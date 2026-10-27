@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CheckId, CheckInfo, JobInfo, ReviewInfo, ShotProduction } from '@shared/types';
 import { useApp } from '../../state';
 import type { CheckOutcome } from './types';
+import { selectShot, type ShotSelection } from './shot-selection';
 
 const JOB_KINDS = new Set(['check', 'review', 'tool']);
 
@@ -17,7 +18,7 @@ export function useChecksPage() {
   const [strict, setStrict] = useState(false);
   const [next, setNext] = useState(false);
   const [planOnly, setPlanOnly] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selection, setSelection] = useState<ShotSelection & { project: string }>({ project, selected: [], anchor: null });
   const [openReview, setOpenReview] = useState<ReviewInfo | null>(null);
   const [deletingReview, setDeletingReview] = useState<string | null>(null);
   const removingReview = useRef(false);
@@ -94,10 +95,19 @@ export function useChecksPage() {
     return { job, status: stepStatus, code: step.code };
   };
 
-  const toggleShot = (id: string): void =>
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id].sort((a, b) => shots.findIndex((s) => s.id === a) - shots.findIndex((s) => s.id === b))
-    );
+  // Выбор и начало диапазона принадлежат текущему проекту; удалённые планы не отправляются в сборку.
+  const selected = selection.project === project ? shots.filter((shot) => selection.selected.includes(shot.id)).map((shot) => shot.id) : [];
+  const toggleShot = (id: string, extend = false): void =>
+    setSelection((previous) => ({
+      project,
+      ...selectShot(
+        previous.project === project ? previous : { selected: [], anchor: null },
+        shots.map((shot) => shot.id),
+        id,
+        extend
+      )
+    }));
+  const clearSelection = (): void => setSelection({ project, selected: [], anchor: null });
 
   const buildReview = (): Promise<void> =>
     start(async () => {
@@ -142,7 +152,7 @@ export function useChecksPage() {
     setStrict,
     setNext,
     setPlanOnly,
-    setSelected,
+    clearSelection,
     setOpenReview,
     loadJobs,
     loadReviews,

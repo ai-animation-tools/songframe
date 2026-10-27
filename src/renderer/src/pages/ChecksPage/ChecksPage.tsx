@@ -54,7 +54,7 @@ export function ChecksPage(): ReactElement {
           deletingReview={page.deletingReview}
           setPlanOnly={page.setPlanOnly}
           toggleShot={page.toggleShot}
-          clearSelection={() => page.setSelected([])}
+          clearSelection={page.clearSelection}
           buildReview={page.buildReview}
           setOpenReview={page.setOpenReview}
           openDirectory={page.openDirectory}

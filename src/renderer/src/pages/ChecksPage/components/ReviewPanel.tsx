@@ -15,7 +15,7 @@ interface ReviewPanelProps {
   openReview: ReviewInfo | null;
   deletingReview: string | null;
   setPlanOnly: (value: boolean) => void;
-  toggleShot: (id: string) => void;
+  toggleShot: (id: string, extend: boolean) => void;
   clearSelection: () => void;
   buildReview: () => Promise<void>;
   setOpenReview: (review: ReviewInfo | null) => void;
@@ -52,6 +52,9 @@ export function ReviewPanel({
         Соберите временный ролик, чтобы оценить переходы между планами. Готовые планы будут показаны принятыми клипами, остальные — карточками, под непрерывный
         участок музыки. Проба сохраняется в plan/batches. Она не заменяет аниматик, её сборка не означает приёмку сцен.
       </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Для диапазона выберите первую сцену, затем последнюю с зажатым Shift. Диапазон добавится к выбранным сценам. С клавиатуры: Shift + Enter.
+      </Typography>
       {shots.length ? (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
           {shots.map((shot) => (
@@ -61,7 +64,8 @@ export function ReviewPanel({
               size="small"
               color={selected.includes(shot.id) ? 'primary' : 'default'}
               variant={shot.asset?.video ? 'filled' : 'outlined'}
-              onClick={() => toggleShot(shot.id)}
+              aria-pressed={selected.includes(shot.id)}
+              onClick={(event) => toggleShot(shot.id, event.shiftKey)}
               title={`${shot.title} · ${shot.stageLabel}${shot.asset?.video ? '' : ' · пойдёт карточкой'}`}
             />
           ))}

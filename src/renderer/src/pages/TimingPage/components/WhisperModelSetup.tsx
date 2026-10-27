@@ -145,16 +145,18 @@ export function WhisperModelSetup({ path, onPathChange }: Props): ReactElement {
           </Stack>
         </>
       ) : null}
-      <Stack direction="row" spacing={1}>
+      {/* Подсказка увеличивает высоту поля целиком: кнопку выравниваем по его верхнему краю и не сжимаем. */}
+      <Stack direction="row" spacing={1} alignItems="flex-start">
         <TextField
           fullWidth
+          sx={{ minWidth: 0 }}
           label="Папка модели faster-whisper"
           value={path}
           onChange={(event) => onPathChange(event.target.value)}
           placeholder={setup?.directories[setup.recommended] ?? 'Выберите папку скачанной модели'}
           helperText="Можно выбрать любую локальную модель CTranslate2. Пусто: стандартная папка рекомендованной модели."
         />
-        <Button startIcon={<FolderOpen />} onClick={pickFolder}>
+        <Button startIcon={<FolderOpen />} onClick={pickFolder} sx={{ flexShrink: 0, minHeight: 40 }}>
           Обзор
         </Button>
       </Stack>

@@ -158,6 +158,29 @@ describe('общий launcher', () => {
     expect(existsSync(marker)).toBe(false);
   });
 
+  it('останавливает вложенное дерево по AbortSignal и не запускает заранее отменённую операцию', async () => {
+    const marker = join(work, 'aborted-child-finished');
+    const source = `setTimeout(() => require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'wrong'), 500);`;
+    const launcher = fakeLauncher(
+      `require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(source)}]); console.log('ready'); setInterval(() => {}, 1000);`
+    );
+    const controller = new AbortController();
+    const result = await launcher.run(work, 'probe', [], {
+      signal: controller.signal,
+      onOutput: (text) => {
+        if (text.includes('ready')) controller.abort();
+      }
+    });
+    expect(result.code).toBeNull();
+    expect(result.stderr).toContain('остановлено пользователем');
+    await new Promise((r) => setTimeout(r, 600));
+    expect(existsSync(marker)).toBe(false);
+    vi.mocked(launcher.runtime).mockClear();
+    const before = await launcher.run(work, 'probe', [], { signal: controller.signal });
+    expect(before.code).toBeNull();
+    expect(launcher.runtime).not.toHaveBeenCalled();
+  });
+
   it.skipIf(process.platform === 'win32')('отличает сигнал от обычного кода завершения', async () => {
     const result = await fakeLauncher("process.kill(process.pid, 'SIGTERM');").run(work, 'probe', []);
     expect(result.code).toBeNull();

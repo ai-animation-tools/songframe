@@ -13,8 +13,19 @@ import { useApp } from '../../../state';
 import { VideoGenerationSettings } from './VideoGenerationSettings';
 import { ImageGenerationSettings } from './ImageGenerationSettings';
 
+/** Пустой неподтверждённый черновик означает «Не выбрано»; старые настройки с именем провайдера не удаляются. */
+export function normalizeProjectSettingsForSave(settings: ProjectSettings): ProjectSettings {
+  if (!settings.generation) return settings;
+  const normalize = <T extends GenerationSettings['image'] | GenerationSettings['video']>(block: T): T | null =>
+    block && block.provider_selected !== true && typeof block.provider === 'string' && !block.provider.trim() ? null : block;
+  return {
+    ...settings,
+    generation: { ...settings.generation, video: normalize(settings.generation.video), image: normalize(settings.generation.image) }
+  };
+}
+
 export function ProjectSettingsCard({ project, name }: { project: string; name: string }): ReactElement {
-  const { notify, describeError, refresh } = useApp();
+  const { notify, describeError, refresh, invalidateAiAccess } = useApp();
   const [saved, setSaved] = useState<ProjectSettings | null>(null);
   const [form, setForm] = useState<ProjectSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,17 +69,25 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
   const save = async (): Promise<void> => {
     // Подсветка полей и возможность сохранить используют одно состояние валидации карточек.
     if (!valid || busy) return;
+    // Пока запись не завершена, прежняя готовность AI не относится к новому состоянию проекта.
+    invalidateAiAccess();
     setBusy(true);
     try {
-      const next = await window.api.projects.saveSettings(project, form);
+      const next = await window.api.projects.saveSettings(project, normalizeProjectSettingsForSave(form));
       setSaved(next);
       setForm(next);
       notify('Настройки проекта записаны в plan/project.json', 'success');
-      await refresh();
     } catch (e) {
       notify(describeError(e), 'error');
     } finally {
-      setBusy(false);
+      try {
+        // После ошибки заново читаем фактические настройки и снимаем временную блокировку через общий refresh.
+        await refresh();
+      } catch (e) {
+        notify(describeError(e), 'error');
+      } finally {
+        setBusy(false);
+      }
     }
   };
 
@@ -110,7 +129,7 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
           project={project}
           value={generation?.video ?? null}
           onChange={(video) => setGeneration({ video })}
-          onAdd={() => setGeneration({ video: { ...DEFAULT_VIDEO_GENERATION } })}
+          onAdd={() => setGeneration({ video: { ...DEFAULT_VIDEO_GENERATION, provider: '' } })}
           onValidityChange={setVideoValid}
         />
         <ImageGenerationSettings
@@ -118,7 +137,7 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
           project={project}
           value={generation?.image ?? null}
           onChange={(image) => setGeneration({ image })}
-          onAdd={() => setGeneration({ image: { ...DEFAULT_IMAGE_GENERATION } })}
+          onAdd={() => setGeneration({ image: { ...DEFAULT_IMAGE_GENERATION, provider: '' } })}
           onValidityChange={setImageValid}
         />
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>

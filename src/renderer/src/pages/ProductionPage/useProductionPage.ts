@@ -181,14 +181,14 @@ export function useProductionPage() {
     );
   };
 
-  const confirmRequest = async (quoteToken?: string): Promise<void> => {
+  const confirmRequest = async (quoteToken?: string, unknownCostConsentToken?: string): Promise<void> => {
     const pkg = confirmSend;
     if (!pkg) return;
     const currentProject = projectScope.capture(project);
     if (!currentProject()) return;
     const currentDialog = sendScope.capture();
     await completeInScope(
-      sendConfirmedRequest(window.api, project, pkg, quoteToken),
+      sendConfirmedRequest(window.api, project, pkg, quoteToken, unknownCostConsentToken),
       () => currentProject() && currentDialog(),
       () => setConfirmSend(null)
     );

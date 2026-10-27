@@ -1,7 +1,8 @@
 import DownloadIcon from '@mui/icons-material/Download';
 /** Получение по уже существующему ID не создаёт повторной платной отправки. */
 import { useState, type ReactElement } from 'react';
-import { Alert, Button, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Stack, TextField, Typography } from '@mui/material';
+import { AiButton } from '../../../components/AiButton';
 import type { PackageView } from '@shared/types';
 import { isExternalPackage } from '../decisions';
 
@@ -54,14 +55,15 @@ export function PackageResume({
       {!request.generationId ? (
         <TextField size="small" label="ID существующей генерации Kling" value={generationId} onChange={(event) => setGenerationId(event.target.value)} />
       ) : null}
-      <Button
+      <AiButton
+        aiKind={pkg.request?.kind === 'image' ? 'image' : 'video'}
         startIcon={<DownloadIcon />}
         sx={{ alignSelf: 'start' }}
         disabled={busy || !klingAvailable || (!request.generationId && !generationId.trim())}
         onClick={() => onResume(request.generationId ?? generationId.trim())}
       >
         {request.generationId ? 'Продолжить получение' : 'Указать ID и проверить'}
-      </Button>
+      </AiButton>
     </Stack>
   );
 }

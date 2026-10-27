@@ -1,8 +1,10 @@
 /** Поток предложения и остановка агента; повтор после прерывания требует нового явного запроса. */
 import { useState, type ReactElement } from 'react';
-import { Alert, Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 import type { AgentJob } from '@shared/agents';
 import { AgentButton } from './AgentButton';
+import StopIcon from '@mui/icons-material/Stop';
+import type { AiActionKind } from '@shared/ai-access';
 import { AgentIcon } from './AgentIcon';
 
 const LABELS = { running: 'Выполняется', completed: 'Завершено', failed: 'Ошибка', cancelled: 'Остановлено', interrupted: 'Прервано' };
@@ -12,12 +14,14 @@ export function AgentJobCard({
   onCancel,
   onRetry,
   retryProvider,
+  retryKind = 'agent',
   compact = false
 }: {
   job: AgentJob;
   onCancel(id: string): Promise<void>;
   onRetry(job: AgentJob): void;
   retryProvider?: AgentJob['provider'] | null;
+  retryKind?: AiActionKind;
   /** Рабочие панели сохраняют остановку и повтор, а подробности показывают в общем журнале. */
   compact?: boolean;
 }): ReactElement {
@@ -35,13 +39,13 @@ export function AgentJobCard({
         </Typography>
         <Box sx={{ flex: 1 }} />
         {['failed', 'cancelled', 'interrupted'].includes(job.status) && (
-          <AgentButton provider={retryProvider} size="small" onClick={() => onRetry(job)}>
+          <AgentButton aiKind={retryKind} provider={retryProvider} size="small" onClick={() => onRetry(job)}>
             Повторить
           </AgentButton>
         )}
         {job.status === 'running' && (
-          <AgentButton
-            provider={job.provider}
+          <Button
+            startIcon={<StopIcon />}
             size="small"
             color="warning"
             disabled={cancelling}
@@ -55,7 +59,7 @@ export function AgentJobCard({
             }}
           >
             Остановить
-          </AgentButton>
+          </Button>
         )}
       </Stack>
       {job.status === 'running' && (

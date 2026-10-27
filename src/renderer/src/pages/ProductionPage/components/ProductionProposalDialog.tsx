@@ -4,7 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import type { AgentSettings } from '@shared/agents';
 import type { ProductionProposal } from '@shared/production-workflow';
-import { AgentButton } from '../../../components';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import { PRODUCTION_PASS_LABELS } from '../constants';
 import { ProductionProposalPreview } from './ProductionProposalPreview';
 
@@ -26,9 +26,9 @@ export function ProductionProposalDialog({
   const [open, setOpen] = useState(false);
   return (
     <Box data-production-proposal={proposal.id}>
-      <AgentButton provider={provider} onClick={() => setOpen(true)}>
+      <Button startIcon={<CompareArrowsIcon />} onClick={() => setOpen(true)}>
         Просмотреть предложение и сравнение
-      </AgentButton>
+      </Button>
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="lg" fullWidth>
         <DialogTitle>Предложение для производства · {PRODUCTION_PASS_LABELS[proposal.stage]}</DialogTitle>
         <DialogContent>

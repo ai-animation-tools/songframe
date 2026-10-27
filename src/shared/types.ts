@@ -549,6 +549,8 @@ export const DURATION_RULE_LABELS: Record<DurationRule, string> = {
 /** Настройки видео; неизвестные параметры сохраняются для подключаемых провайдеров. */
 export interface VideoGenerationSettings {
   provider: string;
+  /** Только явный выбор пользователя; старое имя провайдера само по себе выбором не считается. */
+  provider_selected?: boolean;
   resolution: string;
   aspect_ratio: string;
   watermark: boolean;
@@ -560,6 +562,8 @@ export interface VideoGenerationSettings {
 
 export interface ImageGenerationSettings {
   provider: string;
+  /** Только явный выбор пользователя; отсутствие маркера оставляет генерацию ненастроенной. */
+  provider_selected?: boolean;
   aspect_ratio?: string;
   resolution?: string;
   /** Kling: предпочтительная модель генерации. Codex: модель агента, вызывающего встроенный image_gen. */
@@ -590,8 +594,8 @@ export const DEFAULT_IMAGE_GENERATION: ImageGenerationSettings = { provider: 'co
 export const DEFAULT_KLING_IMAGE_GENERATION: ImageGenerationSettings = { provider: 'kling', resolution: '2k', aspect_ratio: '16:9', outputs: 1 };
 
 export const DEFAULT_GENERATION: GenerationSettings = {
-  video: DEFAULT_VIDEO_GENERATION,
-  image: DEFAULT_IMAGE_GENERATION
+  video: null,
+  image: null
 };
 
 /** Редактируемая часть plan/project.json; прочие поля файла сохраняются как есть. */

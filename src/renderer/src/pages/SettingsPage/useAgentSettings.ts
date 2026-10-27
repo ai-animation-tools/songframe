@@ -5,7 +5,7 @@ import { useApp } from '../../state';
 import { completeInScope, RequestScope } from '../../hooks/requestScope';
 
 export function useAgentSettings() {
-  const { notify, describeError, setAgentProvider } = useApp();
+  const { notify, describeError, setAgentProvider, invalidateAiAccess, refreshAiAccess } = useApp();
   const [settings, setSettings] = useState<AgentSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -79,6 +79,7 @@ export function useAgentSettings() {
     savingNow.current = true;
     scope.invalidate();
     const current = scope.capture();
+    invalidateAiAccess();
     setSaving(true);
     setChecking(false);
     setResult(null);
@@ -90,6 +91,7 @@ export function useAgentSettings() {
       });
     } catch (error) {
       if (current()) notify(describeError(error), 'error');
+      void refreshAiAccess().catch(() => {});
     } finally {
       savingNow.current = false;
       if (current()) setSaving(false);
@@ -103,6 +105,7 @@ export function useAgentSettings() {
     setResult(null);
     try {
       await completeInScope(window.api.agents.check(settings), current, setResult);
+      await refreshAiAccess();
     } catch (error) {
       if (current()) notify(describeError(error), 'error');
     } finally {

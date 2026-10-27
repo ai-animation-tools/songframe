@@ -1,7 +1,8 @@
 /** Сохранённые параметры запроса и переход к общему подтверждению отправки. */
 import type { ReactElement } from 'react';
-import { Box, Button, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
+import { Box, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import { AiButton } from '../../../components/AiButton';
 import type { PackageView } from '@shared/types';
 import { ATTEMPT_LABELS, productionInputLabel } from '@shared/production-labels';
 import { isExternalPackage } from '../decisions';
@@ -94,9 +95,16 @@ export function PackageRequest({
           {canSubmit ? (
             <Tooltip title={klingAvailable ? 'Платная отправка из приложения' : 'Kling CLI не найден'}>
               <span>
-                <Button sx={{ mt: 1.5 }} variant="contained" startIcon={<SendIcon />} disabled={busy || !klingAvailable} onClick={onSubmit}>
+                <AiButton
+                  aiKind={pkg.request?.kind === 'image' ? 'image' : 'video'}
+                  sx={{ mt: 1.5 }}
+                  variant="contained"
+                  startIcon={<SendIcon />}
+                  disabled={busy || !klingAvailable}
+                  onClick={onSubmit}
+                >
                   Отправить
-                </Button>
+                </AiButton>
               </span>
             </Tooltip>
           ) : null}

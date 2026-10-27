@@ -2,6 +2,7 @@
 import { useState, type ReactElement } from 'react';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import { aiActionProblem } from '@shared/ai-access';
 import type { AgentJob } from '@shared/agents';
 import { useApp } from '../state';
 import { AgentButton } from './AgentButton';
@@ -12,8 +13,10 @@ export function AgentRetryDialog({ job, onClose }: { job: AgentJob; onClose(): v
   const [context, setContext] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { describeError, agentProvider } = useApp();
+  const { describeError, agentProvider, aiAccess } = useApp();
+  const aiProblem = aiActionProblem(aiAccess);
   const submit = async (): Promise<void> => {
+    if (aiProblem) return;
     setBusy(true);
     setError(null);
     try {
@@ -56,6 +59,7 @@ export function AgentRetryDialog({ job, onClose }: { job: AgentJob; onClose(): v
             onChange={(event) => setContext(event.target.value)}
             disabled={busy}
           />
+          {aiProblem && <Alert severity="info">{aiProblem}</Alert>}
           {error && <Alert severity="error">{error}</Alert>}
         </Stack>
       </DialogContent>

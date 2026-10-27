@@ -16,6 +16,8 @@ export function useSourcesForm() {
   const [idea, setIdea] = useState('');
   const [coverNew, setCoverNew] = useState<string | null>(null);
   const [coverRemove, setCoverRemove] = useState(false);
+  const [coverGenerationOpen, setCoverGenerationOpen] = useState(false);
+  const [generatedCover, setGeneratedCover] = useState<{ id: string; path: string } | null>(null);
   const [refs, setRefs] = useState<ReferenceForm[]>([]);
   const [kinds, setKinds] = useState<SourceKind[]>(DEFAULT_SOURCE_KINDS);
   const [kindDialog, setKindDialog] = useState<KindForm | null>(null);
@@ -23,6 +25,14 @@ export function useSourcesForm() {
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [savedRefs, setSavedRefs] = useState('[]');
+
+  // Принятый обрезанный файл нужен до сохранения формы; замена и уход со страницы удаляют временную сессию.
+  useEffect(
+    () => () => {
+      if (generatedCover) void window.api.cover.close(generatedCover.id).catch(() => undefined);
+    },
+    [generatedCover]
+  );
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -74,6 +84,8 @@ export function useSourcesForm() {
     setIdea(next.ideaText);
     setTrackNew(null);
     setCoverNew(null);
+    setGeneratedCover(null);
+    setCoverGenerationOpen(false);
     setCoverRemove(false);
     setRefs(loadedRefs);
   }, [project, describeError]);
@@ -149,6 +161,7 @@ export function useSourcesForm() {
   const selectCover = (paths: string[]): void => {
     const [path] = paths;
     if (path) {
+      if (generatedCover?.path !== path) setGeneratedCover(null);
       // Уже сохранённая обложка не должна копироваться поверх самой себя при сохранении.
       setCoverNew(path === view?.coverPath ? null : path);
       setCoverRemove(false);
@@ -303,9 +316,23 @@ export function useSourcesForm() {
       coverSrc,
       onPick: pickCover,
       onDrop: selectCover,
+      onGenerate: () => setCoverGenerationOpen(true),
       onRemove: () => {
         setCoverNew(null);
+        setGeneratedCover(null);
         setCoverRemove(!!manifest?.cover);
+      }
+    },
+    coverGenerationProps: {
+      open: coverGenerationOpen,
+      project,
+      idea,
+      onClose: () => setCoverGenerationOpen(false),
+      onAccepted: (result: { id: string; path: string }) => {
+        setCoverNew(result.path);
+        setCoverRemove(false);
+        setGeneratedCover(result);
+        notify('Обложка выбрана. Нажмите «Сохранить», чтобы записать её в проект.', 'info');
       }
     },
     lyricsProps: {

@@ -1,11 +1,13 @@
 /** Оценка стоимости относится к одному открытому подтверждению и не переживает смену запроса. */
 import { useEffect, useState } from 'react';
+import { aiActionProblem } from '@shared/ai-access';
 import type { PackageView, ProductionQuote } from '@shared/types';
 import { useApp } from '../../state';
 import { isExternalPackage } from './decisions';
 
 export function useRequestQuote(project: string, pkg: PackageView | null) {
-  const { describeError } = useApp();
+  const { describeError, aiAccess } = useApp();
+  const aiProblem = aiActionProblem(aiAccess, pkg?.request?.kind === 'image' ? 'image' : 'video');
   const [storedQuote, setQuote] = useState<{ context: string; value: ProductionQuote } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,7 +24,7 @@ export function useRequestQuote(project: string, pkg: PackageView | null) {
     setQuote(null);
     setError(null);
     setLoading(false);
-    if (!dir || !sha || external) return;
+    if (!dir || !sha || external || aiProblem) return;
     setLoading(true);
     void window.api.production
       .quote(project, dir, sha, decisionToken)
@@ -40,7 +42,7 @@ export function useRequestQuote(project: string, pkg: PackageView | null) {
     return () => {
       active = false;
     };
-  }, [context, project, dir, sha, decisionToken, external, describeError, revision]);
+  }, [context, project, dir, sha, decisionToken, external, aiProblem, describeError, revision]);
 
   return {
     quote,

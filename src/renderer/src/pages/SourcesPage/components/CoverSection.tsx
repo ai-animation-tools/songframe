@@ -4,15 +4,22 @@ import { Box, Paper, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { FileDropZone } from '../../../components/FileDropZone';
+import { AgentButton } from '../../../components/AgentButton';
+import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
+import { useApp } from '../../../state';
+import { aiActionProblem } from '@shared/ai-access';
 
 interface Props {
   coverSrc: string | null;
   onPick: () => Promise<void>;
   onRemove: () => void;
   onDrop: (paths: string[]) => void;
+  onGenerate: () => void;
 }
 
-export function CoverSection({ coverSrc, onPick, onRemove, onDrop }: Props): ReactElement {
+export function CoverSection({ coverSrc, onPick, onRemove, onDrop, onGenerate }: Props): ReactElement {
+  const { agentProvider, aiAccess } = useApp();
+  const blockedReason = !agentProvider ? COVER_AGENT_REQUIRED : aiActionProblem(aiAccess, 'image');
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
@@ -46,6 +53,21 @@ export function CoverSection({ coverSrc, onPick, onRemove, onDrop }: Props): Rea
         hint="Одно изображение PNG, JPG или WebP."
         message="Перетащите изображение или нажмите для выбора"
       />
+      <Box sx={{ mt: 1 }}>
+        <AgentButton
+          onClick={onGenerate}
+          aiKind="image"
+          disabled={Boolean(blockedReason)}
+          title={blockedReason ?? 'Создать обложку через провайдера изображений проекта'}
+        >
+          Сгенерировать
+        </AgentButton>
+        {blockedReason ? (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {blockedReason}
+          </Typography>
+        ) : null}
+      </Box>
     </Paper>
   );
 }

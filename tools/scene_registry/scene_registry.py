@@ -61,7 +61,7 @@ def generation_settings(data, kind="video"):
     if "video" in generation or "image" in generation:
         block = generation.get(kind)
     else:
-        block = generation if kind == "video" else {"provider": "codex"}
+        block = generation if kind == "video" else None
     if not isinstance(block, dict):
         raise ValueError(f"В plan/project.json нет корректного блока generation.{kind}.")
     fields = GENERATION_FIELDS if kind == "video" else {"provider": str}
@@ -86,6 +86,9 @@ def generation_settings(data, kind="video"):
         raise ValueError("aspect_ratio записывается как 16:9 или auto.")
     if "watermark" in block and not isinstance(block["watermark"], bool):
         raise ValueError(f"generation.{kind}.watermark должен быть логическим значением.")
+    # Маркер выбора проверяет формат данных; готовность к запуску проверяется перед AI-действием.
+    if "provider_selected" in block and not isinstance(block["provider_selected"], bool):
+        raise ValueError(f"generation.{kind}.provider_selected должен быть логическим значением.")
     if "options" in block and not isinstance(block["options"], dict):
         raise ValueError(f"generation.{kind}.options должен быть объектом.")
     if kind == "image" and "outputs" in block and (type(block["outputs"]) is not int or block["outputs"] < 1):

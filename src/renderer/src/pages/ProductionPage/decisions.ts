@@ -10,7 +10,7 @@ export function decisionNoteKey(pkg: PackageView): string {
   return `${pkg.dir}\0${pkg.decisionToken ?? JSON.stringify(pkg.pendingDecision)}`;
 }
 
-export async function sendConfirmedRequest(api: Api, project: string, pkg: PackageView, quoteToken?: string): Promise<void> {
+export async function sendConfirmedRequest(api: Api, project: string, pkg: PackageView, quoteToken?: string, unknownCostConsentToken?: string): Promise<void> {
   if (isExternalPackage(pkg)) {
     await api.production.decide(project, pkg.dir, 'send', '', pkg.decisionToken);
     return;
@@ -18,7 +18,13 @@ export async function sendConfirmedRequest(api: Api, project: string, pkg: Packa
   if (!pkg.request?.sha256) throw new Error('У показанного запроса нет SHA256. Обновите пакет перед отправкой.');
   if (!quoteToken) throw new Error('Перед отправкой обновите и подтвердите стоимость запроса.');
   // Главный процесс атомарно связывает разрешение и отправку с этим снимком запроса.
-  await api.production.submit(project, pkg.dir, pkg.request.sha256, pkg.decisionToken, quoteToken);
+  if (unknownCostConsentToken) {
+    // Согласие относится к показанной оценке; новая подготовка или обновление цены потребуют другого токена.
+    if (unknownCostConsentToken !== quoteToken) throw new Error('Согласие относится к другой проверке стоимости. Подтвердите запрос заново.');
+    await api.production.submit(project, pkg.dir, pkg.request.sha256, pkg.decisionToken, quoteToken, unknownCostConsentToken);
+  } else {
+    await api.production.submit(project, pkg.dir, pkg.request.sha256, pkg.decisionToken, quoteToken);
+  }
 }
 
 /** Приёмка связана с показанными оригиналами; токен вопроса не заменяет токен результата. */

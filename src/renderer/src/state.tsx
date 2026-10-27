@@ -1,9 +1,10 @@
 /** Состояние приложения в рендерере: комплекс, текущий проект и его статус, уведомления. */
 
-import { type ReactElement, createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { type ReactElement, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Alert, Snackbar } from '@mui/material';
 import type { AppState, ProjectStatus } from '@shared/types';
 import type { AgentSettings } from '@shared/agents';
+import type { AiAccess } from '@shared/ai-access';
 
 type Severity = 'success' | 'info' | 'warning' | 'error';
 
@@ -11,6 +12,10 @@ interface AppContextValue {
   state: AppState | null;
   status: ProjectStatus | null;
   loading: boolean;
+  aiAccess: AiAccess | null;
+  refreshAiAccess(): Promise<void>;
+  /** Немедленно блокирует AI-действия перед сохранением новых настроек. */
+  invalidateAiAccess(): void;
   agentProvider: AgentSettings['provider'] | null;
   setAgentProvider(provider: AgentSettings['provider'] | null): void;
   refresh(): Promise<void>;
@@ -32,20 +37,48 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
   const [state, setState] = useState<AppState | null>(null);
   const [status, setStatus] = useState<ProjectStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [agentProvider, setAgentProvider] = useState<AgentSettings['provider'] | null>(null);
+  const [agentProvider, updateAgentProvider] = useState<AgentSettings['provider'] | null>(null);
+  const [aiAccess, setAiAccess] = useState<AiAccess | null>(null);
+  const scope = useRef(0);
   const [toast, setToast] = useState<{ message: string; severity: Severity } | null>(null);
 
   const notify = useCallback((message: string, severity: Severity = 'info') => setToast({ message, severity }), []);
 
+  const invalidateAiAccess = useCallback(() => {
+    scope.current += 1;
+    setAiAccess(null);
+  }, []);
+
   const refresh = useCallback(async () => {
+    invalidateAiAccess();
+    const current = scope.current;
     const [next, agent] = await Promise.all([window.api.app.state(), window.api.agents.getSettings()]);
+    if (current !== scope.current) return;
     const nextStatus = next.current ? await window.api.projects.status(next.current) : null;
-    // Новый проект и его статус показываем вместе, без данных предыдущего клипа.
+    if (current !== scope.current) return;
+    // Локальный просмотр появляется до проверки CLI и входа; AI-действия пока остаются заблокированы.
     setState(next);
     setStatus(nextStatus);
-    setAgentProvider(agent?.provider ?? null);
+    updateAgentProvider(agent?.provider ?? null);
     setLoading(false);
-  }, []);
+    try {
+      const access = await window.api.ai.access(next.current);
+      // Ответ старой проверки не может разрешить ИИ после смены проекта или настроек.
+      if (current === scope.current) setAiAccess(access);
+    } catch (error) {
+      // Сбой диагностики блокирует только ИИ, сохраняя просмотр и редактирование проекта.
+      if (current === scope.current) notify(describeError(error), 'error');
+    }
+  }, [invalidateAiAccess, notify]);
+
+  // Проверка читает сохранённые настройки заново, поэтому одинаковый provider с новым путём CLI тоже обновляет доступность.
+  const setAgentProvider = useCallback(
+    (provider: AgentSettings['provider'] | null) => {
+      updateAgentProvider(provider);
+      void refresh().catch((error) => notify(describeError(error), 'error'));
+    },
+    [refresh, notify]
+  );
 
   useEffect(() => {
     refresh().catch((error) => {
@@ -56,21 +89,37 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
 
   const openProject = useCallback(
     async (path: string) => {
+      invalidateAiAccess();
       const next = await window.api.projects.open(path);
       await refresh();
       return next;
     },
-    [refresh]
+    [refresh, invalidateAiAccess]
   );
 
   const closeProject = useCallback(async () => {
+    invalidateAiAccess();
     await window.api.projects.close();
     await refresh();
-  }, [refresh]);
+  }, [refresh, invalidateAiAccess]);
 
   const value = useMemo<AppContextValue>(
-    () => ({ state, status, loading, agentProvider, setAgentProvider, refresh, openProject, closeProject, notify, describeError }),
-    [state, status, loading, agentProvider, refresh, openProject, closeProject, notify]
+    () => ({
+      state,
+      status,
+      loading,
+      aiAccess,
+      refreshAiAccess: refresh,
+      invalidateAiAccess,
+      agentProvider,
+      setAgentProvider,
+      refresh,
+      openProject,
+      closeProject,
+      notify,
+      describeError
+    }),
+    [state, status, loading, aiAccess, agentProvider, setAgentProvider, invalidateAiAccess, refresh, openProject, closeProject, notify]
   );
 
   return (

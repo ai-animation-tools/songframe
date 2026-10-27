@@ -4,6 +4,7 @@
  */
 
 import { FPS } from '@shared/video';
+import { canAgreeToUnknownCost, priceAllowsGeneration } from '@shared/generation-consent';
 import { ATTEMPT_LABELS } from '@shared/production-labels';
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -410,22 +411,37 @@ export class Production {
   }
 
   private async price(project: string, directory: string): Promise<Omit<ProductionQuote, 'token' | 'requestSha'>> {
-    const result = await this.jobs.launcher.run(project, 'cost_check', ['check', '--work-dir', directory, '--json', ...cliArgs(), ...pricingArgs()]);
+    // Недоступная оценка остаётся отдельным согласуемым состоянием; сырой ответ CLI может содержать секреты.
+    const unknown = (): Omit<ProductionQuote, 'token' | 'requestSha'> => ({
+      verdict: 'cost_or_balance_unknown',
+      credits: null,
+      balance: null,
+      reasons: ['Не удалось определить стоимость и остаток кредитов.']
+    });
+    let result;
     let value: Record<string, unknown>;
     try {
-      value = JSON.parse(result.stdout);
+      result = await this.jobs.launcher.run(project, 'cost_check', ['check', '--work-dir', directory, '--json', ...cliArgs(), ...pricingArgs()]);
+      const parsed: unknown = JSON.parse(result.stdout);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return unknown();
+      value = parsed as Record<string, unknown>;
     } catch {
-      throw new Error('Не удалось определить стоимость и остаток. Отправка не выполнялась.');
+      return unknown();
     }
     const verdict = value.verdict;
-    if (![0, 2].includes(result.code ?? -1) || !['ok', 'insufficient_balance', 'cost_or_balance_unknown'].includes(String(verdict)))
-      throw new Error('Проверка стоимости не завершилась. Отправка не выполнялась.');
-    const credits = typeof value.estimate_credits === 'number' && Number.isFinite(value.estimate_credits) ? value.estimate_credits : null;
-    const balance = typeof value.balance_credits === 'number' && Number.isFinite(value.balance_credits) ? value.balance_credits : null;
-    if (verdict === 'ok' && (result.code !== 0 || credits === null || credits < 0 || balance === null || balance < credits))
-      throw new Error('Стоимость или остаток не подтверждены. Отправка не выполнялась.');
+    if (![0, 2].includes(result.code ?? -1) || !['ok', 'insufficient_balance', 'cost_or_balance_unknown'].includes(String(verdict))) return unknown();
+    const credits =
+      typeof value.estimate_credits === 'number' && Number.isFinite(value.estimate_credits) && value.estimate_credits >= 0 ? value.estimate_credits : null;
+    const balance =
+      typeof value.balance_credits === 'number' && Number.isFinite(value.balance_credits) && value.balance_credits >= 0 ? value.balance_credits : null;
+    const checkedVerdict =
+      credits !== null && balance !== null && balance < credits
+        ? 'insufficient_balance'
+        : verdict === 'ok' && (result.code !== 0 || credits === null || balance === null)
+          ? 'cost_or_balance_unknown'
+          : verdict;
     return {
-      verdict: verdict as ProductionQuote['verdict'],
+      verdict: checkedVerdict as ProductionQuote['verdict'],
       credits,
       balance,
       reasons: Array.isArray(value.reasons) ? value.reasons.filter((r): r is string => typeof r === 'string') : []
@@ -488,16 +504,25 @@ export class Production {
   }
 
   /** Только показанный запрос и одноразовое подтверждение стоимости допускают новую оплату. */
-  async submit(project: string, packageDir: string, expectedSha?: string, decisionToken?: string, quoteToken?: string): Promise<JobInfo> {
+  async submit(
+    project: string,
+    packageDir: string,
+    expectedSha?: string,
+    decisionToken?: string,
+    quoteToken?: string,
+    unknownCostConsentToken?: string
+  ): Promise<JobInfo> {
     const directory = this.available(project, packageDir);
     const record = this.quotes.get(quoteToken ?? '');
     this.quotes.delete(quoteToken ?? '');
+    // Согласие относится ровно к показанной оценке и сгорает вместе с её одноразовым token.
+    const agreedToUnknownCost = !!record && unknownCostConsentToken === record.quote.token && canAgreeToUnknownCost(record.quote);
     if (
       !record ||
       record.project !== realpathSync(project) ||
       record.directory !== directory ||
       record.quote.requestSha !== expectedSha ||
-      record.quote.verdict !== 'ok'
+      !priceAllowsGeneration(record.quote, agreedToUnknownCost)
     )
       throw new Error('Сначала откройте запрос и подтвердите актуальную стоимость.');
     const view = this.ready(project, directory, expectedSha!, decisionToken);
@@ -506,7 +531,11 @@ export class Production {
     try {
       const price = await this.price(project, view.request!.dir);
       const fresh = this.ready(project, directory, expectedSha!, decisionToken);
-      if (price.verdict !== 'ok' || price.credits !== record.quote.credits || fresh.decisionToken !== record.decisionToken)
+      if (
+        !priceAllowsGeneration(price, agreedToUnknownCost) ||
+        (!agreedToUnknownCost && price.credits !== record.quote.credits) ||
+        fresh.decisionToken !== record.decisionToken
+      )
         throw new Error('Стоимость, остаток или материалы изменились. Откройте подтверждение заново; отправка не выполнялась.');
       if (fresh.stage === 'ready') {
         // Новый quote и нажатие подтверждения разрешают прежний frozen request; запись вопроса не создаёт новую попытку.

@@ -53,3 +53,23 @@ describe('сохранение профиля до загрузки', () => {
     expect(html).toMatch(/<button[^>]*disabled[^>]*>(?:(?!<\/button>)[\s\S])*Сохранить настройки агента<\/button>/);
   });
 });
+
+describe('Путь Codex показывается только выбранному Codex', () => {
+  it.each([null, { provider: 'claude' as const }])('не монтирует настройки изображений при выборе %s', (settings) => {
+    vi.mocked(useAgentSettings).mockReturnValue({ ...vi.mocked(useAgentSettings)(), settings });
+    const html = renderToStaticMarkup(createElement(SettingsPage));
+    expect(html).not.toContain('Путь к Codex CLI для изображений');
+    expect(html).not.toContain('Загрузка пути Codex CLI');
+    expect(html).not.toContain('Сохранить путь Codex CLI');
+  });
+
+  it('показывает отдельный путь изображений после явного выбора Codex и загрузки профиля', () => {
+    const html = renderToStaticMarkup(createElement(SettingsPage));
+    expect(html).toContain('Путь к Codex CLI для изображений');
+  });
+
+  it.each([{ profileLoading: true }, { profileError: 'Ошибка профиля' }])('не монтирует профиль изображений пока текстовый профиль не готов: %s', (state) => {
+    vi.mocked(useAgentSettings).mockReturnValue({ ...vi.mocked(useAgentSettings)(), ...state });
+    expect(renderToStaticMarkup(createElement(SettingsPage))).not.toContain('Путь к Codex CLI для изображений');
+  });
+});

@@ -5,10 +5,14 @@ import { AcceptResultDialog, PackageCard, ProductionShotCard, ProductionShotList
 import { useProductionPage } from './useProductionPage';
 import { acceptShownResult } from './decisions';
 import { ProductionWorkflowPanel } from './components/ProductionWorkflowPanel';
+import { aiActionProblem } from '@shared/ai-access';
+import { useApp } from '../../state';
 import { JobStatus } from '../../components';
 import { PageActionBar } from '../../components/PageActionBar';
 
 export function ProductionPage(): ReactElement {
+  const { aiAccess } = useApp();
+  const aiProblems = [...new Set((['agent', 'image', 'video'] as const).map((kind) => aiActionProblem(aiAccess, kind)).filter(Boolean))];
   const {
     project,
     view,
@@ -56,6 +60,7 @@ export function ProductionPage(): ReactElement {
       <PageActionBar>
         <ProductionToolbar view={view} filter={filter} onFilter={setFilter} onSelect={setSelected} onRefresh={() => void load()} />
       </PageActionBar>
+      {aiProblems.length ? <Alert severity="info">{aiProblems.join(' ')}</Alert> : null}
       {view.problems.length ? <Alert severity="warning">{view.problems.join(' ')}</Alert> : null}
       {!view.tools.python ? (
         <Alert severity="info">Python не найден: просмотр работает, кнопки решений и отправки недоступны.</Alert>

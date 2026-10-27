@@ -66,7 +66,13 @@ function registerLocalFileProtocol(): void {
     const type = MIME[extname(path).toLowerCase()] ?? 'application/octet-stream';
     const size = statSync(path).size;
     // Рендерер открыт с file://, поэтому fetch к локальному протоколу считается кросс-доменным: разрешаем явно.
-    const headers: Record<string, string> = { 'content-type': type, 'accept-ranges': 'bytes', 'access-control-allow-origin': '*' };
+    // Временные обложки не должны оставаться в дисковом кэше приложения; файлы проекта могут меняться по прежнему пути.
+    const headers: Record<string, string> = {
+      'content-type': type,
+      'accept-ranges': 'bytes',
+      'access-control-allow-origin': '*',
+      'cache-control': 'no-store'
+    };
     // Диапазоны нужны аудио и видео для перемотки: без 206 медиаэлемент начинает с нуля.
     const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('range') ?? '');
     if (range && (range[1] || range[2])) {
@@ -251,4 +257,18 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => services?.agents?.shutdown());
+let coverCleanup: Promise<void> | null = null;
+let coversClosed = false;
+app.on('before-quit', (event) => {
+  services?.agents?.shutdown();
+  if (!services?.cover || coversClosed) return;
+  // Сначала останавливаем запись генератора и удаляем временные изображения, затем завершаем Electron.
+  event.preventDefault();
+  coverCleanup ??= services.cover
+    .shutdown()
+    .catch((error: unknown) => console.error('Не удалось очистить временные обложки:', error))
+    .finally(() => {
+      coversClosed = true;
+      app.quit();
+    });
+});

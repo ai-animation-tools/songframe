@@ -9,6 +9,8 @@ import type { NotificationTarget } from './notifications';
 import type { MontageApi } from './montage';
 import type { MontageWindowApi } from './montage-window';
 import type { ScenarioStatus } from './scenario-status';
+import type { CoverGenerationApi } from './cover-generation';
+import type { AiAccess } from './ai-access';
 import type {
   AcceptOptions,
   AnimaticView,
@@ -45,6 +47,11 @@ import type {
 } from './types';
 
 export interface Api {
+  ai: {
+    /** Явный выбор и проверенная доступность исполнителей; значения по умолчанию не дают разрешение запуска. */
+    access(project: string | null): Promise<AiAccess>;
+  };
+  cover: CoverGenerationApi;
   montage: MontageApi;
   montageWindow: MontageWindowApi;
   notifications: {
@@ -143,7 +150,14 @@ export interface Api {
     decide(project: string, packageDir: string, verdict: string, note?: string, decisionToken?: string): Promise<void>;
     /** Платная отправка подготовленной попытки пакета; разрешение даёт нажатие кнопки. */
     quote(project: string, packageDir: string, expectedSha: string, decisionToken?: string): Promise<ProductionQuote>;
-    submit(project: string, packageDir: string, expectedSha: string, decisionToken?: string, quoteToken?: string): Promise<JobInfo>;
+    submit(
+      project: string,
+      packageDir: string,
+      expectedSha: string,
+      decisionToken?: string,
+      quoteToken?: string,
+      unknownCostConsentToken?: string
+    ): Promise<JobInfo>;
     resume(project: string, packageDir: string, generationId?: string): Promise<JobInfo>;
     /** Выбирает кандидат опоры; художественное утверждение кадра выполняется отдельно. */
     selectImage(project: string, packageDir: string, index: number, expectedResultToken: string): Promise<void>;

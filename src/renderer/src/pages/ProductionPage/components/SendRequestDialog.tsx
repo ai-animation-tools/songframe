@@ -1,8 +1,11 @@
+import CheckIcon from '@mui/icons-material/Check';
 import RefreshIcon from '@mui/icons-material/Refresh';
 /** Общее подтверждение платной отправки с замороженным промптом, входами и хешем запроса. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Button, Stack, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration } from '@shared/generation-consent';
+import { aiActionProblem } from '@shared/ai-access';
 import type { PackageView } from '@shared/types';
 import { productionInputLabel } from '@shared/production-labels';
 import { AgentIcon } from '../../../components';
@@ -22,9 +25,10 @@ export function SendRequestDialog({
   pkg: PackageView | null;
   busy: boolean;
   onClose(): void;
-  onConfirm(quoteToken?: string): Promise<void>;
+  onConfirm(quoteToken?: string, unknownCostConsentToken?: string): Promise<void>;
 }): ReactElement {
-  const { describeError } = useApp();
+  const { describeError, aiAccess } = useApp();
+  const aiProblem = aiActionProblem(aiAccess, pkg?.request?.kind === 'image' ? 'image' : 'video');
   const { quote, error, loading, external, refreshQuote, consumeQuote } = useRequestQuote(project, pkg);
   const mounted = useRef(false);
   useEffect(() => {
@@ -36,18 +40,26 @@ export function SendRequestDialog({
   const sendingNow = useRef(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [unknownCostConsentToken, setUnknownCostConsentToken] = useState<string | null>(null);
+  const agreedToUnknownCost = !!quote && unknownCostConsentToken === quote.token;
+  useEffect(() => {
+    // Обновление оценки или пакета требует отдельного согласия, даже если SHA запроса прежний.
+    setUnknownCostConsentToken(null);
+  }, [quote?.token, project, pkg?.dir, pkg?.decisionToken]);
   useEffect(() => {
     setSendError(null);
   }, [pkg]);
   const confirm = async (): Promise<void> => {
-    if (sendingNow.current) return;
+    if (sendingNow.current || aiProblem || (!external && !priceAllowsGeneration(quote, agreedToUnknownCost))) return;
     sendingNow.current = true;
     const token = quote?.token;
+    const consentToken = agreedToUnknownCost ? token : undefined;
+    setUnknownCostConsentToken(null);
     consumeQuote();
     setSending(true);
     setSendError(null);
     try {
-      await onConfirm(token);
+      await onConfirm(token, consentToken);
     } catch (reason) {
       if (mounted.current) setSendError(describeError(reason));
     } finally {
@@ -59,17 +71,16 @@ export function SendRequestDialog({
     <ConfirmationDialog
       open={!!pkg}
       onClose={onClose}
-      title={
-        external
-          ? 'Разрешить отправку внешнему агенту'
-          : pkg?.request?.kind === 'image'
-            ? 'Отправить запрос изображения в Kling'
-            : 'Отправить запрос видео в Kling'
-      }
+      title="Вы уверены, что промпт правильный?"
       cancelDisabled={sending}
       closeDisabled={sending}
       confirmDisabled={
-        busy || sending || loading || !pkg?.request?.sha256 || (!external && (quote?.verdict !== 'ok' || quote.requestSha !== pkg.request.sha256))
+        !!aiProblem ||
+        busy ||
+        sending ||
+        loading ||
+        !pkg?.request?.sha256 ||
+        (!external && (!priceAllowsGeneration(quote, agreedToUnknownCost) || quote?.requestSha !== pkg.request.sha256))
       }
       confirmLabel="Отправить и списать кредиты"
       confirmIcon={external ? <AgentIcon provider={null} monochrome /> : <SendIcon />}
@@ -77,6 +88,10 @@ export function SendRequestDialog({
     >
       {pkg?.request ? (
         <Stack spacing={1} sx={{ mt: 1 }}>
+          {aiProblem ? <Alert severity="info">{aiProblem}</Alert> : null}
+          <Typography variant="body2">
+            Проверьте промпт и материалы перед отправкой платного запроса. Подтверждение разрешает одну попытку генерации.
+          </Typography>
           <RequestModelSelection selection={pkg.request.modelSelection} />
           <Typography variant="body2">
             План {pkg.shot}
@@ -104,16 +119,31 @@ export function SendRequestDialog({
               {error ? <Alert severity="error">{error}</Alert> : null}
               {quote ? (
                 <Alert severity={quote.verdict === 'ok' ? 'info' : 'warning'}>
-                  Стоимость: {quote.credits ?? 'неизвестна'} кредитов. Остаток: {quote.balance ?? 'неизвестен'} кредитов.
+                  Стоимость: {formatCredits(quote.credits)}. Остаток: {formatCredits(quote.balance)}.
                   {quote.verdict === 'insufficient_balance'
                     ? ' Кредитов недостаточно.'
                     : quote.verdict === 'cost_or_balance_unknown'
-                      ? ' Стоимость или остаток не подтверждены, отправка недоступна.'
+                      ? canAgreeToUnknownCost(quote)
+                        ? ' Стоимость не подтверждена. Для отправки нужно явное согласие на списание неизвестного количества кредитов.'
+                        : ' Остаток кредитов не подтверждён, отправка недоступна.'
                       : ''}
                   {quote.reasons.length ? ` ${quote.reasons.join(' ')}` : ''}
+                  {canAgreeToUnknownCost(quote) ? (
+                    <Stack spacing={1} sx={{ mt: 1 }}>
+                      {agreedToUnknownCost ? <Typography variant="body2">Вы согласились отправить этот запрос с неизвестной стоимостью.</Typography> : null}
+                      <Button
+                        startIcon={<CheckIcon />}
+                        sx={{ alignSelf: 'start' }}
+                        disabled={!!aiProblem || loading || sending || busy || agreedToUnknownCost}
+                        onClick={() => setUnknownCostConsentToken(quote.token)}
+                      >
+                        Я согласен
+                      </Button>
+                    </Stack>
+                  ) : null}
                 </Alert>
               ) : null}
-              <Button startIcon={<RefreshIcon />} sx={{ alignSelf: 'start' }} disabled={loading || sending || busy} onClick={refreshQuote}>
+              <Button startIcon={<RefreshIcon />} sx={{ alignSelf: 'start' }} disabled={!!aiProblem || loading || sending || busy} onClick={refreshQuote}>
                 Обновить стоимость
               </Button>
             </Stack>

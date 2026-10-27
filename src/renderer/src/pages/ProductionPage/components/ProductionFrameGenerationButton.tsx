@@ -3,6 +3,7 @@ import BuildIcon from '@mui/icons-material/Build';
 /** Исполнитель опор определяется настройкой изображений; подготовка Kling ещё не разрешает платную отправку. */
 import type { ReactElement } from 'react';
 import { Alert, Button, Stack } from '@mui/material';
+import { AiButton } from '../../../components/AiButton';
 import { AgentButton } from '../../../components';
 
 export function ProductionFrameGenerationButton({
@@ -16,15 +17,15 @@ export function ProductionFrameGenerationButton({
 }): ReactElement {
   if (provider === 'codex')
     return (
-      <AgentButton provider="codex" disabled={disabled} onClick={onGenerate}>
+      <AgentButton aiKind="image" provider="codex" disabled={disabled} onClick={onGenerate}>
         Создать опоры в Codex
       </AgentButton>
     );
   if (provider === 'kling')
     return (
-      <Button startIcon={<BuildIcon />} variant="outlined" disabled={disabled} onClick={onGenerate}>
+      <AiButton aiKind="image" startIcon={<BuildIcon />} variant="outlined" disabled={disabled} onClick={onGenerate}>
         Подготовить запрос изображения (Kling)
-      </Button>
+      </AiButton>
     );
   return (
     <Stack spacing={1} sx={{ minWidth: 0 }}>

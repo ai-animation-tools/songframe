@@ -203,7 +203,7 @@ function readGeneration(data: Record<string, unknown>): GenerationSettings | nul
   return {
     ...Object.fromEntries(Object.entries(block).filter(([key]) => !LEGACY_VIDEO_FIELDS.includes(key))),
     video: Object.fromEntries(LEGACY_VIDEO_FIELDS.filter((key) => key in block).map((key) => [key, block[key]])) as unknown as VideoGenerationSettings,
-    image: { provider: 'codex' }
+    image: null
   };
 }
 
@@ -252,6 +252,9 @@ export function validateProjectSettings(settings: ProjectSettings): string[] {
       problems.push(`${prefix}watermark должен быть логическим значением.`);
     if (kind === 'video' && !DURATION_RULES.includes(block.duration_rule as VideoGenerationSettings['duration_rule']))
       problems.push(`${prefix}правило длительности должно быть одним из: ${DURATION_RULES.join(', ')}.`);
+    // Наличие имени провайдера в старом файле не подтверждает явный выбор пользователя.
+    if (block.provider_selected !== undefined && typeof block.provider_selected !== 'boolean')
+      problems.push(`${prefix}provider_selected должен быть логическим значением.`);
     if (block.options !== undefined && !isRecord(block.options)) problems.push(`${prefix}options должен быть объектом.`);
     if (kind === 'image' && block.outputs !== undefined && (!Number.isInteger(block.outputs) || Number(block.outputs) < 1))
       problems.push(`${prefix}outputs должен быть положительным целым числом.`);

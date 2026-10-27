@@ -5,7 +5,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CastFile, JobInfo, ScenesFile } from '@shared/types';
+import type { CastFile, JobInfo, ProjectSettings, ScenesFile } from '@shared/types';
 import { findToolsRoot, resolvePaths } from './paths';
 import { defaultAnimaticName, Projects, validateNewProject } from './projects';
 import { parseLyrics, readManifest, saveSources, validateSources } from './sources';
@@ -154,7 +154,7 @@ describe('projects', () => {
       schema_version: 1,
       name: 'Новый клип',
       animatic_video: 'animatic.mp4',
-      generation: { video: { provider: 'kling', aspect_ratio: '16:9', watermark: false }, image: { provider: 'codex' } }
+      generation: { video: null, image: null }
     });
     const agents = readFileSync(join(target, 'AGENTS.md'), 'utf-8');
     expect(agents).toContain('«Новый клип»');
@@ -804,11 +804,11 @@ describe('панель проверок', () => {
     writeJson(path, { ...base, generation: video });
     const original = readFileSync(path, 'utf8');
     const { custom, options, ...legacyVideo } = video;
-    expect(readProjectSettings(project).generation).toEqual({ video: legacyVideo, image: { provider: 'codex' }, custom, options });
+    expect(readProjectSettings(project).generation).toEqual({ video: legacyVideo, image: null, custom, options });
     expect(readFileSync(path, 'utf8')).toBe(original);
     writeProjectSettings(project, readProjectSettings(project));
     const migrated = JSON.parse(readFileSync(path, 'utf8')).generation;
-    expect(migrated).toEqual({ video: legacyVideo, image: { provider: 'codex' }, custom, options });
+    expect(migrated).toEqual({ video: legacyVideo, image: null, custom, options });
     expect(migrated.provider).toBeUndefined();
     const image = { provider: 'future-image', backend: { keep: true }, options: { backend: { keep: 'image' } } };
     writeJson(path, { ...base, generation: { ...video, video: false, image, extension: { keep: true } } });
@@ -860,6 +860,29 @@ describe('панель проверок', () => {
     for (const aspect_ratio of ['wide', '', ' ', null, 3, true, [], {}]) {
       writeJson(path, { ...base, generation: { ...automatic, video: { ...automatic.video, aspect_ratio } } });
       expect(validateProjectSettings(readProjectSettings(project)).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('создаёт проект без выбранных медиапровайдеров и не подтверждает старые настройки при сохранении имени', async () => {
+    const { readProjectSettings, validateProjectSettings, writeProjectSettings } = await import('./checks');
+    const template = JSON.parse(readFileSync(join(REPO, 'templates/project/plan/project.json'), 'utf8'));
+    expect(template.generation).toEqual({ video: null, image: null });
+    const project = join(work, 'explicit-provider-selection');
+    const path = join(project, 'plan/project.json');
+    const base = { schema_version: 1, name: 'Клип', animatic_video: 'clip.mp4' };
+    for (const provider_selected of [undefined, false, true]) {
+      const image = { provider: 'codex', model: 'saved-model', options: { custom: true }, ...(provider_selected === undefined ? {} : { provider_selected }) };
+      writeJson(path, { ...base, generation: { video: null, image } });
+      const settings = readProjectSettings(project);
+      expect(validateProjectSettings(settings)).toEqual([]);
+      writeProjectSettings(project, { ...settings, name: 'Новое имя' });
+      expect(JSON.parse(readFileSync(path, 'utf8')).generation.image).toEqual(image);
+    }
+    for (const provider_selected of ['true', 1, null, {}, []]) {
+      const settings = { name: 'Клип', animaticVideo: 'clip.mp4', generation: { video: null, image: { provider: 'codex', provider_selected } } };
+      expect(validateProjectSettings(settings as unknown as ProjectSettings)).toContain(
+        'generation.image: provider_selected должен быть логическим значением.'
+      );
     }
   });
 

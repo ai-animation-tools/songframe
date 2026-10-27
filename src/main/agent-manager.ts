@@ -15,6 +15,7 @@ interface Running {
   job: AgentJob;
   projectKey: string;
   child?: ChildProcessWithoutNullStreams;
+  childClosed?: Promise<void>;
   timer?: NodeJS.Timeout;
   flush?: NodeJS.Timeout;
   ended: boolean;
@@ -58,6 +59,7 @@ export class AgentManager {
   private readonly listeners = new Set<(event: AgentEvent) => void>();
   private readonly history: AgentHistory;
   private stopping = false;
+  private readonly completions = new Set<Promise<void>>();
 
   constructor(
     private readonly settings: SettingsStore,
@@ -162,7 +164,9 @@ export class AgentManager {
     const run: Running = { job, projectKey: project, ended: false, completed: false, outputBytes: 0 };
     this.running.set(job.id, run);
     this.publish(run, 'started');
-    void this.launch(run, config, input, imageDirectory);
+    const completion = this.launch(run, config, input, imageDirectory).then(() => run.childClosed);
+    this.completions.add(completion);
+    void completion.finally(() => this.completions.delete(completion));
     return structuredClone(job);
   }
 
@@ -178,6 +182,12 @@ export class AgentManager {
     this.stopping = true;
     for (const run of [...this.running.values()])
       this.finish(run, 'interrupted', new AgentError('INTERRUPTED', 'Задание остановлено при закрытии приложения. Автоматический повтор не выполнялся.'));
+  }
+
+  /** Временные рабочие папки можно удалять только после фактического закрытия CLI и его потоков. */
+  async shutdownAndWait(): Promise<void> {
+    this.shutdown();
+    await Promise.all([...this.completions]);
   }
 
   private async launch(run: Running, config: AgentSettings, input: AgentStartInput, imageDirectory?: string): Promise<void> {
@@ -211,6 +221,7 @@ export class AgentManager {
         stdio: 'pipe'
       });
       run.child = child;
+      run.childClosed = new Promise<void>((resolve) => child.once('close', () => resolve()));
       run.timer = setTimeout(
         () => this.finish(run, 'failed', new AgentError('TIMEOUT', 'Превышено время задания. Автоматический повтор не выполнялся.')),
         this.options.timeoutMs ?? 20 * 60 * 1000
@@ -255,7 +266,7 @@ export class AgentManager {
         }
       });
       const prefix = imageDirectory
-        ? 'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы Kling. Верни финальный JSON со списком файлов.'
+        ? 'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы Kling. Верни финальный JSON в запрошенном формате.'
         : 'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы Kling. Прочитай правила проекта AGENTS.md и README.md, если они есть.';
       const prompt = `${prefix}\n\nЗадача:\n${input.prompt}${input.context ? `\n\nДополнительный контекст:\n${input.context}` : ''}`;
       child.stdin.end(prompt);

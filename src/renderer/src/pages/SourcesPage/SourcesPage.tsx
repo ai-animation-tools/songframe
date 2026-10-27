@@ -6,6 +6,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { PageActionBar } from '../../components/PageActionBar';
 import { CoverSection, IdeaSection, LyricsSection, ReferenceKindDialog, ReferencesSection, TrackSection } from './components';
 import { useSourcesForm } from './useSourcesForm';
+import { CoverGenerateDialog } from './components/CoverGenerateDialog';
 
 export function SourcesPage(): ReactElement {
   const form = useSourcesForm();
@@ -112,6 +113,7 @@ export function SourcesPage(): ReactElement {
         <ReferencesSection {...form.referencesProps} />
       </Box>
       <ReferenceKindDialog {...form.kindDialogProps} />
+      {form.coverGenerationProps.open ? <CoverGenerateDialog {...form.coverGenerationProps} /> : null}
     </Stack>
   );
 }

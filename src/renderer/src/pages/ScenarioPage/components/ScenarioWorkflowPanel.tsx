@@ -1,8 +1,11 @@
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Button, Chip, Paper, Stack, Typography } from '@mui/material';
+import { useApp } from '../../../state';
+import { aiActionProblem } from '@shared/ai-access';
 import type { ScenarioPass } from '@shared/scenario-workflow';
 import { AgentButton } from '../../../components/AgentButton';
 import { AgentJobCard } from '../../../components/AgentJobCard';
@@ -29,6 +32,8 @@ export function ScenarioWorkflowPanel({
   editorBusy: boolean;
   onResolveDrafts(action: 'save' | 'discard'): Promise<boolean>;
 }): ReactElement {
+  const { aiAccess } = useApp();
+  const aiProblem = aiActionProblem(aiAccess);
   const [preview, setPreview] = useState(false);
   const [revise, setRevise] = useState(false);
   const [reviseIds, setReviseIds] = useState<string[]>([]);
@@ -84,6 +89,7 @@ export function ScenarioWorkflowPanel({
         <Typography variant="body2" color="text.secondary">
           Агент готовит предложение. Сначала просмотрите сравнение, затем отдельно примените результат. Ручные редакторы доступны без CLI.
         </Typography>
+        {aiProblem && <Alert severity="info">{aiProblem}</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
         {view?.problems.map((problem) => (
           <Alert key={problem} severity="warning">
@@ -114,9 +120,9 @@ export function ScenarioWorkflowPanel({
             {proposal.stale && <Alert severity="warning">Предложение устарело. Исходные файлы изменились; нужен новый запуск.</Alert>}
             {proposal.status === 'ready' && (
               <Stack direction="row" spacing={1}>
-                <AgentButton provider={view.job?.provider ?? null} variant="contained" disabled={disabled} onClick={() => setPreview(true)}>
+                <Button startIcon={<CompareArrowsIcon />} variant="contained" disabled={disabled} onClick={() => setPreview(true)}>
                   Просмотреть предложение и сравнение
-                </AgentButton>
+                </Button>
                 <DestructiveButton
                   label="Отбросить предложение"
                   description="Предложение будет отброшено без записи в проект."

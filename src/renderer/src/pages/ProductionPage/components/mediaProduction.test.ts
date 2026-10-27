@@ -1,18 +1,36 @@
 /** Контракт представления различает платный image-запрос, выбор опоры и отдельную приёмку видео. */
-import { createElement } from 'react';
+import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PackageView } from '@shared/types';
+import type { AiAccess } from '@shared/ai-access';
+import type { PackageView, ProductionQuote } from '@shared/types';
 import { ProductionFrameGenerationButton } from './ProductionFrameGenerationButton';
 import { PackageRequest } from './PackageRequest';
 import { PackageResult } from './PackageResult';
 import { PackageResume } from './PackageResume';
+import { PackageDecision } from './PackageDecision';
+import { SendRequestDialog } from './SendRequestDialog';
 
-// Здесь проверяется выбор исполнителя, поэтому кнопка агента заменяет только зависимость от AppProvider.
-vi.mock('../../../components', () => ({
-  AgentButton: ({ provider, disabled, children }: { provider: string; disabled: boolean; children: string }) =>
-    createElement('button', { 'data-agent': provider, disabled }, children)
+// Сохранённый выбор задаётся независимо от поставляемых моделям настроек по умолчанию.
+const context = vi.hoisted(() => ({ agentProvider: 'codex', aiAccess: null as AiAccess | null, quote: null as ProductionQuote | null }));
+vi.mock('../useRequestQuote', () => ({
+  useRequestQuote: () => ({ quote: context.quote, error: null, loading: false, external: false, refreshQuote: () => {}, consumeQuote: () => {} })
 }));
+// SSR проверяет содержимое и доступность подтверждения без портала Electron-диалога.
+vi.mock('../../../components/ConfirmationDialog', () => ({
+  ConfirmationDialog: ({
+    title,
+    children,
+    confirmDisabled,
+    confirmLabel
+  }: {
+    title: ReactNode;
+    children: ReactNode;
+    confirmDisabled: boolean;
+    confirmLabel: string;
+  }) => createElement('section', null, title, children, createElement('button', { disabled: confirmDisabled, 'data-confirm': true }, confirmLabel))
+}));
+vi.mock('../../../state', () => ({ useApp: () => context }));
 
 const unchanged = (): void => {};
 const fixture = (kind?: 'image' | 'video'): PackageView => ({
@@ -52,16 +70,25 @@ const fixture = (kind?: 'image' | 'video'): PackageView => ({
   }
 });
 
-beforeEach(() => vi.stubGlobal('window', { api: { shell: { fileUrl: (path: string) => `songframe-file://${path}` } } }));
+beforeEach(() => {
+  context.quote = null;
+  context.aiAccess = {
+    agent: { provider: 'codex', selected: true, available: true, message: '' },
+    image: { provider: 'codex', selected: true, available: true, message: '' },
+    video: { provider: 'kling', selected: true, available: true, message: '' }
+  };
+  vi.stubGlobal('window', { api: { shell: { fileUrl: (path: string) => `songframe-file://${path}` } } });
+});
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Генерация опор и результаты изображений', () => {
   it('использует Codex AgentButton только для Codex, а Kling готовит запрос обычной кнопкой', () => {
     const codex = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: 'codex', disabled: false, onGenerate: unchanged }));
     const kling = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: 'kling', disabled: false, onGenerate: unchanged }));
-    expect(codex).toContain('data-agent="codex"');
+    expect(codex).toContain('Codex');
+    expect(codex).not.toMatch(/<button[^>]*disabled/);
     expect(kling).toContain('Подготовить запрос изображения (Kling)');
-    expect(kling).not.toContain('data-agent');
+    expect(kling).not.toContain('Codex');
   });
 
   it('блокирует неизвестного исполнителя с понятной диагностикой', () => {
@@ -149,5 +176,103 @@ describe('Генерация опор и результаты изображен
     expect(html).toContain('Получение изображения');
     expect(html).toContain('Продолжить получение');
     expect(html).not.toContain('Отправить');
+  });
+});
+
+describe('Прямые действия Kling соблюдают общий выбор', () => {
+  it('блокирует подготовку изображения при невыбранном провайдере и сохраняет локальный результат доступным', () => {
+    context.aiAccess!.image.selected = false;
+    context.aiAccess!.image.message = 'Сначала выберите провайдера изображений.';
+    const prepare = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: 'kling', disabled: false, onGenerate: unchanged }));
+    expect(prepare).toMatch(/<button[^>]*disabled/);
+    expect(prepare).toContain('Сначала выберите провайдера изображений.');
+    const local = renderToStaticMarkup(
+      createElement(PackageResult, { pkg: fixture('image'), busy: false, onAccept: unchanged, onContactSheet: unchanged, onSelectImage: unchanged })
+    );
+    expect(local).not.toMatch(/<button[^>]*disabled/);
+  });
+
+  it('использует image kind для отправки и получения изображения независимо от video provider', () => {
+    context.aiAccess!.image.selected = false;
+    context.aiAccess!.image.message = 'Выберите изображения.';
+    const pkg = fixture('image');
+    pkg.stage = 'image_request_choice';
+    pkg.request!.attemptStatus = 'prepared';
+    const send = renderToStaticMarkup(createElement(PackageRequest, { pkg, busy: false, klingAvailable: true, onSubmit: unchanged }));
+    expect(send).toMatch(/<button[^>]*disabled/);
+    expect(send).toContain('Выберите изображения.');
+    pkg.request!.attemptStatus = 'submitted';
+    const resume = renderToStaticMarkup(createElement(PackageResume, { pkg, busy: false, klingAvailable: true, onResume: unchanged }));
+    expect(resume).toMatch(/<button[^>]*disabled/);
+    expect(resume).toContain('Выберите изображения.');
+    const video = fixture('video');
+    video.request!.attemptStatus = 'submitted';
+    expect(renderToStaticMarkup(createElement(PackageResume, { pkg: video, busy: false, klingAvailable: true, onResume: unchanged }))).not.toMatch(
+      /<button[^>]*disabled/
+    );
+  });
+});
+
+it('сохраняет локальное согласование при блокировке нового AI-запроса', () => {
+  context.aiAccess = null;
+  const html = renderToStaticMarkup(
+    createElement(PackageDecision, {
+      pending: { stage: 'request_choice', question: 'Продолжить?', options: ['approve', 'revise', 'send', 'retry'], executor: 'app' },
+      external: false,
+      aiKind: 'image',
+      busy: false,
+      note: 'Нужна правка',
+      setNote: unchanged,
+      onDecide: unchanged
+    })
+  );
+  const buttons = [...html.matchAll(/<button[^>]*>[\s\S]*?<\/button>/g)].map((match) => match[0]);
+  expect(buttons).toHaveLength(4);
+  expect(buttons[0]).not.toContain('disabled');
+  expect(buttons[1]).not.toContain('disabled');
+  expect(buttons[2]).toContain('disabled');
+  expect(buttons[3]).toContain('disabled');
+});
+
+describe('Подтверждение промпта и неизвестной цены', () => {
+  const dialog = (): string =>
+    renderToStaticMarkup(
+      createElement(SendRequestDialog, {
+        project: '/fixture',
+        pkg: fixture('video'),
+        busy: false,
+        onClose: unchanged,
+        onConfirm: async () => {}
+      })
+    );
+
+  it('показывает полный промпт и требует отдельного согласия для неизвестной стоимости', () => {
+    context.quote = { token: 'quote-1', requestSha: 'request-sha', credits: null, balance: 100, verdict: 'cost_or_balance_unknown', reasons: [] };
+    const html = dialog();
+    expect(html).toContain('Вы уверены, что промпт правильный?');
+    expect(html).toContain('Проверьте промпт');
+    expect(html).toContain('Замороженный промпт');
+    expect(html).toContain('Стоимость: неизвестно');
+    expect(html).not.toContain('неизвестно кредитов');
+    expect(html).toContain('Я согласен');
+    expect(html).toMatch(/<button[^>]*disabled[^>]*data-confirm/);
+  });
+
+  it.each([
+    { credits: 10, balance: null, verdict: 'cost_or_balance_unknown' as const },
+    { credits: 10, balance: 0, verdict: 'insufficient_balance' as const }
+  ])('не предлагает согласие, обходя блокирующую цену %j', (price) => {
+    context.quote = { token: 'quote-1', requestSha: 'request-sha', reasons: [], ...price };
+    const html = dialog();
+    expect(html).not.toContain('Я согласен');
+    expect(html).toMatch(/<button[^>]*disabled[^>]*data-confirm/);
+  });
+
+  it('при подтверждённой цене оставляет обычное подтверждение отправки доступным', () => {
+    context.quote = { token: 'quote-1', requestSha: 'request-sha', credits: 10, balance: 100, verdict: 'ok', reasons: [] };
+    const html = dialog();
+    expect(html).toContain('Стоимость: 10 кредитов');
+    expect(html).not.toContain('Я согласен');
+    expect(html).not.toMatch(/<button[^>]*disabled[^>]*data-confirm/);
   });
 });

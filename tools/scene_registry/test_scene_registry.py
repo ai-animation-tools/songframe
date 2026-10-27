@@ -129,7 +129,8 @@ class SceneRegistryTests(unittest.TestCase):
         legacy = {"generation": deepcopy(video)}
         original = deepcopy(legacy)
         self.assertEqual(generation_settings(legacy), video)
-        self.assertEqual(generation_settings(legacy, "image"), {"provider": "codex"})
+        with self.assertRaisesRegex(ValueError, "generation.image"):
+            generation_settings(legacy, "image")
         self.assertEqual(legacy, original)
         image = {"provider": "future-image", "outputs": 2, "options": {"backend": {"custom": True}}, "custom": ["keep"]}
         new = {"generation": {"video": video, "image": image, "custom": {"keep": True}}}
@@ -148,6 +149,21 @@ class SceneRegistryTests(unittest.TestCase):
             generation_settings({"generation": {"video": video}}, "image")
         with self.assertRaisesRegex(ValueError, "video или image"):
             generation_settings(new, "audio")
+
+    def test_provider_selection_marker_is_optional_boolean_without_implicit_confirmation(self):
+        from tools.scene_registry.scene_registry import generation_settings
+
+        for marker in (None, False, True):
+            image = {"provider": "codex", "model": "saved-model", "custom": {"keep": True}}
+            if marker is not None:
+                image["provider_selected"] = marker
+            project = {"generation": {"video": None, "image": image}}
+            self.assertEqual(generation_settings(project, "image"), image)
+            self.assertEqual(project["generation"]["image"], image)
+        for marker in (None, 0, 1, "true", [], {}):
+            project = {"generation": {"image": {"provider": "codex", "provider_selected": marker}}}
+            with self.subTest(marker=marker), self.assertRaisesRegex(ValueError, "provider_selected"):
+                generation_settings(project, "image")
 
     def test_project_validation_checks_each_present_media_and_allows_missing_generation(self):
         from tools.scene_registry.scene_registry import generation_settings, load_project

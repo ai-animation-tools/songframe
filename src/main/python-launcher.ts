@@ -11,6 +11,7 @@ export const TOOL_TIMEOUT = 10 * 60 * 1000;
 export interface LaunchOptions {
   timeoutMs?: number;
   onOutput?: (text: string, error?: boolean) => void;
+  signal?: AbortSignal;
 }
 
 export class PythonLauncher {
@@ -40,6 +41,7 @@ export class PythonLauncher {
 
   /** Диагностика использует те же потоки и таймауты, не блокируя главный процесс spawnSync. */
   async execute(args: string[], options: LaunchOptions = {}, project?: string): Promise<ToolResult> {
+    if (options.signal?.aborted) return { code: null, stdout: '', stderr: 'Выполнение остановлено пользователем.', command: '' };
     const runtime = this.runtime();
     const argv = [...runtime.argsPrefix, ...args];
     const command = [runtime.command, ...argv].map((part) => JSON.stringify(part)).join(' ');
@@ -49,6 +51,7 @@ export class PythonLauncher {
       let stderr = '';
       let finished = false;
       let timedOut = false;
+      let aborted = false;
       const output = (text: string, error = false): void => {
         if (error) stderr += text;
         else stdout += text;
@@ -66,12 +69,11 @@ export class PythonLauncher {
         if (finished) return;
         finished = true;
         clearTimeout(timer);
+        options.signal?.removeEventListener('abort', abort);
         resolveResult({ code, stdout, stderr, command });
       };
-      // Завершаем и вложенное распознавание, иначе после таймаута оно продолжает занимать CPU.
-      const timer = setTimeout(() => {
-        timedOut = true;
-        output(`\nПревышено время выполнения (${timeout} мс).\n`, true);
+      // Таймаут и отмена завершают всё дерево, включая вложенный CLI или распознавание.
+      const stop = (): void => {
         if (child.pid) {
           if (process.platform === 'win32') {
             const systemRoot = runtime.env.SystemRoot ?? runtime.env.SYSTEMROOT;
@@ -86,6 +88,17 @@ export class PythonLauncher {
             }
           }
         }
+      };
+      const abort = (): void => {
+        if (finished || aborted) return;
+        aborted = true;
+        output('\nВыполнение остановлено пользователем.\n', true);
+        stop();
+      };
+      const timer = setTimeout(() => {
+        timedOut = true;
+        output(`\nПревышено время выполнения (${timeout} мс).\n`, true);
+        stop();
       }, timeout);
       child.stdout.setEncoding('utf8').on('data', (chunk: string) => output(chunk));
       child.stderr.setEncoding('utf8').on('data', (chunk: string) => output(chunk, true));
@@ -95,9 +108,11 @@ export class PythonLauncher {
       });
       child.on('close', (code, signal) => {
         if (finished) return;
-        if (signal && !timedOut) output(`\nPython остановлен сигналом ${signal}.\n`, true);
-        finish(timedOut ? null : code);
+        if (signal && !timedOut && !aborted) output(`\nPython остановлен сигналом ${signal}.\n`, true);
+        finish(timedOut || aborted ? null : code);
       });
+      options.signal?.addEventListener('abort', abort, { once: true });
+      if (options.signal?.aborted) abort();
     });
   }
 }

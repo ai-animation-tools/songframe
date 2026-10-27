@@ -37,6 +37,26 @@ describe('подтверждение запроса производства', (
     expect(submit).not.toHaveBeenCalled();
   });
 
+  it('передаёт согласие на неизвестную цену только для показанной оценки', async () => {
+    const { api, submit } = fakeApi();
+    await sendConfirmedRequest(api, '/fixture/project', fixture(), 'shown-quote-token', 'shown-quote-token');
+    expect(submit).toHaveBeenCalledExactlyOnceWith(
+      '/fixture/project',
+      '/fixture/package',
+      'shown-sha',
+      'shown-question-token',
+      'shown-quote-token',
+      'shown-quote-token'
+    );
+  });
+
+  it('отклоняет согласие от предыдущей оценки до обращения к API', async () => {
+    const { api, submit, decide } = fakeApi();
+    await expect(sendConfirmedRequest(api, '/fixture/project', fixture(), 'new-quote-token', 'old-quote-token')).rejects.toThrow('другой проверке');
+    expect(submit).not.toHaveBeenCalled();
+    expect(decide).not.toHaveBeenCalled();
+  });
+
   it('отправляет через приложение пакет без ожидающего вопроса', async () => {
     const { api, submit, decide } = fakeApi();
     await sendConfirmedRequest(api, '/fixture/project', fixture({ pendingDecision: null }), 'shown-quote-token');

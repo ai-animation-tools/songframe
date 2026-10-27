@@ -1,6 +1,6 @@
 /** Регистрация обработчиков IPC: тонкий слой над модулями главного процесса. */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain, shell, nativeImage } from 'electron';
 import type {
@@ -24,7 +24,7 @@ import { Jobs } from './jobs';
 import { CHECKS, Checks, listReviews, readProjectSettings, writeProjectSettings } from './checks';
 import { Animatic, setAnimaticStatus, viewAnimatic } from './animatic';
 import { viewDashboard } from './dashboard';
-import { listBundles, Production, viewProduction, readPackage, cliArgs } from './production';
+import { listBundles, Production, viewProduction, readPackage, cliArgs, pricingArgs } from './production';
 import { initCast, readCast, viewCast, writeCast } from './cast';
 import { buildBrief, saveScenes, saveTreatment, validateScenes, viewScenario } from './scenario';
 import { runEnvironmentTask } from './environment-task';
@@ -64,6 +64,11 @@ import { Montage } from './montage';
 import { copyMontageVideo, montageVideoPath } from './montage-video';
 import { recoverMontageApplications } from './montage-recovery';
 import { readScenarioRegistry } from './scenario-status';
+import { CoverGeneration } from './cover-generation';
+import { prepareKlingCover } from './cover-kling';
+import { prepareProjectCover } from './cover-provider';
+import type { CoverCrop, CoverGenerationApproval } from '@shared/cover-generation';
+import { assertAiSelection, createAiAccess } from './ai-access';
 
 export interface Services {
   projects: Projects;
@@ -79,6 +84,7 @@ export interface Services {
   agents?: AgentManager;
   /** Доставка итогов живёт в main и не зависит от подписки открытой страницы. */
   notifications?: TaskNotifications;
+  cover?: CoverGeneration;
 }
 
 export function createServices(restoreProject = true): Services {
@@ -159,6 +165,82 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   const codexImages = new CodexImageProvider(mediaOptions);
   const klingImages = new KlingImageProvider(mediaOptions);
   const klingVideo = new KlingVideoProvider(mediaOptions);
+  const ai = createAiAccess({
+    settings: () => getServices().settings,
+    checkKling: () => checkKlingAuth(getServices().launcher.options)
+  });
+  ipcMain.handle('ai:access', (_event, project: string | null) => ai.getAccess(project));
+  const cover = new CoverGeneration({
+    settings: getServices().settings,
+    readImage: (path) => {
+      const image = nativeImage.createFromPath(path);
+      return image.isEmpty() ? null : image.getSize();
+    },
+    cropImage: (input, output, crop) => {
+      const image = nativeImage.createFromPath(input).crop({ x: crop.x, y: crop.y, width: crop.size, height: crop.size });
+      if (image.isEmpty()) throw new Error('Не удалось вырезать выбранную область обложки.');
+      writeFileSync(output, image.toPNG());
+    },
+    prepareCandidate: (input) =>
+      prepareProjectCover(input, {
+        settings: getServices().settings,
+        kling: (candidate) => {
+          // Даже discovery и локальная подготовка завершаются до удаления временной сессии при закрытии.
+          const provider = new KlingImageProvider({
+            ...mediaOptions,
+            launcher: () => ({
+              run: (project, name, args, options) => getServices().launcher.run(project, name, args, { ...options, signal: candidate.signal })
+            })
+          });
+          return prepareKlingCover(candidate, { provider, launcher: () => getServices().launcher, cliArgs, pricingArgs });
+        }
+      })
+  });
+  getServices().cover = cover;
+  // Перезагрузка или закрытие renderer не оставляет сессию с непринятыми картинками до завершения приложения.
+  const coverOwners = new Map<number, Set<string>>();
+  const coverProjects = new Map<string, string>();
+  ipcMain.handle('cover:create', async (event, project: string, prompt: string) => {
+    await ai.requireAccess(project, 'image');
+    if (event.sender.isDestroyed()) throw new Error('Окно генерации обложки закрыто.');
+    let owned = coverOwners.get(event.sender.id);
+    if (!owned) {
+      owned = new Set<string>();
+      coverOwners.set(event.sender.id, owned);
+      const closeOwned = (): void => {
+        const ids = [...owned!];
+        owned!.clear();
+        for (const id of ids) {
+          coverProjects.delete(id);
+          void cover.close(id).catch((error: unknown) => console.error('Не удалось очистить временную обложку:', error));
+        }
+      };
+      event.sender.once('destroyed', closeOwned);
+      event.sender.on('render-process-gone', closeOwned);
+      event.sender.on('did-start-navigation', (_navigation, _url, inPlace, mainFrame) => {
+        if (mainFrame && !inPlace) closeOwned();
+      });
+    }
+    const session = cover.create(project, prompt);
+    owned.add(session.id);
+    coverProjects.set(session.id, project);
+    return session;
+  });
+  ipcMain.handle('cover:prepare', async (_event, id: string) => {
+    await ai.requireAccess(coverProjects.get(id) ?? null, 'image');
+    return cover.prepare(id);
+  });
+  ipcMain.handle('cover:generate', async (_event, id: string, requestSha: string, approval: CoverGenerationApproval) => {
+    await ai.requireAccess(coverProjects.get(id) ?? null, 'image');
+    return cover.generate(id, requestSha, approval);
+  });
+  ipcMain.handle('cover:view', (_event, id: string) => cover.view(id));
+  ipcMain.handle('cover:accept', (_event, id: string, crop: CoverCrop) => cover.accept(id, crop));
+  ipcMain.handle('cover:close', async (event, id: string) => {
+    coverOwners.get(event.sender.id)?.delete(id);
+    coverProjects.delete(id);
+    await cover.close(id);
+  });
   const connectMedia = (): void => getServices().production.setMediaProviders({ image: klingImages, video: klingVideo });
   connectMedia();
   ipcMain.handle('media:capabilities', (_event, project: string, kind: MediaKind, provider: string) => {
@@ -186,6 +268,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     },
     isPackageBusy: (project, packageDir) => getServices().production.isBusy(project, packageDir),
     generateImages: (input) => {
+      assertAiSelection(getServices().settings, input.project, 'image');
       const prepared = codexImages.prepare(input);
       const execution = codexImages.submit(prepared, { requestSha: prepared.requestSha });
       if (execution.provider !== 'codex') throw new Error('Исполнитель вернул неверный тип задания опор.');
@@ -195,6 +278,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     },
     collectImages: (job) => codexImages.collectJob(job).map((artifact) => ({ id: artifact.frameId!, path: artifact.path })),
     prepareImageRequest: async (input) => {
+      await ai.requireAccess(input.project, 'image');
       const settings = readProjectSettings(input.project).generation?.image;
       const capabilities = await klingImages.capabilities(input.project);
       const request = frameImageRequest(input, settings, capabilities, (path) => !nativeImage.createFromPath(path).isEmpty());
@@ -212,6 +296,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || 'Не удалось записать согласование изображения.');
     },
     prepareVideoRequest: async ({ project, shot, requestDir, prompt, draft, durationConstraint }) => {
+      await ai.requireAccess(project, 'video');
       const settings = readProjectSettings(project).generation?.video;
       if (settings?.provider !== 'kling') throw new Error('Выберите поддерживаемого провайдера видео Kling.');
       await klingVideo.prepare(
@@ -232,16 +317,20 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     }
   });
   ipcMain.handle('productionWorkflow:view', (_event, project: string, shot: string, packageDir?: string) => productionFlow.view(project, shot, packageDir));
-  ipcMain.handle('productionWorkflow:start', (_event, input: ProductionWorkflowStart) => productionFlow.start(input));
+  ipcMain.handle('productionWorkflow:start', async (_event, input: ProductionWorkflowStart) => {
+    await ai.requireAccess(input.project, 'agent');
+    return productionFlow.start(input);
+  });
   ipcMain.handle('productionWorkflow:apply', (_event, project: string, shot: string, packageDir: string | undefined, id: string) =>
     productionFlow.apply(project, shot, packageDir, id)
   );
   ipcMain.handle('productionWorkflow:discard', (_event, project: string, shot: string, packageDir: string | undefined, id: string) =>
     productionFlow.discard(project, shot, packageDir, id)
   );
-  ipcMain.handle('productionWorkflow:generateFrames', (_event, project: string, shot: string, packageDir: string) =>
-    productionFlow.generateFrames(project, shot, packageDir)
-  );
+  ipcMain.handle('productionWorkflow:generateFrames', async (_event, project: string, shot: string, packageDir: string) => {
+    await ai.requireAccess(project, 'image');
+    return productionFlow.generateFrames(project, shot, packageDir);
+  });
   ipcMain.handle('productionWorkflow:importFrames', (_event, project: string, shot: string, packageDir: string, candidates: ProductionFrameCandidate[]) => {
     if (
       !Array.isArray(candidates) ||
@@ -254,6 +343,14 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const pkg = readPackage(project, packageDir);
     if (pkg && productionFlow.view(project, pkg.shot, packageDir).busy) throw new Error('Для этого пакета уже выполняется задание. Дождитесь завершения.');
   };
+  const requirePackageAccess = async (project: string, packageDir: string): Promise<void> => {
+    const request = readPackage(project, packageDir)?.request;
+    const kind = request?.kind === 'image' ? 'image' : 'video';
+    await ai.requireAccess(project, kind);
+    // Сохранённый запрос прежнего провайдера не становится разрешённым после выбора другого исполнителя.
+    if (request?.provider && readProjectSettings(project).generation?.[kind]?.provider !== request.provider)
+      throw new Error('Провайдер медиа изменился. Подготовьте новый запрос для выбранного провайдера.');
+  };
   const reviewProblem = (project: string): string | null => {
     try {
       return workflow.view(project).scenesNeedReview
@@ -264,7 +361,10 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     }
   };
   ipcMain.handle('scenarioWorkflow:view', (_event, project: string) => workflow.view(project));
-  ipcMain.handle('scenarioWorkflow:start', (_event, input: ScenarioWorkflowStart) => workflow.start(input));
+  ipcMain.handle('scenarioWorkflow:start', async (_event, input: ScenarioWorkflowStart) => {
+    await ai.requireAccess(input.project, 'agent');
+    return workflow.start(input);
+  });
   ipcMain.handle('scenarioWorkflow:apply', (_event, project: string, id: string) => workflow.apply(project, id));
   ipcMain.handle('scenarioWorkflow:approveCurrent', (_event, project: string) => workflow.approveCurrent(project));
   ipcMain.handle('scenarioWorkflow:approveScenes', (_event, project: string) => workflow.approveScenes(project));
@@ -284,7 +384,10 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     notifications?.agentEvent(event);
     for (const sender of subscribers) if (!sender.isDestroyed()) sender.send('agents:event', event);
   });
-  ipcMain.handle('agents:start', (_event, input: AgentStartInput) => agents.start(input));
+  ipcMain.handle('agents:start', async (_event, input: AgentStartInput) => {
+    await ai.requireAccess(input.project, 'agent');
+    return agents.start(input);
+  });
   ipcMain.handle('agents:cancel', (_event, id: string) => agents.cancel(id));
   ipcMain.handle('agents:get', (_event, id: string) => agents.get(id));
   ipcMain.handle('agents:list', (_event, project?: string) => agents.list(project));
@@ -307,7 +410,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const settings = getServices().settings;
     settings.write({ ...settings.read(), toolsRootOverride: path });
     // Смена ресурсов не создаёт второй менеджер и не объявляет живые задания прерванными.
-    const next = { ...createServices(), agents, notifications };
+    const next = { ...createServices(), agents, notifications, cover };
     watchJobs(next.jobs);
     setServices(next);
     return getServices().projects.appState();
@@ -409,17 +512,23 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     productionIdle(project, packageDir);
     return getServices().production.decide(project, packageDir, verdict, note, decisionToken);
   });
-  ipcMain.handle('production:quote', (_event, project: string, packageDir: string, sha: string, decisionToken?: string) => {
+  ipcMain.handle('production:quote', async (_event, project: string, packageDir: string, sha: string, decisionToken?: string) => {
+    await requirePackageAccess(project, packageDir);
     connectMedia();
     productionIdle(project, packageDir);
     return getServices().production.quote(project, packageDir, sha, decisionToken);
   });
-  ipcMain.handle('production:submit', (_event, project: string, packageDir: string, sha: string, decisionToken?: string, quoteToken?: string) => {
-    connectMedia();
-    productionIdle(project, packageDir);
-    return getServices().production.submit(project, packageDir, sha, decisionToken, quoteToken);
-  });
-  ipcMain.handle('production:resume', (_event, project: string, packageDir: string, generationId?: string) => {
+  ipcMain.handle(
+    'production:submit',
+    async (_event, project: string, packageDir: string, sha: string, decisionToken?: string, quoteToken?: string, unknownCostConsentToken?: string) => {
+      await requirePackageAccess(project, packageDir);
+      connectMedia();
+      productionIdle(project, packageDir);
+      return getServices().production.submit(project, packageDir, sha, decisionToken, quoteToken, unknownCostConsentToken);
+    }
+  );
+  ipcMain.handle('production:resume', async (_event, project: string, packageDir: string, generationId?: string) => {
+    await requirePackageAccess(project, packageDir);
     productionIdle(project, packageDir);
     return getServices().production.resume(project, packageDir, generationId);
   });
@@ -428,7 +537,8 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     connectMedia();
     return getServices().production.selectImage(project, packageDir, index, expectedResultToken);
   });
-  ipcMain.handle('production:regenerate', (_event, project: string, shot: string) => {
+  ipcMain.handle('production:regenerate', async (_event, project: string, shot: string) => {
+    await ai.requireAccess(project, 'video');
     // Повтор не должен создавать пакет одновременно с применением предложения того же кадра.
     if (productionFlow.view(project, shot).busy) throw new Error('Для этого кадра уже выполняется задание. Дождитесь завершения.');
     return getServices().production.regenerate(project, shot);

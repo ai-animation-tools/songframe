@@ -82,6 +82,7 @@ export function PackageCard({
 
       <PackageResult pkg={pkg} busy={busy} onAccept={onAccept} onContactSheet={onContactSheet} onSelectImage={onSelectImage} />
       <PackageDecision
+        aiKind={pkg.request?.kind === 'image' ? 'image' : 'video'}
         sendingBlocked={['submitting', 'submission_unknown'].includes(pkg.request?.attemptStatus ?? '')}
         external={isExternalPackage(pkg)}
         pending={pending}

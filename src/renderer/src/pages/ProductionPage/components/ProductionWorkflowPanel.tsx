@@ -83,6 +83,7 @@ export function ProductionWorkflowPanel({
           <AgentJobCard
             compact
             job={view.job}
+            retryKind={view.proposal?.stage === 'frames' || lastAction === 'frames' ? 'image' : 'agent'}
             retryProvider={view.proposal?.stage === 'frames' || lastAction === 'frames' ? 'codex' : undefined}
             onCancel={workflow.cancel}
             onRetry={() => {

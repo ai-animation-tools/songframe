@@ -1,11 +1,43 @@
 /** Проверки формы без Electron: неизвестные предпочтения остаются видимыми, Codex не обещает параметры Kling. */
 
-import { createElement } from 'react';
+import { createElement, type ChangeEvent } from 'react';
+import type * as Material from '@mui/material';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
-import { DEFAULT_IMAGE_GENERATION, DEFAULT_KLING_IMAGE_GENERATION, DEFAULT_VIDEO_GENERATION } from '@shared/types';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_GENERATION, DEFAULT_IMAGE_GENERATION, DEFAULT_KLING_IMAGE_GENERATION, DEFAULT_VIDEO_GENERATION } from '@shared/types';
 import { VideoGenerationSettings } from './VideoGenerationSettings';
 import { ImageGenerationSettings } from './ImageGenerationSettings';
+import { normalizeProjectSettingsForSave } from './ProjectSettingsCard';
+
+const { fields, discoveries, appState } = vi.hoisted(() => ({
+  fields: new Map<string, Material.TextFieldProps>(),
+  discoveries: vi.fn(),
+  appState: { agentProvider: 'codex' as 'codex' | 'claude' | null }
+}));
+
+vi.mock('../../../state', () => ({ useApp: () => appState }));
+
+beforeEach(() => {
+  appState.agentProvider = 'codex';
+});
+
+// SSR позволяет вызвать настоящий обработчик поля и проверить, что чтение формы не запускает discovery.
+vi.mock('@mui/material', async (importOriginal) => {
+  const original = await importOriginal<typeof Material>();
+  return {
+    ...original,
+    TextField: (props: Material.TextFieldProps) => {
+      if (props.id) fields.set(props.id, props);
+      return createElement(original.TextField, props);
+    }
+  };
+});
+vi.mock('./MediaCapabilitiesPanel', () => ({
+  MediaCapabilitiesPanel: (props: unknown) => {
+    discoveries(props);
+    return null;
+  }
+}));
 
 const unchanged = (): void => {};
 
@@ -159,6 +191,7 @@ describe('Настройки независимых медиапровайдер
         value: {
           ...DEFAULT_VIDEO_GENERATION,
           provider: '',
+          provider_selected: true,
           resolution: '',
           aspect_ratio: '',
           duration_rule: 'unknown' as typeof DEFAULT_VIDEO_GENERATION.duration_rule
@@ -167,7 +200,7 @@ describe('Настройки независимых медиапровайдер
         onAdd: unchanged
       })
     );
-    expect(html).toContain('Выберите провайдера видео.');
+    expect(html).toContain('Выберите провайдера видео и сохраните настройки.');
     expect(html).toContain('Выберите разрешение видео.');
     expect(html).toContain('Выберите пропорции видео.');
     expect(html).toContain('Выберите известное правило длительности.');
@@ -215,6 +248,145 @@ describe('Настройки независимых медиапровайдер
     expect(html).not.toContain('aria-invalid="true"');
     expect(html).not.toContain('Количество изображений');
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('не выбирает провайдеров через общий default', () => {
+    expect(DEFAULT_GENERATION).toEqual({ video: null, image: null });
+  });
+
+  it.each([undefined, false])('показывает старого провайдера без маркера %s как «Не выбрано» и не читает CLI', (provider_selected) => {
+    const onChange = vi.fn();
+    discoveries.mockClear();
+    for (const kind of ['image', 'video'] as const) {
+      const value = kind === 'image' ? { provider: 'codex', provider_selected, model: 'saved-model' } : { ...DEFAULT_VIDEO_GENERATION, provider_selected };
+      const html = renderToStaticMarkup(
+        kind === 'image'
+          ? createElement(ImageGenerationSettings, { project: '/fixture/project', value, onChange, onAdd: unchanged })
+          : createElement(VideoGenerationSettings, {
+              project: '/fixture/project',
+              value: { ...DEFAULT_VIDEO_GENERATION, provider_selected },
+              onChange,
+              onAdd: unchanged
+            })
+      );
+      expect(fields.get(`${kind}-generation-provider`)?.value).toBe('');
+      expect(html).toContain('Не выбрано');
+      expect(html).toContain('Сохранённый провайдер:');
+    }
+    expect(discoveries).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('подтверждает повторный выбор того же старого провайдера только через dropdown и сохраняет расширения', () => {
+    const onChange = vi.fn();
+    const image = { provider: 'codex', model: 'saved-model', resolution: 'custom', options: { keep: true } };
+    renderToStaticMarkup(createElement(ImageGenerationSettings, { project: '/fixture/project', value: image, onChange, onAdd: unchanged }));
+    expect(onChange).not.toHaveBeenCalled();
+    const chooseImage = fields.get('image-generation-provider')?.onChange;
+    chooseImage?.({ target: { value: 'codex' } } as ChangeEvent<HTMLInputElement>);
+    expect(onChange).toHaveBeenLastCalledWith({ ...image, provider_selected: true });
+    // Изменение соседнего поля не подтверждает провайдера из старого файла.
+    fields.get('image-generation-model')?.onChange?.({ target: { value: 'another-model' } } as ChangeEvent<HTMLInputElement>);
+    expect(onChange).toHaveBeenLastCalledWith({ ...image, model: 'another-model' });
+    renderToStaticMarkup(createElement(VideoGenerationSettings, { project: '/fixture/project', value: DEFAULT_VIDEO_GENERATION, onChange, onAdd: unchanged }));
+    fields.get('video-generation-provider')?.onChange?.({ target: { value: 'kling' } } as ChangeEvent<HTMLInputElement>);
+    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_VIDEO_GENERATION, provider_selected: true });
+  });
+
+  it('читает возможности только после явного выбора провайдера', () => {
+    discoveries.mockClear();
+    renderToStaticMarkup(
+      createElement(ImageGenerationSettings, {
+        project: '/fixture/project',
+        value: { provider: 'codex', provider_selected: true },
+        onChange: unchanged,
+        onAdd: unchanged
+      })
+    );
+    renderToStaticMarkup(
+      createElement(VideoGenerationSettings, {
+        project: '/fixture/project',
+        value: { ...DEFAULT_VIDEO_GENERATION, provider_selected: true },
+        onChange: unchanged,
+        onAdd: unchanged
+      })
+    );
+    expect(discoveries).toHaveBeenCalledTimes(2);
+  });
+
+  it('не вызывает ни одного медиапровайдера без выбранного глобального агента', () => {
+    appState.agentProvider = null;
+    discoveries.mockClear();
+    for (const provider of ['codex', 'kling']) {
+      const onChange = vi.fn();
+      const html = renderToStaticMarkup(
+        createElement(ImageGenerationSettings, { project: '/fixture/project', value: { provider, provider_selected: true }, onChange, onAdd: unchanged })
+      );
+      expect(html).toContain('Для изображений Codex сначала выберите агента Codex в настройках приложения.');
+      expect(onChange).not.toHaveBeenCalled();
+    }
+    renderToStaticMarkup(
+      createElement(VideoGenerationSettings, {
+        project: '/fixture/project',
+        value: { ...DEFAULT_VIDEO_GENERATION, provider_selected: true },
+        onChange: unchanged,
+        onAdd: unchanged
+      })
+    );
+    expect(discoveries).not.toHaveBeenCalled();
+  });
+
+  it('при Claude сохраняет старый Codex видимым, запрещает его выбор и разрешает только явно выбранный Kling', () => {
+    appState.agentProvider = 'claude';
+    discoveries.mockClear();
+    const onChange = vi.fn();
+    const value = { provider: 'codex', provider_selected: true, model: 'saved-model' };
+    const html = renderToStaticMarkup(createElement(ImageGenerationSettings, { project: '/fixture/project', value, onChange, onAdd: unchanged }));
+    expect(html).toContain('Codex');
+    expect(html).toContain('saved-model');
+    expect(html).toContain('Для изображений Codex сначала выберите агента Codex в настройках приложения.');
+    expect(fields.get('image-generation-provider')?.value).toBe('codex');
+    fields.get('image-generation-provider')?.onChange?.({ target: { value: 'codex' } } as ChangeEvent<HTMLInputElement>);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(discoveries).not.toHaveBeenCalled();
+    renderToStaticMarkup(
+      createElement(ImageGenerationSettings, {
+        project: '/fixture/project',
+        value: { provider: 'kling', provider_selected: true },
+        onChange: unchanged,
+        onAdd: unchanged
+      })
+    );
+    renderToStaticMarkup(
+      createElement(VideoGenerationSettings, {
+        project: '/fixture/project',
+        value: { ...DEFAULT_VIDEO_GENERATION, provider_selected: true },
+        onChange: unchanged,
+        onAdd: unchanged
+      })
+    );
+    expect(discoveries).toHaveBeenCalledTimes(2);
+  });
+
+  it('сохраняет пустую неподтверждённую форму как null без выбора агента и не удаляет старые настройки', () => {
+    appState.agentProvider = null;
+    const image = { provider: 'codex', provider_selected: false, model: 'saved-model', options: { keep: true } };
+    const video = { ...DEFAULT_VIDEO_GENERATION, provider: '', provider_selected: false };
+    const settings = { name: 'Клип', animaticVideo: 'clip.mp4', generation: { video, image, custom: { keep: true } } };
+    expect(normalizeProjectSettingsForSave(settings)).toEqual({ ...settings, generation: { ...settings.generation, video: null } });
+    expect(
+      normalizeProjectSettingsForSave({ ...settings, generation: { ...settings.generation, video: { ...video, provider_selected: true } } }).generation?.video
+    ).toEqual({ ...video, provider_selected: true });
+    const emptyImage = { provider: '' };
+    expect(normalizeProjectSettingsForSave({ ...settings, generation: { ...settings.generation, image: emptyImage } }).generation?.image).toBeNull();
+    expect(settings.generation.video).toBe(video);
+    for (const html of [
+      renderToStaticMarkup(createElement(ImageGenerationSettings, { project: '/fixture/project', value: emptyImage, onChange: unchanged, onAdd: unchanged })),
+      renderToStaticMarkup(createElement(VideoGenerationSettings, { project: '/fixture/project', value: video, onChange: unchanged, onAdd: unchanged }))
+    ]) {
+      expect(html).toContain('Провайдер не выбран. Сохранение оставит генерацию отключённой.');
+      expect(html).not.toContain('aria-invalid="true"');
+    }
   });
 
   it('предлагает явно добавить каждый отсутствующий блок отдельно', () => {

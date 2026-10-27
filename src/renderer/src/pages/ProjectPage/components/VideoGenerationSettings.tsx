@@ -8,6 +8,7 @@ import { aspectOptions, modelOptions, resolutionOptions } from './generationOpti
 import { Alert, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import type { VideoGenerationSettings as Settings } from '@shared/types';
 import { DURATION_RULES, DURATION_RULE_LABELS } from '@shared/types';
+import { useApp } from '../../../state';
 
 const RESOLUTIONS = ['1080p', '720p'];
 
@@ -24,8 +25,13 @@ export function VideoGenerationSettings({
   onAdd: () => void;
   onValidityChange?: (valid: boolean) => void;
 }): ReactElement {
+  const { agentProvider } = useApp();
   const [capabilities, setCapabilities] = useState<MediaCapabilities | null>(null);
-  const capabilitiesReady = capabilities !== null && capabilities.provider === value?.provider;
+  const providerSelected = value?.provider_selected === true;
+  // Пустой неподтверждённый черновик сохраняется как null в ProjectSettingsCard и не блокирует обычное сохранение.
+  const emptyUnselected = value !== null && !providerSelected && !value.provider.trim();
+  const canDiscover = Boolean(agentProvider) && providerSelected;
+  const capabilitiesReady = canDiscover && capabilities !== null && capabilities.provider === value?.provider;
   const capabilitiesConfirmed = capabilitiesReady && capabilities.available && capabilities.problems.length === 0;
   const models = capabilitiesReady ? capabilities.models : [];
   const availableModels = modelOptions(models, 'video');
@@ -36,12 +42,13 @@ export function VideoGenerationSettings({
   const aspects = aspectOptions(models, value?.model);
   const selectedAspect = value?.aspect_ratio ?? (aspects.includes('16:9') ? '16:9' : '');
   // Неполный каталог и недоступный CLI не доказывают несовместимость сохранённых предпочтений.
-  const providerError = value !== null && !value.provider.trim();
+  const providerError = value !== null && !emptyUnselected && !value.provider.trim();
   const modelError = capabilitiesConfirmed && Boolean(value?.model) && !availableModels.includes(value?.model ?? '');
-  const resolutionError = value !== null && (!value.resolution.trim() || (capabilitiesConfirmed && !resolutions.includes(value.resolution)));
-  const aspectError = value !== null && (!selectedAspect.trim() || (capabilitiesConfirmed && !aspects.includes(selectedAspect)));
-  const durationError = value !== null && !DURATION_RULES.includes(value.duration_rule);
-  const valid = !value || !(providerError || modelError || resolutionError || aspectError || durationError);
+  const resolutionError =
+    value !== null && !emptyUnselected && (!value.resolution.trim() || (capabilitiesConfirmed && !resolutions.includes(value.resolution)));
+  const aspectError = value !== null && !emptyUnselected && (!selectedAspect.trim() || (capabilitiesConfirmed && !aspects.includes(selectedAspect)));
+  const durationError = value !== null && !emptyUnselected && !DURATION_RULES.includes(value.duration_rule);
+  const valid = !value || emptyUnselected || !(providerError || modelError || resolutionError || aspectError || durationError);
   useEffect(() => {
     onValidityChange?.(valid);
   }, [onValidityChange, valid]);
@@ -61,6 +68,11 @@ export function VideoGenerationSettings({
             <Typography variant="caption" color="text.secondary">
               Параметры ниже — предпочтения проекта. Исполнитель подбирает доступную модель под требования запроса.
             </Typography>
+            {!providerSelected && value.provider && (
+              <Typography variant="caption" color="text.secondary">
+                Сохранённый провайдер: {value.provider}. Для запуска выберите его в меню и сохраните настройки.
+              </Typography>
+            )}
             <Box
               sx={{
                 display: 'grid',
@@ -71,20 +83,29 @@ export function VideoGenerationSettings({
                 '& > *': { minWidth: 0 }
               }}
             >
+              {/* Старое имя провайдера сохраняется в данных; меню подтверждает выбор только явным действием. */}
               <TextField
                 select
                 id="video-generation-provider"
                 label="Провайдер видео"
                 error={providerError}
-                helperText={providerError ? 'Выберите провайдера видео.' : undefined}
-                value={value.provider}
+                helperText={
+                  emptyUnselected
+                    ? 'Провайдер не выбран. Сохранение оставит генерацию отключённой.'
+                    : providerError || !providerSelected
+                      ? 'Выберите провайдера видео и сохраните настройки.'
+                      : undefined
+                }
+                value={providerSelected ? value.provider : ''}
+                slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}
                 onChange={(event) => {
                   setCapabilities(null);
-                  patch({ provider: event.target.value });
+                  patch({ provider: event.target.value || value.provider, provider_selected: Boolean(event.target.value) });
                 }}
                 size="small"
               >
-                {value.provider !== 'kling' && <MenuItem value={value.provider}>{value.provider || 'Не задано'} (из файла)</MenuItem>}
+                <MenuItem value="">Не выбрано</MenuItem>
+                {value.provider && value.provider !== 'kling' && <MenuItem value={value.provider}>{value.provider || 'Не задано'} (из файла)</MenuItem>}
                 <MenuItem value="kling">Kling</MenuItem>
               </TextField>
               <TextField
@@ -205,7 +226,10 @@ export function VideoGenerationSettings({
                 ))}
               </TextField>
             </Box>
-            <MediaCapabilitiesPanel key={`video:${value.provider}`} project={project} kind="video" provider={value.provider} onResult={setCapabilities} />
+            {/* Неподтверждённый старый default не должен запускать CLI или проверку входа. */}
+            {canDiscover && (
+              <MediaCapabilitiesPanel key={`video:${value.provider}`} project={project} kind="video" provider={value.provider} onResult={setCapabilities} />
+            )}
           </>
         )}
         {!value && (

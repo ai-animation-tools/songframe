@@ -147,6 +147,16 @@ beforeEach(() => {
   project = join(work, 'project');
   localDir = join(work, 'local');
   cpSync(join(root, 'tools/testdata/sample-project'), project, { recursive: true });
+  // Внутренний производственный сценарий получает явно выбранные провайдеры; legacy-образец не подтверждает выбор сам.
+  const projectPath = join(project, 'plan/project.json');
+  const projectData = JSON.parse(readFileSync(projectPath, 'utf8'));
+  write(projectPath, {
+    ...projectData,
+    generation: {
+      video: { ...projectData.generation, provider_selected: true },
+      image: { provider: 'codex', provider_selected: true }
+    }
+  });
 });
 afterEach(() => rmSync(work, { recursive: true, force: true }));
 
@@ -271,6 +281,7 @@ describe('ProductionWorkflow', () => {
     expect(restarted.view(project, 'M01', undefined)).toMatchObject({ packageDir: null, proposal: null });
     expect(readFileSync(join(pkg, 'frames/K01.png'))).toEqual(readFileSync(join(project, 'source/vehicles/boat.png')));
   });
+  // Полный проход последовательно запускает Python-инструменты; изолированный прогон занимает около шести секунд.
   it('проходит ручные опоры, видеопромпт и локальную подготовку нового request-NN', async () => {
     const { workflow, launcher, agents, pkg } = await prepared();
     await decide(launcher, pkg);
@@ -336,7 +347,7 @@ describe('ProductionWorkflow', () => {
     await workflow.apply(project, 'M01', pkg, retry.proposal!.id);
     expect(existsSync(join(pkg, 'request-02/request.json'))).toBe(true);
     expect(readFileSync(join(pkg, 'request-01/request.json'))).toEqual(original);
-  });
+  }, 15000);
   it('запрещает устаревшее предложение и смену байтов кандидата', async () => {
     const { workflow, launcher, pkg } = await prepared();
     await decide(launcher, pkg);

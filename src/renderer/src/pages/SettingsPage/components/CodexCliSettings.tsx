@@ -7,7 +7,7 @@ import { useApp } from '../../../state';
 import { completeInScope, RequestScope } from '../../../hooks/requestScope';
 
 export function CodexCliSettings(): ReactElement {
-  const { notify, describeError } = useApp();
+  const { notify, describeError, invalidateAiAccess, refreshAiAccess } = useApp();
   const [profile, setProfile] = useState<AgentSettings>({ provider: 'codex' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +64,7 @@ export function CodexCliSettings(): ReactElement {
           savingNow.current = true;
           scope.invalidate();
           const current = scope.capture();
+          invalidateAiAccess();
           setBusy(true);
           setError(null);
           try {
@@ -74,6 +75,7 @@ export function CodexCliSettings(): ReactElement {
           } catch (reason) {
             if (current()) setError(describeError(reason));
           } finally {
+            void refreshAiAccess().catch((reason) => notify(describeError(reason), 'error'));
             savingNow.current = false;
             if (current()) setBusy(false);
           }

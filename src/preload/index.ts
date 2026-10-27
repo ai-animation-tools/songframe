@@ -33,6 +33,15 @@ const relayAgentEvent = (_event: Electron.IpcRendererEvent, value: AgentEvent): 
 };
 
 const api: Api = {
+  ai: { access: (project) => ipcRenderer.invoke('ai:access', project) },
+  cover: {
+    create: (project, prompt) => ipcRenderer.invoke('cover:create', project, prompt),
+    prepare: (id) => ipcRenderer.invoke('cover:prepare', id),
+    generate: (id, requestSha, approval) => ipcRenderer.invoke('cover:generate', id, requestSha, approval),
+    view: (id) => ipcRenderer.invoke('cover:view', id),
+    accept: (id, crop) => ipcRenderer.invoke('cover:accept', id, crop),
+    close: (id) => ipcRenderer.invoke('cover:close', id)
+  },
   montageWindow: {
     open: (session) => ipcRenderer.invoke('montage-window:open', session),
     close: (session) => ipcRenderer.invoke('montage-window:close', session),
@@ -162,8 +171,8 @@ const api: Api = {
       ipcRenderer.invoke('production:decide', project, packageDir, verdict, note ?? '', decisionToken),
     quote: (project: string, packageDir: string, expectedSha: string, decisionToken?: string) =>
       ipcRenderer.invoke('production:quote', project, packageDir, expectedSha, decisionToken),
-    submit: (project: string, packageDir: string, expectedSha: string, decisionToken?: string, quoteToken?: string) =>
-      ipcRenderer.invoke('production:submit', project, packageDir, expectedSha, decisionToken, quoteToken),
+    submit: (project: string, packageDir: string, expectedSha: string, decisionToken?: string, quoteToken?: string, unknownCostConsentToken?: string) =>
+      ipcRenderer.invoke('production:submit', project, packageDir, expectedSha, decisionToken, quoteToken, unknownCostConsentToken),
     resume: (project: string, packageDir: string, generationId?: string) => ipcRenderer.invoke('production:resume', project, packageDir, generationId),
     selectImage: (project: string, packageDir: string, index: number, expectedResultToken: string) =>
       ipcRenderer.invoke('production:selectImage', project, packageDir, index, expectedResultToken),

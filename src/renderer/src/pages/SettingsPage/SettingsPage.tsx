@@ -46,6 +46,7 @@ export function SettingsPage(): ReactElement {
                   {form.saving ? 'Сохранение' : 'Сохранить настройки агента'}
                 </Button>
                 <AgentButton
+                  setup
                   provider={form.settings?.provider ?? null}
                   variant="contained"
                   onClick={form.check}
@@ -64,7 +65,7 @@ export function SettingsPage(): ReactElement {
                   onRefresh={account.refresh}
                 />
               )}
-              <CodexCliSettings />
+              {form.settings?.provider === 'codex' && !form.profileLoading && !form.profileError ? <CodexCliSettings /> : null}
             </Stack>
           </Paper>
           {form.result && <AgentDiagnostics result={form.result} />}

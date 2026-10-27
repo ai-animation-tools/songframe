@@ -7,17 +7,31 @@ import { CoverSection } from './components/CoverSection';
 import { LyricsSection } from './components/LyricsSection';
 import { IdeaSection } from './components/IdeaSection';
 import { ReferenceEditor } from './components/ReferenceEditor';
+import type { AiAccess } from '@shared/ai-access';
+import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
 
-vi.mock('../../state', () => ({ useApp: () => ({ notify: vi.fn(), describeError: String }) }));
+const aiState = vi.hoisted(() => ({ agentProvider: null as 'claude' | 'codex' | null, aiAccess: null as AiAccess | null }));
+vi.mock('../../state', () => ({ useApp: () => ({ notify: vi.fn(), describeError: String, ...aiState }) }));
 
 /** Области выбора доступны клавиатуре, а поля текста остаются отдельными редакторами. */
 describe('загрузка исходников', () => {
+  it('не разрешает генерацию обложки с невыбранным агентом', () => {
+    aiState.agentProvider = null;
+    aiState.aiAccess = null;
+    const html = renderToStaticMarkup(
+      createElement(CoverSection, { coverSrc: null, onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn(), onGenerate: vi.fn() })
+    );
+    const label = html.indexOf('Сгенерировать');
+    expect(html.slice(html.lastIndexOf('<button', label), label)).toContain('disabled=""');
+    expect(html).toContain(COVER_AGENT_REQUIRED);
+  });
+
   it('предлагает четыре области выбора без отдельных кнопок импорта', () => {
     const pick = vi.fn();
     const drop = vi.fn();
     const html = [
       createElement(TrackSection, { track: null, trackNew: null, fileUrl: String, onPick: pick, onClear: vi.fn(), onDrop: drop }),
-      createElement(CoverSection, { coverSrc: null, onPick: pick, onRemove: vi.fn(), onDrop: drop }),
+      createElement(CoverSection, { coverSrc: null, onPick: pick, onRemove: vi.fn(), onDrop: drop, onGenerate: vi.fn() }),
       createElement(LyricsSection, { lyrics: '', lyricsCheck: analyzeLyrics(''), onChange: vi.fn(), onPick: pick, onDrop: drop }),
       createElement(IdeaSection, { idea: '', onChange: vi.fn(), onPick: pick, onDrop: drop })
     ]
@@ -54,7 +68,9 @@ describe('загрузка исходников', () => {
   });
 
   it('показывает удаление обложки на изображении отдельным действием от загрузки', () => {
-    const html = renderToStaticMarkup(createElement(CoverSection, { coverSrc: 'cover.png', onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn() }));
+    const html = renderToStaticMarkup(
+      createElement(CoverSection, { coverSrc: 'cover.png', onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn(), onGenerate: vi.fn() })
+    );
     expect(html).toContain('aria-label="Убрать обложку"');
     expect(html).toContain('data-testid="CloseIcon"');
     expect(html).toContain('aria-label="Загрузка обложки"');

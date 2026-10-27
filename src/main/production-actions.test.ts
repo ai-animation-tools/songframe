@@ -107,8 +107,8 @@ const view = (directory = packageDir) => readPackage(project, directory)!;
 async function quote(directory = packageDir): Promise<ProductionQuote> {
   return production.quote(project, directory, requestSha, view(directory).decisionToken);
 }
-async function send(quoted: ProductionQuote, directory = packageDir): Promise<JobInfo> {
-  return production.submit(project, directory, requestSha, view(directory).decisionToken, quoted.token);
+async function send(quoted: ProductionQuote, directory = packageDir, unknownCostConsentToken?: string): Promise<JobInfo> {
+  return production.submit(project, directory, requestSha, view(directory).decisionToken, quoted.token, unknownCostConsentToken);
 }
 async function finished(job: JobInfo): Promise<JobInfo> {
   await vi.waitFor(() => expect(job.status).not.toBe('running'));
@@ -252,10 +252,90 @@ describe('подтверждение платного запроса', () => {
     expect(paidCalls()).toEqual([]);
   });
 
-  it('ошибка проверки с кодом 42 блокирует оплату и не раскрывает сырой ответ CLI', async () => {
-    vi.spyOn(runner, 'run').mockResolvedValueOnce({ code: 42, stdout: 'секретный сырой ответ', stderr: 'секретные параметры', command: 'скрытая команда' });
-    await expect(quote()).rejects.toThrow('Не удалось определить стоимость и остаток. Отправка не выполнялась.');
-    expect(jobs.list()).toEqual([]);
+  it.each([undefined, 'чужое-согласие'])('неизвестная цена без точного согласия %s блокирует отправку', async (consent) => {
+    runner.prices.push({ verdict: 'cost_or_balance_unknown', estimate_credits: null, balance_credits: 100 });
+    const confirmed = await quote();
+    await expect(send(confirmed, packageDir, consent)).rejects.toThrow(/стоимость/);
+    await expect(send(confirmed, packageDir, confirmed.token)).rejects.toThrow(/стоимость/);
+    expect(paidCalls()).toEqual([]);
+  });
+
+  it.each([
+    { verdict: 'cost_or_balance_unknown', estimate_credits: null, balance_credits: 100 },
+    { verdict: 'cost_or_balance_unknown', estimate_credits: null, balance_credits: null },
+    { verdict: 'ok', estimate_credits: 10, balance_credits: 100 }
+  ])('точное согласие разрешает неизвестную цену после повторной проверки %j ровно один раз', async (fresh) => {
+    runner.prices.push({ verdict: 'cost_or_balance_unknown', estimate_credits: null, balance_credits: 100 });
+    const confirmed = await quote();
+    runner.prices.push(fresh);
+    await finished(await send(confirmed, packageDir, confirmed.token));
+    await expect(send(confirmed, packageDir, confirmed.token)).rejects.toThrow(/стоимость/);
+    expect(paidCalls()).toHaveLength(1);
+  });
+
+  it('согласие на старую оценку не переносится на новую с тем же SHA', async () => {
+    runner.prices.push(
+      { verdict: 'cost_or_balance_unknown', estimate_credits: null, balance_credits: 100 },
+      { verdict: 'cost_or_balance_unknown', estimate_credits: null, balance_credits: 100 }
+    );
+    const old = await quote();
+    const fresh = await quote();
+    expect(fresh.requestSha).toBe(old.requestSha);
+    await expect(send(old, packageDir, old.token)).rejects.toThrow(/стоимость/);
+    await expect(send(fresh, packageDir, old.token)).rejects.toThrow(/стоимость/);
+    expect(paidCalls()).toEqual([]);
+  });
+
+  it.each([
+    { verdict: 'cost_or_balance_unknown', estimate_credits: 10, balance_credits: null },
+    { verdict: 'ok', estimate_credits: 10, balance_credits: null },
+    { verdict: 'insufficient_balance', estimate_credits: 10, balance_credits: 0 },
+    { verdict: 'ok', estimate_credits: 10, balance_credits: 0 }
+  ])('согласие не отменяет известную нехватку или неизвестный остаток при известной цене %j', async (price) => {
+    runner.prices.push(price);
+    const confirmed = await quote();
+    await expect(send(confirmed, packageDir, confirmed.token)).rejects.toThrow(/стоимость/);
+    expect(paidCalls()).toEqual([]);
+  });
+
+  it.each([
+    { verdict: 'cost_or_balance_unknown', estimate_credits: 10, balance_credits: null },
+    { verdict: 'insufficient_balance', estimate_credits: 10, balance_credits: 0 }
+  ])('согласие на неизвестную цену не отменяет новую блокирующую оценку %j', async (price) => {
+    runner.prices.push({ verdict: 'cost_or_balance_unknown', estimate_credits: null, balance_credits: 100 });
+    const confirmed = await quote();
+    runner.prices.push(price);
+    await expect(send(confirmed, packageDir, confirmed.token)).rejects.toThrow(/Стоимость/);
+    expect(paidCalls()).toEqual([]);
+  });
+
+  it('изменение материалов отменяет согласие на неизвестную цену', async () => {
+    runner.prices.push({ verdict: 'cost_or_balance_unknown', estimate_credits: null, balance_credits: 100 });
+    const confirmed = await quote();
+    write(join(packageDir, 'request/prompt.txt'), 'другой промпт');
+    await expect(send(confirmed, packageDir, confirmed.token)).rejects.toThrow(/изменил/);
+    expect(paidCalls()).toEqual([]);
+  });
+
+  it.each(['секретный сырой ответ', 'null', '[]', '{"verdict":"чужой"}'])(
+    'некорректная оценка %s допускает отдельное согласие без раскрытия ответа',
+    async (stdout) => {
+      vi.spyOn(runner, 'run').mockResolvedValueOnce({ code: 42, stdout, stderr: 'секретные параметры', command: 'скрытая команда' });
+      const confirmed = await quote();
+      expect(confirmed).toMatchObject({ verdict: 'cost_or_balance_unknown', credits: null, balance: null });
+      expect(JSON.stringify(confirmed)).not.toContain('секрет');
+      expect(jobs.list()).toEqual([]);
+      await finished(await send(confirmed, packageDir, confirmed.token));
+      expect(paidCalls()).toHaveLength(1);
+    }
+  );
+
+  it('ошибка запуска оценки превращается в неизвестную цену без раскрытия исключения', async () => {
+    vi.spyOn(runner, 'run').mockRejectedValueOnce(new Error('секретная команда'));
+    const confirmed = await quote();
+    expect(confirmed).toMatchObject({ verdict: 'cost_or_balance_unknown', credits: null });
+    expect(JSON.stringify(confirmed)).not.toContain('секрет');
+    await expect(send(confirmed)).rejects.toThrow(/стоимость/);
     expect(paidCalls()).toEqual([]);
   });
 

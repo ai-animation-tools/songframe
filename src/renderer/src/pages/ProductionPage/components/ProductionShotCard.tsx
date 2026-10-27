@@ -1,10 +1,11 @@
 /** Описание выбранного плана, команда внешнего агента и принятые видео. */
 import type { ReactElement } from 'react';
-import { Alert, Box, Button, Paper, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Paper, Tooltip, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ReplayIcon from '@mui/icons-material/Replay';
 import type { ShotProduction } from '@shared/types';
 import { formatClock } from '../../../format';
+import { AiButton } from '../../../components/AiButton';
 import { AgentButton } from '../../../components';
 
 export function ProductionShotCard({
@@ -65,7 +66,8 @@ export function ProductionShotCard({
         {shot.state === 'completed' || shot.packages.length ? (
           <Tooltip title="Создать новую попытку по сохранённому запросу без отправки и оплаты">
             <span>
-              <Button
+              <AiButton
+                aiKind="video"
                 size="small"
                 color="warning"
                 startIcon={<ReplayIcon />}
@@ -75,7 +77,7 @@ export function ProductionShotCard({
                 onClick={() => onRegenerate(shot.id)}
               >
                 Подготовить повтор
-              </Button>
+              </AiButton>
             </span>
           </Tooltip>
         ) : null}

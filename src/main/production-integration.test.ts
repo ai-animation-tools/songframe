@@ -189,6 +189,16 @@ beforeEach(() => {
   localDir = join(directory, 'Состояние приложения');
   managers = [];
   cpSync(join(root, 'tools/testdata/sample-project'), project, { recursive: true });
+  // Внутренний производственный сценарий получает явно выбранные провайдеры; legacy-образец не подтверждает выбор сам.
+  const projectPath = join(project, 'plan/project.json');
+  const projectData = JSON.parse(readFileSync(projectPath, 'utf8'));
+  write(projectPath, {
+    ...projectData,
+    generation: {
+      video: { ...projectData.generation, provider_selected: true },
+      image: { provider: 'codex', provider_selected: true }
+    }
+  });
 });
 afterEach(() => {
   for (const agents of managers) agents.shutdown();

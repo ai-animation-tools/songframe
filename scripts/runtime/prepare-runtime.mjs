@@ -1,12 +1,10 @@
 /** Подготовка Python для Linux или готовой Windows-поставки; версии и хеши закреплены рядом. @link README.md */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { createWriteStream } from 'node:fs';
 import { copyFile, cp, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
+import { download } from './download.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, '../..');
@@ -24,6 +22,7 @@ const requirementsSha256 = createHash('sha256')
 const recipe = await Promise.all(
   [
     'prepare-runtime.mjs',
+    'download.mjs',
     'prepare-windows.py',
     'requirements-build.lock',
     'runtime-probe.py',
@@ -57,26 +56,8 @@ if (current?.fingerprint === fingerprint) {
   const cache = join(repo, 'build/runtime/downloads');
   await mkdir(cache, { recursive: true });
   const archive = join(cache, decodeURIComponent(new URL(distribution.url).pathname.split('/').pop()));
-  let validArchive = false;
-  try {
-    validArchive =
-      createHash('sha256')
-        .update(await readFile(archive))
-        .digest('hex') === distribution.sha256;
-  } catch {
-    // Первый запуск получает только зафиксированный архив, а не локальный venv разработчика.
-  }
-  if (!validArchive) {
-    console.log(`Загрузка CPython ${lock.python}: ${target}`);
-    const response = await fetch(distribution.url);
-    if (!response.ok) throw new Error(`Не удалось скачать Python: HTTP ${response.status}`);
-    await pipeline(Readable.fromWeb(response.body), createWriteStream(`${archive}.part`));
-    const hash = createHash('sha256')
-      .update(await readFile(`${archive}.part`))
-      .digest('hex');
-    if (hash !== distribution.sha256) throw new Error(`Неверный SHA256 архива Python: ${hash}`);
-    await rename(`${archive}.part`, archive);
-  }
+  console.log(`Подготовка CPython ${lock.python}: ${target}`);
+  await download(distribution.url, distribution.sha256, archive);
   const staging = `${root}.preparing`;
   await rm(staging, { recursive: true, force: true });
   await mkdir(staging, { recursive: true });

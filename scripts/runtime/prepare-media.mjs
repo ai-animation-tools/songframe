@@ -1,12 +1,10 @@
 /** Медиакомплект Linux и Windows: закреплённые FFmpeg/ffprobe; модели устанавливаются отдельно, без загрузок при запуске приложения. @link README.md */
 import { spawnSync } from 'node:child_process';
-import { createWriteStream } from 'node:fs';
 import { chmod, copyFile, cp, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, basename } from 'node:path';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import mediaFiles from './media-files.cjs';
+import { download } from './download.mjs';
 
 const { sha256, verifyMedia } = mediaFiles;
 if (process.platform !== 'linux' || process.arch !== 'x64') throw new Error('Медиа-поставка готовится на Linux x64.');
@@ -22,23 +20,6 @@ const distribution = windows ? lock.ffmpeg.windows : lock.ffmpeg;
 await stat(join(root, windows ? 'python/python.exe' : 'python/bin/python3'));
 await mkdir(cache, { recursive: true });
 
-async function obtain(url, hash, name) {
-  const file = join(cache, name);
-  try {
-    if ((await sha256(file)) === hash) return file;
-  } catch {
-    // Отсутствующий кэш заполняется только ресурсом из закреплённого источника.
-  }
-  const part = `${file}.part`;
-  console.log(`Загрузка ${name}`);
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Не удалось скачать ${name}: HTTP ${response.status}`);
-  await pipeline(Readable.fromWeb(response.body), createWriteStream(part));
-  if ((await sha256(part)) !== hash) throw new Error(`Неверный SHA256 ${name}`);
-  await rename(part, file);
-  return file;
-}
-
 try {
   await verifyMedia(root, lock, target);
   console.log('FFmpeg/ffprobe уже подготовлены; файлы проверены. Модели в сборку не входят.');
@@ -46,7 +27,7 @@ try {
   const staging = join(root, 'media.preparing');
   await rm(staging, { recursive: true, force: true });
   await mkdir(staging, { recursive: true });
-  const archive = await obtain(distribution.url, distribution.sha256, basename(new URL(distribution.url).pathname));
+  const archive = await download(distribution.url, distribution.sha256, join(cache, basename(new URL(distribution.url).pathname)));
   const unpack = join(staging, windows ? basename(archive, '.zip') : 'ffmpeg');
   // ZIP распаковывает уже подготовленный Linux Python; Windows EXE на сборщике не исполняются.
   if (!windows) await mkdir(unpack);

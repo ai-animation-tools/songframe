@@ -23,6 +23,8 @@ yarn dist:win       # Windows ZIP, тоже на Linux
 
 `prepare-runtime.mjs` получает архив из [python-build-standalone](https://github.com/astral-sh/python-build-standalone/releases/tag/20261021), проверяет SHA256, распаковывает его в staging и устанавливает только зафиксированные wheels собственным `python -m pip`. Первый этап скачивает wheels, второй устанавливает их без индекса; версии и хеши заданы в `requirements-<platform>-<arch>.lock`. Для Linux проверка `pip check` и `runtime-probe.py` обязательна до появления готового manifest. Windows-комплект собирается на Linux из готовых `win_amd64` wheels: закреплённый PyPA installer размещает их по Windows-схеме (`Lib/site-packages`, `Scripts`, DLL рядом с Python), Windows-маркеры зависимостей проверяются отдельно. `installer` нужен только сборщику, он не входит в приложение. В manifest различаются сборочный host и факт нативной проверки; сборка на Linux не выдаётся за успешное исполнение Windows-библиотек.
 
+При загрузке архивов CPython, FFmpeg и лицензий интерактивный терминал показывает число полученных байтов и, при известном размере, процент. Сообщения выводятся не чаще одного раза в 10 секунд, включая ожидание данных; после 120 секунд без данных загрузка завершается ошибкой. В неинтерактивном режиме периодический прогресс не выводится. Проверенный SHA256 архив атомарно помещается в кэш; при ошибке временный файл удаляется, прежний кэш сохраняется. Локальная проверка загрузчика без внешней сети: `node --test scripts/runtime/download.test.mjs`.
+
 Архивы и wheels остаются в `build/runtime/downloads`. Готовый комплект лежит в `build/runtime/linux-x64/` или `build/runtime/win32-x64/`:
 
 ```text

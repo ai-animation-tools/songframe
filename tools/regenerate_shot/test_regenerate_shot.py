@@ -1,5 +1,7 @@
 """Тесты повтора генерации: источник запроса, отказ без данных, подготовка и отправка на подставном CLI."""
 
+import hashlib
+import io
 import json
 import shutil
 import sys
@@ -128,6 +130,176 @@ class RegenerateTests(unittest.TestCase):
             shot_workflow.set_stage(package, stage, root=self.root)
         shot_workflow.set_stage(package, "request_choice", request_dir="request", root=self.root)
         return package
+
+    def make_asset(self, legacy=True):
+        """Снимок M02 с двумя точными входами; данные создаются только во временном проекте."""
+        asset = self.root / "assets/shots/M01"
+        asset.mkdir(exist_ok=True)
+        inputs = []
+        for number in (1, 2):
+            path = asset / f"generation-input-{number}.png"
+            path.write_bytes(b"\x89PNG\r\n" + bytes([number]))
+            inputs.append({
+                "slot": f"image_{number}",
+                "role": f"Кадр {number}",
+                "path": path.name,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            })
+        prompt = asset / "generation-prompt.txt"
+        prompt.write_bytes("Сохранённый промпт\r\nТочные байты.\n".encode("utf-8"))
+        snapshot = {
+            "schema_version": 1,
+            "shot": "M01",
+            "provider": "Kling AI" if legacy else "Kling",
+            "command": "image_to_video",
+            "model": "kling-video-v3_0_omni",
+            "parameters": {
+                "duration": "6", "resolution": "1080p", "aspect_ratio": "16:9", "imageCount": "1",
+                "prefer_multi_shots": "false", "enable_audio": "false",
+            },
+            "inputs": inputs,
+            "prompt": {"path": prompt.name, "sha256": hashlib.sha256(prompt.read_bytes()).hexdigest()},
+            "output": {"original": "original.mp4"},
+            "elements": [],
+            "audio_inputs": [],
+            "path_base": "asset_directory",
+            "cli_argv_before_prompt": ["obsolete-cli", "must-not-run"],
+        }
+        if not legacy:
+            snapshot["prompt_sha256"] = snapshot["prompt"]["sha256"]
+            snapshot["prompt"] = prompt.name
+            snapshot["outputs"] = 1
+        self.write_snapshot(snapshot)
+        return asset, snapshot
+
+    def write_snapshot(self, snapshot):
+        path = self.root / "assets/shots/M01/generation-request.json"
+        path.write_text(json.dumps(snapshot, ensure_ascii=False), encoding="utf-8")
+
+    def assert_cli_data_error(self, message):
+        """Ошибки снимка дают штатный код 3 без создания пакета и без вызова CLI."""
+        with patch.object(sys, "argv", ["regenerate_shot", "M01", "--source", "asset", "--json"]):
+            with patch("sys.stderr", new_callable=io.StringIO) as stderr:
+                with self.assertRaises(SystemExit) as stopped:
+                    tool.main()
+        self.assertEqual(stopped.exception.code, 3)
+        self.assertIn(message, stderr.getvalue())
+        self.assertNotIn("Traceback", stderr.getvalue())
+        self.assertEqual(list((self.root / "plan/batches").iterdir()), [])
+        self.assertFalse((self.root / "calls.jsonl").exists())
+
+    def test_legacy_snapshot_prepares_exact_request_without_submit(self):
+        asset, snapshot = self.make_asset()
+        before = {path.name: path.read_bytes() for path in asset.iterdir()}
+        info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli))
+        request_dir = Path(info["work_dir"])
+        request = json.loads((request_dir / "request.json").read_text())
+        self.assertEqual(request["command"], snapshot["command"])
+        self.assertEqual(request["model"], snapshot["model"])
+        self.assertEqual(request["parameters"], snapshot["parameters"])
+        self.assertEqual(request["outputs"], 1)
+        self.assertEqual((request_dir / request["prompt"]["path"]).read_bytes(), before["generation-prompt.txt"])
+        self.assertEqual(request["prompt"]["sha256"], snapshot["prompt"]["sha256"])
+        for original, repeated in zip(snapshot["inputs"], request["inputs"], strict=True):
+            self.assertEqual((request_dir / repeated["path"]).read_bytes(), before[original["path"]])
+            self.assertEqual(repeated["sha256"], original["sha256"])
+            self.assertEqual(repeated["slot"], original["slot"])
+            self.assertEqual(repeated["role"], original["role"])
+            self.assertEqual(repeated["flag"], "input")
+        self.assertEqual({path.name: path.read_bytes() for path in asset.iterdir()}, before)
+        calls = [json.loads(line) for line in (self.root / "calls.jsonl").read_text().splitlines()]
+        self.assertEqual(calls, [["account", "--quiet"]])
+        self.assertEqual(info["cost"]["balance_credits"], 500)
+        self.assertEqual(json.loads((Path(info["package"]) / "workflow.json").read_text())["stage"], "request_choice")
+
+    def test_provider_aliases_accept_case_and_spaces(self):
+        _, snapshot = self.make_asset()
+        for provider in ("Kling", "kLiNg", " Kling AI ", "  KLING   ai  ", "kling\tAI"):
+            with self.subTest(provider=provider):
+                snapshot["provider"] = provider
+                self.write_snapshot(snapshot)
+                self.assertEqual(tool.spec_from_asset(self.root, "M01")["model"], snapshot["model"])
+
+    def test_missing_prompt_path_is_code_3(self):
+        _, snapshot = self.make_asset()
+        for prompt in ({"sha256": "abc"}, {"path": ""}, {"path": None}, {"path": "missing.txt"}):
+            with self.subTest(prompt=prompt):
+                snapshot["prompt"] = prompt
+                self.write_snapshot(snapshot)
+                self.assert_cli_data_error("промпт")
+
+    def test_changed_prompt_and_input_hashes_are_code_3(self):
+        asset, snapshot = self.make_asset()
+        for name in ("generation-prompt.txt", "generation-input-2.png"):
+            with self.subTest(name=name):
+                path = asset / name
+                original = path.read_bytes()
+                path.write_bytes(original + b"changed")
+                self.assert_cli_data_error("хеш" if "prompt" in name else "Хеш")
+                path.write_bytes(original)
+        _, snapshot = self.make_asset(legacy=False)
+        snapshot["prompt_sha256"] = "wrong"
+        self.write_snapshot(snapshot)
+        self.assert_cli_data_error("хеш промпта")
+
+    def test_foreign_provider_is_code_3(self):
+        _, snapshot = self.make_asset()
+        snapshot["provider"] = "Runway"
+        self.write_snapshot(snapshot)
+        self.assert_cli_data_error("Runway")
+
+    def test_incomplete_and_invalid_data_is_code_3_before_package(self):
+        _, snapshot = self.make_asset()
+        mutations = [
+            {"parameters": []}, {"model": None}, {"command": []}, {"inputs": [None]},
+            {"inputs": [{"slot": "image_1"}]}, {"inputs": []},
+            {"inputs": [{"path": "generation-input-1.png"}]},
+            {"parameters": {"duration": "6"}}, {"elements": [{"id": "lost"}]},
+        ]
+        for fields in mutations:
+            with self.subTest(fields=fields):
+                self.write_snapshot(snapshot | fields)
+                self.assert_cli_data_error("M01")
+
+    def test_modern_snapshot_preserves_image_flag_and_output_count(self):
+        _, snapshot = self.make_asset(legacy=False)
+        snapshot["inputs"] = [{"flag": "image", **{k: v for k, v in snapshot["inputs"][0].items() if k != "slot"}}]
+        snapshot["outputs"] = 2
+        snapshot["parameters"]["imageCount"] = "2"
+        self.write_snapshot(snapshot)
+        info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli), use_account=False)
+        request = json.loads((Path(info["work_dir"]) / "request.json").read_text())
+        self.assertEqual(request["inputs"][0]["flag"], "image")
+        self.assertNotIn("slot", request["inputs"][0])
+        self.assertEqual(request["outputs"], 2)
+        self.assertEqual(request["parameters"], snapshot["parameters"])
+
+    def test_shared_source_descriptor_keeps_exact_input(self):
+        _, snapshot = self.make_asset()
+        source = self.root / "source/heroes/mira.png"
+        snapshot["inputs"][0].update({
+            "root": "source", "path": "heroes/mira.png", "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        })
+        self.write_snapshot(snapshot)
+        info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli), use_account=False)
+        request_dir = Path(info["work_dir"])
+        request = json.loads((request_dir / "request.json").read_text())
+        self.assertEqual((request_dir / request["inputs"][0]["path"]).read_bytes(), source.read_bytes())
+
+    def test_frozen_snapshot_preserves_model_selection_and_checks_prompt_hash(self):
+        package = self.make_package()
+        path = package / "request/request.json"
+        original = json.loads(path.read_text())
+        selection = {"preferredModel": None, "selectedModel": original["model"], "reason": "Выбрана по возможностям"}
+        original["model_selection"] = selection
+        path.write_text(json.dumps(original, ensure_ascii=False))
+        info = tool.regenerate(self.root, "M01", source="package", cli=str(self.cli), use_account=False)
+        request = json.loads((Path(info["work_dir"]) / "request.json").read_text())
+        self.assertEqual(request["model_selection"], selection)
+        shutil.rmtree(info["package"])
+        (package / "request/prompt.txt").write_text("Изменённый промпт", encoding="utf-8")
+        with self.assertRaisesRegex(LookupError, "хеш промпта"):
+            tool.regenerate(self.root, "M01", source="package", cli=str(self.cli), use_account=False)
 
     def test_no_request_data_stops_with_code_3(self):
         with self.assertRaisesRegex(LookupError, "нет снимка запроса"):

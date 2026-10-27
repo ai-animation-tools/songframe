@@ -1,0 +1,9 @@
+export { MontageApplyDialog } from './MontageApplyDialog';
+export { MontageClipEditor } from './MontageClipEditor';
+export { MontagePreview } from './MontagePreview';
+export { MontageSourcesDrawer } from './MontageSourcesDrawer';
+export { MontageTimeline } from './MontageTimeline';
+export { SourceMetadata } from './SourceMetadata';
+export { MontageAudioRange } from './MontageAudioRange';
+export { MontageDiscardDialog } from './MontageDiscardDialog';
+export { MontageShortcuts } from './MontageShortcuts';

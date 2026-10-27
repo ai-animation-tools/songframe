@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "shot": "M01",
+  "provider": "Kling",
+  "command": "image_to_video",
+  "model": "kling-video-v3_0",
+  "parameters": {
+    "duration": 10,
+    "resolution": "1080p",
+    "aspect_ratio": "16:9",
+    "prefer_multi_shots": false
+  },
+  "outputs": 1,
+  "request_sha256": "c47a6ee95ee99d56ce010fa3b2a1320fdf647cd5221b59c041e083c80f1d675e",
+  "inputs": [
+    {
+      "slot": "image_1",
+      "role": "Первый кадр",
+      "path": "generation-input-1.png",
+      "sha256": "44d251ca77fb39c884dd7513fa3a330617381697616a1cee29ca0a46b2e1e5a2"
+    }
+  ],
+  "prompt": "generation-prompt.txt",
+  "prompt_sha256": "3bda9828c785373f44562793bead8db3684d5b2732c11b6aeb3d621e9ed6f299",
+  "generation_id": "sample-m01",
+  "service_status": "completed",
+  "path_base": "asset_directory"
+}

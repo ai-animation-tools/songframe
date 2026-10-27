@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "version": "latest",
+  "path_base": "project_root",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "fps": 30,
+  "total_frames": 900,
+  "video_duration": 30.0,
+  "source_audio": "source/track.mp3",
+  "source_audio_sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+  "source_audio_duration": 30.0,
+  "scene_registry_sha256": "c949531abfa770418b28e15c6d6abbb473b9854c6caba8735982c41fdc713772",
+  "shots": [
+    {
+      "id": "M01",
+      "original": "Вступление",
+      "sequence": "intro",
+      "title": "Вечер у воды",
+      "start_frame": 0,
+      "end_frame_exclusive": 240,
+      "camera": "Общий план с воздуха, медленный наезд",
+      "action": "Лодка покачивается у причала.",
+      "continuity": "Начало клипа; лодка у причала.",
+      "references": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": null,
+      "state_changes": {
+        "after": {
+          "boat": {
+            "dirt": "с каплями воды"
+          }
+        }
+      },
+      "sequence_title": "Вечер у воды",
+      "start": "0",
+      "end": "8",
+      "duration": "8",
+      "interval": "00:00.0–00:08.0",
+      "frames": 240,
+      "state": "Начало клипа; лодка у причала.",
+      "refs": [
+        "boat",
+        "pier"
+      ],
+      "media": "video",
+      "path": "assets/shots/M01/video.mp4",
+      "sha256": "9e81541c4931ca4aa5ce5100f383f95539e83fe63b4de62ca5f1c2c384483f27"
+    },
+    {
+      "id": "M02",
+      "original": "Вечер зажёг фонари у воды",
+      "sequence": "verse",
+      "start_frame": 240,
+      "end_frame_exclusive": 360,
+      "camera": "Средний план на причале",
+      "action": "Мира держит фонарик, Лев смотрит на воду.",
+      "continuity": "Продолжение вечера из M01.",
+      "references": [
+        "mira",
+        "lev",
+        "boat"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": "M01",
+      "state_changes": {
+        "after": {
+          "boat": {
+            "sink": "у края причала"
+          }
+        }
+      },
+      "title": "Фонарики",
+      "sequence_title": "Фонарики",
+      "start": "8",
+      "end": "12",
+      "duration": "4",
+      "interval": "00:08.0–00:12.0",
+      "frames": 120,
+      "state": "Продолжение вечера из M01.",
+      "refs": [
+        "mira",
+        "lev",
+        "boat"
+      ],
+      "media": "video",
+      "path": "assets/shots/M02/video.mp4",
+      "sha256": "2a0b47631c3a06ee73a119c77bb04b9b153bacf4a00703af2993507f9439095b"
+    },
+    {
+      "id": "M03",
+      "original": "Ветер качает бумажные огни",
+      "sequence": "verse",
+      "start_frame": 360,
+      "end_frame_exclusive": 480,
+      "camera": "Общий план сбоку",
+      "action": "Фонарики качаются на ветру.",
+      "continuity": "Лодка остаётся у причала.",
+      "references": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "pier"
+      },
+      "state_from": "M02",
+      "state_changes": {
+        "after": {
+          "boat": {
+            "dirt": "покрыта каплями",
+            "sink": "у края причала"
+          }
+        }
+      },
+      "title": "Фонарики",
+      "sequence_title": "Фонарики",
+      "start": "12",
+      "end": "16",
+      "duration": "4",
+      "interval": "00:12.0–00:16.0",
+      "frames": 120,
+      "state": "Лодка остаётся у причала.",
+      "refs": [
+        "boat",
+        "pier"
+      ],
+      "media": "card",
+      "path": "plan/animatic/cards/M03.png",
+      "card_sources": {
+        "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
+        "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e"
+      },
+      "sha256": "d741320b4d54a346bcb537a43bb8eec713c5c6c57005b25dca6af410382412f3"
+    },
+    {
+      "id": "M04",
+      "original": "Мы отпускаем огни в небеса",
+      "sequence": "verse",
+      "start_frame": 480,
+      "end_frame_exclusive": 600,
+      "camera": "Крупный план Миры",
+      "action": "Мира поднимает фонарик, Лев улыбается.",
+      "continuity": "Мира стоит у воды.",
+      "references": [
+        "mira",
+        "lev",
+        "boat",
+        "pier"
+      ],
+      "lipsync": true,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": "M03",
+      "state_changes": {
+        "before": {
+          "mira": {
+            "position": "стоит у края причала"
+          }
+        },
+        "after": {
+          "mira": {
+            "clothes_condition": "яркая куртка"
+          }
+        }
+      },
+      "title": "Фонарики",
+      "sequence_title": "Фонарики",
+      "start": "16",
+      "end": "20",
+      "duration": "4",
+      "interval": "00:16.0–00:20.0",
+      "frames": 120,
+      "state": "Мира стоит у воды.",
+      "refs": [
+        "mira",
+        "lev",
+        "boat",
+        "pier"
+      ],
+      "media": "card",
+      "path": "plan/animatic/cards/M04.png",
+      "card_sources": {
+        "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
+        "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
+        "source/heroes/mira.png": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818",
+        "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e"
+      },
+      "sha256": "1f6f73f9c2ee3fe755a199b2f0dea7742876cc0c355f2cc8cbd064fe29013976"
+    },
+    {
+      "id": "M05",
+      "original": "Проигрыш: повтор общего плана",
+      "sequence": "outro",
+      "title": "Финальный повтор",
+      "start_frame": 600,
+      "end_frame_exclusive": 900,
+      "camera": "Как в M02, статика",
+      "action": "Повтор кадра у воды как финальная точка.",
+      "continuity": "Состояние как в M02: повтор, не продолжение.",
+      "references": [
+        "mira",
+        "lev",
+        "boat"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": {
+        "scene": "M02",
+        "phase": "same"
+      },
+      "state_changes": {},
+      "sequence_title": "Проигрыш",
+      "start": "20",
+      "end": "30",
+      "duration": "10",
+      "interval": "00:20.0–00:30.0",
+      "frames": 300,
+      "state": "Состояние как в M02: повтор, не продолжение.",
+      "refs": [
+        "mira",
+        "lev",
+        "boat"
+      ],
+      "media": "card",
+      "path": "plan/animatic/cards/M05.png",
+      "card_sources": {
+        "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
+        "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
+        "source/heroes/mira.png": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818"
+      },
+      "sha256": "ee9ffa896cba119e5f2a28228def508d5e379f27512e653cce552dca69d6bb1d"
+    }
+  ],
+  "source_hashes": {
+    "assets/shots/M01/video.mp4": "9e81541c4931ca4aa5ce5100f383f95539e83fe63b4de62ca5f1c2c384483f27",
+    "assets/shots/M02/video.mp4": "2a0b47631c3a06ee73a119c77bb04b9b153bacf4a00703af2993507f9439095b",
+    "plan/animatic/cards/M03.png": "d741320b4d54a346bcb537a43bb8eec713c5c6c57005b25dca6af410382412f3",
+    "plan/animatic/cards/M04.png": "1f6f73f9c2ee3fe755a199b2f0dea7742876cc0c355f2cc8cbd064fe29013976",
+    "plan/animatic/cards/M05.png": "ee9ffa896cba119e5f2a28228def508d5e379f27512e653cce552dca69d6bb1d",
+    "source/track.mp3": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+    "plan/project.json": "cdb1b6055d8ed433a20f0f3549acf91556677f0eb120e1fa18d2e98828441ce7",
+    "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
+    "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e",
+    "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
+    "source/heroes/mira.png": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818"
+  },
+  "video_file": "sample-animatic.mp4",
+  "toolchain_sha256": "dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab",
+  "video_sha256": "53dc49cb26153197be92c846c9ba50b9bbd5838c6dc21fa7237c4a9b73513187"
+}

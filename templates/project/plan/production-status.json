@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "current_animatic": null,
+  "current_animatic_status": "none",
+  "active_work": {
+    "status": "idle",
+    "shots": [],
+    "next": "Активной генерации нет; следующая работа по поручению пользователя."
+  },
+  "shots": {},
+  "pending_work": []
+}

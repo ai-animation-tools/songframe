@@ -1,0 +1,30 @@
+__pycache__/
+*.pyc
+# Локальные переменные и ключи не относятся к исходному коду.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# Зависимости и сборки приложения.
+node_modules/
+build/
+dist/
+# Официальный JS Kling хранится в Git без изменений вместе с vendor-пакетом.
+!/vendor/kling-cli/dist/
+!/vendor/kling-cli/dist/**
+out/
+*.log
+# Yarn Berry: состояние установки и кэш остаются локальными.
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+*.tsbuildinfo
+# Общая версия Node.js для разработчика и CI должна попадать в Git даже при глобальном исключении.
+!/.nvmrc
+# Проект-образец для тестов: MP4 аниматика пересоздаёт tools/testdata/build_sample.py.
+tools/testdata/sample-project/plan/animatic/latest/*.mp4

@@ -1,0 +1,49 @@
+{
+  "json.schemaDownload.enable": false,
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/plan/scenes.json"
+      ],
+      "url": "./.songframe/tools/lint_registry/schemas/scenes.schema.json"
+    },
+    {
+      "fileMatch": [
+        "/plan/cast.json"
+      ],
+      "url": "./.songframe/tools/lint_registry/schemas/cast.schema.json"
+    },
+    {
+      "fileMatch": [
+        "/assets/shots/*/manifest.json"
+      ],
+      "url": "./.songframe/tools/lint_registry/schemas/manifest.schema.json"
+    },
+    {
+      "fileMatch": [
+        "/plan/awaiting/*/workflow.json",
+        "/plan/batches/*/workflow.json"
+      ],
+      "url": "./.songframe/tools/lint_registry/schemas/workflow.schema.json"
+    },
+    {
+      "fileMatch": [
+        "/plan/awaiting/*/request/request.json",
+        "/plan/batches/*/request/request.json"
+      ],
+      "url": "./.songframe/tools/lint_registry/schemas/request.schema.json"
+    }
+  ],
+  "cSpell.language": "en,ru",
+  "cSpell.ignoreRegExpList": [
+    "/\\b[0-9a-f]{32,}\\b/g",
+    "/\\b[A-Za-z0-9_-]{40,}\\b/g"
+  ],
+  "cSpell.ignorePaths": [
+    "assets/shots/**/*.json",
+    "plan/animatic/**",
+    "plan/awaiting/**",
+    "plan/batches/**",
+    ".claude/**"
+  ]
+}

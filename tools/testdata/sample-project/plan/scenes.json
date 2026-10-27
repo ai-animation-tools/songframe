@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "audio": {
+    "path": "source/track.mp3",
+    "end_seconds": "30"
+  },
+  "references": {
+    "mira": {
+      "name": "Мира",
+      "path": "source/heroes/mira.png"
+    },
+    "lev": {
+      "name": "Лев",
+      "path": "source/heroes/lev.png"
+    },
+    "boat": {
+      "name": "Лодка",
+      "path": "source/vehicles/boat.png"
+    },
+    "pier": {
+      "name": "Причал",
+      "path": "source/locations/pier.png"
+    }
+  },
+  "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+  "sequences": [
+    {
+      "id": "intro",
+      "title": "Вечер у воды",
+      "direction": "Общий план причала, спокойный темп."
+    },
+    {
+      "id": "verse",
+      "title": "Фонарики",
+      "direction": "Друзья развешивают фонарики."
+    },
+    {
+      "id": "outro",
+      "title": "Проигрыш",
+      "direction": "Повтор общего плана как финальная точка."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "M01",
+      "original": "Вступление",
+      "sequence": "intro",
+      "title": "Вечер у воды",
+      "start_frame": 0,
+      "end_frame_exclusive": 240,
+      "camera": "Общий план с воздуха, медленный наезд",
+      "action": "Лодка покачивается у причала.",
+      "continuity": "Начало клипа; лодка у причала.",
+      "references": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": null,
+      "state_changes": {
+        "after": {
+          "boat": {
+            "dirt": "с каплями воды"
+          }
+        }
+      }
+    },
+    {
+      "id": "M02",
+      "original": "Вечер зажёг фонари у воды",
+      "sequence": "verse",
+      "start_frame": 240,
+      "end_frame_exclusive": 360,
+      "camera": "Средний план на причале",
+      "action": "Мира держит фонарик, Лев смотрит на воду.",
+      "continuity": "Продолжение вечера из M01.",
+      "references": [
+        "mira",
+        "lev",
+        "boat"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": "M01",
+      "state_changes": {
+        "after": {
+          "boat": {
+            "sink": "у края причала"
+          }
+        }
+      }
+    },
+    {
+      "id": "M03",
+      "original": "Ветер качает бумажные огни",
+      "sequence": "verse",
+      "start_frame": 360,
+      "end_frame_exclusive": 480,
+      "camera": "Общий план сбоку",
+      "action": "Фонарики качаются на ветру.",
+      "continuity": "Лодка остаётся у причала.",
+      "references": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "pier"
+      },
+      "state_from": "M02",
+      "state_changes": {
+        "after": {
+          "boat": {
+            "dirt": "покрыта каплями",
+            "sink": "у края причала"
+          }
+        }
+      }
+    },
+    {
+      "id": "M04",
+      "original": "Мы отпускаем огни в небеса",
+      "sequence": "verse",
+      "start_frame": 480,
+      "end_frame_exclusive": 600,
+      "camera": "Крупный план Миры",
+      "action": "Мира поднимает фонарик, Лев улыбается.",
+      "continuity": "Мира стоит у воды.",
+      "references": [
+        "mira",
+        "lev",
+        "boat",
+        "pier"
+      ],
+      "lipsync": true,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": "M03",
+      "state_changes": {
+        "before": {
+          "mira": {
+            "position": "стоит у края причала"
+          }
+        },
+        "after": {
+          "mira": {
+            "clothes_condition": "яркая куртка"
+          }
+        }
+      }
+    },
+    {
+      "id": "M05",
+      "original": "Проигрыш: повтор общего плана",
+      "sequence": "outro",
+      "title": "Финальный повтор",
+      "start_frame": 600,
+      "end_frame_exclusive": 900,
+      "camera": "Как в M02, статика",
+      "action": "Повтор кадра у воды как финальная точка.",
+      "continuity": "Состояние как в M02: повтор, не продолжение.",
+      "references": [
+        "mira",
+        "lev",
+        "boat"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": {
+        "scene": "M02",
+        "phase": "same"
+      },
+      "state_changes": {}
+    }
+  ]
+}

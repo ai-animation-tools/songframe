@@ -1,0 +1,35 @@
+# Один и тот же путь сборки и приёмки используется CI и Release.
+name: Linux AppImage
+description: Собрать и проверить конечный AppImage с внешней тестовой моделью
+inputs:
+  report-dir:
+    description: Каталог журналов и временного проекта
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v6
+      with:
+        path: |
+          build/runtime/downloads
+          build/runtime/smoke-model
+        key: linux-runtime-${{ hashFiles('scripts/runtime/*lock*') }}
+    - name: Zstd для уведомлений CPython
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends zstd
+    - name: Собрать AppImage с ресурсами
+      shell: bash
+      run: yarn dist:linux --publish never
+    - name: Проверить переносимый Python
+      shell: bash
+      run: yarn smoke:runtime
+    - name: Подготовить внешнюю модель только для проверки
+      shell: bash
+      run: yarn prepare:smoke-model
+    - name: Проверить AppImage в чистом Linux без сети
+      shell: bash
+      env:
+        SONGFRAME_REPORT_DIR: ${{ inputs.report-dir }}
+      run: yarn smoke:appimage --docker --model="$GITHUB_WORKSPACE/build/runtime/smoke-model" --output="$SONGFRAME_REPORT_DIR"

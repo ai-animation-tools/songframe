@@ -1,0 +1,73 @@
+# Упаковка из Linux: AppImage и готовый Windows ZIP, результат в build/release.
+appId: tools.songframe.app
+productName: SongFrame
+# Имена артефактов без пробелов: удобнее прикреплять к релизу и скачивать.
+artifactName: songframe-${version}-${os}-${arch}.${ext}
+directories:
+  output: build/release
+  buildResources: resources
+files:
+  - build/app/**
+  - package.json
+asar: true
+beforePack: scripts/runtime/before-pack.cjs
+afterPack: scripts/runtime/after-pack.cjs
+extraResources:
+  # Окно использует тот же рисунок, что и ярлык; путь вычисляется от resourcesPath.
+  - from: resources/icon.png
+    to: icon.png
+  # Официальный пакет остаётся с package.json и dist вне ASAR; запуск использует Node существующего Electron.
+  - from: build/runtime/kling
+    to: kling
+  - from: README.md
+    to: README.md
+  - from: tools
+    to: tools
+    filter:
+      - '**/*'
+      - '!**/test_*.py'
+      - '!testdata/**'
+      - '!testing.py'
+      - '!run_tests/**'
+      - '!**/__pycache__/**'
+  # Справочники доступны агенту из проекта, без ссылок на временный mount AppImage.
+  - from: skills
+    to: skills
+    filter:
+      - '**/*.md'
+      - '**/agents/openai.yaml'
+  - from: scripts/runtime/README.md
+    to: scripts/runtime/README.md
+  - from: templates/project
+    to: templates/project
+linux:
+  icon: resources/icon.png
+  # Имя desktop-файла и app_id Electron совпадают, чтобы окно получало правильную иконку.
+  syncDesktopName: true
+  extraResources:
+    - from: build/runtime/linux-${arch}
+      to: runtime
+      # Веса устанавливаются отдельно и не попадают в AppImage даже из старого локального runtime.
+      filter:
+        - '**/*'
+        - '!models{,/**}'
+  target:
+    - AppImage
+  category: AudioVideo
+win:
+  icon: resources/icon.ico
+  # resedit в electron-builder меняет иконку и метаданные PE прямо на Linux, без запуска EXE.
+  signAndEditExecutable: true
+  signExecutable: false
+  extraFiles:
+    - from: scripts/runtime/windows
+      to: .
+  extraResources:
+    - from: build/runtime/win32-${arch}
+      to: runtime
+      filter:
+        - '**/*'
+        - '!models{,/**}'
+  target:
+    - zip
+npmRebuild: false

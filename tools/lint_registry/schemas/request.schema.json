@@ -1,0 +1,22 @@
+{
+  "title": "request.json — замороженная попытка kling_request prepare",
+  "type": "object",
+  "required": ["schema_version", "kind", "command", "model", "parameters", "outputs", "inputs", "prompt", "video_without_watermark"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "shot": {"type": ["string", "null"]},
+    "kind": {"enum": ["image", "video"]},
+    "command": {"enum": ["text_to_image", "image_to_image", "text_to_video", "image_to_video", "omni_ref_video", "motion_control"]},
+    "model": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "parameters": {"type": "object"},
+    "outputs": {"type": "integer", "minimum": 1, "maximum": 9},
+    "inputs": {"type": "array", "items": {
+      "type": "object", "required": ["flag", "path", "sha256", "bytes"], "additionalProperties": false,
+      "properties": {"flag": {"enum": ["input", "image", "tailImage", "audio", "video"]}, "slot": {"type": "string"}, "role": {"type": "string"},
+                     "path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "bytes": {"type": "integer", "minimum": 0}}}},
+    "prompt": {"type": "object", "required": ["path", "sha256"], "additionalProperties": false,
+               "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "video_without_watermark": {"const": true}
+  }
+}

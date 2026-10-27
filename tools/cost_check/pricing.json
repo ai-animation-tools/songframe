@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "currency": "credits",
+  "note": "Цены по моделям заполняет владелец по кабинету Kling; null означает «неизвестно». v4_0 1080p выведена из двух наблюдений (3 базовых + 13 за секунду); v3_0 без звука — по руководству Kling о стоимости 3.0 (8 за секунду в 1080p, 6 в 720p, 30 в 4K), подтвердить по панели генерации. Наблюдения добавляет команда learn из credits_consumed отправленных попыток и использует их при пробеле в таблице.",
+  "models": {
+    "kling-video-v2_5": {
+      "base_credits": 0,
+      "per_second": {
+        "720p": null,
+        "1080p": null
+      }
+    },
+    "kling-video-v2_6": {
+      "base_credits": 0,
+      "per_second": {
+        "720p": null,
+        "1080p": null
+      }
+    },
+    "kling-video-o1": {
+      "base_credits": 0,
+      "per_second": {
+        "720p": null,
+        "1080p": null
+      }
+    },
+    "kling-video-v3_0_omni": {
+      "base_credits": 0,
+      "per_second": {
+        "720p": null,
+        "1080p": null,
+        "4k": null
+      }
+    },
+    "kling-video-v3_0": {
+      "base_credits": 0,
+      "per_second": {
+        "720p": 6,
+        "1080p": 8,
+        "4k": 30
+      }
+    },
+    "kling-video-v3_0_turbo": {
+      "base_credits": 0,
+      "per_second": {
+        "720p": null,
+        "1080p": null
+      }
+    },
+    "kling-video-v4_0": {
+      "base_credits": 3,
+      "per_second": {
+        "720p": null,
+        "1080p": 13
+      }
+    }
+  },
+  "observed": [
+    {
+      "model": "kling-video-v4_0",
+      "kind": "video",
+      "resolution": "1080p",
+      "duration": 7,
+      "outputs": 1,
+      "credits": 94.0
+    },
+    {
+      "model": "kling-video-v4_0",
+      "kind": "video",
+      "resolution": "1080p",
+      "duration": 6,
+      "outputs": 1,
+      "credits": 81.0
+    },
+    {
+      "model": "kling-video-v3_0",
+      "kind": "video",
+      "resolution": "1080p",
+      "duration": 5,
+      "outputs": 1,
+      "credits": 40.0
+    },
+    {
+      "model": "kling-video-v4_0",
+      "kind": "video",
+      "resolution": "1080p",
+      "duration": 5,
+      "outputs": 1,
+      "credits": 67.0
+    },
+    {
+      "model": "kling-video-v3_0",
+      "kind": "video",
+      "resolution": "1080p",
+      "duration": 4,
+      "outputs": 1,
+      "credits": 32.0
+    },
+    {
+      "model": "kling-video-v3_0",
+      "kind": "video",
+      "resolution": "1080p",
+      "duration": 3,
+      "outputs": 1,
+      "credits": 24.0
+    },
+    {
+      "model": "kling-video-v4_0",
+      "kind": "video",
+      "resolution": "1080p",
+      "duration": 4,
+      "outputs": 1,
+      "credits": 54.0
+    },
+    {
+      "model": "kling-video-v4_0",
+      "kind": "video",
+      "resolution": "1080p",
+      "duration": 3,
+      "outputs": 1,
+      "credits": 40.0
+    },
+    {
+      "model": "kling-video-v3_0",
+      "kind": "video",
+      "resolution": "1080p",
+      "duration": 6,
+      "outputs": 1,
+      "credits": 48.0
+    },
+    {
+      "model": "kling-image-v3_0_omni",
+      "kind": "image",
+      "command": "text_to_image",
+      "img_resolution": "1k",
+      "quality": null,
+      "image_signature": "{\"command\":\"text_to_image\",\"inputs\":[],\"outputs\":1,\"parameters\":{\"aspect_ratio\":\"16:9\",\"imageCount\":1,\"img_resolution\":\"1k\"}}",
+      "outputs": 1,
+      "credits": 1.0
+    },
+    {
+      "model": "kling-image-v3_0_omni",
+      "kind": "image",
+      "command": "image_to_image",
+      "img_resolution": "1k",
+      "quality": null,
+      "image_signature": "{\"command\":\"image_to_image\",\"inputs\":[{\"flag\":\"input\",\"slot\":\"image_1\"}],\"outputs\":1,\"parameters\":{\"aspect_ratio\":\"16:9\",\"imageCount\":1,\"img_resolution\":\"1k\",\"story_mode\":false}}",
+      "outputs": 1,
+      "credits": 1.0
+    }
+  ]
+}

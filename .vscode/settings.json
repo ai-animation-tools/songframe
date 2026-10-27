@@ -1,0 +1,56 @@
+{
+  "json.schemaDownload.enable": false,
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/templates/project/plan/scenes.json",
+        "/tools/testdata/sample-project/plan/scenes.json"
+      ],
+      "url": "./tools/lint_registry/schemas/scenes.schema.json"
+    },
+    {
+      "fileMatch": [
+        "/templates/project/plan/cast.json",
+        "/tools/testdata/sample-project/plan/cast.json"
+      ],
+      "url": "./tools/lint_registry/schemas/cast.schema.json"
+    },
+    {
+      "fileMatch": [
+        "/tools/testdata/sample-project/assets/shots/*/manifest.json"
+      ],
+      "url": "./tools/lint_registry/schemas/manifest.schema.json"
+    },
+    {
+      "fileMatch": [
+        "/tools/testdata/sample-project/plan/awaiting/*/workflow.json"
+      ],
+      "url": "./tools/lint_registry/schemas/workflow.schema.json"
+    }
+  ],
+  "cSpell.language": "en,ru",
+  "cSpell.ignorePaths": [
+    "tools/testdata/**",
+    "build/**",
+    "node_modules/**",
+    ".yarn/**"
+  ],
+  "editor.formatOnSave": false,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": false
+  },
+  "eslint.useFlatConfig": true
+}

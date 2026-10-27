@@ -1,0 +1,45 @@
+# current_project
+
+Выбирает проект клипа, с которым работают инструменты и скиллы комплекса, когда он не задан явно. Записывает `current-project.json` в постоянном каталоге состояния; тот же файл пишет приложение при выборе проекта. На Linux это `${XDG_CONFIG_HOME:-$HOME/.config}/songframe`, явно задаваемый каталог — `SONGFRAME_LOCAL_DIR`. Ресурсы и checkout для записи не используются.
+
+## Контракт
+
+Из корня комплекса:
+
+```sh
+python3 -B tools/current_project/current_project.py show
+python3 -B tools/current_project/current_project.py set "/путь/к/клипу"
+python3 -B tools/current_project/current_project.py clear
+python3 -B tools/current_project/current_project.py --json show
+```
+
+- `show` печатает, какой проект будет использован и откуда он взят: `argument`, `environment`, `current_file` или `cwd`. Код выхода 0, если папка существует и содержит `plan/project.json`, иначе 1. Проверяет тот же порядок, что и все инструменты.
+- `set` записывает JSON атомарно, при ошибке замены прежний файл сохраняется. Повреждённый файл не перезаписывается; сначала исправьте его или явно выполните clear. Проверяет, что папка существует, и записывает её абсолютный путь с отметкой времени. Структуру проекта не создаёт и не проверяет: новый проект создаётся приложением из шаблона.
+- `clear` удаляет файл; отсутствие файла не ошибка.
+
+Формат файла:
+
+```json
+{
+  "schema_version": 1,
+  "path": "/абсолютный/путь/к/проекту",
+  "selected_at": "2026-10-24T16:00:00+00:00"
+}
+```
+
+Приоритет источников для любого инструмента: `--project` в командной строке, переменная окружения `SONGFRAME_PROJECT`, этот файл, текущая папка с `plan/project.json`. Инструмент без проекта завершается с кодом 2 и подсказкой; `current_project` и `run_tests` проекта не требуют.
+
+В готовом Linux-приложении используется тот же инструмент без системного Python:
+
+```sh
+"/путь/к/SongFrame.AppImage" --songframe-tool current_project --json show
+```
+
+Проектный `./.songframe/run-tool current_project --json show` дополнительно передаёт папку именно этого клипа через --project. Для глобального выбора используйте прямой режим выше. Повреждённый файл при чтении даёт сообщение с путём и сохраняется; ручной инструмент продолжает обычный поиск проекта по cwd, если он не задан явно.
+
+## Тесты
+
+```sh
+python3 -B tools/current_project/test_current_project.py
+python3 -B tools/run_tests/run_tests.py --only test_current_project
+```

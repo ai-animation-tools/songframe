@@ -1,0 +1,453 @@
+import { PageActionBar } from '../../components/PageActionBar';
+import { Save, Add, Refresh, Undo, Redo, FileDownload, WarningAmber, OpenInNew, CallReceived } from '@mui/icons-material';
+import { useId, useLayoutEffect, useMemo, useState, type ReactElement } from 'react';
+import { Alert, Box, Button, Chip, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
+import { VideoLibrary } from '@mui/icons-material';
+import type { MontageSource } from '@shared/montage';
+import { FPS } from '@shared/video';
+import { JobStatus } from '../../components/JobStatus';
+import { ScenarioRequired } from '../../components/ScenarioRequired';
+import {
+  MontageApplyDialog,
+  MontageAudioRange,
+  MontageClipEditor,
+  MontageDiscardDialog,
+  MontagePreview,
+  MontageSourcesDrawer,
+  MontageShortcuts,
+  MontageTimeline,
+  SourceMetadata
+} from './components';
+import { moveClip, projectMediaUrl } from './model';
+import { useMontage } from './useMontage';
+import { useMontageRemove } from './useMontageRemove';
+import { MontageRemoveDialog } from './components/MontageRemoveDialog';
+import { MontageMaterialDialog } from './components/MontageMaterialDialog';
+import { MontageSplitHandle } from './components/MontageSplitHandle';
+import { useThemeMode } from '../../theme';
+import { useDetachedMontage } from './useDetachedMontage';
+
+const SPLIT_KEY = 'montage-preview-split';
+const DIVIDER_HEIGHT = 20;
+
+/** Рабочая область монтируется заново при смене проекта или набора сцен, включая все медиаплееры. */
+export function MontageWorkspace({ project, shots }: { project: string; shots: string[] }): ReactElement {
+  const page = useMontage(project, shots);
+  const savedLabelId = useId();
+  const previewPanelId = useId();
+  const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
+  const [detachedFraction, setDetachedFraction] = useState(0.25);
+  const [loop, setLoop] = useState(false);
+  const [volume, setVolume] = useState(100);
+  const { mode: theme } = useThemeMode();
+  const [previewFraction, setPreviewFraction] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem(SPLIT_KEY));
+      return saved >= 0.05 && saved <= 0.95 ? saved : 0.42;
+    } catch {
+      return 0.42;
+    }
+  });
+  useLayoutEffect(() => {
+    const resize = (): void => setViewportHeight(window.innerHeight);
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
+  const [actionBar, setActionBar] = useState<HTMLDivElement | null>(null);
+  const [actionBarHeight, setActionBarHeight] = useState(0);
+  useLayoutEffect(() => {
+    if (!actionBar) return;
+    // Высота панели меняется при переносе кнопок: плеер должен оставаться под ней.
+    const update = (): void => setActionBarHeight(actionBar.getBoundingClientRect().height);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(actionBar);
+    return () => observer.disconnect();
+  }, [actionBar]);
+  const [pendingOpen, setPendingOpen] = useState<string | null>(null);
+  const [trackFrames, setTrackFrames] = useState<number | null>(null);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [material, setMaterial] = useState<MontageSource | null>(null);
+  const { view, draft, commit, job } = page;
+  const running = job?.status === 'running';
+  const locked = page.busy || running;
+  const selectedClip = draft.clips.find((clip) => clip.id === page.selected);
+  // Галерея повторяет порядок каталога: сцены по реестру, затем все варианты материала внутри карточки.
+  const galleryMaterials = useMemo(
+    () => (view?.scenes ?? []).flatMap((scene) => page.sources.filter((source) => source.scene === scene.id)),
+    [view?.scenes, page.sources]
+  );
+  const materialIndex = material ? galleryMaterials.findIndex((source) => source.id === material.id) : -1;
+  const remove = useMontageRemove({
+    project,
+    clip: selectedClip,
+    locked,
+    blocked: sourcesOpen || page.applyOpen || pendingOpen !== null || material !== null || view?.scenarioStatus !== 'ready',
+    onRemove: (id) => {
+      commit({ ...draft, clips: draft.clips.filter((clip) => clip.id !== id) });
+      page.setSelected(null);
+    }
+  });
+  const trackUrl = draft.audio.path ? projectMediaUrl(project, draft.audio.path) : null;
+  const suspended = sourcesOpen || page.applyOpen || pendingOpen !== null || remove.target !== null || material !== null || locked;
+  const detachedPlayer = useDetachedMontage(
+    { project, draft, trackUrl, frame: page.frame, seekVersion: page.seekVersion, selectedClipId: page.selected, suspended, theme, loop, volume },
+    {
+      onFrame: page.setFrame,
+      onMetadata: page.onMetadata,
+      onTrackFrames: setTrackFrames,
+      onPreferences: (nextLoop, nextVolume) => {
+        setLoop(nextLoop);
+        setVolume(nextVolume);
+      },
+      onError: (error) => page.setError(`Не удалось открыть или закрыть окно плеера: ${String(error)}`)
+    }
+  );
+  const metadataSources = useMemo(() => {
+    const paths = new Set(page.sources.map((source) => source.path));
+    const extra: MontageSource[] = draft.clips
+      .filter((clip) => !paths.has(clip.path))
+      .map((clip) => ({
+        id: clip.id,
+        scene: clip.scene,
+        title: clip.scene,
+        label: clip.path,
+        path: clip.path,
+        kind: clip.kind,
+        frames: clip.source_frames,
+        original: false
+      }));
+    return [...page.sources, ...extra];
+  }, [page.sources, draft.clips]);
+  if (!view)
+    return page.error ? (
+      <Alert
+        severity="error"
+        action={
+          <Button startIcon={<Refresh />} onClick={() => void page.load()}>
+            Повторить
+          </Button>
+        }
+      >
+        {page.error}
+      </Alert>
+    ) : (
+      <Typography color="text.secondary">Читаем материалы монтажа…</Typography>
+    );
+  if (view.scenarioStatus !== 'ready') return <ScenarioRequired title="Монтаж пробы" status={view.scenarioStatus} onRefresh={() => void page.load()} />;
+  const boundsProblem =
+    trackFrames !== null && draft.audio.end_frame_exclusive > trackFrames ? 'Выделение музыки выходит за конец трека. Уменьшите конец участка.' : null;
+  const exportProblem = boundsProblem ?? page.exportProblem;
+  const requestOpen = (id: string): void => {
+    if (page.dirty) setPendingOpen(id);
+    else if (id === '__refresh') void page.load();
+    else void page.open(id);
+  };
+  const previewTop = 49 + actionBarHeight + 8;
+  // Вся доступная высота делится между панелями; маленькое окно допускает их внутреннюю прокрутку.
+  const availableHeight = Math.max(220, viewportHeight - previewTop - 24 - DIVIDER_HEIGHT);
+  const minPreviewHeight = Math.min(180, availableHeight / 2);
+  const maxPreviewHeight = Math.max(minPreviewHeight, availableHeight - 180);
+  const previewHeight = Math.min(
+    maxPreviewHeight,
+    Math.max(minPreviewHeight, availableHeight * (detachedPlayer.detached ? detachedFraction : previewFraction))
+  );
+  const timelineHeight = availableHeight - previewHeight;
+  const setSplitHeight = (height: number): void => {
+    const fraction = height / availableHeight;
+    if (detachedPlayer.detached) {
+      setDetachedFraction(fraction);
+      return;
+    }
+    setPreviewFraction(fraction);
+    try {
+      localStorage.setItem(SPLIT_KEY, String(fraction));
+    } catch {
+      // Недоступное локальное хранилище не мешает менять компоновку текущего окна.
+    }
+  };
+
+  return (
+    <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
+      <PageActionBar barRef={setActionBar}>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ width: '100%' }}>
+          <Typography variant="h5" sx={{ flex: 1 }}>
+            Монтаж пробы
+          </Typography>
+          <Button variant="contained" startIcon={<Save />} disabled={locked || !draft.audio.path} onClick={() => void page.save()}>
+            Сохранить черновик
+          </Button>
+          <Button color="success" startIcon={<Add />} disabled={locked || !draft.audio.path} onClick={() => void page.save(true)}>
+            Сохранить как новый
+          </Button>
+          <Button startIcon={<Refresh />} disabled={locked} onClick={() => requestOpen('__refresh')}>
+            Переоткрыть материалы
+          </Button>
+          <Button startIcon={<Undo />} disabled={locked || !page.history.past.length} onClick={() => page.dispatch({ type: 'undo' })}>
+            Отменить
+          </Button>
+          <Button startIcon={<Redo />} disabled={locked || !page.history.future.length} onClick={() => page.dispatch({ type: 'redo' })}>
+            Повторить
+          </Button>
+          <Button variant="contained" startIcon={<FileDownload />} disabled={locked || !!exportProblem} onClick={() => void page.exportVideo()}>
+            Экспортировать MP4
+          </Button>
+          <Button
+            color="error"
+            variant="outlined"
+            startIcon={<WarningAmber />}
+            disabled={locked || !!exportProblem || page.stale}
+            onClick={() => page.setApplyOpen(true)}
+          >
+            Применить к сценам
+          </Button>
+          <JobStatus running={running} />
+          <Chip size="small" label={`${FPS} FPS`} />
+          <Chip
+            size="small"
+            color={page.dirty ? 'warning' : page.savedId ? 'success' : 'default'}
+            variant="outlined"
+            label={page.dirty ? 'Есть несохранённые правки' : page.savedId ? 'Черновик сохранён' : 'Новая проба'}
+          />
+        </Stack>
+      </PageActionBar>
+      {page.error ? (
+        <Alert severity="error" onClose={() => page.setError(null)}>
+          {page.error}
+        </Alert>
+      ) : null}
+      {view.problems.length ? (
+        <Alert severity="warning">
+          {view.problems.map((problem, index) => (
+            <div key={index}>{problem}</div>
+          ))}
+        </Alert>
+      ) : null}
+      {page.stale ? (
+        <Alert severity="warning">
+          Реестр или материалы сцен изменились после создания черновика. Его можно просматривать и сохранять. Перед применением переоткройте актуальные
+          материалы и соберите монтаж заново.
+        </Alert>
+      ) : null}
+      {/* Общий контейнер продолжается до конца дорожки: sticky не ограничивается высотой первого ряда. */}
+      <Stack sx={{ width: '100%', minWidth: 0 }}>
+        <Paper
+          id={previewPanelId}
+          variant="outlined"
+          sx={{
+            position: 'sticky',
+            top: previewTop,
+            zIndex: (theme) => theme.zIndex.appBar - 2,
+            p: 1,
+            minWidth: 0,
+            width: '100%',
+            height: previewHeight,
+            overflowY: 'auto',
+            bgcolor: 'background.paper'
+          }}
+        >
+          {/* При узком окне плеер и обрезка идут столбцом; внутренняя прокрутка сохраняет место для дорожки. */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr)',
+              '@container workspace (min-width: 1100px)': { gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)' },
+              gap: 2,
+              alignItems: 'start'
+            }}
+          >
+            <Box sx={{ width: '100%', minWidth: 0 }}>
+              {!detachedPlayer.detached ? (
+                <MontagePreview
+                  project={project}
+                  draft={draft}
+                  selectedClipId={page.selected}
+                  trackUrl={trackUrl}
+                  frame={page.frame}
+                  seekVersion={page.seekVersion}
+                  onFrame={page.setFrame}
+                  onMetadata={page.onMetadata}
+                  onTrackFrames={setTrackFrames}
+                  loop={loop}
+                  volume={volume}
+                  onPreferences={(nextLoop, nextVolume) => {
+                    setLoop(nextLoop);
+                    setVolume(nextVolume);
+                  }}
+                  videoMaxWidth={`min(100%, max(200px, ${(previewHeight - 190) * 1.7778}px))`}
+                  suspended={suspended}
+                />
+              ) : (
+                <Typography color="text.secondary">Плеер открыт в отдельном окне.</Typography>
+              )}
+              <Button
+                startIcon={detachedPlayer.detached ? <CallReceived /> : <OpenInNew />}
+                onClick={detachedPlayer.detached ? detachedPlayer.close : detachedPlayer.open}
+                disabled={locked}
+              >
+                {detachedPlayer.detached ? 'Вернуть плеер' : 'Открыть плеер в отдельном окне'}
+              </Button>
+              {/* Подсказки относятся к управлению просмотром и остаются рядом с ним. */}
+              <Box sx={{ mt: 1 }}>
+                <MontageShortcuts />
+              </Box>
+            </Box>
+            <Stack spacing={1.5} sx={{ minWidth: 0 }}>
+              <Paper variant="outlined" sx={{ p: 2, pointerEvents: locked ? 'none' : undefined, opacity: locked ? 0.7 : 1 }}>
+                <Stack spacing={1.5}>
+                  <TextField
+                    key={`name-${page.savedId}-${draft.name}`}
+                    size="small"
+                    label="Название пробы"
+                    defaultValue={draft.name}
+                    onBlur={(event) => commit({ ...draft, name: event.target.value.trim() || 'Монтажная проба' })}
+                    fullWidth
+                  />
+                  <FormControl size="small" fullWidth>
+                    <InputLabel id={savedLabelId}>Открыть черновик</InputLabel>
+                    <Select
+                      labelId={savedLabelId}
+                      label="Открыть черновик"
+                      value=""
+                      disabled={locked || !view.saved.length}
+                      onChange={(event) => requestOpen(event.target.value)}
+                    >
+                      {view.saved.map((saved) => (
+                        <MenuItem key={saved.id} value={saved.id}>
+                          {saved.name} · {new Date(saved.updatedAt).toLocaleString('ru-RU')}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Stack>
+              </Paper>
+              {/* Материалы открываются из того же блока, в котором редактируется выбранный фрагмент. */}
+              <Button
+                sx={{ alignSelf: 'flex-start' }}
+                variant="outlined"
+                startIcon={<VideoLibrary />}
+                onClick={() => setSourcesOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={sourcesOpen}
+              >
+                Материалы сцен
+              </Button>
+              <Box sx={{ minWidth: 0, pointerEvents: locked ? 'none' : undefined, opacity: locked ? 0.7 : 1 }}>
+                <MontageClipEditor
+                  draft={draft}
+                  clip={selectedClip}
+                  title={view.scenes.find((scene) => scene.id === selectedClip?.scene)?.title}
+                  onChange={commit}
+                  disabled={locked}
+                  onRequestRemove={remove.request}
+                />
+              </Box>
+            </Stack>
+          </Box>
+        </Paper>
+        <Box sx={{ position: 'sticky', top: previewTop + previewHeight, zIndex: (theme) => theme.zIndex.appBar - 2, bgcolor: 'background.default' }}>
+          <MontageSplitHandle value={previewHeight} min={minPreviewHeight} max={maxPreviewHeight} controls={previewPanelId} onChange={setSplitHeight} />
+        </Box>
+        {/* Длинная дорожка прокручивается под закреплённым блоком и не прячется за ним в конце страницы. */}
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            height: timelineHeight,
+            overflowY: 'auto',
+            pointerEvents: locked ? 'none' : undefined,
+            opacity: locked ? 0.7 : 1
+          }}
+        >
+          <Stack spacing={2}>
+            <MontageTimeline
+              draft={draft}
+              trackUrl={trackUrl}
+              lyricLines={draft.audio.path === view.trackPath ? view.lyricLines : []}
+              lyricProblem={draft.audio.path === view.trackPath ? view.lyricProblem : 'Черновик использует другой трек; строки текущей песни недоступны.'}
+              duration={trackFrames === null ? (view.duration ?? 0) : trackFrames / FPS}
+              frame={page.frame}
+              selected={page.selected}
+              onSelect={page.setSelected}
+              onSeek={(frame) => page.seek(Math.max(0, Math.min(page.audioLength - 1, frame)))}
+              onChange={commit}
+              onDropSource={page.addSource}
+              onMove={(id, before) => commit({ ...draft, clips: moveClip(draft.clips, id, before) })}
+            />
+            <MontageAudioRange draft={draft} trackFrames={trackFrames} onChange={commit} />
+            {exportProblem ? (
+              <Alert severity="warning">{exportProblem} Экспорт и применение доступны при точном совпадении длин.</Alert>
+            ) : (
+              <Alert severity="success">Музыкальный участок и видео совпадают: {page.length} кадров.</Alert>
+            )}
+          </Stack>
+        </Paper>
+      </Stack>
+      {job ? (
+        <Alert severity={job.status === 'failed' ? 'error' : job.status === 'done' ? 'success' : 'info'}>
+          {job.status === 'running' ? 'Задание выполняется.' : job.status === 'failed' ? 'Задание не выполнено.' : 'Задание завершено.'} Подробности доступны в
+          журнале заданий.
+        </Alert>
+      ) : null}
+      {page.video && job?.status === 'done' && page.jobAction === 'export' ? (
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Stack spacing={1}>
+            <Typography variant="subtitle1">Готовая проба MP4</Typography>
+            <video controls preload="metadata" src={projectMediaUrl(project, page.video)} style={{ width: '100%', maxHeight: 480, background: '#000' }} />
+            <Typography variant="caption" color="text.secondary">
+              Экспорт содержит состояние монтажа на момент запуска задания.
+            </Typography>
+            <Button startIcon={<FileDownload />} sx={{ alignSelf: 'start' }} disabled={page.busy} onClick={() => void page.saveVideo()}>
+              Сохранить MP4 как
+            </Button>
+          </Stack>
+        </Paper>
+      ) : null}
+      <MontageSourcesDrawer
+        open={sourcesOpen}
+        onClose={() => setSourcesOpen(false)}
+        disabled={locked}
+        project={project}
+        sources={page.sources}
+        scenes={view.scenes}
+        clips={draft.clips}
+        selectedClipId={page.selected}
+        onSelectClip={page.setSelected}
+        onPreview={setMaterial}
+        onAdd={page.addSource}
+      />
+      <SourceMetadata project={project} sources={metadataSources} onMetadata={page.onMetadata} />
+      {material ? (
+        <MontageMaterialDialog
+          key={project}
+          project={project}
+          source={material}
+          position={Math.max(0, materialIndex)}
+          total={galleryMaterials.length || 1}
+          onPrevious={materialIndex > 0 ? () => setMaterial(galleryMaterials[materialIndex - 1]) : undefined}
+          onNext={materialIndex >= 0 && materialIndex < galleryMaterials.length - 1 ? () => setMaterial(galleryMaterials[materialIndex + 1]) : undefined}
+          onClose={() => setMaterial(null)}
+        />
+      ) : null}
+      <MontageRemoveDialog scene={remove.target?.scene} onClose={remove.close} onConfirm={remove.confirm} />
+      <MontageApplyDialog
+        open={page.applyOpen}
+        draft={draft}
+        view={view}
+        busy={page.busy}
+        onClose={() => page.setApplyOpen(false)}
+        onApply={() => void page.apply()}
+      />
+      <MontageDiscardDialog
+        open={pendingOpen !== null}
+        onClose={() => setPendingOpen(null)}
+        onContinue={() => {
+          const id = pendingOpen;
+          setPendingOpen(null);
+          if (id === '__refresh') void page.load();
+          else if (id) void page.open(id);
+        }}
+      />
+    </Stack>
+  );
+}

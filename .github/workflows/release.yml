@@ -1,0 +1,148 @@
+# Обе поставки проверяются до создания релиза; публикация выполняется последним шагом.
+name: Release
+run-name: Релиз v${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Версия X.Y.Z без v, например 0.2.0
+        required: true
+        type: string
+      description:
+        description: Описание релиза
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ inputs.version }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Проверить номер релиза
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Проверить параметры и доступность номера
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_DESCRIPTION: ${{ inputs.description }}
+        run: node scripts/release/release.mjs prepare
+
+  build:
+    name: Сборка ${{ matrix.label }}
+    needs: prepare
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            label: Linux AppImage
+            files: |
+              build/release/*.AppImage
+              build/release/*.AppImage.sha256
+              build/release/linux-distribution.json
+              build/release/linux-smoke-result.json
+              build/release/THIRD_PARTY_LICENSES.md
+          - platform: windows
+            label: Windows ZIP
+            files: |
+              build/release/*.zip
+              build/release/*.zip.sha256
+              build/release/windows-archive-check.json
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Все jobs собирают коммит ручного запуска, даже если ветка уже продвинулась.
+          ref: ${{ github.sha }}
+      - name: Node.js для Corepack
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Yarn 4 через Corepack
+        run: |
+          corepack enable
+          node --version
+          corepack --version
+          yarn --version
+      - name: Кэш Yarn
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - name: Зависимости
+        run: yarn install --immutable
+      - name: Версия приложения только для сборки
+        run: node scripts/release/release.mjs version
+      - name: Проверки сценария выпуска
+        run: node --test scripts/release/release.test.mjs
+      - name: Собрать и проверить конечный AppImage
+        if: matrix.platform == 'linux'
+        uses: ./.github/actions/linux-appimage
+        with:
+          report-dir: ${{ runner.temp }}/songframe-appimage
+      - name: Собрать и проверить Windows ZIP
+        if: matrix.platform == 'windows'
+        uses: ./.github/actions/windows-zip
+        with:
+          version: ${{ needs.prepare.outputs.version }}
+      - name: Журналы приёмки Linux
+        if: ${{ !cancelled() && matrix.platform == 'linux' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-smoke
+          path: ${{ runner.temp }}/songframe-appimage
+          if-no-files-found: ignore
+      - name: Проверенные файлы поставки
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-binaries-${{ matrix.platform }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+  publish:
+    name: Опубликовать релиз с обеими поставками
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Получить обе проверенные поставки
+        uses: actions/download-artifact@v7
+        with:
+          pattern: release-binaries-*
+          merge-multiple: true
+          path: release-assets
+      - name: Создать черновик, прикрепить файлы и опубликовать
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_DESCRIPTION: ${{ inputs.description }}
+        run: node scripts/release/release.mjs publish

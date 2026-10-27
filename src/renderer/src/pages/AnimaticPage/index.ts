@@ -1,0 +1,1 @@
+export { AnimaticPage } from './AnimaticPage';

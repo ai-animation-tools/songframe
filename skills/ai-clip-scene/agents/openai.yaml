@@ -1,0 +1,4 @@
+interface:
+  display_name: "План клипа в Kling"
+  short_description: "Этапы плана Mxx и JSON-предложения для приложения"
+  default_prompt: "Используй $ai-clip-scene, чтобы выбрать ожидающий план или начать подготовку нового плана Mxx текущего проекта."

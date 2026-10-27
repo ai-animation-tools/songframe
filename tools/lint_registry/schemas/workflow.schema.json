@@ -1,0 +1,43 @@
+{
+  "title": "workflow.json — текущее состояние подготовки пакета плана",
+  "type": "object",
+  "required": ["schema_version", "shot", "stage"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "shot": {"type": "string", "pattern": "^M\\d{2}(\\.\\d+)?$"},
+    "stage": {"enum": ["description_review", "keyframes_review", "prompt_review", "request_choice", "ready", "submitted", "downloaded",
+                       "edit_review", "accepted", "needs_revision", "first_frame_review", "keyframe_review", "last_frame_review",
+                       "image_request_choice", "image_submitted", "image_downloaded"]},
+    "mode": {"enum": ["shot", "frame", null]},
+    "wait_reason": {"enum": ["user_saved", "insufficient_balance", "cost_or_balance_unknown", null]},
+    "request_dir": {"type": ["string", "null"]},
+    "description_approved": {"type": "boolean"},
+    "image_request_dir": {"type": ["string", "null"]},
+    "image_frame_id": {"type": ["string", "null"], "pattern": "^K\\d{2}$"},
+    "image_requests": {"type": "array", "items": {
+      "type": "object", "required": ["frame_id", "request_dir", "request_sha256", "provider"],
+      "properties": {"frame_id": {"type": "string", "pattern": "^K\\d{2}$"}, "request_dir": {"type": "string"},
+                     "request_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "provider": {"const": "kling"},
+                     "selected_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "selected_at": {"type": "string"}}}},
+    "scene_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "timing": {"type": "object"},
+    "keyframes": {"type": "array", "items": {
+      "type": "object", "required": ["id", "role", "time_seconds"],
+      "properties": {"id": {"type": "string", "pattern": "^K\\d{2}$"}, "role": {"enum": ["first", "middle", "last"]},
+                     "time_seconds": {"type": "number", "minimum": 0}, "note": {"type": ["string", "null"]},
+                     "path": {"type": ["string", "null"]}, "sha256": {"type": ["string", "null"]}, "approved": {"type": "boolean"}}}},
+    "approved_frames": {"type": "object"},
+    "approved_prompt_sha256": {"type": ["string", "null"]},
+    "prompt": {"type": "object"},
+    "retry_of": {"type": ["string", "null"]},
+    "frame_source": {"type": ["string", "null"]},
+    "model": {"type": ["object", "string", "null"]},
+    "current_keyframe": {"type": ["string", "null"]},
+    "batch": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9_.-]{1,40}$"},
+    "pending_decision": {"type": ["object", "null"], "required": ["stage", "question", "options"],
+      "properties": {"stage": {"type": "string"}, "question": {"type": "string"}, "options": {"type": "array", "items": {"type": "string"}},
+                     "asked_at": {"type": "string"}, "executor": {"type": "string"}}},
+    "decision": {"type": ["object", "null"], "required": ["stage", "verdict"],
+      "properties": {"stage": {"type": "string"}, "verdict": {"type": ["string", "null"]}, "note": {"type": "string"}, "at": {"type": "string"}}}
+  }
+}

@@ -1,0 +1,12 @@
+# Настройки проверки кода инструментов; запуск: ruff check tools && ruff format --check tools
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["plan", "assets", "source"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E701", "E702"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["tools"]

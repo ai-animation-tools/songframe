@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "name": "{{project_name}}",
+  "animatic_video": "{{animatic_video}}",
+  "generation": {
+    "video": {
+      "provider": "kling",
+      "resolution": "1080p",
+      "aspect_ratio": "16:9",
+      "watermark": false,
+      "duration_rule": "min_supported_strictly_greater_than_window"
+    },
+    "image": {
+      "provider": "codex"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "current_animatic": "plan/animatic/latest/manifest.json",
+  "current_animatic_status": "review",
+  "active_work": {
+    "status": "idle",
+    "shots": [],
+    "next": "Активной генерации нет; следующая работа по поручению пользователя."
+  },
+  "shots": {},
+  "pending_work": []
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@klingai/cli-global",
+  "version": "0.2.3",
+  "private": false,
+  "description": "Kling AI CLI for image/video generation, reusable Elements, and motion control (thin MCP client)",
+  "type": "module",
+  "bin": {
+    "kling": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@git.corp.kuaishou.com:kling-platform/kling-skills-toc.git"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "title": "assets/shots/Mxx/manifest.json — технический комплект принятого плана",
+  "type": "object",
+  "required": ["schema_version", "shot", "kind", "generation", "accepted_edit"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "shot": {"type": "string", "pattern": "^M\\d{2}(\\.\\d+)?$"},
+    "kind": {"type": "string"},
+    "generation": {
+      "type": "object",
+      "required": ["source_shot", "original", "prompt", "request", "generation_id", "inputs", "lipsync", "audio"],
+      "properties": {
+        "source_shot": {"type": "string"},
+        "original": {"$ref": "#/$defs/file"},
+        "original_media": {"type": "object"},
+        "prompt": {"$ref": "#/$defs/file"},
+        "request": {"$ref": "#/$defs/file"},
+        "generation_id": {"type": ["string", "null"]},
+        "inputs": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/file"}},
+        "lipsync": {"type": "boolean"},
+        "audio": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/file"}]},
+        "auxiliary_references": {"type": "array"},
+        "preparation": {"type": "object", "required": ["index", "files"],
+                        "properties": {"index": {"$ref": "#/$defs/file"}, "files": {"type": "array", "items": {"$ref": "#/$defs/file"}}}}
+      }
+    },
+    "accepted_edit": {
+      "type": "object",
+      "required": ["video", "fps", "frames", "duration_seconds", "source_interval_seconds", "speed", "hold_first_seconds", "hold_last_seconds", "rebuild"],
+      "properties": {
+        "video": {"$ref": "#/$defs/file"},
+        "fps": {"const": 30},
+        "frames": {"type": "integer", "minimum": 1},
+        "duration_seconds": {"type": "number"},
+        "source_interval_seconds": {"type": "array", "minItems": 2, "items": {"type": "number"}},
+        "speed": {"type": "object", "required": ["factor", "ratio"],
+                  "properties": {"factor": {"type": "number"}, "ratio": {"type": "string"}}},
+        "hold_first_seconds": {"type": "number"},
+        "hold_last_seconds": {"type": "number"},
+        "rebuild": {"type": "object", "required": ["stages", "source"],
+                    "properties": {"stages": {"type": "array", "minItems": 1, "items": {
+                      "type": "object", "required": ["input", "filter", "frames"],
+                      "properties": {"input": {"type": "string"}, "filter": {"type": "string", "minLength": 1}, "frames": {"type": "integer", "minimum": 1}}}},
+                                   "source": {"$ref": "#/$defs/file"}}}
+      }
+    }
+  },
+  "$defs": {
+    "file": {"type": "object", "required": ["path", "sha256"],
+             "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                            "bytes": {"type": "integer", "minimum": 0}, "root": {"enum": ["asset", "source"]}}}
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "shot": "M02",
+  "kind": "generated_video",
+  "generation": {
+    "source_shot": "M02",
+    "original": {
+      "path": "original.mp4",
+      "sha256": "303b7a3c96f8373fa46891960d21e6c9d1ac3a8f356c5a297022e2d6baeb6033",
+      "bytes": 10808
+    },
+    "original_media": {
+      "width": 1920,
+      "height": 1080,
+      "r_frame_rate": "24/1",
+      "duration": "4.500000",
+      "nb_frames": "108"
+    },
+    "prompt": {
+      "path": "generation-prompt.txt",
+      "sha256": "40af36cdf6c3c1cb1697cae3641a4e8a7baba39c271fd9800981cdacd0c0fc68",
+      "bytes": 130
+    },
+    "request": {
+      "path": "generation-request.json",
+      "sha256": "41e02133923142fcbf2279a1671fa6e540e35bec595288c077538d92a0c51bc1",
+      "bytes": 803
+    },
+    "generation_id": "sample-m02",
+    "inputs": [
+      {
+        "path": "generation-input-1.png",
+        "sha256": "44d251ca77fb39c884dd7513fa3a330617381697616a1cee29ca0a46b2e1e5a2",
+        "bytes": 290,
+        "slot": "image_1",
+        "role": "Первый кадр"
+      }
+    ],
+    "lipsync": false,
+    "audio": null,
+    "auxiliary_references": [],
+    "preparation": {
+      "index": {
+        "path": "preparation.json",
+        "sha256": "0ffbfc69a5c1e20f2cb88525eae0bcdf185f011b5f9115d5ab897e5ad5412d8a",
+        "bytes": 655
+      },
+      "files": [
+        {
+          "path": "generation-input-1.png",
+          "sha256": "44d251ca77fb39c884dd7513fa3a330617381697616a1cee29ca0a46b2e1e5a2",
+          "bytes": 290
+        },
+        {
+          "path": "generation-prompt.txt",
+          "sha256": "40af36cdf6c3c1cb1697cae3641a4e8a7baba39c271fd9800981cdacd0c0fc68",
+          "bytes": 130
+        },
+        {
+          "path": "original.mp4",
+          "sha256": "303b7a3c96f8373fa46891960d21e6c9d1ac3a8f356c5a297022e2d6baeb6033",
+          "bytes": 10808
+        }
+      ]
+    }
+  },
+  "accepted_edit": {
+    "video": {
+      "path": "video.mp4",
+      "sha256": "2a0b47631c3a06ee73a119c77bb04b9b153bacf4a00703af2993507f9439095b",
+      "bytes": 11730
+    },
+    "fps": 30,
+    "frames": 120,
+    "duration_seconds": 4.0,
+    "source_interval_seconds": [
+      0.0,
+      4.0
+    ],
+    "source_interval_end_exclusive": true,
+    "source_frame_grid_fps": 30,
+    "still_source_time_seconds": null,
+    "speed": {
+      "factor": 1.0,
+      "ratio": "1",
+      "selected_source_seconds": 4.0,
+      "motion_output_seconds": 4.0,
+      "duration_change_seconds": 0.0
+    },
+    "hold_first_seconds": 0.0,
+    "hold_last_seconds": 0.0,
+    "audio_policy": "Звук генератора сохранён в оригинале; в монтаже используется непрерывная исходная песня.",
+    "montage_source": {
+      "path": "video.mp4",
+      "sha256": "2a0b47631c3a06ee73a119c77bb04b9b153bacf4a00703af2993507f9439095b",
+      "bytes": 11730
+    },
+    "rebuild": {
+      "stages": [
+        {
+          "input": "original.mp4",
+          "filter": "fps=30,trim=start_frame=0:end_frame=120,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=120,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30",
+          "frames": 120
+        }
+      ],
+      "source": {
+        "path": "original.mp4",
+        "sha256": "303b7a3c96f8373fa46891960d21e6c9d1ac3a8f356c5a297022e2d6baeb6033",
+        "bytes": 10808
+      },
+      "ffmpeg_version": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
+      "note": "Принятые байты восстанавливаются копированием video; повтор фильтров сохраняет монтаж, но не обещает побайтово одинаковое перекодирование."
+    },
+    "source_frame_interval_exclusive": [
+      0,
+      120
+    ],
+    "source_fps": "24/1",
+    "fps_conversion": "Выбор кадров без интерполяции движения."
+  }
+}

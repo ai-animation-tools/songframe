@@ -1,0 +1,16 @@
+{
+  "python": "3.12.15",
+  "release": "20261021",
+  "platforms": {
+    "linux-x64": {
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15%2B20261021-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz",
+      "sha256": "6d7521138fd33afddc1ccd08abb007d9a2829e38117c2576f9efdc0ec73ce772",
+      "executable": "python/bin/python3"
+    },
+    "win32-x64": {
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15%2B20261021-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
+      "sha256": "aac5d331fc3307343f95928fdbea4583f0d53973d08c7e1d081884fbd229a0e1",
+      "executable": "python/python.exe"
+    }
+  }
+}

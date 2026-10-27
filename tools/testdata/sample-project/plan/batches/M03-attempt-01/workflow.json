@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "shot": "M03",
+  "mode": "shot",
+  "stage": "keyframes_review",
+  "wait_reason": null,
+  "request_dir": null,
+  "description_approved": false,
+  "scene_sha256": "69af153f5fa701a285a4e6a8c9253b5ead4f6031390f7c7cc105b28dfa6cd235",
+  "timing": {
+    "fps": 30,
+    "frames": 120,
+    "window_seconds": 4.0,
+    "request_seconds": 5
+  },
+  "keyframes": [
+    {
+      "id": "K01",
+      "role": "first",
+      "time_seconds": 0.0,
+      "note": "первый кадр",
+      "path": "frames/K01.png",
+      "sha256": "865ff178ce8407825ea5201ce98d16e82bf806feaccd36d5acb0dccd7d5ac2b3",
+      "approved": false
+    },
+    {
+      "id": "K02",
+      "role": "last",
+      "time_seconds": 5.0,
+      "note": "конечный кадр",
+      "path": null,
+      "sha256": null,
+      "approved": false
+    }
+  ],
+  "approved_frames": {},
+  "prompt": {
+    "path": "video-prompt.txt",
+    "approved": false
+  },
+  "approved_prompt_sha256": null,
+  "retry_of": null,
+  "frame_source": null,
+  "model": null,
+  "batch": null,
+  "current_keyframe": "K01",
+  "executor": "agent",
+  "pending_decision": {
+    "stage": "keyframes_review",
+    "question": "Утвердить опоры?",
+    "options": [
+      "approve",
+      "revise"
+    ],
+    "asked_at": "2026-10-27T12:36:12+00:00",
+    "executor": "agent"
+  },
+  "decision": null
+}

@@ -16,6 +16,7 @@ import subprocess
 from decimal import ROUND_HALF_UP, Decimal
 
 from tools.common import ROOT
+from tools.project_inputs import project_inputs_match
 from tools.scene_registry.scene_registry import clock, shots, validate, validate_project
 
 
@@ -143,17 +144,26 @@ def render(sources):
     work = sources.json("plan/production-status.json")
     latest_path = work["current_animatic"]
     compiled = {s["id"]: s for s in sources.json(latest_path)["shots"]} if latest_path in sources.files else {}
+    manifest = sources.json(latest_path) if latest_path in sources.files else {}
+    hashes = manifest.get("source_hashes")
+    # Проверяем все записанные медиа; поля проекта принадлежат только project_inputs.
     fresh = (
         latest_path in sources.files
         and sources.json(latest_path).get("scene_registry_sha256")
         == hashlib.sha256(sources.text("plan/scenes.json").encode()).hexdigest()
-        and sources.json(latest_path).get("source_hashes", {}).get("plan/project.json")
-        == hashlib.sha256(sources.text("plan/project.json").encode()).hexdigest()
+        and project_inputs_match(
+            sources.json(latest_path),
+            project,
+            animatic=True,
+        )
+        and isinstance(hashes, dict)
+        and bool(hashes)
+        and all(name in sources.files and sources.digest(name) == digest for name, digest in hashes.items())
     )
     build_state = (
         "Полная сборка ожидает просмотра."
         if fresh
-        else "Сборка устарела относительно реестра сцен; требуется пересборка."
+        else "Сборка устарела относительно исходников; требуется пересборка."
     )
     states = {
         s["id"]: (

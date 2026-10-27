@@ -19,6 +19,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from tools.animatic_cache.animatic_cache import ArtifactCache, sha
 from tools.common import ROOT, decoded_audio_duration
+from tools.project_inputs import project_inputs, project_inputs_match
 from tools.scene_registry.scene_registry import load as load_scenes
 from tools.scene_registry.scene_registry import load_project
 from tools.scene_registry.scene_registry import shots as registry_shots
@@ -72,7 +73,7 @@ def local(root, name):
 
 def prepare_plan(root=ROOT):
     root = Path(root).resolve()
-    load_project(root)
+    project = load_project(root)
     registry = load_scenes(root)
     shots = registry_shots(registry)
     receipt_path = root / "plan/animatic/cards/manifest.json"
@@ -102,7 +103,10 @@ def prepare_plan(root=ROOT):
             if not receipt_checked:
                 if (
                     receipt["registry_sha256"] != sha(root / "plan/scenes.json")
-                    or receipt.get("project_sha256") != sha(root / "plan/project.json")
+                    or not project_inputs_match(
+                        receipt,
+                        project,
+                    )
                 ) or any(
                     sha(local(root, name)) != digest for name, digest in receipt.get("reference_hashes", {}).items()
                 ):
@@ -274,8 +278,8 @@ def media_counts(shots):
 def build(root=ROOT, plan_only=False):
     root = Path(root).resolve()
     registry_digest = sha(root / "plan/scenes.json")
-    project_digest = sha(root / "plan/project.json")
     project = load_project(root)
+    inputs = project_inputs(project, animatic=True)
     video_name = project["animatic_video"]
     shots, track = prepare_plan(root)
     if plan_only:
@@ -382,7 +386,8 @@ def build(root=ROOT, plan_only=False):
             raise ValueError("Реестр сцен изменился во время сборки.")
         if sha(root / track["path"]) != track["sha256"]:
             raise ValueError("Исходная песня изменилась во время сборки.")
-        if sha(root / "plan/project.json") != project_digest:
+        # Смена провайдера во время кодирования не меняет входы текущего монтажа.
+        if project_inputs(load_project(root), animatic=True) != inputs:
             raise ValueError("Данные проекта изменились во время сборки.")
         result = {
             "schema_version": 1,
@@ -396,10 +401,11 @@ def build(root=ROOT, plan_only=False):
             "source_audio_sha256": track["sha256"],
             "source_audio_duration": float(a["duration"]),
             "scene_registry_sha256": registry_digest,
+            "project_inputs": inputs,
             "shots": shots,
             "source_hashes": {s["path"]: s["sha256"] for s in shots}
             | {s["path_last"]: s["sha256_last"] for s in shots if s["media"] == "keyframes"}
-            | {track["path"]: track["sha256"], "plan/project.json": project_digest}
+            | {track["path"]: track["sha256"]}
             | {name: digest for shot in shots for name, digest in shot.get("card_sources", {}).items()},
             "video_file": video_name,
             "toolchain_sha256": hashlib.sha256(toolchain.encode()).hexdigest(),

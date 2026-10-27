@@ -35,11 +35,6 @@ STAGES = [
 # Image-ветка не меняет индексы и прежние переходы видео. @link README.md
 IMAGE_STAGES = ("image_request_choice", "image_submitted", "image_downloaded")
 REVISION = "needs_revision"
-LEGACY = {
-    "first_frame_review": "keyframes_review",
-    "keyframe_review": "keyframes_review",
-    "last_frame_review": "keyframes_review",
-}
 AWAITING = {"ready", REVISION}
 MODES = ("shot", "frame")
 # Протокол согласований с приложением: этапы, на которых задаётся вопрос, и допустимые ответы.
@@ -93,8 +88,7 @@ def load_workflow(directory):
     data = json.loads((directory / "workflow.json").read_text(encoding="utf-8"))
     if data.get("schema_version") != 1 or not isinstance(data.get("shot"), str):
         raise ValueError("Неизвестная схема workflow.json.")
-    data["stage"] = LEGACY.get(data.get("stage"), data.get("stage"))
-    if data["stage"] not in (*STAGES, *IMAGE_STAGES, REVISION):
+    if data.get("stage") not in (*STAGES, *IMAGE_STAGES, REVISION):
         raise ValueError("Неизвестный этап: " + str(data.get("stage")))
     data.setdefault("keyframes", [])
     data.setdefault("approved_frames", {})
@@ -595,7 +589,6 @@ def allowed_transition(current, target):
 def set_stage(directory, stage, wait_reason=None, request_dir=None, root=ROOT):
     directory = package_dir(directory, root)
     data = load_workflow(directory)
-    stage = LEGACY.get(stage, stage)
     if stage not in (*STAGES, *IMAGE_STAGES, REVISION):
         raise ValueError("Неизвестный этап: " + stage)
     if stage in IMAGE_STAGES:

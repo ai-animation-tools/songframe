@@ -55,12 +55,12 @@ beforeEach(() => {
     keyframes: frames.map((frame) => ({ ...frame, path: `frames/${frame.id}.png`, approved: true }))
   });
   manifest = {
+    project_inputs: { name: 'Проба', animatic_video: 'clip.mp4' },
     scene_registry_sha256: hash(readFileSync(join(project, 'plan/scenes.json'), 'utf8')),
     video_file: 'clip.mp4',
     video_sha256: hash('animatic'),
     source_hashes: Object.fromEntries(
       [
-        'plan/project.json',
         'source/track.mp3',
         'source/hero.png',
         'assets/shots/M01/edit.mp4',
@@ -142,13 +142,55 @@ it('снятое принятие или изменение времени вы�
   expect(viewAnimatic(project).problems.join(' ')).toContain('выбор принятых опор изменился');
 });
 
-it('legacy manifest проверяется по имеющимся хешам, при их отсутствии сообщает о пересборке', () => {
-  delete manifest.source_hashes;
+it('без обязательного project_inputs сборка не считается свежей', () => {
+  delete manifest.project_inputs;
   write(snapshot, manifest);
   const view = viewAnimatic(project);
   expect(view.built?.fresh).toBe(false);
-  expect(view.problems.join(' ')).toContain('Нет сохранённого хеша входа plan/project.json');
+  expect(view.problems.join(' ')).toContain('отсутствует обязательное поле project_inputs');
 });
+
+it('snapshot значимых полей сохраняет свежесть после форматирования, Unicode и изменения генерации', () => {
+  manifest.project_inputs = { name: 'Проба', animatic_video: 'clip.mp4' };
+  write(snapshot, manifest);
+  write(
+    'plan/project.json',
+    '{\n  "name": "\\u041f\\u0440\\u043e\\u0431\\u0430", "animatic_video": "clip.mp4", "generation": {"image": {"provider": "codex"}}\n}\n'
+  );
+  expect(viewAnimatic(project).built?.fresh).toBe(true);
+  expect(computeStatus(project).checks.animaticFresh).toBe(true);
+  write('source/track.mp3', 'changed');
+  expect(viewAnimatic(project).built?.fresh).toBe(false);
+});
+
+it.each([
+  { name: 'Другое имя', animatic_video: 'clip.mp4' },
+  { name: 'Проба', animatic_video: 'other.mp4' }
+])('изменение значимых полей %j делает сборку устаревшей', (current) => {
+  manifest.project_inputs = { name: 'Проба', animatic_video: 'clip.mp4' };
+  write(snapshot, manifest);
+  write('plan/project.json', current);
+  expect(viewAnimatic(project).built?.fresh).toBe(false);
+  expect(viewAnimatic(project).problems.join(' ')).toContain('plan/project.json');
+});
+
+it('snapshot сборки проверяется вместе с хешами медиа', () => {
+  manifest.project_inputs = { name: 'Проба', animatic_video: 'clip.mp4' };
+  write(snapshot, manifest);
+  expect(viewAnimatic(project).built?.fresh).toBe(true);
+  write('source/track.mp3', 'changed');
+  expect(viewAnimatic(project).built?.fresh).toBe(false);
+});
+
+it.each([null, [], {}, { name: 'Проба' }, { name: 'Проба', animatic_video: 1 }, { name: 'Проба', animatic_video: 'clip.mp4', future: true }])(
+  'повреждённый обязательный project_inputs %j делает сборку устаревшей',
+  (inputs) => {
+    manifest.project_inputs = inputs;
+    write(snapshot, manifest);
+    expect(viewAnimatic(project).built?.fresh).toBe(false);
+    expect(viewAnimatic(project).problems.join(' ')).toContain('project_inputs');
+  }
+);
 
 it('кеш не перечитывает MP4 на повторных опросах и замечает замену байтов при прежних size/mtime', () => {
   const name = join(project, 'assets/shots/M01/edit.mp4');

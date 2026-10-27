@@ -253,7 +253,6 @@
     "plan/animatic/cards/M04.png": "1f6f73f9c2ee3fe755a199b2f0dea7742876cc0c355f2cc8cbd064fe29013976",
     "plan/animatic/cards/M05.png": "ee9ffa896cba119e5f2a28228def508d5e379f27512e653cce552dca69d6bb1d",
     "source/track.mp3": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
-    "plan/project.json": "cdb1b6055d8ed433a20f0f3549acf91556677f0eb120e1fa18d2e98828441ce7",
     "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
     "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e",
     "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
@@ -261,5 +260,9 @@
   },
   "video_file": "sample-animatic.mp4",
   "toolchain_sha256": "dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab",
-  "video_sha256": "53dc49cb26153197be92c846c9ba50b9bbd5838c6dc21fa7237c4a9b73513187"
+  "video_sha256": "53dc49cb26153197be92c846c9ba50b9bbd5838c6dc21fa7237c4a9b73513187",
+  "project_inputs": {
+    "name": "Пробный клип",
+    "animatic_video": "sample-animatic.mp4"
+  }
 }

@@ -47,11 +47,14 @@ PROJECT = {
     "name": "Тест",
     "animatic_video": "test.mp4",
     "generation": {
-        "provider": "kling",
-        "resolution": "1080p",
-        "aspect_ratio": "16:9",
-        "watermark": False,
-        "duration_rule": "min_supported_strictly_greater_than_window",
+        "video": {
+            "provider": "kling",
+            "resolution": "1080p",
+            "aspect_ratio": "16:9",
+            "watermark": False,
+            "duration_rule": "min_supported_strictly_greater_than_window",
+        },
+        "image": None,
     },
 }
 FAKE_CLI = """import json,sys,time
@@ -131,44 +134,48 @@ class RegenerateTests(unittest.TestCase):
         shot_workflow.set_stage(package, "request_choice", request_dir="request", root=self.root)
         return package
 
-    def make_asset(self, legacy=True):
-        """Снимок M02 с двумя точными входами; данные создаются только во временном проекте."""
+    def make_asset(self):
+        """Канонический снимок с двумя точными входами; данные создаются только во временном проекте."""
         asset = self.root / "assets/shots/M01"
         asset.mkdir(exist_ok=True)
         inputs = []
         for number in (1, 2):
             path = asset / f"generation-input-{number}.png"
             path.write_bytes(b"\x89PNG\r\n" + bytes([number]))
-            inputs.append({
-                "slot": f"image_{number}",
-                "role": f"Кадр {number}",
-                "path": path.name,
-                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-            })
+            inputs.append(
+                {
+                    "slot": f"image_{number}",
+                    "role": f"Кадр {number}",
+                    "path": path.name,
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                }
+            )
         prompt = asset / "generation-prompt.txt"
         prompt.write_bytes("Сохранённый промпт\r\nТочные байты.\n".encode("utf-8"))
         snapshot = {
             "schema_version": 1,
             "shot": "M01",
-            "provider": "Kling AI" if legacy else "Kling",
+            "provider": "Kling",
             "command": "image_to_video",
             "model": "kling-video-v3_0_omni",
             "parameters": {
-                "duration": "6", "resolution": "1080p", "aspect_ratio": "16:9", "imageCount": "1",
-                "prefer_multi_shots": "false", "enable_audio": "false",
+                "duration": "6",
+                "resolution": "1080p",
+                "aspect_ratio": "16:9",
+                "imageCount": "1",
+                "prefer_multi_shots": "false",
+                "enable_audio": "false",
             },
             "inputs": inputs,
-            "prompt": {"path": prompt.name, "sha256": hashlib.sha256(prompt.read_bytes()).hexdigest()},
+            "prompt": prompt.name,
+            "prompt_sha256": hashlib.sha256(prompt.read_bytes()).hexdigest(),
+            "outputs": 1,
             "output": {"original": "original.mp4"},
             "elements": [],
             "audio_inputs": [],
             "path_base": "asset_directory",
             "cli_argv_before_prompt": ["obsolete-cli", "must-not-run"],
         }
-        if not legacy:
-            snapshot["prompt_sha256"] = snapshot["prompt"]["sha256"]
-            snapshot["prompt"] = prompt.name
-            snapshot["outputs"] = 1
         self.write_snapshot(snapshot)
         return asset, snapshot
 
@@ -188,7 +195,7 @@ class RegenerateTests(unittest.TestCase):
         self.assertEqual(list((self.root / "plan/batches").iterdir()), [])
         self.assertFalse((self.root / "calls.jsonl").exists())
 
-    def test_legacy_snapshot_prepares_exact_request_without_submit(self):
+    def test_asset_snapshot_prepares_exact_request_without_submit(self):
         asset, snapshot = self.make_asset()
         before = {path.name: path.read_bytes() for path in asset.iterdir()}
         info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli))
@@ -199,7 +206,7 @@ class RegenerateTests(unittest.TestCase):
         self.assertEqual(request["parameters"], snapshot["parameters"])
         self.assertEqual(request["outputs"], 1)
         self.assertEqual((request_dir / request["prompt"]["path"]).read_bytes(), before["generation-prompt.txt"])
-        self.assertEqual(request["prompt"]["sha256"], snapshot["prompt"]["sha256"])
+        self.assertEqual(request["prompt"]["sha256"], snapshot["prompt_sha256"])
         for original, repeated in zip(snapshot["inputs"], request["inputs"], strict=True):
             self.assertEqual((request_dir / repeated["path"]).read_bytes(), before[original["path"]])
             self.assertEqual(repeated["sha256"], original["sha256"])
@@ -212,21 +219,34 @@ class RegenerateTests(unittest.TestCase):
         self.assertEqual(info["cost"]["balance_credits"], 500)
         self.assertEqual(json.loads((Path(info["package"]) / "workflow.json").read_text())["stage"], "request_choice")
 
-    def test_provider_aliases_accept_case_and_spaces(self):
+    def test_provider_accepts_case_insensitive_kling_name(self):
         _, snapshot = self.make_asset()
-        for provider in ("Kling", "kLiNg", " Kling AI ", "  KLING   ai  ", "kling\tAI"):
+        for provider in ("Kling", "kLiNg", " Kling "):
             with self.subTest(provider=provider):
                 snapshot["provider"] = provider
                 self.write_snapshot(snapshot)
                 self.assertEqual(tool.spec_from_asset(self.root, "M01")["model"], snapshot["model"])
 
-    def test_missing_prompt_path_is_code_3(self):
+    def test_noncanonical_snapshot_is_code_3(self):
         _, snapshot = self.make_asset()
-        for prompt in ({"sha256": "abc"}, {"path": ""}, {"path": None}, {"path": "missing.txt"}):
-            with self.subTest(prompt=prompt):
-                snapshot["prompt"] = prompt
-                self.write_snapshot(snapshot)
-                self.assert_cli_data_error("промпт")
+        mutations = [
+            {"provider": "Kling AI"},
+            {"provider": "klingAI"},
+            {"prompt": {"path": snapshot["prompt"], "sha256": snapshot["prompt_sha256"]}},
+            {"prompt": ""},
+            {"prompt": None},
+            {"prompt": "missing.txt"},
+            {"prompt_sha256": "wrong"},
+            {"path_base": "project_directory"},
+        ]
+        for fields in mutations:
+            with self.subTest(fields=fields):
+                self.write_snapshot(snapshot | fields)
+                self.assert_cli_data_error("M01")
+        for field in ("outputs", "parameters", "command", "model", "prompt_sha256", "path_base"):
+            with self.subTest(missing=field):
+                self.write_snapshot({key: value for key, value in snapshot.items() if key != field})
+                self.assert_cli_data_error("M01")
 
     def test_changed_prompt_and_input_hashes_are_code_3(self):
         asset, snapshot = self.make_asset()
@@ -237,10 +257,10 @@ class RegenerateTests(unittest.TestCase):
                 path.write_bytes(original + b"changed")
                 self.assert_cli_data_error("хеш" if "prompt" in name else "Хеш")
                 path.write_bytes(original)
-        _, snapshot = self.make_asset(legacy=False)
+        _, snapshot = self.make_asset()
         snapshot["prompt_sha256"] = "wrong"
         self.write_snapshot(snapshot)
-        self.assert_cli_data_error("хеш промпта")
+        self.assert_cli_data_error("SHA-256")
 
     def test_foreign_provider_is_code_3(self):
         _, snapshot = self.make_asset()
@@ -251,18 +271,23 @@ class RegenerateTests(unittest.TestCase):
     def test_incomplete_and_invalid_data_is_code_3_before_package(self):
         _, snapshot = self.make_asset()
         mutations = [
-            {"parameters": []}, {"model": None}, {"command": []}, {"inputs": [None]},
-            {"inputs": [{"slot": "image_1"}]}, {"inputs": []},
+            {"parameters": []},
+            {"model": None},
+            {"command": []},
+            {"inputs": [None]},
+            {"inputs": [{"slot": "image_1"}]},
+            {"inputs": []},
             {"inputs": [{"path": "generation-input-1.png"}]},
-            {"parameters": {"duration": "6"}}, {"elements": [{"id": "lost"}]},
+            {"parameters": {"duration": "6"}},
+            {"elements": [{"id": "lost"}]},
         ]
         for fields in mutations:
             with self.subTest(fields=fields):
                 self.write_snapshot(snapshot | fields)
                 self.assert_cli_data_error("M01")
 
-    def test_modern_snapshot_preserves_image_flag_and_output_count(self):
-        _, snapshot = self.make_asset(legacy=False)
+    def test_snapshot_preserves_image_flag_and_output_count(self):
+        _, snapshot = self.make_asset()
         snapshot["inputs"] = [{"flag": "image", **{k: v for k, v in snapshot["inputs"][0].items() if k != "slot"}}]
         snapshot["outputs"] = 2
         snapshot["parameters"]["imageCount"] = "2"
@@ -277,9 +302,13 @@ class RegenerateTests(unittest.TestCase):
     def test_shared_source_descriptor_keeps_exact_input(self):
         _, snapshot = self.make_asset()
         source = self.root / "source/heroes/mira.png"
-        snapshot["inputs"][0].update({
-            "root": "source", "path": "heroes/mira.png", "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
-        })
+        snapshot["inputs"][0].update(
+            {
+                "root": "source",
+                "path": "heroes/mira.png",
+                "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            }
+        )
         self.write_snapshot(snapshot)
         info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli), use_account=False)
         request_dir = Path(info["work_dir"])
@@ -301,6 +330,34 @@ class RegenerateTests(unittest.TestCase):
         with self.assertRaisesRegex(LookupError, "хеш промпта"):
             tool.regenerate(self.root, "M01", source="package", cli=str(self.cli), use_account=False)
 
+    def test_frozen_request_requires_native_prompt_and_explicit_input_flag(self):
+        package = self.make_package()
+        path = package / "request/request.json"
+        original = json.loads(path.read_text())
+        mutations = [
+            original | {"prompt": "prompt.txt"},
+            original | {"inputs": [{key: value for key, value in original["inputs"][0].items() if key != "flag"}]},
+            {key: value for key, value in original.items() if key != "outputs"},
+        ]
+        for request in mutations:
+            with self.subTest(request=request):
+                path.write_text(json.dumps(request))
+                with self.assertRaises(LookupError):
+                    tool.regenerate(self.root, "M01", source="package", cli=str(self.cli), use_account=False)
+                self.assertEqual(list((self.root / "plan/batches").iterdir()), [package])
+                self.assertFalse((self.root / "calls.jsonl").exists())
+
+    def test_asset_model_selection_and_explicit_image_kind_are_preserved(self):
+        _, snapshot = self.make_asset()
+        snapshot.update(kind="image", command="image_to_image", model="kling-image-o1")
+        selection = {"preferredModel": None, "selectedModel": snapshot["model"], "reason": "Выбрана по возможностям"}
+        snapshot["model_selection"] = selection
+        self.write_snapshot(snapshot)
+        info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli), use_account=False)
+        request = json.loads((Path(info["work_dir"]) / "request.json").read_text())
+        self.assertEqual(request["kind"], "image")
+        self.assertEqual(request["model_selection"], selection)
+
     def test_no_request_data_stops_with_code_3(self):
         with self.assertRaisesRegex(LookupError, "нет снимка запроса"):
             tool.regenerate(self.root, "M01", cli=str(self.cli), use_account=False)
@@ -318,7 +375,7 @@ class RegenerateTests(unittest.TestCase):
                 }
             )
         )
-        with self.assertRaisesRegex(LookupError, "старом формате"):
+        with self.assertRaisesRegex(LookupError, "провайдер снимка"):
             tool.regenerate(self.root, "M01", cli=str(self.cli), use_account=False)
         (asset / "generation-request.json").write_text(
             json.dumps(
@@ -369,7 +426,7 @@ class RegenerateTests(unittest.TestCase):
         self.assertEqual(sum(1 for c in calls if c and c[0] not in ("query_tasks", "account")), 1)
         self.assertEqual(json.loads(pricing.read_text())["observed"][0]["credits"], 43)
 
-    def test_asset_snapshot_in_frozen_format_is_repeatable_and_settings_mismatch_stops(self):
+    def test_asset_settings_mismatch_stops_before_package_creation(self):
         asset = self.root / "assets/shots/M01"
         asset.mkdir()
         (asset / "generation-input-1.png").write_bytes(b"\x89PNG frame")
@@ -384,6 +441,7 @@ class RegenerateTests(unittest.TestCase):
             "outputs": 1,
             "inputs": [{"slot": "image_1", "role": "first", "path": "generation-input-1.png"}],
             "prompt": "generation-prompt.txt",
+            "prompt_sha256": hashlib.sha256((asset / "generation-prompt.txt").read_bytes()).hexdigest(),
             "path_base": "asset_directory",
         }
         (asset / "generation-request.json").write_text(json.dumps(snapshot, ensure_ascii=False))

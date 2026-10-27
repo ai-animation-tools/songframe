@@ -14,6 +14,7 @@ import json
 import tempfile
 
 from tools.common import sha
+from tools.project_inputs import project_inputs, project_inputs_match
 from tools.project_views.project_views import ROOT, Sources, documents, prepared
 from tools.scene_registry.scene_registry import validate_project
 
@@ -108,7 +109,7 @@ def update(check=False):
                     "schema_version": 1,
                     "generated_from": "plan/scenes.json",
                     "registry_sha256": hashlib.sha256(sources.text("plan/scenes.json").encode()).hexdigest(),
-                    "project_sha256": hashlib.sha256(sources.text("plan/project.json").encode()).hexdigest(),
+                    "project_inputs": project_inputs(sources.json("plan/project.json")),
                     "reference_hashes": {
                         v["path"]: sources.digest(v["path"]) for v in prepared(sources)[0]["references"].values()
                     },
@@ -157,9 +158,11 @@ def check_snapshot(sources):
         name for name, text in documents(sources).items() if name not in sources.files or sources.text(name) != text
     ]
     receipt = sources.json("plan/animatic/cards/manifest.json")
-    if (
-        receipt["registry_sha256"] != hashlib.sha256(sources.text("plan/scenes.json").encode()).hexdigest()
-        or receipt.get("project_sha256") != hashlib.sha256(sources.text("plan/project.json").encode()).hexdigest()
+    if receipt["registry_sha256"] != hashlib.sha256(
+        sources.text("plan/scenes.json").encode()
+    ).hexdigest() or not project_inputs_match(
+        receipt,
+        sources.json("plan/project.json"),
     ):
         changed.append("plan/animatic/cards/manifest.json")
     expected = {s["id"] for s in prepared(sources)[1]} - set(prepared(sources)[2])

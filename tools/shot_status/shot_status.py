@@ -29,10 +29,7 @@ STAGE_LABELS = {
     "image_request_choice": "запрос изображения на подтверждении",
     "image_submitted": "изображение генерируется",
     "image_downloaded": "изображение получено, ожидает выбора",
-    "first_frame_review": "первый кадр на согласовании",
-    "keyframe_review": "промежуточный кадр на согласовании",
     "keyframes_review": "опоры на согласовании",
-    "last_frame_review": "конечный кадр на согласовании",
     "prompt_review": "видеопромпт на согласовании",
     "request_choice": "запрос на подтверждении",
     "ready": "отложено в plan/awaiting",
@@ -106,7 +103,7 @@ def package_state(directory):
     elif isinstance(workflow, dict):
         raw = workflow.get("stage")
         stage = STAGE_LABELS.get(raw, "этап: " + str(raw) if raw else None)
-        if raw in ("keyframe_review", "keyframes_review") and workflow.get("current_keyframe"):
+        if raw == "keyframes_review" and workflow.get("current_keyframe"):
             stage = f"кадр {workflow['current_keyframe']} на согласовании"
         if workflow.get("wait_reason") in WAIT_LABELS:
             stage = f"{stage}; {WAIT_LABELS[workflow['wait_reason']]}"

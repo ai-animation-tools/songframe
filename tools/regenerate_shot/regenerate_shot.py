@@ -1,7 +1,7 @@
 """Повтор генерации плана по сохранённому запросу без нового согласования; @link README.md
 
 Берёт замороженный запрос плана (последний пакет в plan/batches или plan/awaiting с подготовленной попыткой,
-иначе снимок принятого комплекта assets/shots/Mxx/generation-request.json в формате замороженного запроса),
+иначе снимок принятого комплекта assets/shots/Mxx/generation-request.json),
 создаёт новый пакет с попыткой `retry_of`, печатает request_sha256 и оценку стоимости. С `--submit`
 отправляет, ждёт результат и делает техническую сводку. Если данных запроса нет или они в чужом формате,
 останавливается с кодом 3: ничего не выдумывается.
@@ -48,103 +48,82 @@ def find_package_request(root, shot):
     return package, request
 
 
-def saved_prompt(data, resolve_file, label):
-    """Старые снимки хранят дескриптор промпта, новые — имя файла и отдельный SHA-256."""
-    prompt = data.get("prompt")
-    if isinstance(prompt, str):
-        prompt = {"path": prompt}
-    if not isinstance(prompt, dict) or not isinstance(prompt.get("path"), str) or not prompt["path"].strip():
-        raise LookupError(f"{label}: у промпта нет непустого prompt.path.")
-    path = resolve_file(prompt)
+def checked_prompt(path, expected, label):
+    """Сверяет обязательный SHA-256 с точными байтами сохранённого промпта."""
+    if not isinstance(expected, str) or not re.fullmatch(r"[a-fA-F0-9]{64}", expected):
+        raise LookupError(f"{label}: у промпта нет корректного SHA-256.")
     if not path.is_file():
-        raise LookupError(f"{label}: нет файла промпта {prompt['path']}.")
-    # Проверяем оба известных места хранения хеша: ни один сохранённый SHA не должен игнорироваться.
-    for expected in (prompt.get("sha256"), data.get("prompt_sha256")):
-        if expected is not None and sha(path) != expected:
-            raise LookupError(f"{label}: хеш промпта отличается от сохранённого.")
+        raise LookupError(f"{label}: нет файла промпта {path.name}.")
+    if sha(path) != expected.lower():
+        raise LookupError(f"{label}: хеш промпта отличается от сохранённого.")
     return str(path.resolve())
 
 
-def saved_spec(data, shot, resolve_file, label, frozen=False):
-    """Адаптирует только описанный запрос; сохранённые cli_argv остаются историческими сведениями."""
-    if not isinstance(data.get("inputs"), list):
-        raise LookupError(f"{label}: нет списка inputs, повтор невозможен.")
-    inputs = []
-    for item in data["inputs"]:
-        if not isinstance(item, dict) or not isinstance(item.get("path"), str) or not item["path"].strip():
-            raise LookupError(f"{label}: у входа нет непустого path.")
-        flag = item.get("flag", None if frozen else "input")
-        if flag is None or (flag == "input" and not isinstance(item.get("slot"), str)):
-            raise LookupError(f"{label}: у входа нет flag или slot.")
-        entry = {key: item[key] for key in ("slot", "role", "sha256") if key in item}
-        inputs.append(entry | {"flag": flag, "path": str(resolve_file(item).resolve())})
-    parameters = data.get("parameters", {})
-    outputs = data.get("outputs", 1)
-    if "outputs" not in data and isinstance(parameters, dict) and "imageCount" in parameters:
-        # Старый снимок M02 хранит число результатов только в параметре CLI imageCount.
-        try:
-            outputs = int(parameters["imageCount"])
-        except (TypeError, ValueError, OverflowError):
-            raise LookupError(f"{label}: неверное число результатов imageCount.") from None
-    command = data.get("command")
-    spec = {
-        "schema_version": 1,
-        "shot": shot,
-        "kind": data.get("kind", "image" if isinstance(command, str) and command.endswith("_image") else "video"),
-        "command": command,
-        "model": data.get("model"),
-        "parameters": parameters,
-        "inputs": inputs,
-        "prompt_file": saved_prompt(data, resolve_file, label),
-        "outputs": outputs,
-    }
+def saved_spec(data, shot, kind, inputs, prompt_file):
+    """Переносит явно сохранённые поля в спецификацию prepare; cli_argv не исполняется."""
+    spec = {key: data[key] for key in ("command", "model", "parameters", "outputs")}
+    spec.update(schema_version=1, shot=shot, kind=kind, inputs=inputs, prompt_file=prompt_file)
     if "model_selection" in data:
         spec["model_selection"] = data["model_selection"]
     return spec
 
 
 def spec_from_frozen(request_path, shot):
-    """Спецификация prepare из замороженного request.json попытки: пути входов и промпта абсолютные."""
+    """Читает request.json попытки в нативном формате kling_request prepare."""
     request_path = Path(request_path)
     data = read_json(request_path)
     if not isinstance(data, dict) or data.get("schema_version") != 1:
         raise LookupError(f"{request_path}: это не замороженный запрос попытки.")
     try:
-        return saved_spec(data, shot, lambda item: request_path.parent / item["path"], str(request_path), frozen=True)
-    except (OSError, ValueError, TypeError) as error:
+        prompt = data["prompt"]
+        if not isinstance(prompt, dict) or not isinstance(prompt.get("path"), str) or not prompt["path"].strip():
+            raise ValueError("Промпт должен содержать path и sha256.")
+        if not isinstance(data["inputs"], list):
+            raise ValueError("inputs должен быть списком.")
+        inputs = []
+        for item in data["inputs"]:
+            if not isinstance(item, dict) or not isinstance(item.get("path"), str) or not item["path"].strip():
+                raise ValueError("У входа нет непустого path.")
+            entry = {key: item[key] for key in ("slot", "role", "sha256") if key in item}
+            inputs.append(entry | {"flag": item["flag"], "path": str((request_path.parent / item["path"]).resolve())})
+        prompt_file = checked_prompt(request_path.parent / prompt["path"], prompt["sha256"], str(request_path))
+        return saved_spec(data, shot, data["kind"], inputs, prompt_file)
+    except (KeyError, OSError, ValueError, TypeError) as error:
         raise LookupError(f"{request_path}: повреждён замороженный запрос: {error}") from None
 
 
 def spec_from_asset(root, shot):
-    """Принимает современный снимок и прежний Kling AI с файловым дескриптором промпта."""
+    """Читает снимок принятого комплекта по контракту accept_shot; @link README.md."""
     asset = Path(root) / "assets/shots" / shot
     data = read_json(asset / "generation-request.json")
     if not isinstance(data, dict):
         raise LookupError(f"У плана {shot} нет снимка запроса в принятом комплекте.")
-    provider = " ".join(str(data.get("provider", "")).split()).casefold()
-    if provider and provider not in ("kling", "kling ai"):
-        raise LookupError(f"{shot}: генерация делалась в {data.get('provider')}, повтор через Kling невозможен.")
-    if not provider or not isinstance(data.get("inputs"), list):
-        raise LookupError(
-            f"{shot}: снимок запроса в старом формате (без провайдера или списка входов), "
-            "повтор невозможен; подготовьте план заново по этапам."
-        )
+    provider = data.get("provider")
+    if not isinstance(provider, str) or provider.strip().casefold() != "kling":
+        raise LookupError(f"{shot}: провайдер снимка {provider!r}; для повтора требуется Kling.")
+    if data.get("schema_version") != 1 or data.get("path_base") != "asset_directory":
+        raise LookupError(f"{shot}: нужны schema_version=1 и path_base=asset_directory.")
     if data.get("elements") or data.get("audio_inputs"):
         raise LookupError(f"{shot}: дополнительные elements/audio_inputs не описаны в inputs; повтор невозможен.")
-    if data.get("schema_version") != 1:
-        raise LookupError(f"{shot}: неизвестная схема снимка запроса.")
-    base = data.get("path_base", "asset_directory")
-    if base not in ("asset_directory", "project_directory"):
-        raise LookupError(f"{shot}: неизвестная база путей path_base: {base}.")
-
-    def resolve_file(item):
-        # Явный root важнее общей базы снимка; общие изображения читаются через контракт комплекта.
-        directory = Path(root) if base == "project_directory" and "root" not in item else asset
-        return descriptor_file(directory, item, root=root)
-
     try:
-        return saved_spec(data, shot, resolve_file, shot)
-    except (OSError, ValueError, TypeError) as error:
+        prompt = data["prompt"]
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise ValueError("Промпт должен быть непустым именем файла.")
+        if not isinstance(data["inputs"], list):
+            raise ValueError("inputs должен быть списком.")
+        inputs = []
+        for item in data["inputs"]:
+            if not isinstance(item, dict) or not isinstance(item.get("path"), str) or not item["path"].strip():
+                raise ValueError("У входа нет непустого path.")
+            # Именованный слот комплекта — вход input. Другие флаги должны быть сохранены явно.
+            entry = {key: item[key] for key in ("slot", "role", "sha256") if key in item}
+            inputs.append(
+                entry | {"flag": item.get("flag", "input"), "path": str(descriptor_file(asset, item, root=root))}
+            )
+        prompt_path = descriptor_file(asset, {"path": prompt}, root=root)
+        prompt_file = checked_prompt(prompt_path, data["prompt_sha256"], shot)
+        return saved_spec(data, shot, data.get("kind", "video"), inputs, prompt_file)
+    except (KeyError, OSError, ValueError, TypeError) as error:
         raise LookupError(f"{shot}: повреждён снимок запроса: {error}") from None
 
 

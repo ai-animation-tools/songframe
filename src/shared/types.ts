@@ -94,7 +94,7 @@ export interface SourceReference {
   short_name: string;
   description: string;
   files: ReferenceFile[];
-  /** Общий промпт старого формата; не относится автоматически к отдельным изображениям. */
+  /** Общий промпт референса; не относится автоматически к отдельным изображениям. */
   prompt: string | null;
 }
 
@@ -129,7 +129,7 @@ export interface ReferenceInput {
   name: string;
   short_name: string;
   description: string;
-  /** Общий промпт старого формата, отдельно от промптов изображений. */
+  /** Общий промпт референса, отдельно от промптов изображений. */
   prompt: string;
   files: ReferenceFileInput[];
 }

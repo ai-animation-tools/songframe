@@ -122,11 +122,14 @@ class ShotWorkflowTests(unittest.TestCase):
                     json.dumps(
                         {
                             "generation": {
-                                "provider": "kling",
-                                "resolution": "1080p",
-                                "aspect_ratio": "16:9",
-                                "watermark": False,
-                                "duration_rule": rule,
+                                "video": {
+                                    "provider": "kling",
+                                    "resolution": "1080p",
+                                    "aspect_ratio": "16:9",
+                                    "watermark": False,
+                                    "duration_rule": rule,
+                                },
+                                "image": None,
                             }
                         }
                     ),
@@ -155,7 +158,7 @@ class ShotWorkflowTests(unittest.TestCase):
         project = json.loads(project_path.read_text())
         with self.assertRaisesRegex(ValueError, "целого монтажного окна"):
             tool.plan_keyframes(self.package, 4, root=self.root)
-        project["generation"]["duration_rule"] = "min_supported_not_less_than_window"
+        project["generation"]["video"]["duration_rule"] = "min_supported_not_less_than_window"
         project_path.write_text(json.dumps(project))
         with self.assertRaisesRegex(ValueError, "не меньше"):
             tool.plan_keyframes(self.package, 3, root=self.root)
@@ -211,10 +214,6 @@ class ShotWorkflowTests(unittest.TestCase):
         self.assertEqual((data["stage"], data["wait_reason"]), ("needs_revision", "insufficient_balance"))
         data = tool.set_stage(self.package, "keyframes_review", root=self.root)
         self.assertEqual((data["stage"], data["wait_reason"]), ("keyframes_review", None))
-        (self.package / "workflow.json").write_text(
-            json.dumps({"schema_version": 1, "shot": "M01", "stage": "last_frame_review"})
-        )
-        self.assertEqual(tool.load_workflow(self.package)["stage"], "keyframes_review")
         self.assertTrue(tool.allowed_transition("request_choice", "submitted"))
         self.assertTrue(tool.allowed_transition("downloaded", "accepted"))
         self.assertFalse(tool.allowed_transition("submitted", "accepted"))

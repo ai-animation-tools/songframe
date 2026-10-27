@@ -189,13 +189,13 @@ beforeEach(() => {
   localDir = join(directory, 'Состояние приложения');
   managers = [];
   cpSync(join(root, 'tools/testdata/sample-project'), project, { recursive: true });
-  // Внутренний производственный сценарий получает явно выбранные провайдеры; legacy-образец не подтверждает выбор сам.
+  // Производственный сценарий явно выбирает провайдеры в канонических блоках образца.
   const projectPath = join(project, 'plan/project.json');
   const projectData = JSON.parse(readFileSync(projectPath, 'utf8'));
   write(projectPath, {
     ...projectData,
     generation: {
-      video: { ...projectData.generation, provider_selected: true },
+      video: { ...projectData.generation.video, provider_selected: true },
       image: { provider: 'codex', provider_selected: true }
     }
   });

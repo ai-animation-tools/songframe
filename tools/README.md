@@ -16,7 +16,7 @@
 | [kling_request](kling_request/README.md) | Прочитать единый свежий каталог команд через tool_list и моделей аккаунта из who_am_i; подготовить, отправить и получить image/video попытки Kling с замороженной причиной выбора модели; определить формат оригинала по байтам и восстановить получение того же ID |
 | [shot_status](shot_status/README.md) | Статусы планов, кандидат `next`, очередь и независимость партии по первичным источникам |
 | [shot_workflow](shot_workflow/README.md) | Вести `workflow.json` пакета: план опор, отдельные image-запросы и выбор кандидата без утверждения, принятие кадров и промпта, этапы, вопрос приложению с владельцем продолжения (`ask --executor agent|app`/`wait`/`decide`), исправленная попытка через `init --retry-of`, перенос в очередь, проверка |
-| [regenerate_shot](regenerate_shot/README.md) | Повтор генерации плана по сохранённому запросу: новый пакет по сохранённому запросу Kling, включая старые снимки Kling AI с объектом промпта; проверка хешей, стоимость, с `--submit` отправка и ожидание; при неполных данных код 3 |
+| [regenerate_shot](regenerate_shot/README.md) | Повтор генерации плана по сохранённому запросу: новый пакет по сохранённому каноническому запросу Kling; проверка хешей, стоимость, с `--submit` отправка и ожидание; при неполных данных код 3 |
 | [cost_check](cost_check/README.md) | Оценить стоимость image/video и остаток до отправки; записать фактический расход, для изображений учитывать только точную конфигурацию тарифа |
 | [accept_shot](accept_shot/README.md) | Перенести принятую попытку в комплект assets с манифестом, ссылками на общие референсы source, проверкой и обновлением представлений и очисткой всех пакетов плана (`--clean`) |
 | [contact_sheet](contact_sheet/README.md) | Техническая сводка полученного видео: параметры, контактный лист, граничные кадры рядом с опорами, превью 2× |
@@ -26,10 +26,10 @@
 | [build_review](build_review/README.md) | Собрать временную пробу и сохранить рецепт; учесть округление конца песни к кадровой сетке |
 | [apply_montage](apply_montage/README.md) | Применить ручной MontageDraft к принятым соседним сценам, перенести внутренние стыки, сохранить историю и восстановить состояние при сбое |
 | [build_animatic](build_animatic/README.md) | Проверить входы или собрать полный latest: MP4, манифест и README; конец песни сверяется по декодированному звуку |
-| [update_scene_views](update_scene_views/README.md) | Обновить или проверить документы, индекс assets и карточки; отсутствующий источник сообщается кратко, без traceback |
+| [update_scene_views](update_scene_views/README.md) | Обновить или проверить документы, индекс assets и карточки; настройки генерации не делают их устаревшими, отсутствующий источник сообщается кратко |
 | [check_workspace](check_workspace/README.md) | Проверить согласованность после приёмки: рабочие пакеты, очередь, карточки и пустые папки; готовые экспорты и пробы распознаются по составу, без сценария — ошибка, в том числе JSON |
 | [check_assets](check_assets/README.md) | Проверить хеши и длительности всех выбранных сцен |
-| [scene_registry](scene_registry/README.md) | Получить состояние сцены до/после с наследованием и хешем текущего контекста; проверить настройки генерации, включая пропорции auto и логический provider_selected у обоих медиа; legacy не выбирает провайдера изображений |
+| [scene_registry](scene_registry/README.md) | Получить состояние сцены до/после с наследованием и хешем текущего контекста; проверить настройки генерации, включая пропорции auto и логический provider_selected у обоих медиа; читаются только отдельные блоки video и image |
 | [asset_package](asset_package/README.md) | Проверить файлы, ссылки на source и монтажное окно одной сцены либо воспроизвести её |
 | [verify_asset_replay](verify_asset_replay/README.md) | Глубоко проверить воспроизведение всех сцен |
 | [cast_registry](cast_registry/README.md) | Кастинг `plan/cast.json`: создать из исходников, проверить, вывести и записать карту `references` реестра сцен, словарь свойств состояния |
@@ -48,7 +48,8 @@
 
 | Модуль и инструкция | Назначение |
 | --- | --- |
-| [project_views](project_views/README.md) | Чтение источников и генерация представлений; ROADMAP ведёт к README сборки, монтажный список сохраняет Markdown-таблицу |
+| [project_views](project_views/README.md) | Чтение источников и генерация представлений; свежесть учитывает значимые поля проекта, ROADMAP ведёт к README сборки |
+| [project_inputs.py](project_inputs.py) | Обязательные значимые поля карточек и аниматика, без зависимости от настроек генерации |
 | [render_animatic_cards](render_animatic_cards/README.md) | Рендер условных карточек |
 | [animatic_cache](animatic_cache/README.md) | Кэш проверенных производных |
 | [common.py](common.py) | `ROOT` проекта, `TOOLS_ROOT` комплекса, `resolve_project`, `sha`, `read_json` для всех инструментов; тесты подменяют `ROOT` в модуле инструмента |
@@ -65,7 +66,7 @@
 | [test_current_project](current_project/test_current_project.py) | Порядок источников проекта, общий каталог состояния, атомарная запись, сохранность при сбое и запуск с ресурсами без записи. |
 | [test_shot_workflow_images](shot_workflow/test_shot_workflow_images.py) | Отдельные image-согласования, два последовательных кадра, выбор без принятия, revision, recovery и сохранность оригиналов. |
 | [test_shot_workflow_decisions](shot_workflow/test_shot_workflow_decisions.py) | Кандидаты опор, вопрос приложению, ответы approve/revise, ожидание с таймаутом и сменой этапа. |
-| [test_regenerate_shot](regenerate_shot/test_regenerate_shot.py) | Источник сохранённого запроса, старые снимки Kling AI с объектом промпта, хеши и общие референсы, отказ без данных и для чужого провайдера, подготовка и отправка на подставном CLI. |
+| [test_regenerate_shot](regenerate_shot/test_regenerate_shot.py) | Источник сохранённого запроса, единый формат снимка комплекта, хеши и общие референсы, отказ без данных и для чужого провайдера, подготовка и отправка на подставном CLI. |
 | [test_cast_registry](cast_registry/test_cast_registry.py) | Кастинг из исходников с произвольными типами, карта references, проверка, синхронизация с реестром. |
 | [test_scene_scaffold](scene_scaffold/test_scene_scaffold.py) | Окна планов по строкам и инструменталу, стыковка частей, заготовки полей. |
 | [test_continuity_brief](continuity_brief/test_continuity_brief.py) | Начальное состояние из кастинга, порядок сущностей, подписи словаря, чек-лист. |
@@ -73,7 +74,7 @@
 | [test_transcribe_local](transcribe_local/test_transcribe_local.py) | Локальный путь модели, офлайн-настройки, отсутствие ложного заявления об OS-изоляции при прямом запуске. |
 | [test_animatic_cache](animatic_cache/test_animatic_cache.py) | Повреждённые и прерванные записи кэша не переиспользуются. |
 | [test_asset_package](asset_package/test_asset_package.py) | Технический контракт комплекта, сохранность и воспроизведение принятого монтажа. |
-| [test_build_animatic](build_animatic/test_build_animatic.py) | Выбор принятых клипов/карточек, растворение между опорами и совпадение видео при холодном и тёплом кэше. |
+| [test_build_animatic](build_animatic/test_build_animatic.py) | Выбор принятых клипов/карточек, значимые поля проекта, растворение между опорами и совпадение видео при холодном и тёплом кэше. |
 | [test_build_review](build_review/test_build_review.py) | Обрезка на сетке 30 FPS, исходники 24 FPS, скорость, удержания, переходы и повторяемость видео. |
 | [test_apply_montage](apply_montage/test_apply_montage.py) | Применение среза и переноса стыка, сохранность оригиналов и истории, replay принятого источника, rollback и восстановление после аварии. |
 | [test_kling_request](kling_request/test_kling_request.py) | Подготовка, единственная отправка, таймауты, восстановление и сохранение оригиналов на подставном CLI без сети. |
@@ -91,6 +92,6 @@
 | [test_verify_asset_replay](verify_asset_replay/test_verify_asset_replay.py) | Воспроизведение рецепта из оригинала в допуске и обнаружение подменённого монтажа той же длины. |
 | [test_shot_status](shot_status/test_shot_status.py) | Четыре статуса, этапы из очереди и попытки, повреждённый пакет, примечание о пробе, кандидат next и конфликты партии. |
 | [test_scene_registry](scene_registry/test_scene_registry.py) | Непрерывность шкалы, сюжетные состояния, единый источник сведений и подстановка другого названия/референсов; проектные значения — в соседнем test_project_data.json. |
-| [test_project_views](project_views/test_project_views.py) | Доли готовности, строки ROADMAP, приоритет выбранных assets над прежними рабочими статусами и различие актуальной и устаревшей сборки. |
+| [test_project_views](project_views/test_project_views.py) | Доли готовности, строки ROADMAP, приоритет выбранных assets, независимость свежести от generation и контроль обязательных значимых полей проекта. |
 
 Linux AppImage включает FFmpeg/ffprobe: общий launcher передаёт встроенные бинарники первыми в PATH. Веса faster-whisper устанавливаются отдельно по [инструкции](../README.md#модель-распознавания); окно разметки показывает рекомендацию по CPU/RAM/CUDA и позволяет выбрать свою папку. `transcribe_local` поддерживает автоматический выбор CUDA либо CPU и принудительный `--device cpu`. Рабочие представления не требуют Git; проверка индекса/истории требует внешний Git. Приложение передаёт встроенный официальный Kling CLI через `SONGFRAME_KLING_EXECUTABLE` и `SONGFRAME_KLING_SCRIPT`: его исполняет Electron без отдельного Node.js. В самостоятельных вызовах без этих переменных сохраняется внешний `kling` из PATH; явный `--cli` имеет приоритет. Локальной разметке Kling не нужен.

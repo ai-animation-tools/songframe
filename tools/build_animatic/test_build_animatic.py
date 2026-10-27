@@ -115,7 +115,7 @@ class BuildTests(unittest.TestCase):
             json.dumps(
                 {
                     "registry_sha256": sha(self.root / "plan/scenes.json"),
-                    "project_sha256": sha(self.root / "plan/project.json"),
+                    "project_inputs": {"name": self.project["name"]},
                     "reference_hashes": {},
                     "cards": {"M02": {"sha256": sha(card)}},
                 }
@@ -129,6 +129,69 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(shots[0]["path"], "assets/shots/M01/accepted-edit.mp4")
         self.assertFalse((self.root / "plan/animatic/latest").exists())
         self.assertFalse((self.root / "plan/animatic/.cache").exists())
+
+    def test_plan_only_ignores_generation_settings_and_project_json_format(self):
+        # M02 остаётся настоящим входом-карточкой: пустой набор не проверил бы квитанцию.
+        path = self.root / "plan/project.json"
+        for generation in (
+            {"video": {"provider": "kling", "provider_selected": True}},
+            {"video": {"model": "другая", "options": {"duration": 5}}},
+            {"image": {"provider": "codex", "provider_selected": False, "model": "другая"}},
+            None,
+        ):
+            with self.subTest(generation=generation):
+                self.project["generation"] = generation
+                self.project["animatic_video"] = "другое.mp4"
+                path.write_text(json.dumps(self.project, ensure_ascii=False, indent=4))
+                self.assertEqual(build(self.root, plan_only=True)["cards"], 1)
+        self.project["name"] = "Другое имя"
+        path.write_text(json.dumps(self.project))
+        with self.assertRaisesRegex(ValueError, "Карточки устарели"):
+            prepare_plan(self.root)
+
+    def test_missing_or_invalid_project_inputs_require_fresh_cards(self):
+        path = self.root / "plan/animatic/cards/manifest.json"
+        original = json.loads(path.read_text())
+        for malformed in (None, [], {"name": False}, {"name": self.project["name"], "extra": "лишнее"}, "missing"):
+            with self.subTest(project_inputs=malformed):
+                receipt = dict(original, project_inputs=malformed)
+                if malformed == "missing":
+                    receipt.pop("project_inputs")
+                path.write_text(json.dumps(receipt))
+                with self.assertRaisesRegex(ValueError, "Карточки устарели"):
+                    prepare_plan(self.root)
+
+    def test_build_guard_compares_only_project_inputs_without_project_file_hash(self):
+        path = self.root / "plan/project.json"
+        original_sha = sha(path)
+
+        def change_generation(args):
+            result = run(args)
+            if args[-3:] == ["-f", "null", "-"]:
+                self.project["generation"] = {"video": {"provider": "kling", "model": "новая"}}
+                path.write_text(json.dumps(self.project, ensure_ascii=False, indent=4))
+            return result
+
+        with patch("tools.build_animatic.build_animatic.run", side_effect=change_generation):
+            build(self.root)
+        manifest_path = self.root / "plan/animatic/latest/manifest.json"
+        original_manifest = manifest_path.read_bytes()
+        manifest = json.loads(original_manifest)
+        self.assertEqual(manifest["project_inputs"], {key: self.project[key] for key in ("name", "animatic_video")})
+        self.assertNotIn("plan/project.json", manifest["source_hashes"])
+        self.assertNotEqual(sha(path), original_sha)
+
+        def change_name(args):
+            result = run(args)
+            if args[-3:] == ["-f", "null", "-"]:
+                self.project["name"] = "Изменилось во время сборки"
+                path.write_text(json.dumps(self.project))
+            return result
+
+        with patch("tools.build_animatic.build_animatic.run", side_effect=change_name):
+            with self.assertRaisesRegex(ValueError, "Данные проекта изменились"):
+                build(self.root)
+        self.assertEqual(manifest_path.read_bytes(), original_manifest)
 
     def test_mp3_start_time_does_not_shorten_decoded_song(self):
         # Такая комбинация метаданных воспроизведена у встроенного FFmpeg на реальном MP3.
@@ -154,7 +217,7 @@ class BuildTests(unittest.TestCase):
         card = self.root / "plan/animatic/cards/M02.png"
         receipt = {
             "registry_sha256": sha(self.root / "plan/scenes.json"),
-            "project_sha256": sha(self.root / "plan/project.json"),
+            "project_inputs": {"name": self.project["name"]},
             "cards": {"M02": {"sha256": sha(card)}},
         }
         (card.parent / "manifest.json").write_text(json.dumps(receipt))
@@ -182,7 +245,7 @@ class BuildTests(unittest.TestCase):
             self.project["name"] + " — текущий аниматик",
         )
         manifest = json.loads((latest / "manifest.json").read_text())
-        self.assertEqual(manifest["source_hashes"]["plan/project.json"], sha(self.root / "plan/project.json"))
+        self.assertNotIn("plan/project.json", manifest["source_hashes"])
 
     def test_changed_or_missing_project_data_cannot_reuse_old_cards(self):
         self.project["name"] = "Другой клип"
@@ -239,7 +302,7 @@ class BuildTests(unittest.TestCase):
             json.dumps(
                 {
                     "registry_sha256": sha(self.root / "plan/scenes.json"),
-                    "project_sha256": sha(self.root / "plan/project.json"),
+                    "project_inputs": {"name": self.project["name"]},
                     "reference_hashes": {},
                     "cards": {
                         "M02": {

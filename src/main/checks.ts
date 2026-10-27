@@ -187,23 +187,14 @@ function readProjectFile(project: string): Record<string, unknown> {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
-const LEGACY_VIDEO_FIELDS = ['provider', 'resolution', 'aspect_ratio', 'watermark', 'duration_rule'];
-
-/** Чтение не мигрирует файл. Явные video/image имеют приоритет даже при неполном новом формате. */
+/** Настройки читаются только из video/image; поля другого формата не подтверждают выбор медиапровайдера. */
 function readGeneration(data: Record<string, unknown>): GenerationSettings | null {
   const block = data.generation;
   if (!isRecord(block)) return null;
-  if ('video' in block || 'image' in block) {
-    return {
-      ...block,
-      video: isRecord(block.video) ? ({ ...block.video } as unknown as VideoGenerationSettings) : null,
-      image: isRecord(block.image) ? ({ ...block.image } as unknown as ImageGenerationSettings) : null
-    };
-  }
   return {
-    ...Object.fromEntries(Object.entries(block).filter(([key]) => !LEGACY_VIDEO_FIELDS.includes(key))),
-    video: Object.fromEntries(LEGACY_VIDEO_FIELDS.filter((key) => key in block).map((key) => [key, block[key]])) as unknown as VideoGenerationSettings,
-    image: null
+    ...block,
+    video: isRecord(block.video) ? ({ ...block.video } as unknown as VideoGenerationSettings) : null,
+    image: isRecord(block.image) ? ({ ...block.image } as unknown as ImageGenerationSettings) : null
   };
 }
 
@@ -252,7 +243,7 @@ export function validateProjectSettings(settings: ProjectSettings): string[] {
       problems.push(`${prefix}watermark должен быть логическим значением.`);
     if (kind === 'video' && !DURATION_RULES.includes(block.duration_rule as VideoGenerationSettings['duration_rule']))
       problems.push(`${prefix}правило длительности должно быть одним из: ${DURATION_RULES.join(', ')}.`);
-    // Наличие имени провайдера в старом файле не подтверждает явный выбор пользователя.
+    // Имя провайдера без маркера не подтверждает явный выбор пользователя.
     if (block.provider_selected !== undefined && typeof block.provider_selected !== 'boolean')
       problems.push(`${prefix}provider_selected должен быть логическим значением.`);
     if (block.options !== undefined && !isRecord(block.options)) problems.push(`${prefix}options должен быть объектом.`);
@@ -282,8 +273,6 @@ export function writeProjectSettings(project: string, settings: ProjectSettings)
     for (const kind of ['video', 'image'] as const)
       if (settings.generation?.[kind] === null && data.generation[kind] != null && !isRecord(data.generation[kind])) generation[kind] = data.generation[kind];
   } else if (!generation && data.generation != null && !isRecord(data.generation)) generation = data.generation;
-  // При явном сохранении убираются только известные плоские video-поля; расширения остаются на прежнем уровне.
-  if (isRecord(generation)) for (const field of LEGACY_VIDEO_FIELDS) delete generation[field];
   const next: Record<string, unknown> = {
     ...data,
     name: settings.name.trim(),

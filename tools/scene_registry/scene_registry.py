@@ -35,12 +35,11 @@ def validate_project(data, *, validate_generation=True):
     if validate_generation and generation is not None:
         if not isinstance(generation, dict):
             raise ValueError("generation должен быть объектом настроек.")
-        if "video" in generation or "image" in generation:
-            for kind in ("video", "image"):
-                if generation.get(kind) is not None:
-                    generation_settings(data, kind)
-        else:
-            generation_settings(data)
+        if not any(kind in generation for kind in ("video", "image")):
+            raise ValueError("В generation нужны независимые блоки video и image.")
+        for kind in ("video", "image"):
+            if generation.get(kind) is not None:
+                generation_settings(data, kind)
     return data
 
 
@@ -49,19 +48,13 @@ DURATION_RULES = ("min_supported_strictly_greater_than_window", "min_supported_n
 
 
 def generation_settings(data, kind="video"):
-    """Читает настройки одного медиа; legacy generation остаётся настройками видео.
-
-    Явные video/image отключают legacy fallback. Возвращаем копию без записи миграции в проект и замороженные запросы.
-    """
+    """Читает независимые настройки выбранного медиа без изменения данных проекта."""
     if kind not in ("video", "image"):
         raise ValueError("Вид генерации должен быть video или image.")
     generation = data.get("generation") if isinstance(data, dict) else None
     if not isinstance(generation, dict):
         raise ValueError(f"В plan/project.json нет блока generation.{kind}.")
-    if "video" in generation or "image" in generation:
-        block = generation.get(kind)
-    else:
-        block = generation if kind == "video" else None
+    block = generation.get(kind)
     if not isinstance(block, dict):
         raise ValueError(f"В plan/project.json нет корректного блока generation.{kind}.")
     fields = GENERATION_FIELDS if kind == "video" else {"provider": str}

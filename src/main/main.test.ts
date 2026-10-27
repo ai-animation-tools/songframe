@@ -55,8 +55,8 @@ describe('template', () => {
 describe('status', () => {
   it('выводит состояние из файлов проекта', () => {
     expect(computeStatus(work).state).toBe('invalid');
-    writeJson(join(work, 'plan/project.json'), { schema_version: 1, name: 'Проба', animatic_video: 'p.mp4' });
-    expect(computeStatus(work)).toMatchObject({ state: 'empty', name: 'Проба', animaticVideo: 'p.mp4' });
+    writeJson(join(work, 'plan/project.json'), { schema_version: 1, name: 'Проба', animatic_video: 'clip.mp4' });
+    expect(computeStatus(work)).toMatchObject({ state: 'empty', name: 'Проба', animaticVideo: 'clip.mp4' });
     writeJson(join(work, 'source/manifest.json'), {
       schema_version: 1,
       track: { path: 'track.mp3' },
@@ -90,7 +90,8 @@ describe('status', () => {
     const built = {
       video_file: 'clip.mp4',
       video_sha256: sha256Text('mp4'),
-      source_hashes: { 'plan/project.json': sha256Text(readFileSync(join(work, 'plan/project.json'), 'utf8')), 'source/track.mp3': sha256Text('track') },
+      project_inputs: { name: JSON.parse(readFileSync(join(work, 'plan/project.json'), 'utf8')).name, animatic_video: 'clip.mp4' },
+      source_hashes: { 'source/track.mp3': sha256Text('track') },
       shots: ['M01', 'M02'].map((id) => ({ id, frames: 60, media: 'video', path: `assets/shots/${id}/video.mp4`, sha256: sha256Text('video') }))
     };
     writeJson(join(latest, 'manifest.json'), { ...built, scene_registry_sha256: 'stale' });
@@ -787,7 +788,7 @@ describe('панель проверок', () => {
     expect(reviews.map((r) => [r.shots, r.totalFrames, r.video])).toEqual([[['M01', 'M02'], 90, join(review, 'review.mp4')]]);
   });
 
-  it('нормализует legacy только при чтении, отдаёт приоритет новым блокам и сохраняет расширения при записи', async () => {
+  it('читает отдельные блоки медиа и сохраняет расширения при записи', async () => {
     const { readProjectSettings, validateProjectSettings, writeProjectSettings } = await import('./checks');
     const project = join(work, 'settings-compat');
     const path = join(project, 'plan/project.json');
@@ -801,17 +802,8 @@ describe('панель проверок', () => {
       options: { backend: { keep: 3 }, quality: 'high' }
     };
     const base = { schema_version: 1, name: 'Клип', animatic_video: 'clip.mp4', extra: { keep: true } };
-    writeJson(path, { ...base, generation: video });
-    const original = readFileSync(path, 'utf8');
-    const { custom, options, ...legacyVideo } = video;
-    expect(readProjectSettings(project).generation).toEqual({ video: legacyVideo, image: null, custom, options });
-    expect(readFileSync(path, 'utf8')).toBe(original);
-    writeProjectSettings(project, readProjectSettings(project));
-    const migrated = JSON.parse(readFileSync(path, 'utf8')).generation;
-    expect(migrated).toEqual({ video: legacyVideo, image: null, custom, options });
-    expect(migrated.provider).toBeUndefined();
     const image = { provider: 'future-image', backend: { keep: true }, options: { backend: { keep: 'image' } } };
-    writeJson(path, { ...base, generation: { ...video, video: false, image, extension: { keep: true } } });
+    writeJson(path, { ...base, generation: { video: false, image, extension: { keep: true } } });
     expect(readProjectSettings(project).generation).toMatchObject({ video: null, image });
     writeProjectSettings(project, { ...readProjectSettings(project), name: 'Новое имя' });
     expect(JSON.parse(readFileSync(path, 'utf8')).generation.video).toBe(false);
@@ -1024,8 +1016,8 @@ describe('аниматик', () => {
       schema_version: 1,
       video_file: 'clip.mp4',
       video_sha256: sha256Text('mp4'),
+      project_inputs: { name: JSON.parse(readFileSync(join(project, 'plan/project.json'), 'utf8')).name, animatic_video: 'clip.mp4' },
       source_hashes: {
-        'plan/project.json': sha256Text(readFileSync(join(project, 'plan/project.json'), 'utf8')),
         'source/track.mp3': sha256Text('track'),
         'assets/shots/M01/video.mp4': sha256Text('video'),
         'plan/animatic/cards/M02.png': sha256Text('png')

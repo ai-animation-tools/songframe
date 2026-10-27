@@ -204,6 +204,54 @@ class UpdateSceneViewsTests(unittest.TestCase):
         self.assertIn("plan/animatic/cards/manifest.json", drift)
         self.assertFalse("Мира встаёт." in (self.root / "plan/storyboard.md").read_text())
 
+    def test_only_project_name_changes_cards_and_working_documents(self):
+        # Две реальные карточки сохраняют зависимость от названия и референса,
+        # но не от настроек следующей генерации или оформления JSON.
+        update()
+        path = self.root / "plan/project.json"
+        project = json.loads(path.read_text())
+        receipt = json.loads((self.root / "plan/animatic/cards/manifest.json").read_text())
+        self.assertEqual(receipt["project_inputs"], {"name": "Тест"})
+        self.assertEqual(len(receipt["cards"]), 2)
+        for generation in (
+            {"video": {"provider": "kling"}},
+            {"video": {"model": "другая модель", "provider_selected": True, "options": {"duration": 5}}},
+            {"image": {"provider": "codex", "model": "новая"}},
+            None,
+        ):
+            with self.subTest(generation=generation):
+                project["generation"] = generation
+                project["animatic_video"] = "другое.mp4"
+                path.write_text(json.dumps(project, ensure_ascii=False, indent=4))
+                self.assertEqual(update(check=True), [])
+                self.git("add", "-A")
+                self.assertEqual(check_snapshot(Sources(":")), [])
+        project["name"] = "Новое имя"
+        path.write_text(json.dumps(project))
+        changed = update(check=True)
+        self.assertIn("plan/storyboard.md", changed)
+        self.assertIn("plan/animatic/cards/manifest.json", changed)
+        self.assertIn("plan/animatic/cards/M01.png", changed)
+        update()
+        Image.new("RGB", (320, 200), "green").save(self.root / "source/heroes/mira.png")
+        changed = update(check=True)
+        self.assertIn("plan/animatic/cards/manifest.json", changed)
+        self.assertIn("plan/animatic/cards/M01.png", changed)
+
+    def test_missing_or_invalid_project_inputs_require_fresh_cards(self):
+        update()
+        path = self.root / "plan/animatic/cards/manifest.json"
+        original = json.loads(path.read_text())
+        for malformed in (None, [], {"name": 1}, {"name": "Тест", "extra": "лишнее"}, "missing"):
+            with self.subTest(project_inputs=malformed):
+                receipt = dict(original, project_inputs=malformed)
+                if malformed == "missing":
+                    receipt.pop("project_inputs")
+                path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")
+                self.assertIn("plan/animatic/cards/manifest.json", update(check=True))
+                self.git("add", "-A")
+                self.assertIn("plan/animatic/cards/manifest.json", check_snapshot(Sources(":")))
+
     def test_approved_keyframes_make_transition_card_and_leave_with_package(self):
         self.queue_package(approved=False)
         self.assertIsNone(approved_keyframes(self.root, "M02"))

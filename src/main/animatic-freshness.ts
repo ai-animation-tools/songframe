@@ -3,6 +3,7 @@ import { FPS } from '@shared/video';
 import { createHash } from 'node:crypto';
 import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { animaticProjectInputsMatch } from './project-inputs';
 
 interface FrameSource {
   id: string;
@@ -42,11 +43,11 @@ export interface AnimaticManifest {
   source_audio?: string;
   source_audio_sha256?: string;
   source_hashes?: Record<string, string>;
+  project_inputs?: unknown;
   shots?: AnimaticManifestShot[];
 }
 interface CardsReceipt {
   registry_sha256?: string;
-  project_sha256?: string;
   reference_hashes?: Record<string, string>;
   cards?: Record<string, { sha256?: string; keyframes?: FrameSource[]; last?: { sha256?: string } }>;
 }
@@ -134,8 +135,14 @@ export function animaticInputProblems(project: string, manifest: AnimaticManifes
       problems.push(`Вход аниматика изменён или отсутствует: ${name}. Нужна пересборка.`);
     }
   };
+  // Snapshot отделяет настройки генерации и форматирование JSON от реальных входов аниматика.
+  const projectFile = join(project, 'plan/project.json');
+  const currentProject = readJson<unknown>(projectFile);
+  if (!('project_inputs' in manifest)) problems.push('В манифесте аниматика отсутствует обязательное поле project_inputs; пересоберите аниматик.');
+  else if (!animaticProjectInputsMatch(manifest.project_inputs, currentProject))
+    problems.push('Значимые поля plan/project.json изменены или snapshot project_inputs повреждён; нужна пересборка аниматика.');
   for (const [name, digest] of Object.entries(sources)) check(name, digest);
-  for (const name of ['plan/project.json', manifest.source_audio ?? 'source/track.mp3']) {
+  for (const name of [manifest.source_audio ?? 'source/track.mp3']) {
     if (!(name in sources)) check(name, name === manifest.source_audio ? manifest.source_audio_sha256 : undefined);
   }
   const receipt = readJson<CardsReceipt>(join(project, 'plan/animatic/cards/manifest.json'));

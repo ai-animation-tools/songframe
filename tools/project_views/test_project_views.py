@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import hashlib
+import json
 import re
 import unittest
 from unittest.mock import patch
@@ -97,15 +98,12 @@ class RoadmapTests(unittest.TestCase):
         current_hash = hashlib.sha256(sources.text("plan/scenes.json").encode()).hexdigest()
         for digest, expected in [
             (current_hash, "Полная сборка ожидает просмотра."),
-            ("0" * 64, "Сборка устарела относительно реестра сцен; требуется пересборка."),
+            ("0" * 64, "Сборка устарела относительно исходников; требуется пересборка."),
         ]:
             manifest = dict(
                 latest,
                 scene_registry_sha256=digest,
-                source_hashes=dict(
-                    latest["source_hashes"],
-                    **{"plan/project.json": hashlib.sha256(sources.text("plan/project.json").encode()).hexdigest()},
-                ),
+                project_inputs={key: read_json("plan/project.json")[key] for key in ("name", "animatic_video")},
             )
             with (
                 self.subTest(current=digest == current_hash),
@@ -116,6 +114,91 @@ class RoadmapTests(unittest.TestCase):
                 roadmap = render(sources)
             self.assertIn(expected, roadmap)
             self.assertNotIn("Последний утверждённый полный просмотр:", roadmap)
+
+    def test_build_project_inputs_ignore_generation_but_validate_exact_snapshot(self):
+        sources = Sources()
+        read_json = sources.json
+        read_text = sources.text
+        project = read_json("plan/project.json")
+        latest_path = read_json("plan/production-status.json")["current_animatic"]
+        manifest = dict(read_json(latest_path))
+        manifest["scene_registry_sha256"] = hashlib.sha256(read_text("plan/scenes.json").encode()).hexdigest()
+        manifest["project_inputs"] = {key: project[key] for key in ("name", "animatic_video")}
+
+        def current_json(path):
+            return project if path == "plan/project.json" else manifest if path == latest_path else read_json(path)
+
+        with (
+            patch.object(sources, "json", side_effect=current_json),
+            patch.object(
+                sources,
+                "text",
+                side_effect=lambda path: (
+                    json.dumps(project, ensure_ascii=False, indent=4)
+                    if path == "plan/project.json"
+                    else read_text(path)
+                ),
+            ),
+        ):
+            for generation in (
+                {
+                    "video": {
+                        "provider": "kling",
+                        "provider_selected": True,
+                        "model": "другая",
+                        "options": {"duration": 5},
+                    }
+                },
+                None,
+            ):
+                with self.subTest(generation=generation):
+                    project["generation"] = generation
+                    self.assertIn("Полная сборка ожидает просмотра.", render(sources))
+            for field in ("name", "animatic_video"):
+                value = project[field]
+                project[field] = "Другое имя" if field == "name" else "другое.mp4"
+                self.assertIn("Сборка устарела", render(sources))
+                project[field] = value
+            for malformed in (
+                None,
+                [],
+                {"name": project["name"]},
+                {"name": project["name"], "animatic_video": 1},
+                dict(manifest["project_inputs"], extra="лишнее"),
+            ):
+                with self.subTest(project_inputs=malformed):
+                    manifest["project_inputs"] = malformed
+                    self.assertIn("Сборка устарела", render(sources))
+            manifest.pop("project_inputs")
+            self.assertIn("Сборка устарела", render(sources))
+
+    def test_missing_or_changed_media_hashes_make_build_stale(self):
+        sources = Sources()
+        read_json = sources.json
+        read_digest = sources.digest
+        latest_path = read_json("plan/production-status.json")["current_animatic"]
+        project = read_json("plan/project.json")
+        manifest = dict(read_json(latest_path))
+        manifest["scene_registry_sha256"] = hashlib.sha256(sources.text("plan/scenes.json").encode()).hexdigest()
+        manifest["project_inputs"] = {key: project[key] for key in ("name", "animatic_video")}
+        with patch.object(
+            sources, "json", side_effect=lambda path: manifest if path == latest_path else read_json(path)
+        ):
+            self.assertIn("Полная сборка ожидает просмотра.", render(sources))
+            video = next(shot["path"] for shot in manifest["shots"] if shot["media"] == "video")
+            for changed in (manifest["source_audio"], video):
+                with (
+                    self.subTest(path=changed),
+                    patch.object(
+                        sources, "digest", side_effect=lambda path: "0" * 64 if path == changed else read_digest(path)
+                    ),
+                ):
+                    self.assertIn("Сборка устарела", render(sources))
+            for missing in (None, {}, {"source/missing.mp4": "0" * 64}):
+                manifest["source_hashes"] = missing
+                self.assertIn("Сборка устарела", render(sources))
+            manifest.pop("source_hashes")
+            self.assertIn("Сборка устарела", render(sources))
 
 
 if __name__ == "__main__":

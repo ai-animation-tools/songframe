@@ -68,24 +68,23 @@ class SceneRegistryTests(unittest.TestCase):
     def test_generation_settings_are_required_and_validated(self):
         from tools.scene_registry.scene_registry import generation_settings
 
-        good = {
-            "generation": {
-                "provider": "kling",
-                "resolution": "1080p",
-                "aspect_ratio": "16:9",
-                "watermark": False,
-                "duration_rule": "min_supported_strictly_greater_than_window",
-            }
+        video = {
+            "provider": "kling",
+            "resolution": "1080p",
+            "aspect_ratio": "16:9",
+            "watermark": False,
+            "duration_rule": "min_supported_strictly_greater_than_window",
         }
+        good = {"generation": {"video": video, "image": None}}
         self.assertEqual(generation_settings(good)["aspect_ratio"], "16:9")
         with self.assertRaisesRegex(ValueError, "нет блока generation"):
             generation_settings({"name": "x"})
         with self.assertRaisesRegex(ValueError, "watermark"):
-            generation_settings({"generation": dict(good["generation"], watermark="no")})
+            generation_settings({"generation": {"video": dict(video, watermark="no"), "image": None}})
         with self.assertRaisesRegex(ValueError, "duration_rule"):
-            generation_settings({"generation": dict(good["generation"], duration_rule="whatever")})
+            generation_settings({"generation": {"video": dict(video, duration_rule="whatever"), "image": None}})
         with self.assertRaisesRegex(ValueError, "16:9"):
-            generation_settings({"generation": dict(good["generation"], aspect_ratio="wide")})
+            generation_settings({"generation": {"video": dict(video, aspect_ratio="wide"), "image": None}})
 
     def test_generation_auto_ratio_is_valid_for_both_media_but_other_invalid_values_are_rejected(self):
         from tools.scene_registry.scene_registry import generation_settings
@@ -113,7 +112,7 @@ class SceneRegistryTests(unittest.TestCase):
                 with self.subTest(kind=kind, value=value), self.assertRaises(ValueError):
                     generation_settings(broken, kind)
 
-    def test_generation_media_are_independent_and_legacy_is_read_without_mutation(self):
+    def test_generation_media_are_independent_and_flat_settings_are_rejected(self):
         from tools.scene_registry.scene_registry import generation_settings
 
         video = {
@@ -126,12 +125,12 @@ class SceneRegistryTests(unittest.TestCase):
             "options": {"backend": {"custom": True}},
             "custom": 7,
         }
-        legacy = {"generation": deepcopy(video)}
-        original = deepcopy(legacy)
-        self.assertEqual(generation_settings(legacy), video)
-        with self.assertRaisesRegex(ValueError, "generation.image"):
-            generation_settings(legacy, "image")
-        self.assertEqual(legacy, original)
+        flat = {"generation": deepcopy(video)}
+        for kind in ("video", "image"):
+            with self.subTest(kind=kind), self.assertRaisesRegex(ValueError, f"generation.{kind}"):
+                generation_settings(flat, kind)
+        with self.assertRaisesRegex(ValueError, "video и image"):
+            validate_project({"schema_version": 1, "name": "Тест", "animatic_video": "clip.mp4", **flat})
         image = {"provider": "future-image", "outputs": 2, "options": {"backend": {"custom": True}}, "custom": ["keep"]}
         new = {"generation": {"video": video, "image": image, "custom": {"keep": True}}}
         self.assertEqual(generation_settings(new), video)
@@ -139,9 +138,9 @@ class SceneRegistryTests(unittest.TestCase):
         self.assertEqual(result, image)
         result["options"]["backend"]["custom"] = False
         self.assertTrue(image["options"]["backend"]["custom"])
-        # Наличие нового ключа запрещает fallback даже при испорченном блоке.
+        # Повреждённые настройки одного медиа не подменяются настройками другого.
         for invalid in (None, False, [], {}, "invalid"):
-            mixed = {"generation": dict(video, video=invalid, image=image)}
+            mixed = {"generation": {"video": invalid, "image": image}}
             with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "generation.video"):
                 generation_settings(mixed)
             self.assertEqual(generation_settings(mixed, "image"), image)

@@ -30,11 +30,14 @@ PROJECT = {
     "name": "Пробный клип",
     "animatic_video": "sample-animatic.mp4",
     "generation": {
-        "provider": "kling",
-        "resolution": "1080p",
-        "aspect_ratio": "16:9",
-        "watermark": False,
-        "duration_rule": "min_supported_strictly_greater_than_window",
+        "video": {
+            "provider": "kling",
+            "resolution": "1080p",
+            "aspect_ratio": "16:9",
+            "watermark": False,
+            "duration_rule": "min_supported_strictly_greater_than_window",
+        },
+        "image": None,
     },
 }
 LYRICS = ["[Куплет]", "Вечер зажёг фонари у воды", "Ветер качает бумажные огни", "Мы отпускаем огни в небеса"]

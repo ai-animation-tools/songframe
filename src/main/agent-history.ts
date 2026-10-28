@@ -2,6 +2,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AgentJob } from '@shared/agents';
+import { isAgentProvider } from '@shared/agent-providers';
 import { readLocalJson, writeLocalJson } from './local-files';
 
 export class AgentHistory {
@@ -23,7 +24,7 @@ export class AgentHistory {
           !job ||
           job.schemaVersion !== 1 ||
           name !== `agent-${job.id}.json` ||
-          !['claude', 'codex'].includes(job.provider) ||
+          !isAgentProvider(job.provider) ||
           !['running', 'completed', 'failed', 'cancelled', 'interrupted'].includes(job.status) ||
           !Number.isSafeInteger(job.sequence) ||
           job.sequence < 0 ||

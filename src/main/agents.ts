@@ -4,7 +4,8 @@ import { constants } from 'node:fs';
 import { access, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { delimiter, isAbsolute, join } from 'node:path';
-import type { AgentCheckResult, AgentSettings } from '@shared/agents';
+import type { AgentCheckResult } from '@shared/agents';
+import { AGENT_CLI_PROBES, type AgentCliProbe, type CliCommandResult } from './agent-probes';
 import { normalizeAgentSettings } from './settings';
 
 interface CheckOptions {
@@ -18,12 +19,7 @@ export function agentEnvironment(env: NodeJS.ProcessEnv = process.env, home = ho
   return { ...env, PATH: directories.filter(isAbsolute).join(delimiter) };
 }
 
-interface CommandResult {
-  code: number | string | null;
-  stdout: string;
-  output: string;
-  failure?: 'timeout' | 'output_limit' | 'launch';
-}
+type CommandResult = CliCommandResult;
 
 function run(executable: string, args: string[], env: NodeJS.ProcessEnv, home: string, timeout: number): Promise<CommandResult> {
   return new Promise((resolve) => {
@@ -51,26 +47,11 @@ function failureMessage(result: CommandResult): string | null {
   return null;
 }
 
-function authorization(provider: AgentSettings['provider'], result: CommandResult): Pick<AgentCheckResult, 'authorization' | 'message'> {
+function authorization(probe: AgentCliProbe, result: CommandResult): Pick<AgentCheckResult, 'authorization' | 'message'> {
   const failed = failureMessage(result);
   if (failed) return { authorization: 'unknown', message: failed };
-  if (provider === 'claude') {
-    try {
-      // CLI может вернуть адрес аккаунта и другие поля: наружу передаётся только признак входа.
-      const data = JSON.parse(result.stdout.trim());
-      if (data?.loggedIn === true && result.code === 0) return { authorization: 'authenticated', message: 'CLI сообщает, что вход выполнен.' };
-      if (data?.loggedIn === false && result.code === 1) return { authorization: 'unauthenticated', message: 'Выполните claude auth login в терминале.' };
-    } catch {
-      // Старый или изменившийся формат не доказывает отсутствие входа.
-    }
-  } else {
-    if (result.code === 0 && /^Logged in using [^\r\n]+$/m.test(result.output)) {
-      return { authorization: 'authenticated', message: 'CLI сообщает, что учётные данные для входа найдены.' };
-    }
-    if (result.code === 1 && /^Not logged in\s*$/m.test(result.output)) {
-      return { authorization: 'unauthenticated', message: 'Выполните codex login в терминале.' };
-    }
-  }
+  const recognized = probe.authorization(result);
+  if (recognized) return recognized;
   if (
     result.code !== 0 &&
     /\b(ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH)\b|\b(network is unreachable|failed to connect|connection refused)\b/i.test(result.output)
@@ -83,6 +64,7 @@ function authorization(provider: AgentSettings['provider'], result: CommandResul
 export async function checkAgent(input: unknown, options: CheckOptions = {}): Promise<AgentCheckResult> {
   const config = normalizeAgentSettings(input);
   if (!config) throw new Error('Сначала выберите агента.');
+  const probe = AGENT_CLI_PROBES[config.provider];
   const home = options.home ?? homedir();
   // GUI часто не наследует PATH терминала; ~/.local/bin используется нативной установкой Claude.
   // Другие менеджеры установок не обходим: для них пользователь может выбрать файл вручную.
@@ -91,7 +73,7 @@ export async function checkAgent(input: unknown, options: CheckOptions = {}): Pr
   let executablePath = config.executablePath;
   if (!executablePath) {
     for (const directory of directories.filter(isAbsolute)) {
-      const candidate = join(directory, config.provider);
+      const candidate = join(directory, probe.executable);
       try {
         if (!(await stat(candidate)).isFile()) continue;
         await access(candidate, constants.X_OK);
@@ -128,20 +110,13 @@ export async function checkAgent(input: unknown, options: CheckOptions = {}): Pr
   if (failed || versionResult.code !== 0) {
     return { ...base, availability: 'error', message: failed ?? 'Команда версии завершилась с ошибкой. Проверьте CLI и его зависимости в терминале.' };
   }
-  const pattern = config.provider === 'codex' ? /^codex-cli (\d+\.\d+\.\d+(?:[-+][\w.-]+)?)\s*$/m : /^(\d+\.\d+\.\d+(?:[-+][\w.-]+)?) \(Claude Code\)\s*$/m;
-  const version = pattern.exec(versionResult.output)?.[1];
+  const version = probe.version(versionResult.output);
   if (!version)
     return {
       ...base,
       availability: 'available',
       message: 'Файл запускается, но версия выбранного CLI не распознана. Проверьте выбранный файл или обновите CLI.'
     };
-  const status = await run(
-    executablePath,
-    config.provider === 'claude' ? ['auth', 'status', '--json'] : ['login', 'status'],
-    env,
-    home,
-    options.timeoutMs ?? 10_000
-  );
-  return { ...base, availability: 'available', version, ...authorization(config.provider, status) };
+  const status = await run(executablePath, probe.statusArgs, env, home, options.timeoutMs ?? 10_000);
+  return { ...base, availability: 'available', version, ...authorization(probe, status) };
 }

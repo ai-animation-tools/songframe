@@ -2,6 +2,7 @@
 import { useState, type ReactElement } from 'react';
 import { Alert, Box, Button, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 import type { AgentJob } from '@shared/agents';
+import { agentTitle } from '@shared/agent-providers';
 import { AgentButton } from './AgentButton';
 import StopIcon from '@mui/icons-material/Stop';
 import type { AiActionKind } from '@shared/ai-access';
@@ -34,8 +35,7 @@ export function AgentJobCard({
         </Typography>
         <Chip size="small" label={LABELS[job.status]} color={job.status === 'completed' ? 'success' : job.status === 'failed' ? 'error' : 'default'} />
         <Typography variant="caption" color="text.secondary">
-          <AgentIcon provider={job.provider} size={16} /> {job.provider === 'claude' ? 'Claude Code' : 'Codex'} ·{' '}
-          {new Date(job.startedAt).toLocaleString('ru-RU')}
+          <AgentIcon provider={job.provider} size={16} /> {agentTitle(job.provider)} · {new Date(job.startedAt).toLocaleString('ru-RU')}
         </Typography>
         <Box sx={{ flex: 1 }} />
         {['failed', 'cancelled', 'interrupted'].includes(job.status) && (

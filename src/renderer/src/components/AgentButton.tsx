@@ -1,13 +1,13 @@
 /** Единое обозначение действий агента; явный значок не заменяет глобальный выбор и проверку доступности. */
 import type { ReactElement } from 'react';
 import { Button, Tooltip, type ButtonProps } from '@mui/material';
-import type { AgentSettings } from '@shared/agents';
+import { agentTitle, type AgentProvider } from '@shared/agent-providers';
 import { aiActionProblem, type AiActionKind } from '@shared/ai-access';
 import { useApp } from '../state';
 import { AgentIcon } from './AgentIcon';
 
 type Props = Omit<ButtonProps, 'startIcon'> & {
-  provider?: AgentSettings['provider'] | null;
+  provider?: AgentProvider | null;
   aiKind?: AiActionKind;
   /** Только диагностика профиля в настройках: проверяет явный выбор формы до сохранения и установки CLI. */
   setup?: boolean;
@@ -24,7 +24,7 @@ export function AgentButton({ provider, aiKind = 'agent', setup = false, ...prop
       ? 'Сначала выберите агента в настройках приложения.'
       : aiActionProblem(aiAccess, aiKind);
   const disabled = props.disabled || !!reason;
-  const title = selected === 'claude' ? 'Claude Code' : selected === 'codex' ? 'Codex' : 'Claude Code или Codex';
+  const title = agentTitle(selected);
   const button = (
     <Button
       {...props}

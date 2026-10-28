@@ -1,4 +1,5 @@
 import type { AgentEvent } from '@shared/agents';
+import { agentTitle } from '@shared/agent-providers';
 import type { NotificationTarget } from '@shared/notifications';
 import type { JobInfo } from '@shared/types';
 
@@ -47,7 +48,7 @@ export class TaskNotifications {
     this.deliveredAgents.add(job.id);
 
     // Завершение ответа не подтверждает корректность предложения и не заменяет согласование пользователем.
-    const provider = job.provider === 'claude' ? 'Claude Code' : 'Codex';
+    const provider = agentTitle(job.provider);
     this.send({
       title: job.status === 'completed' ? `Ответ ${provider} готов` : `Ошибка ${provider}`,
       body: job.task,

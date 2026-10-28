@@ -2,6 +2,7 @@
 import { createHash } from 'node:crypto';
 import { lstatSync, readFileSync, readdirSync, readlinkSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { AGENT_PROVIDER_IDS, AGENT_PROVIDERS } from '@shared/agent-providers';
 import { writeAtomicText, writeLocalJson } from './local-files';
 import { renderProjectDocumentation } from './project-documentation';
 
@@ -24,7 +25,9 @@ const SKILLS = {
     'references/state.md'
   ]
 };
-const DESTINATIONS = Object.keys(SKILLS).flatMap((skill) => [`.agents/skills/${skill}`, `.claude/skills/${skill}`]);
+// Каждый CLI ищет навыки в своём каталоге проекта; копии одинаковы.
+const SKILL_DIRS = AGENT_PROVIDER_IDS.map((provider) => AGENT_PROVIDERS[provider].skillsDir);
+const DESTINATIONS = Object.keys(SKILLS).flatMap((skill) => SKILL_DIRS.map((dir) => `${dir}/${skill}`));
 const MANIFEST = '.songframe/managed-skills.json';
 interface ManagedSkillsManifest {
   schemaVersion: 1;
@@ -124,7 +127,7 @@ export function syncManagedSkills(root: string, project: string, platform: NodeJ
     const desired = new Map<string, string>();
     const otherPlatform = new Map<string, string>();
     for (const [skill, files] of Object.entries(SKILLS)) {
-      for (const destination of [`.agents/skills/${skill}`, `.claude/skills/${skill}`]) {
+      for (const destination of SKILL_DIRS.map((dir) => `${dir}/${skill}`)) {
         for (const file of files) {
           const source = `skills/${skill}/${file}`;
           const target = `${destination}/${file}`;

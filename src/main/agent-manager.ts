@@ -4,6 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, resolve, sep } from 'node:path';
 import type { AgentEvent, AgentJob, AgentSettings, AgentStartInput } from '@shared/agents';
+import type { AgentProvider } from '@shared/agent-providers';
 import { createAgentAdapter, type AgentAdapter, type AgentUpdate } from './agent-adapters';
 import { AgentHistory } from './agent-history';
 import { AgentError, JsonLines, providerFailure, redact } from './agent-protocol';
@@ -26,7 +27,7 @@ interface Running {
 interface Options {
   timeoutMs?: number;
   outputBytes?: number;
-  adapter?: (provider: AgentSettings['provider']) => AgentAdapter;
+  adapter?: (provider: AgentProvider) => AgentAdapter;
 }
 
 const TEXT_LIMIT = 256 * 1024;
@@ -199,13 +200,7 @@ export class AgentManager {
         throw new AgentError(check.availability === 'not_found' ? 'CLI_NOT_FOUND' : 'CLI_UNAVAILABLE', check.message);
       if (!check.version) throw new AgentError('UNSUPPORTED_VERSION', 'Версия CLI не распознана. Проверьте выбранный файл в настройках.');
       run.job.cliVersion = check.version;
-      const args = adapter.args(config, check.version);
-      if (imageDirectory) {
-        const sandbox = args.indexOf('--sandbox');
-        if (config.provider !== 'codex' || sandbox < 0 || args[sandbox + 1] !== 'read-only')
-          throw new AgentError('UNSUPPORTED_VERSION', 'CLI не поддерживает штатный режим создания кандидатов.');
-        args[sandbox + 1] = 'workspace-write';
-      }
+      const args = adapter.args(config, check.version, imageDirectory ? 'write' : 'read');
       if (check.authorization !== 'authenticated')
         throw new AgentError(check.authorization === 'unauthenticated' ? 'AUTH_REQUIRED' : 'AUTH_UNKNOWN', check.message);
       run.job.phase = 'Агент выполняет задачу';

@@ -1,5 +1,7 @@
-/** Адаптеры знают только аргументы CLI и формат событий; жизненным циклом владеет AgentManager. */
+/** Адаптеры знают только аргументы CLI и формат событий; жизненным циклом владеет AgentManager.
+ * Новый CLI подключается записью в shared/agent-providers.ts, описанием проверки в agent-probes.ts и адаптером здесь. */
 import type { AgentAccountResult, AgentCheckResult, AgentSettings } from '@shared/agents';
+import type { AgentProvider } from '@shared/agent-providers';
 import { checkAgent } from './agents';
 import { claudeAccount, codexAccount } from './agent-account';
 import { AgentError, providerFailure } from './agent-protocol';
@@ -11,10 +13,15 @@ export type AgentUpdate =
   | { type: 'completed'; result?: string }
   | { type: 'failed'; error: AgentError };
 
+/** read — только чтение проекта; write — запись кандидатов во временную рабочую папку задания. */
+export type AgentRunMode = 'read' | 'write';
+
 export interface AgentAdapter {
+  readonly provider: AgentProvider;
   check(config: AgentSettings): Promise<AgentCheckResult>;
   account(config: AgentSettings): Promise<AgentAccountResult>;
-  args(config: AgentSettings, version: string): string[];
+  /** Неподдерживаемый режим или версия завершаются AgentError до запуска процесса. */
+  args(config: AgentSettings, version: string, mode: AgentRunMode): string[];
   parse(value: Record<string, unknown>): AgentUpdate[];
 }
 
@@ -31,6 +38,8 @@ function session(value: unknown): AgentUpdate[] {
   const id = text(value);
   return /^[\w.-]{1,128}$/.test(id) ? [{ type: 'session', id }] : [];
 }
+const unsupportedMode = (): AgentError => new AgentError('UNSUPPORTED_VERSION', 'CLI не поддерживает штатный режим создания кандидатов.');
+
 function supported(version: string, major: number, minor: number, patch: number): void {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
   if (!match || +match[1] !== major || +match[2] < minor || (+match[2] === minor && +match[3] < patch)) {
@@ -39,6 +48,7 @@ function supported(version: string, major: number, minor: number, patch: number)
 }
 
 export class ClaudeAdapter implements AgentAdapter {
+  readonly provider = 'claude';
   private partial = false;
   private readonly tools = new Set<string>();
   check(config: AgentSettings): Promise<AgentCheckResult> {
@@ -47,8 +57,9 @@ export class ClaudeAdapter implements AgentAdapter {
   account(config: AgentSettings): Promise<AgentAccountResult> {
     return claudeAccount(config);
   }
-  args(config: AgentSettings, version: string): string[] {
+  args(config: AgentSettings, version: string, mode: AgentRunMode): string[] {
     supported(version, 2, 1, 0);
+    if (mode !== 'read') throw unsupportedMode();
     return [
       '-p',
       '--input-format',
@@ -110,6 +121,7 @@ export class ClaudeAdapter implements AgentAdapter {
 }
 
 export class CodexAdapter implements AgentAdapter {
+  readonly provider = 'codex';
   private readonly messages = new Map<string, string>();
   private completedMessage = '';
   check(config: AgentSettings): Promise<AgentCheckResult> {
@@ -118,7 +130,7 @@ export class CodexAdapter implements AgentAdapter {
   account(config: AgentSettings): Promise<AgentAccountResult> {
     return codexAccount(config);
   }
-  args(config: AgentSettings, version: string): string[] {
+  args(config: AgentSettings, version: string, mode: AgentRunMode): string[] {
     supported(version, 0, 159, 0);
     return [
       '-a',
@@ -126,7 +138,7 @@ export class CodexAdapter implements AgentAdapter {
       'exec',
       '--json',
       '--sandbox',
-      'read-only',
+      mode === 'write' ? 'workspace-write' : 'read-only',
       '--skip-git-repo-check',
       '--color',
       'never',
@@ -161,6 +173,12 @@ export class CodexAdapter implements AgentAdapter {
   }
 }
 
-export function createAgentAdapter(provider: AgentSettings['provider']): AgentAdapter {
-  return provider === 'claude' ? new ClaudeAdapter() : new CodexAdapter();
+/** Record требует адаптера для каждого провайдера реестра; адаптер хранит состояние разбора одного задания. */
+const ADAPTERS: Record<AgentProvider, () => AgentAdapter> = {
+  claude: () => new ClaudeAdapter(),
+  codex: () => new CodexAdapter()
+};
+
+export function createAgentAdapter(provider: AgentProvider): AgentAdapter {
+  return ADAPTERS[provider]();
 }

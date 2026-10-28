@@ -1,21 +1,16 @@
 /** Присланные знаки провайдеров; на кнопках с заливкой контраст обеспечивается цветом текста. */
 import type { ReactElement } from 'react';
 import { Box } from '@mui/material';
-import type { AgentSettings } from '@shared/agents';
+import { AGENT_PROVIDER_IDS, type AgentProvider } from '@shared/agent-providers';
 
-const codex = new URL('../assets/agents/codex.svg', import.meta.url).href;
-const claude = new URL('../assets/agents/claude.svg', import.meta.url).href;
+/** Цветной знак показывается как есть, одноцветный перекрашивается маской в цвет текста. */
+const ICONS: Record<AgentProvider, { src: string; colored: boolean }> = {
+  claude: { src: new URL('../assets/agents/claude.svg', import.meta.url).href, colored: true },
+  codex: { src: new URL('../assets/agents/codex.svg', import.meta.url).href, colored: false }
+};
 
-export function AgentIcon({
-  provider,
-  size = 20,
-  monochrome = false
-}: {
-  provider: AgentSettings['provider'] | null;
-  size?: number;
-  monochrome?: boolean;
-}): ReactElement {
-  const providers = provider ? [provider] : (['claude', 'codex'] as const);
+export function AgentIcon({ provider, size = 20, monochrome = false }: { provider: AgentProvider | null; size?: number; monochrome?: boolean }): ReactElement {
+  const providers = provider ? [provider] : AGENT_PROVIDER_IDS;
   return (
     <Box
       component="span"
@@ -24,8 +19,8 @@ export function AgentIcon({
       sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 0.4, flexShrink: 0, verticalAlign: 'middle', lineHeight: 0 }}
     >
       {providers.map((value) =>
-        value === 'claude' && !monochrome ? (
-          <Box key={value} component="img" src={claude} alt="" sx={{ display: 'block', width: size, height: size }} />
+        ICONS[value].colored && !monochrome ? (
+          <Box key={value} component="img" src={ICONS[value].src} alt="" sx={{ display: 'block', width: size, height: size }} />
         ) : (
           <Box
             key={value}
@@ -35,7 +30,7 @@ export function AgentIcon({
               width: size,
               height: size,
               bgcolor: 'currentColor',
-              maskImage: `url("${value === 'claude' ? claude : codex}")`,
+              maskImage: `url("${ICONS[value].src}")`,
               maskSize: 'contain',
               maskRepeat: 'no-repeat',
               maskPosition: 'center'

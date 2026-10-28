@@ -1,20 +1,21 @@
 /** Настройки лежат рядом с историей и журналами, включая явно выбранный SONGFRAME_LOCAL_DIR. */
 import { isAbsolute, join } from 'node:path';
 import type { AgentSettings } from '@shared/agents';
+import { agentTitle, isAgentProvider, type AgentProvider } from '@shared/agent-providers';
 import { readLocalJson, writeLocalJson } from './local-files';
 
 export interface Settings {
   toolsRootOverride?: string | null;
   agent?: AgentSettings;
   imageAgent?: AgentSettings;
-  agentProfiles?: Partial<Record<AgentSettings['provider'], AgentSettings>>;
+  agentProfiles?: Partial<Record<AgentProvider, AgentSettings>>;
 }
 
 export function normalizeAgentSettings(value: unknown): AgentSettings | null {
   if (value === undefined || value === null) return null;
   if (typeof value !== 'object' || Array.isArray(value)) throw new Error('Неверный формат настроек агента.');
   const input = value as Record<string, unknown>;
-  if (input.provider !== 'claude' && input.provider !== 'codex') throw new Error('Выберите Claude Code или Codex.');
+  if (!isAgentProvider(input.provider)) throw new Error(`Выберите ${agentTitle(null)}.`);
   const optionalText = (key: string): string | undefined => {
     if (input[key] === undefined) return undefined;
     if (typeof input[key] !== 'string' || input[key].includes('\0')) throw new Error('Модель и путь должны быть текстом без нулевых символов.');
@@ -26,12 +27,12 @@ export function normalizeAgentSettings(value: unknown): AgentSettings | null {
   return { provider: input.provider, ...(executablePath ? { executablePath } : {}), ...(model ? { model } : {}) };
 }
 
-function profiles(value: unknown): Partial<Record<AgentSettings['provider'], AgentSettings>> {
+function profiles(value: unknown): Partial<Record<AgentProvider, AgentSettings>> {
   if (value === undefined) return {};
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Неверный формат профилей CLI.');
-  const result: Partial<Record<AgentSettings['provider'], AgentSettings>> = {};
+  const result: Partial<Record<AgentProvider, AgentSettings>> = {};
   for (const [provider, input] of Object.entries(value)) {
-    if (provider !== 'claude' && provider !== 'codex') throw new Error('Неизвестный провайдер CLI.');
+    if (!isAgentProvider(provider)) throw new Error('Неизвестный провайдер CLI.');
     const normalized = normalizeAgentSettings(input);
     if (!normalized || normalized.provider !== provider) throw new Error('Провайдер профиля CLI не совпадает с его именем.');
     result[provider] = normalized;
@@ -82,8 +83,8 @@ export class SettingsStore {
   }
 
   /** Путь и модель другого CLI не переносятся при смене исполнителя или создании опор. */
-  getProviderAgent(provider: AgentSettings['provider']): AgentSettings | null {
-    if (provider !== 'claude' && provider !== 'codex') throw new Error('Неизвестный провайдер CLI.');
+  getProviderAgent(provider: AgentProvider): AgentSettings | null {
+    if (!isAgentProvider(provider)) throw new Error('Неизвестный провайдер CLI.');
     const saved = this.read();
     return saved.agent?.provider === provider ? saved.agent : (saved.agentProfiles?.[provider] ?? null);
   }

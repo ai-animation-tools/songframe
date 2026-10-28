@@ -4,6 +4,7 @@ import { Button, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, St
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import type { AgentSettings } from '@shared/agents';
+import { AGENT_PROVIDER_IDS, AGENT_PROVIDERS, isAgentProvider } from '@shared/agent-providers';
 import { AgentIcon } from '../../../components';
 
 interface Props {
@@ -24,29 +25,23 @@ export function AgentSettingsForm({ settings, disabled, fieldsDisabled = false, 
           aria-labelledby="agent-provider"
           value={settings?.provider ?? ''}
           onChange={(_, provider) => {
-            if (provider === 'claude' || provider === 'codex') onChange({ provider });
+            if (isAgentProvider(provider)) onChange({ provider });
             else onChange(null);
           }}
         >
           <FormControlLabel value="" control={<Radio />} label="Не настроен" />
-          <FormControlLabel
-            value="claude"
-            control={<Radio />}
-            label={
-              <Stack component="span" direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-                <AgentIcon provider="claude" /> <span>Claude Code</span>
-              </Stack>
-            }
-          />
-          <FormControlLabel
-            value="codex"
-            control={<Radio />}
-            label={
-              <Stack component="span" direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-                <AgentIcon provider="codex" /> <span>Codex</span>
-              </Stack>
-            }
-          />
+          {AGENT_PROVIDER_IDS.map((provider) => (
+            <FormControlLabel
+              key={provider}
+              value={provider}
+              control={<Radio />}
+              label={
+                <Stack component="span" direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                  <AgentIcon provider={provider} /> <span>{AGENT_PROVIDERS[provider].title}</span>
+                </Stack>
+              }
+            />
+          ))}
         </RadioGroup>
       </FormControl>
       <TextField

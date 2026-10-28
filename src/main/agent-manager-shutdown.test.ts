@@ -28,6 +28,7 @@ afterEach(async () => {
 function create(check: AgentAdapter['check'], script: string): AgentManager {
   const manager = new AgentManager(settings, {
     adapter: () => ({
+      provider: 'codex',
       check,
       args: () => [script],
       parse: () => [],

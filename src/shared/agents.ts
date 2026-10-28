@@ -1,6 +1,8 @@
+import type { AgentProvider } from './agent-providers';
+
 /** Глобальный выбор агента не связан с видеопровайдером проекта и не содержит учётных данных. */
 export interface AgentSettings {
-  provider: 'claude' | 'codex';
+  provider: AgentProvider;
   executablePath?: string;
   model?: string;
 }

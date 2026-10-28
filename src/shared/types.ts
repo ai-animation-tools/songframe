@@ -170,6 +170,10 @@ export interface EnvironmentCheck {
   status?: 'pending' | 'running' | 'done';
   /** Компонент входит в поставку и не требует отдельной установки. */
   bundled?: boolean;
+  /** Внешняя программа, устанавливаемая отдельно по необходимости. */
+  external?: boolean;
+  /** Строка программы платного провайдера (id из реестра): у неё показывается состояние входа и кнопка входа. */
+  loginProvider?: string;
 }
 
 export interface ToolResult {
@@ -335,6 +339,8 @@ export interface SceneShot {
   card: { primary_reference: string };
   state_from: StateFrom;
   state_changes: { before?: StateDelta; after?: StateDelta };
+  /** План собирается из материала другого плана (стоп-кадр, повтор, замедление) без собственной генерации. */
+  derived_from?: { shot: string };
 }
 
 export interface SceneReference {
@@ -393,6 +399,32 @@ export interface PackageKeyframe {
   approved: boolean;
 }
 
+/** Строка песни в окне речевого плана: по ней предлагаются границы среза. */
+export interface SpeechLine {
+  text: string | null;
+  start: number;
+  end: number;
+}
+
+/** Точный срез песни речевого плана в пакете: audio/speech.wav и audio/audio-recipe.json. */
+export interface PackageSpeech {
+  path: string;
+  recipe: string;
+  start: number;
+  end: number;
+  lines: SpeechLine[];
+}
+
+/** Предложение среза по разметке: строки в окне плана и границы с запасом. */
+export interface SpeechPlan {
+  shot: string;
+  window: { start: number; end: number };
+  lines: SpeechLine[];
+  proposed: { start: number; end: number } | null;
+  /** Допустимая длина звукового входа у провайдера видео проекта (поле lipSync реестра); null — липсинк не поддерживается. */
+  lipSync: { min: number; max: number } | null;
+}
+
 export interface PackageView {
   /** Хеш показанных оригиналов не меняется от записи ответа пользователя. */
   resultToken?: string;
@@ -428,10 +460,14 @@ export interface PackageView {
     /** Замороженный текст из папки попытки; может отличаться от черновика пакета. */
     promptText?: string | null;
     generationId: string | null;
+    /** Оригинал загрузил пользователь из истории генераций сервиса после неизвестного исхода отправки; ID задания нет. */
+    manualResult: boolean;
     creditsConsumed: number | null;
     /** Абсолютные пути скачанных оригиналов. */
     downloads: string[];
   } | null;
+  /** Речевой план: подготовленный точный WAV пакета или null. */
+  speech?: PackageSpeech | null;
   pendingDecision: { stage: string; question: string; options: string[]; asked_at?: string } | null;
   decision: { stage: string; verdict: string | null; note?: string; at?: string } | null;
   /** Файлы технической сводки (контактный лист, превью), если она уже сделана. */
@@ -450,6 +486,8 @@ export interface ShotProduction {
   stageLabel: string;
   /** Известная причина недоступности повтора по сохранённому запросу; проверка не запускает инструменты. */
   regenerateProblem: string | null;
+  /** План собирается из материала этого плана (derived_from реестра или комплект derived_video); иначе null. */
+  derivedFrom: string | null;
   /** Пакет плана ждёт действия пользователя: вопрос, подтверждение запроса, просмотр результата, запуск доработки. */
   attention: string | null;
   /** Принятые материалы в assets: пути только к существующим файлам видео и оригинала. */
@@ -470,8 +508,8 @@ export interface ProductionView {
   /** Повреждённые или недописанные папки пакетов; удаляются кнопкой, инструменты их не трогают. */
   broken: BrokenPackage[];
   problems: string[];
-  /** Есть ли Python и kling: без них действия недоступны, просмотр работает. */
-  tools: { python: boolean; kling: boolean };
+  /** Есть ли Python и программа каждого платного провайдера (по id): без них действия недоступны, просмотр работает. */
+  tools: { python: boolean; providers: Record<string, boolean> };
 }
 
 /** Актуальная стоимость показанного запроса; token одноразовый и не переживает перезапуск. */
@@ -500,10 +538,11 @@ export interface JobInfo {
   project?: string | null;
   kind: JobKind;
   title: string;
-  status: 'running' | 'done' | 'failed';
+  /** interrupted: по сохранённым сведениям задание выполнялось, когда программа закрылась или завершилась сбоем. */
+  status: 'running' | 'done' | 'failed' | 'interrupted';
   startedAt: string;
   finishedAt: string | null;
-  /** Хвост журнала; полный лог в localDir/jobs/<id>.log. */
+  /** Хвост журнала; полный лог в localDir/jobs/<id>.log. У заданий прошлых сеансов в списке пуст и читается из файла через get. */
   log: string;
   code: number | null;
   /** Причина первого обязательного сбоя, пригодная для показа без открытия журнала. */
@@ -511,6 +550,27 @@ export interface JobInfo {
   steps: JobStepInfo[];
   /** Загрузка весов относится к приложению, а не к данным текущего клипа. */
   modelDownload?: { model: WhisperModelId; directory: string };
+  /** Сведения загружены из localDir/jobs/<id>.json, задание запускалось в прошлом сеансе программы. */
+  previousSession?: boolean;
+}
+
+/** Подпись и причина задания, прерванного закрытием программы. */
+export const JOB_INTERRUPTED_MESSAGE = 'Прервано закрытием или сбоем программы';
+
+/** Сведения о прошлом сеансе программы для уведомления и отчёта разработчику. */
+export interface PreviousSessionInfo {
+  /** Прошлый сеанс начался, но не дошёл до штатного выхода. */
+  crashed: boolean;
+  startedAt: string | null;
+  version: string | null;
+}
+
+/** Необработанная ошибка renderer для журнала сбоев: только текст, источник и стек. */
+export interface RendererErrorReport {
+  kind: 'error' | 'unhandledrejection';
+  message: string;
+  source?: string;
+  stack?: string;
 }
 
 /** Проверка проекта из панели: какой инструмент и с какими ключами запускается. */
@@ -579,7 +639,7 @@ export interface ImageGenerationSettings {
   provider_selected?: boolean;
   aspect_ratio?: string;
   resolution?: string;
-  /** Kling: предпочтительная модель генерации. Codex: модель агента, вызывающего встроенный image_gen. */
+  /** Платный провайдер: предпочтительная модель генерации. Агент-исполнитель: модель агента, вызывающего встроенный генератор. */
   model?: string;
   outputs?: number;
   watermark?: boolean;
@@ -594,17 +654,17 @@ export interface GenerationSettings {
   [key: string]: unknown;
 }
 
+// Значения по умолчанию не выбирают провайдера: его выбирает пользователь в настройках проекта.
 export const DEFAULT_VIDEO_GENERATION: VideoGenerationSettings = {
-  provider: 'kling',
+  provider: '',
   resolution: '1080p',
   aspect_ratio: '16:9',
   watermark: false,
   duration_rule: 'min_supported_strictly_greater_than_window'
 };
 
-// Codex исполняет свой контракт опор; параметры запроса Kling не выдаём за настройки встроенного image_gen.
-export const DEFAULT_IMAGE_GENERATION: ImageGenerationSettings = { provider: 'codex' };
-export const DEFAULT_KLING_IMAGE_GENERATION: ImageGenerationSettings = { provider: 'kling', resolution: '2k', aspect_ratio: '16:9', outputs: 1 };
+// Параметры запроса по умолчанию задаёт реестр провайдеров (MediaProviderInfo.defaults).
+export const DEFAULT_IMAGE_GENERATION: ImageGenerationSettings = { provider: '' };
 
 export const DEFAULT_GENERATION: GenerationSettings = {
   video: null,
@@ -690,6 +750,8 @@ export interface AnimaticView {
   /** Карточки plan/animatic/cards нарисованы по текущему реестру. */
   cardsFresh: boolean;
   problems: string[];
+  /** Почему сборка и решение о приёмке сейчас недоступны (например, сценарий нужно утвердить заново). */
+  blockedReason?: string | null;
 }
 
 /** Дашборд сцен: всё известное о плане в одной карточке; только чтение. */

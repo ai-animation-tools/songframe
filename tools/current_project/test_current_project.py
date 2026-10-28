@@ -118,6 +118,33 @@ class CurrentProjectTests(unittest.TestCase):
         finally:
             resources.chmod(0o700)
 
+    def test_show_reports_project_argument(self):
+        script = Path(__file__).resolve().with_name("current_project.py")
+        environment = dict(os.environ)
+        environment.pop(PROJECT_ENV, None)
+        environment["SONGFRAME_LOCAL_DIR"] = str(self.root / "local")
+        for arguments in (["--project", str(self.project)], [f"--project={self.project}"]):
+            run = subprocess.run(
+                [sys.executable, "-B", str(script), *arguments, "--json", "show"],
+                cwd=self.root,
+                env=environment,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(run.returncode, 0, run.stderr)
+            info = json.loads(run.stdout)
+            self.assertEqual(
+                (info["path"], info["source"], info["is_project"]), (str(self.project.resolve()), "argument", True)
+            )
+        run = subprocess.run(
+            [sys.executable, "-B", str(script), "--json", "show"],
+            cwd=self.root,
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual((run.returncode, json.loads(run.stdout)["source"]), (1, None))
+
     def test_damaged_file_is_ignored(self):
         self.file.parent.mkdir(parents=True)
         self.file.write_text("{", encoding="utf-8")

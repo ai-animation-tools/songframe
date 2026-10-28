@@ -189,7 +189,7 @@ function normalizeText(text: string): string {
  * Сохраняет исходники и пишет манифест. Новые файлы копируются, прежние остаются; изображения референсов,
  * исчезнувшие из ввода, удаляются только если они перечислены в прежнем манифесте.
  */
-export function saveSources(project: string, input: SourcesInput, ffprobe = 'ffprobe', beforeManifestSave?: () => void): SourceManifest {
+export function saveSources(project: string, input: SourcesInput, ffprobe = 'ffprobe'): SourceManifest {
   const problems = validateSources(project, input);
   if (problems.length) throw new Error(problems.join(' '));
   const previous = readManifest(project);
@@ -331,8 +331,6 @@ export function saveSources(project: string, input: SourcesInput, ffprobe = 'ffp
   }
 
   const manifest: SourceManifest = { schema_version: 1, kinds, track, lyrics, idea, cover, references, updated_at: new Date().toISOString() };
-  // Старый JSON ещё доступен для точного перевода прежних утверждений на содержательные входы.
-  beforeManifestSave?.();
   writeFileSync(join(source, MANIFEST_NAME), JSON.stringify(manifest, null, 2) + '\n', 'utf-8');
   return manifest;
 }

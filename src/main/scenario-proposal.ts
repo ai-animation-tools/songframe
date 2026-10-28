@@ -5,11 +5,24 @@ import type { CastFile, SceneShot, ScenesFile, TreatmentFile } from '@shared/typ
 import type { ScenarioDocuments, ScenarioPass } from '@shared/scenario-workflow';
 import { castReferences, normalizeCast } from './cast';
 import { normalizeTreatment, resolveStates, validateScenes } from './scenario';
+import { countLabel } from '@shared/plural';
 
 export const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === 'string');
 const equal = isDeepStrictEqual;
-export const STAGING_FIELDS = ['title', 'camera', 'action', 'continuity', 'notes', 'references', 'lipsync', 'card', 'state_from', 'state_changes'] as const;
+export const STAGING_FIELDS = [
+  'title',
+  'camera',
+  'action',
+  'continuity',
+  'notes',
+  'references',
+  'lipsync',
+  'card',
+  'state_from',
+  'state_changes',
+  'derived_from'
+] as const;
 
 /** Полная проверка вложенных полей нужна до validateScenes, который получает уже типизированный документ. */
 export function checkScenesShape(value: unknown): asserts value is ScenesFile {
@@ -44,23 +57,29 @@ export function checkScenesShape(value: unknown): asserts value is ScenesFile {
       !isRecord(scene.card) ||
       typeof scene.card.primary_reference !== 'string' ||
       (scene.title !== undefined && typeof scene.title !== 'string') ||
-      (scene.notes !== undefined && typeof scene.notes !== 'string')
+      (scene.notes !== undefined && typeof scene.notes !== 'string') ||
+      (scene.derived_from !== undefined &&
+        !(isRecord(scene.derived_from) && Object.keys(scene.derived_from).join() === 'shot' && typeof scene.derived_from.shot === 'string'))
     )
-      throw new Error('Реестр: неверная структура плана.');
+      throw new Error(`Реестр${isRecord(scene) && typeof scene.id === 'string' ? `, ${scene.id}` : ''}: неверная структура плана.`);
     const from = scene.state_from;
     if (
       from !== null &&
       typeof from !== 'string' &&
       !(isRecord(from) && typeof from.scene === 'string' && typeof from.phase === 'string' && ['before', 'after', 'same'].includes(from.phase))
     )
-      throw new Error('Реестр: неверный state_from.');
+      throw new Error(`Реестр, ${scene.id}: неверный state_from.`);
     if (!isRecord(scene.state_changes) || Object.keys(scene.state_changes).some((key) => !['before', 'after'].includes(key)))
-      throw new Error('Реестр: неверный state_changes.');
+      throw new Error(
+        `Реестр, ${scene.id}: в state_changes допустимы только фазы before и after${
+          isRecord(scene.state_changes) ? `, получено: ${Object.keys(scene.state_changes).join(', ')}` : ''
+        }. Коды сущностей вкладываются в фазы.`
+      );
     for (const delta of Object.values(scene.state_changes)) {
-      if (!isRecord(delta)) throw new Error('Реестр: изменения состояния должны быть объектом.');
+      if (!isRecord(delta)) throw new Error(`Реестр, ${scene.id}: изменения состояния должны быть объектом.`);
       for (const attrs of Object.values(delta)) {
         if (!isRecord(attrs) || !Object.values(attrs).every((v) => v === null || typeof v === 'string'))
-          throw new Error('Реестр: неверные свойства состояния.');
+          throw new Error(`Реестр, ${scene.id}: неверные свойства состояния.`);
       }
     }
   }
@@ -82,9 +101,10 @@ export function checkReadyScenes(scenes: ScenesFile, cast: CastFile, duration: n
   if (!equal(scenes.references, castReferences(cast))) problems.push('Карта референсов должна соответствовать кастингу.');
   if (!scenes.visual_direction.trim() || /ЗАПОЛНИТЬ/iu.test(scenes.visual_direction)) problems.push('Заполните общую визуальную постановку.');
   const entities = new Map(cast.entities.map((entity) => [entity.id, entity]));
+  const unfilled: string[] = [];
   for (const scene of scenes.scenes) {
     if (['camera', 'action', 'continuity'].some((key) => !String(scene[key as keyof SceneShot]).trim()) || /ЗАПОЛНИТЬ/iu.test(JSON.stringify(scene)))
-      problems.push(`${scene.id}: осталась незаполненная постановка.`);
+      unfilled.push(scene.id);
     for (const delta of Object.values(scene.state_changes)) {
       for (const [id, attrs] of Object.entries(delta)) {
         const entity = entities.get(id);
@@ -96,7 +116,13 @@ export function checkReadyScenes(scenes: ScenesFile, cast: CastFile, duration: n
       }
     }
   }
-  if (problems.length) throw new Error(problems.join(' '));
+  // Один пункт на все незаполненные планы: после каркаса их десятки, и перечень по одному занимал бы весь экран.
+  if (unfilled.length)
+    problems.unshift(
+      `Осталась незаполненная постановка: ${countLabel(unfilled.length, 'план', 'плана', 'планов')} (${unfilled.slice(0, 6).join(', ')}${unfilled.length > 6 ? ' и другие' : ''}).`
+    );
+  // Каждая проблема — отдельная строка: интерфейс показывает их списком.
+  if (problems.length) throw new Error(problems.join('\n'));
 }
 
 export function proposalDocuments(
@@ -152,7 +178,13 @@ export function proposalDocuments(
       seen.add(patch.id);
       patches.set(patch.id, patch);
     }
-    const candidate = { ...before.scenes, scenes: before.scenes.scenes.map((scene) => ({ ...scene, ...patches.get(scene.id) })) };
+    // derived_from: null в патче снимает признак производного плана; остальные поля заменяются целиком.
+    const patched = (scene: SceneShot): SceneShot => {
+      const next = { ...scene, ...patches.get(scene.id) } as SceneShot & { derived_from?: unknown };
+      if (next.derived_from === null) delete next.derived_from;
+      return next as SceneShot;
+    };
+    const candidate = { ...before.scenes, scenes: before.scenes.scenes.map(patched) };
     checkScenesShape(candidate);
     scenes = candidate;
   }

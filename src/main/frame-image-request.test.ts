@@ -2,10 +2,20 @@
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 import type { MediaCapabilities, MediaModel } from '@shared/media-providers';
 import type { ProductionImagesInput } from '@shared/production-workflow';
-import { frameImageRequest } from './frame-image-request';
+import type { ImageGenerationSettings } from '@shared/types';
+import { frameImageRequest as prepareFrameRequest } from './frame-image-request';
+import { registerTestMediaProvider, TEST_PROVIDER, testPaidAdapter } from './testing/media-provider';
+
+let restoreProvider: () => void;
+beforeAll(() => {
+  restoreProvider = registerTestMediaProvider();
+});
+afterAll(() => restoreProvider());
+const frameImageRequest = (request: ProductionImagesInput, settings: ImageGenerationSettings, capabilities: MediaCapabilities) =>
+  prepareFrameRequest(testPaidAdapter, request, settings, capabilities);
 
 let project: string;
 let input: ProductionImagesInput;
@@ -25,7 +35,7 @@ beforeEach(() => {
     frames: [{ id: 'K01', role: 'first', timeSeconds: 0, prompt: 'Персонаж на станции.', referencePaths: ['source/first.png', 'source/second.png'] }]
   };
   caps = {
-    provider: 'kling',
+    provider: TEST_PROVIDER,
     kind: 'image',
     available: true,
     checkedAt: '2026-10-26',
@@ -45,7 +55,7 @@ beforeEach(() => {
 afterEach(() => rmSync(project, { recursive: true, force: true }));
 
 it('связывает N-й референс с image_N независимо от порядка ключей capabilities', () => {
-  const request = frameImageRequest(input, { provider: 'kling', model: 'selected-image', resolution: '1k', aspect_ratio: '16:9' }, caps);
+  const request = frameImageRequest(input, { provider: TEST_PROVIDER, model: 'selected-image', resolution: '1k', aspect_ratio: '16:9' }, caps);
   expect(request.inputs.map((item) => [item.slot, item.path])).toEqual([
     ['image_1', join(project, 'source/first.png')],
     ['image_2', join(project, 'source/second.png')]
@@ -56,20 +66,20 @@ it('связывает N-й референс с image_N независимо о�
 
 it('не подменяет отсутствующий image_2 другим имеющимся слотом', () => {
   delete caps.models[0].slots.image_2;
-  expect(() => frameImageRequest(input, { provider: 'kling', model: 'selected-image' }, caps)).toThrow('Вход image_2 не объявлен');
+  expect(() => frameImageRequest(input, { provider: TEST_PROVIDER, model: 'selected-image' }, caps)).toThrow('Вход image_2 не объявлен');
 });
 
 it('разделяет T2I и I2I и запрещает скрытую серию вместо одной опоры', () => {
   input.frames[0].referencePaths = [];
-  expect(() => frameImageRequest(input, { provider: 'kling', model: 'selected-image' }, caps)).toThrow('не объявлена');
+  expect(() => frameImageRequest(input, { provider: TEST_PROVIDER, model: 'selected-image' }, caps)).toThrow('не объявлена');
   caps.models[0].command = 'text_to_image';
   caps.models[0].slots = {};
-  expect(frameImageRequest(input, { provider: 'kling', model: 'selected-image' }, caps).command).toBe('text_to_image');
-  expect(() => frameImageRequest(input, { provider: 'kling', model: 'selected-image', options: { story_mode: true } }, caps)).toThrow('без серии');
+  expect(frameImageRequest(input, { provider: TEST_PROVIDER, model: 'selected-image' }, caps).command).toBe('text_to_image');
+  expect(() => frameImageRequest(input, { provider: TEST_PROVIDER, model: 'selected-image', options: { story_mode: true } }, caps)).toThrow('без серии');
 });
 
 it('без предпочтения выбирает совместимую модель с 2k и одним изображением', () => {
-  const request = frameImageRequest(input, { provider: 'kling' }, caps);
+  const request = frameImageRequest(input, { provider: TEST_PROVIDER }, caps);
   expect(request.model).toBe('selected-image');
   expect(request.preferredModel).toBeNull();
   expect(request.modelSelection).toMatchObject({ preferredModel: null, selectedModel: 'selected-image' });
@@ -79,7 +89,7 @@ it('без предпочтения выбирает совместимую мо
 
 it('не переносит exact ID между T2I и I2I и объясняет совместимый fallback', () => {
   caps.models.unshift({ ...caps.models[0], id: 'preferred-t2i', command: 'text_to_image' });
-  const request = frameImageRequest(input, { provider: 'kling', model: 'preferred-t2i' }, caps);
+  const request = frameImageRequest(input, { provider: TEST_PROVIDER, model: 'preferred-t2i' }, caps);
   expect(request.model).toBe('selected-image');
   expect(request.modelSelection?.reason).toContain('preferred-t2i не объявлена для команды image_to_image');
 });
@@ -95,7 +105,7 @@ it('отклоняет предпочтительную модель по resolu
   ];
   for (const incompatible of incompatibleModels) {
     caps.models = [{ ...caps.models[caps.models.length - 1], id: 'preferred', ...incompatible }, caps.models[caps.models.length - 1]];
-    const request = frameImageRequest(input, { provider: 'kling', model: 'preferred', aspect_ratio: '16:9', outputs: 2 }, caps);
+    const request = frameImageRequest(input, { provider: TEST_PROVIDER, model: 'preferred', aspect_ratio: '16:9', outputs: 2 }, caps);
     expect(request.model).toBe('selected-image');
     expect(request.outputs).toBe(2);
     expect(request.parameters.img_resolution).toBe('2k');
@@ -106,29 +116,29 @@ it('отклоняет предпочтительную модель по resolu
 
 it('сохраняет явные provider options и не добавляет не объявленный story_mode', () => {
   delete caps.models[0].arguments.story_mode;
-  const request = frameImageRequest(input, { provider: 'kling', options: { img_resolution: '1k' }, watermark: true }, caps);
+  const request = frameImageRequest(input, { provider: TEST_PROVIDER, options: { img_resolution: '1k' }, watermark: true }, caps);
   expect(request.parameters).toEqual({ img_resolution: '1k', aspect_ratio: '16:9' });
-  expect(() => frameImageRequest(input, { provider: 'kling', options: { unsupported_option: 7 } }, caps)).toThrow('unsupported_option=7');
-  expect(frameImageRequest(input, { provider: 'kling', watermark: false }, caps).parameters).not.toHaveProperty('watermark');
+  expect(() => frameImageRequest(input, { provider: TEST_PROVIDER, options: { unsupported_option: 7 } }, caps)).toThrow('unsupported_option=7');
+  expect(frameImageRequest(input, { provider: TEST_PROVIDER, watermark: false }, caps).parameters).not.toHaveProperty('watermark');
 });
 
 it('игнорирует старое отдельное watermark и запрашивает без логотипа только при объявленном флаге', () => {
   for (const watermark of [false, true]) {
-    expect(frameImageRequest(input, { provider: 'kling', watermark }, caps).parameters).not.toHaveProperty('watermark');
+    expect(frameImageRequest(input, { provider: TEST_PROVIDER, watermark }, caps).parameters).not.toHaveProperty('watermark');
   }
   caps.models[0].arguments.watermark = { allowed: ['true', 'false'] };
   for (const watermark of [false, true, undefined]) {
-    expect(frameImageRequest(input, { provider: 'kling', watermark }, caps).parameters.watermark).toBe(false);
+    expect(frameImageRequest(input, { provider: TEST_PROVIDER, watermark }, caps).parameters.watermark).toBe(false);
   }
   for (const watermark of [true, 'true']) {
-    expect(() => frameImageRequest(input, { provider: 'kling', options: { watermark } }, caps)).toThrow('Снимите устаревшую настройку watermark=true');
+    expect(() => frameImageRequest(input, { provider: TEST_PROVIDER, options: { watermark } }, caps)).toThrow('Снимите устаревшую настройку watermark=true');
   }
 });
 
 it('сохраняет явные aspect aliases из options вместо неявного default', () => {
   caps.models[0].arguments.aspect_ratio = { allowed: ['1:1', '16:9'] };
   for (const name of ['aspect_ratio', 'aspectRatio']) {
-    const request = frameImageRequest(input, { provider: 'kling', options: { [name]: '1:1' } }, caps);
+    const request = frameImageRequest(input, { provider: TEST_PROVIDER, options: { [name]: '1:1' } }, caps);
     expect(request.parameters.aspect_ratio).toBe('1:1');
     expect(request.parameters).not.toHaveProperty('aspectRatio');
   }

@@ -1,8 +1,9 @@
-/** Первый исполнитель опор: Codex пишет только кандидаты, регистрация и принятие принадлежат производственному процессу. */
+/** Опоры провайдера-агента: программа пишет только кандидаты, регистрация и принятие принадлежат производственному процессу. */
 import { randomUUID, createHash } from 'node:crypto';
 import { copyFileSync, chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { extname, isAbsolute, join, relative, resolve } from 'node:path';
-import type { AgentJob, AgentStartInput } from '@shared/agents';
+import type { AgentJob, AgentSettings, AgentStartInput } from '@shared/agents';
+import { mediaProviderInfo, mediaProviderTitle, type MediaProviderId } from '@shared/media-providers';
 import type { ProductionFrameCandidate, ProductionImagesInput } from '@shared/production-workflow';
 import { writeLocalJson, readLocalJson } from './local-files';
 
@@ -10,13 +11,21 @@ interface ImagesRecord {
   schemaVersion: 1;
   jobId: string;
   project: string;
+  /** Провайдер изображений, чья программа-агент выполняет задание. */
+  provider: MediaProviderId;
+  requestSha: string;
   ids: string[];
   inputs: { path: string; copy: string; sha256: string }[];
-  requestSha?: string;
+}
+/** Согласованный запуск: провайдер, SHA запроса и программа-агент с моделью. */
+export interface KeyframeImagesRequest {
+  provider: MediaProviderId;
+  requestSha: string;
+  agent: AgentSettings;
 }
 interface Options {
   localDir: string;
-  agents: { startImages(input: AgentStartInput, workDir: string): AgentJob };
+  agents: { startImages(input: AgentStartInput, workDir: string, config: AgentSettings): AgentJob };
   validateImage?: (path: string) => boolean;
 }
 const digest = (path: string): string => createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -79,7 +88,7 @@ export function isImageFile(path: string): boolean {
 export class KeyframeImages {
   constructor(private readonly options: Options) {}
 
-  start(input: ProductionImagesInput, requestSha?: string): AgentJob {
+  start(input: ProductionImagesInput, request: KeyframeImagesRequest): AgentJob {
     const project = realpathSync(input.project);
     if (!input.frames.length || input.frames.some((frame) => !/^K\d{2}$/.test(frame.id) || !frame.prompt.trim()))
       throw new Error('Сначала подготовьте описания опор.');
@@ -107,30 +116,32 @@ export class KeyframeImages {
     const job = this.options.agents.startImages(
       {
         project,
-        task: `Опоры ${input.shot}: Codex`,
+        task: `Опоры ${input.shot}: ${mediaProviderTitle(request.provider)}`,
         prompt:
           'Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. ' +
-          'Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй Kling, API-ключи или другие генераторы. ' +
+          'Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. ' +
           'Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. ' +
           'Не изменяй референсы, исходный проект или принятые материалы. ' +
           'Финальный ответ — один JSON без Markdown: {"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png"}]}.',
         context: JSON.stringify({ stage: 'frames', shot: input.shot, frames })
       },
-      directory
+      directory,
+      request.agent
     );
     writeLocalJson(join(directory, 'job.json'), {
       schemaVersion: 1,
       jobId: job.id,
       project,
-      ...(requestSha ? { requestSha } : {}),
+      provider: request.provider,
+      requestSha: request.requestSha,
       ids: frames.map((frame) => frame.id),
       inputs
     } satisfies ImagesRecord);
     return job;
   }
 
-  collect(job: AgentJob, requestSha?: string): ProductionFrameCandidate[] {
-    if (job.provider !== 'codex' || job.status !== 'completed' || job.exitCode !== 0) throw new Error('Задание опор не завершено успешно.');
+  collect(job: AgentJob, requestSha: string): ProductionFrameCandidate[] {
+    if (job.status !== 'completed' || job.exitCode !== 0) throw new Error('Задание опор не завершено успешно.');
     const base = join(this.options.localDir, 'image-jobs');
     for (const entry of existsSync(base) ? readdirSync(base, { withFileTypes: true }) : []) {
       if (!entry.isDirectory()) continue;
@@ -142,9 +153,17 @@ export class KeyframeImages {
         continue;
       }
       if (record?.jobId !== job.id) continue;
-      if (requestSha && record.requestSha !== requestSha) throw new Error('Задание опор относится к другому согласованному запросу.');
-      if (record.schemaVersion !== 1 || record.project !== job.project || !Array.isArray(record.ids) || !Array.isArray(record.inputs))
+      if (record.requestSha !== requestSha) throw new Error('Задание опор относится к другому согласованному запросу.');
+      // Задание выполнила программа-агент провайдера из записи: её название и показывается в ошибках результата.
+      if (
+        record.schemaVersion !== 1 ||
+        record.project !== job.project ||
+        mediaProviderInfo(record.provider, 'image')?.executor !== job.provider ||
+        !Array.isArray(record.ids) ||
+        !Array.isArray(record.inputs)
+      )
         throw new Error('Повреждена запись задания опор.');
+      const title = mediaProviderTitle(record.provider);
       for (const file of record.inputs)
         if (
           !existsSync(file.path) ||
@@ -154,7 +173,7 @@ export class KeyframeImages {
         )
           throw new Error('Референсы изменились: подготовьте опоры заново.');
       const response: unknown = JSON.parse(job.result);
-      if (!response || typeof response !== 'object' || Array.isArray(response)) throw new Error('Codex не вернул список файлов опор.');
+      if (!response || typeof response !== 'object' || Array.isArray(response)) throw new Error(`${title} не вернул список файлов опор.`);
       const value = response as Record<string, unknown>;
       if (
         value.schemaVersion !== 1 ||
@@ -190,14 +209,14 @@ export class KeyframeImages {
         new Set(candidates.map((item) => item.id)).size !== record.ids.length ||
         candidates.some((item) => !record.ids.includes(item.id))
       )
-        throw new Error('Codex вернул не все согласованные опоры.');
+        throw new Error(`${title} вернул не все согласованные опоры.`);
       return record.ids.map((id) => candidates.find((candidate) => candidate.id === id)!);
     }
     throw new Error('Рабочая папка опор недоступна. Подготовьте новое задание.');
   }
 
   /** После перезапуска восстанавливаем связь с запросом из существующей записи, не создавая второй журнал. */
-  getRequestSha(job: AgentJob): string | null {
+  getRequestSha(job: AgentJob): string {
     const base = join(this.options.localDir, 'image-jobs');
     for (const entry of existsSync(base) ? readdirSync(base, { withFileTypes: true }) : []) {
       if (!entry.isDirectory()) continue;
@@ -209,7 +228,6 @@ export class KeyframeImages {
       }
       if (record?.jobId !== job.id) continue;
       if (record.schemaVersion !== 1 || record.project !== job.project) throw new Error('Повреждена запись задания опор.');
-      if (record.requestSha === undefined) return null;
       if (typeof record.requestSha !== 'string' || !/^[a-f0-9]{64}$/.test(record.requestSha)) throw new Error('Повреждён SHA запроса опор.');
       return record.requestSha;
     }

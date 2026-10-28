@@ -3,8 +3,8 @@
 Образец это маленький клип на пять планов: тихий трек на 30 секунд, три строки текста, четыре референса,
 кастинг с начальным состоянием, трактовка, реестр сцен с наследованием состояния, два принятых комплекта
 (сделаны настоящим accept_shot из подставных оригиналов), пакет плана на согласовании опор, карточки,
-производные представления и собранный аниматик. Документы шаблона копируются с плейсхолдерами:
-tools/testing.py подставляет пути при копировании образца во временную папку.
+производные представления и собранный аниматик. Плейсхолдеры документов шаблона подставляются, как при
+создании проекта приложением.
 
     python3 -B tools/testdata/build_sample.py
 
@@ -31,7 +31,7 @@ PROJECT = {
     "animatic_video": "sample-animatic.mp4",
     "generation": {
         "video": {
-            "provider": "kling",
+            "provider": "test",
             "resolution": "1080p",
             "aspect_ratio": "16:9",
             "watermark": False,
@@ -171,6 +171,8 @@ SCENES = [
         "card": {"primary_reference": "boat"},
         "state_from": {"scene": "M02", "phase": "same"},
         "state_changes": {},
+        # Финал собирается из материала M02 без собственной генерации.
+        "derived_from": {"shot": "M02"},
     },
 ]
 PROMPTS = {
@@ -348,8 +350,27 @@ def make_sources(work):
     return decoded
 
 
+def render_placeholders(target):
+    """Подставляет значения в копию шаблона, как приложение при создании проекта."""
+    project = json.loads((target / "plan/project.json").read_text(encoding="utf-8"))
+    values = {
+        "{{project_name}}": project["name"],
+        "{{animatic_video}}": project["animatic_video"],
+    }
+    for path in target.rglob("*"):
+        if path.suffix not in (".md", ".json") or not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "{{" not in text:
+            continue
+        for key, value in values.items():
+            text = text.replace(key, value)
+        path.write_text(text, encoding="utf-8")
+
+
 def make_plan(work, decoded):
     dump(work / "plan/project.json", PROJECT)
+    render_placeholders(work)
     run([sys.executable, "-B", REPO / "tools/cast_registry/cast_registry.py", "--project", work, "init"])
     cast = json.loads((work / "plan/cast.json").read_text(encoding="utf-8"))
     roles = {rid: description for rid, _k, _n, _s, description, _r, _c in REFERENCES}
@@ -406,14 +427,13 @@ def make_kit(work, sid, color, pricing):
         "schema_version": 1,
         "shot": sid,
         "kind": "video",
-        "provider": "kling",
+        "provider": "test",
         "command": "image_to_video",
-        "model": "kling-video-v3_0",
+        "model": "test-video",
         "parameters": {
             "duration": 5 if frames <= 150 else 10,
             "resolution": "1080p",
             "aspect_ratio": "16:9",
-            "prefer_multi_shots": False,
         },
         "outputs": 1,
         "inputs": [
@@ -427,7 +447,6 @@ def make_kit(work, sid, color, pricing):
             }
         ],
         "prompt": {"path": "prompt.txt", "sha256": sha(request_dir / "prompt.txt")},
-        "video_without_watermark": True,
     }
     dump(request_dir / "request.json", request)
     dump(
@@ -483,6 +502,8 @@ def main():
     shutil.copytree(TEMPLATE, work)
     run(["git", "init", "-q", work])
     os.environ["SONGFRAME_PROJECT"] = str(work)
+    # Наблюдения расхода приёмки пишутся в каталог состояния: у сборки образца он временный.
+    os.environ["SONGFRAME_LOCAL_DIR"] = str(work.parent / "state")
     sys.path.insert(0, str(REPO))
     decoded = make_sources(work)
     make_plan(work, decoded)
@@ -522,7 +543,7 @@ def main():
         )
     shutil.rmtree(work / ".git")
     # .gitignore проекта прятал бы пакет M03 от Git комплекса.
-    # В образце он хранится как _gitignore; testing.py возвращает имя.
+    # В образце он хранится как _gitignore; tools/testing/sample_project.py возвращает имя.
     (work / ".gitignore").rename(work / "_gitignore")
     for stale in work.rglob("__pycache__"):
         shutil.rmtree(stale)

@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { Alert, Box, Button, Typography } from '@mui/material';
 import type { PackageView } from '@shared/types';
+import { LinkedText } from '../../../components/LinkedText';
 
 export function PackageRevisionNotice({ pkg, onOpenRevision }: { pkg: PackageView; onOpenRevision?(): void }): ReactElement | null {
   // Новый вопрос заменяет прежнее замечание: материалы следующего согласования уже требуют своего ответа.
@@ -18,8 +19,7 @@ export function PackageRevisionNotice({ pkg, onOpenRevision }: { pkg: PackageVie
         </Typography>
       ) : null}
       <Typography variant="body2">
-        Возврат с замечанием не запускает агента автоматически. Запуск и результат доработки — в блоке «Подготовка плана». Нажмите там «Запустить доработку с
-        агентом», если ещё не запускали её.
+        <LinkedText text="Возврат с замечанием не запускает агента автоматически. Запуск и результат доработки — в блоке «Подготовка плана». Нажмите там «Запустить доработку с агентом», если ещё не запускали её." />
       </Typography>
       {onOpenRevision ? (
         <Box sx={{ mt: 1 }}>

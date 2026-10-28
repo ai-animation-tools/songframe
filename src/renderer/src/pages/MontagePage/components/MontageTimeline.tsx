@@ -5,6 +5,7 @@ import type { MontageClip, MontageDraft, MontageLyricLine } from '@shared/montag
 import { decodePeaks, type Peaks } from '../../TimingPage/waveform';
 import { clipLength, frameLabel, montageLength, rollCut, slipClip, trimClip } from '../model';
 import { snapCutDelta } from '../snapCut';
+import { LinkedText } from '../../../components/LinkedText';
 
 interface Props {
   draft: MontageDraft;
@@ -304,7 +305,11 @@ export function MontageTimeline({
         — перенос склейки, Alt + перетаскивание — сдвиг участка внутри исходника.
       </Typography>
       {waveError ? <Alert severity="warning">{waveError} Выделение и прослушивание остаются доступны.</Alert> : null}
-      {lyricProblem ? <Alert severity="info">{lyricProblem}</Alert> : null}
+      {lyricProblem ? (
+        <Alert severity="info">
+          <LinkedText text={lyricProblem} />
+        </Alert>
+      ) : null}
       <Box
         ref={scrollRef}
         onScroll={(event) => setScroll(event.currentTarget.scrollLeft)}

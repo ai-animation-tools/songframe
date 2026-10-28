@@ -2,10 +2,13 @@
 
 import { type ReactElement, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Alert, Snackbar } from '@mui/material';
-import type { AppState, ProjectStatus } from '@shared/types';
-import type { AgentSettings } from '@shared/agents';
+import { LinkedText } from './components/LinkedText';
+import { CRASH_NOTICE } from './diagnostics';
+import type { AppState, JobInfo, ProjectStatus } from '@shared/types';
+import type { AgentJob, AgentSettings } from '@shared/agents';
 import type { AiAccess } from '@shared/ai-access';
 import { offlineAccess, useOnline } from './network';
+import { agentFinishedNotice, agentOwnerShowsResult, finishedNotice, ownerShowsResult, routeOf } from './hooks/backgroundJobs';
 
 type Severity = 'success' | 'info' | 'warning' | 'error';
 
@@ -23,9 +26,12 @@ interface AppContextValue {
   agentProvider: AgentSettings['provider'] | null;
   setAgentProvider(provider: AgentSettings['provider'] | null): void;
   refresh(): Promise<void>;
+  /** Перечитывает только статус текущего проекта: он вычисляется из файлов, которые меняют страницы, задания и внешние программы. */
+  refreshStatus(): Promise<void>;
   openProject(path: string): Promise<ProjectStatus>;
   closeProject(): Promise<void>;
-  notify(message: string, severity?: Severity): void;
+  /** persist: сообщение не закрывается само и по клику мимо, только крестиком. */
+  notify(message: string, severity?: Severity, options?: { persist?: boolean }): void;
   /** Текст ошибки из IPC без служебного префикса Electron. */
   describeError(error: unknown): string;
 }
@@ -44,10 +50,76 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
   const [agentProvider, updateAgentProvider] = useState<AgentSettings['provider'] | null>(null);
   const [aiAccess, setAiAccess] = useState<AiAccess | null>(null);
   const scope = useRef(0);
-  const [toast, setToast] = useState<{ message: string; severity: Severity } | null>(null);
+  const currentPath = useRef<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; severity: Severity; persist?: boolean } | null>(null);
 
-  const notify = useCallback((message: string, severity: Severity = 'info') => setToast({ message, severity }), []);
+  const notify = useCallback(
+    (message: string, severity: Severity = 'info', options: { persist?: boolean } = {}) => setToast({ message, severity, persist: options.persist }),
+    []
+  );
   const online = useOnline();
+
+  // Главный процесс отдаёт сведения об аварийном прошлом сеансе один раз за запуск.
+  useEffect(() => {
+    window.api.diagnostics
+      .crashNotice()
+      .then((notice) => {
+        if (notice?.crashed) notify(CRASH_NOTICE, 'warning', { persist: true });
+      })
+      .catch(() => undefined);
+  }, [notify]);
+
+  const refreshStatus = useCallback(async () => {
+    const path = currentPath.current;
+    if (!path) return;
+    try {
+      const next = await window.api.projects.status(path);
+      // Ответ по прежнему проекту не подменяет статус после переключения.
+      if (currentPath.current === path) setStatus(next);
+    } catch {
+      // Статус шапки вторичен: ошибку чтения покажет страница, которая работает с этими файлами.
+    }
+  }, []);
+
+  // Пользователь мог поменять файлы проекта вне приложения: при возврате в окно статус пересчитывается.
+  useEffect(() => {
+    const onFocus = (): void => void refreshStatus();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refreshStatus]);
+
+  // Задания идут в главном процессе и переживают уход со страницы: об итоге сообщаем и там, где пользователь сейчас.
+  useEffect(() => {
+    let known = new Map<string, string>();
+    let first = true;
+    const handle = setInterval(async () => {
+      let jobs: JobInfo[];
+      let agentJobs: AgentJob[];
+      try {
+        [jobs, agentJobs] = await Promise.all([window.api.jobs.list(), window.api.agents.list()]);
+      } catch {
+        return;
+      }
+      const route = routeOf(window.location.hash);
+      // Завершённое задание могло изменить файлы проекта: статус в шапке пересчитывается сразу, а не при следующем общем обновлении.
+      if (!first && [...jobs, ...agentJobs].some((job) => known.get(job.id) === 'running' && job.status !== 'running')) void refreshStatus();
+      if (!first) {
+        for (const job of jobs) {
+          if (known.get(job.id) !== 'running' || job.status === 'running' || ownerShowsResult(job, route)) continue;
+          const notice = finishedNotice(job);
+          notify(notice.message, notice.severity);
+        }
+        for (const job of agentJobs) {
+          if (known.get(job.id) !== 'running' || job.status === 'running' || agentOwnerShowsResult(job, route)) continue;
+          const notice = agentFinishedNotice(job);
+          notify(notice.message, notice.severity);
+        }
+      }
+      first = false;
+      known = new Map([...jobs, ...agentJobs].map((job) => [job.id, job.status]));
+    }, 3000);
+    return () => clearInterval(handle);
+  }, [notify, refreshStatus]);
 
   const invalidateAiAccess = useCallback(() => {
     scope.current += 1;
@@ -62,6 +134,7 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
     const nextStatus = next.current ? await window.api.projects.status(next.current) : null;
     if (current !== scope.current) return;
     // Локальный просмотр появляется до проверки CLI и входа; AI-действия пока остаются заблокированы.
+    currentPath.current = next.current;
     setState(next);
     setStatus(nextStatus);
     updateAgentProvider(agent?.provider ?? null);
@@ -120,12 +193,13 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
       agentProvider,
       setAgentProvider,
       refresh,
+      refreshStatus,
       openProject,
       closeProject,
       notify,
       describeError
     }),
-    [state, status, loading, aiAccess, online, agentProvider, setAgentProvider, invalidateAiAccess, refresh, openProject, closeProject, notify]
+    [state, status, loading, aiAccess, online, agentProvider, setAgentProvider, invalidateAiAccess, refresh, refreshStatus, openProject, closeProject, notify]
   );
 
   // Проверки доступности, сделанные без сети, устарели: после восстановления связи повторяем их.
@@ -140,12 +214,17 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
       {children}
       <Snackbar
         open={!!toast}
-        autoHideDuration={toast?.severity === 'error' ? 8000 : 3500}
-        onClose={() => setToast(null)}
+        autoHideDuration={toast?.persist ? null : toast?.severity === 'error' ? 8000 : 3500}
+        onClose={(_, reason) => {
+          // Ошибку нельзя потерять случайным кликом по странице: она закрывается крестиком или по таймеру.
+          if (reason === 'clickaway' && (toast?.severity === 'error' || toast?.persist)) return;
+          setToast(null);
+        }}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert severity={toast?.severity ?? 'info'} variant="filled" onClose={() => setToast(null)} sx={{ maxWidth: 640 }}>
-          {toast?.message}
+          {/* Отсылки «на странице «…»» в уведомлении ведут к цели. */}
+          <LinkedText text={toast?.message ?? ''} />
         </Alert>
       </Snackbar>
     </AppContext.Provider>

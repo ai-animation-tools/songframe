@@ -112,6 +112,34 @@ def initial_states_for(root=None):
     return deepcopy(_INITIAL_CACHE[key])
 
 
+SHOT_ID = re.compile(r"M\d{2}(?:\.\d+)?")
+DERIVED_FORMAT = 'derived_from должен быть объектом {"shot": "Mxx"}.'
+
+
+def derived_from_problems(scenes):
+    """Нарушения необязательного derived_from как пары (ID плана, текст); @link README.md.
+
+    Производный план собирается из материала одного исходного плана: цепочки запрещены,
+    чтобы монтаж и представления всегда указывали план с собственной генерацией.
+    """
+    by_id = {scene.get("id"): scene for scene in scenes if isinstance(scene, dict)}
+    problems = []
+    for sid, scene in by_id.items():
+        if "derived_from" not in scene:
+            continue
+        value = scene["derived_from"]
+        source = value.get("shot") if isinstance(value, dict) and set(value) == {"shot"} else None
+        if not isinstance(source, str) or not SHOT_ID.fullmatch(source):
+            problems.append((sid, DERIVED_FORMAT))
+        elif source == sid:
+            problems.append((sid, "derived_from не может ссылаться на сам план."))
+        elif source not in by_id:
+            problems.append((sid, f"derived_from ссылается на неизвестный план {source}."))
+        elif "derived_from" in by_id[source]:
+            problems.append((sid, f"источник {source} сам собирается из другого плана; укажите исходный план."))
+    return problems
+
+
 def validate(data, initial=None):
     # Кадровые границы проверяются до чтения медиа; пропуск, повтор или
     # конфликт с готовым клипом нельзя скрывать прежней таблицей или карточкой.
@@ -123,7 +151,7 @@ def validate(data, initial=None):
     for scene in data["scenes"]:
         sid = scene["id"]
         if (
-            not re.fullmatch(r"M\d{2}(?:\.\d+)?", sid)
+            not SHOT_ID.fullmatch(sid)
             or sid in seen
             or type(scene["start_frame"]) is not int
             or type(scene["end_frame_exclusive"]) is not int
@@ -138,6 +166,9 @@ def validate(data, initial=None):
         end = scene["end_frame_exclusive"]
     if abs(Decimal(end) / data["fps"] - Decimal(data["audio"]["end_seconds"])) >= Decimal(1) / data["fps"]:
         raise ValueError("Монтажный конец расходится с концом песни.")
+    problems = derived_from_problems(data["scenes"])
+    if problems:
+        raise ValueError(f"{problems[0][0]}: {problems[0][1]}")
     _resolve_states(data, initial)
     return data
 
@@ -146,12 +177,10 @@ def _resolve_states(data, initial=None):
     """Разворачивает сюжетные зависимости, включая будущие планы вступления.
 
     `initial` это состояние сущностей до первого события (начальное состояние кастинга): источник
-    `state_from: null` стартует с него, а не с пустоты; без кастинга поведение прежнее.
+    `state_from: null` стартует с него, а не с пустоты. Каждый план обязан иметь `state_from` и `state_changes`.
     """
     base = deepcopy(initial) if initial is not None else initial_states_for()
     scenes = {s["id"]: s for s in data["scenes"]}
-    structured = any("state_from" in s or "state_changes" in s for s in scenes.values())
-    previous = {s["id"]: (data["scenes"][i - 1]["id"] if i else None) for i, s in enumerate(data["scenes"])}
     resolved, visiting = {}, []
 
     def apply(state, delta, sid):
@@ -187,9 +216,9 @@ def _resolve_states(data, initial=None):
             raise ValueError(f"{sid}: неизвестный источник state_from.")
         visiting.append(sid)
         scene = scenes[sid]
-        if structured and not {"state_from", "state_changes"} <= scene.keys():
+        if not {"state_from", "state_changes"} <= scene.keys():
             raise ValueError(f"{sid}: нужны state_from и state_changes.")
-        source = scene.get("state_from", previous[sid])
+        source = scene["state_from"]
         phase = "after"
         if isinstance(source, dict):
             if set(source) != {"scene", "phase"}:
@@ -290,7 +319,8 @@ def shots(data):
                 "interval": clock(start) + "–" + clock(end),
                 "frames": scene["end_frame_exclusive"] - scene["start_frame"],
                 "state": scene["continuity"],
-                "refs": scene["references"],
+                # «—» в реестре означает план без референсов: в карточки и сборку заглушка не попадает.
+                "refs": [ref for ref in scene["references"] if ref != "—"],
             }
         )
     return result
@@ -315,6 +345,8 @@ if __name__ == "__main__":
                     "continuity": scene["continuity"],
                     "state_from": scene.get("state_from"),
                     "state_changes": scene.get("state_changes", {}),
+                    # Ключ появляется только у производного плана, вывод обычных планов прежний.
+                    **({"derived_from": scene["derived_from"]} if "derived_from" in scene else {}),
                     "scene_sha256": scene_fingerprint(data, args.shot),
                     "state": state if args.phase == "both" else state[args.phase],
                 },

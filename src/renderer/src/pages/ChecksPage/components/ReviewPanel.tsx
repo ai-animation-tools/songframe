@@ -6,12 +6,16 @@ import BuildIcon from '@mui/icons-material/Build';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import type { ReviewInfo, ShotProduction } from '@shared/types';
 import { ReviewList } from './ReviewList';
+import { ANCHORS } from '../../../components/linkTargets';
+import { ActionButton } from '../../../components/ActionButton';
 
 interface ReviewPanelProps {
   shots: ShotProduction[];
   selected: string[];
   planOnly: boolean;
   disabled: boolean;
+  /** Почему пробу сейчас нельзя собрать независимо от выбора сцен. */
+  disabledReason: string | null;
   reviews: ReviewInfo[];
   openReview: ReviewInfo | null;
   deletingReview: string | null;
@@ -30,6 +34,7 @@ export function ReviewPanel({
   selected,
   planOnly,
   disabled,
+  disabledReason,
   reviews,
   openReview,
   deletingReview,
@@ -41,8 +46,16 @@ export function ReviewPanel({
   openDirectory,
   removeReview
 }: ReviewPanelProps): ReactElement {
+  // Проба собирается под непрерывный участок песни: несмежный выбор инструмент отклонит, поэтому объясняем заранее.
+  const positions = selected.map((id) => shots.findIndex((shot) => shot.id === id)).sort((a, b) => a - b);
+  const gapReason = positions.some((value, index) => index > 0 && value !== positions[index - 1] + 1)
+    ? 'Выберите сцены подряд: проба собирается под непрерывный участок песни. Диапазон удобно выбрать щелчком с Shift.'
+    : null;
+  const buildReason =
+    (disabled ? disabledReason : null) ??
+    (deletingReview !== null ? 'Дождитесь окончания удаления пробы.' : !selected.length ? 'Выберите сцены для пробы.' : gapReason);
   return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
+    <Paper variant="outlined" sx={{ p: 2 }} data-anchor={ANCHORS.checksReview}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <MovieFilterIcon color="action" />
         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
@@ -93,16 +106,17 @@ export function ReviewPanel({
         openDirectory={openDirectory}
         removeReview={removeReview}
       />
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-        <Button
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1, alignItems: 'center' }}>
+        <ActionButton
           variant="contained"
           startIcon={planOnly ? <FactCheckIcon /> : <BuildIcon />}
           size="small"
-          disabled={disabled || deletingReview !== null || !selected.length}
+          disabled={disabled || deletingReview !== null || !selected.length || !!gapReason}
+          disabledReason={buildReason}
           onClick={buildReview}
         >
           {planOnly ? 'Проверить' : 'Собрать'}
-        </Button>
+        </ActionButton>
         {selected.length ? (
           <Button size="small" startIcon={<ClearIcon />} onClick={clearSelection}>
             Снять выбор

@@ -1,11 +1,12 @@
-import { PageActionBar } from '../../components/PageActionBar';
-import { Save, Add, Refresh, Undo, Redo, FileDownload, WarningAmber, OpenInNew, CallReceived } from '@mui/icons-material';
-import { useId, useLayoutEffect, useMemo, useState, type ReactElement } from 'react';
-import { Alert, Box, Button, Chip, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
+import { Refresh, OpenInNew, CallReceived } from '@mui/icons-material';
+import { usePageLoading } from '../../components/PageLoader';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material';
 import { VideoLibrary } from '@mui/icons-material';
 import type { MontageSource } from '@shared/montage';
 import { FPS } from '@shared/video';
-import { JobStatus } from '../../components/JobStatus';
+import { ActionButton } from '../../components/ActionButton';
+import { ActionIconButton } from '../../components/ActionIconButton';
 import { DateTime } from '../../components/DateTime';
 import { ScenarioRequired } from '../../components/ScenarioRequired';
 import {
@@ -25,8 +26,13 @@ import { useMontageRemove } from './useMontageRemove';
 import { MontageRemoveDialog } from './components/MontageRemoveDialog';
 import { MontageMaterialDialog } from './components/MontageMaterialDialog';
 import { MontageSplitHandle } from './components/MontageSplitHandle';
+import { MontageActionBar } from './components/MontageActionBar';
+import { MontageExportDialog } from './components/MontageExportDialog';
 import { useThemeMode } from '../../theme';
 import { useDetachedMontage } from './useDetachedMontage';
+import { countLabel } from '@shared/plural';
+import { useHeaderHeight } from '../../components/headerHeight';
+import { LinkedText } from '../../components/LinkedText';
 
 const SPLIT_KEY = 'montage-preview-split';
 const DIVIDER_HEIGHT = 20;
@@ -37,6 +43,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
   const savedLabelId = useId();
   const previewPanelId = useId();
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
+  const headerHeight = useHeaderHeight();
   const [detachedFraction, setDetachedFraction] = useState(0.25);
   const [loop, setLoop] = useState(false);
   const [volume, setVolume] = useState(100);
@@ -69,9 +76,12 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
   const [trackFrames, setTrackFrames] = useState<number | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [material, setMaterial] = useState<MontageSource | null>(null);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const lengthStatus = useRef<HTMLDivElement>(null);
   const { view, draft, commit, job } = page;
   const running = job?.status === 'running';
   const locked = page.busy || running;
+  const lockedReason = running ? 'Дождитесь завершения задания.' : 'Дождитесь завершения текущей операции.';
   const selectedClip = draft.clips.find((clip) => clip.id === page.selected);
   // Результат попытки на дорожке подписывается явно: пользователь сравнивает его с принятым клипом, а не наоборот.
   const attemptsOnTrack = draft.clips.flatMap((clip) => {
@@ -88,14 +98,15 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
     project,
     clip: selectedClip,
     locked,
-    blocked: sourcesOpen || page.applyOpen || pendingOpen !== null || material !== null || view?.scenarioStatus !== 'ready',
+    blocked: sourcesOpen || page.applyOpen || videoOpen || pendingOpen !== null || material !== null || view?.scenarioStatus !== 'ready',
     onRemove: (id) => {
       commit({ ...draft, clips: draft.clips.filter((clip) => clip.id !== id) });
       page.setSelected(null);
     }
   });
   const trackUrl = draft.audio.path ? projectMediaUrl(project, draft.audio.path) : null;
-  const suspended = sourcesOpen || page.applyOpen || pendingOpen !== null || remove.target !== null || material !== null || locked;
+  const suspended = sourcesOpen || page.applyOpen || videoOpen || pendingOpen !== null || remove.target !== null || material !== null || locked;
+  const suspendedReason = locked ? lockedReason : 'Закройте открытое окно, чтобы продолжить просмотр.';
   const detachedPlayer = useDetachedMontage(
     { project, draft, trackUrl, frame: page.frame, seekVersion: page.seekVersion, selectedClipId: page.selected, suspended, theme, loop, volume },
     {
@@ -106,7 +117,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
         setLoop(nextLoop);
         setVolume(nextVolume);
       },
-      onError: (error) => page.setError(`Не удалось открыть или закрыть окно плеера: ${String(error)}`)
+      onError: (error) => page.notify(`Не удалось открыть или закрыть окно плеера: ${String(error)}`, 'error')
     }
   );
   const metadataSources = useMemo(() => {
@@ -125,6 +136,8 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
       }));
     return [...page.sources, ...extra];
   }, [page.sources, draft.clips]);
+  // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(!view && !page.error);
   if (!view)
     return page.error ? (
       <Alert
@@ -135,21 +148,22 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
           </Button>
         }
       >
-        {page.error}
+        <LinkedText text={page.error} />
       </Alert>
     ) : (
-      <Typography color="text.secondary">Читаем материалы монтажа…</Typography>
+      <></>
     );
   if (view.scenarioStatus !== 'ready') return <ScenarioRequired title="Монтаж пробы" status={view.scenarioStatus} onRefresh={() => void page.load()} />;
   const boundsProblem =
     trackFrames !== null && draft.audio.end_frame_exclusive > trackFrames ? 'Выделение музыки выходит за конец трека. Уменьшите конец участка.' : null;
   const exportProblem = boundsProblem ?? page.exportProblem;
+  const exportProblemLabel = boundsProblem ? 'За концом трека' : page.exportProblemLabel;
   const requestOpen = (id: string): void => {
     if (page.dirty) setPendingOpen(id);
     else if (id === '__refresh') void page.load();
     else void page.open(id);
   };
-  const previewTop = 49 + actionBarHeight + 8;
+  const previewTop = headerHeight + actionBarHeight + 8;
   // Вся доступная высота делится между панелями; маленькое окно допускает их внутреннюю прокрутку.
   const availableHeight = Math.max(220, viewportHeight - previewTop - 24 - DIVIDER_HEIGHT);
   const minPreviewHeight = Math.min(180, availableHeight / 2);
@@ -175,57 +189,40 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
-      <PageActionBar barRef={setActionBar}>
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ width: '100%' }}>
-          <Typography variant="h5" sx={{ flex: 1 }}>
-            Монтаж пробы
-          </Typography>
-          <Button variant="contained" startIcon={<Save />} disabled={locked || !draft.audio.path} onClick={() => void page.save()}>
-            Сохранить черновик
-          </Button>
-          <Button color="success" startIcon={<Add />} disabled={locked || !draft.audio.path} onClick={() => void page.save(true)}>
-            Сохранить как новый
-          </Button>
-          <Button startIcon={<Refresh />} disabled={locked} onClick={() => requestOpen('__refresh')}>
-            Переоткрыть материалы
-          </Button>
-          <Button startIcon={<Undo />} disabled={locked || !page.history.past.length} onClick={() => page.dispatch({ type: 'undo' })}>
-            Отменить
-          </Button>
-          <Button startIcon={<Redo />} disabled={locked || !page.history.future.length} onClick={() => page.dispatch({ type: 'redo' })}>
-            Повторить
-          </Button>
-          <Button variant="contained" startIcon={<FileDownload />} disabled={locked || !!exportProblem} onClick={() => void page.exportVideo()}>
-            Экспортировать MP4
-          </Button>
-          <Button
-            color="error"
-            variant="outlined"
-            startIcon={<WarningAmber />}
-            disabled={locked || !!exportProblem || page.stale}
-            onClick={() => page.setApplyOpen(true)}
-          >
-            Применить к сценам
-          </Button>
-          <JobStatus running={running} />
-          <Chip size="small" label={`${FPS} FPS`} />
-          <Chip
-            size="small"
-            color={page.dirty ? 'warning' : page.savedId ? 'success' : 'default'}
-            variant="outlined"
-            label={page.dirty ? 'Есть несохранённые правки' : page.savedId ? 'Черновик сохранён' : 'Новая проба'}
-          />
-        </Stack>
-      </PageActionBar>
-      {page.error ? (
-        <Alert severity="error" onClose={() => page.setError(null)}>
-          {page.error}
-        </Alert>
-      ) : null}
+      <MontageActionBar
+        barRef={setActionBar}
+        locked={locked}
+        running={running}
+        jobAction={page.jobAction}
+        jobFailed={job?.status === 'failed'}
+        exportReady={page.exportReady}
+        busy={page.busy}
+        name={draft.name}
+        dirty={page.dirty}
+        saved={!!page.savedId}
+        hasAudio={!!draft.audio.path}
+        canUndo={page.history.past.length > 0}
+        canRedo={page.history.future.length > 0}
+        exportProblem={exportProblem}
+        exportProblemLabel={exportProblemLabel}
+        stale={page.stale}
+        onUndo={() => page.dispatch({ type: 'undo' })}
+        onRedo={() => page.dispatch({ type: 'redo' })}
+        onSave={() => void page.save()}
+        onSaveAsNew={() => void page.save(true)}
+        onReopen={() => requestOpen('__refresh')}
+        onExport={() => void page.exportVideo()}
+        onApply={() => page.setApplyOpen(true)}
+        onShowProblem={() => lengthStatus.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+        onOpenVideo={() => setVideoOpen(true)}
+        onSaveVideo={() => void page.saveVideo()}
+      />
       {view.problems.length ? (
         <Alert severity="warning">
           {view.problems.map((problem, index) => (
-            <div key={index}>{problem}</div>
+            <div key={index}>
+              <LinkedText text={problem} />
+            </div>
           ))}
         </Alert>
       ) : null}
@@ -291,17 +288,21 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
                   }}
                   videoMaxWidth={`min(100%, max(200px, ${(previewHeight - 190) * 1.7778}px))`}
                   suspended={suspended}
+                  suspendedReason={suspendedReason}
+                  actions={
+                    <ActionIconButton aria-label="Открыть плеер в отдельном окне" onClick={detachedPlayer.open} disabled={locked} disabledReason={lockedReason}>
+                      <OpenInNew />
+                    </ActionIconButton>
+                  }
                 />
               ) : (
-                <Typography color="text.secondary">Плеер открыт в отдельном окне.</Typography>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                  <Typography color="text.secondary">Плеер открыт в отдельном окне.</Typography>
+                  <ActionButton startIcon={<CallReceived />} onClick={detachedPlayer.close} disabled={locked} disabledReason={lockedReason}>
+                    Вернуть плеер
+                  </ActionButton>
+                </Stack>
               )}
-              <Button
-                startIcon={detachedPlayer.detached ? <CallReceived /> : <OpenInNew />}
-                onClick={detachedPlayer.detached ? detachedPlayer.close : detachedPlayer.open}
-                disabled={locked}
-              >
-                {detachedPlayer.detached ? 'Вернуть плеер' : 'Открыть плеер в отдельном окне'}
-              </Button>
               {/* Подсказки относятся к управлению просмотром и остаются рядом с ним. */}
               <Box sx={{ mt: 1 }}>
                 <MontageShortcuts />
@@ -354,6 +355,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
                   title={view.scenes.find((scene) => scene.id === selectedClip?.scene)?.title}
                   onChange={commit}
                   disabled={locked}
+                  disabledReason={lockedReason}
                   onRequestRemove={remove.request}
                 />
               </Box>
@@ -391,33 +393,15 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
             />
             <MontageAudioRange draft={draft} trackFrames={trackFrames} onChange={commit} />
             {exportProblem ? (
-              <Alert severity="warning">{exportProblem} Экспорт и применение доступны при точном совпадении длин.</Alert>
+              <Alert ref={lengthStatus} severity="warning">
+                {exportProblem}
+              </Alert>
             ) : (
-              <Alert severity="success">Музыкальный участок и видео совпадают: {page.length} кадров.</Alert>
+              <Alert severity="success">Музыкальный участок и видео совпадают: {countLabel(page.length, 'кадр', 'кадра', 'кадров')}.</Alert>
             )}
           </Stack>
         </Paper>
       </Stack>
-      {job ? (
-        <Alert severity={job.status === 'failed' ? 'error' : job.status === 'done' ? 'success' : 'info'}>
-          {job.status === 'running' ? 'Задание выполняется.' : job.status === 'failed' ? 'Задание не выполнено.' : 'Задание завершено.'} Подробности доступны в
-          журнале заданий.
-        </Alert>
-      ) : null}
-      {page.video && job?.status === 'done' && page.jobAction === 'export' ? (
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Stack spacing={1}>
-            <Typography variant="subtitle1">Готовая проба MP4</Typography>
-            <video controls preload="metadata" src={projectMediaUrl(project, page.video)} style={{ width: '100%', maxHeight: 480, background: '#000' }} />
-            <Typography variant="caption" color="text.secondary">
-              Экспорт содержит состояние монтажа на момент запуска задания.
-            </Typography>
-            <Button startIcon={<FileDownload />} sx={{ alignSelf: 'start' }} disabled={page.busy} onClick={() => void page.saveVideo()}>
-              Сохранить MP4 как
-            </Button>
-          </Stack>
-        </Paper>
-      ) : null}
       <MontageSourcesDrawer
         open={sourcesOpen}
         onClose={() => setSourcesOpen(false)}
@@ -442,6 +426,15 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
           onPrevious={materialIndex > 0 ? () => setMaterial(galleryMaterials[materialIndex - 1]) : undefined}
           onNext={materialIndex >= 0 && materialIndex < galleryMaterials.length - 1 ? () => setMaterial(galleryMaterials[materialIndex + 1]) : undefined}
           onClose={() => setMaterial(null)}
+        />
+      ) : null}
+      {page.video && page.exportReady ? (
+        <MontageExportDialog
+          open={videoOpen}
+          url={projectMediaUrl(project, page.video)}
+          busy={page.busy}
+          onClose={() => setVideoOpen(false)}
+          onSave={() => void page.saveVideo()}
         />
       ) : null}
       <MontageRemoveDialog scene={remove.target?.scene} onClose={remove.close} onConfirm={remove.confirm} />

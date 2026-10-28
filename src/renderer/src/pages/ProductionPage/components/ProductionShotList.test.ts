@@ -37,6 +37,7 @@ describe('сетка карточек планов', () => {
       state: 'progress',
       stageLabel: 'результат получен',
       regenerateProblem: null,
+      derivedFrom: null,
       attention: 'вопрос о результате',
       asset: null,
       packages: [

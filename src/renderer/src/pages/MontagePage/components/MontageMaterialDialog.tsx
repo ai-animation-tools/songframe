@@ -3,6 +3,7 @@ import { useCallback, useId, useRef, useState, type KeyboardEvent, type ReactEle
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 import type { MontageSource } from '@shared/montage';
+import { ActionButton } from '../../../components/ActionButton';
 import { projectMediaUrl } from '../model';
 
 /** Просмотр материала перед добавлением: видео запускается вручную, опора открывается в масштабе 1:1. */
@@ -91,15 +92,27 @@ export function MontageMaterialDialog({
           {source.label}
         </Typography>
         <Box component="span" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-          <Button startIcon={<ArrowBack />} aria-label="Предыдущий материал" disabled={!onPrevious} onClick={() => navigate(onPrevious)}>
+          <ActionButton
+            startIcon={<ArrowBack />}
+            aria-label="Предыдущий материал"
+            disabled={!onPrevious}
+            disabledReason="Это первый материал каталога."
+            onClick={() => navigate(onPrevious)}
+          >
             Назад
-          </Button>
+          </ActionButton>
           <Typography component="span" variant="body2" color="text.secondary">
             Материал {position + 1} из {total}
           </Typography>
-          <Button endIcon={<ArrowForward />} aria-label="Следующий материал" disabled={!onNext} onClick={() => navigate(onNext)}>
+          <ActionButton
+            endIcon={<ArrowForward />}
+            aria-label="Следующий материал"
+            disabled={!onNext}
+            disabledReason="Это последний материал каталога."
+            onClick={() => navigate(onNext)}
+          >
             Вперёд
-          </Button>
+          </ActionButton>
         </Box>
       </DialogTitle>
       <DialogContent key={`${source.id}:${url}`} sx={{ p: 0, mx: 2, minHeight: 0, flex: 1, overflow: 'auto', bgcolor: 'background.default' }}>

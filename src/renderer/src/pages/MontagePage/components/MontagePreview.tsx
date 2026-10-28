@@ -1,10 +1,12 @@
 import { PlayArrow, Pause, ArrowBack, ArrowForward, SkipPrevious, MovieFilterOutlined } from '@mui/icons-material';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { Alert, Box, Button, Checkbox, FormControlLabel, IconButton, Slider, Stack, Tooltip, Typography } from '@mui/material';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
+import { Alert, Box, Checkbox, FormControlLabel, Slider, Stack, Typography } from '@mui/material';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import { secondsToFrames, FPS } from '@shared/video';
 import type { MontageDraft } from '@shared/montage';
+import { ActionButton } from '../../../components/ActionButton';
+import { ActionIconButton } from '../../../components/ActionIconButton';
 import { clipLength, frameLabel, projectMediaUrl } from '../model';
 import { createMontagePlayback, cutPreviewWindow, type MontagePlayback } from '../montagePlayback';
 
@@ -23,7 +25,11 @@ interface Props {
   onMetadata: (path: string, frames: number) => void;
   onTrackFrames: (frames: number) => void;
   suspended: boolean;
+  /** Почему воспроизведение приостановлено; показывается в подсказках выключенных кнопок плеера. */
+  suspendedReason?: string;
   videoMaxWidth?: string;
+  /** Дополнительные кнопки в конце ряда управления плеером, например открытие отдельного окна. */
+  actions?: ReactNode;
 }
 
 /** Музыка задаёт единые часы. Второй video заранее загружает следующий план без промежуточной сборки. */
@@ -42,7 +48,9 @@ export function MontagePreview({
   onMetadata,
   onTrackFrames,
   suspended,
-  videoMaxWidth
+  suspendedReason = 'Закройте открытое окно или дождитесь завершения текущей операции.',
+  videoMaxWidth,
+  actions
 }: Props): ReactElement {
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([null, null]);
@@ -59,6 +67,9 @@ export function MontagePreview({
       ? draft.clips.slice(0, selectedIndex + 1).reduce((sum, item) => sum + clipLength(item), 0)
       : null;
   const cutWindow = cut === null ? null : cutPreviewWindow(cut, length);
+  // Причины недоступности управления плеером; приостановка проверяется последней.
+  const noTrackReason = trackUrl ? null : 'В проекте нет музыкальной дорожки.';
+  const emptyReason = length ? null : 'Музыкальный участок пуст: задайте его начало и конец.';
   let offset = 0;
   const index = draft.clips.findIndex((clip) => {
     const end = offset + clipLength(clip);
@@ -271,6 +282,17 @@ export function MontagePreview({
         {!clip ? (
           <Typography sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#fff' }}>На этой позиции нет видео</Typography>
         ) : null}
+        {/* Ошибка открытия медиа накладывается на кадр: под плеером она уходит из закреплённой области. */}
+        {error ? (
+          <Alert
+            severity="warning"
+            variant="filled"
+            onClose={() => setError(null)}
+            sx={{ position: 'absolute', top: 8, left: 8, right: 8, zIndex: 1, maxHeight: 'calc(100% - 16px)', overflowY: 'auto', overflowWrap: 'anywhere' }}
+          >
+            {error}
+          </Alert>
+        ) : null}
       </Box>
       {trackUrl ? (
         <audio
@@ -295,57 +317,57 @@ export function MontagePreview({
         />
       ) : null}
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-        <Tooltip title={playing ? 'Пауза' : 'Воспроизвести'}>
-          <span>
-            <IconButton
-              aria-label={playing ? 'Пауза' : 'Воспроизвести'}
-              disabled={!trackUrl || !length || suspended}
-              onClick={toggle}
-              sx={{
-                color: 'primary.contrastText',
-                bgcolor: 'primary.main',
-                '&:hover': { bgcolor: 'primary.dark' },
-                '&.Mui-disabled': { bgcolor: 'action.disabledBackground' }
-              }}
-            >
-              {playing ? <Pause /> : <PlayArrow />}
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="В начало">
-          <span>
-            <IconButton aria-label="В начало" disabled={!length || suspended} onClick={() => seek(0)}>
-              <SkipPrevious />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Button
-          startIcon={<ArrowBack />}
-          size="small"
+        <ActionIconButton
+          aria-label={playing ? 'Пауза' : 'Воспроизвести'}
+          disabled={!trackUrl || !length || suspended}
+          disabledReason={noTrackReason ?? emptyReason ?? suspendedReason}
+          onClick={toggle}
+          sx={{
+            color: 'primary.contrastText',
+            bgcolor: 'primary.main',
+            '&:hover': { bgcolor: 'primary.dark' },
+            '&.Mui-disabled': { bgcolor: 'action.disabledBackground' }
+          }}
+        >
+          {playing ? <Pause /> : <PlayArrow />}
+        </ActionIconButton>
+        <ActionIconButton aria-label="В начало" disabled={!length || suspended} disabledReason={emptyReason ?? suspendedReason} onClick={() => seek(0)}>
+          <SkipPrevious />
+        </ActionIconButton>
+        {/* Шаг по кадрам — часть управления воспроизведением: иконки того же размера, что и запуск. */}
+        <ActionIconButton
+          aria-label="−1 кадр"
+          title="−1 кадр (стрелка влево)"
+          disabled={!length || suspended}
+          disabledReason={emptyReason ?? suspendedReason}
           onClick={() => {
             playbackRef.current?.pause();
             seek(frame - 1);
           }}
         >
-          −1 кадр
-        </Button>
-        <Button
-          startIcon={<ArrowForward />}
-          size="small"
+          <ArrowBack />
+        </ActionIconButton>
+        <ActionIconButton
+          aria-label="+1 кадр"
+          title="+1 кадр (стрелка вправо)"
+          disabled={!length || suspended}
+          disabledReason={emptyReason ?? suspendedReason}
           onClick={() => {
             playbackRef.current?.pause();
             seek(frame + 1);
           }}
         >
-          +1 кадр
-        </Button>
-        <Tooltip title={cutWindow ? 'Две секунды до и после стыка выбранного фрагмента' : 'Выберите фрагмент со следующей сценой внутри музыкального участка'}>
-          <span>
-            <Button startIcon={<MovieFilterOutlined />} size="small" disabled={!trackUrl || !cutWindow || suspended} onClick={previewCut}>
-              Проверить склейку
-            </Button>
-          </span>
-        </Tooltip>
+          <ArrowForward />
+        </ActionIconButton>
+        <ActionButton
+          startIcon={<MovieFilterOutlined />}
+          title="Две секунды до и после стыка выбранного фрагмента"
+          disabled={!trackUrl || !cutWindow || suspended}
+          disabledReason={noTrackReason ?? (cutWindow ? suspendedReason : 'Выберите фрагмент со следующей сценой внутри музыкального участка.')}
+          onClick={previewCut}
+        >
+          Проверить склейку
+        </ActionButton>
         <FormControlLabel control={<Checkbox checked={loop} onChange={(event) => onPreferences(event.target.checked, volume)} />} label="Повторять" />
         <Stack direction="row" spacing={1} alignItems="center" sx={{ width: 220, maxWidth: '100%' }}>
           {volume === 0 ? <VolumeOffIcon fontSize="small" color="action" /> : <VolumeUpIcon fontSize="small" color="action" />}
@@ -367,12 +389,8 @@ export function MontagePreview({
         <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
           {frameLabel(position)} / {frameLabel(length)} · {clip?.scene ?? '—'}
         </Typography>
+        {actions}
       </Stack>
-      {error ? (
-        <Alert severity="warning" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      ) : null}
     </Stack>
   );
 }

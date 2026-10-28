@@ -21,14 +21,16 @@ import type {
   TreatmentFile
 } from '@shared/types';
 import { Jobs } from './jobs';
+import { runtimeInfo, type AppDiagnostics } from './app-diagnostics';
+import { buildReport, jobText } from './diagnostics';
 import { CHECKS, Checks, listReviews, readProjectSettings, writeProjectSettings } from './checks';
 import { Animatic, setAnimaticStatus, viewAnimatic } from './animatic';
 import { viewDashboard } from './dashboard';
-import { listBundles, Production, viewProduction, readPackage, cliArgs, pricingArgs } from './production';
+import { listBundles, Production, viewProduction, readPackage, pricingArgs } from './production';
+import { speechPlan } from './speech';
 import { initCast, readCast, viewCast, writeCast } from './cast';
 import { buildBrief, saveScenes, saveTreatment, validateScenes, viewScenario } from './scenario';
 import { runEnvironmentTask } from './environment-task';
-import { checkKlingAuth, loginKling } from './kling-auth';
 import { resolvePaths } from './paths';
 import { Projects, validateNewProject } from './projects';
 import { parseLyrics, saveSources, validateSources, viewSources } from './sources';
@@ -43,7 +45,7 @@ import { normalizeAgentSettings, SettingsStore } from './settings';
 import { mediaPaths } from './media-runtime';
 import { checkAgent } from './agents';
 import { createAgentAdapter } from './agent-adapters';
-import type { AgentSettings } from '@shared/agents';
+import type { AgentJob, AgentSettings } from '@shared/agents';
 import type { AgentStartInput } from '@shared/agents';
 import type { AgentManager } from './agent-manager';
 import { openDesktopPath } from './desktop';
@@ -55,15 +57,18 @@ import { KeyframeImages, isImageFile } from './keyframe-images';
 import type { ProductionWorkflowStart, ProductionFrameCandidate } from '@shared/production-workflow';
 import {
   isMediaProvider,
+  MEDIA_PROVIDERS,
+  mediaProvidersFor,
   mediaProviderTitles,
+  normalizeMediaProvider,
   type MediaCapabilities,
   type MediaKind,
-  type MediaProviderFor,
-  type MediaProviderId
+  type ProviderAuth,
+  mediaProviderInfo
 } from '@shared/media-providers';
-import { CodexImageProvider, KlingImageProvider, KlingVideoProvider } from './media-providers';
+import { PaidMediaProvider } from './media-providers';
+import { agentAdapters, paidAdapter, paidAdapters, type AgentImageExecutor, type PaidProviderAdapter } from './providers';
 import { frameImageRequest } from './frame-image-request';
-import { readCodexModels } from './codex-models';
 import { readAgentModels } from './agent-models';
 import type { TaskNotifications } from './task-notifications';
 import type { MontageDraft } from '@shared/montage';
@@ -72,7 +77,7 @@ import { copyMontageVideo, montageVideoPath } from './montage-video';
 import { recoverMontageApplications } from './montage-recovery';
 import { readScenarioRegistry } from './scenario-status';
 import { CoverGeneration } from './cover-generation';
-import { prepareKlingCover } from './cover-kling';
+import { preparePaidCover } from './cover-paid';
 import { prepareProjectCover } from './cover-provider';
 import type { CoverCrop, CoverGenerationApproval } from '@shared/cover-generation';
 import { assertAiSelection, createAiAccess } from './ai-access';
@@ -93,10 +98,13 @@ export interface Services {
   /** Доставка итогов живёт в main и не зависит от подписки открытой страницы. */
   notifications?: TaskNotifications;
   cover?: CoverGeneration;
+  /** Только оконный процесс: журнал сбоев и сеанс пользователя. */
+  diagnostics?: AppDiagnostics;
 }
 
-export function createServices(): Services {
-  const options = {
+/** Исходные данные путей приложения; localDir из них нужен и журналу сбоев до создания служб. */
+export function pathOptions() {
+  return {
     appPath: app.getAppPath(),
     execPath: process.execPath,
     cwd: process.cwd(),
@@ -106,12 +114,20 @@ export function createServices(): Services {
     resourcesPath: process.resourcesPath,
     localDirOverride: process.env.SONGFRAME_LOCAL_DIR
   };
+}
+
+/**
+ * restoreJobs загружает журнал заданий прошлых сеансов (только оконный запуск);
+ * previousJobs продолжает уже открытый журнал при смене ресурсов.
+ */
+export function createServices(input: { restoreJobs?: boolean; previousJobs?: Jobs } = {}): Services {
+  const options = pathOptions();
   const defaults = resolvePaths(options);
   initializeLocalStorage(defaults.localDir);
   const settings = new SettingsStore(defaults.localDir);
   const paths = resolvePaths({ ...options, override: settings.read().toolsRootOverride });
   const launcher = new PythonLauncher({ packaged: app.isPackaged, resourcesPath: process.resourcesPath, toolsRoot: paths.toolsRoot, localDir: paths.localDir });
-  const jobs = new Jobs(paths.toolsRoot, paths.localDir, launcher);
+  const jobs = new Jobs(paths.toolsRoot, paths.localDir, launcher, { restore: !!input.restoreJobs, previous: input.previousJobs });
   const projects = new Projects(new LocalState(paths.localDir), paths.toolsRoot, process.platform, {
     packaged: app.isPackaged,
     problems: paths.problems
@@ -133,6 +149,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   const agents = getServices().agents;
   if (!agents) throw new Error('Менеджер агента не создан.');
   const notifications = getServices().notifications;
+  const diagnostics = getServices().diagnostics;
   const watchJobs = (jobs: Jobs): void => {
     jobs.onFinished((job, project) => notifications?.jobFinished(job, project));
   };
@@ -156,18 +173,40 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   });
   const mediaOptions = {
     launcher: () => getServices().launcher,
-    cliArgs,
-    images,
-    checkCodex: () => createAgentAdapter('codex').check(getServices().settings.getImageAgent()),
-    listCodexModels: () => readCodexModels(getServices().settings.getImageAgent()),
     validateImage: (path: string) => !nativeImage.createFromPath(path).isEmpty()
   };
-  const codexImages = new CodexImageProvider(mediaOptions);
-  const klingImages = new KlingImageProvider(mediaOptions);
-  const klingVideo = new KlingVideoProvider(mediaOptions);
+  // Опоры провайдера-агента рисует его программа по реестру; исполнителей даёт таблица адаптеров.
+  const agentImages: Record<string, AgentImageExecutor> = Object.fromEntries(
+    agentAdapters()
+      .filter((adapter) => MEDIA_PROVIDERS[adapter.id]?.kinds.includes('image'))
+      .map((adapter) => [adapter.id, adapter.images({ images, agentSettings: (model) => getServices().settings.getImageAgent(adapter.id, model) })])
+  );
+  const projectAgentImages = (project: string): AgentImageExecutor => {
+    const executor = agentImages[normalizeMediaProvider(readProjectSettings(project).generation?.image?.provider) ?? ''];
+    if (!executor) throw new Error('Выбранный провайдер изображений не рисует опоры программой-агентом.');
+    return executor;
+  };
+  // Задание опор собирает исполнитель провайдера, чья программа-агент его выполнила, даже если настройки проекта уже сменились.
+  const jobAgentImages = (job: AgentJob): AgentImageExecutor => {
+    const id = Object.keys(agentImages).find((provider) => MEDIA_PROVIDERS[provider]?.executor === job.provider);
+    if (!id) throw new Error('Нет исполнителя опор для программы-агента этого задания.');
+    return agentImages[id];
+  };
+  // Общий платный адаптер для каждого провайдера таблицы и каждого вида медиа из реестра.
+  const paidMedia: Record<string, Partial<Record<MediaKind, PaidMediaProvider>>> = Object.fromEntries(
+    paidAdapters().map((adapter) => [
+      adapter.id,
+      Object.fromEntries(MEDIA_PROVIDERS[adapter.id].kinds.map((kind) => [kind, new PaidMediaProvider(adapter, kind, mediaOptions)]))
+    ])
+  );
+  const requirePaid = (provider: unknown): PaidProviderAdapter => {
+    const adapter = paidAdapter(provider);
+    if (!adapter) throw new Error('Для провайдера не подключён исполнитель платного запроса.');
+    return adapter;
+  };
   const ai = createAiAccess({
     settings: () => getServices().settings,
-    checkKling: () => checkKlingAuth(getServices().launcher.options)
+    checkProviderAuth: (provider) => requirePaid(provider).checkAuth(getServices().launcher.options)
   });
   ipcMain.handle('ai:access', (_event, project: string | null) => ai.getAccess(project));
   const cover = new CoverGeneration({
@@ -184,15 +223,15 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     prepareCandidate: (input) =>
       prepareProjectCover(input, {
         settings: getServices().settings,
-        kling: (candidate) => {
+        paid: (candidate, id) => {
           // Даже discovery и локальная подготовка завершаются до удаления временной сессии при закрытии.
-          const provider = new KlingImageProvider({
+          const provider = new PaidMediaProvider(requirePaid(id), 'image', {
             ...mediaOptions,
             launcher: () => ({
               run: (project, name, args, options) => getServices().launcher.run(project, name, args, { ...options, signal: candidate.signal })
             })
           });
-          return prepareKlingCover(candidate, { provider, launcher: () => getServices().launcher, cliArgs, pricingArgs });
+          return preparePaidCover(candidate, { provider, launcher: () => getServices().launcher, pricingArgs });
         }
       })
   });
@@ -241,17 +280,16 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     coverProjects.delete(id);
     await cover.close(id);
   });
-  const connectMedia = (): void => getServices().production.setMediaProviders({ image: klingImages, video: klingVideo });
+  const connectMedia = (): void => getServices().production.setMediaProviders(paidMedia);
   connectMedia();
-  // Record требует объявить исполнителя возможностей для каждого провайдера реестра и его видов медиа.
-  const mediaCapabilities: Record<MediaProviderId, Partial<Record<MediaKind, (project: string) => Promise<MediaCapabilities>>>> = {
-    codex: { image: (project) => codexImages.capabilities(project) },
-    kling: { image: (project) => klingImages.capabilities(project), video: (project) => klingVideo.capabilities(project) }
+  const mediaCapabilities = (provider: string, kind: MediaKind): ((project: string) => Promise<MediaCapabilities>) | undefined => {
+    if (!isMediaProvider(provider, kind)) return undefined;
+    const executor = paidMedia[provider]?.[kind] ?? (kind === 'image' ? agentImages[provider] : undefined);
+    return executor && ((project) => executor.capabilities(project));
   };
-  const videoProviders: Record<MediaProviderFor<'video'>, KlingVideoProvider> = { kling: klingVideo };
   ipcMain.handle('media:capabilities', (_event, project: string, kind: MediaKind, provider: string) => {
     if (!['image', 'video'].includes(kind)) throw new Error('Неизвестный вид медиа.');
-    const capabilities = isMediaProvider(provider, kind) ? mediaCapabilities[provider][kind] : undefined;
+    const capabilities = mediaCapabilities(provider, kind);
     if (capabilities) return capabilities(project);
     return {
       provider,
@@ -275,20 +313,29 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     isPackageBusy: (project, packageDir) => getServices().production.isBusy(project, packageDir),
     generateImages: (input) => {
       assertAiSelection(getServices().settings, input.project, 'image');
-      const prepared = codexImages.prepare(input);
-      const execution = codexImages.submit(prepared, { requestSha: prepared.requestSha });
-      if (execution.provider !== codexImages.provider) throw new Error('Исполнитель вернул неверный тип задания опор.');
+      const executor = projectAgentImages(input.project);
+      const prepared = executor.prepare(input);
+      const execution = executor.submit(prepared, { requestSha: prepared.requestSha });
+      if (execution.provider !== executor.provider) throw new Error('Исполнитель вернул неверный тип задания опор.');
       const job = agents.get(execution.agentJobId);
       if (!job) throw new Error('Задание изображений не создано.');
       return job;
     },
-    collectImages: (job) => codexImages.collectJob(job).map((artifact) => ({ id: artifact.frameId!, path: artifact.path })),
+    collectImages: (job) =>
+      jobAgentImages(job)
+        .collectJob(job)
+        .map((artifact) => ({ id: artifact.frameId!, path: artifact.path })),
     prepareImageRequest: async (input) => {
       await ai.requireAccess(input.project, 'image');
       const settings = readProjectSettings(input.project).generation?.image;
-      const capabilities = await klingImages.capabilities(input.project);
-      const request = frameImageRequest(input, settings, capabilities, (path) => !nativeImage.createFromPath(path).isEmpty());
-      await klingImages.prepare(request, capabilities);
+      const provider = paidMedia[normalizeMediaProvider(settings?.provider) ?? '']?.image;
+      if (!provider) {
+        const paid = mediaProvidersFor('image').filter((id) => MEDIA_PROVIDERS[id].paid);
+        throw new Error(`Выберите ${paid.map((id) => MEDIA_PROVIDERS[id].title).join(' или ') || 'платного провайдера'} для изображений в настройках проекта.`);
+      }
+      const capabilities = await provider.capabilities(input.project);
+      const request = frameImageRequest(provider.adapter, input, settings, capabilities, (path) => !nativeImage.createFromPath(path).isEmpty());
+      await provider.prepare(request, capabilities);
       const requestName = request.workDir.slice(input.packageDir.length + 1);
       const result = await getServices().launcher.run(input.project, 'shot_workflow', [
         'set-image-request',
@@ -304,8 +351,9 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     prepareVideoRequest: async ({ project, shot, requestDir, prompt, draft, durationConstraint }) => {
       await ai.requireAccess(project, 'video');
       const settings = readProjectSettings(project).generation?.video;
-      if (!isMediaProvider(settings?.provider, 'video')) throw new Error(`Выберите поддерживаемого провайдера видео: ${mediaProviderTitles('video')}.`);
-      await videoProviders[settings.provider].prepare(
+      const provider = isMediaProvider(settings?.provider, 'video') ? paidMedia[settings.provider]?.video : undefined;
+      if (!settings || !provider) throw new Error(`Выберите поддерживаемого провайдера видео: ${mediaProviderTitles('video')}.`);
+      await provider.prepare(
         {
           project,
           shot,
@@ -318,7 +366,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
           requiredParameters: { resolution: settings.resolution, aspect_ratio: settings.aspect_ratio },
           projectOptions: settings.options
         },
-        await videoProviders[settings.provider].capabilities(project)
+        await provider.capabilities(project)
       );
     }
   });
@@ -412,7 +460,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const settings = getServices().settings;
     settings.write({ ...settings.read(), toolsRootOverride: path });
     // Смена ресурсов не создаёт второй менеджер и не объявляет живые задания прерванными.
-    const next = { ...createServices(), agents, notifications, cover };
+    const next = { ...createServices({ previousJobs: getServices().jobs }), agents, notifications, cover, diagnostics };
     watchJobs(next.jobs);
     setServices(next);
     return getServices().projects.appState();
@@ -451,10 +499,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   ipcMain.handle('sources:validate', (_event, project: string, input: SourcesInput) => validateSources(project, input));
   ipcMain.handle('sources:save', (_event, project: string, input: SourcesInput) => {
     const media = mediaPaths(getServices().launcher.options);
-    return saveSources(project, input, media?.ffprobe, () => {
-      workflow.preserveSourceDecoration(project);
-      productionFlow.preserveSourceDecoration(project);
-    });
+    return saveSources(project, input, media?.ffprobe);
   });
 
   ipcMain.handle('timing:modelSetup', () => whisperSetup(getServices().launcher));
@@ -529,10 +574,20 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       return getServices().production.submit(project, packageDir, sha, decisionToken, quoteToken, unknownCostConsentToken);
     }
   );
-  ipcMain.handle('production:resume', async (_event, project: string, packageDir: string, generationId?: string) => {
+  ipcMain.handle('production:resume', async (_event, project: string, packageDir: string) => {
     await requirePackageAccess(project, packageDir);
     productionIdle(project, packageDir);
-    return getServices().production.resume(project, packageDir, generationId);
+    return getServices().production.resume(project, packageDir);
+  });
+  ipcMain.handle('production:attachResult', async (_event, project: string, packageDir: string, files: string[]) => {
+    await requirePackageAccess(project, packageDir);
+    productionIdle(project, packageDir);
+    return getServices().production.attachResult(project, packageDir, files);
+  });
+  ipcMain.handle('production:markNotCreated', async (_event, project: string, packageDir: string) => {
+    await requirePackageAccess(project, packageDir);
+    productionIdle(project, packageDir);
+    return getServices().production.markNotCreated(project, packageDir);
   });
   ipcMain.handle('production:selectImage', (_event, project: string, packageDir: string, index: number, expectedResultToken: string) => {
     productionIdle(project, packageDir);
@@ -559,6 +614,22 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     productionIdle(project, packageDir);
     return getServices().production.park(project, packageDir);
   });
+  // Допустимую длину звукового входа задаёт поле lipSync провайдера видео проекта в реестре.
+  const speechLimits = (project: string, packageDir?: string): { requestSeconds: number | null; lipSync: { min: number; max: number } | null } => ({
+    requestSeconds: (packageDir ? readPackage(project, packageDir)?.timing?.request_seconds : null) ?? null,
+    lipSync: mediaProviderInfo(readProjectSettings(project).generation?.video?.provider, 'video')?.lipSync ?? null
+  });
+  ipcMain.handle('production:speechPlan', (_event, project: string, shot: string, packageDir?: string) =>
+    speechPlan(project, shot, speechLimits(project, packageDir))
+  );
+  ipcMain.handle('production:prepareSpeech', async (_event, project: string, packageDir: string, bounds?: { start: number; end: number }) => {
+    productionIdle(project, packageDir);
+    const { lipSync } = speechLimits(project, packageDir);
+    if (!lipSync) throw new Error('Провайдер видео проекта не синхронизирует губы с заданным звуком.');
+    if (bounds && (bounds.end - bounds.start < lipSync.min - 1e-6 || bounds.end - bounds.start > lipSync.max + 1e-6))
+      throw new Error(`Провайдер видео принимает звук длиной от ${lipSync.min} до ${lipSync.max} с: поправьте границы среза.`);
+    return getServices().production.prepareSpeech(project, packageDir, bounds);
+  });
   ipcMain.handle('production:exportBundle', (_event, project: string, options: ExportBundleOptions) => getServices().production.exportBundle(project, options));
   ipcMain.handle('production:listBundles', (_event, project: string) => listBundles(project));
   ipcMain.handle('production:removeBundle', (_event, project: string, path: string) => getServices().production.removeBundle(project, path));
@@ -576,6 +647,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       if (view.built) view.built.fresh = false;
       view.cardsFresh = false;
       view.approval.current = false;
+      view.blockedReason = problem;
     }
     return view;
   });
@@ -618,6 +690,38 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   });
   ipcMain.handle('jobs:list', () => getServices().jobs.list());
   ipcMain.handle('jobs:get', (_event, id: string) => getServices().jobs.get(id));
+  ipcMain.handle('jobs:copyText', (_event, id: string) => {
+    const job = getServices().jobs.get(id);
+    if (!job) throw new Error('Задание не найдено в журнале.');
+    return jobText(job, getServices().jobs.readLog(id));
+  });
+
+  ipcMain.on('diagnostics:rendererError', (_event, report) => diagnostics?.rendererError(report));
+  ipcMain.handle('diagnostics:crashNotice', () => diagnostics?.takeCrashNotice() ?? null);
+  ipcMain.handle('diagnostics:saveReport', async (event) => {
+    const { jobs, settings } = getServices();
+    const now = new Date();
+    const pad = (value: number): string => String(value).padStart(2, '0');
+    const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
+    const window = BrowserWindow.fromWebContents(event.sender);
+    const result = await dialog.showSaveDialog(window!, {
+      title: 'Сохранить отчёт для разработчика',
+      defaultPath: join(app.getPath('downloads'), `songframe-report-${stamp}.txt`),
+      filters: [{ name: 'Текст', extensions: ['txt'] }]
+    });
+    if (result.canceled || !result.filePath) return null;
+    const report = buildReport({
+      localDir: settings.localDir,
+      info: runtimeInfo(),
+      previous: diagnostics?.previous ?? { crashed: false, startedAt: null, version: null },
+      jobs: jobs.list(),
+      readLog: (id) => jobs.readLog(id, 256 * 1024),
+      agents: agents.list(),
+      now
+    });
+    writeFileSync(result.filePath, report);
+    return result.filePath;
+  });
 
   const environmentChecks = new WeakMap<
     PythonLauncher,
@@ -649,18 +753,42 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const current = pending;
     return current.promise.finally(() => current.listeners.delete(send));
   });
-  let pendingKlingAuth: ReturnType<typeof checkKlingAuth> | null = null;
-  ipcMain.handle('environment:klingAuth', () => {
+  const pendingProviderAuth = new Map<string, Promise<ProviderAuth>>();
+  ipcMain.handle('environment:providerAuth', (_event, provider: string) => {
+    const adapter = requirePaid(provider);
     // Повторное открытие страницы использует уже выполняющуюся проверку входа.
-    // Готовый результат не сохраняем: следующая проверка заново обращается к CLI.
-    if (!pendingKlingAuth) {
-      pendingKlingAuth = checkKlingAuth(getServices().launcher.options).finally(() => {
-        pendingKlingAuth = null;
+    // Готовый результат не сохраняем: следующая проверка заново обращается к программе провайдера.
+    let pending = pendingProviderAuth.get(adapter.id);
+    if (!pending) {
+      pending = adapter.checkAuth(getServices().launcher.options).finally(() => {
+        pendingProviderAuth.delete(adapter.id);
       });
+      pendingProviderAuth.set(adapter.id, pending);
     }
-    return pendingKlingAuth;
+    return pending;
   });
-  ipcMain.handle('environment:loginKling', () => loginKling(getServices().launcher.options));
+  // Ожидание входа можно отменить; адрес авторизации приложение открывает само и сообщает странице.
+  const loginAborts = new Map<string, AbortController>();
+  ipcMain.handle('environment:loginProvider', async (event, provider: string) => {
+    const adapter = requirePaid(provider);
+    loginAborts.get(adapter.id)?.abort();
+    const controller = new AbortController();
+    loginAborts.set(adapter.id, controller);
+    try {
+      return await adapter.login(getServices().launcher.options, {
+        signal: controller.signal,
+        authorizeUrl: (url) => {
+          void shell.openExternal(url).catch(() => undefined);
+          if (!event.sender.isDestroyed()) event.sender.send('environment:loginUrl', { provider: adapter.id, url });
+        }
+      });
+    } finally {
+      if (loginAborts.get(adapter.id) === controller) loginAborts.delete(adapter.id);
+    }
+  });
+  ipcMain.handle('environment:cancelLogin', (_event, provider: string) => {
+    loginAborts.get(provider)?.abort();
+  });
   ipcMain.handle('tools:run', (_event, project: string, name: string, args: string[]) =>
     runTool(getServices().toolsRoot, project, name, args, undefined, getServices().launcher)
   );

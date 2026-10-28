@@ -1,4 +1,4 @@
-/** Сообщение о потере сети под шапкой приложения; закрытое скрывается до следующего отключения или перезапуска. */
+/** Сообщение о потере сети в закреплённой шапке приложения; закрытое скрывается до следующего отключения или перезапуска. */
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert } from '@mui/material';
 import { useApp } from '../state';
@@ -12,8 +12,9 @@ export function NetworkErrorMessage(): ReactElement | null {
   }, [online]);
   if (online || dismissed) return null;
   return (
-    <Alert severity="error" onClose={() => setDismissed(true)} slotProps={{ closeButton: { title: 'Скрыть сообщение' } }} sx={{ mb: 2 }}>
-      Нет подключения к сети. Генерация, задания агента, вход в Kling и загрузка модели недоступны до восстановления связи; просмотр и правка проекта работают.
+    <Alert severity="error" onClose={() => setDismissed(true)} slotProps={{ closeButton: { title: 'Скрыть сообщение' } }} sx={{ borderRadius: 0 }}>
+      Нет подключения к сети. Генерация, задания агента, вход в сервис генерации и загрузка модели недоступны до восстановления связи; просмотр и правка проекта
+      работают.
     </Alert>
   );
 }

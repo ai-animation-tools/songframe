@@ -3,6 +3,7 @@ import type { MontageApi, MontageDraft, MontageSource, MontageView } from '@shar
 import type { JobInfo } from '@shared/types';
 import { useApp } from '../../state';
 import { clipLength, historyReducer, initialDraft, montageLength, moveClip, sourceClip } from './model';
+import { countLabel } from '@shared/plural';
 
 const EMPTY: MontageDraft = {
   schema_version: 1,
@@ -20,6 +21,8 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
   const alive = useRef(true);
   const requestId = useRef(0);
   const metadata = useRef<Record<string, number>>({});
+  // Ошибка первого чтения заменяет страницу; после загрузки ошибки операций уходят в уведомления.
+  const loaded = useRef(false);
   const [view, setView] = useState<MontageView | null>(null);
   const [sources, setSources] = useState<MontageSource[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +69,7 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       const next = await api().view(project);
       if (!alive.current || request !== requestId.current) return;
       setView(next);
+      loaded.current = true;
       setSources(next.sources);
       const initial = snapshot(initialDraft(next, shots, next.trackPath ?? '', preferred));
       dispatch({ type: 'reset', draft: initial });
@@ -79,11 +83,13 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       setJob(null);
       setVideo(null);
     } catch (cause) {
-      if (alive.current && request === requestId.current) setError(describeError(cause));
+      if (!alive.current || request !== requestId.current) return;
+      if (loaded.current) notify(describeError(cause), 'error');
+      else setError(describeError(cause));
     } finally {
       if (alive.current && request === requestId.current) setBusy(false);
     }
-  }, [project, shots, preferred, snapshot, describeError]);
+  }, [project, shots, preferred, snapshot, describeError, notify]);
   useEffect(() => {
     alive.current = true;
     void load();
@@ -103,11 +109,11 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
   const operate = async (action: () => Promise<void>): Promise<void> => {
     const request = requestId.current;
     setBusy(true);
-    setError(null);
     try {
       await action();
     } catch (cause) {
-      if (alive.current && requestId.current === request) setError(describeError(cause));
+      // Панель и плеер закреплены, поэтому итог операции виден только в уведомлении.
+      if (alive.current && requestId.current === request) notify(describeError(cause), 'error');
     } finally {
       if (alive.current && requestId.current === request) setBusy(false);
     }
@@ -136,6 +142,26 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       setVideo(null);
       setJob(null);
     });
+  // Итог задания сообщается один раз: при старте уже завершённого задания или на последнем опросе.
+  const reportJob = useCallback(
+    async (next: JobInfo, action: 'export' | 'apply'): Promise<void> => {
+      if (next.status === 'failed') {
+        const reason = next.error ?? 'Подробности в журнале заданий.';
+        notify(action === 'export' ? `Экспорт MP4 не выполнен. ${reason}` : `Применение к сценам не выполнено. ${reason}`, 'error');
+        return;
+      }
+      if (next.status !== 'done') return;
+      if (action === 'export') {
+        notify('Проба MP4 готова', 'success');
+        return;
+      }
+      const refreshed = await api().view(project);
+      if (!alive.current) return;
+      setView(refreshed);
+      notify('Монтаж применён. Переоткройте материалы перед следующими изменениями сцен.', 'success');
+    },
+    [project, notify]
+  );
   const exportVideo = (): Promise<void> =>
     operate(async () => {
       const exported = await api().export(project, draft);
@@ -143,6 +169,7 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       setJob(exported.job);
       setJobAction('export');
       setVideo(exported.video);
+      await reportJob(exported.job, 'export');
     });
   const apply = (): Promise<void> =>
     operate(async () => {
@@ -152,6 +179,7 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       setJobAction('apply');
       setVideo(null);
       setApplyOpen(false);
+      await reportJob(started, 'apply');
     });
   const saveVideo = (): Promise<void> =>
     operate(async () => {
@@ -171,19 +199,17 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
         const next = await window.api.jobs.get(jobId);
         if (cancelled || !alive.current) return;
         if (!next) {
-          setError('Задание монтажа больше не найдено в истории.');
+          notify('Задание монтажа больше не найдено в истории.', 'error');
           return;
         }
-        if (next.status === 'done' && jobAction === 'apply') {
-          const refreshed = await api().view(project);
+        if (next.status !== 'running' && jobAction) {
+          await reportJob(next, jobAction);
           if (cancelled || !alive.current) return;
-          setView(refreshed);
-          notify('Монтаж применён. Переоткройте материалы перед следующими изменениями сцен.', 'success');
         }
         setJob(next);
         if (next.status !== 'running') return;
       } catch (cause) {
-        if (!cancelled && alive.current) setError(describeError(cause));
+        if (!cancelled && alive.current) notify(describeError(cause), 'error');
       }
       if (!cancelled) timer = setTimeout(() => void poll(), 1200);
     };
@@ -192,7 +218,7 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [jobId, jobStatus, jobAction, project, notify, describeError]);
+  }, [jobId, jobStatus, jobAction, notify, describeError, reportJob]);
 
   useEffect(() => {
     if (view?.scenarioStatus !== 'ready') return;
@@ -247,14 +273,24 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       : unknown
         ? 'Ожидаем метаданные длины видео. Если загрузка не завершится, проверьте доступность исходников.'
         : length !== audioLength
-          ? `Музыка: ${audioLength} кадров, видео: ${length} кадров. Разница ${length - audioLength > 0 ? '+' : ''}${length - audioLength} кадров. Выровняйте выделение музыки или обрежьте видео.`
+          ? `Музыка: ${countLabel(audioLength, 'кадр', 'кадра', 'кадров')}, видео: ${countLabel(length, 'кадр', 'кадра', 'кадров')}. Разница ${length - audioLength > 0 ? '+' : ''}${countLabel(length - audioLength, 'кадр', 'кадра', 'кадров')}. Выровняйте выделение музыки или обрежьте видео.`
+          : null;
+  // Короткая причина для чипа панели; полный текст остаётся под дорожкой и в подсказке кнопки.
+  const exportProblemLabel = !draft.clips.length
+    ? 'Нет фрагментов'
+    : !draft.audio.path
+      ? 'Нет музыки'
+      : unknown
+        ? 'Ждём длину видео'
+        : length !== audioLength
+          ? 'Длины не совпадают'
           : null;
   return {
     project,
     view,
     sources,
     error,
-    setError,
+    notify,
     busy,
     draft,
     history,
@@ -281,9 +317,11 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
     job,
     jobAction,
     video,
+    exportReady: !!video && job?.status === 'done' && jobAction === 'export',
     saveVideo,
     stale,
     exportProblem,
+    exportProblemLabel,
     length,
     audioLength
   };

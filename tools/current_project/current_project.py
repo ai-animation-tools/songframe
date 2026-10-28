@@ -16,6 +16,8 @@ from tools.common import (
     CURRENT_PROJECT_FILE,
     PROJECT_ENV,
     PROJECT_MARKER,
+    ROOT,
+    ROOT_SOURCE,
     read_json,
     resolve_project,
     write_json_atomic,
@@ -51,9 +53,13 @@ def clear_current(file=CURRENT_PROJECT_FILE):
         return False
 
 
-def describe(file=CURRENT_PROJECT_FILE, argv=(), environ=None):
-    """Текущее решение: откуда взят проект, существует ли папка и есть ли в ней маркер проекта."""
-    root, source = resolve_project(list(argv), environ, current_file=file)
+def describe(file=CURRENT_PROJECT_FILE, argv=(), environ=None, resolved=None):
+    """Текущее решение: откуда взят проект, существует ли папка и есть ли в ней маркер проекта.
+
+    `resolved` — уже принятое решение `tools.common`: при импорте он вырезает `--project` из `sys.argv`,
+    поэтому команда `show` передаёт его, а не вычисляет порядок заново.
+    """
+    root, source = resolved if resolved is not None else resolve_project(list(argv), environ, current_file=file)
     info = {
         "path": None if root is None else str(root),
         "source": source,
@@ -94,7 +100,7 @@ def main():
             else ("Файл текущего проекта удалён." if removed else "Файл текущего проекта и так отсутствует.")
         )
         return
-    info = describe()
+    info = describe(resolved=(ROOT if ROOT_SOURCE else None, ROOT_SOURCE))
     if args.json:
         print(json.dumps(info, ensure_ascii=False, indent=2))
     elif info["path"] is None:

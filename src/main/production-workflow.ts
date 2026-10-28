@@ -14,16 +14,28 @@ import type {
   ProductionWorkflowStart,
   ProductionWorkflowView
 } from '@shared/production-workflow';
+import { derivedShotReason } from '@shared/production-workflow';
 import type { DurationRule } from '@shared/types';
 import { isMediaProvider, mediaProviderInfo, mediaProviderTitles } from '@shared/media-providers';
 import { readProjectSettings } from './checks';
 import type { AgentManager } from './agent-manager';
 import type { PythonLauncher } from './python-launcher';
-import { cliArgs } from './production';
-import { readKlingCapabilities } from './kling-capabilities';
+import { acceptsAudioInput, readMediaCatalog } from './media-catalog';
+import { paidAdapter } from './providers';
+import { readPackageSpeech } from './speech';
+import { derivedShotSource } from './derived-shot';
+import { providerGuide } from './provider-guides';
 import { cachedFileDigest } from './animatic-freshness';
-import { sourceInputDigest, upgradeSourceInputSnapshot } from './source-input-hash';
-import { checkFrameCandidates, checkProductionCapabilities, parseProductionProposal, productionPath, record, type ProposalRules } from './production-proposal';
+import { sourceInputDigest } from './source-input-hash';
+import {
+  agentResponseText,
+  checkFrameCandidates,
+  checkProductionCapabilities,
+  parseProductionProposal,
+  productionPath,
+  record,
+  type ProposalRules
+} from './production-proposal';
 import { applyProductionPackage, productionPackageVideoPaid, writeProductionJson } from './production-workflow-apply';
 export { recoverInterruptedProductionApplies } from './production-workflow-apply';
 
@@ -36,7 +48,7 @@ interface Options {
   isPackageBusy?: (project: string, packageDir: string) => boolean;
   generateImages: (input: ProductionImagesInput) => AgentJob;
   collectImages: (job: AgentJob) => ProductionFrameCandidate[];
-  /** Kling готовит один запрос опоры; отправка остаётся за общим quote/submit. */
+  /** Платный провайдер изображений готовит один запрос опоры; отправка остаётся за общим quote/submit. */
   prepareImageRequest?: (input: ProductionImagesInput) => Promise<void>;
   prepareVideoRequest?: (input: {
     project: string;
@@ -44,7 +56,7 @@ interface Options {
     requestDir: string;
     prompt: string;
     draft: ProductionRequestDraft;
-    durationConstraint: { windowSeconds: number; rule: DurationRule };
+    durationConstraint: { windowSeconds: number; rule: DurationRule; minSeconds?: number };
   }) => Promise<void>;
 }
 interface Frame {
@@ -91,9 +103,13 @@ interface Context {
   window: number;
   durationRule: DurationRule;
   framePrompts: ProductionFramePrompt[];
+  /** Подготовленный точный WAV речевого плана в пакете. */
+  speech: { path: string; sourceSeconds: [number, number] } | null;
   allowedPaths: string[];
   paid: boolean;
   problems: string[];
+  /** План-источник производного плана: подготовка агентом и генерация для такого плана не нужны. */
+  derivedFrom: string | null;
 }
 const digest = (data: string | Buffer): string => createHash('sha256').update(data).digest('hex');
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
@@ -212,7 +228,8 @@ function rulesFor(context: Context, stage: ProductionPass): ProposalRules {
     durationRule: context.durationRule,
     requestSeconds: context.workflow?.timing?.request_seconds ?? null,
     allowedPaths: context.allowedPaths,
-    framePrompts: context.framePrompts
+    framePrompts: context.framePrompts,
+    lipSync: context.scene.lipsync === true ? (mediaProviderInfo(context.settings.provider, 'video')?.lipSync ?? null) : null
   };
 }
 
@@ -244,33 +261,13 @@ export class ProductionWorkflow {
   }
   private read(project: string, shot: string): Stored | null {
     try {
-      const value = this.checkedStored(project, json(this.path(project, shot)));
-      if (value) upgradeSourceInputSnapshot(value.hashes, project);
-      return value;
+      return this.checkedStored(project, json(this.path(project, shot)));
     } catch {
       return null;
     }
   }
   private write(project: string, shot: string, stored: Stored): void {
     writeProductionJson(this.path(project, shot), stored);
-  }
-  /** До смены обложки переводим только доказуемо актуальные старые снимки по прежним байтам описи. */
-  preserveSourceDecoration(path: string): void {
-    const project = realpathSync(path);
-    const directory = join(this.options.localDir, 'production-workflow');
-    if (!existsSync(directory)) return;
-    for (const name of readdirSync(directory)) {
-      if (!/^[a-f0-9]{64}\.json$/.test(name)) continue;
-      const file = join(directory, name);
-      let stored: Stored | null;
-      try {
-        stored = this.checkedStored(project, json(file));
-      } catch {
-        // Повреждённые записи и снимки других проектов не мешают сохранению исходников.
-        continue;
-      }
-      if (stored && upgradeSourceInputSnapshot(stored.hashes, project)) writeProductionJson(file, stored);
-    }
   }
   private context(path: string, shot: string, requested?: string): Context {
     if (!/^M\d{2}(?:\.\d+)?$/.test(shot)) throw new Error('Укажите один явный ID плана Mxx.');
@@ -294,6 +291,18 @@ export class ProductionWorkflow {
       !isMediaProvider(settings.provider, 'video')
     )
       problems.push(`Заполните настройки генерации видео проекта: поддерживается провайдер ${mediaProviderTitles('video')}.`);
+    // Речевой план готовится только у провайдера, который синхронизирует губы с заданным звуком и принимает такую длину.
+    const provider = mediaProviderInfo(settings.provider, 'video');
+    if (scene.lipsync === true && provider) {
+      if (!provider.lipSync)
+        problems.push(
+          `Речевой план: ${provider.title} не синхронизирует губы с заданным звуком. Снимите отметку «Липсинк» у плана на странице «Сценарий» или выберите другого провайдера видео.`
+        );
+      else if (window > provider.lipSync.max)
+        problems.push(
+          `Речевой план: окно плана ${window.toFixed(2)} с длиннее, чем ${provider.title} принимает звук (до ${provider.lipSync.max} с). Разделите план на странице «Сценарий».`
+        );
+    }
     const packageDir = requested ? packagePath(project, requested) : null;
     let workflow: Workflow | null = null;
     if (packageDir) {
@@ -332,6 +341,9 @@ export class ProductionWorkflow {
         const entry = manifest[key];
         if (record(entry)) addSource(entry.path);
       }
+    // Точный WAV речевого плана, подготовленный в пакете, — единственный разрешённый аудиовход запроса.
+    const speech = packageDir ? readPackageSpeech(packageDir) : null;
+    if (speech) allowed.add(rel(project, speech.path));
     if (packageDir)
       for (const frame of workflow?.keyframes ?? [])
         if (frame.approved && frame.path) {
@@ -359,9 +371,11 @@ export class ProductionWorkflow {
       window,
       durationRule: durationRule as DurationRule,
       framePrompts,
+      speech: speech ? { path: rel(project, speech.path), sourceSeconds: [speech.start, speech.end] as [number, number] } : null,
       allowedPaths: [...allowed].sort(),
       paid: packageDir ? productionPackageVideoPaid(packageDir) : false,
-      problems
+      problems,
+      derivedFrom: derivedShotSource(project, scene)
     };
   }
   private refresh(context: Context, stored: Stored | null): AgentJob | null {
@@ -395,6 +409,11 @@ export class ProductionWorkflow {
       } catch (error) {
         proposal.status = 'invalid';
         proposal.message = message(error);
+        // Ответ агента сохраняется для показа: он часто объясняет, почему предложение не подготовлено.
+        if (!stored.imageJob) {
+          const answer = agentResponseText(job.result ?? '', proposal.stage);
+          if (answer) proposal.agentText = answer;
+        }
       }
     }
     this.write(context.project, context.shot, stored);
@@ -413,8 +432,7 @@ export class ProductionWorkflow {
       this.options.agents.list(canonical).some((job) => job.status === 'running') ||
       (!!context.packageDir && !!this.options.isPackageBusy?.(canonical, context.packageDir));
     const pending = !!context.workflow?.pending_decision;
-    const descriptionApproved =
-      context.workflow?.description_approved ?? (context.workflow?.decision?.stage === 'description_review' && context.workflow.decision.verdict === 'approve');
+    const descriptionApproved = context.workflow?.description_approved === true;
     const frameRevision = context.workflow?.decision?.stage === 'keyframes_review' && context.workflow.decision.verdict === 'revise';
     const proposalPending = !!relevant && ['running', 'ready'].includes(relevant.proposal.status);
     const enabled = !busy && !proposalPending && !context.problems.length && !pending && !context.paid;
@@ -431,45 +449,65 @@ export class ProductionWorkflow {
         : pending
           ? 'сначала ответьте на вопрос согласования в карточке пакета'
           : null;
+    // Срез должен уложиться в допустимую длину звукового входа провайдера, иначе сервис отклонит запрос.
+    const lipSync = mediaProviderInfo(context.settings.provider, 'video')?.lipSync ?? null;
+    const speechLength = context.speech ? context.speech.sourceSeconds[1] - context.speech.sourceSeconds[0] : null;
+    const speechMismatch =
+      context.scene.lipsync === true && lipSync && speechLength !== null && (speechLength < lipSync.min - 1e-6 || speechLength > lipSync.max + 1e-6)
+        ? `речевой план: WAV длится ${speechLength.toFixed(2)} с, а провайдер принимает звук от ${lipSync.min} до ${lipSync.max} с — обрежьте заново в блоке «Речь»`
+        : null;
+    // Производный план собирается из чужого материала: эта причина постоянна и важнее временной занятости.
+    const derived = context.derivedFrom ? derivedShotReason(context.derivedFrom) : null;
     const reasons = {
-      prepare: busy
-        ? 'идёт задание агента или операция пакета'
-        : imagePhase
-          ? 'сначала завершите согласование или получение изображения'
-          : !scenarioApproved
-            ? 'сценарий не утверждён в приложении: утвердите кастинг, трактовку и сцены на странице «Сценарий»'
-            : (context.problems[0] ?? null),
-      continue: !context.packageDir
-        ? 'нужен выбранный пакет с принятым описанием и опорами'
-        : (common ??
-          (context.paid
-            ? 'попытка уже отправлена: дальше только повтор или возврат с замечанием'
-            : context.problems.length
-              ? context.problems.join(' ')
-              : imagePhase
-                ? 'сначала завершите согласование или получение изображения'
-                : !nextStage || nextStage === 'description'
-                  ? framesApproved
-                    ? 'опоры приняты, видеопромпт готовится этой кнопкой после принятия описания'
-                    : descriptionApproved
-                      ? 'сначала создайте и примите опоры'
-                      : 'сначала примените и примите описание плана'
-                  : null)),
-      frames: !context.packageDir
-        ? 'нужен выбранный пакет с принятым описанием'
-        : (common ??
-          (context.paid
-            ? 'попытка уже отправлена'
-            : framesApproved
-              ? 'опоры уже приняты'
-              : !context.framePrompts.length
-                ? 'в пакете нет плана опор: примените описание с промптами опор'
-                : !(descriptionApproved || frameRevision)
-                  ? 'сначала примите описание плана'
-                  : imagePhase
-                    ? 'сначала завершите согласование или получение изображения'
-                    : null))
+      prepare:
+        derived ??
+        (busy
+          ? 'идёт задание агента или операция пакета'
+          : imagePhase
+            ? 'сначала завершите согласование или получение изображения'
+            : !scenarioApproved
+              ? 'сценарий не утверждён в приложении: утвердите кастинг, трактовку и сцены на странице «Сценарий»'
+              : (context.problems[0] ?? null)),
+      continue:
+        derived ??
+        (!context.packageDir
+          ? 'нужен выбранный пакет с принятым описанием и опорами'
+          : (common ??
+            (context.paid
+              ? 'попытка уже отправлена: дальше только повтор или возврат с замечанием'
+              : context.problems.length
+                ? context.problems.join(' ')
+                : imagePhase
+                  ? 'сначала завершите согласование или получение изображения'
+                  : nextStage === 'request' && context.scene.lipsync === true && !context.speech
+                    ? 'речевой план: сначала подготовьте WAV речи в блоке «Речь»'
+                    : nextStage === 'request' && speechMismatch
+                      ? speechMismatch
+                      : !nextStage || nextStage === 'description'
+                        ? framesApproved
+                          ? 'опоры приняты, видеопромпт готовится этой кнопкой после принятия описания'
+                          : descriptionApproved
+                            ? 'сначала создайте и примите опоры'
+                            : 'сначала примените и примите описание плана'
+                        : null))),
+      frames:
+        derived ??
+        (!context.packageDir
+          ? 'нужен выбранный пакет с принятым описанием'
+          : (common ??
+            (context.paid
+              ? 'попытка уже отправлена'
+              : framesApproved
+                ? 'опоры уже приняты'
+                : !context.framePrompts.length
+                  ? 'в пакете нет плана опор: примените описание с промптами опор'
+                  : !(descriptionApproved || frameRevision)
+                    ? 'сначала примите описание плана'
+                    : imagePhase
+                      ? 'сначала завершите согласование или получение изображения'
+                      : null)))
     };
+    const generation = readProjectSettings(canonical).generation;
     return {
       project: canonical,
       shot,
@@ -477,14 +515,22 @@ export class ProductionWorkflow {
       busy,
       stage: context.workflow?.stage ?? null,
       reasons,
-      canPrepare: !busy && !imagePhase && scenarioApproved && !context.problems.length,
-      canContinue: enabled && !imagePhase && !!stageFor(context) && stageFor(context) !== 'description',
+      derivedFrom: context.derivedFrom,
+      canPrepare: !derived && !busy && !imagePhase && scenarioApproved && !context.problems.length,
+      canContinue:
+        !derived &&
+        enabled &&
+        !imagePhase &&
+        !!stageFor(context) &&
+        stageFor(context) !== 'description' &&
+        !(stageFor(context) === 'request' && speechMismatch),
       // Пока у пакета есть вопрос, замечание вводится в его карточке; панель подхватывает сохранённый ответ «вернуть».
-      canRevise: !busy && !proposalPending && !imagePhase && !!context.packageDir && !context.problems.length && !pending,
+      canRevise: !derived && !busy && !proposalPending && !imagePhase && !!context.packageDir && !context.problems.length && !pending,
       canGenerateFrames:
-        imageEnabled && !!context.packageDir && !approvedFrames(context) && !!context.framePrompts.length && (descriptionApproved || frameRevision),
+        !derived && imageEnabled && !!context.packageDir && !approvedFrames(context) && !!context.framePrompts.length && (descriptionApproved || frameRevision),
       paid: context.paid,
-      imageProvider: readProjectSettings(canonical).generation?.image?.provider,
+      imageProvider: generation?.image?.provider,
+      videoProvider: generation?.video?.provider,
       framePrompts: context.framePrompts,
       problems: context.problems,
       proposal: relevant?.proposal ?? null,
@@ -500,6 +546,7 @@ export class ProductionWorkflow {
     )
       throw new Error('Неверные параметры подготовки производства.');
     const context = this.context(input.project, input.shot, input.packageDir);
+    if (context.derivedFrom) throw new Error(derivedShotReason(context.derivedFrom));
     const view = this.view(context.project, input.shot, input.packageDir);
     if (context.workflow?.stage.startsWith('image_'))
       throw new Error('Сначала завершите согласование или получение текущего изображения. Новая отправка автоматически не создаётся.');
@@ -543,33 +590,55 @@ export class ProductionWorkflow {
       }
       const reports: unknown[] = [];
       const discoveryProblems: string[] = [];
-      const commands = stage === 'request' ? ['image_to_video', 'text_to_video', 'omni_ref_video', 'motion_control'] : ['image_to_video'];
+      // Речевому плану нужен режим со звуковым входом: агент видит все режимы провайдера уже при описании.
+      const lipsync = context.scene.lipsync === true;
       try {
-        // Производство использует тот же снимок, что и настройки, без отдельных who_am_i для каждой команды.
-        const catalog = await readKlingCapabilities(launcher, context.project, cliArgs(), commands);
-        reports.push(...catalog.reports);
-        discoveryProblems.push(...catalog.problems.map((problem) => `${problem.command}: ${problem.message}`));
+        const adapter = paidAdapter(context.settings.provider);
+        if (!adapter) throw new Error('Выбранный провайдер видео не объявляет возможности.');
+        const draft = stage === 'request' || lipsync ? undefined : adapter.rules.draftVideoCommands;
+        const visible = (command: string): boolean => !draft || draft.includes(command);
+        // Производство использует тот же снимок, что и настройки, без отдельных запросов для каждой команды.
+        const catalog = await readMediaCatalog(launcher, context.project, adapter.id, 'video');
+        reports.push(...catalog.reports.filter((report) => visible(report.command)));
+        discoveryProblems.push(...catalog.problems.filter((problem) => visible(problem.command)).map((problem) => `${problem.command}: ${problem.message}`));
       } catch (error) {
         discoveryProblems.push(message(error));
       }
       const capabilities: unknown = reports;
       const capabilitiesProblem = discoveryProblems.join(' ');
       if (stage === 'request' && !reports.length)
-        throw new Error(`Не удалось получить актуальные модели Kling: ${capabilitiesProblem || 'нет объявлений аккаунта'}`);
+        throw new Error(
+          `Не удалось получить актуальные модели ${mediaProviderInfo(context.settings.provider, 'video')?.title ?? 'провайдера видео'}: ${capabilitiesProblem || 'нет объявлений аккаунта'}`
+        );
+      if (lipsync) {
+        if (stage === 'request' && !context.speech) throw new Error('Речевой план: сначала подготовьте WAV речи в блоке «Речь».');
+        // Проверяем до запуска агента: без звукового входа точный липсинк невозможен, и агент всё равно вернул бы ошибку.
+        if (reports.length && !acceptsAudioInput(reports))
+          throw new Error(
+            `Модели ${mediaProviderInfo(context.settings.provider, 'video')?.title ?? 'провайдера'} в этом аккаунте не принимают звуковой вход: точный липсинк по WAV недоступен. Чтобы сделать план без синхронизации губ, снимите отметку «Липсинк» у плана на странице «Сценарий».`
+          );
+      }
       const rules = rulesFor(context, stage);
       const skill = [
         text(join(root, 'skills/ai-clip-scene/SKILL.md')),
         text(join(root, 'skills/ai-clip-scene/references/app-proposal.md')),
-        text(join(root, 'skills/ai-clip-scene/references/prompt-template.md'))
-      ].join('\n\n');
+        text(join(root, 'skills/ai-clip-scene/references/prompt-template.md')),
+        // Особенности сервисов приходят из документов провайдеров, выбранных в проекте; общий скилл их не содержит.
+        providerGuide(root, 'video', context.settings.provider),
+        providerGuide(root, 'image', readProjectSettings(context.project).generation?.image?.provider)
+      ]
+        .filter((part): part is string => !!part)
+        .join('\n\n');
       const prompt =
         `${skill}\n\nРежим приложения: output=proposal, stage=${stage}. Верни ровно один JSON без Markdown, записей файлов, shell и вызовов инструментов. ` +
         'Форма: description={"schemaVersion":1,"stage":"description","description":"текст","requestSeconds":целое,"keyframes":[{"id":"K01","role":"first","timeSeconds":0,"prompt":"полный промпт изображения","referencePaths":["source/..."]},...,{"id":"KNN","role":"last","timeSeconds":requestSeconds,"prompt":"...","referencePaths":[]}]}; ' +
-        'prompt={"schemaVersion":1,"stage":"prompt","prompt":"полный видеопромпт"}; request={"schemaVersion":1,"stage":"request","request":{"model":"точное имя из capabilities","command":"image_to_video|text_to_video|omni_ref_video|motion_control","parameters":{"duration":requestSeconds,...параметры capabilities},"inputs":[{"flag":"input","slot":"image_1","path":"объявленный путь","role":"first"}],"outputs":1}}. ' +
+        'prompt={"schemaVersion":1,"stage":"prompt","prompt":"полный видеопромпт"}; request={"schemaVersion":1,"stage":"request","request":{"model":"точное имя из capabilities","command":"точное имя команды из capabilities","parameters":{"duration":requestSeconds,...параметры capabilities},"inputs":[{"flag":"input","slot":"слот из capabilities","path":"объявленный путь","role":"назначение файла"}],"outputs":1}}. ' +
+        'Команду, параметры и слоты входов бери только из capabilities выбранной модели; какой слот служит первым и последним кадром, а какой референсом, — в указаниях провайдера видео. ' +
+        'flag — input с объявленным slot либо короткий флаг из inputFlags без slot; не смешивай эти способы в одном запросе. ' +
         'Никаких других полей. ID опор K01,K02,... подряд, first на 0 и last на requestSeconds, middle строго между. Сохраняй утверждённую постановку, внешность и непрерывность. ' +
         'settings.model — необязательное предпочтение. Сначала выбери по capabilities модель, совместимую с длительностью, разрешением, пропорциями и всеми референсами задачи. ' +
         'Если предпочтение несовместимо, предложи другую модель и её собственные объявленные параметры; не переноси флаги другой модели и не уменьшай требования ради предпочтения. ' +
-        'Соблюдай settings.duration_rule и выбери ближайшую поддерживаемую длительность, если capabilities доступны. Не выдумывай возможности моделей, путь WAV и цену. Для липсинка нужен готовый точный WAV; если его нет, сообщи диагностическую ошибку вместо произвольной команды. Пути только из allowedPaths.';
+        'Соблюдай settings.duration_rule и выбери ближайшую поддерживаемую длительность, если capabilities доступны. Не выдумывай возможности моделей, путь WAV и цену. Для липсинка нужен готовый точный WAV: на этапе request передай speech.path входом объявленного звукового слота модели, а duration запроса выбери не меньше длины speech (sourceSeconds) и выбери модель с таким слотом (какой слот — в указаниях провайдера видео); если на этапе request speech нет, сообщи диагностическую ошибку вместо произвольной команды. На этапах description и prompt speech может ещё отсутствовать: приложение режет WAV в блоке «Речь» после описания, длиной requestSeconds от начала окна; не прерывайся из-за этого. Для речевого плана requestSeconds выбирай в пределах lipSync.min..lipSync.max (длина звука, которую принимает провайдер) и по правилу длительности; запас после окна уходит в монтаж обрезкой. Пути только из allowedPaths.';
       const agentContext = JSON.stringify({
         stage,
         scene: context.scene,
@@ -582,10 +651,14 @@ export class ProductionWorkflow {
         description: context.packageDir ? text(join(context.packageDir, 'description.md')) : null,
         prompt: context.packageDir ? text(join(context.packageDir, 'video-prompt.txt')) : null,
         keyframes: context.framePrompts,
+        speech: context.speech,
+        lipSync: rules.lipSync ?? null,
         allowedPaths: context.allowedPaths,
         windowSeconds: context.window,
         capabilities,
         capabilitiesProblem,
+        // Короткие флаги входов объявляет адаптер провайдера видео.
+        inputFlags: Object.keys(paidAdapter(context.settings.provider)?.rules.inputFlags ?? {}),
         note: input.note?.trim() || context.workflow?.decision?.note || ''
       });
       const check: Stored = {
@@ -622,6 +695,7 @@ export class ProductionWorkflow {
   }
   async generateFrames(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView> {
     const context = this.context(project, shot, packageDir);
+    if (context.derivedFrom) throw new Error(derivedShotReason(context.derivedFrom));
     if (!this.view(context.project, shot, packageDir).canGenerateFrames) throw new Error('Сначала утвердите описание и план опор.');
     this.ensureNoPending(context);
     const hashes = snapshot(context.project, context.packageDir, packageDir, context.allowedPaths);
@@ -669,6 +743,7 @@ export class ProductionWorkflow {
   }
   async importFrames(project: string, shot: string, packageDir: string, images: ProductionFrameCandidate[]): Promise<ProductionWorkflowView> {
     const context = this.context(project, shot, packageDir);
+    if (context.derivedFrom) throw new Error(derivedShotReason(context.derivedFrom));
     if (!this.view(context.project, shot, packageDir).canGenerateFrames) throw new Error('Сначала утвердите описание и план опор.');
     this.ensureNoPending(context);
     const checked = checkFrameCandidates(images, context.framePrompts);
@@ -815,8 +890,15 @@ export class ProductionWorkflow {
           await ask('prompt_review');
         } else {
           if (!promptApproved(context) || !approvedFrames(context)) throw new Error('Утверждение опор или промпта устарело.');
-          if (context.scene.lipsync && !after.request.inputs.some((input) => input.flag === 'audio' && /\.wav$/i.test(input.path)))
-            throw new Error('Для липсинка нужен подготовленный точный WAV в audio-входе. Подготовьте его штатным инструментом.');
+          // Звуковой вход — именно подготовленный WAV пакета: отдельным флагом audio или именованным слотом audio_N.
+          const speechInput = (input: { flag: string; slot?: string; path: string }): boolean =>
+            (input.flag === 'audio' || (input.flag === 'input' && /^audio/i.test(input.slot ?? ''))) && input.path === context.speech?.path;
+          if (context.scene.lipsync && !after.request.inputs.some(speechInput))
+            throw new Error('Речевой план: запрос должен передавать подготовленный WAV из блока «Речь» звуковым входом модели.');
+          // Видео короче среза оборвало бы речь: длительность запроса покрывает весь WAV.
+          const speechLength = context.speech ? context.speech.sourceSeconds[1] - context.speech.sourceSeconds[0] : 0;
+          if (context.scene.lipsync && Number(after.request.parameters?.duration) < speechLength - 1e-6)
+            throw new Error(`Речевой план: длительность запроса должна быть не меньше длины WAV (${speechLength.toFixed(2)} с).`);
           let number = 1;
           while (existsSync(join(stored.target, `request-${String(number).padStart(2, '0')}`))) number++;
           const requestName = `request-${String(number).padStart(2, '0')}`;
@@ -837,9 +919,13 @@ export class ProductionWorkflow {
               requestDir: join(stored.target, requestName),
               prompt: text(join(stored.target, context.workflow!.prompt!.path!)),
               draft: after.request,
-              durationConstraint: { windowSeconds: context.window, rule: context.durationRule }
+              durationConstraint: {
+                windowSeconds: context.window,
+                rule: context.durationRule,
+                ...(stored.rules.lipSync ? { minSeconds: stored.rules.lipSync.min } : {})
+              }
             });
-          else await run('kling_request', ['prepare', '--request', specPath, '--work-dir', join(stored.target, requestName)]);
+          else await run('media_request', ['prepare', '--request', specPath, '--work-dir', join(stored.target, requestName)]);
           await run('shot_workflow', ['set-stage', '--dir', stored.target, 'request_choice', '--request-dir', requestName]);
           await ask('request_choice');
         }

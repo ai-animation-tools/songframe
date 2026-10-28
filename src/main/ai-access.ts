@@ -2,16 +2,16 @@
 import type { AgentCheckResult, AgentSettings } from '@shared/agents';
 import { aiActionProblem, type AiAccess, type AiActionKind, type AiExecutorAccess } from '@shared/ai-access';
 import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
-import { isMediaProvider, type MediaKind, type MediaProviderId } from '@shared/media-providers';
+import { isMediaProvider, MEDIA_PROVIDERS, type MediaKind, type MediaProviderId, type ProviderAuth } from '@shared/media-providers';
 import { createAgentAdapter } from './agent-adapters';
 import { readProjectSettings } from './checks';
-import type { KlingAuth } from './kling-auth';
 import type { SettingsStore } from './settings';
 
 interface Options {
   settings(): SettingsStore;
   checkAgent?(config: AgentSettings): Promise<AgentCheckResult>;
-  checkKling(): Promise<KlingAuth>;
+  /** Вход в платного провайдера проверяет его программа. */
+  checkProviderAuth(provider: MediaProviderId): Promise<ProviderAuth>;
 }
 const mediaMessage = (kind: MediaKind): string => `Сначала выберите провайдера ${kind === 'image' ? 'изображений' : 'видео'} в настройках проекта.`;
 const blocked = (message: string): AiExecutorAccess & { provider: null } => ({ provider: null, selected: false, available: false, message });
@@ -76,16 +76,15 @@ export function createAiAccess(options: Options) {
       const result = await check(config);
       return { available: result.availability === 'available' && result.authorization === 'authenticated', message: result.message };
     };
-    let kling: Promise<KlingAuth> | undefined;
-    // Record требует проверки доступности для каждого провайдера медиа из реестра.
-    const mediaAvailability: Record<MediaProviderId, () => Promise<Availability>> = {
-      codex: () => agentAvailability(options.settings().getImageAgent()),
-      kling: async () => {
-        kling ??= options.checkKling();
-        const result = await kling;
-        const available = result.status === 'authenticated';
-        return { available, message: result.message || (available ? 'Вход в Kling подтверждён.' : 'Выполните вход в Kling в настройках приложения.') };
-      }
+    const auth = new Map<MediaProviderId, Promise<ProviderAuth>>();
+    // Провайдер-агент проверяется как программа агента; платный — по входу в его собственную программу.
+    const mediaAvailability = async (provider: MediaProviderId): Promise<Availability> => {
+      if (MEDIA_PROVIDERS[provider].executor) return agentAvailability(options.settings().getImageAgent(provider));
+      if (!auth.has(provider)) auth.set(provider, options.checkProviderAuth(provider));
+      const result = await auth.get(provider)!;
+      const available = result.status === 'authenticated';
+      const title = MEDIA_PROVIDERS[provider].title;
+      return { available, message: result.message || (available ? `Вход в ${title} подтверждён.` : `Выполните вход в ${title} в настройках приложения.`) };
     };
     const agentConfig = options.settings().getAgent();
     if (access.agent.selected && agentConfig && (!requiredKind || requiredKind === 'agent')) {
@@ -100,7 +99,7 @@ export function createAiAccess(options: Options) {
       if (!executor.selected || !isMediaProvider(executor.provider, kind)) continue;
       if (requiredKind && requiredKind !== kind) continue;
       try {
-        Object.assign(executor, await mediaAvailability[executor.provider]());
+        Object.assign(executor, await mediaAvailability(executor.provider));
       } catch (error) {
         executor.message = error instanceof Error ? error.message : 'Не удалось проверить доступность провайдера.';
       }

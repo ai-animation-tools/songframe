@@ -122,6 +122,22 @@ def package_owners(folder):
     return {match[1]} if match else set()
 
 
+def new_attempt(folder, root):
+    """Новая попытка уже принятого плана (повтор или доработка) — штатная работа, а не остаток приёмки без --clean.
+
+    Остатком считается пакет на этапе accepted или пакет, чей запрос совпадает с запросом принятого комплекта.
+    """
+    workflow = read_json(folder / "workflow.json")
+    if not isinstance(workflow, dict) or not workflow.get("stage") or workflow["stage"] == "accepted":
+        return False
+    snapshot = read_json(root / "assets/shots" / str(workflow.get("shot")) / "generation-request.json")
+    accepted_sha = snapshot.get("request_sha256") if isinstance(snapshot, dict) else None
+    request_dir = workflow.get("request_dir")
+    attempt = read_json(folder / request_dir / "attempt.json") if isinstance(request_dir, str) and request_dir else None
+    attempt_sha = attempt.get("request_sha256") if isinstance(attempt, dict) else None
+    return not (accepted_sha and attempt_sha == accepted_sha)
+
+
 def collect(root=ROOT):
     """Список несоответствий; пустой список означает, что приёмка и обновление представлений отработали штатно."""
     root = Path(root).resolve()
@@ -182,7 +198,7 @@ def collect(root=ROOT):
                 folder.relative_to(root),
                 "пакет планов, которых нет в реестре: " + ", ".join(sorted(owners - set(ids))),
             )
-        elif owners <= accepted:
+        elif owners <= accepted and not new_attempt(folder, root):
             # Проба нескольких планов нужна, пока хотя бы один из них не принят.
             add(
                 "package_of_accepted",
@@ -192,7 +208,12 @@ def collect(root=ROOT):
 
     awaiting = root / "plan/awaiting"
     for folder in sorted(awaiting.glob("M*")) if awaiting.is_dir() else []:
-        if folder.is_dir() and folder.name in accepted and folder.resolve() not in retained:
+        if (
+            folder.is_dir()
+            and folder.name in accepted
+            and folder.resolve() not in retained
+            and not new_attempt(folder, root)
+        ):
             add(
                 "queue_of_accepted",
                 folder.relative_to(root),

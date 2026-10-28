@@ -5,13 +5,13 @@
     "M01": {
       "asset_manifest": {
         "path": "assets/shots/M01/manifest.json",
-        "sha256": "b401f58fb33b5007b56dbe7c0b7b8bd20315ddcf9e97603a28c4088494a34c22"
+        "sha256": "1c33d6f02dc19174e72bf67a29f55e448569594fdb7f7242f9fbdbff92e66ec0"
       }
     },
     "M02": {
       "asset_manifest": {
         "path": "assets/shots/M02/manifest.json",
-        "sha256": "b87f79f9a1fbe80b2608b8acaf2f48c17550b5ce974429b444317613962cacbc"
+        "sha256": "e2f58213b4a9d4395a8ec16b98c314a23ba37c6429286e9c3d04b5c189a53a50"
       }
     }
   }

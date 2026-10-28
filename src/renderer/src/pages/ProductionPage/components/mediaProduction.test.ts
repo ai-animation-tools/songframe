@@ -1,17 +1,29 @@
 /** Контракт представления различает платный image-запрос, выбор опоры и отдельную приёмку видео. */
 import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AiAccess } from '@shared/ai-access';
 import type { PackageView, ProductionQuote } from '@shared/types';
 import { agentTitle } from '@shared/agent-providers';
-import { MEDIA_PROVIDERS } from '@shared/media-providers';
+import { MEDIA_PROVIDERS, mediaProvidersFor, registerMediaProviderForTests } from '@shared/media-providers';
 import { ProductionFrameGenerationButton } from './ProductionFrameGenerationButton';
 import { PackageRequest } from './PackageRequest';
 import { PackageResult } from './PackageResult';
 import { PackageResume } from './PackageResume';
 import { PackageDecision } from './PackageDecision';
 import { SendRequestDialog } from './SendRequestDialog';
+import { TEST_AGENT_PROVIDER, TEST_PROVIDER, testAgentProviderInfo, testProviderInfo } from '@shared/testing/media-provider';
+
+// Опоры провайдера-агента исполняет программа из реестра агентов; её знак показывает AgentButton.
+const AGENT_EXECUTOR = testAgentProviderInfo.executor!;
+let restoreProviders: (() => void)[] = [];
+beforeAll(() => {
+  restoreProviders = [
+    registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo),
+    registerMediaProviderForTests(TEST_AGENT_PROVIDER, testAgentProviderInfo)
+  ];
+});
+afterAll(() => restoreProviders.forEach((restore) => restore()));
 
 // Сохранённый выбор задаётся независимо от поставляемых моделям настроек по умолчанию.
 const context = vi.hoisted(() => ({ agentProvider: 'codex' as string | null, aiAccess: null as AiAccess | null, quote: null as ProductionQuote | null }));
@@ -57,7 +69,7 @@ const fixture = (kind?: 'image' | 'video'): PackageView => ({
   request: {
     dir: '/fixture/request',
     kind,
-    provider: 'kling',
+    provider: TEST_PROVIDER,
     command: kind === 'image' ? 'text_to_image' : 'image_to_video',
     frameId: kind === 'image' ? 'first' : undefined,
     sha256: 'request-sha',
@@ -67,6 +79,7 @@ const fixture = (kind?: 'image' | 'video'): PackageView => ({
     attemptStatus: 'downloaded',
     promptText: 'Замороженный промпт',
     generationId: 'generation-id',
+    manualResult: false,
     creditsConsumed: 3,
     downloads: ['/fixture/original']
   }
@@ -76,29 +89,33 @@ beforeEach(() => {
   context.quote = null;
   context.aiAccess = {
     agent: { provider: 'codex', selected: true, available: true, message: '' },
-    image: { provider: 'codex', selected: true, available: true, message: '' },
-    video: { provider: 'kling', selected: true, available: true, message: '' }
+    image: { provider: TEST_AGENT_PROVIDER, selected: true, available: true, message: '' },
+    video: { provider: TEST_PROVIDER, selected: true, available: true, message: '' }
   };
   vi.stubGlobal('window', { api: { shell: { fileUrl: (path: string) => `songframe-file://${path}` } } });
 });
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Генерация опор и результаты изображений', () => {
-  it('использует Codex AgentButton только для Codex, а Kling готовит запрос обычной кнопкой', () => {
-    const codex = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: 'codex', disabled: false, onGenerate: unchanged }));
-    const kling = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: 'kling', disabled: false, onGenerate: unchanged }));
-    expect(codex).toContain('Codex');
-    expect(codex).not.toMatch(/<button[^>]*disabled/);
-    expect(kling).toContain('Подготовить запрос изображения (Kling)');
-    expect(kling).not.toContain('Codex');
+  it('использует AgentButton только для провайдера-агента, а платный провайдер готовит запрос обычной кнопкой', () => {
+    const agent = renderToStaticMarkup(
+      createElement(ProductionFrameGenerationButton, { provider: TEST_AGENT_PROVIDER, disabled: false, onGenerate: unchanged })
+    );
+    const paid = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: TEST_PROVIDER, disabled: false, onGenerate: unchanged }));
+    expect(agent).toContain(`title="${agentTitle(AGENT_EXECUTOR)}"`);
+    expect(agent).not.toMatch(/<button[^>]*disabled/);
+    expect(paid).toContain(`Подготовить запрос изображения (${MEDIA_PROVIDERS[TEST_PROVIDER].title})`);
+    expect(paid).not.toContain(agentTitle(AGENT_EXECUTOR));
   });
 
-  it.each(['claude', null])('показывает знак Codex на кнопке опор Codex при агенте %s', (agent) => {
+  it.each(['claude', null])('показывает знак исполнителя на кнопке опор провайдера-агента при агенте %s', (agent) => {
     context.agentProvider = agent;
     try {
-      const html = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: 'codex', disabled: false, onGenerate: unchanged }));
-      expect(html).toContain(`Создать опоры в ${MEDIA_PROVIDERS.codex.title}`);
-      expect(html).toContain(`title="${agentTitle('codex')}"`);
+      const html = renderToStaticMarkup(
+        createElement(ProductionFrameGenerationButton, { provider: TEST_AGENT_PROVIDER, disabled: false, onGenerate: unchanged })
+      );
+      expect(html).toContain(`Создать опоры в ${MEDIA_PROVIDERS[TEST_AGENT_PROVIDER].title}`);
+      expect(html).toContain(`title="${agentTitle(AGENT_EXECUTOR)}"`);
       expect(html).not.toMatch(/<button[^>]*disabled/);
     } finally {
       context.agentProvider = 'codex';
@@ -108,7 +125,9 @@ describe('Генерация опор и результаты изображен
   it('строит список поддерживаемых исполнителей опор из реестра', () => {
     const html = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { disabled: false, onGenerate: unchanged }));
     expect(html).toContain('Провайдер изображений не задан.');
-    expect(html).toContain(`Выберите ${MEDIA_PROVIDERS.kling.title} или ${MEDIA_PROVIDERS.codex.title} в настройках проекта.`);
+    const titles = mediaProvidersFor('image').map((id) => MEDIA_PROVIDERS[id].title);
+    expect(titles).toContain(MEDIA_PROVIDERS[TEST_PROVIDER].title);
+    expect(html).toContain(`Выберите ${titles.slice(0, -1).join(', ')} или ${titles.at(-1)} в настройках проекта.`);
   });
 
   it('блокирует неизвестного исполнителя с понятной диагностикой', () => {
@@ -127,7 +146,7 @@ describe('Генерация опор и результаты изображен
     expect(html).toContain('Выбрать как опору');
     expect(html).toContain('Утверждение опор выполняется отдельно');
     expect(html).not.toContain('<video');
-    expect(html).not.toContain('Принять в assets');
+    expect(html).not.toContain('>Принять<');
     expect(html).not.toContain('Сделать техническую сводку');
   });
 
@@ -136,7 +155,7 @@ describe('Генерация опор и результаты изображен
       createElement(PackageResult, { pkg: fixture(), busy: false, onAccept: unchanged, onContactSheet: unchanged, onSelectImage: unchanged })
     );
     expect(html).toContain('<video');
-    expect(html).toContain('Принять в assets');
+    expect(html).toContain('>Принять<');
     expect(html).not.toContain('Выбрать как опору');
   });
 
@@ -153,7 +172,7 @@ describe('Генерация опор и результаты изображен
     const pkg = fixture('image');
     pkg.stage = 'image_request_choice';
     pkg.request!.attemptStatus = 'prepared';
-    const html = renderToStaticMarkup(createElement(PackageRequest, { pkg, busy: false, klingAvailable: true, onSubmit: unchanged }));
+    const html = renderToStaticMarkup(createElement(PackageRequest, { pkg, busy: false, providerAvailable: true, onSubmit: unchanged }));
     expect(html).toContain('Запрос изображения');
     expect(html).toContain('text_to_image');
     expect(html).toContain('first');
@@ -166,7 +185,7 @@ describe('Генерация опор и результаты изображен
     const pkg = fixture('video');
     pkg.request!.attemptStatus = 'submission_unknown';
     pkg.request!.inputs = [{ slot: 'image_1', role: 'first', path: 'inputs/01.png', imagePath: '/fixture/inputs/01.png' }];
-    const html = renderToStaticMarkup(createElement(PackageRequest, { pkg, busy: false, klingAvailable: true, onSubmit: unchanged }));
+    const html = renderToStaticMarkup(createElement(PackageRequest, { pkg, busy: false, providerAvailable: true, onSubmit: unchanged }));
     expect(html).toContain('исход отправки неизвестен');
     expect(html).toContain('Хеш запроса (SHA-256)');
     expect(html).toContain('Первый кадр (Изображение 1)');
@@ -177,33 +196,49 @@ describe('Генерация опор и результаты изображен
 
   it('объясняет замену предпочтительной модели в согласовании замороженного запроса', () => {
     const pkg = fixture('video');
-    pkg.request!.model = 'kling-video-v4_0';
+    pkg.request!.model = 'test-video-pro';
     pkg.request!.modelSelection = {
-      preferredModel: 'kling-video-v3_0',
-      selectedModel: 'kling-video-v4_0',
+      preferredModel: 'test-video',
+      selectedModel: 'test-video-pro',
       reason: 'Предпочтение не поддерживает duration=25; выбрана совместимая модель без изменения требований.'
     };
-    const html = renderToStaticMarkup(createElement(PackageRequest, { pkg, busy: false, klingAvailable: true, onSubmit: unchanged }));
-    expect(html).toContain('Предпочтительная модель kling-video-v3_0 заменена на kling-video-v4_0');
+    const html = renderToStaticMarkup(createElement(PackageRequest, { pkg, busy: false, providerAvailable: true, onSubmit: unchanged }));
+    expect(html).toContain('Предпочтительная модель test-video заменена на test-video-pro');
     expect(html).toContain('duration=25');
     expect(html).toContain('MuiAlert-standardWarning');
+  });
+
+  it('при неизвестном исходе без ID отсылает к истории генераций из реестра провайдера вместо поля ID', () => {
+    const pkg = fixture('video');
+    pkg.request!.attemptStatus = 'submission_unknown';
+    pkg.request!.generationId = null;
+    const html = renderToStaticMarkup(
+      createElement(PackageResume, { pkg, busy: false, providerAvailable: true, onResume: unchanged, onAttach: unchanged, onNotCreated: unchanged })
+    );
+    expect(html).toContain(MEDIA_PROVIDERS[TEST_PROVIDER].generationHistory);
+    expect(html).toContain('Загрузить результат вручную');
+    expect(html).toContain('Задание не создано');
+    expect(html).not.toContain('Продолжить получение');
+    expect(html).not.toContain('<input');
   });
 
   it('возобновляет получение изображения по существующему ID без предложения новой отправки', () => {
     const pkg = fixture('image');
     pkg.request!.attemptStatus = 'submitted';
-    const html = renderToStaticMarkup(createElement(PackageResume, { pkg, busy: false, klingAvailable: true, onResume: unchanged }));
+    const html = renderToStaticMarkup(
+      createElement(PackageResume, { pkg, busy: false, providerAvailable: true, onResume: unchanged, onAttach: unchanged, onNotCreated: unchanged })
+    );
     expect(html).toContain('Получение изображения');
     expect(html).toContain('Продолжить получение');
     expect(html).not.toContain('Отправить');
   });
 });
 
-describe('Прямые действия Kling соблюдают общий выбор', () => {
+describe('Прямые действия платного провайдера соблюдают общий выбор', () => {
   it('блокирует подготовку изображения при невыбранном провайдере и сохраняет локальный результат доступным', () => {
     context.aiAccess!.image.selected = false;
     context.aiAccess!.image.message = 'Сначала выберите провайдера изображений.';
-    const prepare = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: 'kling', disabled: false, onGenerate: unchanged }));
+    const prepare = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: TEST_PROVIDER, disabled: false, onGenerate: unchanged }));
     expect(prepare).toMatch(/<button[^>]*disabled/);
     expect(prepare).toContain('Сначала выберите провайдера изображений.');
     const local = renderToStaticMarkup(
@@ -218,18 +253,22 @@ describe('Прямые действия Kling соблюдают общий вы
     const pkg = fixture('image');
     pkg.stage = 'image_request_choice';
     pkg.request!.attemptStatus = 'prepared';
-    const send = renderToStaticMarkup(createElement(PackageRequest, { pkg, busy: false, klingAvailable: true, onSubmit: unchanged }));
+    const send = renderToStaticMarkup(createElement(PackageRequest, { pkg, busy: false, providerAvailable: true, onSubmit: unchanged }));
     expect(send).toMatch(/<button[^>]*disabled/);
     expect(send).toContain('Выберите изображения.');
     pkg.request!.attemptStatus = 'submitted';
-    const resume = renderToStaticMarkup(createElement(PackageResume, { pkg, busy: false, klingAvailable: true, onResume: unchanged }));
+    const resume = renderToStaticMarkup(
+      createElement(PackageResume, { pkg, busy: false, providerAvailable: true, onResume: unchanged, onAttach: unchanged, onNotCreated: unchanged })
+    );
     expect(resume).toMatch(/<button[^>]*disabled/);
     expect(resume).toContain('Выберите изображения.');
     const video = fixture('video');
     video.request!.attemptStatus = 'submitted';
-    expect(renderToStaticMarkup(createElement(PackageResume, { pkg: video, busy: false, klingAvailable: true, onResume: unchanged }))).not.toMatch(
-      /<button[^>]*disabled/
-    );
+    expect(
+      renderToStaticMarkup(
+        createElement(PackageResume, { pkg: video, busy: false, providerAvailable: true, onResume: unchanged, onAttach: unchanged, onNotCreated: unchanged })
+      )
+    ).not.toMatch(/<button[^>]*disabled/);
   });
 });
 
@@ -271,7 +310,7 @@ describe('Подтверждение промпта и неизвестной ц
     expect(html).toContain('Вы уверены, что промпт правильный?');
     expect(html).toContain('Проверьте промпт');
     expect(html).toContain('Замороженный промпт');
-    expect(html).toContain('Стоимость: неизвестно');
+    expect(html).toContain('Стоимость: станет известна после первого такого запроса');
     expect(html).not.toContain('неизвестно кредитов');
     expect(html).toContain('Я согласен');
     expect(html).toMatch(/<button[^>]*disabled[^>]*data-confirm/);

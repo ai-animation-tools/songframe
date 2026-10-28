@@ -1,17 +1,25 @@
 /** Единая хронология сохраняет штатные карточки и операции двух разных API заданий. */
 import { useEffect, useState, type ReactElement } from 'react';
+import { ActionButton } from '../../components/ActionButton';
+import { usePageLoading } from '../../components/PageLoader';
 import { useSearchParams } from 'react-router-dom';
 import { Alert, Box, Chip, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined';
+import { PageActionBar } from '../../components/PageActionBar';
 import type { AgentJob } from '@shared/agents';
+import type { JobInfo } from '@shared/types';
 import { AgentJobCard } from '../../components/AgentJobCard';
 import { AgentRetryDialog } from '../../components/AgentRetryDialog';
-import { JobCard } from '../../components/JobCard';
 import { useApp } from '../../state';
+import { ToolJobEntry } from './components';
 import { useJobsJournal } from './useJobsJournal';
 
 export function JobsPage(): ReactElement {
-  const { state } = useApp();
+  const { state, notify, describeError } = useApp();
   const journal = useJobsJournal();
+  // Пока журнал читается впервые, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(journal.loading && !journal.tools.length && !journal.agents.length);
+  const [saving, setSaving] = useState(false);
   const [params, setParams] = useSearchParams();
   const selectedId = params.get('job');
   const [scope, setScope] = useState('current');
@@ -30,6 +38,27 @@ export function JobsPage(): ReactElement {
   const visible = entries.filter(({ job }) => selectedScope === 'all' || (selectedScope === 'global' ? !job.project : !job.project || job.project === project));
   const selectedVisible = visible.some(({ job }) => job.id === selectedId);
 
+  const copyJob = async (job: JobInfo): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(await window.api.jobs.copyText(job.id));
+      notify(`Журнал задания «${job.title}» скопирован`, 'success');
+    } catch (error) {
+      notify(describeError(error), 'error');
+    }
+  };
+
+  const saveReport = async (): Promise<void> => {
+    setSaving(true);
+    try {
+      const path = await window.api.diagnostics.saveReport();
+      if (path) notify(`Отчёт сохранён: ${path}. Отправьте этот файл разработчику.`, 'success');
+    } catch (error) {
+      notify(describeError(error), 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     // Прямой переход с рабочей страницы прокручивает хронологию к нужной записи.
     if (selectedId && selectedVisible) document.getElementById(`job-${selectedId}`)?.scrollIntoView({ block: 'center' });
@@ -37,8 +66,9 @@ export function JobsPage(): ReactElement {
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+      <PageActionBar>
         <Typography variant="h5">Журнал заданий</Typography>
+        <Box sx={{ flex: 1 }} />
         <TextField
           select
           size="small"
@@ -61,10 +91,20 @@ export function JobsPage(): ReactElement {
               </MenuItem>
             ))}
         </TextField>
-      </Stack>
+        <ActionButton
+          startIcon={<BugReportOutlinedIcon />}
+          disabled={saving}
+          disabledReason="Отчёт уже сохраняется."
+          onClick={() => void saveReport()}
+          title="Один текстовый файл с версиями, журналом сбоев и последними заданиями, без настроек и данных входа"
+        >
+          Сохранить отчёт для разработчика
+        </ActionButton>
+      </PageActionBar>
       <Typography variant="body2" color="text.secondary">
         Инструменты и агенты в порядке запуска, новые сверху. Общие задания приложения видны вместе с заданиями выбранного проекта. Статусы обновляются
-        автоматически.
+        автоматически. Журнал сохраняется между запусками: задания прошлых сеансов отмечены отдельно. Если программа завершилась сбоем, сохраните отчёт для
+        разработчика и отправьте ему файл.
       </Typography>
       {journal.error && <Alert severity="error">Не удалось обновить журнал: {journal.error}</Alert>}
       {!visible.length && <Typography color="text.secondary">{journal.loading ? 'Читаем журнал…' : 'Заданий пока нет.'}</Typography>}
@@ -82,7 +122,11 @@ export function JobsPage(): ReactElement {
                 {entry.job.project ? projectName(entry.job.project) : 'Общее задание приложения'}
               </Typography>
             </Box>
-            {entry.type === 'agent' ? <AgentJobCard job={entry.job} onCancel={journal.cancel} onRetry={setRetry} /> : <JobCard job={entry.job} />}
+            {entry.type === 'agent' ? (
+              <AgentJobCard job={entry.job} onCancel={journal.cancel} onRetry={setRetry} />
+            ) : (
+              <ToolJobEntry job={entry.job} onCopy={(job) => void copyJob(job)} />
+            )}
           </Stack>
         </Paper>
       ))}

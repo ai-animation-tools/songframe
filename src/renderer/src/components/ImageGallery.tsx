@@ -4,6 +4,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { useId, useState, type ReactElement } from 'react';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
+import { ActionButton } from './ActionButton';
 
 interface ImageGalleryProps {
   images: { imagePath: string; label: string }[];
@@ -76,12 +77,24 @@ export function ImageGallery({ images, initialIndex, kind = 'Изображен�
         </Box>
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
-        <Button startIcon={<NavigateBeforeIcon />} onClick={() => navigate(index - 1)} disabled={index === 0} aria-label="Предыдущее изображение">
+        <ActionButton
+          startIcon={<NavigateBeforeIcon />}
+          onClick={() => navigate(index - 1)}
+          disabled={index === 0}
+          disabledReason="Это первое изображение."
+          aria-label="Предыдущее изображение"
+        >
           Назад
-        </Button>
-        <Button startIcon={<NavigateNextIcon />} onClick={() => navigate(index + 1)} disabled={index === images.length - 1} aria-label="Следующее изображение">
+        </ActionButton>
+        <ActionButton
+          startIcon={<NavigateNextIcon />}
+          onClick={() => navigate(index + 1)}
+          disabled={index === images.length - 1}
+          disabledReason="Это последнее изображение."
+          aria-label="Следующее изображение"
+        >
           Вперёд
-        </Button>
+        </ActionButton>
         <Button
           startIcon={<ZoomInIcon />}
           onClick={() => setOriginalSize((value) => !value)}

@@ -153,6 +153,7 @@ export function validateScenes(data: ScenesFile, cast: CastFile | null): string[
     for (const ref of scene.references) if (ref !== '—' && !data.references[ref]) problems.push(`${sid}: неизвестный референс ${ref}.`);
     if (!data.references[scene.card?.primary_reference]) problems.push(`${sid}: главный референс карточки не объявлен.`);
   }
+  problems.push(...derivedFromProblems(data.scenes));
   const endSeconds = Number(data.audio?.end_seconds);
   if (!Number.isFinite(endSeconds) || Math.abs(end / FPS - endSeconds) >= 1 / FPS)
     problems.push(`Монтажный конец ${(end / FPS).toFixed(3)} с расходится с концом песни ${data.audio?.end_seconds}.`);
@@ -160,6 +161,25 @@ export function validateScenes(data: ScenesFile, cast: CastFile | null): string[
     resolveStates(data, initialStates(cast));
   } catch (error) {
     problems.push(error instanceof Error ? error.message : String(error));
+  }
+  return problems;
+}
+
+/** Порт derived_from_problems: производный план ссылается на существующий план с собственной генерацией. */
+export function derivedFromProblems(scenes: SceneShot[]): string[] {
+  const byId = new Map(scenes.map((scene) => [scene.id, scene]));
+  const problems: string[] = [];
+  for (const scene of scenes) {
+    // Пустое значение редактора (undefined) не попадает в JSON и означает обычный план.
+    if (scene.derived_from === undefined) continue;
+    const value: unknown = scene.derived_from;
+    const source =
+      value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).join() === 'shot' ? (value as { shot: unknown }).shot : null;
+    if (typeof source !== 'string' || !SCENE_ID.test(source)) problems.push(`${scene.id}: derived_from должен быть объектом {"shot": "Mxx"}.`);
+    else if (source === scene.id) problems.push(`${scene.id}: derived_from не может ссылаться на сам план.`);
+    else if (!byId.has(source)) problems.push(`${scene.id}: derived_from ссылается на неизвестный план ${source}.`);
+    else if (byId.get(source)!.derived_from !== undefined)
+      problems.push(`${scene.id}: источник ${source} сам собирается из другого плана; укажите исходный план.`);
   }
   return problems;
 }

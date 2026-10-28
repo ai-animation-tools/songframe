@@ -1,19 +1,19 @@
 /** Обложка живёт во временной сессии; только общая форма переносит принятый PNG в проект. */
-import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
-import type { AgentJob, AgentSettings } from '@shared/agents';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import type { CoverCrop, CoverGenerationApproval, CoverGenerationSession } from '@shared/cover-generation';
-import { isMediaProvider, MEDIA_PROVIDERS, mediaProviderInfo, mediaProviderTitles } from '@shared/media-providers';
+import { isMediaProvider, MEDIA_PROVIDERS, mediaProviderTitles } from '@shared/media-providers';
 import { priceAllowsGeneration } from '@shared/generation-consent';
-import { AgentManager } from './agent-manager';
+import type { AgentManager } from './agent-manager';
 import { readProjectSettings } from './checks';
 import { imageExtensionMatches, isImageFile } from './keyframe-images';
-import { SettingsStore } from './settings';
+import type { SettingsStore } from './settings';
 import { assertAiSelection } from './ai-access';
 
-type Manager = Pick<AgentManager, 'startImages' | 'get' | 'onEvent' | 'shutdownAndWait'>;
+/** Часть менеджера заданий, нужная исполнителю обложки провайдера-агента. */
+export type CoverManager = Pick<AgentManager, 'startImages' | 'get' | 'onEvent' | 'shutdownAndWait'>;
 export interface CoverCandidateInput {
   workDir: string;
   project: string;
@@ -33,8 +33,8 @@ export interface CoverGenerationOptions {
   settings: SettingsStore;
   readImage(path: string): { width: number; height: number } | null;
   cropImage(input: string, output: string, crop: CoverCrop): void;
-  prepareCandidate?: (input: PreparedCoverCandidateInput) => Promise<PreparedCoverCandidate>;
-  createManager?: (settings: SettingsStore) => Manager;
+  /** Подготовка запроса провайдером изображений проекта (prepareProjectCover). */
+  prepareCandidate: (input: PreparedCoverCandidateInput) => Promise<PreparedCoverCandidate>;
 }
 interface Record {
   session: CoverGenerationSession;
@@ -46,98 +46,10 @@ interface Record {
   prepared?: { candidate: PreparedCoverCandidate; workDir: string };
 }
 
-const IMAGE_PROMPT =
-  'Создай одну квадратную обложку по пользовательскому описанию из дополнительного контекста. ' +
-  'Обязательно используй встроенный инструмент image_gen, создай настоящее изображение и сохрани один результат в текущей рабочей папке. ' +
-  'Разрешены PNG, JPEG и WebP; расширение обязано соответствовать реальному формату. ' +
-  'Не используй Kling, API-ключи, программную отрисовку, SVG, заглушки, имитацию или сторонние генераторы. ' +
-  'Если встроенный image_gen недоступен, заверши задачу с объяснением ошибки. ' +
-  'Не изменяй исходный проект и не выполняй commit/push. Финальный ответ — ровно один JSON без Markdown: {"path":"cover.png"}. ' +
-  'Для JPEG или WebP укажи соответствующее имя созданного файла.';
-
-/** Codex получает только временный проект: его история и все разрешённые записи остаются рядом с кандидатом. */
-export function createCodexCoverRunner(
-  settings: SettingsStore,
-  createManager: (settings: SettingsStore) => Manager = (value) => new AgentManager(value),
-  config: AgentSettings = settings.getImageAgent()
-): CoverCandidateRunner {
-  return async ({ workDir, prompt, signal }) => {
-    if (signal.aborted) throw new Error('Генерация обложки остановлена.');
-    const root = dirname(dirname(workDir));
-    const temporarySettings = new SettingsStore(root);
-    mkdirSync(join(root, 'plan'), { recursive: true });
-    writeFileSync(join(root, 'plan/project.json'), '{}');
-    const manager = createManager(temporarySettings);
-    const stop = (): void => {
-      void manager.shutdownAndWait();
-    };
-    signal.addEventListener('abort', stop, { once: true });
-    let unsubscribe: (() => void) | undefined;
-    try {
-      const job = manager.startImages(
-        { project: root, task: 'Обложка проекта', prompt: IMAGE_PROMPT, context: JSON.stringify({ userPrompt: prompt }) },
-        workDir,
-        config.model
-      );
-      const completed = await new Promise<AgentJob>((finish) => {
-        const check = (): void => {
-          const current = manager.get(job.id);
-          if (current && current.status !== 'running') finish(current);
-        };
-        unsubscribe = manager.onEvent(check);
-        check();
-      });
-      if (signal.aborted) throw new Error('Генерация обложки остановлена.');
-      if (completed.status !== 'completed' || completed.exitCode !== 0)
-        throw new Error(completed.message || 'Агент не смог создать обложку. Проверьте доступность встроенного image_gen.');
-      let response: unknown;
-      try {
-        response = JSON.parse(completed.result);
-      } catch {
-        throw new Error('Агент не вернул путь к созданной обложке.');
-      }
-      if (
-        !response ||
-        typeof response !== 'object' ||
-        Array.isArray(response) ||
-        Object.keys(response).length !== 1 ||
-        typeof (response as { path?: unknown }).path !== 'string'
-      )
-        throw new Error('Агент вернул неверный результат обложки. Ожидается JSON с одним полем path.');
-      return { path: (response as { path: string }).path };
-    } finally {
-      unsubscribe?.();
-      signal.removeEventListener('abort', stop);
-      await manager.shutdownAndWait();
-    }
-  };
-}
-
 export class CoverGeneration {
   private readonly sessions = new Map<string, Record>();
-  private readonly prepareCandidate: NonNullable<CoverGenerationOptions['prepareCandidate']>;
   private stopping = false;
-  constructor(private readonly options: CoverGenerationOptions) {
-    this.prepareCandidate =
-      options.prepareCandidate ??
-      (async (input) => {
-        const imageSettings = readProjectSettings(input.project).generation?.image;
-        if (!mediaProviderInfo(imageSettings?.provider, 'image')?.executor)
-          throw new Error('Для провайдера без агента подключите подготовку запроса выбранного провайдера изображений.');
-        // Самостоятельный Codex runner соблюдает тот же выбор проектной модели, что и общий coordinator.
-        const config = { ...options.settings.getImageAgent(), model: imageSettings?.model?.trim() || undefined };
-        const runner = createCodexCoverRunner(options.settings, options.createManager, config);
-        return {
-          provider: 'codex',
-          model: config.model ?? null,
-          requestSha: createHash('sha256')
-            .update(JSON.stringify({ prompt: input.prompt, config, workDir: input.workDir }))
-            .digest('hex'),
-          quote: null,
-          generate: (signal) => runner({ ...input, signal })
-        };
-      });
-  }
+  constructor(private readonly options: CoverGenerationOptions) {}
 
   create(project: string, prompt: string): CoverGenerationSession {
     if (this.stopping) throw new Error('Приложение завершает работу.');
@@ -191,7 +103,12 @@ export class CoverGeneration {
     record.task = (async () => {
       try {
         mkdirSync(workDir, { recursive: true });
-        const candidate = await this.prepareCandidate({ workDir, project: record.project, prompt: record.session.prompt, signal: record.controller!.signal });
+        const candidate = await this.options.prepareCandidate({
+          workDir,
+          project: record.project,
+          prompt: record.session.prompt,
+          signal: record.controller!.signal
+        });
         if (record.closed) return;
         if (!candidate.requestSha || !isMediaProvider(candidate.provider, 'image')) throw new Error('Не удалось подготовить запрос обложки.');
         record.prepared = { candidate, workDir };

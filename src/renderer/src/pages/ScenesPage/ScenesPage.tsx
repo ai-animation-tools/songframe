@@ -1,6 +1,7 @@
 /** Дашборд сцен: сводка, шкала, сетка карточек и подробности плана: оригинал против монтажа, опоры, промпт, состояние до и после. */
 
 import { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { usePageLoading } from '../../components/PageLoader';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Alert, Box, Button, Checkbox, FormControlLabel, Stack, Typography } from '@mui/material';
 import type { DashboardView } from '@shared/types';
@@ -8,10 +9,14 @@ import { useApp } from '../../state';
 import { SceneCard, ScenesSummary, ScenesTimeline, ShotDetails } from './components';
 import type { Filter } from './types';
 import { PageActionBar } from '../../components/PageActionBar';
+import { ActionButton } from '../../components/ActionButton';
 import ReplayIcon from '@mui/icons-material/Replay';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import MovieIcon from '@mui/icons-material/Movie';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 import DeselectIcon from '@mui/icons-material/Deselect';
+import { LinkedText } from '../../components/LinkedText';
+import { useStickyTop } from '../../hooks/useStickyTop';
 
 export function ScenesPage(): ReactElement {
   const { state, notify, describeError } = useApp();
@@ -23,6 +28,8 @@ export function ScenesPage(): ReactElement {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [montageShots, setMontageShots] = useState<string[]>([]);
+  // Закреплённая панель выбранного плана стоит под шапкой и панелью действий; панель появляется после загрузки сводки.
+  const { barRef, stickyTop } = useStickyTop([view]);
   useEffect(() => setMontageShots([]), [project]);
   const selected = params.get('shot');
 
@@ -49,6 +56,8 @@ export function ScenesPage(): ReactElement {
   const select = (id: string): void => setParams({ shot: id }, { replace: true });
   const duration = view?.summary.duration ?? 0;
 
+  // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(!view && !loadError);
   if (loadError)
     return (
       <Alert
@@ -59,53 +68,47 @@ export function ScenesPage(): ReactElement {
           </Button>
         }
       >
-        {loadError}
+        <LinkedText text={loadError} />
       </Alert>
     );
-  if (!view) return <Typography color="text.secondary">Собираем сводку по сценам…</Typography>;
+  if (!view) return <></>;
   const { summary } = view;
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
-      <PageActionBar>
-        <ScenesSummary summary={summary} onRefresh={load} />
+      <PageActionBar barRef={barRef}>
+        <ScenesSummary summary={summary} />
+        <Box sx={{ flex: 1 }} />
+        <Button startIcon={<RefreshIcon />} onClick={load}>
+          Обновить
+        </Button>
         {/* Выбор для пробы независим от открытой карточки: сцены попадут в монтаж в порядке песни. */}
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-          <Button
-            startIcon={<MovieIcon />}
-            variant="outlined"
-            disabled={!montageShots.length}
-            onClick={() =>
-              navigate(
-                `/project/montage?shots=${encodeURIComponent(
-                  shots
-                    .filter((item) => montageShots.includes(item.id))
-                    .map((item) => item.id)
-                    .join(',')
-                )}`
-              )
-            }
-          >
-            Монтаж выбранных ({montageShots.length})
-          </Button>
-          <Button
-            startIcon={<SelectAllIcon />}
-            size="small"
-            disabled={!visible.length}
-            onClick={() => setMontageShots((current) => [...new Set([...current, ...visible.map((item) => item.id)])])}
-          >
-            Отметить видимые
-          </Button>
-          <Button startIcon={<DeselectIcon />} size="small" disabled={!montageShots.length} onClick={() => setMontageShots([])}>
-            Снять отметки
-          </Button>
-        </Stack>
+        <ActionButton
+          startIcon={<MovieIcon />}
+          variant="contained"
+          disabled={!montageShots.length}
+          disabledReason="Отметьте сцены флажком «В монтажную пробу»."
+          onClick={() =>
+            navigate(
+              `/project/montage?shots=${encodeURIComponent(
+                shots
+                  .filter((item) => montageShots.includes(item.id))
+                  .map((item) => item.id)
+                  .join(',')
+              )}`
+            )
+          }
+        >
+          Монтаж выбранных ({montageShots.length})
+        </ActionButton>
       </PageActionBar>
       {view.problems.length ? (
         <Alert severity="warning">
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {view.problems.slice(0, 6).map((p) => (
-              <li key={p}>{p}</li>
+              <li key={p}>
+                <LinkedText text={p} />
+              </li>
             ))}
           </ul>
         </Alert>
@@ -121,6 +124,28 @@ export function ScenesPage(): ReactElement {
         onSelect={select}
         onFilter={setFilter}
         onQuery={setQuery}
+        actions={
+          <>
+            <ActionButton
+              startIcon={<SelectAllIcon />}
+              size="small"
+              disabled={!visible.length}
+              disabledReason="Нет видимых сцен: измените фильтр или поиск."
+              onClick={() => setMontageShots((current) => [...new Set([...current, ...visible.map((item) => item.id)])])}
+            >
+              Отметить видимые
+            </ActionButton>
+            <ActionButton
+              startIcon={<DeselectIcon />}
+              size="small"
+              disabled={!montageShots.length}
+              disabledReason="Нет отмеченных сцен."
+              onClick={() => setMontageShots([])}
+            >
+              Снять отметки
+            </ActionButton>
+          </>
+        }
       />
 
       <Box
@@ -152,13 +177,27 @@ export function ScenesPage(): ReactElement {
           {!visible.length ? <Typography color="text.secondary">Ничего не найдено.</Typography> : null}
         </Box>
         {shot ? (
-          <ShotDetails
-            key={shot.id}
-            shot={shot}
-            onOpen={(path) => window.api.shell.openPath(path).catch((error) => notify(describeError(error), 'error'))}
-            onNavigate={(to) => navigate(to)}
-            onClose={() => setParams({}, { replace: true })}
-          />
+          // Как на «Производстве»: при двух колонках выбранный план закреплён под панелью действий и прокручивается внутри себя.
+          <Box
+            sx={{
+              minWidth: 0,
+              '@container workspace (min-width: 1100px)': {
+                position: 'sticky',
+                top: stickyTop,
+                maxHeight: `calc(100vh - ${stickyTop + 16}px)`,
+                overflowY: 'auto',
+                pr: 0.5
+              }
+            }}
+          >
+            <ShotDetails
+              key={shot.id}
+              shot={shot}
+              onOpen={(path) => window.api.shell.openPath(path).catch((error) => notify(describeError(error), 'error'))}
+              onNavigate={(to) => navigate(to)}
+              onClose={() => setParams({}, { replace: true })}
+            />
+          </Box>
         ) : null}
       </Box>
     </Stack>

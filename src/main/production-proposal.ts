@@ -3,8 +3,10 @@ import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import type { ProductionFrameCandidate, ProductionFramePrompt, ProductionPass, ProductionStageProposal } from '@shared/production-workflow';
 import type { DurationRule } from '@shared/types';
-import type { MediaCapabilities, MediaModel } from '@shared/media-providers';
-import { selectKlingRequest } from './media-providers';
+import { mediaProviderTitle, type MediaCapabilities, type MediaModel } from '@shared/media-providers';
+import { selectPaidRequest } from './media-providers';
+import { paidAdapter } from './providers';
+import { redact } from './agent-protocol';
 
 export const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const text = (value: unknown): value is string => typeof value === 'string' && !!value.trim() && !value.includes('\0');
@@ -35,6 +37,8 @@ export interface ProposalRules {
   requestSeconds: number | null;
   allowedPaths: string[];
   framePrompts: ProductionFramePrompt[];
+  /** Речевой план: длительность запроса в пределах допустимой длины звукового входа провайдера (поле lipSync реестра). */
+  lipSync?: { min: number; max: number } | null;
 }
 export function checkDuration(seconds: number, window: number, rule: DurationRule): void {
   if (!Number.isInteger(seconds) || seconds <= 0) throw new Error('Длительность запроса должна быть положительным целым числом секунд.');
@@ -58,6 +62,25 @@ export function checkFrameCandidates(value: unknown, prompts: ProductionFramePro
     return { id: item.id as string, path };
   });
 }
+const AGENT_TEXT_LIMIT = 4000;
+/**
+ * Что ответил агент, когда предложение не прошло проверку: текст основного поля этапа
+ * (description, prompt) либо краткая выдержка сырого результата. Распознаваемые секреты скрываются.
+ */
+export function agentResponseText(raw: string, stage: ProductionPass): string | null {
+  let value: unknown = null;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    // Ответ не JSON: показываем сам текст.
+  }
+  const field = stage === 'description' ? 'description' : stage === 'prompt' ? 'prompt' : null;
+  const own = record(value) && field ? value[field] : null;
+  const chosen = typeof own === 'string' && own.trim() ? own : raw;
+  const clean = redact(chosen.replaceAll('\0', '').trim());
+  if (!clean) return null;
+  return clean.length > AGENT_TEXT_LIMIT ? `${clean.slice(0, AGENT_TEXT_LIMIT).trimEnd()}…` : clean;
+}
 export function parseProductionProposal(raw: string, rules: ProposalRules): ProductionStageProposal {
   const value: unknown = JSON.parse(raw);
   if (!record(value) || value.schemaVersion !== 1 || value.stage !== rules.stage) throw new Error('Неверная версия или этап предложения.');
@@ -72,6 +95,10 @@ export function parseProductionProposal(raw: string, rules: ProposalRules): Prod
     )
       throw new Error('Описание требует текст, длительность и минимум две опоры.');
     checkDuration(value.requestSeconds, rules.windowSeconds, rules.durationRule);
+    if (rules.lipSync && (value.requestSeconds < rules.lipSync.min || value.requestSeconds > rules.lipSync.max))
+      throw new Error(
+        `Речевой план: длительность запроса должна быть от ${rules.lipSync.min} до ${rules.lipSync.max} с — столько звука принимает провайдер видео.`
+      );
     let previous = -1;
     for (const [index, frame] of value.keyframes.entries()) {
       if (!record(frame)) throw new Error('Неверная структура опоры.');
@@ -107,9 +134,10 @@ export function parseProductionProposal(raw: string, rules: ProposalRules): Prod
     const request = value.request;
     if (!record(request)) throw new Error('Нужна спецификация запроса.');
     keys(request, ['model', 'command', 'parameters', 'inputs', 'outputs']);
+    // Команды и флаги входов объявляет провайдер: они сверяются с его возможностями в checkProductionCapabilities.
     if (
       !text(request.model) ||
-      !['text_to_video', 'image_to_video', 'omni_ref_video', 'motion_control'].includes(String(request.command)) ||
+      !text(request.command) ||
       !record(request.parameters) ||
       !Array.isArray(request.inputs) ||
       !Number.isInteger(request.outputs) ||
@@ -117,23 +145,7 @@ export function parseProductionProposal(raw: string, rules: ProposalRules): Prod
       Number(request.outputs) > 9
     )
       throw new Error('Неверная модель, команда, параметры, входы или число результатов.');
-    const reserved = new Set([
-      'model',
-      'prompt',
-      'poll',
-      'quiet',
-      'q',
-      'help',
-      'version',
-      'base-url',
-      'credentials',
-      'token',
-      'input',
-      'image',
-      'tailImage',
-      'audio',
-      'video'
-    ]);
+    const reserved = new Set(['model', 'prompt', 'poll', 'quiet', 'q', 'help', 'version', 'base-url', 'credentials', 'token', 'input']);
     if (
       Object.keys(request.parameters).some(
         (name) => !/^[A-Za-z][A-Za-z0-9_-]*$/.test(name) || reserved.has(name) || /token|credential|password|base_url/i.test(name)
@@ -146,7 +158,7 @@ export function parseProductionProposal(raw: string, rules: ProposalRules): Prod
       if (!record(input)) throw new Error('Неверный вход запроса.');
       keys(input, ['flag', 'slot', 'path', 'role']);
       if (
-        !['input', 'image', 'tailImage', 'audio', 'video'].includes(String(input.flag)) ||
+        !text(input.flag) ||
         !text(input.path) ||
         !rules.allowedPaths.includes(input.path) ||
         (input.slot !== undefined && !text(input.slot)) ||
@@ -186,8 +198,16 @@ export function checkProductionCapabilities(
         )
       : []
   );
+  const adapter = paidAdapter(settings.provider);
+  if (!adapter) throw new Error(`Для провайдера видео ${mediaProviderTitle(settings.provider, 'не указан')} не подключён исполнитель запроса.`);
+  // Короткие флаги входов объявляет адаптер провайдера; файл нельзя передать параметром под именем флага.
+  const flags = Object.keys(adapter.rules.inputFlags);
+  if (Object.keys(proposal.request.parameters).some((name) => flags.includes(name)))
+    throw new Error('Недопустимое техническое поле параметров; файлы задаются только через inputs, промпт — сохранённым файлом.');
+  const unknownFlag = proposal.request.inputs.find((input) => input.flag !== 'input' && !flags.includes(input.flag));
+  if (unknownFlag) throw new Error(`Неизвестный флаг входа ${unknownFlag.flag}; допустимы input и ${flags.join(', ')}.`);
   const caps: MediaCapabilities = {
-    provider: 'kling',
+    provider: adapter.id,
     kind: 'video',
     available: models.length > 0,
     checkedAt: '',
@@ -195,7 +215,8 @@ export function checkProductionCapabilities(
     problems: [],
     generationVerified: false
   };
-  const selected = selectKlingRequest(
+  const selected = selectPaidRequest(
+    adapter,
     {
       project: rules.project,
       workDir: rules.project,
@@ -205,7 +226,7 @@ export function checkProductionCapabilities(
       ...proposal.request,
       preferredModel: typeof settings.model === 'string' ? settings.model : null,
       projectOptions: record(settings.options) ? settings.options : undefined,
-      durationConstraint: { windowSeconds: rules.windowSeconds, rule: rules.durationRule },
+      durationConstraint: { windowSeconds: rules.windowSeconds, rule: rules.durationRule, ...(rules.lipSync ? { minSeconds: rules.lipSync.min } : {}) },
       requiredParameters: Object.fromEntries(
         ['resolution', 'aspect_ratio'].filter((name) => typeof settings[name] === 'string').map((name) => [name, settings[name]])
       )

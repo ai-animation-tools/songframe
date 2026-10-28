@@ -1,7 +1,8 @@
 import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
 import type { ReactElement } from 'react';
-import { Alert, Button, Stack, Typography } from '@mui/material';
+import { Alert, Stack, Typography } from '@mui/material';
+import { ActionButton } from '../../../components/ActionButton';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 
 /** Несохранённые правки разрешаются явно до запуска, утверждения, обновления и применения. */
@@ -27,15 +28,17 @@ export function ScenarioDraftConflictDialog({
       onClose={onClose}
       cancelLabel="Вернуться к редактору"
       cancelDisabled={busy}
+      cancelDisabledReason="Дождитесь сохранения правок."
       closeDisabled={busy}
       confirmDisabled={busy}
+      confirmDisabledReason="Дождитесь сохранения правок."
       confirmLabel="Сохранить и продолжить"
       confirmIcon={<SaveIcon />}
       onConfirm={() => onResolve('save')}
       extraActions={
-        <Button startIcon={<UndoIcon />} disabled={busy} color="error" onClick={() => onResolve('discard')}>
+        <ActionButton startIcon={<UndoIcon />} disabled={busy} disabledReason="Дождитесь сохранения правок." color="error" onClick={() => onResolve('discard')}>
           Отменить правки и продолжить
-        </Button>
+        </ActionButton>
       }
     >
       <Stack spacing={2}>

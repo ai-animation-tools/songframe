@@ -1,22 +1,14 @@
 /** Прямые AI-действия сохраняют предметный значок и общий запрет до выбора доступных исполнителей. */
 import type { ReactElement } from 'react';
-import { Button, Tooltip, type ButtonProps } from '@mui/material';
-import { aiActionProblem, type AiActionKind } from '@shared/ai-access';
-import { useApp } from '../state';
+import type { AiActionKind } from '@shared/ai-access';
+import { useAiActionProblem } from '../hooks/useAiActionProblem';
+import { ActionButton, type ActionButtonProps } from './ActionButton';
 
-type Props = ButtonProps & { aiKind: AiActionKind };
+type Props = ActionButtonProps & {
+  aiKind: AiActionKind;
+};
 
-export function AiButton({ aiKind, ...props }: Props): ReactElement {
-  const { agentProvider, aiAccess } = useApp();
-  const reason = aiKind === 'agent' && !agentProvider ? 'Сначала выберите агента в настройках приложения.' : aiActionProblem(aiAccess, aiKind);
-  const button = <Button {...props} disabled={props.disabled || !!reason} title={reason ?? props.title} />;
-  return reason ? (
-    <Tooltip title={reason}>
-      <span tabIndex={0} style={{ display: 'inline-flex', maxWidth: '100%' }}>
-        {button}
-      </span>
-    </Tooltip>
-  ) : (
-    button
-  );
+export function AiButton({ aiKind, disabledReason, ...props }: Props): ReactElement {
+  const reason = useAiActionProblem(aiKind) ?? (props.disabled ? (disabledReason ?? null) : null);
+  return <ActionButton {...props} disabled={props.disabled || !!reason} disabledReason={reason} />;
 }

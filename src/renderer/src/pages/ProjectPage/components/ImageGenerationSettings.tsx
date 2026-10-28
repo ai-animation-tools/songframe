@@ -4,8 +4,10 @@ import AddIcon from '@mui/icons-material/Add';
 import { type ReactElement, useEffect, useState } from 'react';
 import { isMediaProvider, MEDIA_PROVIDERS, mediaProviderInfo, mediaProvidersFor, type MediaCapabilities } from '@shared/media-providers';
 import { MediaCapabilitiesPanel } from './MediaCapabilitiesPanel';
+import { switchGenerationProvider } from '@shared/generation-settings';
+import { ANCHORS } from '../../../components/linkTargets';
 import { Alert, Autocomplete, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
-import { DEFAULT_KLING_IMAGE_GENERATION, type ImageGenerationSettings as Settings } from '@shared/types';
+import type { ImageGenerationSettings as Settings } from '@shared/types';
 import { aspectOptions, modelOptions, resolutionOptions } from './generationOptions';
 
 export function ImageGenerationSettings({
@@ -25,8 +27,10 @@ export function ImageGenerationSettings({
   const providerSelected = value?.provider_selected === true;
   // Пустой неподтверждённый черновик сохраняется как null в ProjectSettingsCard и не блокирует обычное сохранение.
   const emptyUnselected = value !== null && !providerSelected && !value.provider.trim();
-  // Сведения о провайдере берутся из реестра; неизвестное имя из файла ведёт себя как провайдер с параметрами запроса.
-  const info = mediaProviderInfo(value?.provider, 'image');
+  // Сведения о провайдере берутся из реестра и только для явно выбранного провайдера: «Не выбрано» не показывает чужих полей.
+  // Неизвестное имя из файла ведёт себя как провайдер с параметрами запроса.
+  const info = providerSelected ? mediaProviderInfo(value?.provider, 'image') : null;
+  const savedTitle = mediaProviderInfo(value?.provider, 'image')?.title ?? value?.provider;
   const executor = info?.executor ?? null;
   const requestParameters = info?.requestParameters ?? true;
   // Выбранный текстовый агент не влияет на провайдера изображений: проверка зависит только от явного выбора.
@@ -35,16 +39,19 @@ export function ImageGenerationSettings({
   const capabilitiesConfirmed = capabilitiesReady && capabilities.available && capabilities.problems.length === 0;
   const models = capabilitiesReady ? capabilities.models : [];
   // Агент-исполнитель возвращает собственный порядок каталога; рейтинг моделей прямых провайдеров к нему не относится.
-  const availableModels = executor ? [...new Set(models.map((model) => model.id))] : modelOptions(models, 'image');
+  const availableModels = executor ? [...new Set(models.map((model) => model.id))] : modelOptions(models, 'image', value?.provider);
   const modelChoices = ['', ...availableModels];
   const defaultModelLabel = info?.defaultModelLabel ?? 'Автоматически по задаче';
   const resolutions = resolutionOptions(models, value?.model);
-  const selectedResolution = value?.resolution ?? DEFAULT_KLING_IMAGE_GENERATION.resolution ?? '2k';
+  // Значения по умолчанию задаёт провайдер в реестре.
+  const defaults = info?.defaults.image ?? {};
+  const selectedResolution = value?.resolution ?? defaults.resolution ?? '';
   const aspects = aspectOptions(models, value?.model);
-  const defaultAspect = DEFAULT_KLING_IMAGE_GENERATION.aspect_ratio ?? '16:9';
+  const defaultAspect = defaults.aspect_ratio ?? '';
   const selectedAspect = value?.aspect_ratio ?? (aspects.includes(defaultAspect) ? defaultAspect : '');
-  const selectedOutputs = value?.outputs ?? DEFAULT_KLING_IMAGE_GENERATION.outputs ?? 1;
-  const needsProviderParameters = Boolean(value) && !emptyUnselected && requestParameters;
+  const selectedOutputs = value?.outputs ?? defaults.outputs ?? 1;
+  // Без выбранного провайдера поля параметров скрыты: скрытое поле не может блокировать сохранение.
+  const needsProviderParameters = providerSelected && requestParameters;
   // Неполный каталог и скрытые поля другого исполнителя не блокируют сохранение проекта.
   const providerError = value !== null && !emptyUnselected && !value.provider.trim();
   const modelError = capabilitiesConfirmed && Boolean(value?.model) && !availableModels.includes(value?.model ?? '');
@@ -65,7 +72,7 @@ export function ImageGenerationSettings({
   };
 
   return (
-    <Paper component="section" variant="outlined" sx={{ p: 2, minWidth: 0 }}>
+    <Paper component="section" variant="outlined" data-anchor={ANCHORS.projectImageGeneration} sx={{ p: 2, minWidth: 0 }}>
       <Stack spacing={1} sx={{ minWidth: 0 }}>
         <Typography variant="subtitle2">Генерация изображений</Typography>
         {!value ? (
@@ -74,7 +81,7 @@ export function ImageGenerationSettings({
           <>
             {!providerSelected && value.provider && (
               <Typography variant="caption" color="text.secondary">
-                Сохранённый провайдер: {value.provider}. Для запуска выберите его в меню и сохраните настройки.
+                Сохранённый провайдер: {savedTitle}. Для запуска выберите его в меню и сохраните настройки.
               </Typography>
             )}
             <Box
@@ -104,18 +111,17 @@ export function ImageGenerationSettings({
                 onChange={(event) => {
                   setCapabilities(null);
                   const provider = event.target.value;
-                  // Только обработчик выбора подтверждает провайдера; параметры и расширения прежнего исполнителя сохраняются.
-                  patch({
-                    provider: provider || value.provider,
-                    provider_selected: Boolean(provider),
-                    ...(mediaProviderInfo(provider, 'image')?.requestParameters
-                      ? {
-                          resolution: value.resolution ?? DEFAULT_KLING_IMAGE_GENERATION.resolution,
-                          aspect_ratio: value.aspect_ratio ?? DEFAULT_KLING_IMAGE_GENERATION.aspect_ratio,
-                          outputs: value.outputs ?? DEFAULT_KLING_IMAGE_GENERATION.outputs
-                        }
-                      : {})
-                  });
+                  const selected = mediaProviderInfo(provider, 'image');
+                  // «Не выбрано» только снимает подтверждение: сохранённые значения остаются до явного выбора.
+                  if (!provider) return patch({ provider_selected: false });
+                  // Подтверждение того же провайдера сохраняет его значения и дополняет недостающие значениями по умолчанию из реестра.
+                  if (provider === value.provider) {
+                    const defaults: Record<string, unknown> = selected?.requestParameters ? { ...selected.defaults.image } : {};
+                    const missing = Object.fromEntries(Object.entries(defaults).filter(([key]) => value[key] === undefined));
+                    return patch({ ...missing, provider_selected: true });
+                  }
+                  // Другой провайдер: всё, что от него зависит, заменяется значениями нового; поля проекта сохраняются.
+                  onChange(switchGenerationProvider('image', value, provider));
                 }}
                 size="small"
               >
@@ -129,51 +135,53 @@ export function ImageGenerationSettings({
                   </MenuItem>
                 ))}
               </TextField>
-              <TextField
-                select
-                id="image-generation-model"
-                label={executor && info ? `Модель агента ${info.title} для изображений` : 'Предпочтительная модель изображений'}
-                error={modelError}
-                value={value.model ?? ''}
-                onChange={(event) => {
-                  const model = event.target.value || undefined;
-                  // Несохранённый стандарт подставляем только при заявленной поддержке новой модели.
-                  const aspect = aspectOptions(models, model).includes(defaultAspect) ? defaultAspect : undefined;
-                  patch({ model, ...(requestParameters && value.aspect_ratio === undefined ? { aspect_ratio: aspect } : {}) });
-                }}
-                size="small"
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  select: {
-                    displayEmpty: true,
-                    // Закрытое поле остаётся однострочным, команды видны только в меню.
-                    renderValue: () => (value.model ? `${value.model}${availableModels.includes(value.model) ? '' : ' (недоступна)'}` : defaultModelLabel)
+              {providerSelected && (
+                <TextField
+                  select
+                  id="image-generation-model"
+                  label={executor && info ? `Модель агента ${info.title} для изображений` : 'Предпочтительная модель изображений'}
+                  error={modelError}
+                  value={value.model ?? ''}
+                  onChange={(event) => {
+                    const model = event.target.value || undefined;
+                    // Несохранённый стандарт подставляем только при заявленной поддержке новой модели.
+                    const aspect = aspectOptions(models, model).includes(defaultAspect) ? defaultAspect : undefined;
+                    patch({ model, ...(requestParameters && value.aspect_ratio === undefined ? { aspect_ratio: aspect } : {}) });
+                  }}
+                  size="small"
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    select: {
+                      displayEmpty: true,
+                      // Закрытое поле остаётся однострочным, команды видны только в меню.
+                      renderValue: () => (value.model ? `${value.model}${availableModels.includes(value.model) ? '' : ' (недоступна)'}` : defaultModelLabel)
+                    }
+                  }}
+                  helperText={
+                    modelError
+                      ? executor
+                        ? `Модель ${value.model} недоступна у провайдера. Выберите доступную модель или пункт «${defaultModelLabel}».`
+                        : `Модель ${value.model} недоступна у провайдера. Выберите доступную или автоматический подбор модели.`
+                      : executor && info
+                        ? `По умолчанию используется модель из настроек ${info.title}. Здесь выбирается модель агента, который готовит изображение, а не модель самого генератора изображений.`
+                        : 'Автоматически — подбор по требованиям задачи. Выбранная модель — предпочтение; несовместимая будет заменена с объяснением при согласовании.'
                   }
-                }}
-                helperText={
-                  modelError
-                    ? executor
-                      ? `Модель ${value.model} недоступна у провайдера. Выберите доступную модель или пункт «${defaultModelLabel}».`
-                      : `Модель ${value.model} недоступна у провайдера. Выберите доступную или автоматический подбор модели.`
-                    : executor && info
-                      ? `По умолчанию используется модель из настроек ${info.title}. Здесь выбирается модель агента, который готовит изображение, а не модель самого генератора изображений.`
-                      : 'Автоматически — подбор по требованиям задачи. Выбранная модель — предпочтение; несовместимая будет заменена с объяснением при согласовании.'
-                }
-              >
-                {modelChoices.map((id) => (
-                  <MenuItem key={id} value={id} disabled={Boolean(id) && !availableModels.includes(id)}>
-                    <Box>
-                      <Typography variant="body2">{id ? `${id}${availableModels.includes(id) ? '' : ' (недоступна)'}` : defaultModelLabel}</Typography>
-                      {availableModels.includes(id) && (
-                        <Typography variant="caption" color="text.secondary">
-                          {Array.from(new Set(models.filter((model) => model.id === id).map((model) => model.command))).join(', ')}
-                        </Typography>
-                      )}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </TextField>
-              {requestParameters && (
+                >
+                  {modelChoices.map((id) => (
+                    <MenuItem key={id} value={id} disabled={Boolean(id) && !availableModels.includes(id)}>
+                      <Box>
+                        <Typography variant="body2">{id ? `${id}${availableModels.includes(id) ? '' : ' (недоступна)'}` : defaultModelLabel}</Typography>
+                        {availableModels.includes(id) && (
+                          <Typography variant="caption" color="text.secondary">
+                            {Array.from(new Set(models.filter((model) => model.id === id).map((model) => model.command))).join(', ')}
+                          </Typography>
+                        )}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+              {providerSelected && requestParameters && (
                 <>
                   <Autocomplete
                     freeSolo
@@ -248,7 +256,7 @@ export function ImageGenerationSettings({
                 </>
               )}
             </Box>
-            {!requestParameters && info ? (
+            {!providerSelected ? null : !requestParameters && info ? (
               <Typography variant="caption" color="text.secondary">
                 {`Генерацию выполняет ${info.title} встроенным инструментом изображений. Доступные размеры и форматы определяет исполнитель при подготовке запроса. Сейчас создаётся один вариант для каждой опоры. Параметры запроса — количество вариантов, разрешение и пропорции — к этому исполнителю не применяются.`}
               </Typography>
@@ -257,13 +265,8 @@ export function ImageGenerationSettings({
                 Параметры сохраняются как предпочтения. Исполнитель подбирает доступную модель под требования запроса.
               </Typography>
             )}
-            {/* Наблюдение относится к агенту-исполнителю со встроенным генератором: точный размер не задаётся параметрами запроса. */}
-            {executor && (
-              <Alert severity="info">
-                В наших проверках горизонтальные изображения получались размером 1672×941, в том числе при запросе 4K. Точный размер через промпт не
-                гарантируется.
-              </Alert>
-            )}
+            {/* Наблюдение конкретного провайдера хранится в реестре и показывается только при его выборе. */}
+            {info?.settingsNotes.image && <Alert severity="info">{info.settingsNotes.image}</Alert>}
             {/* Неподтверждённый старый default не должен запускать CLI или проверку входа. */}
             {canDiscover && (
               <MediaCapabilitiesPanel key={`image:${value.provider}`} project={project} kind="image" provider={value.provider} onResult={setCapabilities} />

@@ -4,21 +4,16 @@ import { Alert, Box, Chip, Divider, Paper, Stack, Typography } from '@mui/materi
 import type { AgentSettings } from '@shared/agents';
 import type { ProductionFramePrompt, ProductionProposal, ProductionRequestDraft } from '@shared/production-workflow';
 import { productionInputLabel } from '@shared/production-labels';
+import { mediaCommandLabel } from '@shared/media-providers';
 import { AgentIcon } from '../../../components';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import CheckIcon from '@mui/icons-material/Check';
-import { PRODUCTION_PASS_LABELS, PRODUCTION_PROPOSAL_LABELS } from '../constants';
+import { BUSY_REASON, PRODUCTION_PASS_LABELS, PRODUCTION_PROPOSAL_LABELS } from '../constants';
 import { RequestParameters } from './RequestParameters';
 import { Prose } from '../../../components/Prose';
 import { ReadableValue } from '../../../components/ReadableValue';
 
 const FRAME_ROLES: Record<ProductionFramePrompt['role'], string> = { first: 'Первый кадр', middle: 'Промежуточный кадр', last: 'Последний кадр' };
-const COMMANDS: Record<string, string> = {
-  text_to_video: 'видео по тексту',
-  image_to_video: 'видео по опорным кадрам',
-  omni_ref_video: 'видео по референсам',
-  motion_control: 'видео по движению'
-};
 
 function fileName(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
@@ -84,12 +79,12 @@ function Frames({ frames }: { frames: ProductionFramePrompt[] }): ReactElement {
   );
 }
 
-function RequestDraft({ request }: { request: ProductionRequestDraft }): ReactElement {
+function RequestDraft({ request, videoProvider }: { request: ProductionRequestDraft; videoProvider: string | null }): ReactElement {
   return (
     <Stack spacing={1.5}>
       <Section title="Модель и команда">
         <Typography variant="body2">
-          {request.model} · {COMMANDS[request.command] ?? request.command} · результатов: {request.outputs}
+          {request.model} · {mediaCommandLabel(videoProvider, request.command)} · результатов: {request.outputs}
         </Typography>
       </Section>
       <Section title="Входные материалы">
@@ -145,8 +140,23 @@ function Current({ proposal }: { proposal: ProductionProposal }): ReactElement {
   return <Paragraphs text={before} />;
 }
 
-function Proposed({ proposal }: { proposal: ProductionProposal }): ReactElement {
+function Proposed({ proposal, videoProvider }: { proposal: ProductionProposal; videoProvider: string | null }): ReactElement {
   const after = proposal.after;
+  if (!after && proposal.agentText)
+    // Ответ агента не прошёл проверку: показываем, что он ответил, и почему приложение его отклонило.
+    return (
+      <Stack spacing={1.5}>
+        <Typography variant="subtitle2">Агент не подготовил предложение</Typography>
+        <Section title="Ответ агента">
+          <Paragraphs text={proposal.agentText} />
+        </Section>
+        {proposal.message ? (
+          <Section title="Причина проверки">
+            <Typography variant="body2">{proposal.message}</Typography>
+          </Section>
+        ) : null}
+      </Stack>
+    );
   if (!after) return <Paragraphs text="Предложение ещё не получено." />;
   switch (after.stage) {
     case 'description':
@@ -166,7 +176,7 @@ function Proposed({ proposal }: { proposal: ProductionProposal }): ReactElement 
     case 'prompt':
       return <Paragraphs text={after.prompt} />;
     case 'request':
-      return <RequestDraft request={after.request} />;
+      return <RequestDraft request={after.request} videoProvider={videoProvider} />;
     default:
       return <ReadableValue value={after} />;
   }
@@ -185,8 +195,25 @@ export function ProposalActions({
 }): ReactElement | null {
   const ready = proposal.status === 'ready' && !proposal.stale && !!proposal.after;
   if (proposal.status === 'applied' || proposal.status === 'running') return null;
+  const applyReason = busy
+    ? BUSY_REASON
+    : proposal.stale
+      ? 'Исходные материалы изменились: отклоните предложение и подготовьте новое.'
+      : proposal.status !== 'ready'
+        ? 'Агент не подготовил годное предложение: отклоните его и запустите агента заново.'
+        : !proposal.after
+          ? 'В предложении нет материалов для применения.'
+          : null;
   return (
     <>
+      <DestructiveButton
+        label="Отклонить предложение"
+        description="Предложение будет отклонено без применения к пакету."
+        confirmLabel="Отклонить"
+        disabled={busy}
+        disabledReason={BUSY_REASON}
+        onConfirm={onDiscard}
+      />
       <DestructiveButton
         label="Применить предложение"
         description="Предложение будет записано в пакет и изменит соответствующие материалы. Принятие и платная отправка требуют отдельного согласования."
@@ -194,14 +221,8 @@ export function ProposalActions({
         startIcon={<CheckIcon />}
         variant="contained"
         disabled={busy || !ready}
+        disabledReason={applyReason}
         onConfirm={onApply}
-      />
-      <DestructiveButton
-        label="Отклонить предложение"
-        description="Предложение будет отклонено без применения к пакету."
-        confirmLabel="Отклонить"
-        disabled={busy}
-        onConfirm={onDiscard}
       />
     </>
   );
@@ -210,6 +231,7 @@ export function ProposalActions({
 export function ProductionProposalPreview({
   proposal,
   provider = null,
+  videoProvider = null,
   busy,
   onApply,
   onDiscard,
@@ -218,6 +240,8 @@ export function ProductionProposalPreview({
 }: {
   proposal: ProductionProposal;
   provider?: AgentSettings['provider'] | null;
+  /** Провайдер видео проекта: подписи команд черновика запроса берутся из реестра. */
+  videoProvider?: string | null;
   busy: boolean;
   onApply(): void;
   onDiscard(): void;
@@ -271,7 +295,7 @@ export function ProductionProposalPreview({
             <Current proposal={proposal} />
           </Column>
           <Column title="Предложение агента" hint="Станет материалами пакета после применения; согласование отдельно">
-            <Proposed proposal={proposal} />
+            <Proposed proposal={proposal} videoProvider={videoProvider} />
           </Column>
         </Box>
       )}

@@ -27,6 +27,7 @@ export function AnimaticConfirmDialog({
       confirmLabel={confirm === 'approved' ? 'Принять' : 'Вернуть'}
       confirmIcon={<CheckIcon />}
       confirmDisabled={running}
+      confirmDisabledReason="Дождитесь завершения сборки."
     >
       <Typography variant="body2">
         {confirm === 'approved'

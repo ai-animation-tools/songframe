@@ -6,10 +6,11 @@ import { join, relative, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { JobInfo } from '@shared/types';
 import { Jobs } from './jobs';
-import { KeyframeImages } from './keyframe-images';
-import { KlingImageProvider, KlingVideoProvider, type MediaProviderOptions } from './media-providers';
-import { cliArgs, Production, readPackage } from './production';
-import { PythonLauncher, type LaunchOptions } from './python-launcher';
+import { PaidMediaProvider, type MediaProviderOptions } from './media-providers';
+import { Production, readPackage } from './production';
+import { paidAdapter } from './providers';
+import { PythonLauncher } from './python-launcher';
+import { registerTestMediaProvider, TEST_PROVIDER } from './testing/media-provider';
 
 const root = resolve(__dirname, '../..');
 let directory: string;
@@ -30,71 +31,33 @@ function treeHashes(base: string): Record<string, string> {
   return result;
 }
 
-/** Сохраняем настоящий launcher/runtime/toolchain; подменён только источник байтов HTTPS-ответа. */
-class OfflineImagesLauncher extends PythonLauncher {
-  override execute(args: string[], options: LaunchOptions = {}, currentProject?: string) {
-    const bootstrap = `import io,runpy,sys,urllib.request
-from pathlib import Path
-payload=Path(${JSON.stringify(join(project, 'source/vehicles/boat.png'))}).read_bytes()
-class LocalResponse(io.BytesIO):
-    headers={'Content-Length':str(len(payload))}
-def local_urlopen(url,**kwargs):
-    if not url.startswith('https://fixture.invalid/original'):
-        raise AssertionError('Сеть запрещена в интеграционном тесте')
-    return LocalResponse(payload)
-urllib.request.urlopen=local_urlopen
-runpy.run_path(sys.argv.pop(1),run_name='__main__')`;
-    return super.execute(['-c', bootstrap, ...args], options, currentProject);
-  }
-}
-
-function calls(): string[][] {
-  const path = join(directory, 'calls.jsonl');
+/** Журнал тестового сервиса провайдера `test`: отправки и опросы считаются по нему. */
+function serviceCalls(action: string): Record<string, unknown>[] {
+  const path = join(directory, 'service', 'calls.jsonl');
   return existsSync(path)
     ? readFileSync(path, 'utf8')
-        .trim()
         .split('\n')
         .filter(Boolean)
-        .map((line) => JSON.parse(line))
+        .map((line) => JSON.parse(line) as Record<string, unknown>)
+        .filter((call) => call.action === action)
     : [];
 }
-const submissions = (): string[][] => calls().filter((args) => ['text_to_image', 'image_to_image'].includes(args[0]) && !args.includes('--help'));
-function fakeKling(): void {
-  const executable = join(directory, 'Подставной image CLI');
-  // Discovery получает объявления сервиса, как штатный CLI; текстовая справка не подменяет их.
+const submissions = (): Record<string, unknown>[] => serviceCalls('submit');
+const serviceConfig = (): string => join(directory, 'service', 'service.json');
+/** Платный провайдер — тестовый `test`; «результатом» генерации служит референс лодки, сеть не используется. */
+function fakeService(submit: unknown = { generation_id: 'image-job-1', credits_consumed: 2 }): void {
   const model = {
-    model: 'integration-image',
-    arguments: [
-      { name: 'prompt', required: true },
-      { name: 'resolution', allowedValues: ['1k'] },
-      { name: 'image_count', allowedValues: ['1'] }
-    ],
-    inputs: [{ name: 'image_1', required: true }]
+    arguments: { prompt: { required: true }, resolution: { allowed: ['1k'] }, image_count: { allowed: ['1'] } },
+    slots: { image_1: { required: true } },
+    limits: {}
   };
-  writeFileSync(
-    executable,
-    `#!${process.execPath}
-const fs=require('node:fs');
-const args=process.argv.slice(2);
-fs.appendFileSync(${JSON.stringify(join(directory, 'calls.jsonl'))},JSON.stringify(args)+'\\n');
-const reply=(body)=>console.log(JSON.stringify({ok:true,body}));
-if(args[0]==='tool_list') {reply({tools:[{name:'text_to_image'},{name:'image_to_image'}]});process.exit(0);}
-if(args[0]==='who_am_i') {reply({availableModels:{text_to_image:{models:[${JSON.stringify(model)}]},image_to_image:{models:[${JSON.stringify(model)}]}}});process.exit(0);}
-if(args[0]==='account') {reply({credits:{total:1000,remaining:1000}});process.exit(0);}
-if(args[0]==='query_tasks') {reply({generationId:args[1],status:'COMPLETED',works:[{contentType:'image',url:'https://fixture.invalid/original?job='+args[1]}]});process.exit(0);}
-if(args[0]==='image_to_image') {
-  const counter=${JSON.stringify(join(directory, 'submit-count'))};
-  const count=fs.existsSync(counter)?Number(fs.readFileSync(counter,'utf8'))+1:1;
-  fs.writeFileSync(counter,String(count));
-  if(fs.existsSync(${JSON.stringify(join(directory, 'unknown-outcome'))})) reply({});
-  else reply({generationId:'image-job-'+count,creditsConsumed:2});
-  process.exit(0);
-}
-console.error('Неожиданная команда fixture');process.exit(1);
-`,
-    { mode: 0o700 }
-  );
-  vi.stubEnv('SONGFRAME_KLING_CLI', executable);
+  mkdirSync(join(directory, 'service'), { recursive: true });
+  write(serviceConfig(), {
+    reports: { image: ['text_to_image', 'image_to_image'].map((command) => ({ command, models: { 'integration-image': model } })) },
+    submit,
+    results: { image: join(project, 'source/vehicles/boat.png') }
+  });
+  vi.stubEnv('SONGFRAME_TEST_MEDIA_SERVICE', serviceConfig());
   const pricing = join(directory, 'pricing.json');
   write(pricing, { schema_version: 1, currency: 'credits', models: { 'integration-image': { per_image: 2 } }, observed: [] });
   vi.stubEnv('SONGFRAME_PRICING_FILE', pricing);
@@ -104,42 +67,32 @@ async function done(jobs: Jobs, jobId: string): Promise<JobInfo> {
   return jobs.get(jobId)!;
 }
 
+let restoreProvider: () => void;
 beforeEach(() => {
+  restoreProvider = registerTestMediaProvider();
   directory = mkdtempSync(join(tmpdir(), 'songframe-image-integration-'));
   project = join(directory, 'Пробный клип');
   cpSync(join(root, 'tools/testdata/sample-project'), project, { recursive: true });
 });
 afterEach(() => {
+  restoreProvider();
   vi.unstubAllEnvs();
   rmSync(directory, { recursive: true, force: true });
 });
 
-describe.skipIf(process.platform !== 'linux')('сквозная image-ветка с локальным CLI', () => {
-  it('проводит две опоры через quote/send/collect/select, восстанавливает неизвестную отправку и утверждает отдельно', async () => {
+describe.skipIf(process.platform !== 'linux')('сквозная image-ветка с тестовым провайдером', () => {
+  it('проводит две опоры через quote/send/collect/select, принимает вручную загруженный результат неизвестной отправки и утверждает отдельно', async () => {
     const sourcesBefore = treeHashes(join(project, 'source'));
     const assetsBefore = treeHashes(join(project, 'assets'));
-    fakeKling();
+    fakeService();
     const localDir = join(directory, 'state');
-    const launcher = new OfflineImagesLauncher({ toolsRoot: root, localDir });
+    const launcher = new PythonLauncher({ toolsRoot: root, localDir });
     const jobs = new Jobs(root, localDir, launcher);
     const production = new Production(root, jobs);
-    const options: MediaProviderOptions = {
-      launcher: () => launcher,
-      cliArgs,
-      images: new KeyframeImages({
-        localDir,
-        agents: {
-          startImages: () => {
-            throw new Error('Codex не участвует');
-          }
-        }
-      }),
-      checkCodex: async () => {
-        throw new Error('Codex не участвует');
-      }
-    };
-    const image = new KlingImageProvider(options);
-    production.setMediaProviders({ image, video: new KlingVideoProvider(options) });
+    const options: MediaProviderOptions = { launcher: () => launcher };
+    const adapter = paidAdapter(TEST_PROVIDER)!;
+    const image = new PaidMediaProvider(adapter, 'image', options);
+    production.setMediaProviders({ [TEST_PROVIDER]: { image, video: new PaidMediaProvider(adapter, 'video', options) } });
     const capabilities = await image.capabilities(project);
     expect(capabilities.available).toBe(true);
     expect(submissions()).toHaveLength(0);
@@ -151,7 +104,7 @@ describe.skipIf(process.platform !== 'linux')('сквозная image-ветка
     await tool(['init', 'M03', '--dir', pkg]);
     await tool(['plan-keyframes', '--dir', pkg, '--request-seconds', '5']);
     mkdirSync(join(pkg, 'video-request'));
-    write(join(pkg, 'video-request/request.json'), { kind: 'video', provider: 'kling', model: 'saved-video', inputs: [], parameters: {} });
+    write(join(pkg, 'video-request/request.json'), { kind: 'video', provider: TEST_PROVIDER, model: 'saved-video', inputs: [], parameters: {} });
     write(join(pkg, 'video-request/attempt.json'), { status: 'downloaded', generation_id: 'existing-video', downloads: [{ path: 'original.mp4' }] });
     writeFileSync(join(pkg, 'video-request/original.mp4'), 'Ранее оплаченный видеооригинал');
     const videoBefore = treeHashes(join(pkg, 'video-request'));
@@ -194,22 +147,25 @@ describe.skipIf(process.platform !== 'linux')('сквозная image-ветка
         expect(treeHashes(requestDir)).toEqual(frozenBefore);
         // Новое нажатие подтверждения после park обязано записать send до единственной отправки.
       }
-      const staleQuote = await production.quote(project, pkg, prepared.requestSha, view.decisionToken);
+      // Окно может держать более раннюю оценку тех же материалов: она действует, а отправка сжигает все оценки пакета.
+      const earlierQuote = await production.quote(project, pkg, prepared.requestSha, view.decisionToken);
       const quote = await production.quote(project, pkg, prepared.requestSha, view.decisionToken);
       expect(quote).toMatchObject({ verdict: 'ok', credits: 2, balance: 1000 });
-      await expect(production.submit(project, pkg, prepared.requestSha, view.decisionToken, staleQuote.token)).rejects.toThrow(/стоимость/);
       expect(submissions()).toHaveLength(offset);
-      if (frameId === 'K02') writeFileSync(join(directory, 'unknown-outcome'), 'fixture');
-      const submitted = await production.submit(project, pkg, prepared.requestSha, view.decisionToken, quote.token);
+      // Ответ без ID задания: исход второй отправки неизвестен.
+      if (frameId === 'K02') fakeService('unknown');
+      const submitted = await production.submit(project, pkg, prepared.requestSha, view.decisionToken, earlierQuote.token);
       const completed = await done(jobs, submitted.id);
       expect(submissions()).toHaveLength(offset + 1);
       if (frameId === 'K02') {
         expect(completed.status, completed.log).toBe('failed');
         expect(readPackage(project, pkg)!.request).toMatchObject({ attemptStatus: 'submission_unknown', generationId: null });
         await expect(production.submit(project, pkg, prepared.requestSha, view.decisionToken, quote.token)).rejects.toThrow();
-        expect(() => production.resume(project, pkg)).toThrow(/ID/);
-        const resumed = await done(jobs, production.resume(project, pkg, 'image-job-2').id);
-        expect(resumed.status, resumed.log).toBe('done');
+        expect(() => production.resume(project, pkg)).toThrow(/историю генераций/);
+        // ID задания не узнать: пользователь находит изображение в истории генераций сервиса и загружает его вручную.
+        const attached = await done(jobs, production.attachResult(project, pkg, [join(project, 'source/vehicles/boat.png')]).id);
+        expect(attached.status, attached.log).toBe('done');
+        expect(readPackage(project, pkg)!.request).toMatchObject({ manualResult: true, generationId: null });
         expect(submissions()).toHaveLength(2);
       } else expect(completed.status, completed.log).toBe('done');
       let downloaded = readPackage(project, pkg)!;
@@ -236,11 +192,7 @@ describe.skipIf(process.platform !== 'linux')('сквозная image-ветка
     await production.decide(project, pkg, 'approve', '', beforeApproval.decisionToken);
     expect(readPackage(project, pkg)!.keyframes.every((frame) => frame.approved)).toBe(true);
     expect(json(join(pkg, 'workflow.json')).image_requests as unknown[]).toHaveLength(2);
-    expect(
-      calls()
-        .filter((args) => args[0] === 'query_tasks')
-        .map((args) => args[1])
-    ).toEqual(['image-job-1', 'image-job-2']);
+    expect(serviceCalls('poll').map((call) => call.generation_id)).toEqual(['image-job-1']);
     expect(submissions()).toHaveLength(2);
     for (const [path, originalHash] of originals) expect(digest(path)).toBe(originalHash);
     expect(treeHashes(join(pkg, 'video-request'))).toEqual(videoBefore);

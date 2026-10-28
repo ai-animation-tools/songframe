@@ -5,7 +5,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { ReferenceKind, SourceKind } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
-import { suggestId } from '../helpers';
+import { ID_PATTERN, suggestId } from '../helpers';
 import type { FileForm, ReferenceForm } from '../types';
 import { ReferenceFileCard } from './ReferenceFileCard';
 import { FileDropZone } from '../../../components/FileDropZone';
@@ -13,6 +13,7 @@ import { FileDropZone } from '../../../components/FileDropZone';
 interface Props {
   reference: ReferenceForm;
   kinds: SourceKind[];
+  duplicateId: boolean;
   fileUrl: (path: string, absolute?: boolean) => string;
   onUpdate: (patch: Partial<ReferenceForm>) => void;
   onRetryFilePrompt: (fileKey: number) => Promise<void>;
@@ -26,6 +27,7 @@ interface Props {
 export function ReferenceEditor({
   reference,
   kinds,
+  duplicateId,
   fileUrl,
   onUpdate,
   onRetryFilePrompt,
@@ -37,8 +39,26 @@ export function ReferenceEditor({
 }: Props): ReactElement {
   const [expanded, setExpanded] = useState(!reference.files.length);
   const kind = kinds.find((item) => item.id === reference.kind)?.label ?? reference.kind;
+  // Те же правила, что у проверки сохранения: ошибка видна у поля, а не только в общем списке в начале страницы.
+  const nameError = reference.name.trim() ? null : 'Укажите название';
+  const idError = !ID_PATTERN.test(reference.id)
+    ? 'Латиница в нижнем регистре, цифры и _, начиная с буквы'
+    : duplicateId
+      ? 'Этот код уже есть у другого референса'
+      : null;
+  const kindError = kinds.some((item) => item.id === reference.kind) ? null : 'Выберите тип из списка';
+  const filesError = reference.files.length ? null : 'Добавьте хотя бы одно изображение.';
+  const hasErrors = Boolean(nameError || idError || kindError || filesError);
   return (
-    <Accordion variant="outlined" disableGutters expanded={expanded} onChange={(_event, value) => setExpanded(value)} sx={{ '&:before': { display: 'none' } }}>
+    <Accordion
+      variant="outlined"
+      disableGutters
+      expanded={expanded}
+      onChange={(_event, value) => setExpanded(value)}
+      // Свёрнутое содержимое не держим в DOM: скрытые поля и кнопки не попадают в обход и проверки доступности.
+      slotProps={{ transition: { unmountOnExit: true } }}
+      sx={{ '&:before': { display: 'none' }, ...(hasErrors ? { borderColor: 'warning.main' } : {}) }}
+    >
       <AccordionSummary expandIcon={<ExpandMoreIcon />} id={`reference-${reference.key}-summary`} aria-controls={`reference-${reference.key}-details`}>
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', minWidth: 0 }}>
           <Typography component="span" fontWeight={600}>
@@ -47,6 +67,11 @@ export function ReferenceEditor({
           <Typography component="span" variant="caption" color="text.secondary">
             {kind} · изображений: {reference.files.length}
           </Typography>
+          {hasErrors ? (
+            <Typography component="span" variant="caption" color="warning.main">
+              Требует исправления
+            </Typography>
+          ) : null}
           {reference.promptError || reference.files.some((file) => file.promptError) ? (
             <Typography component="span" variant="caption" color="warning.main">
               Ошибка чтения промпта
@@ -67,15 +92,25 @@ export function ReferenceEditor({
             <TextField
               label="Название"
               value={reference.name}
+              error={!!nameError}
+              helperText={nameError ?? undefined}
               onChange={(e) =>
                 onUpdate({ name: e.target.value, id: reference.id && reference.id !== suggestId(reference.name) ? reference.id : suggestId(e.target.value) })
               }
             />
-            <TextField label="Код (id)" value={reference.id} onChange={(e) => onUpdate({ id: e.target.value })} helperText="латиница, цифры, _" />
+            <TextField
+              label="Код (id)"
+              value={reference.id}
+              onChange={(e) => onUpdate({ id: e.target.value })}
+              error={!!idError}
+              helperText={idError ?? 'латиница, цифры, _'}
+            />
             <TextField
               select
               label="Тип"
               value={kinds.some((item) => item.id === reference.kind) ? reference.kind : ''}
+              error={!!kindError}
+              helperText={kindError ?? undefined}
               onChange={(e) => onUpdate({ kind: e.target.value as ReferenceKind })}
             >
               {kinds.map((item) => (
@@ -112,6 +147,11 @@ export function ReferenceEditor({
               onRetryPrompt={() => onRetryFilePrompt(file.key)}
             />
           ))}
+          {filesError ? (
+            <Typography variant="body2" color="warning.main">
+              {filesError}
+            </Typography>
+          ) : null}
           <FileDropZone
             label={`Выбрать изображения референса ${reference.name || 'без названия'}`}
             kind="image"
@@ -126,6 +166,7 @@ export function ReferenceEditor({
             description="Референс будет удалён вместе с изображениями, описаниями и промптами. После сохранения исходников сохранённые в проекте файлы этого референса также будут удалены."
             onConfirm={onRemove}
             startIcon={<DeleteOutlineIcon />}
+            sx={{ alignSelf: 'flex-start' }}
           />
         </Stack>
       </AccordionDetails>

@@ -179,7 +179,10 @@
         "scene": "M02",
         "phase": "same"
       },
-      "state_changes": {}
+      "state_changes": {},
+      "derived_from": {
+        "shot": "M02"
+      }
     }
   ]
 }

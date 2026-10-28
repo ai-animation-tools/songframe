@@ -1,7 +1,8 @@
 /** Принятие текущей сборки или возврат на просмотр с учётом её свежести. */
 
 import type { ReactElement } from 'react';
-import { Box, Button, Paper, Typography } from '@mui/material';
+import { Box, Paper, Typography } from '@mui/material';
+import { ActionButton } from '../../../components/ActionButton';
 import UndoIcon from '@mui/icons-material/Undo';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { AnimaticApproval, AnimaticView } from '@shared/types';
@@ -35,20 +36,35 @@ export function AnimaticAcceptance({
               : 'Просмотрите видео целиком. Если результат устраивает, нажмите «Принять».'}
         </Typography>
         {approval.current ? (
-          <Button size="small" disabled={running} startIcon={<UndoIcon />} onClick={() => onConfirm('review')}>
+          <ActionButton
+            size="small"
+            disabled={running}
+            disabledReason="Дождитесь завершения сборки."
+            startIcon={<UndoIcon />}
+            onClick={() => onConfirm('review')}
+          >
             Вернуть на просмотр
-          </Button>
+          </ActionButton>
         ) : (
-          <Button
+          <ActionButton
             size="small"
             variant="contained"
             color="primary"
             startIcon={<CheckCircleIcon />}
             disabled={running || !built.fresh || !built.videoPath}
+            disabledReason={
+              running
+                ? 'Дождитесь завершения сборки.'
+                : !built.fresh
+                  ? 'Сценарий изменился после сборки: пересоберите видео.'
+                  : !built.videoPath
+                    ? 'Видео ещё не собрано: нажмите «Собрать».'
+                    : null
+            }
             onClick={() => onConfirm('approved')}
           >
             Принять
-          </Button>
+          </ActionButton>
         )}
       </Box>
     </Paper>

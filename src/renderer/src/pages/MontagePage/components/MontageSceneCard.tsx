@@ -2,11 +2,12 @@ import { Add } from '@mui/icons-material';
 import type { ReactElement } from 'react';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MovieOutlinedIcon from '@mui/icons-material/MovieOutlined';
-import { Box, Button, ButtonBase, Chip, Paper, Stack, Typography } from '@mui/material';
+import { Box, ButtonBase, Chip, Paper, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { MontageClip, MontageScene, MontageSource } from '@shared/montage';
 import { frameLabel } from '../model';
 import { MontageSourceThumbnail } from './MontageSourceThumbnail';
+import { ActionButton } from '../../../components/ActionButton';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
 
@@ -120,9 +121,17 @@ export function MontageSceneCard({
                   onConfirm={() => onAdd(source.id)}
                 />
               ) : (
-                <Button startIcon={<Add />} color="success" size="small" disabled={selected} onClick={() => onAdd(source.id)} sx={{ px: 0.5 }}>
+                <ActionButton
+                  startIcon={<Add />}
+                  color="success"
+                  size="small"
+                  disabled={selected}
+                  disabledReason="Этот материал уже стоит на дорожке."
+                  onClick={() => onAdd(source.id)}
+                  sx={{ px: 0.5 }}
+                >
                   {selected ? 'На дорожке' : 'Добавить'}
-                </Button>
+                </ActionButton>
               )}
             </Box>
           );

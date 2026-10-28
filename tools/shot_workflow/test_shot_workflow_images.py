@@ -1,4 +1,4 @@
-"""Image-ветка использует frozen Kling attempt и отдельный выбор кандидата. @link README.md"""
+"""Image-ветка использует замороженную попытку media_request и отдельный выбор кандидата. @link README.md"""
 
 import sys
 from pathlib import Path
@@ -12,10 +12,25 @@ from unittest.mock import patch
 
 from PIL import Image
 
-from tools.kling_request import kling_request
 from tools.lint_registry import lint_registry
+from tools.media_request import attempt
 from tools.shot_workflow import shot_workflow as tool
 from tools.shot_workflow.test_shot_workflow_decisions import SCENES
+from tools.testing import fake_media_request as fake
+
+# Блок generation.video выбранного проекта обязателен для плана опор.
+GENERATION = {
+    "generation": {
+        "video": {
+            "provider": "test",
+            "resolution": "1080p",
+            "aspect_ratio": "16:9",
+            "watermark": False,
+            "duration_rule": "min_supported_strictly_greater_than_window",
+        },
+        "image": None,
+    }
+}
 
 
 class ImageWorkflowTests(unittest.TestCase):
@@ -25,18 +40,19 @@ class ImageWorkflowTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         (self.root / "plan/batches").mkdir(parents=True)
         (self.root / "plan/scenes.json").write_text(json.dumps(SCENES), encoding="utf-8")
-        (self.root / "plan/project.json").write_text(
-            json.dumps({"schema_version": 1, "name": "Тест", "animatic_video": "test.mp4"}), encoding="utf-8"
-        )
+        project = {"schema_version": 1, "name": "Тест", "animatic_video": "test.mp4", **GENERATION}
+        (self.root / "plan/project.json").write_text(json.dumps(project), encoding="utf-8")
         self.package = self.root / "plan/batches/M01-attempt-01"
         tool.init("M01", self.package, root=self.root)
         tool.plan_keyframes(self.package, 3, root=self.root)
         tool.ask(self.package, "description_review", root=self.root)
         tool.decide(self.package, "approve", root=self.root)
         # Prepare локален; ни один сценарий теста не должен вызвать сервис генерации.
-        guard = patch.object(kling_request, "call_cli", side_effect=AssertionError("Сетевой вызов запрещён"))
-        guard.start()
-        self.addCleanup(guard.stop)
+        self.service = fake.enable(self)
+        for name in ("submit", "poll", "fetch"):
+            guard = patch.object(fake, name, side_effect=AssertionError("Обращение к сервису запрещено"))
+            guard.start()
+            self.addCleanup(guard.stop)
 
     def workflow(self):
         return tool.load_workflow(self.package)
@@ -51,7 +67,7 @@ class ImageWorkflowTests(unittest.TestCase):
                     "schema_version": 1,
                     "shot": shot,
                     "kind": kind,
-                    "provider": "kling",
+                    "provider": "test",
                     "command": "text_to_image" if kind == "image" else "text_to_video",
                     "model": "fixture-model",
                     "parameters": {},
@@ -63,14 +79,14 @@ class ImageWorkflowTests(unittest.TestCase):
             encoding="utf-8",
         )
         directory = self.package / name
-        kling_request.prepare(spec, directory)
+        attempt.prepare(spec, directory)
         return directory
 
     def state(self, directory, **changes):
         path = directory / "attempt.json"
         data = json.loads(path.read_text())
         data.update(changes)
-        kling_request.atomic_json(path, data)
+        attempt.atomic_json(path, data)
         return data
 
     def start(self, frame="K01", name="image-01"):
@@ -98,7 +114,7 @@ class ImageWorkflowTests(unittest.TestCase):
     def test_two_frames_preserve_video_originals_history_and_separate_acceptance(self):
         video = self.package / "video-request"
         video.mkdir()
-        (video / "request.json").write_text(json.dumps({"provider": "kling"}), encoding="utf-8")
+        (video / "request.json").write_text(json.dumps({"provider": "test"}), encoding="utf-8")
         (video / "original.mp4").write_bytes(b"paid-video-original")
         data = self.workflow()
         data.update(request_dir="video-request", unknown={"keep": True})
@@ -124,6 +140,8 @@ class ImageWorkflowTests(unittest.TestCase):
                 tool.approve(self.package, frame, self.package / candidate["path"], root=self.root)
                 accepted = (self.package / candidate["path"]).read_bytes()
         self.assertEqual(len(data["image_requests"]), 2)
+        # История хранит провайдера самого запроса, а не имя конкретного сервиса из кода.
+        self.assertEqual({entry["provider"] for entry in data["image_requests"]}, {"test"})
         self.assertEqual(data["unknown"], {"keep": True})
         self.assertTrue(data["keyframes"][0]["approved"])
         self.assertEqual((self.package / "keyframes/K01.png").read_bytes(), accepted)
@@ -135,10 +153,15 @@ class ImageWorkflowTests(unittest.TestCase):
             all(frame["approved"] for frame in tool.decide(self.package, "approve", root=self.root)["keyframes"])
         )
 
-    def test_description_approval_is_durable_with_legacy_fallback_and_revise_reset(self):
+    def test_description_approval_is_durable_and_revise_resets_it(self):
         directory = self.prepare()
         data = self.workflow()
-        del data["description_approved"]
+        approved = data.pop("description_approved")
+        tool.save_workflow(self.package, data)
+        # Без явного поля описание не считается утверждённым: прежнее решение не подставляется.
+        with self.assertRaisesRegex(ValueError, "утвердите описание"):
+            tool.set_image_request(self.package, "K01", directory.name, root=self.root)
+        data["description_approved"] = approved
         tool.save_workflow(self.package, data)
         data = tool.set_image_request(self.package, "K01", directory.name, root=self.root)
         self.assertTrue(data["description_approved"])
@@ -200,6 +223,18 @@ class ImageWorkflowTests(unittest.TestCase):
                 operation()
         self.assertEqual((self.package / "workflow.json").read_bytes(), before)
         self.assertEqual((directory / "attempt.json").read_bytes(), attempt_before)
+
+    def test_manual_result_after_unknown_submission_reaches_downloaded_without_id(self):
+        # Оригинал, загруженный пользователем из истории генераций, заменяет потерянный ID задания.
+        directory = self.start()
+        tool.decide(self.package, "send", root=self.root)
+        self.state(directory, status="submission_unknown")
+        tool.set_stage(self.package, "image_submitted", root=self.root)
+        self.state(directory, status="downloaded")
+        with self.assertRaisesRegex(ValueError, "downloaded"):
+            tool.set_stage(self.package, "image_downloaded", root=self.root)
+        self.state(directory, status="downloaded", manual_result=True)
+        self.assertEqual(tool.set_stage(self.package, "image_downloaded", root=self.root)["stage"], "image_downloaded")
 
     def test_submitted_transition_requires_send_and_recorded_attempt(self):
         directory = self.start()
@@ -353,16 +388,19 @@ class ImageWorkflowTests(unittest.TestCase):
                 tool.set_image_request(self.package, "K02", next_request.name, root=self.root)
             self.assertEqual((self.package / "workflow.json").read_bytes(), before)
 
-    def test_revise_preserves_approved_frame_and_legacy_selection_is_upgraded(self):
+    def test_revise_preserves_approved_frame_and_selection_needs_saved_sha(self):
         directory = self.start("K02")
         self.submit(directory)
         original = self.download(directory)
         data = tool.select_image(self.package, original, root=self.root)
-        data["image_requests"][0].pop("selected_sha256")
-        data["image_requests"][0].pop("selected_at")
+        selection = {key: data["image_requests"][0].pop(key) for key in ("selected_sha256", "selected_at")}
         tool.save_workflow(self.package, data)
-        # Старый пакет без selected_sha256 по-прежнему доказывает выбор совпадающей копией.
-        next_request = self.prepare("legacy-next")
+        # Запись без selected_sha256 не выбрана: совпадающая копия опоры её не заменяет.
+        next_request = self.prepare("next")
+        with self.assertRaisesRegex(ValueError, "Хеш выбора"):
+            tool.set_image_request(self.package, "K01", next_request.name, root=self.root)
+        data["image_requests"][0].update(selection)
+        tool.save_workflow(self.package, data)
         data = tool.set_image_request(self.package, "K01", next_request.name, root=self.root)
         self.assertEqual(data["image_requests"][0]["selected_sha256"], tool.sha(original))
         self.submit(next_request)

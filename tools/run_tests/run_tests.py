@@ -9,7 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-import tools.testing  # noqa: E402,F401  Копия проекта-образца как SONGFRAME_PROJECT до импорта инструментов.
+# Копия проекта-образца как SONGFRAME_PROJECT до импорта инструментов.
+import tools.testing.sample_project  # noqa: E402,F401
 
 
 def main():

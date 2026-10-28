@@ -103,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("--preserved", type=Path)
     args = parser.parse_args()
     if args.report.resolve().is_relative_to(ROOT):
-        raise ValueError("Отчёт проверки нужно сохранить вне репозитория.")
+        raise ValueError("Отчёт проверки нужно сохранить вне папки проекта.")
     registry = json.loads((ROOT / "assets/shots/manifest.json").read_text())
     results = []
     failures = []

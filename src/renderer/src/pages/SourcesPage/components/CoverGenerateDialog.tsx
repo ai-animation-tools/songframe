@@ -1,17 +1,19 @@
 /** Генерация и выбор обложки остаются временными до сохранения формы исходников. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import type { CoverCrop, CoverGenerationSession } from '@shared/cover-generation';
 import { MEDIA_PROVIDERS, mediaProviderInfo } from '@shared/media-providers';
-import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration } from '@shared/generation-consent';
+import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration, priceNotice } from '@shared/generation-consent';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { useApp } from '../../../state';
 import { aiActionProblem } from '@shared/ai-access';
+import { ActionButton } from '../../../components/ActionButton';
 import { AgentButton } from '../../../components/AgentButton';
+import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { useCoverGeneration } from '../useCoverGeneration';
 import { CoverCropEditor } from './CoverCropEditor';
 import { centeredCrop } from './crop';
@@ -52,6 +54,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
   const generationExecutor = mediaProviderInfo(session?.provider ?? aiAccess?.image.provider, 'image')?.executor ?? null;
   const prepared = !!preparedSha && preparedSha === session?.requestSha && !!session?.approvalToken;
   const quote = prepared ? session?.quote : null;
+  const coverNotice = priceNotice(quote, info);
   const agreedToUnknownCost = !!session?.approvalToken && agreedToken === session.approvalToken;
   const unknownCost = canAgreeToUnknownCost(quote);
   const blockedQuote = paid && prepared && !priceAllowsGeneration(quote, agreedToUnknownCost);
@@ -61,9 +64,28 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
     setConfirmation((current) => (current?.approvalToken === session?.approvalToken && !error ? current : null));
   }, [session?.approvalToken, error]);
   const isRetry = session?.status === 'ready' || session?.status === 'failed';
-  const actionLabel = session ? (isRetry ? 'Ещё' : 'Сгенерировать') : 'Сгенерировать';
-  const generationLabel = paid && prepared && quote?.verdict === 'ok' ? `${actionLabel} · ${quote.credits} кредитов` : actionLabel;
+  const actionLabel = isRetry ? 'Ещё' : 'Сгенерировать обложку';
+  const generationLabel = paid && prepared && quote?.verdict === 'ok' ? `${actionLabel} · ${formatCredits(quote.credits)}` : actionLabel;
   const generationDisabled = Boolean(blockedReason) || preparing || generating || !!blockedQuote || (!session && !prompt.trim());
+  // Причины блокировки для подсказок; недоступность исполнителя AgentButton показывает сам, обычной кнопке её передаём явно.
+  const waitReason = preparing ? 'Дождитесь окончания подготовки запроса.' : generating ? 'Дождитесь окончания генерации обложки.' : null;
+  const quoteReason = blockedQuote
+    ? unknownCost
+      ? 'Сначала нажмите «Я согласен» для показанной оценки стоимости.'
+      : quote?.verdict === 'insufficient_balance'
+        ? 'Кредитов недостаточно: пополните баланс и обновите стоимость.'
+        : 'Стоимость или остаток не подтверждены: обновите стоимость.'
+    : null;
+  const ownGenerationReason = waitReason ?? quoteReason ?? (!session && !prompt.trim() ? 'Введите промпт обложки.' : null);
+  const acceptReason = preparing
+    ? 'Дождитесь окончания подготовки.'
+    : !image
+      ? 'Сначала сгенерируйте обложку.'
+      : session?.status !== 'ready'
+        ? 'Дождитесь готовой обложки.'
+        : !crop
+          ? 'Выберите область обложки.'
+          : null;
   const onGenerate = async (): Promise<void> => {
     if (preparingClick.current || blockedReason || generationDisabled) return;
     preparingClick.current = true;
@@ -101,7 +123,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
         <DialogTitle id="cover-generation-title">Создать обложку</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
-            {blockedReason ? <Alert severity="info">{blockedReason}</Alert> : null}
+            <AiProblemAlert kinds={['image']} />
             <Typography variant="body2" color="text.secondary">
               {session
                 ? 'Промпт зафиксирован для этой сессии. Каждая новая попытка использует тот же текст.'
@@ -133,33 +155,34 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
               </Stack>
             )}
             {paid && prepared && (
-              <Alert severity={quote?.verdict === 'ok' ? 'info' : 'warning'}>
+              <Alert severity={coverNotice?.severity ?? 'warning'}>
                 <Stack spacing={1} alignItems="flex-start">
                   <Typography variant="body2">
-                    Стоимость: {formatCredits(quote?.credits)}. Остаток: {formatCredits(quote?.balance)}.{' '}
-                    {quote?.verdict === 'ok'
-                      ? 'Перед отправкой проверьте и подтвердите промпт.'
-                      : unknownCost
-                        ? 'Цена неизвестна. Чтобы разрешить один запрос, нажмите «Я согласен», затем подтвердите промпт.'
-                        : (quote?.message ??
-                          (quote?.verdict === 'insufficient_balance'
-                            ? 'Недостаточно кредитов для отправки.'
-                            : 'Цена или остаток не подтверждены. Отправка недоступна.'))}
+                    {coverNotice?.text ?? 'Цена или остаток не подтверждены. Отправка недоступна.'}{' '}
+                    {quote?.verdict === 'ok' ? 'Перед отправкой проверьте и подтвердите промпт.' : ''}
+                    {/* Пояснение инструмента нужно, только когда цену не узнать обычным путём. */}
+                    {quote?.message && coverNotice?.severity !== 'info' && quote.verdict !== 'ok' ? ` ${quote.message}` : ''}
                   </Typography>
                   {unknownCost && (
-                    <Button
+                    <ActionButton
                       variant={agreedToUnknownCost ? 'outlined' : 'contained'}
                       startIcon={<CheckIcon />}
                       disabled={Boolean(blockedReason) || preparing || agreedToUnknownCost}
+                      disabledReason={blockedReason ?? (preparing ? 'Дождитесь окончания подготовки запроса.' : 'Согласие для этой оценки уже получено.')}
                       onClick={() => setAgreedToken(session?.approvalToken ?? null)}
                     >
                       {agreedToUnknownCost ? 'Согласие получено' : 'Я согласен'}
-                    </Button>
+                    </ActionButton>
                   )}
                   {quote?.verdict !== 'ok' && (
-                    <Button startIcon={<RefreshIcon />} disabled={Boolean(blockedReason) || preparing} onClick={() => void refreshQuote()}>
+                    <ActionButton
+                      startIcon={<RefreshIcon />}
+                      disabled={Boolean(blockedReason) || preparing}
+                      disabledReason={blockedReason ?? 'Дождитесь окончания подготовки запроса.'}
+                      onClick={() => void refreshQuote()}
+                    >
                       Обновить стоимость
-                    </Button>
+                    </ActionButton>
                   )}
                 </Stack>
               </Alert>
@@ -189,9 +212,15 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1, flexWrap: 'wrap' }}>
-          <Button startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={accepting}>
-            Закрыть
-          </Button>
+          {/* Закрытие без «Принять» не меняет форму исходников, поэтому это всегда отмена. */}
+          <ActionButton
+            startIcon={<CancelOutlinedIcon />}
+            onClick={onClose}
+            disabled={accepting}
+            disabledReason="Дождитесь окончания подготовки выбранной области."
+          >
+            Отмена
+          </ActionButton>
           <Box sx={{ flexGrow: 1 }} />
           {generationExecutor ? (
             <AgentButton
@@ -199,19 +228,27 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
               provider={generationExecutor}
               variant={image ? 'outlined' : 'contained'}
               disabled={generationDisabled}
+              disabledReason={ownGenerationReason}
               onClick={() => void onGenerate()}
             >
               {generationLabel}
             </AgentButton>
           ) : (
-            <Button variant={image ? 'outlined' : 'contained'} startIcon={<AutoAwesomeIcon />} disabled={generationDisabled} onClick={() => void onGenerate()}>
+            <ActionButton
+              variant={image ? 'outlined' : 'contained'}
+              startIcon={<AutoAwesomeIcon />}
+              disabled={generationDisabled}
+              disabledReason={blockedReason ?? ownGenerationReason}
+              onClick={() => void onGenerate()}
+            >
               {generationLabel}
-            </Button>
+            </ActionButton>
           )}
-          <Button
+          <ActionButton
             variant="contained"
             startIcon={<CheckIcon />}
             disabled={!image || !crop || session?.status !== 'ready' || preparing}
+            disabledReason={acceptReason}
             onClick={() => {
               if (crop)
                 void accept(crop, (result) => {
@@ -221,14 +258,14 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
             }}
           >
             Принять
-          </Button>
+          </ActionButton>
         </DialogActions>
       </Dialog>
       <ConfirmationDialog
         open={!!confirmation}
         title="Проверьте промпт перед генерацией"
         description="Вы уверены, что промпт правильный?"
-        confirmLabel="Генерировать"
+        confirmLabel="Сгенерировать обложку"
         // Знак подтверждения — программа-исполнитель провайдера изображений, а не выбранный текстовый агент.
         {...(confirmationInfo?.executor
           ? { confirmAgent: { aiKind: 'image' as const, provider: confirmationInfo.executor } }
@@ -237,6 +274,9 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
         onClose={() => setConfirmation(null)}
         onConfirm={confirmGeneration}
         confirmDisabled={Boolean(blockedReason) || preparing || !confirmation?.approvalToken || confirmation.approvalToken !== session?.approvalToken}
+        confirmDisabledReason={
+          blockedReason ?? (preparing ? 'Дождитесь окончания подготовки запроса.' : 'Запрос изменился: закройте окно и подготовьте попытку заново.')
+        }
       >
         {confirmation && (
           <Stack spacing={2} sx={{ mt: 2 }}>

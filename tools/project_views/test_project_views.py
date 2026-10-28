@@ -13,7 +13,7 @@ import re
 import unittest
 from unittest.mock import patch
 
-import tools.testing  # noqa: E402,F401  Проект-образец должен быть выбран до импорта инструментов.
+import tools.testing.sample_project  # noqa: E402,F401  Проект-образец должен быть выбран до импорта инструментов.
 from tools.project_views.project_views import Sources, documents, progress, render
 
 
@@ -30,6 +30,30 @@ class RoadmapTests(unittest.TestCase):
             with self.subTest(row=line[:80]):
                 self.assertEqual(len(re.split(r"(?<!\\)\|", line[1:-1])), len(columns))
         self.assertEqual(len(rows), len(Sources().json("plan/scenes.json")["scenes"]))
+
+    def test_derived_shot_is_marked_with_source_and_ordinary_shots_are_unchanged(self):
+        def views(derived):
+            sources = Sources()
+            read_json = sources.json
+            scenes = read_json("plan/scenes.json")
+            for scene in scenes["scenes"]:
+                scene.pop("derived_from", None)
+                if scene["id"] in derived:
+                    scene["derived_from"] = {"shot": derived[scene["id"]]}
+            sources.json = lambda name: scenes if name == "plan/scenes.json" else read_json(name)
+            return documents(sources)
+
+        plain, result = views({}), views({"M04": "M02"})
+        self.assertIn("| **M04** · из M02 | ", result["ROADMAP.md"])
+        self.assertIn("\n| M04 · из M02 | ", result["plan/edit-list.md"])
+        self.assertIn("**Материал:** из [M02](#m02), без собственной генерации.", result["plan/storyboard.md"])
+        # Остальные планы выглядят так же, как без поля.
+        for name in ("ROADMAP.md", "plan/edit-list.md"):
+            marked = [line for line in result[name].splitlines() if "из M02" in line]
+            self.assertEqual(len(marked), 1, name)
+        for line in plain["plan/edit-list.md"].splitlines():
+            if line.startswith("| M0") and not line.startswith("| M04"):
+                self.assertIn(line, result["plan/edit-list.md"])
 
     def test_progress_distinguishes_plan_count_from_frame_duration(self):
         # Равное число планов не означает равную долю готового хронометража.
@@ -52,18 +76,18 @@ class RoadmapTests(unittest.TestCase):
                 else:
                     self.assertNotIn("```mermaid", result)
 
-    def test_selected_asset_does_not_depend_on_approval_or_old_work_status(self):
-        # Наличие выбранной сцены в assets важнее устаревшей рабочей отметки.
+    def test_selected_asset_does_not_depend_on_approval_or_open_work_package(self):
+        # Наличие выбранной сцены в assets важнее незавершённого пакета новой попытки.
         # Манифест и видео остаются входами таблицы, подтверждения — нет.
         sources = Sources()
         read_json = sources.json
-        state = read_json("plan/production-status.json")
-        state["shots"]["M02"] = {"status": "in_progress"}
+        package = "plan/awaiting/M02/workflow.json"
+        sources.files.add(package)
 
-        def json_without_old_state(path):
-            return state if path == "plan/production-status.json" else read_json(path)
+        def json_with_package(path):
+            return {"shot": "M02", "stage": "ready"} if path == package else read_json(path)
 
-        with patch.object(sources, "json", side_effect=json_without_old_state):
+        with patch.object(sources, "json", side_effect=json_with_package):
             roadmap = render(sources)
         row = next(line for line in roadmap.splitlines() if "**M02**" in line)
         self.assertIn("**Готово**", row)
@@ -143,7 +167,7 @@ class RoadmapTests(unittest.TestCase):
             for generation in (
                 {
                     "video": {
-                        "provider": "kling",
+                        "provider": "test",
                         "provider_selected": True,
                         "model": "другая",
                         "options": {"duration": 5},

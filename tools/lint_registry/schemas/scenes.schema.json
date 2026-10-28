@@ -39,7 +39,9 @@
                                  {"type": "object", "required": ["scene", "phase"], "additionalProperties": false,
                                   "properties": {"scene": {"type": "string"}, "phase": {"enum": ["before", "after", "same"]}}}]},
         "state_changes": {"type": "object", "additionalProperties": false,
-                          "properties": {"before": {"type": "object"}, "after": {"type": "object"}}}
+                          "properties": {"before": {"type": "object"}, "after": {"type": "object"}}},
+        "derived_from": {"type": "object", "required": ["shot"], "additionalProperties": false,
+                         "properties": {"shot": {"type": "string", "pattern": "^M\\d{2}(\\.\\d+)?$"}}}
       }}}
   }
 }

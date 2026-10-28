@@ -16,9 +16,6 @@ extraResources:
   # Окно использует тот же рисунок, что и ярлык; путь вычисляется от resourcesPath.
   - from: resources/icon.png
     to: icon.png
-  # Официальный пакет остаётся с package.json и dist вне ASAR; запуск использует Node существующего Electron.
-  - from: build/runtime/kling
-    to: kling
   - from: README.md
     to: README.md
   - from: tools
@@ -27,12 +24,18 @@ extraResources:
       - '**/*'
       - '!**/test_*.py'
       - '!testdata/**'
-      - '!testing.py'
+      # Тестовый провайдер медиа и помощники тестов в поставку не входят.
+      - '!testing/**'
       - '!run_tests/**'
       - '!**/__pycache__/**'
   # Промпты заданий агента: главный процесс вкладывает их в задания сценария и производства.
   - from: skills
     to: skills
+    filter:
+      - '**/*.md'
+  # Документы провайдеров: раздел «Указания агенту» выбранного провайдера вкладывается в промпт производства.
+  - from: docs/providers
+    to: docs/providers
     filter:
       - '**/*.md'
   - from: templates/project

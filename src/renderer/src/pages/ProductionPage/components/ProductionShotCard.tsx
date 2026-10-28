@@ -1,6 +1,6 @@
 /** Описание выбранного плана, повтор по сохранённому запросу и принятые видео. */
 import type { ReactElement } from 'react';
-import { Alert, Box, Button, Paper, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import ReplayIcon from '@mui/icons-material/Replay';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import type { BrokenPackage, JobInfo, ShotProduction } from '@shared/types';
@@ -8,6 +8,9 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { formatClock } from '../../../format';
 import { JobStatus } from '../../../components/JobStatus';
+import { ActionButton } from '../../../components/ActionButton';
+import { BUSY_REASON, PYTHON_REASON } from '../constants';
+import { DerivedShotNotice } from './DerivedShotNotice';
 
 export function ProductionShotCard({
   shot,
@@ -33,6 +36,17 @@ export function ProductionShotCard({
   onDiscardBroken?(item: BrokenPackage): void;
 }): ReactElement {
   const waiting = shot.packages.filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
+  const sending = shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''));
+  // Несовместимость запроса устраняет пользователь, поэтому она важнее временной занятости.
+  const regenerateReason =
+    shot.regenerateProblem ??
+    (busy
+      ? BUSY_REASON
+      : !pythonAvailable
+        ? PYTHON_REASON
+        : sending
+          ? 'Исход отправки попытки этого плана ещё не известен: сначала выясните его в карточке пакета.'
+          : null);
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
@@ -44,6 +58,11 @@ export function ProductionShotCard({
       <Typography variant="body2" sx={{ mt: 1 }}>
         {shot.original}
       </Typography>
+      {shot.derivedFrom ? (
+        <Box sx={{ mt: 1.5 }}>
+          <DerivedShotNotice source={shot.derivedFrom} />
+        </Box>
+      ) : null}
       {broken.map((item) => (
         <Alert
           key={item.dir}
@@ -57,6 +76,7 @@ export function ProductionShotCard({
                 confirmLabel="Удалить папку"
                 startIcon={<DeleteForeverIcon />}
                 disabled={busy}
+                disabledReason={BUSY_REASON}
                 onConfirm={() => onDiscardBroken(item)}
               />
             ) : undefined
@@ -106,32 +126,19 @@ export function ProductionShotCard({
           </Box>
         </Box>
       ) : null}
+      {/* Действие блока внизу слева, того же вида, что ряд подготовки плана; результат — сразу под ним, причина недоступности — в подсказке кнопки. */}
       {shot.state === 'completed' || shot.packages.length ? (
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
-          <Tooltip title={shot.regenerateProblem ?? 'Создать новую попытку по сохранённому запросу без отправки и оплаты'}>
-            <span>
-              <Button
-                size="small"
-                color="warning"
-                startIcon={<ReplayIcon />}
-                disabled={
-                  busy ||
-                  !pythonAvailable ||
-                  !!shot.regenerateProblem ||
-                  shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''))
-                }
-                onClick={() => onRegenerate(shot.id)}
-              >
-                Подготовить повтор
-              </Button>
-            </span>
-          </Tooltip>
-        </Box>
-      ) : null}
-      {shot.regenerateProblem && (shot.state === 'completed' || shot.packages.length) ? (
-        <Alert severity="info" sx={{ mt: 1 }}>
-          {shot.regenerateProblem}
-        </Alert>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
+          <ActionButton
+            startIcon={<ReplayIcon />}
+            title="Создать новую попытку по сохранённому запросу без отправки и оплаты"
+            disabled={busy || !pythonAvailable || !!shot.regenerateProblem || sending}
+            disabledReason={regenerateReason}
+            onClick={() => onRegenerate(shot.id)}
+          >
+            Подготовить повтор
+          </ActionButton>
+        </Stack>
       ) : null}
       <JobStatus {...operation} />
     </Paper>

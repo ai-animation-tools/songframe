@@ -1,17 +1,16 @@
 {
   "schema_version": 1,
   "shot": "M02",
-  "provider": "Kling",
+  "provider": "test",
   "command": "image_to_video",
-  "model": "kling-video-v3_0",
+  "model": "test-video",
   "parameters": {
     "duration": 5,
     "resolution": "1080p",
-    "aspect_ratio": "16:9",
-    "prefer_multi_shots": false
+    "aspect_ratio": "16:9"
   },
   "outputs": 1,
-  "request_sha256": "6101c8dc1b9de7ffc93012614c17b99fcf9ca3367ea55186f4832f4eee030dab",
+  "request_sha256": "231d3ceb30b5dd74d57cdc18438f638f6a1dc64d00e8300241525d1c73b14e02",
   "inputs": [
     {
       "slot": "image_1",

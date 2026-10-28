@@ -10,9 +10,6 @@ __pycache__/
 node_modules/
 build/
 dist/
-# Официальный JS Kling хранится в Git без изменений вместе с vendor-пакетом.
-!/vendor/kling-cli/dist/
-!/vendor/kling-cli/dist/**
 out/
 *.log
 # Yarn Berry: состояние установки и кэш остаются локальными.

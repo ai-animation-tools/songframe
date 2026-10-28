@@ -1,12 +1,15 @@
-/** Настройки проекта из plan/project.json: название, имя MP4 аниматика и предпочтения генерации видео и изображений. */
+/** Настройки проекта из plan/project.json: имя MP4 аниматика и предпочтения генерации; название меняется кнопкой «Переименовать» в шапке. */
 
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import { LinkedText } from '../../../components/LinkedText';
+import { ANCHORS } from '../../../components/linkTargets';
+import { Alert, Box, Paper, Stack, TextField, Typography } from '@mui/material';
 import TuneIcon from '@mui/icons-material/Tune';
 import SaveIcon from '@mui/icons-material/Save';
-import UndoIcon from '@mui/icons-material/Undo';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { GenerationSettings, ProjectSettings } from '@shared/types';
 import { DEFAULT_VIDEO_GENERATION, DEFAULT_IMAGE_GENERATION } from '@shared/types';
+import { ActionButton } from '../../../components';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { useApp } from '../../../state';
 
@@ -61,9 +64,11 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
 
   const generation = form.generation;
   const dirty = JSON.stringify(form) !== JSON.stringify(saved);
-  const nameError = !form.name.trim();
   const animaticError = !/^[\w.-]+\.mp4$/.test(form.animaticVideo) || form.animaticVideo.startsWith('.');
-  const valid = !nameError && !animaticError && videoValid && imageValid;
+  const valid = !animaticError && videoValid && imageValid;
+  const busyReason = busy ? 'Дождитесь окончания записи настроек.' : null;
+  const noChangesReason = !dirty ? 'Нет изменений для сохранения.' : null;
+  const saveReason = busyReason ?? noChangesReason ?? (!valid ? 'Исправьте ошибки в отмеченных полях формы.' : null);
   const setGeneration = (patch: Partial<GenerationSettings>): void => setForm({ ...form, generation: { video: null, image: null, ...generation, ...patch } });
 
   const save = async (): Promise<void> => {
@@ -104,26 +109,16 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
       </Box>
       <Stack spacing={1.5}>
         {/* Поля перестраиваются по ширине карточки, в том числе в боковой колонке проекта. */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 1 }}>
-          <TextField
-            label="Название"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            size="small"
-            sx={{ minWidth: 0 }}
-            error={nameError}
-            helperText={nameError ? 'Введите название проекта.' : undefined}
-          />
-          <TextField
-            label="Имя MP4 аниматика"
-            value={form.animaticVideo}
-            onChange={(e) => setForm({ ...form, animaticVideo: e.target.value })}
-            size="small"
-            sx={{ minWidth: 0 }}
-            error={animaticError}
-            helperText={animaticError ? 'Укажите имя .mp4: буквы, цифры, точки и дефисы, без пути к папке.' : 'Без пути к папке'}
-          />
-        </Box>
+        <TextField
+          label="Имя MP4 аниматика"
+          slotProps={{ htmlInput: { 'data-anchor': ANCHORS.projectAnimaticName } }}
+          value={form.animaticVideo}
+          onChange={(e) => setForm({ ...form, animaticVideo: e.target.value })}
+          size="small"
+          sx={{ minWidth: 0, maxWidth: 480 }}
+          error={animaticError}
+          helperText={animaticError ? 'Укажите имя .mp4: буквы, цифры, точки и дефисы, без пути к папке.' : 'Без пути к папке'}
+        />
         <VideoGenerationSettings
           key={`video:${project}`}
           project={project}
@@ -141,18 +136,19 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
           onValidityChange={setImageValid}
         />
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-          <Button variant="contained" startIcon={<SaveIcon />} disabled={!dirty || busy || !valid} onClick={save}>
+          <ActionButton variant="contained" startIcon={<SaveIcon />} disabled={!dirty || busy || !valid} disabledReason={saveReason} onClick={save}>
             Сохранить
-          </Button>
+          </ActionButton>
           <DestructiveButton
-            startIcon={<UndoIcon />}
-            label="Отменить изменения настроек проекта"
+            startIcon={<RestartAltIcon />}
+            label="Сбросить правки настроек проекта"
             description="Все несохранённые изменения настроек будут потеряны. Форма вернётся к последним сохранённым значениям."
             disabled={!dirty || busy}
+            disabledReason={busyReason ?? (!dirty ? 'Нет несохранённых правок.' : null)}
             onConfirm={() => setForm(saved)}
-            confirmLabel="Отменить изменения"
+            confirmLabel="Сбросить правки"
           >
-            Отменить
+            Сбросить правки
           </DestructiveButton>
           <Typography variant="caption" color="text.secondary">
             Прочие поля файла сохраняются как есть. Изменение настроек не трогает уже подготовленные запросы: повтор по снимку с другим форматом остановится.
@@ -160,7 +156,16 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
         </Box>
         {!valid && (
           <Typography variant="caption" color="error">
-            Исправьте ошибки в полях перед сохранением.
+            {/* Сообщение называет блоки с ошибками ссылками: переход прокручивает к блоку. */}
+            <LinkedText
+              text={`Исправьте ошибки перед сохранением: ${[
+                animaticError ? 'поле «Имя MP4 аниматика»' : null,
+                videoValid ? null : 'блок «Генерация видео»',
+                imageValid ? null : 'блок «Генерация изображений»'
+              ]
+                .filter(Boolean)
+                .join(', ')}.`}
+            />
           </Typography>
         )}
       </Stack>

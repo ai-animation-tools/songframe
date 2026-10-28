@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { mediaPaths } from './media-runtime';
 import { Jobs } from './jobs';
 import { PythonLauncher } from './python-launcher';
-import { klingPaths } from './kling-runtime';
+import { paidAdapters } from './providers';
 
 export const IMPORT_TIMEOUT = 120000;
 
@@ -116,18 +116,8 @@ with tempfile.TemporaryDirectory(prefix='songframe-media-') as folder:
 print(json.dumps(result))`
       );
     }
-    if (klingPaths(isolated.options)) {
-      await run(
-        'Встроенный Kling CLI без внешнего Node',
-        `import json,os,shutil
-from tools.kling_cli import run
-assert shutil.which('node') is None, 'Внешний Node не должен участвовать в проверке поставки'
-assert not os.environ.get('ELECTRON_RUN_AS_NODE'), 'Python не должен работать в режиме Electron Node'
-result = run(['kling', '--version'], 30)
-assert result.returncode == 0, result.stderr.decode('utf-8', errors='replace')
-print(json.dumps({'version': result.stdout.decode('utf-8').strip(), 'externalNode': False, 'pythonEnvironmentUnchanged': not os.environ.get('ELECTRON_RUN_AS_NODE')}))`
-      );
-    }
+    // Встроенные программы провайдеров проверяются их адаптерами без внешнего окружения.
+    for (const check of paidAdapters().flatMap((adapter) => adapter.smokeChecks(isolated.options))) await run(check.name, check.code);
     await run(
       'Загрузчик модели без системного Python и hf',
       `import inspect,json,shutil,subprocess,sys

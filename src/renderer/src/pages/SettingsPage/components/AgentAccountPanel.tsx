@@ -1,11 +1,12 @@
 /** Показываем только подтверждённые CLI поля; неизвестные значения не подменяем предположениями о подписке. */
 import type { ReactElement } from 'react';
-import { Alert, Box, Button, Divider, LinearProgress, Link, Stack, Typography, type Theme } from '@mui/material';
+import { Alert, Box, Divider, LinearProgress, Link, Stack, Typography, type Theme } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import type { AgentAccountResult } from '@shared/agents';
 import { AGENT_PROVIDERS, type AgentProvider } from '@shared/agent-providers';
 import { formatDateTime } from '../../../format';
+import { ActionButton } from '../../../components/ActionButton';
 
 const unknown = 'Не удалось уточнить';
 const percent = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
@@ -44,10 +45,12 @@ interface Props {
   loading: boolean;
   failed: boolean;
   disabled: boolean;
+  /** Почему обновление сейчас недоступно (сохранение, нет сети). */
+  disabledReason?: string | null;
   onRefresh(): void;
 }
 
-export function AgentAccountPanel({ provider, result, loading, failed, disabled, onRefresh }: Props): ReactElement {
+export function AgentAccountPanel({ provider, result, loading, failed, disabled, disabledReason, onRefresh }: Props): ReactElement {
   const available = result?.diagnostic.availability === 'available';
   const authorization = result ? { authenticated: 'Вход выполнен', unauthenticated: 'Вход не выполнен', unknown }[result.diagnostic.authorization] : unknown;
   const fields: AccountField[] =
@@ -139,9 +142,15 @@ export function AgentAccountPanel({ provider, result, loading, failed, disabled,
           </Typography>
         </Stack>
       )}
-      <Button sx={{ alignSelf: 'flex-start' }} startIcon={<RefreshIcon />} variant="outlined" disabled={disabled || loading} onClick={onRefresh}>
+      <ActionButton
+        sx={{ alignSelf: 'flex-start' }}
+        startIcon={<RefreshIcon />}
+        disabled={disabled || loading}
+        disabledReason={(disabled ? disabledReason : null) ?? (loading ? 'Дождитесь окончания чтения аккаунта.' : null)}
+        onClick={onRefresh}
+      >
         Обновить
-      </Button>
+      </ActionButton>
     </Stack>
   );
 }

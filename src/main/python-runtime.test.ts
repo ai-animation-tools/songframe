@@ -78,12 +78,12 @@ describe('переносимый Python', () => {
     const env = pythonEnv({
       toolsRoot: work,
       localDir: work,
-      env: { PYTHONHOME: '/old', PYTHONPATH: '/old', VIRTUAL_ENV: '/old', SystemRoot: 'C:\\Windows', SONGFRAME_KLING_CLI: 'fake' }
+      env: { PYTHONHOME: '/old', PYTHONPATH: '/old', VIRTUAL_ENV: '/old', SystemRoot: 'C:\\Windows', SONGFRAME_EXTERNAL_MARKER: 'fake' }
     });
     expect(env.PYTHONHOME).toBeUndefined();
     expect(env.PYTHONPATH).toBeUndefined();
     expect(env.VIRTUAL_ENV).toBeUndefined();
-    expect(env).toMatchObject({ SystemRoot: 'C:\\Windows', SONGFRAME_KLING_CLI: 'fake', PYTHONNOUSERSITE: '1', SONGFRAME_LOCAL_DIR: work });
+    expect(env).toMatchObject({ SystemRoot: 'C:\\Windows', SONGFRAME_EXTERNAL_MARKER: 'fake', PYTHONNOUSERSITE: '1', SONGFRAME_LOCAL_DIR: work });
   });
 
   it('отделяет packaged-ресурсы от записываемого состояния и override разработчика', () => {

@@ -6,12 +6,14 @@ import SendIcon from '@mui/icons-material/Send';
 import SaveIcon from '@mui/icons-material/Save';
 import MovieIcon from '@mui/icons-material/Movie';
 import ReplayIcon from '@mui/icons-material/Replay';
-import { Alert, Box, Button, TextField, Typography } from '@mui/material';
+import { Alert, Box, TextField, Typography } from '@mui/material';
 import type { PackageView } from '@shared/types';
-import { VERDICT_HINTS, VERDICT_LABELS } from '../constants';
+import { BUSY_REASON, VERDICT_HINTS, VERDICT_LABELS } from '../constants';
 import { useApp } from '../../../state';
 import { aiActionProblem } from '@shared/ai-access';
 import type { AiActionKind } from '@shared/ai-access';
+import { LinkedText } from '../../../components/LinkedText';
+import { ActionButton } from '../../../components/ActionButton';
 
 /** Пример относится к текущему согласованию и помогает описать конкретное изменение. */
 const REVISION_EXAMPLES: Record<string, string> = {
@@ -29,6 +31,7 @@ export function PackageDecision({
   note,
   setNote,
   busy,
+  busyReason = BUSY_REASON,
   onDecide
 }: {
   pending: PackageView['pendingDecision'];
@@ -37,6 +40,8 @@ export function PackageDecision({
   note: string;
   setNote(value: string): void;
   busy: boolean;
+  /** Почему busy блокирует ответы: идёт операция или нет Python. */
+  busyReason?: string;
   onDecide(verdict: string): void;
 }): ReactElement {
   const { aiAccess } = useApp();
@@ -76,18 +81,29 @@ export function PackageDecision({
             <Box component="ul" sx={{ m: 0, mb: 1, pl: 2.5 }}>
               {options.map((verdict) => (
                 <Typography key={verdict} component="li" variant="caption" color="text.secondary">
-                  <b>{VERDICT_LABELS[verdict]?.label ?? verdict}.</b> {VERDICT_HINTS[verdict] ?? ''}
+                  <b>{VERDICT_LABELS[verdict]?.label ?? verdict}.</b> <LinkedText text={VERDICT_HINTS[verdict] ?? ''} />
                 </Typography>
               ))}
             </Box>
           ) : null}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {options.map((verdict) => {
-              const reason = ['send', 'retry'].includes(verdict) ? problem : null;
+              const paid = ['send', 'retry'].includes(verdict);
+              const reason = paid ? problem : null;
+              const disabledReason =
+                reason ??
+                (busy
+                  ? busyReason
+                  : sendingBlocked && paid
+                    ? 'Исход отправки этой попытки ещё не известен: дождитесь его или разберите в блоке получения выше.'
+                    : verdict === 'revise' && !note.trim()
+                      ? 'Опишите в поле выше, что нужно исправить.'
+                      : null);
               return (
-                <Button
+                <ActionButton
                   key={verdict}
-                  title={reason ?? VERDICT_HINTS[verdict]}
+                  title={VERDICT_HINTS[verdict]}
+                  disabledReason={disabledReason}
                   size="small"
                   variant={verdict === options[0] ? 'contained' : 'outlined'}
                   color={VERDICT_LABELS[verdict]?.color ?? 'inherit'}
@@ -110,7 +126,7 @@ export function PackageDecision({
                   }
                 >
                   {VERDICT_LABELS[verdict]?.label ?? verdict}
-                </Button>
+                </ActionButton>
               );
             })}
           </Box>

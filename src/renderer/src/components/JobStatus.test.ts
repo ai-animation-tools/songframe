@@ -43,10 +43,10 @@ describe('Результат операции у действия', () => {
   });
 
   it('показывает причину M44 сразу и оставляет отдельную ссылку на журнал', () => {
-    const html = render({ job: job({ status: 'failed', code: 3, error: "M44: провайдер снимка 'gptunnel'; для повтора требуется Kling." }) });
+    const html = render({ job: job({ status: 'failed', code: 3, error: "M44: провайдер снимка 'gptunnel'; для повтора требуется другой провайдер." }) });
     expect(html).toContain('role="alert"');
     expect(html).toContain('gptunnel');
-    expect(html).toContain('для повтора требуется Kling.');
+    expect(html).toContain('для повтора требуется другой провайдер.');
     expect(html).toContain('href="/jobs"');
     expect(html).toContain('Открыть журнал');
     expect(html).not.toContain('Служебный полный журнал');

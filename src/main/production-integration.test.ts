@@ -14,12 +14,15 @@ import { Production, readPackage } from './production';
 import { ProductionWorkflow } from './production-workflow';
 import { PythonLauncher } from './python-launcher';
 import { SettingsStore } from './settings';
+import { registerTestAgentProvider, registerTestMediaProvider, TEST_AGENT_PROVIDER } from './testing/media-provider';
 
 const root = resolve(__dirname, '../..');
 let directory: string;
 let project: string;
 let localDir: string;
 let managers: AgentManager[];
+let restoreProvider: () => void;
+const IMAGE_SHA = 'f'.repeat(64);
 const write = (path: string, value: unknown): void => {
   mkdirSync(join(path, '..'), { recursive: true });
   writeFileSync(path, JSON.stringify(value, null, 2));
@@ -52,22 +55,18 @@ function agentCalls(): Invocation[] {
         .map((line) => JSON.parse(line))
     : [];
 }
-function klingCalls(): string[][] {
-  const path = join(directory, 'kling-calls.jsonl');
-  return existsSync(path)
-    ? readFileSync(path, 'utf8')
-        .trim()
-        .split('\n')
-        .filter(Boolean)
-        .map((line) => JSON.parse(line))
-    : [];
+/** Журнал тестового сервиса провайдера `test`: по нему считаются отправки и опросы. */
+function serviceCalls(action?: string): Record<string, unknown>[] {
+  const path = join(directory, 'service', 'calls.jsonl');
+  if (!existsSync(path)) return [];
+  return readFileSync(path, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as Record<string, unknown>)
+    .filter((call) => !action || call.action === action);
 }
-function fakePaidCalls(): string[][] {
-  return klingCalls().filter((args) => ['image_to_video', 'text_to_video', 'omni_ref_video', 'motion_control'].includes(args[0]) && !args.includes('--help'));
-}
+const paidCalls = (): Record<string, unknown>[] => serviceCalls('submit');
 
-/** Форматы событий взяты из agent-adapters и его fake executable проверок; комментарий намеренно предшествует финальному JSON. */
-/** CLI ищется по имени: каталог фикстур ставится в PATH раньше настоящего claude/codex из ~/.local/bin. */
 function fakeAgent(provider: AgentSettings['provider']): string {
   const bin = join(directory, 'Подставные CLI');
   mkdirSync(bin, { recursive: true });
@@ -109,7 +108,7 @@ process.stdin.on('end', () => {
     const first = context.allowedPaths.find((value) => value.endsWith('/frames/K01.png'));
     const last = context.allowedPaths.find((value) => value.endsWith('/frames/K02.png'));
     if (!first || !last) throw new Error('Утверждённые опоры не переданы');
-    result = {schemaVersion:1,stage,request:{model:'integration-video',command:'image_to_video',parameters:{duration:9,resolution:'1080p',aspect_ratio:'16:9',imageCount:1,enable_audio:false},inputs:[{flag:'image',path:first,role:'first'},{flag:'tailImage',path:last,role:'last'}],outputs:1}};
+    result = {schemaVersion:1,stage,request:{model:'integration-video',command:'image_to_video',parameters:{duration:9,resolution:'1080p',aspect_ratio:'16:9'},inputs:[{flag:'input',slot:'first_image',path:first,role:'first'},{flag:'input',slot:'tail_image',path:last,role:'last'}],outputs:1}};
   } else throw new Error('Неизвестный этап '+stage);
   const final = JSON.stringify(result);
   if (provider === 'codex') {
@@ -130,47 +129,28 @@ process.stdin.on('end', () => {
 }
 
 /** Discovery, account и query повторяют контракт CLI; исполняемый файл только пишет локальный счётчик. */
-function fakeKling(): string {
-  const path = join(directory, 'Подставной Kling CLI');
+/** Платный провайдер — тестовый `test`: модель видео и неизвестный исход отправки задаёт конфигурация его сервиса. */
+function fakeService(): void {
   const model = {
-    model: 'integration-video',
-    arguments: [
-      { name: 'prompt', required: true },
-      { name: 'duration', default: '9', allowedValues: ['9', '10'] },
-      { name: 'resolution', default: '1080p', allowedValues: ['1080p'] },
-      { name: 'aspect_ratio', default: '16:9', allowedValues: ['16:9'] },
-      { name: 'imageCount', default: '1', allowedValues: ['1'] },
-      { name: 'enable_audio', default: 'false', allowedValues: ['false'] }
-    ],
-    inputs: [
-      { name: 'first_image', required: true },
-      { name: 'tail_image', required: false }
-    ]
+    arguments: {
+      prompt: { required: true },
+      duration: { default: '9', allowed: ['9', '10'] },
+      resolution: { default: '1080p', allowed: ['1080p'] },
+      aspect_ratio: { default: '16:9', allowed: ['16:9'] }
+    },
+    slots: { first_image: { required: true }, tail_image: { required: false } },
+    limits: {}
   };
-  writeFileSync(
-    path,
-    `#!${process.execPath}
-const fs = require('node:fs');
-const args = process.argv.slice(2);
-fs.appendFileSync(${JSON.stringify(join(directory, 'kling-calls.jsonl'))},JSON.stringify(args)+'\\n');
-const commands=['image_to_video','text_to_video','omni_ref_video','motion_control'];
-if (args[0] === 'tool_list') { console.log(JSON.stringify({ok:true,body:{tools:commands.map(name=>({name}))}})); process.exit(0); }
-if (args[0] === 'who_am_i') { console.log(JSON.stringify({ok:true,body:{availableModels:Object.fromEntries(commands.map(name=>[name,{models:[${JSON.stringify(model)}]}]))}})); process.exit(0); }
-if (args[0] === 'account') { console.log(JSON.stringify({ok:true,body:{credits:{total:1000,remaining:1000}}})); process.exit(0); }
-if (args[0] === 'query_tasks') { console.log(JSON.stringify({ok:true,body:{generationId:args[1],status:'FAILED',works:[]}})); process.exit(0); }
-if (args[0] === 'image_to_video') {
-  // Нет generationId: штатный инструмент обязан сохранить submission_unknown и запретить повтор.
-  console.log(JSON.stringify({ok:true,body:{}})); process.exit(0);
-}
-console.error('Неожиданная команда тестового CLI'); process.exit(1);
-`,
-    { mode: 0o700 }
-  );
-  vi.stubEnv('SONGFRAME_KLING_CLI', path);
+  const service = join(directory, 'service');
+  write(join(service, 'service.json'), {
+    reports: { video: ['image_to_video', 'text_to_video'].map((command) => ({ command, models: { 'integration-video': model } })) },
+    // Ответ без ID задания: штатный инструмент обязан сохранить submission_unknown и запретить повтор.
+    submit: 'unknown'
+  });
+  vi.stubEnv('SONGFRAME_TEST_MEDIA_SERVICE', join(service, 'service.json'));
   const pricing = join(directory, 'pricing.json');
   write(pricing, { schema_version: 1, currency: 'credits', models: { 'integration-video': { base_credits: 2, per_second: { '1080p': 3 } } }, observed: [] });
   vi.stubEnv('SONGFRAME_PRICING_FILE', pricing);
-  return path;
 }
 async function agentDone(agents: AgentManager, jobId: string): Promise<AgentJob> {
   await vi.waitFor(() => expect(agents.get(jobId)?.status).not.toBe('running'), { timeout: 10000, interval: 20 });
@@ -187,6 +167,12 @@ async function jobDone(jobs: Jobs, jobId: string): Promise<JobInfo> {
 }
 
 beforeEach(() => {
+  const restorePaid = registerTestMediaProvider();
+  const restoreAgent = registerTestAgentProvider();
+  restoreProvider = () => {
+    restoreAgent();
+    restorePaid();
+  };
   directory = mkdtempSync(join(tmpdir(), 'songframe-production-integration-'));
   project = join(directory, 'Пробный клип');
   localDir = join(directory, 'Состояние приложения');
@@ -199,11 +185,12 @@ beforeEach(() => {
     ...projectData,
     generation: {
       video: { ...projectData.generation.video, provider_selected: true },
-      image: { provider: 'codex', provider_selected: true }
+      image: { provider: TEST_AGENT_PROVIDER, provider_selected: true }
     }
   });
 });
 afterEach(() => {
+  restoreProvider();
   for (const agents of managers) agents.shutdown();
   vi.unstubAllEnvs();
   rmSync(directory, { recursive: true, force: true });
@@ -220,7 +207,7 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
       const bin = dirname(fakeAgent('claude'));
       fakeAgent('codex');
       vi.stubEnv('PATH', bin + delimiter + (process.env.PATH ?? ''));
-      fakeKling();
+      fakeService();
       settings.saveAgent({ provider, model: `${provider}-text-fixture` });
       const agents = new AgentManager(settings, { timeoutMs: 10000 });
       managers.push(agents);
@@ -239,14 +226,15 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
         launcher: () => launcher,
         isScenarioApproved: () => true,
         isPackageBusy: (project, packageDir) => production.isBusy(project, packageDir),
-        generateImages: (input) => images.start(input),
-        collectImages: (job) => images.collect(job)
+        generateImages: (input) =>
+          images.start(input, { provider: TEST_AGENT_PROVIDER, requestSha: IMAGE_SHA, agent: settings.getImageAgent(TEST_AGENT_PROVIDER) }),
+        collectImages: (job) => images.collect(job, images.getRequestSha(job))
       });
       const batchesBefore = readdirSync(join(project, 'plan/batches'));
       const description = await workflow.start({ project, shot: 'M01', action: 'prepare' });
       await agentDone(agents, description.proposal!.jobId);
       expect(readdirSync(join(project, 'plan/batches'))).toEqual(batchesBefore);
-      expect(fakePaidCalls()).toEqual([]);
+      expect(paidCalls()).toEqual([]);
       let view: ProductionWorkflowView = await workflow.apply(project, 'M01', undefined, description.proposal!.id);
       const pkg = view.packageDir!;
       const approve = async (): Promise<void> => {
@@ -260,7 +248,7 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
       expect(() => agents.start({ project, task: 'Конкурирующий проход', prompt: 'Не запускайся' })).toThrow('PROJECT_BUSY');
       const imageJob = await agentDone(agents, view.proposal!.jobId);
       expect(imageJob).toMatchObject({ provider: 'codex', permissions: 'workspace-write' });
-      // Без проектной модели Codex использует конфигурацию CLI, а не скрытый прежний профиль опор.
+      // Без проектной модели программа-агент использует конфигурацию CLI, а не скрытый прежний профиль опор.
       expect(imageJob.model).toBeUndefined();
       await workflow.apply(project, 'M01', pkg, view.proposal!.id);
       expect(readPackage(project, pkg)!.keyframes.every((frame) => !frame.approved)).toBe(true);
@@ -276,7 +264,7 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
       expect(frozen.pendingDecision?.stage).toBe('request_choice');
       expect(frozen.request?.attemptStatus).toBe('prepared');
       expect(frozen.request?.sha256).toMatch(/^[a-f0-9]{64}$/);
-      expect(fakePaidCalls()).toEqual([]);
+      expect(paidCalls()).toEqual([]);
       expect(agents.list(project).map((job) => job.provider)).toEqual(expect.arrayContaining([provider, 'codex']));
       const calls = agentCalls();
       expect(calls.map((call) => call.stage).sort()).toEqual(['description', 'frames', 'prompt', 'request']);
@@ -297,31 +285,32 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
           toolsRoot: () => root,
           launcher: () => launcher,
           isScenarioApproved: () => true,
-          generateImages: (input) => images.start(input),
-          collectImages: (job) => images.collect(job)
+          generateImages: (input) =>
+            images.start(input, { provider: TEST_AGENT_PROVIDER, requestSha: IMAGE_SHA, agent: settings.getImageAgent(TEST_AGENT_PROVIDER) }),
+          collectImages: (job) => images.collect(job, images.getRequestSha(job))
         }).view(project, 'M01', pkg).proposal?.status
       ).toBe('applied');
       if (provider === 'claude') {
         const quote = await production.quote(project, pkg, frozen.request!.sha256!, frozen.decisionToken);
         expect(quote).toMatchObject({ verdict: 'ok', credits: 29, balance: 1000 });
-        expect(fakePaidCalls()).toEqual([]);
+        expect(paidCalls()).toEqual([]);
         await expect(production.submit(project, pkg, frozen.request!.sha256!, frozen.decisionToken)).rejects.toThrow();
-        expect(fakePaidCalls()).toEqual([]);
+        expect(paidCalls()).toEqual([]);
         const submitted = await production.submit(project, pkg, frozen.request!.sha256!, frozen.decisionToken, quote.token);
         const submittedJob = await jobDone(jobs, submitted.id);
         expect(submittedJob.status, submittedJob.log).toBe('failed');
-        expect(fakePaidCalls()).toHaveLength(1);
+        expect(paidCalls()).toHaveLength(1);
         expect(readPackage(project, pkg)!.request?.attemptStatus).toBe('submission_unknown');
         expect(readPackage(project, pkg)!.request?.generationId).toBeNull();
         await expect(production.submit(project, pkg, frozen.request!.sha256!, frozen.decisionToken, quote.token)).rejects.toThrow();
-        expect(() => production.resume(project, pkg)).toThrow('ID');
-        const resumed = production.resume(project, pkg, 'integration-known-generation');
-        const resumedJob = await jobDone(jobs, resumed.id);
-        expect(resumedJob.status, resumedJob.log).toBe('failed');
-        expect(readPackage(project, pkg)!.request).toMatchObject({ generationId: 'integration-known-generation', attemptStatus: 'failed' });
-        expect(readPackage(project, pkg)!.pendingDecision).toBeNull();
-        expect(klingCalls().filter((args) => args[0] === 'query_tasks')).toEqual([['query_tasks', 'integration-known-generation', '--quiet']]);
-        expect(fakePaidCalls()).toHaveLength(1);
+        expect(() => production.resume(project, pkg)).toThrow('историю генераций');
+        // Генерации нет в истории сервиса: пользователь отмечает это, и попытка снова ждёт подтверждения отправки.
+        await production.markNotCreated(project, pkg);
+        expect(readPackage(project, pkg)!.request).toMatchObject({ generationId: null, attemptStatus: 'prepared' });
+        expect(readPackage(project, pkg)!.pendingDecision?.stage).toBe('request_choice');
+        await expect(production.submit(project, pkg, frozen.request!.sha256!, frozen.decisionToken, quote.token)).rejects.toThrow();
+        expect(serviceCalls('poll')).toEqual([]);
+        expect(paidCalls()).toHaveLength(1);
       }
       expect(fileHashes(join(project, 'source'))).toEqual(sourcesBefore);
       expect(fileHashes(join(project, 'assets'))).toEqual(assetsBefore);

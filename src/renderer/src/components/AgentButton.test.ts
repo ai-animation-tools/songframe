@@ -13,7 +13,7 @@ vi.mock('../state', () => ({ useApp: () => context }));
 const ready = (): AiAccess => ({
   agent: { provider: 'codex', selected: true, available: true, message: '' },
   image: { provider: 'codex', selected: true, available: true, message: '' },
-  video: { provider: 'kling', selected: true, available: true, message: '' }
+  video: { provider: 'test', selected: true, available: true, message: '' }
 });
 const render = (props: Parameters<typeof AgentButton>[0] = {}): string => renderToStaticMarkup(createElement(AgentButton, props, 'Создать'));
 const disabled = (html: string): boolean => /<button[^>]*disabled=""/.test(html);
@@ -50,7 +50,7 @@ describe('Общий запрет AI-действий', () => {
     context.aiAccess!.image.message = 'Выберите провайдера изображений.';
     expect(disabled(render({ aiKind: 'image' }))).toBe(true);
     expect(disabled(render())).toBe(false);
-    const direct = renderToStaticMarkup(createElement(AiButton, { aiKind: 'image' }, 'Создать в Kling'));
+    const direct = renderToStaticMarkup(createElement(AiButton, { aiKind: 'image' }, 'Создать в сервисе'));
     expect(disabled(direct)).toBe(true);
     expect(direct).toContain('Выберите провайдера изображений.');
   });

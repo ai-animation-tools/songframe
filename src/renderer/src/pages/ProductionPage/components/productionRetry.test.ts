@@ -1,4 +1,4 @@
-/** Повтор готовится локально: выбор агента не блокирует его, а причина несовместимости остаётся видимой. */
+/** Повтор готовится локально: выбор агента не блокирует его, а причина несовместимости видна в подсказке кнопки. */
 import { createElement, type ComponentProps, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
@@ -16,15 +16,29 @@ vi.mock('../../../components/ConfirmationDialog', () => ({
     title,
     children,
     confirmDisabled,
+    confirmDisabledReason,
     confirmLabel
   }: {
     open: boolean;
     title: ReactNode;
     children: ReactNode;
     confirmDisabled?: boolean;
+    confirmDisabledReason?: string | null;
     confirmLabel: string;
   }) =>
-    open ? createElement('section', null, title, children, createElement('button', { disabled: confirmDisabled, 'data-confirm': true }, confirmLabel)) : null
+    open
+      ? createElement(
+          'section',
+          null,
+          title,
+          children,
+          createElement(
+            'button',
+            { disabled: confirmDisabled, title: confirmDisabled ? (confirmDisabledReason ?? undefined) : undefined, 'data-confirm': true },
+            confirmLabel
+          )
+        )
+      : null
 }));
 
 const unchanged = (): void => {};
@@ -56,6 +70,7 @@ const fixturePackage = (provider: string, attemptStatus = 'downloaded'): Package
     inputs: [],
     attemptStatus,
     generationId: 'existing-generation',
+    manualResult: false,
     creditsConsumed: 32,
     downloads: ['/fixture/original.mp4']
   }
@@ -70,6 +85,7 @@ const fixtureShot = (overrides: Partial<ShotProduction> = {}): ShotProduction =>
   state: 'completed',
   stageLabel: 'Готова',
   regenerateProblem: null,
+  derivedFrom: null,
   attention: null,
   asset: { dir: '/fixture/asset', video: '/fixture/edit.mp4', original: '/fixture/original.mp4' },
   packages: [],
@@ -106,7 +122,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Локальная подготовка повтора', () => {
-  it.each(['kling', 'gptunnel'])('разрешает совместимый запрос %s без aiAccess и agentProvider', (provider) => {
+  it.each(['test', 'gptunnel'])('разрешает совместимый запрос %s без aiAccess и agentProvider', (provider) => {
     const html = renderCard({ shot: fixtureShot({ packages: [fixturePackage(provider)] }) });
     expect(repeatButton(html)).not.toMatch(/\bdisabled(?:=|\s|>)/);
     expect(repeatButton(html)).not.toContain('Codex');
@@ -126,14 +142,14 @@ describe('Локальная подготовка повтора', () => {
     expect(html).not.toContain('Сначала выберите агента');
   });
 
-  it('блокирует несовместимый провайдер и показывает причину в карточке и диалоге', () => {
-    const problem = 'Провайдер сохранённого запроса Kling отличается от выбранного GPTunnel.';
+  it('блокирует несовместимый провайдер и объясняет причину в подсказке кнопки карточки и диалога', () => {
+    const problem = 'Провайдер сохранённого запроса Test отличается от выбранного GPTunnel.';
     const card = renderCard({ shot: fixtureShot({ regenerateProblem: problem }) });
     const dialog = renderDialog(problem);
     for (const html of [card, dialog]) {
       expect(repeatButton(html)).toMatch(/\bdisabled(?:=|\s|>)/);
-      expect(html).toContain('role="alert"');
-      expect(html).toContain(problem);
+      expect(repeatButton(html)).toContain(problem);
+      expect(html).not.toContain('role="alert"');
     }
   });
 
@@ -145,7 +161,7 @@ describe('Локальная подготовка повтора', () => {
   });
 
   it.each(['submitting', 'submission_unknown'])('не позволяет готовить повтор при незавершённой отправке %s', (status) => {
-    const html = renderCard({ shot: fixtureShot({ packages: [fixturePackage('kling', status)] }) });
+    const html = renderCard({ shot: fixtureShot({ packages: [fixturePackage('test', status)] }) });
     expect(repeatButton(html)).toMatch(/\bdisabled(?:=|\s|>)/);
   });
 
@@ -180,7 +196,7 @@ describe('Локальная подготовка повтора', () => {
 describe('Пакет, ждущий решения, у принятой сцены', () => {
   it('показывает вопрос пакета с кнопкой открытия и не повторяет его для уже выбранного пакета', () => {
     const waiting = {
-      ...fixturePackage('kling'),
+      ...fixturePackage('test'),
       pendingDecision: { stage: 'downloaded', question: 'Принять результат, повторить или собрать пробу?', options: ['accept', 'retry'] }
     };
     const html = renderCard({ shot: fixtureShot({ packages: [waiting] }), onOpenPackage: unchanged });

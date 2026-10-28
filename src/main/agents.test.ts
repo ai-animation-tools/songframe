@@ -71,11 +71,11 @@ describe('Глобальные настройки агента', () => {
     const store = new SettingsStore(work);
     store.write({ toolsRootOverride: null });
     const previous = readFileSync(join(work, 'settings.json'), 'utf8');
-    for (const input of [{ provider: 'kling' }, { provider: 'codex', model: 3 }, { provider: 'codex', model: 'x\0y' }, []]) {
+    for (const input of [{ provider: 'test' }, { provider: 'codex', model: 3 }, { provider: 'codex', model: 'x\0y' }, []]) {
       expect(() => store.saveAgent(input)).toThrow();
     }
     expect(readFileSync(join(work, 'settings.json'), 'utf8')).toBe(previous);
-    writeFileSync(join(work, 'settings.json'), '{"agent":{"provider":"kling"}}');
+    writeFileSync(join(work, 'settings.json'), '{"agent":{"provider":"test"}}');
     expect(() => store.getAgent()).toThrow(/Неверный формат агента/);
     expect(() => normalizeAgentSettings({ provider: 'claude', model: null })).toThrow();
   });

@@ -1,14 +1,32 @@
-/** Проверки формы без Electron: неизвестные предпочтения остаются видимыми, Codex не обещает параметры Kling. */
+/** Проверки формы без Electron: неизвестные предпочтения остаются видимыми, провайдер-агент не обещает параметры платного провайдера. */
 
 import { Children, createElement, isValidElement, type ChangeEvent } from 'react';
 import type * as Material from '@mui/material';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_GENERATION, DEFAULT_IMAGE_GENERATION, DEFAULT_KLING_IMAGE_GENERATION, DEFAULT_VIDEO_GENERATION } from '@shared/types';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_GENERATION, DEFAULT_IMAGE_GENERATION, DEFAULT_VIDEO_GENERATION as DEFAULT_VIDEO } from '@shared/types';
 import { VideoGenerationSettings } from './VideoGenerationSettings';
 import { ImageGenerationSettings } from './ImageGenerationSettings';
 import { normalizeProjectSettingsForSave } from './ProjectSettingsCard';
-import { MEDIA_PROVIDERS } from '@shared/media-providers';
+import { MEDIA_PROVIDERS, mediaProvidersFor, registerMediaProviderForTests, type MediaKind } from '@shared/media-providers';
+import { TEST_AGENT_PROVIDER, TEST_PROVIDER, testAgentProviderInfo, testProviderInfo } from '@shared/testing/media-provider';
+
+// Провайдер-агент изображений с заметкой настроек: проверяется показ заметок только выбранного провайдера.
+const AGENT = TEST_AGENT_PROVIDER;
+const AGENT_INFO = { ...testAgentProviderInfo, settingsNotes: { image: 'Заметка тестового агента изображений.' } };
+let restoreProviders: (() => void)[] = [];
+beforeAll(() => {
+  restoreProviders = [registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo), registerMediaProviderForTests(AGENT, AGENT_INFO)];
+});
+afterAll(() => restoreProviders.forEach((restore) => restore()));
+// Видео с платным тестовым провайдером; значения по умолчанию сами провайдера не выбирают.
+const DEFAULT_VIDEO_GENERATION = { ...DEFAULT_VIDEO, provider: TEST_PROVIDER };
+const TEST_IMAGE_DEFAULTS = testProviderInfo.defaults.image!;
+/** Варианты меню провайдеров берутся из реестра в его порядке. */
+const providerMenu = (kind: MediaKind) => [
+  { value: '', label: 'Не выбрано', disabled: false },
+  ...mediaProvidersFor(kind).map((id) => ({ value: id, label: MEDIA_PROVIDERS[id].title, disabled: false }))
+];
 
 const { fields, discoveries, appState } = vi.hoisted(() => ({
   fields: new Map<string, Material.TextFieldProps>(),
@@ -63,14 +81,14 @@ describe('Настройки независимых медиапровайдер
     expect(html).toContain('future-video');
     expect(html).toContain('4K');
     expect(html).toContain('2:1');
-    expect(html).not.toContain('поддерживается только в Kling 4.0');
+    expect(html).not.toContain('поддерживается только в');
   });
 
   it('показывает неизвестного исполнителя изображений как сохранённый выбор', () => {
     const html = renderToStaticMarkup(
       createElement(ImageGenerationSettings, {
         project: '/fixture/project',
-        value: { provider: 'future-image', resolution: 'custom-size' },
+        value: { provider: 'future-image', provider_selected: true, resolution: 'custom-size' },
         onChange: unchanged,
         onAdd: unchanged
       })
@@ -82,11 +100,16 @@ describe('Настройки независимых медиапровайдер
   it('показывает значения изображений по умолчанию без сохранения отсутствующих полей', () => {
     const onChange = vi.fn();
     const html = renderToStaticMarkup(
-      createElement(ImageGenerationSettings, { project: '/fixture/project', value: { provider: 'kling' }, onChange, onAdd: unchanged })
+      createElement(ImageGenerationSettings, {
+        project: '/fixture/project',
+        value: { provider: TEST_PROVIDER, provider_selected: true },
+        onChange,
+        onAdd: unchanged
+      })
     );
-    expect(html).toContain(`value="${DEFAULT_KLING_IMAGE_GENERATION.resolution}"`);
+    expect(html).toContain(`value="${TEST_IMAGE_DEFAULTS.resolution}"`);
     expect(html).toContain('type="number"');
-    expect(html).toContain(`value="${DEFAULT_KLING_IMAGE_GENERATION.outputs}"`);
+    expect(html).toContain(`value="${TEST_IMAGE_DEFAULTS.outputs}"`);
     expect(html).toContain('Выберите пропорции');
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -95,7 +118,7 @@ describe('Настройки независимых медиапровайдер
     const html = renderToStaticMarkup(
       createElement(ImageGenerationSettings, {
         project: '/fixture/project',
-        value: { provider: 'kling', outputs: 3, resolution: '4k' },
+        value: { provider: TEST_PROVIDER, provider_selected: true, outputs: 3, resolution: '4k' },
         onChange: unchanged,
         onAdd: unchanged
       })
@@ -109,7 +132,12 @@ describe('Настройки независимых медиапровайдер
       createElement(VideoGenerationSettings, { project: '/fixture/project', value: DEFAULT_VIDEO_GENERATION, onChange: unchanged, onAdd: unchanged })
     );
     const image = renderToStaticMarkup(
-      createElement(ImageGenerationSettings, { project: '/fixture/project', value: { provider: 'kling' }, onChange: unchanged, onAdd: unchanged })
+      createElement(ImageGenerationSettings, {
+        project: '/fixture/project',
+        value: { provider: TEST_PROVIDER, provider_selected: true },
+        onChange: unchanged,
+        onAdd: unchanged
+      })
     );
     expect(video).toContain('Предпочтительная модель видео');
     expect(image).toContain('Предпочтительная модель изображений');
@@ -136,7 +164,7 @@ describe('Настройки независимых медиапровайдер
     const image = renderToStaticMarkup(
       createElement(ImageGenerationSettings, {
         project: '/fixture/project',
-        value: { provider: 'kling', model: 'future-image-model' },
+        value: { provider: TEST_PROVIDER, provider_selected: true, model: 'future-image-model' },
         onChange,
         onAdd: unchanged
       })
@@ -159,7 +187,7 @@ describe('Настройки независимых медиапровайдер
     const image = renderToStaticMarkup(
       createElement(ImageGenerationSettings, {
         project: '/fixture/project',
-        value: { provider: 'kling', model: 'unknown', aspect_ratio: '3:2' },
+        value: { provider: TEST_PROVIDER, provider_selected: true, model: 'unknown', aspect_ratio: '3:2' },
         onChange,
         onAdd: unchanged
       })
@@ -173,21 +201,59 @@ describe('Настройки независимых медиапровайдер
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('для Codex объясняет выбор параметров исполнителем и не показывает поля Kling', () => {
+  it('блоки провайдера-агента показываются только при выбранном провайдере-агенте', () => {
+    const render = (provider: string): string =>
+      renderToStaticMarkup(
+        createElement(ImageGenerationSettings, {
+          project: '/fixture/project',
+          value: { provider, provider_selected: true },
+          onChange: unchanged,
+          onAdd: unchanged
+        })
+      );
+    const agent = render(AGENT);
+    expect(agent).toContain(AGENT_INFO.settingsNotes.image);
+    expect(agent).toContain(`Модель агента ${AGENT_INFO.title} для изображений`);
+    const other = render(TEST_PROVIDER);
+    expect(other).not.toContain(AGENT_INFO.settingsNotes.image);
+    expect(other).not.toContain('Модель агента');
+    expect(other).not.toContain('Генерацию выполняет');
+  });
+
+  it('при «Не выбрано» не показывает поля и заметки сохранённого, но не подтверждённого провайдера', () => {
     const html = renderToStaticMarkup(
-      createElement(ImageGenerationSettings, { project: '/fixture/project', value: DEFAULT_IMAGE_GENERATION, onChange: unchanged, onAdd: unchanged })
+      createElement(ImageGenerationSettings, {
+        project: '/fixture/project',
+        value: { provider: AGENT, model: 'saved-agent-model' },
+        onChange: unchanged,
+        onAdd: unchanged
+      })
     );
-    expect(html).toContain('Codex встроенным инструментом изображений');
-    expect(html).toContain('Модель агента Codex для изображений');
-    expect(html).toContain('>Как указано в настройках Codex</div>');
-    expect(html).toContain('По умолчанию используется модель из настроек Codex.');
+    expect(html).toContain(`Сохранённый провайдер: ${AGENT_INFO.title}.`);
+    expect(html).not.toContain(AGENT_INFO.settingsNotes.image);
+    expect(html).not.toContain('Генерацию выполняет');
+    expect(html).not.toContain('Модель агента');
+    expect(html).not.toContain('Разрешение изображений');
+  });
+
+  it('для провайдера-агента объясняет выбор параметров исполнителем и не показывает поля платного провайдера', () => {
+    const html = renderToStaticMarkup(
+      createElement(ImageGenerationSettings, {
+        project: '/fixture/project',
+        value: { ...DEFAULT_IMAGE_GENERATION, provider: AGENT, provider_selected: true },
+        onChange: unchanged,
+        onAdd: unchanged
+      })
+    );
+    expect(html).toContain(`Генерацию выполняет ${AGENT_INFO.title} встроенным инструментом изображений`);
+    expect(html).toContain(`Модель агента ${AGENT_INFO.title} для изображений`);
+    expect(html).toContain(`>${AGENT_INFO.defaultModelLabel}</div>`);
+    expect(html).toContain(`По умолчанию используется модель из настроек ${AGENT_INFO.title}.`);
     expect(html).toContain('а не модель самого генератора изображений.');
     expect(html).toContain('Доступные размеры и форматы определяет исполнитель');
     expect(html).toContain('Сейчас создаётся один вариант для каждой опоры.');
     expect(html).toContain('Параметры запроса — количество вариантов, разрешение и пропорции — к этому исполнителю не применяются.');
-    expect(html).toContain(
-      'В наших проверках горизонтальные изображения получались размером 1672×941, в том числе при запросе 4K. Точный размер через промпт не гарантируется.'
-    );
+    expect(html).toContain(AGENT_INFO.settingsNotes.image);
     expect(html).not.toContain('Предпочтительная модель изображений');
     expect(html).not.toContain('Разрешение изображений');
     expect(html).not.toContain('Количество изображений');
@@ -220,7 +286,7 @@ describe('Настройки независимых медиапровайдер
     const html = renderToStaticMarkup(
       createElement(ImageGenerationSettings, {
         project: '/fixture/project',
-        value: { provider: 'kling', outputs },
+        value: { provider: TEST_PROVIDER, provider_selected: true, outputs },
         onChange: unchanged,
         onAdd: unchanged
       })
@@ -229,11 +295,11 @@ describe('Настройки независимых медиапровайдер
     expect(html).toContain('aria-invalid="true"');
   });
 
-  it('не считает скрытые параметры Kling ошибками при исполнителе Codex', () => {
+  it('не считает скрытые параметры платного провайдера ошибками при исполнителе-агенте', () => {
     const html = renderToStaticMarkup(
       createElement(ImageGenerationSettings, {
         project: '/fixture/project',
-        value: { provider: 'codex', outputs: 0, aspect_ratio: '', resolution: '' },
+        value: { provider: AGENT, provider_selected: true, outputs: 0, aspect_ratio: '', resolution: '' },
         onChange: unchanged,
         onAdd: unchanged
       })
@@ -242,18 +308,18 @@ describe('Настройки независимых медиапровайдер
     expect(html).not.toContain('Введите целое количество изображений от 1.');
   });
 
-  it('показывает сохранённую модель агента Codex и не стирает её до получения каталога', () => {
+  it('показывает сохранённую модель провайдера-агента и не стирает её до получения каталога', () => {
     const onChange = vi.fn();
     const html = renderToStaticMarkup(
       createElement(ImageGenerationSettings, {
         project: '/fixture/project',
-        value: { provider: 'codex', model: 'codex-agent-id', outputs: 0 },
+        value: { provider: AGENT, provider_selected: true, model: 'saved-agent-id', outputs: 0 },
         onChange,
         onAdd: unchanged
       })
     );
-    expect(html).toContain('Модель агента Codex для изображений');
-    expect(html).toContain('>codex-agent-id (недоступна)</div>');
+    expect(html).toContain(`Модель агента ${AGENT_INFO.title} для изображений`);
+    expect(html).toContain('>saved-agent-id (недоступна)</div>');
     expect(html).not.toContain('aria-invalid="true"');
     expect(html).not.toContain('Количество изображений');
     expect(onChange).not.toHaveBeenCalled();
@@ -267,7 +333,7 @@ describe('Настройки независимых медиапровайдер
     const onChange = vi.fn();
     discoveries.mockClear();
     for (const kind of ['image', 'video'] as const) {
-      const value = kind === 'image' ? { provider: 'codex', provider_selected, model: 'saved-model' } : { ...DEFAULT_VIDEO_GENERATION, provider_selected };
+      const value = kind === 'image' ? { provider: AGENT, provider_selected, model: 'saved-model' } : { ...DEFAULT_VIDEO_GENERATION, provider_selected };
       const html = renderToStaticMarkup(
         kind === 'image'
           ? createElement(ImageGenerationSettings, { project: '/fixture/project', value, onChange, onAdd: unchanged })
@@ -288,17 +354,18 @@ describe('Настройки независимых медиапровайдер
 
   it('подтверждает повторный выбор того же старого провайдера только через dropdown и сохраняет расширения', () => {
     const onChange = vi.fn();
-    const image = { provider: 'codex', model: 'saved-model', resolution: 'custom', options: { keep: true } };
+    const image = { provider: AGENT, model: 'saved-model', resolution: 'custom', options: { keep: true } };
     renderToStaticMarkup(createElement(ImageGenerationSettings, { project: '/fixture/project', value: image, onChange, onAdd: unchanged }));
     expect(onChange).not.toHaveBeenCalled();
     const chooseImage = fields.get('image-generation-provider')?.onChange;
-    chooseImage?.({ target: { value: 'codex' } } as ChangeEvent<HTMLInputElement>);
+    chooseImage?.({ target: { value: AGENT } } as ChangeEvent<HTMLInputElement>);
     expect(onChange).toHaveBeenLastCalledWith({ ...image, provider_selected: true });
-    // Изменение соседнего поля не подтверждает провайдера из старого файла.
-    fields.get('image-generation-model')?.onChange?.({ target: { value: 'another-model' } } as ChangeEvent<HTMLInputElement>);
-    expect(onChange).toHaveBeenLastCalledWith({ ...image, model: 'another-model' });
+    // До подтверждения провайдера поля модели нет: правка соседнего поля не может подменить выбор.
+    fields.clear();
+    renderToStaticMarkup(createElement(ImageGenerationSettings, { project: '/fixture/project', value: image, onChange, onAdd: unchanged }));
+    expect(fields.has('image-generation-model')).toBe(false);
     renderToStaticMarkup(createElement(VideoGenerationSettings, { project: '/fixture/project', value: DEFAULT_VIDEO_GENERATION, onChange, onAdd: unchanged }));
-    fields.get('video-generation-provider')?.onChange?.({ target: { value: 'kling' } } as ChangeEvent<HTMLInputElement>);
+    fields.get('video-generation-provider')?.onChange?.({ target: { value: TEST_PROVIDER } } as ChangeEvent<HTMLInputElement>);
     expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_VIDEO_GENERATION, provider_selected: true });
   });
 
@@ -307,7 +374,7 @@ describe('Настройки независимых медиапровайдер
     renderToStaticMarkup(
       createElement(ImageGenerationSettings, {
         project: '/fixture/project',
-        value: { provider: 'codex', provider_selected: true },
+        value: { provider: AGENT, provider_selected: true },
         onChange: unchanged,
         onAdd: unchanged
       })
@@ -323,51 +390,67 @@ describe('Настройки независимых медиапровайдер
     expect(discoveries).toHaveBeenCalledTimes(2);
   });
 
-  it.each([null, 'claude', 'codex'] as const)('предлагает Codex и Kling для изображений и читает их возможности при агенте %s', (agent) => {
-    appState.agentProvider = agent;
-    discoveries.mockClear();
-    for (const provider of ['codex', 'kling']) {
-      const onChange = vi.fn();
-      const html = renderToStaticMarkup(
-        createElement(ImageGenerationSettings, { project: '/fixture/project', value: { provider, provider_selected: true }, onChange, onAdd: unchanged })
+  it.each([null, 'claude', 'codex'] as const)(
+    'предлагает провайдера-агента и платного провайдера для изображений и читает их возможности при агенте %s',
+    (agent) => {
+      appState.agentProvider = agent;
+      discoveries.mockClear();
+      for (const provider of [AGENT, TEST_PROVIDER]) {
+        const onChange = vi.fn();
+        const html = renderToStaticMarkup(
+          createElement(ImageGenerationSettings, { project: '/fixture/project', value: { provider, provider_selected: true }, onChange, onAdd: unchanged })
+        );
+        expect(html).not.toContain('выберите агента');
+        expect(menuItems('image-generation-provider')).toEqual(providerMenu('image'));
+        expect(menuItems('image-generation-provider')).toContainEqual({ value: AGENT, label: AGENT_INFO.title, disabled: false });
+        expect(menuItems('image-generation-provider')).toContainEqual({ value: TEST_PROVIDER, label: MEDIA_PROVIDERS[TEST_PROVIDER].title, disabled: false });
+        expect(onChange).not.toHaveBeenCalled();
+      }
+      renderToStaticMarkup(
+        createElement(VideoGenerationSettings, {
+          project: '/fixture/project',
+          value: { ...DEFAULT_VIDEO_GENERATION, provider_selected: true },
+          onChange: unchanged,
+          onAdd: unchanged
+        })
       );
-      expect(html).not.toContain('выберите агента Codex');
-      expect(menuItems('image-generation-provider')).toEqual([
-        { value: '', label: 'Не выбрано', disabled: false },
-        { value: 'kling', label: MEDIA_PROVIDERS.kling.title, disabled: false },
-        { value: 'codex', label: MEDIA_PROVIDERS.codex.title, disabled: false }
-      ]);
-      expect(onChange).not.toHaveBeenCalled();
+      expect(discoveries).toHaveBeenCalledTimes(3);
+      expect(discoveries.mock.calls.map(([props]) => (props as { provider: string }).provider)).toEqual([AGENT, TEST_PROVIDER, TEST_PROVIDER]);
     }
-    renderToStaticMarkup(
-      createElement(VideoGenerationSettings, {
-        project: '/fixture/project',
-        value: { ...DEFAULT_VIDEO_GENERATION, provider_selected: true },
-        onChange: unchanged,
-        onAdd: unchanged
-      })
-    );
-    expect(discoveries).toHaveBeenCalledTimes(3);
-    expect(discoveries.mock.calls.map(([props]) => (props as { provider: string }).provider)).toEqual(['codex', 'kling', 'kling']);
-  });
+  );
 
-  it('разрешает выбрать Codex для изображений при агенте Claude и подставляет параметры только провайдеру с параметрами запроса', () => {
+  it('разрешает выбрать провайдера-агента для изображений при агенте Claude и подставляет параметры только провайдеру с параметрами запроса', () => {
     appState.agentProvider = 'claude';
     const onChange = vi.fn();
-    const value = { provider: 'kling', provider_selected: false, model: 'saved-model' };
+    const value = { provider: TEST_PROVIDER, provider_selected: false, model: 'saved-model', watermark: false };
     renderToStaticMarkup(createElement(ImageGenerationSettings, { project: '/fixture/project', value, onChange, onAdd: unchanged }));
     const choose = fields.get('image-generation-provider')?.onChange;
-    choose?.({ target: { value: 'codex' } } as ChangeEvent<HTMLInputElement>);
-    expect(onChange).toHaveBeenLastCalledWith({ ...value, provider: 'codex', provider_selected: true });
-    choose?.({ target: { value: 'kling' } } as ChangeEvent<HTMLInputElement>);
+    // Другой провайдер: модель прежнего не переносится, у провайдера-агента нет параметров запроса.
+    choose?.({ target: { value: AGENT } } as ChangeEvent<HTMLInputElement>);
+    expect(onChange).toHaveBeenLastCalledWith({ provider: AGENT, provider_selected: true, watermark: false });
+    // Повторное подтверждение того же сохранённого провайдера сохраняет его значения и дополняет недостающие.
+    choose?.({ target: { value: TEST_PROVIDER } } as ChangeEvent<HTMLInputElement>);
     expect(onChange).toHaveBeenLastCalledWith({
       ...value,
-      provider: 'kling',
       provider_selected: true,
-      resolution: DEFAULT_KLING_IMAGE_GENERATION.resolution,
-      aspect_ratio: DEFAULT_KLING_IMAGE_GENERATION.aspect_ratio,
-      outputs: DEFAULT_KLING_IMAGE_GENERATION.outputs
+      resolution: TEST_IMAGE_DEFAULTS.resolution,
+      aspect_ratio: TEST_IMAGE_DEFAULTS.aspect_ratio,
+      outputs: TEST_IMAGE_DEFAULTS.outputs
     });
+  });
+
+  it('при смене провайдера сбрасывает поля прежнего и подставляет значения нового', () => {
+    const onChange = vi.fn();
+    const image = { provider: AGENT, provider_selected: true, model: 'gpt-agent', resolution: '4k', aspect_ratio: '21:9', outputs: 3, options: { x: 1 } };
+    renderToStaticMarkup(createElement(ImageGenerationSettings, { project: '/fixture/project', value: image, onChange, onAdd: unchanged }));
+    fields.get('image-generation-provider')?.onChange?.({ target: { value: TEST_PROVIDER } } as ChangeEvent<HTMLInputElement>);
+    expect(onChange).toHaveBeenLastCalledWith({ provider: TEST_PROVIDER, provider_selected: true, ...TEST_IMAGE_DEFAULTS });
+    const video = { ...DEFAULT_VIDEO_GENERATION, provider: 'future-video', provider_selected: true, model: 'old-model', options: { y: 2 } };
+    renderToStaticMarkup(createElement(VideoGenerationSettings, { project: '/fixture/project', value: video, onChange, onAdd: unchanged }));
+    fields.get('video-generation-provider')?.onChange?.({ target: { value: TEST_PROVIDER } } as ChangeEvent<HTMLInputElement>);
+    const { model: _model, options: _options, ...kept } = video;
+    // Разрешение, пропорции и правило длительности — требования проекта: они остаются.
+    expect(onChange).toHaveBeenLastCalledWith({ ...kept, provider: TEST_PROVIDER, provider_selected: true });
   });
 
   it('предлагает для видео только провайдеров видео из реестра', () => {
@@ -379,16 +462,19 @@ describe('Настройки независимых медиапровайдер
         onAdd: unchanged
       })
     );
-    expect(menuItems('video-generation-provider')).toEqual([
-      { value: '', label: 'Не выбрано', disabled: false },
-      { value: 'kling', label: MEDIA_PROVIDERS.kling.title, disabled: false }
-    ]);
+    expect(menuItems('video-generation-provider')).toEqual(providerMenu('video'));
+    expect(menuItems('video-generation-provider')).not.toContainEqual(expect.objectContaining({ value: AGENT }));
   });
 
   it('берёт подписи модели по умолчанию из реестра', () => {
-    for (const provider of ['codex', 'kling'] as const) {
+    for (const provider of [AGENT, TEST_PROVIDER]) {
       const html = renderToStaticMarkup(
-        createElement(ImageGenerationSettings, { project: '/fixture/project', value: { provider }, onChange: unchanged, onAdd: unchanged })
+        createElement(ImageGenerationSettings, {
+          project: '/fixture/project',
+          value: { provider, provider_selected: true },
+          onChange: unchanged,
+          onAdd: unchanged
+        })
       );
       expect(html).toContain(`>${MEDIA_PROVIDERS[provider].defaultModelLabel}</div>`);
     }
@@ -396,7 +482,7 @@ describe('Настройки независимых медиапровайдер
 
   it('сохраняет пустую неподтверждённую форму как null без выбора агента и не удаляет старые настройки', () => {
     appState.agentProvider = null;
-    const image = { provider: 'codex', provider_selected: false, model: 'saved-model', options: { keep: true } };
+    const image = { provider: AGENT, provider_selected: false, model: 'saved-model', options: { keep: true } };
     const video = { ...DEFAULT_VIDEO_GENERATION, provider: '', provider_selected: false };
     const settings = { name: 'Клип', animaticVideo: 'clip.mp4', generation: { video, image, custom: { keep: true } } };
     expect(normalizeProjectSettingsForSave(settings)).toEqual({ ...settings, generation: { ...settings.generation, video: null } });

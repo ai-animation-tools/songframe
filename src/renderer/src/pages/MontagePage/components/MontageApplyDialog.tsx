@@ -32,7 +32,9 @@ export function MontageApplyDialog({
       confirmIcon={<Check />}
       confirmColor="error"
       confirmDisabled={busy}
+      confirmDisabledReason="Дождитесь завершения текущей операции."
       cancelDisabled={busy}
+      cancelDisabledReason="Дождитесь завершения текущей операции."
       closeDisabled={busy}
     >
       <Stack spacing={1.5}>

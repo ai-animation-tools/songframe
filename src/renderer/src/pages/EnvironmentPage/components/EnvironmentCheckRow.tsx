@@ -1,45 +1,61 @@
 import type { ReactElement } from 'react';
-import { Box, Button, Chip, CircularProgress, ListItem, ListItemIcon, ListItemText, Typography } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, Link, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LoginIcon from '@mui/icons-material/Login';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import CloseIcon from '@mui/icons-material/Close';
 import type { EnvironmentCheck } from '@shared/types';
 import { OFFLINE_MESSAGE } from '../../../network';
+import { ActionButton } from '../../../components/ActionButton';
 
 export type EnvironmentCheckCategory = 'core' | 'model' | 'external';
-export type KlingAuthStatus = 'checking' | 'authenticated' | 'unauthenticated' | 'unknown';
+export type ProviderAuthStatus = 'checking' | 'authenticated' | 'unauthenticated' | 'unknown';
+
+/** Вход в платного провайдера из строки его программы. */
+export interface ProviderLogin {
+  status: ProviderAuthStatus;
+  message?: string;
+  loggingIn: boolean;
+  /** Без сети вход в провайдера недоступен. */
+  offline: boolean;
+  onLogin(): Promise<void>;
+  onCheck?(): Promise<void>;
+  /** Адрес страницы входа текущего ожидания: приложение открыло его в браузере, ссылка нужна, если браузер не открылся. */
+  authorizeUrl?: string;
+  onCancel?(): void;
+}
 
 interface EnvironmentCheckRowProps {
   check: EnvironmentCheck;
   category: EnvironmentCheckCategory;
-  onLoginKling?(): Promise<void>;
-  klingLoggingIn?: boolean;
-  /** Без сети вход в Kling недоступен. */
-  klingOffline?: boolean;
-  klingAuthStatus?: KlingAuthStatus;
-  klingAuthMessage?: string;
-  onCheckKlingAuth?(): Promise<void>;
+  /** Вход по id провайдера; строка показывает его, если она отмечена loginProvider. */
+  logins?: Record<string, ProviderLogin>;
 }
 
 /** Отсутствие отдельной модели или внешнего CLI показывается нейтрально: они нужны по необходимости. */
-export function EnvironmentCheckRow({
-  check,
-  category,
-  onLoginKling,
-  klingLoggingIn = false,
-  klingOffline = false,
-  klingAuthStatus = 'unknown',
-  klingAuthMessage,
-  onCheckKlingAuth
-}: EnvironmentCheckRowProps): ReactElement {
+export function EnvironmentCheckRow({ check, category, logins }: EnvironmentCheckRowProps): ReactElement {
+  const login = check.loginProvider ? logins?.[check.loginProvider] : undefined;
   const pending = check.status === 'pending';
   const running = check.status === 'running';
   const completed = !pending && !running;
+  // Причина недоступности кнопки входа по тем же ветвям, что и её условие disabled.
+  const loginReason = !login
+    ? null
+    : login.offline
+      ? OFFLINE_MESSAGE
+      : !completed
+        ? 'Дождитесь окончания проверки среды.'
+        : !check.ok
+          ? 'Сначала устраните проблему, указанную в этой строке, и повторите проверку.'
+          : login.status === 'checking'
+            ? 'Дождитесь окончания проверки входа.'
+            : 'Повторите проверку среды кнопкой «Проверить».';
   return (
-    <ListItem divider alignItems="flex-start">
+    // id строки совпадает с id провайдера из реестра: ссылка «на странице «Среда»» прокручивает к ней.
+    <ListItem divider alignItems="flex-start" data-anchor={check.id}>
       <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
         {pending ? (
           <ScheduleIcon color="disabled" />
@@ -72,7 +88,7 @@ export function EnvironmentCheckRow({
                       ? 'внешняя программа'
                       : category === 'model'
                         ? 'выбирается при разметке'
-                        : 'локальная обработка'
+                        : 'для разработки'
                 }
               />
             ) : null}
@@ -93,35 +109,55 @@ export function EnvironmentCheckRow({
                 {check.hint}
               </Typography>
             ) : null}
-            {check.id === 'kling' && onLoginKling && (
+            {login && (
               <>
-                {completed && check.ok && klingAuthStatus !== 'checking' && (
-                  <Typography variant="caption" component="span" display="block" color={klingAuthStatus === 'unknown' ? 'error' : 'text.secondary'}>
-                    {klingAuthStatus === 'unknown'
-                      ? klingAuthMessage || 'Не удалось определить, выполнен ли вход. Повторите проверку.'
-                      : klingAuthStatus === 'authenticated'
-                        ? 'Вход в Kling выполнен.'
-                        : 'Вход в Kling не выполнен.'}
+                {completed && check.ok && login.status !== 'checking' && (
+                  <Typography variant="caption" component="span" display="block" color={login.status === 'unknown' ? 'error' : 'text.secondary'}>
+                    {login.status === 'unknown'
+                      ? login.message || 'Не удалось определить, выполнен ли вход. Повторите проверку.'
+                      : login.status === 'authenticated'
+                        ? 'Вход выполнен.'
+                        : 'Вход не выполнен.'}
                   </Typography>
                 )}
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={klingAuthStatus === 'unknown' || klingAuthStatus === 'checking' ? <RefreshIcon /> : <LoginIcon />}
-                  onClick={klingAuthStatus === 'unknown' ? onCheckKlingAuth : onLoginKling}
-                  loading={klingLoggingIn}
-                  disabled={klingOffline || !completed || !check.ok || klingAuthStatus === 'checking' || (klingAuthStatus === 'unknown' && !onCheckKlingAuth)}
-                  title={klingOffline ? OFFLINE_MESSAGE : undefined}
-                  sx={{ mt: 1 }}
-                >
-                  {klingAuthStatus === 'checking'
-                    ? 'Проверка входа'
-                    : klingAuthStatus === 'authenticated'
-                      ? 'Сменить аккаунт'
-                      : klingAuthStatus === 'unauthenticated'
-                        ? 'Войти'
-                        : 'Проверить вход'}
-                </Button>
+                {login.loggingIn && (
+                  <Typography variant="caption" component="span" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Страница входа открыта в браузере; приложение ждёт подтверждения до 5 минут.{' '}
+                    {login.authorizeUrl ? (
+                      <>
+                        Если браузер не открылся,{' '}
+                        <Link href={login.authorizeUrl} target="_blank" rel="noreferrer">
+                          откройте страницу входа
+                        </Link>
+                        .
+                      </>
+                    ) : null}
+                  </Typography>
+                )}
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                  <ActionButton
+                    size="small"
+                    variant="outlined"
+                    startIcon={login.status === 'unknown' || login.status === 'checking' ? <RefreshIcon /> : <LoginIcon />}
+                    onClick={login.status === 'unknown' ? login.onCheck : login.onLogin}
+                    loading={login.loggingIn}
+                    disabled={login.offline || !completed || !check.ok || login.status === 'checking' || (login.status === 'unknown' && !login.onCheck)}
+                    disabledReason={loginReason}
+                  >
+                    {login.status === 'checking'
+                      ? 'Проверка входа'
+                      : login.status === 'authenticated'
+                        ? 'Сменить аккаунт'
+                        : login.status === 'unauthenticated'
+                          ? 'Войти'
+                          : 'Проверить вход'}
+                  </ActionButton>
+                  {login.loggingIn && login.onCancel ? (
+                    <Button size="small" startIcon={<CloseIcon />} onClick={login.onCancel}>
+                      Отменить вход
+                    </Button>
+                  ) : null}
+                </Stack>
               </>
             )}
           </>

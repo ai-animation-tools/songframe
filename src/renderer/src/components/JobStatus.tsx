@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import type { JobInfo } from '@shared/types';
 
 export function JobStatus({ running = false, label, job, error }: { running?: boolean; label?: string; job?: JobInfo; error?: string }): ReactElement | null {
-  if (error || job?.status === 'failed') {
+  if (error || job?.status === 'failed' || job?.status === 'interrupted') {
     return (
       <Alert severity="error" sx={{ mt: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
         <AlertTitle>{job?.title ?? 'Действие не выполнено'}</AlertTitle>

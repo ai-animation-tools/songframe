@@ -1,6 +1,6 @@
 /** Предметные действия работают только с выбранным пакетом; агент возвращает проверяемое предложение. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Box, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Paper, Stack, TextField, Typography } from '@mui/material';
 import type { ProductionWorkflowStart } from '@shared/production-workflow';
 import type { PackageView } from '@shared/types';
 import { mediaProviderInfo } from '@shared/media-providers';
@@ -10,6 +10,9 @@ import { useProductionWorkflow } from '../useProductionWorkflow';
 import { ProductionProposalDialog } from './ProductionProposalDialog';
 import { ProductionFrameImport } from './ProductionFrameImport';
 import { ProductionFrameGenerationButton } from './ProductionFrameGenerationButton';
+import { LinkedText } from '../../../components/LinkedText';
+import { BUSY_REASON } from '../constants';
+import { DerivedShotNotice } from './DerivedShotNotice';
 
 export function ProductionWorkflowPanel({
   project,
@@ -46,6 +49,13 @@ export function ProductionWorkflowPanel({
   useEffect(() => onBusyChange(workflow.busy), [workflow.busy, onBusyChange]);
   // После ухода с пакета его завершение больше не опрашивается этой панелью.
   useEffect(() => () => reportBusy.current(false), []);
+  // Ошибка ставится у ряда кнопок, вызвавших действие: при закреплённой колонке начало панели может быть вне вида.
+  const errorAlert = workflow.error ? (
+    <Alert severity="error">
+      <LinkedText text={workflow.error} />
+    </Alert>
+  ) : null;
+  const reviseError = lastAction === 'revise' && view?.canRevise;
   const start = async (action: ProductionWorkflowStart['action']): Promise<void> => {
     if (busy) return;
     if (action === 'revise' && !note.trim()) {
@@ -66,10 +76,14 @@ export function ProductionWorkflowPanel({
           {packageDir ? `Выбран пакет: ${packageDir}` : 'Новая подготовка: папка пакета появится после применения описания.'}{' '}
           {view?.paid
             ? 'Запрос этой попытки уже отправлен: решения о результате принимаются в карточке пакета ниже. Возврат с замечанием создаст новый пакет для доработки.'
-            : 'Описание, опоры, видеопромпт и запрос согласуются по отдельности. Отправка в Kling подтверждается отдельно.'}
+            : 'Описание, опоры, видеопромпт и запрос согласуются по отдельности. Платная отправка провайдеру подтверждается отдельно.'}
         </Typography>
-        {workflow.error && <Alert severity="error">{workflow.error}</Alert>}
-        {view?.problems.length ? <Alert severity="warning">{view.problems.join(' ')}</Alert> : null}
+        {view?.derivedFrom ? <DerivedShotNotice source={view.derivedFrom} /> : null}
+        {view?.problems.length ? (
+          <Alert severity="warning">
+            <LinkedText text={view.problems.join(' ')} />
+          </Alert>
+        ) : null}
         {view?.canRevise ? (
           <Stack spacing={1}>
             <Alert severity="info">
@@ -88,11 +102,16 @@ export function ProductionWorkflowPanel({
               onChange={(event) => setNote(event.target.value)}
             />
             {validation && <Alert severity="warning">{validation}</Alert>}
-            <Box>
-              <AgentButton disabled={busy || !note.trim()} onClick={() => void start('revise')}>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <AgentButton
+                disabled={busy || !note.trim()}
+                disabledReason={busy ? BUSY_REASON : 'Опишите в поле выше, что агенту нужно исправить.'}
+                onClick={() => void start('revise')}
+              >
                 Запустить доработку с агентом
               </AgentButton>
-            </Box>
+            </Stack>
+            {reviseError ? errorAlert : null}
           </Stack>
         ) : null}
         {view?.job ? (
@@ -118,6 +137,7 @@ export function ProductionWorkflowPanel({
             proposal={view.proposal}
             error={workflow.error}
             provider={view.job?.provider ?? null}
+            videoProvider={view.videoProvider ?? null}
             busy={busy}
             onApply={workflow.apply}
             onDiscard={workflow.discard}
@@ -128,44 +148,43 @@ export function ProductionWorkflowPanel({
             key={`${packageDir}:${decisionToken ?? ''}`}
             frames={view.framePrompts}
             busy={busy || !view.canGenerateFrames}
+            busyReason={busy ? BUSY_REASON : (view.reasons.frames ?? 'Сначала утвердите описание и план опор.')}
             onImport={workflow.importFrames}
           />
         ) : null}
         {view?.paid ? null : (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            <AgentButton disabled={busy || !view?.canPrepare} onClick={() => void start('prepare')}>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <AgentButton
+              disabled={busy || !view?.canPrepare}
+              disabledReason={busy ? BUSY_REASON : (view?.reasons.prepare ?? 'Дождитесь загрузки состояния плана.')}
+              title="Начинает новый пакет с описания плана"
+              onClick={() => void start('prepare')}
+            >
               Подготовить описание
             </AgentButton>
-            <AgentButton disabled={busy || !view?.canContinue} onClick={() => void start('continue')}>
+            <AgentButton
+              disabled={busy || !view?.canContinue}
+              disabledReason={busy ? BUSY_REASON : (view?.reasons.continue ?? 'Дождитесь загрузки состояния плана.')}
+              title="Готовит следующий этап: видеопромпт, затем запрос"
+              onClick={() => void start('continue')}
+            >
               Продолжить подготовку
             </AgentButton>
             {view ? (
               <ProductionFrameGenerationButton
                 provider={view.imageProvider}
                 disabled={busy || !view.canGenerateFrames}
+                disabledReason={busy ? BUSY_REASON : view.reasons.frames}
+                title="Генерирует кандидатов опор по принятому описанию"
                 onGenerate={() => {
                   setLastAction('frames');
                   void workflow.generateFrames();
                 }}
               />
             ) : null}
-          </Box>
-        )}
-        {view && !view.paid ? (
-          <Stack spacing={0.25}>
-            {(
-              [
-                ['Подготовить описание', view.canPrepare ? null : view.reasons.prepare, 'начинает новый пакет с описания'],
-                ['Продолжить подготовку', view.canContinue ? null : view.reasons.continue, 'готовит следующий этап: видеопромпт, затем запрос'],
-                ['Создать опоры', view.canGenerateFrames ? null : view.reasons.frames, 'генерирует кандидатов опор по принятому описанию']
-              ] as const
-            ).map(([label, reason, purpose]) => (
-              <Typography key={label} variant="caption" color={reason ? 'text.secondary' : 'success.main'}>
-                «{label}» {purpose}. {reason ? `Недоступно: ${reason}.` : 'Доступно.'}
-              </Typography>
-            ))}
           </Stack>
-        ) : null}
+        )}
+        {reviseError ? null : errorAlert}
       </Stack>
     </Paper>
   );

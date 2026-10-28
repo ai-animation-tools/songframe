@@ -17,8 +17,10 @@ from tools.common import ROOT
 from tools.scene_registry.scene_registry import load as load_scenes
 from tools.scene_registry.scene_registry import shots as registry_shots
 
-FONT = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
-BOLD = FONT.with_name("DejaVuSans-Bold.ttf")
+# Шрифт входит в комплекс рядом с модулем (лицензия — fonts/LICENSE): системные шрифты ОС не нужны.
+FONTS = Path(__file__).resolve().parent / "fonts"
+FONT = FONTS / "DejaVuSans.ttf"
+BOLD = FONTS / "DejaVuSans-Bold.ttf"
 FPS = 30
 SIZE = (1280, 720)
 ACCENT = "#E8B975"
@@ -57,17 +59,30 @@ def wrapped(draw, text, font, width):
 
 
 def text_box(draw, text, xy, width, height, size=24, color=FG, bold=False):
-    # Уменьшаем шрифт только до заданного предела и проверяем переполнение:
-    # длинные действия из монтажного списка нельзя молча обрезать на карточке.
+    # Сначала уменьшаем шрифт до заданного предела. Если текст всё равно не помещается,
+    # видимо сокращаем его многоточием: карточка лишь условный кадр, а полный текст
+    # плана остаётся в монтажном списке и раскадровке, поэтому сборка не должна падать.
     for point in range(size, 15, -1):
         font = ImageFont.truetype(str(BOLD if bold else FONT), point)
         lines = wrapped(draw, text, font, width)
         leading = point + 7
         if len(lines) * leading <= height:
-            for index, line in enumerate(lines):
-                draw.text((xy[0], xy[1] + index * leading), line, font=font, fill=color)
-            return point
-    raise ValueError(f"Текст не помещается: {text}")
+            break
+    else:
+        lines = shortened(draw, lines, font, width, max(1, height // leading))
+    for index, line in enumerate(lines):
+        draw.text((xy[0], xy[1] + index * leading), line, font=font, fill=color)
+    return point
+
+
+def shortened(draw, lines, font, width, count):
+    """Оставляет первые count строк и завершает последнюю многоточием, убирая слова до совпадения по ширине."""
+    kept = lines[:count]
+    words = kept[-1].split()
+    while words and draw.textlength(" ".join(words) + "…", font=font) > width:
+        words.pop()
+    kept[-1] = " ".join(words) + "…"
+    return kept
 
 
 def place_reference(card, source_path, box, root):
@@ -141,6 +156,9 @@ def render_card(shot, target, project, references, root=ROOT):
     text_box(draw, header, (32, 22), 760, 32, 20, ACCENT, True)
     text_box(draw, shot["interval"] + "  •  " + shot["duration"] + " с", (865, 24), 385, 30, 18)
     title = shot["title"]
+    # План из материала другого плана помечается источником; у обычного плана заголовок прежний.
+    if shot.get("derived_from"):
+        title += "  •  из " + shot["derived_from"]["shot"]
     text_box(draw, shot["id"] + "  /  " + title, (32, 63), 1216, 51, 32, FG, True)
     text_box(draw, "РЕФЕРЕНСЫ • УСЛОВНЫЙ КАДР, НЕ ГОТОВАЯ СЦЕНА", (32, 128), 660, 26, 17, MUTED)
     text_box(draw, shot["camera"], (720, 128), 528, 83, 21, ACCENT)

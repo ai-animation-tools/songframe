@@ -15,10 +15,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
     "prepare:runtime": "node scripts/runtime/prepare-runtime.mjs",
-    "prepare:kling": "node scripts/runtime/prepare-kling.mjs",
     "smoke:runtime": "node scripts/runtime/smoke-runtime.mjs",
-    "dist:linux": "yarn prepare:runtime && yarn prepare:media && yarn prepare:linux-licenses && yarn prepare:kling && yarn build && electron-builder --linux",
-    "dist:win": "yarn prepare:runtime --target=win32-x64 && yarn prepare:media --target=win32-x64 && yarn prepare:kling && yarn build && electron-builder --win --x64",
+    "dist:linux": "yarn prepare:runtime && yarn prepare:media && yarn prepare:linux-licenses && yarn build && electron-builder --linux",
+    "dist:win": "yarn prepare:runtime --target=win32-x64 && yarn prepare:media --target=win32-x64 && yarn build && electron-builder --win --x64",
     "postinstall": "node -e \"const fs=require('fs');if(!fs.existsSync('node_modules/electron/dist'))require('child_process').execFileSync(process.execPath,['node_modules/electron/install.js'],{stdio:'inherit'})\"",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
@@ -30,6 +29,7 @@
     "smoke:appimage": "node scripts/runtime/smoke-appimage.mjs"
   },
   "dependencies": {
+    "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.3.0",

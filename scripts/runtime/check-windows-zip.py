@@ -2,6 +2,7 @@
 """Проверяет готовый Windows ZIP на Linux, не исполняя Windows-код. @link README.md"""
 
 import argparse
+import ast
 import hashlib
 import json
 import re
@@ -18,13 +19,25 @@ REQUIRED_FILES = (
     "resources/runtime/bin/ffmpeg.exe",
     "resources/runtime/bin/ffprobe.exe",
     "resources/runtime/media-manifest.json",
-    "resources/kling/package.json",
-    "resources/kling/dist/cli.js",
-    "resources/kling/manifest.json",
-    "resources/kling/SOURCES.md",
+    "resources/tools/media_request/media_request.py",
+    "resources/tools/media_adapters.py",
     "check-runtime.cmd",
     "ПРОЧТИ.md",
 )
+
+ADAPTERS_FILE = "resources/tools/media_adapters.py"
+
+
+def provider_adapter_files(source: str) -> list[str]:
+    """Модули адаптеров платных провайдеров берутся из таблицы ADAPTERS, а не вшиваются сюда по имени сервиса."""
+    for node in ast.parse(source).body:
+        targets = node.targets if isinstance(node, ast.Assign) else []
+        if any(isinstance(target, ast.Name) and target.id == "ADAPTERS" for target in targets):
+            table = ast.literal_eval(node.value)
+            if not isinstance(table, dict) or not table or not all(isinstance(item, str) for item in table.values()):
+                raise ValueError(f"Таблица ADAPTERS в {ADAPTERS_FILE} пуста или некорректна.")
+            return [f"resources/{module.replace('.', '/')}.py" for module in table.values()]
+    raise ValueError(f"В {ADAPTERS_FILE} не найдена таблица ADAPTERS.")
 
 
 def check_archive(archive: Path, version: str | None = None) -> dict:
@@ -41,7 +54,8 @@ def check_archive(archive: Path, version: str | None = None) -> dict:
         if damaged:
             raise ValueError(f"Повреждён ресурс ZIP (CRC): {damaged}")
         files = {entry.filename: entry for entry in package.infolist()}
-        for name in REQUIRED_FILES:
+        adapters = provider_adapter_files(package.read(ADAPTERS_FILE).decode("utf-8")) if ADAPTERS_FILE in files else []
+        for name in (*REQUIRED_FILES, *adapters):
             entry = files.get(name)
             if entry is None or entry.is_dir() or entry.file_size == 0:
                 raise ValueError(f"Обязательный ресурс отсутствует или пуст: {name}")
@@ -73,6 +87,7 @@ def check_archive(archive: Path, version: str | None = None) -> dict:
         "checks": {
             "crc": True,
             "requiredFiles": list(REQUIRED_FILES),
+            "providerAdapters": adapters,
             "runtimeTarget": True,
             "mediaTarget": True,
             "externalModels": True,

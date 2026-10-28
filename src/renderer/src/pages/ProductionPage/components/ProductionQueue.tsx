@@ -6,7 +6,7 @@ import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import type { BrokenPackage, PackageView } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
-import { FILTER_EMPTY_HINTS } from '../constants';
+import { BUSY_REASON, FILTER_EMPTY_HINTS } from '../constants';
 
 export function ProductionQueue({
   packages,
@@ -81,6 +81,7 @@ export function ProductionQueue({
               startIcon={<DeleteForeverIcon />}
               variant="outlined"
               disabled={busy}
+              disabledReason={BUSY_REASON}
               onConfirm={() => onDiscardBroken(item)}
               sx={{ alignSelf: 'start' }}
             />

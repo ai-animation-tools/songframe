@@ -1,11 +1,13 @@
 import { type ReactElement, useState } from 'react';
-import { Alert, Box, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material';
+import { usePageLoading } from '../../components/PageLoader';
+import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { ScenarioToolbar, TreatmentEditor, SceneRegistry } from './components';
 import { useScenario } from './useScenario';
 import { useScenarioWorkflow } from './useScenarioWorkflow';
 import { ScenarioWorkflowPanel } from './components/ScenarioWorkflowPanel';
 import { PageActionBar } from '../../components/PageActionBar';
 import ReplayIcon from '@mui/icons-material/Replay';
+import { LinkedText } from '../../components/LinkedText';
 
 /** Сценарий связывает независимые черновики трактовки и реестра с их редакторами. */
 export function ScenarioPage(): ReactElement {
@@ -44,6 +46,8 @@ export function ScenarioPage(): ReactElement {
     notify
   } = scenario;
 
+  // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(!view && !loadError);
   if (loadError)
     return (
       <Alert
@@ -54,15 +58,10 @@ export function ScenarioPage(): ReactElement {
           </Button>
         }
       >
-        {loadError}
+        <LinkedText text={loadError} />
       </Alert>
     );
-  if (!view)
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-        <CircularProgress />
-      </Box>
-    );
+  if (!view) return <></>;
 
   return (
     <Stack spacing={2} inert={busy || undefined} aria-busy={busy} sx={{ width: '100%', minWidth: 0, pb: 8 }}>
@@ -86,7 +85,11 @@ export function ScenarioPage(): ReactElement {
           scaffold={scaffold}
         />
       </PageActionBar>
-      {view.problems.length ? <Alert severity="warning">{view.problems.join(' ')}</Alert> : null}
+      {view.problems.length ? (
+        <Alert severity="warning">
+          <LinkedText text={view.problems.join(' ')} />
+        </Alert>
+      ) : null}
       {!cast ? <Alert severity="info">Сначала создайте кастинг: без сущностей нет референсов для планов и состояния героев.</Alert> : null}
       <ScenarioWorkflowPanel
         key={scenario.project}
@@ -96,10 +99,16 @@ export function ScenarioPage(): ReactElement {
         treatmentDirty={treatmentDirty}
         scenesDirty={scenesDirty}
         editorBusy={busy}
+        scenesInputProblem={scenario.scenesInputProblem}
         onResolveDrafts={scenario.resolveWorkflowDrafts}
       />
       {workflow.busy && (
-        <Alert severity="info">Агент работает с сохранёнными данными. Редактирование приостановлено до завершения или остановки задания.</Alert>
+        <Alert severity="info">
+          {/* Блокировка держится и пока готовое предложение ждёт решения, а не только во время работы агента. */}
+          {workflow.view?.proposal?.status === 'ready'
+            ? 'Предложение агента ждёт решения. Редактирование приостановлено, пока вы не примените или не отклоните его.'
+            : 'Агент работает с сохранёнными данными. Редактирование приостановлено до завершения или остановки задания.'}
+        </Alert>
       )}
       <Box inert={workflow.busy || undefined} aria-busy={workflow.busy}>
         {tab === 'treatment' ? (

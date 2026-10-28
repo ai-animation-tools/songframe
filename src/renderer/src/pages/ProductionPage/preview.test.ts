@@ -34,6 +34,7 @@ function shot(overrides: Partial<ShotProduction>): ShotProduction {
     state: 'progress',
     stageLabel: '',
     regenerateProblem: null,
+    derivedFrom: null,
     attention: null,
     asset: null,
     packages: [],

@@ -6,6 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ClearIcon from '@mui/icons-material/Clear';
 import UndoIcon from '@mui/icons-material/Undo';
 import type { CastProperty } from '@shared/types';
+import { ActionIconButton } from './ActionIconButton';
 import { DestructiveButton } from './DestructiveButton';
 
 interface Props {
@@ -18,6 +19,13 @@ interface Props {
   /** Разрешить значение null (удаление свойства из унаследованного состояния). */
   allowRemove?: boolean;
   compact?: boolean;
+}
+
+/** Почему нельзя добавить своё свойство с таким кодом; null — можно. */
+function customKeyProblem(key: string, exists: boolean): string | null {
+  if (!key) return 'Введите код свойства.';
+  if (!/^[a-z][a-z0-9_]*$/.test(key)) return 'Код начинается со строчной латинской буквы и содержит только a–z, цифры и «_».';
+  return exists ? 'Такое свойство уже есть в списке.' : null;
 }
 
 export function StateEditor({ properties, value, onChange, baseline = {}, allowRemove = false, compact = false }: Props): ReactElement {
@@ -102,20 +110,20 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
           placeholder="helmet"
           sx={{ minWidth: 0 }}
         />
-        <IconButton
+        <ActionIconButton
           size="small"
           color="success"
           aria-label="Добавить своё свойство"
-          title="Добавить своё свойство"
           sx={{ mt: 0.5 }}
           disabled={!/^[a-z][a-z0-9_]*$/.test(customKey) || customKey in value || known.has(customKey)}
+          disabledReason={customKeyProblem(customKey, customKey in value || known.has(customKey))}
           onClick={() => {
             set(customKey, ' ');
             setCustomKey('');
           }}
         >
           <AddIcon fontSize="small" />
-        </IconButton>
+        </ActionIconButton>
       </Box>
       {!rows.length ? (
         <Typography variant="caption" color="text.secondary">

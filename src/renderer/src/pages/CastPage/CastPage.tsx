@@ -1,14 +1,17 @@
 /** Кастинг: сущности клипа, их изображения из исходников, роль, внешность и начальное состояние. */
 
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { usePageLoading } from '../../components/PageLoader';
 import AddIcon from '@mui/icons-material/Add';
 import { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Box, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { DEFAULT_SOURCE_KINDS, type CastEntity, type CastFile, type CastView } from '@shared/types';
 import { useApp } from '../../state';
 import { CastEntityCard, CastToolbar } from './components';
 import { WORLD } from './constants';
 import { castImageOptions } from './helpers';
+import { LinkedText } from '../../components/LinkedText';
+import { ActionButton } from '../../components/ActionButton';
 
 export function CastPage(): ReactElement {
   const { state, refresh, notify, describeError } = useApp();
@@ -83,6 +86,8 @@ export function CastPage(): ReactElement {
     }
   };
 
+  // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(!view && !loadError);
   if (loadError)
     return (
       <Alert
@@ -93,29 +98,29 @@ export function CastPage(): ReactElement {
           </Button>
         }
       >
-        {loadError}
+        <LinkedText text={loadError} />
       </Alert>
     );
 
-  if (!view) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (!view) return <></>;
 
   return (
     <Stack spacing={2} inert={busy || undefined} aria-busy={busy} sx={{ width: '100%', minWidth: 0, pb: 8 }}>
       <CastToolbar busy={busy} dirty={dirty} hasManifest={Boolean(view.manifest)} hasCast={Boolean(cast)} onInit={init} onSave={save} />
-      {view.problems.length ? <Alert severity="warning">{view.problems.join(' ')}</Alert> : null}
-      {!view.manifest ? <Alert severity="info">Исходников ещё нет: загрузите референсы на странице «Исходники», затем создайте кастинг.</Alert> : null}
+      {view.problems.length ? (
+        <Alert severity="warning">
+          <LinkedText text={view.problems.join(' ')} />
+        </Alert>
+      ) : null}
+      {!view.manifest ? (
+        <Alert severity="info">
+          <LinkedText text="Исходников ещё нет: загрузите референсы на странице «Исходники», затем создайте кастинг." />
+        </Alert>
+      ) : null}
       {!cast ? (
         <Paper variant="outlined" sx={{ p: 3 }}>
           <Typography color="text.secondary">
-            Кастинга пока нет. Он собирается из референсов исходников: каждый референс становится сущностью с кодом, типом и изображениями, плюс сущность «Мир
-            сцены» для времени суток, погоды и сторон дороги. Роль, внешность и начальное состояние заполняются здесь или агентом: кнопка «Создать трактовку» на
-            странице «Сценарий» готовит предложение кастинга вместе с трактовкой.
+            <LinkedText text="Кастинга пока нет. Он собирается из референсов исходников: каждый референс становится сущностью с кодом, типом и изображениями, плюс сущность «Мир сцены» для времени суток, погоды и сторон дороги. Роль, внешность и начальное состояние заполняются здесь или агентом: кнопка «Создать трактовку» на странице «Сценарий» готовит предложение кастинга вместе с трактовкой." />
           </Typography>
         </Paper>
       ) : (
@@ -157,9 +162,16 @@ export function CastPage(): ReactElement {
       )}
       {cast && (
         <Box>
-          <Button variant="outlined" color="success" startIcon={<AddIcon />} disabled={busy} onClick={add}>
+          <ActionButton
+            variant="outlined"
+            color="success"
+            startIcon={<AddIcon />}
+            disabled={busy}
+            disabledReason="Дождитесь завершения текущей операции."
+            onClick={add}
+          >
             Добавить сущность
-          </Button>
+          </ActionButton>
         </Box>
       )}
       <Typography variant="caption" color="text.secondary">

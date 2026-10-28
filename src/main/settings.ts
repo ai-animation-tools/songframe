@@ -2,7 +2,7 @@
 import { join } from 'node:path';
 import type { AgentSettings } from '@shared/agents';
 import { agentTitle, isAgentProvider, type AgentProvider } from '@shared/agent-providers';
-import { MEDIA_PROVIDERS } from '@shared/media-providers';
+import { mediaProviderInfo, type MediaProviderId } from '@shared/media-providers';
 import { readLocalJson, writeLocalJson } from './local-files';
 
 export interface Settings {
@@ -85,9 +85,15 @@ export class SettingsStore {
     return agent;
   }
 
-  /** Опоры и обложку создаёт Codex с моделью из настроек проекта; модель текстового Codex сюда не переносится. */
-  getImageAgent(): AgentSettings {
-    return { provider: MEDIA_PROVIDERS.codex.executor };
+  /**
+   * Программа-агент провайдера изображений по реестру и модель из настроек проекта.
+   * Модель текстового агента сюда не переносится: пустая модель оставляет выбор самой программе.
+   */
+  getImageAgent(provider: MediaProviderId, model?: string): AgentSettings {
+    const executor = mediaProviderInfo(provider, 'image')?.executor;
+    if (!executor) throw new Error('Выбранный провайдер изображений не исполняется программой-агентом.');
+    const value = model?.trim();
+    return { provider: executor, ...(value ? { model: value } : {}) };
   }
 
   getAgent(): AgentSettings | null {

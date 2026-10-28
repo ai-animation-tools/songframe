@@ -205,7 +205,7 @@ describe('каталог и хранение', () => {
 
   it('добавляет скачанные рабочие оригиналы без запроса метаданных к Python', () => {
     json('plan/batches/M03-attempt/workflow.json', { shot: 'M03', request_dir: 'requests/video-01' });
-    json('plan/batches/M03-attempt/requests/video-01/request.json', { kind: 'video', provider: 'kling' });
+    json('plan/batches/M03-attempt/requests/video-01/request.json', { kind: 'video', provider: 'test' });
     json('plan/batches/M03-attempt/requests/video-01/attempt.json', { downloads: [{ path: 'download.mp4' }] });
     file('plan/batches/M03-attempt/requests/video-01/download.mp4', 'скачанный ролик');
     expect(montage.view(project).sources.find((source) => source.scene === 'M03')).toMatchObject({

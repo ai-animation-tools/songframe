@@ -5,6 +5,7 @@ import { Chip, List, ListItem, ListItemIcon, ListItemText, Paper, Typography } f
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import type { ProjectStatus } from '@shared/types';
+import { countLabel } from '@shared/plural';
 
 export function ProjectChecksCard({ status }: { status: ProjectStatus }): ReactElement {
   const checks = status.checks;
@@ -14,7 +15,7 @@ export function ProjectChecksCard({ status }: { status: ProjectStatus }): ReactE
     { label: 'Разметка трека (plan/audio/timing.json)', ok: checks.timing },
     { label: 'Кастинг (plan/cast.json)', ok: checks.cast },
     { label: 'Трактовка (plan/treatment.json)', ok: checks.treatment },
-    { label: 'Реестр сцен (plan/scenes.json)', ok: checks.scenes, note: checks.scenes ? `${checks.shotsTotal} планов` : undefined },
+    { label: 'Реестр сцен (plan/scenes.json)', ok: checks.scenes, note: checks.scenes ? countLabel(checks.shotsTotal, 'план', 'плана', 'планов') : undefined },
     {
       label: 'Принятые сцены (assets/shots)',
       ok: checks.shotsTotal > 0 && checks.shotsDone === checks.shotsTotal,

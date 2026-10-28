@@ -1,9 +1,9 @@
 import { type ReactElement, useEffect, useState } from 'react';
-import { Box, Button, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Box, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { CastProperty, StateDelta } from '@shared/types';
-import { StateEditor } from '../../../components';
+import { ActionButton, StateEditor } from '../../../components';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 
 /** Редактирует изменения выбранных сущностей поверх вычисленного состояния. */
@@ -64,36 +64,42 @@ export function DeltaEditor({
           </Box>
         ))}
       </Stack>
-      <TextField
-        select
-        size="small"
-        label="Сущность для изменения"
-        value={selectedEntity}
-        onChange={(e) => setAdding(e.target.value)}
-        disabled={!available.length}
-        helperText={!available.length ? (entities.length ? 'Все сущности уже добавлены' : 'В кастинге пока нет сущностей') : undefined}
-        sx={{ minWidth: 0 }}
-      >
-        {available.map((entity) => (
-          <MenuItem key={entity.id} value={entity.id}>
-            {entity.label}
-          </MenuItem>
-        ))}
-      </TextField>
-      <Button
-        size="small"
-        color="success"
-        startIcon={<AddIcon />}
-        disabled={!selectedEntity}
-        sx={{ mt: 0.5 }}
-        onClick={() => {
-          if (!selectedEntity) return;
-          onChange(selectedEntity, { [propertiesOf(selectedEntity)[0]?.key ?? 'note']: ' ' });
-          setAdding('');
-        }}
-      >
-        Добавить сущность
-      </Button>
+      {/* Выбор и добавление замыкают свой список (первый кадр или итог плана) и стоят слева одной строкой. */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, flexWrap: 'wrap', minWidth: 0 }}>
+        <TextField
+          select
+          size="small"
+          label="Сущность для изменения"
+          value={selectedEntity}
+          onChange={(e) => setAdding(e.target.value)}
+          disabled={!available.length}
+          helperText={!available.length ? (entities.length ? 'Все сущности уже добавлены' : 'В кастинге пока нет сущностей') : undefined}
+          sx={{ flex: '1 1 220px', minWidth: 0, maxWidth: 360 }}
+        >
+          {available.map((entity) => (
+            <MenuItem key={entity.id} value={entity.id}>
+              {entity.label}
+            </MenuItem>
+          ))}
+        </TextField>
+        <ActionButton
+          size="small"
+          color="success"
+          startIcon={<AddIcon />}
+          disabled={!selectedEntity}
+          disabledReason={
+            available.length ? 'Сначала выберите сущность для изменения.' : entities.length ? 'Все сущности уже добавлены.' : 'В кастинге пока нет сущностей.'
+          }
+          sx={{ mt: 0.5, flexShrink: 0 }}
+          onClick={() => {
+            if (!selectedEntity) return;
+            onChange(selectedEntity, { [propertiesOf(selectedEntity)[0]?.key ?? 'note']: ' ' });
+            setAdding('');
+          }}
+        >
+          Добавить сущность
+        </ActionButton>
+      </Box>
     </Stack>
   );
 }

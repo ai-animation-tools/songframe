@@ -1,8 +1,9 @@
 /** Отдельное переименование не требует заполнения настроек генерации. */
 import { useState, type ReactElement } from 'react';
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
+import { Alert, Box, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import SaveIcon from '@mui/icons-material/Save';
+import { ActionButton } from '../../../components';
 import { useApp } from '../../../state';
 
 interface Props {
@@ -59,12 +60,20 @@ export function ProjectRenameDialog({ project, name, onClose }: Props): ReactEle
           )}
         </DialogContent>
         <DialogActions>
-          <Button startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy}>
+          <ActionButton startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy} disabledReason="Дождитесь окончания переименования.">
             Отмена
-          </Button>
-          <Button type="submit" startIcon={<SaveIcon />} variant="contained" disabled={busy || !value.trim() || value.trim() === name}>
+          </ActionButton>
+          <ActionButton
+            type="submit"
+            startIcon={<SaveIcon />}
+            variant="contained"
+            disabled={busy || !value.trim() || value.trim() === name}
+            disabledReason={
+              busy ? 'Дождитесь окончания переименования.' : !value.trim() ? 'Введите название проекта.' : 'Введите новое название: оно совпадает с текущим.'
+            }
+          >
             {busy ? 'Сохранение' : 'Сохранить'}
-          </Button>
+          </ActionButton>
         </DialogActions>
       </Box>
     </Dialog>

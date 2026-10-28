@@ -9,9 +9,9 @@ import type { AgentManager } from './agent-manager';
 import { castFromSources, loadDefaults, normalizeCast } from './cast';
 import { normalizeTreatment, validateScenes } from './scenario';
 import { scenarioOutputPaths } from './scenario-apply';
-import { changedSceneIds, checkReadyScenes, checkScenesShape, checkTreatmentCast, isRecord, proposalDocuments } from './scenario-proposal';
+import { STAGING_FIELDS, changedSceneIds, checkReadyScenes, checkScenesShape, checkTreatmentCast, isRecord, proposalDocuments } from './scenario-proposal';
 import { parseLyricsLines, validateTiming } from './timing';
-import { sourceInputDigest, upgradeSourceInputSnapshot } from './source-input-hash';
+import { sourceInputDigest } from './source-input-hash';
 
 type Hashes = Record<string, string | null>;
 interface StoredProposal {
@@ -130,9 +130,6 @@ export class ScenarioWorkflow {
     try {
       const value: unknown = JSON.parse(readFileSync(this.statePath(project), 'utf8'));
       checkStoredState(value);
-      for (const hashes of [value.approval, value.scenesApproval?.hashes, value.pending?.expectedHashes]) {
-        if (hashes) upgradeSourceInputSnapshot(hashes, project);
-      }
       return value;
     } catch {
       /* Повреждённая локальная запись не служит подтверждением и не меняет проект. */
@@ -145,22 +142,6 @@ export class ScenarioWorkflow {
     const temporary = `${path}.${randomUUID()}.tmp`;
     writeFileSync(temporary, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
     renameSync(temporary, path);
-  }
-
-  /** До замены манифеста сохраняет актуальные старые утверждения без привязки к оформлению. */
-  preserveSourceDecoration(project: string): void {
-    const resolved = realpathSync(project);
-    const path = this.statePath(resolved);
-    if (!existsSync(path)) return;
-    let previous: unknown;
-    try {
-      previous = JSON.parse(readFileSync(path, 'utf8'));
-      checkStoredState(previous);
-    } catch {
-      return;
-    }
-    const next = this.read(resolved);
-    if (JSON.stringify(previous) !== JSON.stringify(next)) this.write(resolved, next);
   }
 
   private inputs(path: string): Inputs {
@@ -312,7 +293,7 @@ export class ScenarioWorkflow {
           checkReadyScenes(documents.scenes, documents.cast, duration);
           scenesReady = true;
         } catch (error) {
-          documentProblems.push(message(error));
+          documentProblems.push(...message(error).split('\n'));
         }
       }
     }
@@ -457,7 +438,7 @@ export class ScenarioWorkflow {
         `${skill}\n\nРежим приложения: output=proposal, pass=${input.pass}. Верни ровно один JSON без Markdown, без записи файлов и вызовов инструментов производства. ` +
         `Оболочка: {"schemaVersion":1,"pass":"${input.pass}",${input.pass === 'treatment' ? '"cast":{...},"treatment":{...}' : input.pass === 'scenes' ? '"scenes":{...}' : '"patches":[{"id":"выбранный ID",...поля постановки}]'} }. ` +
         `Не меняй source, timing и assets. Конец песни равен timing.duration_decoded. Сохраняй ID, original, sequence и кадровые окна каркаса. ` +
-        `Для revise разрешены только title, camera, action, continuity, notes, references, lipsync, card, state_from, state_changes выбранных ID. Не меняй глобальные поля и остальные сцены. Заполни постановку без ЗАПОЛНИТЬ; используй только объявленные изображения и свойства кастинга.`;
+        `Для revise разрешены только ${STAGING_FIELDS.join(', ')} выбранных ID; derived_from: null снимает признак производного плана. Не меняй глобальные поля и остальные сцены. Заполни постановку без ЗАПОЛНИТЬ; используй только объявленные изображения и свойства кастинга.`;
       const job = this.options.agents.start({ project: initial.project, task: `ai-clip-scenario:${input.pass}`, prompt, context });
       const proposal: ScenarioProposal = {
         id: randomUUID(),

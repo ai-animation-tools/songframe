@@ -11,13 +11,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import argparse
 import json
 import re
-import subprocess
 
-from tools.kling_cli import resolve as resolve_kling_cli
-from tools.kling_cli import run as run_kling_cli
-from tools.kling_request.kling_request import validate_spec, work_path
+from tools import media_adapters, request_snapshot
+from tools.common import local_directory, read_json, write_json_atomic
+from tools.media_request.attempt import work_path
 
-PRICING = Path(__file__).with_name("pricing.json")
+# Наблюдения расхода — состояние пользователя: базовая таблица адаптера лежит в поставке и только читается.
+OBSERVATIONS_FILE = "pricing-observations.json"
+
 VERDICTS = {
     "ok": "средств достаточно",
     "insufficient_balance": "средств не хватает",
@@ -25,16 +26,46 @@ VERDICTS = {
 }
 
 
-def load_pricing(path=PRICING):
+def pricing_path(request, path=None):
+    """Явный файл тарифов (прогоны без расхода) либо базовая таблица цен адаптера провайдера запроса."""
+    return Path(path) if path else media_adapters.adapter(request["provider"]).pricing_file()
+
+
+def observations_path(provider):
+    """Наблюдения `learn` в каталоге состояния: `<каталог состояния>/providers/<id>/pricing-observations.json`."""
+    if not isinstance(provider, str) or not provider or Path(provider).name != provider or provider in (".", ".."):
+        raise ValueError("Некорректный идентификатор провайдера.")
+    return local_directory() / "providers" / provider / OBSERVATIONS_FILE
+
+
+def load_observations(provider):
+    """Список наблюдений провайдера; отсутствующий файл — пустой список, повреждённый — ошибка."""
+    path = observations_path(provider)
+    data = read_json(path)
+    if data is None:
+        return []
+    if not isinstance(data, dict) or data.get("schema_version") != 1 or not isinstance(data.get("observed"), list):
+        raise ValueError(f"Файл наблюдений цен повреждён: {path}. Исправьте или удалите его.")
+    return data["observed"]
+
+
+def load_pricing(path, provider=None):
+    """Базовая таблица; с провайдером к её наблюдениям добавляются наблюдения из каталога состояния.
+
+    Наблюдения состояния идут после базовых: оценка берёт последнее подходящее, поэтому они в приоритете.
+    """
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if data.get("schema_version") != 1 or not isinstance(data.get("models"), dict):
         raise ValueError("Неизвестная схема таблицы цен.")
     data.setdefault("observed", [])
+    if provider is not None:
+        data["observed"] = [*data["observed"], *load_observations(provider)]
     return data
 
 
-def save_pricing(data, path=PRICING):
-    Path(path).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+def pricing_for(request, path=None):
+    """Таблица цен запроса для оценки: базовая (или явная `--pricing`) вместе с наблюдениями провайдера."""
+    return load_pricing(pricing_path(request, path), request["provider"])
 
 
 def load_request(work_dir=None, request=None):
@@ -43,7 +74,8 @@ def load_request(work_dir=None, request=None):
         directory = work_path(work_dir)
         return json.loads((directory / "request.json").read_text(encoding="utf-8")), directory
     spec = json.loads(Path(request).read_text(encoding="utf-8"))
-    validate_spec(spec)
+    request_snapshot.validate_spec(spec)
+    media_adapters.adapter(spec["provider"]).validate_spec(spec)
     return spec, None
 
 
@@ -69,7 +101,7 @@ def image_signature(request):
             return [parameters_only(item) for item in value]
         return value
 
-    # Содержимое и локальная подпись role не передаются как тарифные аргументы CLI.
+    # Содержимое и локальная подпись role не передаются сервису как тарифные аргументы.
     # Число входов и фактические именованные слоты остаются частью тарифа.
     configuration = {
         "command": request.get("command"),
@@ -164,51 +196,12 @@ def estimate(pricing, request):
     return {"credits": None, "source": None, "missing": ["неизвестный вид результата"]}
 
 
-def find_balance(value, path=""):
-    """Ищет числовое поле остатка в ответе account, не сохраняя сам ответ."""
-    found = []
-    if isinstance(value, dict):
-        for key, item in value.items():
-            name = f"{path}.{key}" if path else str(key)
-            if (
-                isinstance(item, (int, float))
-                and not isinstance(item, bool)
-                and re.search(r"credit|balance|remain|point", str(key), re.I)
-            ):
-                found.append((name, float(item)))
-            else:
-                found += find_balance(item, name)
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            found += find_balance(item, f"{path}[{index}]")
-    return found
-
-
-def account_balance(cli="kling", timeout=60):
-    try:
-        resolve_kling_cli(cli)
-    except OSError as error:
-        return None, str(error)
-    try:
-        # Цена и submit используют тот же CLI; Electron-режим остаётся только в его дочернем процессе.
-        result = run_kling_cli([cli, "account", "--quiet"], timeout)
-        body = json.loads(result.stdout)
-    except (OSError, subprocess.TimeoutExpired, ValueError):
-        return None, "ответ account не получен или не разобран"
-    if not isinstance(body, dict) or body.get("ok") is False or body.get("isError"):
-        return None, "account вернул ошибку"
-    found = find_balance(body.get("body", body))
-    if not found:
-        return None, "в ответе account нет числового поля остатка"
-    preferred = [f for f in found if re.search(r"remain|available|balance|left", f[0], re.I)]
-    name, value = (preferred or found)[0]
-    return value, name
-
-
-def check(request, pricing, balance=None, balance_source=None, cli="kling", use_account=True, timeout=60):
+def check(request, pricing, balance=None, balance_source=None, use_account=True, timeout=60):
     estimated = estimate(pricing, request)
     if balance is None and use_account:
-        balance, balance_source = account_balance(cli, timeout)
+        # Единственное обращение к сервису — информационный остаток через адаптер провайдера запроса.
+        account = media_adapters.adapter(request["provider"]).account(timeout)
+        balance, balance_source = account["balance"], account["source"]
     elif balance is not None:
         balance_source = balance_source or "указан вручную"
     else:
@@ -239,8 +232,8 @@ def check(request, pricing, balance=None, balance_source=None, cli="kling", use_
     }
 
 
-def learn(work_dir, pricing_path=PRICING):
-    """Записывает фактический расход отправленной попытки как наблюдение тарифа."""
+def learn(work_dir, pricing=None):
+    """Записывает фактический расход отправленной попытки наблюдением в каталоге состояния."""
     directory = work_path(work_dir)
     request = json.loads((directory / "request.json").read_text(encoding="utf-8"))
     attempt = json.loads((directory / "attempt.json").read_text(encoding="utf-8"))
@@ -268,10 +261,11 @@ def learn(work_dir, pricing_path=PRICING):
             "outputs": request.get("outputs", 1),
             "credits": credits,
         }
-    pricing = load_pricing(pricing_path)
-    if observation not in pricing["observed"]:
-        pricing["observed"].append(observation)
-        save_pricing(pricing, pricing_path)
+    # Таблица поставки не меняется: новое наблюдение дописывается в файл состояния провайдера.
+    if observation not in pricing_for(request, pricing)["observed"]:
+        observed = load_observations(request["provider"])
+        observed.append(observation)
+        write_json_atomic(observations_path(request["provider"]), {"schema_version": 1, "observed": observed})
     return observation
 
 
@@ -315,13 +309,12 @@ def main():
     group.add_argument("--request", type=Path)
     p.add_argument("--balance", type=float, help="Остаток из кабинета, если account недоступен.")
     p.add_argument("--no-account", action="store_true", help="Не обращаться к аккаунту.")
-    p.add_argument("--pricing", type=Path, default=PRICING)
-    p.add_argument("--cli", default="kling")
+    p.add_argument("--pricing", type=Path, help="Файл тарифов вместо базовой таблицы адаптера провайдера.")
     p.add_argument("--timeout", type=float, default=60)
     p.add_argument("--json", action="store_true")
     p = sub.add_parser("learn")
     p.add_argument("--work-dir", type=Path, required=True)
-    p.add_argument("--pricing", type=Path, default=PRICING)
+    p.add_argument("--pricing", type=Path, help="Файл тарифов вместо базовой таблицы адаптера провайдера.")
     args = parser.parse_args()
     try:
         if args.action == "learn":
@@ -329,9 +322,8 @@ def main():
             print("Наблюдение записано: " + json.dumps(observation, ensure_ascii=False))
             return
         request, _ = load_request(args.work_dir, args.request)
-        report = check(
-            request, load_pricing(args.pricing), args.balance, None, args.cli, not args.no_account, args.timeout
-        )
+        pricing = pricing_for(request, args.pricing)
+        report = check(request, pricing, args.balance, None, not args.no_account, args.timeout)
         print(json.dumps(report, ensure_ascii=False, indent=2) if args.json else table(report))
         if report["verdict"] != "ok":
             raise SystemExit(2)

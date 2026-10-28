@@ -1,4 +1,2 @@
 # Проверочные CMD должны сохранять Windows-переносы и при checkout на Linux.
 *.cmd text eol=crlf
-# Официальный пакет сохраняется без изменений, включая пробелы исходного архива.
-/vendor/kling-cli/** -text -whitespace

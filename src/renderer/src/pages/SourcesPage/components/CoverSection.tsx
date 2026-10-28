@@ -1,12 +1,11 @@
 /** Предпросмотр, выбор и удаление необязательной обложки. */
 import type { ReactElement } from 'react';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Stack, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { FileDropZone } from '../../../components/FileDropZone';
 import { AgentButton } from '../../../components/AgentButton';
-import { useApp } from '../../../state';
-import { aiActionProblem } from '@shared/ai-access';
+import { AiProblemAlert } from '../../../components/AiProblemAlert';
 
 interface Props {
   coverSrc: string | null;
@@ -17,9 +16,6 @@ interface Props {
 }
 
 export function CoverSection({ coverSrc, onPick, onRemove, onDrop, onGenerate }: Props): ReactElement {
-  const { aiAccess } = useApp();
-  // Обложку готовит провайдер изображений проекта; выбранный агент на неё не влияет.
-  const blockedReason = aiActionProblem(aiAccess, 'image');
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
@@ -53,21 +49,15 @@ export function CoverSection({ coverSrc, onPick, onRemove, onDrop, onGenerate }:
         hint="Одно изображение PNG, JPG или WebP."
         message="Перетащите изображение или нажмите для выбора"
       />
-      <Box sx={{ mt: 1 }}>
-        <AgentButton
-          onClick={onGenerate}
-          aiKind="image"
-          disabled={Boolean(blockedReason)}
-          title={blockedReason ?? 'Создать обложку через провайдера изображений проекта'}
-        >
-          Сгенерировать
-        </AgentButton>
-        {blockedReason ? (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-            {blockedReason}
-          </Typography>
-        ) : null}
-      </Box>
+      {/* Обложку готовит провайдер изображений проекта; выбранный агент на неё не влияет, AgentButton сам блокируется по той же причине. */}
+      <Stack spacing={1} sx={{ mt: 1 }}>
+        <AiProblemAlert kinds={['image']} />
+        <Box>
+          <AgentButton onClick={onGenerate} aiKind="image" title="Создать обложку через провайдера изображений проекта">
+            Сгенерировать обложку
+          </AgentButton>
+        </Box>
+      </Stack>
     </Paper>
   );
 }

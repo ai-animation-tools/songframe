@@ -97,7 +97,7 @@ def package_state(directory):
     shot = shot_of(directory, workflow, request)
     stage = None
     # Состояние исполнения принадлежит attempt.json и важнее этапа подготовки,
-    # кроме ещё не отправленного запроса. @link ../kling_request/request-format.md
+    # кроме ещё не отправленного запроса. @link ../media_request/request-format.md
     if isinstance(attempt, dict) and attempt.get("status") not in (None, "prepared"):
         stage = ATTEMPT_LABELS.get(attempt["status"], "состояние попытки: " + str(attempt["status"]))
     elif isinstance(workflow, dict):
@@ -141,9 +141,6 @@ def collect(root=ROOT):
     root = Path(root).resolve()
     data = load(root)
     items = registry_shots(data)
-    work = read_json(root / "plan/production-status.json")
-    work = work if isinstance(work, dict) else {}
-    tracked = set(work.get("shots", {})) | set(work.get("active_work", {}).get("shots", []))
     packages, reviews = work_packages(root)
     rows = []
     for scene in items:
@@ -159,14 +156,6 @@ def collect(root=ROOT):
             status, stage = "unknown", own[0]["stage"]
         elif own:
             status, stage = "progress", own[0]["stage"]
-        elif sid in tracked:
-            detail = work.get("shots", {}).get(sid, {})
-            status = "progress"
-            stage = (
-                "по реестру работ: " + str(detail.get("status", "в работе"))
-                if isinstance(detail, dict)
-                else "по реестру работ"
-            )
         else:
             status, stage = "planned", "постановка в реестре, работа не начата"
         rows.append(

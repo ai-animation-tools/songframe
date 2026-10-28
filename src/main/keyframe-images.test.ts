@@ -3,17 +3,26 @@ import { randomUUID, createHash } from 'node:crypto';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AgentJob, AgentStartInput } from '@shared/agents';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AgentJob, AgentSettings, AgentStartInput } from '@shared/agents';
 import type { ProductionImagesInput } from '@shared/production-workflow';
 import { imageDimensions, imageExtensionMatches, isImageFile, KeyframeImages } from './keyframe-images';
+import { registerTestAgentProvider, TEST_AGENT_PROVIDER, testAgentProviderInfo } from './testing/media-provider';
+
+let restoreProvider: () => void;
+beforeAll(() => {
+  restoreProvider = registerTestAgentProvider();
+});
+afterAll(() => restoreProvider());
 
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64');
 let work: string;
 let project: string;
 let localDir: string;
 let input: ProductionImagesInput;
-let launched: { input: AgentStartInput; workDir: string; job: AgentJob };
+let launched: { input: AgentStartInput; workDir: string; config: AgentSettings; job: AgentJob };
+const SHA = 'a'.repeat(64);
+const AGENT: AgentSettings = { provider: testAgentProviderInfo.executor!, model: 'image-model' };
 let adapter: KeyframeImages;
 let validateImage: ReturnType<typeof vi.fn<(path: string) => boolean>>;
 const digest = (path: string): string => createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -40,13 +49,13 @@ beforeEach(() => {
     localDir,
     validateImage,
     agents: {
-      startImages(value, workDir) {
+      startImages(value, workDir, config) {
         const job: AgentJob = {
           schemaVersion: 1,
           id: randomUUID(),
           sequence: 1,
           project: value.project,
-          provider: 'codex',
+          provider: config.provider,
           task: value.task,
           permissions: 'workspace-write',
           inputHashes: { prompt: 'a'.repeat(64), context: 'b'.repeat(64) },
@@ -58,7 +67,7 @@ beforeEach(() => {
           result: '',
           log: ''
         };
-        launched = { input: value, workDir, job };
+        launched = { input: value, workDir, config, job };
         return job;
       }
     }
@@ -69,8 +78,11 @@ afterEach(() => {
   rmSync(work, { recursive: true, force: true });
 });
 
-function start(): AgentJob {
-  return adapter.start(input);
+function start(requestSha = SHA): AgentJob {
+  return adapter.start(input, { provider: TEST_AGENT_PROVIDER, requestSha, agent: AGENT });
+}
+function collect(job: AgentJob, requestSha = SHA): ReturnType<KeyframeImages['collect']> {
+  return adapter.collect(job, requestSha);
 }
 function response(
   images: unknown = [
@@ -93,8 +105,11 @@ describe('кандидаты опор', () => {
     expect(readdirSync(launched.workDir).filter((name) => name.startsWith('reference-'))).toEqual(['reference-01.png']);
     expect(readFileSync(join(launched.workDir, 'reference-01.png'))).toEqual(png);
     expect(statSync(join(launched.workDir, 'reference-01.png')).mode & 0o222).toBe(0);
-    expect(launched.input.prompt).toContain('Не используй Kling');
-    const candidates = adapter.collect(response());
+    expect(launched.input.prompt).toContain('Не используй внешние сервисы генерации');
+    // Программу и название задания даёт реестр провайдера, а не выбранный текстовый агент.
+    expect(launched.config).toEqual(AGENT);
+    expect(launched.input.task).toBe(`Опоры S01: ${testAgentProviderInfo.title}`);
+    const candidates = collect(response());
     expect(candidates).toEqual([
       { id: 'K01', path: join(launched.workDir, 'K01.png') },
       { id: 'K02', path: join(launched.workDir, 'K02.png') }
@@ -107,13 +122,13 @@ describe('кандидаты опор', () => {
     'не принимает невалидный финальный ответ: %s',
     (result) => {
       start();
-      expect(() => adapter.collect({ ...response(), result })).toThrow();
+      expect(() => collect({ ...response(), result })).toThrow();
     }
   );
 
   it('сохраняет порядок опор независимо от порядка файлов в финальном ответе', () => {
     start();
-    const result = adapter.collect(
+    const result = collect(
       response([
         { id: 'K02', path: 'K02.png' },
         { id: 'K01', path: 'K01.png' }
@@ -123,7 +138,7 @@ describe('кандидаты опор', () => {
   });
 
   it('собирает фактический WebP без переименования и проверяет связь с requestSHA', () => {
-    const job = adapter.start(input, 'frozen-sha');
+    const job = start('frozen-sha');
     const webp = Buffer.from('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA', 'base64');
     writeFileSync(join(launched.workDir, 'K01.webp'), webp);
     writeFileSync(join(launched.workDir, 'K02.webp'), webp);
@@ -139,8 +154,8 @@ describe('кандидаты опор', () => {
       })
     };
     expect(launched.input.prompt).toContain('фактический формат');
-    expect(adapter.collect(result, 'frozen-sha').map((item) => item.path)).toEqual([join(launched.workDir, 'K01.webp'), join(launched.workDir, 'K02.webp')]);
-    expect(() => adapter.collect(result, 'another-sha')).toThrow(/другому согласованному запросу/);
+    expect(collect(result, 'frozen-sha').map((item) => item.path)).toEqual([join(launched.workDir, 'K01.webp'), join(launched.workDir, 'K02.webp')]);
+    expect(() => collect(result, 'another-sha')).toThrow(/другому согласованному запросу/);
   });
 
   it('повреждённая запись старого задания не мешает собрать новое завершённое задание', () => {
@@ -148,14 +163,14 @@ describe('кандидаты опор', () => {
     const previous = join(localDir, 'image-jobs', '000-old-job');
     mkdirSync(previous);
     writeFileSync(join(previous, 'job.json'), '{');
-    expect(adapter.collect(response()).map((image) => image.id)).toEqual(['K01', 'K02']);
+    expect(collect(response()).map((image) => image.id)).toEqual(['K01', 'K02']);
     expect(readFileSync(join(previous, 'job.json'), 'utf8')).toBe('{');
   });
 
   it('отклоняет отсутствующий файл и текст под расширением PNG', () => {
     start();
     expect(() =>
-      adapter.collect(
+      collect(
         response([
           { id: 'K01', path: 'missing.png' },
           { id: 'K02', path: 'K02.png' }
@@ -164,14 +179,14 @@ describe('кандидаты опор', () => {
     ).toThrow();
     const job = response();
     writeFileSync(join(launched.workDir, 'K01.png'), 'это не изображение');
-    expect(() => adapter.collect(job)).toThrow(/настоящий файл изображения/);
+    expect(() => collect(job)).toThrow(/настоящий файл изображения/);
   });
 
   it('передаёт magic-valid изображение декодеру и отклоняет отказ декодирования', () => {
     start();
     const job = response();
     validateImage.mockReturnValue(false);
-    expect(() => adapter.collect(job)).toThrow(/настоящий файл изображения/);
+    expect(() => collect(job)).toThrow(/настоящий файл изображения/);
     expect(validateImage).toHaveBeenCalledExactlyOnceWith(join(launched.workDir, 'K01.png'));
   });
 
@@ -184,7 +199,7 @@ describe('кандидаты опор', () => {
       { id: 'K01', path: `K01${suffix}` },
       { id: 'K02', path: 'K02.png' }
     ]);
-    expect(() => adapter.collect(job)).toThrow(/расширение не соответствует фактическому формату/);
+    expect(() => collect(job)).toThrow(/расширение не соответствует фактическому формату/);
     expect(digest(path)).toBe(before);
     expect(readFileSync(path)).toEqual(png);
   });
@@ -193,7 +208,7 @@ describe('кандидаты опор', () => {
     start();
     writeFileSync(join(launched.workDir, '../outside.png'), png);
     expect(() =>
-      adapter.collect(
+      collect(
         response([
           { id: 'K01', path },
           { id: 'K02', path: 'K02.png' }
@@ -209,10 +224,10 @@ describe('кандидаты опор', () => {
       { id: 'K02', path: 'K02.png' }
     ]);
     symlinkSync(join(launched.workDir, 'K01.png'), join(launched.workDir, 'alias.png'));
-    expect(() => adapter.collect(job)).toThrow(/настоящий файл изображения/);
+    expect(() => collect(job)).toThrow(/настоящий файл изображения/);
     symlinkSync(join(project, 'source'), join(launched.workDir, 'linked-directory'));
     expect(() =>
-      adapter.collect(
+      collect(
         response([
           { id: 'K01', path: 'linked-directory/reference.png' },
           { id: 'K02', path: 'K02.png' }
@@ -225,13 +240,13 @@ describe('кандидаты опор', () => {
     start();
     const job = response();
     writeFileSync(join(project, 'source/reference.png'), Buffer.concat([png, Buffer.from('изменено')]));
-    expect(() => adapter.collect(job)).toThrow(/Референсы изменились/);
+    expect(() => collect(job)).toThrow(/Референсы изменились/);
   });
 
   it('отклоняет изменённую рабочую копию и не выдаёт референс за результат', () => {
     start();
     expect(() =>
-      adapter.collect(
+      collect(
         response([
           { id: 'K01', path: 'reference-01.png' },
           { id: 'K02', path: 'K02.png' }
@@ -240,7 +255,7 @@ describe('кандидаты опор', () => {
     ).toThrow();
     chmodSync(join(launched.workDir, 'reference-01.png'), 0o644);
     writeFileSync(join(launched.workDir, 'reference-01.png'), Buffer.concat([png, Buffer.from('изменено')]));
-    expect(() => adapter.collect(response())).toThrow(/Референс|копи/);
+    expect(() => collect(response())).toThrow(/Референс|копи/);
   });
 
   it.each([
@@ -255,16 +270,27 @@ describe('кандидаты опор', () => {
     ]
   ])('требует ровно все заявленные ID: %j', (...images) => {
     start();
-    expect(() => adapter.collect(response(images))).toThrow(/не все согласованные опоры/);
+    expect(() => collect(response(images))).toThrow(/не все согласованные опоры/);
   });
 
-  it.each([{ provider: 'claude' as const }, { status: 'failed' as const }, { status: 'running' as const }, { exitCode: 1 }])(
-    'не собирает результат неуспешного или чужого исполнителя: %j',
-    (patch) => {
-      start();
-      expect(() => adapter.collect({ ...response(), ...patch })).toThrow(/не завершено успешно/);
-    }
-  );
+  it.each([{ status: 'failed' as const }, { status: 'running' as const }, { exitCode: 1 }])('не собирает результат неуспешного задания: %j', (patch) => {
+    start();
+    expect(() => collect({ ...response(), ...patch })).toThrow(/не завершено успешно/);
+  });
+
+  it('не собирает задание чужой программы-агента и неполную запись без провайдера', () => {
+    start();
+    expect(() => collect({ ...response(), provider: 'claude' })).toThrow(/Повреждена запись/);
+    const record = join(launched.workDir, 'job.json');
+    const { provider: _provider, ...rest } = JSON.parse(readFileSync(record, 'utf8'));
+    writeFileSync(record, JSON.stringify(rest));
+    expect(() => collect(response())).toThrow(/Повреждена запись/);
+  });
+
+  it('называет провайдера из записи в ошибке результата', () => {
+    start();
+    expect(() => collect({ ...response(), result: 'null' })).toThrow(`${testAgentProviderInfo.title} не вернул список файлов опор.`);
+  });
 
   it('не копирует референс за пределами проекта', () => {
     writeFileSync(join(work, 'outside.png'), png);

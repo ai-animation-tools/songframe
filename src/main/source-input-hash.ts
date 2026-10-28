@@ -34,15 +34,3 @@ export function sourceInputDigest(project: string): string | null {
   const path = join(project, 'source/manifest.json');
   return existsSync(path) ? sourceInputDigestFromBytes(readFileSync(path)) : null;
 }
-
-/** Старый снимок переводим только при точном совпадении прежних байтов, не утверждая неизвестные изменения. */
-export function upgradeSourceInputSnapshot(hashes: Record<string, string | null>, project: string): boolean {
-  const path = join(project, 'source/manifest.json');
-  if (!existsSync(path)) return false;
-  const bytes = readFileSync(path);
-  if (hashes['source/manifest.json'] !== digest(bytes)) return false;
-  const next = sourceInputDigestFromBytes(bytes);
-  if (hashes['source/manifest.json'] === next) return false;
-  hashes['source/manifest.json'] = next;
-  return true;
-}

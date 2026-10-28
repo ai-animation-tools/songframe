@@ -6,6 +6,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useNavigate } from 'react-router-dom';
 import type { ProjectStatus } from '@shared/types';
 import { nextStep } from '../nextStep';
+import { LinkedText } from '../../../components/LinkedText';
 
 export function NextStepCard({ status }: { status: ProjectStatus }): ReactElement {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export function NextStepCard({ status }: { status: ProjectStatus }): ReactElemen
         {step.title}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {step.text}
+        <LinkedText text={step.text} />
       </Typography>
       {step.action ? (
         <Button variant="contained" startIcon={<ArrowForwardIcon />} onClick={() => navigate(step.action!.to)}>

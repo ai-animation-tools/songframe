@@ -1,6 +1,6 @@
 /** GUI PATH согласуется с Node shebang и default nvm без изменений окружения вызывающего процесса. */
 import { execFile } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -31,11 +31,10 @@ function cliVersion(command: string, env: NodeJS.ProcessEnv): Promise<string> {
 }
 
 describe.skipIf(process.platform !== 'linux')('Окружение внешних CLI на Linux', () => {
-  it('сохраняет уже выбранную пару node/kling и не переключает её на другой NVM_BIN', async () => {
+  it('сохраняет уже выбранный node и не переключает его на другой NVM_BIN', async () => {
     const existing = join(work, 'current');
     const other = join(work, 'other');
     binary(existing, 'node');
-    binary(existing, 'kling');
     binary(other, 'node');
     const input = Object.freeze({ PATH: existing, NVM_BIN: other, HOME: work });
     const processPath = process.env.PATH;
@@ -47,13 +46,13 @@ describe.skipIf(process.platform !== 'linux')('Окружение внешних
     expect(env).not.toBe(input);
   });
 
-  it('подключает валидный NVM_BIN к минимальному GUI PATH и реально запускает Kling с Node shebang', async () => {
+  it('подключает валидный NVM_BIN к минимальному GUI PATH и реально запускает CLI с Node shebang', async () => {
     const bin = join(work, 'CLI с пробелами');
     binary(bin, 'node', '#!/bin/sh\nprintf "node-wrapper:%s\\n" "$*"\n');
-    const kling = binary(bin, 'kling', '#!/usr/bin/env node\n');
+    const cli = binary(bin, 'test-cli', '#!/usr/bin/env node\n');
     const env = await externalEnvironment({ env: { PATH: '/usr/bin:/bin', NVM_BIN: bin }, home: work, platform: 'linux' });
     expect(env.PATH?.split(':')[0]).toBe(bin);
-    expect(await cliVersion('kling', env)).toBe(`node-wrapper:${kling} --version`);
+    expect(await cliVersion('test-cli', env)).toBe(`node-wrapper:${cli} --version`);
   });
 
   it('использует штатный nvm which default из NVM_DIR вместо обхода каталогов версий', async () => {
@@ -88,21 +87,6 @@ describe.skipIf(process.platform !== 'linux')('Окружение внешних
     expect(env.PATH?.split(':')[0]).toBe(bin);
   });
 
-  it('использует исходный каталог абсолютного override, чтобы symlink npm не потерял sibling Node', async () => {
-    const bin = join(work, 'manual');
-    const packageDir = join(work, 'npm-package/dist');
-    binary(bin, 'node', '#!/bin/sh\nprintf "manual-node:%s\\n" "$*"\n');
-    const target = binary(packageDir, 'cli.js', '#!/usr/bin/env node\n');
-    const cli = join(bin, 'kling');
-    symlinkSync(target, cli);
-    const input = { PATH: '/usr/bin:/bin', SONGFRAME_KLING_CLI: cli };
-    const env = await externalEnvironment({ env: input, home: work, platform: 'linux' });
-    expect(env.PATH?.split(':')[0]).toBe(bin);
-    expect(env.PATH?.split(':')).not.toContain(packageDir);
-    expect(await cliVersion(cli, env)).toBe(`manual-node:${cli} --version`);
-    expect(env.SONGFRAME_KLING_CLI).toBe(cli);
-  });
-
   it('возвращает базовый PATH после ошибки resolver и ограничивает зависший resolver без блокировки event loop', async () => {
     const directory = join(work, '.nvm');
     nvm(directory, 'nvm() { return 7; }\n');
@@ -124,7 +108,7 @@ describe.skipIf(process.platform !== 'linux')('Окружение внешних
 });
 
 it('сохраняет Windows PATH и переменные без POSIX-каталогов и без изменения входного объекта', async () => {
-  const input = Object.freeze({ PATH: 'C:\\Windows;C:\\node', NVM_BIN: '/unused', SONGFRAME_KLING_CLI: '/unused/kling' });
+  const input = Object.freeze({ PATH: 'C:\\Windows;C:\\node', NVM_BIN: '/unused', SONGFRAME_TEST_MARKER: '/unused/marker' });
   const env = await externalEnvironment({ env: input, home: '/unused', platform: 'win32' });
   expect(env).toEqual(input);
   expect(env).not.toBe(input);

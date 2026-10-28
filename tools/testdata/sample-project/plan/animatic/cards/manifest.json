@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_from": "plan/scenes.json",
-  "registry_sha256": "c949531abfa770418b28e15c6d6abbb473b9854c6caba8735982c41fdc713772",
+  "registry_sha256": "7a80da73a0f083fc3a9b31862b7b0ea2fe87c6536af966a50c3b1b579417401f",
   "project_inputs": {
     "name": "Пробный клип"
   },
@@ -22,7 +22,7 @@
     },
     "M05": {
       "path": "plan/animatic/cards/M05.png",
-      "sha256": "ee9ffa896cba119e5f2a28228def508d5e379f27512e653cce552dca69d6bb1d"
+      "sha256": "8c0df30d50c5ac7a688840ef13e5448ce42f1e9167557ddb3630bd3725b6738f"
     }
   }
 }

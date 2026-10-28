@@ -7,20 +7,34 @@ import { JobStatus } from '../../components';
 import { ProjectChecksPanel, ReviewPanel } from './components';
 import { useChecksPage } from './useChecksPage';
 import { PageActionBar } from '../../components/PageActionBar';
+import { LinkedText } from '../../components/LinkedText';
 
 export function ChecksPage(): ReactElement {
   const page = useChecksPage();
+  // Причины блокировки общие для проверок и пробы; показываются в подсказках выключенных кнопок.
+  const toolsReason = !page.pythonAvailable
+    ? 'Нужен Python: проверьте его на странице «Среда».'
+    : page.running
+      ? 'Дождитесь окончания текущего задания.'
+      : null;
+  const checksReason = toolsReason ?? (!page.scenesReady ? 'Сначала соберите реестр сцен.' : null);
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
       <PageActionBar>
         <Typography variant="h5">Проверки</Typography>
+        {/* Индикатор задания стоит в закреплённой панели, чтобы был виден при любой прокрутке. */}
+        <JobStatus running={page.running} />
         <Box sx={{ flex: 1 }} />
-        <Button size="small" startIcon={<RefreshIcon />} onClick={() => Promise.all([page.loadJobs(), page.loadReviews()])}>
+        <Button startIcon={<RefreshIcon />} onClick={() => Promise.all([page.loadJobs(), page.loadReviews()])}>
           Обновить
         </Button>
       </PageActionBar>
-      {!page.pythonAvailable ? <Alert severity="warning">Python не найден: проверки и проба недоступны. См. страницу «Среда».</Alert> : null}
+      {!page.pythonAvailable ? (
+        <Alert severity="warning">
+          <LinkedText text="Python не найден: проверки и проба недоступны. См. страницу «Среда»." />
+        </Alert>
+      ) : null}
       {/* Независимые проверки и проба стыков стоят рядом, когда рабочая область достаточно широка. */}
       <Box
         sx={{
@@ -35,6 +49,7 @@ export function ChecksPage(): ReactElement {
         <ProjectChecksPanel
           checks={page.checks}
           disabled={!page.pythonAvailable || !page.scenesReady || page.running}
+          disabledReason={checksReason}
           strict={page.strict}
           next={page.next}
           setStrict={page.setStrict}
@@ -49,6 +64,7 @@ export function ChecksPage(): ReactElement {
           selected={page.selected}
           planOnly={page.planOnly}
           disabled={!page.pythonAvailable || page.running}
+          disabledReason={toolsReason}
           reviews={page.reviews}
           openReview={page.openReview}
           deletingReview={page.deletingReview}
@@ -61,7 +77,6 @@ export function ChecksPage(): ReactElement {
           removeReview={page.removeReview}
         />
       </Box>
-      <JobStatus running={page.running} />
     </Stack>
   );
 }

@@ -112,6 +112,12 @@ it.each([
   expect(() => setAnimaticStatus(project, 'approved')).toThrow(/устаревшему/);
 });
 
+it('пометка «—» плана без референсов не считается источником карточки', () => {
+  manifest.shots![1] = { ...manifest.shots![1], references: ['—', 'hero'] };
+  write(snapshot, manifest);
+  expect(viewAnimatic(project).problems).toEqual([]);
+});
+
 it('переключение принятого монтажа и появление видео вместо карточки требуют пересборки', () => {
   accepted('M01', 'replacement.mp4', 'video');
   expect(viewAnimatic(project).problems.join(' ')).toContain('выбранный принятый монтаж изменился');

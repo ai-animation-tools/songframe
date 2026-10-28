@@ -5,7 +5,6 @@ node_modules/
 .yarn/
 tools/
 templates/
-vendor/
 skills/
 *.md
 yarn.lock

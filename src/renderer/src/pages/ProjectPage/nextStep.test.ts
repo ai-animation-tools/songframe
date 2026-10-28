@@ -28,7 +28,7 @@ const status = (state: ProjectState, checks: Partial<ProjectStatus['checks']> = 
 describe('Подсказка следующего шага', () => {
   it('для разметки называет только кнопку автоматической разметки', () => {
     const step = nextStep(status('sourced'));
-    expect(step.text).toContain('«Разметить автоматически»');
+    expect(step.text).toContain('«Разметить»');
     expect(step.text).not.toMatch(/скилл|ai-clip|внешн/i);
     expect(step.action?.to).toBe('/project/timing');
   });

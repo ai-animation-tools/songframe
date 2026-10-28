@@ -15,11 +15,12 @@ import shutil
 import tempfile
 from datetime import datetime, timezone
 
-from tools.common import ROOT, sha
+from tools import media_adapters
+from tools.common import ROOT, read_json, sha
 from tools.scene_registry.scene_registry import generation_settings, load, scene_fingerprint
 from tools.shot_status.shot_status import STAGE_LABELS, WAIT_LABELS
 
-# Единый порядок этапов подготовки; прежние покадровые названия читаются как keyframes_review.
+# Единый порядок этапов подготовки.
 STAGES = [
     "description_review",
     "keyframes_review",
@@ -56,7 +57,6 @@ DEFAULT_QUESTIONS = {
     "downloaded": ("Принять результат, исправить или собрать пробу?", ["accept", "retry", "review", "revise"]),
     "edit_review": ("Принять этот монтажный участок?", ["accept", "revise"]),
 }
-PROMPT_WARNING_CHARS = 2500
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 
 
@@ -163,14 +163,8 @@ def plan_keyframes(directory, request_seconds, middles=(), root=ROOT):
     data = load_workflow(directory)
     if type(request_seconds) is not int or request_seconds <= 0:
         raise ValueError("Длительность запроса задаётся целым числом секунд.")
-    # Старые пакеты без generation сохраняют запас; новые используют правило выбранного проекта.
-    project_path = Path(root) / "plan/project.json"
-    project = json.loads(project_path.read_text(encoding="utf-8")) if project_path.is_file() else {}
-    rule = (
-        generation_settings(project)["duration_rule"]
-        if "generation" in project
-        else "min_supported_strictly_greater_than_window"
-    )
+    # Длительность запроса задаёт правило generation.video выбранного проекта; без блока — понятная ошибка.
+    rule = generation_settings(read_json(Path(root) / "plan/project.json"))["duration_rule"]
     window = data["timing"]["window_seconds"]
     if rule == "exact_window":
         if not float(window).is_integer():
@@ -257,10 +251,21 @@ def approve_prompt(directory, file=None, root=ROOT):
     data["approved_prompt_sha256"] = digest
     if data["stage"] in ("description_review", "keyframes_review"):
         data["stage"] = "prompt_review"
-    warnings = (
-        [f"Промпт длиннее {PROMPT_WARNING_CHARS} символов ({len(text)})."] if len(text) > PROMPT_WARNING_CHARS else []
-    )
+    limit = prompt_warning_chars(root)
+    warnings = [f"Промпт длиннее {limit} символов ({len(text)})."] if limit and len(text) > limit else []
     return save_workflow(directory, data), warnings
+
+
+def prompt_warning_chars(root=ROOT):
+    """Предел длины видеопромпта из адаптера провайдера generation.video; нет предела — нет предупреждения."""
+    try:
+        provider = generation_settings(read_json(Path(root) / "plan/project.json"))["provider"]
+    except ValueError:
+        return None
+    if not media_adapters.known(provider):
+        return None
+    limit = getattr(media_adapters.adapter(provider), "PROMPT_WARNING_CHARS", None)
+    return limit if type(limit) is int and limit > 0 else None
 
 
 def now():
@@ -293,7 +298,7 @@ def propose(directory, keyframe_id, source, root=ROOT):
 
 def image_attempt(directory, data, request_dir=None):
     """Читает прежний frozen request/attempt, не создавая ещё одного журнала отправки."""
-    from tools.kling_request.kling_request import load_attempt
+    from tools.media_request.attempt import load_attempt
 
     name = request_dir if request_dir is not None else data.get("image_request_dir")
     if not isinstance(name, str) or not name or Path(name).is_absolute():
@@ -302,7 +307,7 @@ def image_attempt(directory, data, request_dir=None):
     if path == directory or not path.is_relative_to(directory):
         raise ValueError("Запрос изображения должен лежать внутри рабочего пакета.")
     request, attempt = load_attempt(path, verify_inputs=True)
-    if request.get("kind") != "image" or request.get("command") not in ("text_to_image", "image_to_image"):
+    if request.get("kind") != "image":
         raise ValueError("Нужен подготовленный запрос kind=image.")
     if request.get("shot") not in (None, data["shot"]):
         raise ValueError("Запрос изображения относится к другому плану.")
@@ -316,7 +321,7 @@ def image_attempt(directory, data, request_dir=None):
         if not entry or (entry.get("request_sha256"), entry.get("frame_id"), entry.get("provider")) != (
             attempt["request_sha256"],
             data.get("image_frame_id"),
-            "kling",
+            request["provider"],
         ):
             raise ValueError("Активный запрос не совпадает с историей изображений.")
     return path, request, attempt
@@ -345,12 +350,7 @@ def set_image_request(directory, frame_id, request_dir, root=ROOT):
     if data["stage"] not in ("description_review", "keyframes_review", "image_request_choice", REVISION):
         raise ValueError("Сначала завершите текущую отправку и выберите её результат.")
     # Отдельный факт принятия описания не теряется после send/выбора первой опоры.
-    # Старый пакет получает его из прежнего решения только при отсутствии нового поля.
-    decision = data.get("decision") or {}
-    description_approved = data.get(
-        "description_approved", decision.get("stage") == "description_review" and decision.get("verdict") == "approve"
-    )
-    if description_approved is not True:
+    if data.get("description_approved") is not True:
         raise ValueError("Сначала утвердите описание перед подготовкой изображения.")
     frame = next((item for item in data["keyframes"] if item["id"] == frame_id), None)
     if (
@@ -373,15 +373,8 @@ def set_image_request(directory, frame_id, request_dir, root=ROOT):
                 item for item in data["image_requests"] if item.get("request_dir") == data["image_request_dir"]
             )
             originals = image_downloads(previous_dir, previous)
-            selected_sha256 = previous_record.get("selected_sha256")
             # Выбор оригинала переживает исправление описания и сброс candidate path.
-            # Старый пакет пока можно подтвердить совпадающим кандидатом. @link README.md
-            if selected_sha256 is None:
-                selected = next((item for item in data["keyframes"] if item["id"] == data.get("image_frame_id")), {})
-                selected_path = (directory / (selected.get("path") or "")).resolve()
-                if not selected_path.is_file() or selected.get("sha256") != sha(selected_path):
-                    raise ValueError("Опора не совпадает с выбранным оригиналом предыдущей отправки.")
-                selected_sha256 = selected["sha256"]
+            selected_sha256 = previous_record.get("selected_sha256")
             if (
                 not isinstance(selected_sha256, str)
                 or not re.fullmatch(r"[a-f0-9]{64}", selected_sha256)
@@ -389,7 +382,7 @@ def set_image_request(directory, frame_id, request_dir, root=ROOT):
             ):
                 raise ValueError("Хеш выбора не совпадает с сохранённым оригиналом предыдущей отправки.")
             previous_record["selected_sha256"] = selected_sha256
-    path, _, attempt = image_attempt(directory, data, request_dir)
+    path, request, attempt = image_attempt(directory, data, request_dir)
     name = str(path.relative_to(directory))
     if attempt.get("status") != "prepared" or attempt.get("generation_id") or attempt.get("downloads"):
         raise ValueError("Запрос уже отправлялся: используйте resume, не новую отправку.")
@@ -398,7 +391,7 @@ def set_image_request(directory, frame_id, request_dir, root=ROOT):
         "frame_id": frame_id,
         "request_dir": name,
         "request_sha256": attempt["request_sha256"],
-        "provider": "kling",
+        "provider": request["provider"],
     }
     previous_entry = next((item for item in history if item.get("request_dir") == name), None)
     if previous_entry and any(previous_entry.get(key) != value for key, value in entry.items()):
@@ -589,7 +582,10 @@ def set_stage(directory, stage, wait_reason=None, request_dir=None, root=ROOT):
                 not attempt.get("generation_id") and attempt.get("status") not in ("submitting", "submission_unknown")
             ):
                 raise ValueError("Отправка изображения ещё не зарегистрирована в attempt.json.")
-        if stage == "image_downloaded" and (attempt.get("status") != "downloaded" or not attempt.get("generation_id")):
+        # Результат без ID допустим, только если пользователь сам загрузил оригинал после неизвестного исхода.
+        if stage == "image_downloaded" and (
+            attempt.get("status") != "downloaded" or not (attempt.get("generation_id") or attempt.get("manual_result"))
+        ):
             raise ValueError("Результат изображения ещё не downloaded.")
     if stage == data["stage"] and wait_reason is None and request_dir is None:
         return data
@@ -662,16 +658,16 @@ def report(directory, root=ROOT):
             pass
     hints = {
         "image_request_choice": "покажите image request SHA и cost_check; каждую отправку подтвердите отдельно",
-        "image_submitted": "продолжите ту же попытку: kling_request resume, не submit",
+        "image_submitted": "продолжите ту же попытку: media_request resume, не submit",
         "image_downloaded": "пользователь выбирает оригинал: select-image --file ПУТЬ",
         "description_review": "согласуйте описание, затем plan-keyframes и approve",
         "keyframes_review": "примите опоры: approve ID ПУТЬ; затем approve-prompt",
-        "prompt_review": "после принятия промпта подготовьте запрос: kling_request prepare, "
+        "prompt_review": "после принятия промпта подготовьте запрос: media_request prepare, "
         "затем set-stage request_choice --request-dir",
         "request_choice": "покажите таблицу запроса и cost_check; «отправить» — submit, «сохранить» — park",
         "ready": "пакет ждёт в очереди; продолжение — кнопками на странице «Производство»",
         REVISION: "исправьте затронутые опоры или промпт",
-        "submitted": "ожидайте результат: kling_request resume",
+        "submitted": "ожидайте результат: media_request resume",
         "downloaded": "покажите результат; решение пользователя",
         "edit_review": "уточните монтажный участок, затем accept_shot",
         "accepted": "перенесите комплект в assets и очистите пакет",
@@ -694,11 +690,7 @@ def report(directory, root=ROOT):
         "image_frame_id": data.get("image_frame_id"),
         "image_requests": data.get("image_requests", []),
         "image_attempt_status": image_status,
-        "description_approved": data.get(
-            "description_approved",
-            (data.get("decision") or {}).get("stage") == "description_review"
-            and (data.get("decision") or {}).get("verdict") == "approve",
-        ),
+        "description_approved": data.get("description_approved") is True,
         "pending_decision": data.get("pending_decision"),
         "decision": data.get("decision"),
         "problems": problems(directory, data, root),

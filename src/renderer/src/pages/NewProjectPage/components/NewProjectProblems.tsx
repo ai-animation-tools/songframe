@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { Alert } from '@mui/material';
+import { LinkedText } from '../../../components/LinkedText';
 
 interface NewProjectProblemsProps {
   problems: string[];
@@ -11,7 +12,9 @@ export function NewProjectProblems({ problems }: NewProjectProblemsProps): React
     <Alert severity="warning">
       <ul style={{ margin: 0, paddingLeft: 18 }}>
         {problems.map((problem) => (
-          <li key={problem}>{problem}</li>
+          <li key={problem}>
+            <LinkedText text={problem} />
+          </li>
         ))}
       </ul>
     </Alert>

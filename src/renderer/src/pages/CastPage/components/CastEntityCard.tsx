@@ -46,6 +46,8 @@ export function CastEntityCard({
       onChange={(_e, open) => onExpandedChange(open)}
       disableGutters
       variant="outlined"
+      // Свёрнутое содержимое не держим в DOM: скрытые поля и кнопки не попадают в обход и проверки доступности.
+      slotProps={{ transition: { unmountOnExit: true } }}
       sx={{ minWidth: 0, m: '0 !important', gridColumn: expanded ? '1 / -1' : undefined }}
     >
       {/* Содержимое заголовка может сжиматься внутри колонки, не выталкивая изображение за край карточки. */}
@@ -54,20 +56,29 @@ export function CastEntityCard({
           <Avatar src={thumb} variant="rounded" sx={{ width: 40, height: 40, bgcolor: 'action.hover', color: 'text.secondary', fontSize: 14 }}>
             {entity.kind === WORLD ? '🌍' : entity.name.slice(0, 1)}
           </Avatar>
-          <Typography fontWeight={600} noWrap>
+          {/* Имя и код не сжимаются, пока помещаются; при нехватке места обрезается роль справа. */}
+          <Typography fontWeight={600} noWrap title={entity.name || undefined} sx={{ flexShrink: 0, maxWidth: '40%' }}>
             {entity.name || '(без названия)'}
           </Typography>
-          <Chip size="small" variant="outlined" label={kinds.find((kind) => kind.id === entity.kind)?.label ?? entity.kind} />
-          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+          <Chip
+            size="small"
+            variant="outlined"
+            label={kinds.find((kind) => kind.id === entity.kind)?.label ?? entity.kind}
+            sx={{ flexShrink: 0, maxWidth: 160 }}
+          />
+          <Typography variant="caption" color="text.secondary" noWrap title={entity.id} sx={{ fontFamily: 'monospace', flexShrink: 0, maxWidth: 180 }}>
             {entity.id}
           </Typography>
-          <Box sx={{ flex: 1 }} />
-          {entity.role ? (
-            <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 260 }}>
-              {entity.role}
-            </Typography>
-          ) : null}
-          <Chip size="small" label={stateCount ? `состояние: ${stateCount}` : 'без состояния'} color={stateCount ? 'default' : 'warning'} variant="outlined" />
+          <Typography variant="caption" color="text.secondary" noWrap title={entity.role || undefined} sx={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
+            {entity.role}
+          </Typography>
+          <Chip
+            size="small"
+            label={stateCount ? `состояние: ${stateCount}` : 'без состояния'}
+            color={stateCount ? 'default' : 'warning'}
+            variant="outlined"
+            sx={{ flexShrink: 0 }}
+          />
         </Box>
       </AccordionSummary>
       <AccordionDetails>
@@ -101,10 +112,12 @@ export function CastEntityCard({
             />
           </Box>
           <Box>
+            {/* Мир сцены обязателен для состояния сцены: выключенная кнопка объясняет причину. */}
             <DestructiveButton
               label={`Удалить сущность «${entity.name || entity.id}»`}
               description="Сущность и её настройки будут удалены из состава проекта."
               disabled={entity.kind === WORLD}
+              disabledReason="Мир сцены нельзя удалить: в нём хранятся общие условия сцен."
               onConfirm={onRemove}
               startIcon={<DeleteOutlineIcon />}
             />

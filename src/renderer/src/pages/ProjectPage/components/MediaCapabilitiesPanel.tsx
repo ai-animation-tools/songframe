@@ -7,6 +7,7 @@ import type { MediaCapabilities } from '@shared/media-providers';
 import { capabilitiesFailed, capabilitiesNote, capabilitiesSummary } from './capabilitiesSummary';
 import { DateTime } from '../../../components/DateTime';
 import { useApp } from '../../../state';
+import { LinkedText } from '../../../components/LinkedText';
 
 export function MediaCapabilitiesPanel({
   project,
@@ -63,13 +64,17 @@ export function MediaCapabilitiesPanel({
       </Typography>
       {busy && <LinearProgress aria-label="Проверяем возможности провайдера" />}
       {!online && provider ? <Alert severity="info">Возможности провайдера проверятся после подключения к сети.</Alert> : null}
-      {error && <Alert severity="error">Не удалось проверить возможности: {error}</Alert>}
+      {error && (
+        <Alert severity="error">
+          <LinkedText text={`Не удалось проверить возможности: ${error}`} />
+        </Alert>
+      )}
       {result && (
         <Alert severity={result.available && result.problems.length === 0 ? 'info' : 'warning'}>
           <Typography variant="body2">{capabilitiesSummary(result)}</Typography>
           {result.problems.map((problem, index) => (
             <Typography key={`${index}:${problem}`} variant="body2">
-              {problem}
+              <LinkedText text={problem} />
             </Typography>
           ))}
           {!result.generationVerified && <Typography variant="body2">{capabilitiesNote(result)}</Typography>}

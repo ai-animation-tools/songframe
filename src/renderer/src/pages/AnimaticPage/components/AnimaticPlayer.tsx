@@ -1,7 +1,7 @@
 /** Плеер собранного видео, полоса глав и сведения о сборке. */
 
 import type { ReactElement, RefObject } from 'react';
-import { Box, Button, Paper, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import type { AnimaticShot, AnimaticView } from '@shared/types';
 import { formatClock } from '../../../format';
@@ -75,16 +75,15 @@ export function AnimaticPlayer({
           />
         ) : null}
       </Box>
-      <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Stack spacing={1} sx={{ mt: 1, alignItems: 'flex-start' }}>
         <Typography variant="caption" color="text.secondary">
           {formatClock(time)} / {formatClock(duration)} · {shots.length} планов: {built.counts.video} анимация, {built.counts.keyframes} опоры,{' '}
           {built.counts.cards} карточки · собрано <DateTime value={built.builtAt} />
         </Typography>
-        <Box sx={{ flex: 1 }} />
         <Button size="small" startIcon={<FolderOpenIcon />} onClick={onOpenFolder}>
           Открыть папку
         </Button>
-      </Box>
+      </Stack>
     </Paper>
   );
 }

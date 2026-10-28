@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
 import { analyzeLyrics } from '@shared/lyrics';
 import { TrackSection } from './components/TrackSection';
 import { CoverSection } from './components/CoverSection';
@@ -10,14 +11,15 @@ import { ReferenceEditor } from './components/ReferenceEditor';
 import type { AiAccess } from '@shared/ai-access';
 
 const aiState = vi.hoisted(() => ({ agentProvider: null as 'claude' | 'codex' | null, aiAccess: null as AiAccess | null }));
-vi.mock('../../state', () => ({ useApp: () => ({ notify: vi.fn(), describeError: String, ...aiState }) }));
+vi.mock('../../state', () => ({ useApp: () => ({ notify: vi.fn(), describeError: String, online: true, ...aiState }) }));
 
 /** Области выбора доступны клавиатуре, а поля текста остаются отдельными редакторами. */
 describe('загрузка исходников', () => {
-  const cover = (): string =>
-    renderToStaticMarkup(createElement(CoverSection, { coverSrc: null, onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn(), onGenerate: vi.fn() }));
+  // Причина недоступности ИИ показывается общим AiProblemAlert с переходом в настройки, ему нужен маршрутизатор.
+  const routed = (element: ReturnType<typeof createElement>): string => renderToStaticMarkup(createElement(MemoryRouter, null, element));
+  const cover = (): string => routed(createElement(CoverSection, { coverSrc: null, onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn(), onGenerate: vi.fn() }));
   const generateDisabled = (html: string): boolean => {
-    const label = html.indexOf('Сгенерировать');
+    const label = html.indexOf('Сгенерировать обложку');
     return html.slice(html.lastIndexOf('<button', label), label).includes('disabled=""');
   };
 
@@ -33,6 +35,7 @@ describe('загрузка исходников', () => {
     const html = cover();
     expect(generateDisabled(html)).toBe(true);
     expect(html).toContain('Сначала выберите провайдера изображений');
+    expect(html).toContain('Настройки проекта');
   });
 
   it('разрешает генерацию обложки без выбранного агента при доступном провайдере изображений', () => {
@@ -54,7 +57,7 @@ describe('загрузка исходников', () => {
       createElement(LyricsSection, { lyrics: '', lyricsCheck: analyzeLyrics(''), onChange: vi.fn(), onPick: pick, onDrop: drop }),
       createElement(IdeaSection, { idea: '', onChange: vi.fn(), onPick: pick, onDrop: drop })
     ]
-      .map((element) => renderToStaticMarkup(element))
+      .map((element) => routed(element))
       .join('');
     for (const label of ['Загрузка трека', 'Загрузка обложки', 'Загрузить текст песни из файла', 'Загрузить идею клипа из файла']) {
       expect(html).toContain(`role="button" aria-label="${label}" tabindex="0"`);
@@ -71,6 +74,7 @@ describe('загрузка исходников', () => {
       createElement(ReferenceEditor, {
         reference: { key: 1, id: 'hero', kind: 'character', name: 'Герой', short_name: '', description: '', prompt: '', files: [] },
         kinds: [],
+        duplicateId: false,
         fileUrl: String,
         onUpdate: vi.fn(),
         onRetryFilePrompt: vi.fn(),
@@ -84,12 +88,13 @@ describe('загрузка исходников', () => {
     expect(html).toContain('Общее описание сущности');
     expect(html).not.toContain('Загрузка описания референса');
     expect(html).toContain('Выбрать изображения референса Герой');
+    // Ошибки референса видны в самой карточке, а не только в общем списке страницы.
+    expect(html).toContain('Добавьте хотя бы одно изображение.');
+    expect(html).toContain('Выберите тип из списка');
   });
 
   it('показывает удаление обложки на изображении отдельным действием от загрузки', () => {
-    const html = renderToStaticMarkup(
-      createElement(CoverSection, { coverSrc: 'cover.png', onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn(), onGenerate: vi.fn() })
-    );
+    const html = routed(createElement(CoverSection, { coverSrc: 'cover.png', onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn(), onGenerate: vi.fn() }));
     expect(html).toContain('aria-label="Убрать обложку"');
     expect(html).toContain('data-testid="CloseIcon"');
     expect(html).toContain('aria-label="Загрузка обложки"');

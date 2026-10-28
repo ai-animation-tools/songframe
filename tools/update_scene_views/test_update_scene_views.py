@@ -214,7 +214,7 @@ class UpdateSceneViewsTests(unittest.TestCase):
         self.assertEqual(receipt["project_inputs"], {"name": "Тест"})
         self.assertEqual(len(receipt["cards"]), 2)
         for generation in (
-            {"video": {"provider": "kling"}},
+            {"video": {"provider": "test"}},
             {"video": {"model": "другая модель", "provider_selected": True, "options": {"duration": 5}}},
             {"image": {"provider": "codex", "model": "новая"}},
             None,

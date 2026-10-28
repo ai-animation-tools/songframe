@@ -1,8 +1,9 @@
 import { useId, type ReactElement, type ReactNode } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import type { AgentProvider } from '@shared/agent-providers';
 import type { AiActionKind } from '@shared/ai-access';
+import { ActionButton } from './ActionButton';
 import { AgentButton } from './AgentButton';
 
 interface Props {
@@ -19,7 +20,11 @@ interface Props {
   confirmAgent?: { provider?: AgentProvider; aiKind?: AiActionKind };
   confirmColor?: 'primary' | 'error' | 'warning';
   confirmDisabled?: boolean;
+  /** Что мешает подтвердить и что сделать; видно в подсказке выключенной кнопки. */
+  confirmDisabledReason?: string | null;
   cancelDisabled?: boolean;
+  /** Почему нельзя закрыть диалог сейчас, например во время операции. */
+  cancelDisabledReason?: string | null;
   closeDisabled?: boolean;
   cancelLabel?: string;
   cancelAutoFocus?: boolean;
@@ -39,7 +44,9 @@ export function ConfirmationDialog({
   confirmAgent,
   confirmColor = 'primary',
   confirmDisabled = false,
+  confirmDisabledReason,
   cancelDisabled = false,
+  cancelDisabledReason,
   closeDisabled = false,
   cancelLabel = 'Отмена',
   cancelAutoFocus = false,
@@ -61,18 +68,38 @@ export function ConfirmationDialog({
         {children}
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'wrap' }}>
-        <Button startIcon={<CancelOutlinedIcon />} autoFocus={cancelAutoFocus} disabled={cancelDisabled} onClick={onClose}>
+        <ActionButton
+          startIcon={<CancelOutlinedIcon />}
+          autoFocus={cancelAutoFocus}
+          disabled={cancelDisabled}
+          disabledReason={cancelDisabledReason}
+          onClick={onClose}
+        >
           {cancelLabel}
-        </Button>
+        </ActionButton>
         {extraActions}
         {confirmAgent ? (
-          <AgentButton {...confirmAgent} color={confirmColor} variant="contained" disabled={confirmDisabled} onClick={onConfirm}>
+          <AgentButton
+            {...confirmAgent}
+            color={confirmColor}
+            variant="contained"
+            disabled={confirmDisabled}
+            disabledReason={confirmDisabledReason}
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </AgentButton>
         ) : (
-          <Button startIcon={confirmIcon} color={confirmColor} variant="contained" disabled={confirmDisabled} onClick={onConfirm}>
+          <ActionButton
+            startIcon={confirmIcon}
+            color={confirmColor}
+            variant="contained"
+            disabled={confirmDisabled}
+            disabledReason={confirmDisabledReason}
+            onClick={onConfirm}
+          >
             {confirmLabel}
-          </Button>
+          </ActionButton>
         )}
       </DialogActions>
     </Dialog>

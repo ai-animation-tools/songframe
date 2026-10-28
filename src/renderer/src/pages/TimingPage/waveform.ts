@@ -15,11 +15,26 @@ export interface Peaks {
   duration: number;
 }
 
+/** Готовая волна на время сеанса: повторное открытие страницы не декодирует трек заново, пока его байты те же. */
+const peaksCache = new Map<string, Peaks>();
+/** Сколько миллисекунд подряд считаем волну, прежде чем отдать управление окну: интерфейс остаётся отзывчивым. */
+const SLICE_MS = 12;
+
+const yieldToWindow = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+
 export async function decodePeaks(url: string): Promise<Peaks> {
   const response = await fetch(url);
   const buffer = await response.arrayBuffer();
+  // Тот же путь с другим содержимым (заменённый трек) даёт другой ключ по размеру и первым байтам.
+  const head = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 4096));
+  let sum = 0;
+  for (let i = 0; i < head.length; i += 1) sum = (sum * 31 + head[i]) >>> 0;
+  const key = `${url}|${buffer.byteLength}|${sum}`;
+  const cached = peaksCache.get(key);
+  if (cached) return cached;
   const context = new AudioContext();
   try {
+    // Декодирование идёт вне главного потока; свёртку в пики считаем частями, чтобы окно не замирало.
     const audio = await context.decodeAudioData(buffer);
     const bins = Math.ceil(audio.duration * BINS_PER_SECOND);
     const min = new Float32Array(bins).fill(0);
@@ -27,6 +42,7 @@ export async function decodePeaks(url: string): Promise<Peaks> {
     const step = audio.sampleRate / BINS_PER_SECOND;
     for (let channel = 0; channel < audio.numberOfChannels; channel += 1) {
       const data = audio.getChannelData(channel);
+      let started = performance.now();
       for (let bin = 0; bin < bins; bin += 1) {
         const from = Math.floor(bin * step);
         const to = Math.min(data.length, Math.floor((bin + 1) * step));
@@ -39,9 +55,15 @@ export async function decodePeaks(url: string): Promise<Peaks> {
         }
         if (lo < min[bin]) min[bin] = lo;
         if (hi > max[bin]) max[bin] = hi;
+        if (performance.now() - started > SLICE_MS) {
+          await yieldToWindow();
+          started = performance.now();
+        }
       }
     }
-    return { min, max, duration: audio.duration };
+    const peaks = { min, max, duration: audio.duration };
+    peaksCache.set(key, peaks);
+    return peaks;
   } finally {
     void context.close();
   }

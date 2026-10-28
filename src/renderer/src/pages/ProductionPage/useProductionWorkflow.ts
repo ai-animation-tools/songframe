@@ -2,9 +2,46 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ProductionFrameCandidate, ProductionWorkflowStart, ProductionWorkflowView } from '@shared/production-workflow';
 import { useApp } from '../../state';
+import { PRODUCTION_PASS_LABELS } from './constants';
+
+type Notify = ReturnType<typeof useApp>['notify'];
+
+/** Состояние предложения и задания, по смене которого сообщаем о завершении работы агента. */
+interface Observed {
+  proposal: string;
+  job: string;
+}
+
+const observe = (view: ProductionWorkflowView): Observed => ({
+  proposal: view.proposal ? `${view.proposal.id}\0${view.proposal.status}` : '',
+  job: view.job ? `${view.job.id}\0${view.job.status}` : ''
+});
+
+/**
+ * Панель закреплённой колонки может быть прокручена вне вида: завершение агента сообщается через Snackbar.
+ * Первый снимок пакета только запоминается, чтобы открытие пакета с готовым предложением не вызывало уведомлений.
+ */
+function announce(previous: Observed | null, view: ProductionWorkflowView, notify: Notify): void {
+  if (!previous) return;
+  const current = observe(view);
+  const { proposal, job } = view;
+  if (proposal && current.proposal !== previous.proposal) {
+    const stage = PRODUCTION_PASS_LABELS[proposal.stage];
+    if (proposal.status === 'ready') notify(`${stage}: предложение агента готово. Откройте «Просмотреть предложение и сравнение».`, 'success');
+    else if (proposal.status === 'invalid')
+      notify(`${stage}: результат агента требует исправления.${proposal.message ? ` ${proposal.message}` : ''}`, 'warning');
+    else if (proposal.status === 'failed' || proposal.status === 'interrupted')
+      notify(
+        `${stage}: задание агента ${proposal.status === 'failed' ? 'завершилось с ошибкой' : 'прервано'}.${proposal.message ? ` ${proposal.message}` : ''}`,
+        'error'
+      );
+  } else if (!proposal && job && current.job !== previous.job && (job.status === 'failed' || job.status === 'interrupted')) {
+    notify(`${job.task}: задание агента ${job.status === 'failed' ? 'завершилось с ошибкой' : 'прервано'}.`, 'error');
+  }
+}
 
 export function useProductionWorkflow(project: string, shot: string, packageDir: string | undefined, onApplied: (packageDir: string | null) => Promise<void>) {
-  const { describeError } = useApp();
+  const { describeError, notify } = useApp();
   const [view, setView] = useState<ProductionWorkflowView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -13,6 +50,15 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
   contextRef.current = context;
   const revision = useRef(0);
   const mutating = useRef(false);
+  const observed = useRef<Observed | null>(null);
+  const show = useCallback(
+    (next: ProductionWorkflowView) => {
+      announce(observed.current, next, notify);
+      observed.current = observe(next);
+      setView(next);
+    },
+    [notify]
+  );
   const invalidate = useCallback(() => {
     revision.current++;
   }, []);
@@ -25,13 +71,14 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     setError(null);
     setPending(false);
     mutating.current = false;
+    observed.current = null;
     const read = async (): Promise<void> => {
       const version = revision.current;
       try {
         if (!mutating.current) {
           const next = await window.api.productionWorkflow.view(project, shot, packageDir);
           if (active && contextRef.current === context && version === revision.current && !mutating.current) {
-            setView(next);
+            show(next);
             setError(null);
           }
         }
@@ -47,10 +94,10 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
       invalidate();
       clearTimeout(timer);
     };
-  }, [context, project, shot, packageDir, describeError, invalidate]);
+  }, [context, project, shot, packageDir, describeError, invalidate, show]);
 
   const execute = useCallback(
-    async (operation: () => Promise<ProductionWorkflowView>, applied = false): Promise<boolean> => {
+    async (operation: () => Promise<ProductionWorkflowView>, applied = false, done?: string): Promise<boolean> => {
       if (mutating.current) return false;
       mutating.current = true;
       const version = ++revision.current;
@@ -60,11 +107,17 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
         const next = await operation();
         // Ответ старого проекта или пакета не должен менять уже выбранный пользователем контекст.
         if (contextRef.current !== context || version !== revision.current) return false;
-        setView(next);
+        show(next);
         if (applied) await onApplied(next.packageDir);
+        if (done) notify(done, applied ? 'success' : 'info');
         return true;
       } catch (reason) {
-        if (contextRef.current === context && version === revision.current) setError(describeError(reason));
+        if (contextRef.current === context && version === revision.current) {
+          // Ошибка остаётся у кнопок панели и дублируется в Snackbar: кнопки могут быть вне вида.
+          const message = describeError(reason);
+          setError(message);
+          notify(message, 'error');
+        }
         return false;
       } finally {
         if (contextRef.current === context && version === revision.current) {
@@ -73,7 +126,7 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
         }
       }
     },
-    [context, describeError, onApplied]
+    [context, describeError, notify, onApplied, show]
   );
 
   return {
@@ -86,9 +139,13 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     importFrames: (images: ProductionFrameCandidate[]) =>
       packageDir ? execute(() => window.api.productionWorkflow.importFrames(project, shot, packageDir, images)) : Promise.resolve(false),
     apply: () =>
-      view?.proposal ? execute(() => window.api.productionWorkflow.apply(project, shot, packageDir, view.proposal!.id), true) : Promise.resolve(false),
+      view?.proposal
+        ? execute(() => window.api.productionWorkflow.apply(project, shot, packageDir, view.proposal!.id), true, 'Предложение применено.')
+        : Promise.resolve(false),
     discard: () =>
-      view?.proposal ? execute(() => window.api.productionWorkflow.discard(project, shot, packageDir, view.proposal!.id)) : Promise.resolve(false),
+      view?.proposal
+        ? execute(() => window.api.productionWorkflow.discard(project, shot, packageDir, view.proposal!.id), false, 'Предложение отклонено.')
+        : Promise.resolve(false),
     cancel: async (id: string): Promise<void> => {
       await execute(async () => {
         await window.api.agents.cancel(id);

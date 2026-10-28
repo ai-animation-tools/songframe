@@ -12,7 +12,11 @@
   "source_audio": "source/track.mp3",
   "source_audio_sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
   "source_audio_duration": 30.0,
-  "scene_registry_sha256": "c949531abfa770418b28e15c6d6abbb473b9854c6caba8735982c41fdc713772",
+  "scene_registry_sha256": "7a80da73a0f083fc3a9b31862b7b0ea2fe87c6536af966a50c3b1b579417401f",
+  "project_inputs": {
+    "name": "Пробный клип",
+    "animatic_video": "sample-animatic.mp4"
+  },
   "shots": [
     {
       "id": "M01",
@@ -224,6 +228,9 @@
         "phase": "same"
       },
       "state_changes": {},
+      "derived_from": {
+        "shot": "M02"
+      },
       "sequence_title": "Проигрыш",
       "start": "20",
       "end": "30",
@@ -243,7 +250,7 @@
         "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
         "source/heroes/mira.png": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818"
       },
-      "sha256": "ee9ffa896cba119e5f2a28228def508d5e379f27512e653cce552dca69d6bb1d"
+      "sha256": "8c0df30d50c5ac7a688840ef13e5448ce42f1e9167557ddb3630bd3725b6738f"
     }
   ],
   "source_hashes": {
@@ -251,7 +258,7 @@
     "assets/shots/M02/video.mp4": "2a0b47631c3a06ee73a119c77bb04b9b153bacf4a00703af2993507f9439095b",
     "plan/animatic/cards/M03.png": "d741320b4d54a346bcb537a43bb8eec713c5c6c57005b25dca6af410382412f3",
     "plan/animatic/cards/M04.png": "1f6f73f9c2ee3fe755a199b2f0dea7742876cc0c355f2cc8cbd064fe29013976",
-    "plan/animatic/cards/M05.png": "ee9ffa896cba119e5f2a28228def508d5e379f27512e653cce552dca69d6bb1d",
+    "plan/animatic/cards/M05.png": "8c0df30d50c5ac7a688840ef13e5448ce42f1e9167557ddb3630bd3725b6738f",
     "source/track.mp3": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
     "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
     "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e",
@@ -260,9 +267,5 @@
   },
   "video_file": "sample-animatic.mp4",
   "toolchain_sha256": "dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab",
-  "video_sha256": "53dc49cb26153197be92c846c9ba50b9bbd5838c6dc21fa7237c4a9b73513187",
-  "project_inputs": {
-    "name": "Пробный клип",
-    "animatic_video": "sample-animatic.mp4"
-  }
+  "video_sha256": "09b89cbad11d1aa93f3e6f252ace8cf8c5828954c148e6bf4b458d5ecaaf556c"
 }

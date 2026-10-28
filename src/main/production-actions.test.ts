@@ -2,11 +2,18 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { JobInfo, ProductionQuote, ToolResult } from '@shared/types';
 import { Jobs } from './jobs';
 import { Production, readPackage, viewProduction } from './production';
 import { PythonLauncher } from './python-launcher';
+import { registerTestMediaProvider, TEST_PROVIDER } from './testing/media-provider';
+
+let restoreProvider: () => void;
+beforeAll(() => {
+  restoreProvider = registerTestMediaProvider();
+});
+afterAll(() => restoreProvider());
 
 const requestSha = 'a'.repeat(64);
 let project: string;
@@ -71,10 +78,13 @@ class Runner extends PythonLauncher {
       mkdirSync(dirname(target), { recursive: true });
       renameSync(directory, target);
     }
-    if (name === 'kling_request' && args[0] === 'submit') patch(join(workDir, 'attempt.json'), { status: 'submitted', generation_id: 'saved-id' });
-    if (name === 'kling_request' && args[0] === 'resume')
-      patch(join(workDir, 'attempt.json'), { status: 'submitted', generation_id: args[args.indexOf('--generation-id') + 1] });
-    if (name === 'kling_request' && args[0] === 'watch') {
+    if (name === 'media_request' && args[0] === 'submit') patch(join(workDir, 'attempt.json'), { status: 'submitted', generation_id: 'saved-id' });
+    if (name === 'media_request' && args[0] === 'attach') {
+      write(join(workDir, 'original.mp4'), 'from-history');
+      patch(join(workDir, 'attempt.json'), { status: 'downloaded', manual_result: true, downloads: [{ path: 'original.mp4' }] });
+    }
+    if (name === 'media_request' && args[0] === 'not-created') patch(join(workDir, 'attempt.json'), { status: 'prepared' });
+    if (name === 'media_request' && args[0] === 'watch') {
       if (this.finalStatus === 'downloaded' && !this.missingDownload) write(join(workDir, 'original.mp4'), 'paid-original');
       patch(join(workDir, 'attempt.json'), { status: this.finalStatus, downloads: this.finalStatus === 'downloaded' ? [{ path: 'original.mp4' }] : [] });
     }
@@ -90,7 +100,7 @@ function fixture(name = 'M01-attempt-01', shot = 'M01'): string {
     pending_decision: { stage: 'request_choice', question: 'Отправить?', options: ['send', 'park', 'revise'] }
   });
   write(join(directory, 'request/request.json'), {
-    provider: 'kling',
+    provider: TEST_PROVIDER,
     model: 'test-video',
     command: 'image_to_video',
     prompt: { path: 'prompt.txt' },
@@ -113,7 +123,7 @@ async function finished(job: JobInfo): Promise<JobInfo> {
   await vi.waitFor(() => expect(job.status).not.toBe('running'));
   return job;
 }
-const paidCalls = () => runner.calls.filter((call) => call.name === 'kling_request' && call.args[0] === 'submit');
+const paidCalls = () => runner.calls.filter((call) => call.name === 'media_request' && call.args[0] === 'submit');
 function downloaded(): void {
   patch(join(packageDir, 'workflow.json'), { stage: 'downloaded', pending_decision: { stage: 'downloaded', options: ['accept', 'retry'] } });
   patch(join(packageDir, 'request/attempt.json'), {
@@ -127,8 +137,7 @@ function downloaded(): void {
 
 beforeEach(() => {
   project = mkdtempSync(join(tmpdir(), 'songframe-actions-'));
-  vi.stubEnv('SONGFRAME_KLING_CLI', 'подставной CLI без запуска');
-  write(join(project, 'plan/project.json'), { name: 'Проба', generation: { video: { provider: 'kling', provider_selected: true } } });
+  write(join(project, 'plan/project.json'), { name: 'Проба', generation: { video: { provider: TEST_PROVIDER, provider_selected: true } } });
   write(join(project, 'plan/scenes.json'), {
     fps: 30,
     sequences: [{ id: 's', title: 'Сцена' }],
@@ -199,7 +208,7 @@ describe('подтверждение платного запроса', () => {
     expect(commands.slice(0, 4)).toEqual(['cost_check:check', 'shot_workflow:set-stage', 'shot_workflow:ask', 'shot_workflow:decide']);
     const question = runner.calls.slice(start).find((call) => call.name === 'shot_workflow' && call.args[0] === 'ask')!;
     expect(question.args).toEqual(['ask', '--dir', packageDir, '--stage', 'request_choice']);
-    expect(runner.calls.some((call) => call.name === 'kling_request' && call.args[0] === 'prepare')).toBe(false);
+    expect(runner.calls.some((call) => call.name === 'media_request' && call.args[0] === 'prepare')).toBe(false);
     expect(readFileSync(join(packageDir, 'request/request.json'), 'utf8')).toBe(frozen);
     expect(view().request?.sha256).toBe(requestSha);
     expect(view().request?.attemptStatus).toBe('downloaded');
@@ -216,13 +225,30 @@ describe('подтверждение платного запроса', () => {
     expect(paidCalls()).toEqual([]);
   });
 
+  it('запоздавший прежний quote не вытесняет более новый, показанный пользователю', async () => {
+    // Окно может запросить оценку дважды (повторный эффект); первая оценка завершается последней.
+    const gate = deferred();
+    runner.hold = { name: 'cost_check', action: 'check', promise: gate.promise };
+    const stale = quote();
+    await vi.waitFor(() => expect(runner.calls.some((call) => call.name === 'cost_check')).toBe(true));
+    runner.hold = null;
+    const shown = await quote();
+    gate.resolve();
+    await stale;
+    const job = await send(shown);
+    await finished(job);
+    expect(paidCalls().length).toBeGreaterThan(0);
+  });
+
   it('quote другого пакета и прежняя цена после обновления quote не принимаются', async () => {
     const first = await quote();
     const other = fixture('M01-attempt-02');
     await expect(send(first, other)).rejects.toThrow(/стоимость/);
+    // Прежняя оценка тех же материалов остаётся действительной, но цена перед отправкой проверяется заново.
     const old = await quote();
     await quote();
-    await expect(send(old)).rejects.toThrow(/стоимость/);
+    runner.prices.push({ verdict: 'ok', estimate_credits: 12, balance_credits: 100 });
+    await expect(send(old)).rejects.toThrow(/Стоимость, остаток или материалы изменились/);
     expect(paidCalls()).toEqual([]);
   });
 
@@ -280,7 +306,7 @@ describe('подтверждение платного запроса', () => {
     const old = await quote();
     const fresh = await quote();
     expect(fresh.requestSha).toBe(old.requestSha);
-    await expect(send(old, packageDir, old.token)).rejects.toThrow(/стоимость/);
+    // Согласие привязано к показанной оценке: с другой оценкой тех же материалов оно не работает.
     await expect(send(fresh, packageDir, old.token)).rejects.toThrow(/стоимость/);
     expect(paidCalls()).toEqual([]);
   });
@@ -467,7 +493,7 @@ describe('согласования и исключение конфликтую�
 });
 
 describe('явный провайдер сохранённого запроса', () => {
-  it.each(['kling', 'Другой сервис', 'CustomProvider'])('readPackage показывает сохранённый provider %s', (provider) => {
+  it.each([TEST_PROVIDER, 'Другой сервис', 'CustomProvider'])('readPackage показывает сохранённый provider %s', (provider) => {
     patch(join(packageDir, 'request/request.json'), { provider });
     expect(view().request?.provider).toBe(provider);
   });
@@ -507,6 +533,33 @@ describe('явный провайдер сохранённого запроса'
   });
 });
 
+describe('производный план', () => {
+  const reason = 'План собирается из материала M02: описание, опоры и генерация для него не нужны.';
+  it('derived_from реестра блокирует повтор той же причиной до запуска инструмента', () => {
+    write(join(project, 'plan/scenes.json'), {
+      fps: 30,
+      sequences: [{ id: 's', title: 'Сцена' }],
+      scenes: [
+        { id: 'M01', sequence: 's', start_frame: 0, end_frame_exclusive: 60, derived_from: { shot: 'M02' } },
+        { id: 'M02', sequence: 's', start_frame: 60, end_frame_exclusive: 120 }
+      ]
+    });
+    const shot = viewProduction(project, runner).shots[0];
+    expect(shot.derivedFrom).toBe('M02');
+    expect(shot.regenerateProblem).toBe(reason);
+    expect(viewProduction(project, runner).shots[1].derivedFrom).toBeNull();
+    expect(() => production.regenerate(project, 'M01')).toThrow(reason);
+    expect(runner.calls).toEqual([]);
+  });
+
+  it('принятый комплект derived_video считается производным и без поля реестра', () => {
+    write(join(project, 'assets/shots/M01/manifest.json'), { schema_version: 1, shot: 'M01', kind: 'derived_video', generation: { source_shot: 'M02' } });
+    const shot = viewProduction(project, runner).shots[0];
+    expect(shot.derivedFrom).toBe('M02');
+    expect(shot.regenerateProblem).toBe(reason);
+  });
+});
+
 describe('восстановление и подготовка повтора', () => {
   it('regenerate только готовит новый запрос и блокирует повторный запуск того же плана', async () => {
     const gate = deferred();
@@ -529,20 +582,42 @@ describe('восстановление и подготовка повтора', 
 
   it('resume использует сохранённый ID, запрещает замену и не содержит submit', async () => {
     patch(join(packageDir, 'request/attempt.json'), { status: 'submitted', generation_id: 'saved-id' });
-    expect(() => production.resume(project, packageDir, 'other-id')).toThrow(/не заменяется/);
     const job = production.resume(project, packageDir);
     await finished(job);
     expect(paidCalls()).toEqual([]);
-    expect(runner.calls.some((call) => call.name === 'kling_request' && call.args[0] === 'watch')).toBe(true);
+    expect(runner.calls.some((call) => call.name === 'media_request' && call.args[0] === 'watch')).toBe(true);
     expect(view().stage).toBe('downloaded');
   });
 
-  it('неизвестная отправка требует установленный ID и привязывает его без новой оплаты', async () => {
+  it('неизвестная отправка без ID: продолжение получения отсылает к истории генераций и ничего не запускает', () => {
     patch(join(packageDir, 'request/attempt.json'), { status: 'submission_unknown' });
-    expect(() => production.resume(project, packageDir)).toThrow(/установите ID/);
-    await finished(production.resume(project, packageDir, 'restored-id'));
-    expect(read(join(packageDir, 'request/attempt.json')).generation_id).toBe('restored-id');
+    expect(() => production.resume(project, packageDir)).toThrow(/историю генераций/);
+    expect(runner.calls).toEqual([]);
+  });
+
+  it('результат из истории генераций становится оригиналом попытки без новой оплаты', async () => {
+    patch(join(packageDir, 'request/attempt.json'), { status: 'submission_unknown' });
+    const file = join(project, 'скачано из истории.mp4');
+    write(file, 'from-history');
+    expect(() => production.attachResult(project, packageDir, [])).toThrow(/Выберите файл/);
+    const job = await finished(production.attachResult(project, packageDir, [file]));
+    expect(job.status).toBe('done');
+    expect(runner.calls.find((call) => call.name === 'media_request' && call.args[0] === 'attach')!.args.slice(-2)).toEqual(['--file', file]);
+    expect(view().stage).toBe('downloaded');
+    expect(view().request).toMatchObject({ manualResult: true, generationId: null, attemptStatus: 'downloaded' });
+    expect(view().pendingDecision?.stage).toBe('downloaded');
     expect(paidCalls()).toEqual([]);
+    expect(() => production.attachResult(project, packageDir, [file])).toThrow(/неизвестным исходом/);
+  });
+
+  it('«задание не создано» возвращает вопрос об отправке, а сама отправка требует новой оценки', async () => {
+    patch(join(packageDir, 'request/attempt.json'), { status: 'submission_unknown' });
+    patch(join(packageDir, 'workflow.json'), { pending_decision: null, decision: { stage: 'request_choice', verdict: 'send' } });
+    await production.markNotCreated(project, packageDir);
+    expect(view().request?.attemptStatus).toBe('prepared');
+    expect(view().pendingDecision?.stage).toBe('request_choice');
+    expect(paidCalls()).toEqual([]);
+    await expect(production.markNotCreated(project, packageDir)).rejects.toThrow(/неизвестным исходом/);
   });
 
   it.each(['failed', 'missing-download'])('успешный выход watch с %s не переводит пакет в downloaded и не задаёт вопрос приёмки', async (state) => {
@@ -587,6 +662,29 @@ describe('принятие именно просмотренного резул�
     const call = runner.calls.find((item) => item.name === 'accept_shot')!;
     expect(call.args).toEqual(['M01', '--package', packageDir, '--full', '--replace', '--clean']);
     expect(job.steps[0].label).toBe('замена комплекта в assets');
+  });
+
+  it('речевой план принимается только с WAV пакета и передаёт его вместе с рецептом', async () => {
+    downloaded();
+    patch(join(project, 'plan/scenes.json'), { scenes: [{ id: 'M01', sequence: 's', start_frame: 0, end_frame_exclusive: 60, lipsync: true }] });
+    const shown = view();
+    expect(() => production.accept(project, 'M01', packageDir, { mode: 'full', expectedResultToken: shown.resultToken })).toThrow(/подготовьте WAV речи/);
+    write(join(packageDir, 'audio/speech.wav'), 'wav');
+    write(join(packageDir, 'audio/audio-recipe.json'), { source_interval_seconds: [0.5, 2], output: { path: 'speech.wav' }, timing_lines: [] });
+    const job = production.accept(project, 'M01', packageDir, { mode: 'full', expectedResultToken: view().resultToken });
+    await finished(job);
+    const call = runner.calls.find((item) => item.name === 'accept_shot')!;
+    expect(call.args).toEqual([
+      'M01',
+      '--package',
+      packageDir,
+      '--full',
+      '--audio',
+      join(packageDir, 'audio/speech.wav'),
+      '--audio-recipe',
+      join(packageDir, 'audio/audio-recipe.json'),
+      '--clean'
+    ]);
   });
 
   it.each(['original', 'attempt', 'request'])('замена %s инвалидирует токены и блокирует stale accept до Jobs', (part) => {

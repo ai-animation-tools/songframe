@@ -1,5 +1,6 @@
 /** Карточка плана в сетке: одинаковая на страницах «Сцены» и «Производство», предпросмотр запускается при наведении. */
 import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
+import { alpha } from '@mui/material/styles';
 import { Box, Chip, Paper, Typography } from '@mui/material';
 import type { ShotProductionState } from '@shared/types';
 import { formatClock } from '../format';
@@ -83,8 +84,8 @@ export function ShotCard({
   return (
     <Paper
       ref={cardRef}
-      variant={selected ? 'elevation' : 'outlined'}
-      elevation={selected ? 4 : 0}
+      variant="outlined"
+      aria-current={selected ? 'true' : undefined}
       onClick={() => onSelect(shot.id)}
       onMouseEnter={play}
       onMouseLeave={pause}
@@ -94,6 +95,15 @@ export function ShotCard({
         cursor: 'pointer',
         borderLeft: 4,
         borderLeftColor: state.bar,
+        // Выбранный план выделен цветом темы: рамка поверх карточки (без сдвига сетки) и фон выбранного элемента.
+        ...(selected
+          ? {
+              outline: 2,
+              outlineColor: 'primary.main',
+              outlineOffset: -1,
+              bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.18 : 0.08)
+            }
+          : {}),
         // Прокрутка к карточке учитывает шапку и закреплённую панель действий страницы; страница может уточнить отступ переменной.
         scrollMarginTop: 'var(--shot-card-scroll-margin, 130px)'
       }}

@@ -10,24 +10,23 @@
 import argparse
 import json
 import re
+import shutil
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from tools import request_snapshot
+from tools import media_adapters, request_snapshot
 from tools.asset_package.asset_package import descriptor_file
 from tools.common import ROOT, read_json, sha
 from tools.cost_check import cost_check
-from tools.kling_request import kling_request
+from tools.media_request import attempt
 from tools.scene_registry.scene_registry import generation_settings, load_project
 from tools.shot_workflow import shot_workflow
 
 NO_DATA = 3
 PACKAGE_ROOTS = ("plan/batches", "plan/awaiting")
-# Подготовка общая; проверку ограничений и стоимости обслуживают только уже подключённые адаптеры.
-ADAPTERS = {"kling": kling_request}
 
 
 def find_package_request(root, shot):
@@ -63,7 +62,7 @@ def checked_prompt(path, expected, label):
 
 
 def saved_spec(data, shot, kind, inputs, prompt_file):
-    """Переносит явно сохранённые поля в спецификацию prepare; cli_argv не исполняется."""
+    """Переносит в спецификацию prepare только явно перечисленные поля; прочие поля документа не используются."""
     spec = {key: data[key] for key in ("provider", "command", "model", "parameters", "outputs")}
     spec.update(schema_version=1, shot=shot, kind=kind, inputs=inputs, prompt_file=prompt_file)
     if "model_selection" in data:
@@ -134,14 +133,17 @@ def validate_saved_spec(spec, shot):
     """Проверяет совместимость и сохранённые байты до создания нового пакета."""
     try:
         request_snapshot.validate_spec(spec)
-        adapter = ADAPTERS.get(spec["provider"].strip().casefold())
-        if adapter:
-            adapter.validate_spec(spec)
-        if adapter and not spec["command"].startswith("text_to_") and not spec["inputs"]:
-            raise ValueError("Для этой команды нет сохранённых входов.")
         prompt = Path(spec["prompt_file"]).read_bytes().decode("utf-8")
-        if not prompt.strip() or (adapter and re.match(r"^--[A-Za-z]", prompt)):
-            raise ValueError("Промпт пуст или начинается с флага CLI.")
+        if not prompt.strip():
+            raise ValueError("Промпт пуст.")
+        # Подготовка общая; ограничения сервиса проверяет только подключённый адаптер провайдера.
+        if media_adapters.known(spec["provider"]):
+            service = media_adapters.adapter(spec["provider"])
+            # Снимок прежнего формата входов адаптер приводит к объявленным слотам до проверки и создания пакета.
+            if hasattr(service, "normalize_inputs"):
+                service.normalize_inputs(spec)
+            service.validate_spec(spec)
+            service.validate_prompt(prompt)
         for item in spec["inputs"]:
             path = Path(item["path"])
             if not path.is_file():
@@ -185,7 +187,27 @@ def check_settings(spec, settings):
     return problems
 
 
-def regenerate(root, shot, source="auto", work_dir=None, cli="kling", use_account=True, pricing_path=None):
+def carry_speech(source, directory, spec):
+    """Речевой план: WAV липсинка и его рецепт переходят в новый пакет, если этот WAV уже входит в сохранённый запрос.
+
+    Без них новую попытку нельзя принять, а после отправки WAV уже не подготовить заново. Источник — папка audio
+    прежнего пакета или принятый комплект, где accept_shot хранит speech.wav рядом с audio-recipe.json.
+    """
+    recipe = read_json(source / "audio-recipe.json")
+    name = recipe.get("output", {}).get("path") if isinstance(recipe, dict) else None
+    if not isinstance(name, str) or Path(name).name != name or not (source / name).is_file():
+        return False
+    digest = sha(source / name)
+    if digest != recipe["output"].get("sha256") or digest not in {item.get("sha256") for item in spec["inputs"]}:
+        return False
+    target = Path(directory) / "audio"
+    target.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source / name, target / name)
+    shutil.copyfile(source / "audio-recipe.json", target / "audio-recipe.json")
+    return True
+
+
+def regenerate(root, shot, source="auto", work_dir=None, use_account=True, pricing_path=None):
     """Создаёт новый пакет и подготовленную попытку по сохранённому запросу; возвращает сведения для таблицы."""
     package = None
     spec = None
@@ -212,11 +234,12 @@ def regenerate(root, shot, source="auto", work_dir=None, cli="kling", use_accoun
         raise LookupError(f"{shot}: " + "; ".join(mismatches) + ". Повтор остановлен.")
     directory = Path(work_dir) if work_dir else next_attempt_dir(root, shot)
     workflow = shot_workflow.init(shot, directory, root=root, retry_of=str(package) if package else None)
+    carry_speech(Path(package) / "audio" if package else Path(root) / "assets/shots" / shot, directory, spec)
     with tempfile.TemporaryDirectory(prefix="regenerate-") as temporary:
         spec_path = Path(temporary) / "request.json"
         spec_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8")
-        adapter = ADAPTERS.get(spec["provider"].strip().casefold())
-        prepare = adapter.prepare if adapter else request_snapshot.prepare
+        connected = media_adapters.known(spec["provider"])
+        prepare = attempt.prepare if connected else request_snapshot.prepare
         prepared = prepare(spec_path, Path(directory) / "request")
     # Опоры и промпт унаследованы от исходного запроса: этапы проходятся без согласований, по одному шагу.
     for stage in ("keyframes_review", "prompt_review"):
@@ -225,9 +248,9 @@ def regenerate(root, shot, source="auto", work_dir=None, cli="kling", use_accoun
     # Вопрос продолжают кнопки приложения; сам вопрос согласия на отправку не означает.
     shot_workflow.ask(directory, "request_choice", root=root)
     frozen = read_json(Path(directory) / "request/request.json")
-    if adapter:
-        pricing = cost_check.load_pricing(pricing_path or cost_check.PRICING)
-        report = cost_check.check(frozen, pricing, cli=cli, use_account=use_account)
+    if connected:
+        pricing = cost_check.pricing_for(frozen, pricing_path)
+        report = cost_check.check(frozen, pricing, use_account=use_account)
     else:
         report = {key: frozen[key] for key in ("model", "kind", "command", "parameters", "outputs")}
         report.update(
@@ -261,10 +284,9 @@ def main():
     parser.add_argument("shot")
     parser.add_argument("--source", choices=["auto", "package", "asset"], default="auto")
     parser.add_argument("--work-dir", help="Папка нового пакета; по умолчанию plan/batches/Mxx-attempt-NN")
-    parser.add_argument("--cli", default="kling")
     parser.add_argument("--no-account", action="store_true", help="Не запрашивать остаток у аккаунта")
     parser.add_argument(
-        "--pricing", type=Path, help="Файл тарифов вместо tools/cost_check/pricing.json (прогоны без расхода)"
+        "--pricing", type=Path, help="Файл тарифов вместо таблицы адаптера провайдера (прогоны без расхода)"
     )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
@@ -274,7 +296,6 @@ def main():
             args.shot,
             args.source,
             args.work_dir,
-            cli=args.cli,
             use_account=not args.no_account,
             pricing_path=args.pricing,
         )

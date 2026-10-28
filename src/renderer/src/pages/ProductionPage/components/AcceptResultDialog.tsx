@@ -20,6 +20,8 @@ export function AcceptResultDialog({
   onClose(): void;
   onConfirm(): void;
 }): ReactElement {
+  const mismatch = !!target?.windowFrames && !!target.originalFrames && target.windowFrames !== target.originalFrames;
+  const seconds = (frames?: number): string => ((frames ?? 0) / FPS).toFixed(2).replace('.', ',');
   return (
     <ConfirmationDialog
       open={!!target}
@@ -29,7 +31,14 @@ export function AcceptResultDialog({
       confirmLabel={target?.hasAsset ? 'Заменить комплект' : 'Принять'}
       confirmIcon={<CheckCircleIcon />}
       confirmColor="error"
-      confirmDisabled={!target?.resultToken || (!!target?.hasAsset && !options.replaceExisting)}
+      confirmDisabled={!target?.resultToken || !!target?.speechMissing || (!!target?.hasAsset && !options.replaceExisting)}
+      confirmDisabledReason={
+        !target?.resultToken
+          ? 'Данные показанного результата не подтверждены: обновите пакет и откройте приёмку заново.'
+          : target.speechMissing
+            ? 'Это речевой план: сначала подготовьте WAV речи в блоке «Речь» этого пакета.'
+            : 'Отметьте «Заменить принятый комплект этим результатом».'
+      }
     >
       <Stack spacing={2} sx={{ mt: 1 }}>
         {target?.hasAsset ? (
@@ -45,8 +54,12 @@ export function AcceptResultDialog({
             label="Заменить принятый комплект этим результатом"
           />
         ) : null}
-        {target && !target.resultToken ? (
-          <Alert severity="warning">Обновите пакет и откройте приёмку заново: данные показанного результата не подтверждены.</Alert>
+        {mismatch ? (
+          <Alert severity="info">
+            Оригинал длиной {seconds(target?.originalFrames)} с не совпадает с окном плана {seconds(target?.windowFrames)} с, поэтому принять его целиком
+            нельзя. Предложен участок {target && target.originalFrames! < target.windowFrames! ? 'с удержанием последнего кадра' : 'по длине окна'}; при
+            необходимости поправьте его.
+          </Alert>
         ) : null}
         <TextField
           select
@@ -55,11 +68,13 @@ export function AcceptResultDialog({
           value={options.mode}
           onChange={(e) => onOptions({ ...options, mode: e.target.value as AcceptOptions['mode'] })}
         >
-          <MenuItem value="full">Оригинал целиком совпадает с окном плана</MenuItem>
+          <MenuItem value="full" disabled={mismatch}>
+            Оригинал целиком совпадает с окном плана
+          </MenuItem>
           <MenuItem value="cut">Участок оригинала (секунды, конец исключительно)</MenuItem>
         </TextField>
         {options.mode === 'cut' ? (
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 1 }}>
             <TextField
               size="small"
               type="number"
@@ -83,11 +98,19 @@ export function AcceptResultDialog({
               onChange={(e) => onOptions({ ...options, speed: e.target.value })}
               helperText="множитель, например 1 или 0.8"
             />
+            <TextField
+              size="small"
+              type="number"
+              label="Удержать последний кадр, кадров"
+              value={options.holdLast ?? 0}
+              onChange={(e) => onOptions({ ...options, holdLast: Number(e.target.value) })}
+              inputProps={{ min: 0, step: 1 }}
+            />
           </Box>
         ) : null}
         <Typography variant="caption" color="text.secondary">
           Оригинал, принятый монтаж, кадры, промпт и сведения о приёмке будут сохранены в комплекте сцены. Рабочие пакеты плана будут очищены, карточки и списки
-          — обновлены. Речевые планы с отдельным WAV принимайте через агента.
+          — обновлены.
         </Typography>
       </Stack>
     </ConfirmationDialog>

@@ -1,21 +1,22 @@
 /** Производство: планы, пакеты, решения и подтверждения платных действий. */
-import { useLayoutEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Box, CircularProgress, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import { useRef, type ReactElement } from 'react';
+import { usePageLoading } from '../../components/PageLoader';
+import { Alert, Box, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import { AiProblemAlert } from '../../components';
 import { AcceptResultDialog, PackageCard, ProductionShotCard, ProductionShotList, ProductionToolbar, RegenerateDialog, SendRequestDialog } from './components';
 import { useProductionPage } from './useProductionPage';
 import { acceptShownResult, isQueuedPackage } from './decisions';
 import { ProductionWorkflowPanel } from './components/ProductionWorkflowPanel';
-import { aiActionProblem } from '@shared/ai-access';
-import { useApp } from '../../state';
+import { ProductionSpeechPanel } from './components/ProductionSpeechPanel';
 import { PageActionBar } from '../../components/PageActionBar';
 import { ProductionQueue } from './components/ProductionQueue';
+import { useStickyTop } from '../../hooks/useStickyTop';
+import { ANCHORS } from '../../components/linkTargets';
+import { LinkedText } from '../../components/LinkedText';
+import { BUSY_REASON, PYTHON_REASON } from './constants';
 
 export function ProductionPage(): ReactElement {
   const workflowPanel = useRef<HTMLDivElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const [toolbarHeight, setToolbarHeight] = useState(0);
-  const { aiAccess } = useApp();
-  const aiProblems = [...new Set((['agent', 'image', 'video'] as const).map((kind) => aiActionProblem(aiAccess, kind)).filter(Boolean))];
   const {
     project,
     view,
@@ -36,6 +37,7 @@ export function ProductionPage(): ReactElement {
     openQueuedPackage,
     acceptDialog,
     setAcceptDialog,
+    openAccept,
     acceptOptions,
     setAcceptOptions,
     confirmSend,
@@ -53,39 +55,30 @@ export function ProductionPage(): ReactElement {
     selectImage
   } = useProductionPage();
 
-  useLayoutEffect(() => {
-    const toolbar = toolbarRef.current;
-    if (!toolbar) return;
-    // Высота панели меняется при переносе фильтров: закреплённый блок плана остаётся под ней.
-    const updateHeight = (): void => setToolbarHeight(toolbar.getBoundingClientRect().height);
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(toolbar);
-    updateHeight();
-    return () => observer.disconnect();
-  }, [view]);
-
   // Отступ закреплённого блока и прокрутки к карточке: шапка, панель действий и зазор сетки.
-  const stickyTop = 49 + toolbarHeight + 16;
+  const { barRef: toolbarRef, stickyTop } = useStickyTop([view]);
 
-  if (!view) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(!view);
+  if (!view) return <></>;
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0, pb: 8, '--shot-card-scroll-margin': `${stickyTop}px` }}>
       <PageActionBar barRef={toolbarRef}>
-        <ProductionToolbar view={view} filter={filter} onFilter={setFilter} onSelect={setSelected} onRefresh={() => void load()} />
+        <ProductionToolbar view={view} filter={filter} onFilter={setFilter} onRefresh={() => void load()} />
       </PageActionBar>
-      {aiProblems.length ? <Alert severity="info">{aiProblems.join(' ')}</Alert> : null}
-      {view.problems.length ? <Alert severity="warning">{view.problems.join(' ')}</Alert> : null}
+      <AiProblemAlert kinds={['agent', 'image', 'video']} />
+      {view.problems.length ? (
+        <Alert severity="warning">
+          <LinkedText text={view.problems.join(' ')} />
+        </Alert>
+      ) : null}
       {!view.tools.python ? (
         <Alert severity="info">Python не найден: просмотр работает, кнопки решений и отправки недоступны.</Alert>
-      ) : !view.tools.kling ? (
-        <Alert severity="info">Kling не найден: отправка и получение результатов недоступны, подготовка и согласования работают.</Alert>
+      ) : !Object.values(view.tools.providers).every(Boolean) ? (
+        <Alert severity="info">
+          Программа платного провайдера генерации не найдена: отправка и получение результатов недоступны, подготовка и согласования работают.
+        </Alert>
       ) : null}
 
       {/* Пока планов нет, предупреждение выше объясняет следующий шаг без пустых панелей выбора. */}
@@ -169,7 +162,7 @@ export function ProductionPage(): ReactElement {
               </TextField>
 
               {packageSelection === '__new__' || selectedPackage ? (
-                <Box ref={workflowPanel} tabIndex={-1}>
+                <Box ref={workflowPanel} tabIndex={-1} data-anchor={ANCHORS.productionWorkflow}>
                   <ProductionWorkflowPanel
                     key={`${project}:${shot.id}:${packageSelection}`}
                     project={project}
@@ -189,6 +182,18 @@ export function ProductionPage(): ReactElement {
                 <Alert severity="info">Выберите пакет, чтобы увидеть материалы, согласования и действия агента.</Alert>
               )}
 
+              {/* Речевому плану нужен точный срез песни до подготовки запроса и для приёмки. */}
+              {selectedPackage && shot.lipsync ? (
+                <ProductionSpeechPanel
+                  key={`speech:${selectedPackage.dir}`}
+                  project={project}
+                  pkg={selectedPackage}
+                  busy={busyFor(selectedPackage.dir) || workflowBusyFor(selectedPackage.dir) || !view.tools.python}
+                  busyReason={view.tools.python ? BUSY_REASON : PYTHON_REASON}
+                  onPrepared={load}
+                />
+              ) : null}
+
               {selectedPackage ? (
                 <PackageCard
                   key={selectedPackage.dir}
@@ -196,6 +201,7 @@ export function ProductionPage(): ReactElement {
                   note={noteFor(selectedPackage)}
                   setNote={(value) => setNoteFor(selectedPackage, value)}
                   busy={busyFor(selectedPackage.dir) || workflowBusyFor(selectedPackage.dir) || !view.tools.python}
+                  busyReason={view.tools.python ? BUSY_REASON : PYTHON_REASON}
                   operation={operationFor(selectedPackage.dir)}
                   onOpenRevision={() => {
                     const panel = workflowPanel.current;
@@ -206,18 +212,24 @@ export function ProductionPage(): ReactElement {
                   onDecide={(verdict) => decide(selectedPackage, verdict)}
                   onSubmit={() => setConfirmSend(selectedPackage)}
                   onSelectImage={(index) => selectImage(selectedPackage, index)}
-                  onAccept={() =>
-                    setAcceptDialog({ shot: selectedPackage.shot, dir: selectedPackage.dir, resultToken: selectedPackage.resultToken, hasAsset: !!shot.asset })
-                  }
+                  onAccept={() => openAccept(selectedPackage, !!shot.asset, shot.lipsync)}
                   onContactSheet={() => act('Сводка запущена', () => window.api.production.contactSheet(project, selectedPackage.dir), selectedPackage.dir)}
                   onReopenQuestion={() =>
                     act('Вопрос о результате задан снова', () => window.api.production.reopenQuestion(project, selectedPackage.dir), selectedPackage.dir)
                   }
                   onDiscard={() => discardPackage(selectedPackage)}
-                  onResume={(id) =>
-                    act('Получение результата запущено', () => window.api.production.resume(project, selectedPackage.dir, id), selectedPackage.dir)
+                  onResume={() => act('Получение результата запущено', () => window.api.production.resume(project, selectedPackage.dir), selectedPackage.dir)}
+                  onAttachResult={(files) =>
+                    act('Загрузка результата запущена', () => window.api.production.attachResult(project, selectedPackage.dir, files), selectedPackage.dir)
                   }
-                  klingAvailable={view.tools.kling}
+                  onNotCreated={() =>
+                    act(
+                      'Попытка снова ждёт подтверждения отправки',
+                      () => window.api.production.markNotCreated(project, selectedPackage.dir),
+                      selectedPackage.dir
+                    )
+                  }
+                  providers={view.tools.providers}
                 />
               ) : null}
             </Stack>

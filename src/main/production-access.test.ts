@@ -56,8 +56,8 @@ afterEach(() => {
 
 describe.each(['image', 'video'] as const)('допуск пакета %s', (kind) => {
   it.each([
-    ['Kling', 'kling'],
-    [' \tKlInG\n', '\n kLiNg \t']
+    ['Test', 'test'],
+    [' \tTeSt\n', '\n tEsT \t']
   ])('разрешает сохранённый %j при выбранном %j и проверяет доступ нужного медиа', async (frozenProvider, selectedProvider) => {
     fixture(kind, frozenProvider, selectedProvider);
     const requireAccess = vi.fn(async (_project: string, _kind: MediaKind): Promise<void> => {});
@@ -68,14 +68,14 @@ describe.each(['image', 'video'] as const)('допуск пакета %s', (kind
   });
 
   it('блокирует запрос после выбора действительно другого провайдера', async () => {
-    fixture(kind, 'Kling', 'Другой сервис');
+    fixture(kind, 'Test', 'Другой сервис');
     const requireAccess = vi.fn(async (_project: string, _kind: MediaKind): Promise<void> => {});
 
     await expect(requireProductionPackageAccess(project, packageDir, requireAccess)).rejects.toThrow('Провайдер медиа изменился');
   });
 
   it('сохраняет отказ проверки доступа при совпадающем провайдере', async () => {
-    fixture(kind, 'Kling', 'kling');
+    fixture(kind, 'Test', 'test');
     const accessError = new Error('Выбранный агент недоступен');
     const requireAccess = vi.fn(async (_project: string, _kind: MediaKind): Promise<void> => {
       throw accessError;
@@ -88,7 +88,7 @@ describe.each(['image', 'video'] as const)('допуск пакета %s', (kind
 });
 
 it('не проверяет CLI для пакета без подготовленного запроса', async () => {
-  fixture('video', 'Kling', 'kling');
+  fixture('video', 'Test', 'test');
   writeJson(join(packageDir, 'workflow.json'), { shot: 'M45', stage: 'prompt_review' });
   const requireAccess = vi.fn(async (_project: string, _kind: MediaKind): Promise<void> => {});
 
@@ -98,7 +98,7 @@ it('не проверяет CLI для пакета без подготовле�
 });
 
 it('не проверяет CLI для запроса без сохранённого провайдера', async () => {
-  fixture('video', 'Kling', 'kling');
+  fixture('video', 'Test', 'test');
   writeJson(join(packageDir, 'request/request.json'), { kind: 'video', model: 'test-model', parameters: {}, inputs: [] });
   const requireAccess = vi.fn(async (_project: string, _kind: MediaKind): Promise<void> => {});
 

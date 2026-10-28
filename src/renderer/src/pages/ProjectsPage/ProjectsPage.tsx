@@ -6,6 +6,7 @@ import { Alert, Stack } from '@mui/material';
 import type { ProjectState } from '@shared/types';
 import { useApp } from '../../state';
 import { ProjectHistory, ProjectsToolbar } from './components';
+import { LinkedText } from '../../components/LinkedText';
 
 export function ProjectsPage(): ReactElement {
   const { state, refresh, openProject, notify, describeError } = useApp();
@@ -72,7 +73,7 @@ export function ProjectsPage(): ReactElement {
       <ProjectsToolbar busy={!!busy} onPickFolder={pickFolder} onCreateProject={() => navigate('/projects/new')} />
       {state && !state.toolsRoot ? (
         <Alert severity="warning">
-          Ресурсы приложения не найдены: создание проектов и инструменты недоступны, просмотр работает. Подробности на странице «Среда».
+          <LinkedText text="Ресурсы приложения не найдены: создание проектов и инструменты недоступны, просмотр работает. Подробности на странице «Среда»." />
         </Alert>
       ) : null}
       <ProjectHistory history={history} states={states} currentPath={state?.current} busy={!!busy} onOpen={open} onForget={forget} />

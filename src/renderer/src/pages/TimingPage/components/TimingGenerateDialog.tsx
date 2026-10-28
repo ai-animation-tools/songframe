@@ -1,6 +1,7 @@
 import { CancelOutlined, PlayArrow } from '@mui/icons-material';
 import type { ReactElement } from 'react';
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { ActionButton } from '../../../components/ActionButton';
 import { WhisperModelSetup } from './WhisperModelSetup';
 
 interface TimingGenerateDialogProps {
@@ -9,6 +10,8 @@ interface TimingGenerateDialogProps {
   device: 'auto' | 'cpu';
   resetAll: boolean;
   canGenerate: boolean;
+  /** Почему запуск сейчас недоступен; показывается в подсказке кнопки. */
+  generateBlockedReason: string | null;
   onClose: () => void;
   onModelChange: (model: string) => void;
   onDeviceChange: (device: 'auto' | 'cpu') => void;
@@ -23,6 +26,7 @@ export function TimingGenerateDialog({
   device,
   resetAll,
   canGenerate,
+  generateBlockedReason,
   onClose,
   onModelChange,
   onDeviceChange,
@@ -59,9 +63,16 @@ export function TimingGenerateDialog({
         <Button startIcon={<CancelOutlined />} onClick={onClose}>
           Отмена
         </Button>
-        <Button startIcon={<PlayArrow />} variant="contained" color={resetAll ? 'error' : 'primary'} onClick={onGenerate} disabled={!canGenerate}>
+        <ActionButton
+          startIcon={<PlayArrow />}
+          variant="contained"
+          color={resetAll ? 'error' : 'primary'}
+          onClick={onGenerate}
+          disabled={!canGenerate}
+          disabledReason={generateBlockedReason}
+        >
           Запустить
-        </Button>
+        </ActionButton>
       </DialogActions>
     </Dialog>
   );

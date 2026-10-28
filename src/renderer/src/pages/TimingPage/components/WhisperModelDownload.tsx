@@ -1,10 +1,10 @@
 import { Download } from '@mui/icons-material';
 /** Наблюдение за обычным заданием Jobs продолжается при повторном открытии диалога. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Button, Stack, Typography } from '@mui/material';
+import { Alert, Stack, Typography } from '@mui/material';
 import type { JobInfo } from '@shared/types';
 import type { WhisperModelId } from '@shared/whisper-models';
-import { JobStatus } from '../../../components';
+import { ActionButton, JobStatus } from '../../../components';
 import { useApp } from '../../../state';
 import { OFFLINE_MESSAGE } from '../../../network';
 
@@ -97,20 +97,16 @@ export function WhisperModelDownload({ model, onDownloaded }: Props): ReactEleme
 
   return (
     <Stack spacing={1}>
-      <Button
+      <ActionButton
         variant="contained"
         startIcon={<Download />}
         onClick={download}
         disabled={!online || loading || starting || running}
+        disabledReason={starting || running ? 'Модель уже скачивается.' : !online ? OFFLINE_MESSAGE : 'Дождитесь окончания проверки загрузок.'}
         sx={{ alignSelf: 'flex-start' }}
       >
         {loading ? 'Проверяем загрузки' : starting || running ? `Скачивается ${model}` : `Скачать модель ${model}`}
-      </Button>
-      {!online && !running ? (
-        <Typography variant="caption" color="error">
-          {OFFLINE_MESSAGE}
-        </Typography>
-      ) : null}
+      </ActionButton>
       <Typography variant="caption" color="text.secondary">
         Повторная загрузка использует уже скачанные файлы. Диалог можно закрыть: загрузка продолжится. После завершения папка выберется автоматически.
       </Typography>

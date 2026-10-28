@@ -1,9 +1,17 @@
 /** Готовое предложение остаётся кандидатом; устаревшее предложение нельзя применить. */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { registerMediaProviderForTests } from '@shared/media-providers';
 import type { ProductionProposal } from '@shared/production-workflow';
+import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
 import { ProductionProposalPreview } from './ProductionProposalPreview';
+
+let restoreProvider: () => void;
+beforeAll(() => {
+  restoreProvider = registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo);
+});
+afterAll(() => restoreProvider());
 
 const proposal: ProductionProposal = {
   id: 'proposal-fixture',
@@ -15,8 +23,8 @@ const proposal: ProductionProposal = {
   after: { schemaVersion: 1, stage: 'prompt', prompt: 'Новый промпт' }
 };
 
-function render(value: ProductionProposal): string {
-  return renderToStaticMarkup(createElement(ProductionProposalPreview, { proposal: value, busy: false, onApply: vi.fn(), onDiscard: vi.fn() }));
+function render(value: ProductionProposal, videoProvider: string | null = null): string {
+  return renderToStaticMarkup(createElement(ProductionProposalPreview, { proposal: value, videoProvider, busy: false, onApply: vi.fn(), onDiscard: vi.fn() }));
 }
 
 describe('preview производства', () => {
@@ -66,7 +74,7 @@ describe('preview производства', () => {
   });
 
   it('показывает черновик запроса подписями входов и параметрами', () => {
-    const html = render({
+    const request = (command: string): ProductionProposal => ({
       ...proposal,
       stage: 'request',
       before: JSON.stringify({ stage: 'prompt_review', keyframes: [{}, {}], prompt: { approved: true } }),
@@ -74,17 +82,39 @@ describe('preview производства', () => {
         schemaVersion: 1,
         stage: 'request',
         request: {
-          model: 'kling-video-v3_0',
-          command: 'image_to_video',
+          model: 'test-video-v3_0',
+          command,
           parameters: { duration: 5, resolution: '1080p' },
           inputs: [{ flag: 'input', slot: 'image_1', role: 'first', path: 'frames/K01.png' }],
           outputs: 1
         }
       }
     });
-    expect(html).toContain('видео по опорным кадрам');
+    const html = render(request('image_to_video'), TEST_PROVIDER);
+    // Подпись команды даёт реестр провайдера видео; неизвестная команда показывается своим именем.
+    expect(html).toContain(testProviderInfo.commandLabels.image_to_video);
+    expect(render(request('unknown_command'), TEST_PROVIDER)).toContain('unknown_command');
+    expect(render(request('image_to_video'))).toContain('image_to_video');
     expect(html).toContain('Первый кадр (Изображение 1): K01.png');
     expect(html).toContain('Опор в пакете: 2; видеопромпт принят');
     expect(html).not.toContain('&quot;model&quot;');
+  });
+
+  it('показывает ответ агента и причину, когда предложение не прошло проверку', () => {
+    const html = render({
+      ...proposal,
+      stage: 'description',
+      status: 'invalid',
+      before: '',
+      after: null,
+      message: 'Описание требует текст, длительность и минимум две опоры.',
+      agentText: 'Для M01 задано точное повторное использование кадра M13; генерация не обеспечит повторение.'
+    });
+    expect(html).toContain('Агент не подготовил предложение');
+    expect(html).toContain('точное повторное использование кадра M13');
+    expect(html).toContain('Причина проверки');
+    expect(html).toContain('минимум две опоры');
+    expect(html).not.toContain('Предложение ещё не получено');
+    expect(html).toMatch(/<button[^>]* disabled[^>]*>(?:(?!<\/button>)[\s\S])*Применить предложение<\/button>/);
   });
 });

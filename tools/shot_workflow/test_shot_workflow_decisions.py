@@ -39,6 +39,20 @@ SCENES = {
     ],
 }
 
+# Блок generation.video выбранного проекта обязателен для плана опор.
+GENERATION = {
+    "generation": {
+        "video": {
+            "provider": "test",
+            "resolution": "1080p",
+            "aspect_ratio": "16:9",
+            "watermark": False,
+            "duration_rule": "min_supported_strictly_greater_than_window",
+        },
+        "image": None,
+    }
+}
+
 
 class DecisionTests(unittest.TestCase):
     def setUp(self):
@@ -48,7 +62,7 @@ class DecisionTests(unittest.TestCase):
         (self.root / "plan/batches").mkdir(parents=True)
         (self.root / "plan/scenes.json").write_text(json.dumps(SCENES, ensure_ascii=False))
         (self.root / "plan/project.json").write_text(
-            json.dumps({"schema_version": 1, "name": "Т", "animatic_video": "t.mp4"})
+            json.dumps({"schema_version": 1, "name": "Т", "animatic_video": "t.mp4", **GENERATION})
         )
         scene_registry._INITIAL_CACHE.clear()
         for module in (scene_registry, tool):

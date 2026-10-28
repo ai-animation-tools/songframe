@@ -43,6 +43,8 @@ class ReviewTests(unittest.TestCase):
                     "camera": "Статика",
                     "continuity": "",
                     "references": [],
+                    "state_from": None,
+                    "state_changes": {},
                 }
                 for index, sid in enumerate(("M01", "M02", "M03"))
             ],

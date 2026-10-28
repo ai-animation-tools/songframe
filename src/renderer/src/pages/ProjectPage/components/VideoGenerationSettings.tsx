@@ -4,6 +4,8 @@ import AddIcon from '@mui/icons-material/Add';
 import { type ReactElement, useEffect, useState } from 'react';
 import { isMediaProvider, MEDIA_PROVIDERS, mediaProviderInfo, mediaProvidersFor, type MediaCapabilities } from '@shared/media-providers';
 import { MediaCapabilitiesPanel } from './MediaCapabilitiesPanel';
+import { ANCHORS } from '../../../components/linkTargets';
+import { switchGenerationProvider } from '@shared/generation-settings';
 import { aspectOptions, modelOptions, resolutionOptions } from './generationOptions';
 import { Alert, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import type { VideoGenerationSettings as Settings } from '@shared/types';
@@ -33,9 +35,10 @@ export function VideoGenerationSettings({
   const capabilitiesReady = canDiscover && capabilities !== null && capabilities.provider === value?.provider;
   const capabilitiesConfirmed = capabilitiesReady && capabilities.available && capabilities.problems.length === 0;
   const models = capabilitiesReady ? capabilities.models : [];
-  const availableModels = modelOptions(models, 'video');
+  const availableModels = modelOptions(models, 'video', value?.provider);
   const modelChoices = ['', ...availableModels];
-  const defaultModelLabel = mediaProviderInfo(value?.provider, 'video')?.defaultModelLabel ?? 'Автоматически по задаче';
+  const defaultModelLabel = (providerSelected ? mediaProviderInfo(value?.provider, 'video')?.defaultModelLabel : null) ?? 'Автоматически по задаче';
+  const savedTitle = mediaProviderInfo(value?.provider, 'video')?.title ?? value?.provider;
   // Сохранённый ID остаётся видимым, но не становится доступной моделью без подтверждения CLI.
   if (value?.model && !availableModels.includes(value.model)) modelChoices.push(value.model);
   const resolutions = capabilitiesReady ? resolutionOptions(models, value?.model) : RESOLUTIONS;
@@ -58,7 +61,7 @@ export function VideoGenerationSettings({
   };
 
   return (
-    <Paper component="section" variant="outlined" sx={{ p: 2, minWidth: 0 }}>
+    <Paper component="section" variant="outlined" data-anchor={ANCHORS.projectVideoGeneration} sx={{ p: 2, minWidth: 0 }}>
       <Stack spacing={1} sx={{ minWidth: 0 }}>
         <Typography variant="subtitle2">Генерация видео</Typography>
         {!value ? (
@@ -70,7 +73,7 @@ export function VideoGenerationSettings({
             </Typography>
             {!providerSelected && value.provider && (
               <Typography variant="caption" color="text.secondary">
-                Сохранённый провайдер: {value.provider}. Для запуска выберите его в меню и сохраните настройки.
+                Сохранённый провайдер: {savedTitle}. Для запуска выберите его в меню и сохраните настройки.
               </Typography>
             )}
             <Box
@@ -100,7 +103,10 @@ export function VideoGenerationSettings({
                 slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}
                 onChange={(event) => {
                   setCapabilities(null);
-                  patch({ provider: event.target.value || value.provider, provider_selected: Boolean(event.target.value) });
+                  const provider = event.target.value;
+                  if (!provider || provider === value.provider) return patch({ provider_selected: Boolean(provider) });
+                  // Другой провайдер: всё, что от него зависит, заменяется значениями нового; требования проекта сохраняются.
+                  onChange(switchGenerationProvider('video', value, provider));
                 }}
                 size="small"
               >

@@ -4,15 +4,16 @@ import { DestructiveButton } from '../../../components/DestructiveButton';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Button, Chip, Paper, Stack, Typography } from '@mui/material';
-import { useApp } from '../../../state';
-import { aiActionProblem } from '@shared/ai-access';
+import { ActionButton } from '../../../components/ActionButton';
 import type { ScenarioPass } from '@shared/scenario-workflow';
 import { AgentButton } from '../../../components/AgentButton';
+import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { AgentJobCard } from '../../../components/AgentJobCard';
 import type { useScenarioWorkflow } from '../useScenarioWorkflow';
 import { ScenarioDraftConflictDialog } from './ScenarioDraftConflictDialog';
 import { ScenarioReviseDialog } from './ScenarioReviseDialog';
 import { ScenarioProposalDialog } from './ScenarioProposalDialog';
+import { LinkedText } from '../../../components/LinkedText';
 
 /** Доменные действия создают новое предложение; повтор всегда заново собирает контекст. */
 export function ScenarioWorkflowPanel({
@@ -22,6 +23,7 @@ export function ScenarioWorkflowPanel({
   treatmentDirty,
   scenesDirty,
   editorBusy,
+  scenesInputProblem,
   onResolveDrafts
 }: {
   project: string;
@@ -30,10 +32,10 @@ export function ScenarioWorkflowPanel({
   treatmentDirty: boolean;
   scenesDirty: boolean;
   editorBusy: boolean;
+  /** Чего не хватает для подробного сценария: разметки или кастинга с изображениями. */
+  scenesInputProblem?: string | null;
   onResolveDrafts(action: 'save' | 'discard'): Promise<boolean>;
 }): ReactElement {
-  const { aiAccess } = useApp();
-  const aiProblem = aiActionProblem(aiAccess);
   const [preview, setPreview] = useState(false);
   const [revise, setRevise] = useState(false);
   const [reviseIds, setReviseIds] = useState<string[]>([]);
@@ -49,6 +51,16 @@ export function ScenarioWorkflowPanel({
   }, [project]);
   const { view, error, busy } = workflow;
   const disabled = busy || editorBusy || resolving;
+  // Причина блокировки агентских кнопок видна в их подсказке.
+  const busyReason = disabled
+    ? 'Дождитесь завершения текущей операции.'
+    : view?.busy
+      ? 'Агент уже готовит предложение.'
+      : view?.proposal && view.proposal.status === 'ready'
+        ? 'Сначала примените или отклоните текущее предложение.'
+        : null;
+  // Причина для обычных кнопок панели: их блокирует только выполняемая операция.
+  const operationReason = disabled ? 'Дождитесь завершения текущей операции.' : null;
   const guard = (action: () => Promise<unknown>): void => {
     if (treatmentDirty || scenesDirty) setPendingAction(() => action);
     else void action();
@@ -89,19 +101,9 @@ export function ScenarioWorkflowPanel({
         <Typography variant="body2" color="text.secondary">
           Агент готовит предложение. Сначала просмотрите сравнение, затем отдельно примените результат. Ручные редакторы доступны без агента.
         </Typography>
-        {aiProblem && <Alert severity="info">{aiProblem}</Alert>}
-        {error && <Alert severity="error">{error}</Alert>}
-        {view?.problems.map((problem) => (
-          <Alert key={problem} severity="warning">
-            {problem}
-          </Alert>
-        ))}
+        <AiProblemAlert kinds={['agent']} />
+        {view?.problems.length ? <ProblemList problems={view.problems} /> : null}
         {view?.scenesNeedReview && <Alert severity="warning">Кастинг или трактовка изменились. Существующий сценарий требует пересмотра.</Alert>}
-        {view && !view.treatmentApproved && (
-          <Typography variant="caption">
-            Для подробного сценария требуется актуальное утверждение кастинга и трактовки. Готовую ручную пару можно утвердить без повторной генерации.
-          </Typography>
-        )}
         {view?.job && (
           <AgentJobCard
             compact
@@ -112,65 +114,117 @@ export function ScenarioWorkflowPanel({
             }}
           />
         )}
+        {/* Итог задания и применения дублируется в Snackbar (useScenarioWorkflow); здесь — состояние текущего предложения рядом с его действиями. */}
         {proposal && (
           <Stack spacing={1}>
-            {proposal.message && (
-              <Alert severity={proposal.status === 'ready' ? 'info' : proposal.status === 'applied' ? 'success' : 'warning'}>{proposal.message}</Alert>
+            {proposal.status === 'applied' ? (
+              <Alert severity="success">{proposal.message || 'Предложение применено.'}</Alert>
+            ) : (
+              proposal.message && <Alert severity={proposal.status === 'ready' || proposal.status === 'running' ? 'info' : 'warning'}>{proposal.message}</Alert>
             )}
-            {proposal.stale && <Alert severity="warning">Предложение устарело. Исходные файлы изменились; нужен новый запуск.</Alert>}
-            {proposal.status === 'ready' && (
-              <Stack direction="row" spacing={1}>
-                <Button startIcon={<CompareArrowsIcon />} disabled={disabled} onClick={() => setPreview(true)}>
-                  Просмотреть предложение и сравнение
-                </Button>
-                {proposal.stale && (
-                  <AgentButton color="success" disabled={disabled} onClick={() => begin(proposal.pass, proposal.selectedIds)}>
+            {proposal.stale && proposal.status !== 'applied' && (
+              <Alert severity="warning">Предложение устарело. Исходные файлы изменились; нужен новый запуск.</Alert>
+            )}
+            {proposal.status !== 'applied' && proposal.status !== 'running' && (
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {proposal.status === 'ready' && (
+                  <ActionButton
+                    variant="outlined"
+                    startIcon={<CompareArrowsIcon />}
+                    disabled={disabled}
+                    disabledReason={operationReason}
+                    onClick={() => setPreview(true)}
+                  >
+                    Просмотреть предложение и сравнение
+                  </ActionButton>
+                )}
+                {(proposal.stale || proposal.status !== 'ready') && (
+                  <AgentButton
+                    variant="outlined"
+                    disabled={disabled}
+                    disabledReason={operationReason}
+                    onClick={() => begin(proposal.pass, proposal.selectedIds)}
+                  >
                     Создать новое предложение
                   </AgentButton>
                 )}
+                {proposal.status !== 'ready' && (
+                  <DestructiveButton
+                    label="Отклонить предложение"
+                    description="Предложение будет отклонено без записи в проект."
+                    confirmLabel="Отклонить"
+                    variant="outlined"
+                    size="medium"
+                    disabled={disabled}
+                    disabledReason={operationReason}
+                    onConfirm={() => void workflow.discard()}
+                  />
+                )}
               </Stack>
             )}
-            {['invalid', 'failed', 'interrupted'].includes(proposal.status) && (
-              <Stack direction="row" spacing={1}>
-                <AgentButton color="success" disabled={disabled} onClick={() => begin(proposal.pass, proposal.selectedIds)}>
-                  Создать новое предложение
-                </AgentButton>
-                <DestructiveButton
-                  label="Отклонить предложение"
-                  description="Предложение будет отклонено без записи в проект."
-                  confirmLabel="Отклонить"
-                  disabled={disabled}
-                  onConfirm={() => void workflow.discard()}
-                />
-              </Stack>
-            )}
-            {proposal.status === 'applied' && <Alert severity="success">Предложение применено.</Alert>}
           </Stack>
         )}
-        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-          <AgentButton color="success" variant="outlined" disabled={disabled || !view?.canStartTreatment} onClick={() => begin('treatment')}>
-            Создать трактовку
-          </AgentButton>
-          <AgentButton color="success" variant="outlined" disabled={disabled || !view?.canStartScenes} onClick={() => begin('scenes')}>
-            Создать сценарий
-          </AgentButton>
-          <AgentButton disabled={disabled || !view?.canRevise || !selected} onClick={() => begin('revise')}>
-            Доработать выбранный план
-          </AgentButton>
-          {view?.canApproveCurrent && (
-            <Button startIcon={<CheckCircleIcon />} disabled={disabled} onClick={() => guard(workflow.approve)}>
-              Утвердить текущие кастинг и трактовку
-            </Button>
-          )}
-          {view?.canApproveScenes && (
-            <Button startIcon={<CheckCircleIcon />} disabled={disabled} onClick={() => guard(workflow.approveScenes)}>
-              Утвердить текущий сценарий
-            </Button>
-          )}
+        {/* Ошибка запуска, утверждения или обновления показывается прямо над кнопками, которые её вызвали. */}
+        {error && (
+          <Alert severity="error">
+            <LinkedText text={error} />
+          </Alert>
+        )}
+        <Stack spacing={1}>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <AgentButton
+              variant="outlined"
+              disabled={disabled || !view?.canStartTreatment}
+              disabledReason={busyReason ?? view?.problems[0] ?? null}
+              onClick={() => begin('treatment')}
+            >
+              Создать трактовку
+            </AgentButton>
+            <AgentButton
+              variant="outlined"
+              disabled={disabled || !view?.canStartScenes || !!scenesInputProblem}
+              disabledReason={
+                busyReason ??
+                (view?.canStartScenes
+                  ? scenesInputProblem
+                  : 'Сначала утвердите текущие кастинг и трактовку: готовую ручную пару можно утвердить без повторной генерации.')
+              }
+              onClick={() => begin('scenes')}
+            >
+              Создать сценарий
+            </AgentButton>
+            <AgentButton
+              variant="outlined"
+              disabled={disabled || !view?.canRevise || !selected}
+              disabledReason={
+                busyReason ??
+                (!view?.treatmentApproved
+                  ? 'Сначала утвердите текущие кастинг и трактовку.'
+                  : !selected
+                    ? 'Выберите план в реестре сцен.'
+                    : 'Сначала исправьте ошибки реестра сцен.')
+              }
+              onClick={() => begin('revise')}
+            >
+              Доработать выбранный план
+            </AgentButton>
+          </Stack>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {view?.canApproveCurrent && (
+              <ActionButton startIcon={<CheckCircleIcon />} disabled={disabled} disabledReason={operationReason} onClick={() => guard(workflow.approve)}>
+                Утвердить текущие кастинг и трактовку
+              </ActionButton>
+            )}
+            {view?.canApproveScenes && (
+              <ActionButton startIcon={<CheckCircleIcon />} disabled={disabled} disabledReason={operationReason} onClick={() => guard(workflow.approveScenes)}>
+                Утвердить текущий сценарий
+              </ActionButton>
+            )}
+            <ActionButton startIcon={<RefreshIcon />} disabled={disabled} disabledReason={operationReason} onClick={() => guard(workflow.refresh)}>
+              Обновить статус
+            </ActionButton>
+          </Stack>
         </Stack>
-        <Button startIcon={<RefreshIcon />} size="small" disabled={disabled} onClick={() => guard(workflow.refresh)}>
-          Обновить статус
-        </Button>
         <ScenarioDraftConflictDialog
           open={!!pendingAction}
           treatmentDirty={treatmentDirty}
@@ -215,5 +269,31 @@ export function ScenarioWorkflowPanel({
         )}
       </Stack>
     </Paper>
+  );
+}
+
+/** Длинный перечень (например, по каждому из 59 планов) не должен занимать весь экран: показываем начало и раскрываем по запросу. */
+function ProblemList({ problems }: { problems: string[] }): ReactElement {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? problems : problems.slice(0, 3);
+  return (
+    <Alert
+      severity="warning"
+      action={
+        problems.length > 3 ? (
+          <Button color="inherit" size="small" onClick={() => setExpanded((value) => !value)}>
+            {expanded ? 'Свернуть' : `Показать все (${problems.length})`}
+          </Button>
+        ) : undefined
+      }
+    >
+      <Stack component="ul" spacing={0.25} sx={{ m: 0, pl: 2 }}>
+        {shown.map((problem) => (
+          <li key={problem}>
+            <LinkedText text={problem} />
+          </li>
+        ))}
+      </Stack>
+    </Alert>
   );
 }

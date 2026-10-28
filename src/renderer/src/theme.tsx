@@ -2,6 +2,7 @@
 
 import { type ReactElement, createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CssBaseline, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
+import { ruRU } from '@mui/material/locale';
 import { themePalettes } from './theme-palette';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -37,15 +38,18 @@ export function ThemeModeProvider({ children }: { children: ReactNode }): ReactE
   }, [mode]);
   const theme = useMemo(
     () =>
-      createTheme({
-        palette: themePalettes[resolved],
-        shape: { borderRadius: 8 },
-        typography: { fontSize: 13.5 },
-        components: {
-          MuiButton: { defaultProps: { disableElevation: true } },
-          MuiTextField: { defaultProps: { size: 'small' } }
-        }
-      }),
+      createTheme(
+        {
+          palette: themePalettes[resolved],
+          shape: { borderRadius: 8 },
+          typography: { fontSize: 13.5 },
+          components: {
+            MuiButton: { defaultProps: { disableElevation: true } },
+            MuiTextField: { defaultProps: { size: 'small' } }
+          }
+        },
+        ruRU
+      ),
     [resolved]
   );
   const value = useMemo(() => ({ mode, resolved, setMode }), [mode, resolved]);

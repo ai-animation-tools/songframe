@@ -34,7 +34,15 @@ class AssetPackageTests(unittest.TestCase):
             "references": {},
             "sequences": [{"id": "intro"}],
             "scenes": [
-                {"id": "M01", "sequence": "intro", "start_frame": 0, "end_frame_exclusive": 30, "references": []}
+                {
+                    "id": "M01",
+                    "sequence": "intro",
+                    "start_frame": 0,
+                    "end_frame_exclusive": 30,
+                    "references": [],
+                    "state_from": None,
+                    "state_changes": {},
+                }
             ],
         }
         (self.root / "plan/scenes.json").write_text(json.dumps(self.registry))
@@ -153,7 +161,16 @@ class AssetPackageTests(unittest.TestCase):
         self.registry["audio"]["end_seconds"] = "2"
         self.registry["scenes"][0].update(start_frame=30, end_frame_exclusive=60)
         self.registry["scenes"].insert(
-            0, {"id": "M02", "sequence": "intro", "start_frame": 0, "end_frame_exclusive": 30, "references": []}
+            0,
+            {
+                "id": "M02",
+                "sequence": "intro",
+                "start_frame": 0,
+                "end_frame_exclusive": 30,
+                "references": [],
+                "state_from": None,
+                "state_changes": {},
+            },
         )
         path = self.root / "plan/scenes.json"
         path.write_text(json.dumps(self.registry))

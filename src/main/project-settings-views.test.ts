@@ -23,9 +23,9 @@ it('после настоящего saveSettings смена generation не тр
     const manifestBefore = readFileSync(manifestPath, 'utf8');
     const roadmap = readFileSync(join(project, 'ROADMAP.md'), 'utf8');
     const settings = readProjectSettings(project);
-    settings.generation!.video!.model = 'kling-video-v4_0';
+    settings.generation!.video!.model = 'test-video-v4_0';
     settings.generation!.video!.provider_selected = true;
-    settings.generation!.image = { provider: 'kling', provider_selected: true, model: 'test-image-model' };
+    settings.generation!.image = { provider: 'test', provider_selected: true, model: 'test-image-model' };
     writeProjectSettings(project, settings);
     expect(JSON.parse(readFileSync(receiptPath, 'utf8')).project_inputs).toEqual({ name: settings.name });
     expect(JSON.parse(readFileSync(manifestPath, 'utf8')).project_inputs).toEqual({ name: settings.name, animatic_video: settings.animaticVideo });

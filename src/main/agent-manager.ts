@@ -5,12 +5,10 @@ import { existsSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, resolve, sep } from 'node:path';
 import type { AgentEvent, AgentJob, AgentSettings, AgentStartInput } from '@shared/agents';
 import { agentTitle, type AgentProvider } from '@shared/agent-providers';
-import { mediaProviderInfo } from '@shared/media-providers';
 import { createAgentAdapter, type AgentAdapter, type AgentUpdate } from './agent-adapters';
 import { AgentHistory } from './agent-history';
 import { AgentError, JsonLines, providerFailure, redact } from './agent-protocol';
 import { agentEnvironment } from './agents';
-import { readProjectSettings } from './checks';
 import type { SettingsStore } from './settings';
 
 interface Running {
@@ -102,16 +100,16 @@ export class AgentManager {
     return this.begin(value);
   }
 
-  /** Только внутренний маршрут опор: запись ограничена подготовленной рабочей папкой кандидатов.
-   * model задаёт вызывающий без проектных настроек изображений, например временный проект обложки; при передаче он важнее модели проекта. */
-  startImages(value: AgentStartInput, workDir: string, model?: string): AgentJob {
+  /** Только внутренний маршрут изображений: запись ограничена подготовленной рабочей папкой кандидатов.
+   * Программу и модель задаёт провайдер изображений (SettingsStore.getImageAgent), а не выбранный текстовый агент. */
+  startImages(value: AgentStartInput, workDir: string, config: AgentSettings): AgentJob {
     const directory = realpathSync(workDir);
     const base = realpathSync(join(this.settings.localDir, 'image-jobs'));
     if (!directory.startsWith(base + sep)) throw new AgentError('INVALID_INPUT', 'Папка кандидатов не принадлежит заданиям изображений.');
-    return this.begin(value, directory, model);
+    return this.begin(value, directory, config);
   }
 
-  private begin(value: unknown, imageDirectory?: string, imageModel?: string): AgentJob {
+  private begin(value: unknown, imageDirectory?: string, imageConfig?: AgentSettings): AgentJob {
     if (this.stopping) throw new AgentError('INTERRUPTED', 'Приложение завершает работу.');
     if (process.platform !== 'linux') throw new AgentError('CLI_UNAVAILABLE', 'Запуск агента сейчас поддерживается только на Linux.');
     const input = validate(value);
@@ -125,12 +123,10 @@ export class AgentManager {
     // Резервируем проект до асинхронной диагностики: два клика не должны создать два запроса.
     if ([...this.running.values()].some((run) => run.projectKey === project))
       throw new AgentError('PROJECT_BUSY', 'Для этого проекта уже выполняется задание агента.');
-    const globalConfig = imageDirectory ? this.settings.getImageAgent() : this.settings.getAgent();
-    if (!globalConfig) throw new AgentError('INVALID_INPUT', 'Сначала выберите агента в настройках.');
-    const imageSettings = imageDirectory ? readProjectSettings(project).generation?.image : null;
-    // Пустая модель изображений оставляет выбор самому CLI; модель текстового агента сюда не переносится.
-    const model = imageModel?.trim() || (mediaProviderInfo(imageSettings?.provider, 'image')?.executor ? imageSettings?.model?.trim() : undefined);
-    const config = imageDirectory ? { ...globalConfig, model: model || undefined } : globalConfig;
+    // Пустая модель изображений оставляет выбор самой программе.
+    const imageModel = imageConfig?.model?.trim();
+    const config = imageConfig ? { provider: imageConfig.provider, ...(imageModel ? { model: imageModel } : {}) } : this.settings.getAgent();
+    if (!config) throw new AgentError('INVALID_INPUT', 'Сначала выберите агента в настройках.');
     if (input.retryOf) {
       const previous = this.jobs.get(input.retryOf);
       let previousProject: string | null = null;
@@ -269,8 +265,8 @@ export class AgentManager {
         }
       });
       const prefix = imageDirectory
-        ? 'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы Kling. Верни финальный JSON в запрошенном формате.'
-        : 'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы Kling. Правила хранения проекта описаны в его README.md.';
+        ? 'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы сервисам генерации. Верни финальный JSON в запрошенном формате.'
+        : 'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.';
       const prompt = `${prefix}\n\nЗадача:\n${input.prompt}${input.context ? `\n\nДополнительный контекст:\n${input.context}` : ''}`;
       child.stdin.end(prompt);
     } catch (error) {

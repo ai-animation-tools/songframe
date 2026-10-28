@@ -5,7 +5,10 @@ import { extname, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { app, BrowserWindow, Menu, protocol, shell, dialog } from 'electron';
 import { LOCAL_FILE_SCHEME } from '@shared/api';
-import { createServices, registerIpc, type Services } from './ipc';
+import { createServices, pathOptions, registerIpc, type Services } from './ipc';
+import { resolvePaths } from './paths';
+import { AppDiagnostics } from './app-diagnostics';
+import { describeFailure } from './diagnostics';
 import { runtimeSmoke } from './runtime-smoke';
 import { linuxSmoke } from './linux-smoke';
 import { AgentManager } from './agent-manager';
@@ -20,6 +23,16 @@ import { registerMontageWindow } from './montage-window';
 
 // У SongFrame отдельное состояние: первый запуск не открывает проект прежнего приложения.
 app.setName('songframe');
+
+// Журнал сбоев и сеанс ведёт только оконный запуск: служебные проверки поставки не трогают сеанс пользователя.
+let diagnostics: AppDiagnostics | null = null;
+if (!process.env.SONGFRAME_LINUX_SMOKE && !process.env.SONGFRAME_RUNTIME_SMOKE) {
+  try {
+    diagnostics = new AppDiagnostics(resolvePaths(pathOptions()).localDir);
+  } catch (error) {
+    console.error('Журнал сбоев недоступен:', error);
+  }
+}
 
 const MIME: Record<string, string> = {
   '.png': 'image/png',
@@ -143,7 +156,7 @@ app
   .whenReady()
   .then(async () => {
     if (process.platform === 'linux' && !process.env.SONGFRAME_LINUX_SMOKE && !process.env.SONGFRAME_RUNTIME_SMOKE) {
-      // Графический запуск не наследует nvm из терминала; один PATH нужен диагностике, агентам и вложенным инструментам Kling.
+      // Графический запуск не наследует nvm из терминала; один PATH нужен диагностике, агентам и вложенным программам провайдеров генерации.
       process.env.PATH = (await externalEnvironment()).PATH;
     }
     if (process.platform === 'linux' && process.env.SONGFRAME_LINUX_SMOKE) {
@@ -174,7 +187,8 @@ app
     // Windows использует тот же постоянный ID, что и сборка; ярлык и toast activator создаёт Electron.
     // Headless-режимы выше не регистрируют приложение ради уведомлений.
     if (process.platform === 'win32') app.setAppUserModelId('tools.songframe.app');
-    services = createServices();
+    services = createServices({ restoreJobs: true });
+    if (diagnostics) services.diagnostics = diagnostics;
     const desktopNotifications = new DesktopNotifications(openNotificationTarget);
     services.notifications = new TaskNotifications((notice) => desktopNotifications.show(notice));
     // Только старт окна восстанавливает незавершённое применение; headless не мешает живому окну.
@@ -213,6 +227,7 @@ app
   .catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
     console.error(message);
+    diagnostics?.log.write('startup', describeFailure(error));
     if (!process.env.SONGFRAME_LINUX_SMOKE) dialog.showErrorBox('SongFrame: ошибка запуска', message);
     app.exit(1);
   });
@@ -220,6 +235,9 @@ app
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
+// Сеанс чистый, только когда Electron действительно завершает работу (после возможной отсрочки before-quit).
+app.on('will-quit', () => diagnostics?.finish());
 
 let coverCleanup: Promise<void> | null = null;
 let coversClosed = false;

@@ -11,9 +11,10 @@ python3 -B tools/current_project/current_project.py show
 python3 -B tools/current_project/current_project.py set "/путь/к/клипу"
 python3 -B tools/current_project/current_project.py clear
 python3 -B tools/current_project/current_project.py --json show
+python3 -B tools/current_project/current_project.py --project "/путь/к/клипу" show
 ```
 
-- `show` печатает, какой проект будет использован и откуда он взят: `argument`, `environment`, `current_file` или `cwd`. Код выхода 0, если папка существует и содержит `plan/project.json`, иначе 1. Проверяет тот же порядок, что и все инструменты.
+- `show` печатает, какой проект будет использован и откуда он взят: `argument`, `environment`, `current_file` или `cwd`. Код выхода 0, если папка существует и содержит `plan/project.json`, иначе 1. Проверяет тот же порядок, что и все инструменты: `--project` вырезается из командной строки общим модулем `tools/common.py`, и `show` сообщает принятое им решение с источником `argument`.
 - `set` записывает JSON атомарно, при ошибке замены прежний файл сохраняется. Повреждённый файл не перезаписывается; сначала исправьте его или явно выполните clear. Проверяет, что папка существует, и записывает её абсолютный путь с отметкой времени. Структуру проекта не создаёт и не проверяет: новый проект создаётся приложением из шаблона.
 - `clear` удаляет файл; отсутствие файла не ошибка.
 
@@ -27,7 +28,7 @@ python3 -B tools/current_project/current_project.py --json show
 }
 ```
 
-Приоритет источников для любого инструмента: `--project` в командной строке, переменная окружения `SONGFRAME_PROJECT`, этот файл, текущая папка с `plan/project.json`. Инструмент без проекта завершается с кодом 2 и подсказкой; `current_project` и `run_tests` проекта не требуют.
+Приоритет источников для любого инструмента: `--project` в командной строке, переменная окружения `SONGFRAME_PROJECT`, этот файл, текущая папка с `plan/project.json`. Инструмент без проекта завершается с кодом 2 и подсказкой. Проекта не требуют `current_project`, `run_tests` (`PROJECT_FREE_TOOLS` в `tools/common.py`), действия `media_request login` и `auth-status` (`PROJECT_FREE_ACTIONS`) и `download_whisper_model`, который общий модуль не импортирует.
 
 Готовое приложение записывает тот же файл при выборе проекта; отдельного режима командной строки у него нет. Инструмент вызывают smoke-проверка поставки и разработчик из checkout при отладке. Повреждённый файл при чтении даёт сообщение с путём и сохраняется; ручной инструмент продолжает обычный поиск проекта по cwd, если он не задан явно.
 

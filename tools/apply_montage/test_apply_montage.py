@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-import tools.testing  # noqa: F401
+import tools.testing.sample_project  # noqa: F401
 from tools.apply_montage import apply_montage as tool
 from tools.asset_package.asset_package import replay, validate_package
 from tools.build_review.build_review import prepare, probe, run

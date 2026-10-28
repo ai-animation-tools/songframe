@@ -1,4 +1,5 @@
 import { PageActionBar } from '../../components/PageActionBar';
+import { usePageLoading } from '../../components/PageLoader';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 /** Редактор таймингов: загрузка документа, правки и сохранение подтверждённых на слух строк. */
@@ -6,13 +7,15 @@ import { selectLyricTimings } from '@shared/lyrics';
 import { withTimingVerification } from '@shared/timing-verification';
 import { buildSections } from '@shared/timing-sections';
 import { type ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import { Alert, Button, Stack, Typography } from '@mui/material';
 import type { LyricsLine, TimingLine, TimingSection, TimingView } from '@shared/types';
 import { useApp } from '../../state';
 import { Link as RouterLink } from 'react-router-dom';
 import { TimingGenerateDialog, TimingLinesTable, TimingPlayer, TimingToolbar, UnassignedLyrics } from './components';
 import { emptyTiming, MIN_LENGTH, round } from './timing';
 import { useTimingPlayer } from './useTimingPlayer';
+import { useHeaderHeight } from '../../components/headerHeight';
+import { LinkedText } from '../../components/LinkedText';
 
 const MODEL_KEY = 'songframe.whisperModel';
 
@@ -20,6 +23,7 @@ export function TimingPage(): ReactElement {
   const { state, refresh, notify, describeError } = useApp();
   const project = state?.current ?? '';
   const [loadError, setLoadError] = useState<string | null>(null);
+  const headerHeight = useHeaderHeight();
   const [view, setView] = useState<TimingView | null>(null);
   const [lines, setLines] = useState<TimingLine[]>([]);
   const [sections, setSections] = useState<TimingSection[]>([]);
@@ -180,6 +184,8 @@ export function TimingPage(): ReactElement {
     }
   };
 
+  // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(!view && !loadError);
   if (loadError)
     return (
       <Alert
@@ -190,17 +196,20 @@ export function TimingPage(): ReactElement {
           </Button>
         }
       >
-        {loadError}
+        <LinkedText text={loadError} />
       </Alert>
     );
 
-  if (!view) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (!view) return <></>;
+
+  // Причина недоступности разметки без учёта правок и операций: общая для панели и диалога.
+  const generateBlockedReason = !view.trackPath
+    ? 'Сначала добавьте трек на странице «Исходники».'
+    : !hasLyrics
+      ? 'Сначала добавьте текст песни на странице «Исходники».'
+      : !state?.toolsRoot
+        ? 'Инструменты комплекса не найдены.'
+        : null;
 
   return (
     <Stack spacing={2} inert={busy || generating || undefined} aria-busy={busy || generating} sx={{ pb: 8 }}>
@@ -208,12 +217,12 @@ export function TimingPage(): ReactElement {
         <TimingToolbar
           lineCount={lines.length}
           verifiedCount={verifiedCount}
-          sectionCount={player.sections.length}
           dirty={dirty}
           busy={busy}
           generating={generating}
           invalidBindings={invalidBindings}
           canGenerate={canGenerate}
+          generateBlockedReason={generateBlockedReason}
           onGenerate={() => setGenerateOpen(true)}
           onConfirmAll={confirmAll}
           onRecalculateSections={recalculateSections}
@@ -221,12 +230,6 @@ export function TimingPage(): ReactElement {
           onDiscard={() => load().catch((error) => setLoadError(describeError(error)))}
         />
       </PageActionBar>
-      {dirty ? <Alert severity="info">Есть несохранённые правки. Сохраните или отмените их перед автоматической разметкой.</Alert> : null}
-      {lines.length ? (
-        <Typography variant="body2" color="text.secondary">
-          Секции песни сохраняются отдельно от границ строк. «Пересчитать секции» заменяет их границы, названия и заметки по текущей разметке.
-        </Typography>
-      ) : null}
       {view.problems.length || !view.trackPath || !hasLyrics ? (
         <Alert
           severity="warning"
@@ -238,17 +241,23 @@ export function TimingPage(): ReactElement {
             ) : undefined
           }
         >
-          {!view.trackPath ? 'Сначала добавьте трек на странице «Исходники». ' : ''}
-          {view.problems.join(' ')}
+          <LinkedText text={`${!view.trackPath ? 'Сначала добавьте трек на странице «Исходники». ' : ''}${view.problems.join(' ')}`} />
         </Alert>
       ) : null}
-      {view.timing ? (
+      {lines.length ? (
         <Typography variant="body2" color="text.secondary">
-          {view.timing.status}
+          Секций: {player.sections.length}. Секции песни сохраняются отдельно от границ строк; «Пересчитать секции» заменяет их границы, названия и заметки по
+          текущей разметке.
+        </Typography>
+      ) : null}
+      {/* Статус из файла разметки: черновик правок отражает чип в панели. */}
+      {view.timing?.status ? (
+        <Typography variant="caption" color="text.secondary">
+          В файле: {view.timing.status}
         </Typography>
       ) : null}
 
-      {view.trackPath ? <TimingPlayer player={player} lines={lines} stickyTop={49 + toolbarHeight} /> : null}
+      {view.trackPath ? <TimingPlayer player={player} lines={lines} stickyTop={headerHeight + toolbarHeight} /> : null}
       <TimingLinesTable
         lines={lines}
         selected={selected}
@@ -269,6 +278,13 @@ export function TimingPage(): ReactElement {
         device={device}
         resetAll={resetAll}
         canGenerate={canGenerate && !dirty && !busy && !generating}
+        generateBlockedReason={
+          generating || busy
+            ? 'Дождитесь окончания текущей операции.'
+            : dirty
+              ? 'Сохраните или отмените правки перед автоматической разметкой.'
+              : generateBlockedReason
+        }
         onClose={() => setGenerateOpen(false)}
         onModelChange={setModel}
         onDeviceChange={setDevice}

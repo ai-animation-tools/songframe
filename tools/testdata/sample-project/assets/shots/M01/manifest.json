@@ -23,8 +23,8 @@
     },
     "request": {
       "path": "generation-request.json",
-      "sha256": "f0c967879727d053e77db8362f35f777b136f5fbb16606c40f861d8ae3744090",
-      "bytes": 804
+      "sha256": "d06c11985d074aded6f33797793e71a09ca8a8657112d2a90e11f01fc1155614",
+      "bytes": 764
     },
     "generation_id": "sample-m01",
     "inputs": [

@@ -4,7 +4,7 @@ import { aiActionProblem, type AiAccess } from './ai-access';
 const ready: AiAccess = {
   agent: { provider: 'claude', selected: true, available: true, message: '' },
   image: { provider: 'codex', selected: true, available: true, message: '' },
-  video: { provider: 'kling', selected: true, available: true, message: '' }
+  video: { provider: 'test', selected: true, available: true, message: '' }
 };
 
 describe('причина блокировки ИИ', () => {

@@ -15,9 +15,10 @@ export interface ProductionFrameCandidate {
 }
 export interface ProductionRequestDraft {
   model: string;
-  command: 'text_to_video' | 'image_to_video' | 'omni_ref_video' | 'motion_control';
+  /** Команда и флаги входов — из объявленных возможностей провайдера видео; `input` со `slot` задаёт именованный слот. */
+  command: string;
   parameters: Record<string, unknown>;
-  inputs: { flag: 'input' | 'image' | 'tailImage' | 'audio' | 'video'; slot?: string; path: string; role?: string }[];
+  inputs: { flag: string; slot?: string; path: string; role?: string }[];
   outputs: number;
 }
 export type ProductionStageProposal =
@@ -32,6 +33,8 @@ export interface ProductionProposal {
   status: 'running' | 'ready' | 'invalid' | 'failed' | 'interrupted' | 'applied';
   stale: boolean;
   message?: string;
+  /** Текст ответа агента, не прошедшего проверку: показывается вместо предложения вместе с причиной. */
+  agentText?: string;
   before: string;
   after: ProductionStageProposal | null;
 }
@@ -57,8 +60,12 @@ export interface ProductionWorkflowView {
   paid: boolean;
   /** Почему действие подготовки недоступно; пусто, когда оно доступно. */
   reasons: { prepare: string | null; continue: string | null; frames: string | null };
+  /** План собирается из материала другого плана (derived_from или комплект derived_video): подготовка и генерация заблокированы. */
+  derivedFrom: string | null;
   /** Backend опор выбран в проекте независимо от текстового агента. */
   imageProvider?: string;
+  /** Провайдер видео проекта: по нему интерфейс подписывает команды черновика запроса. */
+  videoProvider?: string;
   framePrompts: ProductionFramePrompt[];
   problems: string[];
   proposal: ProductionProposal | null;
@@ -69,4 +76,9 @@ export interface ProductionImagesInput {
   shot: string;
   packageDir: string;
   frames: ProductionFramePrompt[];
+}
+
+/** Причина блокировки подготовки и повтора для плана, который собирается из материала другого плана. */
+export function derivedShotReason(source: string): string {
+  return `План собирается из материала ${source}: описание, опоры и генерация для него не нужны.`;
 }

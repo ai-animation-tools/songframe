@@ -1,13 +1,14 @@
 /** Неизвестная цена требует отдельного согласия; известная нехватка средств этим согласием не отменяется. */
 import { describe, expect, it } from 'vitest';
-import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration, type GenerationPrice } from './generation-consent';
+import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration, type GenerationPrice, priceNotice } from './generation-consent';
 
 describe('согласие на неизвестную стоимость', () => {
   it('показывает неизвестное значение без единиц, сохраняя нулевую цену', () => {
     expect(formatCredits(null)).toBe('неизвестно');
     expect(formatCredits(undefined)).toBe('неизвестно');
     expect(formatCredits(0)).toBe('0 кредитов');
-    expect(formatCredits(2.5)).toBe('2.5 кредитов');
+    expect(formatCredits(2.5)).toBe('2.5 кредита');
+    expect(formatCredits(24)).toBe('24 кредита');
   });
 
   it.each([null, 100])('разрешает неизвестную цену только с согласием при остатке %s', (balance) => {
@@ -31,5 +32,23 @@ describe('согласие на неизвестную стоимость', () =
     expect(priceAllowsGeneration({ credits: 0, balance: 0, verdict: 'ok' })).toBe(true);
     expect(priceAllowsGeneration(null, true)).toBe(false);
     expect(priceAllowsGeneration(undefined, true)).toBe(false);
+  });
+});
+
+describe('сообщение о цене', () => {
+  const learns = { title: 'Сервис', learnsPriceFromCharges: true };
+  it('неизвестная цена у провайдера, узнающего её по списанию, — спокойная подсказка', () => {
+    const notice = priceNotice({ credits: null, balance: 1167, verdict: 'cost_or_balance_unknown' }, learns);
+    expect(notice?.severity).toBe('info');
+    expect(notice?.text).toContain('станет известна после первого такого запроса');
+    expect(notice?.text).toContain('Сервис не сообщает цену заранее');
+  });
+  it('без такого свойства и при неизвестном остатке остаётся предупреждение', () => {
+    expect(priceNotice({ credits: null, balance: 10, verdict: 'cost_or_balance_unknown' }, { title: 'Сервис', learnsPriceFromCharges: false })?.severity).toBe(
+      'warning'
+    );
+    expect(priceNotice({ credits: null, balance: null, verdict: 'cost_or_balance_unknown' }, learns)?.severity).toBe('warning');
+    expect(priceNotice({ credits: 30, balance: 10, verdict: 'insufficient_balance' }, learns)?.severity).toBe('error');
+    expect(priceNotice({ credits: 24, balance: 1167, verdict: 'ok' }, learns)?.text).toBe('Стоимость: 24 кредита. Остаток: 1167 кредитов.');
   });
 });

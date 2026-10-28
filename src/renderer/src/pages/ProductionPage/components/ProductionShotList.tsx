@@ -7,6 +7,7 @@ import type { ShotProduction } from '@shared/types';
 import { ShotCard } from '../../../components/ShotCard';
 import { FILTER_EMPTY_HINTS, FILTER_LABELS, type ProductionFilter } from '../constants';
 import { shotPreview } from '../preview';
+import { LinkedText } from '../../../components/LinkedText';
 
 export function ProductionShotList({
   shots,
@@ -30,7 +31,9 @@ export function ProductionShotList({
       <Paper variant="outlined" sx={{ p: 2, minWidth: 0 }}>
         <Stack spacing={2}>
           <Typography variant="h6">{FILTER_LABELS[filter]} (0)</Typography>
-          <Alert severity="info">{FILTER_EMPTY_HINTS[filter]}</Alert>
+          <Alert severity="info">
+            <LinkedText text={FILTER_EMPTY_HINTS[filter]} />
+          </Alert>
           {filter !== 'all' && onResetFilter ? (
             <Button size="small" startIcon={<FilterAltOffIcon />} onClick={onResetFilter} sx={{ alignSelf: 'start' }}>
               Показать все планы
@@ -58,7 +61,18 @@ export function ProductionShotList({
             videoPath={videoPath}
             imagePath={imagePath}
             chips={
-              shot.state === 'completed' && !shot.asset?.video ? <Chip size="small" color="warning" label="Видео отсутствует" sx={{ height: 18 }} /> : null
+              <>
+                {shot.derivedFrom ? (
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={`из ${shot.derivedFrom}`}
+                    title={`План собирается из материала ${shot.derivedFrom}`}
+                    sx={{ height: 18 }}
+                  />
+                ) : null}
+                {shot.state === 'completed' && !shot.asset?.video ? <Chip size="small" color="warning" label="Видео отсутствует" sx={{ height: 18 }} /> : null}
+              </>
             }
             caption={shot.attention ? `ждёт вас: ${shot.attention}` : undefined}
             captionColor={shot.attention ? 'primary.main' : undefined}

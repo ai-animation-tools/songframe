@@ -193,7 +193,8 @@ export function animaticInputProblems(project: string, manifest: AnimaticManifes
     if (shot.media === 'keyframes' && !recorded) problems.push(`${shot.id}: нет сведений об исходных опорах старой сборки; пересоберите аниматик.`);
     for (const frame of recorded ?? []) if (!(frame.path in sources)) check(frame.path, frame.sha256);
     if (!recorded) {
-      const references = new Set([...(shot.references ?? shot.refs ?? []), shot.card?.primary_reference].filter((id): id is string => !!id));
+      // «—» помечает план без референсов и источником карточки не является.
+      const references = new Set([...(shot.references ?? shot.refs ?? []), shot.card?.primary_reference].filter((id): id is string => !!id && id !== '—'));
       for (const id of references) {
         const name = registry?.references?.[id]?.path;
         if (!name) problems.push(`${shot.id}: нет пути референса ${id}; нужна пересборка.`);

@@ -25,6 +25,8 @@ python3 -B tools/update_scene_views/update_scene_views.py --check --ref HEAD
 
 Если у плана без комплекта есть пакет в `plan/awaiting/Mxx` или `plan/batches/*` с полностью принятыми опорами (`workflow.json`, этап не `accepted`), вместо текстовой карточки рисуется карточка опор, а при двух и более опорах — ещё `Mxx.last.png`. Квитанция карточек записывает пути и хеши опор; устаревшие `*.last.png` удаляются. Проверка по снимку Git сверяет записанные хеши без повторного чтения пакетов.
 
+Производный план (`derived_from`) помечается «из Mxx» в ROADMAP, монтажном списке, раскадровке и заголовке текстовой карточки — подробности в [project_views](../project_views/README.md) и [render_animatic_cards](../render_animatic_cards/README.md).
+
 В `plan/context` формируется только `characters.md` — единый визуальный справочник с вычисленным списком речевых планов. Промпты референсов хранятся в `source` и этим инструментом не изменяются; полный аниматик не пересобирается — для него [build_animatic](../build_animatic/README.md).
 
 ## Тесты

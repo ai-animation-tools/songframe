@@ -1,15 +1,19 @@
 /** Исходники проекта: трек, текст песни, идея, обложка и референсы. */
-import { useEffect, type ReactElement } from 'react';
-import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import { useEffect, useRef, type ReactElement } from 'react';
+import { usePageLoading } from '../../components/PageLoader';
+import { Alert, Box, Button, Chip, Stack, Typography } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { ActionButton } from '../../components/ActionButton';
 import { PageActionBar } from '../../components/PageActionBar';
 import { CoverSection, IdeaSection, LyricsSection, ReferenceKindDialog, ReferencesSection, TrackSection } from './components';
 import { useSourcesForm } from './useSourcesForm';
 import { CoverGenerateDialog } from './components/CoverGenerateDialog';
+import { LinkedText } from '../../components/LinkedText';
 
 export function SourcesPage(): ReactElement {
   const form = useSourcesForm();
+  const problemsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // Файл, брошенный мимо области загрузки, не должен открыться вместо приложения.
     const preventNavigation = (event: DragEvent): void => {
@@ -23,6 +27,8 @@ export function SourcesPage(): ReactElement {
     };
   }, []);
 
+  // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(!form.view && !form.loadError);
   if (form.loadError)
     return (
       <Alert
@@ -33,46 +39,74 @@ export function SourcesPage(): ReactElement {
           </Button>
         }
       >
-        {form.loadError}
+        <LinkedText text={form.loadError} />
       </Alert>
     );
 
-  if (!form.view)
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-        <CircularProgress />
-      </Box>
-    );
+  if (!form.view) return <></>;
+
+  // Проверка сервера включает разбор текста песни с задержкой; локальный разбор показывает его ошибки сразу.
+  const problems = [...new Set([...form.problems, ...form.lyricsCheck.problems])];
+  const problemCount = problems.length + (form.hasPromptErrors ? 1 : 0);
+  const saveBlockedReason = form.busy
+    ? null
+    : form.hasPromptErrors
+      ? 'Не удалось прочитать некоторые промпты референсов: восстановите файлы или введите текст заново.'
+      : problems.length
+        ? `Исправьте проблемы формы (${problems.length}): список — в начале страницы, ошибки отмечены у полей.`
+        : !form.dirty
+          ? 'Нет несохранённых правок.'
+          : null;
 
   return (
     <Stack spacing={2} inert={form.busy || undefined} aria-busy={form.busy} sx={{ width: '100%', minWidth: 0, pb: 10 }}>
       <PageActionBar>
-        <Typography variant="h5" sx={{ flex: 1 }}>
-          Исходники
-        </Typography>
-        <Button
+        <Typography variant="h5">Исходники</Typography>
+        {form.dirty ? <Chip size="small" color="warning" label="Есть несохранённые правки" /> : null}
+        {problemCount ? (
+          <Chip
+            size="small"
+            color="warning"
+            label={`Проблем: ${problemCount}`}
+            // Список проблем стоит в начале страницы, а правка обычно идёт в карточке ниже.
+            onClick={() => problemsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          />
+        ) : null}
+        <Box sx={{ flex: 1 }} />
+        <ActionButton
           variant="contained"
           startIcon={<SaveIcon />}
-          disabled={form.busy || form.hasPromptErrors || form.problems.length > 0 || form.lyricsCheck.problems.length > 0 || !form.dirty}
+          disabled={form.busy || !!saveBlockedReason}
+          disabledReason={form.busy ? 'Дождитесь окончания текущей операции.' : saveBlockedReason}
           onClick={form.save}
         >
           Сохранить
-        </Button>
+        </ActionButton>
       </PageActionBar>
-      {form.hasPromptErrors ? (
-        <Alert severity="warning">
-          Сохранение недоступно: не удалось прочитать некоторые промпты. Раскройте отмеченные референсы и восстановите файл либо введите текст заново.
+      {form.view.problems.length ? (
+        <Alert severity="error">
+          <LinkedText text={form.view.problems.join(' ')} />
         </Alert>
       ) : null}
-      {form.view.problems.length ? <Alert severity="error">{form.view.problems.join(' ')}</Alert> : null}
-      {form.problems.length ? (
-        <Alert severity="warning">
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {form.problems.map((problem) => (
-              <li key={problem}>{problem}</li>
-            ))}
-          </ul>
-        </Alert>
+      {problemCount ? (
+        <Stack ref={problemsRef} spacing={1}>
+          {form.hasPromptErrors ? (
+            <Alert severity="warning">
+              Не удалось прочитать некоторые промпты. Раскройте отмеченные референсы и восстановите файл либо введите текст заново.
+            </Alert>
+          ) : null}
+          {problems.length ? (
+            <Alert severity="warning">
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {problems.map((problem) => (
+                  <li key={problem}>
+                    <LinkedText text={problem} />
+                  </li>
+                ))}
+              </ul>
+            </Alert>
+          ) : null}
+        </Stack>
       ) : null}
       {/* Референсы занимают отдельную колонку только при достаточной ширине рабочей области. */}
       <Box

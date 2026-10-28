@@ -62,6 +62,7 @@ export function TreatmentEditor({
           <Button
             startIcon={<AddIcon />}
             color="success"
+            sx={{ alignSelf: 'flex-start' }}
             onClick={() =>
               setTreatment({
                 ...treatment,

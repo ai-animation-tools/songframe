@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
 import type { CastProperty, ScenesFile } from '@shared/types';
-import type { EntityOption, ScenarioBrief } from '../types';
+import { SCENE_PROBLEMS_ID, type EntityOption, type ScenarioBrief } from '../types';
 import { useSceneDraft } from '../useSceneDraft';
 import { SceneGlobalRules } from './SceneGlobalRules';
 import { SceneTimeline } from './SceneTimeline';
@@ -46,7 +46,7 @@ export function SceneRegistry({
     <>
       <SceneGlobalRules scenes={scenes} setScenes={setScenes} showGlobal={showGlobal} />
       {problems.length ? (
-        <Alert severity="warning">
+        <Alert id={SCENE_PROBLEMS_ID} severity="warning">
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {problems.slice(0, 8).map((p) => (
               <li key={p}>{p}</li>

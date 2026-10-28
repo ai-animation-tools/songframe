@@ -4,6 +4,7 @@ import { Alert, AlertTitle, Button, Stack, Typography } from '@mui/material';
 import TheatersIcon from '@mui/icons-material/Theaters';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import type { ScenarioStatus } from '@shared/scenario-status';
+import { LinkedText } from './LinkedText';
 
 /** Отсутствие сценария оформляется одинаково на всех зависимых страницах, на всю рабочую ширину. */
 export function ScenarioRequired({
@@ -27,7 +28,7 @@ export function ScenarioRequired({
       <Typography variant="h5">{title}</Typography>
       <Alert severity={status === 'invalid' ? 'error' : 'info'}>
         <AlertTitle>{heading}</AlertTitle>
-        {message}
+        <LinkedText text={message} />
       </Alert>
       <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
         <Button component={Link} to="/project/scenario" variant="contained" startIcon={<TheatersIcon />}>

@@ -56,7 +56,12 @@ export function useChecksPage() {
       if (finished.length) {
         await loadReviews();
         const failed = after.filter((j) => finished.includes(j.id) && j.status === 'failed');
-        notify(failed.length ? `Завершено с ошибками: ${failed.map((j) => j.title).join(', ')}` : 'Задание завершено', failed.length ? 'warning' : 'success');
+        // Называем завершившиеся задания: страница запускает разные проверки, и общее «Задание завершено» не говорит, что именно готово.
+        const titles = after.filter((j) => finished.includes(j.id)).map((j) => j.title);
+        notify(
+          failed.length ? `Завершено с ошибками: ${failed.map((j) => j.title).join(', ')}. Подробности — в журнале заданий.` : `Готово: ${titles.join(', ')}`,
+          failed.length ? 'warning' : 'success'
+        );
       }
     }, 1500);
     return () => clearInterval(handle);
@@ -89,7 +94,8 @@ export function useChecksPage() {
     const job = byId.get(lastJob[check.id]);
     if (!job) return null;
     const step = job.steps.length > 1 ? job.steps.find((s) => s.tool === check.tool) : job.steps[0];
-    if (!step) return { job, status: job.status, code: job.code };
+    // Прерванное закрытием программы задание для итога проверки равно неудачному.
+    if (!step) return { job, status: job.status === 'interrupted' ? 'failed' : job.status, code: job.code };
     // После остановки задания незапущенные шаги больше не выполняются.
     const stepStatus = step.status === 'pending' ? (job.status === 'running' ? 'running' : 'skipped') : step.status;
     return { job, status: stepStatus, code: step.code };

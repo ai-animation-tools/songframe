@@ -1,10 +1,18 @@
 /** Сохранённый возврат подставляется в явную доработку, не запуская агента при показе панели. */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProductionWorkflowView } from '@shared/production-workflow';
 import { agentTitle } from '@shared/agent-providers';
+import { registerMediaProviderForTests } from '@shared/media-providers';
+import { TEST_AGENT_PROVIDER, testAgentProviderInfo } from '@shared/testing/media-provider';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
+
+let restoreProvider: () => void;
+beforeAll(() => {
+  restoreProvider = registerMediaProviderForTests(TEST_AGENT_PROVIDER, testAgentProviderInfo);
+});
+afterAll(() => restoreProvider());
 
 const workflow = vi.hoisted(() => ({
   view: null as ProductionWorkflowView | null,
@@ -26,8 +34,8 @@ vi.mock('../../../state', () => ({
     agentProvider: app.agentProvider,
     aiAccess: {
       agent: { selected: true, available: true, provider: 'codex', message: '' },
-      image: { selected: true, available: true, provider: 'kling', message: '' },
-      video: { selected: true, available: true, provider: 'kling', message: '' }
+      image: { selected: true, available: true, provider: 'test', message: '' },
+      video: { selected: true, available: true, provider: 'test', message: '' }
     }
   })
 }));
@@ -69,7 +77,8 @@ beforeEach(() => {
     canGenerateFrames: false,
     paid: false,
     reasons: { prepare: 'сценарий не утверждён', continue: null, frames: 'опоры уже приняты' },
-    imageProvider: 'kling',
+    derivedFrom: null,
+    imageProvider: 'test',
     framePrompts: [],
     problems: [],
     proposal: null,
@@ -124,7 +133,7 @@ describe('Явный запуск доработки плана', () => {
     app.agentProvider = 'claude';
     const view = workflow.view!;
     view.canRevise = false;
-    view.imageProvider = 'codex';
+    view.imageProvider = TEST_AGENT_PROVIDER;
     view.proposal = { id: 'frames-1', stage: 'frames' } as NonNullable<ProductionWorkflowView['proposal']>;
     view.job = {
       schemaVersion: 1,
@@ -146,6 +155,6 @@ describe('Явный запуск доработки плана', () => {
     };
     const html = render();
     const retry = [...html.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g)].find((match) => match[0].includes('Повторить'));
-    expect(retry?.[0]).toContain(`title="${agentTitle('codex')}"`);
+    expect(retry?.[0]).toContain(`title="${agentTitle(testAgentProviderInfo.executor!)}"`);
   });
 });

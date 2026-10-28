@@ -4,9 +4,15 @@ import { type ReactElement, useState } from 'react';
 import { Box, Button, Chip, LinearProgress, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import type { JobInfo, JobStepInfo } from '@shared/types';
+import { JOB_INTERRUPTED_MESSAGE, type JobInfo, type JobStepInfo } from '@shared/types';
 import { JobStatusIcon } from './JobStatusIcon';
 import { DateTime } from './DateTime';
+
+function statusChip(job: JobInfo): { color: 'success' | 'error' | 'warning'; label: string } {
+  if (job.status === 'done') return { color: 'success', label: 'без ошибок' };
+  if (job.status === 'interrupted') return { color: 'warning', label: 'прервано' };
+  return { color: 'error', label: `код ${job.code}` };
+}
 
 function stepColor(step: JobStepInfo): 'default' | 'success' | 'error' | 'info' {
   if (step.status === 'done') return 'success';
@@ -29,15 +35,8 @@ export function JobCard({ job, lines = 14, expanded = false }: { job: JobInfo; l
         <Typography variant="caption" color="text.secondary">
           <DateTime value={job.startedAt} />
         </Typography>
-        {job.status !== 'running' ? (
-          <Chip
-            size="small"
-            variant="outlined"
-            color={job.status === 'done' ? 'success' : 'error'}
-            label={job.status === 'done' ? 'без ошибок' : `код ${job.code}`}
-            sx={{ height: 20 }}
-          />
-        ) : null}
+        {job.status !== 'running' ? <Chip size="small" variant="outlined" {...statusChip(job)} sx={{ height: 20 }} /> : null}
+        {job.previousSession ? <Chip size="small" variant="outlined" label="Прошлый сеанс" sx={{ height: 20 }} /> : null}
         <Box sx={{ flex: 1 }} />
         {job.steps.length > 1
           ? job.steps.map((step, index) => (
@@ -53,6 +52,11 @@ export function JobCard({ job, lines = 14, expanded = false }: { job: JobInfo; l
           : null}
       </Box>
       {job.status === 'running' ? <LinearProgress sx={{ my: 0.5 }} /> : null}
+      {job.status === 'interrupted' ? (
+        <Typography variant="body2" color="warning.main" sx={{ mt: 0.5 }}>
+          {JOB_INTERRUPTED_MESSAGE}. Результат задания неизвестен: проверьте его на рабочей странице и при необходимости запустите заново.
+        </Typography>
+      ) : null}
       <Typography
         component="pre"
         variant="caption"

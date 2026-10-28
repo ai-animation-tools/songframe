@@ -12,7 +12,9 @@ import argparse
 import json
 import re
 
+from tools import media_adapters
 from tools.common import ROOT
+from tools.scene_registry.scene_registry import DERIVED_FORMAT, derived_from_problems
 
 SCHEMAS = Path(__file__).with_name("schemas")
 
@@ -85,7 +87,6 @@ SNAPSHOT_ALIASES = {
     "prompt": ("prompt_file", "prompt_path"),
     "provider": ("service",),
 }
-MULTI_SHOT_MODELS = {"kling-video-v3_0", "kling-video-v3_0_omni"}
 
 
 def load_schema(name):
@@ -244,6 +245,11 @@ def lint_scenes(root, report):
                 report.error("plan/scenes.json", f"{sid}.references", f"неизвестный референс {key}")
         if scene.get("card", {}).get("primary_reference") not in reference_keys:
             report.error("plan/scenes.json", f"{sid}.card", "главный референс карточки не объявлен")
+    # Форму derived_from проверяет схема; здесь только ссылки на другие планы.
+    scenes = data.get("scenes") if isinstance(data.get("scenes"), list) else []
+    for sid, message in derived_from_problems(scenes):
+        if message != DERIVED_FORMAT:
+            report.error("plan/scenes.json", f"{sid}.derived_from", message.removeprefix("derived_from ").rstrip("."))
     return data
 
 
@@ -296,7 +302,7 @@ def lint_description(root, data, report):
             report.warning("source/description.md", key, f"персонаж «{name}» из реестра не упомянут в сценарии")
 
 
-def lint_snapshot(root, name, report, model_warning=True):
+def lint_snapshot(root, name, report):
     snapshot = read_json(root, name, report)
     if snapshot is None:
         return
@@ -311,31 +317,18 @@ def lint_snapshot(root, name, report, model_warning=True):
                 report.warning(name, found[0], f"устаревшее имя поля; каноническое — {canonical}")
     if "model" not in snapshot or "prompt" not in present:
         report.error(name, "$", "снимок должен называть модель и промпт")
-    kling = "command" in snapshot and ("parameters" in present or "argv" in snapshot)
-    external = "provider" in present
-    if not kling and not external:
-        report.error(name, "$", "нет ни команды Kling с параметрами, ни поля provider внешнего сервиса")
+    if "provider" not in present:
+        report.error(name, "provider", "снимок должен называть провайдера генерации")
     if "generation_id" not in present:
         report.error(name, "generation_id", "поле обязательно; при неизвестном ID — null и причина в provenance")
     elif snapshot[present["generation_id"]] is None and not snapshot.get("provenance"):
         report.error(name, "provenance", "ID задания отсутствует, но причина не записана")
-    parameters = snapshot.get(present.get("parameters", "parameters"), {})
-    if (
-        kling
-        and model_warning
-        and snapshot.get("model") in MULTI_SHOT_MODELS
-        and isinstance(parameters, dict)
-        and "prefer_multi_shots" not in parameters
-        and "prefer_multi_shots" not in snapshot
-    ):
-        report.warning(
-            name,
-            "parameters",
-            (
-                "запрос к модели с авто-раскадровкой отправлен без "
-                "prefer_multi_shots: у сервиса значение по умолчанию true"
-            ),
-        )
+    provider = snapshot.get(present.get("provider", "provider"))
+    # Модельные предупреждения знает только адаптер провайдера; общая проверка о сервисах не знает.
+    service = media_adapters.adapter(provider) if media_adapters.known(provider) else None
+    if hasattr(service, "snapshot_warnings"):
+        for where, message in service.snapshot_warnings(snapshot):
+            report.warning(name, where, message)
 
 
 def lint_assets(root, report):
@@ -391,15 +384,6 @@ def lint_packages(root, report):
             if data is not None:
                 for message in validate(data, request_schema):
                     report.error(str(request.relative_to(root)), message.split(":")[0], message.split(": ", 1)[1])
-                if (
-                    isinstance(data, dict)
-                    and data.get("kind") == "video"
-                    and data.get("model") in MULTI_SHOT_MODELS
-                    and "prefer_multi_shots" not in data.get("parameters", {})
-                ):
-                    report.error(
-                        str(request.relative_to(root)), "parameters", "prefer_multi_shots обязателен для этой модели"
-                    )
 
 
 def lint(root=ROOT):

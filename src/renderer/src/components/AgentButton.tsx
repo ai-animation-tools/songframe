@@ -1,48 +1,48 @@
 /** Единственная кнопка действий агента: знак всегда соответствует одному агенту, обычно сохранённому в настройках. */
 import type { ReactElement } from 'react';
-import { Button, Tooltip, type ButtonProps } from '@mui/material';
+import { Button, type ButtonProps } from '@mui/material';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import { agentTitle, type AgentProvider } from '@shared/agent-providers';
-import { aiActionProblem, type AiActionKind } from '@shared/ai-access';
+import type { AiActionKind } from '@shared/ai-access';
+import { useAiActionProblem } from '../hooks/useAiActionProblem';
+import { buttonHint } from './buttonHint';
 import { useApp } from '../state';
 import { AgentIcon } from './AgentIcon';
+import { DisabledHint } from './DisabledHint';
 
 type Props = Omit<ButtonProps, 'startIcon'> & {
-  /** Агент уже запущенного задания, формы настроек или исполнитель провайдера медиа (Codex для изображений); иначе — сохранённый агент. */
+  /** Агент уже запущенного задания, формы настроек или программа-исполнитель провайдера медиа из реестра; иначе — сохранённый агент. */
   provider?: AgentProvider;
   aiKind?: AiActionKind;
   /** Только диагностика профиля в настройках: проверяет явный выбор формы до сохранения и установки CLI. */
   setup?: boolean;
+  /** Причина собственной блокировки действия (props.disabled), чтобы выключенная кнопка объясняла, что сделать дальше. */
+  disabledReason?: string | null;
 };
 
-export function AgentButton({ provider, aiKind = 'agent', setup = false, ...props }: Props): ReactElement {
-  const { agentProvider, aiAccess } = useApp();
+export function AgentButton({ provider, aiKind = 'agent', setup = false, disabledReason, ...props }: Props): ReactElement {
+  const { agentProvider } = useApp();
+  const problem = useAiActionProblem(aiKind);
   const selected = provider ?? (setup ? undefined : (agentProvider ?? undefined));
-  const reason = setup
-    ? selected
-      ? null
-      : 'Выберите агента в форме настроек.'
-    : aiKind === 'agent' && !agentProvider
-      ? 'Сначала выберите агента в настройках приложения.'
-      : aiActionProblem(aiAccess, aiKind);
+  const ownReason = props.disabled ? (disabledReason ?? null) : null;
+  const reason = setup ? (selected ? ownReason : 'Выберите агента в форме настроек.') : (problem ?? ownReason);
   const disabled = props.disabled || !!reason;
+  // Подсказка при наведении: назначение кнопки и, если она недоступна, причина — вместо отдельных сводок рядом с кнопками.
+  const hint = buttonHint(props.title, reason);
   const monochrome = props.variant === 'contained' || disabled;
   const button = (
     <Button
       {...props}
       disabled={disabled}
-      title={reason ?? props.title ?? (selected ? agentTitle(selected) : 'Агент не выбран')}
+      title={hint ?? (selected ? agentTitle(selected) : 'Агент не выбран')}
       // Без выбранного агента показываем нейтральный знак, а не оба логотипа.
       startIcon={selected ? <AgentIcon provider={selected} monochrome={monochrome} /> : <SmartToyOutlinedIcon />}
     />
   );
-  // Disabled-кнопка не получает события мыши и фокус; обёртка сохраняет подсказку также с клавиатуры.
-  return reason ? (
-    <Tooltip title={reason}>
-      <span tabIndex={0} style={{ display: 'inline-flex', maxWidth: '100%' }}>
-        {button}
-      </span>
-    </Tooltip>
+  return reason && hint ? (
+    <DisabledHint hint={hint} fullWidth={props.fullWidth}>
+      {button}
+    </DisabledHint>
   ) : (
     button
   );

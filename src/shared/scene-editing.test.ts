@@ -29,4 +29,13 @@ describe('перенумерация при объединении планов'
       ['M03', 'M02']
     ]);
   });
+  it('переименовывает источник производного плана', () => {
+    const list = [
+      { id: 'M01', state_from: null },
+      { id: 'M01.1', state_from: 'M01' },
+      { id: 'M02', state_from: 'M01.1', derived_from: { shot: 'M01.1' } }
+    ] as SceneShot[];
+    expect(renumberShots(list)[2].derived_from).toEqual({ shot: 'M02' });
+    expect(renumberShots(list)[0]).not.toHaveProperty('derived_from');
+  });
 });

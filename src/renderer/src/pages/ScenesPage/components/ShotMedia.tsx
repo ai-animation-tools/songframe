@@ -1,10 +1,12 @@
 import type { ReactElement } from 'react';
 import type { DashboardShot } from '@shared/types';
-import { Alert, Box, Button, Stack, Typography } from '@mui/material';
+import { Alert, Box, Stack, Typography } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import { useSynchronizedVideos } from '../useSynchronizedVideos';
 import { ShotSection } from './ShotSection';
+import { ActionButton } from '../../../components/ActionButton';
+import { countLabel } from '@shared/plural';
 
 /** Одинаковая область видео и подписи под ней сохраняют выравнивание пары при длинном рецепте монтажа. */
 export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | null {
@@ -21,7 +23,7 @@ export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | nul
         edit.speed && edit.speed !== '1' ? `скорость ${edit.speed}` : null,
         edit.holdFirst ? `удержание первого кадра ${edit.holdFirst} с` : null,
         edit.holdLast ? `удержание последнего кадра ${edit.holdLast} с` : null,
-        `${edit.frames} кадров, ${edit.duration.toFixed(2)} с`
+        `${countLabel(edit.frames, 'кадр', 'кадра', 'кадров')}, ${edit.duration.toFixed(2)} с`
       ].filter(Boolean)
     : [];
   const viewport = { aspectRatio: '16 / 9', bgcolor: '#000', borderRadius: 1, overflow: 'hidden', display: 'grid', placeItems: 'center' };
@@ -81,14 +83,19 @@ export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | nul
           </Typography>
         ) : null}
         <Box>
-          <Button
+          <ActionButton
             variant="outlined"
             startIcon={comparison.synchronized ? <PauseIcon /> : <PlayArrowIcon />}
             disabled={!comparison.ready}
+            disabledReason={
+              !asset.original || !asset.video
+                ? 'Для сравнения нужны оба видео: оригинал генерации и принятый монтаж.'
+                : (comparison.error ?? 'Дождитесь загрузки обоих видео.')
+            }
             onClick={comparison.toggle}
           >
             {comparison.synchronized ? 'Приостановить синхронно' : 'Воспроизвести синхронно'}
-          </Button>
+          </ActionButton>
         </Box>
       </Stack>
     </ShotSection>

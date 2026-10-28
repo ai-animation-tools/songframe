@@ -42,6 +42,8 @@ class CheckAssetsTests(unittest.TestCase):
                             "start_frame": 0,
                             "end_frame_exclusive": 30,
                             "references": [],
+                            "state_from": None,
+                            "state_changes": {},
                         }
                     ],
                 }

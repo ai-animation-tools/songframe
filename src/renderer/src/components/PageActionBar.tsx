@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode, Ref } from 'react';
 import { Paper, type SxProps, type Theme } from '@mui/material';
+import { useHeaderHeight } from './headerHeight';
 
 /** Действия страницы остаются доступны при прокрутке под общей шапкой приложения. */
 export function PageActionBar({
@@ -13,14 +14,17 @@ export function PageActionBar({
   sx?: SxProps<Theme>;
   barRef?: Ref<HTMLDivElement>;
 }): ReactElement {
+  const headerHeight = useHeaderHeight();
   return (
     <Paper
       ref={barRef}
       variant="outlined"
+      // По метке прокрутка к цели ссылки учитывает закреплённую панель (PAGE_ACTION_BAR_ATTR в useAnchorTarget).
+      data-page-action-bar={position}
       sx={[
         {
           position: 'sticky',
-          ...(position === 'top' ? { top: 49 } : { bottom: 0 }),
+          ...(position === 'top' ? { top: headerHeight } : { bottom: 0 }),
           zIndex: (theme) => theme.zIndex.appBar - 1,
           p: 1,
           display: 'flex',

@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from copy import deepcopy
 
-import tools.testing  # noqa: E402,F401  Проект-образец должен быть выбран до импорта инструментов.
+import tools.testing.sample_project  # noqa: E402,F401  Проект-образец должен быть выбран до импорта инструментов.
 from tools.project_views.project_views import Sources, documents
 from tools.scene_registry.scene_registry import (
     ROOT,
@@ -65,11 +65,24 @@ class SceneRegistryTests(unittest.TestCase):
                     ImageChops.difference(first.crop((0, 63, 1280, 720)), second.crop((0, 63, 1280, 720))).getbbox()
                 )
 
+    def test_placeholder_reference_is_not_passed_to_cards(self):
+        from tools.render_animatic_cards.render_animatic_cards import render_card
+
+        # «—» — штатная пометка плана без референсов; карточка рисуется по главному референсу.
+        data = deepcopy(load())
+        data["scenes"][0]["references"] = ["—"]
+        shot = shots(data)[0]
+        self.assertEqual(shot["refs"], [])
+        with tempfile.TemporaryDirectory(prefix="card-placeholder-test-") as folder:
+            target = Path(folder) / "card.png"
+            render_card(shot, target, {"name": "Клип"}, data["references"], ROOT)
+            self.assertTrue(target.is_file())
+
     def test_generation_settings_are_required_and_validated(self):
         from tools.scene_registry.scene_registry import generation_settings
 
         video = {
-            "provider": "kling",
+            "provider": "test",
             "resolution": "1080p",
             "aspect_ratio": "16:9",
             "watermark": False,
@@ -90,13 +103,13 @@ class SceneRegistryTests(unittest.TestCase):
         from tools.scene_registry.scene_registry import generation_settings
 
         video = {
-            "provider": "kling",
+            "provider": "test",
             "resolution": "1080p",
             "aspect_ratio": "auto",
             "watermark": False,
             "duration_rule": "exact_window",
         }
-        image = {"provider": "kling", "aspect_ratio": "auto"}
+        image = {"provider": "test", "aspect_ratio": "auto"}
         project = {
             "schema_version": 1,
             "name": "Тест",
@@ -172,7 +185,7 @@ class SceneRegistryTests(unittest.TestCase):
         for generation in (None, {"video": None, "image": None}, {"image": {"provider": "codex"}}):
             self.assertEqual(validate_project(dict(project, generation=generation))["generation"], generation)
         video = {
-            "provider": "kling",
+            "provider": "test",
             "resolution": "1080p",
             "aspect_ratio": "16:9",
             "watermark": False,
@@ -251,6 +264,31 @@ class SceneRegistryTests(unittest.TestCase):
         del data["scenes"][0]["state_changes"]
         with self.assertRaisesRegex(ValueError, "нужны state_from"):
             validate(data)
+
+    def test_derived_from_accepts_existing_source_and_rejects_bad_links(self):
+        data = load()
+        by_id = {s["id"]: s for s in data["scenes"]}
+        # Без поля и с корректной ссылкой на план с собственной генерацией реестр валиден.
+        for scene in data["scenes"]:
+            scene.pop("derived_from", None)
+        validate(data)
+        by_id["M04"]["derived_from"] = {"shot": "M02"}
+        validate(data)
+        cases = [
+            ("M04", {"shot": "M99"}, "M04: derived_from ссылается на неизвестный план M99."),
+            ("M04", {"shot": "M04"}, "M04: derived_from не может ссылаться на сам план."),
+            ("M03", {"shot": "M04"}, "M03: источник M04 сам собирается из другого плана; укажите исходный план."),
+            ("M03", "M02", 'M03: derived_from должен быть объектом {"shot": "Mxx"}.'),
+            ("M03", {"shot": "M02", "mode": "freeze"}, 'M03: derived_from должен быть объектом {"shot": "Mxx"}.'),
+            ("M03", {"shot": "2"}, 'M03: derived_from должен быть объектом {"shot": "Mxx"}.'),
+        ]
+        for sid, value, message in cases:
+            with self.subTest(sid=sid, value=value):
+                broken = deepcopy(data)
+                next(s for s in broken["scenes"] if s["id"] == sid)["derived_from"] = value
+                with self.assertRaises(ValueError) as error:
+                    validate(broken)
+                self.assertEqual(str(error.exception), message)
 
     def test_explicit_before_reference_and_null_remove_only_named_fact(self):
         data = load()

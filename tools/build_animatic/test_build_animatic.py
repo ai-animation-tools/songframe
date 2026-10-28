@@ -46,6 +46,8 @@ class BuildTests(unittest.TestCase):
                     "action": "Технический кадр",
                     "continuity": "",
                     "references": [],
+                    "state_from": None,
+                    "state_changes": {},
                 }
                 for sid, start in [("M01", 0), ("M02", 12)]
             ],
@@ -134,7 +136,7 @@ class BuildTests(unittest.TestCase):
         # M02 остаётся настоящим входом-карточкой: пустой набор не проверил бы квитанцию.
         path = self.root / "plan/project.json"
         for generation in (
-            {"video": {"provider": "kling", "provider_selected": True}},
+            {"video": {"provider": "test", "provider_selected": True}},
             {"video": {"model": "другая", "options": {"duration": 5}}},
             {"image": {"provider": "codex", "provider_selected": False, "model": "другая"}},
             None,
@@ -168,7 +170,7 @@ class BuildTests(unittest.TestCase):
         def change_generation(args):
             result = run(args)
             if args[-3:] == ["-f", "null", "-"]:
-                self.project["generation"] = {"video": {"provider": "kling", "model": "новая"}}
+                self.project["generation"] = {"video": {"provider": "test", "model": "новая"}}
                 path.write_text(json.dumps(self.project, ensure_ascii=False, indent=4))
             return result
 

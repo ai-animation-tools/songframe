@@ -1,23 +1,27 @@
-/** Адаптеры медиа: discovery и локальная подготовка не разрешают платную отправку. Согласования принадлежат Production. */
+/** Общий платный адаптер медиа: discovery и локальная подготовка не разрешают отправку. Согласования принадлежат Production. */
 import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
-import type { AgentCheckResult, AgentJob } from '@shared/agents';
-import type { MediaArgument, MediaCapabilities, MediaExecutionRef, MediaKind, MediaModel, MediaModelSelection } from '@shared/media-providers';
-import type { ProductionImagesInput } from '@shared/production-workflow';
+import {
+  mediaProviderTitle,
+  type MediaArgument,
+  type MediaCapabilities,
+  type MediaKind,
+  type MediaModel,
+  type MediaModelSelection,
+  type MediaProviderId,
+  type PaidMediaExecutionRef
+} from '@shared/media-providers';
 import type { DurationRule } from '@shared/types';
 import type { PythonLauncher } from './python-launcher';
-import { readKlingCapabilities } from './kling-capabilities';
-import { imageDimensions, imageExtensionMatches, type KeyframeImages } from './keyframe-images';
+import { readMediaCatalog } from './media-catalog';
+import { imageDimensions, imageExtensionMatches } from './keyframe-images';
+import type { PaidProviderAdapter, PaidRequestRules } from './providers/types';
 
 export interface MediaProviderOptions {
   launcher: () => Pick<PythonLauncher, 'run'>;
-  cliArgs: () => string[];
-  images: KeyframeImages;
-  checkCodex: () => Promise<AgentCheckResult>;
-  listCodexModels?: () => Promise<MediaModel[]>;
   validateImage?: (path: string) => boolean;
   validateVideo?: (path: string) => boolean;
 }
@@ -31,14 +35,14 @@ export interface MediaArtifact {
   height?: number;
 }
 export interface PreparedMediaRequest {
-  provider: 'kling';
+  provider: MediaProviderId;
   kind: MediaKind;
   project: string;
   requestDir: string;
   requestSha: string;
   frameId?: string;
 }
-export interface PrepareKlingInput {
+export interface PreparePaidInput {
   project: string;
   workDir: string;
   shot: string;
@@ -47,7 +51,8 @@ export interface PrepareKlingInput {
   model: string;
   preferredModel?: string | null;
   modelSelection?: MediaModelSelection;
-  durationConstraint?: { windowSeconds: number; rule: DurationRule };
+  /** minSeconds — нижняя граница сверх правила окна (речевой план: минимальная длина звукового входа). */
+  durationConstraint?: { windowSeconds: number; rule: DurationRule; minSeconds?: number };
   /** Настройки проекта проверяются для объявленных параметров; неподдерживаемые поля не дописываются в запрос. */
   requiredParameters?: Record<string, unknown>;
   projectOptions?: Record<string, unknown>;
@@ -57,38 +62,8 @@ export interface PrepareKlingInput {
   outputs: number;
   frameId?: string;
 }
-export interface PreparedCodexRequest {
-  provider: 'codex';
-  kind: 'image';
-  requestSha: string;
-  input: ProductionImagesInput;
-  references: { path: string; sha256: string }[];
-}
 /** Callback предоставляется владельцем cost gate и Jobs; адаптер не создаёт второй журнал отправки. */
 export type MediaExecutor = (action: 'submit' | 'resume', request: PreparedMediaRequest) => Promise<void>;
-/** Контракт локального Codex: подготовка и отправка отделены от восстановления существующего задания. */
-export interface CodexImageProviderContract {
-  readonly provider: 'codex';
-  readonly kind: 'image';
-  capabilities(project: string): Promise<MediaCapabilities>;
-  prepare(input: ProductionImagesInput): PreparedCodexRequest;
-  submit(prepared: PreparedCodexRequest, permit: { requestSha: string }): MediaExecutionRef;
-  collect(reference: Extract<MediaExecutionRef, { provider: 'codex' }>, job: AgentJob): MediaArtifact[];
-  collectJob(job: AgentJob): MediaArtifact[];
-}
-
-/** Платный lifecycle делегирует submit/resume владельцу согласования и использует прежний frozen request. */
-export interface KlingProviderContract {
-  readonly provider: 'kling';
-  readonly kind: MediaKind;
-  capabilities(project: string): Promise<MediaCapabilities>;
-  prepare(input: PrepareKlingInput, capabilities: MediaCapabilities): Promise<PreparedMediaRequest>;
-  submit(reference: PreparedMediaRequest, execute: MediaExecutor): Promise<MediaExecutionRef>;
-  resume(reference: PreparedMediaRequest, execute: MediaExecutor): Promise<MediaExecutionRef>;
-  collect(reference: PreparedMediaRequest): MediaArtifact[];
-}
-export type ImageProvider = CodexImageProviderContract | (KlingProviderContract & { readonly kind: 'image' });
-export type VideoProvider = KlingProviderContract & { readonly kind: 'video' };
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const hash = (value: string | Buffer): string => createHash('sha256').update(value).digest('hex');
 const fileHash = (path: string): string => hash(readFileSync(path));
@@ -97,12 +72,8 @@ const read = (path: string): Record<string, unknown> => {
   if (!record(value)) throw new Error('Ожидается JSON-объект медиа.');
   return value;
 };
-const commands: Record<MediaKind, string[]> = {
-  image: ['text_to_image', 'image_to_image'],
-  video: ['text_to_video', 'image_to_video', 'omni_ref_video', 'motion_control']
-};
-
-function localFile(directory: string, path: string): string {
+/** Файл попытки или референс: только обычный файл внутри своей папки, без символических ссылок. */
+export function localFile(directory: string, path: string): string {
   const file = resolve(directory, path);
   const inside = relative(realpathSync(directory), realpathSync(file));
   if (
@@ -116,7 +87,7 @@ function localFile(directory: string, path: string): string {
   return file;
 }
 
-function argumentMap(value: unknown): Record<string, MediaArgument> {
+function argumentMap(value: unknown, title: string): Record<string, MediaArgument> {
   if (
     !record(value) ||
     Object.values(value).some(
@@ -127,32 +98,30 @@ function argumentMap(value: unknown): Record<string, MediaArgument> {
         ('max_items' in entry && (!Number.isInteger(entry.max_items) || Number(entry.max_items) < 1))
     )
   )
-    throw new Error('Kling вернул неверное объявление параметров.');
+    throw new Error(`${title} вернул неверное объявление параметров.`);
   return value as Record<string, MediaArgument>;
 }
 
-/** CLI принимает объявленное MCP-имя и его camelCase; в snapshot оставляем точное имя объявления. */
-function argumentName(argumentsMap: Record<string, MediaArgument>, supplied: string): string | undefined {
+/** Объявленное имя параметра и его camelCase-написание равнозначны; в snapshot оставляем точное имя объявления. */
+export function argumentName(argumentsMap: Record<string, MediaArgument>, supplied: string): string | undefined {
   const camel = (name: string): string => name.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
   return supplied in argumentsMap ? supplied : Object.keys(argumentsMap).find((name) => camel(name) === camel(supplied));
 }
 
-/** Эквивалентные имена раскрываем по конкретной модели, не меняя значение требования. */
-function parameterName(input: PrepareKlingInput, model: MediaModel, supplied: string): string | undefined {
-  return (
-    argumentName(model.arguments, supplied) ??
-    (input.kind === 'image' && ['resolution', 'img_resolution', 'imgResolution'].includes(supplied)
-      ? (argumentName(model.arguments, 'resolution') ?? argumentName(model.arguments, 'img_resolution'))
-      : undefined)
-  );
+/** Эквивалентные имена раскрываем по конкретной модели и синонимам провайдера, не меняя значение требования. */
+function parameterName(rules: PaidRequestRules, kind: MediaKind, model: MediaModel, supplied: string): string | undefined {
+  const direct = argumentName(model.arguments, supplied);
+  if (direct) return direct;
+  const synonyms = Object.values(rules.aliases[kind] ?? {}).find((names) => names.includes(supplied));
+  return synonyms?.map((name) => argumentName(model.arguments, name)).find((name) => name !== undefined);
 }
 
 /** Явные options проекта обязательны; draft может только повторить их, но не заменить другим значением. */
-function withProjectOptions(input: PrepareKlingInput, model: MediaModel, parameters: Record<string, unknown>): Record<string, unknown> {
+function withProjectOptions(rules: PaidRequestRules, input: PreparePaidInput, model: MediaModel, parameters: Record<string, unknown>): Record<string, unknown> {
   const merged = { ...parameters };
   for (const [supplied, expected] of Object.entries(input.projectOptions ?? {})) {
-    const name = parameterName(input, model, supplied) ?? supplied;
-    const matches = Object.keys(merged).filter((key) => (parameterName(input, model, key) ?? key) === name);
+    const name = parameterName(rules, input.kind, model, supplied) ?? supplied;
+    const matches = Object.keys(merged).filter((key) => (parameterName(rules, input.kind, model, key) ?? key) === name);
     for (const key of matches) {
       if (!isDeepStrictEqual(merged[key], expected))
         throw new Error(`Параметр ${name}=${JSON.stringify(merged[key])} конфликтует с явной настройкой проекта ${JSON.stringify(expected)}.`);
@@ -162,21 +131,16 @@ function withProjectOptions(input: PrepareKlingInput, model: MediaModel, paramet
   return merged;
 }
 
-/** Старые флаги CLI раскрываем в объявленные слоты до фиксации SHA и показа запроса человеку. */
-function normalizeInputs(input: PrepareKlingInput, model: MediaModel): PrepareKlingInput['inputs'] {
+/** Короткие флаги входов раскрываем в объявленные слоты до фиксации SHA и показа запроса человеку. */
+function normalizeInputs(rules: PaidRequestRules, input: PreparePaidInput, model: MediaModel): PreparePaidInput['inputs'] {
   const named = input.inputs.some((item) => item.flag === 'input');
-  if (named && input.inputs.some((item) => item.flag !== 'input')) throw new Error('Не смешивайте именованные входы с legacy image/tailImage/audio/video.');
+  if (named && input.inputs.some((item) => item.flag !== 'input'))
+    throw new Error(`Не смешивайте именованные входы с короткими флагами ${Object.keys(rules.inputFlags).join('/')}.`);
   if (named) return input.inputs.map((item) => ({ ...item }));
   const used = new Set<string>();
   return input.inputs.map((item) => {
     if (item.slot) throw new Error('slot допустим только для именованного входа input.');
-    const patterns: Record<string, RegExp> = {
-      image: /^(?:first_image|image(?:_\d+)?|keyframe_\d+)$/,
-      tailImage: /^tail_image(?:_\d+)?$/,
-      audio: /^audio(?:_\d+)?$/,
-      video: /^video(?:_\d+)?$/
-    };
-    const pattern = patterns[item.flag];
+    const pattern = Object.hasOwn(rules.inputFlags, item.flag) ? rules.inputFlags[item.flag] : undefined;
     if (!pattern) throw new Error(`Неизвестный флаг входа ${item.flag}.`);
     const candidates = Object.keys(model.slots).filter((slot) => pattern.test(slot));
     const slot = candidates.find((name) => !used.has(name));
@@ -191,31 +155,36 @@ function normalizeInputs(input: PrepareKlingInput, model: MediaModel): PrepareKl
 }
 
 /** Значения ограничений берутся только из переданного snapshot; названия моделей не подменяются алиасами. */
-function validateKling(input: PrepareKlingInput, caps: MediaCapabilities): { parameters: Record<string, unknown>; inputs: PrepareKlingInput['inputs'] } {
-  if (caps.provider !== 'kling' || caps.kind !== input.kind || !caps.available) throw new Error('Нет подтверждённых возможностей выбранного медиа Kling.');
+function validatePaid(
+  rules: PaidRequestRules,
+  input: PreparePaidInput,
+  caps: MediaCapabilities
+): { parameters: Record<string, unknown>; inputs: PreparePaidInput['inputs'] } {
   const model = caps.models.find((item) => item.command === input.command && item.id === input.model);
   if (!model) throw new Error('Модель не объявлена для выбранной команды.');
-  const inputs = normalizeInputs(input, model);
-  if (!commands[input.kind].includes(input.command) || !input.prompt.trim() || !Number.isInteger(input.outputs) || input.outputs < 1 || input.outputs > 9)
+  const inputs = normalizeInputs(rules, input, model);
+  if (!input.prompt.trim() || !Number.isInteger(input.outputs) || input.outputs < 1 || input.outputs > 9)
     throw new Error('Неверная команда, промпт или число результатов.');
   const parameters: Record<string, unknown> = {};
   for (const [supplied, value] of Object.entries(input.parameters)) {
-    // Для изображений resolution и img_resolution обозначают одно требование; значение не меняем.
-    const name = parameterName(input, model, supplied);
+    // Синонимы провайдера (например, два написания разрешения) обозначают одно требование; значение не меняем.
+    const name = parameterName(rules, input.kind, model, supplied);
     if (!name || ['prompt', 'model'].includes(name))
       throw new Error(`Параметр ${supplied}=${JSON.stringify(value)} не объявлен для модели или передаётся отдельно.`);
     if (name in parameters) throw new Error(`Параметр ${name} указан дважды.`);
     parameters[name] = value;
   }
-  // Проект использует оригиналы без логотипа; старые options не должны разрешить новый запрос с водяным знаком.
-  if (parameters.watermark === true || parameters.watermark === 'true') throw new Error('Снимите устаревшую настройку watermark=true.');
-  if (model.arguments.watermark) parameters.watermark = false;
-  const countParameter = ['image_count', 'imageCount'].find((name) => name in model.arguments);
+  // Обязательные значения провайдера (например, оригинал без логотипа) не переопределяются старыми options.
+  for (const [name, rule] of Object.entries(rules.enforced)) {
+    if (rule.rejected.some((value) => isDeepStrictEqual(parameters[name], value))) throw new Error(rule.message);
+    if (model.arguments[name]) parameters[name] = rule.value;
+  }
+  const countParameter = rules.outputCount.find((name) => name in model.arguments);
   if (!countParameter && input.outputs !== 1) throw new Error(`Модель не объявляет выбор числа результатов outputs=${input.outputs}.`);
   if (countParameter && !(countParameter in parameters)) parameters[countParameter] = input.outputs;
   const values: Record<string, unknown> = { ...parameters, prompt: input.prompt, model: input.model };
   for (const [name, value] of Object.entries(parameters)) {
-    if (['imageCount', 'image_count'].includes(name) && String(value) !== String(input.outputs))
+    if (rules.outputCount.includes(name) && String(value) !== String(input.outputs))
       throw new Error('Число outputs отличается от параметра количества изображений.');
   }
   for (const [supplied, expected] of Object.entries(input.requiredParameters ?? {})) {
@@ -256,6 +225,7 @@ function validateKling(input: PrepareKlingInput, caps: MediaCapabilities): { par
       .filter(
         (seconds) =>
           Number.isInteger(seconds) &&
+          seconds >= (constraint.minSeconds ?? 0) &&
           (constraint.rule === 'exact_window'
             ? seconds === constraint.windowSeconds
             : constraint.rule === 'min_supported_not_less_than_window'
@@ -265,7 +235,7 @@ function validateKling(input: PrepareKlingInput, caps: MediaCapabilities): { par
     // Согласованную длительность не уменьшаем ради модели; правило проверяем для каждого кандидата.
     if (!supported?.length || Number(parameters.duration) !== Math.min(...supported))
       throw new Error(
-        `Длительность duration=${JSON.stringify(parameters.duration)} должна быть ближайшей поддерживаемой по правилу ${constraint.rule} для окна ${constraint.windowSeconds} с${supported?.length ? `: ${Math.min(...supported)} с` : '; подходящие длительности не объявлены'}.`
+        `Длительность duration=${JSON.stringify(parameters.duration)} должна быть ближайшей поддерживаемой по правилу ${constraint.rule} для окна ${constraint.windowSeconds} с${constraint.minSeconds ? ` и не короче ${constraint.minSeconds} с` : ''}${supported?.length ? `: ${Math.min(...supported)} с` : '; подходящие длительности не объявлены'}.`
       );
   }
   const limit = model.limits.combined_item_cap;
@@ -292,12 +262,15 @@ function validateKling(input: PrepareKlingInput, caps: MediaCapabilities): { par
 }
 
 /** Проверяем весь запрос для каждой модели до записи попытки; предпочтение не ограничивает совместимый выбор. */
-export function selectKlingRequest(
-  input: PrepareKlingInput,
+export function selectPaidRequest(
+  adapter: Pick<PaidProviderAdapter, 'id' | 'rules'>,
+  input: PreparePaidInput,
   caps: MediaCapabilities,
   candidateParameters: (model: MediaModel) => Record<string, unknown> = () => input.parameters
-): PrepareKlingInput & { modelSelection: MediaModelSelection } {
-  if (caps.provider !== 'kling' || caps.kind !== input.kind || !caps.available) throw new Error('Нет подтверждённых возможностей выбранного медиа Kling.');
+): PreparePaidInput & { modelSelection: MediaModelSelection } {
+  const title = mediaProviderTitle(adapter.id, adapter.id);
+  if (caps.provider !== adapter.id || caps.kind !== input.kind || !caps.available)
+    throw new Error(`Нет подтверждённых возможностей выбранного медиа ${title}.`);
   const preferredModel = (input.preferredModel === undefined ? input.model : input.preferredModel)?.trim() || null;
   const models = caps.models.filter((model) => model.command === input.command);
   const ids = [...new Set([preferredModel, input.model.trim(), ...models.map((model) => model.id)].filter((id): id is string => !!id))];
@@ -306,8 +279,8 @@ export function selectKlingRequest(
     const model = models.find((model) => model.id === id);
     try {
       if (!model) throw new Error(`Модель ${id} не объявлена для команды ${input.command}.`);
-      const candidate = { ...input, model: id, parameters: withProjectOptions(input, model, candidateParameters(model)) };
-      const normalized = validateKling(candidate, caps);
+      const candidate = { ...input, model: id, parameters: withProjectOptions(adapter.rules, input, model, candidateParameters(model)) };
+      const normalized = validatePaid(adapter.rules, candidate, caps);
       const previous = input.modelSelection;
       const reason =
         previous?.selectedModel === id && previous.preferredModel === preferredModel
@@ -323,34 +296,37 @@ export function selectKlingRequest(
     }
   }
   const details = [...failures].map(([id, reason]) => `${id}: ${reason}`).join(' ');
-  throw new Error(`Нет совместимой модели Kling для команды ${input.command}. ${details || 'Аккаунт не объявляет модели этой команды.'}`);
+  throw new Error(`Нет совместимой модели ${title} для команды ${input.command}. ${details || 'Аккаунт не объявляет модели этой команды.'}`);
 }
 
-class KlingMediaProvider implements KlingProviderContract {
-  readonly provider = 'kling';
+/** Общий платный адаптер: lifecycle делегирует submit/resume владельцу согласования и использует прежний frozen request. */
+export class PaidMediaProvider {
+  readonly provider: MediaProviderId;
   constructor(
+    readonly adapter: Pick<PaidProviderAdapter, 'id' | 'rules'>,
     readonly kind: MediaKind,
     protected readonly options: MediaProviderOptions
-  ) {}
+  ) {
+    this.provider = adapter.id;
+  }
+
+  private get title(): string {
+    return mediaProviderTitle(this.provider, this.provider);
+  }
 
   async capabilities(project: string): Promise<MediaCapabilities> {
     let models: MediaModel[] = [];
     const problems: string[] = [];
     try {
-      const batch = await readKlingCapabilities(this.options.launcher(), project, this.options.cliArgs(), commands[this.kind]);
-      const reports = new Map(batch.reports.map((entry) => [entry.command, entry]));
-      const failures = new Map(batch.problems.map((entry) => [entry.command, entry.message]));
-      for (const command of commands[this.kind]) {
-        if (failures.has(command)) {
-          problems.push(`${command}: ${failures.get(command)}`);
-          continue;
-        }
+      const batch = await readMediaCatalog(this.options.launcher(), project, this.provider, this.kind);
+      problems.push(...batch.problems.map((entry) => `${entry.command}: ${entry.message}`));
+      for (const report of batch.reports) {
+        const command = report.command;
         try {
-          const report = reports.get(command)!;
-          if (!record(report.models)) throw new Error('Kling вернул неверное объявление моделей.');
+          if (!record(report.models)) throw new Error(`${this.title} вернул неверное объявление моделей.`);
           const commandModels: MediaModel[] = Object.entries(report.models).map(([id, value]) => {
-            if (!record(value) || !record(value.limits)) throw new Error('Kling вернул неверное объявление модели.');
-            return { id, command, arguments: argumentMap(value.arguments), slots: argumentMap(value.slots), limits: value.limits };
+            if (!record(value) || !record(value.limits)) throw new Error(`${this.title} вернул неверное объявление модели.`);
+            return { id, command, arguments: argumentMap(value.arguments, this.title), slots: argumentMap(value.slots, this.title), limits: value.limits };
           });
           models.push(...commandModels);
           if (!commandModels.length) problems.push(`${command}: модели аккаунта не объявлены.`);
@@ -364,7 +340,7 @@ class KlingMediaProvider implements KlingProviderContract {
       problems.splice(0, problems.length, error instanceof Error ? error.message : String(error));
     }
     return {
-      provider: 'kling',
+      provider: this.provider,
       kind: this.kind,
       available: models.length > 0,
       checkedAt: new Date().toISOString(),
@@ -374,9 +350,9 @@ class KlingMediaProvider implements KlingProviderContract {
     };
   }
 
-  async prepare(input: PrepareKlingInput, capabilities: MediaCapabilities): Promise<PreparedMediaRequest> {
+  async prepare(input: PreparePaidInput, capabilities: MediaCapabilities): Promise<PreparedMediaRequest> {
     if (input.kind !== this.kind) throw new Error('Исполнитель не соответствует виду медиа.');
-    input = selectKlingRequest(input, capabilities);
+    input = selectPaidRequest(this.adapter, input, capabilities);
     const { parameters, inputs } = input;
     const directory = mkdtempSync(join(tmpdir(), 'songframe-media-prepare-'));
     try {
@@ -397,13 +373,13 @@ class KlingMediaProvider implements KlingProviderContract {
       const specPath = join(directory, 'spec.json');
       writeFileSync(specPath, JSON.stringify(spec), 'utf8');
       const requestDir = resolve(input.project, input.workDir);
-      const result = await this.options.launcher().run(input.project, 'kling_request', ['prepare', '--request', specPath, '--work-dir', requestDir]);
-      if (result.code !== 0) throw new Error(result.stderr.trim() || 'Не удалось подготовить запрос Kling.');
+      const result = await this.options.launcher().run(input.project, 'media_request', ['prepare', '--request', specPath, '--work-dir', requestDir]);
+      if (result.code !== 0) throw new Error(result.stderr.trim() || `Не удалось подготовить запрос ${this.title}.`);
       const prepared: unknown = JSON.parse(result.stdout);
       if (!record(prepared) || typeof prepared.request_sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(prepared.request_sha256))
         throw new Error('Подготовка не вернула SHA запроса.');
       const reference: PreparedMediaRequest = {
-        provider: 'kling',
+        provider: this.provider,
         kind: this.kind,
         project: realpathSync(input.project),
         requestDir,
@@ -418,7 +394,7 @@ class KlingMediaProvider implements KlingProviderContract {
   }
 
   protected verify(reference: PreparedMediaRequest): { request: Record<string, unknown>; attempt: Record<string, unknown> } {
-    if (reference.provider !== 'kling' || reference.kind !== this.kind) throw new Error('Исполнитель не соответствует подготовленному запросу.');
+    if (reference.provider !== this.provider || reference.kind !== this.kind) throw new Error('Исполнитель не соответствует подготовленному запросу.');
     const request = read(join(reference.requestDir, 'request.json'));
     const attempt = read(join(reference.requestDir, 'attempt.json'));
     if (
@@ -440,17 +416,17 @@ class KlingMediaProvider implements KlingProviderContract {
     return { request, attempt };
   }
 
-  async submit(reference: PreparedMediaRequest, execute: MediaExecutor): Promise<MediaExecutionRef> {
+  async submit(reference: PreparedMediaRequest, execute: MediaExecutor): Promise<PaidMediaExecutionRef> {
     const { attempt } = this.verify(reference);
     if (attempt.status !== 'prepared' || attempt.generation_id) throw new Error('Эта попытка уже отправлялась; продолжите её через resume.');
     await execute('submit', reference);
-    return { provider: 'kling', kind: this.kind, requestDir: reference.requestDir, requestSha: reference.requestSha };
+    return { provider: this.provider, kind: this.kind, requestDir: reference.requestDir, requestSha: reference.requestSha };
   }
 
-  async resume(reference: PreparedMediaRequest, execute: MediaExecutor): Promise<MediaExecutionRef> {
+  async resume(reference: PreparedMediaRequest, execute: MediaExecutor): Promise<PaidMediaExecutionRef> {
     this.verify(reference);
     await execute('resume', reference);
-    return { provider: 'kling', kind: this.kind, requestDir: reference.requestDir, requestSha: reference.requestSha };
+    return { provider: this.provider, kind: this.kind, requestDir: reference.requestDir, requestSha: reference.requestSha };
   }
 
   collect(reference: PreparedMediaRequest): MediaArtifact[] {
@@ -494,108 +470,5 @@ class KlingMediaProvider implements KlingProviderContract {
         };
       })
       .sort((a, b) => a.index - b.index);
-  }
-}
-
-export class KlingImageProvider extends KlingMediaProvider implements KlingProviderContract {
-  declare readonly kind: 'image';
-  constructor(options: MediaProviderOptions) {
-    super('image', options);
-  }
-}
-export class KlingVideoProvider extends KlingMediaProvider implements KlingProviderContract {
-  declare readonly kind: 'video';
-  constructor(options: MediaProviderOptions) {
-    super('video', options);
-  }
-}
-
-export class CodexImageProvider implements CodexImageProviderContract {
-  readonly provider = 'codex';
-  readonly kind = 'image';
-  private readonly submittedRequests = new WeakSet<PreparedCodexRequest>();
-  private readonly consumedPermits = new WeakSet<{ requestSha: string }>();
-
-  constructor(private readonly options: MediaProviderOptions) {}
-
-  async capabilities(_project: string): Promise<MediaCapabilities> {
-    let available = false;
-    let models: MediaModel[] = [];
-    const problems: string[] = [];
-    try {
-      const diagnostic = await this.options.checkCodex();
-      available = diagnostic.availability === 'available' && diagnostic.authorization !== 'unauthenticated';
-      if (!available || diagnostic.authorization === 'unknown') problems.push(diagnostic.message);
-    } catch (error) {
-      problems.push(error instanceof Error ? error.message : String(error));
-    }
-    if (available && this.options.listCodexModels) {
-      try {
-        models = await this.options.listCodexModels();
-        if (!models.length) problems.push('Codex не вернул доступные модели агента.');
-      } catch {
-        problems.push('Каталог моделей агента Codex сейчас недоступен. Повторите проверку возможностей.');
-      }
-    }
-    // Непроверенная генерация отражена generationVerified; это справка, а не ошибка успешной диагностики CLI.
-    return { provider: 'codex', kind: 'image', available, checkedAt: new Date().toISOString(), models, problems, generationVerified: false };
-  }
-
-  prepare(input: ProductionImagesInput): PreparedCodexRequest {
-    const frozen = structuredClone(input);
-    frozen.project = realpathSync(input.project);
-    if (!frozen.frames.length || frozen.frames.some((frame) => !/^K\d{2}$/.test(frame.id) || !frame.prompt.trim()))
-      throw new Error('Сначала подготовьте описания опор.');
-    const references = [...new Set(frozen.frames.flatMap((frame) => frame.referencePaths))].map((path) => {
-      const file = localFile(frozen.project, path);
-      if (!imageDimensions(file)) throw new Error('Референс не является изображением.');
-      return { path: file, sha256: fileHash(file) };
-    });
-    const requestSha = hash(JSON.stringify({ input: frozen, references }));
-    return { provider: 'codex', kind: 'image', requestSha, input: frozen, references };
-  }
-
-  submit(prepared: PreparedCodexRequest, permit: { requestSha: string }): MediaExecutionRef {
-    if (this.submittedRequests.has(prepared) || this.consumedPermits.has(permit))
-      throw new Error('Эта подготовка или подтверждение уже использованы. Для нового запуска подготовьте и подтвердите новый запрос.');
-    if (
-      prepared.provider !== 'codex' ||
-      prepared.kind !== 'image' ||
-      permit.requestSha !== prepared.requestSha ||
-      this.prepare(prepared.input).requestSha !== prepared.requestSha
-    )
-      throw new Error('Запрос или референсы изменились после согласования.');
-    // Подтверждение расходуется до запуска: исключение start не разрешает неявный повтор.
-    // Новые prepared/permit допускают отдельно согласованную генерацию тех же входов и SHA.
-    this.submittedRequests.add(prepared);
-    this.consumedPermits.add(permit);
-    const job = this.options.images.start(prepared.input, prepared.requestSha);
-    return { provider: 'codex', kind: 'image', requestSha: prepared.requestSha, agentJobId: job.id };
-  }
-
-  collect(reference: Extract<MediaExecutionRef, { provider: 'codex' }>, job: AgentJob): MediaArtifact[] {
-    if (job.id !== reference.agentJobId) throw new Error('Неверное задание для согласованного запроса.');
-    return this.options.images.collect(job, reference.requestSha).map((candidate, index) => ({
-      path: candidate.path,
-      index: index + 1,
-      frameId: candidate.id,
-      kind: 'image',
-      sha256: fileHash(candidate.path),
-      ...imageDimensions(candidate.path)!
-    }));
-  }
-
-  /** Старые задания собираются без заявления о frozen SHA; новые восстанавливают ref из image-jobs/job.json. */
-  collectJob(job: AgentJob): MediaArtifact[] {
-    const requestSha = this.options.images.getRequestSha(job);
-    if (requestSha !== null) return this.collect({ provider: 'codex', kind: 'image', requestSha, agentJobId: job.id }, job);
-    return this.options.images.collect(job).map((candidate, index) => ({
-      path: candidate.path,
-      index: index + 1,
-      frameId: candidate.id,
-      kind: 'image',
-      sha256: fileHash(candidate.path),
-      ...imageDimensions(candidate.path)!
-    }));
   }
 }

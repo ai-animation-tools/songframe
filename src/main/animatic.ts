@@ -35,10 +35,7 @@ function readStatus(project: string): ProductionStatus {
     readJson<ProductionStatus>(join(project, STATUS_FILE)) ?? {
       schema_version: 1,
       current_animatic: null,
-      current_animatic_status: 'none',
-      active_work: { status: 'idle', shots: [], next: '' },
-      shots: {},
-      pending_work: []
+      current_animatic_status: 'none'
     }
   );
 }

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { Box, Paper, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import type { DashboardShot } from '@shared/types';
 import { formatClock } from '../../../format';
@@ -14,7 +14,8 @@ export function ScenesTimeline({
   visibleCount,
   onSelect,
   onFilter,
-  onQuery
+  onQuery,
+  actions
 }: {
   shots: DashboardShot[];
   selected: string | null;
@@ -25,6 +26,8 @@ export function ScenesTimeline({
   onSelect(id: string): void;
   onFilter(value: Filter): void;
   onQuery(value: string): void;
+  /** Действия над видимыми планами стоят в блоке фильтра, к которому относятся. */
+  actions?: ReactNode;
 }): ReactElement {
   return (
     <Paper variant="outlined" sx={{ p: 1.5 }}>
@@ -69,6 +72,7 @@ export function ScenesTimeline({
           {visibleCount} из {shots.length} · {formatClock(duration)}
         </Typography>
       </Box>
+      {actions ? <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>{actions}</Box> : null}
     </Paper>
   );
 }

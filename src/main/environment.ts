@@ -6,7 +6,7 @@ import { WHISPER_MODELS } from '@shared/whisper-models';
 import { mediaPaths, missingModelFiles, modelDirectory } from './media-runtime';
 import type { EnvironmentCheck } from '@shared/types';
 import { PythonLauncher } from './python-launcher';
-import { klingPaths, resolveKling } from './kling-runtime';
+import { paidAdapters } from './providers';
 
 const PROGRESS_PREFIX = 'SONGFRAME_ENV_CHECK ';
 const MODULES = [
@@ -20,7 +20,7 @@ const developmentHint = 'Для разработки: yarn prepare:runtime ил�
 type Update = (id: string, patch: Partial<EnvironmentCheck>) => void;
 
 /** Версии проверяются независимо: медленный внешний CLI не блокирует главный процесс и остальные проверки. */
-function run(command: string, args: string[], shell: boolean, env: NodeJS.ProcessEnv): Promise<{ ok: boolean; output: string; elapsedMs: number }> {
+export function run(command: string, args: string[], shell: boolean, env: NodeJS.ProcessEnv): Promise<{ ok: boolean; output: string; elapsedMs: number }> {
   const started = performance.now();
   return new Promise((resolve) => {
     execFile(command, args, { encoding: 'utf-8', timeout: 15000, shell, env, windowsHide: true }, (error, stdout, stderr) => {
@@ -83,8 +83,11 @@ async function checkPython(launcher: PythonLauncher, update: Update): Promise<vo
     const runtime = launcher.runtime();
     update('python', {
       label: runtime.source === 'bundled' ? 'Встроенный Python' : 'Python (разработка)',
-      hint: runtime.source === 'bundled' ? bundledHint : developmentHint
+      hint: runtime.source === 'bundled' ? bundledHint : developmentHint,
+      bundled: runtime.source === 'bundled'
     });
+    // Библиотеки поставляются вместе с тем Python, которым запущены.
+    for (const [, id] of MODULES) update(id, { bundled: runtime.source === 'bundled' });
     // Один процесс сохраняет итоговый JSON в stdout; помеченный stderr показывает настоящий зависший импорт до завершения процесса.
     const imports = await launcher.execute(
       [
@@ -143,7 +146,11 @@ export async function checkEnvironment(
 ): Promise<EnvironmentCheck[]> {
   const media = mediaPaths(launcher.options);
   const externalEnv = launcher.options.env ?? process.env;
-  const bundledKling = !externalEnv.SONGFRAME_KLING_CLI && Boolean(klingPaths(launcher.options));
+  // Строки платных провайдеров задают их адаптеры; одинаковая строка показывается один раз.
+  const providers = paidAdapters().map((adapter) => adapter.environment(launcher.options));
+  const providerChecks = providers
+    .flatMap((provider) => provider.checks)
+    .filter((check, index, all) => all.findIndex((item) => item.id === check.id) === index);
   const pythonHint = launcher.options.packaged ? bundledHint : developmentHint;
   const initial = (id: string, label: string, hint: string, productionOnly = true): EnvironmentCheck => ({
     id,
@@ -168,33 +175,26 @@ export async function checkEnvironment(
     initial(
       'whisper-model',
       'Внешняя модель faster-whisper',
-      'Модель устанавливается отдельно. Откройте «Тайминги → Разметить автоматически»: там рекомендации, инструкция и ссылки; путь можно выбрать вручную.'
+      'Модель устанавливается отдельно. Откройте «Тайминги → Разметить»: там рекомендации, инструкция и ссылки; путь можно выбрать вручную.'
     ),
-    ...(['ffmpeg', 'ffprobe'] as const).map((id) =>
-      initial(
+    ...(['ffmpeg', 'ffprobe'] as const).map((id) => ({
+      ...initial(
         id,
         `${media ? 'Встроенный ' : ''}${id === 'ffmpeg' ? 'FFmpeg' : 'ffprobe'}`,
         media ? 'Бинарник входит в приложение. Восстановите поставку.' : 'Для разработки установите FFmpeg/ffprobe или выполните yarn prepare:media.'
-      )
-    ),
-    initial('node', 'Node.js', 'Нужен для Kling (npm i -g @klingai/cli-global).'),
-    initial('kling', 'Kling', 'npm i -g @klingai/cli-global, затем kling login в браузере. Без него генерации недоступны, остальное работает.'),
-    initial(
-      'git',
-      'Git',
-      'Необязателен для локальной работы. Нужен для истории проекта и проверки индекса/снимков Git; рабочие представления проверяются без него.'
-    )
-  ];
-  if (bundledKling) {
-    for (const check of checks.filter((item) => item.id === 'node' || item.id === 'kling')) {
-      check.bundled = true;
-      check.label = check.id === 'node' ? 'Node.js (встроенный)' : 'Kling (встроенный)';
-      check.hint =
-        check.id === 'node'
-          ? 'Используется Node из Electron; отдельная установка не требуется.'
-          : 'Входит в поставку. Вход выполняется в браузере кнопкой «Войти / сменить аккаунт».';
+      ),
+      bundled: Boolean(media)
+    })),
+    ...providerChecks.map((check) => ({ ...check })),
+    {
+      ...initial(
+        'git',
+        'Git',
+        'Приложению не нужен: все страницы и производство работают без него. Если Git установлен, новый проект сразу создаётся репозиторием, чтобы при желании вести историю версий клипа.'
+      ),
+      external: true
     }
-  }
+  ];
   for (const check of checks) onProgress?.({ ...check });
   const update: Update = (id, patch) => {
     const index = checks.findIndex((check) => check.id === id);
@@ -218,36 +218,20 @@ export async function checkEnvironment(
     elapsedMs: Math.round(performance.now() - modelStarted)
   });
 
-  // Проверяем то же окружение и выбранный CLI, которые получат производственные инструменты; bundled EXE обходят shell.
+  // Проверяем то же окружение, которое получат производственные инструменты; bundled EXE обходят shell.
   const shell = (launcher.options.platform ?? process.platform) === 'win32';
   const commands = [
     { id: 'ffmpeg', command: media?.ffmpeg ?? 'ffmpeg', args: ['-version'], shell: false },
     { id: 'ffprobe', command: media?.ffprobe ?? 'ffprobe', args: ['-version'], shell: false },
-    ...(!bundledKling ? [{ id: 'node', command: 'node', args: ['--version'], shell }] : []),
     { id: 'git', command: 'git', args: ['--version'], shell }
   ];
   const pending = commands.map(async ({ id, command, args, shell: commandShell }) => {
     update(id, { status: 'running', detail: 'Проверяется версия' });
     const probe = await run(command, args, commandShell, externalEnv);
-    const detail =
-      probe.ok && (id === 'ffmpeg' || id === 'ffprobe')
-        ? `${probe.output.split('\n')[0]} (${command})`
-        : probe.ok && id === 'kling'
-          ? probe.output.split('\n')[0]
-          : probe.output;
+    const detail = probe.ok && (id === 'ffmpeg' || id === 'ffprobe') ? `${probe.output.split('\n')[0]} (${command})` : probe.output;
     update(id, { status: 'done', ok: probe.ok, detail, elapsedMs: probe.elapsedMs });
   });
-  const pendingKling = (async () => {
-    update('kling', { status: 'running', detail: 'Проверяется версия' });
-    try {
-      const runtime = resolveKling(launcher.options);
-      const probe = await run(runtime.command, [...runtime.argsPrefix, '--version'], !runtime.bundled && shell, runtime.env);
-      update('kling', { status: 'done', ok: probe.ok, detail: probe.ok ? probe.output.split('\n')[0] : probe.output, elapsedMs: probe.elapsedMs });
-    } catch (error) {
-      update('kling', { status: 'done', ok: false, detail: (error as Error).message });
-    }
-  })();
-  if (bundledKling) update('node', { status: 'done', ok: true, detail: process.versions.node, elapsedMs: 0 });
-  await Promise.all([...pending, pendingKling, checkPython(launcher, update)]);
+  const pendingProviders = providers.map((provider) => provider.run(update));
+  await Promise.all([...pending, ...pendingProviders, checkPython(launcher, update)]);
   return checks;
 }

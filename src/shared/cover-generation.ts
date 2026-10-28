@@ -1,4 +1,4 @@
-import type { MediaProviderFor } from './media-providers';
+import type { MediaProviderId } from './media-providers';
 
 /** Без выбранного агента недоступны текстовые этапы; генерация медиа от агента не зависит. */
 export const COVER_AGENT_REQUIRED = 'Сначала выберите агента в настройках приложения.';
@@ -16,7 +16,7 @@ export interface CoverGenerationSession {
   status: 'idle' | 'generating' | 'ready' | 'failed' | 'accepted';
   image: { path: string; width: number; height: number } | null;
   error: string | null;
-  provider: MediaProviderFor<'image'>;
+  provider: MediaProviderId;
   model: string | null;
   preparing: boolean;
   requestSha: string | null;

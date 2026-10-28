@@ -77,6 +77,14 @@ export function useScenario() {
   const duration = view?.duration ?? 0;
   const scenesDirty = JSON.stringify(scenes) !== JSON.stringify(view?.scenes ?? null);
   const treatmentDirty = JSON.stringify(treatment) !== JSON.stringify(view?.treatment ?? null);
+  // Каркас нужен и агенту для подробного сценария: без разметки и кастинга с изображениями его не создать.
+  const scenesInputProblem = !view?.timing?.lines?.length
+    ? 'На странице «Тайминги» разметьте строки песни и сохраните результат.'
+    : !cast
+      ? 'На странице «Кастинг» создайте героев и другие объекты клипа.'
+      : !referenceOptions.length
+        ? 'На странице «Кастинг» добавьте изображение хотя бы одному герою или объекту.'
+        : null;
   // Те же обязательные данные нужны scene_scaffold; объяснение используем и в кнопке, и при запуске.
   const scaffoldProblem = !view?.timing?.lines?.length
     ? 'На странице «Тайминги» разметьте строки песни и сохраните результат.'
@@ -264,6 +272,7 @@ export function useScenario() {
     scaffold,
     copy,
     scaffoldProblem,
+    scenesInputProblem,
     notify
   };
 }

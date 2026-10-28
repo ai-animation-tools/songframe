@@ -11,8 +11,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import json
 import tempfile
 import unittest
+import unittest.mock
 
 from tools.shot_workflow import shot_workflow as tool
+from tools.testing import fake_media_request as fake
+
+# Блок generation.video выбранного проекта обязателен для плана опор.
+GENERATION = {
+    "generation": {
+        "video": {
+            "provider": "test",
+            "resolution": "1080p",
+            "aspect_ratio": "16:9",
+            "watermark": False,
+            "duration_rule": "min_supported_strictly_greater_than_window",
+        },
+        "image": None,
+    }
+}
 
 
 def scene(sid, start, end, source, changes):
@@ -57,6 +73,7 @@ class ShotWorkflowTests(unittest.TestCase):
         self.frame = self.root / "draft.png"
         self.frame.write_bytes(b"png bytes")
         self.package = self.root / "plan/batches/M02-attempt-01"
+        (self.root / "plan/project.json").write_text(json.dumps({"schema_version": 1, **GENERATION}))
 
     def write_registry(self):
         (self.root / "plan/scenes.json").write_text(json.dumps(self.registry, ensure_ascii=False), encoding="utf-8")
@@ -93,7 +110,7 @@ class ShotWorkflowTests(unittest.TestCase):
             tool.set_stage(self.package, "request_choice", root=self.root)
         request_dir = self.package / "request"
         request_dir.mkdir()
-        (request_dir / "request.json").write_text(json.dumps({"provider": "kling"}))
+        (request_dir / "request.json").write_text(json.dumps({"provider": "test"}))
         data = tool.set_stage(self.package, "request_choice", request_dir="request", root=self.root)
         self.assertEqual(data["stage"], "request_choice")
         info = tool.report(self.package, self.root)
@@ -109,6 +126,20 @@ class ShotWorkflowTests(unittest.TestCase):
             tool.init("M02", self.root / "plan/batches/M02-attempt-02", root=self.root)
             tool.park(self.root / "plan/batches/M02-attempt-02", self.root)
 
+    def test_prompt_warning_limit_comes_from_video_provider_adapter(self):
+        tool.init("M02", self.package, root=self.root)
+        tool.plan_keyframes(self.package, 4, root=self.root)
+        for keyframe in ("K01", "K02"):
+            tool.approve(self.package, keyframe, self.frame, self.root)
+        (self.package / "video-prompt.txt").write_text("Длинный промпт плана.", encoding="utf-8")
+        # Провайдер без адаптера или адаптер без предела: предупреждения нет.
+        self.assertEqual(tool.approve_prompt(self.package, root=self.root)[1], [])
+        fake.enable(self)
+        self.assertEqual(tool.approve_prompt(self.package, root=self.root)[1], [])
+        with unittest.mock.patch.object(fake, "PROMPT_WARNING_CHARS", 10, create=True):
+            warnings = tool.approve_prompt(self.package, root=self.root)[1]
+        self.assertEqual(warnings, ["Промпт длиннее 10 символов (21)."])
+
     def test_duration_rules_allow_equality_only_when_configured(self):
         tool.init("M02", self.package, root=self.root)
         project_path = self.root / "plan/project.json"
@@ -123,7 +154,7 @@ class ShotWorkflowTests(unittest.TestCase):
                         {
                             "generation": {
                                 "video": {
-                                    "provider": "kling",
+                                    "provider": "test",
                                     "resolution": "1080p",
                                     "aspect_ratio": "16:9",
                                     "watermark": False,
@@ -163,10 +194,11 @@ class ShotWorkflowTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "не меньше"):
             tool.plan_keyframes(self.package, 3, root=self.root)
         self.assertEqual(tool.plan_keyframes(self.package, 4, root=self.root)["timing"]["request_seconds"], 4)
+        # Проект без блока generation не читается по прежнему правилу: нужна явная настройка видео.
         project_path.write_text(json.dumps({}))
         data["timing"]["window_seconds"] = 3
         tool.save_workflow(self.package, data)
-        with self.assertRaisesRegex(ValueError, "строго больше"):
+        with self.assertRaisesRegex(ValueError, "generation.video"):
             tool.plan_keyframes(self.package, 3, root=self.root)
 
     def test_replanning_keeps_unchanged_approved_frames_and_detects_drift(self):

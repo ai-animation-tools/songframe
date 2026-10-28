@@ -14,7 +14,7 @@ describe('реестр агентов', () => {
   it('распознаёт только провайдеров реестра', () => {
     expect(isAgentProvider('claude')).toBe(true);
     expect(isAgentProvider('codex')).toBe(true);
-    expect(isAgentProvider('kling')).toBe(false);
+    expect(isAgentProvider('test')).toBe(false);
     expect(isAgentProvider('toString')).toBe(false);
     expect(isAgentProvider(undefined)).toBe(false);
   });

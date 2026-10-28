@@ -60,6 +60,7 @@ export function MontagePlayerPage(): ReactElement {
         seekVersion={state.seekVersion}
         selectedClipId={state.selectedClipId}
         suspended={state.suspended}
+        suspendedReason="Просмотр приостановлен в основном окне монтажа: закройте открытое там окно или дождитесь завершения операции."
         loop={state.loop}
         volume={state.volume}
         onPreferences={onPreferences}

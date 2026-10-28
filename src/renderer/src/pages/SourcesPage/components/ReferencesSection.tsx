@@ -38,6 +38,9 @@ export function ReferencesSection({
   onRemoveKind,
   onAddKind
 }: Props): ReactElement {
+  // Повтор кода виден только по всему списку, поэтому считается здесь и передаётся каждой карточке.
+  const idCounts = new Map<string, number>();
+  for (const reference of refs) idCounts.set(reference.id, (idCounts.get(reference.id) ?? 0) + 1);
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -63,6 +66,7 @@ export function ReferencesSection({
             key={reference.key}
             reference={reference}
             kinds={kinds}
+            duplicateId={(idCounts.get(reference.id) ?? 0) > 1}
             fileUrl={fileUrl}
             onUpdate={(patch) => onUpdate(reference.key, patch)}
             onRetryFilePrompt={(fileKey) => onRetryFilePrompt(reference.key, fileKey)}

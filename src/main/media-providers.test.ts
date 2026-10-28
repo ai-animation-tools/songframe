@@ -1,27 +1,30 @@
-import { KLING_COMMANDS } from './kling-capabilities';
-/** Транспорт проверяется подставным discovery и настоящей локальной prepare без Kling CLI и сети. */
-import { spawnSync } from 'node:child_process';
+/** Общий платный адаптер проверяется на провайдере test: подставной discovery и офлайн-подготовка без CLI и сети. */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MediaCapabilities } from '@shared/media-providers';
-import type { AgentJob } from '@shared/agents';
-import { KeyframeImages } from './keyframe-images';
-import {
-  CodexImageProvider,
-  KlingImageProvider,
-  KlingVideoProvider,
-  selectKlingRequest,
-  type MediaProviderOptions,
-  type PrepareKlingInput
-} from './media-providers';
+import { join } from 'node:path';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MediaCapabilities, MediaKind } from '@shared/media-providers';
+import { PaidMediaProvider, selectPaidRequest, type MediaProviderOptions, type PreparePaidInput } from './media-providers';
+import { prepareOffline, registerTestMediaProvider, TEST_PROVIDER, testPaidAdapter } from './testing/media-provider';
+
+const COMMANDS: Record<MediaKind, string[]> = {
+  image: ['text_to_image', 'image_to_image'],
+  video: ['text_to_video', 'image_to_video', 'omni_ref_video', 'motion_control']
+};
+let restoreProvider: () => void;
+beforeAll(() => {
+  restoreProvider = registerTestMediaProvider();
+});
+afterAll(() => restoreProvider());
+const select = (request: PreparePaidInput, capabilities: MediaCapabilities) => selectPaidRequest(testPaidAdapter, request, capabilities);
+const imageProvider = (): PaidMediaProvider => new PaidMediaProvider(testPaidAdapter, 'image', options);
+const videoProvider = (): PaidMediaProvider => new PaidMediaProvider(testPaidAdapter, 'video', options);
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64');
 let work: string;
 let project: string;
 let options: MediaProviderOptions;
-let input: PrepareKlingInput;
+let input: PreparePaidInput;
 let caps: MediaCapabilities;
 const hash = (data: Buffer): string => createHash('sha256').update(data).digest('hex');
 const model = {
@@ -49,7 +52,7 @@ beforeEach(() => {
     frameId: 'K01'
   };
   caps = {
-    provider: 'kling',
+    provider: TEST_PROVIDER,
     kind: 'image',
     checkedAt: new Date().toISOString(),
     available: true,
@@ -58,24 +61,19 @@ beforeEach(() => {
     problems: []
   };
   options = {
-    cliArgs: () => ['--cli', '/unused/test-kling'],
-    checkCodex: async () => ({ availability: 'available', authorization: 'authenticated', message: 'Готово' }),
-    images: new KeyframeImages({ localDir: join(work, 'state'), agents: { startImages: vi.fn() } }),
     launcher: () => ({
       run: vi.fn(async (_project, _tool, args) => {
-        if (args[0] === 'capabilities')
+        if (args[0] === 'capabilities') {
+          const kind = args[args.indexOf('--kind') + 1] as MediaKind;
           return {
             code: 0,
-            stdout: JSON.stringify({ reports: args[2].split(',').map((command: string) => ({ command, models: { 'image-exact': model } })), problems: [] }),
+            stdout: JSON.stringify({ reports: COMMANDS[kind].map((command) => ({ command, models: { 'image-exact': model } })), problems: [] }),
             stderr: '',
             command: 'fake discovery'
           };
-        if (args[0] !== 'prepare') throw new Error('Тест запрещает CLI/submit/resume.');
-        const result = spawnSync('python3', ['-B', resolve('tools/kling_request/kling_request.py'), ...args], {
-          encoding: 'utf8',
-          env: { ...process.env, SONGFRAME_PROJECT: project }
-        });
-        return { code: result.status, stdout: result.stdout, stderr: result.stderr, command: 'offline prepare' };
+        }
+        if (args[0] !== 'prepare') throw new Error('Тест запрещает submit/resume.');
+        return prepareOffline(args);
       })
     })
   };
@@ -86,21 +84,21 @@ describe('провайдеры медиа', () => {
   it('не разрешает водяной знак и явно выключает его, если модель объявляет параметр', () => {
     for (const kind of ['image', 'video'] as const) {
       const command = kind === 'image' ? 'text_to_image' : 'text_to_video';
-      const request: PrepareKlingInput = { ...input, kind, command, model: 'logo-model', parameters: {}, inputs: [] };
+      const request: PreparePaidInput = { ...input, kind, command, model: 'logo-model', parameters: {}, inputs: [] };
       const capabilities: MediaCapabilities = {
         ...caps,
         kind,
         models: [{ id: 'logo-model', command, arguments: { watermark: { allowed: ['true', 'false'], default: true } }, slots: {}, limits: {} }]
       };
-      expect(selectKlingRequest(request, capabilities).parameters.watermark).toBe(false);
-      expect(() => selectKlingRequest({ ...request, parameters: { watermark: true } }, capabilities)).toThrow('watermark=true');
+      expect(select(request, capabilities).parameters.watermark).toBe(false);
+      expect(() => select({ ...request, parameters: { watermark: true } }, capabilities)).toThrow('watermark=true');
     }
   });
-  it('получает две команды изображений и четыре видео без подставного успеха генерации', async () => {
+  it('получает команды изображений и видео отдельными запросами вида без подставного успеха генерации', async () => {
     const run = vi.fn(options.launcher().run);
     options.launcher = () => ({ run });
-    const image = await new KlingImageProvider(options).capabilities(project);
-    const video = await new KlingVideoProvider(options).capabilities(project);
+    const image = await imageProvider().capabilities(project);
+    const video = await videoProvider().capabilities(project);
     expect(image.available).toBe(true);
     expect(image.generationVerified).toBe(false);
     expect(image.models.map((item) => item.command)).toEqual(['text_to_image', 'image_to_image']);
@@ -109,34 +107,31 @@ describe('провайдеры медиа', () => {
     expect(run).toHaveBeenCalledTimes(2);
     expect(run.mock.calls[0]).toEqual([
       project,
-      'kling_request',
-      ['capabilities', '--commands', KLING_COMMANDS.join(','), '--json', '--timeout', '30', '--cli', '/unused/test-kling'],
+      'media_request',
+      ['capabilities', '--provider', TEST_PROVIDER, '--kind', 'image', '--json', '--timeout', '30'],
       { timeoutMs: 35_000 }
     ]);
-    expect(run.mock.calls[1][2]).toEqual(['capabilities', '--commands', KLING_COMMANDS.join(','), '--json', '--timeout', '30', '--cli', '/unused/test-kling']);
+    expect(run.mock.calls[1][2]).toEqual(['capabilities', '--provider', TEST_PROVIDER, '--kind', 'video', '--json', '--timeout', '30']);
     run.mockClear();
-    await new KlingVideoProvider(options).capabilities(project);
+    await videoProvider().capabilities(project);
     expect(run).toHaveBeenCalledTimes(1);
   });
 
-  it('две панели Kling и повторное монтирование используют один текущий каталог', async () => {
+  it('две панели и повторное монтирование используют один текущий каталог', async () => {
     const run = vi.fn(options.launcher().run);
     const launcher = { run };
     options.launcher = () => launcher;
-    const imageProvider = new KlingImageProvider(options);
-    const videoProvider = new KlingVideoProvider(options);
-    const [image, video, repeated] = await Promise.all([
-      imageProvider.capabilities(project),
-      videoProvider.capabilities(project),
-      videoProvider.capabilities(project)
-    ]);
-    expect(run).toHaveBeenCalledTimes(1);
+    const images = imageProvider();
+    const videos = videoProvider();
+    const [image, video, repeated] = await Promise.all([images.capabilities(project), videos.capabilities(project), videos.capabilities(project)]);
+    // Один запрос на вид медиа: повторная панель видео ждёт уже выполняющийся.
+    expect(run).toHaveBeenCalledTimes(2);
     expect(image.models.map((entry) => entry.command)).toEqual(['text_to_image', 'image_to_image']);
     expect(video.models.map((entry) => entry.command)).toEqual(['text_to_video', 'image_to_video', 'omni_ref_video', 'motion_control']);
     expect(repeated.models).toEqual(video.models);
     expect(repeated.problems).toEqual([]);
-    await videoProvider.capabilities(project);
-    expect(run).toHaveBeenCalledTimes(2);
+    await videos.capabilities(project);
+    expect(run).toHaveBeenCalledTimes(3);
   });
 
   it.each([
@@ -145,7 +140,7 @@ describe('провайдеры медиа', () => {
     { code: 1, stdout: '', stderr: 'Общая ошибка аккаунта.' }
   ])('возвращает одну общую проблему discovery без статических моделей: %j', async (response) => {
     options.launcher = () => ({ run: vi.fn(async () => ({ ...response, command: '' })) });
-    const result = await new KlingImageProvider(options).capabilities(project);
+    const result = await imageProvider().capabilities(project);
     expect(result.available).toBe(false);
     expect(result.models).toEqual([]);
     expect(result.problems).toHaveLength(1);
@@ -154,7 +149,7 @@ describe('провайдеры медиа', () => {
 
   it('сохраняет успешные видео-команды и точную индивидуальную ошибку схемы из общего discovery', async () => {
     const report = {
-      reports: ['text_to_image', 'image_to_image', 'motion_control', 'image_to_video', 'text_to_video'].map((command) => ({
+      reports: ['text_to_video', 'image_to_video', 'motion_control'].map((command) => ({
         command,
         models: { 'account-video': model }
       })),
@@ -162,7 +157,7 @@ describe('провайдеры медиа', () => {
     };
     const run = vi.fn(async () => ({ code: 0, stdout: JSON.stringify(report), stderr: '', command: '' }));
     options.launcher = () => ({ run });
-    const result = await new KlingVideoProvider(options).capabilities(project);
+    const result = await videoProvider().capabilities(project);
     expect(run).toHaveBeenCalledTimes(1);
     expect(result.available).toBe(true);
     expect(result.models).toEqual(['text_to_video', 'image_to_video', 'motion_control'].map((command) => ({ id: 'account-video', command, ...model })));
@@ -171,18 +166,10 @@ describe('провайдеры медиа', () => {
   });
 
   it.each([
-    { reports: [{ command: 'text_to_image', models: {} }], problems: [] },
     {
       reports: [
         { command: 'text_to_image', models: {} },
         { command: 'text_to_image', models: {} }
-      ],
-      problems: []
-    },
-    {
-      reports: [
-        { command: 'text_to_image', models: {} },
-        { command: 'text_to_video', models: {} }
       ],
       problems: []
     },
@@ -194,9 +181,9 @@ describe('провайдеры медиа', () => {
       ],
       problems: [{ command: 'text_to_image', message: 'Сбой.' }]
     }
-  ])('отклоняет неполный, повторный или чужой состав команд: %j', async (report) => {
+  ])('отклоняет повторный состав команд или пустую ошибку команды: %j', async (report) => {
     options.launcher = () => ({ run: vi.fn(async () => ({ code: 0, stdout: JSON.stringify(report), stderr: '', command: '' })) });
-    const result = await new KlingImageProvider(options).capabilities(project);
+    const result = await imageProvider().capabilities(project);
     expect(result.available).toBe(false);
     expect(result.models).toEqual([]);
     expect(result.problems).toHaveLength(1);
@@ -212,13 +199,13 @@ describe('провайдеры медиа', () => {
   ])('диагностирует пустые или повреждённые модели только своей команды: %j', async (invalidModels) => {
     const report = {
       reports: [
-        ...KLING_COMMANDS.filter((command) => command !== 'image_to_image').map((command) => ({ command, models: { 'image-exact': model } })),
+        { command: 'text_to_image', models: { 'image-exact': model } },
         { command: 'image_to_image', models: invalidModels }
       ],
       problems: []
     };
     options.launcher = () => ({ run: vi.fn(async () => ({ code: 0, stdout: JSON.stringify(report), stderr: '', command: '' })) });
-    const result = await new KlingImageProvider(options).capabilities(project);
+    const result = await imageProvider().capabilities(project);
     expect(result.available).toBe(true);
     expect(result.models).toEqual([{ id: 'image-exact', command: 'text_to_image', ...model }]);
     expect(result.problems).toHaveLength(1);
@@ -228,13 +215,13 @@ describe('провайдеры медиа', () => {
   it('готовит snapshot офлайн, сохраняет SHA/входы и собирает оригинал с размером и индексом', async () => {
     const run = vi.fn(options.launcher().run);
     options.launcher = () => ({ run });
-    const provider = new KlingImageProvider(options);
+    const provider = imageProvider();
     const prepared = await provider.prepare(input, caps);
     expect(run).toHaveBeenCalledTimes(1);
     expect(run.mock.calls[0][2][0]).toBe('prepare');
     expect(prepared.requestSha).toBe(hash(readFileSync(join(prepared.requestDir, 'request.json'))));
     const frozen = JSON.parse(readFileSync(join(prepared.requestDir, 'request.json'), 'utf8'));
-    expect(frozen.provider).toBe('kling');
+    expect(frozen.provider).toBe(TEST_PROVIDER);
     expect(frozen.inputs[0].sha256).toBe(hash(png));
     expect(() => provider.collect(prepared)).toThrow(/ещё не сохранены/);
     writeFileSync(join(prepared.requestDir, 'original.png'), png);
@@ -257,11 +244,11 @@ describe('провайдеры медиа', () => {
   });
 
   it('передаёт submit/resume только executor владельца согласования и не выдаёт артефакт до download', async () => {
-    const provider = new KlingImageProvider(options);
+    const provider = imageProvider();
     const prepared = await provider.prepare(input, caps);
     const execute = vi.fn(async () => {});
     expect(await provider.submit(prepared, execute)).toEqual({
-      provider: 'kling',
+      provider: TEST_PROVIDER,
       kind: 'image',
       requestDir: prepared.requestDir,
       requestSha: prepared.requestSha
@@ -278,7 +265,7 @@ describe('провайдеры медиа', () => {
   });
 
   it('возвращает каждый output по индексу, проверяет SHA оригиналов и запрещает внешние пути', async () => {
-    const provider = new KlingImageProvider(options);
+    const provider = imageProvider();
     const prepared = await provider.prepare({ ...input, outputs: 2, parameters: { ...input.parameters, image_count: 2 } }, caps);
     const first = join(prepared.requestDir, 'original-01.png');
     const second = join(prepared.requestDir, 'original-02.png');
@@ -308,8 +295,8 @@ describe('провайдеры медиа', () => {
     expect(readFileSync(first)).toEqual(png);
   });
 
-  it('Kling collector отклоняет PNG под JPEG-именем без изменения оригинала', async () => {
-    const provider = new KlingImageProvider(options);
+  it('collector отклоняет PNG под JPEG-именем без изменения оригинала', async () => {
+    const provider = imageProvider();
     const prepared = await provider.prepare(input, caps);
     const path = join(prepared.requestDir, 'original.jpg');
     writeFileSync(path, png);
@@ -326,7 +313,7 @@ describe('провайдеры медиа', () => {
   });
 
   it('combined cap складывает legacy file arguments с массивами и не считает файл дважды через prefix', async () => {
-    const provider = new KlingImageProvider(options);
+    const provider = imageProvider();
     const legacyCaps: MediaCapabilities = {
       ...caps,
       models: [
@@ -339,7 +326,7 @@ describe('провайдеры медиа', () => {
         }
       ]
     };
-    const legacyInput: PrepareKlingInput = { ...input, parameters: { elements: ['one'] }, inputs: [{ flag: 'image', path: 'source/reference.png' }] };
+    const legacyInput: PreparePaidInput = { ...input, parameters: { elements: ['one'] }, inputs: [{ flag: 'image', path: 'source/reference.png' }] };
     await expect(provider.prepare(legacyInput, legacyCaps)).rejects.toThrow(/общий лимит/);
     const sharedPrefix = structuredClone(legacyCaps);
     sharedPrefix.models[0].limits.combined_item_cap = { maxItems: 2, arguments: ['image', 'elements'], inputPrefixes: ['image'] };
@@ -361,7 +348,7 @@ describe('провайдеры медиа', () => {
     };
     const validateVideo = vi.fn(() => false);
     options.validateVideo = validateVideo;
-    const provider = new KlingVideoProvider(options);
+    const provider = videoProvider();
     const prepared = await provider.prepare(
       { ...input, kind: 'video', model: 'video-exact', command: 'text_to_video', parameters: {}, inputs: [], frameId: undefined },
       videoCaps
@@ -377,11 +364,11 @@ describe('провайдеры медиа', () => {
     expect(validateVideo).toHaveBeenCalledWith(path);
     validateVideo.mockReturnValue(true);
     expect(provider.collect(prepared)).toEqual([{ path, index: 1, kind: 'video', sha256: hash(mp4) }]);
-    expect(() => new KlingImageProvider(options).collect(prepared)).toThrow(/виду медиа|виду|виду|не соответствует/);
+    expect(() => imageProvider().collect(prepared)).toThrow(/виду медиа|виду|виду|не соответствует/);
   });
 
   it('проверяет exact command/model, параметры, обязательные слоты и общий cap до записи', async () => {
-    const provider = new KlingImageProvider(options);
+    const provider = imageProvider();
     for (const change of [
       { command: 'text_to_image' },
       { parameters: { resolution: '8k' } },
@@ -423,7 +410,7 @@ describe('провайдеры медиа', () => {
         }
       ]
     };
-    const videoInput: PrepareKlingInput = {
+    const videoInput: PreparePaidInput = {
       ...input,
       kind: 'video',
       command: 'text_to_video',
@@ -432,15 +419,15 @@ describe('провайдеры медиа', () => {
       parameters: { duration: 25, resolution: '1080p' },
       inputs: []
     };
-    const selected = selectKlingRequest(videoInput, videoCaps);
+    const selected = select(videoInput, videoCaps);
     expect(selected.model).toBe('video-4');
     expect(selected.parameters).toEqual(videoInput.parameters);
     expect(selected.modelSelection.reason).toContain('duration');
     expect(selected.modelSelection.reason).toContain('25');
-    expect(selectKlingRequest(selected, videoCaps).modelSelection).toEqual(selected.modelSelection);
-    const short = selectKlingRequest({ ...videoInput, parameters: { ...videoInput.parameters, duration: 10 } }, videoCaps);
+    expect(select(selected, videoCaps).modelSelection).toEqual(selected.modelSelection);
+    const short = select({ ...videoInput, parameters: { ...videoInput.parameters, duration: 10 } }, videoCaps);
     expect(short.model).toBe('video-3');
-    const noPreference = selectKlingRequest({ ...videoInput, preferredModel: null }, videoCaps);
+    const noPreference = select({ ...videoInput, preferredModel: null }, videoCaps);
     expect(noPreference.model).toBe('video-4');
     expect(noPreference.modelSelection.preferredModel).toBeNull();
     const run = vi.fn(options.launcher().run);
@@ -451,7 +438,7 @@ describe('провайдеры медиа', () => {
         return run(...args);
       }
     });
-    await new KlingVideoProvider(options).prepare(selected, videoCaps);
+    await videoProvider().prepare(selected, videoCaps);
     expect(frozenSpec).toMatchObject({ model: 'video-4', parameters: { duration: 25, resolution: '1080p' }, model_selection: selected.modelSelection });
     expect(run).toHaveBeenCalledTimes(1);
     expect(run.mock.calls[0][2][0]).toBe('prepare');
@@ -460,7 +447,7 @@ describe('провайдеры медиа', () => {
   it('при отсутствии совместимых моделей не вызывает runner и не создаёт попытку', async () => {
     const run = vi.fn(options.launcher().run);
     options.launcher = () => ({ run });
-    await expect(new KlingImageProvider(options).prepare({ ...input, parameters: { resolution: '8k' } }, caps)).rejects.toThrow('"8k"');
+    await expect(imageProvider().prepare({ ...input, parameters: { resolution: '8k' } }, caps)).rejects.toThrow('"8k"');
     expect(run).not.toHaveBeenCalled();
     expect(existsSync(input.workDir)).toBe(false);
   });
@@ -474,7 +461,7 @@ describe('провайдеры медиа', () => {
         { id: 'video-4', command: 'text_to_video', arguments: { duration: { allowed: ['10'] } }, slots: {}, limits: {} }
       ]
     };
-    const videoInput: PrepareKlingInput = {
+    const videoInput: PreparePaidInput = {
       ...input,
       kind: 'video',
       command: 'text_to_video',
@@ -484,11 +471,11 @@ describe('провайдеры медиа', () => {
       parameters: { duration: 10 },
       inputs: []
     };
-    const selected = selectKlingRequest(videoInput, videoCaps);
+    const selected = select(videoInput, videoCaps);
     expect(selected.model).toBe('video-4');
     expect(selected.modelSelection.reason).toContain('ближайшей');
     expect(selected.modelSelection.reason).toContain('9 с');
-    const prepared = await new KlingVideoProvider(options).prepare(selected, videoCaps);
+    const prepared = await videoProvider().prepare(selected, videoCaps);
     const frozen = JSON.parse(readFileSync(join(prepared.requestDir, 'request.json'), 'utf8'));
     expect(frozen).toMatchObject({ model: 'video-4', parameters: { duration: 10 }, model_selection: selected.modelSelection });
     expect(frozen).not.toHaveProperty('durationConstraint');
@@ -498,22 +485,22 @@ describe('провайдеры медиа', () => {
   it('сохраняет обязательные project options, проверяет aliases и не теряет их до frozen request', async () => {
     const optionCaps = structuredClone(caps);
     optionCaps.models[0].arguments.enable_audio = { allowed: ['true', 'false'], default: 'true' };
-    const requested: PrepareKlingInput = { ...input, projectOptions: { enableAudio: false } };
-    const selected = selectKlingRequest(requested, optionCaps);
+    const requested: PreparePaidInput = { ...input, projectOptions: { enableAudio: false } };
+    const selected = select(requested, optionCaps);
     expect(selected.parameters.enable_audio).toBe(false);
-    const prepared = await new KlingImageProvider(options).prepare(selected, optionCaps);
+    const prepared = await imageProvider().prepare(selected, optionCaps);
     const frozen = JSON.parse(readFileSync(join(prepared.requestDir, 'request.json'), 'utf8'));
     expect(frozen.parameters.enable_audio).toBe(false);
     expect(frozen).not.toHaveProperty('projectOptions');
     expect(frozen).not.toHaveProperty('requiredParameters');
-    expect(selectKlingRequest({ ...requested, parameters: { ...input.parameters, enable_audio: false } }, optionCaps).parameters.enable_audio).toBe(false);
-    expect(() => selectKlingRequest({ ...requested, parameters: { ...input.parameters, enable_audio: true } }, optionCaps)).toThrow('конфликтует');
-    expect(() => selectKlingRequest(requested, caps)).toThrow('enableAudio=false');
+    expect(select({ ...requested, parameters: { ...input.parameters, enable_audio: false } }, optionCaps).parameters.enable_audio).toBe(false);
+    expect(() => select({ ...requested, parameters: { ...input.parameters, enable_audio: true } }, optionCaps)).toThrow('конфликтует');
+    expect(() => select(requested, caps)).toThrow('enableAudio=false');
   });
 
   it('учитывает настройки проекта при выборе каждого кандидата без добавления отсутствующего aspect', () => {
     const preferred = { ...caps.models[0], id: 'preferred', arguments: { ...caps.models[0].arguments, aspect_ratio: { allowed: ['16:9'] } } };
-    const selected = selectKlingRequest(
+    const selected = select(
       { ...input, preferredModel: 'preferred', requiredParameters: { resolution: '1k', aspect_ratio: '16:9' } },
       { ...caps, models: [preferred, ...caps.models] }
     );
@@ -524,14 +511,14 @@ describe('провайдеры медиа', () => {
   });
 
   it('отсутствующее предпочтение допускает exact fallback и blank автоматически выбирает модель', () => {
-    const selected = selectKlingRequest({ ...input, model: 'image-alias' }, caps);
+    const selected = select({ ...input, model: 'image-alias' }, caps);
     expect(selected.model).toBe('image-exact');
     expect(selected.modelSelection.reason).toContain('image-alias не объявлена');
-    expect(selectKlingRequest({ ...input, model: '  ' }, caps).model).toBe('image-exact');
+    expect(select({ ...input, model: '  ' }, caps).model).toBe('image-exact');
   });
 
   it('принимает camelCase только как написание объявленного MCP-параметра и сохраняет объявленное имя', async () => {
-    const provider = new KlingImageProvider(options);
+    const provider = imageProvider();
     const prepared = await provider.prepare({ ...input, parameters: { resolution: '1k', imageCount: 1 } }, caps);
     const frozen = JSON.parse(readFileSync(join(prepared.requestDir, 'request.json'), 'utf8'));
     expect(frozen.parameters).toEqual({ resolution: '1k', image_count: 1 });
@@ -541,7 +528,7 @@ describe('провайдеры медиа', () => {
   });
 
   it('раскрывает legacy image/tailImage в точные объявленные first/tail slots до фиксации запроса', async () => {
-    const provider = new KlingVideoProvider(options);
+    const provider = videoProvider();
     const videoCaps: MediaCapabilities = {
       ...caps,
       kind: 'video',
@@ -555,7 +542,7 @@ describe('провайдеры медиа', () => {
         }
       ]
     };
-    const videoInput: PrepareKlingInput = {
+    const videoInput: PreparePaidInput = {
       ...input,
       kind: 'video',
       command: 'image_to_video',
@@ -583,7 +570,7 @@ describe('провайдеры медиа', () => {
   });
 
   it('раскрывает omni image/audio/video по объявленному порядку и требует named inputs для неизвестных ролей', async () => {
-    const provider = new KlingVideoProvider(options);
+    const provider = videoProvider();
     const omniCaps: MediaCapabilities = {
       ...caps,
       kind: 'video',
@@ -598,7 +585,7 @@ describe('провайдеры медиа', () => {
       ]
     };
     const source = 'source/reference.png';
-    const omniInput: PrepareKlingInput = {
+    const omniInput: PreparePaidInput = {
       ...input,
       kind: 'video',
       command: 'omni_ref_video',
@@ -617,167 +604,5 @@ describe('провайдеры медиа', () => {
     const ambiguous = structuredClone(omniCaps);
     ambiguous.models[0].slots = { reference: { required: true } };
     await expect(provider.prepare(omniInput, ambiguous)).rejects.toThrow(/именованные input slots/);
-  });
-
-  it('Codex после перезапуска восстанавливает SHA из job.json и поддерживает legacy без frozen proof', () => {
-    const productionInput = {
-      project,
-      shot: 'M01',
-      packageDir: input.workDir,
-      frames: [{ id: 'K01', role: 'first' as const, timeSeconds: 0, prompt: 'Кадр', referencePaths: [] }]
-    };
-    const job = {
-      id: 'persisted-agent',
-      project,
-      provider: 'codex',
-      status: 'completed',
-      exitCode: 0,
-      result: JSON.stringify({ schemaVersion: 1, stage: 'frames', images: [{ id: 'K01', path: 'K01.png' }] })
-    } as AgentJob;
-    const localDir = join(work, 'restart-state');
-    const createImages = (): KeyframeImages =>
-      new KeyframeImages({
-        localDir,
-        agents: {
-          startImages: (_input, directory) => {
-            writeFileSync(join(directory, 'K01.png'), png);
-            return job;
-          }
-        }
-      });
-    options.images = createImages();
-    const initial = new CodexImageProvider(options);
-    const prepared = initial.prepare(productionInput);
-    initial.submit(prepared, { requestSha: prepared.requestSha });
-    options.images = createImages();
-    expect(options.images.getRequestSha(job)).toBe(prepared.requestSha);
-    expect(new CodexImageProvider(options).collectJob(job)).toMatchObject([{ index: 1, frameId: 'K01', kind: 'image', width: 1, height: 1 }]);
-    const legacy = { ...job, id: 'legacy-agent' };
-    options.images = new KeyframeImages({
-      localDir,
-      agents: {
-        startImages: (_input, directory) => {
-          writeFileSync(join(directory, 'K01.png'), png);
-          return legacy;
-        }
-      }
-    });
-    options.images.start(productionInput);
-    options.images = new KeyframeImages({ localDir, agents: { startImages: vi.fn() } });
-    expect(options.images.getRequestSha(legacy)).toBeNull();
-    expect(new CodexImageProvider(options).collectJob(legacy)).toMatchObject([{ index: 1, frameId: 'K01', kind: 'image' }]);
-  });
-
-  it('Codex проверяет CLI, но не сообщает о подтверждённом image tool и не запускает его при discovery/prepare', async () => {
-    const start = vi.spyOn(options.images, 'start');
-    const provider = new CodexImageProvider(options);
-    const capabilities = await provider.capabilities(project);
-    expect(capabilities).toMatchObject({ available: true, models: [], generationVerified: false });
-    expect(capabilities.problems).toEqual([]);
-    const prepared = provider.prepare({
-      project,
-      shot: 'M01',
-      packageDir: input.workDir,
-      frames: [{ id: 'K01', role: 'first', timeSeconds: 0, prompt: 'Первый кадр', referencePaths: ['source/reference.png'] }]
-    });
-    expect(prepared.references[0].sha256).toBe(hash(png));
-    expect(start).not.toHaveBeenCalled();
-    expect(() => provider.submit(prepared, { requestSha: 'wrong' })).toThrow(/изменились/);
-    writeFileSync(join(project, 'source/reference.png'), Buffer.concat([png, Buffer.from('изменено')]));
-    expect(() => provider.submit(prepared, { requestSha: prepared.requestSha })).toThrow(/изменились/);
-    expect(start).not.toHaveBeenCalled();
-  });
-
-  it('Codex discovery загружает реальный каталог моделей агента, не подтверждая image tool', async () => {
-    const models = [{ id: 'account-model', command: 'codex_exec', arguments: {}, slots: {}, limits: {} }];
-    options.listCodexModels = vi.fn(async () => models);
-    const start = vi.spyOn(options.images, 'start');
-    const result = await new CodexImageProvider(options).capabilities(project);
-    expect(result).toMatchObject({ available: true, models, generationVerified: false, problems: [] });
-    expect(options.listCodexModels).toHaveBeenCalledTimes(1);
-    expect(start).not.toHaveBeenCalled();
-  });
-
-  it('сбой каталога Codex не превращается в отсутствие CLI; недоступный CLI каталог не запрашивает', async () => {
-    options.listCodexModels = vi.fn(async () => {
-      throw new Error('fixture network failure');
-    });
-    const provider = new CodexImageProvider(options);
-    expect(await provider.capabilities(project)).toMatchObject({
-      available: true,
-      models: [],
-      generationVerified: false,
-      problems: ['Каталог моделей агента Codex сейчас недоступен. Повторите проверку возможностей.']
-    });
-    options.checkCodex = async () => ({ availability: 'not_found', authorization: 'unknown', message: 'Codex не найден.' });
-    expect(await provider.capabilities(project)).toMatchObject({ available: false, models: [], generationVerified: false, problems: ['Codex не найден.'] });
-    expect(options.listCodexModels).toHaveBeenCalledTimes(1);
-  });
-
-  it('Codex расходует prepared и permit один раз, сохраняя возможность нового явного запуска тех же входов', () => {
-    const provider = new CodexImageProvider(options);
-    const source = {
-      project,
-      shot: 'M01',
-      packageDir: input.workDir,
-      frames: [{ id: 'K01', role: 'first' as const, timeSeconds: 0, prompt: 'Кадр', referencePaths: [] }]
-    };
-    const prepared = provider.prepare(source);
-    const permit = { requestSha: prepared.requestSha };
-    const start = vi.spyOn(options.images, 'start').mockReturnValue({ id: 'agent-job' } as AgentJob);
-    provider.submit(prepared, permit);
-    expect(() => provider.submit(prepared, permit)).toThrow(/уже использованы/);
-    expect(() => provider.submit(prepared, { requestSha: prepared.requestSha })).toThrow(/уже использованы/);
-    const next = provider.prepare(source);
-    expect(next.requestSha).toBe(prepared.requestSha);
-    expect(() => provider.submit(next, permit)).toThrow(/уже использованы/);
-    expect(start).toHaveBeenCalledTimes(1);
-    provider.submit(next, { requestSha: next.requestSha });
-    expect(start).toHaveBeenCalledTimes(2);
-  });
-
-  it('Codex после ошибки start требует новую подготовку и новый permit', () => {
-    const provider = new CodexImageProvider(options);
-    const source = {
-      project,
-      shot: 'M01',
-      packageDir: input.workDir,
-      frames: [{ id: 'K01', role: 'first' as const, timeSeconds: 0, prompt: 'Кадр', referencePaths: [] }]
-    };
-    const prepared = provider.prepare(source);
-    const permit = { requestSha: prepared.requestSha };
-    const start = vi
-      .spyOn(options.images, 'start')
-      .mockImplementationOnce(() => {
-        throw new Error('Не удалось запустить CLI');
-      })
-      .mockReturnValue({ id: 'retry-job' } as AgentJob);
-    expect(() => provider.submit(prepared, permit)).toThrow(/Не удалось запустить CLI/);
-    expect(() => provider.submit(prepared, { requestSha: prepared.requestSha })).toThrow(/уже использованы/);
-    const retry = provider.prepare(source);
-    expect(() => provider.submit(retry, permit)).toThrow(/уже использованы/);
-    expect(start).toHaveBeenCalledTimes(1);
-    provider.submit(retry, { requestSha: retry.requestSha });
-    expect(start).toHaveBeenCalledTimes(2);
-  });
-
-  it('Codex связывает задание с requestSHA и собирает результат через существующий collector', () => {
-    const provider = new CodexImageProvider(options);
-    const prepared = provider.prepare({
-      project,
-      shot: 'M01',
-      packageDir: input.workDir,
-      frames: [{ id: 'K01', role: 'first', timeSeconds: 0, prompt: 'Кадр', referencePaths: [] }]
-    });
-    const job = { id: 'agent-job' } as AgentJob;
-    const start = vi.spyOn(options.images, 'start').mockReturnValue(job);
-    const ref = provider.submit(prepared, { requestSha: prepared.requestSha });
-    expect(start).toHaveBeenCalledWith(prepared.input, prepared.requestSha);
-    const file = join(work, 'image.png');
-    writeFileSync(file, png);
-    const collect = vi.spyOn(options.images, 'collect').mockReturnValue([{ id: 'K01', path: file }]);
-    if (ref.provider !== 'codex') throw new Error('Неверный исполнитель');
-    expect(provider.collect(ref, job)).toEqual([{ path: file, frameId: 'K01', index: 1, kind: 'image', sha256: hash(png), width: 1, height: 1 }]);
-    expect(collect).toHaveBeenCalledWith(job, prepared.requestSha);
   });
 });

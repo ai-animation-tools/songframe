@@ -16,7 +16,7 @@ beforeEach(() => {
   work = mkdtempSync(join(tmpdir(), 'Задания агентов '));
   project = join(work, 'Проект клипа');
   mkdirSync(join(project, 'plan'), { recursive: true });
-  writeFileSync(join(project, 'plan/project.json'), '{"generation":{"provider":"kling"}}');
+  writeFileSync(join(project, 'plan/project.json'), '{"generation":{"provider":"test"}}');
   settings = new SettingsStore(join(work, 'state'));
   managers = [];
 });
@@ -136,7 +136,7 @@ describe.skipIf(process.platform !== 'linux')('Жизненный цикл об�
     const persisted = readFileSync(join(work, 'state/jobs', `agent-${job.id}.json`), 'utf8');
     expect(persisted).not.toMatch(/SECRET|source lyrics|ТЕКСТ ЗАПРОСА|КОНТЕКСТ/);
     expect(done.inputHashes.prompt).toMatch(/^[a-f0-9]{64}$/);
-    expect(readFileSync(join(project, 'plan/project.json'), 'utf8')).toContain('kling');
+    expect(readFileSync(join(project, 'plan/project.json'), 'utf8')).toContain('test');
     unsubscribe();
     expect(manager().get(job.id)).toEqual(done);
   });

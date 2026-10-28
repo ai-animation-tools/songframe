@@ -2,8 +2,20 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SettingsStore } from './settings';
+import { registerTestAgentProvider, registerTestMediaProvider, TEST_AGENT_PROVIDER, TEST_PROVIDER, testAgentProviderInfo } from './testing/media-provider';
+
+let restoreProviders: () => void;
+beforeAll(() => {
+  const restorePaid = registerTestMediaProvider();
+  const restoreAgent = registerTestAgentProvider();
+  restoreProviders = () => {
+    restoreAgent();
+    restorePaid();
+  };
+});
+afterAll(() => restoreProviders());
 
 let directory: string;
 let store: SettingsStore;
@@ -81,13 +93,17 @@ describe('независимые профили Claude и Codex', () => {
     expect(JSON.stringify(raw())).not.toContain('executablePath');
   });
 
-  it('профиль изображений всегда Codex без модели текстового агента', () => {
-    expect(store.getImageAgent()).toEqual({ provider: 'codex' });
+  it('профиль изображений — программа провайдера из реестра с моделью проекта, без модели текстового агента', () => {
+    const executor = testAgentProviderInfo.executor!;
+    expect(store.getImageAgent(TEST_AGENT_PROVIDER)).toEqual({ provider: executor });
     store.saveAgent(claude);
-    expect(store.getImageAgent()).toEqual({ provider: 'codex' });
+    expect(store.getImageAgent(TEST_AGENT_PROVIDER, '  ')).toEqual({ provider: executor });
     store.saveAgent(codex);
-    expect(store.getImageAgent()).toEqual({ provider: 'codex' });
+    expect(store.getImageAgent(TEST_AGENT_PROVIDER, ' image-model ')).toEqual({ provider: executor, model: 'image-model' });
     expect(store.getAgent()).toEqual(codex);
+    // Провайдер без программы-агента и неизвестный id не дают профиля.
+    expect(() => store.getImageAgent(TEST_PROVIDER)).toThrow(/не исполняется программой-агентом/);
+    expect(() => store.getImageAgent('unknown')).toThrow(/не исполняется программой-агентом/);
   });
 
   it.each([{ codex: claude }, { claude: codex }, { unknown: codex }, { codex: null }, []])(

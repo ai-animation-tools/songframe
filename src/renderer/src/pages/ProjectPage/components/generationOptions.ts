@@ -1,24 +1,12 @@
-/** Каталог задаёт CLI; здесь хранится только условный порядок предпочтений интерфейса. */
-import type { MediaModel } from '@shared/media-providers';
+/** Каталог задаёт провайдер; порядок известных моделей в интерфейсе — из реестра провайдеров. */
+import { mediaProviderInfo, type MediaModel } from '@shared/media-providers';
 
-const PRIORITY = {
-  image: [
-    'gpt-image-2',
-    'gpt-image2',
-    'gemini-3-pro-image',
-    'gemini-3.1-flash-image',
-    'kling-image-v3_0_omni',
-    'kling-image-o1',
-    'kling-image-v3_0',
-    'kling-image-v2_1'
-  ],
-  video: ['kling-video-v4_0', 'kling-video-v3_0_omni', 'kling-video-v3_0', 'kling-video-v3_0_turbo', 'kling-video-o1', 'kling-video-v2_6', 'kling-video-v2_5']
-};
 const alphabetical = (a: string, b: string): number => a.localeCompare(b, 'en', { numeric: true });
 
-export function modelOptions(models: readonly MediaModel[], kind: 'image' | 'video'): string[] {
+export function modelOptions(models: readonly MediaModel[], kind: 'image' | 'video', provider: unknown): string[] {
+  const order = mediaProviderInfo(provider, kind)?.modelOrder[kind] ?? [];
   const priority = (id: string): number => {
-    const index = PRIORITY[kind].indexOf(id);
+    const index = order.indexOf(id);
     return index < 0 ? Number.POSITIVE_INFINITY : index;
   };
   // Разные команды могут объявлять один ID; разные ID одной марки не подменяем друг другом.

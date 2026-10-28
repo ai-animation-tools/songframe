@@ -1,7 +1,10 @@
 /** Общие компоненты приложения и маршрутизации. */
 export { HomeRedirect } from './HomeRedirect';
+export { ActionButton } from './ActionButton';
+export { ActionIconButton } from './ActionIconButton';
 export { AgentButton } from './AgentButton';
 export { AgentIcon } from './AgentIcon';
+export { AiProblemAlert } from './AiProblemAlert';
 export { DateTime } from './DateTime';
 export { ImageGallery } from './ImageGallery';
 export { Prose } from './Prose';
@@ -10,6 +13,7 @@ export { ShotCard } from './ShotCard';
 export { JobCard } from './JobCard';
 export { JobStatus } from './JobStatus';
 export { Layout } from './Layout';
+export { LinkedText } from './LinkedText';
 export { NetworkErrorMessage } from './NetworkErrorMessage';
 export { RequireProject } from './RequireProject';
 export { RequireScenario } from './RequireScenario';

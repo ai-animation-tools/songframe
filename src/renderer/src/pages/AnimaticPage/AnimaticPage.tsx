@@ -1,16 +1,19 @@
 import { PageActionBar } from '../../components/PageActionBar';
+import { usePageLoading } from '../../components/PageLoader';
 import RefreshIcon from '@mui/icons-material/Refresh';
 /** Страница аниматика объединяет сборку, просмотр планов и принятие результата. */
 
 import type { ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
-import { JobStatus } from '../../components';
 import { AnimaticAcceptance, AnimaticChapters, AnimaticConfirmDialog, AnimaticHeader, AnimaticPlayer, ShotCard } from './components';
 import { useAnimaticPage } from './useAnimaticPage';
+import { LinkedText } from '../../components/LinkedText';
 
 export function AnimaticPage(): ReactElement {
   const page = useAnimaticPage();
   const { view, loadError, load, loadJobs, running, accepted, shots, current, seek } = page;
+  // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(!view && !loadError);
   if (loadError)
     return (
       <Alert
@@ -21,22 +24,31 @@ export function AnimaticPage(): ReactElement {
           </Button>
         }
       >
-        {loadError}
+        <LinkedText text={loadError} />
       </Alert>
     );
-  if (!view) return <Typography color="text.secondary">Читаем сборку…</Typography>;
+  if (!view) return <></>;
   const built = view.built;
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
       <PageActionBar>
-        <AnimaticHeader built={built} accepted={accepted} running={running} onRefresh={() => Promise.all([load(), loadJobs()])} onBuild={page.build} />
+        <AnimaticHeader
+          built={built}
+          accepted={accepted}
+          running={running}
+          blockedReason={view.blockedReason}
+          onRefresh={() => Promise.all([load(), loadJobs()])}
+          onBuild={page.build}
+        />
       </PageActionBar>
       {view.problems.length ? (
         <Alert severity={built ? 'warning' : 'info'}>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {view.problems.map((problem) => (
-              <li key={problem}>{problem}</li>
+              <li key={problem}>
+                <LinkedText text={problem} />
+              </li>
             ))}
           </ul>
         </Alert>
@@ -71,7 +83,6 @@ export function AnimaticPage(): ReactElement {
       ) : null}
       {built ? <AnimaticAcceptance built={built} accepted={accepted} approval={view.approval} running={running} onConfirm={page.setConfirm} /> : null}
       {shots.length ? <AnimaticChapters shots={shots} current={current} seek={seek} /> : null}
-      <JobStatus running={running} />
       <AnimaticConfirmDialog confirm={page.confirm} running={running} onClose={() => page.setConfirm(null)} onConfirm={page.setStatus} />
     </Stack>
   );

@@ -1,6 +1,7 @@
 import { Sync } from '@mui/icons-material';
 import type { ReactElement } from 'react';
-import { Button, Stack, TextField, Typography } from '@mui/material';
+import { Stack, TextField, Typography } from '@mui/material';
+import { ActionButton } from '../../../components/ActionButton';
 import type { MontageDraft } from '@shared/montage';
 import { frameLabel, montageLength } from '../model';
 
@@ -15,6 +16,7 @@ export function MontageAudioRange({
   onChange: (draft: MontageDraft) => void;
 }): ReactElement {
   const length = montageLength(draft.clips);
+  const pastTrackEnd = trackFrames !== null && draft.audio.start_frame + length > trackFrames;
   return (
     <Stack spacing={1}>
       <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" alignItems="center">
@@ -54,15 +56,18 @@ export function MontageAudioRange({
         Участок песни: {frameLabel(draft.audio.start_frame)} — {frameLabel(draft.audio.end_frame_exclusive)}. Положение на обеих дорожках считается от начала
         исходной песни.
       </Typography>
-      <Button
+      <ActionButton
         startIcon={<Sync />}
         size="small"
         sx={{ alignSelf: 'flex-start' }}
-        disabled={!length || (trackFrames !== null && draft.audio.start_frame + length > trackFrames)}
+        disabled={!length || pastTrackEnd}
+        disabledReason={
+          !length ? 'Добавьте фрагменты на видеодорожку.' : 'Видео длиннее остатка трека от начала участка: сдвиньте начало музыки раньше или обрежьте видео.'
+        }
         onClick={() => onChange({ ...draft, audio: { ...draft.audio, end_frame_exclusive: draft.audio.start_frame + length } })}
       >
         Конец музыки по видео
-      </Button>
+      </ActionButton>
     </Stack>
   );
 }

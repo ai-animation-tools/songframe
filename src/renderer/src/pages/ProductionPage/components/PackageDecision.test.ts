@@ -8,8 +8,8 @@ vi.mock('../../../state', () => ({
   useApp: () => ({
     aiAccess: {
       agent: { selected: true, available: true, provider: 'codex', message: '' },
-      image: { selected: true, available: true, provider: 'kling', message: '' },
-      video: { selected: true, available: true, provider: 'kling', message: '' }
+      image: { selected: true, available: true, provider: 'test', message: '' },
+      video: { selected: true, available: true, provider: 'test', message: '' }
     }
   })
 }));

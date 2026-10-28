@@ -277,28 +277,6 @@ describe('ScenarioWorkflow', () => {
     expect(workflow.view(project)).toMatchObject({ treatmentApproved: true, scenesNeedReview: false });
   });
 
-  it('первая смена обложки сохраняет доказанные утверждения старой версии', () => {
-    currentPair();
-    write(join(project, 'plan/scenes.json'), scenes);
-    const { workflow } = setup();
-    workflow.approveCurrent(project);
-    const statePath = join(work, 'state/scenario-workflow', `${sha(project)}.json`);
-    const state = JSON.parse(readFileSync(statePath, 'utf8'));
-    const oldRaw = sha(readFileSync(join(project, 'source/manifest.json'), 'utf8'));
-    state.approval['source/manifest.json'] = oldRaw;
-    state.scenesApproval = { hashes: structuredClone(state.approval), sceneHash: sha(readFileSync(join(project, 'plan/scenes.json'), 'utf8')) };
-    state.needsScenesReview = false;
-    write(statePath, state);
-    expect(workflow.view(project)).toMatchObject({ treatmentApproved: true, scenesNeedReview: false });
-    workflow.preserveSourceDecoration(project);
-    expect(JSON.parse(readFileSync(statePath, 'utf8')).approval['source/manifest.json']).not.toBe(oldRaw);
-    const manifest = JSON.parse(readFileSync(join(project, 'source/manifest.json'), 'utf8'));
-    manifest.cover = { path: 'new-cover.png', sha256: 'b'.repeat(64) };
-    manifest.updated_at = 'после смены';
-    write(join(project, 'source/manifest.json'), manifest);
-    expect(workflow.view(project)).toMatchObject({ treatmentApproved: true, scenesNeedReview: false });
-  });
-
   it.each(['plan/audio/timing.json', 'source/manifest.json', 'source/description.md', 'source/text.md', 'source/heroes/hero.png'])(
     'изменение %s инвалидирует утверждение и предложение',
     async (path) => {
@@ -416,6 +394,8 @@ describe('ScenarioWorkflow', () => {
     const { workflow, agents, publish } = setup();
     workflow.approveCurrent(project);
     await workflow.start({ project, pass: 'revise', selectedIds: ['M01'], note: 'Пусть войдёт' });
+    // Промпт перечисляет те же поля, что пропускает проверка патча.
+    expect(agents.inputs[0].prompt).toContain('state_changes, derived_from выбранных ID');
     agents.finish({
       schemaVersion: 1,
       pass: 'revise',
@@ -443,6 +423,29 @@ describe('ScenarioWorkflow', () => {
     await workflow.start({ project, pass: 'revise', selectedIds: ['M01'], note: 'Поправить' });
     agents.finish({ schemaVersion: 1, pass: 'revise', patches: [patch] });
     expect(workflow.view(project).proposal?.status).toBe('invalid');
+  });
+
+  it('доработка ставит и снимает derived_from выбранного плана с проверкой источника', async () => {
+    currentPair();
+    write(join(project, 'plan/scenes.json'), scenes);
+    const { workflow, agents } = setup();
+    workflow.approveCurrent(project);
+    await workflow.start({ project, pass: 'revise', selectedIds: ['M02'], note: 'Это повтор M01' });
+    agents.finish({ schemaVersion: 1, pass: 'revise', patches: [{ id: 'M02', derived_from: { shot: 'M01' } }] });
+    const ready = workflow.view(project).proposal!;
+    expect(ready.status).toBe('ready');
+    expect(ready.after.scenes!.scenes[1].derived_from).toEqual({ shot: 'M01' });
+    workflow.discard(project, ready.id);
+    await workflow.start({ project, pass: 'revise', selectedIds: ['M02'], note: 'Сам на себя' });
+    agents.finish({ schemaVersion: 1, pass: 'revise', patches: [{ id: 'M02', derived_from: { shot: 'M02' } }] });
+    expect(workflow.view(project).proposal).toMatchObject({ status: 'invalid', message: expect.stringContaining('не может ссылаться на сам план') });
+    workflow.discard(project, workflow.view(project).proposal!.id);
+    write(join(project, 'plan/scenes.json'), { ...scenes, scenes: [scenes.scenes[0], { ...scenes.scenes[1], derived_from: { shot: 'M01' } }] });
+    await workflow.start({ project, pass: 'revise', selectedIds: ['M02'], note: 'Своя генерация' });
+    agents.finish({ schemaVersion: 1, pass: 'revise', patches: [{ id: 'M02', derived_from: null }] });
+    const removed = workflow.view(project).proposal!;
+    expect(removed.status).toBe('ready');
+    expect(removed.after.scenes!.scenes[1]).not.toHaveProperty('derived_from');
   });
 
   it('проверяет весь результат: цикл соседней сцены не проходит', async () => {

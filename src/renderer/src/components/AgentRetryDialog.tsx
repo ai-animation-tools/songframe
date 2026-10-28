@@ -1,10 +1,11 @@
 /** Повтор всегда создаёт новое задание по заново введённому запросу, без скрытого возобновления сессии. */
 import { useState, type ReactElement } from 'react';
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import { aiActionProblem } from '@shared/ai-access';
 import type { AgentJob } from '@shared/agents';
 import { useApp } from '../state';
+import { ActionButton } from './ActionButton';
 import { AgentButton } from './AgentButton';
 import { AgentIcon } from './AgentIcon';
 
@@ -59,15 +60,20 @@ export function AgentRetryDialog({ job, onClose }: { job: AgentJob; onClose(): v
             onChange={(event) => setContext(event.target.value)}
             disabled={busy}
           />
-          {aiProblem && <Alert severity="info">{aiProblem}</Alert>}
           {error && <Alert severity="error">{error}</Alert>}
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy}>
+        <ActionButton startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy} disabledReason="Дождитесь запуска задания.">
           Отмена
-        </Button>
-        <AgentButton variant="contained" onClick={submit} disabled={busy || !prompt.trim()}>
+        </ActionButton>
+        {/* Причину недоступности агента кнопка показывает в подсказке сама. */}
+        <AgentButton
+          variant="contained"
+          onClick={submit}
+          disabled={busy || !prompt.trim()}
+          disabledReason={busy ? 'Дождитесь запуска задания.' : 'Введите запрос для нового задания.'}
+        >
           {busy ? 'Запуск' : 'Запустить'}
         </AgentButton>
       </DialogActions>

@@ -1,27 +1,32 @@
 /** Подсказки объединяют объявления CLI и сохраняют порядок точных ID, размеров и пропорций. */
-import { describe, expect, it } from 'vitest';
-import type { MediaModel } from '@shared/media-providers';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { registerMediaProviderForTests, type MediaModel } from '@shared/media-providers';
+import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
 import { aspectOptions, modelOptions, resolutionOptions, sortAspects, sortResolutions } from './generationOptions';
 
 const model = (id: string, command: string, args: MediaModel['arguments'] = {}): MediaModel => ({ id, command, arguments: args, slots: {}, limits: {} });
+let restoreProvider: () => void;
+beforeAll(() => {
+  restoreProvider = registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo);
+});
+afterAll(() => restoreProvider());
 
 describe('Подсказки генерации из возможностей CLI', () => {
-  it('ранжирует только обнаруженные модели и сохраняет разные ID GPT для разных команд', () => {
+  it('ранжирует только обнаруженные модели по порядку реестра провайдера и сохраняет одинаковые ID разных команд', () => {
     const models = [
-      model('kling-image-v2_1', 'image_to_image'),
-      model('gpt-image2', 'image_to_image'),
-      model('gpt-image-2', 'text_to_image'),
-      model('gpt-image2', 'text_to_image'),
-      model('future-7', 'text_to_image')
+      model('test-image', 'image_to_image'),
+      model('test-image-pro', 'text_to_image'),
+      model('future-7', 'text_to_image'),
+      model('test-image', 'text_to_image'),
+      model('future-10', 'text_to_image')
     ];
-    expect(modelOptions(models, 'image')).toEqual(['gpt-image-2', 'gpt-image2', 'kling-image-v2_1', 'future-7']);
-    expect(modelOptions([], 'image')).toEqual([]);
+    expect(modelOptions(models, 'image', TEST_PROVIDER)).toEqual(['test-image-pro', 'test-image', 'future-7', 'future-10']);
+    expect(modelOptions([], 'image', TEST_PROVIDER)).toEqual([]);
     expect(
-      modelOptions(
-        [model('kling-video-v3_0_turbo', 'text_to_video'), model('kling-video-v4_0', 'text_to_video'), model('kling-video-v3_0', 'image_to_video')],
-        'video'
-      )
-    ).toEqual(['kling-video-v4_0', 'kling-video-v3_0', 'kling-video-v3_0_turbo']);
+      modelOptions([model('future', 'text_to_video'), model('test-video', 'text_to_video'), model('test-video-pro', 'image_to_video')], 'video', TEST_PROVIDER)
+    ).toEqual(['test-video-pro', 'test-video', 'future']);
+    // Без известного провайдера порядок только алфавитный.
+    expect(modelOptions(models, 'image', 'unknown')).toEqual(['future-7', 'future-10', 'test-image', 'test-image-pro']);
   });
 
   it('сортирует разрешение по размеру и пропорции от широких к вертикальным', () => {

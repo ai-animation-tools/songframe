@@ -10,7 +10,8 @@ import {
   relocatedPackage,
   reviewMontageRoute,
   reviewShots,
-  sendConfirmedRequest
+  sendConfirmedRequest,
+  defaultAcceptOptions
 } from './decisions';
 
 function fixture(overrides: Partial<PackageView> = {}): PackageView {
@@ -192,7 +193,7 @@ describe('проба стыков', () => {
       shots: ['M01', 'M02', 'M03', 'M04'].map((id) => ({ id })),
       broken: [],
       problems: [],
-      tools: { python: true, kling: true }
+      tools: { python: true, providers: { test: true } }
     } as unknown as ProductionView;
     expect(reviewShots(view, 'M02')).toEqual(['M01', 'M02', 'M03']);
     expect(reviewShots(view, 'M01')).toEqual(['M01', 'M02']);
@@ -205,7 +206,7 @@ describe('проба стыков', () => {
       shots: ['M44', 'M45', 'M46'].map((id) => ({ id })),
       broken: [],
       problems: [],
-      tools: { python: true, kling: true }
+      tools: { python: true, providers: { test: true } }
     } as unknown as ProductionView;
     const pkg = { shot: 'M45', request: { downloads: ['/p/clip/plan/batches/M45-attempt-01/request/original.mp4'] } } as unknown as PackageView;
     expect(reviewMontageRoute(view, pkg, '/p/clip')).toBe(
@@ -214,5 +215,19 @@ describe('проба стыков', () => {
     expect(reviewMontageRoute(view, { shot: 'M45', request: { downloads: [] } } as unknown as PackageView, '/p/clip')).toBe(
       '/project/montage?shots=M44,M45,M46'
     );
+  });
+});
+
+describe('участок приёмки по умолчанию', () => {
+  it('целиком — только при совпадении длины оригинала с окном плана', () => {
+    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', windowFrames: 90, originalFrames: 90 }).mode).toBe('full');
+    // Оригинал 3 с при окне 3,1 с: тот же участок и удержание последнего кадра на недостающие кадры.
+    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', windowFrames: 93, originalFrames: 90 })).toMatchObject({
+      mode: 'cut',
+      cutStart: 0,
+      cutEnd: 3,
+      holdLast: 3
+    });
+    expect(defaultAcceptOptions({ shot: 'M08', dir: '/p', windowFrames: 60, originalFrames: 90 })).toMatchObject({ mode: 'cut', cutEnd: 2, holdLast: 0 });
   });
 });

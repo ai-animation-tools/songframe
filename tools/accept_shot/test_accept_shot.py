@@ -10,10 +10,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import tempfile
 import unittest
+import unittest.mock
 
 from tools.accept_shot import accept_shot as tool
 from tools.asset_package.asset_package import validate_package
@@ -60,6 +62,11 @@ class AcceptShotTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="accept-shot-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        # Наблюдения расхода пишутся в каталог состояния; у теста он свой.
+        self.state = self.root / "state"
+        patcher = unittest.mock.patch.dict(os.environ, {"SONGFRAME_LOCAL_DIR": str(self.state)})
+        patcher.start()
+        self.addCleanup(patcher.stop)
         for name in ("plan/batches", "plan/awaiting", "assets/shots", "source"):
             (self.root / name).mkdir(parents=True)
         self.registry = {
@@ -118,10 +125,10 @@ class AcceptShotTests(unittest.TestCase):
             "schema_version": 1,
             "shot": "M02",
             "kind": "video",
-            "provider": "kling",
+            "provider": "test",
             "command": "image_to_video",
-            "model": "kling-video-v3_0",
-            "parameters": {"duration": "3", "resolution": "1080p", "prefer_multi_shots": "false"},
+            "model": "test-video",
+            "parameters": {"duration": "3", "resolution": "1080p", "enable_audio": "false"},
             "outputs": 1,
             "inputs": [
                 {
@@ -203,12 +210,38 @@ class AcceptShotTests(unittest.TestCase):
         self.assertEqual(edit["source_fps"], "24/1")
         validate_package(target / "manifest.json", "M02", self.root)
         snapshot = json.loads((target / "generation-request.json").read_text(encoding="utf-8"))
-        self.assertEqual(snapshot["provider"], "kling")
+        self.assertEqual(snapshot["provider"], "test")
         self.assertEqual(snapshot["generation_id"], "job-1")
         self.assertNotIn("credits_consumed", snapshot)
         self.assertEqual(result["observed_credits"], 30.0)
-        self.assertEqual(len(json.loads(self.pricing.read_text())["observed"]), 1)
+        self.assertEqual(result["warnings"], [])
+        # Таблица цен только читается; наблюдение лежит в каталоге состояния провайдера.
+        self.assertEqual(json.loads(self.pricing.read_text())["observed"], [])
+        observations = json.loads((self.state / "providers/test/pricing-observations.json").read_text())
+        self.assertEqual([item["credits"] for item in observations["observed"]], [30.0])
         self.assertTrue(self.package.exists())
+
+    def test_observation_write_failure_is_warning_after_kit_transfer(self):
+        # Файл на месте каталога состояния: запись наблюдения невозможна, но комплект уже перенесён.
+        self.state.write_text("не каталог")
+        result = self.accept(cut=(12, 72), clean=True)
+        target = self.root / "assets/shots/M02"
+        validate_package(target / "manifest.json", "M02", self.root)
+        self.assertIsNone(result["observed_credits"])
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertIn("Наблюдение расхода не записано", result["warnings"][0])
+        self.assertFalse(self.package.exists())
+
+    def test_manual_result_without_id_records_provenance(self):
+        attempt = json.loads((self.work / "attempt.json").read_text())
+        attempt.update(generation_id=None, manual_result=True)
+        (self.work / "attempt.json").write_text(json.dumps(attempt))
+        self.accept(cut=(12, 72))
+        target = self.root / "assets/shots/M02"
+        snapshot = json.loads((target / "generation-request.json").read_text(encoding="utf-8"))
+        self.assertIsNone(snapshot["generation_id"])
+        self.assertIn("загружен пользователем", snapshot["provenance"])
+        validate_package(target / "manifest.json", "M02", self.root)
 
     def test_speed_and_holds_fill_window_and_review_recipe_is_reused(self):
         with self.assertRaises(ValueError):
@@ -274,7 +307,8 @@ class AcceptShotTests(unittest.TestCase):
             )
         )
         (batches / "retry-m02").mkdir()
-        (batches / "retry-m02/request.json").write_text(json.dumps({"shot": "M02", "kind": "video", "provider": "kling"}))
+        retry = {"shot": "M02", "kind": "video", "provider": "test"}
+        (batches / "retry-m02/request.json").write_text(json.dumps(retry))
         (batches / "M02-review-v01").mkdir()
         (batches / "M01-M02-review").mkdir()
         (batches / "M01-M02-review/review-01.json").write_text(

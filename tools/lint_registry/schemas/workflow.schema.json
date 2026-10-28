@@ -17,7 +17,8 @@
     "image_requests": {"type": "array", "items": {
       "type": "object", "required": ["frame_id", "request_dir", "request_sha256", "provider"],
       "properties": {"frame_id": {"type": "string", "pattern": "^K\\d{2}$"}, "request_dir": {"type": "string"},
-                     "request_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "provider": {"const": "kling"},
+                     "request_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                     "provider": {"type": "string", "minLength": 1, "pattern": "\\S"},
                      "selected_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "selected_at": {"type": "string"}}}},
     "scene_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
     "timing": {"type": "object"},

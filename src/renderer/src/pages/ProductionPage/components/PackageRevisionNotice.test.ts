@@ -89,12 +89,14 @@ describe('Продолжение после возврата пакета', () =
         note: '',
         setNote: vi.fn(),
         busy: false,
-        klingAvailable: true,
+        providers: {},
         onDecide: vi.fn(),
         onSubmit: vi.fn(),
         onAccept: vi.fn(),
         onContactSheet: vi.fn(),
         onResume: vi.fn(),
+        onAttachResult: vi.fn(),
+        onNotCreated: vi.fn(),
         onSelectImage: vi.fn(),
         onOpenRevision: vi.fn()
       })

@@ -2,9 +2,10 @@ import CheckIcon from '@mui/icons-material/Check';
 import RefreshIcon from '@mui/icons-material/Refresh';
 /** Общее подтверждение платной отправки с замороженным промптом, входами и хешем запроса. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Button, Stack, Typography } from '@mui/material';
+import { Alert, Stack, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration } from '@shared/generation-consent';
+import { canAgreeToUnknownCost, priceAllowsGeneration, priceNotice } from '@shared/generation-consent';
+import { mediaProviderInfo, normalizeMediaProvider } from '@shared/media-providers';
 import { aiActionProblem } from '@shared/ai-access';
 import type { PackageView } from '@shared/types';
 import { productionInputLabel } from '@shared/production-labels';
@@ -14,6 +15,8 @@ import { RequestModelSelection } from './RequestModelSelection';
 import { RequestParameters } from './RequestParameters';
 import { RequestPrompt } from './RequestPrompt';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
+import { ActionButton } from '../../../components/ActionButton';
+import { BUSY_REASON } from '../constants';
 
 export function SendRequestDialog({
   project,
@@ -31,6 +34,10 @@ export function SendRequestDialog({
   const { describeError, aiAccess } = useApp();
   const aiProblem = aiActionProblem(aiAccess, pkg?.request?.kind === 'image' ? 'image' : 'video');
   const { quote, error, loading, refreshQuote, consumeQuote } = useRequestQuote(project, pkg);
+  // Название и правила цены берём у провайдера запроса из реестра, а не по имени сервиса.
+  const providerInfo = pkg?.request ? mediaProviderInfo(normalizeMediaProvider(pkg.request.provider), pkg.request.kind === 'image' ? 'image' : 'video') : null;
+  const providerTitle = providerInfo?.title ?? pkg?.request?.provider ?? 'сервисе';
+  const notice = priceNotice(quote, providerInfo);
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -50,6 +57,22 @@ export function SendRequestDialog({
   useEffect(() => {
     setSendError(null);
   }, [pkg]);
+  // Причины по тем же ветвям, что и блокировка кнопок: подсказка выключенной кнопки говорит, что сделать дальше.
+  const commonReason = aiProblem ?? (sending ? 'Запрос уже отправляется.' : busy ? BUSY_REASON : loading ? 'Дождитесь проверки стоимости.' : null);
+  const priceReason = !quote
+    ? 'Стоимость не проверена: нажмите «Обновить стоимость».'
+    : quote.verdict === 'insufficient_balance'
+      ? 'Кредитов недостаточно: пополните баланс и обновите стоимость.'
+      : canAgreeToUnknownCost(quote) && !agreedToUnknownCost
+        ? 'Стоимость неизвестна: нажмите «Я согласен», чтобы разрешить один запрос.'
+        : !priceAllowsGeneration(quote, agreedToUnknownCost)
+          ? 'Остаток кредитов не подтверждён: обновите стоимость.'
+          : null;
+  const confirmReason =
+    commonReason ??
+    (!pkg?.request?.sha256
+      ? 'У запроса нет хеша: подготовьте запрос заново.'
+      : (priceReason ?? (quote?.requestSha !== pkg.request.sha256 ? 'Стоимость проверена для другой версии запроса: обновите стоимость.' : null)));
   const confirm = async (): Promise<void> => {
     if (sendingNow.current || aiProblem || !priceAllowsGeneration(quote, agreedToUnknownCost)) return;
     sendingNow.current = true;
@@ -74,6 +97,7 @@ export function SendRequestDialog({
       onClose={onClose}
       title="Вы уверены, что промпт правильный?"
       cancelDisabled={sending}
+      cancelDisabledReason="Дождитесь окончания отправки запроса."
       closeDisabled={sending}
       confirmDisabled={
         !!aiProblem ||
@@ -84,13 +108,13 @@ export function SendRequestDialog({
         !priceAllowsGeneration(quote, agreedToUnknownCost) ||
         quote?.requestSha !== pkg.request.sha256
       }
+      confirmDisabledReason={confirmReason}
       confirmLabel="Отправить и списать кредиты"
       confirmIcon={<SendIcon />}
       onConfirm={() => void confirm()}
     >
       {pkg?.request ? (
         <Stack spacing={2} sx={{ mt: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
-          {aiProblem ? <Alert severity="info">{aiProblem}</Alert> : null}
           <Typography variant="body2">
             Проверьте промпт и материалы перед отправкой платного запроса. Подтверждение разрешает одну попытку генерации.
           </Typography>
@@ -108,41 +132,42 @@ export function SendRequestDialog({
             </Typography>
           ))}
           <Typography variant="body2">
-            Это платная операция: будут списаны кредиты аккаунта Kling. Запрос отправляется ровно один раз, затем приложение ждёт результат и запишет его в
-            пакет.
+            Это платная операция: будут списаны кредиты аккаунта {providerTitle}. Запрос отправляется ровно один раз, затем приложение ждёт результат и запишет
+            его в пакет.
           </Typography>
           <Stack spacing={1}>
-            {loading ? <Alert severity="info">Проверяем стоимость запроса и остаток кредитов в Kling.</Alert> : null}
+            {loading ? <Alert severity="info">Проверяем стоимость запроса и остаток кредитов в {providerTitle}.</Alert> : null}
             {error ? <Alert severity="error">{error}</Alert> : null}
-            {quote ? (
-              <Alert severity={quote.verdict === 'ok' ? 'info' : 'warning'}>
-                Стоимость: {formatCredits(quote.credits)}. Остаток: {formatCredits(quote.balance)}.
-                {quote.verdict === 'insufficient_balance'
-                  ? ' Кредитов недостаточно.'
-                  : quote.verdict === 'cost_or_balance_unknown'
-                    ? canAgreeToUnknownCost(quote)
-                      ? ' Стоимость не подтверждена. Для отправки нужно явное согласие на списание неизвестного количества кредитов.'
-                      : ' Остаток кредитов не подтверждён, отправка недоступна.'
-                    : ''}
-                {quote.reasons.length ? ` ${quote.reasons.join(' ')}` : ''}
+            {quote && notice ? (
+              <Alert severity={notice.severity}>
+                {notice.text}
+                {/* Технические причины инструмента нужны, только когда цену не узнать обычным путём. */}
+                {quote.reasons.length && notice.severity !== 'info' ? ` ${quote.reasons.join(' ')}` : ''}
                 {canAgreeToUnknownCost(quote) ? (
                   <Stack spacing={1} sx={{ mt: 1 }}>
                     {agreedToUnknownCost ? <Typography variant="body2">Вы согласились отправить этот запрос с неизвестной стоимостью.</Typography> : null}
-                    <Button
+                    <ActionButton
                       startIcon={<CheckIcon />}
                       sx={{ alignSelf: 'start' }}
                       disabled={!!aiProblem || loading || sending || busy || agreedToUnknownCost}
+                      disabledReason={commonReason ?? 'Согласие на этот запрос уже дано.'}
                       onClick={() => setUnknownCostConsentToken(quote.token)}
                     >
                       Я согласен
-                    </Button>
+                    </ActionButton>
                   </Stack>
                 ) : null}
               </Alert>
             ) : null}
-            <Button startIcon={<RefreshIcon />} sx={{ alignSelf: 'start' }} disabled={!!aiProblem || loading || sending || busy} onClick={refreshQuote}>
+            <ActionButton
+              startIcon={<RefreshIcon />}
+              sx={{ alignSelf: 'start' }}
+              disabled={!!aiProblem || loading || sending || busy}
+              disabledReason={commonReason}
+              onClick={refreshQuote}
+            >
               Обновить стоимость
-            </Button>
+            </ActionButton>
           </Stack>
           {sendError ? (
             <Alert severity="error">{sendError} Закройте диалог для проверки состояния пакета или обновите стоимость для нового подтверждения.</Alert>

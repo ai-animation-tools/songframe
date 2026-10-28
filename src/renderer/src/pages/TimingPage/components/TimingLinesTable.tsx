@@ -53,7 +53,7 @@ export function TimingLinesTable({ lines, selected, duration, textOf, onSelect, 
             <TableRow>
               <TableCell colSpan={8}>
                 <Typography color="text.secondary" sx={{ py: 2 }}>
-                  Разметки ещё нет. Нажмите «Разметить автоматически» или добавляйте строки из списка ниже на позиции плейхеда.
+                  Разметки ещё нет. Нажмите «Разметить» или добавляйте строки из списка ниже на позиции плейхеда.
                 </Typography>
               </TableCell>
             </TableRow>

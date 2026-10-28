@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScenarioPass, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import { useApp } from '../../state';
+import { proposalNotice } from './workflowNotice';
 
 /** Опрос восстанавливает предложение после перезапуска и не затрагивает черновики редакторов. */
 export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioPass) => Promise<void>) {
-  const { describeError } = useApp();
+  const { describeError, notify } = useApp();
   const [view, setView] = useState<ScenarioWorkflowView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
@@ -12,12 +13,21 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
   const [pollingRevision, setPollingRevision] = useState(0);
   const generation = useRef(0);
   const applying = useRef(false);
+  const lastProposal = useRef<ScenarioWorkflowView['proposal']>(null);
 
   useEffect(() => {
     setView(null);
     setError(null);
     setPollError(null);
   }, [project]);
+
+  // Задание завершается позже, когда пользователь может быть далеко внизу страницы: итог показывает общий Snackbar.
+  useEffect(() => {
+    const next = view?.proposal ?? null;
+    const notice = proposalNotice(lastProposal.current, next);
+    lastProposal.current = next;
+    if (notice) notify(notice.message, notice.severity);
+  }, [view, notify]);
 
   useEffect(() => {
     let active = true;
@@ -48,7 +58,7 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
   }, [project, describeError, pollingRevision]);
 
   const execute = useCallback(
-    async (operation: () => Promise<ScenarioWorkflowView>, pass?: ScenarioPass): Promise<boolean> => {
+    async (operation: () => Promise<ScenarioWorkflowView>, pass?: ScenarioPass, success?: string): Promise<boolean> => {
       if (applying.current) return false;
       applying.current = true;
       const revision = ++generation.current;
@@ -61,6 +71,7 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
         if (generation.current !== revision) return false;
         setView(next);
         if (pass) await onApplied(pass);
+        if (success) notify(success, 'success');
         return true;
       } catch (reason) {
         setError(describeError(reason));
@@ -71,7 +82,7 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
         setPollingRevision((value) => value + 1);
       }
     },
-    [describeError, onApplied]
+    [describeError, notify, onApplied]
   );
 
   return {
@@ -82,15 +93,15 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
     refresh: () => execute(() => window.api.scenarioWorkflow.view(project)),
     start: (pass: ScenarioPass, note?: string, selectedIds?: string[]) =>
       execute(() => window.api.scenarioWorkflow.start({ project, pass, note, selectedIds })),
-    approve: () => execute(() => window.api.scenarioWorkflow.approveCurrent(project)),
-    approveScenes: () => execute(() => window.api.scenarioWorkflow.approveScenes(project)),
+    approve: () => execute(() => window.api.scenarioWorkflow.approveCurrent(project), undefined, 'Кастинг и трактовка утверждены'),
+    approveScenes: () => execute(() => window.api.scenarioWorkflow.approveScenes(project), undefined, 'Сценарий утверждён'),
     apply: () => {
       const proposal = view?.proposal;
-      return proposal ? execute(() => window.api.scenarioWorkflow.apply(project, proposal.id), proposal.pass) : Promise.resolve(false);
+      return proposal ? execute(() => window.api.scenarioWorkflow.apply(project, proposal.id), proposal.pass, 'Предложение применено') : Promise.resolve(false);
     },
     discard: () => {
       const proposal = view?.proposal;
-      return proposal ? execute(() => window.api.scenarioWorkflow.discard(project, proposal.id)) : Promise.resolve(false);
+      return proposal ? execute(() => window.api.scenarioWorkflow.discard(project, proposal.id), undefined, 'Предложение отклонено') : Promise.resolve(false);
     },
     cancel: async (id: string): Promise<void> => {
       await execute(async () => {

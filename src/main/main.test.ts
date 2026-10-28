@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { CastFile, JobInfo, ProjectSettings, ScenesFile } from '@shared/types';
 import { findToolsRoot, resolvePaths } from './paths';
 import { defaultAnimaticName, Projects, validateNewProject } from './projects';
@@ -70,7 +70,7 @@ describe('template', () => {
     const missing: string[] = [];
     for (const file of markdownFiles(root)) {
       const content = readFileSync(file, 'utf8');
-      expect(content, file).not.toMatch(/\.songframe|run-tool|run-kling|AGENTS\.md|songframe-(?:tool|kling)/);
+      expect(content, file).not.toMatch(/\.songframe|run-tool|AGENTS\.md|songframe-tool/);
       for (const link of content.matchAll(/(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)/g)) {
         if (/^(?:[a-z][a-z\d+.-]*:|\/|#)/i.test(link[1])) continue;
         const target = resolve(join(file, '..'), decodeURIComponent(link[1].split(/[?#]/)[0]));
@@ -308,8 +308,6 @@ describe('sources', () => {
       validateSources(project, { kinds: [{ id: 'Bad', label: '', dir: 'x y' }], track: null, lyrics: null, idea: null, cover: null, references: [] })
     ).toHaveLength(3);
 
-    const previousManifest = readFileSync(join(project, 'source/manifest.json'), 'utf8');
-    const beforeManifestSave = vi.fn(() => expect(readFileSync(join(project, 'source/manifest.json'), 'utf8')).toBe(previousManifest));
     const second = saveSources(
       project,
       {
@@ -329,10 +327,8 @@ describe('sources', () => {
           }
         ]
       },
-      'ffprobe',
-      beforeManifestSave
+      'ffprobe'
     );
-    expect(beforeManifestSave).toHaveBeenCalledTimes(1);
     expect(second.track?.sha256).toBe(manifest.track?.sha256);
     expect(second.cover).toBeNull();
     expect(existsSync(join(project, 'source/cover.png'))).toBe(false);
@@ -509,6 +505,21 @@ describe('cast и сценарий', () => {
     const cyclic = scenes();
     cyclic.scenes[0].state_from = 'M02';
     expect(validateScenes(cyclic, cast()).join(' ')).toMatch(/Цикл/);
+    // Производный план ссылается на существующий план с собственной генерацией; пустое значение редактора допустимо.
+    const derived = scenes();
+    derived.scenes[2].derived_from = { shot: 'M01' };
+    derived.scenes[1].derived_from = undefined;
+    expect(validateScenes(derived, cast())).toEqual([]);
+    const derivedProblems = (shots: Partial<Record<'M01' | 'M02' | 'M03', unknown>>): string => {
+      const value = scenes();
+      for (const scene of value.scenes) if (scene.id in shots) Object.assign(scene, { derived_from: shots[scene.id as 'M01'] });
+      return validateScenes(value, cast()).join(' ');
+    };
+    expect(derivedProblems({ M03: { shot: 'M99' } })).toBe('M03: derived_from ссылается на неизвестный план M99.');
+    expect(derivedProblems({ M03: { shot: 'M03' } })).toBe('M03: derived_from не может ссылаться на сам план.');
+    expect(derivedProblems({ M02: { shot: 'M01' }, M03: { shot: 'M02' } })).toBe('M03: источник M02 сам собирается из другого плана; укажите исходный план.');
+    expect(derivedProblems({ M03: 'M01' })).toBe('M03: derived_from должен быть объектом {"shot": "Mxx"}.');
+    expect(derivedProblems({ M03: { shot: 'M01', mode: 'still' } })).toBe('M03: derived_from должен быть объектом {"shot": "Mxx"}.');
     const brief = buildBrief(scenes(), cast(), 'M02', 'before', REPO);
     expect(brief.text.split('\n')[2]).toBe('Мир: погода: пасмурно.');
     expect(brief.checklist).toEqual(['Мир: Погода: пасмурно?', 'Мира: Одежда: брызги?', 'Лодка: Транспорт стоит у причала, не у берега?']);
@@ -599,10 +610,10 @@ describe('производство', () => {
     });
     writeJson(join(pkg, 'request/request.json'), {
       schema_version: 1,
-      provider: 'kling',
-      model: 'kling-video-v3_0',
+      provider: 'test',
+      model: 'test-video-v3_0',
       parameters: { duration: 3 },
-      model_selection: { preferredModel: 'kling-video-v2_5', selectedModel: 'kling-video-v3_0', reason: 'Предпочтительная модель не поддерживает duration=3.' },
+      model_selection: { preferredModel: 'test-video-v2_5', selectedModel: 'test-video-v3_0', reason: 'Предпочтительная модель не поддерживает duration=3.' },
       inputs: [{ slot: 'image_1', role: 'first', path: 'inputs/01.png' }]
     });
     writeJson(join(pkg, 'request/attempt.json'), {
@@ -635,9 +646,9 @@ describe('производство', () => {
     expect(p.prompt?.approved).toBe(true);
     expect(p.request).toMatchObject({
       sha256: 'abc',
-      model: 'kling-video-v3_0',
+      model: 'test-video-v3_0',
       promptText: 'Согласованный промпт попытки',
-      modelSelection: { preferredModel: 'kling-video-v2_5', selectedModel: 'kling-video-v3_0', reason: 'Предпочтительная модель не поддерживает duration=3.' },
+      modelSelection: { preferredModel: 'test-video-v2_5', selectedModel: 'test-video-v3_0', reason: 'Предпочтительная модель не поддерживает duration=3.' },
       attemptStatus: 'downloaded',
       generationId: 'job-1',
       creditsConsumed: 24
@@ -852,7 +863,7 @@ describe('панель проверок', () => {
       expect(readProjectSettings(project).generation).toEqual({ video: 'video' in generation ? generation.video : null, image: generation.image });
     }
     // Динамический auto проходит сохранение и чтение обоими контрактами до проверки модели в prepare.
-    const automatic = { video: { ...video, aspect_ratio: 'auto' }, image: { provider: 'kling', model: 'live-model', aspect_ratio: 'auto' } };
+    const automatic = { video: { ...video, aspect_ratio: 'auto' }, image: { provider: 'test', model: 'live-model', aspect_ratio: 'auto' } };
     writeProjectSettings(project, { name: 'Клип', animaticVideo: 'clip.mp4', generation: automatic });
     expect(readProjectSettings(project).generation).toEqual(automatic);
     const python = spawnSync(
@@ -900,7 +911,7 @@ describe('панель проверок', () => {
     const project = join(work, 'settings-clear-optional');
     const path = join(project, 'plan/project.json');
     const video = {
-      provider: 'kling',
+      provider: 'test',
       resolution: '1080p',
       aspect_ratio: '16:9',
       watermark: false,
@@ -1009,8 +1020,6 @@ describe('аниматик', () => {
       schema_version: 1,
       current_animatic: null,
       current_animatic_status: 'none',
-      shots: {},
-      pending_work: [],
       extra: 'keep'
     });
     let view = viewAnimatic(project);
@@ -1151,7 +1160,7 @@ describe('дашборд сцен', () => {
     mkdirSync(asset, { recursive: true });
     for (const name of ['original.mp4', 'video.mp4', 'first-frame.png']) writeFileSync(join(asset, name), name);
     writeFileSync(join(asset, 'generation-prompt.txt'), 'Промпт принятой');
-    writeJson(join(asset, 'generation-request.json'), { schema_version: 1, provider: 'Kling', model: 'kling-video-v3_0', parameters: { duration: 5 } });
+    writeJson(join(asset, 'generation-request.json'), { schema_version: 1, provider: 'Test', model: 'test-video-v3_0', parameters: { duration: 5 } });
     writeJson(join(asset, 'manifest.json'), {
       schema_version: 1,
       shot: 'M01',
@@ -1203,7 +1212,7 @@ describe('дашборд сцен', () => {
     expect(m1.asset?.originalMedia).toBe('1920×1088, 24/1 кадр/с, 121 кадров, 5.04 с');
     expect(m1.asset?.edit).toMatchObject({ frames: 60, duration: 2, sourceInterval: [1, 3], speed: '1', holdLast: 0.5, note: 'обрезка' });
     expect(m1.asset?.prompt).toBe('Промпт принятой');
-    expect(m1.asset?.request).toEqual({ provider: 'Kling', model: 'kling-video-v3_0', parameters: { duration: 5 } });
+    expect(m1.asset?.request).toEqual({ provider: 'Test', model: 'test-video-v3_0', parameters: { duration: 5 } });
     expect(m1.asset?.inputs).toEqual([
       { path: join(asset, 'first-frame.png'), role: 'первый кадр' },
       { path: join(project, 'source/heroes/mira.jpg'), role: 'референс' }

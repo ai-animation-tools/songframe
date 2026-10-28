@@ -80,6 +80,12 @@ def cell(text):
     return re.sub(r"\s+", " ", str(text)).replace("|", "\\|").strip()
 
 
+def derived_label(scene, separator=" · "):
+    """Пометка «из Mxx» у плана из материала другого плана; у обычного плана пусто."""
+    source = scene.get("derived_from")
+    return f"{separator}из {source['shot']}" if source else ""
+
+
 def prepared(sources):
     data = validate(sources.json("plan/scenes.json"))
     items = shots(data)
@@ -89,6 +95,23 @@ def prepared(sources):
         if path in sources.files:
             packages[scene["id"]] = sources.json(path)
     return data, items, packages
+
+
+def in_progress(sources):
+    """Планы с рабочим пакетом производства: незавершённая работа видна только по workflow.json пакетов."""
+    result = set()
+    for path in sources.files:
+        parts = path.split("/")
+        package = len(parts) == 4 and parts[0] == "plan" and parts[1] in ("batches", "awaiting")
+        if not package or parts[3] != "workflow.json":
+            continue
+        try:
+            workflow = sources.json(path)
+        except ValueError:
+            continue
+        if isinstance(workflow, dict) and isinstance(workflow.get("shot"), str):
+            result.add(workflow["shot"])
+    return result
 
 
 def progress(items, states, fps):
@@ -165,10 +188,9 @@ def render(sources):
         if fresh
         else "Сборка устарела относительно исходников; требуется пересборка."
     )
+    active = in_progress(sources)
     states = {
-        s["id"]: (
-            "Готово" if s["id"] in packages else ("В процессе" if s["id"] in work.get("shots", {}) else "Запланировано")
-        )
+        s["id"]: ("Готово" if s["id"] in packages else ("В процессе" if s["id"] in active else "Запланировано"))
         for s in items
     }
     lines = [
@@ -201,7 +223,7 @@ def render(sources):
         included = MEDIA_LABELS.get(compiled.get(sid, {}).get("media"), "Карточка") if fresh else "Устаревшая сборка"
         lines.append(
             (
-                f"| **{sid}** | {s['interval']} · {s['duration']} с | "
+                f"| **{sid}**{derived_label(s)} | {s['interval']} · {s['duration']} с | "
                 f"{cell(s['action'])} | **{state}** | {link} | {included} |"
             )
         )
@@ -211,12 +233,12 @@ def render(sources):
             "Изменять постановку и монтажные границы только в [реестре "
             "сцен](plan/scenes.json). [Сценарий](source/description.md) "
             "описывает общую историю. Генерации и обработка сохраняются в "
-            "локальных манифестах assets. Незавершённая работа — в [реестре "
-            "работ](plan/production-status.json)."
+            "локальных манифестах assets. Незавершённая работа — в рабочих "
+            "пакетах `plan/batches` и `plan/awaiting` (страница «Производство»)."
         ),
         "",
         (
-            "Представления обновляет приложение: кнопка «Обновить» в строке "
+            "Представления обновляет приложение: кнопка «Пересобрать карточки» в строке "
             "«Карточки и списки» на странице «Проверки»; проверка той же строки "
             "находит рассинхрон."
         ),
@@ -258,7 +280,7 @@ def documents(sources):
             + " | ".join(
                 cell(v)
                 for v in [
-                    s["id"],
+                    s["id"] + derived_label(s),
                     s["original"],
                     s["interval"],
                     s["duration"],
@@ -276,8 +298,9 @@ def documents(sources):
         banner.format(registry="scenes.json"),
         (
             "Общая история — в [сценарии](../source/description.md); "
-            "персонажи, транспорт и общие правила — в [визуальном "
-            "справочнике](context/characters.md)."
+            "роли, внешность и начальное состояние персонажей — в кастинге "
+            "[plan/cast.json](cast.json) (страница «Кастинг»); общие визуальные "
+            "правила и речевые планы — в [визуальном справочнике](context/characters.md)."
         ),
         "",
     ]
@@ -298,6 +321,11 @@ def documents(sources):
                 "",
                 f"**Монтаж:** {s['interval']} · {s['duration']} с.",
                 "",
+            ]
+            if s.get("derived_from"):
+                origin = s["derived_from"]["shot"]
+                story += [f"**Материал:** из [{origin}](#{origin.lower()}), без собственной генерации.", ""]
+            story += [
                 f"**Камера:** {s['camera']}",
                 "",
                 s["action"],
@@ -444,7 +472,7 @@ def documents(sources):
             "Точный текст — [source/text.md](../../source/text.md), исходное "
             "аудио — [source/track.mp3](../../source/track.mp3). Анализ "
             "выполняет инструмент `transcribe_local` комплекса; временные "
-            "результаты сохранять вне репозитория, в /tmp. Слуховые поправки "
+            "результаты сохранять вне папки проекта, во временной папке ОС. Слуховые поправки "
             "и новые оценки вносить в timing.json; постановку сцен здесь не "
             "повторять."
         ),

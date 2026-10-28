@@ -20,6 +20,24 @@ async function describe(root, file) {
   return { path: file, bytes: info.size, sha256: await sha256(join(root, file)) };
 }
 
+/** Модули адаптеров платных провайдеров берутся из таблицы ADAPTERS в tools/media_adapters.py, а не вшиваются сюда по имени сервиса. */
+function providerAdapterFiles(source) {
+  const table = /^ADAPTERS\s*=\s*\{([^}]*)\}/m.exec(source);
+  if (!table) throw new Error('В tools/media_adapters.py не найдена таблица ADAPTERS.');
+  const modules = [...table[1].matchAll(/["'][^"']+["']\s*:\s*["']([\w.]+)["']/g)].map((match) => match[1]);
+  if (!modules.length) throw new Error('Таблица ADAPTERS в tools/media_adapters.py пуста.');
+  return modules.map((module) => `resources/${module.replaceAll('.', '/')}.py`);
+}
+
+/** Шрифт в поставке допустим только рядом с текстом его лицензии. */
+function fontLicenses(tools) {
+  const directories = new Set(tools.filter((name) => /(^|\/)fonts\/[^/]+\.(ttf|otf)$/i.test(name)).map((name) => name.slice(0, name.lastIndexOf('/'))));
+  const licenses = tools.filter((name) => /(^|\/)fonts\/[^/]*(LICENSE|LICENCE|COPYING)[^/]*$/i.test(name));
+  for (const directory of directories)
+    if (!licenses.some((name) => name.startsWith(`${directory}/`))) throw new Error(`Шрифт без лицензии в поставке: tools/${directory}`);
+  return licenses.map((name) => `resources/tools/${name}`);
+}
+
 async function inspectResources(root) {
   const resources = join(root, 'resources');
   const tools = await walk(join(resources, 'tools'));
@@ -29,10 +47,6 @@ async function inspectResources(root) {
   if (runtime.some((name) => name.startsWith('models/'))) throw new Error('В AppImage попали веса модели.');
   const required = [
     'resources/app.asar',
-    'resources/kling/package.json',
-    'resources/kling/dist/cli.js',
-    'resources/kling/manifest.json',
-    'resources/kling/SOURCES.md',
     'resources/runtime/manifest.json',
     'resources/runtime/requirements.lock',
     'resources/runtime/python/bin/python3',
@@ -40,11 +54,16 @@ async function inspectResources(root) {
     'resources/runtime/bin/ffprobe',
     'resources/runtime/media-manifest.json',
     'resources/tools/common.py',
-    'resources/tools/cost_check/pricing.json',
+    'resources/tools/media_request/media_request.py',
+    'resources/tools/media_adapters.py',
+    'resources/docs/providers/README.md',
     'resources/tools/lint_registry/schemas/scenes.schema.json',
     'resources/templates/project/README.md',
     'resources/templates/project/plan/project.json',
     'resources/skills/ai-clip-scenario/SKILL.md',
+    'resources/skills/ai-clip-scene/SKILL.md',
+    'resources/skills/ai-clip-scene/references/app-proposal.md',
+    'resources/skills/ai-clip-scene/references/prompt-template.md',
     'LICENSE.electron.txt',
     'LICENSES.chromium.html',
     'resources/runtime/python/lib/python3.12/LICENSE.txt',
@@ -53,7 +72,9 @@ async function inspectResources(root) {
     'resources/runtime/licenses/upstream/flatbuffers-LICENSE',
     'resources/runtime/licenses/upstream/tokenizers-LICENSE',
     'resources/runtime/licenses/upstream/CTranslate2-LICENSE',
-    'resources/runtime/licenses/ffmpeg/LICENSE.txt'
+    'resources/runtime/licenses/ffmpeg/LICENSE.txt',
+    ...providerAdapterFiles(await readFile(join(resources, 'tools/media_adapters.py'), 'utf8')),
+    ...fontLicenses(tools)
   ];
   return Promise.all(required.map((file) => describe(root, file)));
 }
@@ -63,7 +84,6 @@ async function createInventory(context) {
   const root = context.appOutDir;
   const repo = context.packager.projectDir;
   const runtime = JSON.parse(await readFile(join(root, 'resources/runtime/manifest.json'), 'utf8'));
-  const kling = JSON.parse(await readFile(join(root, 'resources/kling/manifest.json'), 'utf8'));
   const wheels = JSON.parse(await readFile(join(root, 'resources/runtime/licenses/packages.json'), 'utf8'));
   const extraNotices = { ctranslate2: 'upstream/CTranslate2-LICENSE', flatbuffers: 'upstream/flatbuffers-LICENSE', tokenizers: 'upstream/tokenizers-LICENSE' };
   for (const wheel of wheels) {
@@ -94,6 +114,7 @@ async function createInventory(context) {
     if (!((await stat(join(root, 'resources', entry))).mode & 0o111)) throw new Error(`Нет execute-bit: ${entry}`);
   }
   const notices = (await walk(join(root, 'resources/runtime/licenses'))).filter((name) => !name.endsWith('.json'));
+  const fonts = fontLicenses(await walk(join(root, 'resources/tools')));
   for (const wheel of wheels) for (const file of wheel.files) await stat(join(root, 'resources/runtime/licenses', file));
   const inventory = {
     schema_version: 1,
@@ -101,20 +122,18 @@ async function createInventory(context) {
     version: context.packager.appInfo.version,
     electron: context.packager.config.electronVersion ?? require('electron/package.json').version,
     python: runtime.python,
-    kling,
     modelDelivery: 'external',
     files,
     wheels,
     npm,
-    notices: notices.map((file) => `resources/runtime/licenses/${file}`)
+    notices: [...notices.map((file) => `resources/runtime/licenses/${file}`), ...fonts]
   };
   const markdown =
-    '# Состав Linux-поставки\n\nМодель распознавания и Claude/Codex не входят в приложение. Официальный Kling CLI включён в поставку и использует Node.js из Electron. Перечень отражает уведомления поставщиков; полные тексты находятся по указанным путям.\n\n' +
+    '# Состав Linux-поставки\n\nМодель распознавания и Claude/Codex не входят в приложение. Клиенты платных провайдеров генерации входят в Python-инструменты поставки. Перечень отражает уведомления поставщиков; полные тексты находятся по указанным путям.\n\n' +
     `Electron ${inventory.electron}, Python ${inventory.python}.\n\n## Python-пакеты\n\n| Пакет | Версия | Лицензия из metadata |\n| --- | --- | --- |\n` +
     wheels.map((item) => `| ${item.name} | ${item.version} | ${String(item.license).replaceAll('\n', ' ').replaceAll('|', '/')} |`).join('\n') +
     '\n\n## JavaScript-пакеты\n\n| Пакет | Версия | Лицензия из metadata |\n| --- | --- | --- |\n' +
     npm.map((item) => `| ${item.name} | ${item.version} | ${item.license ?? 'см. уведомления'} |`).join('\n') +
-    `\n\n## Kling CLI\n\n${kling.name} ${kling.version}. Неизменённый пакет, источник и контрольная сумма: resources/kling/SOURCES.md. Документация поставщика сохранена в resources/kling/README.md.\n` +
     '\n\n## Тексты лицензий\n\n' +
     ['LICENSE.electron.txt', 'LICENSES.chromium.html', 'resources/runtime/python/lib/python3.12/LICENSE.txt', ...inventory.notices]
       .map((file) => `- ${file}`)
@@ -128,4 +147,4 @@ async function createInventory(context) {
   console.log(`Состав Linux-поставки проверен: ${files.length} ресурсов, ${wheels.length} Python и ${npm.length} JavaScript-пакетов.`);
 }
 
-module.exports = { inspectResources, createInventory };
+module.exports = { inspectResources, createInventory, providerAdapterFiles, fontLicenses };

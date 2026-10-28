@@ -1,4 +1,4 @@
-/** Окружение внешних CLI при запуске из рабочего стола; bundled Python и изолированные smoke его не требуют. */
+/** Окружение внешних CLI агентов при запуске из рабочего стола; bundled Python и изолированные smoke его не требуют. */
 import { execFile } from 'node:child_process';
 import { constants } from 'node:fs';
 import { access, stat } from 'node:fs/promises';
@@ -48,12 +48,9 @@ export async function externalEnvironment(options: ExternalEnvironmentOptions = 
   const input = options.env ?? process.env;
   if ((options.platform ?? process.platform) !== 'linux') return { ...input };
   const home = options.home ?? homedir();
-  let env = agentEnvironment(input, home);
-  // Сохраняем исходный каталог выбранного CLI: realpath symlink npm ведёт в dist, где sibling Node отсутствует.
-  const manualDirectory = input.SONGFRAME_KLING_CLI && isAbsolute(input.SONGFRAME_KLING_CLI) ? dirname(input.SONGFRAME_KLING_CLI) : null;
-  if (manualDirectory) env = prepend(env, manualDirectory);
-  const kling = input.SONGFRAME_KLING_CLI ?? 'kling';
-  if ((await found('node', env)) && (isAbsolute(kling) ? await executable(kling) : await found(kling, env))) return env;
+  const env = agentEnvironment(input, home);
+  // npm-установки агентов запускаются через shebang node: уже найденный Node не переключаем.
+  if (await found('node', env)) return env;
 
   let bin = input.NVM_BIN;
   if (!bin || !isAbsolute(bin) || !(await executable(join(bin, 'node')))) {
@@ -68,6 +65,5 @@ export async function externalEnvironment(options: ExternalEnvironmentOptions = 
     if (!node || !isAbsolute(node) || !(await executable(node))) return env;
     bin = dirname(node);
   }
-  env = prepend(env, bin);
-  return manualDirectory ? prepend(env, manualDirectory) : env;
+  return prepend(env, bin);
 }

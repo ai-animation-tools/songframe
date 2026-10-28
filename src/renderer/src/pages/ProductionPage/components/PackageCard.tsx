@@ -2,10 +2,11 @@
 import type { ReactElement } from 'react';
 import { Alert, Box, Chip, Paper, Typography } from '@mui/material';
 import type { JobInfo, PackageView } from '@shared/types';
+import { normalizeMediaProvider } from '@shared/media-providers';
 import { JobStatus } from '../../../components/JobStatus';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { VERDICT_LABELS } from '../constants';
+import { BUSY_REASON, VERDICT_LABELS } from '../constants';
 import { isQueuedPackage } from '../decisions';
 import { PackageDecision } from './PackageDecision';
 import { PackageRevisionNotice } from './PackageRevisionNotice';
@@ -14,14 +15,16 @@ import { PackageRequest } from './PackageRequest';
 import { PackageResume } from './PackageResume';
 import { PackageResult } from './PackageResult';
 import { PackageTextSection } from './PackageTextSection';
+import { LinkedText } from '../../../components/LinkedText';
 
 export function PackageCard({
   pkg,
   note,
   setNote,
   busy,
+  busyReason = BUSY_REASON,
   operation,
-  klingAvailable,
+  providers,
   onDecide,
   onSubmit,
   onAccept,
@@ -29,6 +32,8 @@ export function PackageCard({
   onReopenQuestion,
   onDiscard,
   onResume,
+  onAttachResult,
+  onNotCreated,
   onSelectImage,
   onOpenRevision
 }: {
@@ -36,8 +41,11 @@ export function PackageCard({
   note: string;
   setNote(value: string): void;
   busy: boolean;
+  /** Почему busy блокирует действия: идёт операция или нет Python. */
+  busyReason?: string;
   operation?: { job?: JobInfo; error?: string; running?: boolean; label?: string };
-  klingAvailable: boolean;
+  /** Найдена ли программа каждого платного провайдера (по id). */
+  providers: Record<string, boolean>;
   onDecide(verdict: string): void;
   onSubmit(): void;
   onAccept(): void;
@@ -45,11 +53,15 @@ export function PackageCard({
   onReopenQuestion?(): void;
   /** Удалить попытку целиком; доступно пакету приложения вне незавершённой отправки. */
   onDiscard?(): void;
-  onResume(generationId?: string): void;
+  onResume(): void;
+  onAttachResult(files: string[]): void;
+  onNotCreated(): void;
   onSelectImage(index: number): void;
   onOpenRevision?(): void;
 }): ReactElement {
   const pending = pkg.pendingDecision;
+  // Отправка и получение доступны, только если найдена программа провайдера сохранённого запроса.
+  const providerAvailable = providers[normalizeMediaProvider(pkg.request?.provider) ?? ''] === true;
   const returnedForRevision = !pending && pkg.decision?.verdict === 'revise';
   const inFlight = [
     'submitting',
@@ -79,7 +91,6 @@ export function PackageCard({
           </Typography>
         ) : null}
       </Box>
-      <JobStatus {...operation} />
       <PackageRevisionNotice pkg={pkg} onOpenRevision={onOpenRevision} />
       {isQueuedPackage(pkg) ? (
         <Alert severity="info" sx={{ mb: 2 }}>
@@ -89,7 +100,7 @@ export function PackageCard({
       ) : null}
       {pkg.problems.length ? (
         <Alert severity="warning" sx={{ mb: 1 }}>
-          {pkg.problems.join(' ')}
+          <LinkedText text={pkg.problems.join(' ')} />
         </Alert>
       ) : null}
 
@@ -105,13 +116,23 @@ export function PackageCard({
         />
       ) : null}
 
-      <PackageRequest pkg={pkg} busy={busy} klingAvailable={klingAvailable} onSubmit={onSubmit} />
+      <PackageRequest pkg={pkg} busy={busy} busyReason={busyReason} providerAvailable={providerAvailable} onSubmit={onSubmit} />
 
-      <PackageResume key={`${pkg.dir}:${pkg.request?.generationId ?? ''}`} pkg={pkg} busy={busy} klingAvailable={klingAvailable} onResume={onResume} />
+      <PackageResume
+        key={`${pkg.dir}:${pkg.request?.generationId ?? ''}`}
+        pkg={pkg}
+        busy={busy}
+        busyReason={busyReason}
+        providerAvailable={providerAvailable}
+        onResume={onResume}
+        onAttach={onAttachResult}
+        onNotCreated={onNotCreated}
+      />
 
       <PackageResult
         pkg={pkg}
         busy={busy}
+        busyReason={busyReason}
         onAccept={onAccept}
         onContactSheet={onContactSheet}
         onSelectImage={onSelectImage}
@@ -124,6 +145,7 @@ export function PackageCard({
         note={note}
         setNote={setNote}
         busy={busy}
+        busyReason={busyReason}
         onDecide={onDecide}
       />
       {canDiscard ? (
@@ -134,6 +156,7 @@ export function PackageCard({
             startIcon={<DeleteForeverIcon />}
             variant="outlined"
             disabled={busy}
+            disabledReason={busyReason}
             description={
               `Папка ${pkg.relative} будет удалена безвозвратно вместе с запросом, опорами и промптом` +
               (paidAttempt ? ', включая оплаченный оригинал генерации: кредиты не возвращаются' : '') +
@@ -143,6 +166,8 @@ export function PackageCard({
           />
         </Box>
       ) : null}
+      {/* Статус отправки, получения, сводки и ответов — у кнопок действий внизу карточки, где их нажимают. */}
+      <JobStatus {...operation} />
     </Paper>
   );
 }

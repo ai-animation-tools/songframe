@@ -11,6 +11,8 @@ import {
   relocatedPackage,
   reviewMontageRoute,
   sendConfirmedRequest,
+  acceptTargetFor,
+  defaultAcceptOptions,
   type AcceptTarget
 } from './decisions';
 import { completeInScope, RequestScope } from '../../hooks/requestScope';
@@ -34,6 +36,11 @@ export function useProductionPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(params.get('shot'));
+  // Переход по ссылке ?shot= на уже открытой странице (например, со «Сцен» или из уведомления) выбирает новый план.
+  const shotParam = params.get('shot');
+  useEffect(() => {
+    if (shotParam) setSelected(shotParam);
+  }, [shotParam]);
   const [jobs, setJobs] = useState<JobInfo[]>([]);
   const [operations, setOperations] = useState<Record<string, OperationResult>>({});
   const announcedJobs = useRef(new Set<string>());
@@ -47,6 +54,12 @@ export function useProductionPage() {
   const [filter, setFilter] = useState<ProductionFilter>('all');
   const [acceptDialog, setAcceptDialog] = useState<AcceptTarget | null>(null);
   const [acceptOptions, setAcceptOptions] = useState<AcceptOptions>({ mode: 'full', cutStart: 0, cutEnd: 0, speed: '1', holdFirst: 0, holdLast: 0 });
+  // Приёмка открывается с участком под окно плана, если длина оригинала заведомо другая.
+  const openAccept = useCallback((pkg: PackageView, hasAsset: boolean, lipsync = false) => {
+    const target = acceptTargetFor(pkg, hasAsset, lipsync);
+    setAcceptOptions(defaultAcceptOptions(target));
+    setAcceptDialog(target);
+  }, []);
   const [confirmSend, setConfirmSend] = useState<PackageView | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState<string | null>(null);
   const projectScope = useRef(new RequestScope()).current;
@@ -173,7 +186,12 @@ export function useProductionPage() {
     if (value === 'queued' && queued.length) {
       const pkg = queued.find((item) => item.shot === selected && item.dir === packageSelection) ?? queued[0];
       openQueuedPackage(pkg);
-    } else setFilter(value);
+      return;
+    }
+    // Как и очередь, фильтр «Ждут вашего действия» сразу открывает первый такой план, если выбранный не ждёт.
+    const waiting = value === 'attention' ? (view?.shots ?? []).filter((item) => item.attention) : [];
+    if (waiting.length && !waiting.some((item) => item.id === selected)) setSelected(waiting[0].id);
+    setFilter(value);
   };
 
   const busyFor = (dir: string): boolean => busyPackages.includes(dir) || operationFor(dir).job?.status === 'running';
@@ -234,7 +252,7 @@ export function useProductionPage() {
     const currentNavigation = navigationScope.capture();
     void act(
       verdict === 'park'
-        ? 'Пакет сохранён. Откройте его через «Очередь» на странице «Производство».'
+        ? 'Пакет сохранён в очередь: он в списке «Очередь», генерация не запускалась.'
         : verdict === 'revise'
           ? 'Замечание сохранено. Нажмите «Запустить доработку с агентом» в блоке подготовки.'
           : `Ответ записан: ${VERDICT_LABELS[verdict]?.label ?? verdict}`,
@@ -263,7 +281,7 @@ export function useProductionPage() {
         }
         if (!current()) return;
         setNoteFor(pkg, '');
-        if (verdict === 'accept') setAcceptDialog({ shot: pkg.shot, dir: pkg.dir, resultToken: pkg.resultToken, hasAsset: !!shot?.asset });
+        if (verdict === 'accept') openAccept(pkg, !!shot?.asset, !!shot?.lipsync);
         if (verdict === 'retry') setConfirmRegenerate(pkg.shot);
       },
       pkg.dir
@@ -294,6 +312,8 @@ export function useProductionPage() {
         if (job && currentProject()) {
           const key = operationKey(pkg.dir, pkg.shot);
           setOperations((current) => ({ ...current, [key]: { job } }));
+          // Диалог закрывается сразу: подтверждаем, что платный запрос ушёл, а итог придёт отдельным уведомлением.
+          notify(`Запрос ${pkg.shot} отправлен. Результат придёт уведомлением, когда сервис его вернёт.`, 'info');
         }
       }),
       () => currentProject() && currentDialog(),
@@ -336,6 +356,7 @@ export function useProductionPage() {
     openQueuedPackage,
     acceptDialog,
     setAcceptDialog,
+    openAccept,
     acceptOptions,
     setAcceptOptions,
     confirmSend,

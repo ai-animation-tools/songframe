@@ -2,36 +2,18 @@ import type { ReactElement } from 'react';
 import { Alert, Box, CircularProgress, LinearProgress } from '@mui/material';
 import type { EnvironmentCheck } from '@shared/types';
 import { EnvironmentCheckGroup } from './EnvironmentCheckGroup';
-import type { KlingAuthStatus } from './EnvironmentCheckRow';
+import type { ProviderLogin } from './EnvironmentCheckRow';
 
 interface EnvironmentDiagnosticsProps {
   checks: EnvironmentCheck[] | null;
   loading: boolean;
   error: string | null;
-  onLoginKling?(): Promise<void>;
-  klingLoggingIn?: boolean;
-  /** Без сети вход в Kling недоступен. */
-  klingOffline?: boolean;
-  klingAuthStatus?: KlingAuthStatus;
-  klingAuthMessage?: string;
-  onCheckKlingAuth?(): Promise<void>;
+  /** Вход по id платного провайдера для строк его программы. */
+  logins?: Record<string, ProviderLogin>;
 }
 
-const externalIds = ['git', 'node', 'kling'];
-const separateIds = [...externalIds, 'whisper-model'];
-
 /** Модель и внешние CLI не влияют на готовность основных ресурсов приложения. */
-export function EnvironmentDiagnostics({
-  checks,
-  loading,
-  error,
-  onLoginKling,
-  klingLoggingIn,
-  klingOffline,
-  klingAuthStatus,
-  klingAuthMessage,
-  onCheckKlingAuth
-}: EnvironmentDiagnosticsProps): ReactElement {
+export function EnvironmentDiagnostics({ checks, loading, error, logins }: EnvironmentDiagnosticsProps): ReactElement {
   if (!checks?.length) {
     if (error) return <Alert severity="error">Не удалось проверить среду: {error}</Alert>;
     if (!loading) return <Alert severity="info">{checks === null ? 'Проверка среды ещё не выполнена.' : 'Проверка завершилась без результатов.'}</Alert>;
@@ -42,8 +24,9 @@ export function EnvironmentDiagnostics({
     );
   }
 
-  const coreChecks = checks.filter((check) => !separateIds.includes(check.id) || (check.bundled && externalIds.includes(check.id)));
-  const externalChecks = checks.filter((check) => externalIds.includes(check.id) && !check.bundled);
+  // Внешняя программа из поставки относится к ресурсам приложения; модель показывается отдельно.
+  const coreChecks = checks.filter((check) => (check.external ? check.bundled : check.id !== 'whisper-model'));
+  const externalChecks = checks.filter((check) => check.external && !check.bundled);
   const completedCore = coreChecks.filter((check) => check.status === 'done' || check.status === undefined);
   const missingProduction = completedCore.filter((check) => !check.ok && check.productionOnly);
   const missingCore = completedCore.filter((check) => !check.ok && !check.productionOnly);
@@ -75,29 +58,9 @@ export function EnvironmentDiagnostics({
       ) : completed && missingCore.length === 0 ? (
         <Alert severity="success">Ресурсы и библиотеки приложения доступны.</Alert>
       ) : null}
-      <EnvironmentCheckGroup
-        title="Ресурсы и библиотеки приложения"
-        items={coreChecks}
-        category="core"
-        onLoginKling={onLoginKling}
-        klingLoggingIn={klingLoggingIn}
-        klingOffline={klingOffline}
-        klingAuthStatus={klingAuthStatus}
-        klingAuthMessage={klingAuthMessage}
-        onCheckKlingAuth={onCheckKlingAuth}
-      />
+      <EnvironmentCheckGroup title="Ресурсы и библиотеки приложения" items={coreChecks} category="core" logins={logins} />
       <EnvironmentCheckGroup title="Отдельно устанавливаемая модель" items={checks.filter((check) => check.id === 'whisper-model')} category="model" />
-      <EnvironmentCheckGroup
-        title="Внешние программы — по необходимости"
-        items={externalChecks}
-        category="external"
-        onLoginKling={onLoginKling}
-        klingLoggingIn={klingLoggingIn}
-        klingOffline={klingOffline}
-        klingAuthStatus={klingAuthStatus}
-        klingAuthMessage={klingAuthMessage}
-        onCheckKlingAuth={onCheckKlingAuth}
-      />
+      <EnvironmentCheckGroup title="Внешние программы — по необходимости" items={externalChecks} category="external" logins={logins} />
     </Box>
   );
 }

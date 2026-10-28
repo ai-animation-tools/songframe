@@ -22,6 +22,9 @@ class WindowsZipTests(unittest.TestCase):
         self.files["resources/runtime/manifest.json"] = b'{"target":"win32-x64","nativeProbe":false}'
         self.files["resources/runtime/media-manifest.json"] = b'{"target":"win32-x64","nativeProbe":false}'
         self.files["check-runtime.cmd"] = b"@echo off\r\nexit /b 0\r\n"
+        # Обязательные модули адаптеров вычисляются из таблицы ADAPTERS, а не задаются именем сервиса.
+        self.files[CHECKER.ADAPTERS_FILE] = b'ADAPTERS = {"example": "tools.example_request.example_request"}\n'
+        self.files["resources/tools/example_request/example_request.py"] = b"# adapter\n"
         # Python-библиотеки вправе иметь собственный models, он не является каталогом весов runtime.
         self.files["resources/runtime/python/Lib/site-packages/example/models/__init__.py"] = b"# models\n"
 
@@ -50,6 +53,21 @@ class WindowsZipTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ffprobe.exe"):
             CHECKER.check_archive(self.archive)
         self.assertFalse((self.archive.parent / "windows-archive-check.json").exists())
+
+    def test_provider_adapter_from_table_is_required(self):
+        self.write_archive()
+        adapters = CHECKER.check_archive(self.archive)["checks"]["providerAdapters"]
+        self.assertEqual(adapters, ["resources/tools/example_request/example_request.py"])
+        del self.files["resources/tools/example_request/example_request.py"]
+        self.write_archive()
+        with self.assertRaisesRegex(ValueError, "example_request.py"):
+            CHECKER.check_archive(self.archive)
+
+    def test_empty_adapter_table_is_rejected(self):
+        self.files[CHECKER.ADAPTERS_FILE] = b"ADAPTERS = {}\n"
+        self.write_archive()
+        with self.assertRaisesRegex(ValueError, "ADAPTERS"):
+            CHECKER.check_archive(self.archive)
 
     def test_wrong_runtime_or_media_target(self):
         for manifest in ("manifest.json", "media-manifest.json"):

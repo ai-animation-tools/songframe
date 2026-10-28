@@ -64,8 +64,8 @@ class ShotStatusTests(unittest.TestCase):
             "plan/production-status.json",
             {
                 "schema_version": 1,
-                "shots": {"M05": {"status": "frames_approved"}},
-                "active_work": {"status": "idle", "shots": []},
+                "current_animatic": None,
+                "current_animatic_status": "none",
             },
         )
         self.write("assets/shots/M01/manifest.json", {"schema_version": 1, "shot": "M01"})
@@ -80,7 +80,7 @@ class ShotStatusTests(unittest.TestCase):
             },
         )
         self.write("plan/awaiting/M02/request/attempt.json", {"status": "prepared", "request_sha256": "x"})
-        self.write("plan/batches/M03-attempt-01/request.json", {"shot": "M03", "provider": "kling"})
+        self.write("plan/batches/M03-attempt-01/request.json", {"shot": "M03", "provider": "test"})
         self.write("plan/batches/M03-attempt-01/attempt.json", {"status": "submitted", "generation_id": "job"})
         self.write(
             "plan/batches/M03-review/review.json", {"status": "review_pending", "shots": [{"id": "M03"}, {"id": "M04"}]}
@@ -105,14 +105,14 @@ class ShotStatusTests(unittest.TestCase):
         self.assertEqual(rows["M03"]["stage"], "генерируется")
         self.assertEqual(rows["M04"]["status"], "planned")
         self.assertEqual(rows["M04"]["notes"], ["проба: plan/batches/M03-review/review.json"])
-        self.assertEqual(rows["M05"]["stage"], "по реестру работ: frames_approved")
+        self.assertEqual(rows["M05"]["status"], "planned")
         self.assertEqual(rows["M06"]["status"], "unknown")
         self.assertEqual(result["queue"], ["M02", "M06"])
         self.assertEqual(result["next"], "M02")
         self.assertEqual(result["unassigned_packages"], {})
 
     def test_completed_shot_keeps_status_and_shows_alternative_package_as_note(self):
-        self.write("plan/batches/M01-attempt-02/request.json", {"shot": "M01", "provider": "kling"})
+        self.write("plan/batches/M01-attempt-02/request.json", {"shot": "M01", "provider": "test"})
         self.write("plan/batches/M01-attempt-02/attempt.json", {"status": "downloaded", "request_sha256": "y"})
         _, rows = self.rows()
         self.assertEqual(rows["M01"]["status"], "completed")
@@ -146,9 +146,9 @@ class ShotStatusTests(unittest.TestCase):
             self.assertEqual((rows["M04"]["status"], rows["M04"]["stage"]), ("progress", tool.STAGE_LABELS[stage]))
 
     def test_package_for_unknown_shot_is_reported_not_silently_dropped(self):
-        self.write("plan/batches/m99-kling-v01/attempt.json", {"status": "prepared"})
+        self.write("plan/batches/m99-test-v01/attempt.json", {"status": "prepared"})
         result, _ = self.rows()
-        self.assertEqual(result["unassigned_packages"], {"M99": ["plan/batches/m99-kling-v01"]})
+        self.assertEqual(result["unassigned_packages"], {"M99": ["plan/batches/m99-test-v01"]})
         text = tool.table(result)
         self.assertIn("Пакет без плана в реестре: M99", text)
         self.assertIn("| M01 | 00:00.0–00:03.0 · 3 с | готова |", text)

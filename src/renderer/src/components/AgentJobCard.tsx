@@ -1,8 +1,9 @@
 /** Поток предложения и остановка агента; повтор после прерывания требует нового явного запроса. */
 import { useState, type ReactElement } from 'react';
-import { Alert, Box, Button, Chip, LinearProgress, Stack, Typography } from '@mui/material';
+import { Alert, Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 import type { AgentJob } from '@shared/agents';
 import { agentTitle } from '@shared/agent-providers';
+import { ActionButton } from './ActionButton';
 import { AgentButton } from './AgentButton';
 import StopIcon from '@mui/icons-material/Stop';
 import type { AiActionKind } from '@shared/ai-access';
@@ -45,11 +46,12 @@ export function AgentJobCard({
           </AgentButton>
         )}
         {job.status === 'running' && (
-          <Button
+          <ActionButton
             startIcon={<StopIcon />}
             size="small"
             color="warning"
             disabled={cancelling}
+            disabledReason="Задание уже останавливается: дождитесь завершения."
             onClick={async () => {
               setCancelling(true);
               try {
@@ -60,7 +62,7 @@ export function AgentJobCard({
             }}
           >
             Остановить
-          </Button>
+          </ActionButton>
         )}
       </Stack>
       {job.status === 'running' && (

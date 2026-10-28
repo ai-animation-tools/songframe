@@ -45,7 +45,7 @@ def destination(root, name):
         path.is_relative_to((root / "plan/batches").resolve())
         or path.is_relative_to(Path(tempfile.gettempdir()).resolve())
     ):
-        raise ValueError("Пробу сохранять только в plan/batches или /tmp.")
+        raise ValueError("Пробу сохранять только в plan/batches или во временной папке ОС.")
     if any(path.is_relative_to((root / folder).resolve()) for folder in ("assets", "source", "plan/animatic")):
         raise ValueError("Проба не может заменять assets, исходники или аниматик.")
     if path.suffix.lower() != ".mp4":

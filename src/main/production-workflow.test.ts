@@ -3,17 +3,22 @@ import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { AgentJob, AgentStartInput } from '@shared/agents';
 import type { ProductionStageProposal } from '@shared/production-workflow';
 import { PythonLauncher, type LaunchOptions } from './python-launcher';
-import { KLING_COMMANDS } from './kling-capabilities';
+import { registerTestAgentProvider, registerTestMediaProvider, TEST_AGENT_PROVIDER, TEST_PROVIDER, testPaidAdapter } from './testing/media-provider';
 import { ProductionWorkflow, recoverInterruptedProductionApplies } from './production-workflow';
 import { applyProductionPackage } from './production-workflow-apply';
 import { checkProductionCapabilities, parseProductionProposal, type ProposalRules } from './production-proposal';
-import { sourceInputDigest } from './source-input-hash';
 
 const root = resolve(__dirname, '../..');
+const VIDEO_COMMANDS = ['text_to_video', 'image_to_video', 'omni_ref_video', 'motion_control'];
+let restoreProviders: (() => void)[] = [];
+beforeAll(() => {
+  restoreProviders = [registerTestMediaProvider(), registerTestAgentProvider()];
+});
+afterAll(() => restoreProviders.forEach((restore) => restore()));
 let work: string;
 let project: string;
 let localDir: string;
@@ -67,13 +72,13 @@ class Launcher extends PythonLauncher {
   }
   override async run(project: string | null, name: string, args: string[], options?: LaunchOptions) {
     this.calls.push({ name, args });
-    if (name === 'kling_request' && args[0] === 'capabilities' && this.failCapabilities)
+    if (name === 'media_request' && args[0] === 'capabilities' && this.failCapabilities)
       return { code: 1, stdout: '', stderr: 'Каталог временно недоступен.', command: 'тестовые объявления' };
-    if (name === 'kling_request' && args[0] === 'capabilities')
+    if (name === 'media_request' && args[0] === 'capabilities')
       return {
         code: 0,
         stdout: JSON.stringify({
-          reports: KLING_COMMANDS.filter((command) => !this.capabilityProblems.some((problem) => problem.command === command)).map((command) => ({
+          reports: VIDEO_COMMANDS.filter((command) => !this.capabilityProblems.some((problem) => problem.command === command)).map((command) => ({
             command,
             models: {
               'test-video': {
@@ -153,14 +158,72 @@ beforeEach(() => {
   write(projectPath, {
     ...projectData,
     generation: {
-      video: { ...projectData.generation.video, provider_selected: true },
-      image: { provider: 'codex', provider_selected: true }
+      video: { ...projectData.generation.video, provider: TEST_PROVIDER, provider_selected: true },
+      image: { provider: TEST_AGENT_PROVIDER, provider_selected: true }
     }
   });
 });
 afterEach(() => rmSync(work, { recursive: true, force: true }));
 
 describe('ProductionWorkflow', () => {
+  it('речевой план с окном длиннее допустимого звука провайдера блокирует подготовку с объяснением', () => {
+    const { workflow } = setup();
+    const scenesPath = join(project, 'plan/scenes.json');
+    const scenes = JSON.parse(readFileSync(scenesPath, 'utf8'));
+    // Окно 40 с длиннее поля lipSync.max провайдера (30 с): сервис не принял бы звук такой длины.
+    scenes.scenes[0] = { ...scenes.scenes[0], lipsync: true, end_frame_exclusive: scenes.scenes[0].start_frame + 40 * scenes.fps };
+    write(scenesPath, scenes);
+    const view = workflow.view(project, scenes.scenes[0].id);
+    expect(view.canPrepare).toBe(false);
+    expect(view.problems.join(' ')).toMatch(/Речевой план: окно плана 40\.00 с длиннее.*до 30 с/);
+  });
+
+  it('производный план не запускает агента и объясняет причину на всех действиях подготовки', async () => {
+    const { workflow, agents, launcher } = setup();
+    const scenes = JSON.parse(readFileSync(join(project, 'plan/scenes.json'), 'utf8'));
+    const derived = scenes.scenes.find((scene: { derived_from?: { shot: string } }) => scene.derived_from);
+    expect(derived?.derived_from).toBeDefined();
+    const reason = `План собирается из материала ${derived.derived_from.shot}: описание, опоры и генерация для него не нужны.`;
+    const view = workflow.view(project, derived.id);
+    expect(view.derivedFrom).toBe(derived.derived_from.shot);
+    expect([view.canPrepare, view.canContinue, view.canRevise, view.canGenerateFrames]).toEqual([false, false, false, false]);
+    expect(view.reasons).toEqual({ prepare: reason, continue: reason, frames: reason });
+    await expect(workflow.start({ project, shot: derived.id, action: 'prepare' })).rejects.toThrow(reason);
+    await expect(workflow.start({ project, shot: derived.id, action: 'continue' })).rejects.toThrow(reason);
+    expect(agents.inputs).toEqual([]);
+    expect(launcher.calls).toEqual([]);
+    expect(workflow.view(project, 'M01').derivedFrom).toBeNull();
+  });
+
+  it('сохраняет ответ агента, не прошедший проверку, для показа вместо предложения', async () => {
+    const { workflow, agents } = setup();
+    const view = await workflow.start({ project, shot: 'M01', action: 'prepare' });
+    const answer = 'Для M01 задано точное повторное использование кадра; генерация не обеспечит повторение.';
+    Object.assign(agents.jobs.at(-1)!, {
+      result: JSON.stringify({ schemaVersion: 1, stage: 'description', description: answer, requestSeconds: 9, keyframes: [] }),
+      status: 'completed',
+      exitCode: 0
+    });
+    const invalid = workflow.view(project, 'M01').proposal!;
+    expect(invalid.id).toBe(view.proposal!.id);
+    expect(invalid.status).toBe('invalid');
+    expect(invalid.after).toBeNull();
+    expect(invalid.message).toMatch(/минимум две опоры/);
+    expect(invalid.agentText).toBe(answer);
+    // Запись переживает перезапуск: новый экземпляр читает тот же текст.
+    expect(setup().workflow.view(project, 'M01').proposal?.agentText).toBe(answer);
+  });
+
+  it('при ответе не в JSON сохраняет краткую выдержку без распознаваемых секретов', async () => {
+    const { workflow, agents } = setup();
+    await workflow.start({ project, shot: 'M01', action: 'prepare' });
+    Object.assign(agents.jobs.at(-1)!, { result: `План не подходит. api_key=abc123secret ${'x'.repeat(5000)}`, status: 'completed', exitCode: 0 });
+    const text = workflow.view(project, 'M01').proposal!.agentText!;
+    expect(text).toMatch(/^План не подходит\. api_key=\[скрыто\]/);
+    expect(text).not.toContain('abc123secret');
+    expect(text.length).toBeLessThanOrEqual(4001);
+  });
+
   it('дорабатывает повтор сохранённого запроса через описание только после явного запуска', async () => {
     const { workflow, agents, launcher } = setup();
     const asset = join(project, 'assets/shots/M01');
@@ -169,7 +232,7 @@ describe('ProductionWorkflow', () => {
     writeFileSync(join(asset, 'prompt.txt'), savedPrompt);
     write(join(asset, 'generation-request.json'), {
       schema_version: 1,
-      provider: 'kling',
+      provider: TEST_PROVIDER,
       kind: 'video',
       path_base: 'asset_directory',
       command: 'image_to_video',
@@ -282,45 +345,6 @@ describe('ProductionWorkflow', () => {
     expect(workflow.view(project, 'M01').proposal?.stale).toBe(true);
     await expect(workflow.apply(project, 'M01', undefined, started.proposal!.id)).rejects.toThrow('актуальное');
   });
-  it('читает актуальный старый raw-снимок без изменения сохранённой записи', async () => {
-    const { workflow, agents, options } = setup();
-    await workflow.start({ project, shot: 'M01', action: 'prepare' });
-    agents.finish(description());
-    workflow.view(project, 'M01');
-    const statePath = join(localDir, 'production-workflow', `${sha(`${project}\0M01`)}.json`);
-    const stored = JSON.parse(readFileSync(statePath, 'utf8'));
-    stored.hashes['source/manifest.json'] = sha(readFileSync(join(project, 'source/manifest.json')));
-    write(statePath, stored);
-    const before = readFileSync(statePath);
-    expect(new ProductionWorkflow(options).view(project, 'M01').proposal).toMatchObject({ status: 'ready', stale: false });
-    expect(readFileSync(statePath)).toEqual(before);
-  });
-  it('до смены обложки сохраняет только доказуемо актуальные старые снимки текущего проекта', async () => {
-    const { workflow, agents, options } = setup();
-    await workflow.start({ project, shot: 'M01', action: 'prepare' });
-    agents.finish(description());
-    workflow.view(project, 'M01');
-    const directory = join(localDir, 'production-workflow');
-    const statePath = join(directory, `${sha(`${project}\0M01`)}.json`);
-    const stored = JSON.parse(readFileSync(statePath, 'utf8'));
-    stored.hashes['source/manifest.json'] = sha(readFileSync(join(project, 'source/manifest.json')));
-    write(statePath, stored);
-    const untouched = [
-      { ...structuredClone(stored), rules: { ...stored.rules, project: join(work, 'other-project') } },
-      { ...structuredClone(stored), proposal: null },
-      { ...structuredClone(stored), hashes: { ...stored.hashes, 'source/manifest.json': 'f'.repeat(64) } }
-    ].map((value, index) => {
-      const path = join(directory, `${sha(`другая запись ${index}`)}.json`);
-      write(path, value);
-      return { path, before: readFileSync(path) };
-    });
-    workflow.preserveSourceDecoration(project);
-    expect(JSON.parse(readFileSync(statePath, 'utf8')).hashes['source/manifest.json']).toBe(sourceInputDigest(project));
-    for (const { path, before } of untouched) expect(readFileSync(path)).toEqual(before);
-    const manifestPath = join(project, 'source/manifest.json');
-    write(manifestPath, { ...JSON.parse(readFileSync(manifestPath, 'utf8')), cover: null, updated_at: '2026-01-03T00:00:00.000Z' });
-    expect(new ProductionWorkflow(options).view(project, 'M01').proposal).toMatchObject({ status: 'ready', stale: false });
-  });
   it('сохраняет read-only предложение при перезапуске и создаёт пакет только после Apply', async () => {
     const { agents, launcher, workflow, options } = setup();
     const before = readdirSync(join(project, 'plan/batches'));
@@ -328,6 +352,9 @@ describe('ProductionWorkflow', () => {
     expect(readdirSync(join(project, 'plan/batches'))).toEqual(before);
     expect(agents.inputs[0].prompt).toContain('Предложение производственного этапа');
     expect(agents.inputs[0].context).not.toContain('"scenes":[');
+    // Слоты и флаги входов приходят от провайдера test, а не из примера в общем суффиксе.
+    expect(agents.inputs[0].prompt).not.toContain('"slot":"image_1"');
+    expect(JSON.parse(agents.inputs[0].context ?? '{}').inputFlags).toEqual(Object.keys(testPaidAdapter.rules.inputFlags));
     agents.finish(description());
     const restarted = new ProductionWorkflow(options);
     expect(restarted.view(project, 'M01').proposal?.status).toBe('ready');
@@ -392,11 +419,11 @@ describe('ProductionWorkflow', () => {
     expect(agents.inputs).toHaveLength(agentStarts);
     launcher.failCapabilities = false;
     launcher.capabilityProblems = [{ command: 'omni_ref_video', message: 'Модели команды не объявлены.' }];
-    const beforeRequestDiscovery = launcher.calls.filter((call) => call.name === 'kling_request' && call.args[0] === 'capabilities').length;
+    const beforeRequestDiscovery = launcher.calls.filter((call) => call.name === 'media_request' && call.args[0] === 'capabilities').length;
     const request = await workflow.start({ project, shot: 'M01', packageDir: pkg, action: 'continue' });
-    const discovery = launcher.calls.filter((call) => call.name === 'kling_request' && call.args[0] === 'capabilities');
+    const discovery = launcher.calls.filter((call) => call.name === 'media_request' && call.args[0] === 'capabilities');
     expect(discovery).toHaveLength(beforeRequestDiscovery + 1);
-    expect(discovery.at(-1)!.args.slice(0, 3)).toEqual(['capabilities', '--commands', KLING_COMMANDS.join(',')]);
+    expect(discovery.at(-1)!.args.slice(0, 5)).toEqual(['capabilities', '--provider', TEST_PROVIDER, '--kind', 'video']);
     expect(agents.inputs.at(-1)!.context).toContain('omni_ref_video: Модели команды не объявлены.');
     agents.finish({
       schemaVersion: 1,
@@ -417,12 +444,12 @@ describe('ProductionWorkflow', () => {
     await workflow.apply(project, 'M01', pkg, request.proposal!.id);
     expect(existsSync(join(pkg, 'request-01/request.json'))).toBe(true);
     expect(JSON.parse(readFileSync(join(pkg, 'request-01/request.json'), 'utf8'))).toMatchObject({
-      provider: 'kling',
+      provider: TEST_PROVIDER,
       model: 'test-video',
       parameters: { duration: 9, resolution: '1080p' }
     });
     expect(JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8')).pending_decision.stage).toBe('request_choice');
-    expect(launcher.calls.some((call) => call.name === 'kling_request' && call.args[0] === 'submit')).toBe(false);
+    expect(launcher.calls.some((call) => call.name === 'media_request' && call.args[0] === 'submit')).toBe(false);
     const original = readFileSync(join(pkg, 'request-01/request.json'));
     await decide(launcher, pkg, 'revise');
     const retry = await workflow.start({ project, shot: 'M01', packageDir: pkg, action: 'revise' });
@@ -609,7 +636,7 @@ describe('валидация и восстановление', () => {
         }
       }
     };
-    const settings = { resolution: '1080p', aspect_ratio: '16:9' };
+    const settings = { provider: TEST_PROVIDER, resolution: '1080p', aspect_ratio: '16:9' };
     expect(() => checkProductionCapabilities(proposal, requestRules, capabilities, settings)).not.toThrow();
     expect(() => checkProductionCapabilities(proposal, requestRules, { ...capabilities, command: 'text_to_video' }, settings)).toThrow(
       'не объявлена для команды'
@@ -626,6 +653,26 @@ describe('валидация и восстановление', () => {
     if (prompt.stage !== 'request') throw new Error('Неверная форма');
     prompt.request.parameters.prompt = 'Подмена принятого текста';
     expect(() => parseProductionProposal(JSON.stringify(prompt), requestRules)).toThrow('техническое поле');
+    // Флаги входов объявляет адаптер провайдера test: имя флага не годится в параметры, необъявленный флаг отклоняется.
+    const flagParameter = structuredClone(proposal);
+    if (flagParameter.stage !== 'request') throw new Error('Неверная форма');
+    flagParameter.request.parameters.tailImage = 'source/vehicles/boat.png';
+    expect(() =>
+      checkProductionCapabilities(parseProductionProposal(JSON.stringify(flagParameter), requestRules), requestRules, capabilities, settings)
+    ).toThrow('техническое поле');
+    const unknownFlag = structuredClone(proposal);
+    if (unknownFlag.stage !== 'request') throw new Error('Неверная форма');
+    unknownFlag.request.inputs[0].flag = 'sidecar';
+    expect(() => checkProductionCapabilities(parseProductionProposal(JSON.stringify(unknownFlag), requestRules), requestRules, capabilities, settings)).toThrow(
+      'Неизвестный флаг входа sidecar'
+    );
+    // Команду проверяют объявленные возможности провайдера, а не встроенный список.
+    const undeclared = structuredClone(proposal);
+    if (undeclared.stage !== 'request') throw new Error('Неверная форма');
+    undeclared.request.command = 'undeclared_video';
+    expect(() => checkProductionCapabilities(parseProductionProposal(JSON.stringify(undeclared), requestRules), requestRules, capabilities, settings)).toThrow(
+      'не объявлена для команды undeclared_video'
+    );
     const path = structuredClone(proposal);
     if (path.stage !== 'request') throw new Error('Неверная форма');
     path.request.inputs[0].path = '/etc/passwd';
@@ -657,7 +704,7 @@ describe('валидация и восстановление', () => {
         }
       }
     };
-    const settings = { model: 'video-3', resolution: '1080p' };
+    const settings = { provider: TEST_PROVIDER, model: 'video-3', resolution: '1080p' };
     const parsed = parseProductionProposal(JSON.stringify(proposal), requestRules);
     expect(() => checkProductionCapabilities(parsed, requestRules, capabilities, settings)).not.toThrow();
     expect(parsed).toMatchObject({ request: { model: 'video-4', parameters: { duration: 25, resolution: '1080p' }, inputs: proposal.request.inputs } });
@@ -689,7 +736,7 @@ describe('валидация и восстановление', () => {
       proposal,
       requestRules,
       { command: 'image_to_video', models: { 'video-4': model, 'video-3': model } },
-      { model: 'video-3', resolution: '1080p' }
+      { provider: TEST_PROVIDER, model: 'video-3', resolution: '1080p' }
     );
     expect(proposal.request.model).toBe('video-3');
     expect(proposal.request.parameters.duration).toBe(9);
@@ -708,7 +755,7 @@ describe('валидация и восстановление', () => {
         'video-4': { arguments: { duration: { allowed: ['10'] }, resolution: { allowed: ['1080p'] } }, slots: {} }
       }
     };
-    checkProductionCapabilities(proposal, requestRules, capabilities, { model: 'video-3', resolution: '1080p' });
+    checkProductionCapabilities(proposal, requestRules, capabilities, { provider: TEST_PROVIDER, model: 'video-3', resolution: '1080p' });
     expect(proposal.request.model).toBe('video-4');
     expect(proposal.request.parameters.duration).toBe(10);
   });
@@ -728,7 +775,7 @@ describe('валидация и восстановление', () => {
         }
       }
     };
-    const settings = { resolution: '1080p', options: { enableAudio: false } };
+    const settings = { provider: TEST_PROVIDER, resolution: '1080p', options: { enableAudio: false } };
     checkProductionCapabilities(proposal, requestRules, capabilities, settings);
     expect(proposal.request.parameters.enable_audio).toBe(false);
     proposal.request.parameters.enable_audio = true;

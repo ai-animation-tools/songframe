@@ -1,14 +1,25 @@
 /** Подставные исполнители проверяют временный цикл обложки без обращения к генераторам. */
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import type * as FileSystem from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AgentEvent, AgentJob, AgentStartInput } from '@shared/agents';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CoverGenerationApproval } from '@shared/cover-generation';
 import { CoverGeneration, type CoverGenerationOptions, type PreparedCoverCandidateInput } from './cover-generation';
 import { imageDimensions } from './keyframe-images';
 import { SettingsStore } from './settings';
+import { registerTestAgentProvider, registerTestMediaProvider, TEST_AGENT_PROVIDER, TEST_PROVIDER } from './testing/media-provider';
+
+let restoreProvider: () => void;
+beforeAll(() => {
+  const restorePaid = registerTestMediaProvider();
+  const restoreAgent = registerTestAgentProvider();
+  restoreProvider = () => {
+    restoreAgent();
+    restorePaid();
+  };
+});
+afterAll(() => restoreProvider());
 
 vi.mock('node:fs', async (importOriginal) => {
   const original = await importOriginal<typeof FileSystem>();
@@ -30,7 +41,7 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'songframe-cover-test-'));
   project = join(root, 'project');
   mkdirSync(join(project, 'plan'), { recursive: true });
-  writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: 'codex', provider_selected: true } } }));
+  writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: TEST_AGENT_PROVIDER, provider_selected: true } } }));
   settings = new SettingsStore(join(root, 'settings'));
   settings.saveAgent({ provider: 'codex' });
   sessions = [];
@@ -44,13 +55,18 @@ function create(options: Partial<CoverGenerationOptions> = {}): CoverGeneration 
     settings,
     readImage: imageDimensions,
     cropImage: (_source, target, crop) => png(target, crop.size, crop.size),
+    prepareCandidate: async () => {
+      throw new Error('Подготовка не подключена в этом тесте.');
+    },
     ...options
   });
   sessions.push(value);
   return value;
 }
 function prepared(run: (input: PreparedCoverCandidateInput) => Promise<{ path: string }>): Pick<CoverGenerationOptions, 'prepareCandidate'> {
-  return { prepareCandidate: async (input) => ({ provider: 'codex', model: null, quote: null, requestSha: input.workDir, generate: () => run(input) }) };
+  return {
+    prepareCandidate: async (input) => ({ provider: TEST_AGENT_PROVIDER, model: null, quote: null, requestSha: input.workDir, generate: () => run(input) })
+  };
 }
 function approval(value: CoverGeneration, id: string): CoverGenerationApproval {
   return { approvalToken: value.view(id).approvalToken!, promptConfirmed: true };
@@ -62,10 +78,10 @@ async function launch(value: CoverGeneration, id: string): Promise<void> {
 }
 
 describe('Временная генерация обложки', () => {
-  it('под Claude готовит и отправляет обложку Codex: агент на провайдера изображений не влияет', async () => {
+  it('под Claude готовит и отправляет обложку провайдера-агента: агент на провайдера изображений не влияет', async () => {
     settings.saveAgent({ provider: 'claude' });
     const generate = vi.fn(async () => ({ path: 'cover.png' }));
-    const prepareCandidate = vi.fn(async () => ({ provider: 'codex' as const, model: null, requestSha: 'request', quote: null, generate }));
+    const prepareCandidate = vi.fn(async () => ({ provider: TEST_AGENT_PROVIDER, model: null, requestSha: 'request', quote: null, generate }));
     const value = create({ prepareCandidate });
     const { id } = value.create(project, 'Обложка');
     await value.prepare(id);
@@ -73,7 +89,7 @@ describe('Временная генерация обложки', () => {
     await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(1));
   });
 
-  it.each(['codex', 'kling'])('сохранённый %s без явного выбора не создаёт временную папку', (provider) => {
+  it.each([TEST_AGENT_PROVIDER, TEST_PROVIDER])('сохранённый %s без явного выбора не создаёт временную папку', (provider) => {
     writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider } } }));
     const prepareCandidate = vi.fn();
     const value = create({ prepareCandidate });
@@ -85,18 +101,18 @@ describe('Временная генерация обложки', () => {
 
   it('снятие явного выбора провайдера запрещает подготовку и ранее согласованную отправку', async () => {
     const generate = vi.fn(async () => ({ path: 'cover.png' }));
-    const prepareCandidate = vi.fn(async () => ({ provider: 'codex' as const, model: null, requestSha: 'request', quote: null, generate }));
+    const prepareCandidate = vi.fn(async () => ({ provider: TEST_AGENT_PROVIDER, model: null, requestSha: 'request', quote: null, generate }));
     const value = create({ prepareCandidate });
     const { id } = value.create(project, 'Обложка');
     await value.prepare(id);
-    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: 'codex', provider_selected: false } } }));
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: TEST_AGENT_PROVIDER, provider_selected: false } } }));
     await expect(value.prepare(id)).rejects.toThrow('выберите провайдера изображений');
     expect(() => value.generate(id, 'request', approval(value, id))).toThrow('выберите провайдера изображений');
     expect(prepareCandidate).toHaveBeenCalledTimes(1);
     expect(generate).not.toHaveBeenCalled();
   });
 
-  it.each(['codex', 'kling'] as const)('без выбранного агента готовит и отправляет обложку %s', async (provider) => {
+  it.each([TEST_AGENT_PROVIDER, TEST_PROVIDER])('без выбранного агента готовит и отправляет обложку %s', async (provider) => {
     writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider, provider_selected: true } } }));
     settings.saveAgent(null);
     const generate = vi.fn(async () => ({ path: 'cover.png' }));
@@ -117,11 +133,11 @@ describe('Временная генерация обложки', () => {
 
   it('повторно проверяет выбор провайдера изображений перед отложенной отправкой', async () => {
     const generate = vi.fn(async () => ({ path: 'cover.png' }));
-    const value = create({ prepareCandidate: async () => ({ provider: 'codex', model: null, requestSha: 'request', quote: null, generate }) });
+    const value = create({ prepareCandidate: async () => ({ provider: TEST_AGENT_PROVIDER, model: null, requestSha: 'request', quote: null, generate }) });
     const { id } = value.create(project, 'Обложка');
     await value.prepare(id);
     value.generate(id, 'request', approval(value, id));
-    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: 'codex', provider_selected: false } } }));
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: TEST_AGENT_PROVIDER, provider_selected: false } } }));
     await vi.waitFor(() => expect(value.view(id)).toMatchObject({ status: 'failed', image: null }));
     expect(value.view(id).error).toContain('выберите провайдера изображений');
     expect(generate).not.toHaveBeenCalled();
@@ -141,58 +157,6 @@ describe('Временная генерация обложки', () => {
     expect(existsSync(accepted.path)).toBe(true);
     await value.close(id);
     expect(existsSync(accepted.path)).toBe(false);
-  });
-
-  it('сохраняет фиксированный Codex промпт и пользовательский контекст при повторе; всё состояние находится в tmp', async () => {
-    writeFileSync(
-      join(project, 'plan/project.json'),
-      JSON.stringify({ generation: { image: { provider: 'codex', model: ' cover-model ', provider_selected: true } } })
-    );
-    settings.saveAgent({ provider: 'codex', model: 'text-model' });
-    const initialSettings = readFileSync(join(settings.localDir, 'settings.json'), 'utf8');
-    const inputs: AgentStartInput[] = [];
-    const models: Array<string | undefined> = [];
-    const workDirs: string[] = [];
-    const value = create({
-      createManager: (temporarySettings) => {
-        expect(temporarySettings.localDir).not.toBe(settings.localDir);
-        expect(temporarySettings.getImageAgent()).toEqual(settings.getImageAgent());
-        let job: AgentJob;
-        return {
-          startImages: (input, workDir, model) => {
-            inputs.push(input);
-            models.push(model);
-            workDirs.push(workDir);
-            png(join(workDir, 'cover.png'));
-            job = { id: 'job', status: 'completed', exitCode: 0, result: '{"path":"cover.png"}' } as AgentJob;
-            return job;
-          },
-          get: () => job,
-          onEvent: (_listener: (event: AgentEvent) => void) => () => undefined,
-          shutdownAndWait: async () => undefined
-        };
-      }
-    });
-    const { id } = value.create(project, '  Ёж у костра  ');
-    await launch(value, id);
-    const first = value.view(id).image!.path;
-    const next = await value.prepare(id);
-    expect(existsSync(first)).toBe(true);
-    value.generate(id, next.requestSha!, approval(value, id));
-    expect(existsSync(first)).toBe(false);
-    await vi.waitFor(() => expect(value.view(id).status).toBe('ready'));
-    expect(inputs).toHaveLength(2);
-    // Временный проект обложки не содержит настроек: модель передаётся явно, без модели текстового агента.
-    expect(models).toEqual(['cover-model', 'cover-model']);
-    expect(inputs[0].prompt).toBe(inputs[1].prompt);
-    expect(inputs[0].prompt).toContain('image_gen');
-    expect(inputs[0].context).toBe(JSON.stringify({ userPrompt: '  Ёж у костра  ' }));
-    expect(inputs[0].project).not.toBe(project);
-    expect(readdirSync(project)).toEqual(['plan']);
-    expect(readdirSync(join(project, 'plan'))).toEqual(['project.json']);
-    expect(readFileSync(join(settings.localDir, 'settings.json'), 'utf8')).toBe(initialSettings);
-    await value.close(id);
-    expect(workDirs.every((path) => !existsSync(path))).toBe(true);
   });
 
   it('проверяет квадрат, сохраняет только принятый PNG и удаляет его после закрытия формы', async () => {
@@ -250,7 +214,7 @@ describe('Временная генерация обложки', () => {
     let release: (() => void) | undefined;
     const value = create({
       prepareCandidate: async (input) => ({
-        provider: 'codex',
+        provider: TEST_AGENT_PROVIDER,
         model: null,
         quote: null,
         requestSha: 'request',
@@ -284,13 +248,19 @@ describe('Временная генерация обложки', () => {
     expect(existsSync(workDir)).toBe(false);
   });
 
-  it('проверяет SHA и стоимость Kling; не повторяет неудачную отправку без нового prepare', async () => {
-    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: 'kling', provider_selected: true } } }));
+  it('проверяет SHA и стоимость платного провайдера; не повторяет неудачную отправку без нового prepare', async () => {
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: TEST_PROVIDER, provider_selected: true } } }));
     const generate = vi.fn(async () => {
       throw new Error('Не удалось создать обложку.');
     });
     const value = create({
-      prepareCandidate: async () => ({ provider: 'kling', model: 'kling', requestSha: 'sha', quote: { credits: 2, balance: 3, verdict: 'ok' }, generate })
+      prepareCandidate: async () => ({
+        provider: TEST_PROVIDER,
+        model: 'test-model',
+        requestSha: 'sha',
+        quote: { credits: 2, balance: 3, verdict: 'ok' },
+        generate
+      })
     });
     const { id } = value.create(project, 'Обложка');
     await value.prepare(id);
@@ -299,7 +269,7 @@ describe('Временная генерация обложки', () => {
     await vi.waitFor(() => expect(value.view(id).status).toBe('failed'));
     expect(generate).toHaveBeenCalledTimes(1);
     expect(() => value.generate(id, 'sha', approval(value, id))).toThrow(/подготовьте/);
-    const unknown = create({ prepareCandidate: async () => ({ provider: 'kling', model: null, requestSha: 'unknown', quote: null, generate }) });
+    const unknown = create({ prepareCandidate: async () => ({ provider: TEST_PROVIDER, model: null, requestSha: 'unknown', quote: null, generate }) });
     const session = unknown.create(project, 'Обложка');
     await unknown.prepare(session.id);
     expect(() => unknown.generate(session.id, 'unknown', approval(unknown, session.id))).toThrow(/Стоимость или баланс/);
@@ -310,7 +280,7 @@ describe('Временная генерация обложки', () => {
     const generate = vi.fn(async (_signal: AbortSignal, _consent?: { allowUnknownCost?: boolean }) => ({ path: 'cover.png' }));
     const value = create({
       prepareCandidate: async ({ workDir }) => ({
-        provider: 'codex',
+        provider: TEST_AGENT_PROVIDER,
         model: null,
         requestSha: 'same-sha',
         quote: null,
@@ -349,11 +319,11 @@ describe('Временная генерация обложки', () => {
     [{ credits: 10, balance: 1, verdict: 'insufficient_balance' as const }, true, false],
     [{ credits: 10, balance: null, verdict: 'cost_or_balance_unknown' as const }, true, false]
   ])('отправляет неизвестную цену только с отдельным согласием: %j / %s', async (quote, allowUnknownCost, allowed) => {
-    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: 'kling', provider_selected: true } } }));
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: TEST_PROVIDER, provider_selected: true } } }));
     const generate = vi.fn(async () => {
       throw new Error('Тестовая остановка после разрешения отправки.');
     });
-    const value = create({ prepareCandidate: async () => ({ provider: 'kling', model: null, requestSha: 'sha', quote, generate }) });
+    const value = create({ prepareCandidate: async () => ({ provider: TEST_PROVIDER, model: null, requestSha: 'sha', quote, generate }) });
     const { id } = value.create(project, 'Обложка');
     await value.prepare(id);
     const consent = { ...approval(value, id), allowUnknownCost };
@@ -372,7 +342,7 @@ describe('Временная генерация обложки', () => {
   it('не запускает генерацию после немедленного закрытия и дожидается подготовки перед очисткой', async () => {
     const generate = vi.fn(async () => ({ path: 'cover.png' }));
     const immediate = create({
-      prepareCandidate: async () => ({ provider: 'codex', model: null, requestSha: 'request', quote: null, generate })
+      prepareCandidate: async () => ({ provider: TEST_AGENT_PROVIDER, model: null, requestSha: 'request', quote: null, generate })
     });
     const first = immediate.create(project, 'Обложка');
     await immediate.prepare(first.id);
@@ -395,7 +365,7 @@ describe('Временная генерация обложки', () => {
           )
         );
         writeFileSync(join(workDir, 'late.txt'), 'Подготовка завершена');
-        return { provider: 'codex', model: null, requestSha: 'request', quote: null, generate };
+        return { provider: TEST_AGENT_PROVIDER, model: null, requestSha: 'request', quote: null, generate };
       }
     });
     const second = waiting.create(project, 'Обложка');
@@ -415,19 +385,19 @@ describe('Временная генерация обложки', () => {
     expect(() => value.create(root, 'Обложка')).toThrow(/plan\/project.json/);
   });
 
-  it('сразу показывает провайдера Kling и сохраняет его при ошибке подготовки', async () => {
+  it('сразу показывает платного провайдера и сохраняет его при ошибке подготовки', async () => {
     writeFileSync(
       join(project, 'plan/project.json'),
-      JSON.stringify({ generation: { image: { provider: 'kling', provider_selected: true, model: 'kling-v3' } } })
+      JSON.stringify({ generation: { image: { provider: TEST_PROVIDER, provider_selected: true, model: 'test-v3' } } })
     );
     const value = create({
       prepareCandidate: async () => {
-        throw new Error('Сервис Kling недоступен.');
+        throw new Error('Сервис недоступен.');
       }
     });
     const session = value.create(project, 'Обложка');
-    expect(session).toMatchObject({ provider: 'kling', model: 'kling-v3', status: 'idle' });
-    expect(await value.prepare(session.id)).toMatchObject({ provider: 'kling', model: 'kling-v3', status: 'failed', requestSha: null });
+    expect(session).toMatchObject({ provider: TEST_PROVIDER, model: 'test-v3', status: 'idle' });
+    expect(await value.prepare(session.id)).toMatchObject({ provider: TEST_PROVIDER, model: 'test-v3', status: 'failed', requestSha: null });
   });
 
   it.each([{}, { generation: { image: { provider: 'other' } } }])('отклоняет проект без поддерживаемого провайдера', (manifest) => {

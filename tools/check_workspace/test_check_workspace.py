@@ -40,6 +40,8 @@ class CheckWorkspaceTests(unittest.TestCase):
                             "start_frame": i * 30,
                             "end_frame_exclusive": i * 30 + 30,
                             "references": [],
+                            "state_from": None,
+                            "state_changes": {},
                         }
                         for i, sid in enumerate(["M01", "M02", "M03"])
                     ],
@@ -97,7 +99,7 @@ class CheckWorkspaceTests(unittest.TestCase):
         for name, document, expected in (
             ("workflow.json", {"shot": "M01"}, "package_of_accepted"),
             ("workflow.json", {"stage": "preparing"}, "package_unowned"),
-            ("request/request.json", {"shot": "M01", "provider": "kling"}, "package_of_accepted"),
+            ("request/request.json", {"shot": "M01", "provider": "test"}, "package_of_accepted"),
         ):
             with self.subTest(name=name, document=document):
                 root, folder = self.exported_project()
@@ -105,6 +107,23 @@ class CheckWorkspaceTests(unittest.TestCase):
                 marker.parent.mkdir(exist_ok=True)
                 marker.write_text(json.dumps(document))
                 self.assertEqual([p["kind"] for p in collect(root)["problems"]], [expected])
+
+    def test_new_attempt_of_accepted_plan_is_regular_work(self):
+        # «Подготовить повтор» и доработка создают новую попытку принятого плана: это не остаток приёмки.
+        folder = self.root / "plan/batches/M01-attempt-02"
+        (folder / "request").mkdir(parents=True)
+        workflow = {"shot": "M01", "stage": "request_choice", "request_dir": "request"}
+        (folder / "workflow.json").write_text(json.dumps(workflow))
+        (folder / "request/attempt.json").write_text(json.dumps({"status": "prepared", "request_sha256": "b" * 64}))
+        snapshot = self.root / "assets/shots/M01/generation-request.json"
+        snapshot.write_text(json.dumps({"request_sha256": "a" * 64}))
+        self.assertEqual(collect(self.root)["problems"], [])
+        # Тот же запрос, что в принятом комплекте, или этап accepted — пакет не убран после приёмки.
+        snapshot.write_text(json.dumps({"request_sha256": "b" * 64}))
+        self.assertEqual([p["kind"] for p in collect(self.root)["problems"]], ["package_of_accepted"])
+        snapshot.write_text(json.dumps({"request_sha256": "a" * 64}))
+        (folder / "workflow.json").write_text(json.dumps(workflow | {"stage": "accepted"}))
+        self.assertEqual([p["kind"] for p in collect(self.root)["problems"]], ["package_of_accepted"])
 
     def test_completed_review_is_kept_but_incomplete_review_remains_a_package(self):
         folder = self.root / "plan/batches/arbitrary-review-name"
@@ -206,8 +225,13 @@ class CheckWorkspaceTests(unittest.TestCase):
         (self.root / "plan/batches/M02-attempt-01/workflow.json").write_text(
             '{"shot": "M02", "stage": "keyframes_review"}'
         )
-        (self.root / "plan/awaiting/M01").mkdir()
-        (self.root / "plan/awaiting/M01/workflow.json").write_text('{"shot": "M01", "stage": "ready"}')
+        # Остаток очереди: запрос пакета совпадает с запросом принятого комплекта.
+        (self.root / "plan/awaiting/M01/request").mkdir(parents=True)
+        (self.root / "plan/awaiting/M01/workflow.json").write_text(
+            '{"shot": "M01", "stage": "ready", "request_dir": "request"}'
+        )
+        (self.root / "plan/awaiting/M01/request/attempt.json").write_text(json.dumps({"request_sha256": "c" * 64}))
+        (self.root / "assets/shots/M01/generation-request.json").write_text(json.dumps({"request_sha256": "c" * 64}))
         (self.root / "plan/animatic/cards/manifest.json").write_text(
             json.dumps({"cards": {"M01": {}, "M02": {}, "M03": {}}})
         )
@@ -233,7 +257,7 @@ class CheckWorkspaceTests(unittest.TestCase):
             json.dumps({"status": "review_pending", "shots": [{"id": "M01"}, {"id": "M02"}]})
         )
         self.assertEqual(package_owners(folder), {"M01", "M02"})
-        (folder / "request.json").write_text('{"shot": "M02", "provider": "kling"}')
+        (folder / "request.json").write_text('{"shot": "M02", "provider": "test"}')
         self.assertEqual(package_owners(folder), {"M02"})
         (self.root / "plan/batches/notes").mkdir()
         self.assertEqual(package_owners(self.root / "plan/batches/notes"), set())

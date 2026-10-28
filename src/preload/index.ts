@@ -172,7 +172,9 @@ const api: Api = {
       ipcRenderer.invoke('production:quote', project, packageDir, expectedSha, decisionToken),
     submit: (project: string, packageDir: string, expectedSha: string, decisionToken?: string, quoteToken?: string, unknownCostConsentToken?: string) =>
       ipcRenderer.invoke('production:submit', project, packageDir, expectedSha, decisionToken, quoteToken, unknownCostConsentToken),
-    resume: (project: string, packageDir: string, generationId?: string) => ipcRenderer.invoke('production:resume', project, packageDir, generationId),
+    resume: (project: string, packageDir: string) => ipcRenderer.invoke('production:resume', project, packageDir),
+    attachResult: (project: string, packageDir: string, files: string[]) => ipcRenderer.invoke('production:attachResult', project, packageDir, files),
+    markNotCreated: (project: string, packageDir: string) => ipcRenderer.invoke('production:markNotCreated', project, packageDir),
     selectImage: (project: string, packageDir: string, index: number, expectedResultToken: string) =>
       ipcRenderer.invoke('production:selectImage', project, packageDir, index, expectedResultToken),
     regenerate: (project: string, shot: string) => ipcRenderer.invoke('production:regenerate', project, shot),
@@ -180,6 +182,9 @@ const api: Api = {
       ipcRenderer.invoke('production:accept', project, shot, packageDir, options),
     contactSheet: (project: string, packageDir: string) => ipcRenderer.invoke('production:contactSheet', project, packageDir),
     park: (project: string, packageDir: string) => ipcRenderer.invoke('production:park', project, packageDir),
+    speechPlan: (project: string, shot: string, packageDir?: string) => ipcRenderer.invoke('production:speechPlan', project, shot, packageDir),
+    prepareSpeech: (project: string, packageDir: string, bounds?: { start: number; end: number }) =>
+      ipcRenderer.invoke('production:prepareSpeech', project, packageDir, bounds),
     reopenQuestion: (project: string, packageDir: string) => ipcRenderer.invoke('production:reopenQuestion', project, packageDir),
     discardAttempt: (project: string, packageDir: string) => ipcRenderer.invoke('production:discardAttempt', project, packageDir),
     exportBundle: (project: string, options: ExportBundleOptions) => ipcRenderer.invoke('production:exportBundle', project, options),
@@ -205,7 +210,13 @@ const api: Api = {
   },
   jobs: {
     list: () => ipcRenderer.invoke('jobs:list'),
-    get: (id: string) => ipcRenderer.invoke('jobs:get', id)
+    get: (id: string) => ipcRenderer.invoke('jobs:get', id),
+    copyText: (id: string) => ipcRenderer.invoke('jobs:copyText', id)
+  },
+  diagnostics: {
+    reportRendererError: (report) => ipcRenderer.send('diagnostics:rendererError', report),
+    crashNotice: () => ipcRenderer.invoke('diagnostics:crashNotice'),
+    saveReport: () => ipcRenderer.invoke('diagnostics:saveReport')
   },
   environment: {
     check: async (onProgress) => {
@@ -221,8 +232,14 @@ const api: Api = {
         if (onProgress) ipcRenderer.removeListener('environment:progress', listener);
       }
     },
-    loginKling: () => ipcRenderer.invoke('environment:loginKling'),
-    klingAuth: () => ipcRenderer.invoke('environment:klingAuth')
+    loginProvider: (provider) => ipcRenderer.invoke('environment:loginProvider', provider),
+    cancelLogin: (provider) => ipcRenderer.invoke('environment:cancelLogin', provider),
+    onLoginUrl: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, value: { provider: string; url: string }): void => listener(value);
+      ipcRenderer.on('environment:loginUrl', handler);
+      return () => ipcRenderer.removeListener('environment:loginUrl', handler);
+    },
+    providerAuth: (provider) => ipcRenderer.invoke('environment:providerAuth', provider)
   },
   tools: {
     run: (project: string, name: string, args: string[]) => ipcRenderer.invoke('tools:run', project, name, args)

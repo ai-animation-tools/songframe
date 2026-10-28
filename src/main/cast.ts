@@ -35,7 +35,7 @@ const FALLBACK: Defaults = {
     kind: 'world',
     name: 'Мир сцены',
     short_name: 'Мир',
-    role: 'Общие условия: время, погода, стороны дороги',
+    role: 'Общие условия: время, погода и окружение',
     appearance: '',
     images: [],
     initial_state: {}

@@ -5,6 +5,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { GLOSSARY } from './glossary';
 import { GlossaryItem, HighlightedText } from './components';
 import { searchGlossary } from './search';
+import { PageActionBar } from '../../components/PageActionBar';
 
 export function HelpPage(): ReactElement {
   const [query, setQuery] = useState('');
@@ -13,22 +14,19 @@ export function HelpPage(): ReactElement {
 
   return (
     <Stack spacing={3} sx={{ width: '100%', maxWidth: 1500, mx: 'auto', minWidth: 0 }}>
-      <Box>
-        <Typography variant="h5" component="h1" gutterBottom>
+      {/* Заголовок и поиск в общей панели страницы: поиск доступен при любой прокрутке. */}
+      <PageActionBar>
+        <Typography variant="h5" component="h1">
           Справка
         </Typography>
-        <Typography color="text.secondary">
-          Как начать работу над клипом и что означают действия в приложении. Ищите по названию, вопросу или знакомым словам.
-        </Typography>
-      </Box>
-      <Box sx={{ position: 'sticky', top: 56, zIndex: 1, bgcolor: 'background.default', py: 1 }}>
         <TextField
-          fullWidth
+          size="small"
           type="search"
           label="Поиск по справке"
           placeholder="Например: с чего начать, стоимость, как перенести проект"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          sx={{ flex: 1, minWidth: 260 }}
           slotProps={{
             input: {
               startAdornment: (
@@ -39,10 +37,13 @@ export function HelpPage(): ReactElement {
             }
           }}
         />
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }} aria-live="polite">
+        <Typography variant="body2" color="text.secondary" aria-live="polite">
           {words.length ? `Найдено статей: ${entries.length} из ${GLOSSARY.length}` : `Всего статей: ${GLOSSARY.length}`}
         </Typography>
-      </Box>
+      </PageActionBar>
+      <Typography color="text.secondary">
+        Как начать работу над клипом и что означают действия в приложении. Ищите по названию, вопросу или знакомым словам.
+      </Typography>
       {!entries.length ? <Alert severity="info">Ничего не найдено. Попробуйте другое слово или его часть.</Alert> : null}
       {categories.map((category) => (
         <Box component="section" key={category}>

@@ -9,7 +9,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import type { BundleInfo, JobInfo } from '@shared/types';
 import { joinPath } from '../../../format';
 import { useApp } from '../../../state';
-import { DateTime, JobStatus } from '../../../components';
+import { ActionButton, DateTime, JobStatus } from '../../../components';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 
 function stamp(): string {
@@ -64,6 +64,16 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
   };
 
   const summary = job?.status === 'done' ? parseSummary(job.log) : null;
+  // Сборка и удаление пакетов не идут одновременно: обе операции меняют plan/batches.
+  const operationReason =
+    job?.status === 'running'
+      ? 'Дождитесь окончания сборки пакета.'
+      : busy
+        ? 'Дождитесь запуска сборки.'
+        : deletingBundle !== null
+          ? 'Дождитесь удаления пакета.'
+          : null;
+  const buildReason = operationReason ?? (!pythonAvailable ? 'Нужен Python: проверьте его на странице «Среда».' : null);
 
   /** Удаляем папку собранного пакета вместе с копиями; исходники проекта остаются на месте. */
   const removeBundle = async (bundle: BundleInfo): Promise<void> => {
@@ -112,20 +122,15 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
       </Box>
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mt: 1 }}>
         <FormControlLabel control={<Checkbox checked={copy} onChange={(e) => setCopy(e.target.checked)} />} label="Скопировать медиа в пакет" />
-        <Button
+        <ActionButton
           variant="contained"
-          color="success"
           disabled={busy || deletingBundle !== null || !pythonAvailable || job?.status === 'running'}
+          disabledReason={buildReason}
           onClick={run}
           startIcon={job?.status === 'running' ? <CircularProgress size={16} color="inherit" /> : <BuildIcon />}
         >
           {job?.status === 'running' ? 'Собираем' : 'Собрать пакет'}
-        </Button>
-        {!pythonAvailable ? (
-          <Typography variant="caption" color="text.secondary">
-            Нужен Python: см. страницу «Среда».
-          </Typography>
-        ) : null}
+        </ActionButton>
       </Box>
       {job ? (
         <Box sx={{ mt: 1.5 }}>
@@ -174,6 +179,7 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
                 label="Удалить пакет для монтажёра"
                 description={`Будет удалена папка «${b.dir.split(/[\\/]/).pop()}» со всем содержимым, включая скопированные медиа. Исходные файлы проекта сохранятся.`}
                 disabled={deletingBundle !== null || busy || job?.status === 'running'}
+                disabledReason={operationReason}
                 onConfirm={() => void removeBundle(b)}
               >
                 <DeleteOutlineIcon fontSize="small" />

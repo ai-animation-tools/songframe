@@ -1,14 +1,17 @@
 import type { ReactElement } from 'react';
-import { Box, Button, Checkbox, Chip, CircularProgress, FormControlLabel, Tooltip, Typography } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import { Box, Checkbox, Chip, CircularProgress, FormControlLabel, Typography } from '@mui/material';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import type { CheckInfo } from '@shared/types';
 import type { CheckOutcome } from '../types';
+import { ActionButton } from '../../../components/ActionButton';
 
 interface CheckRowProps {
   check: CheckInfo;
   result: CheckOutcome | null;
   disabled: boolean;
+  /** Почему проверку сейчас нельзя запустить. */
+  disabledReason: string | null;
   strict: boolean;
   next: boolean;
   setStrict: (value: boolean) => void;
@@ -18,7 +21,7 @@ interface CheckRowProps {
 }
 
 /** Показывает результат проверки и её собственные параметры запуска. */
-export function CheckRow({ check, result, disabled, strict, next, setStrict, setNext, onUpdateViews, onRun }: CheckRowProps): ReactElement {
+export function CheckRow({ check, result, disabled, disabledReason, strict, next, setStrict, setNext, onUpdateViews, onRun }: CheckRowProps): ReactElement {
   return (
     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, pt: 1 }}>
       <Box sx={{ width: 24, pt: 0.25, display: 'flex', justifyContent: 'center' }}>
@@ -58,17 +61,20 @@ export function CheckRow({ check, result, disabled, strict, next, setStrict, set
         />
       ) : null}
       {check.id === 'views' ? (
-        <Tooltip title="Обновить монтажный список, раскадровку и карточки по реестру сцен">
-          <span>
-            <Button size="small" startIcon={<RefreshIcon />} disabled={disabled} onClick={onUpdateViews}>
-              Обновить
-            </Button>
-          </span>
-        </Tooltip>
+        <ActionButton
+          size="small"
+          startIcon={<AutorenewIcon />}
+          title="Пересобрать монтажный список, раскадровку и карточки по реестру сцен"
+          disabled={disabled}
+          disabledReason={disabledReason}
+          onClick={onUpdateViews}
+        >
+          Пересобрать карточки
+        </ActionButton>
       ) : null}
-      <Button size="small" variant="outlined" startIcon={<PlayArrowIcon />} disabled={disabled} onClick={onRun}>
+      <ActionButton size="small" variant="outlined" startIcon={<PlayArrowIcon />} disabled={disabled} disabledReason={disabledReason} onClick={onRun}>
         Запустить
-      </Button>
+      </ActionButton>
     </Box>
   );
 }

@@ -1,6 +1,6 @@
 import { FPS } from '@shared/video';
 import { useRef, type ReactElement } from 'react';
-import { Box, Button, Chip, IconButton, Typography } from '@mui/material';
+import { Box, Chip, IconButton, Typography } from '@mui/material';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -8,6 +8,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type { ReviewInfo } from '@shared/types';
 import { DateTime } from '../../../components/DateTime';
 import { DestructiveButton } from '../../../components/DestructiveButton';
+import { ActionButton } from '../../../components/ActionButton';
 
 interface ReviewItemProps {
   review: ReviewInfo;
@@ -45,14 +46,15 @@ export function ReviewItem({ review, openReview, deletingReview, setOpenReview, 
         <Typography variant="caption" color="text.secondary">
           <DateTime value={review.createdAt} />
         </Typography>
-        <Button
+        <ActionButton
           size="small"
           startIcon={openReview?.video === review.video ? <VisibilityOffIcon /> : <VisibilityIcon />}
           disabled={deletingReview === review.video}
+          disabledReason="Проба удаляется."
           onClick={() => setOpenReview(openReview?.video === review.video ? null : review)}
         >
           {openReview?.video === review.video ? 'Скрыть' : 'Смотреть'}
-        </Button>
+        </ActionButton>
         <IconButton size="small" onClick={() => openDirectory(review.dir)} title="Открыть папку" aria-label="Открыть папку">
           <FolderOpenIcon fontSize="small" />
         </IconButton>
@@ -61,6 +63,7 @@ export function ReviewItem({ review, openReview, deletingReview, setOpenReview, 
           label="Удалить пробу"
           description={`Будут удалены MP4 пробы «${review.video.split(/[\\/]/).pop()}» и её рецепт. Исходные медиа и другие файлы в папке сохранятся.`}
           disabled={deletingReview !== null}
+          disabledReason="Дождитесь окончания удаления пробы."
           onConfirm={remove}
         >
           <DeleteOutlineIcon fontSize="small" />

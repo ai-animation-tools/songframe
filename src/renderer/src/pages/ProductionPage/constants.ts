@@ -18,6 +18,10 @@ export const VERDICT_HINTS: Record<string, string> = {
   review: 'Открывает «Монтаж пробы» с соседними планами: выберите в материалах результат этой попытки. Вопрос остаётся открытым.'
 };
 
+/** Причины недоступности кнопок производства для подсказки выключенной кнопки. */
+export const BUSY_REASON = 'Дождитесь завершения текущей операции.';
+export const PYTHON_REASON = 'Python не найден: проверьте его на странице «Среда».';
+
 export { SHOT_STATE_LABELS as STATE_LABELS } from '../../components/shotState';
 
 export type ProductionFilter = 'all' | 'attention' | 'progress' | 'planned' | 'completed' | 'queued';
@@ -29,7 +33,7 @@ export const FILTER_LABELS: Record<ProductionFilter, string> = {
   progress: 'В работе',
   planned: 'Не начатые',
   completed: 'Принятые',
-  queued: 'Сохранённые в очередь'
+  queued: 'Очередь'
 };
 export const FILTER_EMPTY_HINTS: Record<ProductionFilter, string> = {
   all: 'В реестре сцен нет планов. Создайте сценарий на странице «Сценарий».',

@@ -61,6 +61,18 @@ class CardTests(unittest.TestCase):
             for kid in ids
         ]
 
+    def test_fonts_ship_next_to_module_with_license(self):
+        from PIL import ImageFont
+
+        from tools.render_animatic_cards import render_animatic_cards as cards
+
+        folder = Path(cards.__file__).resolve().parent / "fonts"
+        for path in (cards.FONT, cards.BOLD):
+            self.assertEqual(path.parent, folder)
+            self.assertTrue(path.is_file(), path)
+            ImageFont.truetype(str(path), 20)
+        self.assertIn("Bitstream Vera", (folder / "LICENSE").read_text(encoding="utf-8"))
+
     def test_fit_keeps_whole_image_without_stretching(self):
         canvas = fit_canvas(self.root / "frames/K02.png")
         self.assertEqual(canvas.size, SIZE)
@@ -88,6 +100,44 @@ class CardTests(unittest.TestCase):
         self.assertFalse(last.exists())
         with self.assertRaises(ValueError):
             render_keyframe_card(shot(), card, PROJECT, [], self.root)
+
+    def test_long_texts_are_shortened_instead_of_failing(self):
+        from PIL import ImageDraw, ImageFont
+
+        from tools.render_animatic_cards.render_animatic_cards import FONT, text_box
+
+        # Длинная постановка настоящего проекта не должна останавливать приёмку и сборку.
+        long = shot(camera="Средне-общий; неподвижная камера. " * 8, action="Герой идёт к машине. " * 30, state="Без изменений. " * 20)
+        render_card(long, self.root / "card.png", PROJECT, self.references, self.root)
+        render_keyframe_card(long, self.root / "keys.png", PROJECT, self.keyframes("K01", "K02"), self.root)
+        self.assertTrue((self.root / "card.png").is_file() and (self.root / "keys.png").is_file())
+        drawn = []
+        draw = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+        draw.text = lambda xy, line, **_: drawn.append(line)
+        point = text_box(draw, "слово " * 200, (0, 0), 300, 46, 20)
+        font = ImageFont.truetype(str(FONT), point)
+        self.assertEqual(len(drawn), 2)
+        self.assertTrue(drawn[-1].endswith("…"))
+        self.assertTrue(all(draw.textlength(line, font=font) <= 300 for line in drawn))
+
+    def test_derived_shot_title_names_source_and_plain_title_is_unchanged(self):
+        from unittest.mock import patch
+
+        from tools.render_animatic_cards import render_animatic_cards as module
+
+        texts = []
+        original = module.text_box
+
+        def recording(draw, text, *args, **kwargs):
+            texts.append(text)
+            return original(draw, text, *args, **kwargs)
+
+        with patch.object(module, "text_box", recording):
+            render_card(shot(), self.root / "plain.png", PROJECT, self.references, self.root)
+            derived = shot(derived_from={"shot": "M01"})
+            render_card(derived, self.root / "derived.png", PROJECT, self.references, self.root)
+        self.assertIn("M02  /  Технический план", texts)
+        self.assertIn("M02  /  Технический план  •  из M01", texts)
 
     def test_reference_card_uses_only_given_context(self):
         card = self.root / "card.png"

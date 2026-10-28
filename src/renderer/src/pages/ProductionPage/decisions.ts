@@ -1,6 +1,7 @@
 /** Черновик замечания и платное подтверждение относятся к показанному вопросу, а не ко всему плану. */
 import type { Api } from '@shared/api';
 import type { AcceptOptions, JobInfo, PackageView, ProductionView } from '@shared/types';
+import { FPS } from '@shared/video';
 
 export function decisionNoteKey(pkg: PackageView): string {
   return `${pkg.dir}\0${pkg.decisionToken ?? JSON.stringify(pkg.pendingDecision)}`;
@@ -32,6 +33,35 @@ export interface AcceptTarget {
   resultToken?: string;
   /** У плана уже есть комплект в assets: приёмка возможна только с явной заменой. */
   hasAsset?: boolean;
+  /** Длина окна плана и запрошенного оригинала в кадрах: при расхождении «целиком» заведомо не подходит. */
+  windowFrames?: number;
+  originalFrames?: number;
+  /** Речевой план без подготовленного WAV принять нельзя: accept_shot требует точный срез песни. */
+  speechMissing?: boolean;
+}
+
+export function acceptTargetFor(pkg: PackageView, hasAsset: boolean, lipsync = false): AcceptTarget {
+  const window = pkg.timing?.frames ?? (pkg.timing?.window_seconds ? Math.round(pkg.timing.window_seconds * FPS) : undefined);
+  // У повтора по сохранённому запросу длительность есть только в параметрах запроса.
+  const requested = pkg.timing?.request_seconds ?? Number(pkg.request?.parameters?.duration);
+  const original = requested > 0 ? Math.round(requested * FPS) : undefined;
+  return {
+    shot: pkg.shot,
+    dir: pkg.dir,
+    resultToken: pkg.resultToken,
+    hasAsset,
+    windowFrames: window,
+    originalFrames: original,
+    speechMissing: lipsync && !pkg.speech
+  };
+}
+
+/** Оригинал короче окна удерживает последний кадр, длиннее — обрезается по окну; совпадающий принимается целиком. */
+export function defaultAcceptOptions(target: AcceptTarget): AcceptOptions {
+  const base: AcceptOptions = { mode: 'full', cutStart: 0, cutEnd: 0, speed: '1', holdFirst: 0, holdLast: 0 };
+  const { windowFrames: window, originalFrames: original } = target;
+  if (!window || !original || window === original) return base;
+  return { ...base, mode: 'cut', cutEnd: Math.min(window, original) / FPS, holdLast: Math.max(0, window - original) };
 }
 
 export async function acceptShownResult(api: Api, project: string, target: AcceptTarget, options: AcceptOptions): Promise<JobInfo> {

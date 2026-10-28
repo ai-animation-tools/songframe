@@ -1,8 +1,10 @@
 import { ArrowBack, ArrowForward, DeleteOutline } from '@mui/icons-material';
 import { memo, type ReactElement } from 'react';
 import { Alert, Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import { ActionButton } from '../../../components/ActionButton';
 import type { MontageClip, MontageDraft } from '@shared/montage';
 import { clipLength, frameLabel, rollCut, slipClip, trimClip } from '../model';
+import { countLabel } from '@shared/plural';
 
 interface Props {
   draft: MontageDraft;
@@ -11,10 +13,20 @@ interface Props {
   onChange: (draft: MontageDraft) => void;
   onRequestRemove: () => void;
   disabled: boolean;
+  /** Почему правка недоступна, пока disabled. */
+  disabledReason: string;
 }
 
 /** Точные значения дополняют перетаскивание: конец всегда исключающий, как в сохранённом черновике. */
-export const MontageClipEditor = memo(function MontageClipEditor({ draft, clip, title, onChange, onRequestRemove, disabled }: Props): ReactElement {
+export const MontageClipEditor = memo(function MontageClipEditor({
+  draft,
+  clip,
+  title,
+  onChange,
+  onRequestRemove,
+  disabled,
+  disabledReason
+}: Props): ReactElement {
   if (!clip)
     return (
       <Paper variant="outlined" sx={{ p: 2 }}>
@@ -23,6 +35,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({ draft, clip, 
     );
   const change = (clips: MontageClip[]): void => onChange({ ...draft, clips });
   const next = draft.clips[draft.clips.findIndex((item) => item.id === clip.id) + 1];
+  const slipReason = 'У опоры нет видео: сдвиг участка доступен только для видеофрагмента.';
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Stack spacing={1.5}>
@@ -35,7 +48,8 @@ export const MontageClipEditor = memo(function MontageClipEditor({ draft, clip, 
           {clip.path}
         </Typography>
         <Typography variant="body2">
-          В исходнике: {frameLabel(clip.source_start_frame)} — {frameLabel(clip.source_end_frame_exclusive)} · {clipLength(clip)} кадров
+          В исходнике: {frameLabel(clip.source_start_frame)} — {frameLabel(clip.source_end_frame_exclusive)} ·{' '}
+          {countLabel(clipLength(clip), 'кадр', 'кадра', 'кадров')}
         </Typography>
         {clip.kind === 'video' && clip.source_frames === null ? (
           <Alert severity="info">Ожидаем метаданные длины исходника. Расширение конца станет доступно после загрузки видео.</Alert>
@@ -101,12 +115,24 @@ export const MontageClipEditor = memo(function MontageClipEditor({ draft, clip, 
           </Typography>
         ) : null}
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-          <Button startIcon={<ArrowBack />} size="small" disabled={clip.kind === 'card'} onClick={() => change(slipClip(draft.clips, clip.id, -1))}>
+          <ActionButton
+            startIcon={<ArrowBack />}
+            size="small"
+            disabled={clip.kind === 'card'}
+            disabledReason={slipReason}
+            onClick={() => change(slipClip(draft.clips, clip.id, -1))}
+          >
             Сдвиг −1 кадр
-          </Button>
-          <Button startIcon={<ArrowForward />} size="small" disabled={clip.kind === 'card'} onClick={() => change(slipClip(draft.clips, clip.id, 1))}>
+          </ActionButton>
+          <ActionButton
+            startIcon={<ArrowForward />}
+            size="small"
+            disabled={clip.kind === 'card'}
+            disabledReason={slipReason}
+            onClick={() => change(slipClip(draft.clips, clip.id, 1))}
+          >
             Сдвиг +1 кадр
-          </Button>
+          </ActionButton>
           {next ? (
             <>
               <Button startIcon={<ArrowBack />} size="small" onClick={() => change(rollCut(draft.clips, clip.id, -1))}>
@@ -117,9 +143,9 @@ export const MontageClipEditor = memo(function MontageClipEditor({ draft, clip, 
               </Button>
             </>
           ) : null}
-          <Button startIcon={<DeleteOutline />} color="error" size="small" disabled={disabled} onClick={onRequestRemove}>
+          <ActionButton startIcon={<DeleteOutline />} color="error" size="small" disabled={disabled} disabledReason={disabledReason} onClick={onRequestRemove}>
             Удалить с дорожки
-          </Button>
+          </ActionButton>
         </Stack>
       </Stack>
     </Paper>

@@ -4,6 +4,9 @@ import type { ReferenceForm } from './types';
 let keyCounter = 1;
 export const nextKey = (): number => keyCounter++;
 
+/** Допустимый код референса; совпадает с проверкой сохранения в главном процессе. */
+export const ID_PATTERN = /^[a-z][a-z0-9_]*$/;
+
 export { AUDIO_FILTER, IMAGE_FILTER, TEXT_FILTER } from '../../file-filters';
 
 /** Код референса из названия: транслитерация кириллицы в латиницу, остальное в подчёркивание. */

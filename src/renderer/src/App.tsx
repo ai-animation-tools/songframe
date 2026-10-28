@@ -10,6 +10,7 @@ import {
   JobsPage,
   NewProjectPage,
   MontagePage,
+  MontagePlayerPage,
   ProjectPage,
   ProductionPage,
   ProjectsPage,
@@ -21,7 +22,6 @@ import {
 } from './pages';
 import { AppProvider } from './state';
 import { ThemeModeProvider } from './theme';
-import { MontagePlayerPage } from './pages/MontagePlayerPage';
 
 export function App(): ReactElement {
   return (

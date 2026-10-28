@@ -19,6 +19,8 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
+import uuid
 from decimal import Decimal
 from pathlib import Path
 
@@ -54,10 +56,20 @@ PROJECT_ENV = "SONGFRAME_PROJECT"
 PROJECT_MARKER = "plan/project.json"
 # Инструменты, которым проект не нужен: запуск без выбранного проекта для них не ошибка.
 PROJECT_FREE_TOOLS = {"run_tests.py", "current_project.py"}
+# Действия инструментов, не связанные с проектом: вход к провайдеру выполняется со страницы «Среда» без клипа.
+PROJECT_FREE_ACTIONS = {"media_request.py": {"login", "auth-status"}}
 NO_PROJECT_MESSAGE = (
     "Проект клипа не выбран. Укажите `--project <папка>`, задайте переменную окружения "
     f"{PROJECT_ENV} или выберите проект: `python3 -B tools/current_project/current_project.py set <папка>`."
 )
+
+
+def uuid7():
+    """UUID версии 7 по RFC 9562: 48 бит времени Unix в миллисекундах, версия, вариант и случайные биты."""
+    value = (time.time_ns() // 1_000_000) << 80 | int.from_bytes(os.urandom(10), "big")
+    value = value & ~(0xF << 76) | 0x7 << 76
+    value = value & ~(0x3 << 62) | 0x2 << 62
+    return str(uuid.UUID(int=value))
 
 
 def sha(path):
@@ -145,6 +157,8 @@ def running_as_tool(argv=None):
         return False
     script = Path(argv[0]).resolve()
     if not script.is_relative_to(TOOLS_ROOT / "tools"):
+        return False
+    if len(argv) > 1 and argv[1] in PROJECT_FREE_ACTIONS.get(script.name, ()):
         return False
     return script.name.endswith(".py") and not script.name.startswith("test_") and script.name not in PROJECT_FREE_TOOLS
 

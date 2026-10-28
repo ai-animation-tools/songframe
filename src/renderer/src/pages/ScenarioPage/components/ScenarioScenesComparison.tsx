@@ -31,6 +31,7 @@ export function ScenarioScenesComparison({
     { key: 'card', label: 'Карточка' },
     { key: 'state_from', label: 'Наследование состояния' },
     { key: 'state_changes', label: 'Изменения состояния' },
+    { key: 'derived_from', label: 'Собирается из плана' },
     { key: 'notes', label: 'Примечания' }
   ];
   return (

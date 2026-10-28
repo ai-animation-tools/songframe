@@ -1,10 +1,11 @@
 /** Глобальные настройки доступны и без проекта, Python, FFmpeg или установленного агента. */
 import type { ReactElement } from 'react';
-import { Alert, Button, LinearProgress, Paper, Stack, Typography } from '@mui/material';
+import { Alert, LinearProgress, Paper, Stack, Typography } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { AgentDiagnostics, AgentInstructions, AgentSettingsForm } from './components';
 import { useAgentSettings } from './useAgentSettings';
-import { AgentButton } from '../../components';
+import { ActionButton, AgentButton } from '../../components';
+import { PageActionBar } from '../../components/PageActionBar';
 import { useApp } from '../../state';
 import { useAgentAccount } from './useAgentAccount';
 import { useAgentModels } from './useAgentModels';
@@ -20,9 +21,15 @@ export function SettingsPage(): ReactElement {
   const account = useAgentAccount(form.settings, networkReady);
   const models = useAgentModels(form.settings?.provider, networkReady);
   const installed = useInstalledAgents();
+  // Причины блокировки кнопок формы: сначала идущая операция, затем состояние профиля.
+  const profileReason = form.profileLoading ? 'Дождитесь загрузки профиля агента.' : form.profileError ? 'Профиль агента не прочитан: см. ошибку выше.' : null;
+  const saveReason = form.saving ? 'Дождитесь окончания сохранения.' : profileReason;
+  const checkReason = !form.settings ? 'Сначала выберите агента.' : form.checking ? 'Дождитесь окончания проверки.' : saveReason;
   return (
     <Stack spacing={2} sx={{ minWidth: 0 }}>
-      <Typography variant="h5">Настройки</Typography>
+      <PageActionBar>
+        <Typography variant="h5">Настройки</Typography>
+      </PageActionBar>
       <Typography color="text.secondary">
         Текстовый агент и его модель общие для всех проектов. Модель изображений выбирается в настройках проекта. Просмотр, редактирование и локальные
         инструменты доступны без агента.
@@ -49,9 +56,15 @@ export function SettingsPage(): ReactElement {
                 Проверка не сохраняет форму и не запускает генерацию. Статус входа не подтверждает доступ к выбранной модели или наличие средств.
               </Typography>
               <Stack direction="row" spacing={1}>
-                <Button variant="contained" startIcon={<SaveIcon />} onClick={form.save} disabled={form.saving || form.profileLoading || !!form.profileError}>
+                <ActionButton
+                  variant="contained"
+                  startIcon={<SaveIcon />}
+                  onClick={form.save}
+                  disabled={form.saving || form.profileLoading || !!form.profileError}
+                  disabledReason={saveReason}
+                >
                   {form.saving ? 'Сохранение' : 'Сохранить настройки агента'}
-                </Button>
+                </ActionButton>
                 <AgentButton
                   setup
                   provider={form.settings?.provider}
@@ -62,11 +75,14 @@ export function SettingsPage(): ReactElement {
                     models.refresh();
                   }}
                   disabled={!form.settings || form.checking || form.saving || form.profileLoading || !!form.profileError}
+                  disabledReason={checkReason}
                 >
                   {form.checking ? 'Проверка' : 'Проверить'}
                 </AgentButton>
               </Stack>
               {form.checking && <LinearProgress aria-label="Проверка агента" />}
+              {/* Итог проверки сразу под кнопкой, а не после панели аккаунта. */}
+              {form.result && <AgentDiagnostics result={form.result} />}
               {form.settings && accountReady && (
                 <AgentAccountPanel
                   provider={form.settings.provider}
@@ -74,12 +90,12 @@ export function SettingsPage(): ReactElement {
                   loading={account.loading}
                   failed={account.failed}
                   disabled={form.saving || !online}
+                  disabledReason={form.saving ? 'Дождитесь окончания сохранения настроек.' : 'Нет подключения к сети.'}
                   onRefresh={account.refresh}
                 />
               )}
             </Stack>
           </Paper>
-          {form.result && <AgentDiagnostics result={form.result} />}
           {form.settings && form.result && <AgentInstructions provider={form.settings.provider} result={form.result} />}
         </>
       )}

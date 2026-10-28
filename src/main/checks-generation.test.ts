@@ -9,7 +9,7 @@ let project: string;
 let path: string;
 const base = { schema_version: 1, name: 'Клип', animatic_video: 'clip.mp4' };
 const video = {
-  provider: 'kling',
+  provider: 'test',
   provider_selected: true,
   resolution: '1080p',
   aspect_ratio: '16:9',

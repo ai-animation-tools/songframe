@@ -415,7 +415,7 @@ def readme(bundle, copied):
         "## Как читать интервалы",
         "",
         (
-            "- Оригиналы Kling идут с частотой 24 кадра/с (`original_fps`). "
+            "- Оригиналы генерации сохраняют собственную частоту кадров (`original_fps`, например 24 кадра/с). "
             "Поля `source_in_s`/`source_out_s` — секунды выбранного участка "
             "на сетке `source_grid_fps` после конвертации в 30 кадров/с; "
             "`source_in_frame_native`/`source_out_frame_native` — те же "
@@ -438,7 +438,7 @@ def readme(bundle, copied):
             "песни, с которым синхронизированы губы; `audio_recipe` описывает "
             "срез по сэмплам."
         ),
-        "- Звук внутри оригиналов Kling в монтаже не используется; музыка — исходная песня.",
+        "- Звук внутри оригиналов генерации в монтаже не используется; музыка — исходная песня.",
         "",
         "## Оговорки",
         "",
@@ -456,7 +456,7 @@ def export(target, root=ROOT, copy=False):
     if target.is_relative_to(root) and not any(
         target.is_relative_to((root / name).resolve()) for name in ("plan/batches",)
     ):
-        raise ValueError("Пакет собирается вне репозитория или в plan/batches.")
+        raise ValueError("Пакет собирается вне папки проекта или в plan/batches.")
     if target.exists() and any(target.iterdir()):
         raise ValueError("Папка пакета должна быть пустой.")
     target.mkdir(parents=True, exist_ok=True)
@@ -482,7 +482,7 @@ def export(target, root=ROOT, copy=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", required=True, help="Пустая папка вне репозитория или внутри plan/batches")
+    parser.add_argument("--out", required=True, help="Пустая папка вне папки проекта или внутри plan/batches")
     parser.add_argument(
         "--copy",
         action="store_true",

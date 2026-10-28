@@ -263,6 +263,11 @@ def accept(
             "service_status": attempt.get("service_status"),
             "path_base": "asset_directory",
         }
+        if attempt.get("manual_result"):
+            snapshot["provenance"] = (
+                "Исход отправки остался неизвестен; оригинал загружен пользователем из истории генераций сервиса, "
+                "ID задания неизвестен."
+            )
         (staging / "generation-request.json").write_text(
             json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
@@ -366,14 +371,16 @@ def accept(
         "replaced": str(replaced.relative_to(root)) if replaced else None,
         "observed_credits": None,
         "cleaned": [],
+        "warnings": [],
     }
     if attempt.get("credits_consumed") is not None:
+        # Комплект уже перенесён: сбой записи наблюдения цены не отменяет приёмку и не мешает обновлению
+        # представлений и очистке, а возвращается предупреждением.
         try:
-            result["observed_credits"] = (
-                learn_cost(work_dir, pricing)["credits"] if pricing else learn_cost(work_dir)["credits"]
-            )
-        except ValueError:
-            result["observed_credits"] = None
+            result["observed_credits"] = learn_cost(work_dir, pricing)["credits"]
+        except (ValueError, OSError, KeyError, TypeError) as error:
+            reason = str(error) if isinstance(error, (ValueError, OSError)) else type(error).__name__
+            result["warnings"].append("Наблюдение расхода не записано: " + reason)
     if update_views and root == ROOT.resolve():
         subprocess.run(
             [
@@ -462,7 +469,7 @@ def main():
     parser.add_argument("shot")
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--package", help="Папка пакета shot_workflow с workflow.json")
-    source.add_argument("--work-dir", help="Папка попытки kling_request с request.json и attempt.json")
+    source.add_argument("--work-dir", help="Папка попытки media_request с request.json и attempt.json")
     edit = parser.add_mutually_exclusive_group(required=True)
     edit.add_argument("--review", help="JSON рецепта пробы build_review с этим планом")
     edit.add_argument(

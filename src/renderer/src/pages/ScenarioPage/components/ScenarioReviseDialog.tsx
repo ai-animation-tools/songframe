@@ -1,6 +1,7 @@
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import type { ReactElement } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import { ActionButton } from '../../../components/ActionButton';
 import { AgentButton } from '../../../components/AgentButton';
 
 /** Доработка ограничена выбранным планом и требует содержательного замечания. */
@@ -31,10 +32,23 @@ export function ScenarioReviseDialog({
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button startIcon={<CancelOutlinedIcon />} disabled={busy} onClick={onClose}>
+        <ActionButton startIcon={<CancelOutlinedIcon />} disabled={busy} disabledReason="Дождитесь завершения текущей операции." onClick={onClose}>
           Отмена
-        </Button>
-        <AgentButton disabled={busy || !ids.length || !note.trim()} variant="contained" onClick={onStart}>
+        </ActionButton>
+        <AgentButton
+          disabled={busy || !ids.length || !note.trim()}
+          disabledReason={
+            busy
+              ? 'Дождитесь завершения текущей операции.'
+              : !ids.length
+                ? 'Сначала выберите план для доработки.'
+                : !note.trim()
+                  ? 'Опишите, что нужно изменить.'
+                  : null
+          }
+          variant="contained"
+          onClick={onStart}
+        >
           Подготовить доработку
         </AgentButton>
       </DialogActions>

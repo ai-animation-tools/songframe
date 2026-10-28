@@ -6,6 +6,7 @@
  */
 
 import { FPS } from '@shared/video';
+import { mediaProviderTitles } from '@shared/media-providers';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DashboardShot, DashboardView, EntityState, ScenesFile } from '@shared/types';
@@ -100,7 +101,7 @@ function readAsset(project: string, sid: string, fps: number): DashboardShot['as
       note: edit.processing_note ?? ''
     },
     prompt: readText(descriptorPath(project, dir, generation.prompt)),
-    request: request ? { provider: request.provider ?? 'Kling', model: request.model ?? '', parameters: request.parameters ?? {} } : null,
+    request: request ? { provider: request.provider ?? mediaProviderTitles('video'), model: request.model ?? '', parameters: request.parameters ?? {} } : null,
     inputs,
     lipsync: !!generation.lipsync,
     audio: descriptorPath(project, dir, generation.audio)

@@ -18,7 +18,7 @@ export function nextStep(status: ProjectStatus): NextStep {
     },
     sourced: {
       title: 'Разметить трек',
-      text: 'Черновик делает кнопка «Разметить автоматически» на странице таймингов; затем границы строк подтверждаются на слух.',
+      text: 'Черновик делает кнопка «Разметить» на странице таймингов; затем границы строк подтверждаются на слух.',
       action: { label: 'К таймингам', to: '/project/timing' }
     },
     timed: status.checks.cast

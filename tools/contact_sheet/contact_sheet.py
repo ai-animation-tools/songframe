@@ -17,8 +17,7 @@ from decimal import Decimal
 from PIL import Image, ImageDraw, ImageFont
 
 from tools.common import ROOT
-
-FONT = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+from tools.render_animatic_cards.render_animatic_cards import FONT  # шрифт комплекса, не системный
 SAMPLES = 12
 COLUMNS = 4
 CELL = (480, 270)
@@ -251,7 +250,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--package", help="Папка shot_workflow: видео из попытки, опоры для сравнения")
-    source.add_argument("--work-dir", help="Папка попытки kling_request")
+    source.add_argument("--work-dir", help="Папка попытки media_request")
     source.add_argument("--video", help="Любой видеофайл")
     parser.add_argument("--out", help="Папка сводки; по умолчанию preview/ рядом с пакетом или видео")
     parser.add_argument("--no-preview", action="store_true", help="Не делать превью 2×")

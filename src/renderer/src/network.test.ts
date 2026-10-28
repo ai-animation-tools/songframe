@@ -11,7 +11,7 @@ vi.mock('./state', () => ({ useApp: () => app }));
 const ready: AiAccess = {
   agent: { provider: 'claude', selected: true, available: true, message: '' },
   image: { provider: 'codex', selected: true, available: true, message: '' },
-  video: { provider: 'kling', selected: true, available: true, message: '' }
+  video: { provider: 'test', selected: true, available: true, message: '' }
 };
 
 describe('работа без сети', () => {

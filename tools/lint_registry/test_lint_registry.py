@@ -11,8 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from tools.lint_registry import lint_registry as tool
+from tools.testing import fake_media_request as fake
 
 SHA = "a" * 64
 
@@ -41,6 +43,7 @@ class LintRegistryTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="lint-registry-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        fake.enable(self)
         for name in ("plan/awaiting", "plan/batches", "assets/shots/M01", "source"):
             (self.root / name).mkdir(parents=True)
         self.registry = {
@@ -55,10 +58,10 @@ class LintRegistryTests(unittest.TestCase):
         self.snapshot = {
             "schema_version": 1,
             "shot": "M01",
-            "service": "Kling",
+            "service": "test",
             "command": "image_to_video",
-            "model": "kling-video-v3_0",
-            "parameters": {"duration": "2", "prefer_multi_shots": "false"},
+            "model": "test-video",
+            "parameters": {"duration": "2"},
             "inputs": [],
             "prompt": "generation-prompt.txt",
             "generation_id": "job-1",
@@ -145,17 +148,52 @@ class LintRegistryTests(unittest.TestCase):
         self.assertTrue(any("нет обязательного поля lipsync" in e for e in errors))
         self.assertTrue(any("референс-изображение в assets" in e for e in errors))
 
+    def test_derived_from_schema_and_links_to_other_shots(self):
+        def errors_for(**links):
+            for item in self.registry["scenes"]:
+                item.pop("derived_from", None)
+                if item["id"] in links:
+                    item["derived_from"] = links[item["id"]]
+            self.write()
+            return [e for e in self.messages(tool.lint(self.root))[0] if "derived_from" in e]
+
+        self.assertEqual(errors_for(M02={"shot": "M01"}), [])
+        self.assertEqual(errors_for(M02={"shot": "M99"}), ["M02.derived_from: ссылается на неизвестный план M99"])
+        self.assertEqual(errors_for(M02={"shot": "M02"}), ["M02.derived_from: не может ссылаться на сам план"])
+        self.assertEqual(
+            errors_for(M01={"shot": "M02"}, M02={"shot": "M01"}),
+            [
+                "M01.derived_from: источник M02 сам собирается из другого плана; укажите исходный план",
+                "M02.derived_from: источник M01 сам собирается из другого плана; укажите исходный план",
+            ],
+        )
+        # Неверную форму сообщает схема, ссылочные правила её не дублируют.
+        self.assertEqual(
+            errors_for(M02={"shot": "2", "mode": "freeze"}),
+            [
+                "$.scenes[1].derived_from.shot: значение '2' не соответствует шаблону",
+                "$.scenes[1].derived_from: неизвестное поле mode",
+            ],
+        )
+
     def test_snapshot_rules_and_packages(self):
         self.snapshot.update(created_at="2026-10-21T00:00:00", cost={"available_credits": 1})
         del self.snapshot["generation_id"]
-        del self.snapshot["parameters"]["prefer_multi_shots"]
         self.manifest["generation"]["inputs"] = []
         self.write()
-        errors, warnings = self.messages(tool.lint(self.root))
+        # Модельные предупреждения о снимке даёт только адаптер его провайдера.
+        warning = [("parameters", "предупреждение адаптера о модели")]
+        with patch.object(fake, "snapshot_warnings", side_effect=lambda snapshot: warning, create=True) as hook:
+            errors, warnings = self.messages(tool.lint(self.root))
+        self.assertEqual(hook.call_args.args[0]["model"], "test-video")
         self.assertTrue(any(e.startswith("created_at:") for e in errors) and any(e.startswith("cost:") for e in errors))
         self.assertTrue(any(e.startswith("generation_id:") for e in errors))
         self.assertTrue(any("generation.inputs: нужно не менее 1" in e for e in errors))
-        self.assertTrue(any("prefer_multi_shots" in w for w in warnings))
+        self.assertIn("parameters: предупреждение адаптера о модели", warnings)
+        del self.snapshot["service"]
+        self.write()
+        errors, _ = self.messages(tool.lint(self.root))
+        self.assertIn("provider: снимок должен называть провайдера генерации", errors)
         package = self.root / "plan/awaiting/M02"
         (package / "request").mkdir(parents=True)
         (package / "workflow.json").write_text(
@@ -166,23 +204,21 @@ class LintRegistryTests(unittest.TestCase):
                 {
                     "schema_version": 1,
                     "kind": "video",
-                    "provider": "kling",
+                    "provider": "test",
                     "command": "image_to_video",
-                    "model": "kling-video-v3_0",
+                    "model": "test-video",
                     "parameters": {},
                     "outputs": 1,
                     "inputs": [],
                     "prompt": {"path": "prompt.txt", "sha256": SHA},
-                    "video_without_watermark": True,
                 }
             )
         )
         errors, _ = self.messages(tool.lint(self.root))
         self.assertTrue(any("stage: пакет в очереди" in e for e in errors))
-        self.assertTrue(any("prefer_multi_shots обязателен" in e for e in errors))
         self.assertTrue(any("plan/awaiting/M02" in i["file"] for i in tool.lint(self.root).errors))
 
-    def test_generic_frozen_request_has_explicit_provider_without_kling_constraints(self):
+    def test_generic_frozen_request_has_explicit_provider_without_service_constraints(self):
         # Общая схема описывает хранимый запрос. Команду, модель, входные
         # флаги и ограничения числа результатов проверяет конкретный адаптер.
         package = self.root / "plan/batches/M02-generic"
@@ -241,7 +277,7 @@ class LintRegistryTests(unittest.TestCase):
                     "frame_id": "K01",
                     "request_dir": "image-01",
                     "request_sha256": SHA,
-                    "provider": "kling",
+                    "provider": "test",
                     "unknown": {"keep": True},
                 }
             ],
@@ -255,6 +291,42 @@ class LintRegistryTests(unittest.TestCase):
         path.write_text(json.dumps(data), encoding="utf-8")
         errors, _ = self.messages(tool.lint(self.root))
         self.assertTrue(any("image_requests[0].request_sha256" in error for error in errors), errors)
+
+    def test_cast_schema_images_world_and_references_map(self):
+        entity = {
+            "id": "mira",
+            "kind": "hero",
+            "name": "Мира",
+            "short_name": "Мира",
+            "role": "",
+            "appearance": "",
+            "images": ["heroes/mira.jpg"],
+            "initial_state": {},
+        }
+        cast = {"schema_version": 1, "entities": [entity], "properties": {}}
+        (self.root / "plan/cast.json").write_text(json.dumps(cast, ensure_ascii=False), encoding="utf-8")
+        report = tool.lint(self.root)
+        cast_errors = [f"{i['where']}: {i['message']}" for i in report.errors if i["file"] == "plan/cast.json"]
+        self.assertEqual(cast_errors, ["mira.images: нет файла source/heroes/mira.jpg"])
+        errors, warnings = self.messages(report)
+        self.assertTrue(any(e.startswith("references: карта references расходится с кастингом") for e in errors))
+        self.assertTrue(any(w.startswith("entities: нет сущности world") for w in warnings))
+        # Согласованный кастинг: файл есть, карта выведена из кастинга, мир задан.
+        (self.root / "source/heroes").mkdir()
+        (self.root / "source/heroes/mira.jpg").write_bytes(b"jpg")
+        world = dict(entity, id="world", kind="world", name="Мир", short_name="Мир", images=[])
+        cast["entities"].append(world)
+        (self.root / "plan/cast.json").write_text(json.dumps(cast, ensure_ascii=False), encoding="utf-8")
+        self.registry["references"] = {"mira": {"name": "Мира", "path": "source/heroes/mira.jpg"}}
+        for item in self.registry["scenes"]:
+            item.update(references=["mira"], card={"primary_reference": "mira"})
+        self.write()
+        report = tool.lint(self.root)
+        self.assertEqual(self.messages(report)[0], [])
+        self.assertFalse(any(i["file"] == "plan/cast.json" for i in report.warnings))
+        cast["entities"][0]["id"] = "Мира"
+        (self.root / "plan/cast.json").write_text(json.dumps(cast, ensure_ascii=False), encoding="utf-8")
+        self.assertTrue(any(i["file"] == "plan/cast.json" for i in tool.lint(self.root).errors))
 
     def test_description_missing_hero_is_warning(self):
         (self.root / "source/description.md").write_text("Компания едет на отдых.", encoding="utf-8")

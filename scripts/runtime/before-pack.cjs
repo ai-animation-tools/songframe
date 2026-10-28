@@ -13,8 +13,6 @@ module.exports = async function beforePack(context) {
     const lock = JSON.parse(readFileSync(join(__dirname, 'media-lock.json'), 'utf8'));
     await require('./media-files.cjs').verifyMedia(root, lock, target);
   }
-  const klingLock = JSON.parse(readFileSync(join(__dirname, 'kling-lock.json'), 'utf8'));
-  await require('./kling-files.cjs').verifyKling(join(context.packager.projectDir, 'build/runtime/kling'), klingLock);
   if (context.electronPlatformName === 'win32') {
     // Предотвращает повтор ошибки CMD с обрывками команд после смены кодировки/переносов.
     const cmd = readFileSync(join(context.packager.projectDir, 'scripts/runtime/windows/check-runtime.cmd'));

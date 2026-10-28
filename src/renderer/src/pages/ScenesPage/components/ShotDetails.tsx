@@ -13,6 +13,7 @@ import { ShotPrompt } from './ShotPrompt';
 import { ShotSection } from './ShotSection';
 import { ShotStaging } from './ShotStaging';
 import { ShotStateBlock } from './ShotStateBlock';
+import { countLabel } from '@shared/plural';
 
 /** Собирает подробности выбранной сцены и действия перехода к её производству. */
 export function ShotDetails({
@@ -39,7 +40,7 @@ export function ShotDetails({
           {shot.animaticMedia ? <Chip size="small" variant="outlined" label={`в аниматике: ${MEDIA_LABELS[shot.animaticMedia]}`} /> : null}
           <Box sx={{ flex: 1 }} />
           <Typography variant="caption" color="text.secondary">
-            {formatClock(shot.start)}–{formatClock(shot.end)} · {shot.frames} кадров · {shot.sequenceTitle}
+            {formatClock(shot.start)}–{formatClock(shot.end)} · {countLabel(shot.frames, 'кадр', 'кадра', 'кадров')} · {shot.sequenceTitle}
           </Typography>
         </Box>
         <Typography variant="subtitle1" fontWeight={600}>

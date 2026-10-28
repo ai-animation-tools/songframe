@@ -3,7 +3,7 @@
 import type { WhisperSetup, WhisperModelId } from './whisper-models';
 import type { AgentAccountResult, AgentCheckResult, AgentEvent, AgentJob, AgentModelsResult, AgentSettings, AgentStartInput } from './agents';
 import type { ProductionFrameCandidate, ProductionWorkflowStart, ProductionWorkflowView } from './production-workflow';
-import type { MediaCapabilities, MediaKind } from './media-providers';
+import type { MediaCapabilities, MediaKind, ProviderAuth } from './media-providers';
 import type { ScenarioWorkflowStart, ScenarioWorkflowView } from './scenario-workflow';
 import type { NotificationTarget } from './notifications';
 import type { MontageApi } from './montage';
@@ -13,6 +13,8 @@ import type { CoverGenerationApi } from './cover-generation';
 import type { AiAccess } from './ai-access';
 import type {
   AcceptOptions,
+  PackageView,
+  SpeechPlan,
   AnimaticView,
   AppState,
   BriefResult,
@@ -31,6 +33,8 @@ import type {
   EnvironmentCheck,
   JobInfo,
   PickOptions,
+  PreviousSessionInfo,
+  RendererErrorReport,
   ProductionView,
   ProductionQuote,
   ProjectStatus,
@@ -158,13 +162,22 @@ export interface Api {
       quoteToken?: string,
       unknownCostConsentToken?: string
     ): Promise<JobInfo>;
-    resume(project: string, packageDir: string, generationId?: string): Promise<JobInfo>;
+    /** Продолжает получение по сохранённому ID задания; без ID доступны только два действия ниже. */
+    resume(project: string, packageDir: string): Promise<JobInfo>;
+    /** Неизвестный исход: файл, скачанный пользователем из истории генераций сервиса, становится оригиналом попытки. */
+    attachResult(project: string, packageDir: string, files: string[]): Promise<JobInfo>;
+    /** Неизвестный исход: генерации нет в истории сервиса, попытка снова ждёт подтверждения отправки. */
+    markNotCreated(project: string, packageDir: string): Promise<void>;
     /** Выбирает кандидат опоры; художественное утверждение кадра выполняется отдельно. */
     selectImage(project: string, packageDir: string, index: number, expectedResultToken: string): Promise<void>;
     regenerate(project: string, shot: string): Promise<JobInfo>;
     accept(project: string, shot: string, packageDir: string, options: AcceptOptions): Promise<JobInfo>;
     contactSheet(project: string, packageDir: string): Promise<JobInfo>;
     park(project: string, packageDir: string): Promise<void>;
+    /** Строки песни в окне речевого плана и предложенные границы среза. */
+    speechPlan(project: string, shot: string, packageDir?: string): Promise<SpeechPlan>;
+    /** Режет точный WAV липсинка в audio/ пакета; без границ — по разметке «Таймингов». */
+    prepareSpeech(project: string, packageDir: string, bounds?: { start: number; end: number }): Promise<PackageView>;
     /** Снова задать вопрос о полученном результате пакета приложения, если ответ уже записан. */
     reopenQuestion(project: string, packageDir: string): Promise<void>;
     /** Удалить пакет попытки целиком, включая оплаченный оригинал; незавершённая отправка не удаляется. */
@@ -200,13 +213,29 @@ export interface Api {
     removeReview(project: string, path: string): Promise<void>;
   };
   jobs: {
+    /** Задания этого и прошлых сеансов; у прошлых log пуст, хвост журнала даёт get. */
     list(): Promise<JobInfo[]>;
     get(id: string): Promise<JobInfo | null>;
+    /** Сведения задания и его журнал с диска одним текстом для копирования. */
+    copyText(id: string): Promise<string>;
+  };
+  diagnostics: {
+    /** Необработанная ошибка окна в журнал сбоев localDir/logs/app.log. */
+    reportRendererError(report: RendererErrorReport): void;
+    /** Сведения об аварийном прошлом сеансе; один раз за запуск, иначе null. */
+    crashNotice(): Promise<PreviousSessionInfo | null>;
+    /** Отчёт для разработчика через диалог сохранения; путь файла или null при отмене. */
+    saveReport(): Promise<string | null>;
   };
   environment: {
     check(onProgress?: (check: EnvironmentCheck) => void): Promise<EnvironmentCheck[]>;
-    loginKling(): Promise<{ ok: boolean; message: string }>;
-    klingAuth(): Promise<{ status: 'authenticated' | 'unauthenticated' | 'unknown'; message?: string }>;
+    /** Вход в платного провайдера: приложение открывает страницу авторизации в браузере и ждёт подтверждения. */
+    loginProvider(provider: string): Promise<{ ok: boolean; message: string }>;
+    /** Прервать ожидание входа. */
+    cancelLogin(provider: string): Promise<void>;
+    /** Адрес авторизации текущего входа: страница показывает его ссылкой, если браузер не открылся. */
+    onLoginUrl(listener: (value: { provider: string; url: string }) => void): () => void;
+    providerAuth(provider: string): Promise<ProviderAuth>;
   };
   tools: {
     run(project: string, name: string, args: string[]): Promise<ToolResult>;

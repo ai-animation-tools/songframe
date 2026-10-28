@@ -15,3 +15,4 @@ export { SettingsPage } from './SettingsPage';
 export { SourcesPage } from './SourcesPage';
 export { TimingPage } from './TimingPage';
 export { MontagePage } from './MontagePage';
+export { MontagePlayerPage } from './MontagePlayerPage';

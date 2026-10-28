@@ -1,14 +1,18 @@
 import type { ReactElement } from 'react';
-import { Box, Button, Divider, Paper, Stack, Typography } from '@mui/material';
+import { Box, Divider, Paper, Stack, Typography } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import type { CheckInfo } from '@shared/types';
 import type { CheckOutcome } from '../types';
 import { CheckRow } from './CheckRow';
+import { ANCHORS } from '../../../components/linkTargets';
+import { ActionButton } from '../../../components/ActionButton';
 
 interface ProjectChecksPanelProps {
   checks: CheckInfo[];
   disabled: boolean;
+  /** Почему проверки сейчас нельзя запустить. */
+  disabledReason: string | null;
   strict: boolean;
   next: boolean;
   setStrict: (value: boolean) => void;
@@ -23,6 +27,7 @@ interface ProjectChecksPanelProps {
 export function ProjectChecksPanel({
   checks,
   disabled,
+  disabledReason,
   strict,
   next,
   setStrict,
@@ -33,7 +38,7 @@ export function ProjectChecksPanel({
   runCheck
 }: ProjectChecksPanelProps): ReactElement {
   return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
+    <Paper variant="outlined" sx={{ p: 2 }} data-anchor={ANCHORS.checksProject}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
         <PlaylistAddCheckIcon color="action" />
         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
@@ -47,6 +52,7 @@ export function ProjectChecksPanel({
             check={check}
             result={outcome(check)}
             disabled={disabled}
+            disabledReason={disabledReason}
             strict={strict}
             next={next}
             setStrict={setStrict}
@@ -56,9 +62,17 @@ export function ProjectChecksPanel({
           />
         ))}
       </Stack>
-      <Button sx={{ mt: 1 }} variant="contained" size="small" startIcon={<PlayArrowIcon />} disabled={disabled} onClick={runAll}>
+      <ActionButton
+        sx={{ mt: 1 }}
+        variant="contained"
+        size="small"
+        startIcon={<PlayArrowIcon />}
+        disabled={disabled}
+        disabledReason={disabledReason}
+        onClick={runAll}
+      >
         Запустить все
-      </Button>
+      </ActionButton>
     </Paper>
   );
 }

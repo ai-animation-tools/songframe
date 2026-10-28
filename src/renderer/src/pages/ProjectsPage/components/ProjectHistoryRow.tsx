@@ -28,6 +28,7 @@ export function ProjectHistoryRow({ entry, projectState, current, busy, onOpen, 
           label={`Убрать проект «${entry.name}» из истории`}
           description="Из истории будет удалена только запись о проекте. Папка проекта и все её файлы останутся на диске."
           disabled={busy}
+          disabledReason="Дождитесь открытия проекта."
           onConfirm={() => onForget(entry.path)}
           confirmLabel="Убрать из истории"
         >

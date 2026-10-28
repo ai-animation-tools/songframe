@@ -4,7 +4,6 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { mediaPaths, modelDirectory } from './media-runtime';
-import { klingPaths } from './kling-runtime';
 
 export interface PythonOptions {
   packaged?: boolean;
@@ -46,14 +45,6 @@ export function pythonEnv(options: PythonOptions): NodeJS.ProcessEnv {
     env.SONGFRAME_BIN_DIR = media.binDir;
   }
   env.SONGFRAME_MODEL_DIR = modelDirectory(options);
-  if (!env.SONGFRAME_KLING_CLI) {
-    const kling = klingPaths(options);
-    if (kling) {
-      // Python знает только argv встроенного CLI; режим Node включается исключительно у его дочернего процесса.
-      env.SONGFRAME_KLING_EXECUTABLE = kling.executable;
-      env.SONGFRAME_KLING_SCRIPT = kling.script;
-    }
-  }
   return env;
 }
 

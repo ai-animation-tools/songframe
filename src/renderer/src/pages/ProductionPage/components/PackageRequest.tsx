@@ -1,27 +1,35 @@
 /** Сохранённые параметры запроса и переход к общему подтверждению отправки. */
 import type { ReactElement } from 'react';
-import { Box, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from '@mui/material';
+import { Box, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { AiButton } from '../../../components/AiButton';
 import type { PackageView } from '@shared/types';
 import { ATTEMPT_LABELS, productionInputLabel } from '@shared/production-labels';
+import { MEDIA_PROVIDERS, normalizeMediaProvider } from '@shared/media-providers';
 import { RequestModelSelection } from './RequestModelSelection';
 import { RequestParameters } from './RequestParameters';
 import { RequestPrompt } from './RequestPrompt';
+import { BUSY_REASON } from '../constants';
 
 export function PackageRequest({
   pkg,
   busy,
-  klingAvailable,
+  busyReason = BUSY_REASON,
+  providerAvailable,
   onSubmit
 }: {
   pkg: PackageView;
   busy: boolean;
-  klingAvailable: boolean;
+  /** Почему busy блокирует действия: идёт операция или нет Python. */
+  busyReason?: string;
+  providerAvailable: boolean;
   onSubmit(): void;
 }): ReactElement {
   const pending = pkg.pendingDecision;
   const canSubmit = !pending && ['request_choice', 'image_request_choice', 'ready'].includes(pkg.stage) && pkg.request?.attemptStatus === 'prepared';
+  // Название исполнителя берётся из реестра провайдеров, а не из текста интерфейса.
+  const providerId = normalizeMediaProvider(pkg.request?.provider);
+  const providerTitle = providerId ? MEDIA_PROVIDERS[providerId].title : 'Провайдер генерации';
   return (
     <>
       {pkg.request ? (
@@ -88,20 +96,18 @@ export function PackageRequest({
           </Box>
           {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} /> : null}
           {canSubmit ? (
-            <Tooltip title={klingAvailable ? 'Платная отправка из приложения' : 'Kling не найден'}>
-              <span>
-                <AiButton
-                  aiKind={pkg.request?.kind === 'image' ? 'image' : 'video'}
-                  sx={{ mt: 1.5 }}
-                  variant="contained"
-                  startIcon={<SendIcon />}
-                  disabled={busy || !klingAvailable}
-                  onClick={onSubmit}
-                >
-                  Отправить
-                </AiButton>
-              </span>
-            </Tooltip>
+            <AiButton
+              aiKind={pkg.request?.kind === 'image' ? 'image' : 'video'}
+              sx={{ mt: 1.5 }}
+              variant="contained"
+              startIcon={<SendIcon />}
+              title="Платная отправка из приложения"
+              disabled={busy || !providerAvailable}
+              disabledReason={busy ? busyReason : `${providerTitle} не найден: проверьте его на странице «Среда».`}
+              onClick={onSubmit}
+            >
+              Отправить
+            </AiButton>
           ) : null}
         </Box>
       ) : null}

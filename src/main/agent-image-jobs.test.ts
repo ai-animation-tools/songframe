@@ -3,11 +3,18 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentJob } from '@shared/agents';
 import { AgentManager } from './agent-manager';
 import { KeyframeImages } from './keyframe-images';
 import { SettingsStore } from './settings';
+import { registerTestAgentProvider, TEST_AGENT_PROVIDER } from './testing/media-provider';
+
+let restoreProvider: () => void;
+beforeAll(() => {
+  restoreProvider = registerTestAgentProvider();
+});
+afterAll(() => restoreProvider());
 
 const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=';
 let work: string;
@@ -87,6 +94,8 @@ async function done(value: AgentManager, id: string): Promise<AgentJob> {
   await vi.waitFor(() => expect(value.get(id)?.status).not.toBe('running'), { timeout: 4000, interval: 10 });
   return value.get(id)!;
 }
+/** Программа изображений задаётся провайдером изображений; здесь — подставной Codex CLI. */
+const IMAGE_AGENT = { provider: 'codex' as const };
 const input = (project: string) => ({ project, task: 'Опоры S01', prompt: 'Нарисуй K01', context: '{"stage":"frames"}' });
 const projectHashes = (): string[] =>
   ['plan/project.json', 'README.md'].map((path) =>
@@ -96,14 +105,13 @@ const projectHashes = (): string[] =>
   );
 
 describe.skipIf(process.platform !== 'linux')('маршрут Codex изображений', () => {
-  it('запускает найденный в PATH Codex при выбранном Claude и передаёт точный sandbox/cwd/model проекта', async () => {
+  it('запускает найденный в PATH Codex при выбранном Claude и передаёт точный sandbox/cwd/model задания', async () => {
     fakeCodex();
     const selected = { provider: 'claude' as const, model: 'личная модель Claude' };
     settings.saveAgent(selected);
-    imageProject({ provider: 'codex', model: 'модель Codex с пробелами', provider_selected: true });
     const before = projectHashes();
     const value = manager();
-    const job = value.startImages(input(project), candidateDir);
+    const job = value.startImages(input(project), candidateDir, { ...IMAGE_AGENT, model: 'модель Codex с пробелами' });
     expect(job).toMatchObject({ provider: 'codex', model: 'модель Codex с пробелами', permissions: 'workspace-write' });
     expect(await done(value, job.id)).toMatchObject({ status: 'completed', exitCode: 0 });
     expect(invocations()).toHaveLength(1);
@@ -147,20 +155,18 @@ describe.skipIf(process.platform !== 'linux')('маршрут Codex изобра
     expect(manager().get(job.id)?.permissions).toBe('read-only');
   });
 
-  it('модель опор проекта используется только для image job, модель текстового Codex туда не переносится', async () => {
+  it('модель изображений используется только для image job, модель текстового Codex туда не переносится', async () => {
     fakeCodex();
     settings.saveAgent({ provider: 'codex', model: 'text-codex-model' });
-    imageProject({ provider: 'codex', model: ' project-image-model ' });
     const before = projectHashes();
     const value = manager();
-    const image = value.startImages(input(project), candidateDir);
+    const image = value.startImages(input(project), candidateDir, { ...IMAGE_AGENT, model: ' project-image-model ' });
     expect(await done(value, image.id)).toMatchObject({ model: 'project-image-model', permissions: 'workspace-write', status: 'completed' });
     const text = value.start(input(project));
     expect(await done(value, text.id)).toMatchObject({ model: 'text-codex-model', permissions: 'read-only', status: 'completed' });
     expect(invocations()).toHaveLength(2);
     expect(invocations()[0].args.slice(-3)).toEqual(['--model', 'project-image-model', '-']);
     expect(invocations()[1].args.slice(-3)).toEqual(['--model', 'text-codex-model', '-']);
-    expect(settings.getImageAgent()).toEqual({ provider: 'codex' });
     expect(settings.getAgent()).toEqual({ provider: 'codex', model: 'text-codex-model' });
     expect(projectHashes()).toEqual(before);
   });
@@ -169,7 +175,7 @@ describe.skipIf(process.platform !== 'linux')('маршрут Codex изобра
     fakeCodex();
     settings.saveAgent({ provider: 'codex', model: 'text-codex-model' });
     const value = manager();
-    const image = value.startImages(input(project), candidateDir, ' cover-model ');
+    const image = value.startImages(input(project), candidateDir, { ...IMAGE_AGENT, model: ' cover-model ' });
     expect(await done(value, image.id)).toMatchObject({ model: 'cover-model', permissions: 'workspace-write', status: 'completed' });
     expect(invocations()[0].args.slice(-3)).toEqual(['--model', 'cover-model', '-']);
   });
@@ -177,20 +183,19 @@ describe.skipIf(process.platform !== 'linux')('маршрут Codex изобра
   it.each([undefined, '  '])('пустая модель опор %j оставляет выбор CLI без модели текстового агента', async (model) => {
     fakeCodex();
     settings.saveAgent({ provider: 'codex', model: 'text-codex-model' });
-    imageProject({ provider: 'codex', model });
     const value = manager();
-    const image = value.startImages(input(project), candidateDir, model);
+    const image = value.startImages(input(project), candidateDir, { ...IMAGE_AGENT, model });
     const completed = await done(value, image.id);
     expect(completed).toMatchObject({ provider: 'codex', status: 'completed' });
     expect(completed.model).toBeUndefined();
     expect(invocations()[0].args).not.toContain('--model');
   });
 
-  it('модель опор не берётся из проекта с провайдером изображений Kling', async () => {
+  it('модель опор не берётся из настроек проекта: её передаёт провайдер изображений', async () => {
     fakeCodex();
-    imageProject({ provider: 'kling', model: 'kling-image-model' });
+    imageProject({ provider: 'test', model: 'test-image-model' });
     const value = manager();
-    const completed = await done(value, value.startImages(input(project), candidateDir).id);
+    const completed = await done(value, value.startImages(input(project), candidateDir, IMAGE_AGENT).id);
     expect(completed.model).toBeUndefined();
     expect(invocations()[0].args).not.toContain('--model');
   });
@@ -199,15 +204,15 @@ describe.skipIf(process.platform !== 'linux')('маршрут Codex изобра
     fakeCodex(true);
     settings.saveAgent({ provider: 'codex' });
     const value = manager();
-    const image = value.startImages(input(project), candidateDir);
+    const image = value.startImages(input(project), candidateDir, IMAGE_AGENT);
     expect(() => value.start(input(project))).toThrow(/PROJECT_BUSY/);
     await vi.waitFor(() => expect(invocations()).toHaveLength(1));
     expect(value.cancel(image.id)).toMatchObject({ status: 'cancelled', permissions: 'workspace-write' });
     const generic = value.start(input(project));
-    expect(() => value.startImages(input(project), candidateDir)).toThrow(/PROJECT_BUSY/);
+    expect(() => value.startImages(input(project), candidateDir, IMAGE_AGENT)).toThrow(/PROJECT_BUSY/);
     await vi.waitFor(() => expect(invocations()).toHaveLength(2));
     expect(value.cancel(generic.id)).toMatchObject({ status: 'cancelled', permissions: 'read-only' });
-    const next = value.startImages(input(project), candidateDir);
+    const next = value.startImages(input(project), candidateDir, IMAGE_AGENT);
     expect(next.status).toBe('running');
     value.cancel(next.id);
   });
@@ -215,7 +220,7 @@ describe.skipIf(process.platform !== 'linux')('маршрут Codex изобра
   it('восстанавливает workspace-write историю после перезапуска без повторного процесса', async () => {
     fakeCodex();
     const value = manager();
-    const job = value.startImages(input(project), candidateDir);
+    const job = value.startImages(input(project), candidateDir, IMAGE_AGENT);
     const completed = await done(value, job.id);
     const path = join(localDir, 'jobs', `agent-${job.id}.json`);
     writeFileSync(path, JSON.stringify({ ...completed, status: 'running', finishedAt: null }));
@@ -228,8 +233,8 @@ describe.skipIf(process.platform !== 'linux')('маршрут Codex изобра
   it('не принимает папку проекта и сам image-jobs вместо отдельной рабочей папки', () => {
     fakeCodex();
     const value = manager();
-    expect(() => value.startImages(input(project), project)).toThrow(/INVALID_INPUT/);
-    expect(() => value.startImages(input(project), join(localDir, 'image-jobs'))).toThrow(/INVALID_INPUT/);
+    expect(() => value.startImages(input(project), project, IMAGE_AGENT)).toThrow(/INVALID_INPUT/);
+    expect(() => value.startImages(input(project), join(localDir, 'image-jobs'), IMAGE_AGENT)).toThrow(/INVALID_INPUT/);
     expect(value.list()).toEqual([]);
     expect(invocations()).toEqual([]);
   });
@@ -239,14 +244,18 @@ describe.skipIf(process.platform !== 'linux')('маршрут Codex изобра
     const value = manager();
     const images = new KeyframeImages({ localDir, agents: value, validateImage: (path) => readFileSync(path).equals(Buffer.from(pngBase64, 'base64')) });
     const before = projectHashes();
-    const job = images.start({
-      project,
-      shot: 'S01',
-      packageDir: join(project, 'plan/batches/S01'),
-      frames: [{ id: 'K01', role: 'first', timeSeconds: 0, prompt: 'Кандидат первого кадра', referencePaths: [] }]
-    });
+    const requestSha = 'c'.repeat(64);
+    const job = images.start(
+      {
+        project,
+        shot: 'S01',
+        packageDir: join(project, 'plan/batches/S01'),
+        frames: [{ id: 'K01', role: 'first', timeSeconds: 0, prompt: 'Кандидат первого кадра', referencePaths: [] }]
+      },
+      { provider: TEST_AGENT_PROVIDER, requestSha, agent: settings.getImageAgent(TEST_AGENT_PROVIDER) }
+    );
     const completed = await done(value, job.id);
-    const candidates = images.collect(completed);
+    const candidates = images.collect(completed, images.getRequestSha(completed));
     expect(candidates).toEqual([{ id: 'K01', path: join(invocations()[0].cwd, 'K01.png') }]);
     expect(projectHashes()).toEqual(before);
     expect(existsSync(join(project, 'K01.png'))).toBe(false);

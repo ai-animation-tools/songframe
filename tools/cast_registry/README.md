@@ -17,7 +17,7 @@ python3 -B tools/cast_registry/cast_registry.py vocab
 - `references` печатает карту для `plan/scenes.json`: сущности с изображениями, первый файл основной, `short_name` только если отличается от имени. `sync` записывает её в реестр; ссылки сцен на сущности без изображения это ошибка.
 - `vocab` печатает словарь свойств по типам. Общий для инструментов и приложения источник словаря по умолчанию: [default_properties.json](default_properties.json). Тип сущности открыт (код латиницей); для типа без словаря действует общий набор `generic`.
 - Поля сущности: `id` (он же ключ в `references` и в `state_changes` реестра), `kind`, `name`, `short_name`, `role`, `appearance`, `images` (пути внутри `source`), `initial_state` (свойство → непустая строка). Схема: `tools/lint_registry/schemas/cast.schema.json`; `lint_registry` проверяет кастинг, если файл есть.
-- `scene_registry` берёт начальное состояние из кастинга: сцены со `state_from: null` стартуют с него. Без кастинга поведение прежнее (пустое начало).
+- `scene_registry` берёт начальное состояние из кастинга: сцены со `state_from: null` стартуют с него. Без кастинга начало пустое.
 
 ## Тесты
 

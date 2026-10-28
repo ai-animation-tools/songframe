@@ -1,10 +1,11 @@
 import { useId, type ReactElement } from 'react';
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography } from '@mui/material';
+import { Alert, Box, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, Stack, Typography } from '@mui/material';
 import type { ScenarioProposal } from '@shared/scenario-workflow';
 import type { AgentSettings } from '@shared/agents';
 import { AgentIcon } from '../../../components/AgentIcon';
+import { ActionButton } from '../../../components/ActionButton';
 import { DestructiveButton } from '../../../components/DestructiveButton';
-import CloseIcon from '@mui/icons-material/Close';
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import { ScenarioCastComparison } from './ScenarioCastComparison';
 import { ScenarioTreatmentComparison } from './ScenarioTreatmentComparison';
@@ -46,6 +47,8 @@ export function ScenarioProposalDialog({
       slotProps={{ paper: { sx: { width: 'calc(100% - 32px)', height: 'calc(100% - 32px)', maxHeight: 'calc(100% - 32px)', m: 2 } } }}
     >
       <DialogTitle id={titleId}>Предложение для сценария · {PASS_LABELS[proposal.pass]}</DialogTitle>
+      {/* Запись большого реестра занимает десятки секунд: показываем, что работа идёт. */}
+      {busy ? <LinearProgress aria-label="Применяем предложение" /> : null}
       <DialogContent dividers>
         <Stack spacing={3}>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
@@ -86,7 +89,20 @@ export function ScenarioProposalDialog({
           )}
         </Stack>
       </DialogContent>
+      {/* Порядок как в подтверждениях: закрытие без действия слева, применение последним справа. */}
       <DialogActions sx={{ gap: 1, flexWrap: 'wrap' }}>
+        <ActionButton startIcon={<CancelOutlinedIcon />} disabled={busy} disabledReason="Дождитесь завершения текущей операции." onClick={onClose}>
+          Закрыть без применения
+        </ActionButton>
+        <Box sx={{ flex: 1 }} />
+        <DestructiveButton
+          label="Отклонить предложение"
+          description="Предложение будет отклонено без записи в проект."
+          confirmLabel="Отклонить"
+          disabled={busy}
+          disabledReason="Дождитесь завершения текущей операции."
+          onConfirm={onDiscard}
+        />
         <DestructiveButton
           label={proposal.pass === 'treatment' ? 'Применить и утвердить кастинг и трактовку' : 'Применить сценарий'}
           description="Предложение будет записано в проект и заменит соответствующие сохранённые данные."
@@ -94,19 +110,17 @@ export function ScenarioProposalDialog({
           startIcon={<CheckIcon />}
           variant="contained"
           disabled={busy || proposal.stale || proposal.status !== 'ready'}
+          disabledReason={
+            busy
+              ? 'Дождитесь завершения текущей операции.'
+              : proposal.stale
+                ? 'Предложение устарело: запустите новый проход.'
+                : proposal.status !== 'ready'
+                  ? 'Предложение ещё не готово к применению.'
+                  : null
+          }
           onConfirm={onApply}
         />
-        <DestructiveButton
-          label="Отклонить предложение"
-          description="Предложение будет отклонено без записи в проект."
-          confirmLabel="Отклонить"
-          disabled={busy}
-          onConfirm={onDiscard}
-        />
-        <Box sx={{ flex: 1 }} />
-        <Button startIcon={<CloseIcon />} disabled={busy} onClick={onClose}>
-          Закрыть без применения
-        </Button>
       </DialogActions>
     </Dialog>
   );

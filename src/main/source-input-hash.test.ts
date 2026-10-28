@@ -1,10 +1,9 @@
-/** Содержательные изменения остаются значимыми; оформление и прежние доказанные снимки обрабатываются отдельно. */
-import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+/** Содержательные изменения остаются значимыми, оформление на отпечаток не влияет. */
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { sourceInputDigest, sourceInputDigestFromBytes, upgradeSourceInputSnapshot } from './source-input-hash';
+import { sourceInputDigest, sourceInputDigestFromBytes } from './source-input-hash';
 
 let project: string;
 const value = {
@@ -33,16 +32,6 @@ describe('содержательные входы проекта', () => {
   });
   it.each(['track', 'lyrics', 'idea', 'references', 'kinds', 'new_field'])('изменение %s не скрывается', (field) => {
     expect(sourceInputDigestFromBytes(JSON.stringify({ ...value, [field]: 'изменено' }))).not.toBe(sourceInputDigestFromBytes(JSON.stringify(value)));
-  });
-  it('переводит только точно совпадающий старый снимок', () => {
-    const bytes = JSON.stringify(value);
-    writeFileSync(join(project, 'source/manifest.json'), bytes);
-    const old = { 'source/manifest.json': createHash('sha256').update(bytes).digest('hex') };
-    expect(upgradeSourceInputSnapshot(old, project)).toBe(true);
-    expect(old['source/manifest.json']).toBe(sourceInputDigest(project));
-    const unrelated = { 'source/manifest.json': 'f'.repeat(64) };
-    expect(upgradeSourceInputSnapshot(unrelated, project)).toBe(false);
-    expect(unrelated['source/manifest.json']).toBe('f'.repeat(64));
   });
   it('повреждённый JSON не совпадает с прежним корректным', () => {
     expect(sourceInputDigestFromBytes('{')).not.toBe(sourceInputDigestFromBytes(JSON.stringify(value)));

@@ -19,6 +19,16 @@ export function MontagePage(): ReactElement {
     ],
     [raw]
   );
+  // source=M45:plan/batches/M45-attempt-01/request/original.mp4 ставит на дорожку сцены конкретный материал.
+  const rawSources = params.getAll('source');
+  const preferred = useMemo(() => {
+    const result: Record<string, string> = {};
+    for (const value of rawSources) {
+      const colon = value.indexOf(':');
+      if (colon > 0) result[value.slice(0, colon).trim()] = value.slice(colon + 1).trim();
+    }
+    return result;
+  }, [rawSources]);
   const project = state?.current ?? '';
-  return <MontageWorkspace key={`${project}:${raw}`} project={project} shots={shots} />;
+  return <MontageWorkspace key={`${project}:${raw}:${rawSources.join('|')}`} project={project} shots={shots} preferred={preferred} />;
 }

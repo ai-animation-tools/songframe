@@ -584,6 +584,7 @@ describe('производство', () => {
     });
     writeJson(join(pkg, 'request/request.json'), {
       schema_version: 1,
+      provider: 'kling',
       model: 'kling-video-v3_0',
       parameters: { duration: 3 },
       model_selection: { preferredModel: 'kling-video-v2_5', selectedModel: 'kling-video-v3_0', reason: 'Предпочтительная модель не поддерживает duration=3.' },
@@ -640,6 +641,7 @@ describe('производство', () => {
       sequences: [{ id: 's', title: 'Часть' }],
       scenes: [{ id: 'M01', sequence: 's', start_frame: 0, end_frame_exclusive: 60 }]
     });
+    writeJson(join(work, 'plan/project.json'), { name: 'Проверка приёмки' });
     const asset = join(work, 'assets/shots/M01');
     writeJson(join(asset, 'manifest.json'), {
       accepted_edit: { video: { path: 'video.mp4' } },

@@ -128,7 +128,7 @@ describe('Удаление готовых пакетов и проб', () => {
 
   it.each(['request.json', 'request/request.json'])('сохраняет платный оригинал старого рабочего пакета с маркером %s', (marker) => {
     const target = bundle(join(project, 'plan/batches/legacy-working'));
-    write(join(target, marker), { command: 'image_to_video' });
+    write(join(target, marker), { provider: 'kling', command: 'image_to_video' });
     const original = join(target, 'request/original.mp4');
     write(original, 'платный оригинал');
 

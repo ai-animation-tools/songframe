@@ -406,6 +406,7 @@ def make_kit(work, sid, color, pricing):
         "schema_version": 1,
         "shot": sid,
         "kind": "video",
+        "provider": "kling",
         "command": "image_to_video",
         "model": "kling-video-v3_0",
         "parameters": {

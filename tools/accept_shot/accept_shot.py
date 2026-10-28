@@ -12,6 +12,7 @@ import argparse
 import json
 import shutil
 import subprocess
+from datetime import datetime, timezone
 from decimal import Decimal
 from fractions import Fraction
 
@@ -145,6 +146,7 @@ def accept(
     clean=False,
     update_views=True,
     pricing=None,
+    replace=False,
 ):
     root = Path(root).resolve()
     registry = load(root)
@@ -153,11 +155,15 @@ def accept(
         raise ValueError(f"{shot}: план отсутствует в реестре сцен.")
     frames = scene["end_frame_exclusive"] - scene["start_frame"]
     package, work_dir, request, attempt, workflow = resolve_package(package, work_dir, root)
+    if not isinstance(request.get("provider"), str) or not request["provider"].strip():
+        raise ValueError("В сохранённом запросе не указан провайдер.")
     if request.get("shot") not in (None, shot) or request.get("kind") != "video":
         raise ValueError("Пакет относится к другому плану или не является видеозапросом.")
     target = root / "assets/shots" / shot
-    if target.exists():
-        raise ValueError(f"{shot}: комплект уже есть в assets; замена выбранной версии — отдельное решение.")
+    if target.exists() and not replace:
+        raise ValueError(
+            f"{shot}: комплект уже есть в assets; замена выбранной версии — отдельное решение (--replace)."
+        )
     original = work_dir / attempt["downloads"][0]["path"]
     if not original.is_file():
         raise ValueError("Скачанный оригинал не найден в попытке.")
@@ -241,7 +247,8 @@ def accept(
         snapshot = {
             "schema_version": 1,
             "shot": shot,
-            "provider": "Kling",
+            # Снимок сохраняет исполнителя исходного запроса, чтобы повтор сравнивал его с выбором проекта.
+            "provider": request["provider"],
             "command": request["command"],
             "model": request["model"],
             "parameters": request.get("parameters", {}),
@@ -345,6 +352,7 @@ def accept(
         (staging / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
+        replaced = retire_kit(root, shot) if target.exists() else None
         staging.rename(target)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
@@ -355,6 +363,7 @@ def accept(
         "target": str(target.relative_to(root)),
         "frames": frames,
         "video_sha256": video["sha256"],
+        "replaced": str(replaced.relative_to(root)) if replaced else None,
         "observed_credits": None,
         "cleaned": [],
     }
@@ -380,6 +389,21 @@ def accept(
     if clean:
         result["cleaned"] = clean_work(root, shot, package, work_dir, review)
     return result
+
+
+def retire_kit(root, shot):
+    """Прежний комплект целиком переезжает в assets/replaced/Mxx/<время>: оплаченные оригиналы и манифест не удаляются.
+
+    Папка вне assets/shots не участвует в индексе, проверках и сборке; @link ../../templates/project/assets/README.md.
+    """
+    current = root / "assets/shots" / shot
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    archive = root / "assets/replaced" / shot / stamp
+    if archive.exists():
+        raise ValueError(f"{shot}: папка {archive.relative_to(root)} уже существует.")
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(current), str(archive))
+    return archive
 
 
 def clean_work(root, shot, package=None, work_dir=None, review=None):
@@ -465,6 +489,11 @@ def main():
         ),
     )
     parser.add_argument("--no-views", action="store_true", help="Не обновлять представления")
+    parser.add_argument(
+        "--replace",
+        action="store_true",
+        help="Заменить уже принятый комплект: прежний переезжает в assets/replaced/Mxx/<время>",
+    )
     args = parser.parse_args()
     try:
         cut = tuple(int(x) for x in args.cut.split(":")) if args.cut else None
@@ -485,6 +514,7 @@ def main():
             args.preparation,
             clean=args.clean,
             update_views=not args.no_views,
+            replace=args.replace,
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (ValueError, OSError, KeyError, TypeError, StopIteration) as error:

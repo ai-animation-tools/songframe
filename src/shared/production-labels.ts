@@ -22,14 +22,20 @@ const INPUT_ROLES: Record<string, string> = {
   video: 'Видео'
 };
 
+const INPUT_SLOTS: Record<string, string> = {
+  first_image: 'Первый кадр',
+  tail_image: 'Последний кадр',
+  image: 'Изображение',
+  audio: 'Аудио',
+  video: 'Видео'
+};
+
+const NUMBERED_INPUT_SLOTS: Record<string, string> = { ...INPUT_SLOTS, keyframe: 'Ключевой кадр' };
+
 /** Роль опоры понятнее пользователю, а номер сохраняет различие между входами одного вида. */
 export function productionInputLabel(input: { slot?: string; role?: string }): string {
   const role = input.role ? INPUT_ROLES[input.role] : undefined;
-  const numbered = /^(image|video|audio)_(\d+)$/.exec(input.slot ?? '');
-  const slot = numbered
-    ? `${({ image: 'Изображение', video: 'Видео', audio: 'Аудио' } as Record<string, string>)[numbered[1]]} ${numbered[2]}`
-    : input.slot === 'tail_image'
-      ? 'Последний кадр'
-      : input.slot;
-  return role ? `${role}${slot ? ` (${slot})` : ''}` : (slot ?? input.role ?? 'Входной материал');
+  const numbered = /^(image|video|audio|keyframe|tail_image)_(\d+)$/.exec(input.slot ?? '');
+  const slot = numbered ? `${NUMBERED_INPUT_SLOTS[numbered[1]]} ${numbered[2]}` : input.slot ? (INPUT_SLOTS[input.slot] ?? input.slot) : undefined;
+  return role ? `${role}${slot && slot !== role ? ` (${slot})` : ''}` : (slot ?? input.role ?? 'Входной материал');
 }

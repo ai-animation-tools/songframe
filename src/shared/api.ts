@@ -165,6 +165,10 @@ export interface Api {
     accept(project: string, shot: string, packageDir: string, options: AcceptOptions): Promise<JobInfo>;
     contactSheet(project: string, packageDir: string): Promise<JobInfo>;
     park(project: string, packageDir: string): Promise<void>;
+    /** Снова задать вопрос о полученном результате пакета приложения, если ответ уже записан. */
+    reopenQuestion(project: string, packageDir: string): Promise<void>;
+    /** Удалить пакет попытки целиком, включая оплаченный оригинал; незавершённая отправка не удаляется. */
+    discardAttempt(project: string, packageDir: string): Promise<void>;
     /** Пакет для монтажёра: таблица планов, EDL, FCPXML, строки песни; с копированием медиа по желанию. */
     exportBundle(project: string, options: ExportBundleOptions): Promise<JobInfo>;
     listBundles(project: string): Promise<BundleInfo[]>;

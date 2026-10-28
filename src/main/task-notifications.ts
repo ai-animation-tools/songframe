@@ -20,11 +20,11 @@ export class TaskNotifications {
     if (this.deliveredJobs.has(job.id)) return;
     this.deliveredJobs.add(job.id);
 
-    // Режимы из checks.ts и animatic.ts завершают рецепт или проверку входов без сборки MP4.
+    // Режимы проверки из checks.ts и animatic.ts завершаются без сборки MP4.
     const operation =
       job.kind === 'review'
-        ? job.title.endsWith(' (только рецепт)')
-          ? 'Рецепт пробы'
+        ? job.title.endsWith(' (проверка без видео)')
+          ? 'Проверка пробы'
           : 'Проба'
         : job.title === 'Проверка входов аниматика'
           ? 'Проверка входов аниматика'
@@ -33,7 +33,9 @@ export class TaskNotifications {
     const title = success
       ? operation === 'Проверка входов аниматика'
         ? 'Входы аниматика проверены'
-        : `${operation} готов${operation === 'Проба' ? 'а' : ''}`
+        : operation === 'Проверка пробы'
+          ? 'Проба проверена'
+          : `${operation} готов${operation === 'Проба' ? 'а' : ''}`
       : `Ошибка: ${job.title}`;
     this.send({ title, body: job.title, target: { project, route: job.kind === 'review' ? '/project/checks' : '/project/animatic' } });
   }

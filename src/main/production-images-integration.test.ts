@@ -151,7 +151,7 @@ describe.skipIf(process.platform !== 'linux')('сквозная image-ветка
     await tool(['init', 'M03', '--dir', pkg]);
     await tool(['plan-keyframes', '--dir', pkg, '--request-seconds', '5']);
     mkdirSync(join(pkg, 'video-request'));
-    write(join(pkg, 'video-request/request.json'), { kind: 'video', model: 'saved-video', inputs: [], parameters: {} });
+    write(join(pkg, 'video-request/request.json'), { kind: 'video', provider: 'kling', model: 'saved-video', inputs: [], parameters: {} });
     write(join(pkg, 'video-request/attempt.json'), { status: 'downloaded', generation_id: 'existing-video', downloads: [{ path: 'original.mp4' }] });
     writeFileSync(join(pkg, 'video-request/original.mp4'), 'Ранее оплаченный видеооригинал');
     const videoBefore = treeHashes(join(pkg, 'video-request'));

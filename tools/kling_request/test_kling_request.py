@@ -96,6 +96,7 @@ class KlingRequestTests(unittest.TestCase):
             "schema_version": 1,
             "shot": "M32",
             "kind": "video",
+            "provider": "kling",
             "command": "image_to_video",
             "model": "test-model",
             "parameters": {"duration": 6, "resolution": "1080p", "imageCount": 1, "enable_audio": False},
@@ -180,14 +181,63 @@ print(json.dumps(value));raise SystemExit(config.get('exit',0))
         self.assertEqual((self.work / frozen["inputs"][0]["path"]).read_bytes(), b"exact input bytes")
         self.assertEqual(self.calls(), [])
 
-    def test_legacy_prepare_keeps_original_bytes_and_digest_without_selection(self):
-        # SHA взят у прежнего пакета этой фикстуры: добавление необязательных
-        # метаданных не должно менять байты уже поддерживаемого формата.
+    def test_prepare_keeps_stable_digest_without_optional_selection(self):
+        # Базовая фикстура уже содержит явного провайдера. Проверка фиксирует
+        # точные байты текущего контракта без необязательных метаданных выбора.
         digest = self.prepare()
-        self.assertEqual(digest, "4b1ba3dddd1913c2b07e78e70fa1870cf596feca7e09c7faaf64a3934d42d7e7")
+        self.assertEqual(digest, "f58044814f7a9be976b3cf99b2a6006b995806482b8e4d01115bd553c2409114")
         data = (self.work / "request.json").read_bytes()
         self.assertEqual(hashlib.sha256(data).hexdigest(), digest)
+        self.assertEqual(json.loads(data)["provider"], "kling")
         self.assertNotIn("model_selection", json.loads(data))
+
+    def test_prepare_requires_provider_and_kling_adapter_rejects_other_services(self):
+        # Источник провайдера — только spec: имя команды и инструмента
+        # не разрешает дописывать Kling к запросу без этого поля.
+        for provider in (None, "", " \n\t", 1, "OtherService"):
+            with self.subTest(provider=provider):
+                self.spec["provider"] = provider
+                self.write_spec()
+                with self.assertRaisesRegex(ValueError, "provider|провайдера"):
+                    self.prepare()
+                self.assertFalse(self.work.exists())
+        del self.spec["provider"]
+        self.write_spec()
+        with self.assertRaisesRegex(ValueError, "provider"):
+            self.prepare()
+        self.assertFalse(self.work.exists())
+        self.assertEqual(self.calls(), [])
+
+    def test_load_submit_and_resume_reject_missing_or_other_provider_before_cli(self):
+        # Пересчитываем SHA после изменения provider: отказ должен проверять
+        # назначение адаптера, а не случайное несовпадение контрольной суммы.
+        for provider in (None, "", " \n\t", "CustomProvider"):
+            for action in ("load", "submit", "resume"):
+                with self.subTest(provider=provider, action=action):
+                    directory = self.root / f"guard-{action}-{len(list(self.root.glob('guard-*')))}"
+                    job.prepare(self.request, directory)
+                    frozen = json.loads((directory / "request.json").read_text())
+                    if provider is None:
+                        del frozen["provider"]
+                    else:
+                        frozen["provider"] = provider
+                    job.atomic_json(directory / "request.json", frozen)
+                    digest = hashlib.sha256((directory / "request.json").read_bytes()).hexdigest()
+                    state = json.loads((directory / "attempt.json").read_text())
+                    state["request_sha256"] = digest
+                    if action == "resume":
+                        state.update(status="submitted", generation_id="saved-id")
+                    job.atomic_json(directory / "attempt.json", state)
+                    with patch.object(job, "call_cli") as runner:
+                        with self.assertRaisesRegex(ValueError, "provider"):
+                            if action == "load":
+                                job.load_attempt(directory, verify_inputs=True)
+                            elif action == "submit":
+                                job.submit(directory, digest, str(self.cli))
+                            else:
+                                job.resume(directory, str(self.cli))
+                        runner.assert_not_called()
+                    self.assertEqual(json.loads((directory / "attempt.json").read_text()), state)
 
     def test_prepare_preserves_selection_and_hashes_exact_reason_offline(self):
         selection = {

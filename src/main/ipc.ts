@@ -69,6 +69,7 @@ import { prepareKlingCover } from './cover-kling';
 import { prepareProjectCover } from './cover-provider';
 import type { CoverCrop, CoverGenerationApproval } from '@shared/cover-generation';
 import { assertAiSelection, createAiAccess } from './ai-access';
+import { requireProductionPackageAccess } from './production-access';
 
 export interface Services {
   projects: Projects;
@@ -343,14 +344,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const pkg = readPackage(project, packageDir);
     if (pkg && productionFlow.view(project, pkg.shot, packageDir).busy) throw new Error('Для этого пакета уже выполняется задание. Дождитесь завершения.');
   };
-  const requirePackageAccess = async (project: string, packageDir: string): Promise<void> => {
-    const request = readPackage(project, packageDir)?.request;
-    const kind = request?.kind === 'image' ? 'image' : 'video';
-    await ai.requireAccess(project, kind);
-    // Сохранённый запрос прежнего провайдера не становится разрешённым после выбора другого исполнителя.
-    if (request?.provider && readProjectSettings(project).generation?.[kind]?.provider !== request.provider)
-      throw new Error('Провайдер медиа изменился. Подготовьте новый запрос для выбранного провайдера.');
-  };
+  const requirePackageAccess = (project: string, packageDir: string): Promise<void> => requireProductionPackageAccess(project, packageDir, ai.requireAccess);
   const reviewProblem = (project: string): string | null => {
     try {
       return workflow.view(project).scenesNeedReview
@@ -537,8 +531,8 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     connectMedia();
     return getServices().production.selectImage(project, packageDir, index, expectedResultToken);
   });
-  ipcMain.handle('production:regenerate', async (_event, project: string, shot: string) => {
-    await ai.requireAccess(project, 'video');
+  ipcMain.handle('production:regenerate', (_event, project: string, shot: string) => {
+    // Повтор только копирует сохранённый запрос; выбор провайдера проверяется без входа в сервис и запуска ИИ.
     // Повтор не должен создавать пакет одновременно с применением предложения того же кадра.
     if (productionFlow.view(project, shot).busy) throw new Error('Для этого кадра уже выполняется задание. Дождитесь завершения.');
     return getServices().production.regenerate(project, shot);
@@ -551,6 +545,8 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     productionIdle(project, packageDir);
     return getServices().production.contactSheet(project, packageDir);
   });
+  ipcMain.handle('production:discardAttempt', (_event, project: string, packageDir: string) => getServices().production.discardAttempt(project, packageDir));
+  ipcMain.handle('production:reopenQuestion', (_event, project: string, packageDir: string) => getServices().production.reopenQuestion(project, packageDir));
   ipcMain.handle('production:park', (_event, project: string, packageDir: string) => {
     productionIdle(project, packageDir);
     return getServices().production.park(project, packageDir);

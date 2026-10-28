@@ -60,7 +60,7 @@ describe('сохранность платных изображений при и
     image = join(pkg, 'images/request-01');
     original = join(image, 'original.png');
     write(join(project, 'plan/project.json'), { schema_version: 1 });
-    write(join(image, 'request.json'), { schema_version: 1, kind: 'image', command: 'text_to_image', inputs: [], outputs: 1 });
+    write(join(image, 'request.json'), { schema_version: 1, kind: 'image', provider: 'kling', command: 'text_to_image', inputs: [], outputs: 1 });
     const requestSha = hash(readFileSync(join(image, 'request.json')));
     writeFileSync(original, 'Сохранённые платные байты изображения');
     utimesSync(original, 1234567890, 1234567890);
@@ -91,7 +91,7 @@ describe('сохранность платных изображений при и
     expect(productionPackageVideoPaid(pkg)).toBe(false);
     await applyProductionPackage(local, project, pkg, async () => {
       writeFileSync(join(pkg, 'video-prompt.txt'), 'Новый согласуемый видеопромпт');
-      write(join(pkg, 'request-01/request.json'), { kind: 'video' });
+      write(join(pkg, 'request-01/request.json'), { kind: 'video', provider: 'kling' });
       write(join(pkg, 'request-01/attempt.json'), { status: 'prepared' });
       write(join(pkg, 'workflow.json'), { ...readWorkflow(), stage: 'request_choice', request_dir: 'request-01' });
     });
@@ -209,7 +209,7 @@ describe('сохранность платных изображений при и
     expect(productionPackageVideoPaid(pkg)).toBe(true);
     await expect(applyProductionPackage(local, project, pkg, action)).rejects.toThrow('платной отправки');
     write(join(pkg, 'workflow.json'), data);
-    write(join(pkg, 'images/request-01/request.json'), { kind: 'image', command: 'text_to_image', changed: true });
+    write(join(pkg, 'images/request-01/request.json'), { kind: 'image', provider: 'kling', command: 'text_to_image', changed: true });
     await expect(applyProductionPackage(local, project, pkg, action)).rejects.toThrow('платной отправки');
     expect(action).not.toHaveBeenCalled();
   });
@@ -229,7 +229,7 @@ describe('сохранность платных изображений при и
   });
 
   it('считает отдельный video request платным независимо от текущего workflow stage', async () => {
-    write(join(pkg, 'video-request/request.json'), { kind: 'video' });
+    write(join(pkg, 'video-request/request.json'), { kind: 'video', provider: 'kling' });
     write(join(pkg, 'video-request/attempt.json'), { status: 'prepared' });
     write(join(pkg, 'workflow.json'), { ...readWorkflow(), request_dir: 'video-request' });
     expect(productionPackageVideoPaid(pkg)).toBe(false);

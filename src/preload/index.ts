@@ -181,6 +181,8 @@ const api: Api = {
       ipcRenderer.invoke('production:accept', project, shot, packageDir, options),
     contactSheet: (project: string, packageDir: string) => ipcRenderer.invoke('production:contactSheet', project, packageDir),
     park: (project: string, packageDir: string) => ipcRenderer.invoke('production:park', project, packageDir),
+    reopenQuestion: (project: string, packageDir: string) => ipcRenderer.invoke('production:reopenQuestion', project, packageDir),
+    discardAttempt: (project: string, packageDir: string) => ipcRenderer.invoke('production:discardAttempt', project, packageDir),
     exportBundle: (project: string, options: ExportBundleOptions) => ipcRenderer.invoke('production:exportBundle', project, options),
     listBundles: (project: string) => ipcRenderer.invoke('production:listBundles', project),
     removeBundle: (project: string, path: string) => ipcRenderer.invoke('production:removeBundle', project, path)

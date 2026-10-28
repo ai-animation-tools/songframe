@@ -10,7 +10,13 @@ export function decisionNoteKey(pkg: PackageView): string {
   return `${pkg.dir}\0${pkg.decisionToken ?? JSON.stringify(pkg.pendingDecision)}`;
 }
 
-export async function sendConfirmedRequest(api: Api, project: string, pkg: PackageView, quoteToken?: string, unknownCostConsentToken?: string): Promise<void> {
+export async function sendConfirmedRequest(
+  api: Api,
+  project: string,
+  pkg: PackageView,
+  quoteToken?: string,
+  unknownCostConsentToken?: string
+): Promise<JobInfo | void> {
   if (isExternalPackage(pkg)) {
     await api.production.decide(project, pkg.dir, 'send', '', pkg.decisionToken);
     return;
@@ -21,9 +27,9 @@ export async function sendConfirmedRequest(api: Api, project: string, pkg: Packa
   if (unknownCostConsentToken) {
     // Согласие относится к показанной оценке; новая подготовка или обновление цены потребуют другого токена.
     if (unknownCostConsentToken !== quoteToken) throw new Error('Согласие относится к другой проверке стоимости. Подтвердите запрос заново.');
-    await api.production.submit(project, pkg.dir, pkg.request.sha256, pkg.decisionToken, quoteToken, unknownCostConsentToken);
+    return api.production.submit(project, pkg.dir, pkg.request.sha256, pkg.decisionToken, quoteToken, unknownCostConsentToken);
   } else {
-    await api.production.submit(project, pkg.dir, pkg.request.sha256, pkg.decisionToken, quoteToken);
+    return api.production.submit(project, pkg.dir, pkg.request.sha256, pkg.decisionToken, quoteToken);
   }
 }
 
@@ -32,19 +38,58 @@ export interface AcceptTarget {
   shot: string;
   dir: string;
   resultToken?: string;
+  /** У плана уже есть комплект в assets: приёмка возможна только с явной заменой. */
+  hasAsset?: boolean;
 }
 
 export async function acceptShownResult(api: Api, project: string, target: AcceptTarget, options: AcceptOptions): Promise<JobInfo> {
   if (!target.resultToken) throw new Error('Результат не подтверждён. Обновите пакет и откройте приёмку заново.');
+  if (target.hasAsset && !options.replaceExisting) throw new Error('У плана уже есть принятый комплект. Подтвердите замену в диалоге приёмки.');
   return api.production.accept(project, target.shot, target.dir, { ...options, expectedResultToken: target.resultToken });
 }
 
-/** После переноса в очередь сохраняем выбор только при однозначном совпадении того же пакета и frozen запроса. */
+/** Проба стыков собирается с соседями по шкале: предыдущий план, сам план и следующий. */
+export function reviewShots(view: ProductionView, shotId: string): string[] {
+  const index = view.shots.findIndex((shot) => shot.id === shotId);
+  if (index === -1) return [shotId];
+  return view.shots.slice(Math.max(0, index - 1), index + 2).map((shot) => shot.id);
+}
+
+/** Маршрут монтажа для пробы стыков: соседи по шкале и результат показанной попытки на дорожке сцены. */
+export function reviewMontageRoute(view: ProductionView, pkg: PackageView, project: string): string {
+  const download = pkg.request?.downloads[0];
+  const root = project.replace(/[\\/]+$/, '');
+  const relative =
+    download && (download.startsWith(root + '/') || download.startsWith(root + '\\')) ? download.slice(root.length + 1).replaceAll('\\', '/') : null;
+  const source = relative ? `&source=${encodeURIComponent(`${pkg.shot}:${relative}`)}` : '';
+  return `/project/montage?shots=${reviewShots(view, pkg.shot).join(',')}${source}`;
+}
+
+/** regenerate_shot печатает JSON с полем package: это папка новой попытки, которую страница открывает сама. */
+export function regeneratedPackage(log: string): string | null {
+  const matches = log.match(/\{[^\n]*"package"[^\n]*\}/g);
+  for (const candidate of (matches ?? []).reverse()) {
+    try {
+      const data = JSON.parse(candidate) as { package?: unknown };
+      if (typeof data.package === 'string' && data.package) return data.package;
+    } catch {
+      // Строка журнала не является JSON целиком: проверяем предыдущие.
+    }
+  }
+  return null;
+}
+
+/** В очереди остаются сохранённые неотправленные запросы, включая опоры изображений. */
+export function isQueuedPackage(pkg: PackageView): boolean {
+  return pkg.relative.replaceAll('\\', '/').startsWith('plan/awaiting/') && pkg.request?.attemptStatus === 'prepared';
+}
+
+/** park переименовывает папку попытки в ID плана: перенос узнаём по плану и неизменному SHA запроса. */
 export function relocatedPackage(pkg: PackageView, view: ProductionView): PackageView | null {
-  const name = pkg.dir.split(/[\\/]/).pop();
+  if (!pkg.request?.sha256) return null;
   const candidates = view.shots
     .filter((shot) => shot.id === pkg.shot)
     .flatMap((shot) => shot.packages)
-    .filter((candidate) => candidate.dir.split(/[\\/]/).pop() === name && candidate.request?.sha256 === pkg.request?.sha256);
+    .filter((candidate) => isQueuedPackage(candidate) && candidate.request?.sha256 === pkg.request?.sha256);
   return candidates.length === 1 ? candidates[0] : null;
 }

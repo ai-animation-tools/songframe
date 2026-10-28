@@ -1,26 +1,42 @@
 /** Описание выбранного плана, команда внешнего агента и принятые видео. */
 import type { ReactElement } from 'react';
-import { Alert, Box, Paper, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Paper, Tooltip, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ReplayIcon from '@mui/icons-material/Replay';
-import type { ShotProduction } from '@shared/types';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import type { BrokenPackage, JobInfo, ShotProduction } from '@shared/types';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import { DestructiveButton } from '../../../components/DestructiveButton';
 import { formatClock } from '../../../format';
-import { AiButton } from '../../../components/AiButton';
 import { AgentButton } from '../../../components';
+import { JobStatus } from '../../../components/JobStatus';
 
 export function ProductionShotCard({
   shot,
   busy,
+  operation,
   pythonAvailable,
   onCopy,
-  onRegenerate
+  onRegenerate,
+  selectedPackage,
+  onOpenPackage,
+  broken = [],
+  onDiscardBroken
 }: {
   shot: ShotProduction;
   busy: boolean;
+  operation?: { job?: JobInfo; error?: string; running?: boolean; label?: string };
   pythonAvailable: boolean;
   onCopy(text: string): void;
   onRegenerate(id: string): void;
+  /** Текущий выбор пакета: вопросы уже открытого пакета повторно не предлагаются. */
+  selectedPackage?: string;
+  onOpenPackage?(dir: string): void;
+  /** Повреждённые папки этого плана в очереди или batches: без workflow.json они блокируют «Сохранить в очередь». */
+  broken?: BrokenPackage[];
+  onDiscardBroken?(item: BrokenPackage): void;
 }): ReactElement {
+  const waiting = shot.packages.filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
@@ -32,6 +48,43 @@ export function ProductionShotCard({
       <Typography variant="body2" sx={{ mt: 1 }}>
         {shot.original}
       </Typography>
+      {broken.map((item) => (
+        <Alert
+          key={item.dir}
+          severity="error"
+          sx={{ mt: 1.5 }}
+          action={
+            onDiscardBroken ? (
+              <DestructiveButton
+                label="Удалить папку"
+                description={`Папка ${item.relative} будет удалена безвозвратно вместе со всем содержимым. Принятый комплект сцены и исходники не затрагиваются.`}
+                confirmLabel="Удалить папку"
+                startIcon={<DeleteForeverIcon />}
+                disabled={busy}
+                onConfirm={() => onDiscardBroken(item)}
+              />
+            ) : undefined
+          }
+        >
+          Папка {item.relative}: {item.reason}. Пока она есть, «Сохранить в очередь» для этого плана не сработает.
+        </Alert>
+      ))}
+      {waiting.map((pkg) => (
+        <Alert
+          key={pkg.dir}
+          severity="info"
+          sx={{ mt: 1.5 }}
+          action={
+            onOpenPackage ? (
+              <Button size="small" color="inherit" startIcon={<FolderOpenIcon />} onClick={() => onOpenPackage(pkg.dir)}>
+                Открыть пакет
+              </Button>
+            ) : undefined
+          }
+        >
+          Пакет {pkg.relative} ждёт вашего решения: {pkg.pendingDecision!.question}
+        </Alert>
+      ))}
       {shot.asset ? (
         <Box sx={{ mt: 1.5 }}>
           <Typography variant="subtitle2" gutterBottom>
@@ -64,24 +117,32 @@ export function ProductionShotCard({
           </AgentButton>
         </Tooltip>
         {shot.state === 'completed' || shot.packages.length ? (
-          <Tooltip title="Создать новую попытку по сохранённому запросу без отправки и оплаты">
+          <Tooltip title={shot.regenerateProblem ?? 'Создать новую попытку по сохранённому запросу без отправки и оплаты'}>
             <span>
-              <AiButton
-                aiKind="video"
+              <Button
                 size="small"
                 color="warning"
                 startIcon={<ReplayIcon />}
                 disabled={
-                  busy || !pythonAvailable || shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''))
+                  busy ||
+                  !pythonAvailable ||
+                  !!shot.regenerateProblem ||
+                  shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''))
                 }
                 onClick={() => onRegenerate(shot.id)}
               >
                 Подготовить повтор
-              </AiButton>
+              </Button>
             </span>
           </Tooltip>
         ) : null}
       </Box>
+      {shot.regenerateProblem && (shot.state === 'completed' || shot.packages.length) ? (
+        <Alert severity="info" sx={{ mt: 1 }}>
+          {shot.regenerateProblem}
+        </Alert>
+      ) : null}
+      <JobStatus {...operation} />
     </Paper>
   );
 }

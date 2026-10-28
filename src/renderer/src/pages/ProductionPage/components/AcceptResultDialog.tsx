@@ -2,7 +2,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 /** Параметры переноса результата в assets с сохранением выбранного монтажного участка. */
 import { FPS } from '@shared/video';
 import type { ReactElement } from 'react';
-import { Alert, Box, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import type { AcceptOptions } from '@shared/types';
 import type { AcceptTarget } from '../decisions';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
@@ -26,12 +26,25 @@ export function AcceptResultDialog({
       onClose={onClose}
       title={`Принять результат ${target?.shot ?? ''}`}
       onConfirm={onConfirm}
-      confirmLabel="Принять"
+      confirmLabel={target?.hasAsset ? 'Заменить комплект' : 'Принять'}
       confirmIcon={<CheckCircleIcon />}
       confirmColor="error"
-      confirmDisabled={!target?.resultToken}
+      confirmDisabled={!target?.resultToken || (!!target?.hasAsset && !options.replaceExisting)}
     >
       <Stack spacing={2} sx={{ mt: 1 }}>
+        {target?.hasAsset ? (
+          <Alert severity="warning">
+            У плана {target.shot} уже есть принятый комплект. Новый результат займёт его место в assets/shots, а прежний комплект целиком переедет в
+            assets/replaced/{target.shot}: оригинал, монтаж, опоры и промпт сохранятся, но в сборку он больше не войдёт. Аниматик после замены нужно
+            пересобрать.
+          </Alert>
+        ) : null}
+        {target?.hasAsset ? (
+          <FormControlLabel
+            control={<Checkbox checked={!!options.replaceExisting} onChange={(e) => onOptions({ ...options, replaceExisting: e.target.checked })} />}
+            label="Заменить принятый комплект этим результатом"
+          />
+        ) : null}
         {target && !target.resultToken ? (
           <Alert severity="warning">Обновите пакет и откройте приёмку заново: данные показанного результата не подтверждены.</Alert>
         ) : null}

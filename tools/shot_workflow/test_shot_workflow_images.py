@@ -51,6 +51,7 @@ class ImageWorkflowTests(unittest.TestCase):
                     "schema_version": 1,
                     "shot": shot,
                     "kind": kind,
+                    "provider": "kling",
                     "command": "text_to_image" if kind == "image" else "text_to_video",
                     "model": "fixture-model",
                     "parameters": {},
@@ -97,7 +98,7 @@ class ImageWorkflowTests(unittest.TestCase):
     def test_two_frames_preserve_video_originals_history_and_separate_acceptance(self):
         video = self.package / "video-request"
         video.mkdir()
-        (video / "request.json").write_text("{}", encoding="utf-8")
+        (video / "request.json").write_text(json.dumps({"provider": "kling"}), encoding="utf-8")
         (video / "original.mp4").write_bytes(b"paid-video-original")
         data = self.workflow()
         data.update(request_dir="video-request", unknown={"keep": True})

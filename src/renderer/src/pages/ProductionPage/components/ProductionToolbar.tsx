@@ -2,8 +2,11 @@
 import type { ReactElement } from 'react';
 import { Box, Button, Chip, MenuItem, TextField, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import QueueIcon from '@mui/icons-material/Queue';
 import type { ProductionView } from '@shared/types';
 import type { ProductionFilter } from '../constants';
+import { FILTER_LABELS } from '../constants';
+import { isQueuedPackage } from '../decisions';
 
 export function ProductionToolbar({
   view,
@@ -23,7 +26,8 @@ export function ProductionToolbar({
     progress: view.shots.filter((s) => s.state === 'progress').length,
     completed: view.shots.filter((s) => s.state === 'completed').length
   };
-  const waiting = view.shots.filter((s) => s.packages.some((p) => p.pendingDecision));
+  const waiting = view.shots.filter((s) => s.attention);
+  const queued = view.shots.flatMap((shot) => shot.packages.filter(isQueuedPackage));
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
@@ -38,22 +42,28 @@ export function ProductionToolbar({
       ) : null}
       {counts.progress ? <Chip size="small" color="warning" label={`в работе ${counts.progress}`} /> : null}
       {waiting.length ? (
-        <Chip size="small" color="primary" label={`ждут решения: ${waiting.map((s) => s.id).join(', ')}`} onClick={() => onSelect(waiting[0].id)} />
+        <Chip
+          size="small"
+          color="primary"
+          label={`ждут вас: ${waiting.map((s) => s.id).join(', ')}`}
+          title="Планы, у которых пакет ждёт вашего действия; щелчок открывает первый"
+          onClick={() => {
+            onFilter('attention');
+            onSelect(waiting[0].id);
+          }}
+        />
       ) : null}
       <Box sx={{ flex: 1 }} />
+      <Button startIcon={<QueueIcon />} variant={filter === 'queued' ? 'contained' : 'outlined'} onClick={() => onFilter('queued')}>
+        Очередь ({queued.length + view.broken.length})
+      </Button>
       {/* Подпись остаётся видимой и после выбора конкретного состояния планов. */}
-      <TextField
-        select
-        size="small"
-        label="Состояние планов"
-        value={filter}
-        onChange={(e) => onFilter(e.target.value as ProductionFilter)}
-        sx={{ minWidth: 160 }}
-      >
-        <MenuItem value="all">Все планы</MenuItem>
-        <MenuItem value="progress">В работе</MenuItem>
-        <MenuItem value="planned">Не начатые</MenuItem>
-        <MenuItem value="completed">Принятые</MenuItem>
+      <TextField select size="small" label="Показать" value={filter} onChange={(e) => onFilter(e.target.value as ProductionFilter)} sx={{ minWidth: 160 }}>
+        {(Object.keys(FILTER_LABELS) as ProductionFilter[]).map((value) => (
+          <MenuItem key={value} value={value}>
+            {FILTER_LABELS[value]}
+          </MenuItem>
+        ))}
       </TextField>
       <Button size="small" startIcon={<RefreshIcon />} onClick={onRefresh}>
         Обновить

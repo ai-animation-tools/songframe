@@ -45,7 +45,7 @@ function agentEvent(overrides: Partial<AgentJob> = {}, type: AgentEvent['type'] 
 describe('TaskNotifications', () => {
   it.each([
     ['review', 'Проба M01 M02', 'Проба готова', '/project/checks'],
-    ['review', 'Проба M01 (только рецепт)', 'Рецепт пробы готов', '/project/checks'],
+    ['review', 'Проба M01 (проверка без видео)', 'Проба проверена', '/project/checks'],
     ['animatic', 'Сборка аниматика', 'Аниматик готов', '/project/animatic'],
     ['animatic', 'Проверка входов аниматика', 'Входы аниматика проверены', '/project/animatic']
   ] as const)('сохраняет смысл завершения %s: %s', (kind, title, expectedTitle, route) => {

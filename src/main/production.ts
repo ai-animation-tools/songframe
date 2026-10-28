@@ -12,6 +12,7 @@ import { closeSync, existsSync, mkdirSync, openSync, readSync, readdirSync, read
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import type {
   AcceptOptions,
+  BrokenPackage,
   BundleInfo,
   ExportBundleOptions,
   JobInfo,
@@ -28,8 +29,10 @@ import type { Jobs } from './jobs';
 import { runTool } from './tools';
 import type { KlingImageProvider, KlingVideoProvider, PreparedMediaRequest } from './media-providers';
 import type { MediaModelSelection } from '@shared/media-providers';
+import { sameMediaProvider } from '@shared/media-providers';
 import { sourceInputDigest } from './source-input-hash';
 import { checkedBuiltOutput } from './built-output-path';
+import { readProjectSettings } from './checks';
 
 const STAGE_LABELS: Record<string, string> = {
   description_review: 'описание на согласовании',
@@ -104,6 +107,7 @@ export function readPackage(project: string, dir: string): PackageView | null {
   if (activeRequest) {
     const requestDir = join(dir, activeRequest);
     const frozen = readJson<{
+      provider: string;
       kind?: 'image' | 'video';
       command?: string;
       model: string;
@@ -116,6 +120,7 @@ export function readPackage(project: string, dir: string): PackageView | null {
       join(requestDir, 'attempt.json')
     );
     if (frozen) {
+      if (typeof frozen.provider !== 'string' || !frozen.provider.trim()) problems.push('В сохранённом запросе не указан провайдер.');
       if (imageRequest && frozen.kind !== 'image') problems.push('Активный запрос опоры должен иметь kind=image.');
       if (!imageRequest && frozen.kind === 'image') problems.push('Видео-запрос не может ссылаться на попытку изображения.');
       if (
@@ -141,7 +146,7 @@ export function readPackage(project: string, dir: string): PackageView | null {
       request = {
         dir: requestDir,
         kind: frozen.kind ?? 'video',
-        provider: 'kling',
+        provider: typeof frozen.provider === 'string' ? frozen.provider.trim() : undefined,
         command: frozen.command,
         ...(imageRequest && workflow.image_frame_id ? { frameId: workflow.image_frame_id } : {}),
         sha256: attempt?.request_sha256 ?? null,
@@ -282,13 +287,66 @@ function checkedPackage(project: string, packageDir: string): string {
   return realpathSync(directory);
 }
 
+/** Что ждёт от пользователя пакет приложения; пакет внешнего агента ждёт только ответа на его вопрос. */
+function packageAttention(pkg: PackageView): string | null {
+  const name = basename(pkg.dir);
+  if (pkg.pendingDecision) return `${name}: ${pkg.pendingDecision.question || 'вопрос ждёт ответа'}`;
+  if (pkg.executor === 'agent') return null;
+  if (pkg.decision?.verdict === 'revise' && pkg.stage !== 'accepted') return `${name}: замечание записано, доработка с агентом не запущена`;
+  const status = pkg.request?.attemptStatus ?? '';
+  if (['request_choice', 'image_request_choice', 'ready'].includes(pkg.stage) && status === 'prepared')
+    return `${name}: запрос подготовлен, ждёт отправки, очереди или отказа`;
+  if (['submission_unknown', 'submitting'].includes(status)) return `${name}: исход отправки неизвестен, нужен ID генерации`;
+  if (['downloaded', 'edit_review'].includes(pkg.stage) && status === 'downloaded') return `${name}: результат получен, ждёт просмотра`;
+  if (pkg.stage === 'image_downloaded') return `${name}: изображение получено, выберите опору`;
+  return null;
+}
+
+/** Повтор выбирает источник как regenerate_shot --source auto; @link ../../tools/regenerate_shot/README.md. */
+function regenerateProblem(project: string, shot: string, packages: PackageView[], selectedProvider: string): string | null {
+  if (!selectedProvider) return `${shot}: сначала выберите провайдера видео в настройках проекта.`;
+  const compareProvider = (value: unknown): string | null => {
+    const provider = typeof value === 'string' ? value.trim() : '';
+    if (!provider) return `${shot}: провайдер сцены не указан. Подготовьте новый пакет.`;
+    if (!sameMediaProvider(provider, selectedProvider)) {
+      return `${shot}: провайдер сцены — ${provider}, текущий выбранный — ${selectedProvider}. Для подготовки повтора провайдеры должны совпадать.`;
+    }
+    return null;
+  };
+  const requests: { modified: number; path: string; provider: string | undefined }[] = [];
+  for (const pkg of packages) {
+    const workflow = readJson<Workflow>(join(pkg.dir, 'workflow.json'));
+    if (typeof workflow?.request_dir !== 'string' || !workflow.request_dir) continue;
+    try {
+      // Берём провайдера фактического источника повтора и сравниваем с текущим выбором проекта.
+      // Как и инструмент, выбираем последний request.json; порядок workflow.json может отличаться.
+      const path = resolve(pkg.dir, workflow.request_dir, 'request.json');
+      const stat = statSync(path);
+      if (stat.isFile()) {
+        const request = readJson<{ provider?: unknown }>(path);
+        requests.push({ modified: stat.mtimeMs, path, provider: typeof request?.provider === 'string' ? request.provider : undefined });
+      }
+    } catch {
+      // Пакет без подготовленного запроса не участвует в выборе source=auto.
+    }
+  }
+  requests.sort((a, b) => a.modified - b.modified || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  if (requests.length) return compareProvider(requests[requests.length - 1].provider);
+  const snapshotPath = join(project, 'assets', 'shots', shot, 'generation-request.json');
+  if (!existsSync(snapshotPath)) return `${shot}: нет сохранённого запроса для повтора. Подготовьте новый пакет.`;
+  const snapshot = readJson<{ provider?: unknown }>(snapshotPath);
+  if (!snapshot || typeof snapshot !== 'object') return `${shot}: не удалось прочитать снимок сохранённого запроса.`;
+  return compareProvider(snapshot.provider);
+}
+
 export function viewProduction(project: string, launcher = new PythonLauncher({ toolsRoot: null })): ProductionView {
   const problems: string[] = [];
   // Наличие инструментов относится к приложению и не зависит от готовности сценария проекта.
   const tools = { python: launcher.available(), kling: !!process.env.SONGFRAME_KLING_CLI || hasKling(launcher.options) };
   const scenes = readJson<ScenesFile>(join(project, 'plan', 'scenes.json'));
-  if (!scenes) return { shots: [], problems: ['Сначала нужен сценарий. Создайте его на странице «Сценарий».'], tools };
+  if (!scenes) return { shots: [], broken: [], problems: ['Сначала нужен сценарий. Создайте его на странице «Сценарий».'], tools };
   const packages: PackageView[] = [];
+  const broken: BrokenPackage[] = [];
   for (const base of ['plan/batches', 'plan/awaiting']) {
     const folder = join(project, base);
     if (!existsSync(folder)) continue;
@@ -296,10 +354,25 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
       if (!entry.isDirectory()) continue;
       const view = readPackage(project, join(folder, entry.name));
       if (view) packages.push(view);
+      else {
+        const dir = join(folder, entry.name);
+        const shotMatch = /^(M\d{2}(?:\.\d+)?)(?:[-_]|$)/.exec(entry.name);
+        // Очередь состоит только из пакетов; в batches недописанной считается лишь папка попытки плана без workflow.json.
+        const packageLike = base === 'plan/awaiting' || (!!shotMatch && !existsSync(join(dir, 'montage.json')) && !existsSync(join(dir, 'review.json')));
+        if (packageLike && !existsSync(join(dir, 'workflow.json')))
+          broken.push({
+            dir,
+            relative: `${base}/${entry.name}`,
+            shot: shotMatch?.[1] ?? null,
+            reason: 'нет workflow.json: папка осталась после прерванной операции'
+          });
+      }
     }
   }
   packages.sort((a, b) => statSync(join(b.dir, 'workflow.json')).mtimeMs - statSync(join(a.dir, 'workflow.json')).mtimeMs);
   const titles = new Map(scenes.sequences.map((s) => [s.id, s.title]));
+  const videoGeneration = scenes.scenes.length ? readProjectSettings(project).generation?.video : null;
+  const selectedProvider = videoGeneration?.provider_selected === true && typeof videoGeneration.provider === 'string' ? videoGeneration.provider.trim() : '';
   const fps = Number(scenes.fps) || FPS;
   const shots: ShotProduction[] = scenes.scenes.map((scene) => {
     const assetDir = join(project, 'assets', 'shots', scene.id);
@@ -315,8 +388,13 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
         ? 'принят, монтажное видео сохранено'
         : 'принят, файл монтажного видео отсутствует'
       : (mine[0]?.stageLabel ?? 'постановка есть, работа не начата');
-    if (!manifest && mine.some((p) => p.pendingDecision)) stageLabel = `ждёт вашего решения: ${mine.find((p) => p.pendingDecision)!.pendingDecision!.question}`;
+    const waiting = mine.find((p) => p.pendingDecision);
+    if (waiting)
+      stageLabel = manifest
+        ? `принят; новая попытка ждёт решения: ${waiting.pendingDecision!.question}`
+        : `ждёт вашего решения: ${waiting.pendingDecision!.question}`;
     if (mine.some((p) => p.problems.length)) state = state === 'completed' ? state : 'unknown';
+    const attention = mine.map(packageAttention).find((text) => text) ?? null;
     return {
       id: scene.id,
       title: scene.title ?? titles.get(scene.sequence) ?? scene.sequence,
@@ -326,6 +404,8 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
       lipsync: scene.lipsync,
       state,
       stageLabel,
+      regenerateProblem: regenerateProblem(project, scene.id, mine, selectedProvider),
+      attention,
       asset: manifest
         ? {
             dir: assetDir,
@@ -338,7 +418,8 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
   });
   const orphans = packages.filter((p) => !scenes.scenes.some((s) => s.id === p.shot));
   if (orphans.length) problems.push(`Пакеты планов, которых нет в реестре: ${orphans.map((p) => basename(p.dir)).join(', ')}.`);
-  return { shots, problems, tools };
+  for (const item of broken) problems.push(`${item.relative}: ${item.reason}. Папка мешает сохранению в очередь; удалите её в очереди или у плана.`);
+  return { shots, broken, problems, tools };
 }
 
 let klingCache: boolean | null = null;
@@ -405,6 +486,9 @@ export class Production {
     if (!['request_choice', 'ready', 'image_request_choice'].includes(view.stage) || view.request.attemptStatus !== 'prepared')
       throw new Error('Эта попытка уже отправлялась или не готова к отправке.');
     if (view.executor === 'agent' || view.pendingDecision?.executor === 'agent') throw new Error('Продолжением этого пакета владеет внешний агент.');
+    // Универсальная подготовка не разрешает отправить запрос через адаптер другого провайдера.
+    if (!sameMediaProvider(view.request.provider, 'kling'))
+      throw new Error(`Для провайдера ${view.request.provider ?? 'не указан'} не подключён исполнитель отправки.`);
     if (view.pendingDecision && (!decisionToken || decisionToken !== view.decisionToken || !view.pendingDecision.options.includes('send')))
       throw new Error('Вопрос или материалы изменились. Откройте подтверждение заново.');
     return view;
@@ -487,6 +571,67 @@ export class Production {
         const reset = await this.jobs.launcher.run(project, 'shot_workflow', ['set-stage', '--dir', packageDir, 'keyframes_review']);
         if (reset.code !== 0) throw new Error('Замечание сохранено; не удалось вернуться к подготовке изображения.');
       }
+    } finally {
+      this.operations.delete(packageDir);
+    }
+  }
+
+  /** Отказ от попытки удаляет пакет целиком вместе с оплаченным оригиналом: после него повтор по сохранённому запросу доступен снова. */
+  discardAttempt(project: string, packageDir: string): void {
+    const directory = this.available(project, packageDir);
+    const view = readPackage(project, directory);
+    if (!view) {
+      // Недописанная папка без workflow.json: удаляется, если в ней нет следов незавершённой отправки.
+      const attempt = readJson<{ status?: string }>(join(directory, 'request', 'attempt.json'));
+      if (attempt?.status && !['prepared', 'downloaded', 'failed', 'download_failed', 'download_partial'].includes(attempt.status))
+        throw new Error(`В папке есть попытка в состоянии «${attempt.status}»: удалять её без результата нельзя.`);
+      const local = relative(realpathSync(project), directory).replaceAll('\\', '/');
+      for (const draft of montageDraftsUsing(project, local))
+        throw new Error(`Папка используется сохранённым черновиком монтажа «${draft}». Сначала удалите черновик.`);
+      rmSync(directory, { recursive: true, force: true });
+      return;
+    }
+    if (!view.managed) throw new Error('Пакет ведёт внешний агент: его судьбу решает агент.');
+    if (view.stage === 'accepted') throw new Error('Принятый пакет не удаляется: комплект уже в assets.');
+    const status = view.request?.attemptStatus ?? '';
+    if (
+      [
+        'submitting',
+        'submission_unknown',
+        'submitted',
+        'running',
+        'watermark_free_pending',
+        'outputs_pending',
+        'download_pending',
+        'downloading',
+        'polling'
+      ].includes(status)
+    )
+      throw new Error('Отправка ещё не завершена: сначала получите результат, иначе оплаченная генерация потеряется без файла.');
+    const packageRelative = view.relative.replaceAll('\\', '/');
+    for (const draft of montageDraftsUsing(project, packageRelative))
+      throw new Error(`Пакет используется сохранённым черновиком монтажа «${draft}». Сначала удалите черновик.`);
+    rmSync(directory, { recursive: true, force: true });
+  }
+
+  /** Возвращает вопрос о полученном результате, если ответ уже записан, а решение нужно принять заново. */
+  async reopenQuestion(project: string, packageDir: string): Promise<void> {
+    packageDir = this.available(project, packageDir);
+    const view = readPackage(project, packageDir);
+    if (!view?.managed) throw new Error('Пакет ведёт внешний агент: вопрос задаёт он.');
+    if (view.pendingDecision) throw new Error('Вопрос уже задан.');
+    if (!['downloaded', 'edit_review'].includes(view.stage)) throw new Error('Вернуть можно только вопрос о полученном результате.');
+    this.operations.add(packageDir);
+    try {
+      const result = await runTool(
+        this.toolsRoot,
+        project,
+        'shot_workflow',
+        ['ask', '--dir', packageDir, '--stage', view.stage, '--executor', 'app'],
+        undefined,
+        this.jobs.launcher
+      );
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || `shot_workflow ask завершился с кодом ${result.code}`);
     } finally {
       this.operations.delete(packageDir);
     }
@@ -591,11 +736,14 @@ export class Production {
     const key = `${realpathSync(project)}:${shot}`;
     if (this.jobs.get(this.shotJobs.get(key) ?? '')?.status === 'running') throw new Error('Повтор уже подготавливается.');
     const view = viewProduction(project, this.jobs.launcher);
-    const packages = view.shots.find((s) => s.id === shot)?.packages ?? [];
+    const currentShot = view.shots.find((s) => s.id === shot);
+    if (!currentShot) throw new Error(`План ${shot} не найден. Обновите страницу производства.`);
+    const packages = currentShot.packages;
     if (packages.some((pkg) => ['submitting', 'submission_unknown'].includes(pkg.request?.attemptStatus ?? '') || this.isBusy(project, pkg.dir)))
       throw new Error('Сначала выясните исход существующей отправки; новая оплата запрещена.');
+    if (currentShot.regenerateProblem) throw new Error(currentShot.regenerateProblem);
     const job = this.jobs.start('regenerate', `Подготовка повтора ${shot}`, project, [
-      { tool: 'regenerate_shot', args: [shot, '--json', ...cliArgs(), ...pricingArgs()], label: 'новая попытка без отправки' }
+      { tool: 'regenerate_shot', args: [shot, '--json', '--executor', 'app', ...cliArgs(), ...pricingArgs()], label: 'новая попытка без отправки' }
     ]);
     this.shotJobs.set(key, job.id);
     return job;
@@ -634,6 +782,8 @@ export class Production {
     const view = readPackage(project, directory);
     if (!view?.request) throw new Error('В пакете нет попытки.');
     const request = view.request;
+    if (!sameMediaProvider(request.provider, 'kling'))
+      throw new Error(`Для провайдера ${request.provider ?? 'не указан'} не подключён исполнитель получения результата.`);
     if (request.attemptStatus === 'prepared') throw new Error('Запрос ещё не отправлен.');
     if (!request.generationId && (!generationId || !/^[A-Za-z0-9_.:-]{1,256}$/.test(generationId)))
       throw new Error('Сначала установите ID существующей отправки. Не создавайте запрос повторно.');
@@ -708,6 +858,9 @@ export class Production {
     if (!view.resultToken || !options.expectedResultToken || options.expectedResultToken !== view.resultToken)
       throw new Error('Результат изменился. Обновите пакет и просмотрите его перед приёмкой.');
     if (view.request?.attemptStatus !== 'downloaded' || !view.request.downloads.length) throw new Error('Сначала получите полный результат задания.');
+    // Замена принятого комплекта необратима для индекса сцены: прежний комплект переезжает в assets/replaced только по явному согласию.
+    const accepted = existsSync(join(project, 'assets', 'shots', shot, 'manifest.json'));
+    if (accepted && !options.replaceExisting) throw new Error('У плана уже есть принятый комплект. Подтвердите замену в диалоге приёмки.');
     // UI задаёт секунды, accept_shot принимает границы в кадрах; неточные границы не округляем молча.
     const cutFrame = (seconds: number | undefined): number => {
       if (
@@ -733,7 +886,11 @@ export class Production {
       ...(options.holdLast ? ['--hold-last', String(options.holdLast)] : [])
     ];
     const job = this.jobs.start('accept', `Приёмка ${shot}`, project, [
-      { tool: 'accept_shot', args: [shot, '--package', packageDir, ...edit, ...extra, '--clean'], label: 'перенос в assets' }
+      {
+        tool: 'accept_shot',
+        args: [shot, '--package', packageDir, ...edit, ...extra, ...(accepted ? ['--replace'] : []), '--clean'],
+        label: accepted ? 'замена комплекта в assets' : 'перенос в assets'
+      }
     ]);
     this.packageJobs.set(packageDir, job.id);
     return job;
@@ -778,6 +935,20 @@ export class Production {
     this.packageJobs.set(packageDir, job.id);
     return job;
   }
+}
+
+/** Названия сохранённых черновиков монтажа, чьи клипы лежат в указанной папке пакета. */
+function montageDraftsUsing(project: string, relative: string): string[] {
+  const folder = join(project, 'plan', 'montage');
+  if (!existsSync(folder)) return [];
+  const names: string[] = [];
+  for (const file of readdirSync(folder)) {
+    if (!file.endsWith('.json')) continue;
+    const draft = readJson<{ name?: string; clips?: { path?: string }[] }>(join(folder, file));
+    if (draft?.clips?.some((clip) => typeof clip.path === 'string' && clip.path.replaceAll('\\', '/').startsWith(relative + '/')))
+      names.push(draft.name ?? file);
+  }
+  return names;
 }
 
 /** Собранные пакеты внутри plan/batches: папки с bundle.json. Пакеты вне проекта приложение не отслеживает. */

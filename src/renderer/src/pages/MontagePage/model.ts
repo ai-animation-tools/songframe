@@ -79,13 +79,24 @@ export function sourceClip(source: MontageSource, length: number): MontageClip {
   };
 }
 
-export function initialDraft(view: MontageView, selected: string[], trackPath: string): MontageDraft {
+/** Путь источника сравнивается без учёта разделителей: ссылка приходит из другой страницы или ОС. */
+export function samePath(a: string, b: string): boolean {
+  return a.replaceAll('\\', '/') === b.replaceAll('\\', '/');
+}
+
+export function initialDraft(view: MontageView, selected: string[], trackPath: string, preferred: Record<string, string> = {}): MontageDraft {
   const scenes = view.scenes.filter((scene) => selected.includes(scene.id));
   const clips = scenes.flatMap((scene) => {
     const sources = view.sources.filter((source) => source.scene === scene.id);
     // Начальная проба повторяет текущий монтаж сцены, включая ранее выбранную обрезку.
     // Полный original выбирается явно, когда для новой склейки нужен дополнительный запас.
-    const source = sources.find((item) => item.kind === 'video' && !item.original) ?? sources.find((item) => item.original) ?? sources[0];
+    // Со страницы производства проба открывается с результатом попытки этой сцены.
+    const wanted = preferred[scene.id];
+    const source =
+      (wanted ? sources.find((item) => samePath(item.path, wanted)) : undefined) ??
+      sources.find((item) => item.kind === 'video' && !item.original) ??
+      sources.find((item) => item.original) ??
+      sources[0];
     return source ? [sourceClip(source, scene.endFrame - scene.startFrame)] : [];
   });
   const start = scenes[0]?.startFrame ?? 0;

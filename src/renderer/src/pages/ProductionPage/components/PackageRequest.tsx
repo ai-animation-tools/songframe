@@ -7,6 +7,8 @@ import type { PackageView } from '@shared/types';
 import { ATTEMPT_LABELS, productionInputLabel } from '@shared/production-labels';
 import { isExternalPackage } from '../decisions';
 import { RequestModelSelection } from './RequestModelSelection';
+import { RequestParameters } from './RequestParameters';
+import { RequestPrompt } from './RequestPrompt';
 
 export function PackageRequest({
   pkg,
@@ -25,15 +27,15 @@ export function PackageRequest({
   return (
     <>
       {pkg.request ? (
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 2, minWidth: 0 }}>
           <Typography variant="subtitle2" gutterBottom>
             {pkg.request.kind === 'image' ? 'Запрос изображения' : 'Запрос видео'}
           </Typography>
           <RequestModelSelection selection={pkg.request.modelSelection} />
-          <Table size="small">
+          <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', '& .MuiTableCell-root': { overflowWrap: 'anywhere' } }}>
             <TableHead>
               <TableRow>
-                <TableCell>Параметр</TableCell>
+                <TableCell sx={{ width: '35%' }}>Параметр</TableCell>
                 <TableCell>Значение</TableCell>
               </TableRow>
             </TableHead>
@@ -41,7 +43,7 @@ export function PackageRequest({
               <TableRow>
                 <TableCell>Исполнитель</TableCell>
                 <TableCell>
-                  {pkg.request.provider ?? 'kling'}
+                  {pkg.request.provider ?? 'не указан'}
                   {pkg.request.command ? ` · ${pkg.request.command}` : ''}
                 </TableCell>
               </TableRow>
@@ -54,10 +56,6 @@ export function PackageRequest({
               <TableRow>
                 <TableCell>Модель</TableCell>
                 <TableCell>{pkg.request.model}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Параметры</TableCell>
-                <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>{JSON.stringify(pkg.request.parameters)}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Входные материалы</TableCell>
@@ -87,11 +85,10 @@ export function PackageRequest({
               </TableRow>
             </TableBody>
           </Table>
-          {pkg.request.promptText ? (
-            <Typography component="pre" variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 240, overflow: 'auto', mt: 1 }}>
-              {pkg.request.promptText}
-            </Typography>
-          ) : null}
+          <Box sx={{ my: 2 }}>
+            <RequestParameters parameters={pkg.request.parameters} />
+          </Box>
+          {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} /> : null}
           {canSubmit ? (
             <Tooltip title={klingAvailable ? 'Платная отправка из приложения' : 'Kling CLI не найден'}>
               <span>

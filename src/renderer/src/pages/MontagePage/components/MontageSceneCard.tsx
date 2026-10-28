@@ -67,7 +67,8 @@ export function MontageSceneCard({
       <Stack spacing={1} sx={{ mt: sources.length ? 1.5 : 0 }}>
         {sources.map((source) => {
           const selected = used?.path === source.path;
-          const materialColor = source.kind === 'card' ? null : source.original ? 'info' : 'success';
+          // Результат попытки выделяется предупреждающим цветом: он ещё не принят и легко теряется среди принятых материалов.
+          const materialColor = source.kind === 'card' ? null : source.attempt ? 'warning' : source.original ? 'info' : 'success';
           return (
             <Box
               key={source.id}
@@ -80,9 +81,15 @@ export function MontageSceneCard({
                 p: 1,
                 border: 1,
                 borderColor: selected ? 'primary.main' : materialColor ? `${materialColor}.main` : 'divider',
+                borderWidth: source.attempt ? 2 : 1,
                 // Цвет всего материала различает полный оригинал и принятый монтаж в обеих темах.
                 bgcolor: (theme) =>
-                  materialColor ? alpha(theme.palette[materialColor].main, theme.palette.mode === 'dark' ? 0.18 : 0.09) : 'background.default',
+                  materialColor
+                    ? alpha(
+                        theme.palette[materialColor].main,
+                        source.attempt ? (theme.palette.mode === 'dark' ? 0.32 : 0.2) : theme.palette.mode === 'dark' ? 0.18 : 0.09
+                      )
+                    : 'background.default',
                 borderRadius: 1,
                 cursor: 'grab',
                 '&:active': { cursor: 'grabbing' }
@@ -93,9 +100,9 @@ export function MontageSceneCard({
                 {source.kind === 'card' ? <ImageOutlinedIcon fontSize="small" color="action" /> : <MovieOutlinedIcon fontSize="small" color="action" />}
                 <Chip
                   size="small"
-                  label={source.kind === 'card' ? 'Карточка' : source.original ? 'Полный оригинал' : 'Принятый'}
+                  label={source.kind === 'card' ? 'Карточка' : source.attempt ? 'Не принят' : source.original ? 'Полный оригинал' : 'Принятый'}
                   color={materialColor ?? 'default'}
-                  variant="outlined"
+                  variant={source.attempt ? 'filled' : 'outlined'}
                 />
                 <Typography variant="caption" color="text.secondary">
                   {source.kind === 'card' ? 'Опора' : source.frames === null ? 'Читаем длину…' : frameLabel(source.frames)}

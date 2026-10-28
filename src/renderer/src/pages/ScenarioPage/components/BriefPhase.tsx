@@ -1,6 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Box, Checkbox, FormControlLabel, FormGroup, Typography } from '@mui/material';
 import type { BriefResult } from '@shared/types';
+import { Prose } from '../../../components/Prose';
 
 /** Отметки помогают сравнить кадр с ожидаемым состоянием и живут только в этом представлении. */
 export function BriefPhase({ brief }: { brief: BriefResult }): ReactElement {
@@ -14,9 +15,7 @@ export function BriefPhase({ brief }: { brief: BriefResult }): ReactElement {
       <Typography variant="subtitle2" sx={{ mb: 1 }}>
         {heading}
       </Typography>
-      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-        {body.join('\n').trim()}
-      </Typography>
+      <Prose text={body.join('\n').trim()} />
       {brief.checklist.length ? (
         <Box sx={{ mt: 2, minWidth: 0 }}>
           <Typography variant="subtitle2">Проверить по кадру:</Typography>

@@ -46,7 +46,7 @@ export function ScenarioContinuityComparison({
     <Stack spacing={1}>
       <Typography variant="h6">Влияние на наследуемые состояния</Typography>
       {error ? (
-        <Alert severity="warning">Не удалось рассчитать сравнение состояний соседей. Проверьте continuity перед применением.</Alert>
+        <Alert severity="warning">Не удалось рассчитать сравнение состояний соседей. Проверьте непрерывность перед применением.</Alert>
       ) : changes === null ? (
         <Typography>Проверяем состояния остальных планов…</Typography>
       ) : changes.length ? (

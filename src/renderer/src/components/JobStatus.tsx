@@ -1,8 +1,32 @@
-/** Рабочая страница показывает только ход операции; история доступна через постоянное меню. */
+/** Результат операции остаётся у действия; полный журнал доступен из сообщения о сбое. */
 import type { ReactElement } from 'react';
-import { CircularProgress, Stack, Typography } from '@mui/material';
+import { Alert, AlertTitle, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import { Link } from 'react-router-dom';
+import type { JobInfo } from '@shared/types';
 
-export function JobStatus({ running = false, label }: { running?: boolean; label?: string }): ReactElement | null {
+export function JobStatus({ running = false, label, job, error }: { running?: boolean; label?: string; job?: JobInfo; error?: string }): ReactElement | null {
+  if (error || job?.status === 'failed') {
+    return (
+      <Alert severity="error" sx={{ mt: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
+        <AlertTitle>{job?.title ?? 'Действие не выполнено'}</AlertTitle>
+        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+          {error ?? job?.error ?? `Задание завершилось с кодом ${job?.code}. Подробности доступны в журнале.`}
+        </Typography>
+        <Button component={Link} to="/jobs" color="inherit" size="small" startIcon={<ListAltIcon />} sx={{ mt: 1 }}>
+          Открыть журнал
+        </Button>
+      </Alert>
+    );
+  }
+  if (job?.status === 'done')
+    return (
+      <Alert severity="success" sx={{ mt: 1 }}>
+        {job.title}: выполнено.
+      </Alert>
+    );
+  running ||= job?.status === 'running';
+  label ??= job?.title;
   if (!running && !label) return null;
 
   return (

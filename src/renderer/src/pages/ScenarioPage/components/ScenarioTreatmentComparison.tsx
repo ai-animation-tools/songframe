@@ -12,7 +12,7 @@ export function ScenarioTreatmentComparison({ before, after }: { before: Treatme
     { key: 'end', label: 'Конец, с' },
     { key: 'direction', label: 'Действие' },
     { key: 'entities', label: 'Участники' },
-    { key: 'lipsync', label: 'Lipsync' },
+    { key: 'lipsync', label: 'Липсинк' },
     { key: 'max_shot_seconds', label: 'Максимум плана, с' }
   ];
   return (

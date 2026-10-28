@@ -93,7 +93,7 @@ class ShotWorkflowTests(unittest.TestCase):
             tool.set_stage(self.package, "request_choice", root=self.root)
         request_dir = self.package / "request"
         request_dir.mkdir()
-        (request_dir / "request.json").write_text("{}")
+        (request_dir / "request.json").write_text(json.dumps({"provider": "kling"}))
         data = tool.set_stage(self.package, "request_choice", request_dir="request", root=self.root)
         self.assertEqual(data["stage"], "request_choice")
         info = tool.report(self.package, self.root)

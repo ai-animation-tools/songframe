@@ -110,9 +110,11 @@ def scene_of(root, shot):
     return registry, scene
 
 
-def init(shot, directory, mode="shot", root=ROOT, batch=None, retry_of=None):
+def init(shot, directory, mode="shot", root=ROOT, batch=None, retry_of=None, executor="agent"):
     if mode not in MODES:
         raise ValueError("Режим согласования: shot или frame.")
+    if executor not in ("app", "agent"):
+        raise ValueError("Исполнитель продолжения: app или agent.")
     if batch is not None and not re.fullmatch(r"[A-Za-z0-9_.-]{1,40}", batch):
         raise ValueError("Имя партии: латиница, цифры, точка, дефис, подчёркивание.")
     registry, scene = scene_of(root, shot)
@@ -135,6 +137,8 @@ def init(shot, directory, mode="shot", root=ROOT, batch=None, retry_of=None):
         "schema_version": 1,
         "shot": shot,
         "mode": mode,
+        # Владелец известен до подготовки файлов: сбой следующего шага не делает пакет чужим.
+        "executor": executor,
         "stage": "description_review",
         "wait_reason": None,
         "request_dir": None,
@@ -815,6 +819,7 @@ def main():
     p.add_argument("shot")
     p.add_argument("--dir", required=True)
     p.add_argument("--mode", choices=MODES, default="shot")
+    p.add_argument("--executor", choices=("app", "agent"), default="agent")
     p.add_argument("--batch", help="Имя партии независимых планов, готовящихся вместе")
     p.add_argument("--retry-of", help="Пакет того же плана, для которого создаётся исправленная попытка")
     p = sub.add_parser("plan-keyframes")
@@ -874,7 +879,7 @@ def main():
     args = parser.parse_args()
     try:
         if args.action == "init":
-            data = init(args.shot, args.dir, args.mode, batch=args.batch, retry_of=args.retry_of)
+            data = init(args.shot, args.dir, args.mode, batch=args.batch, retry_of=args.retry_of, executor=args.executor)
             print(f"Пакет {data['shot']} создан: этап {data['stage']}, окно {data['timing']['window_seconds']} с.")
         elif args.action == "plan-keyframes":
             middles = []

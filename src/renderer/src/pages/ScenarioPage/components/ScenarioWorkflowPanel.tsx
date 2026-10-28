@@ -87,7 +87,7 @@ export function ScenarioWorkflowPanel({
           )}
         </Stack>
         <Typography variant="body2" color="text.secondary">
-          Агент готовит предложение. Сначала просмотрите сравнение, затем отдельно примените результат. Ручные редакторы доступны без CLI.
+          Агент готовит предложение. Сначала просмотрите сравнение, затем отдельно примените результат. Ручные редакторы доступны без агента.
         </Typography>
         {aiProblem && <Alert severity="info">{aiProblem}</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
@@ -120,16 +120,9 @@ export function ScenarioWorkflowPanel({
             {proposal.stale && <Alert severity="warning">Предложение устарело. Исходные файлы изменились; нужен новый запуск.</Alert>}
             {proposal.status === 'ready' && (
               <Stack direction="row" spacing={1}>
-                <Button startIcon={<CompareArrowsIcon />} variant="contained" disabled={disabled} onClick={() => setPreview(true)}>
+                <Button startIcon={<CompareArrowsIcon />} disabled={disabled} onClick={() => setPreview(true)}>
                   Просмотреть предложение и сравнение
                 </Button>
-                <DestructiveButton
-                  label="Отбросить предложение"
-                  description="Предложение будет отброшено без записи в проект."
-                  confirmLabel="Отбросить"
-                  disabled={disabled}
-                  onConfirm={() => void workflow.discard()}
-                />
                 {proposal.stale && (
                   <AgentButton color="success" disabled={disabled} onClick={() => begin(proposal.pass, proposal.selectedIds)}>
                     Создать новое предложение
@@ -143,9 +136,9 @@ export function ScenarioWorkflowPanel({
                   Создать новое предложение
                 </AgentButton>
                 <DestructiveButton
-                  label="Отбросить предложение"
-                  description="Предложение будет отброшено без записи в проект."
-                  confirmLabel="Отбросить"
+                  label="Отклонить предложение"
+                  description="Предложение будет отклонено без записи в проект."
+                  confirmLabel="Отклонить"
                   disabled={disabled}
                   onConfirm={() => void workflow.discard()}
                 />
@@ -211,6 +204,11 @@ export function ScenarioWorkflowPanel({
             onApply={() =>
               guard(async () => {
                 if (await workflow.apply()) setPreview(false);
+              })
+            }
+            onDiscard={() =>
+              guard(async () => {
+                if (await workflow.discard()) setPreview(false);
               })
             }
           />

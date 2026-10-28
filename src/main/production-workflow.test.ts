@@ -161,6 +161,98 @@ beforeEach(() => {
 afterEach(() => rmSync(work, { recursive: true, force: true }));
 
 describe('ProductionWorkflow', () => {
+  it('дорабатывает повтор сохранённого запроса через описание только после явного запуска', async () => {
+    const { workflow, agents, launcher } = setup();
+    const asset = join(project, 'assets/shots/M01');
+    mkdirSync(asset, { recursive: true });
+    const savedPrompt = 'Лодка плывёт по реке.\r\n';
+    writeFileSync(join(asset, 'prompt.txt'), savedPrompt);
+    write(join(asset, 'generation-request.json'), {
+      schema_version: 1,
+      provider: 'kling',
+      kind: 'video',
+      path_base: 'asset_directory',
+      command: 'image_to_video',
+      model: 'test-video',
+      parameters: { duration: 9, resolution: '1080p', aspect_ratio: '16:9' },
+      outputs: 1,
+      prompt: 'prompt.txt',
+      prompt_sha256: sha(savedPrompt),
+      inputs: [{ root: 'source', path: 'vehicles/boat.png', flag: 'image', sha256: sha(readFileSync(join(project, 'source/vehicles/boat.png'))) }]
+    });
+    // Настоящий инструмент копирует снимок без CLI аккаунта и без отправки; согласования намеренно отсутствуют.
+    const regenerated = await launcher.run(project, 'regenerate_shot', ['M01', '--source', 'asset', '--executor', 'app', '--no-account', '--json']);
+    expect(regenerated.code, regenerated.stderr).toBe(0);
+    const pkg = JSON.parse(regenerated.stdout).package as string;
+    const requestPath = join(pkg, 'request/request.json');
+    const frozenBytes = readFileSync(requestPath);
+    const frozenSha = sha(frozenBytes);
+    const frozen = JSON.parse(frozenBytes.toString('utf8'));
+    const savedFiles = [frozen.prompt, ...frozen.inputs].map((entry: { path: string }) => ({
+      path: join(pkg, 'request', entry.path),
+      bytes: readFileSync(join(pkg, 'request', entry.path))
+    }));
+    const initial = JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8'));
+    expect(initial).toMatchObject({ description_approved: false, keyframes: [], prompt: { approved: false } });
+    expect(workflow.view(project, 'M01', pkg).canRevise).toBe(false);
+    const note = 'Изменить направление камеры и уточнить движение лодки';
+    const decided = await launcher.run(project, 'shot_workflow', ['decide', '--dir', pkg, '--verdict', 'revise', '--note', note]);
+    expect(decided.code, decided.stderr).toBe(0);
+    expect(workflow.view(project, 'M01', pkg)).toMatchObject({ canRevise: true, canContinue: false, proposal: null, job: null });
+    expect(agents.inputs).toHaveLength(0);
+    const started = await workflow.start({ project, shot: 'M01', packageDir: pkg, action: 'revise' });
+    expect(started.proposal?.stage).toBe('description');
+    expect(JSON.parse(agents.inputs.at(-1)!.context!)).toMatchObject({ stage: 'description', note });
+    expect(workflow.view(project, 'M01', pkg).canRevise).toBe(false);
+    agents.finish(description());
+    expect(workflow.view(project, 'M01', pkg)).toMatchObject({ canRevise: false, canContinue: false, proposal: { status: 'ready' } });
+    await workflow.apply(project, 'M01', pkg, started.proposal!.id);
+    expect(JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8'))).toMatchObject({
+      stage: 'description_review',
+      pending_decision: { stage: 'description_review', executor: 'app' }
+    });
+    expect(readFileSync(requestPath)).toEqual(frozenBytes);
+    expect(sha(readFileSync(requestPath))).toBe(frozenSha);
+    for (const file of savedFiles) expect(readFileSync(file.path)).toEqual(file.bytes);
+    expect(launcher.calls.some((call) => call.args.includes('submit'))).toBe(false);
+  });
+
+  it.each([
+    ['description_review', false, false, 'description'],
+    ['keyframes_review', false, false, 'description'],
+    ['image_request_choice', false, false, 'description'],
+    ['prompt_review', false, false, 'description'],
+    ['prompt_review', true, false, 'prompt'],
+    ['request_choice', false, false, 'description'],
+    ['request_choice', false, true, 'description'],
+    ['request_choice', true, false, 'prompt'],
+    ['request_choice', true, true, 'request']
+  ] as const)('доработка %s при опорах=%s и промпте=%s запускает %s', async (decisionStage, framesApproved, promptIsApproved, expectedStage) => {
+    const { workflow, agents, pkg } = await prepared();
+    const workflowPath = join(pkg, 'workflow.json');
+    const data = JSON.parse(readFileSync(workflowPath, 'utf8'));
+    if (framesApproved) {
+      mkdirSync(join(pkg, 'frames'), { recursive: true });
+      data.keyframes = candidates().map((candidate) => {
+        const path = `frames/${candidate.id}.png`;
+        cpSync(candidate.path, join(pkg, path));
+        return { id: candidate.id, approved: true, path, sha256: sha(readFileSync(candidate.path)) };
+      });
+    }
+    if (promptIsApproved) {
+      writeFileSync(join(pkg, 'video-prompt.txt'), 'Сохранённый видеопромпт');
+      data.prompt.approved = true;
+      data.approved_prompt_sha256 = sha('Сохранённый видеопромпт');
+    }
+    data.stage = decisionStage === 'image_request_choice' ? 'keyframes_review' : decisionStage;
+    data.pending_decision = null;
+    data.decision = { stage: decisionStage, verdict: 'revise', note: 'Уточнить движение' };
+    write(workflowPath, data);
+    const started = await workflow.start({ project, shot: 'M01', packageDir: pkg, action: 'revise' });
+    expect(started.proposal?.stage).toBe(expectedStage);
+    expect(JSON.parse(agents.inputs.at(-1)!.context!)).toMatchObject({ stage: expectedStage, note: 'Уточнить движение' });
+  });
+
   it('сохраняет актуальность готового предложения после смены и удаления обложки', async () => {
     const { workflow, agents } = setup();
     const started = await workflow.start({ project, shot: 'M01', action: 'prepare' });
@@ -325,6 +417,7 @@ describe('ProductionWorkflow', () => {
     await workflow.apply(project, 'M01', pkg, request.proposal!.id);
     expect(existsSync(join(pkg, 'request-01/request.json'))).toBe(true);
     expect(JSON.parse(readFileSync(join(pkg, 'request-01/request.json'), 'utf8'))).toMatchObject({
+      provider: 'kling',
       model: 'test-video',
       parameters: { duration: 9, resolution: '1080p' }
     });

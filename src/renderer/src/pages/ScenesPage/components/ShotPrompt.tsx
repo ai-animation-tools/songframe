@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import type { DashboardShot } from '@shared/types';
-import { Box, Button, Typography } from '@mui/material';
+import { Box, Button, Chip, Typography } from '@mui/material';
+import { Prose } from '../../../components/Prose';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useApp } from '../../../state';
 import { ShotSection } from './ShotSection';
@@ -21,28 +22,25 @@ export function ShotPrompt({ shot }: { shot: DashboardShot }): ReactElement {
       {prompt ? (
         <ShotSection title={asset ? 'Промпт принятой генерации' : 'Видеопромпт пакета'}>
           <Box sx={{ position: 'relative' }}>
-            <Typography
-              component="pre"
-              variant="body2"
-              sx={{
-                whiteSpace: 'pre-wrap',
-                fontFamily: 'inherit',
-                m: 0,
-                p: 1,
-                pr: 5,
-                bgcolor: 'action.hover',
-                borderRadius: 1,
-                maxHeight: 220,
-                overflowY: 'auto'
-              }}
-            >
-              {prompt}
-            </Typography>
+            <Box sx={{ p: 1, pr: 5, bgcolor: 'action.hover', borderRadius: 1, maxHeight: 220, overflowY: 'auto' }}>
+              <Prose text={prompt} />
+            </Box>
           </Box>
           {request ? (
-            <Typography variant="caption" color="text.secondary">
-              {('provider' in request ? `${request.provider} · ` : '') + request.model} · {JSON.stringify(request.parameters)}
-            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {('provider' in request ? `${request.provider} · ` : '') + request.model}
+              </Typography>
+              {Object.entries(request.parameters).map(([key, value]) => (
+                <Chip
+                  key={key}
+                  size="small"
+                  variant="outlined"
+                  label={`${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`}
+                  sx={{ height: 20 }}
+                />
+              ))}
+            </Box>
           ) : null}
           <Button size="small" startIcon={<ContentCopyIcon />} onClick={() => copy(prompt)}>
             Скопировать промпт

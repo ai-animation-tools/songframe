@@ -80,7 +80,7 @@ class ShotStatusTests(unittest.TestCase):
             },
         )
         self.write("plan/awaiting/M02/request/attempt.json", {"status": "prepared", "request_sha256": "x"})
-        self.write("plan/batches/M03-attempt-01/request.json", {"shot": "M03"})
+        self.write("plan/batches/M03-attempt-01/request.json", {"shot": "M03", "provider": "kling"})
         self.write("plan/batches/M03-attempt-01/attempt.json", {"status": "submitted", "generation_id": "job"})
         self.write(
             "plan/batches/M03-review/review.json", {"status": "review_pending", "shots": [{"id": "M03"}, {"id": "M04"}]}
@@ -112,7 +112,7 @@ class ShotStatusTests(unittest.TestCase):
         self.assertEqual(result["unassigned_packages"], {})
 
     def test_completed_shot_keeps_status_and_shows_alternative_package_as_note(self):
-        self.write("plan/batches/M01-attempt-02/request.json", {"shot": "M01"})
+        self.write("plan/batches/M01-attempt-02/request.json", {"shot": "M01", "provider": "kling"})
         self.write("plan/batches/M01-attempt-02/attempt.json", {"status": "downloaded", "request_sha256": "y"})
         _, rows = self.rows()
         self.assertEqual(rows["M01"]["status"], "completed")

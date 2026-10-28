@@ -54,6 +54,10 @@ export interface ProductionWorkflowView {
   canContinue: boolean;
   canRevise: boolean;
   canGenerateFrames: boolean;
+  /** Попытка пакета уже оплачена: подготовка продолжается только новой попыткой или возвратом с замечанием. */
+  paid: boolean;
+  /** Почему действие подготовки недоступно; пусто, когда оно доступно. */
+  reasons: { prepare: string | null; continue: string | null; frames: string | null };
   /** Backend опор выбран в проекте независимо от текстового агента. */
   imageProvider?: string;
   framePrompts: ProductionFramePrompt[];

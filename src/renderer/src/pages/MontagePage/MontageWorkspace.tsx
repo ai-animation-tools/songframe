@@ -18,7 +18,7 @@ import {
   MontageTimeline,
   SourceMetadata
 } from './components';
-import { moveClip, projectMediaUrl } from './model';
+import { moveClip, projectMediaUrl, samePath } from './model';
 import { useMontage } from './useMontage';
 import { useMontageRemove } from './useMontageRemove';
 import { MontageRemoveDialog } from './components/MontageRemoveDialog';
@@ -31,8 +31,8 @@ const SPLIT_KEY = 'montage-preview-split';
 const DIVIDER_HEIGHT = 20;
 
 /** Рабочая область монтируется заново при смене проекта или набора сцен, включая все медиаплееры. */
-export function MontageWorkspace({ project, shots }: { project: string; shots: string[] }): ReactElement {
-  const page = useMontage(project, shots);
+export function MontageWorkspace({ project, shots, preferred = {} }: { project: string; shots: string[]; preferred?: Record<string, string> }): ReactElement {
+  const page = useMontage(project, shots, preferred);
   const savedLabelId = useId();
   const previewPanelId = useId();
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight);
@@ -72,6 +72,11 @@ export function MontageWorkspace({ project, shots }: { project: string; shots: s
   const running = job?.status === 'running';
   const locked = page.busy || running;
   const selectedClip = draft.clips.find((clip) => clip.id === page.selected);
+  // Результат попытки на дорожке подписывается явно: пользователь сравнивает его с принятым клипом, а не наоборот.
+  const attemptsOnTrack = draft.clips.flatMap((clip) => {
+    const source = page.sources.find((item) => item.scene === clip.scene && samePath(item.path, clip.path));
+    return source?.attempt ? [{ scene: clip.scene, label: source.label }] : [];
+  });
   // Галерея повторяет порядок каталога: сцены по реестру, затем все варианты материала внутри карточки.
   const galleryMaterials = useMemo(
     () => (view?.scenes ?? []).flatMap((scene) => page.sources.filter((source) => source.scene === scene.id)),
@@ -220,6 +225,15 @@ export function MontageWorkspace({ project, shots }: { project: string; shots: s
         <Alert severity="warning">
           {view.problems.map((problem, index) => (
             <div key={index}>{problem}</div>
+          ))}
+        </Alert>
+      ) : null}
+      {attemptsOnTrack.length ? (
+        <Alert severity="warning">
+          {attemptsOnTrack.map((item) => (
+            <div key={item.scene}>
+              На дорожке {item.scene} стоит «{item.label}»: этот ролик ещё не принят в assets. Принятый клип сцены доступен в материалах справа.
+            </div>
           ))}
         </Alert>
       ) : null}

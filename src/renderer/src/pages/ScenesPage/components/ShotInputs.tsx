@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import type { DashboardShot } from '@shared/types';
 import { Box, ButtonBase, Typography } from '@mui/material';
-import { InputImageGallery } from './InputImageGallery';
+import { ImageGallery } from '../../../components/ImageGallery';
 import { ShotSection } from './ShotSection';
 
 /** Показывает входные опоры сцены с их статусом, а при их отсутствии — карточку аниматика. */
@@ -54,7 +54,9 @@ export function ShotInputs({ shot }: { shot: DashboardShot }): ReactElement {
           </ButtonBase>
         </ShotSection>
       ) : null}
-      {activeIndex !== null && images.length > 0 && <InputImageGallery images={images} initialIndex={activeIndex} onClose={() => setActiveIndex(null)} />}
+      {activeIndex !== null && images.length > 0 && (
+        <ImageGallery kind="Входное изображение" images={images} initialIndex={activeIndex} onClose={() => setActiveIndex(null)} />
+      )}
     </>
   );
 }

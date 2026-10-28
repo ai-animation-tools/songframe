@@ -166,6 +166,7 @@ class LintRegistryTests(unittest.TestCase):
                 {
                     "schema_version": 1,
                     "kind": "video",
+                    "provider": "kling",
                     "command": "image_to_video",
                     "model": "kling-video-v3_0",
                     "parameters": {},
@@ -180,6 +181,49 @@ class LintRegistryTests(unittest.TestCase):
         self.assertTrue(any("stage: пакет в очереди" in e for e in errors))
         self.assertTrue(any("prefer_multi_shots обязателен" in e for e in errors))
         self.assertTrue(any("plan/awaiting/M02" in i["file"] for i in tool.lint(self.root).errors))
+
+    def test_generic_frozen_request_has_explicit_provider_without_kling_constraints(self):
+        # Общая схема описывает хранимый запрос. Команду, модель, входные
+        # флаги и ограничения числа результатов проверяет конкретный адаптер.
+        package = self.root / "plan/batches/M02-generic"
+        package.mkdir()
+        request = {
+            "schema_version": 1,
+            "shot": "M02",
+            "kind": "video",
+            "provider": "CustomProvider",
+            "command": "render.clip",
+            "model": "Сервис v1",
+            "model_selection": {"preferredModel": None, "selectedModel": "Сервис v1", "reason": "Совместима с запросом."},
+            "parameters": {"profile": "custom"},
+            "outputs": 12,
+            "inputs": [{"flag": "referenceVideo", "path": "clip.mov", "sha256": SHA, "bytes": 1}],
+            "prompt": {"path": "prompt.txt", "sha256": SHA},
+        }
+        path = package / "request.json"
+        path.write_text(json.dumps(request), encoding="utf-8")
+        errors, _ = self.messages(tool.lint(self.root))
+        self.assertEqual(errors, [])
+        schema = tool.load_schema("request")
+        self.assertEqual(tool.validate(request | {"video_without_watermark": True}, schema), [])
+        for provider in (None, "", " \n\t", 1):
+            with self.subTest(provider=provider):
+                invalid = request | {"provider": provider}
+                if provider is None:
+                    del invalid["provider"]
+                path.write_text(json.dumps(invalid), encoding="utf-8")
+                errors, _ = self.messages(tool.lint(self.root))
+                self.assertTrue(any("provider" in error for error in errors))
+        self.assertTrue(tool.validate(request | {"video_without_watermark": False}, schema))
+        for selection in (
+            {},
+            {"preferredModel": "", "selectedModel": "Сервис v1", "reason": "Причина"},
+            {"preferredModel": None, "selectedModel": " ", "reason": "Причина"},
+            {"preferredModel": None, "selectedModel": "Сервис v1", "reason": " \n\t"},
+            request["model_selection"] | {"extra": True},
+        ):
+            with self.subTest(selection=selection):
+                self.assertTrue(tool.validate(request | {"model_selection": selection}, schema))
 
     def test_awaiting_image_stages_and_history_are_valid_but_malformed_history_is_not(self):
         package = self.root / "plan/awaiting/M02"

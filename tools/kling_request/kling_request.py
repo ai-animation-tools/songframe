@@ -25,6 +25,8 @@ from urllib.request import urlopen
 
 from tools.asset_package.asset_package import sha
 from tools.common import ROOT
+from tools import request_snapshot
+from tools.request_snapshot import atomic_json, encoded
 from tools.kling_cli import resolve as resolve_kling_cli
 from tools.kling_cli import run as run_kling_cli
 
@@ -46,24 +48,6 @@ EXPLICIT_RESOLUTION_MODELS = {"kling-video-v4_0"}
 # Документированный предел промпта API Kling; поведение CLI при превышении не проверено.
 PROMPT_WARNING_CHARS = 2500
 
-
-def encoded(value):
-    return (json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
-
-
-def atomic_json(path, value):
-    # Состояние отправки должно пережить обрыв до получения ID. Подписанные
-    # адреса и сырые ответы CLI никогда не попадают в этот файл.
-    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
-        temporary = Path(stream.name)
-        try:
-            stream.write(encoded(value))
-            stream.flush()
-            os.fsync(stream.fileno())
-        except BaseException:
-            temporary.unlink(missing_ok=True)
-            raise
-    temporary.replace(path)
 
 
 def work_path(value):
@@ -117,6 +101,9 @@ def locked(directory):
 
 
 def validate_spec(spec):
+    request_snapshot.validate_spec(spec)
+    if spec["provider"].strip().casefold() != "kling":
+        raise ValueError("Адаптер Kling не обслуживает провайдера " + spec["provider"] + ".")
     if spec.get("schema_version") != 1 or spec.get("command") not in COMMANDS:
         raise ValueError("Неизвестная схема или команда генерации.")
     if spec.get("kind") not in ("image", "video") or not re.fullmatch(r"[A-Za-z0-9_.-]+", spec.get("model", "")):
@@ -126,6 +113,7 @@ def validate_spec(spec):
     if set(spec) - {
         "schema_version",
         "shot",
+        "provider",
         "kind",
         "command",
         "model",
@@ -189,73 +177,19 @@ def validate_spec(spec):
 
 
 def prepare(request, directory):
-    request = Path(request).resolve()
-    directory = work_path(directory)
-    spec = json.loads(request.read_text())
+    # Общая подготовка копирует точные байты; особенности Kling проверяются до создания папки.
+    spec = json.loads(Path(request).read_text())
     validate_spec(spec)
-    if directory.exists():
-        raise ValueError("Нужна новая папка попытки; существующая не перезаписывается.")
-    prompt_source = (request.parent / spec["prompt_file"]).resolve()
-    prompt_bytes = prompt_source.read_bytes()
-    prompt = prompt_bytes.decode("utf-8")
-    if not prompt.strip():
-        raise ValueError("Промпт пуст.")
-    if re.match(r"^--[A-Za-z]", prompt):
+    prompt_source = Path(request).resolve().parent / spec["prompt_file"]
+    if re.match(r"^--[A-Za-z]", prompt_source.read_bytes().decode("utf-8")):
         raise ValueError("Промпт начинается с флага CLI; измените начало текста до согласования.")
-    directory.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".prepare-", dir=directory.parent) as temporary:
-        staging = Path(temporary)
-        (staging / "inputs").mkdir()
-        (staging / "prompt.txt").write_bytes(prompt_bytes)
-        inputs = []
-        copies = {}
-        for number, item in enumerate(spec.get("inputs", []), 1):
-            source = (request.parent / item["path"]).resolve()
-            digest = sha(source)
-            if item.get("sha256", digest) != digest:
-                raise ValueError("Хеш входа отличается от указанного в запросе.")
-            if digest not in copies:
-                name = f"inputs/{number:02}{source.suffix.lower()}"
-                shutil.copyfile(source, staging / name)
-                if sha(staging / name) != digest:
-                    raise ValueError("Вход изменился при подготовке.")
-                copies[digest] = name
-            inputs.append(
-                {k: item[k] for k in ("flag", "slot", "role") if k in item}
-                | {"path": copies[digest], "sha256": digest, "bytes": source.stat().st_size}
-            )
-        frozen = {
-            "schema_version": 1,
-            "shot": spec.get("shot"),
-            "kind": spec["kind"],
-            "command": spec["command"],
-            "model": spec["model"],
-            "parameters": spec.get("parameters", {}),
-            "outputs": spec.get("outputs", 1),
-            "inputs": inputs,
-            "prompt": {"path": "prompt.txt", "sha256": sha(staging / "prompt.txt")},
-            "video_without_watermark": True,
-        }
-        # Отсутствующее поле не добавляем: байты и SHA прежних запросов сохраняются.
-        if "model_selection" in spec:
-            frozen["model_selection"] = spec["model_selection"]
-        digest = hashlib.sha256(encoded(frozen)).hexdigest()
-        atomic_json(staging / "request.json", frozen)
-        atomic_json(
-            staging / "attempt.json",
-            {"schema_version": 1, "request_sha256": digest, "status": "prepared", "downloads": []},
+    prepared = request_snapshot.prepare(request, work_path(directory), extra_fields={"video_without_watermark": True})
+    if len(prepared["prompt_text"]) > PROMPT_WARNING_CHARS:
+        prepared["warnings"].append(
+            f"Промпт длиннее {PROMPT_WARNING_CHARS} символов ({len(prepared['prompt_text'])}): "
+            "сервис может обрезать или ослабить хвост текста."
         )
-        # Папка появляется только целиком: недописанный запрос нельзя отправить.
-        staging.rename(directory)
-    warnings = []
-    if len(prompt) > PROMPT_WARNING_CHARS:
-        warnings.append(
-            (
-                f"Промпт длиннее {PROMPT_WARNING_CHARS} символов ({len(prompt)}): "
-                f"сервис может обрезать или ослабить хвост текста."
-            )
-        )
-    return frozen | {"request_sha256": digest, "prompt_text": prompt, "work_dir": str(directory), "warnings": warnings}
+    return prepared
 
 
 def capability_body(cli, command, timeout):
@@ -431,6 +365,9 @@ def capabilities_table(report):
 
 def load_attempt(directory, verify_inputs=False):
     request = json.loads(inside(directory, "request.json").read_text())
+    provider = request.get("provider")
+    if not isinstance(provider, str) or provider.strip().casefold() != "kling":
+        raise ValueError("Адаптер Kling требует явный provider Kling в подготовленном запросе.")
     state = json.loads(inside(directory, "attempt.json").read_text())
     if hashlib.sha256(encoded(request)).hexdigest() != state["request_sha256"]:
         raise ValueError("Подготовленный запрос изменён; нужна новая попытка и новое согласование.")

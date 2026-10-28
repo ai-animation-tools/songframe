@@ -8,7 +8,7 @@ python3 -B tools/lint_registry/lint_registry.py --json
 python3 -B tools/lint_registry/lint_registry.py --strict
 ```
 
-Код возврата 1 при ошибках; `--strict` считает ошибками и предупреждения. Схемы форматов лежат в [schemas/](schemas/): `scenes` (реестр), `manifest` (комплект assets), `request` (замороженная попытка `kling_request`), `workflow` (пакет `shot_workflow`). Это подмножество JSON Schema без внешних библиотек: `type`, `const`, `enum`, `required`, `properties`, `additionalProperties`, `items`, `pattern`, `minimum`, `minItems`, `minLength`, `anyOf`, `$ref`. Схемы — контракт форматов; описания в README остаются пояснениями.
+Код возврата 1 при ошибках; `--strict` считает ошибками и предупреждения. Схемы форматов лежат в [schemas/](schemas/): `scenes` (реестр), `manifest` (комплект assets), `request` (общий замороженный запрос с явным `provider`), `workflow` (пакет `shot_workflow`). Это подмножество JSON Schema без внешних библиотек: `type`, `const`, `enum`, `required`, `properties`, `additionalProperties`, `items`, `pattern`, `minimum`, `minItems`, `minLength`, `anyOf`, `$ref`. Схемы — контракт форматов; описания в README остаются пояснениями.
 
 ## Правила
 
@@ -25,13 +25,14 @@ python3 -B tools/lint_registry/lint_registry.py --strict
 | Снимок без модели, промпта, команды с параметрами или `provider`, без ключа `generation_id`; `null` без `provenance` | ошибка | `generation-request.json` |
 | Устаревшие имена полей снимка (`generationId`, `arguments`, `prompt_file`, `service`) | предупреждение | `generation-request.json` |
 | Запрос к модели с авто-раскадровкой без `prefer_multi_shots` | предупреждение в assets, ошибка в рабочем пакете | снимки и `request.json` |
+| Замороженный запрос без непустого `provider`; общая схема не ограничивает сервис, его команды, модели и число результатов сверху | ошибка | `request.json` |
 | Схема `workflow.json`; пакет в очереди на допустимом этапе | ошибка | `plan/awaiting`, `plan/batches` |
 
 Правила о хронике намеренно узкие: слова «принято», «ускорение», «сохраняются» в сюжетном смысле не считаются нарушением; нарушением считается связка с пробой, участком, клипом, версией или путём в assets. Ложное срабатывание исправляется уточнением образца в `HISTORY_PATTERNS`, а не отключением проверки.
 
 ## Тесты
 
-Чистая фикстура без ошибок, хроника и рецепты против сюжетных слов, нарушения схем и референс вне `source`, состав снимка и пакеты, отсутствие героя в сценарии.
+Чистая фикстура без ошибок, хроника и рецепты против сюжетных слов, нарушения схем и референс вне `source`, состав снимка и пакеты, отсутствие героя в сценарии. Для замороженного запроса проверяются обязательный явный провайдер и независимость общей схемы от команд, моделей, флагов и лимитов Kling.
 
 ```sh
 python3 -B tools/lint_registry/test_lint_registry.py

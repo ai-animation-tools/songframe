@@ -363,10 +363,13 @@ export class ScenarioWorkflow {
             }
         proposal.after = after;
         proposal.changedIds = proposal.pass === 'treatment' ? [] : changedSceneIds(proposal.before, after);
-        proposal.warnings =
-          after.cast?.entities
-            .filter((entity) => entity.kind !== 'world' && !entity.images.length)
-            .map((entity) => `${entity.name}: изображение ещё не подготовлено.`) ?? [];
+        // Сущности без изображения допустимы (место действия, реквизит): одно предупреждение вместо списка одинаковых.
+        const withoutImages = after.cast?.entities.filter((entity) => entity.kind !== 'world' && !entity.images.length).map((entity) => entity.name) ?? [];
+        proposal.warnings = withoutImages.length
+          ? [
+              `Без референса в кастинге: ${withoutImages.join(', ')}. Агент описывает их в опорах только текстом; если нужна узнаваемость, добавьте изображение на странице «Исходники» и обновите кастинг.`
+            ]
+          : [];
         proposal.status = 'ready';
       } catch (error) {
         proposal.status = 'invalid';

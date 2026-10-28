@@ -15,7 +15,7 @@ const EMPTY: MontageDraft = {
 const api = (): MontageApi => (window.api as typeof window.api & { montage: MontageApi }).montage;
 
 /** Ответы старого проекта не попадают в новый монтаж; черновик хранит исходные хеши до явного переоткрытия. */
-export function useMontage(project: string, shots: string[]) {
+export function useMontage(project: string, shots: string[], preferred: Record<string, string> = {}) {
   const { describeError, notify } = useApp();
   const alive = useRef(true);
   const requestId = useRef(0);
@@ -67,7 +67,7 @@ export function useMontage(project: string, shots: string[]) {
       if (!alive.current || request !== requestId.current) return;
       setView(next);
       setSources(next.sources);
-      const initial = snapshot(initialDraft(next, shots, next.trackPath ?? ''));
+      const initial = snapshot(initialDraft(next, shots, next.trackPath ?? '', preferred));
       dispatch({ type: 'reset', draft: initial });
       // Новая проба ещё не сохранена, но само открытие не является правкой.
       setBaseline(initial);
@@ -83,7 +83,7 @@ export function useMontage(project: string, shots: string[]) {
     } finally {
       if (alive.current && request === requestId.current) setBusy(false);
     }
-  }, [project, shots, snapshot, describeError]);
+  }, [project, shots, preferred, snapshot, describeError]);
   useEffect(() => {
     alive.current = true;
     void load();

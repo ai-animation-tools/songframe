@@ -1,6 +1,7 @@
-/** Текстовая часть пакета: описание плана или видеопромпт с ограничением высоты. */
+/** Текстовая часть пакета: описание плана или видеопромпт с ограничением высоты, разметка показана словами. */
 import type { ReactElement } from 'react';
 import { Box, Typography } from '@mui/material';
+import { Prose } from '../../../components/Prose';
 
 export function PackageTextSection({ title, text, maxHeight }: { title: string; text: string; maxHeight: number }): ReactElement {
   return (
@@ -8,13 +9,9 @@ export function PackageTextSection({ title, text, maxHeight }: { title: string; 
       <Typography variant="subtitle2" gutterBottom>
         {title}
       </Typography>
-      <Typography
-        component="pre"
-        variant="body2"
-        sx={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', m: 0, maxHeight, overflowY: 'auto', bgcolor: 'action.hover', p: 1.5, borderRadius: 1 }}
-      >
-        {text}
-      </Typography>
+      <Box sx={{ maxHeight, overflowY: 'auto', bgcolor: 'action.hover', p: 1.5, borderRadius: 1 }}>
+        <Prose text={text} />
+      </Box>
     </Box>
   );
 }

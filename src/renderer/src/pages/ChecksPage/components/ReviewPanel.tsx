@@ -3,6 +3,7 @@ import { Box, Button, Checkbox, Chip, FormControlLabel, Paper, Typography } from
 import MovieFilterIcon from '@mui/icons-material/MovieFilter';
 import ClearIcon from '@mui/icons-material/Clear';
 import BuildIcon from '@mui/icons-material/Build';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 import type { ReviewInfo, ShotProduction } from '@shared/types';
 import { ReviewList } from './ReviewList';
 
@@ -78,7 +79,7 @@ export function ReviewPanel({
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
         <FormControlLabel
           control={<Checkbox checked={planOnly} onChange={(e) => setPlanOnly(e.target.checked)} />}
-          label="Только подготовить рецепт, без создания видео"
+          label="Только проверить, без создания видео"
         />
         <Typography variant="caption" color="text.secondary">
           Заливка: принятое видео доступно; контур: пойдёт карточкой.
@@ -95,12 +96,12 @@ export function ReviewPanel({
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
         <Button
           variant="contained"
-          startIcon={<BuildIcon />}
+          startIcon={planOnly ? <FactCheckIcon /> : <BuildIcon />}
           size="small"
           disabled={disabled || deletingReview !== null || !selected.length}
           onClick={buildReview}
         >
-          Собрать
+          {planOnly ? 'Проверить' : 'Собрать'}
         </Button>
         {selected.length ? (
           <Button size="small" startIcon={<ClearIcon />} onClick={clearSelection}>

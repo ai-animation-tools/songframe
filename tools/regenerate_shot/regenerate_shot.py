@@ -16,6 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from tools import request_snapshot
 from tools.asset_package.asset_package import descriptor_file
 from tools.common import ROOT, read_json, sha
 from tools.cost_check import cost_check
@@ -25,6 +26,8 @@ from tools.shot_workflow import shot_workflow
 
 NO_DATA = 3
 PACKAGE_ROOTS = ("plan/batches", "plan/awaiting")
+# Подготовка общая; отправку и стоимость обслуживают только уже подключённые адаптеры.
+ADAPTERS = {"kling": kling_request}
 
 
 def find_package_request(root, shot):
@@ -61,7 +64,7 @@ def checked_prompt(path, expected, label):
 
 def saved_spec(data, shot, kind, inputs, prompt_file):
     """Переносит явно сохранённые поля в спецификацию prepare; cli_argv не исполняется."""
-    spec = {key: data[key] for key in ("command", "model", "parameters", "outputs")}
+    spec = {key: data[key] for key in ("provider", "command", "model", "parameters", "outputs")}
     spec.update(schema_version=1, shot=shot, kind=kind, inputs=inputs, prompt_file=prompt_file)
     if "model_selection" in data:
         spec["model_selection"] = data["model_selection"]
@@ -69,7 +72,7 @@ def saved_spec(data, shot, kind, inputs, prompt_file):
 
 
 def spec_from_frozen(request_path, shot):
-    """Читает request.json попытки в нативном формате kling_request prepare."""
+    """Читает request.json попытки в общем замороженном формате."""
     request_path = Path(request_path)
     data = read_json(request_path)
     if not isinstance(data, dict) or data.get("schema_version") != 1:
@@ -99,8 +102,8 @@ def spec_from_asset(root, shot):
     if not isinstance(data, dict):
         raise LookupError(f"У плана {shot} нет снимка запроса в принятом комплекте.")
     provider = data.get("provider")
-    if not isinstance(provider, str) or provider.strip().casefold() != "kling":
-        raise LookupError(f"{shot}: провайдер снимка {provider!r}; для повтора требуется Kling.")
+    if not isinstance(provider, str) or not provider.strip():
+        raise LookupError(f"{shot}: провайдер снимка {provider!r}; нужна непустая строка provider.")
     if data.get("schema_version") != 1 or data.get("path_base") != "asset_directory":
         raise LookupError(f"{shot}: нужны schema_version=1 и path_base=asset_directory.")
     if data.get("elements") or data.get("audio_inputs"):
@@ -130,11 +133,14 @@ def spec_from_asset(root, shot):
 def validate_saved_spec(spec, shot):
     """Проверяет совместимость и сохранённые байты до создания нового пакета."""
     try:
-        kling_request.validate_spec(spec)
-        if not spec["command"].startswith("text_to_") and not spec["inputs"]:
+        request_snapshot.validate_spec(spec)
+        adapter = ADAPTERS.get(spec["provider"].strip().casefold())
+        if adapter:
+            adapter.validate_spec(spec)
+        if adapter and not spec["command"].startswith("text_to_") and not spec["inputs"]:
             raise ValueError("Для этой команды нет сохранённых входов.")
         prompt = Path(spec["prompt_file"]).read_bytes().decode("utf-8")
-        if not prompt.strip() or re.match(r"^--[A-Za-z]", prompt):
+        if not prompt.strip() or (adapter and re.match(r"^--[A-Za-z]", prompt)):
             raise ValueError("Промпт пуст или начинается с флага CLI.")
         for item in spec["inputs"]:
             path = Path(item["path"])
@@ -160,64 +166,94 @@ def check_settings(spec, settings):
     """Снимок должен соответствовать настройкам генерации проекта: иначе повтор молча сменит формат."""
     parameters = spec.get("parameters", {})
     problems = []
-    if settings["provider"].lower() != "kling":
-        problems.append(f"провайдер проекта {settings['provider']}, инструмент повторяет только запросы Kling")
-    if "resolution" in parameters and str(parameters["resolution"]) != settings["resolution"]:
+    if spec["provider"].strip().casefold() != settings["provider"].strip().casefold():
+        problems.append(f"провайдер запроса {spec['provider']} отличается от провайдера проекта {settings['provider']}")
+    if (
+        "resolution" in parameters
+        and "resolution" in settings
+        and str(parameters["resolution"]) != settings["resolution"]
+    ):
         problems.append(
             f"разрешение запроса {parameters['resolution']} отличается от настроек проекта {settings['resolution']}"
         )
-    if "aspect_ratio" in parameters and str(parameters["aspect_ratio"]) != settings["aspect_ratio"]:
+    if (
+        "aspect_ratio" in parameters
+        and "aspect_ratio" in settings
+        and str(parameters["aspect_ratio"]) != settings["aspect_ratio"]
+    ):
         problems.append(f"пропорции запроса {parameters['aspect_ratio']} отличаются от {settings['aspect_ratio']}")
     return problems
 
 
-def regenerate(root, shot, source="auto", work_dir=None, cli="kling", use_account=True, pricing_path=None):
+def regenerate(
+    root, shot, source="auto", work_dir=None, cli="kling", use_account=True, pricing_path=None, executor="agent"
+):
     """Создаёт новый пакет и подготовленную попытку по сохранённому запросу; возвращает сведения для таблицы."""
-    settings = generation_settings(load_project(root))
+    if executor not in ("agent", "app"):
+        raise ValueError("Исполнитель продолжения: agent или app.")
     package = None
     spec = None
     errors = []
     if source in ("auto", "package"):
         package, request = find_package_request(root, shot)
         if request is not None:
-            try:
-                spec = spec_from_frozen(request, shot)
-            except LookupError as error:
-                errors.append(str(error))
-                spec = None
+            # Последний запрос задаёт источник повтора: его повреждение нельзя скрывать снимком assets.
+            spec = spec_from_frozen(request, shot)
         elif source == "package":
             raise LookupError(f"У плана {shot} нет пакета с подготовленной попыткой.")
     if spec is None and source in ("auto", "asset"):
         try:
             spec = spec_from_asset(root, shot)
+            package = None
         except LookupError as error:
             errors.append(str(error))
     if spec is None:
         raise LookupError(" ".join(errors) or f"У плана {shot} нет сохранённого запроса.")
     validate_saved_spec(spec, shot)
+    settings = generation_settings(load_project(root), spec["kind"])
     mismatches = check_settings(spec, settings)
     if mismatches:
         raise LookupError(f"{shot}: " + "; ".join(mismatches) + ". Повтор остановлен.")
     directory = Path(work_dir) if work_dir else next_attempt_dir(root, shot)
-    workflow = shot_workflow.init(shot, directory, root=root, retry_of=str(package) if package else None)
+    workflow = shot_workflow.init(
+        shot, directory, root=root, retry_of=str(package) if package else None, executor=executor
+    )
     with tempfile.TemporaryDirectory(prefix="regenerate-") as temporary:
         spec_path = Path(temporary) / "request.json"
         spec_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8")
-        prepared = kling_request.prepare(spec_path, Path(directory) / "request")
+        adapter = ADAPTERS.get(spec["provider"].strip().casefold())
+        prepare = adapter.prepare if adapter else request_snapshot.prepare
+        prepared = prepare(spec_path, Path(directory) / "request")
     # Опоры и промпт унаследованы от исходного запроса: этапы проходятся без согласований, по одному шагу.
     for stage in ("keyframes_review", "prompt_review"):
         shot_workflow.set_stage(directory, stage, root=root)
     shot_workflow.set_stage(directory, "request_choice", request_dir="request", root=root)
-    pricing = cost_check.load_pricing(pricing_path or cost_check.PRICING)
-    report = cost_check.check(
-        read_json(Path(directory) / "request/request.json"), pricing, cli=cli, use_account=use_account
-    )
+    if executor == "app":
+        # Кнопки приложения продолжают только явный вопрос, принадлежащий приложению.
+        shot_workflow.ask(directory, "request_choice", root=root, executor=executor)
+    frozen = read_json(Path(directory) / "request/request.json")
+    if adapter:
+        pricing = cost_check.load_pricing(pricing_path or cost_check.PRICING)
+        report = cost_check.check(frozen, pricing, cli=cli, use_account=use_account)
+    else:
+        report = {key: frozen[key] for key in ("model", "kind", "command", "parameters", "outputs")}
+        report.update(
+            estimate_credits=None,
+            estimate_source=None,
+            balance_credits=None,
+            balance_source="для провайдера не подключена проверка стоимости и баланса",
+            verdict="cost_or_balance_unknown",
+            verdict_label=cost_check.VERDICTS["cost_or_balance_unknown"],
+            reasons=[f"Для провайдера {spec['provider']} не подключена проверка стоимости и баланса."],
+        )
     return {
         "shot": shot,
         "package": str(directory),
         "work_dir": str(Path(directory) / "request"),
         "retry_of": workflow.get("retry_of"),
         "request_sha256": prepared["request_sha256"],
+        "provider": prepared["provider"],
+        "executor": executor,
         "model": prepared["model"],
         "parameters": prepared["parameters"],
         "inputs": prepared["inputs"],
@@ -231,15 +267,31 @@ def regenerate(root, shot, source="auto", work_dir=None, cli="kling", use_accoun
 def submit_and_watch(root, info, cli="kling", max_minutes=20, interval=20, report=print, pricing_path=None):
     """Отправка ровно один раз, запись расхода, ожидание и техническая сводка. Разрешение на расход даёт вызывающий."""
     work_dir = Path(info["work_dir"])
+    frozen = read_json(work_dir / "request.json")
+    provider = frozen.get("provider")
+    if not isinstance(provider, str) or not provider.strip():
+        raise LookupError("У подготовленного запроса нет обязательного provider.")
+    adapter = ADAPTERS.get(provider.strip().casefold())
+    if adapter is None:
+        raise LookupError(f"Для провайдера {provider} не подключен исполнитель отправки.")
+    workflow = read_json(Path(info["package"]) / "workflow.json")
+    if workflow.get("executor") == "app":
+        decision = workflow.get("decision") or {}
+        if (
+            workflow.get("pending_decision")
+            or decision.get("stage") != "request_choice"
+            or decision.get("verdict") != "send"
+        ):
+            raise LookupError("Отправку продолжает приложение после явного ответа send на вопрос запроса.")
     if info["cost"]["verdict"] != "ok":
         raise LookupError(f"Отправка остановлена: {info['cost']['verdict_label']} ({info['cost']['verdict']}).")
-    kling_request.submit(work_dir, info["request_sha256"], cli=cli)
+    adapter.submit(work_dir, info["request_sha256"], cli=cli)
     try:
         cost_check.learn(work_dir, pricing_path or cost_check.PRICING)
     except ValueError:
         pass
     shot_workflow.set_stage(info["package"], "submitted", root=root)
-    results = kling_request.watch([work_dir], cli=cli, max_minutes=max_minutes, interval=interval, report=report)
+    results = adapter.watch([work_dir], cli=cli, max_minutes=max_minutes, interval=interval, report=report)
     state = results.get(str(work_dir), {})
     if state.get("status") == "downloaded":
         shot_workflow.set_stage(info["package"], "downloaded", root=root)
@@ -256,6 +308,7 @@ def main():
         action="store_true",
         help="Сразу отправить, дождаться и сохранить результат (разрешение на расход даёт вызов)",
     )
+    parser.add_argument("--executor", choices=["app", "agent"], default="agent", help="Владелец продолжения пакета")
     parser.add_argument("--max-minutes", type=float, default=20)
     parser.add_argument("--cli", default="kling")
     parser.add_argument("--no-account", action="store_true", help="Не запрашивать остаток у аккаунта")
@@ -273,6 +326,7 @@ def main():
             cli=args.cli,
             use_account=not args.no_account,
             pricing_path=args.pricing,
+            executor=args.executor,
         )
     except LookupError as error:
         parser.exit(NO_DATA, f"{error}\n")

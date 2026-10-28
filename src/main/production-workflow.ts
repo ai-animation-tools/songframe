@@ -186,10 +186,20 @@ function stageFor(context: Context): Exclude<ProductionPass, 'frames'> | null {
   if (!workflow) return 'description';
   if (workflow.pending_decision) return null;
   if (workflow.decision?.verdict === 'revise') {
-    return (
-      ({ description_review: 'description', prompt_review: 'prompt', request_choice: 'request' } as const)[workflow.decision.stage as 'description_review'] ??
-      null
-    );
+    // Повтор сохранённого запроса не содержит утверждений предыдущих этапов: доработка возвращает к доступному шагу.
+    // Замечания к опорам сначала меняют их постановку, иначе генерация повторила бы прежние тексты изображений.
+    switch (workflow.decision.stage) {
+      case 'description_review':
+      case 'keyframes_review':
+      case 'image_request_choice':
+        return 'description';
+      case 'prompt_review':
+        return approvedFrames(context) ? 'prompt' : 'description';
+      case 'request_choice':
+        return approvedFrames(context) ? (promptApproved(context) ? 'request' : 'prompt') : 'description';
+      default:
+        return null;
+    }
   }
   if (promptApproved(context) && !workflow.request_dir) return 'request';
   if (approvedFrames(context) && !promptApproved(context)) return 'prompt';
@@ -410,7 +420,8 @@ export class ProductionWorkflow {
     const descriptionApproved =
       context.workflow?.description_approved ?? (context.workflow?.decision?.stage === 'description_review' && context.workflow.decision.verdict === 'approve');
     const frameRevision = context.workflow?.decision?.stage === 'keyframes_review' && context.workflow.decision.verdict === 'revise';
-    const enabled = !busy && context.managed && !context.problems.length && !pending && !context.paid;
+    const proposalPending = !!relevant && ['running', 'ready'].includes(relevant.proposal.status);
+    const enabled = !busy && !proposalPending && context.managed && !context.problems.length && !pending && !context.paid;
     const imagePhase = context.workflow?.stage?.startsWith('image_');
     const imageEnabled =
       !busy &&
@@ -419,6 +430,57 @@ export class ProductionWorkflow {
       !pending &&
       !context.paid &&
       !imagePhase;
+    const scenarioApproved = this.options.isScenarioApproved(canonical);
+    const framesApproved = approvedFrames(context);
+    const nextStage = stageFor(context);
+    const common = busy
+      ? 'идёт задание агента или операция пакета'
+      : proposalPending
+        ? 'сначала примените или отклоните текущее предложение'
+        : pending
+          ? 'сначала ответьте на вопрос согласования в карточке пакета'
+          : null;
+    const reasons = {
+      prepare: busy
+        ? 'идёт задание агента или операция пакета'
+        : imagePhase
+          ? 'сначала завершите согласование или получение изображения'
+          : !scenarioApproved
+            ? 'сценарий не утверждён в приложении: утвердите кастинг, трактовку и сцены на странице «Сценарий»'
+            : (context.problems.find((problem) => !problem.startsWith('Этот пакет')) ?? null),
+      continue: !context.packageDir
+        ? 'нужен выбранный пакет с принятым описанием и опорами'
+        : (common ??
+          (context.paid
+            ? 'попытка уже отправлена: дальше только повтор или возврат с замечанием'
+            : !context.managed
+              ? 'пакет ведёт внешний агент'
+              : context.problems.length
+                ? context.problems.join(' ')
+                : imagePhase
+                  ? 'сначала завершите согласование или получение изображения'
+                  : !nextStage || nextStage === 'description'
+                    ? framesApproved
+                      ? 'опоры приняты, видеопромпт готовится этой кнопкой после принятия описания'
+                      : descriptionApproved
+                        ? 'сначала создайте и примите опоры'
+                        : 'сначала примените и примите описание плана'
+                    : null)),
+      frames: !context.packageDir
+        ? 'нужен выбранный пакет с принятым описанием'
+        : (common ??
+          (context.paid
+            ? 'попытка уже отправлена'
+            : framesApproved
+              ? 'опоры уже приняты'
+              : !context.framePrompts.length
+                ? 'в пакете нет плана опор: примените описание с промптами опор'
+                : !(descriptionApproved || frameRevision)
+                  ? 'сначала примите описание плана'
+                  : imagePhase
+                    ? 'сначала завершите согласование или получение изображения'
+                    : null))
+    };
     return {
       project: canonical,
       shot,
@@ -426,11 +488,14 @@ export class ProductionWorkflow {
       managed: context.managed,
       busy,
       stage: context.workflow?.stage ?? null,
-      canPrepare: !busy && !imagePhase && this.options.isScenarioApproved(canonical) && !context.problems.some((problem) => !problem.startsWith('Этот пакет')),
+      reasons,
+      canPrepare: !busy && !imagePhase && scenarioApproved && !context.problems.some((problem) => !problem.startsWith('Этот пакет')),
       canContinue: enabled && !imagePhase && !!stageFor(context) && stageFor(context) !== 'description',
-      canRevise: !busy && !imagePhase && !!context.packageDir && context.managed && !context.problems.length && (!pending || context.paid),
+      // Пока у пакета есть вопрос, замечание вводится в его карточке; панель подхватывает сохранённый ответ «вернуть».
+      canRevise: !busy && !proposalPending && !imagePhase && !!context.packageDir && context.managed && !context.problems.length && !pending,
       canGenerateFrames:
         imageEnabled && !!context.packageDir && !approvedFrames(context) && !!context.framePrompts.length && (descriptionApproved || frameRevision),
+      paid: context.paid,
       imageProvider: readProjectSettings(canonical).generation?.image?.provider,
       framePrompts: context.framePrompts,
       problems: context.problems,
@@ -709,6 +774,8 @@ export class ProductionWorkflow {
               stored.target,
               '--mode',
               'shot',
+              '--executor',
+              'app',
               ...(context.packageDir ? ['--retry-of', context.packageDir] : [])
             ]);
           mkdirSync(stored.target, { recursive: true });
@@ -771,6 +838,7 @@ export class ProductionWorkflow {
           const specPath = join(this.options.localDir, 'production-workflow', `${stored.proposal.id}-request.json`);
           writeProductionJson(specPath, {
             schema_version: 1,
+            provider: context.settings.provider,
             shot,
             kind: 'video',
             ...after.request,

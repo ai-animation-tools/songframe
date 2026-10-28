@@ -16,15 +16,19 @@ afterEach(() => {
   rmSync(localDir, { recursive: true, force: true });
 });
 
-function jobs(outcomes: (number | Error | Promise<number>)[]): Jobs {
+type Outcome = number | Error | Promise<number> | { code: number | null; stdout?: string; stderr?: string };
+
+function jobs(outcomes: Outcome[]): Jobs {
   const launcher = new PythonLauncher({ toolsRoot: localDir, localDir });
   vi.spyOn(launcher, 'runtime').mockReturnValue({ source: 'system-dev', command: 'fake-python', argsPrefix: [], cwd: localDir, env: {}, version: '3.12' });
   vi.spyOn(launcher, 'run').mockImplementation(async (_project, _tool, _args, options) => {
     const outcome = outcomes.shift();
     if (outcome instanceof Error) throw outcome;
-    const code = await outcome;
-    options?.onOutput?.('Результат шага\n');
-    return { code: code ?? 0, stdout: '', stderr: '', command: 'fake-python' };
+    const result = await outcome;
+    const output = typeof result === 'object' ? result : { code: result ?? 0 };
+    options?.onOutput?.(output.stdout ?? 'Результат шага\n');
+    if (output.stderr) options?.onOutput?.(output.stderr, true);
+    return { code: output.code, stdout: output.stdout ?? '', stderr: output.stderr ?? '', command: 'fake-python' };
   });
   return new Jobs(localDir, localDir, launcher);
 }
@@ -102,6 +106,51 @@ describe('Завершение Jobs', () => {
       null
     );
     expect(value.launcher.run).toHaveBeenCalledTimes(1);
+    expect(job.error).toBe(outcome instanceof Error ? outcome.message : `Шаг «first» завершился с кодом ${expectedCode}.`);
+  });
+
+  it('сохраняет причину отказа повтора из stderr в задании и событии завершения', async () => {
+    const reason = "M44: провайдер снимка 'gptunnel'; для повтора требуется Kling.";
+    const value = jobs([{ code: 3, stdout: 'Подготовка повтора\n', stderr: `\n${reason}\n` }]);
+    const listener = vi.fn();
+    value.onFinished(listener);
+    const job = value.start('regenerate', 'Подготовка повтора M44', null, [
+      { tool: 'regenerate_shot', args: ['M44', '--json'], label: 'новая попытка без отправки' }
+    ]);
+    await finished(value, job.id);
+
+    expect(job).toMatchObject({ status: 'failed', code: 3, error: reason });
+    expect(listener).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ error: reason }), null);
+    expect(value.launcher.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('сохраняет причину первого обязательного сбоя после последующих шагов', async () => {
+    const value = jobs([
+      { code: 1, stdout: 'Первый шаг не готов\n' },
+      { code: 2, stderr: 'Второй шаг не готов\n' },
+      { code: 0, stdout: 'Успешный длинный вывод\n'.repeat(2000) }
+    ]);
+    const job = value.start('tool', 'Продолжение после ошибки', null, [
+      { tool: 'first', args: [], stop: false },
+      { tool: 'second', args: [], stop: false },
+      { tool: 'third', args: [] }
+    ]);
+    await finished(value, job.id);
+
+    expect(job).toMatchObject({ status: 'failed', code: 1, error: 'Первый шаг не готов' });
+    expect(job.log).not.toContain('Первый шаг не готов');
+  });
+
+  it('не считает сбой необязательного шага причиной ошибки успешного задания', async () => {
+    const value = jobs([{ code: 2, stderr: 'Сопутствующий шаг недоступен\n' }, 0]);
+    const job = value.start('tool', 'Сопутствующая операция', null, [
+      { tool: 'optional', args: [], required: false },
+      { tool: 'required', args: [] }
+    ]);
+    await finished(value, job.id);
+
+    expect(job).toMatchObject({ status: 'done', code: 0 });
+    expect(job.error).toBeUndefined();
   });
 
   it('не доставляет событие после отписки во время выполнения', async () => {

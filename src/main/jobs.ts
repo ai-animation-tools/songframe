@@ -9,6 +9,7 @@ import type { JobInfo, JobKind, JobStepInfo } from '@shared/types';
 import { PythonLauncher } from './python-launcher';
 
 const LOG_TAIL = 12000;
+const ERROR_LIMIT = 2000;
 
 export interface Step {
   tool: string;
@@ -77,25 +78,30 @@ export class Jobs {
       appendFileSync(logPath, text);
       job.log = (job.log + text).slice(-LOG_TAIL);
     };
-    const runStep = async (step: Step): Promise<number> => {
+    const runStep = async (step: Step): Promise<{ code: number; error?: string }> => {
       write(`\n$ ${step.label ?? step.tool} ${step.args.join(' ')}\n`);
       try {
         await step.before?.();
         const result = await this.launcher.run(project, step.tool, step.args, { onOutput: write, timeoutMs: step.timeoutMs ?? 2 * 60 * 60 * 1000 });
-        return result.code ?? -1;
+        const code = result.code ?? -1;
+        // Причина берётся из вывода именно этого шага: последующие шаги могут затереть хвост журнала.
+        const error = result.stderr.trim() || result.stdout.trim() || `Шаг «${step.label ?? step.tool}» завершился с кодом ${code}.`;
+        return { code, ...(code !== 0 ? { error: error.slice(-ERROR_LIMIT) } : {}) };
       } catch (error) {
-        write(`\nОшибка запуска: ${(error as Error).message}\n`);
-        return -1;
+        const message = error instanceof Error ? error.message : String(error);
+        write(`\nОшибка запуска: ${message}\n`);
+        return { code: -1, error: message.slice(-ERROR_LIMIT) };
       }
     };
     void (async () => {
       let failed: number | null = null;
       for (const [index, step] of steps.entries()) {
         stepInfos[index].status = 'running';
-        const code = await runStep(step);
+        const { code, error } = await runStep(step);
         stepInfos[index].code = code;
         stepInfos[index].status = code === 0 ? 'done' : 'failed';
         if (code !== 0 && step.required !== false) {
+          if (failed === null) job.error = error;
           failed = failed ?? code;
           if (step.stop !== false) {
             write(`\nШаг «${step.label ?? step.tool}» завершился с кодом ${code}; задание остановлено.\n`);

@@ -54,7 +54,7 @@ PROJECT = {
             "watermark": False,
             "duration_rule": "min_supported_strictly_greater_than_window",
         },
-        "image": None,
+        "image": {"provider": "kling"},
     },
 }
 FAKE_CLI = """import json,sys,time
@@ -120,6 +120,7 @@ class RegenerateTests(unittest.TestCase):
             "schema_version": 1,
             "shot": "M01",
             "kind": "video",
+            "provider": "kling",
             "command": "image_to_video",
             "model": "kling-video-v3_0",
             "parameters": {"duration": 3, "resolution": "1080p", "aspect_ratio": "16:9", "prefer_multi_shots": False},
@@ -243,7 +244,7 @@ class RegenerateTests(unittest.TestCase):
             with self.subTest(fields=fields):
                 self.write_snapshot(snapshot | fields)
                 self.assert_cli_data_error("M01")
-        for field in ("outputs", "parameters", "command", "model", "prompt_sha256", "path_base"):
+        for field in ("provider", "outputs", "parameters", "command", "model", "prompt_sha256", "path_base"):
             with self.subTest(missing=field):
                 self.write_snapshot({key: value for key, value in snapshot.items() if key != field})
                 self.assert_cli_data_error("M01")
@@ -338,6 +339,7 @@ class RegenerateTests(unittest.TestCase):
             original | {"prompt": "prompt.txt"},
             original | {"inputs": [{key: value for key, value in original["inputs"][0].items() if key != "flag"}]},
             {key: value for key, value in original.items() if key != "outputs"},
+            {key: value for key, value in original.items() if key != "provider"},
         ]
         for request in mutations:
             with self.subTest(request=request):
@@ -390,7 +392,7 @@ class RegenerateTests(unittest.TestCase):
                 }
             )
         )
-        with self.assertRaisesRegex(LookupError, "Runway"):
+        with self.assertRaisesRegex(LookupError, "path_base"):
             tool.regenerate(self.root, "M01", cli=str(self.cli), use_account=False)
 
     def test_repeats_package_request_and_submits_on_fake_cli(self):
@@ -425,6 +427,100 @@ class RegenerateTests(unittest.TestCase):
         calls = [json.loads(line) for line in (self.root / "calls.jsonl").read_text().splitlines()]
         self.assertEqual(sum(1 for c in calls if c and c[0] not in ("query_tasks", "account")), 1)
         self.assertEqual(json.loads(pricing.read_text())["observed"][0]["credits"], 43)
+
+    def test_generic_provider_prepares_asset_and_repeats_frozen_without_kling(self):
+        """Чужой адаптер не вызывается: точный снимок готовится без знания команд сервиса."""
+        asset, snapshot = self.make_asset()
+        snapshot.update(provider=" GPTunnel ", command="generate", model="provider/model", outputs=12)
+        # Ограничение начала промпта флагом относится к CLI Kling, а не к общему снимку.
+        prompt = asset / snapshot["prompt"]
+        prompt.write_bytes(b"--saved exact prompt\r\n")
+        snapshot["prompt_sha256"] = hashlib.sha256(prompt.read_bytes()).hexdigest()
+        snapshot["parameters"] = {"arbitraryOption": {"mode": "saved"}}
+        snapshot["inputs"][0]["flag"] = "reference"
+        self.write_snapshot(snapshot)
+        project = json.loads((self.root / "plan/project.json").read_text())
+        project["generation"]["video"]["provider"] = "gPtUnNeL"
+        (self.root / "plan/project.json").write_text(json.dumps(project))
+        with patch.object(tool.cost_check, "check", side_effect=AssertionError("Вызван Kling cost_check")):
+            info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli), executor="app")
+            frozen_dir = Path(info["work_dir"])
+            frozen = json.loads((frozen_dir / "request.json").read_text())
+            self.assertEqual(frozen["provider"], " GPTunnel ")
+            self.assertEqual(frozen["command"], "generate")
+            self.assertEqual(frozen["outputs"], 12)
+            self.assertEqual(frozen["parameters"], snapshot["parameters"])
+            self.assertEqual(frozen["inputs"][0]["flag"], "reference")
+            self.assertNotIn("video_without_watermark", frozen)
+            self.assertEqual((frozen_dir / "prompt.txt").read_bytes(), (asset / snapshot["prompt"]).read_bytes())
+            repeated = tool.regenerate(self.root, "M01", source="package", cli=str(self.cli))
+        self.assertEqual(repeated["provider"], " GPTunnel ")
+        self.assertEqual(repeated["request_sha256"], info["request_sha256"])
+        self.assertEqual(info["cost"]["verdict"], "cost_or_balance_unknown")
+        # Даже подменённый положительный cost report не подключает несуществующий адаптер.
+        with self.assertRaisesRegex(LookupError, "не подключен исполнитель отправки"):
+            tool.submit_and_watch(self.root, info | {"cost": {"verdict": "ok"}}, cli=str(self.cli))
+        self.assertFalse((self.root / "calls.jsonl").exists())
+        self.assertEqual(json.loads((frozen_dir / "attempt.json").read_text())["status"], "prepared")
+
+    def test_auto_does_not_hide_damaged_latest_request_with_valid_asset(self):
+        """Существующий последний frozen определяет источник; повреждение требует исправления явно."""
+        package = self.make_package()
+        self.make_asset()
+        path = package / "request/request.json"
+        original = json.loads(path.read_text())
+        mutations = [
+            {key: value for key, value in original.items() if key != "provider"},
+            original | {"schema_version": 2},
+            original | {"prompt": {"path": "missing.txt", "sha256": "a" * 64}},
+        ]
+        for request in mutations:
+            with self.subTest(request=request):
+                path.write_text(json.dumps(request))
+                with self.assertRaises(LookupError):
+                    tool.regenerate(self.root, "M01", source="auto", cli=str(self.cli), executor="app")
+                self.assertEqual(list((self.root / "plan/batches").iterdir()), [package])
+                self.assertFalse((self.root / "calls.jsonl").exists())
+
+    def test_app_executor_records_question_and_requires_send_before_submit(self):
+        """Владелец и вопрос включают кнопки приложения, но сами не разрешают платную отправку."""
+        self.make_package()
+        info = tool.regenerate(self.root, "M01", source="package", cli=str(self.cli), executor="app")
+        workflow = json.loads((Path(info["package"]) / "workflow.json").read_text())
+        self.assertEqual(workflow["executor"], "app")
+        self.assertEqual(workflow["pending_decision"]["stage"], "request_choice")
+        self.assertEqual(workflow["pending_decision"]["executor"], "app")
+        self.assertEqual(workflow["pending_decision"]["options"], ["send", "park", "revise"])
+        with patch.object(kling_request, "submit", side_effect=AssertionError("Отправка до согласия")):
+            with self.assertRaisesRegex(LookupError, "ответа send"):
+                tool.submit_and_watch(self.root, info, cli=str(self.cli))
+        shot_workflow.decide(info["package"], "send", root=self.root)
+        with patch.object(kling_request, "submit") as submit, patch.object(kling_request, "watch", return_value={}), \
+                patch.object(tool.cost_check, "learn"):
+            tool.submit_and_watch(self.root, info, cli=str(self.cli))
+        submit.assert_called_once_with(Path(info["work_dir"]), info["request_sha256"], cli=str(self.cli))
+
+    def test_cli_executor_app_is_forwarded(self):
+        """Приложение выбирает владельца через CLI, обычный вызов остаётся агентским."""
+        self.make_asset()
+        with patch.object(sys, "argv", ["regenerate_shot", "M01", "--source", "asset", "--executor", "app",
+                                       "--no-account", "--json"]), patch("sys.stdout", new_callable=io.StringIO) as output:
+            tool.main()
+        info = json.loads(output.getvalue())
+        self.assertEqual(info["executor"], "app")
+        self.assertEqual(json.loads((Path(info["package"]) / "workflow.json").read_text())["executor"], "app")
+
+    def test_image_retry_compares_image_provider_independently(self):
+        """Для изображения не применяется провайдер видеогенерации проекта."""
+        _, snapshot = self.make_asset()
+        snapshot.update(provider="Codex", kind="image", command="generate", model="image-model", parameters={})
+        self.write_snapshot(snapshot)
+        project = json.loads((self.root / "plan/project.json").read_text())
+        project["generation"]["image"] = {"provider": " codex "}
+        (self.root / "plan/project.json").write_text(json.dumps(project))
+        info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli))
+        self.assertEqual(info["provider"], "Codex")
+        self.assertFalse((self.root / "calls.jsonl").exists())
 
     def test_asset_settings_mismatch_stops_before_package_creation(self):
         asset = self.root / "assets/shots/M01"

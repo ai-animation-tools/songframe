@@ -451,13 +451,27 @@ export interface ShotProduction {
   lipsync: boolean;
   state: ShotProductionState;
   stageLabel: string;
+  /** Известная причина недоступности повтора по сохранённому запросу; проверка не запускает инструменты. */
+  regenerateProblem: string | null;
+  /** Пакет плана ждёт действия пользователя: вопрос, подтверждение запроса, просмотр результата, запуск доработки. */
+  attention: string | null;
   /** Принятые материалы в assets: пути только к существующим файлам видео и оригинала. */
   asset: { dir: string; video: string | null; original: string | null } | null;
   packages: PackageView[];
 }
 
+/** Папка в plan/awaiting или plan/batches без читаемого workflow.json: приложение её не ведёт, но она мешает очереди. */
+export interface BrokenPackage {
+  dir: string;
+  relative: string;
+  shot: string | null;
+  reason: string;
+}
+
 export interface ProductionView {
   shots: ShotProduction[];
+  /** Повреждённые или недописанные папки пакетов; удаляются кнопкой, инструменты их не трогают. */
+  broken: BrokenPackage[];
   problems: string[];
   /** Есть ли Python и kling: без них действия недоступны, просмотр работает. */
   tools: { python: boolean; kling: boolean };
@@ -495,6 +509,8 @@ export interface JobInfo {
   /** Хвост журнала; полный лог в localDir/jobs/<id>.log. */
   log: string;
   code: number | null;
+  /** Причина первого обязательного сбоя, пригодная для показа без открытия журнала. */
+  error?: string;
   steps: JobStepInfo[];
   /** Загрузка весов относится к приложению, а не к данным текущего клипа. */
   modelDownload?: { model: WhisperModelId; directory: string };
@@ -522,7 +538,7 @@ export interface CheckOptions {
 export interface ReviewOptions {
   /** Коды планов подряд по шкале: готовые идут клипами, остальные карточками. */
   shots: string[];
-  /** Только рецепт без кодирования: проверка параметров и медиа. */
+  /** Проверка параметров и медиа без кодирования и записи; рецепт выводится только в журнал задания. */
   planOnly: boolean;
 }
 
@@ -608,6 +624,8 @@ export interface ProjectSettings {
 
 export interface AcceptOptions {
   expectedResultToken?: string;
+  /** Явное согласие заменить уже принятый комплект: прежний переезжает в assets/replaced/Mxx. */
+  replaceExisting?: boolean;
   /** full: оригинал целиком совпадает с окном; cut: участок оригинала в секундах. */
   mode: 'full' | 'cut';
   cutStart?: number;

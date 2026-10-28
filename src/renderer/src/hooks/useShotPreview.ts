@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-/** Уход с карточки и смена источника останавливают даже ещё не завершившийся запуск видео. */
-export function useScenePreview(source: string | null) {
+/** Беззвучный предпросмотр карточки плана: уход с карточки и смена источника останавливают даже ещё не завершившийся запуск видео. */
+export function useShotPreview(source: string | null) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hovered = useRef(false);
 

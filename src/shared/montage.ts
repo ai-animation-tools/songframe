@@ -34,6 +34,8 @@ export interface MontageSource {
   frames: number | null;
   /** Оригинал разрешает расширять монтаж в пределах полного ролика. */
   original: boolean;
+  /** Скачанный результат рабочего пакета: ещё не принят в assets. */
+  attempt?: boolean;
 }
 
 export interface MontageScene {

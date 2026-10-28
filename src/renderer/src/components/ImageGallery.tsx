@@ -5,14 +5,16 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { useId, useState, type ReactElement } from 'react';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 
-interface InputImageGalleryProps {
+interface ImageGalleryProps {
   images: { imagePath: string; label: string }[];
   initialIndex: number;
+  /** Подпись вида изображений в заголовке, например «Входное изображение» или «Опора». */
+  kind?: string;
   onClose(): void;
 }
 
-/** Открывает исходные входы без обрезки; режим 1:1 сохраняет размер файла и даёт прокрутку. */
-export function InputImageGallery({ images, initialIndex, onClose }: InputImageGalleryProps): ReactElement {
+/** Общий просмотр изображений без обрезки; режим 1:1 сохраняет размер файла и даёт прокрутку. */
+export function ImageGallery({ images, initialIndex, kind = 'Изображение', onClose }: ImageGalleryProps): ReactElement {
   const [index, setIndex] = useState(Math.min(initialIndex, images.length - 1));
   const [originalSize, setOriginalSize] = useState(false);
   const titleId = useId();
@@ -41,7 +43,7 @@ export function InputImageGallery({ images, initialIndex, onClose }: InputImageG
     >
       <DialogTitle id={titleId} sx={{ overflowWrap: 'anywhere' }}>
         <Typography component="span" variant="overline" display="block" color="text.secondary">
-          Входное изображение · {index + 1} / {images.length}
+          {kind} · {index + 1} / {images.length}
         </Typography>
         {image.label}
       </DialogTitle>
@@ -74,15 +76,10 @@ export function InputImageGallery({ images, initialIndex, onClose }: InputImageG
         </Box>
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
-        <Button startIcon={<NavigateBeforeIcon />} onClick={() => navigate(index - 1)} disabled={index === 0} aria-label="Предыдущее входное изображение">
+        <Button startIcon={<NavigateBeforeIcon />} onClick={() => navigate(index - 1)} disabled={index === 0} aria-label="Предыдущее изображение">
           Назад
         </Button>
-        <Button
-          startIcon={<NavigateNextIcon />}
-          onClick={() => navigate(index + 1)}
-          disabled={index === images.length - 1}
-          aria-label="Следующее входное изображение"
-        >
+        <Button startIcon={<NavigateNextIcon />} onClick={() => navigate(index + 1)} disabled={index === images.length - 1} aria-label="Следующее изображение">
           Вперёд
         </Button>
         <Button

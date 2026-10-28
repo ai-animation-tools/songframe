@@ -40,6 +40,10 @@ describe('Кадровый монтаж', () => {
       problems: []
     };
     expect(initialDraft(view, ['M01'], 'source/track.mp3').clips[0].path).toBe('revisions/accepted.mp4');
+    // Предпочтительный источник сцены ставится на дорожку независимо от разделителей пути; неизвестный путь не меняет выбор.
+    expect(initialDraft(view, ['M01'], 'source/track.mp3', { M01: 'original.mp4' }).clips[0].path).toBe('original.mp4');
+    expect(initialDraft(view, ['M01'], 'source/track.mp3', { M01: 'revisions\\accepted.mp4' }).clips[0].path).toBe('revisions/accepted.mp4');
+    expect(initialDraft(view, ['M01'], 'source/track.mp3', { M01: 'missing.mp4' }).clips[0].path).toBe('revisions/accepted.mp4');
   });
   it('меняет длительность карточки и переносит её стык без ненулевого начала источника', () => {
     const card: MontageClip = { ...clip('A', 0, 30), kind: 'card', source_frames: null };

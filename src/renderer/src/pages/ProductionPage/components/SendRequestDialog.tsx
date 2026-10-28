@@ -12,6 +12,8 @@ import { AgentIcon } from '../../../components';
 import { useApp } from '../../../state';
 import { useRequestQuote } from '../useRequestQuote';
 import { RequestModelSelection } from './RequestModelSelection';
+import { RequestParameters } from './RequestParameters';
+import { RequestPrompt } from './RequestPrompt';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 
 export function SendRequestDialog({
@@ -87,7 +89,7 @@ export function SendRequestDialog({
       onConfirm={() => void confirm()}
     >
       {pkg?.request ? (
-        <Stack spacing={1} sx={{ mt: 1 }}>
+        <Stack spacing={2} sx={{ mt: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
           {aiProblem ? <Alert severity="info">{aiProblem}</Alert> : null}
           <Typography variant="body2">
             Проверьте промпт и материалы перед отправкой платного запроса. Подтверждение разрешает одну попытку генерации.
@@ -95,14 +97,11 @@ export function SendRequestDialog({
           <RequestModelSelection selection={pkg.request.modelSelection} />
           <Typography variant="body2">
             План {pkg.shot}
-            {pkg.request.kind === 'image' && pkg.request.frameId ? `, опора ${pkg.request.frameId}` : ''}, провайдер {pkg.request.provider ?? 'kling'}
-            {pkg.request.command ? `, команда ${pkg.request.command}` : ''}, модель {pkg.request.model}, параметры {JSON.stringify(pkg.request.parameters)}.
+            {pkg.request.kind === 'image' && pkg.request.frameId ? `, опора ${pkg.request.frameId}` : ''}, провайдер {pkg.request.provider ?? 'не указан'}
+            {pkg.request.command ? `, команда ${pkg.request.command}` : ''}, модель {pkg.request.model}.
           </Typography>
-          {pkg.request.promptText ? (
-            <Typography component="pre" variant="body2" sx={{ whiteSpace: 'pre-wrap', maxHeight: 240, overflow: 'auto' }}>
-              {pkg.request.promptText}
-            </Typography>
-          ) : null}
+          <RequestParameters parameters={pkg.request.parameters} />
+          {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} /> : null}
           {pkg.request.inputs.map((input) => (
             <Typography key={`${input.slot}:${input.path}`} variant="caption">
               {productionInputLabel(input)}: {input.path}
@@ -151,7 +150,7 @@ export function SendRequestDialog({
           {sendError ? (
             <Alert severity="error">{sendError} Закройте диалог для проверки состояния пакета или обновите стоимость для нового подтверждения.</Alert>
           ) : null}
-          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', overflowWrap: 'anywhere' }}>
             Хеш запроса (SHA-256): {pkg.request.sha256}
           </Typography>
         </Stack>

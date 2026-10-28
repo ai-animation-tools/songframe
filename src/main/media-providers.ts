@@ -383,6 +383,7 @@ class KlingMediaProvider implements KlingProviderContract {
       writeFileSync(join(directory, 'prompt.txt'), input.prompt, 'utf8');
       const spec = {
         schema_version: 1,
+        provider: this.provider,
         shot: input.shot,
         kind: input.kind,
         command: input.command,

@@ -234,6 +234,7 @@ describe('провайдеры медиа', () => {
     expect(run.mock.calls[0][2][0]).toBe('prepare');
     expect(prepared.requestSha).toBe(hash(readFileSync(join(prepared.requestDir, 'request.json'))));
     const frozen = JSON.parse(readFileSync(join(prepared.requestDir, 'request.json'), 'utf8'));
+    expect(frozen.provider).toBe('kling');
     expect(frozen.inputs[0].sha256).toBe(hash(png));
     expect(() => provider.collect(prepared)).toThrow(/ещё не сохранены/);
     writeFileSync(join(prepared.requestDir, 'original.png'), png);

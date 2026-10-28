@@ -1,11 +1,11 @@
 /** Границы оплаты и приёмки: настоящий Jobs, временные файлы и подставной launcher без сервисных вызовов. */
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { JobInfo, ProductionQuote, ToolResult } from '@shared/types';
 import { Jobs } from './jobs';
-import { Production, readPackage } from './production';
+import { Production, readPackage, viewProduction } from './production';
 import { PythonLauncher } from './python-launcher';
 
 const requestSha = 'a'.repeat(64);
@@ -92,6 +92,7 @@ function fixture(name = 'M01-attempt-01', shot = 'M01'): string {
     pending_decision: { stage: 'request_choice', question: 'Отправить?', options: ['send', 'park', 'revise'], executor: 'app' }
   });
   write(join(directory, 'request/request.json'), {
+    provider: 'kling',
     model: 'test-video',
     command: 'image_to_video',
     prompt: { path: 'prompt.txt' },
@@ -129,7 +130,7 @@ function downloaded(): void {
 beforeEach(() => {
   project = mkdtempSync(join(tmpdir(), 'songframe-actions-'));
   vi.stubEnv('SONGFRAME_KLING_CLI', 'подставной CLI без запуска');
-  write(join(project, 'plan/project.json'), { name: 'Проба' });
+  write(join(project, 'plan/project.json'), { name: 'Проба', generation: { video: { provider: 'kling', provider_selected: true } } });
   write(join(project, 'plan/scenes.json'), {
     fps: 30,
     sequences: [{ id: 's', title: 'Сцена' }],
@@ -412,6 +413,64 @@ describe('согласования и исключение конфликтую�
     }
   });
 
+  it('reopenQuestion снова задаёт вопрос о результате только пакету приложения без ожидающего вопроса', async () => {
+    downloaded();
+    await expect(production.reopenQuestion(project, packageDir)).rejects.toThrow(/уже задан/);
+    await production.decide(project, packageDir, 'review', '', view().decisionToken);
+    expect(view().pendingDecision).toBeNull();
+    await production.reopenQuestion(project, packageDir);
+    const ask = runner.calls.filter((item) => item.name === 'shot_workflow' && item.args[0] === 'ask').at(-1)!;
+    expect(ask.args).toEqual(['ask', '--dir', packageDir, '--stage', 'downloaded', '--executor', 'app']);
+    expect(view().pendingDecision?.stage).toBe('downloaded');
+    expect(paidCalls()).toEqual([]);
+  });
+
+  it('discardAttempt удаляет пакет целиком, но не во время отправки и не при ссылке из черновика монтажа', async () => {
+    patch(join(packageDir, 'request/attempt.json'), { status: 'submitted', generation_id: 'in-flight' });
+    expect(() => production.discardAttempt(project, packageDir)).toThrow(/не завершена/);
+    downloaded();
+    write(join(project, 'plan/montage/draft.json'), {
+      name: 'Проба стыков',
+      clips: [{ path: `${relative(project, packageDir).replaceAll('\\', '/')}/request/original.mp4` }]
+    });
+    expect(() => production.discardAttempt(project, packageDir)).toThrow(/Проба стыков/);
+    rmSync(join(project, 'plan/montage'), { recursive: true, force: true });
+    production.discardAttempt(project, packageDir);
+    expect(existsSync(packageDir)).toBe(false);
+    expect(existsSync(join(project, 'source/track.mp3'))).toBe(true);
+    expect(paidCalls()).toEqual([]);
+  });
+
+  it('план отмечается как ждущий действия по подготовленному запросу, вопросу, замечанию и результату', async () => {
+    // fixture создаёт пакет на request_choice с открытым вопросом; без вопроса план всё равно ждёт отправки или отказа.
+    expect(viewProduction(project, runner).shots[0].attention).toMatch(/Отправить\?/);
+    patch(join(packageDir, 'workflow.json'), { pending_decision: null });
+    expect(viewProduction(project, runner).shots[0].attention).toMatch(/запрос подготовлен/);
+    patch(join(packageDir, 'workflow.json'), {
+      pending_decision: { stage: 'request_choice', question: 'Отправить?', options: ['send', 'park', 'revise'], executor: 'app' }
+    });
+    await production.decide(project, packageDir, 'revise', 'камера ближе', view().decisionToken);
+    expect(viewProduction(project, runner).shots[0].attention).toMatch(/доработка с агентом не запущена/);
+    downloaded();
+    expect(viewProduction(project, runner).shots[0].attention).toMatch(/вопрос ждёт ответа/);
+    patch(join(packageDir, 'workflow.json'), { pending_decision: null, decision: null, executor: 'agent' });
+    expect(viewProduction(project, runner).shots[0].attention).toBeNull();
+  });
+
+  it('повреждённая папка очереди видна в сводке и удаляется, а при незавершённой отправке остаётся', () => {
+    const orphan = join(project, 'plan/awaiting/M01');
+    mkdirSync(join(orphan, 'request/inputs'), { recursive: true });
+    const before = viewProduction(project, runner);
+    expect(before.broken).toEqual([{ dir: orphan, relative: 'plan/awaiting/M01', shot: 'M01', reason: expect.stringContaining('нет workflow.json') }]);
+    expect(before.problems.join(' ')).toContain('plan/awaiting/M01');
+    write(join(orphan, 'request/attempt.json'), { status: 'submitted', generation_id: 'paid' });
+    expect(() => production.discardAttempt(project, orphan)).toThrow(/submitted/);
+    rmSync(join(orphan, 'request/attempt.json'));
+    production.discardAttempt(project, orphan);
+    expect(existsSync(orphan)).toBe(false);
+    expect(viewProduction(project, runner).broken).toEqual([]);
+  });
+
   it('contactSheet сохраняет busy до завершения задания', async () => {
     const gate = deferred();
     runner.hold = { name: 'contact_sheet', action: '--package', promise: gate.promise };
@@ -421,6 +480,47 @@ describe('согласования и исключение конфликтую�
     gate.resolve();
     await finished(job);
     expect(production.isBusy(project, packageDir)).toBe(false);
+  });
+});
+
+describe('явный провайдер сохранённого запроса', () => {
+  it.each(['kling', 'Другой сервис', 'CustomProvider'])('readPackage показывает сохранённый provider %s', (provider) => {
+    patch(join(packageDir, 'request/request.json'), { provider });
+    expect(view().request?.provider).toBe(provider);
+  });
+
+  it.each([undefined, null, '', ' \n\t', 1])('readPackage отмечает некорректный provider %s', (provider) => {
+    const frozen = read<Record<string, unknown>>(join(packageDir, 'request/request.json'));
+    if (provider === undefined) delete frozen.provider;
+    else frozen.provider = provider;
+    write(join(packageDir, 'request/request.json'), frozen);
+    expect(view().problems.join(' ')).toMatch(/провайдер/i);
+  });
+
+  it('viewProduction допускает совпавший generic provider и объясняет несовпадение', () => {
+    // Просмотр сравнивает сохранённые значения сервиса независимо от каталога
+    // поддерживаемых адаптеров: реальная отправка проверяется своим маршрутом.
+    patch(join(packageDir, 'request/request.json'), { provider: 'CustomProvider' });
+    patch(join(project, 'plan/project.json'), { generation: { video: { provider: 'customprovider', provider_selected: true } } });
+    expect(viewProduction(project, runner).shots[0].regenerateProblem).toBeNull();
+    patch(join(project, 'plan/project.json'), { generation: { video: { provider: 'other-provider', provider_selected: true } } });
+    expect(viewProduction(project, runner).shots[0].regenerateProblem).toMatch(/CustomProvider.*other-provider/);
+  });
+
+  it('прямой regenerate готовит совпавший generic provider без платной отправки', async () => {
+    patch(join(packageDir, 'request/request.json'), { provider: 'CustomProvider' });
+    patch(join(project, 'plan/project.json'), { generation: { video: { provider: 'customprovider', provider_selected: true } } });
+    const job = await finished(production.regenerate(project, 'M01'));
+    expect(job.status).toBe('done');
+    expect(runner.calls.filter((call) => call.name === 'regenerate_shot')).toHaveLength(1);
+    expect(paidCalls()).toEqual([]);
+  });
+
+  it('прямой regenerate блокирует несовпавший generic provider до запуска инструмента', () => {
+    patch(join(packageDir, 'request/request.json'), { provider: 'CustomProvider' });
+    patch(join(project, 'plan/project.json'), { generation: { video: { provider: 'other-provider', provider_selected: true } } });
+    expect(() => production.regenerate(project, 'M01')).toThrow(/CustomProvider.*other-provider/);
+    expect(runner.calls).toEqual([]);
   });
 });
 
@@ -492,6 +592,18 @@ describe('принятие именно просмотренного резул�
     expect(paidCalls()).toEqual([]);
     expect(read(join(packageDir, 'request/attempt.json'))).toMatchObject({ generation_id: 'saved-id', credits_consumed: 10 });
     expect(readFileSync(join(project, 'source/track.mp3'), 'utf8')).toBe('protected-source');
+  });
+
+  it('приёмка сцены с принятым комплектом требует replaceExisting и передаёт --replace', async () => {
+    downloaded();
+    write(join(project, 'assets/shots/M01/manifest.json'), { schema_version: 1, shot: 'M01' });
+    const shown = view();
+    expect(() => production.accept(project, 'M01', packageDir, { mode: 'full', expectedResultToken: shown.resultToken })).toThrow(/уже есть принятый комплект/);
+    const job = production.accept(project, 'M01', packageDir, { mode: 'full', replaceExisting: true, expectedResultToken: shown.resultToken });
+    await finished(job);
+    const call = runner.calls.find((item) => item.name === 'accept_shot')!;
+    expect(call.args).toEqual(['M01', '--package', packageDir, '--full', '--replace', '--clean']);
+    expect(job.steps[0].label).toBe('замена комплекта в assets');
   });
 
   it.each(['original', 'attempt', 'request'])('замена %s инвалидирует токены и блокирует stale accept до Jobs', (part) => {

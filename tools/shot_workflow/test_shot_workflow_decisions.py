@@ -64,6 +64,16 @@ class DecisionTests(unittest.TestCase):
     def workflow(self):
         return json.loads((self.package / "workflow.json").read_text())
 
+    def test_init_records_owner_before_later_preparation(self):
+        """Ошибка подготовки после init не должна превращать пакет приложения во внешний."""
+        package = self.root / "plan/batches/M01-attempt-app"
+        created = tool.init("M01", package, root=self.root, executor="app")
+        self.assertEqual(created["executor"], "app")
+        self.assertEqual(json.loads((package / "workflow.json").read_text())["executor"], "app")
+        self.assertEqual(self.workflow()["executor"], "agent")
+        with self.assertRaisesRegex(ValueError, "Исполнитель"):
+            tool.init("M01", self.root / "plan/batches/M01-invalid", root=self.root, executor="other")
+
     def test_propose_ask_decide_approve_frames_and_prompt(self):
         tool.propose(self.package, "K01", self.root / "k1.png", root=self.root)
         tool.propose(self.package, "K02", self.root / "k2.png", root=self.root)

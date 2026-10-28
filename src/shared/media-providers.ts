@@ -1,5 +1,10 @@
 /** Возможности media-провайдеров независимы от текстового агента и не разрешают запуск генерации. */
 export type MediaKind = 'image' | 'video';
+
+/** Имя сервиса в сохранённом запросе и в настройках может отличаться регистром и крайними пробелами. */
+export function sameMediaProvider(left: unknown, right: unknown): boolean {
+  return typeof left === 'string' && typeof right === 'string' && !!left.trim() && !!right.trim() && left.trim().toLowerCase() === right.trim().toLowerCase();
+}
 /** Обоснование выбора замораживается вместе с запросом и показывается при платном согласовании. */
 export interface MediaModelSelection {
   preferredModel: string | null;

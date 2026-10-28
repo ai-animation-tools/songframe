@@ -16,6 +16,8 @@ export function MontageSourcesDrawer({ open, onClose, disabled, ...sources }: Pr
       anchor="right"
       open={open}
       onClose={onClose}
+      // Каталог остаётся смонтированным: прокрутка списка и загруженные превью сохраняются между открытиями.
+      keepMounted
       slotProps={{
         paper: {
           role: 'dialog',

@@ -25,9 +25,9 @@ export function ScenarioScenesComparison({
     { key: 'end_frame_exclusive', label: 'Конец (не включая)' },
     { key: 'camera', label: 'Камера' },
     { key: 'action', label: 'Действие' },
-    { key: 'continuity', label: 'Continuity' },
+    { key: 'continuity', label: 'Непрерывность' },
     { key: 'references', label: 'Референсы' },
-    { key: 'lipsync', label: 'Lipsync' },
+    { key: 'lipsync', label: 'Липсинк' },
     { key: 'card', label: 'Карточка' },
     { key: 'state_from', label: 'Наследование состояния' },
     { key: 'state_changes', label: 'Изменения состояния' },
@@ -38,12 +38,13 @@ export function ScenarioScenesComparison({
       <Typography variant="h6">Реестр сцен</Typography>
       {selectedIds.length > 0 && (
         <Alert severity="info">
-          Разрешённые цели: {selectedIds.join(', ')}. Изменения состояния могут влиять на наследуемое состояние следующих планов; проверьте continuity ниже и в
-          редакторе перед дальнейшим производством.
+          Разрешённые цели: {selectedIds.join(', ')}. Изменения состояния могут влиять на наследуемое состояние следующих планов; проверьте непрерывность ниже и
+          в редакторе перед дальнейшим производством.
         </Alert>
       )}
       <ScenarioComparison
         title="Общие правила и шкала"
+        defaultExpanded={false}
         fields={[
           { label: 'Визуальные правила', before: before?.visual_direction, after: after?.visual_direction },
           { label: 'Части', before: before?.sequences, after: after?.sequences },

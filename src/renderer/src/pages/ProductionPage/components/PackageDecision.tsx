@@ -5,13 +5,23 @@ import EditIcon from '@mui/icons-material/Edit';
 import SendIcon from '@mui/icons-material/Send';
 import SaveIcon from '@mui/icons-material/Save';
 import MovieIcon from '@mui/icons-material/Movie';
+import ReplayIcon from '@mui/icons-material/Replay';
 import { Alert, Box, Button, TextField, Typography } from '@mui/material';
 import type { PackageView } from '@shared/types';
-import { VERDICT_LABELS } from '../constants';
+import { VERDICT_HINTS, VERDICT_LABELS } from '../constants';
 import { useApp } from '../../../state';
 import { aiActionProblem } from '@shared/ai-access';
 import type { AiActionKind } from '@shared/ai-access';
 import { AgentIcon } from '../../../components';
+
+/** Пример относится к текущему согласованию и помогает описать конкретное изменение. */
+const REVISION_EXAMPLES: Record<string, string> = {
+  description_review: 'Например: герой должен выйти из дома, а не остаться у окна.',
+  keyframes_review: 'Например: в первом опорном кадре сохранить одежду героя из предыдущего плана.',
+  prompt_review: 'Например: камера медленно приближается к герою, без смены ракурса.',
+  request_choice: 'Например: заменить последнюю опору и уточнить движение камеры перед отправкой.',
+  image_request_choice: 'Например: уточнить позу героя и освещение в запросе изображения.'
+};
 
 export function PackageDecision({
   pending,
@@ -44,25 +54,44 @@ export function PackageDecision({
           </Typography>
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
             {external
-              ? 'Внешний агент ждёт ответа. Отправку, сохранение и повтор после вашего ответа выполнит он.'
-              : 'Ответ будет обработан приложением. Платная отправка требует подтверждения запроса.'}
+              ? 'Приложение запишет ответ для внешнего агента. Он продолжит работу, когда прочитает ответ. Если агент остановлен, возобновите его во внешнем чате; приложение не запускает новый процесс.'
+              : 'Этот пакет ведёт приложение: нажатие кнопки сразу записывает ответ и выполняет действие. «Отправить» открывает подтверждение стоимости перед списанием, «Сохранить в очередь» переносит пакет в очередь, «Принять» открывает приёмку. Поле ниже нужно только для «Вернуть с замечанием»: замечание сохраняется в пакете и передаётся агенту, когда вы нажмёте «Запустить доработку с агентом» в блоке «Подготовка плана». Текст запроса здесь не редактируется.'}
           </Typography>
           {options.includes('revise') ? (
             <TextField
               size="small"
               fullWidth
-              label="Замечание (обязательно для возврата)"
+              multiline
+              minRows={3}
+              maxRows={8}
+              label="Что нужно исправить"
+              placeholder={REVISION_EXAMPLES[pending.stage] ?? 'Например: укажите, что изменить в показанных материалах и каким должен быть результат.'}
+              helperText={
+                'Опишите нужные изменения. Обязательно только для «Вернуть с замечанием». ' +
+                (external
+                  ? 'Замечание сохранится вместе с ответом для внешнего агента.'
+                  : 'Замечание сохранится вместе с ответом. Агент автоматически не запускается. После возврата нажмите «Запустить доработку с агентом» в блоке «Подготовка плана».')
+              }
               value={note}
               onChange={(e) => setNote(e.target.value)}
               sx={{ mb: 1 }}
             />
+          ) : null}
+          {options.length > 1 ? (
+            <Box component="ul" sx={{ m: 0, mb: 1, pl: 2.5 }}>
+              {options.map((verdict) => (
+                <Typography key={verdict} component="li" variant="caption" color="text.secondary">
+                  <b>{VERDICT_LABELS[verdict]?.label ?? verdict}.</b> {VERDICT_HINTS[verdict] ?? ''}
+                </Typography>
+              ))}
+            </Box>
           ) : null}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {options.map((verdict) => {
               const reason = ['send', 'retry'].includes(verdict) ? problem : null;
               return (
                 <Button
-                  title={reason ?? undefined}
+                  title={reason ?? VERDICT_HINTS[verdict]}
                   key={verdict}
                   size="small"
                   variant={verdict === options[0] ? 'contained' : 'outlined'}
@@ -77,7 +106,9 @@ export function PackageDecision({
                       <SaveIcon />
                     ) : verdict === 'review' ? (
                       <MovieIcon />
-                    ) : ['revise', 'retry'].includes(verdict) ? (
+                    ) : verdict === 'retry' ? (
+                      <ReplayIcon />
+                    ) : verdict === 'revise' ? (
                       <EditIcon />
                     ) : (
                       <CheckCircleIcon />

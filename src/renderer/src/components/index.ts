@@ -2,6 +2,10 @@
 export { HomeRedirect } from './HomeRedirect';
 export { AgentButton } from './AgentButton';
 export { AgentIcon } from './AgentIcon';
+export { ImageGallery } from './ImageGallery';
+export { Prose } from './Prose';
+export { ReadableValue } from './ReadableValue';
+export { ShotCard } from './ShotCard';
 export { JobCard } from './JobCard';
 export { JobStatus } from './JobStatus';
 export { Layout } from './Layout';

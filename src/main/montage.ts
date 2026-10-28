@@ -144,14 +144,23 @@ export class Montage {
         if (!view.lyricLines.length) view.lyricProblem = 'В разметке пока нет строк песни. Добавьте их на странице «Тайминги».';
       }
     }
-    const addSource = (scene: string, title: string, label: string, dir: string, descriptor: unknown, frames: number | null, original: boolean): void => {
+    const addSource = (
+      scene: string,
+      title: string,
+      label: string,
+      dir: string,
+      descriptor: unknown,
+      frames: number | null,
+      original: boolean,
+      attempt = false
+    ): void => {
       if (!object(descriptor) || typeof descriptor.path !== 'string') return;
       const base = descriptor.root === 'source' ? join(project, 'source') : dir;
       const path = portable(project, join(base, descriptor.path));
       try {
         projectPath(project, path);
         if (!view.sources.some((source) => source.scene === scene && source.path === path))
-          view.sources.push({ id: `${scene}:${path}`, scene, title, label, path, kind: 'video', frames, original });
+          view.sources.push({ id: `${scene}:${path}`, scene, title, label, path, kind: 'video', frames, original, ...(attempt ? { attempt: true } : {}) });
       } catch (error) {
         view.problems.push(`${scene}: ${message(error)}`);
       }
@@ -197,7 +206,8 @@ export class Montage {
                 .filter((path): path is string => typeof path === 'string' && /\.mp4$/i.test(path))
             : [];
           downloads.push(...readdirSync(requestDir).filter((name) => /^original(?:-\d+)?\.mp4$/i.test(name)));
-          for (const name of new Set(downloads)) addSource(scene.id, scene.title, `Рабочий оригинал: ${entry.name}`, requestDir, { path: name }, null, true);
+          for (const name of new Set(downloads))
+            addSource(scene.id, scene.title, `Результат попытки: ${entry.name}`, requestDir, { path: name }, null, true, true);
         } catch (error) {
           view.problems.push(`${entry.name}: ${message(error)}`);
         }

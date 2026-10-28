@@ -118,6 +118,7 @@ class AcceptShotTests(unittest.TestCase):
             "schema_version": 1,
             "shot": "M02",
             "kind": "video",
+            "provider": "kling",
             "command": "image_to_video",
             "model": "kling-video-v3_0",
             "parameters": {"duration": "3", "resolution": "1080p", "prefer_multi_shots": "false"},
@@ -202,6 +203,7 @@ class AcceptShotTests(unittest.TestCase):
         self.assertEqual(edit["source_fps"], "24/1")
         validate_package(target / "manifest.json", "M02", self.root)
         snapshot = json.loads((target / "generation-request.json").read_text(encoding="utf-8"))
+        self.assertEqual(snapshot["provider"], "kling")
         self.assertEqual(snapshot["generation_id"], "job-1")
         self.assertNotIn("credits_consumed", snapshot)
         self.assertEqual(result["observed_credits"], 30.0)
@@ -272,7 +274,7 @@ class AcceptShotTests(unittest.TestCase):
             )
         )
         (batches / "retry-m02").mkdir()
-        (batches / "retry-m02/request.json").write_text(json.dumps({"shot": "M02", "kind": "video"}))
+        (batches / "retry-m02/request.json").write_text(json.dumps({"shot": "M02", "kind": "video", "provider": "kling"}))
         (batches / "M02-review-v01").mkdir()
         (batches / "M01-M02-review").mkdir()
         (batches / "M01-M02-review/review-01.json").write_text(
@@ -345,6 +347,21 @@ class AcceptShotTests(unittest.TestCase):
         self.assertEqual(manifest["generation"]["audio"]["path"], "speech.wav")
         with self.assertRaises(ValueError):
             self.accept(cut=(12, 72), audio=wav)
+
+    def test_replace_moves_previous_kit_to_assets_replaced(self):
+        first = self.accept(cut=(12, 72))
+        previous_manifest = (self.root / "assets/shots/M02/manifest.json").read_bytes()
+        with self.assertRaisesRegex(ValueError, "--replace"):
+            self.accept(cut=(0, 60))
+        second = self.accept(cut=(0, 60), replace=True)
+        self.assertNotEqual(first["video_sha256"], second["video_sha256"])
+        archive = self.root / second["replaced"]
+        self.assertTrue(archive.is_relative_to(self.root / "assets/replaced/M02"))
+        self.assertEqual((archive / "manifest.json").read_bytes(), previous_manifest)
+        self.assertTrue((archive / "original.mp4").is_file() and (archive / "video.mp4").is_file())
+        manifest = json.loads((self.root / "assets/shots/M02/manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["accepted_edit"]["video"]["sha256"], second["video_sha256"])
+        validate_package(self.root / "assets/shots/M02/manifest.json", "M02", self.root)
 
 
 if __name__ == "__main__":

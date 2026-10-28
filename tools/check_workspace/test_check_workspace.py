@@ -97,7 +97,7 @@ class CheckWorkspaceTests(unittest.TestCase):
         for name, document, expected in (
             ("workflow.json", {"shot": "M01"}, "package_of_accepted"),
             ("workflow.json", {"stage": "preparing"}, "package_unowned"),
-            ("request/request.json", {"shot": "M01"}, "package_of_accepted"),
+            ("request/request.json", {"shot": "M01", "provider": "kling"}, "package_of_accepted"),
         ):
             with self.subTest(name=name, document=document):
                 root, folder = self.exported_project()
@@ -233,7 +233,7 @@ class CheckWorkspaceTests(unittest.TestCase):
             json.dumps({"status": "review_pending", "shots": [{"id": "M01"}, {"id": "M02"}]})
         )
         self.assertEqual(package_owners(folder), {"M01", "M02"})
-        (folder / "request.json").write_text('{"shot": "M02"}')
+        (folder / "request.json").write_text('{"shot": "M02", "provider": "kling"}')
         self.assertEqual(package_owners(folder), {"M02"})
         (self.root / "plan/batches/notes").mkdir()
         self.assertEqual(package_owners(self.root / "plan/batches/notes"), set())

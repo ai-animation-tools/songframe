@@ -121,8 +121,8 @@ export class Checks {
     if (bad.length) throw new Error(`Коды планов вида M05 или M05.1: ${bad.join(', ')}`);
     const output = reviewOutput(project, shots);
     const args = ['--shots', ...shots, '--output', output, ...(options.planOnly ? ['--plan-only'] : [])];
-    const job = this.jobs.start('review', `Проба ${shots.join(' ')}${options.planOnly ? ' (только рецепт)' : ''}`, project, [
-      { tool: 'build_review', args, label: options.planOnly ? 'Подготовка рецепта пробы' : 'Сборка пробы стыков' }
+    const job = this.jobs.start('review', `Проба ${shots.join(' ')}${options.planOnly ? ' (проверка без видео)' : ''}`, project, [
+      { tool: 'build_review', args, label: options.planOnly ? 'Проверка пробы без видео' : 'Сборка пробы стыков' }
     ]);
     this.reviewJobs.set(resolve(output), job.id);
     return job;

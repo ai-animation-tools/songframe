@@ -25,7 +25,6 @@ function fixture(kind: MediaKind, frozenProvider: string, selectedProvider: stri
   });
   writeJson(join(packageDir, 'workflow.json'), {
     shot: 'M45',
-    executor: 'app',
     stage: kind === 'image' ? 'image_request_choice' : 'request_choice',
     ...(kind === 'image'
       ? {
@@ -90,7 +89,7 @@ describe.each(['image', 'video'] as const)('допуск пакета %s', (kind
 
 it('не проверяет CLI для пакета без подготовленного запроса', async () => {
   fixture('video', 'Kling', 'kling');
-  writeJson(join(packageDir, 'workflow.json'), { shot: 'M45', executor: 'app', stage: 'prompt_review' });
+  writeJson(join(packageDir, 'workflow.json'), { shot: 'M45', stage: 'prompt_review' });
   const requireAccess = vi.fn(async (_project: string, _kind: MediaKind): Promise<void> => {});
 
   await expect(requireProductionPackageAccess(project, packageDir, requireAccess)).rejects.toThrow('В пакете нет сохранённого запроса');

@@ -395,7 +395,7 @@ class RegenerateTests(unittest.TestCase):
         with self.assertRaisesRegex(LookupError, "path_base"):
             tool.regenerate(self.root, "M01", cli=str(self.cli), use_account=False)
 
-    def test_repeats_package_request_and_submits_on_fake_cli(self):
+    def test_repeats_package_request_without_submit(self):
         package = self.make_package()
         info = tool.regenerate(self.root, "M01", cli=str(self.cli), use_account=True)
         self.assertEqual(info["source"], "package")
@@ -408,25 +408,8 @@ class RegenerateTests(unittest.TestCase):
         self.assertEqual(original["inputs"][0]["sha256"], repeated["inputs"][0]["sha256"])
         self.assertEqual(original["prompt"]["sha256"], repeated["prompt"]["sha256"])
         self.assertEqual(json.loads((Path(info["package"]) / "workflow.json").read_text())["stage"], "request_choice")
-        with patch.object(
-            kling_request, "download", side_effect=lambda url, destination: Path(destination).write_bytes(b"video")
-        ):
-            pricing = self.root / "pricing.json"
-            pricing.write_text(json.dumps({"schema_version": 1, "models": {}, "observed": []}))
-            state = tool.submit_and_watch(
-                self.root,
-                info,
-                cli=str(self.cli),
-                max_minutes=1,
-                interval=5,
-                report=lambda *_: None,
-                pricing_path=pricing,
-            )
-        self.assertEqual(state["status"], "downloaded")
-        self.assertEqual(json.loads((Path(info["package"]) / "workflow.json").read_text())["stage"], "downloaded")
         calls = [json.loads(line) for line in (self.root / "calls.jsonl").read_text().splitlines()]
-        self.assertEqual(sum(1 for c in calls if c and c[0] not in ("query_tasks", "account")), 1)
-        self.assertEqual(json.loads(pricing.read_text())["observed"][0]["credits"], 43)
+        self.assertEqual(sum(1 for c in calls if c and c[0] not in ("query_tasks", "account")), 0)
 
     def test_generic_provider_prepares_asset_and_repeats_frozen_without_kling(self):
         """Чужой адаптер не вызывается: точный снимок готовится без знания команд сервиса."""
@@ -443,7 +426,7 @@ class RegenerateTests(unittest.TestCase):
         project["generation"]["video"]["provider"] = "gPtUnNeL"
         (self.root / "plan/project.json").write_text(json.dumps(project))
         with patch.object(tool.cost_check, "check", side_effect=AssertionError("Вызван Kling cost_check")):
-            info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli), executor="app")
+            info = tool.regenerate(self.root, "M01", source="asset", cli=str(self.cli), )
             frozen_dir = Path(info["work_dir"])
             frozen = json.loads((frozen_dir / "request.json").read_text())
             self.assertEqual(frozen["provider"], " GPTunnel ")
@@ -457,9 +440,6 @@ class RegenerateTests(unittest.TestCase):
         self.assertEqual(repeated["provider"], " GPTunnel ")
         self.assertEqual(repeated["request_sha256"], info["request_sha256"])
         self.assertEqual(info["cost"]["verdict"], "cost_or_balance_unknown")
-        # Даже подменённый положительный cost report не подключает несуществующий адаптер.
-        with self.assertRaisesRegex(LookupError, "не подключен исполнитель отправки"):
-            tool.submit_and_watch(self.root, info | {"cost": {"verdict": "ok"}}, cli=str(self.cli))
         self.assertFalse((self.root / "calls.jsonl").exists())
         self.assertEqual(json.loads((frozen_dir / "attempt.json").read_text())["status"], "prepared")
 
@@ -478,37 +458,30 @@ class RegenerateTests(unittest.TestCase):
             with self.subTest(request=request):
                 path.write_text(json.dumps(request))
                 with self.assertRaises(LookupError):
-                    tool.regenerate(self.root, "M01", source="auto", cli=str(self.cli), executor="app")
+                    tool.regenerate(self.root, "M01", source="auto", cli=str(self.cli), )
                 self.assertEqual(list((self.root / "plan/batches").iterdir()), [package])
                 self.assertFalse((self.root / "calls.jsonl").exists())
 
-    def test_app_executor_records_question_and_requires_send_before_submit(self):
-        """Владелец и вопрос включают кнопки приложения, но сами не разрешают платную отправку."""
+    def test_records_app_question_without_submit(self):
+        """Вопрос включает кнопки приложения, но сам не разрешает платную отправку."""
         self.make_package()
-        info = tool.regenerate(self.root, "M01", source="package", cli=str(self.cli), executor="app")
-        workflow = json.loads((Path(info["package"]) / "workflow.json").read_text())
-        self.assertEqual(workflow["executor"], "app")
-        self.assertEqual(workflow["pending_decision"]["stage"], "request_choice")
-        self.assertEqual(workflow["pending_decision"]["executor"], "app")
-        self.assertEqual(workflow["pending_decision"]["options"], ["send", "park", "revise"])
         with patch.object(kling_request, "submit", side_effect=AssertionError("Отправка до согласия")):
-            with self.assertRaisesRegex(LookupError, "ответа send"):
-                tool.submit_and_watch(self.root, info, cli=str(self.cli))
-        shot_workflow.decide(info["package"], "send", root=self.root)
-        with patch.object(kling_request, "submit") as submit, patch.object(kling_request, "watch", return_value={}), \
-                patch.object(tool.cost_check, "learn"):
-            tool.submit_and_watch(self.root, info, cli=str(self.cli))
-        submit.assert_called_once_with(Path(info["work_dir"]), info["request_sha256"], cli=str(self.cli))
+            info = tool.regenerate(self.root, "M01", source="package", cli=str(self.cli))
+        workflow = json.loads((Path(info["package"]) / "workflow.json").read_text())
+        self.assertNotIn("executor", workflow)
+        self.assertEqual(workflow["pending_decision"]["stage"], "request_choice")
+        self.assertNotIn("executor", workflow["pending_decision"])
+        self.assertEqual(workflow["pending_decision"]["options"], ["send", "park", "revise"])
+        self.assertIsNone(workflow["decision"])
 
-    def test_cli_executor_app_is_forwarded(self):
-        """Приложение выбирает владельца через CLI, обычный вызов остаётся агентским."""
+    def test_cli_prints_package_json(self):
         self.make_asset()
-        with patch.object(sys, "argv", ["regenerate_shot", "M01", "--source", "asset", "--executor", "app",
-                                       "--no-account", "--json"]), patch("sys.stdout", new_callable=io.StringIO) as output:
+        with patch.object(sys, "argv", ["regenerate_shot", "M01", "--source", "asset", "--no-account", "--json"]), \
+                patch("sys.stdout", new_callable=io.StringIO) as output:
             tool.main()
         info = json.loads(output.getvalue())
-        self.assertEqual(info["executor"], "app")
-        self.assertEqual(json.loads((Path(info["package"]) / "workflow.json").read_text())["executor"], "app")
+        self.assertNotIn("executor", info)
+        self.assertEqual(json.loads((Path(info["package"]) / "workflow.json").read_text())["stage"], "request_choice")
 
     def test_image_retry_compares_image_provider_independently(self):
         """Для изображения не применяется провайдер видеогенерации проекта."""
@@ -545,8 +518,6 @@ class RegenerateTests(unittest.TestCase):
         self.assertEqual(info["source"], "asset")
         self.assertIsNone(info["retry_of"])
         self.assertEqual(info["cost"]["verdict"], "cost_or_balance_unknown")
-        with self.assertRaisesRegex(LookupError, "остановлена"):
-            tool.submit_and_watch(self.root, info, cli=str(self.cli))
         snapshot["parameters"]["resolution"] = "720p"
         (asset / "generation-request.json").write_text(json.dumps(snapshot, ensure_ascii=False))
         shutil.rmtree(info["package"])

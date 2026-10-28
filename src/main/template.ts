@@ -1,10 +1,8 @@
-/** Копирование шаблона проекта с подстановкой плейсхолдеров и обновление управляемого блока AGENTS.md. */
+/** Копирование шаблона проекта с подстановкой плейсхолдеров. */
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
-export const BLOCK_BEGIN = '<!-- songframe:begin -->';
-export const BLOCK_END = '<!-- songframe:end -->';
 const TEXT_EXTENSIONS = new Set(['.md', '.json', '.txt', '.gitignore', '.gitkeep', '.yml', '.yaml']);
 
 export type Placeholders = Record<string, string>;
@@ -40,25 +38,4 @@ export function copyTemplate(source: string, target: string, values: Placeholder
   if (!existsSync(source) || !statSync(source).isDirectory()) throw new Error(`Шаблон проекта не найден: ${source}`);
   walk(source, target);
   return written;
-}
-
-/** Возвращает управляемый блок шаблона AGENTS.md с подставленными значениями. */
-export function renderManagedBlock(templateAgents: string, values: Placeholders): string | null {
-  const begin = templateAgents.indexOf(BLOCK_BEGIN);
-  const end = templateAgents.indexOf(BLOCK_END);
-  if (begin < 0 || end < 0 || end < begin) return null;
-  return renderPlaceholders(templateAgents.slice(begin, end + BLOCK_END.length), values);
-}
-
-/**
- * Обновляет только блок между маркерами в существующем AGENTS.md проекта; текст владельца вне блока
- * не трогается. Файл без маркеров (проект создан не комплексом) остаётся как есть.
- */
-export function syncManagedBlock(existing: string, block: string): string {
-  const begin = existing.indexOf(BLOCK_BEGIN);
-  const end = existing.indexOf(BLOCK_END);
-  if (begin >= 0 && end > begin) {
-    return existing.slice(0, begin) + block + existing.slice(end + BLOCK_END.length);
-  }
-  return existing;
 }

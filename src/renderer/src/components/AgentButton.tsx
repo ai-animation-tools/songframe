@@ -13,22 +13,18 @@ type Props = Omit<ButtonProps, 'startIcon'> & {
   aiKind?: AiActionKind;
   /** Только диагностика профиля в настройках: проверяет явный выбор формы до сохранения и установки CLI. */
   setup?: boolean;
-  /** Действие продолжит внешний агент вне приложения: доступность CLI в приложении не требуется. */
-  external?: boolean;
 };
 
-export function AgentButton({ provider, aiKind = 'agent', setup = false, external = false, ...props }: Props): ReactElement {
+export function AgentButton({ provider, aiKind = 'agent', setup = false, ...props }: Props): ReactElement {
   const { agentProvider, aiAccess } = useApp();
   const selected = provider ?? (setup ? undefined : (agentProvider ?? undefined));
   const reason = setup
     ? selected
       ? null
       : 'Выберите агента в форме настроек.'
-    : external
-      ? null
-      : aiKind === 'agent' && !agentProvider
-        ? 'Сначала выберите агента в настройках приложения.'
-        : aiActionProblem(aiAccess, aiKind);
+    : aiKind === 'agent' && !agentProvider
+      ? 'Сначала выберите агента в настройках приложения.'
+      : aiActionProblem(aiAccess, aiKind);
   const disabled = props.disabled || !!reason;
   const monochrome = props.variant === 'contained' || disabled;
   const button = (

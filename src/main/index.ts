@@ -7,13 +7,11 @@ import { app, BrowserWindow, Menu, protocol, shell, dialog } from 'electron';
 import { LOCAL_FILE_SCHEME } from '@shared/api';
 import { createServices, registerIpc, type Services } from './ipc';
 import { runtimeSmoke } from './runtime-smoke';
-import { runToolCli } from './tool-cli';
 import { linuxSmoke } from './linux-smoke';
 import { AgentManager } from './agent-manager';
 import { recoverScenarioApplications } from './scenario-apply';
 import { recoverInterruptedProductionApplies } from './production-workflow';
 import { externalEnvironment } from './external-environment';
-import { runKling } from './kling-runtime';
 import type { NotificationTarget } from '@shared/notifications';
 import { DesktopNotifications } from './desktop-notifications';
 import { TaskNotifications } from './task-notifications';
@@ -22,16 +20,6 @@ import { registerMontageWindow } from './montage-window';
 
 // У SongFrame отдельное состояние: первый запуск не открывает проект прежнего приложения.
 app.setName('songframe');
-
-// CLI не создаёт окна: до ready отключаем ненужный GPU и его дисковый кэш.
-// Обычный запуск окна сохраняет штатное ускорение и кэш Chromium.
-if (process.argv.includes('--songframe-tool') || process.argv.includes('--songframe-kling')) {
-  app.disableHardwareAcceleration();
-  app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
-  // Chromium 156 включает отдельный persistent cache, на который shader-флаг не действует.
-  const disabledFeatures = [app.commandLine.getSwitchValue('disable-features'), 'GpuPersistentCache', 'SkiaGraphiteUsePersistentCache'];
-  app.commandLine.appendSwitch('disable-features', disabledFeatures.filter(Boolean).join(','));
-}
 
 const MIME: Record<string, string> = {
   '.png': 'image/png',
@@ -154,36 +142,13 @@ function openNotificationTarget(target: NotificationTarget): void {
 app
   .whenReady()
   .then(async () => {
-    const klingIndex = process.argv.indexOf('--songframe-kling');
-    if (klingIndex >= 0) {
-      const result = await runKling(
-        { packaged: app.isPackaged, resourcesPath: process.resourcesPath, toolsRoot: app.getAppPath() },
-        process.argv.slice(klingIndex + 1),
-        { onOutput: (text, error) => (error ? process.stderr : process.stdout).write(text) }
-      );
-      app.exit(result.code ?? 1);
-      return;
-    }
     if (process.platform === 'linux' && !process.env.SONGFRAME_LINUX_SMOKE && !process.env.SONGFRAME_RUNTIME_SMOKE) {
       // Графический запуск не наследует nvm из терминала; один PATH нужен диагностике, агентам и вложенным инструментам Kling.
       process.env.PATH = (await externalEnvironment()).PATH;
     }
-    const toolIndex = process.argv.indexOf('--songframe-tool');
-    if (toolIndex >= 0) {
-      services = createServices(false);
-      const code = await runToolCli(services.launcher, process.argv.slice(toolIndex + 1), (text, error) =>
-        (error ? process.stderr : process.stdout).write(text)
-      );
-      app.exit(code);
-      return;
-    }
     if (process.platform === 'linux' && process.env.SONGFRAME_LINUX_SMOKE) {
-      services = createServices(false);
-      const ok = await linuxSmoke(services.launcher, process.env.SONGFRAME_LINUX_SMOKE, {
-        appImage: process.env.APPIMAGE,
-        execPath: process.execPath,
-        appPath: app.getAppPath()
-      });
+      services = createServices();
+      const ok = await linuxSmoke(services.launcher, process.env.SONGFRAME_LINUX_SMOKE);
       app.exit(ok ? 0 : 1);
       return;
     }
@@ -192,7 +157,7 @@ app
     // Как и SONGFRAME_SCREENSHOT, этот режим нужен локальной проверке сборки и не открывает пользовательский проект.
     if (process.env.SONGFRAME_RUNTIME_SMOKE) {
       try {
-        services = createServices(false);
+        services = createServices();
         const ok = await runtimeSmoke(services.launcher, process.env.SONGFRAME_RUNTIME_SMOKE);
         app.exit(ok ? 0 : 1);
       } catch (error) {
@@ -248,8 +213,7 @@ app
   .catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
     console.error(message);
-    if (!process.argv.includes('--songframe-tool') && !process.argv.includes('--songframe-kling') && !process.env.SONGFRAME_LINUX_SMOKE)
-      dialog.showErrorBox('SongFrame: ошибка запуска', message);
+    if (!process.env.SONGFRAME_LINUX_SMOKE) dialog.showErrorBox('SongFrame: ошибка запуска', message);
     app.exit(1);
   });
 

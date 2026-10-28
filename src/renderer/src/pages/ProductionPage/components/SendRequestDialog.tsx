@@ -30,7 +30,7 @@ export function SendRequestDialog({
 }): ReactElement {
   const { describeError, aiAccess } = useApp();
   const aiProblem = aiActionProblem(aiAccess, pkg?.request?.kind === 'image' ? 'image' : 'video');
-  const { quote, error, loading, external, refreshQuote, consumeQuote } = useRequestQuote(project, pkg);
+  const { quote, error, loading, refreshQuote, consumeQuote } = useRequestQuote(project, pkg);
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -51,7 +51,7 @@ export function SendRequestDialog({
     setSendError(null);
   }, [pkg]);
   const confirm = async (): Promise<void> => {
-    if (sendingNow.current || aiProblem || (!external && !priceAllowsGeneration(quote, agreedToUnknownCost))) return;
+    if (sendingNow.current || aiProblem || !priceAllowsGeneration(quote, agreedToUnknownCost)) return;
     sendingNow.current = true;
     const token = quote?.token;
     const consentToken = agreedToUnknownCost ? token : undefined;
@@ -81,10 +81,11 @@ export function SendRequestDialog({
         sending ||
         loading ||
         !pkg?.request?.sha256 ||
-        (!external && (!priceAllowsGeneration(quote, agreedToUnknownCost) || quote?.requestSha !== pkg.request.sha256))
+        !priceAllowsGeneration(quote, agreedToUnknownCost) ||
+        quote?.requestSha !== pkg.request.sha256
       }
       confirmLabel="Отправить и списать кредиты"
-      {...(external ? { confirmAgent: { external: true } } : { confirmIcon: <SendIcon /> })}
+      confirmIcon={<SendIcon />}
       onConfirm={() => void confirm()}
     >
       {pkg?.request ? (
@@ -106,46 +107,43 @@ export function SendRequestDialog({
               {productionInputLabel(input)}: {input.path}
             </Typography>
           ))}
-          {external ? <Alert severity="info">Исполнитель — внешний агент. Приложение запишет разрешение; отправку выполнит агент.</Alert> : null}
           <Typography variant="body2">
             Это платная операция: будут списаны кредиты аккаунта Kling. Запрос отправляется ровно один раз, затем приложение ждёт результат и запишет его в
             пакет.
           </Typography>
-          {!external ? (
-            <Stack spacing={1}>
-              {loading ? <Alert severity="info">Проверяем стоимость запроса и остаток кредитов в Kling.</Alert> : null}
-              {error ? <Alert severity="error">{error}</Alert> : null}
-              {quote ? (
-                <Alert severity={quote.verdict === 'ok' ? 'info' : 'warning'}>
-                  Стоимость: {formatCredits(quote.credits)}. Остаток: {formatCredits(quote.balance)}.
-                  {quote.verdict === 'insufficient_balance'
-                    ? ' Кредитов недостаточно.'
-                    : quote.verdict === 'cost_or_balance_unknown'
-                      ? canAgreeToUnknownCost(quote)
-                        ? ' Стоимость не подтверждена. Для отправки нужно явное согласие на списание неизвестного количества кредитов.'
-                        : ' Остаток кредитов не подтверждён, отправка недоступна.'
-                      : ''}
-                  {quote.reasons.length ? ` ${quote.reasons.join(' ')}` : ''}
-                  {canAgreeToUnknownCost(quote) ? (
-                    <Stack spacing={1} sx={{ mt: 1 }}>
-                      {agreedToUnknownCost ? <Typography variant="body2">Вы согласились отправить этот запрос с неизвестной стоимостью.</Typography> : null}
-                      <Button
-                        startIcon={<CheckIcon />}
-                        sx={{ alignSelf: 'start' }}
-                        disabled={!!aiProblem || loading || sending || busy || agreedToUnknownCost}
-                        onClick={() => setUnknownCostConsentToken(quote.token)}
-                      >
-                        Я согласен
-                      </Button>
-                    </Stack>
-                  ) : null}
-                </Alert>
-              ) : null}
-              <Button startIcon={<RefreshIcon />} sx={{ alignSelf: 'start' }} disabled={!!aiProblem || loading || sending || busy} onClick={refreshQuote}>
-                Обновить стоимость
-              </Button>
-            </Stack>
-          ) : null}
+          <Stack spacing={1}>
+            {loading ? <Alert severity="info">Проверяем стоимость запроса и остаток кредитов в Kling.</Alert> : null}
+            {error ? <Alert severity="error">{error}</Alert> : null}
+            {quote ? (
+              <Alert severity={quote.verdict === 'ok' ? 'info' : 'warning'}>
+                Стоимость: {formatCredits(quote.credits)}. Остаток: {formatCredits(quote.balance)}.
+                {quote.verdict === 'insufficient_balance'
+                  ? ' Кредитов недостаточно.'
+                  : quote.verdict === 'cost_or_balance_unknown'
+                    ? canAgreeToUnknownCost(quote)
+                      ? ' Стоимость не подтверждена. Для отправки нужно явное согласие на списание неизвестного количества кредитов.'
+                      : ' Остаток кредитов не подтверждён, отправка недоступна.'
+                    : ''}
+                {quote.reasons.length ? ` ${quote.reasons.join(' ')}` : ''}
+                {canAgreeToUnknownCost(quote) ? (
+                  <Stack spacing={1} sx={{ mt: 1 }}>
+                    {agreedToUnknownCost ? <Typography variant="body2">Вы согласились отправить этот запрос с неизвестной стоимостью.</Typography> : null}
+                    <Button
+                      startIcon={<CheckIcon />}
+                      sx={{ alignSelf: 'start' }}
+                      disabled={!!aiProblem || loading || sending || busy || agreedToUnknownCost}
+                      onClick={() => setUnknownCostConsentToken(quote.token)}
+                    >
+                      Я согласен
+                    </Button>
+                  </Stack>
+                ) : null}
+              </Alert>
+            ) : null}
+            <Button startIcon={<RefreshIcon />} sx={{ alignSelf: 'start' }} disabled={!!aiProblem || loading || sending || busy} onClick={refreshQuote}>
+              Обновить стоимость
+            </Button>
+          </Stack>
           {sendError ? (
             <Alert severity="error">{sendError} Закройте диалог для проверки состояния пакета или обновите стоимость для нового подтверждения.</Alert>
           ) : null}

@@ -2,9 +2,9 @@
 
 Берёт замороженный запрос плана (последний пакет в plan/batches или plan/awaiting с подготовленной попыткой,
 иначе снимок принятого комплекта assets/shots/Mxx/generation-request.json),
-создаёт новый пакет с попыткой `retry_of`, печатает request_sha256 и оценку стоимости. С `--submit`
-отправляет, ждёт результат и делает техническую сводку. Если данных запроса нет или они в чужом формате,
-останавливается с кодом 3: ничего не выдумывается.
+создаёт новый пакет с попыткой `retry_of` и вопросом отправки для приложения, печатает request_sha256
+и оценку стоимости. Отправку выполняет приложение после ответа send. Если данных запроса нет или они
+в чужом формате, останавливается с кодом 3: ничего не выдумывается.
 """
 
 import argparse
@@ -26,7 +26,7 @@ from tools.shot_workflow import shot_workflow
 
 NO_DATA = 3
 PACKAGE_ROOTS = ("plan/batches", "plan/awaiting")
-# Подготовка общая; отправку и стоимость обслуживают только уже подключённые адаптеры.
+# Подготовка общая; проверку ограничений и стоимости обслуживают только уже подключённые адаптеры.
 ADAPTERS = {"kling": kling_request}
 
 
@@ -185,12 +185,8 @@ def check_settings(spec, settings):
     return problems
 
 
-def regenerate(
-    root, shot, source="auto", work_dir=None, cli="kling", use_account=True, pricing_path=None, executor="agent"
-):
+def regenerate(root, shot, source="auto", work_dir=None, cli="kling", use_account=True, pricing_path=None):
     """Создаёт новый пакет и подготовленную попытку по сохранённому запросу; возвращает сведения для таблицы."""
-    if executor not in ("agent", "app"):
-        raise ValueError("Исполнитель продолжения: agent или app.")
     package = None
     spec = None
     errors = []
@@ -215,9 +211,7 @@ def regenerate(
     if mismatches:
         raise LookupError(f"{shot}: " + "; ".join(mismatches) + ". Повтор остановлен.")
     directory = Path(work_dir) if work_dir else next_attempt_dir(root, shot)
-    workflow = shot_workflow.init(
-        shot, directory, root=root, retry_of=str(package) if package else None, executor=executor
-    )
+    workflow = shot_workflow.init(shot, directory, root=root, retry_of=str(package) if package else None)
     with tempfile.TemporaryDirectory(prefix="regenerate-") as temporary:
         spec_path = Path(temporary) / "request.json"
         spec_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -228,9 +222,8 @@ def regenerate(
     for stage in ("keyframes_review", "prompt_review"):
         shot_workflow.set_stage(directory, stage, root=root)
     shot_workflow.set_stage(directory, "request_choice", request_dir="request", root=root)
-    if executor == "app":
-        # Кнопки приложения продолжают только явный вопрос, принадлежащий приложению.
-        shot_workflow.ask(directory, "request_choice", root=root, executor=executor)
+    # Вопрос продолжают кнопки приложения; сам вопрос согласия на отправку не означает.
+    shot_workflow.ask(directory, "request_choice", root=root)
     frozen = read_json(Path(directory) / "request/request.json")
     if adapter:
         pricing = cost_check.load_pricing(pricing_path or cost_check.PRICING)
@@ -253,7 +246,6 @@ def regenerate(
         "retry_of": workflow.get("retry_of"),
         "request_sha256": prepared["request_sha256"],
         "provider": prepared["provider"],
-        "executor": executor,
         "model": prepared["model"],
         "parameters": prepared["parameters"],
         "inputs": prepared["inputs"],
@@ -264,52 +256,11 @@ def regenerate(
     }
 
 
-def submit_and_watch(root, info, cli="kling", max_minutes=20, interval=20, report=print, pricing_path=None):
-    """Отправка ровно один раз, запись расхода, ожидание и техническая сводка. Разрешение на расход даёт вызывающий."""
-    work_dir = Path(info["work_dir"])
-    frozen = read_json(work_dir / "request.json")
-    provider = frozen.get("provider")
-    if not isinstance(provider, str) or not provider.strip():
-        raise LookupError("У подготовленного запроса нет обязательного provider.")
-    adapter = ADAPTERS.get(provider.strip().casefold())
-    if adapter is None:
-        raise LookupError(f"Для провайдера {provider} не подключен исполнитель отправки.")
-    workflow = read_json(Path(info["package"]) / "workflow.json")
-    if workflow.get("executor") == "app":
-        decision = workflow.get("decision") or {}
-        if (
-            workflow.get("pending_decision")
-            or decision.get("stage") != "request_choice"
-            or decision.get("verdict") != "send"
-        ):
-            raise LookupError("Отправку продолжает приложение после явного ответа send на вопрос запроса.")
-    if info["cost"]["verdict"] != "ok":
-        raise LookupError(f"Отправка остановлена: {info['cost']['verdict_label']} ({info['cost']['verdict']}).")
-    adapter.submit(work_dir, info["request_sha256"], cli=cli)
-    try:
-        cost_check.learn(work_dir, pricing_path or cost_check.PRICING)
-    except ValueError:
-        pass
-    shot_workflow.set_stage(info["package"], "submitted", root=root)
-    results = adapter.watch([work_dir], cli=cli, max_minutes=max_minutes, interval=interval, report=report)
-    state = results.get(str(work_dir), {})
-    if state.get("status") == "downloaded":
-        shot_workflow.set_stage(info["package"], "downloaded", root=root)
-    return state
-
-
 def main():
     parser = argparse.ArgumentParser(description="Повтор генерации плана по сохранённому запросу.")
     parser.add_argument("shot")
     parser.add_argument("--source", choices=["auto", "package", "asset"], default="auto")
     parser.add_argument("--work-dir", help="Папка нового пакета; по умолчанию plan/batches/Mxx-attempt-NN")
-    parser.add_argument(
-        "--submit",
-        action="store_true",
-        help="Сразу отправить, дождаться и сохранить результат (разрешение на расход даёт вызов)",
-    )
-    parser.add_argument("--executor", choices=["app", "agent"], default="agent", help="Владелец продолжения пакета")
-    parser.add_argument("--max-minutes", type=float, default=20)
     parser.add_argument("--cli", default="kling")
     parser.add_argument("--no-account", action="store_true", help="Не запрашивать остаток у аккаунта")
     parser.add_argument(
@@ -326,7 +277,6 @@ def main():
             cli=args.cli,
             use_account=not args.no_account,
             pricing_path=args.pricing,
-            executor=args.executor,
         )
     except LookupError as error:
         parser.exit(NO_DATA, f"{error}\n")
@@ -344,30 +294,6 @@ def main():
         print(cost_check.table(info["cost"]))
         for warning in info["warnings"]:
             print("Предупреждение: " + warning)
-    if args.submit:
-        try:
-            state = submit_and_watch(
-                ROOT,
-                info,
-                cli=args.cli,
-                max_minutes=args.max_minutes,
-                report=(lambda *_: None) if args.json else print,
-                pricing_path=args.pricing,
-            )
-        except (LookupError, ValueError) as error:
-            if args.json:
-                print(json.dumps({**info, "submitted": False, "error": str(error)}, ensure_ascii=False))
-            parser.exit(1, f"{error}\n")
-        info = {**info, "submitted": True, "attempt": state}
-        if not args.json:
-            print(
-                f"Состояние попытки: {state.get('status')}"
-                + (
-                    f"; результат: {', '.join(d.get('path', '') for d in state.get('downloads', []))}"
-                    if state.get("downloads")
-                    else ""
-                )
-            )
     if args.json:
         print(json.dumps(info, ensure_ascii=False))
 

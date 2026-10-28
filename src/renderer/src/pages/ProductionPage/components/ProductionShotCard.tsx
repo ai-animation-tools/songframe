@@ -1,16 +1,12 @@
-/** Описание выбранного плана, команда внешнего агента и принятые видео. */
+/** Описание выбранного плана, повтор по сохранённому запросу и принятые видео. */
 import type { ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Tooltip, Typography } from '@mui/material';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ReplayIcon from '@mui/icons-material/Replay';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import type { BrokenPackage, JobInfo, ShotProduction } from '@shared/types';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { formatClock } from '../../../format';
-import { AgentButton } from '../../../components';
-import { useApp } from '../../../state';
-import { skillCommand } from '@shared/agent-providers';
 import { JobStatus } from '../../../components/JobStatus';
 
 export function ProductionShotCard({
@@ -18,7 +14,6 @@ export function ProductionShotCard({
   busy,
   operation,
   pythonAvailable,
-  onCopy,
   onRegenerate,
   selectedPackage,
   onOpenPackage,
@@ -29,7 +24,6 @@ export function ProductionShotCard({
   busy: boolean;
   operation?: { job?: JobInfo; error?: string; running?: boolean; label?: string };
   pythonAvailable: boolean;
-  onCopy(text: string): void;
   onRegenerate(id: string): void;
   /** Текущий выбор пакета: вопросы уже открытого пакета повторно не предлагаются. */
   selectedPackage?: string;
@@ -38,7 +32,6 @@ export function ProductionShotCard({
   broken?: BrokenPackage[];
   onDiscardBroken?(item: BrokenPackage): void;
 }): ReactElement {
-  const { agentProvider } = useApp();
   const waiting = shot.packages.filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
@@ -113,20 +106,8 @@ export function ProductionShotCard({
           </Box>
         </Box>
       ) : null}
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
-        {/* Команда показывается в синтаксисе выбранного агента: /навык у Claude Code, $навык у Codex. */}
-        {agentProvider ? (
-          <Tooltip title="Скопировать команду для агента">
-            <AgentButton size="small" endIcon={<ContentCopyIcon />} onClick={() => onCopy(skillCommand(agentProvider, 'ai-clip-scene', `scene=${shot.id}`))}>
-              {skillCommand(agentProvider, 'ai-clip-scene', `scene=${shot.id}`)}
-            </AgentButton>
-          </Tooltip>
-        ) : (
-          <AgentButton size="small" endIcon={<ContentCopyIcon />}>
-            Команда для агента
-          </AgentButton>
-        )}
-        {shot.state === 'completed' || shot.packages.length ? (
+      {shot.state === 'completed' || shot.packages.length ? (
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
           <Tooltip title={shot.regenerateProblem ?? 'Создать новую попытку по сохранённому запросу без отправки и оплаты'}>
             <span>
               <Button
@@ -145,8 +126,8 @@ export function ProductionShotCard({
               </Button>
             </span>
           </Tooltip>
-        ) : null}
-      </Box>
+        </Box>
+      ) : null}
       {shot.regenerateProblem && (shot.state === 'completed' || shot.packages.length) ? (
         <Alert severity="info" sx={{ mt: 1 }}>
           {shot.regenerateProblem}

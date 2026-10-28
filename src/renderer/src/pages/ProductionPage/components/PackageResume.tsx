@@ -4,7 +4,6 @@ import { useState, type ReactElement } from 'react';
 import { Alert, Stack, TextField, Typography } from '@mui/material';
 import { AiButton } from '../../../components/AiButton';
 import type { PackageView } from '@shared/types';
-import { isExternalPackage } from '../decisions';
 
 export function PackageResume({
   pkg,
@@ -19,7 +18,6 @@ export function PackageResume({
 }): ReactElement | null {
   const [generationId, setGenerationId] = useState('');
   const request = pkg.request;
-  if (isExternalPackage(pkg)) return null;
   if (
     !request ||
     ![

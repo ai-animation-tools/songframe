@@ -1,4 +1,4 @@
-/** Вопрос пакета и варианты ответа с учётом исполнителя приложения или внешнего агента. */
+/** Вопрос пакета и варианты ответа; ответ сразу выполняет приложение. */
 import type { ReactElement } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
@@ -12,7 +12,6 @@ import { VERDICT_HINTS, VERDICT_LABELS } from '../constants';
 import { useApp } from '../../../state';
 import { aiActionProblem } from '@shared/ai-access';
 import type { AiActionKind } from '@shared/ai-access';
-import { AgentButton } from '../../../components';
 
 /** Пример относится к текущему согласованию и помогает описать конкретное изменение. */
 const REVISION_EXAMPLES: Record<string, string> = {
@@ -25,7 +24,6 @@ const REVISION_EXAMPLES: Record<string, string> = {
 
 export function PackageDecision({
   pending,
-  external,
   aiKind,
   sendingBlocked,
   note,
@@ -34,7 +32,6 @@ export function PackageDecision({
   onDecide
 }: {
   pending: PackageView['pendingDecision'];
-  external: boolean;
   aiKind: AiActionKind;
   sendingBlocked?: boolean;
   note: string;
@@ -53,9 +50,10 @@ export function PackageDecision({
             {pending.question}
           </Typography>
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-            {external
-              ? 'Приложение запишет ответ для внешнего агента. Он продолжит работу, когда прочитает ответ. Если агент остановлен, возобновите его во внешнем чате; приложение не запускает новый процесс.'
-              : 'Этот пакет ведёт приложение: нажатие кнопки сразу записывает ответ и выполняет действие. «Отправить» открывает подтверждение стоимости перед списанием, «Сохранить в очередь» переносит пакет в очередь, «Принять» открывает приёмку. Поле ниже нужно только для «Вернуть с замечанием»: замечание сохраняется в пакете и передаётся агенту, когда вы нажмёте «Запустить доработку с агентом» в блоке «Подготовка плана». Текст запроса здесь не редактируется.'}
+            Этот пакет ведёт приложение: нажатие кнопки сразу записывает ответ и выполняет действие. «Отправить» открывает подтверждение стоимости перед
+            списанием, «Сохранить в очередь» переносит пакет в очередь, «Принять» открывает приёмку. Поле ниже нужно только для «Вернуть с замечанием»:
+            замечание сохраняется в пакете и передаётся агенту, когда вы нажмёте «Запустить доработку с агентом» в блоке «Подготовка плана». Текст запроса здесь
+            не редактируется.
           </Typography>
           {options.includes('revise') ? (
             <TextField
@@ -67,10 +65,7 @@ export function PackageDecision({
               label="Что нужно исправить"
               placeholder={REVISION_EXAMPLES[pending.stage] ?? 'Например: укажите, что изменить в показанных материалах и каким должен быть результат.'}
               helperText={
-                'Опишите нужные изменения. Обязательно только для «Вернуть с замечанием». ' +
-                (external
-                  ? 'Замечание сохранится вместе с ответом для внешнего агента.'
-                  : 'Замечание сохранится вместе с ответом. Агент автоматически не запускается. После возврата нажмите «Запустить доработку с агентом» в блоке «Подготовка плана».')
+                'Опишите нужные изменения. Обязательно только для «Вернуть с замечанием». Замечание сохранится вместе с ответом. Агент автоматически не запускается. После возврата нажмите «Запустить доработку с агентом» в блоке «Подготовка плана».'
               }
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -89,22 +84,15 @@ export function PackageDecision({
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {options.map((verdict) => {
               const reason = ['send', 'retry'].includes(verdict) ? problem : null;
-              const common = {
-                title: reason ?? VERDICT_HINTS[verdict],
-                size: 'small' as const,
-                variant: verdict === options[0] ? ('contained' as const) : ('outlined' as const),
-                color: VERDICT_LABELS[verdict]?.color ?? 'inherit',
-                disabled: !!reason || busy || (sendingBlocked && ['send', 'retry'].includes(verdict)) || (verdict === 'revise' && !note.trim()),
-                onClick: () => onDecide(verdict),
-                children: VERDICT_LABELS[verdict]?.label ?? verdict
-              };
-              // Ответ внешнему агенту обозначается его знаком через общий AgentButton, остальные — значком действия.
-              return external ? (
-                <AgentButton key={verdict} external {...common} />
-              ) : (
+              return (
                 <Button
                   key={verdict}
-                  {...common}
+                  title={reason ?? VERDICT_HINTS[verdict]}
+                  size="small"
+                  variant={verdict === options[0] ? 'contained' : 'outlined'}
+                  color={VERDICT_LABELS[verdict]?.color ?? 'inherit'}
+                  disabled={!!reason || busy || (sendingBlocked && ['send', 'retry'].includes(verdict)) || (verdict === 'revise' && !note.trim())}
+                  onClick={() => onDecide(verdict)}
                   startIcon={
                     verdict === 'send' ? (
                       <SendIcon />
@@ -120,7 +108,9 @@ export function PackageDecision({
                       <CheckCircleIcon />
                     )
                   }
-                />
+                >
+                  {VERDICT_LABELS[verdict]?.label ?? verdict}
+                </Button>
               );
             })}
           </Box>

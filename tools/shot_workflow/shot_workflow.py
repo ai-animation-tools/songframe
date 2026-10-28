@@ -13,7 +13,6 @@ import json
 import re
 import shutil
 import tempfile
-import time
 from datetime import datetime, timezone
 
 from tools.common import ROOT, sha
@@ -110,11 +109,9 @@ def scene_of(root, shot):
     return registry, scene
 
 
-def init(shot, directory, mode="shot", root=ROOT, batch=None, retry_of=None, executor="agent"):
+def init(shot, directory, mode="shot", root=ROOT, batch=None, retry_of=None):
     if mode not in MODES:
         raise ValueError("Режим согласования: shot или frame.")
-    if executor not in ("app", "agent"):
-        raise ValueError("Исполнитель продолжения: app или agent.")
     if batch is not None and not re.fullmatch(r"[A-Za-z0-9_.-]{1,40}", batch):
         raise ValueError("Имя партии: латиница, цифры, точка, дефис, подчёркивание.")
     registry, scene = scene_of(root, shot)
@@ -137,8 +134,6 @@ def init(shot, directory, mode="shot", root=ROOT, batch=None, retry_of=None, exe
         "schema_version": 1,
         "shot": shot,
         "mode": mode,
-        # Владелец известен до подготовки файлов: сбой следующего шага не делает пакет чужим.
-        "executor": executor,
         "stage": "description_review",
         "wait_reason": None,
         "request_dir": None,
@@ -410,9 +405,6 @@ def set_image_request(directory, frame_id, request_dir, root=ROOT):
         raise ValueError("Историю запроса изображения нельзя переписать.")
     if not previous_entry:
         history.append(entry)
-    executor = data.get("executor", "agent")
-    if executor not in ("app", "agent"):
-        raise ValueError("Исполнитель продолжения: agent или app.")
     data.update(
         image_requests=history,
         image_request_dir=name,
@@ -422,7 +414,7 @@ def set_image_request(directory, frame_id, request_dir, root=ROOT):
         wait_reason=None,
     )
     save_workflow(directory, data)
-    return ask(directory, "image_request_choice", root=root, executor=executor)
+    return ask(directory, "image_request_choice", root=root)
 
 
 def select_image(directory, file, root=ROOT):
@@ -484,33 +476,28 @@ def select_image(directory, file, root=ROOT):
     return save_workflow(directory, data)
 
 
-def ask(directory, stage, question=None, options=None, root=ROOT, executor="agent"):
-    """Записывает вопрос и владельца продолжения; прежние вызовы оставляют ожидание агенту."""
+def ask(directory, stage, question=None, options=None, root=ROOT):
+    """Записывает вопрос для приложения и очищает прежний ответ."""
     directory = package_dir(directory, root)
     data = load_workflow(directory)
     if stage not in DECISION_STAGES:
         raise ValueError("Вопрос задаётся на этапах: " + ", ".join(DECISION_STAGES))
-    if executor not in ("agent", "app"):
-        raise ValueError("Исполнитель продолжения: agent или app.")
     default_question, default_options = DEFAULT_QUESTIONS[stage]
     options = options or default_options
     if any(o not in VERDICTS for o in options):
         raise ValueError("Варианты ответа: " + ", ".join(VERDICTS))
-    # Владелец остаётся в пакете после ответа; это не отдельный этап согласования.
-    data["executor"] = executor
     data["pending_decision"] = {
         "stage": stage,
         "question": question or default_question,
         "options": list(options),
         "asked_at": now(),
-        "executor": executor,
     }
     data["decision"] = None
     return save_workflow(directory, data)
 
 
 def decide(directory, verdict, note="", root=ROOT):
-    """Применить принятие опор и промпта; остальные ответы исполняет агент или приложение."""
+    """Применить принятие опор и промпта; остальные ответы исполняет приложение."""
     directory = package_dir(directory, root)
     data = load_workflow(directory)
     if verdict not in VERDICTS:
@@ -543,29 +530,6 @@ def decide(directory, verdict, note="", root=ROOT):
     data["decision"] = {"stage": stage, "verdict": verdict, "note": note or "", "at": now()}
     data["pending_decision"] = None
     return save_workflow(directory, data)
-
-
-def wait(directory, timeout=1800, interval=3, root=ROOT, sleep=time.sleep, clock=time.monotonic):
-    """Ждёт ответа пользователя из приложения: 0 решение, 2 время вышло, 3 пакет изменил этап снаружи."""
-    directory = package_dir(directory, root)
-    data = load_workflow(directory)
-    pending = data.get("pending_decision")
-    if not pending:
-        if data.get("decision"):
-            return 0, data["decision"]
-        raise ValueError("Нет ожидающего вопроса: сначала ask.")
-    stage_at_start = data["stage"]
-    deadline = clock() + timeout
-    while True:
-        data = load_workflow(directory)
-        decision = data.get("decision")
-        if decision and decision.get("stage") == pending["stage"] and not data.get("pending_decision"):
-            return 0, decision
-        if data["stage"] != stage_at_start and data["stage"] != REVISION:
-            return 3, {"stage": data["stage"], "verdict": None, "note": "этап пакета изменён снаружи", "at": now()}
-        if clock() >= deadline:
-            return 2, None
-        sleep(interval)
 
 
 def allowed_transition(current, target):
@@ -705,7 +669,7 @@ def report(directory, root=ROOT):
         "prompt_review": "после принятия промпта подготовьте запрос: kling_request prepare, "
         "затем set-stage request_choice --request-dir",
         "request_choice": "покажите таблицу запроса и cost_check; «отправить» — submit, «сохранить» — park",
-        "ready": "пакет ждёт в очереди; продолжение по скиллу",
+        "ready": "пакет ждёт в очереди; продолжение — кнопками на странице «Производство»",
         REVISION: "исправьте затронутые опоры или промпт",
         "submitted": "ожидайте результат: kling_request resume",
         "downloaded": "покажите результат; решение пользователя",
@@ -735,7 +699,6 @@ def report(directory, root=ROOT):
             (data.get("decision") or {}).get("stage") == "description_review"
             and (data.get("decision") or {}).get("verdict") == "approve",
         ),
-        "executor": data.get("executor", "agent"),
         "pending_decision": data.get("pending_decision"),
         "decision": data.get("decision"),
         "problems": problems(directory, data, root),
@@ -819,7 +782,6 @@ def main():
     p.add_argument("shot")
     p.add_argument("--dir", required=True)
     p.add_argument("--mode", choices=MODES, default="shot")
-    p.add_argument("--executor", choices=("app", "agent"), default="agent")
     p.add_argument("--batch", help="Имя партии независимых планов, готовящихся вместе")
     p.add_argument("--retry-of", help="Пакет того же плана, для которого создаётся исправленная попытка")
     p = sub.add_parser("plan-keyframes")
@@ -857,21 +819,11 @@ def main():
     p.add_argument("--stage", required=True, choices=DECISION_STAGES)
     p.add_argument("--question")
     p.add_argument("--options", help="Через запятую: " + ",".join(VERDICTS))
-    p.add_argument(
-        "--executor",
-        choices=("agent", "app"),
-        default="agent",
-        help="Кто продолжает после решения: агент с wait или приложение",
-    )
     p = sub.add_parser("decide")
     p.add_argument("--dir", required=True)
     p.add_argument("--verdict", required=True, choices=VERDICTS)
     p.add_argument("--note", default="")
     p.add_argument("--json", action="store_true")
-    p = sub.add_parser("wait")
-    p.add_argument("--dir", required=True)
-    p.add_argument("--timeout", type=float, default=1800)
-    p.add_argument("--interval", type=float, default=3)
     for action in ("show", "check"):
         p = sub.add_parser(action)
         p.add_argument("--dir", required=True)
@@ -879,7 +831,7 @@ def main():
     args = parser.parse_args()
     try:
         if args.action == "init":
-            data = init(args.shot, args.dir, args.mode, batch=args.batch, retry_of=args.retry_of, executor=args.executor)
+            data = init(args.shot, args.dir, args.mode, batch=args.batch, retry_of=args.retry_of)
             print(f"Пакет {data['shot']} создан: этап {data['stage']}, окно {data['timing']['window_seconds']} с.")
         elif args.action == "plan-keyframes":
             middles = []
@@ -912,19 +864,10 @@ def main():
             data = propose(args.dir, args.keyframe, args.path)
             print(f"{args.keyframe} предложена как кандидат; ждёт решения пользователя.")
         elif args.action == "ask":
-            data = ask(
-                args.dir,
-                args.stage,
-                args.question,
-                args.options.split(",") if args.options else None,
-                executor=args.executor,
-            )
-            continuation = (
-                "Ждите ответ командой wait." if args.executor == "agent" else "Продолжение выполняет приложение."
-            )
+            data = ask(args.dir, args.stage, args.question, args.options.split(",") if args.options else None)
             print(
                 f"Вопрос записан для приложения: {data['pending_decision']['question']} "
-                f"({', '.join(data['pending_decision']['options'])}). {continuation}"
+                f"({', '.join(data['pending_decision']['options'])})."
             )
         elif args.action == "decide":
             data = decide(args.dir, args.verdict, args.note)
@@ -933,14 +876,6 @@ def main():
                 if args.json
                 else f"Ответ записан: {args.verdict}" + (f" ({args.note})" if args.note else "")
             )
-        elif args.action == "wait":
-            code, decision = wait(args.dir, args.timeout, args.interval)
-            print(
-                json.dumps(decision, ensure_ascii=False)
-                if decision
-                else "Время ожидания вышло; вопрос остаётся, повторите wait."
-            )
-            raise SystemExit(code)
         else:
             info = report(args.dir)
             print(json.dumps(info, ensure_ascii=False, indent=2) if args.json else table(info))

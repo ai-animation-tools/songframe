@@ -85,7 +85,6 @@ const renderCard = (overrides: Partial<ComponentProps<typeof ProductionShotCard>
         shot: fixtureShot(),
         busy: false,
         pythonAvailable: true,
-        onCopy: unchanged,
         onRegenerate: unchanged,
         ...overrides
       })
@@ -95,7 +94,7 @@ const renderDialog = (problem: string | null = null, shot: string | null = 'M44'
   renderToStaticMarkup(createElement(RegenerateDialog, { shot, problem, onClose: unchanged, onConfirm: unchanged }));
 
 function repeatButton(html: string): string {
-  // Выбираем именно действие повтора: соседняя команда внешнего агента вправе оставаться недоступной.
+  // Выбираем именно действие повтора среди кнопок карточки.
   const button = [...html.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g)].find((match) => match[0].includes('Подготовить повтор'));
   expect(button, 'Действие подготовки повтора присутствует').toBeDefined();
   return button![0];
@@ -182,7 +181,7 @@ describe('Пакет, ждущий решения, у принятой сцен�
   it('показывает вопрос пакета с кнопкой открытия и не повторяет его для уже выбранного пакета', () => {
     const waiting = {
       ...fixturePackage('kling'),
-      pendingDecision: { stage: 'downloaded', question: 'Принять результат, повторить или собрать пробу?', options: ['accept', 'retry'], executor: 'app' }
+      pendingDecision: { stage: 'downloaded', question: 'Принять результат, повторить или собрать пробу?', options: ['accept', 'retry'] }
     };
     const html = renderCard({ shot: fixtureShot({ packages: [waiting] }), onOpenPackage: unchanged });
     expect(html).toContain('ждёт вашего решения: Принять результат, повторить или собрать пробу?');

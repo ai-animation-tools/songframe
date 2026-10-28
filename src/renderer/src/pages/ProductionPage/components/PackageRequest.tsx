@@ -5,7 +5,6 @@ import SendIcon from '@mui/icons-material/Send';
 import { AiButton } from '../../../components/AiButton';
 import type { PackageView } from '@shared/types';
 import { ATTEMPT_LABELS, productionInputLabel } from '@shared/production-labels';
-import { isExternalPackage } from '../decisions';
 import { RequestModelSelection } from './RequestModelSelection';
 import { RequestParameters } from './RequestParameters';
 import { RequestPrompt } from './RequestPrompt';
@@ -22,8 +21,7 @@ export function PackageRequest({
   onSubmit(): void;
 }): ReactElement {
   const pending = pkg.pendingDecision;
-  const canSubmit =
-    !isExternalPackage(pkg) && !pending && ['request_choice', 'image_request_choice', 'ready'].includes(pkg.stage) && pkg.request?.attemptStatus === 'prepared';
+  const canSubmit = !pending && ['request_choice', 'image_request_choice', 'ready'].includes(pkg.stage) && pkg.request?.attemptStatus === 'prepared';
   return (
     <>
       {pkg.request ? (

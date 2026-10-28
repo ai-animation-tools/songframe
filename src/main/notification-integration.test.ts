@@ -56,7 +56,7 @@ beforeEach(() => {
   });
   vi.spyOn(PythonLauncher.prototype, 'run').mockResolvedValue({ code: 0, stdout: '', stderr: '', command: 'test' });
   deliver = vi.fn();
-  services = createServices(false);
+  services = createServices();
   services.agents = {
     onEvent: (listener: typeof emitAgent) => {
       emitAgent = listener;

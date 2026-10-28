@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { aiActionProblem } from '@shared/ai-access';
 import type { PackageView, ProductionQuote } from '@shared/types';
 import { useApp } from '../../state';
-import { isExternalPackage } from './decisions';
 
 export function useRequestQuote(project: string, pkg: PackageView | null) {
   const { describeError, aiAccess } = useApp();
@@ -15,8 +14,7 @@ export function useRequestQuote(project: string, pkg: PackageView | null) {
   const dir = pkg?.dir;
   const sha = pkg?.request?.sha256;
   const decisionToken = pkg?.decisionToken;
-  const external = !!pkg && isExternalPackage(pkg);
-  const context = `${project}\0${dir ?? ''}\0${sha ?? ''}\0${decisionToken ?? ''}\0${external}`;
+  const context = `${project}\0${dir ?? ''}\0${sha ?? ''}\0${decisionToken ?? ''}`;
   const quote = storedQuote?.context === context ? storedQuote.value : null;
 
   useEffect(() => {
@@ -24,7 +22,7 @@ export function useRequestQuote(project: string, pkg: PackageView | null) {
     setQuote(null);
     setError(null);
     setLoading(false);
-    if (!dir || !sha || external || aiProblem) return;
+    if (!dir || !sha || aiProblem) return;
     setLoading(true);
     void window.api.production
       .quote(project, dir, sha, decisionToken)
@@ -42,13 +40,12 @@ export function useRequestQuote(project: string, pkg: PackageView | null) {
     return () => {
       active = false;
     };
-  }, [context, project, dir, sha, decisionToken, external, aiProblem, describeError, revision]);
+  }, [context, project, dir, sha, decisionToken, aiProblem, describeError, revision]);
 
   return {
     quote,
     error,
     loading,
-    external,
     refreshQuote: () => {
       setQuote(null);
       setRevision((current) => current + 1);

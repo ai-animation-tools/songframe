@@ -1,9 +1,7 @@
 /** Приёмка Linux-поставки без окна, на собственном временном проекте и внешней модели. */
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { appCommand } from './project-integration';
 import { Projects } from './projects';
 import { LocalState } from './state';
 import { Jobs } from './jobs';
@@ -16,33 +14,7 @@ import type { TimingFile } from '@shared/types';
 
 const TEXT = '[Куплет]\nУтром солнце светит ярко.\nМы гуляем у реки.\n';
 
-/** Вложенный launcher действительно вызывает AppImage; потоки разделены, код ошибки не теряется. */
-async function command(file: string, args: string[], env: NodeJS.ProcessEnv): Promise<string> {
-  return new Promise((resolveResult, reject) => {
-    const child = spawn(file, args, { cwd: '/', env, stdio: ['ignore', 'pipe', 'pipe'] });
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk;
-    });
-    const timer = setTimeout(() => child.kill('SIGKILL'), 120000);
-    child.on('error', reject);
-    child.on('close', (code) => {
-      clearTimeout(timer);
-      if (code !== 0) reject(new Error(`Проектный launcher: код ${code}; ${stderr}`));
-      else resolveResult(stdout);
-    });
-  });
-}
-
-export async function linuxSmoke(
-  launcher: PythonLauncher,
-  output: string,
-  executable: { appImage?: string; execPath: string; appPath: string }
-): Promise<boolean> {
+export async function linuxSmoke(launcher: PythonLauncher, output: string): Promise<boolean> {
   const root = dirname(output);
   mkdirSync(root, { recursive: true });
   const checks: { name: string; result: unknown }[] = [];
@@ -83,10 +55,7 @@ export async function linuxSmoke(
       record('В ОС нет Python/Node/Yarn/Git', programs);
     }
     const state = new LocalState(launcher.options.localDir!);
-    const integration = appCommand({ packaged: true, ...executable, localDir: state.localDir });
-    // Флаг относится только к тестовому контейнеру; обычный launcher приложения не меняется.
-    if (process.argv.includes('--no-sandbox')) integration.args.push('--no-sandbox');
-    const projects = (): Projects => new Projects(state, resources, 'linux', { packaged: true, appCommand: integration });
+    const projects = (): Projects => new Projects(state, resources, 'linux', { packaged: true });
     let project = join(root, 'Клип с пробелами');
     if (process.env.SONGFRAME_SMOKE_PHASE === 'reopen') {
       const previous = JSON.parse(readFileSync(join(root, 'expected.json'), 'utf8')) as { project: string; timingHash: string; sourceHash: string };
@@ -94,20 +63,13 @@ export async function linuxSmoke(
       assert.equal(state.readCurrent(), project);
       assert.equal(new SettingsStore(state.localDir).read().toolsRootOverride, null);
       assert(existsSync(join(state.localDir, 'jobs')));
-      const restored = projects();
-      restored.restoreCurrent();
-      assert.deepEqual(restored.appState().problems, []);
+      assert.deepEqual(projects().appState().problems, []);
       assert.equal(sha256File(join(project, 'source/track.mp3')), previous.sourceHash);
       assert.equal(sha256File(join(project, 'plan/audio/timing.json')), previous.timingHash);
-      const result = await command(join(project, '.songframe/run-tool'), ['current_project', '--json', 'show'], {
-        ...process.env,
-        SONGFRAME_SMOKE_PHASE: '',
-        SONGFRAME_LINUX_SMOKE: ''
-      });
-      // Extract-and-run может печатать служебный список файлов AppImage в stdout до JSON инструмента.
-      const printedPath = /^\s*"path":\s*("(?:[^"\\]|\\.)*")/m.exec(result);
-      assert(printedPath, 'Launcher должен вернуть JSON текущего проекта.');
-      assert.equal(JSON.parse(printedPath[1]), project);
+      // Без явного проекта Python читает текущий проект из того же каталога состояния, что и приложение.
+      const current = await isolated.run(null, 'current_project', ['--json', 'show'], { timeoutMs: 60000 });
+      assert.equal(current.code, 0, current.stderr);
+      assert.equal(JSON.parse(current.stdout).path, project);
       record('Перезапуск AppImage сохраняет проект, настройки и журналы', { project });
       save(true, { status: 'done', phase: 'reopen' });
       return true;
@@ -184,18 +146,10 @@ Image.new('RGB',(64,64),(30,90,160)).save(sys.argv[3])`,
     }
     writeFileSync(join(project, 'plan/scenes.json'), JSON.stringify(scenes));
     record('Каркас сцен из разметки и кастинга', { scenes: scenes.scenes.length });
-    const rules = join(project, 'AGENTS.md');
-    writeFileSync(rules, readFileSync(rules, 'utf8') + '\nМоё дополнительное правило.\n');
-    const config = join(project, '.vscode/settings.json');
-    const settings = JSON.parse(readFileSync(config, 'utf8'));
-    settings['editor.tabSize'] = 3;
-    writeFileSync(config, '// Мой комментарий\n' + JSON.stringify(settings, null, 2));
     const moved = join(root, 'Перенесённый клип');
     renameSync(project, moved);
     project = moved;
     projects().open(project);
-    assert(readFileSync(join(project, 'AGENTS.md'), 'utf8').endsWith('Моё дополнительное правило.\n'));
-    assert(readFileSync(join(project, '.vscode/settings.json'), 'utf8').startsWith('// Мой комментарий'));
     assert.equal(sha256File(join(project, 'source/track.mp3')), sourceHash);
     new SettingsStore(state.localDir).write({ toolsRootOverride: null });
     const jobs = new Jobs(resources, state.localDir, isolated);
@@ -209,7 +163,7 @@ Image.new('RGB',(64,64),(30,90,160)).save(sys.argv[3])`,
     assert(existsSync(join(state.localDir, 'jobs', `${job.id}.log`)));
     record('Задание и журнал сохраняются в каталоге состояния', { job: job.id });
     writeFileSync(join(root, 'expected.json'), JSON.stringify({ project, sourceHash, timingHash: sha256File(join(project, 'plan/audio/timing.json')) }));
-    record('Перенос проекта сохраняет данные и ручные правила', { project });
+    record('Перенос проекта сохраняет данные', { project });
     assert(!existsSync(join(resources, '.local')));
     save(true, { status: 'done', phase: 'exercise', model: recognized.model });
     return true;

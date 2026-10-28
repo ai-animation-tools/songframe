@@ -23,7 +23,7 @@ const FIXED_VIEWS = [
 ];
 const CANONICAL = ['plan/cast.json', 'plan/treatment.json', 'plan/scenes.json'];
 const COPY_EXTENSIONS = new Set(['.json', '.md', '.txt', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.tif', '.tiff', '.avif', '.svg']);
-const SKIP_DIRECTORIES = new Set(['.git', '.songframe', '.local', '__pycache__', 'node_modules', 'cache']);
+const SKIP_DIRECTORIES = new Set(['.git', '.local', '__pycache__', 'node_modules', 'cache']);
 interface BackupEntry {
   path: string;
   backup: string | null;

@@ -16,8 +16,8 @@ from tools.common import ROOT
 from tools.scene_registry.scene_registry import load
 from tools.scene_registry.scene_registry import shots as registry_shots
 
-# Названия статусов и этапов заданы справочником скилла; здесь они только вычисляются.
-# @link ../../skills/ai-clip-scene/references/quality-and-state.md
+# Названия статусов и этапов описаны в README инструмента; здесь они только вычисляются.
+# @link README.md
 STATUS_LABELS = {
     "planned": "запланирована",
     "progress": "в работе",
@@ -273,7 +273,7 @@ def table(result, status_filter="all"):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--filter", choices=["all", "planned", "progress", "completed", "unknown"], default="all")
-    parser.add_argument("--json", action="store_true", help="Машиночитаемый вывод для скилла и дашборда.")
+    parser.add_argument("--json", action="store_true", help="Машиночитаемый вывод для приложения.")
     parser.add_argument("--next", action="store_true", help="Только кандидат next и очередь.")
     parser.add_argument("--independent", nargs="+", metavar="Mxx", help="Проверить независимость партии планов.")
     args = parser.parse_args()

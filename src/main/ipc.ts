@@ -40,7 +40,6 @@ import { whisperSetup } from './whisper-setup';
 import { startWhisperDownload } from './whisper-download';
 import { initializeLocalStorage } from './local-storage';
 import { normalizeAgentSettings, SettingsStore } from './settings';
-import { appCommand } from './project-integration';
 import { mediaPaths } from './media-runtime';
 import { checkAgent } from './agents';
 import { createAgentAdapter } from './agent-adapters';
@@ -89,14 +88,14 @@ export interface Services {
   montage: Montage;
   launcher: PythonLauncher;
   settings: SettingsStore;
-  /** Только оконный процесс: --songframe-tool не должен восстанавливать задания работающего приложения. */
+  /** Только оконный процесс: служебные проверки без окна не восстанавливают задания работающего приложения. */
   agents?: AgentManager;
   /** Доставка итогов живёт в main и не зависит от подписки открытой страницы. */
   notifications?: TaskNotifications;
   cover?: CoverGeneration;
 }
 
-export function createServices(restoreProject = true): Services {
+export function createServices(): Services {
   const options = {
     appPath: app.getAppPath(),
     execPath: process.execPath,
@@ -115,16 +114,8 @@ export function createServices(restoreProject = true): Services {
   const jobs = new Jobs(paths.toolsRoot, paths.localDir, launcher);
   const projects = new Projects(new LocalState(paths.localDir), paths.toolsRoot, process.platform, {
     packaged: app.isPackaged,
-    problems: paths.problems,
-    appCommand: appCommand({
-      packaged: app.isPackaged,
-      appImage: process.env.APPIMAGE,
-      execPath: process.execPath,
-      appPath: app.getAppPath(),
-      localDir: paths.localDir
-    })
+    problems: paths.problems
   });
-  if (restoreProject) projects.restoreCurrent();
   return {
     projects,
     toolsRoot: paths.toolsRoot,

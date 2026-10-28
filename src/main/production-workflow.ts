@@ -58,7 +58,6 @@ interface Frame {
 interface Workflow {
   shot: string;
   stage: string;
-  executor?: string;
   request_dir?: string;
   description_approved?: boolean;
   image_request_dir?: string;
@@ -68,7 +67,7 @@ interface Workflow {
   prompt?: { path?: string; approved?: boolean; sha256?: string };
   approved_prompt_sha256?: string;
   decision?: { stage: string; verdict: string; note?: string } | null;
-  pending_decision?: { executor?: string; stage: string } | null;
+  pending_decision?: { stage: string } | null;
 }
 interface Stored {
   proposal: ProductionProposal;
@@ -93,7 +92,6 @@ interface Context {
   durationRule: DurationRule;
   framePrompts: ProductionFramePrompt[];
   allowedPaths: string[];
-  managed: boolean;
   paid: boolean;
   problems: string[];
 }
@@ -303,8 +301,6 @@ export class ProductionWorkflow {
       if (!record(value) || value.shot !== shot || typeof value.stage !== 'string') throw new Error('Пакет отсутствует или относится к другому плану.');
       workflow = value as unknown as Workflow;
     }
-    const managed = !workflow || (workflow.executor ?? workflow.pending_decision?.executor) === 'app';
-    if (!managed) problems.push('Этот пакет ведёт внешний агент; продолжение остаётся за ним. Для работы в приложении подготовьте новую попытку.');
     const cast = json(join(project, 'plan/cast.json'));
     const references: Record<string, unknown> = {};
     const allowed = new Set<string>();
@@ -364,7 +360,6 @@ export class ProductionWorkflow {
       durationRule: durationRule as DurationRule,
       framePrompts,
       allowedPaths: [...allowed].sort(),
-      managed,
       paid: packageDir ? productionPackageVideoPaid(packageDir) : false,
       problems
     };
@@ -422,15 +417,10 @@ export class ProductionWorkflow {
       context.workflow?.description_approved ?? (context.workflow?.decision?.stage === 'description_review' && context.workflow.decision.verdict === 'approve');
     const frameRevision = context.workflow?.decision?.stage === 'keyframes_review' && context.workflow.decision.verdict === 'revise';
     const proposalPending = !!relevant && ['running', 'ready'].includes(relevant.proposal.status);
-    const enabled = !busy && !proposalPending && context.managed && !context.problems.length && !pending && !context.paid;
+    const enabled = !busy && !proposalPending && !context.problems.length && !pending && !context.paid;
     const imagePhase = context.workflow?.stage?.startsWith('image_');
     const imageEnabled =
-      !busy &&
-      context.managed &&
-      !context.problems.some((problem) => !problem.startsWith('Заполните настройки генерации видео')) &&
-      !pending &&
-      !context.paid &&
-      !imagePhase;
+      !busy && !context.problems.some((problem) => !problem.startsWith('Заполните настройки генерации видео')) && !pending && !context.paid && !imagePhase;
     const scenarioApproved = this.options.isScenarioApproved(canonical);
     const framesApproved = approvedFrames(context);
     const nextStage = stageFor(context);
@@ -448,25 +438,23 @@ export class ProductionWorkflow {
           ? 'сначала завершите согласование или получение изображения'
           : !scenarioApproved
             ? 'сценарий не утверждён в приложении: утвердите кастинг, трактовку и сцены на странице «Сценарий»'
-            : (context.problems.find((problem) => !problem.startsWith('Этот пакет')) ?? null),
+            : (context.problems[0] ?? null),
       continue: !context.packageDir
         ? 'нужен выбранный пакет с принятым описанием и опорами'
         : (common ??
           (context.paid
             ? 'попытка уже отправлена: дальше только повтор или возврат с замечанием'
-            : !context.managed
-              ? 'пакет ведёт внешний агент'
-              : context.problems.length
-                ? context.problems.join(' ')
-                : imagePhase
-                  ? 'сначала завершите согласование или получение изображения'
-                  : !nextStage || nextStage === 'description'
-                    ? framesApproved
-                      ? 'опоры приняты, видеопромпт готовится этой кнопкой после принятия описания'
-                      : descriptionApproved
-                        ? 'сначала создайте и примите опоры'
-                        : 'сначала примените и примите описание плана'
-                    : null)),
+            : context.problems.length
+              ? context.problems.join(' ')
+              : imagePhase
+                ? 'сначала завершите согласование или получение изображения'
+                : !nextStage || nextStage === 'description'
+                  ? framesApproved
+                    ? 'опоры приняты, видеопромпт готовится этой кнопкой после принятия описания'
+                    : descriptionApproved
+                      ? 'сначала создайте и примите опоры'
+                      : 'сначала примените и примите описание плана'
+                  : null)),
       frames: !context.packageDir
         ? 'нужен выбранный пакет с принятым описанием'
         : (common ??
@@ -486,14 +474,13 @@ export class ProductionWorkflow {
       project: canonical,
       shot,
       packageDir: context.packageDir,
-      managed: context.managed,
       busy,
       stage: context.workflow?.stage ?? null,
       reasons,
-      canPrepare: !busy && !imagePhase && scenarioApproved && !context.problems.some((problem) => !problem.startsWith('Этот пакет')),
+      canPrepare: !busy && !imagePhase && scenarioApproved && !context.problems.length,
       canContinue: enabled && !imagePhase && !!stageFor(context) && stageFor(context) !== 'description',
       // Пока у пакета есть вопрос, замечание вводится в его карточке; панель подхватывает сохранённый ответ «вернуть».
-      canRevise: !busy && !proposalPending && !imagePhase && !!context.packageDir && context.managed && !context.problems.length && !pending,
+      canRevise: !busy && !proposalPending && !imagePhase && !!context.packageDir && !context.problems.length && !pending,
       canGenerateFrames:
         imageEnabled && !!context.packageDir && !approvedFrames(context) && !!context.framePrompts.length && (descriptionApproved || frameRevision),
       paid: context.paid,
@@ -525,8 +512,7 @@ export class ProductionWorkflow {
       if (!view.canPrepare) throw new Error('Сначала утвердите актуальный сценарий и настройки генерации.');
       stage = 'description';
     } else {
-      if (!context.packageDir || !context.managed || context.paid || context.problems.length)
-        throw new Error(context.problems.join(' ') || 'Выберите доступный пакет приложения.');
+      if (!context.packageDir || context.paid || context.problems.length) throw new Error(context.problems.join(' ') || 'Выберите доступный пакет приложения.');
       if (context.workflow?.pending_decision) throw new Error('Сначала ответьте на текущий вопрос согласования.');
       stage =
         input.stage ??
@@ -742,8 +728,7 @@ export class ProductionWorkflow {
     )
       throw new Error('Применимо только завершённое актуальное предложение.');
     const context = this.context(view.project, shot, view.packageDir ?? undefined);
-    if (stored.target === context.packageDir && (context.workflow?.pending_decision || !context.managed))
-      throw new Error('Сначала ответьте на текущий вопрос согласования.');
+    if (stored.target === context.packageDir && context.workflow?.pending_decision) throw new Error('Сначала ответьте на текущий вопрос согласования.');
     if (stored.target !== context.packageDir && !this.options.isScenarioApproved(view.project)) throw new Error('Утверждение сценария устарело.');
     const job = stored.proposal.jobId ? this.options.agents.get(stored.proposal.jobId) : null;
     if (stored.proposal.jobId && (!job || job.status !== 'completed' || job.exitCode !== 0)) throw new Error('Нет успешного результата агента.');
@@ -766,7 +751,7 @@ export class ProductionWorkflow {
           const result = await launcher.run(view.project, tool, args);
           if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || `${tool}: код ${result.code}`);
         };
-        const ask = async (stage: string): Promise<void> => run('shot_workflow', ['ask', '--dir', stored.target, '--stage', stage, '--executor', 'app']);
+        const ask = async (stage: string): Promise<void> => run('shot_workflow', ['ask', '--dir', stored.target, '--stage', stage]);
         if (after.stage === 'description') {
           if (stored.target !== context.packageDir)
             await run('shot_workflow', [
@@ -776,8 +761,6 @@ export class ProductionWorkflow {
               stored.target,
               '--mode',
               'shot',
-              '--executor',
-              'app',
               ...(context.packageDir ? ['--retry-of', context.packageDir] : [])
             ]);
           mkdirSync(stored.target, { recursive: true });

@@ -16,7 +16,7 @@ import { SendRequestDialog } from './SendRequestDialog';
 // Сохранённый выбор задаётся независимо от поставляемых моделям настроек по умолчанию.
 const context = vi.hoisted(() => ({ agentProvider: 'codex' as string | null, aiAccess: null as AiAccess | null, quote: null as ProductionQuote | null }));
 vi.mock('../useRequestQuote', () => ({
-  useRequestQuote: () => ({ quote: context.quote, error: null, loading: false, external: false, refreshQuote: () => {}, consumeQuote: () => {} })
+  useRequestQuote: () => ({ quote: context.quote, error: null, loading: false, refreshQuote: () => {}, consumeQuote: () => {} })
 }));
 // SSR проверяет содержимое и доступность подтверждения без портала Electron-диалога.
 vi.mock('../../../components/ConfirmationDialog', () => ({
@@ -237,8 +237,7 @@ it('сохраняет локальное согласование при бло
   context.aiAccess = null;
   const html = renderToStaticMarkup(
     createElement(PackageDecision, {
-      pending: { stage: 'request_choice', question: 'Продолжить?', options: ['approve', 'revise', 'send', 'retry'], executor: 'app' },
-      external: false,
+      pending: { stage: 'request_choice', question: 'Продолжить?', options: ['approve', 'revise', 'send', 'retry'] },
       aiKind: 'image',
       busy: false,
       note: 'Нужна правка',

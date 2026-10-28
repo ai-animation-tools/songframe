@@ -181,7 +181,7 @@ describe('ProductionWorkflow', () => {
       inputs: [{ root: 'source', path: 'vehicles/boat.png', flag: 'image', sha256: sha(readFileSync(join(project, 'source/vehicles/boat.png'))) }]
     });
     // Настоящий инструмент копирует снимок без CLI аккаунта и без отправки; согласования намеренно отсутствуют.
-    const regenerated = await launcher.run(project, 'regenerate_shot', ['M01', '--source', 'asset', '--executor', 'app', '--no-account', '--json']);
+    const regenerated = await launcher.run(project, 'regenerate_shot', ['M01', '--source', 'asset', '--no-account', '--json']);
     expect(regenerated.code, regenerated.stderr).toBe(0);
     const pkg = JSON.parse(regenerated.stdout).package as string;
     const requestPath = join(pkg, 'request/request.json');
@@ -209,7 +209,7 @@ describe('ProductionWorkflow', () => {
     await workflow.apply(project, 'M01', pkg, started.proposal!.id);
     expect(JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8'))).toMatchObject({
       stage: 'description_review',
-      pending_decision: { stage: 'description_review', executor: 'app' }
+      pending_decision: { stage: 'description_review' }
     });
     expect(readFileSync(requestPath)).toEqual(frozenBytes);
     expect(sha(readFileSync(requestPath))).toBe(frozenSha);
@@ -334,7 +334,7 @@ describe('ProductionWorkflow', () => {
     const applied = await restarted.apply(project, 'M01', undefined, started.proposal!.id);
     expect(applied.packageDir).toMatch(/M01-attempt-\d+$/);
     expect(applied.canGenerateFrames).toBe(false);
-    expect(JSON.parse(readFileSync(join(applied.packageDir!, 'workflow.json'), 'utf8')).pending_decision.executor).toBe('app');
+    expect(JSON.parse(readFileSync(join(applied.packageDir!, 'workflow.json'), 'utf8')).pending_decision.stage).toBe('description_review');
     await decide(launcher, applied.packageDir!);
     expect(restarted.view(project, 'M01', applied.packageDir!).canGenerateFrames).toBe(true);
   });
@@ -564,16 +564,6 @@ describe('ProductionWorkflow', () => {
     await expect(workflow.apply(project, 'M01', undefined, view.proposal!.id)).rejects.toThrow('Прервано');
     expect(readdirSync(join(project, 'plan/batches'))).toEqual(before);
     expect(workflow.view(project, 'M01').proposal?.status).toBe('ready');
-  });
-  it('не присваивает внешний пакет и не принимает неподходящий этап', async () => {
-    const { workflow, launcher, pkg } = await prepared();
-    await decide(launcher, pkg);
-    const data = JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8'));
-    delete data.executor;
-    write(join(pkg, 'workflow.json'), data);
-    expect(workflow.view(project, 'M01', pkg).managed).toBe(false);
-    await expect(workflow.start({ project, shot: 'M01', packageDir: pkg, action: 'continue' })).rejects.toThrow('внешний агент');
-    expect(JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8')).executor).toBeUndefined();
   });
 });
 

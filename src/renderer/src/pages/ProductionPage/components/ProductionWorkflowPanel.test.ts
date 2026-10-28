@@ -61,7 +61,6 @@ beforeEach(() => {
     project: '/fixture',
     shot: 'M44',
     packageDir: '/fixture/package',
-    managed: true,
     busy: false,
     stage: 'prompt_review',
     canPrepare: false,

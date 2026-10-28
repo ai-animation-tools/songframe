@@ -7,7 +7,6 @@ import { mediaPaths } from './media-runtime';
 import { Jobs } from './jobs';
 import { PythonLauncher } from './python-launcher';
 import { klingPaths } from './kling-runtime';
-import { renderWindowsProjectLauncher } from './project-integration';
 
 export const IMPORT_TIMEOUT = 120000;
 
@@ -143,37 +142,6 @@ assert result.returncode == 0, result.stderr.decode('utf-8', errors='replace')
 assert b'--repository' in result.stdout and b'--output' in result.stdout
 print(json.dumps({'huggingfaceHub': version('huggingface_hub'), 'downloadCLI': True, 'externalPython': False, 'externalHf': False, 'networkUsed': False}))`
     );
-    if (process.platform === 'win32') {
-      // Настоящий CMD и EXE проверяют Unicode-путь, выбор проекта и код ошибки без внешнего Node или Python.
-      const service = join(project, '.songframe');
-      mkdirSync(service, { recursive: true });
-      const app = { command: process.execPath, args: [], localDir: isolated.options.localDir! };
-      for (const mode of ['--songframe-tool', '--songframe-kling'] as const)
-        writeFileSync(join(service, mode === '--songframe-tool' ? 'run-tool.cmd' : 'run-kling.cmd'), renderWindowsProjectLauncher(app, mode));
-      await run(
-        'Windows-launcher проекта через CMD',
-        `import json,os,subprocess
-folder = ${JSON.stringify(service)}
-comspec = os.environ['COMSPEC']
-def invoke(file, args):
-    command = '"' + comspec + '" /d /s /c ""' + os.path.join(folder, file) + '" ' + args + '"'
-    return subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, timeout=45)
-kling = invoke('run-kling.cmd', '--version')
-assert kling.returncode == 0, kling.stderr.decode('utf-8', errors='replace')
-version = kling.stdout.decode('utf-8').strip()
-assert version.startswith('kling-cli '), version
-tool = invoke('run-tool.cmd', 'check_workspace --json')
-assert tool.returncode == 0, tool.stderr.decode('utf-8', errors='replace')
-json.loads(tool.stdout.decode('utf-8'))
-failure = invoke('run-tool.cmd', '--invalid')
-assert failure.returncode == 2, failure.returncode
-download = invoke('run-tool.cmd', 'download_whisper_model --help')
-assert download.returncode == 0, download.stderr.decode('utf-8', errors='replace')
-assert b'--repository' in download.stdout and b'--output' in download.stdout
-print(json.dumps({'kling': version, 'toolExitCode': tool.returncode, 'invalidToolExitCode': failure.returncode, 'downloadCLI': True, 'projectPath': folder}))`,
-        120000
-      );
-    }
     let asr: unknown = null;
     // Только явно заданная тестовая копия проекта: этот режим никогда не выбирает пользовательский проект автоматически.
     if (process.env.SONGFRAME_ASR_PROJECT) {

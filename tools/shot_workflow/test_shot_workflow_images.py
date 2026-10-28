@@ -31,7 +31,7 @@ class ImageWorkflowTests(unittest.TestCase):
         self.package = self.root / "plan/batches/M01-attempt-01"
         tool.init("M01", self.package, root=self.root)
         tool.plan_keyframes(self.package, 3, root=self.root)
-        tool.ask(self.package, "description_review", root=self.root, executor="app")
+        tool.ask(self.package, "description_review", root=self.root)
         tool.decide(self.package, "approve", root=self.root)
         # Prepare локален; ни один сценарий теста не должен вызвать сервис генерации.
         guard = patch.object(kling_request, "call_cli", side_effect=AssertionError("Сетевой вызов запрещён"))
@@ -108,7 +108,6 @@ class ImageWorkflowTests(unittest.TestCase):
             directory = self.start(frame, name)
             pending = self.workflow()["pending_decision"]
             self.assertEqual(pending["options"], ["send", "park", "revise"])
-            self.assertEqual(pending["executor"], "app")
             self.submit(directory)
             file = self.download(directory, color=color)
             immutable.update({path: path.read_bytes() for path in directory.iterdir() if path.is_file()})
@@ -131,7 +130,7 @@ class ImageWorkflowTests(unittest.TestCase):
         self.assertEqual((video / "original.mp4").read_bytes(), b"paid-video-original")
         for path, content in immutable.items():
             self.assertEqual(path.read_bytes(), content)
-        tool.ask(self.package, "keyframes_review", root=self.root, executor="app")
+        tool.ask(self.package, "keyframes_review", root=self.root)
         self.assertTrue(
             all(frame["approved"] for frame in tool.decide(self.package, "approve", root=self.root)["keyframes"])
         )
@@ -144,16 +143,16 @@ class ImageWorkflowTests(unittest.TestCase):
         data = tool.set_image_request(self.package, "K01", directory.name, root=self.root)
         self.assertTrue(data["description_approved"])
         original = (directory / "attempt.json").read_bytes()
-        tool.ask(self.package, "description_review", root=self.root, executor="app")
+        tool.ask(self.package, "description_review", root=self.root)
         data = tool.decide(self.package, "revise", root=self.root)
         self.assertFalse(data["description_approved"])
         with self.assertRaisesRegex(ValueError, "утвердите описание"):
             tool.set_image_request(self.package, "K01", directory.name, root=self.root)
         self.assertEqual((directory / "attempt.json").read_bytes(), original)
-        tool.ask(self.package, "description_review", root=self.root, executor="app")
+        tool.ask(self.package, "description_review", root=self.root)
         self.assertTrue(tool.decide(self.package, "approve", root=self.root)["description_approved"])
 
-    def test_reasking_prepared_request_preserves_executor_history_and_attempt(self):
+    def test_reasking_prepared_request_preserves_history_and_attempt(self):
         directory = self.start()
         data = self.workflow()
         data["image_requests"][0]["unknown"] = {"keep": True}
@@ -162,14 +161,10 @@ class ImageWorkflowTests(unittest.TestCase):
         for verdict in ("park", "revise"):
             tool.decide(self.package, verdict, root=self.root)
             data = tool.set_image_request(self.package, "K01", "image-01", root=self.root)
-            self.assertEqual(data["executor"], "app")
+            self.assertEqual(data["pending_decision"]["stage"], "image_request_choice")
             self.assertEqual(len(data["image_requests"]), 1)
             self.assertEqual(data["image_requests"][0]["unknown"], {"keep": True})
             self.assertEqual((directory / "attempt.json").read_bytes(), original)
-        data.pop("executor")
-        data["pending_decision"] = None
-        tool.save_workflow(self.package, data)
-        self.assertEqual(tool.set_image_request(self.package, "K01", "image-01", root=self.root)["executor"], "agent")
 
     def test_park_moves_prepared_image_without_video_request_or_reset(self):
         directory = self.start()
@@ -306,7 +301,7 @@ class ImageWorkflowTests(unittest.TestCase):
             self.assertIn("selected_at", data["image_requests"][-1])
             candidate = self.package / data["keyframes"][int(frame[1:]) - 1]["path"]
             candidate_bytes[candidate] = candidate.read_bytes()
-        tool.ask(self.package, "keyframes_review", root=self.root, executor="app")
+        tool.ask(self.package, "keyframes_review", root=self.root)
         data = tool.decide(self.package, "revise", root=self.root)
         self.assertTrue(all(frame["path"] is None and frame["sha256"] is None for frame in data["keyframes"]))
         for path, content in {**original_bytes, **candidate_bytes}.items():
@@ -336,7 +331,7 @@ class ImageWorkflowTests(unittest.TestCase):
             {"id": "K03", "role": "first", "time_seconds": 0, "path": None, "sha256": None, "approved": False}
         ]
         tool.save_workflow(self.package, data)
-        tool.ask(self.package, "description_review", root=self.root, executor="app")
+        tool.ask(self.package, "description_review", root=self.root)
         tool.decide(self.package, "approve", root=self.root)
         next_request = self.prepare("revised-description")
         data = tool.set_image_request(self.package, "K03", next_request.name, root=self.root)
@@ -376,7 +371,7 @@ class ImageWorkflowTests(unittest.TestCase):
         accepted = self.package / "keyframes/K01.png"
         tool.approve(self.package, "K01", accepted, root=self.root)
         content = accepted.read_bytes()
-        tool.ask(self.package, "keyframes_review", root=self.root, executor="app")
+        tool.ask(self.package, "keyframes_review", root=self.root)
         data = tool.decide(self.package, "revise", root=self.root)
         self.assertTrue(data["keyframes"][0]["approved"])
         self.assertEqual(data["keyframes"][0]["path"], "keyframes/K01.png")

@@ -21,15 +21,13 @@ _TEMPORARY = None
 
 
 def render_placeholders(target):
-    """Подставляет пути в копию шаблона, как приложение при создании проекта."""
+    """Подставляет значения в копию шаблона, как приложение при создании проекта."""
     import json
 
     project = json.loads((target / "plan/project.json").read_text(encoding="utf-8"))
     values = {
         "{{project_name}}": project["name"],
         "{{animatic_video}}": project["animatic_video"],
-        "{{tools_root}}": str(SAMPLE.parents[2]),
-        "{{project_root}}": str(target),
     }
     for path in target.rglob("*"):
         if path.suffix not in (".md", ".json") or not path.is_file():

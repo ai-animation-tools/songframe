@@ -16,7 +16,7 @@ interface Props {
   /** Обычное подтверждение; для действия агента вместо значка передаётся confirmAgent. */
   confirmIcon?: ReactNode;
   /** Подтверждение выполняет агент: кнопка становится AgentButton с его знаком. */
-  confirmAgent?: { provider?: AgentProvider; aiKind?: AiActionKind; external?: boolean };
+  confirmAgent?: { provider?: AgentProvider; aiKind?: AiActionKind };
   confirmColor?: 'primary' | 'error' | 'warning';
   confirmDisabled?: boolean;
   cancelDisabled?: boolean;

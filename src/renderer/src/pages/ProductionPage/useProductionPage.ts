@@ -6,7 +6,6 @@ import { useApp } from '../../state';
 import { VERDICT_LABELS, type ProductionFilter } from './constants';
 import {
   decisionNoteKey,
-  isExternalPackage,
   isQueuedPackage,
   regeneratedPackage,
   relocatedPackage,
@@ -227,24 +226,21 @@ export function useProductionPage() {
       return;
     }
     // Пробу собирает сам пользователь в монтаже; вопрос о результате остаётся открытым до его решения.
-    if (verdict === 'review' && !isExternalPackage(pkg) && view) {
+    if (verdict === 'review' && view) {
       navigate(reviewMontageRoute(view, pkg, project));
       return;
     }
     const current = projectScope.capture(project);
     const currentNavigation = navigationScope.capture();
     void act(
-      verdict === 'park' && !isExternalPackage(pkg)
+      verdict === 'park'
         ? 'Пакет сохранён. Откройте его через «Очередь» на странице «Производство».'
         : verdict === 'revise'
-          ? isExternalPackage(pkg)
-            ? 'Замечание записано для внешнего агента. Приложение новый запуск не создаёт.'
-            : 'Замечание сохранено. Нажмите «Запустить доработку с агентом» в блоке подготовки.'
+          ? 'Замечание сохранено. Нажмите «Запустить доработку с агентом» в блоке подготовки.'
           : `Ответ записан: ${VERDICT_LABELS[verdict]?.label ?? verdict}`,
       async () => {
         await window.api.production.decide(project, pkg.dir, verdict, note, pkg.decisionToken);
-        const appExecutor = !isExternalPackage(pkg);
-        if (verdict === 'park' && appExecutor) {
+        if (verdict === 'park') {
           await window.api.production.park(project, pkg.dir);
           if (!current()) return;
           const next = await window.api.production.view(project);
@@ -267,8 +263,8 @@ export function useProductionPage() {
         }
         if (!current()) return;
         setNoteFor(pkg, '');
-        if (verdict === 'accept' && appExecutor) setAcceptDialog({ shot: pkg.shot, dir: pkg.dir, resultToken: pkg.resultToken, hasAsset: !!shot?.asset });
-        if (verdict === 'retry' && appExecutor) setConfirmRegenerate(pkg.shot);
+        if (verdict === 'accept') setAcceptDialog({ shot: pkg.shot, dir: pkg.dir, resultToken: pkg.resultToken, hasAsset: !!shot?.asset });
+        if (verdict === 'retry') setConfirmRegenerate(pkg.shot);
       },
       pkg.dir
     );
@@ -324,10 +320,6 @@ export function useProductionPage() {
     void act(`Папка ${item.relative} удалена`, () => window.api.production.discardAttempt(project, item.dir), item.dir, item.shot ?? selected);
   };
 
-  const copy = async (text: string): Promise<void> => {
-    await navigator.clipboard.writeText(text);
-    notify('Скопировано', 'success');
-  };
   return {
     project,
     view,
@@ -359,7 +351,6 @@ export function useProductionPage() {
     act,
     decide,
     selectImage,
-    copy,
     packageSelection,
     selectedPackage,
     selectPackage,

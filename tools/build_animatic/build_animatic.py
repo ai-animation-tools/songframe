@@ -414,7 +414,7 @@ def build(root=ROOT, plan_only=False):
         (work / "manifest.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
         (work / "README.md").write_text(
             f"# Текущий полный аниматик\n\n[Видео]({video_name}) · [Манифест](manifest.json).\n\n"
-            "Сборка из папки проекта: `.songframe/run-tool build_animatic`. "
+            "Сборка: страница «Аниматик» приложения. "
             "Источники — принятые монтажные клипы сцен, карточки и песня; "
             "правила находятся в [описании](../README.md).\n"
         )

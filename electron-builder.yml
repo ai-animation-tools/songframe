@@ -30,14 +30,11 @@ extraResources:
       - '!testing.py'
       - '!run_tests/**'
       - '!**/__pycache__/**'
-  # Справочники доступны агенту из проекта, без ссылок на временный mount AppImage.
+  # Промпты заданий агента: главный процесс вкладывает их в задания сценария и производства.
   - from: skills
     to: skills
     filter:
       - '**/*.md'
-      - '**/agents/openai.yaml'
-  - from: scripts/runtime/README.md
-    to: scripts/runtime/README.md
   - from: templates/project
     to: templates/project
 linux:

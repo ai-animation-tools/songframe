@@ -47,7 +47,6 @@ export interface ProductionWorkflowView {
   project: string;
   shot: string;
   packageDir: string | null;
-  managed: boolean;
   busy: boolean;
   stage: string | null;
   canPrepare: boolean;

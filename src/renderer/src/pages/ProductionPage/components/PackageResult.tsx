@@ -6,7 +6,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import type { PackageView } from '@shared/types';
 import { ImageGallery } from '../../../components/ImageGallery';
-import { isExternalPackage } from '../decisions';
 
 const focusRing = { borderRadius: 1.5, '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2 } };
 
@@ -28,7 +27,7 @@ export function PackageResult({
 }): ReactElement {
   const pending = pkg.pendingDecision;
   const image = pkg.request?.kind === 'image';
-  const canSelectImage = !isExternalPackage(pkg) && !pending && pkg.stage === 'image_downloaded' && !!pkg.resultToken;
+  const canSelectImage = !pending && pkg.stage === 'image_downloaded' && !!pkg.resultToken;
   const downloaded = pkg.request?.downloads.length ? pkg.request.downloads : [];
   const [gallery, setGallery] = useState<{ kind: string; images: { imagePath: string; label: string }[]; index: number } | null>(null);
   const variants = image ? downloaded.map((path, index) => ({ imagePath: path, label: `Вариант опорного кадра ${index + 1}` })) : [];
@@ -98,7 +97,7 @@ export function PackageResult({
               Сделать техническую сводку
             </Button>
           )}
-          {!image && !isExternalPackage(pkg) && !pending && ['downloaded', 'edit_review'].includes(pkg.stage) ? (
+          {!image && !pending && ['downloaded', 'edit_review'].includes(pkg.stage) ? (
             <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
               <Button variant="contained" color="error" startIcon={<CheckCircleIcon />} disabled={busy} onClick={onAccept}>
                 Принять в assets

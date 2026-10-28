@@ -156,7 +156,7 @@ describe.skipIf(process.platform !== 'linux')('сквозная image-ветка
     writeFileSync(join(pkg, 'video-request/original.mp4'), 'Ранее оплаченный видеооригинал');
     const videoBefore = treeHashes(join(pkg, 'video-request'));
     await tool(['set-stage', '--dir', pkg, 'description_review', '--request-dir', 'video-request']);
-    await tool(['ask', '--dir', pkg, '--stage', 'description_review', '--executor', 'app']);
+    await tool(['ask', '--dir', pkg, '--stage', 'description_review']);
     await production.decide(project, pkg, 'approve', '', readPackage(project, pkg)!.decisionToken);
     const originals = new Map<string, string>();
     for (const [offset, frameId] of ['K01', 'K02'].entries()) {

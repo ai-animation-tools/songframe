@@ -394,11 +394,8 @@ export interface PackageKeyframe {
 }
 
 export interface PackageView {
-  executor?: 'app' | 'agent';
   /** Хеш показанных оригиналов не меняется от записи ответа пользователя. */
   resultToken?: string;
-  /** Встроенное приложение владеет следующими действиями; внешний агент не исполняет их повторно. */
-  managed?: boolean;
   /** Связь ответа с показанным вопросом и его материалами. */
   decisionToken?: string;
   /** Папка пакета (абсолютный путь). */
@@ -435,7 +432,7 @@ export interface PackageView {
     /** Абсолютные пути скачанных оригиналов. */
     downloads: string[];
   } | null;
-  pendingDecision: { stage: string; question: string; options: string[]; asked_at?: string; executor?: string } | null;
+  pendingDecision: { stage: string; question: string; options: string[]; asked_at?: string } | null;
   decision: { stage: string; verdict: string | null; note?: string; at?: string } | null;
   /** Файлы технической сводки (контактный лист, превью), если она уже сделана. */
   preview: string[];

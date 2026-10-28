@@ -1,15 +1,13 @@
 /** Создание проекта из шаблона, открытие существующего, история и текущий проект. */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import type { AppState, CreateProjectInput, ProjectStatus } from '@shared/types';
 import type { LocalState } from './state';
 import { computeStatus, readProjectMarker } from './status';
-import { INTEGRATION_DIR, syncProjectIntegration, type AppCommand } from './project-integration';
-import { readLocalJson, writeAtomicText, writeLocalJson } from './local-files';
-import { copyTemplate, renderManagedBlock, syncManagedBlock, type Placeholders } from './template';
-import { projectPlatformValues } from './project-platform';
+import { readLocalJson, writeLocalJson } from './local-files';
+import { copyTemplate } from './template';
 
 export const TEMPLATE_DIR = join('templates', 'project');
 
@@ -40,26 +38,13 @@ export function validateNewProject(input: CreateProjectInput): string[] {
 
 export class Projects {
   private readonly problems: string[];
-  private readonly projectProblems = new Map<string, string[]>();
   constructor(
     private readonly state: LocalState,
     private readonly toolsRoot: string | null,
     private readonly platform: NodeJS.Platform,
-    private readonly integration: { packaged?: boolean; problems?: string[]; appCommand?: AppCommand } = {}
+    private readonly environment: { packaged?: boolean; problems?: string[] } = {}
   ) {
-    this.problems = [...(integration.problems ?? [])];
-  }
-
-  /** Восстановленный при запуске проект тоже обновляет ссылки, без изменения истории и времени выбора. */
-  restoreCurrent(): void {
-    try {
-      const current = this.state.readCurrent();
-      if (!current || !existsSync(current)) return;
-      const marker = readProjectMarker(current);
-      if (marker) this.syncAgents(current, marker.name);
-    } catch (error) {
-      this.problems.push(`Не удалось обновить ссылки текущего проекта: ${(error as Error).message}`);
-    }
+    this.problems = [...(environment.problems ?? [])];
   }
 
   appState(): AppState {
@@ -70,14 +55,13 @@ export class Projects {
       current: current && existsSync(current) ? current : null,
       history: this.state.readHistory(),
       platform: this.platform,
-      packaged: this.integration.packaged ?? false,
+      packaged: this.environment.packaged ?? false,
       problems: this.problems
     };
   }
 
   status(path: string): ProjectStatus {
-    const status = computeStatus(path);
-    return { ...status, problems: [...status.problems, ...(this.projectProblems.get(resolve(path)) ?? [])] };
+    return computeStatus(path);
   }
 
   /** Делает папку текущим проектом; папка должна быть проектом (plan/project.json). */
@@ -85,7 +69,6 @@ export class Projects {
     const target = resolve(path);
     const marker = existsSync(target) ? readProjectMarker(target) : null;
     if (!marker) throw new Error(`В папке нет plan/project.json с названием проекта: ${target}`);
-    this.syncAgents(target, marker.name);
     this.state.readHistory();
     this.state.writeCurrent(target);
     this.state.touchHistory(target, marker.name);
@@ -108,7 +91,6 @@ export class Projects {
     const next = name.trim();
     writeLocalJson(file, { ...data, name: next });
     this.state.renameHistory(target, next);
-    this.syncAgents(target, next);
     return this.status(target);
   }
 
@@ -123,7 +105,7 @@ export class Projects {
     if (!this.toolsRoot) throw new Error('Корень комплекса не найден: шаблон проекта недоступен. Укажите его на странице «Среда».');
     const target = resolve(input.path);
     const name = input.name.trim();
-    const values = this.placeholders(name, input.animaticVideo?.trim() || defaultAnimaticName(name));
+    const values = { project_name: name, animatic_video: input.animaticVideo?.trim() || defaultAnimaticName(name) };
     mkdirSync(target, { recursive: true });
     copyTemplate(join(this.toolsRoot, TEMPLATE_DIR), target, values);
     const git = spawnSync('git', ['init', '-q', target], { encoding: 'utf-8' });
@@ -132,46 +114,5 @@ export class Projects {
       writeFileSync(join(target, 'GIT-INIT-FAILED.txt'), `git init не удался: ${git.stderr || git.error?.message || 'неизвестная ошибка'}\n`);
     }
     return this.open(target);
-  }
-
-  /** Обновляет управляемый блок AGENTS.md проекта по текущему шаблону и пути к комплексу. */
-  syncAgents(target: string, name: string): void {
-    if (!this.toolsRoot) return;
-    const templatePath = join(this.toolsRoot, TEMPLATE_DIR, 'AGENTS.md');
-    const agentsPath = join(target, 'AGENTS.md');
-    const marker = readProjectMarker(target);
-    const animaticVideo = marker?.animaticVideo ?? defaultAnimaticName(name);
-    const existing = existsSync(agentsPath) ? readFileSync(agentsPath, 'utf-8') : null;
-    const managed = existing !== null && renderManagedBlock(existing, {}) !== null;
-    // Инструменты доступны каждому проекту, но чужие инструкции и настройки редактора остаются нетронутыми.
-    this.projectProblems.set(resolve(target), syncProjectIntegration(this.toolsRoot, target, this.integration.appCommand, this.platform, managed));
-    this.syncReadme(target, name, animaticVideo);
-    if (!managed || !existsSync(templatePath)) return;
-    const block = renderManagedBlock(readFileSync(templatePath, 'utf-8'), this.placeholders(name, animaticVideo));
-    if (!block) return;
-    const updated = syncManagedBlock(existing, block);
-    if (updated !== existing) writeAtomicText(agentsPath, updated);
-  }
-
-  /** Обновляем только управляемую памятку: примеры владельца и README без маркеров не переписываем. */
-  private syncReadme(target: string, name: string, animaticVideo: string): void {
-    const path = join(target, 'README.md');
-    const template = join(this.toolsRoot!, TEMPLATE_DIR, 'README.md');
-    if (!existsSync(path) || !existsSync(template)) return;
-    const before = readFileSync(path, 'utf8');
-    const block = renderManagedBlock(readFileSync(template, 'utf8'), this.placeholders(name, animaticVideo));
-    if (!block || !renderManagedBlock(before, {})) return;
-    const after = syncManagedBlock(before, block);
-    if (after !== before) writeAtomicText(path, after);
-  }
-
-  private placeholders(name: string, animaticVideo: string): Placeholders {
-    return {
-      project_name: name,
-      animatic_video: animaticVideo,
-      tools_root: INTEGRATION_DIR,
-      project_root: '.',
-      ...projectPlatformValues(this.platform)
-    };
   }
 }

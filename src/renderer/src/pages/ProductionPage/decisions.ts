@@ -2,10 +2,6 @@
 import type { Api } from '@shared/api';
 import type { AcceptOptions, JobInfo, PackageView, ProductionView } from '@shared/types';
 
-export function isExternalPackage(pkg: PackageView): boolean {
-  return pkg.executor === 'agent' || pkg.pendingDecision?.executor === 'agent';
-}
-
 export function decisionNoteKey(pkg: PackageView): string {
   return `${pkg.dir}\0${pkg.decisionToken ?? JSON.stringify(pkg.pendingDecision)}`;
 }
@@ -17,10 +13,6 @@ export async function sendConfirmedRequest(
   quoteToken?: string,
   unknownCostConsentToken?: string
 ): Promise<JobInfo | void> {
-  if (isExternalPackage(pkg)) {
-    await api.production.decide(project, pkg.dir, 'send', '', pkg.decisionToken);
-    return;
-  }
   if (!pkg.request?.sha256) throw new Error('У показанного запроса нет SHA256. Обновите пакет перед отправкой.');
   if (!quoteToken) throw new Error('Перед отправкой обновите и подтвердите стоимость запроса.');
   // Главный процесс атомарно связывает разрешение и отправку с этим снимком запроса.

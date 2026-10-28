@@ -5,7 +5,6 @@ import type { JobInfo, PackageView, ProductionView } from '@shared/types';
 import {
   acceptShownResult,
   decisionNoteKey,
-  isExternalPackage,
   isQueuedPackage,
   regeneratedPackage,
   relocatedPackage,
@@ -19,9 +18,8 @@ function fixture(overrides: Partial<PackageView> = {}): PackageView {
     dir: '/fixture/package',
     relative: 'plan/batches/S01-attempt-01',
     shot: 'S01',
-    managed: true,
     decisionToken: 'shown-question-token',
-    pendingDecision: { stage: 'request_choice', question: 'Отправить?', options: ['send'], executor: 'app' },
+    pendingDecision: { stage: 'request_choice', question: 'Отправить?', options: ['send'] },
     request: { sha256: 'shown-sha', attemptStatus: 'prepared' },
     ...overrides
   } as PackageView;
@@ -50,13 +48,6 @@ describe('подтверждение запроса производства', (
     expect(await sendConfirmedRequest(api, '/fixture/project', fixture(), 'shown-quote-token')).toBe(job);
     expect(submit).toHaveBeenCalledExactlyOnceWith('/fixture/project', '/fixture/package', 'shown-sha', 'shown-question-token', 'shown-quote-token');
     expect(decide).not.toHaveBeenCalled();
-  });
-
-  it('сохраняет внешний маршрут агента, передавая показанный token', async () => {
-    const { api, submit, decide } = fakeApi();
-    await sendConfirmedRequest(api, '/fixture/project', fixture({ managed: false, executor: 'agent' }));
-    expect(decide).toHaveBeenCalledExactlyOnceWith('/fixture/project', '/fixture/package', 'send', '', 'shown-question-token');
-    expect(submit).not.toHaveBeenCalled();
   });
 
   it('передаёт согласие на неизвестную цену только для показанной оценки', async () => {
@@ -116,28 +107,7 @@ describe('подтверждение запроса производства', (
   });
 });
 
-describe('владелец пакета и показанный результат', () => {
-  it('внешний owner остаётся внешним без pending и при конфликтующем managed', async () => {
-    const pkg = fixture({ executor: 'agent', managed: true, pendingDecision: null });
-    expect(isExternalPackage(pkg)).toBe(true);
-    const { api, submit, decide } = fakeApi();
-    await sendConfirmedRequest(api, '/fixture/project', pkg);
-    expect(submit).not.toHaveBeenCalled();
-    expect(decide).toHaveBeenCalledExactlyOnceWith('/fixture/project', '/fixture/package', 'send', '', 'shown-question-token');
-  });
-
-  it('pending agent не переопределяется флагом managed или owner app', async () => {
-    const pkg = fixture({
-      executor: 'app',
-      managed: true,
-      pendingDecision: { stage: 'request_choice', question: 'Отправить?', options: ['send'], executor: 'agent' }
-    });
-    const { api, submit, decide } = fakeApi();
-    await sendConfirmedRequest(api, '/fixture/project', pkg, 'quote');
-    expect(submit).not.toHaveBeenCalled();
-    expect(decide).toHaveBeenCalledTimes(1);
-  });
-
+describe('показанный результат', () => {
   it('приёмка передаёт токен показанного результата поверх старого значения формы', async () => {
     const accept = vi.fn().mockResolvedValue({ id: 'fixture-job' });
     const api = { production: { accept } } as unknown as Api;
@@ -205,7 +175,7 @@ describe('замена принятого комплекта и папка но�
 
   it('берёт папку новой попытки из последнего JSON журнала повтора', () => {
     const log = [
-      '$ новая попытка без отправки M45 --json --executor app',
+      '$ новая попытка без отправки M45 --json',
       '{"shot": "M45", "package": "/p/plan/batches/M45-attempt-01", "retry_of": null}',
       'Предупреждение: промпт длинный',
       '{"shot": "M45", "package": "/p/plan/batches/M45-attempt-02", "retry_of": "plan/batches/M45-attempt-01"}'

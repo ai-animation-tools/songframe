@@ -61,8 +61,7 @@ class Runner extends PythonLauncher {
     if (name === 'shot_workflow' && args[0] === 'ask') {
       const stage = args[args.indexOf('--stage') + 1];
       patch(join(directory, 'workflow.json'), {
-        executor: 'app',
-        pending_decision: { stage, executor: 'app', options: stage === 'request_choice' ? ['send', 'park', 'revise'] : ['accept', 'retry'] }
+        pending_decision: { stage, options: stage === 'request_choice' ? ['send', 'park', 'revise'] : ['accept', 'retry'] }
       });
     }
     if (name === 'shot_workflow' && args[0] === 'park') {
@@ -87,9 +86,8 @@ function fixture(name = 'M01-attempt-01', shot = 'M01'): string {
   write(join(directory, 'workflow.json'), {
     shot,
     stage: 'request_choice',
-    executor: 'app',
     request_dir: 'request',
-    pending_decision: { stage: 'request_choice', question: 'Отправить?', options: ['send', 'park', 'revise'], executor: 'app' }
+    pending_decision: { stage: 'request_choice', question: 'Отправить?', options: ['send', 'park', 'revise'] }
   });
   write(join(directory, 'request/request.json'), {
     provider: 'kling',
@@ -117,7 +115,7 @@ async function finished(job: JobInfo): Promise<JobInfo> {
 }
 const paidCalls = () => runner.calls.filter((call) => call.name === 'kling_request' && call.args[0] === 'submit');
 function downloaded(): void {
-  patch(join(packageDir, 'workflow.json'), { stage: 'downloaded', pending_decision: { stage: 'downloaded', options: ['accept', 'retry'], executor: 'app' } });
+  patch(join(packageDir, 'workflow.json'), { stage: 'downloaded', pending_decision: { stage: 'downloaded', options: ['accept', 'retry'] } });
   patch(join(packageDir, 'request/attempt.json'), {
     status: 'downloaded',
     generation_id: 'saved-id',
@@ -200,7 +198,7 @@ describe('подтверждение платного запроса', () => {
     const commands = runner.calls.slice(start).map((call) => `${call.name}:${call.args[0]}`);
     expect(commands.slice(0, 4)).toEqual(['cost_check:check', 'shot_workflow:set-stage', 'shot_workflow:ask', 'shot_workflow:decide']);
     const question = runner.calls.slice(start).find((call) => call.name === 'shot_workflow' && call.args[0] === 'ask')!;
-    expect(question.args).toEqual(['ask', '--dir', packageDir, '--stage', 'request_choice', '--executor', 'app']);
+    expect(question.args).toEqual(['ask', '--dir', packageDir, '--stage', 'request_choice']);
     expect(runner.calls.some((call) => call.name === 'kling_request' && call.args[0] === 'prepare')).toBe(false);
     expect(readFileSync(join(packageDir, 'request/request.json'), 'utf8')).toBe(frozen);
     expect(view().request?.sha256).toBe(requestSha);
@@ -234,7 +232,7 @@ describe('подтверждение платного запроса', () => {
       const confirmed = await quote();
       const shown = view().decisionToken;
       if (file === 'workflow.json')
-        patch(join(packageDir, file), { pending_decision: { stage: 'request_choice', question: 'Новый вопрос?', options: ['send'], executor: 'app' } });
+        patch(join(packageDir, file), { pending_decision: { stage: 'request_choice', question: 'Новый вопрос?', options: ['send'] } });
       else write(join(packageDir, file), 'changed');
       await expect(production.submit(project, packageDir, requestSha, shown, confirmed.token)).rejects.toThrow(/изменил/);
       expect(paidCalls()).toEqual([]);
@@ -349,21 +347,8 @@ describe('подтверждение платного запроса', () => {
     }
   );
 
-  it.each([
-    { executor: 'agent', pending_decision: null },
-    { executor: 'app', pending_decision: { stage: 'request_choice', executor: 'agent', options: ['send'] } }
-  ])('явный внешний исполнитель блокирует прямую отправку UI: %j', async (owner) => {
-    patch(join(packageDir, 'workflow.json'), owner);
-    await expect(quote()).rejects.toThrow(/внешний агент/);
-    expect(runner.calls).toEqual([]);
-  });
-
-  it('legacy без executor и ожидающего вопроса сохраняет прямой маршрут SHA + quote', async () => {
-    const workflow = read(join(packageDir, 'workflow.json'));
-    delete workflow.executor;
-    workflow.pending_decision = null;
-    write(join(packageDir, 'workflow.json'), workflow);
-    expect(view().executor).toBeUndefined();
+  it('без ожидающего вопроса сохраняет прямой маршрут SHA + quote', async () => {
+    patch(join(packageDir, 'workflow.json'), { pending_decision: null });
     await finished(await send(await quote()));
     expect(paidCalls()).toHaveLength(1);
   });
@@ -420,7 +405,7 @@ describe('согласования и исключение конфликтую�
     expect(view().pendingDecision).toBeNull();
     await production.reopenQuestion(project, packageDir);
     const ask = runner.calls.filter((item) => item.name === 'shot_workflow' && item.args[0] === 'ask').at(-1)!;
-    expect(ask.args).toEqual(['ask', '--dir', packageDir, '--stage', 'downloaded', '--executor', 'app']);
+    expect(ask.args).toEqual(['ask', '--dir', packageDir, '--stage', 'downloaded']);
     expect(view().pendingDecision?.stage).toBe('downloaded');
     expect(paidCalls()).toEqual([]);
   });
@@ -447,14 +432,12 @@ describe('согласования и исключение конфликтую�
     patch(join(packageDir, 'workflow.json'), { pending_decision: null });
     expect(viewProduction(project, runner).shots[0].attention).toMatch(/запрос подготовлен/);
     patch(join(packageDir, 'workflow.json'), {
-      pending_decision: { stage: 'request_choice', question: 'Отправить?', options: ['send', 'park', 'revise'], executor: 'app' }
+      pending_decision: { stage: 'request_choice', question: 'Отправить?', options: ['send', 'park', 'revise'] }
     });
     await production.decide(project, packageDir, 'revise', 'камера ближе', view().decisionToken);
     expect(viewProduction(project, runner).shots[0].attention).toMatch(/доработка с агентом не запущена/);
     downloaded();
     expect(viewProduction(project, runner).shots[0].attention).toMatch(/вопрос ждёт ответа/);
-    patch(join(packageDir, 'workflow.json'), { pending_decision: null, decision: null, executor: 'agent' });
-    expect(viewProduction(project, runner).shots[0].attention).toBeNull();
   });
 
   it('повреждённая папка очереди видна в сводке и удаляется, а при незавершённой отправке остаётся', () => {

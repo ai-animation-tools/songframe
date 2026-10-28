@@ -17,8 +17,7 @@ vi.mock('../../../state', () => ({
 function render(overrides: Partial<Parameters<typeof PackageDecision>[0]> = {}): string {
   return renderToStaticMarkup(
     createElement(PackageDecision, {
-      pending: { stage: 'request_choice', question: 'Что сделать с запросом?', options: ['send', 'park', 'revise'], executor: 'app' },
-      external: false,
+      pending: { stage: 'request_choice', question: 'Что сделать с запросом?', options: ['send', 'park', 'revise'] },
       aiKind: 'video',
       note: '',
       setNote: vi.fn(),
@@ -72,16 +71,11 @@ describe('Замечание при согласовании пакета', () =
     expect(html).toContain('Сохранить одежду героя.');
   });
 
-  it('называет получателя замечания для внешнего агента и подбирает пример к этапу', () => {
+  it('подбирает пример замечания к этапу', () => {
     const html = render({
-      external: true,
-      pending: { stage: 'prompt_review', question: 'Принять промпт?', options: ['approve', 'revise'], executor: 'agent' }
+      pending: { stage: 'prompt_review', question: 'Принять промпт?', options: ['approve', 'revise'] }
     });
-    expect(html).toContain('Замечание сохранится вместе с ответом для внешнего агента.');
-    expect(html).toContain('Он продолжит работу, когда прочитает ответ.');
-    expect(html).toContain('Если агент остановлен, возобновите его во внешнем чате; приложение не запускает новый процесс.');
-    expect(html).not.toContain('Внешний агент ждёт ответа.');
-    expect(html).not.toContain('Запустить доработку с агентом');
+    expect(html).not.toContain('внешн');
     expect(html).toContain('камера медленно приближается к герою');
     expect(button(html, 'Принять')).not.toContain('disabled=""');
   });

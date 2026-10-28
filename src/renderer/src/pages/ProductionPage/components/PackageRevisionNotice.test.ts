@@ -1,4 +1,4 @@
-/** Возврат сохраняет замечание и объясняет ручное продолжение для каждого исполнителя. */
+/** Возврат сохраняет замечание и объясняет запуск доработки в приложении. */
 import { Children, createElement, isValidElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Button } from '@mui/material';
@@ -11,7 +11,6 @@ vi.mock('../../../state', () => ({ useApp: () => ({ agentProvider: null, aiAcces
 
 const note = 'Изменить движение героя.\nСохранить одежду и направление камеры.';
 const fixture = (overrides: Partial<PackageView> = {}): PackageView => ({
-  executor: 'app',
   dir: '/fixture/package',
   relative: 'package',
   shot: 'M44',
@@ -69,18 +68,6 @@ describe('Продолжение после возврата пакета', () =
     expect(html).not.toContain('disabled=""');
   });
 
-  it('для внешнего агента объясняет чтение ответа и возобновление внешнего чата без локальной кнопки запуска', () => {
-    const html = render(fixture({ executor: 'agent' }), vi.fn());
-    expect(html).toContain('Замечание сохранено для внешнего агента');
-    expect(html).toContain(note);
-    expect(html).toContain('когда прочитает замечание');
-    expect(html).toContain('Если агент остановлен, возобновите его во внешнем чате');
-    expect(html).toContain('приложение не запускает новый процесс');
-    expect(html).not.toContain('<button');
-    expect(html).not.toContain('ждёт ответа');
-    expect(html).not.toContain('Запустить доработку с агентом');
-  });
-
   it('сохраняет пояснение без необязательного перехода', () => {
     const html = render();
     expect(html).toContain('«Запустить доработку с агентом»');
@@ -95,10 +82,10 @@ describe('Продолжение после возврата пакета', () =
     expect(render(fixture(overrides))).toBe('');
   });
 
-  it.each(['app', 'agent'] as const)('в карточке %s показывает сохранённый возврат без дублирования последнего ответа', (executor) => {
+  it('в карточке показывает сохранённый возврат без дублирования последнего ответа', () => {
     const html = renderToStaticMarkup(
       createElement(PackageCard, {
-        pkg: fixture({ executor }),
+        pkg: fixture(),
         note: '',
         setNote: vi.fn(),
         busy: false,
@@ -114,7 +101,6 @@ describe('Продолжение после возврата пакета', () =
     );
     expect(html).toContain(note);
     expect(html).not.toContain('последний ответ:');
-    expect(html).not.toContain('отправку и сохранение продолжает агент');
-    expect(html.includes('Перейти к доработке')).toBe(executor === 'app');
+    expect(html).toContain('Перейти к доработке');
   });
 });

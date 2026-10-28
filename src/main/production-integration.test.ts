@@ -251,7 +251,7 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
       const pkg = view.packageDir!;
       const approve = async (): Promise<void> => {
         const current = readPackage(project, pkg)!;
-        expect(current.pendingDecision?.executor).toBe('app');
+        expect(current.pendingDecision).not.toBeNull();
         await production.decide(project, pkg, 'approve', '', current.decisionToken);
       };
       expect(view.canGenerateFrames).toBe(false);

@@ -13,7 +13,7 @@ import { LocalState } from './state';
 import { resolvePython } from './python-runtime';
 import { PythonLauncher } from './python-launcher';
 import { computeStatus, sha256Text } from './status';
-import { BLOCK_BEGIN, BLOCK_END, renderManagedBlock, renderPlaceholders, syncManagedBlock } from './template';
+import { renderPlaceholders } from './template';
 
 const REPO = resolve(__dirname, '../..');
 let work: string;
@@ -40,15 +40,45 @@ describe('paths', () => {
   });
 });
 
+function markdownFiles(path: string): string[] {
+  return readdirSync(path, { withFileTypes: true }).flatMap((item) => {
+    const file = join(path, item.name);
+    return item.isDirectory() ? markdownFiles(file) : item.name.endsWith('.md') ? [file] : [];
+  });
+}
+
 describe('template', () => {
-  it('подставляет плейсхолдеры и обновляет только управляемый блок', () => {
-    expect(renderPlaceholders('«{{project_name}}» в {{ tools_root }} {{unknown}}', { project_name: 'Клип', tools_root: '/x' })).toBe('«Клип» в /x {{unknown}}');
-    const template = `${BLOCK_BEGIN}\n# {{project_name}}\n${BLOCK_END}\n\n## Правила\n`;
-    const block = renderManagedBlock(template, { project_name: 'Новый' })!;
-    expect(block).toContain('# Новый');
-    const owner = `${BLOCK_BEGIN}\n# Старый\n${BLOCK_END}\n\nМой текст\n`;
-    expect(syncManagedBlock(owner, block)).toBe(`${block}\n\nМой текст\n`);
-    expect(syncManagedBlock('Без маркеров\n', block)).toBe('Без маркеров\n');
+  it('подставляет плейсхолдеры', () => {
+    expect(renderPlaceholders('«{{project_name}}» в {{ animatic_video }} {{unknown}}', { project_name: 'Клип', animatic_video: 'a.mp4' })).toBe(
+      '«Клип» в a.mp4 {{unknown}}'
+    );
+  });
+
+  it('справки шаблона ссылаются только на файлы внутри проекта и не описывают ручной запуск инструментов', () => {
+    const root = join(REPO, 'templates/project');
+    // Эти файлы приложение создаёт позже: исходники, разметка, сценарий, представления и сборка.
+    const futureOutputs = new Set([
+      'source/manifest.json',
+      'plan/audio/timing.json',
+      'plan/scenes.json',
+      'plan/edit-list.md',
+      'plan/storyboard.md',
+      'plan/context/characters.md',
+      'plan/audio/timing.md',
+      'plan/animatic/latest/manifest.json'
+    ]);
+    const missing: string[] = [];
+    for (const file of markdownFiles(root)) {
+      const content = readFileSync(file, 'utf8');
+      expect(content, file).not.toMatch(/\.songframe|run-tool|run-kling|AGENTS\.md|songframe-(?:tool|kling)/);
+      for (const link of content.matchAll(/(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)/g)) {
+        if (/^(?:[a-z][a-z\d+.-]*:|\/|#)/i.test(link[1])) continue;
+        const target = resolve(join(file, '..'), decodeURIComponent(link[1].split(/[?#]/)[0]));
+        const inside = target.slice(root.length + 1);
+        if (!target.startsWith(root + '/') || (!existsSync(target) && !futureOutputs.has(inside))) missing.push(`${file.slice(root.length + 1)} → ${link[1]}`);
+      }
+    }
+    expect(missing).toEqual([]);
   });
 });
 
@@ -118,7 +148,6 @@ describe('projects', () => {
     const target = join(work, 'проект');
     const marker = { schema_version: 1, name: 'Старое название', animatic_video: 'original.mp4', custom: { value: 42 } };
     writeJson(join(target, 'plan/project.json'), marker);
-    writeFileSync(join(target, 'AGENTS.md'), `${BLOCK_BEGIN}\nСтарый блок\n${BLOCK_END}\nПравило владельца\n`);
     mkdirSync(join(target, 'source'));
     writeFileSync(join(target, 'source/original.txt'), 'Оригинал');
     const state = new LocalState(join(work, 'state'));
@@ -133,9 +162,6 @@ describe('projects', () => {
     expect(state.readHistory()).toEqual(before.map((entry) => (entry.path === target ? { ...entry, name: 'Новое название' } : entry)));
     expect(state.readCurrent()).toBe(target);
     expect(readFileSync(join(target, 'source/original.txt'), 'utf8')).toBe('Оригинал');
-    const agents = readFileSync(join(target, 'AGENTS.md'), 'utf8');
-    expect(agents).toContain('«Новое название»');
-    expect(agents).toContain('Правило владельца');
 
     const saved = readFileSync(join(target, 'plan/project.json'), 'utf8');
     expect(() => projects.rename(target, '  ')).toThrow(/не может быть пустым/);
@@ -157,16 +183,11 @@ describe('projects', () => {
       animatic_video: 'animatic.mp4',
       generation: { video: null, image: null }
     });
-    const agents = readFileSync(join(target, 'AGENTS.md'), 'utf-8');
-    expect(agents).toContain('«Новый клип»');
-    expect(agents).not.toContain(REPO);
-    expect(agents).toContain('./.songframe/run-tool');
-    expect(agents).not.toContain('{{');
     const readme = readFileSync(join(target, 'README.md'), 'utf-8');
-    expect(readme).toContain('./.songframe/run-tool check_assets');
+    expect(readme).toContain('«Новый клип»');
+    expect(readme).not.toContain(REPO);
     expect(readme).not.toContain('{{');
-    const vscode = JSON.parse(readFileSync(join(target, '.vscode/settings.json'), 'utf-8')) as { 'json.schemas': { url: string }[] };
-    expect(vscode['json.schemas'][0].url).toBe('./.songframe/tools/lint_registry/schemas/scenes.schema.json');
+    for (const absent of ['AGENTS.md', '.vscode', '.songframe', '.agents', '.claude']) expect(existsSync(join(target, absent)), absent).toBe(false);
     expect(existsSync(join(target, '.git'))).toBe(true);
     expect(existsSync(join(target, 'plan/batches/.gitkeep'))).toBe(true);
     expect(state.readCurrent()).toBe(target);
@@ -175,16 +196,10 @@ describe('projects', () => {
     expect(defaultAnimaticName('My Clip!')).toBe('my-clip-animatic.mp4');
     expect(defaultAnimaticName('Лев')).toBe('animatic.mp4');
 
-    // Правка владельца вне блока переживает повторное открытие, блок обновляется.
-    writeFileSync(
-      join(target, 'AGENTS.md'),
-      agents.replace(/<!-- songframe:begin -->[\s\S]*?<!-- songframe:end -->/, `${BLOCK_BEGIN}\nстарый блок\n${BLOCK_END}`) + '\nМоё правило\n'
-    );
+    // Повторное открытие не переписывает файлы проекта.
+    writeFileSync(join(target, 'README.md'), readme + '\nМоя заметка\n');
     projects.open(target);
-    const synced = readFileSync(join(target, 'AGENTS.md'), 'utf-8');
-    expect(synced).toContain('Моё правило');
-    expect(synced).not.toContain('старый блок');
-    expect(synced).toContain('«Новый клип»');
+    expect(readFileSync(join(target, 'README.md'), 'utf-8')).toBe(readme + '\nМоя заметка\n');
 
     projects.forget(target);
     expect(state.readCurrent()).toBeNull();

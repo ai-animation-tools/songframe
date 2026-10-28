@@ -94,13 +94,6 @@ describe('Знак агента на кнопке', () => {
     const html = render();
     expect(icons(html)).toEqual([]);
     expect(html).toContain('data-testid="SmartToyOutlinedIcon"');
-    expect(icons(render({ external: true }))).toEqual([]);
-  });
-
-  it('действие внешнего агента не требует доступности CLI в приложении', () => {
-    context.aiAccess!.agent.available = false;
-    expect(disabled(render({ external: true }))).toBe(false);
-    expect(icons(render({ external: true }))).toEqual(['codex']);
   });
 });
 

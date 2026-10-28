@@ -7,7 +7,6 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import type { BrokenPackage, PackageView } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { FILTER_EMPTY_HINTS } from '../constants';
-import { isExternalPackage } from '../decisions';
 
 export function ProductionQueue({
   packages,
@@ -56,9 +55,7 @@ export function ProductionQueue({
               {pkg.relative}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {isExternalPackage(pkg)
-                ? 'Работу с этим запросом продолжает внешний агент.'
-                : 'Кнопка «Отправить» откроет проверку стоимости и отдельное подтверждение.'}
+              Кнопка «Отправить» откроет проверку стоимости и отдельное подтверждение.
             </Typography>
             <Button size="small" startIcon={<FolderOpenIcon />} onClick={() => onOpen(pkg)} sx={{ alignSelf: 'start' }}>
               Открыть запрос

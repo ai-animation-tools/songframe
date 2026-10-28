@@ -50,8 +50,7 @@ export function ProductionPage(): ReactElement {
     visible,
     act,
     decide,
-    selectImage,
-    copy
+    selectImage
   } = useProductionPage();
 
   useLayoutEffect(() => {
@@ -143,7 +142,6 @@ export function ProductionPage(): ReactElement {
                 busy={busyFor('') || !!shot.packages.find((pkg) => busyFor(pkg.dir) || workflowBusyFor(pkg.dir))}
                 operation={operationFor()}
                 pythonAvailable={view.tools.python}
-                onCopy={copy}
                 onRegenerate={setConfirmRegenerate}
                 selectedPackage={packageSelection}
                 onOpenPackage={selectPackage}

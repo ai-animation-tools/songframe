@@ -71,7 +71,6 @@ function existingAssetFile(assetDir: string, path: string | undefined): string |
 interface Workflow {
   shot: string;
   stage: string;
-  executor?: string;
   mode?: string | null;
   wait_reason?: string | null;
   request_dir?: string | null;
@@ -184,8 +183,6 @@ export function readPackage(project: string, dir: string): PackageView | null {
   }
   return {
     dir,
-    managed: workflow.executor === 'app',
-    executor: workflow.executor === 'app' || workflow.executor === 'agent' ? workflow.executor : undefined,
     decisionToken,
     resultToken,
     relative: relative(project, dir),
@@ -287,11 +284,10 @@ function checkedPackage(project: string, packageDir: string): string {
   return realpathSync(directory);
 }
 
-/** Что ждёт от пользователя пакет приложения; пакет внешнего агента ждёт только ответа на его вопрос. */
+/** Что ждёт от пользователя пакет: вопрос, замечание без доработки, отправка или просмотр результата. */
 function packageAttention(pkg: PackageView): string | null {
   const name = basename(pkg.dir);
   if (pkg.pendingDecision) return `${name}: ${pkg.pendingDecision.question || 'вопрос ждёт ответа'}`;
-  if (pkg.executor === 'agent') return null;
   if (pkg.decision?.verdict === 'revise' && pkg.stage !== 'accepted') return `${name}: замечание записано, доработка с агентом не запущена`;
   const status = pkg.request?.attemptStatus ?? '';
   if (['request_choice', 'image_request_choice', 'ready'].includes(pkg.stage) && status === 'prepared')
@@ -485,7 +481,6 @@ export class Production {
       throw new Error('Показанный запрос изменился. Откройте подтверждение заново.');
     if (!['request_choice', 'ready', 'image_request_choice'].includes(view.stage) || view.request.attemptStatus !== 'prepared')
       throw new Error('Эта попытка уже отправлялась или не готова к отправке.');
-    if (view.executor === 'agent' || view.pendingDecision?.executor === 'agent') throw new Error('Продолжением этого пакета владеет внешний агент.');
     // Универсальная подготовка не разрешает отправить запрос через адаптер другого провайдера.
     if (!isPaidMediaProvider(view.request.provider))
       throw new Error(`Для провайдера ${view.request.provider ?? 'не указан'} не подключён исполнитель отправки.`);
@@ -553,8 +548,8 @@ export class Production {
     packageDir = this.available(project, packageDir);
     const view = readPackage(project, packageDir);
     if (decisionToken && decisionToken !== view?.decisionToken) throw new Error('Вопрос или материалы изменились. Обновите пакет перед ответом.');
-    if (view?.managed && !decisionToken) throw new Error('Обновите вопрос перед ответом.');
-    if (verdict === 'send' && view?.managed) throw new Error('Используйте отдельное подтверждение запроса со стоимостью.');
+    if (!decisionToken) throw new Error('Обновите вопрос перед ответом.');
+    if (verdict === 'send') throw new Error('Используйте отдельное подтверждение запроса со стоимостью.');
     this.operations.add(packageDir);
     try {
       const result = await runTool(
@@ -591,7 +586,6 @@ export class Production {
       rmSync(directory, { recursive: true, force: true });
       return;
     }
-    if (!view.managed) throw new Error('Пакет ведёт внешний агент: его судьбу решает агент.');
     if (view.stage === 'accepted') throw new Error('Принятый пакет не удаляется: комплект уже в assets.');
     const status = view.request?.attemptStatus ?? '';
     if (
@@ -618,7 +612,7 @@ export class Production {
   async reopenQuestion(project: string, packageDir: string): Promise<void> {
     packageDir = this.available(project, packageDir);
     const view = readPackage(project, packageDir);
-    if (!view?.managed) throw new Error('Пакет ведёт внешний агент: вопрос задаёт он.');
+    if (!view) throw new Error('Пакет не найден. Обновите страницу производства.');
     if (view.pendingDecision) throw new Error('Вопрос уже задан.');
     if (!['downloaded', 'edit_review'].includes(view.stage)) throw new Error('Вернуть можно только вопрос о полученном результате.');
     this.operations.add(packageDir);
@@ -627,7 +621,7 @@ export class Production {
         this.toolsRoot,
         project,
         'shot_workflow',
-        ['ask', '--dir', packageDir, '--stage', view.stage, '--executor', 'app'],
+        ['ask', '--dir', packageDir, '--stage', view.stage],
         undefined,
         this.jobs.launcher
       );
@@ -686,20 +680,12 @@ export class Production {
         // Новый quote и нажатие подтверждения разрешают прежний frozen request; запись вопроса не создаёт новую попытку.
         const stage = await this.jobs.launcher.run(project, 'shot_workflow', ['set-stage', '--dir', directory, 'request_choice']);
         if (stage.code !== 0) throw new Error('Не удалось возобновить отложенный пакет. Отправка не выполнялась.');
-        const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', 'request_choice', '--executor', 'app']);
+        const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', 'request_choice']);
         if (question.code !== 0) throw new Error('Не удалось записать вопрос отложенного запроса. Отправка не выполнялась.');
       }
       if (fresh.request?.kind === 'image' && !fresh.pendingDecision) {
         // Отложенный image-запрос снова подтверждается для того же SHA, а прежний park не выдаётся за send.
-        const question = await this.jobs.launcher.run(project, 'shot_workflow', [
-          'ask',
-          '--dir',
-          directory,
-          '--stage',
-          'image_request_choice',
-          '--executor',
-          'app'
-        ]);
+        const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', 'image_request_choice']);
         if (question.code !== 0) throw new Error('Не удалось записать новое подтверждение изображения. Отправка не выполнялась.');
       }
       if (fresh.pendingDecision || fresh.stage === 'ready' || fresh.request?.kind === 'image') {
@@ -743,7 +729,7 @@ export class Production {
       throw new Error('Сначала выясните исход существующей отправки; новая оплата запрещена.');
     if (currentShot.regenerateProblem) throw new Error(currentShot.regenerateProblem);
     const job = this.jobs.start('regenerate', `Подготовка повтора ${shot}`, project, [
-      { tool: 'regenerate_shot', args: [shot, '--json', '--executor', 'app', ...cliArgs(), ...pricingArgs()], label: 'новая попытка без отправки' }
+      { tool: 'regenerate_shot', args: [shot, '--json', ...cliArgs(), ...pricingArgs()], label: 'новая попытка без отправки' }
     ]);
     this.shotJobs.set(key, job.id);
     return job;
@@ -769,7 +755,7 @@ export class Production {
       },
       ...(!image
         ? [
-            { tool: 'shot_workflow', args: ['ask', '--dir', directory, '--stage', 'downloaded', '--executor', 'app'], label: 'просмотр результата' },
+            { tool: 'shot_workflow', args: ['ask', '--dir', directory, '--stage', 'downloaded'], label: 'просмотр результата' },
             { tool: 'contact_sheet', args: ['--package', directory, '--json'], required: false, label: 'техническая сводка' }
           ]
         : [])
@@ -814,7 +800,7 @@ export class Production {
     const directory = this.available(project, packageDir);
     const view = readPackage(project, directory);
     if (
-      !view?.managed ||
+      !view ||
       view.stage !== 'image_downloaded' ||
       view.pendingDecision ||
       !view.resultToken ||
@@ -834,15 +820,7 @@ export class Production {
       if (selected.code !== 0) throw new Error((selected.stderr || selected.stdout).trim() || 'Не удалось выбрать опору.');
       const current = readPackage(project, directory);
       if (current?.keyframes.length && current.keyframes.every((frame) => frame.imagePath)) {
-        const question = await this.jobs.launcher.run(project, 'shot_workflow', [
-          'ask',
-          '--dir',
-          directory,
-          '--stage',
-          'keyframes_review',
-          '--executor',
-          'app'
-        ]);
+        const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', 'keyframes_review']);
         if (question.code !== 0) throw new Error('Кандидат сохранён; не удалось записать вопрос утверждения опор.');
       }
     } finally {

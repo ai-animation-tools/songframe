@@ -36,7 +36,7 @@
     "batch": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9_.-]{1,40}$"},
     "pending_decision": {"type": ["object", "null"], "required": ["stage", "question", "options"],
       "properties": {"stage": {"type": "string"}, "question": {"type": "string"}, "options": {"type": "array", "items": {"type": "string"}},
-                     "asked_at": {"type": "string"}, "executor": {"type": "string"}}},
+                     "asked_at": {"type": "string"}}},
     "decision": {"type": ["object", "null"], "required": ["stage", "verdict"],
       "properties": {"stage": {"type": "string"}, "verdict": {"type": ["string", "null"]}, "note": {"type": "string"}, "at": {"type": "string"}}}
   }

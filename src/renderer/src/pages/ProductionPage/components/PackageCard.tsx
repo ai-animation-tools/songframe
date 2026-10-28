@@ -6,7 +6,7 @@ import { JobStatus } from '../../../components/JobStatus';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { VERDICT_LABELS } from '../constants';
-import { isExternalPackage, isQueuedPackage } from '../decisions';
+import { isQueuedPackage } from '../decisions';
 import { PackageDecision } from './PackageDecision';
 import { PackageRevisionNotice } from './PackageRevisionNotice';
 import { PackageKeyframes } from './PackageKeyframes';
@@ -62,7 +62,7 @@ export function PackageCard({
     'downloading',
     'polling'
   ].includes(pkg.request?.attemptStatus ?? '');
-  const canDiscard = !!onDiscard && !isExternalPackage(pkg) && pkg.stage !== 'accepted' && !inFlight;
+  const canDiscard = !!onDiscard && pkg.stage !== 'accepted' && !inFlight;
   const paidAttempt = !!pkg.request?.generationId || pkg.request?.creditsConsumed !== null;
   return (
     <Paper variant="outlined" sx={{ p: 2, borderColor: pending ? 'primary.main' : undefined }}>
@@ -83,20 +83,13 @@ export function PackageCard({
       <PackageRevisionNotice pkg={pkg} onOpenRevision={onOpenRevision} />
       {isQueuedPackage(pkg) ? (
         <Alert severity="info" sx={{ mb: 2 }}>
-          {isExternalPackage(pkg)
-            ? 'Запрос сохранён в очереди. Подготовку и отправку продолжает внешний агент; приложение показывает материалы и вопросы согласования.'
-            : 'Запрос сохранён в очереди, генерация не запущена. Нажмите «Отправить» ниже: приложение заново проверит стоимость и покажет подтверждение перед списанием кредитов.'}
+          Запрос сохранён в очереди, генерация не запущена. Нажмите «Отправить» ниже: приложение заново проверит стоимость и покажет подтверждение перед
+          списанием кредитов.
         </Alert>
       ) : null}
       {pkg.problems.length ? (
         <Alert severity="warning" sx={{ mb: 1 }}>
           {pkg.problems.join(' ')}
-        </Alert>
-      ) : null}
-
-      {isExternalPackage(pkg) && !pending && !returnedForRevision ? (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Пакетом управляет внешний агент. Приложение показывает материалы; отправку и сохранение продолжает агент.
         </Alert>
       ) : null}
 
@@ -127,7 +120,6 @@ export function PackageCard({
       <PackageDecision
         aiKind={pkg.request?.kind === 'image' ? 'image' : 'video'}
         sendingBlocked={['submitting', 'submission_unknown'].includes(pkg.request?.attemptStatus ?? '')}
-        external={isExternalPackage(pkg)}
         pending={pending}
         note={note}
         setNote={setNote}

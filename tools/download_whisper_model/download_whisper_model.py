@@ -25,7 +25,7 @@ def main(argv: list[str] | None = None) -> int:
         "--repository", required=True, help="Репозиторий модели, например Systran/faster-whisper-medium"
     )
     parser.add_argument("--output", required=True, type=Path, help="Абсолютный путь к папке модели")
-    parser.add_argument("--project", help="Совместимость с проектным launcher; проект не используется")
+    parser.add_argument("--project", help="Проект не используется: модель хранится вне папки клипа")
     args = parser.parse_args(argv)
     if not args.output.is_absolute():
         parser.error("--output должен содержать абсолютный путь к папке модели")

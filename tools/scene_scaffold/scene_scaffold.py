@@ -172,7 +172,7 @@ def main():
         treatment = read_json(root / TREATMENT_PATH)
         timing = read_json(root / TIMING_PATH)
         if not isinstance(treatment, dict):
-            raise ValueError(f"Нет {TREATMENT_PATH}: сначала трактовка (первый проход скилла ai-clip-scenario).")
+            raise ValueError(f"Нет {TREATMENT_PATH}: сначала трактовка (первый проход сценария).")
         if not isinstance(timing, dict) or not timing.get("lines"):
             raise ValueError(f"Нет разметки {TIMING_PATH}: сначала этап таймингов.")
         # Конец шкалы равен декодированной длительности: сборка аниматика сверяет звук с ней,

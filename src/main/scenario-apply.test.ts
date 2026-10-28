@@ -162,7 +162,6 @@ describe('публикация сценария', () => {
     write('plan/animatic/latest/full.mp4', 'Полный аниматик');
     write('plan/animatic/cards/obsolete.png', Buffer.from([0, 250]));
     write('.git/index', 'Git');
-    write('.songframe/cache/result.json', '{}');
     const visited: { name: string; args: string[] }[] = [];
     let stageUsed = '';
     const launcher = fakeLauncher((stage, name, args) => {
@@ -171,7 +170,7 @@ describe('публикация сценария', () => {
       expect(readFileSync(join(stage, 'source/heroes/hero.png'))).toEqual(read('source/heroes/hero.png'));
       expect(lstatSync(join(stage, 'source')).isSymbolicLink()).toBe(false);
       expect(readFileSync(join(stage, 'assets/shots/M01/accepted.mp4'))).toEqual(accepted);
-      for (const absent of ['source/track.mp3', 'assets/shots/M01/original.mp4', 'plan/animatic/latest/full.mp4', '.git', '.songframe'])
+      for (const absent of ['source/track.mp3', 'assets/shots/M01/original.mp4', 'plan/animatic/latest/full.mp4', '.git'])
         expect(existsSync(join(stage, absent))).toBe(false);
       visited.push({ name, args });
       if (name === 'update_scene_views' && !args.length) {

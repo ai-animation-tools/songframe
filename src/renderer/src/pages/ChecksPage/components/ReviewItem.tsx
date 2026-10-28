@@ -6,7 +6,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type { ReviewInfo } from '@shared/types';
-import { formatDate } from '../../../format';
+import { DateTime } from '../../../components/DateTime';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 
 interface ReviewItemProps {
@@ -43,7 +43,7 @@ export function ReviewItem({ review, openReview, deletingReview, setOpenReview, 
         <Chip size="small" variant="outlined" label={review.shots.join(' ')} />
         <Chip size="small" variant="outlined" label={`${(review.totalFrames / FPS).toFixed(1)} с`} />
         <Typography variant="caption" color="text.secondary">
-          {formatDate(review.createdAt)}
+          <DateTime value={review.createdAt} />
         </Typography>
         <Button
           size="small"

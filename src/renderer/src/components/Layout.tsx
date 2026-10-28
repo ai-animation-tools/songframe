@@ -22,6 +22,7 @@ import { type ReactElement, useEffect, useRef } from 'react';
 import { useApp } from '../state';
 import { useThemeMode } from '../theme';
 import { StateChip } from './StateChip';
+import { NetworkErrorMessage } from './NetworkErrorMessage';
 
 const WIDTH = 236;
 
@@ -153,6 +154,7 @@ export function Layout(): ReactElement {
       {/* Страницы перестраивают блоки по доступной ширине рабочей области, уже без бокового меню. */}
       <Box component="main" sx={{ flex: 1, minWidth: 0, p: 3, containerType: 'inline-size', containerName: 'workspace' }}>
         <Toolbar variant="dense" />
+        <NetworkErrorMessage />
         <Outlet />
       </Box>
     </Box>

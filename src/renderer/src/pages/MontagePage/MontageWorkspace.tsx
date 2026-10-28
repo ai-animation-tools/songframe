@@ -6,6 +6,7 @@ import { VideoLibrary } from '@mui/icons-material';
 import type { MontageSource } from '@shared/montage';
 import { FPS } from '@shared/video';
 import { JobStatus } from '../../components/JobStatus';
+import { DateTime } from '../../components/DateTime';
 import { ScenarioRequired } from '../../components/ScenarioRequired';
 import {
   MontageApplyDialog,
@@ -328,7 +329,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
                     >
                       {view.saved.map((saved) => (
                         <MenuItem key={saved.id} value={saved.id}>
-                          {saved.name} · {new Date(saved.updatedAt).toLocaleString('ru-RU')}
+                          {saved.name} · <DateTime value={saved.updatedAt} />
                         </MenuItem>
                       ))}
                     </Select>

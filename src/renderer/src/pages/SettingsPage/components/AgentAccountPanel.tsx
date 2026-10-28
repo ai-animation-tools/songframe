@@ -5,6 +5,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import type { AgentAccountResult } from '@shared/agents';
 import { AGENT_PROVIDERS, type AgentProvider } from '@shared/agent-providers';
+import { formatDateTime } from '../../../format';
 
 const unknown = 'Не удалось уточнить';
 const percent = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
@@ -32,8 +33,9 @@ function remaining(usedPercent: number): Pick<AccountField, 'value' | 'tone'> {
 
 function date(value: string | number | null): string {
   if (value === null || value === '') return unknown;
+  // CLI отдаёт время сброса в секундах Unix, остальное — строками ISO.
   const parsed = new Date(typeof value === 'number' ? value * 1000 : value);
-  return Number.isNaN(parsed.getTime()) ? unknown : parsed.toLocaleString('ru-RU');
+  return Number.isNaN(parsed.getTime()) ? unknown : formatDateTime(parsed);
 }
 
 interface Props {

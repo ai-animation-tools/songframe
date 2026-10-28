@@ -13,10 +13,24 @@ export function formatDuration(seconds: number | null): string {
   return `${minutes}:${rest.toFixed(1).padStart(4, '0')}`;
 }
 
-export function formatDate(iso: string): string {
-  if (!iso) return '';
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? iso : date.toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
+// Месяц в родительном падеже даёт только формат вместе с днём; части собираются без «г.» и «в».
+const DATE_TIME = new Intl.DateTimeFormat('ru-RU', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23'
+});
+
+/** Дата и время для человека в локальном часовом поясе: «28 октября 2026 11:20:30». Неразборчивое значение возвращается как есть. */
+export function formatDateTime(value: string | number | Date): string {
+  if (value === '') return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  const part = Object.fromEntries(DATE_TIME.formatToParts(date).map(({ type, value: text }) => [type, text]));
+  return `${part.day} ${part.month} ${part.year} ${part.hour}:${part.minute}:${part.second}`;
 }
 
 /** Соединяет путь проекта с относительным путём внутри него; разделитель берётся из пути проекта. */

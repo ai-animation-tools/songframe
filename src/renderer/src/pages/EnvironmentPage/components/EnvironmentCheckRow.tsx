@@ -7,6 +7,7 @@ import ScheduleIcon from '@mui/icons-material/Schedule';
 import LoginIcon from '@mui/icons-material/Login';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import type { EnvironmentCheck } from '@shared/types';
+import { OFFLINE_MESSAGE } from '../../../network';
 
 export type EnvironmentCheckCategory = 'core' | 'model' | 'external';
 export type KlingAuthStatus = 'checking' | 'authenticated' | 'unauthenticated' | 'unknown';
@@ -16,6 +17,8 @@ interface EnvironmentCheckRowProps {
   category: EnvironmentCheckCategory;
   onLoginKling?(): Promise<void>;
   klingLoggingIn?: boolean;
+  /** Без сети вход в Kling недоступен. */
+  klingOffline?: boolean;
   klingAuthStatus?: KlingAuthStatus;
   klingAuthMessage?: string;
   onCheckKlingAuth?(): Promise<void>;
@@ -27,6 +30,7 @@ export function EnvironmentCheckRow({
   category,
   onLoginKling,
   klingLoggingIn = false,
+  klingOffline = false,
   klingAuthStatus = 'unknown',
   klingAuthMessage,
   onCheckKlingAuth
@@ -106,7 +110,8 @@ export function EnvironmentCheckRow({
                   startIcon={klingAuthStatus === 'unknown' || klingAuthStatus === 'checking' ? <RefreshIcon /> : <LoginIcon />}
                   onClick={klingAuthStatus === 'unknown' ? onCheckKlingAuth : onLoginKling}
                   loading={klingLoggingIn}
-                  disabled={!completed || !check.ok || klingAuthStatus === 'checking' || (klingAuthStatus === 'unknown' && !onCheckKlingAuth)}
+                  disabled={klingOffline || !completed || !check.ok || klingAuthStatus === 'checking' || (klingAuthStatus === 'unknown' && !onCheckKlingAuth)}
+                  title={klingOffline ? OFFLINE_MESSAGE : undefined}
                   sx={{ mt: 1 }}
                 >
                   {klingAuthStatus === 'checking'

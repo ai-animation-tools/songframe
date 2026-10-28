@@ -10,7 +10,7 @@ import { PageActionBar } from '../../components/PageActionBar';
 import type { KlingAuthStatus } from './components/EnvironmentCheckRow';
 
 export function EnvironmentPage(): ReactElement {
-  const { state, refresh, notify, describeError } = useApp();
+  const { state, refresh, notify, describeError, online } = useApp();
   const [checks, setChecks] = useState<EnvironmentCheck[] | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -178,6 +178,7 @@ export function EnvironmentPage(): ReactElement {
         error={error}
         onLoginKling={loginKling}
         klingLoggingIn={klingLoggingIn}
+        klingOffline={!online}
         klingAuthStatus={klingAuthStatus}
         klingAuthMessage={klingAuthMessage}
         onCheckKlingAuth={checkKlingAuth}

@@ -6,6 +6,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import type { JobInfo, JobStepInfo } from '@shared/types';
 import { JobStatusIcon } from './JobStatusIcon';
+import { DateTime } from './DateTime';
 
 function stepColor(step: JobStepInfo): 'default' | 'success' | 'error' | 'info' {
   if (step.status === 'done') return 'success';
@@ -26,7 +27,7 @@ export function JobCard({ job, lines = 14, expanded = false }: { job: JobInfo; l
           {job.title}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {new Date(job.startedAt).toLocaleString('ru-RU')}
+          <DateTime value={job.startedAt} />
         </Typography>
         {job.status !== 'running' ? (
           <Chip

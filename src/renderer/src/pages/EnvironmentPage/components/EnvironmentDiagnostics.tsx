@@ -10,6 +10,8 @@ interface EnvironmentDiagnosticsProps {
   error: string | null;
   onLoginKling?(): Promise<void>;
   klingLoggingIn?: boolean;
+  /** Без сети вход в Kling недоступен. */
+  klingOffline?: boolean;
   klingAuthStatus?: KlingAuthStatus;
   klingAuthMessage?: string;
   onCheckKlingAuth?(): Promise<void>;
@@ -25,6 +27,7 @@ export function EnvironmentDiagnostics({
   error,
   onLoginKling,
   klingLoggingIn,
+  klingOffline,
   klingAuthStatus,
   klingAuthMessage,
   onCheckKlingAuth
@@ -78,6 +81,7 @@ export function EnvironmentDiagnostics({
         category="core"
         onLoginKling={onLoginKling}
         klingLoggingIn={klingLoggingIn}
+        klingOffline={klingOffline}
         klingAuthStatus={klingAuthStatus}
         klingAuthMessage={klingAuthMessage}
         onCheckKlingAuth={onCheckKlingAuth}
@@ -89,6 +93,7 @@ export function EnvironmentDiagnostics({
         category="external"
         onLoginKling={onLoginKling}
         klingLoggingIn={klingLoggingIn}
+        klingOffline={klingOffline}
         klingAuthStatus={klingAuthStatus}
         klingAuthMessage={klingAuthMessage}
         onCheckKlingAuth={onCheckKlingAuth}

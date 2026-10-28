@@ -4,7 +4,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { ProjectHistoryEntry, ProjectState } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { StateChip } from '../../../components';
-import { formatDate } from '../../../format';
+import { formatDateTime } from '../../../format';
 
 interface ProjectHistoryRowProps {
   entry: ProjectHistoryEntry;
@@ -49,7 +49,7 @@ export function ProjectHistoryRow({ entry, projectState, current, busy, onOpen, 
             </Box>
           }
           slotProps={{ secondary: { sx: { overflowWrap: 'anywhere' } } }}
-          secondary={`${entry.path}${entry.exists ? '' : ' (папка не найдена)'}${entry.lastOpened ? ` · открыт ${formatDate(entry.lastOpened)}` : ''}`}
+          secondary={`${entry.path}${entry.exists ? '' : ' (папка не найдена)'}${entry.lastOpened ? ` · открыт ${formatDateTime(entry.lastOpened)}` : ''}`}
         />
       </ListItemButton>
     </ListItem>

@@ -7,9 +7,9 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import BuildIcon from '@mui/icons-material/Build';
 import type { BundleInfo, JobInfo } from '@shared/types';
-import { formatDate, joinPath } from '../../../format';
+import { joinPath } from '../../../format';
 import { useApp } from '../../../state';
-import { JobStatus } from '../../../components';
+import { DateTime, JobStatus } from '../../../components';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 
 function stamp(): string {
@@ -160,7 +160,7 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
               <Chip size="small" variant="outlined" label={`${b.videos} видео из ${b.shots}`} />
               {b.copied ? <Chip size="small" variant="outlined" label="с медиа" /> : null}
               <Typography variant="caption" color="text.secondary">
-                {b.createdAt ? formatDate(b.createdAt) : ''}
+                {b.createdAt ? <DateTime value={b.createdAt} /> : ''}
               </Typography>
               <Button
                 size="small"

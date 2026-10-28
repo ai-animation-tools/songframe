@@ -27,7 +27,7 @@ export const MEDIA_PROVIDERS = {
     paid: true,
     requestParameters: true,
     defaultModelLabel: 'Автоматически по задаче',
-    capabilitiesNote: 'Эта проверка не подтверждает выполнение генерации. Параметры и доступ к модели проверяют перед запросом.'
+    capabilitiesNote: 'Проверка не запускает генерацию и не тратит кредиты. Подойдёт ли модель для конкретного плана, приложение проверит перед запросом.'
   },
   codex: {
     title: 'Codex',
@@ -36,7 +36,7 @@ export const MEDIA_PROVIDERS = {
     paid: false,
     requestParameters: false,
     defaultModelLabel: 'Как указано в настройках Codex',
-    capabilitiesNote: 'Проверка не создаёт изображений. Доступность встроенного генератора выясняется при согласованной генерации.'
+    capabilitiesNote: 'Проверка не создаёт изображений. Сможет ли Codex их нарисовать, станет ясно при первой генерации.'
   }
 } as const satisfies Record<string, MediaProviderInfo>;
 

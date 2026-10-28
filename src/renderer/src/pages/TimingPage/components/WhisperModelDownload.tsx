@@ -6,6 +6,7 @@ import type { JobInfo } from '@shared/types';
 import type { WhisperModelId } from '@shared/whisper-models';
 import { JobStatus } from '../../../components';
 import { useApp } from '../../../state';
+import { OFFLINE_MESSAGE } from '../../../network';
 
 interface Props {
   model: WhisperModelId;
@@ -16,7 +17,7 @@ interface Props {
 const appliedJobs = new Set<string>();
 
 export function WhisperModelDownload({ model, onDownloaded }: Props): ReactElement {
-  const { describeError } = useApp();
+  const { describeError, online } = useApp();
   const [job, setJob] = useState<JobInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -96,9 +97,20 @@ export function WhisperModelDownload({ model, onDownloaded }: Props): ReactEleme
 
   return (
     <Stack spacing={1}>
-      <Button variant="contained" startIcon={<Download />} onClick={download} disabled={loading || starting || running} sx={{ alignSelf: 'flex-start' }}>
+      <Button
+        variant="contained"
+        startIcon={<Download />}
+        onClick={download}
+        disabled={!online || loading || starting || running}
+        sx={{ alignSelf: 'flex-start' }}
+      >
         {loading ? 'Проверяем загрузки' : starting || running ? `Скачивается ${model}` : `Скачать модель ${model}`}
       </Button>
+      {!online && !running ? (
+        <Typography variant="caption" color="error">
+          {OFFLINE_MESSAGE}
+        </Typography>
+      ) : null}
       <Typography variant="caption" color="text.secondary">
         Повторная загрузка использует уже скачанные файлы. Диалог можно закрыть: загрузка продолжится. После завершения папка выберется автоматически.
       </Typography>

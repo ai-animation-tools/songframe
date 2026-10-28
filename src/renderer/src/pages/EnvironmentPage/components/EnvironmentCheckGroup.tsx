@@ -9,6 +9,8 @@ interface EnvironmentCheckGroupProps {
   category: EnvironmentCheckCategory;
   onLoginKling?(): Promise<void>;
   klingLoggingIn?: boolean;
+  /** Без сети вход в Kling недоступен. */
+  klingOffline?: boolean;
   klingAuthStatus?: KlingAuthStatus;
   klingAuthMessage?: string;
   onCheckKlingAuth?(): Promise<void>;
@@ -21,6 +23,7 @@ export function EnvironmentCheckGroup({
   category,
   onLoginKling,
   klingLoggingIn,
+  klingOffline,
   klingAuthStatus,
   klingAuthMessage,
   onCheckKlingAuth
@@ -43,6 +46,7 @@ export function EnvironmentCheckGroup({
             category={category}
             onLoginKling={onLoginKling}
             klingLoggingIn={klingLoggingIn}
+            klingOffline={klingOffline}
             klingAuthStatus={klingAuthStatus}
             klingAuthMessage={klingAuthMessage}
             onCheckKlingAuth={onCheckKlingAuth}

@@ -4,7 +4,8 @@ import type { ReactElement, RefObject } from 'react';
 import { Box, Button, Paper, Tooltip, Typography } from '@mui/material';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import type { AnimaticShot, AnimaticView } from '@shared/types';
-import { formatClock, formatDate } from '../../../format';
+import { formatClock } from '../../../format';
+import { DateTime } from '../../../components/DateTime';
 import { MEDIA_COLORS, MEDIA_LABELS } from '../media';
 
 export function AnimaticPlayer({
@@ -77,7 +78,7 @@ export function AnimaticPlayer({
       <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center', flexWrap: 'wrap' }}>
         <Typography variant="caption" color="text.secondary">
           {formatClock(time)} / {formatClock(duration)} · {shots.length} планов: {built.counts.video} анимация, {built.counts.keyframes} опоры,{' '}
-          {built.counts.cards} карточки · собрано {formatDate(built.builtAt)}
+          {built.counts.cards} карточки · собрано <DateTime value={built.builtAt} />
         </Typography>
         <Box sx={{ flex: 1 }} />
         <Button size="small" startIcon={<FolderOpenIcon />} onClick={onOpenFolder}>

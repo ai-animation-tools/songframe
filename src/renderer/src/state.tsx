@@ -5,6 +5,7 @@ import { Alert, Snackbar } from '@mui/material';
 import type { AppState, ProjectStatus } from '@shared/types';
 import type { AgentSettings } from '@shared/agents';
 import type { AiAccess } from '@shared/ai-access';
+import { offlineAccess, useOnline } from './network';
 
 type Severity = 'success' | 'info' | 'warning' | 'error';
 
@@ -12,7 +13,10 @@ interface AppContextValue {
   state: AppState | null;
   status: ProjectStatus | null;
   loading: boolean;
+  /** Без сети содержит причину «Нет подключения к сети» для всех исполнителей. */
   aiAccess: AiAccess | null;
+  /** Компьютер подключён к сети; без неё сетевые действия заблокированы. */
+  online: boolean;
   refreshAiAccess(): Promise<void>;
   /** Немедленно блокирует AI-действия перед сохранением новых настроек. */
   invalidateAiAccess(): void;
@@ -43,6 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
   const [toast, setToast] = useState<{ message: string; severity: Severity } | null>(null);
 
   const notify = useCallback((message: string, severity: Severity = 'info') => setToast({ message, severity }), []);
+  const online = useOnline();
 
   const invalidateAiAccess = useCallback(() => {
     scope.current += 1;
@@ -108,7 +113,8 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
       state,
       status,
       loading,
-      aiAccess,
+      aiAccess: online ? aiAccess : offlineAccess(aiAccess),
+      online,
       refreshAiAccess: refresh,
       invalidateAiAccess,
       agentProvider,
@@ -119,8 +125,15 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
       notify,
       describeError
     }),
-    [state, status, loading, aiAccess, agentProvider, setAgentProvider, invalidateAiAccess, refresh, openProject, closeProject, notify]
+    [state, status, loading, aiAccess, online, agentProvider, setAgentProvider, invalidateAiAccess, refresh, openProject, closeProject, notify]
   );
+
+  // Проверки доступности, сделанные без сети, устарели: после восстановления связи повторяем их.
+  const wasOnline = useRef(online);
+  useEffect(() => {
+    if (online && !wasOnline.current) void refresh().catch(() => {});
+    wasOnline.current = online;
+  }, [online, refresh]);
 
   return (
     <AppContext.Provider value={value}>

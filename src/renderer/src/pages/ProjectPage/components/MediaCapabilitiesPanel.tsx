@@ -1,12 +1,12 @@
 /** Проверка возможностей читает сведения провайдера и не отправляет генерацию. */
 
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Stack, Typography } from '@mui/material';
+import { Alert, Button, LinearProgress, Stack, Typography } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
-import { mediaProviderInfo, type MediaCapabilities } from '@shared/media-providers';
-
-// Неизвестный провайдер получает общее предупреждение: проверка возможностей не доказывает выполнение генерации.
-const DEFAULT_CAPABILITIES_NOTE = 'Эта проверка не подтверждает выполнение генерации. Параметры и доступ к модели проверяют перед запросом.';
+import type { MediaCapabilities } from '@shared/media-providers';
+import { capabilitiesFailed, capabilitiesNote, capabilitiesSummary } from './capabilitiesSummary';
+import { DateTime } from '../../../components/DateTime';
+import { useApp } from '../../../state';
 
 export function MediaCapabilitiesPanel({
   project,
@@ -23,6 +23,7 @@ export function MediaCapabilitiesPanel({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const request = useRef(0);
+  const { online } = useApp();
 
   const check = useCallback(async (): Promise<void> => {
     const current = ++request.current;
@@ -43,56 +44,53 @@ export function MediaCapabilitiesPanel({
 
   useEffect(() => {
     // Подсказки заполняются при открытии карточки. Поздний ответ другой формы не меняет текущие варианты.
+    // Без сети проверка не запускается; при восстановлении связи она выполнится сама.
     setResult(null);
-    if (provider) void check();
+    setError(null);
+    if (provider && online) void check();
     return () => {
       request.current += 1;
     };
-  }, [provider, check]);
+  }, [provider, check, online]);
+
+  // Проверка идёт сама при открытии и смене провайдера; повтор нужен только после ошибки, недоступности или неполного ответа.
+  const failed = capabilitiesFailed(result, error);
 
   return (
     <Stack spacing={1} sx={{ minWidth: 0 }}>
       <Typography variant="caption" color="text.secondary">
-        Читает у текущего провайдера доступные модели и параметры и обновляет подсказки. Не сохраняет форму, не запускает генерацию и не списывает кредиты.
+        Модели и параметры провайдера проверяются автоматически при открытии и смене провайдера. Настройки не сохраняются, генерация не запускается.
       </Typography>
+      {busy && <LinearProgress aria-label="Проверяем возможности провайдера" />}
+      {!online && provider ? <Alert severity="info">Возможности провайдера проверятся после подключения к сети.</Alert> : null}
       {error && <Alert severity="error">Не удалось проверить возможности: {error}</Alert>}
       {result && (
         <Alert severity={result.available && result.problems.length === 0 ? 'info' : 'warning'}>
-          <Typography variant="body2">
-            {result.available
-              ? result.problems.length > 0
-                ? 'Получена только часть возможностей провайдера. Обновите возможности.'
-                : 'Провайдер доступен.'
-              : 'Провайдер недоступен.'}
-          </Typography>
+          <Typography variant="body2">{capabilitiesSummary(result)}</Typography>
           {result.problems.map((problem, index) => (
             <Typography key={`${index}:${problem}`} variant="body2">
               {problem}
             </Typography>
           ))}
-          {!result.generationVerified && (
-            <Typography variant="body2">{mediaProviderInfo(result.provider, result.kind)?.capabilitiesNote ?? DEFAULT_CAPABILITIES_NOTE}</Typography>
-          )}
-          {result.models.length > 0 && (
-            <Typography variant="body2">Модели: {result.models.map((model) => `${model.id} (${model.command})`).join(', ')}.</Typography>
-          )}
+          {!result.generationVerified && <Typography variant="body2">{capabilitiesNote(result)}</Typography>}
           <Typography variant="caption" color="text.secondary">
-            Проверено: {result.checkedAt}
+            Проверено: <DateTime value={result.checkedAt} />
           </Typography>
         </Alert>
       )}
-      <Button
-        startIcon={<SyncIcon />}
-        variant="contained"
-        size="small"
-        disabled={busy || !provider}
-        onClick={() => {
-          void check();
-        }}
-        sx={{ alignSelf: 'start' }}
-      >
-        {busy ? 'Проверяем возможности' : result ? 'Обновить возможности' : 'Проверить возможности'}
-      </Button>
+      {failed && !busy && provider && online ? (
+        <Button
+          startIcon={<SyncIcon />}
+          variant="outlined"
+          size="small"
+          onClick={() => {
+            void check();
+          }}
+          sx={{ alignSelf: 'start' }}
+        >
+          Повторить проверку
+        </Button>
+      ) : null}
     </Stack>
   );
 }

@@ -5,6 +5,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import { AgentDiagnostics, AgentInstructions, AgentSettingsForm } from './components';
 import { useAgentSettings } from './useAgentSettings';
 import { AgentButton } from '../../components';
+import { useApp } from '../../state';
 import { useAgentAccount } from './useAgentAccount';
 import { useAgentModels } from './useAgentModels';
 import { useInstalledAgents } from './useInstalledAgents';
@@ -12,9 +13,12 @@ import { AgentAccountPanel } from './components/AgentAccountPanel';
 
 export function SettingsPage(): ReactElement {
   const form = useAgentSettings();
+  const { online } = useApp();
   const accountReady = !form.loading && !form.loadError && !form.profileLoading && !form.profileError;
-  const account = useAgentAccount(form.settings, accountReady);
-  const models = useAgentModels(form.settings?.provider, accountReady);
+  // Аккаунт и каталог моделей читаются у сервисов агента: без сети не запрашиваем, после подключения прочитаем снова.
+  const networkReady = accountReady && online;
+  const account = useAgentAccount(form.settings, networkReady);
+  const models = useAgentModels(form.settings?.provider, networkReady);
   const installed = useInstalledAgents();
   return (
     <Stack spacing={2} sx={{ minWidth: 0 }}>
@@ -69,7 +73,7 @@ export function SettingsPage(): ReactElement {
                   result={account.result}
                   loading={account.loading}
                   failed={account.failed}
-                  disabled={form.saving}
+                  disabled={form.saving || !online}
                   onRefresh={account.refresh}
                 />
               )}

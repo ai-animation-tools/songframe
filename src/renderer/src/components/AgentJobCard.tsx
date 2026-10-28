@@ -7,6 +7,7 @@ import { AgentButton } from './AgentButton';
 import StopIcon from '@mui/icons-material/Stop';
 import type { AiActionKind } from '@shared/ai-access';
 import { AgentIcon } from './AgentIcon';
+import { DateTime } from './DateTime';
 
 const LABELS = { running: 'Выполняется', completed: 'Завершено', failed: 'Ошибка', cancelled: 'Остановлено', interrupted: 'Прервано' };
 
@@ -35,7 +36,7 @@ export function AgentJobCard({
         </Typography>
         <Chip size="small" label={LABELS[job.status]} color={job.status === 'completed' ? 'success' : job.status === 'failed' ? 'error' : 'default'} />
         <Typography variant="caption" color="text.secondary">
-          <AgentIcon provider={job.provider} size={16} /> {agentTitle(job.provider)} · {new Date(job.startedAt).toLocaleString('ru-RU')}
+          <AgentIcon provider={job.provider} size={16} /> {agentTitle(job.provider)} · <DateTime value={job.startedAt} />
         </Typography>
         <Box sx={{ flex: 1 }} />
         {['failed', 'cancelled', 'interrupted'].includes(job.status) && (

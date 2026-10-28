@@ -16,7 +16,6 @@ function fixture(image: { provider: string; model?: string }) {
   writeFileSync(join(root, 'plan/project.json'), JSON.stringify({ name: 'Тест', generation: { image: { ...image, provider_selected: true }, video: null } }));
   const settings = new SettingsStore(join(root, 'local'));
   settings.saveAgent({ provider: 'claude', model: 'text-model' });
-  settings.saveImageAgent({ provider: 'codex', model: 'global-image-model', executablePath: '/tmp/codex-test' });
   return { input: { project: root, workDir: join(root, 'temporary'), prompt: 'Та же обложка', signal: new AbortController().signal }, settings };
 }
 
@@ -71,11 +70,17 @@ describe('выбор провайдера обложки', () => {
     const codex = vi.fn(() => generate);
     const kling = vi.fn();
     const prepared = await prepareProjectCover(input, { settings, kling, codex });
-    expect(codex).toHaveBeenCalledWith({ provider: 'codex', executablePath: '/tmp/codex-test', model: model || undefined });
+    expect(codex).toHaveBeenCalledWith({ provider: 'codex', model: model || undefined });
     expect(prepared.model).toBe(model || null);
     expect(prepared.requestSha).toMatch(/^[a-f0-9]{64}$/);
-    settings.saveImageAgent({ provider: 'codex', model: 'changed-after-prepare' });
+    // Правка проекта после подготовки не меняет уже закреплённый запрос.
+    writeFileSync(
+      join(input.project, 'plan/project.json'),
+      JSON.stringify({ generation: { image: { provider: 'codex', model: 'changed-after-prepare', provider_selected: true } } })
+    );
     await prepared.generate(input.signal);
+    expect(prepared.model).toBe(model || null);
+    expect(codex).toHaveBeenCalledTimes(1);
     expect(generate).toHaveBeenCalledWith(input);
     expect(kling).not.toHaveBeenCalled();
   });

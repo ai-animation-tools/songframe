@@ -709,8 +709,8 @@ describe('провайдеры медиа', () => {
       generationVerified: false,
       problems: ['Каталог моделей агента Codex сейчас недоступен. Повторите проверку возможностей.']
     });
-    options.checkCodex = async () => ({ availability: 'not_found', authorization: 'unknown', message: 'CLI не найден.' });
-    expect(await provider.capabilities(project)).toMatchObject({ available: false, models: [], generationVerified: false, problems: ['CLI не найден.'] });
+    options.checkCodex = async () => ({ availability: 'not_found', authorization: 'unknown', message: 'Codex не найден.' });
+    expect(await provider.capabilities(project)).toMatchObject({ available: false, models: [], generationVerified: false, problems: ['Codex не найден.'] });
     expect(options.listCodexModels).toHaveBeenCalledTimes(1);
   });
 

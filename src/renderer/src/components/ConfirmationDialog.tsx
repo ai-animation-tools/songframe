@@ -1,6 +1,9 @@
 import { useId, type ReactElement, type ReactNode } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import type { AgentProvider } from '@shared/agent-providers';
+import type { AiActionKind } from '@shared/ai-access';
+import { AgentButton } from './AgentButton';
 
 interface Props {
   open: boolean;
@@ -10,7 +13,10 @@ interface Props {
   onClose(): void;
   onConfirm(): void;
   confirmLabel: string;
-  confirmIcon: ReactNode;
+  /** Обычное подтверждение; для действия агента вместо значка передаётся confirmAgent. */
+  confirmIcon?: ReactNode;
+  /** Подтверждение выполняет агент: кнопка становится AgentButton с его знаком. */
+  confirmAgent?: { provider?: AgentProvider; aiKind?: AiActionKind; external?: boolean };
   confirmColor?: 'primary' | 'error' | 'warning';
   confirmDisabled?: boolean;
   cancelDisabled?: boolean;
@@ -30,6 +36,7 @@ export function ConfirmationDialog({
   onConfirm,
   confirmLabel,
   confirmIcon,
+  confirmAgent,
   confirmColor = 'primary',
   confirmDisabled = false,
   cancelDisabled = false,
@@ -58,9 +65,15 @@ export function ConfirmationDialog({
           {cancelLabel}
         </Button>
         {extraActions}
-        <Button startIcon={confirmIcon} color={confirmColor} variant="contained" disabled={confirmDisabled} onClick={onConfirm}>
-          {confirmLabel}
-        </Button>
+        {confirmAgent ? (
+          <AgentButton {...confirmAgent} color={confirmColor} variant="contained" disabled={confirmDisabled} onClick={onConfirm}>
+            {confirmLabel}
+          </AgentButton>
+        ) : (
+          <Button startIcon={confirmIcon} color={confirmColor} variant="contained" disabled={confirmDisabled} onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

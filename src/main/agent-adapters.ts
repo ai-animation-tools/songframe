@@ -1,10 +1,13 @@
 /** Адаптеры знают только аргументы CLI и формат событий; жизненным циклом владеет AgentManager.
  * Новый CLI подключается записью в shared/agent-providers.ts, описанием проверки в agent-probes.ts и адаптером здесь. */
-import type { AgentAccountResult, AgentCheckResult, AgentSettings } from '@shared/agents';
+import type { AgentAccountResult, AgentCheckResult, AgentModel, AgentSettings } from '@shared/agents';
 import type { AgentProvider } from '@shared/agent-providers';
 import { checkAgent } from './agents';
 import { claudeAccount, codexAccount } from './agent-account';
 import { AgentError, providerFailure } from './agent-protocol';
+import { readClaudeModels } from './claude-account-transport';
+import type { AccountProcessOptions } from './codex-account-transport';
+import { readCodexAgentModels } from './codex-models';
 
 export type AgentUpdate =
   | { type: 'session'; id: string }
@@ -20,6 +23,8 @@ export interface AgentAdapter {
   readonly provider: AgentProvider;
   check(config: AgentSettings): Promise<AgentCheckResult>;
   account(config: AgentSettings): Promise<AgentAccountResult>;
+  /** Каталог моделей найденного CLI служебным вызовом, без хода модели. */
+  models(executable: string, options: AccountProcessOptions): Promise<AgentModel[]>;
   /** Неподдерживаемый режим или версия завершаются AgentError до запуска процесса. */
   args(config: AgentSettings, version: string, mode: AgentRunMode): string[];
   parse(value: Record<string, unknown>): AgentUpdate[];
@@ -38,12 +43,15 @@ function session(value: unknown): AgentUpdate[] {
   const id = text(value);
   return /^[\w.-]{1,128}$/.test(id) ? [{ type: 'session', id }] : [];
 }
-const unsupportedMode = (): AgentError => new AgentError('UNSUPPORTED_VERSION', 'CLI не поддерживает штатный режим создания кандидатов.');
+const unsupportedMode = (): AgentError => new AgentError('UNSUPPORTED_VERSION', 'Выбранный агент не поддерживает штатный режим создания кандидатов.');
 
 function supported(version: string, major: number, minor: number, patch: number): void {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
   if (!match || +match[1] !== major || +match[2] < minor || (+match[2] === minor && +match[3] < patch)) {
-    throw new AgentError('UNSUPPORTED_VERSION', 'Версия CLI не поддерживает подтверждённый контракт запуска. Обновите CLI или выберите совместимую версию.');
+    throw new AgentError(
+      'UNSUPPORTED_VERSION',
+      'Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию.'
+    );
   }
 }
 
@@ -56,6 +64,9 @@ export class ClaudeAdapter implements AgentAdapter {
   }
   account(config: AgentSettings): Promise<AgentAccountResult> {
     return claudeAccount(config);
+  }
+  models(executable: string, options: AccountProcessOptions): Promise<AgentModel[]> {
+    return readClaudeModels(executable, options);
   }
   args(config: AgentSettings, version: string, mode: AgentRunMode): string[] {
     supported(version, 2, 1, 0);
@@ -130,6 +141,9 @@ export class CodexAdapter implements AgentAdapter {
   account(config: AgentSettings): Promise<AgentAccountResult> {
     return codexAccount(config);
   }
+  models(executable: string, options: AccountProcessOptions): Promise<AgentModel[]> {
+    return readCodexAgentModels(executable, options);
+  }
   args(config: AgentSettings, version: string, mode: AgentRunMode): string[] {
     supported(version, 0, 159, 0);
     return [
@@ -160,7 +174,7 @@ export class CodexAdapter implements AgentAdapter {
         if (value.type === 'item.completed') this.completedMessage = message;
         const previous = this.messages.get(id) ?? '';
         this.messages.set(id, message);
-        if (!message.startsWith(previous)) throw new AgentError('PROTOCOL_ERROR', 'CLI изменил уже полученный текст сообщения.');
+        if (!message.startsWith(previous)) throw new AgentError('PROTOCOL_ERROR', 'Codex изменил уже полученный текст сообщения.');
         const delta = message.slice(previous.length);
         return delta ? [{ type: 'text_delta', text: `${!previous && this.messages.size > 1 ? '\n' : ''}${delta}` }] : [];
       }

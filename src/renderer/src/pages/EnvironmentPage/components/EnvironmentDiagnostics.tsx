@@ -84,7 +84,7 @@ export function EnvironmentDiagnostics({
       />
       <EnvironmentCheckGroup title="Отдельно устанавливаемая модель" items={checks.filter((check) => check.id === 'whisper-model')} category="model" />
       <EnvironmentCheckGroup
-        title="Внешние CLI — по необходимости"
+        title="Внешние программы — по необходимости"
         items={externalChecks}
         category="external"
         onLoginKling={onLoginKling}

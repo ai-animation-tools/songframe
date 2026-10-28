@@ -50,13 +50,13 @@ async function prepare(config: AgentSettings, options: AgentAccountOptions): Pro
   };
 }
 
-const PARTIAL_MESSAGE = 'Часть данных аккаунта недоступна в ответе CLI. Проверьте подключение и актуальность CLI.';
+const PARTIAL_MESSAGE = 'Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии.';
 
 export async function claudeAccount(config: AgentSettings, options: AgentAccountOptions = {}): Promise<AgentAccountResult> {
   const result = await prepare(config, options);
   const path = result.diagnostic.executablePath;
   if (!path || result.diagnostic.availability !== 'available') return result;
-  if (!supported(result.diagnostic.version, 2, 1)) return { ...result, message: 'Данные аккаунта недоступны для этой версии CLI.' };
+  if (!supported(result.diagnostic.version, 2, 1)) return { ...result, message: 'Данные аккаунта недоступны для этой версии Claude Code.' };
   if (result.diagnostic.authorization === 'unauthenticated') return result;
   const home = options.home ?? homedir();
   let canReadSubscriptionUsage = false;
@@ -155,14 +155,14 @@ export async function codexAccount(config: AgentSettings, options: AgentAccountO
   const result = await prepare(config, options);
   const path = result.diagnostic.executablePath;
   if (!path || result.diagnostic.availability !== 'available') return result;
-  if (!supported(result.diagnostic.version, 0, 159)) return { ...result, message: 'Данные аккаунта недоступны для этой версии CLI.' };
+  if (!supported(result.diagnostic.version, 0, 159)) return { ...result, message: 'Данные аккаунта недоступны для этой версии Codex.' };
   if (result.diagnostic.authorization === 'unauthenticated') return result;
   const home = options.home ?? homedir();
   const snapshot = await readCodexAccount(path, { ...options, home, env: agentEnvironment(options.env, home) });
   const accountResponse = object(snapshot.account);
   // login status подтверждает локальные учётные данные; явный ответ сервера об отсутствии аккаунта важнее этого кэша.
   if (accountResponse.account === null && accountResponse.requiresOpenaiAuth === true) {
-    const message = 'CLI сообщает, что вход не выполнен. Выполните codex login в терминале.';
+    const message = 'Codex сообщает, что вход не выполнен. Выполните codex login в терминале.';
     return { ...result, diagnostic: { ...result.diagnostic, authorization: 'unauthenticated', message }, message };
   }
   const account = object(accountResponse.account);
@@ -174,13 +174,13 @@ export async function codexAccount(config: AgentSettings, options: AgentAccountO
   } else if (method === 'apiKey') result.authenticationMethod = 'API key';
   else if (method === 'amazonBedrock') result.authenticationMethod = 'Amazon Bedrock';
   else {
-    result.diagnostic = { ...result.diagnostic, authorization: 'unknown', message: 'Не удалось подтвердить вход по ответу сервера CLI.' };
+    result.diagnostic = { ...result.diagnostic, authorization: 'unknown', message: 'Не удалось подтвердить вход по ответу Codex.' };
     result.message = PARTIAL_MESSAGE;
   }
   Object.assign(result, codexLimits(object(snapshot.rateLimits)));
   const usageAllowed = object(snapshot.rateLimits).ordinaryUsageAllowed;
   result.usageAllowed = typeof usageAllowed === 'boolean' ? usageAllowed : null;
-  if (usageAllowed === false) result.message = 'CLI сообщает об ограничении использования.';
+  if (usageAllowed === false) result.message = 'Codex сообщает об ограничении использования.';
   if (snapshot.partial || !snapshot.rateLimits || !snapshot.account) result.message = PARTIAL_MESSAGE;
   return result;
 }

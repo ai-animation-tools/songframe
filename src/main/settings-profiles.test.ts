@@ -12,8 +12,8 @@ beforeEach(() => {
   store = new SettingsStore(directory);
 });
 afterEach(() => rmSync(directory, { recursive: true, force: true }));
-const claude = { provider: 'claude' as const, executablePath: '/fixture/claude cli', model: 'claude-personal' };
-const codex = { provider: 'codex' as const, executablePath: '/fixture/codex cli', model: 'codex-personal' };
+const claude = { provider: 'claude' as const, model: 'claude-personal' };
+const codex = { provider: 'codex' as const, model: 'codex-personal' };
 
 function saveRaw(value: unknown): void {
   writeFileSync(join(directory, 'settings.json'), JSON.stringify(value));
@@ -72,40 +72,22 @@ describe('независимые профили Claude и Codex', () => {
     expect(store.getProviderAgent('claude')).toBeNull();
   });
 
-  it('сохраняет отдельные модели текстового Codex и Codex изображений, включая перезапуск', () => {
-    const image = { ...codex, executablePath: '/fixture/image codex', model: 'codex-image-personal' };
-    store.saveAgent(codex);
-    store.saveImageAgent(image);
-    expect(store.getAgent()).toEqual(codex);
+  it('отбрасывает лишние поля профиля, включая прежний путь CLI, при чтении и сохранении', () => {
+    saveRaw({ agent: { ...claude, executablePath: '/fixture/claude cli' }, agentProfiles: { codex: { ...codex, executablePath: '/fixture/codex cli' } } });
+    expect(store.getAgent()).toEqual(claude);
     expect(store.getProviderAgent('codex')).toEqual(codex);
-    expect(store.getImageAgent()).toEqual(image);
-    store.saveAgent({ ...codex, model: 'обновлённая текстовая модель' });
-    expect(store.getImageAgent()).toEqual(image);
-    const reopened = new SettingsStore(directory);
-    expect(reopened.getAgent()?.model).toBe('обновлённая текстовая модель');
-    expect(reopened.getImageAgent()).toEqual(image);
+    expect(store.saveProviderAgent({ ...codex, executablePath: '/fixture/другой codex' })).toEqual(codex);
+    expect(raw()).toMatchObject({ agent: claude, agentProfiles: { codex } });
+    expect(JSON.stringify(raw())).not.toContain('executablePath');
   });
 
-  it('отклоняет Claude как профиль изображений, не портя настройки и исходный файл', () => {
-    store.saveAgent(codex);
-    const before = readFileSync(join(directory, 'settings.json'), 'utf8');
-    expect(() => store.saveImageAgent(claude)).toThrow(/Codex/);
-    expect(readFileSync(join(directory, 'settings.json'), 'utf8')).toBe(before);
-    saveRaw({ agent: codex, imageAgent: claude, custom: 'сохранить' });
-    const malformed = readFileSync(join(directory, 'settings.json'), 'utf8');
-    expect(() => store.getImageAgent()).toThrow(/Неверный формат агента/);
-    expect(readFileSync(join(directory, 'settings.json'), 'utf8')).toBe(malformed);
-  });
-
-  it('использует legacy профиль Codex для изображений только пока отдельный профиль ещё не задан', () => {
+  it('профиль изображений всегда Codex без модели текстового агента', () => {
     expect(store.getImageAgent()).toEqual({ provider: 'codex' });
     store.saveAgent(claude);
     expect(store.getImageAgent()).toEqual({ provider: 'codex' });
-    store.saveProviderAgent(codex);
-    expect(store.getImageAgent()).toEqual(codex);
-    store.saveImageAgent({ ...codex, model: 'отдельная модель изображений' });
-    expect(store.getImageAgent().model).toBe('отдельная модель изображений');
-    expect(store.getAgent()).toEqual(claude);
+    store.saveAgent(codex);
+    expect(store.getImageAgent()).toEqual({ provider: 'codex' });
+    expect(store.getAgent()).toEqual(codex);
   });
 
   it.each([{ codex: claude }, { claude: codex }, { unknown: codex }, { codex: null }, []])(

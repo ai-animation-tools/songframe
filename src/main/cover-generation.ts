@@ -65,7 +65,6 @@ export function createCodexCoverRunner(
     if (signal.aborted) throw new Error('Генерация обложки остановлена.');
     const root = dirname(dirname(workDir));
     const temporarySettings = new SettingsStore(root);
-    temporarySettings.saveImageAgent(config);
     mkdirSync(join(root, 'plan'), { recursive: true });
     writeFileSync(join(root, 'plan/project.json'), '{}');
     const manager = createManager(temporarySettings);
@@ -77,7 +76,8 @@ export function createCodexCoverRunner(
     try {
       const job = manager.startImages(
         { project: root, task: 'Обложка проекта', prompt: IMAGE_PROMPT, context: JSON.stringify({ userPrompt: prompt }) },
-        workDir
+        workDir,
+        config.model
       );
       const completed = await new Promise<AgentJob>((finish) => {
         const check = (): void => {

@@ -17,7 +17,7 @@ export function AgentInstructions({ provider, result }: { provider: AgentProvide
   return (
     <Stack spacing={1}>
       {missing ? (
-        <Typography variant="body2">Установите CLI по официальной инструкции или выберите установленный файл выше.</Typography>
+        <Typography variant="body2">Установите {info.title} по официальной инструкции и повторите проверку.</Typography>
       ) : needsLogin ? (
         <Typography variant="body2">
           Выполните вход в {terminal}: <code>{info.loginCommand}</code>.

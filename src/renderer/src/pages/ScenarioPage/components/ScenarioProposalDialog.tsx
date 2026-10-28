@@ -49,7 +49,7 @@ export function ScenarioProposalDialog({
       <DialogContent dividers>
         <Stack spacing={3}>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <AgentIcon provider={provider} />
+            {provider ? <AgentIcon provider={provider} /> : null}
             <Typography fontWeight={600}>Предложение агента · {PASS_LABELS[proposal.pass]}</Typography>
           </Stack>
           <Alert severity="info">Предложение ещё не записано в проект. Изменённые поля выделены фоном.</Alert>

@@ -103,7 +103,6 @@ describe('Временная генерация обложки', () => {
 
   it.each(['codex', 'kling'])('без глобального агента не создаёт сессию или временную папку для %s', (provider) => {
     writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider, provider_selected: true } } }));
-    settings.saveImageAgent({ provider: 'codex', model: 'image-profile' });
     settings.saveAgent(null);
     const prepareCandidate = vi.fn();
     const createManager = vi.fn();
@@ -170,8 +169,14 @@ describe('Временная генерация обложки', () => {
   });
 
   it('сохраняет фиксированный Codex промпт и пользовательский контекст при повторе; всё состояние находится в tmp', async () => {
+    writeFileSync(
+      join(project, 'plan/project.json'),
+      JSON.stringify({ generation: { image: { provider: 'codex', model: ' cover-model ', provider_selected: true } } })
+    );
+    settings.saveAgent({ provider: 'codex', model: 'text-model' });
     const initialSettings = readFileSync(join(settings.localDir, 'settings.json'), 'utf8');
     const inputs: AgentStartInput[] = [];
+    const models: Array<string | undefined> = [];
     const workDirs: string[] = [];
     const value = create({
       createManager: (temporarySettings) => {
@@ -179,8 +184,9 @@ describe('Временная генерация обложки', () => {
         expect(temporarySettings.getImageAgent()).toEqual(settings.getImageAgent());
         let job: AgentJob;
         return {
-          startImages: (input, workDir) => {
+          startImages: (input, workDir, model) => {
             inputs.push(input);
+            models.push(model);
             workDirs.push(workDir);
             png(join(workDir, 'cover.png'));
             job = { id: 'job', status: 'completed', exitCode: 0, result: '{"path":"cover.png"}' } as AgentJob;
@@ -201,6 +207,8 @@ describe('Временная генерация обложки', () => {
     expect(existsSync(first)).toBe(false);
     await vi.waitFor(() => expect(value.view(id).status).toBe('ready'));
     expect(inputs).toHaveLength(2);
+    // Временный проект обложки не содержит настроек: модель передаётся явно, без модели текстового агента.
+    expect(models).toEqual(['cover-model', 'cover-model']);
     expect(inputs[0].prompt).toBe(inputs[1].prompt);
     expect(inputs[0].prompt).toContain('image_gen');
     expect(inputs[0].context).toBe(JSON.stringify({ userPrompt: '  Ёж у костра  ' }));

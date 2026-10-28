@@ -35,7 +35,7 @@ export function ImageGenerationSettings({
   // Codex возвращает собственный порядок каталога агента; рейтинг моделей Kling к нему не относится.
   const availableModels = value?.provider === 'codex' ? [...new Set(models.map((model) => model.id))] : modelOptions(models, 'image');
   const modelChoices = ['', ...availableModels];
-  const defaultModelLabel = value?.provider === 'codex' ? 'Как указано в Codex CLI' : 'Автоматически по задаче';
+  const defaultModelLabel = value?.provider === 'codex' ? 'Как указано в настройках Codex' : 'Автоматически по задаче';
   const resolutions = resolutionOptions(models, value?.model);
   const selectedResolution = value?.resolution ?? DEFAULT_KLING_IMAGE_GENERATION.resolution ?? '2k';
   const aspects = aspectOptions(models, value?.model);
@@ -156,10 +156,10 @@ export function ImageGenerationSettings({
                 helperText={
                   modelError
                     ? value.provider === 'codex'
-                      ? `Модель ${value.model} недоступна у провайдера. Выберите доступную модель или пункт «Как указано в Codex CLI».`
+                      ? `Модель ${value.model} недоступна у провайдера. Выберите доступную модель или пункт «Как указано в настройках Codex».`
                       : `Модель ${value.model} недоступна у провайдера. Выберите доступную или автоматический подбор модели.`
                     : value.provider === 'codex'
-                      ? 'По умолчанию используется модель из настроек Codex CLI. Здесь выбирается модель агента, который готовит изображение, а не модель самого генератора изображений.'
+                      ? 'По умолчанию используется модель из настроек Codex. Здесь выбирается модель агента, который готовит изображение, а не модель самого генератора изображений.'
                       : 'Автоматически — подбор по требованиям задачи. Выбранная модель — предпочтение; несовместимая будет заменена с объяснением при согласовании.'
                 }
               >

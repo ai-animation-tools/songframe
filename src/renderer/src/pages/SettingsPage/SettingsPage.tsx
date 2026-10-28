@@ -4,15 +4,16 @@ import { Alert, Button, LinearProgress, Paper, Stack, Typography } from '@mui/ma
 import SaveIcon from '@mui/icons-material/Save';
 import { AgentDiagnostics, AgentInstructions, AgentSettingsForm } from './components';
 import { useAgentSettings } from './useAgentSettings';
-import { CodexCliSettings } from './components/CodexCliSettings';
 import { AgentButton } from '../../components';
 import { useAgentAccount } from './useAgentAccount';
+import { useAgentModels } from './useAgentModels';
 import { AgentAccountPanel } from './components/AgentAccountPanel';
 
 export function SettingsPage(): ReactElement {
   const form = useAgentSettings();
   const accountReady = !form.loading && !form.loadError && !form.profileLoading && !form.profileError;
   const account = useAgentAccount(form.settings, accountReady);
+  const models = useAgentModels(form.settings?.provider, accountReady);
   return (
     <Stack spacing={2} sx={{ minWidth: 0 }}>
       <Typography variant="h5">Настройки</Typography>
@@ -30,13 +31,12 @@ export function SettingsPage(): ReactElement {
                 settings={form.settings}
                 disabled={form.saving}
                 fieldsDisabled={form.profileLoading || !!form.profileError}
-                onChange={(value, pathTyping = false) => {
-                  account.preparePathChange(pathTyping);
-                  form.change(value);
-                }}
-                onPick={form.pick}
+                models={models.models}
+                modelsLoading={models.loading}
+                modelsMessage={models.message}
+                onChange={form.change}
               />
-              {form.profileLoading && <LinearProgress aria-label="Загрузка профиля CLI" />}
+              {form.profileLoading && <LinearProgress aria-label="Загрузка профиля агента" />}
               {form.profileError && <Alert severity="error">{form.profileError}</Alert>}
               <Typography variant="body2" color="text.secondary">
                 Проверка не сохраняет форму и не запускает генерацию. Статус входа не подтверждает доступ к выбранной модели или наличие средств.
@@ -47,17 +47,22 @@ export function SettingsPage(): ReactElement {
                 </Button>
                 <AgentButton
                   setup
-                  provider={form.settings?.provider ?? null}
+                  provider={form.settings?.provider}
                   variant="contained"
-                  onClick={form.check}
+                  onClick={async () => {
+                    await form.check();
+                    // После установки или входа каталог мог стать доступен.
+                    models.refresh();
+                  }}
                   disabled={!form.settings || form.checking || form.saving || form.profileLoading || !!form.profileError}
                 >
                   {form.checking ? 'Проверка' : 'Проверить'}
                 </AgentButton>
               </Stack>
-              {form.checking && <LinearProgress aria-label="Проверка CLI" />}
+              {form.checking && <LinearProgress aria-label="Проверка агента" />}
               {form.settings && accountReady && (
                 <AgentAccountPanel
+                  provider={form.settings.provider}
                   result={account.result}
                   loading={account.loading}
                   failed={account.failed}
@@ -65,7 +70,6 @@ export function SettingsPage(): ReactElement {
                   onRefresh={account.refresh}
                 />
               )}
-              {form.settings?.provider === 'codex' && !form.profileLoading && !form.profileError ? <CodexCliSettings /> : null}
             </Stack>
           </Paper>
           {form.result && <AgentDiagnostics result={form.result} />}

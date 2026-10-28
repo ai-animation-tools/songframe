@@ -9,6 +9,8 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { formatClock } from '../../../format';
 import { AgentButton } from '../../../components';
+import { useApp } from '../../../state';
+import { skillCommand } from '@shared/agent-providers';
 import { JobStatus } from '../../../components/JobStatus';
 
 export function ProductionShotCard({
@@ -36,6 +38,7 @@ export function ProductionShotCard({
   broken?: BrokenPackage[];
   onDiscardBroken?(item: BrokenPackage): void;
 }): ReactElement {
+  const { agentProvider } = useApp();
   const waiting = shot.packages.filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
@@ -111,11 +114,18 @@ export function ProductionShotCard({
         </Box>
       ) : null}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
-        <Tooltip title="Скопировать команду для агента">
-          <AgentButton provider={null} size="small" endIcon={<ContentCopyIcon />} onClick={() => onCopy(`$ai-clip-scene scene=${shot.id}`)}>
-            $ai-clip-scene scene={shot.id}
+        {/* Команда показывается в синтаксисе выбранного агента: /навык у Claude Code, $навык у Codex. */}
+        {agentProvider ? (
+          <Tooltip title="Скопировать команду для агента">
+            <AgentButton size="small" endIcon={<ContentCopyIcon />} onClick={() => onCopy(skillCommand(agentProvider, 'ai-clip-scene', `scene=${shot.id}`))}>
+              {skillCommand(agentProvider, 'ai-clip-scene', `scene=${shot.id}`)}
+            </AgentButton>
+          </Tooltip>
+        ) : (
+          <AgentButton size="small" endIcon={<ContentCopyIcon />}>
+            Команда для агента
           </AgentButton>
-        </Tooltip>
+        )}
         {shot.state === 'completed' || shot.packages.length ? (
           <Tooltip title={shot.regenerateProblem ?? 'Создать новую попытку по сохранённому запросу без отправки и оплаты'}>
             <span>

@@ -411,8 +411,8 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
     expect(calls()).toEqual([['--version'], ['login', 'status']]);
   });
 
-  it('сохраняет ошибку выбранного пути и не пытается читать аккаунт', async () => {
-    const result = await codexAccount({ provider: 'codex', executablePath: join(home, 'нет файла') }, options());
+  it('без найденного CLI сохраняет диагностику и не пытается читать аккаунт', async () => {
+    const result = await codexAccount({ provider: 'codex' }, options());
     expect(result.diagnostic.availability).toBe('not_found');
     expect(result.email).toBeNull();
   });

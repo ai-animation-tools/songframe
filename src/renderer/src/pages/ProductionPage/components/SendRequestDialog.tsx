@@ -8,7 +8,6 @@ import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration } from '@sh
 import { aiActionProblem } from '@shared/ai-access';
 import type { PackageView } from '@shared/types';
 import { productionInputLabel } from '@shared/production-labels';
-import { AgentIcon } from '../../../components';
 import { useApp } from '../../../state';
 import { useRequestQuote } from '../useRequestQuote';
 import { RequestModelSelection } from './RequestModelSelection';
@@ -85,7 +84,7 @@ export function SendRequestDialog({
         (!external && (!priceAllowsGeneration(quote, agreedToUnknownCost) || quote?.requestSha !== pkg.request.sha256))
       }
       confirmLabel="Отправить и списать кредиты"
-      confirmIcon={external ? <AgentIcon provider={null} monochrome /> : <SendIcon />}
+      {...(external ? { confirmAgent: { external: true } } : { confirmIcon: <SendIcon /> })}
       onConfirm={() => void confirm()}
     >
       {pkg?.request ? (

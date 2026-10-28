@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, resolve, sep } from 'node:path';
 import type { AgentEvent, AgentJob, AgentSettings, AgentStartInput } from '@shared/agents';
-import type { AgentProvider } from '@shared/agent-providers';
+import { agentTitle, type AgentProvider } from '@shared/agent-providers';
 import { createAgentAdapter, type AgentAdapter, type AgentUpdate } from './agent-adapters';
 import { AgentHistory } from './agent-history';
 import { AgentError, JsonLines, providerFailure, redact } from './agent-protocol';
@@ -101,15 +101,16 @@ export class AgentManager {
     return this.begin(value);
   }
 
-  /** Только внутренний маршрут опор: запись ограничена подготовленной рабочей папкой кандидатов. */
-  startImages(value: AgentStartInput, workDir: string): AgentJob {
+  /** Только внутренний маршрут опор: запись ограничена подготовленной рабочей папкой кандидатов.
+   * model задаёт вызывающий без проектных настроек изображений, например временный проект обложки; при передаче он важнее модели проекта. */
+  startImages(value: AgentStartInput, workDir: string, model?: string): AgentJob {
     const directory = realpathSync(workDir);
     const base = realpathSync(join(this.settings.localDir, 'image-jobs'));
     if (!directory.startsWith(base + sep)) throw new AgentError('INVALID_INPUT', 'Папка кандидатов не принадлежит заданиям изображений.');
-    return this.begin(value, directory);
+    return this.begin(value, directory, model);
   }
 
-  private begin(value: unknown, imageDirectory?: string): AgentJob {
+  private begin(value: unknown, imageDirectory?: string, imageModel?: string): AgentJob {
     if (this.stopping) throw new AgentError('INTERRUPTED', 'Приложение завершает работу.');
     if (process.platform !== 'linux') throw new AgentError('CLI_UNAVAILABLE', 'Запуск агента сейчас поддерживается только на Linux.');
     const input = validate(value);
@@ -126,10 +127,9 @@ export class AgentManager {
     const globalConfig = imageDirectory ? this.settings.getImageAgent() : this.settings.getAgent();
     if (!globalConfig) throw new AgentError('INVALID_INPUT', 'Сначала выберите агента в настройках.');
     const imageSettings = imageDirectory ? readProjectSettings(project).generation?.image : null;
-    const projectModel = imageSettings?.provider === 'codex' ? imageSettings.model?.trim() : undefined;
-    // Пустая модель явного backend Codex оставляет выбор самому CLI; старый профиль и его путь не изменяем.
-    // Глобальный model остаётся только для прежних прямых вызовов без image backend в проекте.
-    const config = imageSettings?.provider === 'codex' ? { ...globalConfig, model: projectModel || undefined } : globalConfig;
+    // Пустая модель изображений оставляет выбор самому CLI; модель текстового агента сюда не переносится.
+    const model = imageModel?.trim() || (imageSettings?.provider === 'codex' ? imageSettings.model?.trim() : undefined);
+    const config = imageDirectory ? { ...globalConfig, model: model || undefined } : globalConfig;
     if (input.retryOf) {
       const previous = this.jobs.get(input.retryOf);
       let previousProject: string | null = null;
@@ -153,7 +153,7 @@ export class AgentManager {
       permissions: imageDirectory ? 'workspace-write' : 'read-only',
       inputHashes: { prompt: hash(input.prompt), context: hash(input.context ?? '') },
       status: 'running',
-      phase: 'Проверка CLI',
+      phase: 'Проверка агента',
       startedAt: new Date().toISOString(),
       finishedAt: null,
       exitCode: null,
@@ -198,7 +198,8 @@ export class AgentManager {
       if (run.ended) return;
       if (check.availability !== 'available' || !check.executablePath)
         throw new AgentError(check.availability === 'not_found' ? 'CLI_NOT_FOUND' : 'CLI_UNAVAILABLE', check.message);
-      if (!check.version) throw new AgentError('UNSUPPORTED_VERSION', 'Версия CLI не распознана. Проверьте выбранный файл в настройках.');
+      if (!check.version)
+        throw new AgentError('UNSUPPORTED_VERSION', `Версия ${agentTitle(config.provider)} не распознана. Обновите его до поддерживаемой версии.`);
       run.job.cliVersion = check.version;
       const args = adapter.args(config, check.version, imageDirectory ? 'write' : 'read');
       if (check.authorization !== 'authenticated')
@@ -225,7 +226,7 @@ export class AgentManager {
         if (run.ended) return false;
         run.outputBytes += chunk.length;
         if (run.outputBytes > (this.options.outputBytes ?? 8 * 1024 * 1024)) {
-          this.finish(run, 'failed', new AgentError('OUTPUT_LIMIT', 'CLI превысил допустимый объём вывода.'));
+          this.finish(run, 'failed', new AgentError('OUTPUT_LIMIT', 'Агент превысил допустимый объём вывода.'));
           return false;
         }
         return true;
@@ -246,7 +247,13 @@ export class AgentManager {
       child.stdin.on('error', () => {
         /* Ранний выход CLI обрабатывается по close, без ошибки EPIPE в приложении. */
       });
-      child.on('error', () => this.finish(run, 'failed', new AgentError('CLI_UNAVAILABLE', 'Не удалось запустить CLI. Проверьте путь и его зависимости.')));
+      child.on('error', () =>
+        this.finish(
+          run,
+          'failed',
+          new AgentError('CLI_UNAVAILABLE', `Не удалось запустить ${agentTitle(config.provider)}. Проверьте его установку и зависимости.`)
+        )
+      );
       child.on('close', (code) => {
         if (run.ended) return;
         run.job.exitCode = code;
@@ -254,7 +261,7 @@ export class AgentManager {
           parser.finish();
           if (run.ended) return;
           if (code !== 0) throw providerFailure(stderr);
-          if (!run.completed) throw new AgentError('PROTOCOL_ERROR', 'CLI завершился без подтверждения результата.');
+          if (!run.completed) throw new AgentError('PROTOCOL_ERROR', 'Агент завершился без подтверждения результата.');
           this.finish(run, 'completed');
         } catch (error) {
           this.fail(run, error);

@@ -323,7 +323,7 @@ describe('Диагностика среды', () => {
       bundled: true,
       ok: false,
       status: 'done',
-      detail: expect.stringContaining('Встроенный Kling CLI недоступен')
+      detail: expect.stringContaining('Встроенный Kling недоступен')
     });
     expect(checks.find(({ id }) => id === 'node')).toMatchObject({ bundled: true, ok: true, status: 'done', detail: process.versions.node });
   });

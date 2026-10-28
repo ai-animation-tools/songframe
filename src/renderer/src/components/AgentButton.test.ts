@@ -38,10 +38,10 @@ describe('Общий запрет AI-действий', () => {
 
   it('блокирует выбранного агента без установленного CLI и объясняет причину', () => {
     context.aiAccess!.agent.available = false;
-    context.aiAccess!.agent.message = 'Codex CLI не найден.';
+    context.aiAccess!.agent.message = 'Codex не найден.';
     const html = render();
     expect(disabled(html)).toBe(true);
-    expect(html).toContain('Codex CLI не найден.');
+    expect(html).toContain('Codex не найден.');
     expect(html).toContain('tabindex="0"');
   });
 
@@ -74,8 +74,33 @@ describe('Общий запрет AI-действий', () => {
     context.agentProvider = null;
     context.aiAccess = null;
     expect(disabled(render({ setup: true, provider: 'codex' }))).toBe(false);
-    expect(disabled(render({ setup: true, provider: null }))).toBe(true);
+    expect(disabled(render({ setup: true }))).toBe(true);
     expect(disabled(render({ setup: true, provider: 'codex', disabled: true }))).toBe(true);
+  });
+});
+
+describe('Знак агента на кнопке', () => {
+  const icons = (html: string): string[] => [...html.matchAll(/data-agent-icon="([^"]+)"/g)].map((match) => match[1]);
+
+  it('показывает ровно один знак сохранённого агента', () => {
+    expect(icons(render())).toEqual(['codex']);
+    context.agentProvider = 'claude';
+    context.aiAccess!.agent.provider = 'claude';
+    expect(icons(render())).toEqual(['claude']);
+  });
+
+  it('без выбранного агента показывает нейтральный значок вместо обоих логотипов', () => {
+    context.agentProvider = null;
+    const html = render();
+    expect(icons(html)).toEqual([]);
+    expect(html).toContain('data-testid="SmartToyOutlinedIcon"');
+    expect(icons(render({ external: true }))).toEqual([]);
+  });
+
+  it('действие внешнего агента не требует доступности CLI в приложении', () => {
+    context.aiAccess!.agent.available = false;
+    expect(disabled(render({ external: true }))).toBe(false);
+    expect(icons(render({ external: true }))).toEqual(['codex']);
   });
 });
 

@@ -77,7 +77,7 @@ describe.each(['image', 'video'] as const)('допуск пакета %s', (kind
 
   it('сохраняет отказ проверки доступа при совпадающем провайдере', async () => {
     fixture(kind, 'Kling', 'kling');
-    const accessError = new Error('Выбранный CLI недоступен');
+    const accessError = new Error('Выбранный агент недоступен');
     const requireAccess = vi.fn(async (_project: string, _kind: MediaKind): Promise<void> => {
       throw accessError;
     });

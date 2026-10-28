@@ -21,7 +21,7 @@ export function AgentJobCard({
   job: AgentJob;
   onCancel(id: string): Promise<void>;
   onRetry(job: AgentJob): void;
-  retryProvider?: AgentJob['provider'] | null;
+  retryProvider?: AgentJob['provider'];
   retryKind?: AiActionKind;
   /** Рабочие панели сохраняют остановку и повтор, а подробности показывают в общем журнале. */
   compact?: boolean;

@@ -20,7 +20,7 @@ export async function withAccountProcess<T>(
   const failure = new Promise<never>((_, reject) => {
     rejectFailure = reject;
   });
-  const fail = (): void => rejectFailure(new Error('Не удалось получить диагностику CLI.'));
+  const fail = (): void => rejectFailure(new Error('Не удалось получить диагностику агента.'));
   const closed = new Promise<number | null>((resolve) => child.once('close', resolve));
   let bytes = 0;
   const count = (chunk: Buffer | string): void => {
@@ -114,7 +114,7 @@ export async function withCodexAppServer<T>(
             const request = pending.get(reply.id);
             if (!request) continue;
             pending.delete(reply.id);
-            if ('error' in reply || !('result' in reply)) request.reject(new Error('CLI не поддерживает запрос диагностики.'));
+            if ('error' in reply || !('result' in reply)) request.reject(new Error('Codex не поддерживает запрос диагностики.'));
             else request.resolve(reply.result);
           } catch {
             rejectPending();

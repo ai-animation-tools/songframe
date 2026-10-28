@@ -50,8 +50,7 @@ export function MediaCapabilitiesPanel({
   return (
     <Stack spacing={1} sx={{ minWidth: 0 }}>
       <Typography variant="caption" color="text.secondary">
-        Читает через CLI доступные модели и параметры текущего провайдера и обновляет подсказки. Не сохраняет форму, не запускает генерацию и не списывает
-        кредиты.
+        Читает у текущего провайдера доступные модели и параметры и обновляет подсказки. Не сохраняет форму, не запускает генерацию и не списывает кредиты.
       </Typography>
       {error && <Alert severity="error">Не удалось проверить возможности: {error}</Alert>}
       {result && (

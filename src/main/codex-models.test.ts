@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, expect, it } from 'vitest';
-import { readCodexModels } from './codex-models';
+import { readCodexAgentModels, readCodexModels } from './codex-models';
 
 let work: string;
 beforeEach(() => {
@@ -11,8 +11,9 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(work, { recursive: true, force: true }));
 
+// Каталог моделей запускает codex по имени; фикстура лежит первой в PATH, а пустой home скрывает ~/.local/bin.
 function cli(body: string): string {
-  const executable = join(work, 'Codex fixture');
+  const executable = join(work, 'codex');
   writeFileSync(
     executable,
     `#!${process.execPath}
@@ -34,13 +35,14 @@ readline.createInterface({input:process.stdin}).on('line', line => {
   return executable;
 }
 
-const read = (executablePath: string, timeoutMs = 1000) => readCodexModels({ provider: 'codex', executablePath }, { home: work, env: process.env, timeoutMs });
+const options = (timeoutMs = 1000) => ({ home: work, env: { PATH: work }, timeoutMs });
+const read = (timeoutMs = 1000) => readCodexModels({ provider: 'codex' }, options(timeoutMs));
 
 it('читает все страницы видимых моделей точными model ID без account refresh и запуска диалога', async () => {
-  const executable = cli(
+  cli(
     `send(r, r.params.cursor ? {data:[{id:'catalog-b',model:'actual-b',displayName:'Модель B',hidden:false,inputModalities:['text']}],nextCursor:null} : {data:[{id:'catalog-a',model:'actual-a',displayName:'Модель A',hidden:false,isDefault:true},{id:'hidden',model:'hidden',hidden:true}],nextCursor:'page-2'});`
   );
-  expect(await read(executable)).toEqual([
+  expect(await read()).toEqual([
     { id: 'actual-a', command: 'codex_exec', arguments: {}, slots: {}, limits: {} },
     { id: 'actual-b', command: 'codex_exec', arguments: {}, slots: {}, limits: {} }
   ]);
@@ -61,9 +63,34 @@ it.each([
   ['отказ RPC', 'console.log(JSON.stringify({id:r.id,error:{code:-32601}}));', 'не поддерживает'],
   ['преждевременный EOF', 'process.exit(0);', 'закрыта']
 ])('отклоняет %s без выдуманного каталога', async (_name, body, message) => {
-  await expect(read(cli(body))).rejects.toThrow(message);
+  cli(body);
+  await expect(read()).rejects.toThrow(message);
+  await expect(readCodexAgentModels(join(work, 'codex'), options())).rejects.toThrow(message);
 });
 
 it('завершает зависший app-server по общему таймауту', async () => {
-  await expect(read(cli(''), 80)).rejects.toThrow('Не удалось получить диагностику CLI');
+  cli('');
+  await expect(read(80)).rejects.toThrow('Не удалось получить диагностику агента');
+});
+
+it('не читает каталог изображений для агента Claude и не запускает CLI', async () => {
+  cli('process.exit(99);');
+  await expect(readCodexModels({ provider: 'claude' }, options())).rejects.toThrow('только для агента Codex');
+  expect(() => readFileSync(join(work, 'args.json'))).toThrow();
+});
+
+it('без codex в PATH и home не находит настоящий CLI', async () => {
+  await expect(read(300)).rejects.toThrow();
+  expect(() => readFileSync(join(work, 'requests.jsonl'))).toThrow();
+});
+
+it('модели текстового агента: подпись из displayName, точный model ID и признак по умолчанию', async () => {
+  const executable = cli(
+    `send(r, r.params.cursor ? {data:[{id:'catalog-b',model:'actual-b',displayName:'  ',hidden:false}],nextCursor:null} : {data:[{id:'catalog-a',model:'actual-a',displayName:' Модель A ',isDefault:true},{id:'hidden',model:'hidden',hidden:true}],nextCursor:'page-2'});`
+  );
+  expect(await readCodexAgentModels(executable, options())).toEqual([
+    { id: 'actual-a', label: 'Модель A', isDefault: true },
+    { id: 'actual-b', label: 'actual-b' }
+  ]);
+  expect(JSON.parse(readFileSync(join(work, 'args.json'), 'utf8'))).toEqual(['app-server', '--listen', 'stdio://']);
 });

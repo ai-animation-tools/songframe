@@ -90,7 +90,7 @@ export function PackageRequest({
           </Box>
           {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} /> : null}
           {canSubmit ? (
-            <Tooltip title={klingAvailable ? 'Платная отправка из приложения' : 'Kling CLI не найден'}>
+            <Tooltip title={klingAvailable ? 'Платная отправка из приложения' : 'Kling не найден'}>
               <span>
                 <AiButton
                   aiKind={pkg.request?.kind === 'image' ? 'image' : 'video'}

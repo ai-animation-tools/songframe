@@ -23,7 +23,9 @@ function account(overrides: Partial<AgentAccountResult> = {}): AgentAccountResul
 }
 
 function render(result: AgentAccountResult | null, loading = false, failed = false): string {
-  return renderToStaticMarkup(createElement(AgentAccountPanel, { result, loading, failed, disabled: false, onRefresh: vi.fn() }));
+  return renderToStaticMarkup(
+    createElement(AgentAccountPanel, { provider: result?.provider ?? 'codex', result, loading, failed, disabled: false, onRefresh: vi.fn() })
+  );
 }
 
 function fieldValue(html: string, label: string): string | undefined {
@@ -34,6 +36,16 @@ function fieldValue(html: string, label: string): string | undefined {
 }
 
 describe('сведения об аккаунте CLI', () => {
+  it.each([
+    ['codex', 'https://chatgpt.com/codex/settings/usage', 'Личный кабинет Codex'],
+    ['claude', 'https://claude.ai/settings/usage', 'Личный кабинет Claude Code']
+  ] as const)('показывает ссылку на личный кабинет %s до загрузки сведений', (provider, url, label) => {
+    const html = render(account({ provider }), true);
+    expect(html).toContain(`href="${url}"`);
+    expect(html).toContain(label);
+    expect(html.indexOf(label)).toBeLessThan(html.indexOf('aria-label="Чтение аккаунта"'));
+  });
+
   it('подписывает каждое неизвестное поле и не угадывает аккаунт или тариф', () => {
     const html = render(account());
     for (const label of ['Вход', 'Аккаунт (email)', 'Организация', 'Способ входа', 'Тариф', 'Статус подписки', 'Срок подписки', 'Кредиты']) {
@@ -105,19 +117,21 @@ describe('сведения об аккаунте CLI', () => {
   });
 
   it.each([
-    [89.9, false],
-    [90, true],
-    [99, true]
-  ] as const)('выделяет остаток до 10%% включительно при использовании %s%%', (usedPercent, red) => {
+    [74.9, null, '25,1%'],
+    [75, '#e65100', '25% (Лимит заканчивается)'],
+    [89.9, '#e65100', '10,1% (Лимит заканчивается)'],
+    [90, '#d32f2f', '10% (Лимит почти исчерпан)'],
+    [99, '#d32f2f', '1% (Лимит почти исчерпан)']
+  ] as const)('подсвечивает остаток при использовании %s%%', (usedPercent, color, value) => {
     const html = render(account({ limits: [{ label: 'Основной', usedPercent, windowMinutes: 300, resetsAt: null }] }));
-    expect(html.includes('color:#d32f2f')).toBe(red);
-    expect(fieldValue(html, 'Осталось')).not.toContain('Лимит исчерпан');
-    if (usedPercent === 89.9) expect(fieldValue(html, 'Осталось')).toBe('10,1%');
+    expect(html.includes('color:#e65100')).toBe(color === '#e65100');
+    expect(html.includes('color:#d32f2f')).toBe(color === '#d32f2f');
+    expect(fieldValue(html, 'Осталось')).toBe(value);
   });
 
   it('при отсутствии CLI ограничивается статусом и кнопкой повторного чтения', () => {
     const html = render(account({ diagnostic: { availability: 'not_found', authorization: 'unknown', message: 'Служебный вывод' } }));
-    expect(html).toContain('Аккаунт не прочитан: CLI не найден');
+    expect(html).toContain('Аккаунт не прочитан: Codex не найден.');
     expect(html).toMatch(/<button[^>]*>(?:(?!<\/button>)[\s\S])*Обновить<\/button>/);
     expect(html).not.toContain('Аккаунт (email):');
     expect(html).not.toContain('Служебный вывод');
@@ -125,7 +139,7 @@ describe('сведения об аккаунте CLI', () => {
 
   it('при чтении не показывает прежний аккаунт и блокирует повторное чтение', () => {
     const html = render(account({ email: 'old@example.test' }), true);
-    expect(html).toContain('Чтение аккаунта CLI');
+    expect(html).toContain('aria-label="Чтение аккаунта"');
     expect(html).toMatch(/<button[^>]*disabled[^>]*>(?:(?!<\/button>)[\s\S])*Обновить<\/button>/);
     expect(html).not.toContain('old@example.test');
   });
@@ -135,9 +149,9 @@ describe('сведения об аккаунте CLI', () => {
   });
 
   it('показывает нормализованное предупреждение приложения без служебной диагностики CLI', () => {
-    const html = render(account({ message: 'CLI сообщает об ограничении использования.' }));
+    const html = render(account({ message: 'Codex сообщает об ограничении использования.' }));
     expect(html).toMatch(/role="alert"[^>]*>/);
-    expect(html).toContain('CLI сообщает об ограничении использования.');
+    expect(html).toContain('Codex сообщает об ограничении использования.');
     expect(html).not.toContain('Служебный вывод');
     expect(render(account({ message: 'Предупреждение прежнего аккаунта' }), true)).not.toContain('Предупреждение прежнего аккаунта');
   });
@@ -150,7 +164,7 @@ describe('сведения об аккаунте CLI', () => {
 
   it('красным выделяет явный запрет использования и не выводит его из нулевого кредита или неизвестного статуса', () => {
     const blocked = render(account({ usageAllowed: false }));
-    expect(blocked).toContain('CLI сообщает об ограничении использования.');
+    expect(blocked).toContain('Codex сообщает об ограничении использования.');
     expect(blocked).toContain('MuiAlert-standardError');
     for (const usageAllowed of [undefined, null, true]) {
       const html = render(account({ usageAllowed, credits: '0', subscriptionStatus: null }));

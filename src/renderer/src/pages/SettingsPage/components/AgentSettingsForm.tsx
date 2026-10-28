@@ -1,9 +1,7 @@
 /** Поля глобального выбора агента; пустой выбор сохраняет работу приложения без CLI. */
 import type { ReactElement } from 'react';
-import { Button, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Stack, TextField } from '@mui/material';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import ManageSearchIcon from '@mui/icons-material/ManageSearch';
-import type { AgentSettings } from '@shared/agents';
+import { Autocomplete, createFilterOptions, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Stack, TextField, Typography } from '@mui/material';
+import type { AgentModel, AgentSettings } from '@shared/agents';
 import { AGENT_PROVIDER_IDS, AGENT_PROVIDERS, isAgentProvider } from '@shared/agent-providers';
 import { AgentIcon } from '../../../components';
 
@@ -11,11 +9,22 @@ interface Props {
   settings: AgentSettings | null;
   disabled: boolean;
   fieldsDisabled?: boolean;
-  onChange(value: AgentSettings | null, pathTyping?: boolean): void;
-  onPick(): Promise<void>;
+  models: AgentModel[];
+  modelsLoading: boolean;
+  modelsMessage: string | null;
+  onChange(value: AgentSettings | null): void;
 }
 
-export function AgentSettingsForm({ settings, disabled, fieldsDisabled = false, onChange, onPick }: Props): ReactElement {
+// Поиск идёт и по точному имени, и по подписи: «Opus» находит claude-opus-4-8.
+const filterModels = createFilterOptions<AgentModel>({ stringify: (model) => `${model.id} ${model.label}` });
+
+export function AgentSettingsForm({ settings, disabled, fieldsDisabled = false, models, modelsLoading, modelsMessage, onChange }: Props): ReactElement {
+  const model = settings?.model ?? '';
+  // Значение вне каталога остаётся строкой: CLI может принять модель, которой нет в списке.
+  const selected = models.find((item) => item.id === model) ?? (model || null);
+  const setModel = (value: string): void => {
+    if (settings) onChange({ ...settings, model: value });
+  };
   return (
     <Stack spacing={2}>
       <FormControl disabled={disabled}>
@@ -29,7 +38,7 @@ export function AgentSettingsForm({ settings, disabled, fieldsDisabled = false, 
             else onChange(null);
           }}
         >
-          <FormControlLabel value="" control={<Radio />} label="Не настроен" />
+          <FormControlLabel value="" control={<Radio />} label="Без агента" />
           {AGENT_PROVIDER_IDS.map((provider) => (
             <FormControlLabel
               key={provider}
@@ -44,32 +53,47 @@ export function AgentSettingsForm({ settings, disabled, fieldsDisabled = false, 
           ))}
         </RadioGroup>
       </FormControl>
-      <TextField
-        label="Модель"
-        value={settings?.model ?? ''}
+      <Autocomplete<AgentModel, false, false, true>
+        freeSolo
+        options={models}
+        value={selected}
+        inputValue={model}
+        loading={modelsLoading}
+        loadingText="Чтение каталога моделей"
         disabled={disabled || fieldsDisabled || !settings}
-        helperText="Пусто — модель по умолчанию CLI"
-        onChange={(event) => settings && onChange({ ...settings, model: event.target.value })}
+        filterOptions={filterModels}
+        getOptionLabel={(option) => (typeof option === 'string' ? option : option.id)}
+        isOptionEqualToValue={(option, value) => option.id === (typeof value === 'string' ? value : value.id)}
+        onChange={(_, value) => setModel(typeof value === 'string' ? value : (value?.id ?? ''))}
+        onInputChange={(_, value, reason) => {
+          // reset приходит при выборе варианта и уже обработан onChange.
+          if (reason !== 'reset') setModel(value);
+        }}
+        renderOption={(props, option) => {
+          const { key, ...rest } = props;
+          return (
+            <li key={key} {...rest}>
+              <Stack sx={{ minWidth: 0 }}>
+                <Typography variant="body2">
+                  {option.label}
+                  {option.isDefault ? ' · по умолчанию' : ''}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
+                  {option.id}
+                  {option.description ? ` — ${option.description}` : ''}
+                </Typography>
+              </Stack>
+            </li>
+          );
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Модель"
+            helperText={modelsMessage ?? 'Пусто — модель по умолчанию агента. Выберите из списка или введите название вручную.'}
+          />
+        )}
       />
-      <TextField
-        label="Путь к CLI"
-        value={settings?.executablePath ?? ''}
-        disabled={disabled || fieldsDisabled || !settings}
-        helperText="Пусто — автоматический поиск. Можно указать полный путь к установленному файлу."
-        onChange={(event) => settings && onChange({ ...settings, executablePath: event.target.value }, true)}
-      />
-      <Stack direction="row" spacing={1}>
-        <Button startIcon={<FolderOpenIcon />} disabled={disabled || fieldsDisabled || !settings} onClick={onPick}>
-          Выбрать файл
-        </Button>
-        <Button
-          startIcon={<ManageSearchIcon />}
-          disabled={disabled || fieldsDisabled || !settings?.executablePath}
-          onClick={() => settings && onChange({ ...settings, executablePath: '' })}
-        >
-          Найти автоматически
-        </Button>
-      </Stack>
     </Stack>
   );
 }

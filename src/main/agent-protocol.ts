@@ -38,7 +38,7 @@ export class JsonLines {
   }
 
   private checkSize(line: string): void {
-    if (Buffer.byteLength(line) > this.lineBytes) throw new AgentError('OUTPUT_LIMIT', 'Строка ответа CLI слишком велика.');
+    if (Buffer.byteLength(line) > this.lineBytes) throw new AgentError('OUTPUT_LIMIT', 'Строка ответа агента слишком велика.');
   }
 
   private parse(line: string): void {
@@ -48,9 +48,9 @@ export class JsonLines {
     try {
       value = JSON.parse(line);
     } catch {
-      throw new AgentError('PROTOCOL_ERROR', 'CLI вернул некорректный JSONL.');
+      throw new AgentError('PROTOCOL_ERROR', 'Агент вернул некорректный JSONL.');
     }
-    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AgentError('PROTOCOL_ERROR', 'Ожидался объект события CLI.');
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AgentError('PROTOCOL_ERROR', 'Ожидался объект события агента.');
     this.onValue(value as Record<string, unknown>);
   }
 }
@@ -65,8 +65,8 @@ export function redact(text: string): string {
 export function providerFailure(value: unknown): AgentError {
   const text = typeof value === 'string' ? value : '';
   if (/auth|not logged|login|unauthorized|invalid.?api.?key|\b401\b/i.test(text))
-    return new AgentError('AUTH_REQUIRED', 'CLI сообщил об ошибке входа. Проверьте авторизацию в настройках.');
+    return new AgentError('AUTH_REQUIRED', 'Агент сообщил об ошибке входа. Проверьте авторизацию в настройках.');
   if (/rate.?limit|quota|usage.?limit|budget|\b429\b/i.test(text))
-    return new AgentError('RATE_LIMIT', 'CLI сообщил об ограничении использования. Проверьте лимиты аккаунта.');
-  return new AgentError('CLI_ERROR', 'CLI сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели.');
+    return new AgentError('RATE_LIMIT', 'Агент сообщил об ограничении использования. Проверьте лимиты аккаунта.');
+  return new AgentError('CLI_ERROR', 'Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели.');
 }

@@ -127,7 +127,7 @@ function argumentMap(value: unknown): Record<string, MediaArgument> {
         ('max_items' in entry && (!Number.isInteger(entry.max_items) || Number(entry.max_items) < 1))
     )
   )
-    throw new Error('CLI вернул неверное объявление параметров.');
+    throw new Error('Kling вернул неверное объявление параметров.');
   return value as Record<string, MediaArgument>;
 }
 
@@ -347,9 +347,9 @@ class KlingMediaProvider implements KlingProviderContract {
         }
         try {
           const report = reports.get(command)!;
-          if (!record(report.models)) throw new Error('CLI вернул неверное объявление моделей.');
+          if (!record(report.models)) throw new Error('Kling вернул неверное объявление моделей.');
           const commandModels: MediaModel[] = Object.entries(report.models).map(([id, value]) => {
-            if (!record(value) || !record(value.limits)) throw new Error('CLI вернул неверное объявление модели.');
+            if (!record(value) || !record(value.limits)) throw new Error('Kling вернул неверное объявление модели.');
             return { id, command, arguments: argumentMap(value.arguments), slots: argumentMap(value.slots), limits: value.limits };
           });
           models.push(...commandModels);

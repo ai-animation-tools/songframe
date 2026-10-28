@@ -1,8 +1,8 @@
 /** Настоящие fake CLI и Python проверяют оба прохода без провайдеров и изменения исходных материалов. */
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { delimiter, join, resolve } from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AgentSettings } from '@shared/agents';
 import type { CastFile, ScenesFile, TreatmentFile } from '@shared/types';
@@ -17,6 +17,7 @@ const workspaces: string[] = [];
 const managers: AgentManager[] = [];
 afterEach(() => {
   for (const manager of managers.splice(0)) manager.shutdown();
+  vi.unstubAllEnvs();
   for (const work of workspaces.splice(0)) rmSync(work, { recursive: true, force: true });
 });
 
@@ -51,7 +52,10 @@ it.each<AgentSettings['provider']>(['claude', 'codex'])(
     const settings = new SettingsStore(localDir);
     const mode = join(work, 'mode');
     const capture = join(work, 'capture.json');
-    const executablePath = join(work, `${provider}-fake`);
+    // CLI ищется по имени: фикстура стоит в PATH раньше настоящего claude/codex из ~/.local/bin.
+    const bin = join(work, 'bin');
+    mkdirSync(bin);
+    const executablePath = join(bin, provider);
     writeFileSync(mode, 'normal');
     // Процесс только возвращает ответ: инструменты проверки и запись принадлежат приложению.
     writeFileSync(
@@ -85,7 +89,8 @@ let input='';process.stdin.setEncoding('utf8');process.stdin.on('data',chunk=>in
 `,
       { mode: 0o700 }
     );
-    settings.saveAgent({ provider, executablePath });
+    vi.stubEnv('PATH', bin + delimiter + (process.env.PATH ?? ''));
+    settings.saveAgent({ provider });
     const manager = new AgentManager(settings);
     managers.push(manager);
     const launcher = new PythonLauncher({ toolsRoot: REPO, localDir });

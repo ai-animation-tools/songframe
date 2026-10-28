@@ -2,7 +2,6 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CodexCliSettings } from './components/CodexCliSettings';
 import { SettingsPage } from './SettingsPage';
 import { useAgentSettings } from './useAgentSettings';
 
@@ -21,28 +20,15 @@ beforeEach(() => {
     result: null,
     change: vi.fn(),
     save: vi.fn(),
-    check: vi.fn(),
-    pick: vi.fn()
+    check: vi.fn()
   });
 });
 
 describe('сохранение профиля до загрузки', () => {
-  it('блокирует путь и Save до загрузки профиля Codex, не показывая глобальную модель изображений', () => {
-    const html = renderToStaticMarkup(createElement(CodexCliSettings));
-    expect(html).toContain('Загрузка пути Codex CLI');
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>(?:(?!<\/button>)[\s\S])*Сохранить путь Codex CLI<\/button>/);
-    expect(html).toMatch(/<input[^>]*disabled/);
-    expect(html).toContain('Путь к Codex CLI для изображений');
-    expect(html).toContain('Пусто — автоматический поиск. Модель выбирается в настройках проекта.');
-    expect(html).not.toContain('Модель Codex для опор');
-    expect(html).not.toContain('Codex для опорных изображений');
-    expect(html).not.toContain('MuiPaper-root');
-  });
-
   it('блокирует Save текстового провайдера до ответа getProviderSettings', () => {
     vi.mocked(useAgentSettings).mockReturnValue({ ...vi.mocked(useAgentSettings)(), profileLoading: true });
     const html = renderToStaticMarkup(createElement(SettingsPage));
-    expect(html).toContain('Загрузка профиля CLI');
+    expect(html).toContain('Загрузка профиля агента');
     expect(html).toMatch(/<button[^>]*disabled[^>]*>(?:(?!<\/button>)[\s\S])*Сохранить настройки агента<\/button>/);
   });
 
@@ -54,22 +40,19 @@ describe('сохранение профиля до загрузки', () => {
   });
 });
 
-describe('Путь Codex показывается только выбранному Codex', () => {
-  it.each([null, { provider: 'claude' as const }])('не монтирует настройки изображений при выборе %s', (settings) => {
+describe('CLI находится только автоматически', () => {
+  it.each([null, { provider: 'claude' as const }, { provider: 'codex' as const, model: 'text-model' }])('не показывает выбор пути к CLI для %s', (settings) => {
     vi.mocked(useAgentSettings).mockReturnValue({ ...vi.mocked(useAgentSettings)(), settings });
     const html = renderToStaticMarkup(createElement(SettingsPage));
-    expect(html).not.toContain('Путь к Codex CLI для изображений');
-    expect(html).not.toContain('Загрузка пути Codex CLI');
-    expect(html).not.toContain('Сохранить путь Codex CLI');
+    expect(html).not.toContain('Путь к');
+    expect(html).not.toContain('Выбрать файл');
+    expect(html).not.toContain('Найти автоматически');
   });
 
-  it('показывает отдельный путь изображений после явного выбора Codex и загрузки профиля', () => {
+  it('показывает сохранённую модель в поле со списком', () => {
     const html = renderToStaticMarkup(createElement(SettingsPage));
-    expect(html).toContain('Путь к Codex CLI для изображений');
-  });
-
-  it.each([{ profileLoading: true }, { profileError: 'Ошибка профиля' }])('не монтирует профиль изображений пока текстовый профиль не готов: %s', (state) => {
-    vi.mocked(useAgentSettings).mockReturnValue({ ...vi.mocked(useAgentSettings)(), ...state });
-    expect(renderToStaticMarkup(createElement(SettingsPage))).not.toContain('Путь к Codex CLI для изображений');
+    expect(html).toContain('Модель');
+    expect(html).toMatch(/<input[^>]*value="text-model"/);
+    expect(html).toContain('role="combobox"');
   });
 });

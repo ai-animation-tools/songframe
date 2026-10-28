@@ -18,7 +18,7 @@ describe('причина блокировки ИИ', () => {
     expect(aiActionProblem({ ...ready, image: { ...ready.image, selected: false, message: 'Выберите провайдера изображений.' } }, 'image')).toBe(
       'Выберите провайдера изображений.'
     );
-    expect(aiActionProblem({ ...ready, image: { ...ready.image, available: false, message: 'Codex CLI не найден.' } }, 'image')).toBe('Codex CLI не найден.');
+    expect(aiActionProblem({ ...ready, image: { ...ready.image, available: false, message: 'Codex не найден.' } }, 'image')).toBe('Codex не найден.');
     expect(aiActionProblem(ready, 'image')).toBeNull();
   });
 });

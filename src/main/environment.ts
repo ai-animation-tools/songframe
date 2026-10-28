@@ -177,8 +177,8 @@ export async function checkEnvironment(
         media ? 'Бинарник входит в приложение. Восстановите поставку.' : 'Для разработки установите FFmpeg/ffprobe или выполните yarn prepare:media.'
       )
     ),
-    initial('node', 'Node.js', 'Нужен официальному Kling CLI (npm i -g @klingai/cli-global).'),
-    initial('kling', 'Kling CLI', 'npm i -g @klingai/cli-global, затем kling login в браузере. Без него генерации недоступны, остальное работает.'),
+    initial('node', 'Node.js', 'Нужен для Kling (npm i -g @klingai/cli-global).'),
+    initial('kling', 'Kling', 'npm i -g @klingai/cli-global, затем kling login в браузере. Без него генерации недоступны, остальное работает.'),
     initial(
       'git',
       'Git',
@@ -188,7 +188,7 @@ export async function checkEnvironment(
   if (bundledKling) {
     for (const check of checks.filter((item) => item.id === 'node' || item.id === 'kling')) {
       check.bundled = true;
-      check.label = check.id === 'node' ? 'Node.js (встроенный)' : 'Kling CLI (встроенный)';
+      check.label = check.id === 'node' ? 'Node.js (встроенный)' : 'Kling (встроенный)';
       check.hint =
         check.id === 'node'
           ? 'Используется Node из Electron; отдельная установка не требуется.'

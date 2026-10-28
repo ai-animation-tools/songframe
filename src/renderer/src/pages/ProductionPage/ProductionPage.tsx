@@ -86,7 +86,7 @@ export function ProductionPage(): ReactElement {
       {!view.tools.python ? (
         <Alert severity="info">Python не найден: просмотр работает, кнопки решений и отправки недоступны.</Alert>
       ) : !view.tools.kling ? (
-        <Alert severity="info">Kling CLI не найден: отправка и получение результатов недоступны, подготовка и согласования работают.</Alert>
+        <Alert severity="info">Kling не найден: отправка и получение результатов недоступны, подготовка и согласования работают.</Alert>
       ) : null}
 
       {/* Пока планов нет, предупреждение выше объясняет следующий шаг без пустых панелей выбора. */}

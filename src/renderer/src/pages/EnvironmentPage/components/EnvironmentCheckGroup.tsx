@@ -32,7 +32,7 @@ export function EnvironmentCheckGroup({
       </Typography>
       {category === 'external' ? (
         <Typography variant="body2" color="text.secondary" sx={{ px: 2, pt: 1 }}>
-          Эти CLI устанавливаются отдельно по необходимости. Git нужен для истории и снимков. Локальная разметка работает без внешних CLI.
+          Эти программы устанавливаются отдельно по необходимости. Git нужен для истории и снимков. Локальная разметка работает без них.
         </Typography>
       ) : null}
       <List dense disablePadding>

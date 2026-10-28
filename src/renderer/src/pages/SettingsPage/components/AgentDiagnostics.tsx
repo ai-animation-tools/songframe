@@ -10,7 +10,7 @@ export function AgentDiagnostics({ result }: { result: AgentCheckResult }): Reac
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Stack spacing={1} role="status">
         <Typography fontWeight={600}>Результат проверки</Typography>
-        <Typography variant="body2">CLI: {available ? 'Доступен' : result.availability === 'not_found' ? 'Не найден' : 'Не запускается'}</Typography>
+        <Typography variant="body2">Агент: {available ? 'Доступен' : result.availability === 'not_found' ? 'Не найден' : 'Не запускается'}</Typography>
         {result.executablePath && (
           <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
             Файл: {result.executablePath}

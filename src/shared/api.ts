@@ -1,7 +1,7 @@
 /** Контракт между рендерером и главным процессом: имена каналов и сигнатуры window.api. */
 
 import type { WhisperSetup, WhisperModelId } from './whisper-models';
-import type { AgentAccountResult, AgentCheckResult, AgentEvent, AgentJob, AgentSettings, AgentStartInput } from './agents';
+import type { AgentAccountResult, AgentCheckResult, AgentEvent, AgentJob, AgentModelsResult, AgentSettings, AgentStartInput } from './agents';
 import type { ProductionFrameCandidate, ProductionWorkflowStart, ProductionWorkflowView } from './production-workflow';
 import type { MediaCapabilities, MediaKind } from './media-providers';
 import type { ScenarioWorkflowStart, ScenarioWorkflowView } from './scenario-workflow';
@@ -80,8 +80,6 @@ export interface Api {
   };
   agents: {
     getSettings(): Promise<AgentSettings | null>;
-    getImageSettings(): Promise<AgentSettings>;
-    saveImageSettings(settings: AgentSettings): Promise<AgentSettings>;
     getProviderSettings(provider: AgentSettings['provider']): Promise<AgentSettings | null>;
     saveProviderSettings(settings: AgentSettings): Promise<AgentSettings>;
     saveSettings(settings: AgentSettings | null): Promise<AgentSettings | null>;
@@ -89,6 +87,8 @@ export interface Api {
     check(settings: AgentSettings): Promise<AgentCheckResult>;
     /** Получает доступные CLI сведения об аккаунте и лимитах без генерации и сохранения формы. */
     account(settings: AgentSettings): Promise<AgentAccountResult>;
+    /** Каталог моделей найденного CLI служебным вызовом; пустой список не запрещает ввод модели вручную. */
+    models(settings: AgentSettings): Promise<AgentModelsResult>;
     start(input: AgentStartInput): Promise<AgentJob>;
     cancel(id: string): Promise<AgentJob>;
     get(id: string): Promise<AgentJob | null>;

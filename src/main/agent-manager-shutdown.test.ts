@@ -34,6 +34,9 @@ function create(check: AgentAdapter['check'], script: string): AgentManager {
       parse: () => [],
       account: async () => {
         throw new Error('Не используется в тесте.');
+      },
+      models: async () => {
+        throw new Error('Не используется в тесте.');
       }
     })
   });

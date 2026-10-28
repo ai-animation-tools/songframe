@@ -18,7 +18,6 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'songframe-ai-access-'));
   mkdirSync(join(root, 'plan'));
   settings = new SettingsStore(join(root, 'local'));
-  settings.saveImageAgent({ provider: 'codex', model: 'image-model' });
   project();
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
@@ -78,24 +77,26 @@ describe('Явный выбор и доступность ИИ', () => {
     settings.saveAgent({ provider: 'codex' });
     project({ provider: 'codex', provider_selected: true });
     const { ai, checkAgent } = fixture();
-    checkAgent.mockResolvedValue({ ...ready, availability: 'not_found', authorization: 'unknown', message: 'CLI не найден.' });
+    checkAgent.mockResolvedValue({ ...ready, availability: 'not_found', authorization: 'unknown', message: 'Codex не найден.' });
     const execute = vi.fn();
-    await expect(ai.requireAccess(root, 'image').then(execute)).rejects.toThrow('CLI не найден');
+    await expect(ai.requireAccess(root, 'image').then(execute)).rejects.toThrow('Codex не найден');
     expect(execute).not.toHaveBeenCalled();
     expect(checkAgent).toHaveBeenCalledTimes(1);
   });
 
-  it('проверяет отдельный image CLI только после выбора провайдера и блокирует неизвестный вход Kling', async () => {
-    settings.saveAgent({ provider: 'codex', executablePath: '/tmp/global-codex' });
+  it('проверяет Codex изображений без модели текстового агента и блокирует неизвестный вход Kling', async () => {
+    settings.saveAgent({ provider: 'codex', model: 'text-model' });
     project({ provider: 'codex', provider_selected: true }, { provider: 'kling', provider_selected: true });
     const { ai, checkAgent, checkKling } = fixture();
     checkAgent.mockImplementation(async (config) =>
-      config.model === 'image-model' ? { ...ready, authorization: 'unknown', message: 'Вход Codex не подтверждён.' } : ready
+      config.model === 'text-model' ? ready : { ...ready, authorization: 'unknown', message: 'Вход Codex не подтверждён.' }
     );
     checkKling.mockResolvedValue({ status: 'unknown' });
     const access = await ai.getAccess(root);
     expect(access).toMatchObject({ agent: { available: true }, image: { available: false }, video: { available: false } });
-    expect(checkAgent).toHaveBeenCalledWith(settings.getImageAgent());
+    expect(checkAgent).toHaveBeenCalledWith({ provider: 'codex', model: 'text-model' });
+    expect(checkAgent).toHaveBeenCalledWith({ provider: 'codex' });
+    expect(checkAgent).toHaveBeenCalledTimes(2);
   });
 
   it('явный выбор агента и обоих доступных провайдеров разрешает действия', async () => {

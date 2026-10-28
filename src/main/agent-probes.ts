@@ -26,7 +26,8 @@ const claude: AgentCliProbe = {
     try {
       // CLI может вернуть адрес аккаунта и другие поля: наружу передаётся только признак входа.
       const data = JSON.parse(result.stdout.trim());
-      if (data?.loggedIn === true && result.code === 0) return { authorization: 'authenticated', message: 'CLI сообщает, что вход выполнен.' };
+      if (data?.loggedIn === true && result.code === 0)
+        return { authorization: 'authenticated', message: `${AGENT_PROVIDERS.claude.title} сообщает, что вход выполнен.` };
       if (data?.loggedIn === false && result.code === 1)
         return { authorization: 'unauthenticated', message: `Выполните ${AGENT_PROVIDERS.claude.loginCommand} в терминале.` };
     } catch {
@@ -42,7 +43,7 @@ const codex: AgentCliProbe = {
   statusArgs: ['login', 'status'],
   authorization(result) {
     if (result.code === 0 && /^Logged in using [^\r\n]+$/m.test(result.output))
-      return { authorization: 'authenticated', message: 'CLI сообщает, что учётные данные для входа найдены.' };
+      return { authorization: 'authenticated', message: `${AGENT_PROVIDERS.codex.title} сообщает, что учётные данные для входа найдены.` };
     if (result.code === 1 && /^Not logged in\s*$/m.test(result.output))
       return { authorization: 'unauthenticated', message: `Выполните ${AGENT_PROVIDERS.codex.loginCommand} в терминале.` };
     return null;

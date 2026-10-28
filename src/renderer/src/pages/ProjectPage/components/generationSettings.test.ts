@@ -170,8 +170,8 @@ describe('Настройки независимых медиапровайдер
     );
     expect(html).toContain('Codex встроенным инструментом изображений');
     expect(html).toContain('Модель агента Codex для изображений');
-    expect(html).toContain('>Как указано в Codex CLI</div>');
-    expect(html).toContain('По умолчанию используется модель из настроек Codex CLI.');
+    expect(html).toContain('>Как указано в настройках Codex</div>');
+    expect(html).toContain('По умолчанию используется модель из настроек Codex.');
     expect(html).toContain('а не модель самого генератора изображений.');
     expect(html).toContain('Доступные размеры и форматы определяет исполнитель');
     expect(html).toContain('Сейчас создаётся один вариант для каждой опоры.');

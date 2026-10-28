@@ -9,7 +9,6 @@ import type { CoverCrop, CoverGenerationSession } from '@shared/cover-generation
 import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
 import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration } from '@shared/generation-consent';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
-import { AgentIcon } from '../../../components/AgentIcon';
 import { useApp } from '../../../state';
 import { aiActionProblem } from '@shared/ai-access';
 import { AgentButton } from '../../../components/AgentButton';
@@ -116,7 +115,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
             {session && (
               <Stack spacing={0.5}>
                 <Typography variant="body2">
-                  Исполнитель: {kling ? 'Kling' : 'Codex'} · Модель: {session.model ?? (kling ? 'уточняется при подготовке' : 'из настроек Codex CLI')}
+                  Исполнитель: {kling ? 'Kling' : 'Codex'} · Модель: {session.model ?? (kling ? 'уточняется при подготовке' : 'из настроек Codex')}
                 </Typography>
                 {prepared && session.requestSha && (
                   <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere', fontFamily: 'monospace' }}>
@@ -191,13 +190,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
               {generationLabel}
             </Button>
           ) : (
-            <AgentButton
-              aiKind="image"
-              variant={image ? 'outlined' : 'contained'}
-              provider={session ? 'codex' : null}
-              disabled={generationDisabled}
-              onClick={() => void onGenerate()}
-            >
+            <AgentButton aiKind="image" variant={image ? 'outlined' : 'contained'} disabled={generationDisabled} onClick={() => void onGenerate()}>
               {generationLabel}
             </AgentButton>
           )}
@@ -222,7 +215,8 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
         title="Проверьте промпт перед генерацией"
         description="Вы уверены, что промпт правильный?"
         confirmLabel="Генерировать"
-        confirmIcon={confirmation?.provider === 'codex' ? <AgentIcon provider="codex" /> : <AutoAwesomeIcon />}
+        // Codex изображений доступен только при выбранном агенте Codex, поэтому знак берётся из сохранённого выбора.
+        {...(confirmation?.provider === 'codex' ? { confirmAgent: { aiKind: 'image' as const } } : { confirmIcon: <AutoAwesomeIcon /> })}
         cancelLabel="Отмена"
         onClose={() => setConfirmation(null)}
         onConfirm={confirmGeneration}
@@ -240,7 +234,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
               slotProps={{ input: { readOnly: true } }}
             />
             <Typography variant="body2">
-              Исполнитель: {confirmation.provider === 'kling' ? 'Kling' : 'Codex'} · Модель: {confirmation.model ?? 'из настроек Codex CLI'}
+              Исполнитель: {confirmation.provider === 'kling' ? 'Kling' : 'Codex'} · Модель: {confirmation.model ?? 'из настроек Codex'}
             </Typography>
             <Typography variant="body2">
               {confirmation.provider === 'kling'

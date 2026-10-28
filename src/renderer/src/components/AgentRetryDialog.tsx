@@ -31,7 +31,7 @@ export function AgentRetryDialog({ job, onClose }: { job: AgentJob; onClose(): v
   return (
     <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <AgentIcon provider={agentProvider} />
+        {agentProvider ? <AgentIcon provider={agentProvider} /> : null}
         Повторить задание
       </DialogTitle>
       <DialogContent>

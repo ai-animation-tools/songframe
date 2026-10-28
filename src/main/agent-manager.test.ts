@@ -1,7 +1,7 @@
 /** Настоящие процессы подставных CLI проверяют общий контракт без расхода лимитов провайдеров. */
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentEvent, AgentJob, AgentSettings } from '@shared/agents';
 import { AgentManager } from './agent-manager';
@@ -23,6 +23,7 @@ beforeEach(() => {
 afterEach(() => {
   for (const manager of managers) manager.shutdown();
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   rmSync(work, { recursive: true, force: true });
 });
 function manager(options: ConstructorParameters<typeof AgentManager>[1] = {}): AgentManager {
@@ -31,8 +32,11 @@ function manager(options: ConstructorParameters<typeof AgentManager>[1] = {}): A
   return value;
 }
 
+/** CLI ищется только по имени: фикстура лежит в каталоге с пробелами первым в PATH, раньше настоящего ~/.local/bin. */
 function fake(provider: AgentSettings['provider'], body: string, version?: string, login = true): string {
-  const executablePath = join(work, `${provider} исполняемый файл`);
+  const bin = join(work, 'исполняемые файлы');
+  mkdirSync(bin, { recursive: true });
+  const executablePath = join(bin, provider);
   const cliVersion = version ?? (provider === 'claude' ? '2.1.284 (Claude Code)' : 'codex-cli 0.159.2');
   writeFileSync(
     executablePath,
@@ -54,7 +58,8 @@ process.stdin.on('end', ()=> { fs.writeFileSync(${JSON.stringify(join(work, 'std
 `,
     { mode: 0o700 }
   );
-  settings.saveAgent({ provider, executablePath, model: 'модель с пробелами;$(touch injected)' });
+  vi.stubEnv('PATH', bin + delimiter + (process.env.PATH ?? ''));
+  settings.saveAgent({ provider, model: 'модель с пробелами;$(touch injected)' });
   return executablePath;
 }
 

@@ -118,13 +118,13 @@ describe('Runtime официального Kling CLI', () => {
   it('не маскирует отсутствующий или повреждённый packaged bundle внешним CLI', () => {
     const settings = { ...options(work), env: { PATH: '/usr/bin' } };
     expect(klingPaths(settings)).not.toBeNull();
-    expect(() => resolveKling(settings)).toThrow('Встроенный Kling CLI недоступен');
+    expect(() => resolveKling(settings)).toThrow('Встроенный Kling недоступен');
     bundle(work);
     rmSync(join(work, 'kling/dist/cli.js'));
-    expect(() => resolveKling(settings)).toThrow('Встроенный Kling CLI недоступен');
+    expect(() => resolveKling(settings)).toThrow('Встроенный Kling недоступен');
     bundle(work);
     writeFileSync(join(work, 'kling/package.json'), JSON.stringify({ name: 'other-cli', version: '0.2.3' }));
-    expect(() => resolveKling(settings)).toThrow('Встроенный Kling CLI недоступен');
+    expect(() => resolveKling(settings)).toThrow('Встроенный Kling недоступен');
   });
 
   it.each([
@@ -136,7 +136,7 @@ describe('Runtime официального Kling CLI', () => {
   ])('не подменяет global locale и настоящую версию чужим manifest: %j', (pkg) => {
     bundle(work);
     writeFileSync(join(work, 'kling/package.json'), JSON.stringify(pkg));
-    expect(() => resolveKling(options(work))).toThrow('Не найден manifest официального CLI');
+    expect(() => resolveKling(options(work))).toThrow('Не найден manifest пакета Kling');
   });
 
   it('использует dev fallback только до появления подготовленного каталога', () => {
@@ -145,7 +145,7 @@ describe('Runtime официального Kling CLI', () => {
     expect(resolveKling(settings)).toMatchObject({ bundled: false, command: 'kling', argsPrefix: [] });
     mkdirSync(join(work, 'build/runtime/kling'), { recursive: true });
     expect(klingPaths(settings)?.script).toBe(join(work, 'build/runtime/kling/dist/cli.js'));
-    expect(() => resolveKling(settings)).toThrow('Встроенный Kling CLI недоступен');
+    expect(() => resolveKling(settings)).toThrow('Встроенный Kling недоступен');
   });
 
   it('возвращает настоящий код ошибки и ограничивает зависший процесс без блокировки event loop', async () => {
@@ -161,7 +161,7 @@ describe('Runtime официального Kling CLI', () => {
     clearTimeout(timer);
     expect(heartbeat).toBe(true);
     expect(result.code).toBeNull();
-    expect(result.stderr).toContain('Превышено время выполнения Kling CLI (40 мс).');
+    expect(result.stderr).toContain('Превышено время выполнения Kling (40 мс).');
     expect(performance.now() - started).toBeLessThan(1500);
   });
 });

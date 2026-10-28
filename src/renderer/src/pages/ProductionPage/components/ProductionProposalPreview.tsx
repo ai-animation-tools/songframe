@@ -230,7 +230,7 @@ export function ProductionProposalPreview({
   return (
     <Stack spacing={1.5} sx={fill ? { height: '100%', minHeight: 0 } : undefined}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-        <AgentIcon provider={provider} />
+        {provider ? <AgentIcon provider={provider} /> : null}
         <Typography fontWeight={600}>Предложение агента · {PRODUCTION_PASS_LABELS[proposal.stage]}</Typography>
       </Stack>
       <Alert severity={proposal.stale || ['failed', 'invalid', 'interrupted'].includes(proposal.status) ? 'warning' : 'info'}>

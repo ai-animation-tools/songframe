@@ -113,17 +113,5 @@ export function useAgentSettings() {
     }
   };
 
-  const pick = async (): Promise<void> => {
-    if (!settings || !ready.current || savingNow.current) return;
-    const current = scope.capture();
-    try {
-      await completeInScope(window.api.dialog.pickFiles({ title: 'Исполняемый файл CLI' }), current, (paths) => {
-        if (paths[0]) change({ ...settings, executablePath: paths[0] });
-      });
-    } catch (error) {
-      if (current()) notify(describeError(error), 'error');
-    }
-  };
-
-  return { settings, change, loading, profileLoading, loadError, profileError, saving, checking, result, save, check, pick };
+  return { settings, change, loading, profileLoading, loadError, profileError, saving, checking, result, save, check };
 }

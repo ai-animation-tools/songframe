@@ -1,7 +1,7 @@
 /** Подставные CLI проверяют аргументы, статусы и ограничения, не обращаясь к сервисам генерации. */
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { checkAgent } from './agents';
 import { normalizeAgentSettings, SettingsStore } from './settings';
@@ -20,6 +20,9 @@ function fake(path: string, body: string): string {
   writeFileSync(path, `#!${process.execPath}\n${body}\n`, { mode: 0o700 });
   return path;
 }
+
+// Пустой home и PATH из одного временного каталога не дают найти настоящие claude/codex из ~/.local/bin.
+const isolated = () => ({ env: { PATH: work }, home: work });
 
 function cli(provider: 'claude' | 'codex', status: string, path = join(work, provider)): string {
   return fake(
@@ -43,12 +46,10 @@ describe('Глобальные настройки агента', () => {
     writeFileSync(file, JSON.stringify({ toolsRootOverride: '/ресурсы', futureField: 42 }));
     const store = new SettingsStore(work);
     expect(store.getAgent()).toBeNull();
-    expect(store.saveAgent({ provider: 'codex', model: '  ', executablePath: '  /путь с пробелами/codex  ' })).toEqual({
-      provider: 'codex',
-      executablePath: '/путь с пробелами/codex'
-    });
+    // Прежнее поле пути CLI молча отбрасывается: файл ищется только автоматически.
+    expect(store.saveAgent({ provider: 'codex', model: '  ', executablePath: '  /путь с пробелами/codex  ' })).toEqual({ provider: 'codex' });
     const restarted = new SettingsStore(work);
-    expect(restarted.getAgent()?.executablePath).toBe('/путь с пробелами/codex');
+    expect(restarted.getAgent()).toEqual({ provider: 'codex' });
     restarted.write({ toolsRootOverride: null });
     expect(restarted.getAgent()?.provider).toBe('codex');
     restarted.saveAgent({ provider: 'claude', model: '  выбранная-модель  ' });
@@ -60,7 +61,7 @@ describe('Глобальные настройки агента', () => {
       toolsRootOverride: null,
       futureField: 42,
       agentProfiles: {
-        codex: { provider: 'codex', executablePath: '/путь с пробелами/codex' },
+        codex: { provider: 'codex' },
         claude: { provider: 'claude', model: 'выбранная-модель' }
       }
     });
@@ -70,19 +71,13 @@ describe('Глобальные настройки агента', () => {
     const store = new SettingsStore(work);
     store.write({ toolsRootOverride: null });
     const previous = readFileSync(join(work, 'settings.json'), 'utf8');
-    for (const input of [
-      { provider: 'kling' },
-      { provider: 'codex', model: 3 },
-      { provider: 'claude', executablePath: './claude' },
-      { provider: 'codex', model: 'x\0y' },
-      []
-    ]) {
+    for (const input of [{ provider: 'kling' }, { provider: 'codex', model: 3 }, { provider: 'codex', model: 'x\0y' }, []]) {
       expect(() => store.saveAgent(input)).toThrow();
     }
     expect(readFileSync(join(work, 'settings.json'), 'utf8')).toBe(previous);
     writeFileSync(join(work, 'settings.json'), '{"agent":{"provider":"kling"}}');
     expect(() => store.getAgent()).toThrow(/Неверный формат агента/);
-    expect(() => normalizeAgentSettings({ provider: 'claude', executablePath: null })).toThrow();
+    expect(() => normalizeAgentSettings({ provider: 'claude', model: null })).toThrow();
   });
 });
 
@@ -95,16 +90,24 @@ describe.skipIf(process.platform !== 'linux')('Диагностика Linux CLI'
     expect(new SettingsStore(work).getAgent()).toBeNull();
   });
 
-  it('использует ручной путь с пробелами и кириллицей раньше PATH, не возвращает данные аккаунта', async () => {
-    cli('claude', 'process.exit(99);');
+  it('находит CLI в каталоге с пробелами и кириллицей, берёт первый в PATH, не возвращает данные аккаунта', async () => {
+    const first = join(work, 'моя папка');
     const executablePath = cli(
       'claude',
       'console.error("предупреждение"); console.log(JSON.stringify({ loggedIn: true, email: "private@example.test", token: "SECRET" }));',
-      join(work, 'моя папка', 'Claude CLI')
+      join(first, 'claude')
     );
-    const result = await checkAgent({ provider: 'claude', executablePath }, { env: { PATH: work }, home: work });
+    cli('claude', 'process.exit(99);');
+    const result = await checkAgent({ provider: 'claude' }, { env: { PATH: `${first}${delimiter}${work}` }, home: work });
     expect(result).toMatchObject({ executablePath, version: '2.1.284', authorization: 'authenticated' });
     expect(JSON.stringify(result)).not.toMatch(/SECRET|private@example/);
+  });
+
+  it('ищет только файл с именем CLI своего провайдера', async () => {
+    cli('codex', 'console.log("Logged in using ChatGPT");');
+    fake(join(work, 'Claude CLI'), 'console.log("2.1.284 (Claude Code)");');
+    expect(await checkAgent({ provider: 'claude' }, isolated())).toMatchObject({ availability: 'not_found', authorization: 'unknown' });
+    expect(await checkAgent({ provider: 'codex' }, isolated())).toMatchObject({ executablePath: join(work, 'codex'), availability: 'available' });
   });
 
   it('находит нативный CLI в домашнем .local/bin при минимальном PATH графического меню', async () => {
@@ -115,30 +118,36 @@ describe.skipIf(process.platform !== 'linux')('Диагностика Linux CLI'
     });
   });
 
-  it('объясняет отсутствие CLI и не подменяет исчезнувший ручной файл найденным в PATH', async () => {
-    expect(await checkAgent({ provider: 'codex' }, { env: { PATH: work }, home: work })).toMatchObject({ availability: 'not_found', authorization: 'unknown' });
-    cli('codex', 'console.log("Logged in using ChatGPT");');
-    const result = await checkAgent({ provider: 'codex', executablePath: join(work, 'исчезнувший') }, { env: { PATH: work }, home: work });
-    expect(result).toMatchObject({ availability: 'not_found', authorization: 'unknown' });
-    expect(result.message).toContain('заново');
+  it('объясняет отсутствие CLI и игнорирует прежнее поле пути в настройках', async () => {
+    const missing = await checkAgent({ provider: 'codex' }, isolated());
+    expect(missing).toMatchObject({ availability: 'not_found', authorization: 'unknown' });
+    expect(missing.message).toContain('Codex не найден');
+    const elsewhere = cli('codex', 'console.log("Logged in using ChatGPT");', join(work, 'вне PATH', 'codex'));
+    expect(await checkAgent({ provider: 'codex', executablePath: elsewhere }, isolated())).toMatchObject({ availability: 'not_found' });
+    expect(() => readFileSync(join(work, 'calls'))).toThrow();
   });
 
-  it('различает неисполняемый файл и ошибку команды версии', async () => {
-    const executablePath = cli('claude', '');
+  it('пропускает неисполняемый файл и каталог с именем CLI, отличает ошибку команды версии', async () => {
+    const blocked = join(work, 'без прав');
+    const executablePath = cli('claude', '', join(blocked, 'claude'));
     chmodSync(executablePath, 0o600);
-    expect(await checkAgent({ provider: 'claude', executablePath })).toMatchObject({ availability: 'not_executable' });
+    mkdirSync(join(work, 'каталог', 'claude'), { recursive: true });
+    const env = { PATH: [blocked, join(work, 'каталог')].join(delimiter) };
+    expect(await checkAgent({ provider: 'claude' }, { env, home: work })).toMatchObject({ availability: 'not_found' });
+    const next = cli('claude', 'console.log("{\\"loggedIn\\":true}");');
+    expect(await checkAgent({ provider: 'claude' }, { env: { PATH: [blocked, work].join(delimiter) }, home: work })).toMatchObject({
+      executablePath: next,
+      availability: 'available'
+    });
     fake(executablePath, 'process.exit(2);');
     chmodSync(executablePath, 0o700);
-    expect(await checkAgent({ provider: 'claude', executablePath })).toMatchObject({ availability: 'error', authorization: 'unknown' });
+    expect(await checkAgent({ provider: 'claude' }, { env, home: work })).toMatchObject({ executablePath, availability: 'error', authorization: 'unknown' });
   });
 
   it('подтверждает отсутствие входа только по штатному статусу каждого провайдера', async () => {
     for (const provider of ['claude', 'codex'] as const) {
-      const executablePath = cli(
-        provider,
-        provider === 'claude' ? 'console.log("{\\"loggedIn\\":false}"); process.exit(1);' : 'console.error("Not logged in"); process.exit(1);'
-      );
-      expect(await checkAgent({ provider, executablePath })).toMatchObject({ availability: 'available', authorization: 'unauthenticated' });
+      cli(provider, provider === 'claude' ? 'console.log("{\\"loggedIn\\":false}"); process.exit(1);' : 'console.error("Not logged in"); process.exit(1);');
+      expect(await checkAgent({ provider }, isolated())).toMatchObject({ availability: 'available', authorization: 'unauthenticated' });
     }
   });
 
@@ -147,32 +156,32 @@ describe.skipIf(process.platform !== 'linux')('Диагностика Linux CLI'
       ['codex', 'console.log("новый формат SECRET");'],
       ['claude', 'console.log("{\\"loggedIn\\":true}"); process.exit(1);']
     ] as const) {
-      const executablePath = cli(provider, body);
-      const result = await checkAgent({ provider, executablePath });
+      cli(provider, body);
+      const result = await checkAgent({ provider }, isolated());
       expect(result.authorization).toBe('unknown');
       expect(JSON.stringify(result)).not.toContain('SECRET');
     }
-    const executablePath = cli('codex', 'console.error("failed to connect SECRET"); process.exit(1);');
-    expect((await checkAgent({ provider: 'codex', executablePath })).message).toContain('соединения');
+    cli('codex', 'console.error("failed to connect SECRET"); process.exit(1);');
+    expect((await checkAgent({ provider: 'codex' }, isolated())).message).toContain('соединения');
   });
 
   it('не запускает статус для неизвестной версии CLI', async () => {
-    const executablePath = fake(join(work, 'другой'), 'console.log("SECRET unknown version");');
-    const result = await checkAgent({ provider: 'claude', executablePath });
+    fake(join(work, 'claude'), 'console.log("SECRET unknown version");');
+    const result = await checkAgent({ provider: 'claude' }, isolated());
     expect(result).toMatchObject({ availability: 'available', authorization: 'unknown' });
     expect(result.version).toBeUndefined();
     expect(JSON.stringify(result)).not.toContain('SECRET');
   });
 
   it('завершает зависшую проверку входа и ограничивает объём ответа', async () => {
-    const executablePath = cli('codex', 'setInterval(() => {}, 1000);');
+    cli('codex', 'setInterval(() => {}, 1000);');
     const start = Date.now();
-    const result = await checkAgent({ provider: 'codex', executablePath }, { timeoutMs: 150 });
+    const result = await checkAgent({ provider: 'codex' }, { ...isolated(), timeoutMs: 150 });
     expect(result).toMatchObject({ availability: 'available', version: '0.159.2', authorization: 'unknown' });
     expect(result.message).toContain('вовремя');
     expect(Date.now() - start).toBeLessThan(2500);
     cli('codex', 'process.stdout.write("SECRET".repeat(10000));');
-    const overflow = await checkAgent({ provider: 'codex', executablePath });
+    const overflow = await checkAgent({ provider: 'codex' }, isolated());
     expect(overflow.authorization).toBe('unknown');
     expect(overflow.message).toContain('объём');
     expect(JSON.stringify(overflow)).not.toContain('SECRET');

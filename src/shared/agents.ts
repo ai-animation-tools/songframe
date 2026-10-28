@@ -1,16 +1,30 @@
 import type { AgentProvider } from './agent-providers';
 
 /** Глобальный выбор агента не связан с видеопровайдером проекта и не содержит учётных данных. */
+/** CLI всегда находится автоматическим поиском; найденный файл виден в результате проверки. */
 export interface AgentSettings {
   provider: AgentProvider;
-  executablePath?: string;
   model?: string;
+}
+
+/** Модель из каталога CLI: id передаётся в --model, подпись показывается в настройках. */
+export interface AgentModel {
+  id: string;
+  label: string;
+  description?: string;
+  isDefault?: boolean;
+}
+
+/** Пустой список с сообщением означает, что каталог недоступен и модель можно ввести вручную. */
+export interface AgentModelsResult {
+  models: AgentModel[];
+  message?: string;
 }
 
 export interface AgentCheckResult {
   executablePath?: string;
   version?: string;
-  availability: 'available' | 'not_found' | 'not_executable' | 'error';
+  availability: 'available' | 'not_found' | 'error';
   authorization: 'authenticated' | 'unauthenticated' | 'unknown';
   message: string;
 }

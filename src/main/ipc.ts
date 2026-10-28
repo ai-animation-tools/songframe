@@ -58,6 +58,7 @@ import type { MediaKind } from '@shared/media-providers';
 import { CodexImageProvider, KlingImageProvider, KlingVideoProvider } from './media-providers';
 import { frameImageRequest } from './frame-image-request';
 import { readCodexModels } from './codex-models';
+import { readAgentModels } from './agent-models';
 import type { TaskNotifications } from './task-notifications';
 import type { MontageDraft } from '@shared/montage';
 import { Montage } from './montage';
@@ -386,8 +387,6 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   ipcMain.handle('agents:get', (_event, id: string) => agents.get(id));
   ipcMain.handle('agents:list', (_event, project?: string) => agents.list(project));
   ipcMain.handle('agents:getSettings', () => getServices().settings.getAgent());
-  ipcMain.handle('agents:getImageSettings', () => getServices().settings.getImageAgent());
-  ipcMain.handle('agents:saveImageSettings', (_event, settings: AgentSettings) => getServices().settings.saveImageAgent(settings));
   ipcMain.handle('agents:getProviderSettings', (_event, provider: AgentSettings['provider']) => getServices().settings.getProviderAgent(provider));
   ipcMain.handle('agents:saveProviderSettings', (_event, settings: AgentSettings) => getServices().settings.saveProviderAgent(settings));
   ipcMain.handle('agents:saveSettings', (_event, settings: AgentSettings | null) => getServices().settings.saveAgent(settings));
@@ -396,6 +395,11 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const config = normalizeAgentSettings(settings);
     if (!config) throw new Error('Сначала выберите агента.');
     return createAgentAdapter(config.provider).account(config);
+  });
+  ipcMain.handle('agents:models', (_event, settings: AgentSettings) => {
+    const config = normalizeAgentSettings(settings);
+    if (!config) throw new Error('Сначала выберите агента.');
+    return readAgentModels(createAgentAdapter(config.provider), config);
   });
   ipcMain.handle('app:state', () => getServices().projects.appState());
   ipcMain.handle('app:setToolsRoot', (_event, path: string | null) => {

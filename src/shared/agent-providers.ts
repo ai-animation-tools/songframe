@@ -12,6 +12,10 @@ export interface AgentProviderInfo {
   /** Официальные инструкции установки и входа. */
   installUrl: string;
   loginUrl: string;
+  /** Личный кабинет подписки: использование, лимиты и тариф. */
+  accountUrl: string;
+  /** Как пользователь вызывает навык в этом CLI: /ai-clip-scene или $ai-clip-scene. */
+  skillPrefix: '/' | '$';
 }
 
 export const AGENT_PROVIDERS = {
@@ -22,7 +26,9 @@ export const AGENT_PROVIDERS = {
     loginCommand: 'claude auth login',
     statusCommand: 'claude auth status',
     installUrl: 'https://code.claude.com/docs/en/setup',
-    loginUrl: 'https://code.claude.com/docs/en/cli-reference'
+    loginUrl: 'https://code.claude.com/docs/en/cli-reference',
+    accountUrl: 'https://claude.ai/settings/usage',
+    skillPrefix: '/'
   },
   codex: {
     title: 'Codex',
@@ -31,7 +37,9 @@ export const AGENT_PROVIDERS = {
     loginCommand: 'codex login',
     statusCommand: 'codex login status',
     installUrl: 'https://learn.chatgpt.com/docs/codex/cli',
-    loginUrl: 'https://learn.chatgpt.com/docs/developer-commands?surface=cli#codex-login'
+    loginUrl: 'https://learn.chatgpt.com/docs/developer-commands?surface=cli#codex-login',
+    accountUrl: 'https://chatgpt.com/codex/settings/usage',
+    skillPrefix: '$'
   }
 } as const satisfies Record<string, AgentProviderInfo>;
 
@@ -42,6 +50,11 @@ export const AGENT_PROVIDER_IDS = Object.keys(AGENT_PROVIDERS) as AgentProvider[
 
 export function isAgentProvider(value: unknown): value is AgentProvider {
   return typeof value === 'string' && Object.hasOwn(AGENT_PROVIDERS, value);
+}
+
+/** Команда вызова навыка в синтаксисе выбранного CLI. */
+export function skillCommand(provider: AgentProvider, skill: string, args = ''): string {
+  return `${AGENT_PROVIDERS[provider].skillPrefix}${skill}${args ? ` ${args}` : ''}`;
 }
 
 /** Без выбранного провайдера перечисляются все подключённые агенты. */

@@ -31,12 +31,12 @@ export function resolveKling(options: KlingRuntimeOptions): KlingRuntime {
   if (!paths) return { bundled: false, command: 'kling', argsPrefix: [], env };
   try {
     const pkg = JSON.parse(readFileSync(paths.packageFile, 'utf8'));
-    if (pkg.name !== '@klingai/cli-global' || typeof pkg.version !== 'string' || !pkg.version) throw new Error('Не найден manifest официального CLI.');
+    if (pkg.name !== '@klingai/cli-global' || typeof pkg.version !== 'string' || !pkg.version) throw new Error('Не найден manifest пакета Kling.');
     const script = statSync(paths.script);
-    if (!script.isFile() || script.size === 0) throw new Error('Нет исполняемого JS-файла CLI.');
+    if (!script.isFile() || script.size === 0) throw new Error('Нет исполняемого JS-файла Kling.');
     return { bundled: true, command: paths.executable, argsPrefix: [paths.script], env: { ...env, ELECTRON_RUN_AS_NODE: '1' }, version: pkg.version };
   } catch (error) {
-    throw new Error(`Встроенный Kling CLI недоступен (${paths.packageFile}): ${(error as Error).message}. Восстановите поставку.`, { cause: error });
+    throw new Error(`Встроенный Kling недоступен (${paths.packageFile}): ${(error as Error).message}. Восстановите поставку.`, { cause: error });
   }
 }
 
@@ -80,7 +80,7 @@ export async function runKling(
     };
     const timer = setTimeout(() => {
       timedOut = true;
-      output(`\nПревышено время выполнения Kling CLI (${timeoutMs} мс).\n`, true);
+      output(`\nПревышено время выполнения Kling (${timeoutMs} мс).\n`, true);
       finish(null);
       child.kill('SIGKILL');
       child.stdout.destroy();
@@ -103,7 +103,7 @@ export async function runKling(
     });
     child.stderr.setEncoding('utf8').on('data', (text: string) => output(text, true));
     child.on('error', (error) => {
-      output(`\nОшибка запуска Kling CLI: ${error.message}\n`, true);
+      output(`\nОшибка запуска Kling: ${error.message}\n`, true);
       finish(null);
     });
     child.on('close', (code) => finish(timedOut ? null : code));

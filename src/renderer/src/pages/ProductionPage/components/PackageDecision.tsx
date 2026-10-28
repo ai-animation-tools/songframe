@@ -12,7 +12,7 @@ import { VERDICT_HINTS, VERDICT_LABELS } from '../constants';
 import { useApp } from '../../../state';
 import { aiActionProblem } from '@shared/ai-access';
 import type { AiActionKind } from '@shared/ai-access';
-import { AgentIcon } from '../../../components';
+import { AgentButton } from '../../../components';
 
 /** Пример относится к текущему согласованию и помогает описать конкретное изменение. */
 const REVISION_EXAMPLES: Record<string, string> = {
@@ -89,18 +89,24 @@ export function PackageDecision({
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {options.map((verdict) => {
               const reason = ['send', 'retry'].includes(verdict) ? problem : null;
-              return (
+              const common = {
+                title: reason ?? VERDICT_HINTS[verdict],
+                size: 'small' as const,
+                variant: verdict === options[0] ? ('contained' as const) : ('outlined' as const),
+                color: VERDICT_LABELS[verdict]?.color ?? 'inherit',
+                disabled: !!reason || busy || (sendingBlocked && ['send', 'retry'].includes(verdict)) || (verdict === 'revise' && !note.trim()),
+                onClick: () => onDecide(verdict),
+                children: VERDICT_LABELS[verdict]?.label ?? verdict
+              };
+              // Ответ внешнему агенту обозначается его знаком через общий AgentButton, остальные — значком действия.
+              return external ? (
+                <AgentButton key={verdict} external {...common} />
+              ) : (
                 <Button
-                  title={reason ?? VERDICT_HINTS[verdict]}
                   key={verdict}
-                  size="small"
-                  variant={verdict === options[0] ? 'contained' : 'outlined'}
-                  color={VERDICT_LABELS[verdict]?.color ?? 'inherit'}
-                  disabled={!!reason || busy || (sendingBlocked && ['send', 'retry'].includes(verdict)) || (verdict === 'revise' && !note.trim())}
+                  {...common}
                   startIcon={
-                    external ? (
-                      <AgentIcon provider={null} monochrome={verdict === options[0] || busy} />
-                    ) : verdict === 'send' ? (
+                    verdict === 'send' ? (
                       <SendIcon />
                     ) : verdict === 'park' ? (
                       <SaveIcon />
@@ -114,10 +120,7 @@ export function PackageDecision({
                       <CheckCircleIcon />
                     )
                   }
-                  onClick={() => onDecide(verdict)}
-                >
-                  {VERDICT_LABELS[verdict]?.label ?? verdict}
-                </Button>
+                />
               );
             })}
           </Box>

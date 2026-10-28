@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative, resolve } from 'node:path';
+import { delimiter, dirname, join, relative, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentJob, AgentSettings } from '@shared/agents';
 import type { JobInfo } from '@shared/types';
@@ -67,8 +67,11 @@ function fakePaidCalls(): string[][] {
 }
 
 /** Форматы событий взяты из agent-adapters и его fake executable проверок; комментарий намеренно предшествует финальному JSON. */
+/** CLI ищется по имени: каталог фикстур ставится в PATH раньше настоящего claude/codex из ~/.local/bin. */
 function fakeAgent(provider: AgentSettings['provider']): string {
-  const path = join(directory, `Подставной ${provider} CLI`);
+  const bin = join(directory, 'Подставные CLI');
+  mkdirSync(bin, { recursive: true });
+  const path = join(bin, provider);
   writeFileSync(
     path,
     `#!${process.execPath}
@@ -214,11 +217,11 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
       const assetsBefore = fileHashes(join(project, 'assets'));
       const registryBefore = readFileSync(join(project, 'plan/scenes.json'));
       const settings = new SettingsStore(localDir);
-      const claude = fakeAgent('claude');
-      const codex = fakeAgent('codex');
+      const bin = dirname(fakeAgent('claude'));
+      fakeAgent('codex');
+      vi.stubEnv('PATH', bin + delimiter + (process.env.PATH ?? ''));
       fakeKling();
-      settings.saveAgent({ provider, executablePath: provider === 'claude' ? claude : codex, model: `${provider}-text-fixture` });
-      settings.saveImageAgent({ provider: 'codex', executablePath: codex, model: 'codex-images-fixture' });
+      settings.saveAgent({ provider, model: `${provider}-text-fixture` });
       const agents = new AgentManager(settings, { timeoutMs: 10000 });
       managers.push(agents);
       const launcher = new PythonLauncher({ toolsRoot: root, localDir });

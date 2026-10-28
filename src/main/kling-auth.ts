@@ -38,6 +38,6 @@ export async function loginKling(options: KlingRuntimeOptions): Promise<{ ok: bo
   const result = await runKling(options, ['login', '--quiet'], { timeoutMs: 310000 });
   const payload = json(result.stdout);
   return result.code === 0 && payload?.ok === true && payload.loggedIn === true
-    ? { ok: true, message: 'Вход в Kling выполнен. Авторизация сохранена CLI.' }
+    ? { ok: true, message: 'Вход в Kling выполнен, авторизация сохранена.' }
     : { ok: false, message: 'Вход в Kling не завершён. Подтвердите вход в браузере и повторите при необходимости.' };
 }

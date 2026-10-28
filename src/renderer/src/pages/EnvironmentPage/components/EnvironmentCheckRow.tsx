@@ -65,7 +65,7 @@ export function EnvironmentCheckRow({
                   check.bundled
                     ? 'в поставке'
                     : category === 'external'
-                      ? 'внешний CLI'
+                      ? 'внешняя программа'
                       : category === 'model'
                         ? 'выбирается при разметке'
                         : 'локальная обработка'

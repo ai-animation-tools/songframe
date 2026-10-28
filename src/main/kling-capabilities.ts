@@ -11,7 +11,7 @@ const pending = new WeakMap<Launcher, Map<string, Promise<Catalog>>>();
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 function parseCatalog(value: unknown): Catalog {
-  if (!record(value) || !Array.isArray(value.reports) || !Array.isArray(value.problems)) throw new Error('CLI вернул неверное объявление возможностей.');
+  if (!record(value) || !Array.isArray(value.reports) || !Array.isArray(value.problems)) throw new Error('Kling вернул неверное объявление возможностей.');
   const seen = new Set<string>();
   for (const [entries, failed] of [
     [value.reports, false],
@@ -25,11 +25,11 @@ function parseCatalog(value: unknown): Catalog {
         seen.has(entry.command) ||
         (failed ? typeof entry.message !== 'string' || !entry.message.trim() : !record(entry.models))
       )
-        throw new Error('CLI вернул неверный состав команд возможностей.');
+        throw new Error('Kling вернул неверный состав команд возможностей.');
       seen.add(entry.command);
     }
   }
-  if (seen.size !== KLING_COMMANDS.length) throw new Error('CLI вернул неполный состав команд возможностей.');
+  if (seen.size !== KLING_COMMANDS.length) throw new Error('Kling вернул неполный состав команд возможностей.');
   return value as unknown as Catalog;
 }
 
@@ -53,7 +53,7 @@ export async function readKlingCapabilities(launcher: Launcher, project: string,
         ['capabilities', '--commands', KLING_COMMANDS.join(','), '--json', '--timeout', '30', ...cliArgs],
         { timeoutMs: 35_000 }
       );
-      if (result.code !== 0) throw new Error(result.stderr.trim() || 'CLI не подтвердил возможности Kling.');
+      if (result.code !== 0) throw new Error(result.stderr.trim() || 'Kling не подтвердил возможности.');
       return parseCatalog(JSON.parse(result.stdout));
     })().finally(() => {
       requests.delete(key);

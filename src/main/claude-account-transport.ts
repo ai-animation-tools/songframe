@@ -1,4 +1,5 @@
 /** Читает штатную диагностику Claude через control protocol, не создавая пользовательский ход. */
+import type { AgentModel } from '@shared/agents';
 import { withAccountProcess, type AccountProcessOptions } from './codex-account-transport';
 
 export interface ClaudeUsageWindow {
@@ -79,86 +80,111 @@ function usageSnapshot(value: unknown): ClaudeUsageSnapshot | null {
   };
 }
 
+const CONTROL_ARGS = [
+  '--output-format',
+  'stream-json',
+  '--verbose',
+  '--input-format',
+  'stream-json',
+  '--setting-sources=',
+  '--strict-mcp-config',
+  '--mcp-config',
+  '{"mcpServers":{}}',
+  '--tools',
+  '',
+  '--no-session-persistence',
+  '--settings',
+  '{"disableAllHooks":true}'
+];
+
+/** Отправляет control-запросы по одному и возвращает их ответы; ход модели или запрос инструмента прерывает чтение. */
+async function controlRequests(
+  executable: string,
+  options: AccountProcessOptions,
+  requests: Array<{ subtype: string } & Record<string, unknown>>
+): Promise<unknown[]> {
+  return withAccountProcess(
+    executable,
+    CONTROL_ARGS,
+    options,
+    async (child, closed) =>
+      new Promise<unknown[]>((resolve, reject) => {
+        let buffer = '';
+        let finished = false;
+        const responses: unknown[] = [];
+        const fail = (): void => {
+          if (finished) return;
+          finished = true;
+          reject(new Error('Claude не ответил на служебный запрос.'));
+        };
+        const send = (): void => {
+          const request = requests[responses.length];
+          child.stdin.write(`${JSON.stringify({ type: 'control_request', request_id: request.subtype, request })}\n`);
+        };
+        void closed.then(fail);
+        child.stdout.setEncoding('utf8');
+        child.stdout.on('data', (chunk: string) => {
+          if (finished) return;
+          buffer += chunk;
+          let newline: number;
+          while (!finished && (newline = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, newline).trim();
+            buffer = buffer.slice(newline + 1);
+            if (!line) continue;
+            try {
+              const message = object(JSON.parse(line));
+              if (!message) {
+                fail();
+                return;
+              }
+              // Допустимы служебные уведомления, но не неожиданный ход модели или запрос инструмента.
+              if (message.type === 'system') continue;
+              if (message.type !== 'control_response') {
+                fail();
+                return;
+              }
+              const response = object(message.response);
+              if (!response || response.request_id !== requests[responses.length].subtype || response.subtype !== 'success') {
+                fail();
+                return;
+              }
+              responses.push(response.response);
+              if (responses.length === requests.length) {
+                finished = true;
+                resolve(responses);
+              } else send();
+            } catch {
+              fail();
+            }
+          }
+        });
+        send();
+      })
+  );
+}
+
 export async function readClaudeUsage(executable: string, options: AccountProcessOptions): Promise<ClaudeUsageSnapshot | null> {
   try {
-    return await withAccountProcess(
-      executable,
-      [
-        '--output-format',
-        'stream-json',
-        '--verbose',
-        '--input-format',
-        'stream-json',
-        '--setting-sources=',
-        '--strict-mcp-config',
-        '--mcp-config',
-        '{"mcpServers":{}}',
-        '--tools',
-        '',
-        '--no-session-persistence',
-        '--settings',
-        '{"disableAllHooks":true}'
-      ],
-      options,
-      async (child, closed) =>
-        new Promise<ClaudeUsageSnapshot | null>((resolve, reject) => {
-          let buffer = '';
-          let waiting: 'initialize' | 'get_usage' = 'initialize';
-          let finished = false;
-          const fail = (): void => {
-            if (finished) return;
-            finished = true;
-            reject(new Error('Не удалось прочитать лимиты Claude.'));
-          };
-          const send = (): void => {
-            // get_usage — экспериментальный метод SDK; skip_behaviors исключает чтение истории за семь дней.
-            child.stdin.write(
-              `${JSON.stringify({ type: 'control_request', request_id: waiting, request: waiting === 'initialize' ? { subtype: 'initialize' } : { subtype: 'get_usage', skip_behaviors: true } })}\n`
-            );
-          };
-          void closed.then(fail);
-          child.stdout.setEncoding('utf8');
-          child.stdout.on('data', (chunk: string) => {
-            if (finished) return;
-            buffer += chunk;
-            let newline: number;
-            while (!finished && (newline = buffer.indexOf('\n')) >= 0) {
-              const line = buffer.slice(0, newline).trim();
-              buffer = buffer.slice(newline + 1);
-              if (!line) continue;
-              try {
-                const message = object(JSON.parse(line));
-                if (!message) {
-                  fail();
-                  return;
-                }
-                // Допустимы служебные уведомления, но не неожиданный ход модели или запрос инструмента.
-                if (message.type === 'system') continue;
-                if (message.type !== 'control_response') {
-                  fail();
-                  return;
-                }
-                const response = object(message.response);
-                if (!response || response.request_id !== waiting || response.subtype !== 'success') {
-                  fail();
-                  return;
-                }
-                if (waiting === 'initialize') {
-                  waiting = 'get_usage';
-                  send();
-                } else {
-                  finished = true;
-                  resolve(usageSnapshot(response.response));
-                }
-              } catch {
-                fail();
-              }
-            }
-          });
-          send();
-        })
-    );
+    // get_usage — экспериментальный метод SDK; skip_behaviors исключает чтение истории за семь дней.
+    const [, usage] = await controlRequests(executable, options, [{ subtype: 'initialize' }, { subtype: 'get_usage', skip_behaviors: true }]);
+    return usageSnapshot(usage);
   } catch {
     return null;
   }
+}
+
+/** Список моделей приходит в ответе initialize, как supportedModels() в Agent SDK; формат экспериментальный. */
+export async function readClaudeModels(executable: string, options: AccountProcessOptions): Promise<AgentModel[]> {
+  const [initialize] = await controlRequests(executable, options, [{ subtype: 'initialize' }]);
+  const models = object(initialize)?.models;
+  if (!Array.isArray(models)) throw new Error('Claude не вернул список моделей.');
+  return models.slice(0, 100).flatMap((value) => {
+    const row = object(value);
+    const id = typeof row?.value === 'string' ? row.value.trim() : '';
+    // В --model передаётся value; псевдоним default означает выбор самого CLI и совпадает с пустым полем.
+    if (!row || !id || id === 'default' || id.length > 128 || /\s/.test(id)) return [];
+    const label = typeof row.displayName === 'string' && row.displayName.trim() ? row.displayName.trim().slice(0, 128) : id;
+    const description = typeof row.description === 'string' && row.description.trim() ? row.description.trim().slice(0, 200) : undefined;
+    return [{ id, label, ...(description ? { description } : {}) }];
+  });
 }

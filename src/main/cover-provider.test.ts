@@ -2,7 +2,6 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
 import { SettingsStore } from './settings';
 import { prepareProjectCover } from './cover-provider';
 
@@ -20,14 +19,14 @@ function fixture(image: { provider: string; model?: string }) {
 }
 
 describe('выбор провайдера обложки', () => {
-  it('не выбирает Codex изображений под текстовым Claude', async () => {
+  it('готовит обложку Codex под текстовым Claude: агент на провайдера изображений не влияет', async () => {
     const { input, settings } = fixture({ provider: 'codex' });
-    const getImageAgent = vi.spyOn(settings, 'getImageAgent');
     const kling = vi.fn();
-    const codex = vi.fn();
-    await expect(prepareProjectCover(input, { settings, kling, codex })).rejects.toThrow('выберите агента Codex');
-    expect(getImageAgent).not.toHaveBeenCalled();
-    expect(codex).not.toHaveBeenCalled();
+    const generate = vi.fn();
+    const codex = vi.fn(() => generate);
+    const prepared = await prepareProjectCover(input, { settings, kling, codex });
+    expect(prepared.provider).toBe('codex');
+    expect(codex).toHaveBeenCalledWith({ provider: 'codex' });
     expect(kling).not.toHaveBeenCalled();
   });
 
@@ -41,15 +40,15 @@ describe('выбор провайдера обложки', () => {
     expect(codex).not.toHaveBeenCalled();
   });
 
-  it.each(['codex', 'kling'])('не подготавливает %s без выбранного глобального агента при сохранённом профиле изображения', async (provider) => {
+  it.each(['codex', 'kling'] as const)('готовит %s и без выбранного агента', async (provider) => {
     const { input, settings } = fixture({ provider });
     settings.saveAgent(null);
     const generate = vi.fn();
     const kling = vi.fn(async () => ({ provider: 'kling' as const, model: null, requestSha: 'sha', quote: null, generate }));
     const codex = vi.fn(() => generate);
-    await expect(prepareProjectCover(input, { settings, kling, codex })).rejects.toThrow(COVER_AGENT_REQUIRED);
-    expect(kling).not.toHaveBeenCalled();
-    expect(codex).not.toHaveBeenCalled();
+    expect((await prepareProjectCover(input, { settings, kling, codex })).provider).toBe(provider);
+    expect(provider === 'kling' ? kling : codex).toHaveBeenCalledTimes(1);
+    expect(provider === 'kling' ? codex : kling).not.toHaveBeenCalled();
     expect(generate).not.toHaveBeenCalled();
   });
 

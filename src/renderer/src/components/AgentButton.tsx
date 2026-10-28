@@ -8,7 +8,7 @@ import { useApp } from '../state';
 import { AgentIcon } from './AgentIcon';
 
 type Props = Omit<ButtonProps, 'startIcon'> & {
-  /** Только агент уже запущенного задания или формы настроек; иначе используется сохранённый агент. */
+  /** Агент уже запущенного задания, формы настроек или исполнитель провайдера медиа (Codex для изображений); иначе — сохранённый агент. */
   provider?: AgentProvider;
   aiKind?: AiActionKind;
   /** Только диагностика профиля в настройках: проверяет явный выбор формы до сохранения и установки CLI. */
@@ -26,7 +26,7 @@ export function AgentButton({ provider, aiKind = 'agent', setup = false, externa
       : 'Выберите агента в форме настроек.'
     : external
       ? null
-      : !agentProvider
+      : aiKind === 'agent' && !agentProvider
         ? 'Сначала выберите агента в настройках приложения.'
         : aiActionProblem(aiAccess, aiKind);
   const disabled = props.disabled || !!reason;

@@ -1,4 +1,6 @@
-/** Выключенный агент блокирует весь сценарий, даже при сохранённом отдельном профиле изображений. */
+import type { MediaProviderFor } from './media-providers';
+
+/** Без выбранного агента недоступны текстовые этапы; генерация медиа от агента не зависит. */
 export const COVER_AGENT_REQUIRED = 'Сначала выберите агента в настройках приложения.';
 
 /** Временная сессия обложки не меняет исходники до сохранения общей формы. */
@@ -14,7 +16,7 @@ export interface CoverGenerationSession {
   status: 'idle' | 'generating' | 'ready' | 'failed' | 'accepted';
   image: { path: string; width: number; height: number } | null;
   error: string | null;
-  provider: 'codex' | 'kling';
+  provider: MediaProviderFor<'image'>;
   model: string | null;
   preparing: boolean;
   requestSha: string | null;

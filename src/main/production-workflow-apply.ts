@@ -1,4 +1,5 @@
 /** Узкий журнал замены рабочего пакета: платные попытки никогда не откатываются и не заменяются. */
+import { isPaidMediaProvider } from '@shared/media-providers';
 import { createHash, randomUUID } from 'node:crypto';
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmdirSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
@@ -69,7 +70,7 @@ function imageRoots(directory: string, data = workflow(directory)): Omit<Protect
   for (const item of data.image_requests) {
     if (
       !record(item) ||
-      item.provider !== 'kling' ||
+      !isPaidMediaProvider(item.provider) ||
       typeof item.frame_id !== 'string' ||
       !/^K\d{2}$/.test(item.frame_id) ||
       typeof item.request_dir !== 'string' ||

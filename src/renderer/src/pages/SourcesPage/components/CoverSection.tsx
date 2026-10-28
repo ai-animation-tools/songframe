@@ -5,7 +5,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { FileDropZone } from '../../../components/FileDropZone';
 import { AgentButton } from '../../../components/AgentButton';
-import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
 import { useApp } from '../../../state';
 import { aiActionProblem } from '@shared/ai-access';
 
@@ -18,8 +17,9 @@ interface Props {
 }
 
 export function CoverSection({ coverSrc, onPick, onRemove, onDrop, onGenerate }: Props): ReactElement {
-  const { agentProvider, aiAccess } = useApp();
-  const blockedReason = !agentProvider ? COVER_AGENT_REQUIRED : aiActionProblem(aiAccess, 'image');
+  const { aiAccess } = useApp();
+  // Обложку готовит провайдер изображений проекта; выбранный агент на неё не влияет.
+  const blockedReason = aiActionProblem(aiAccess, 'image');
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>

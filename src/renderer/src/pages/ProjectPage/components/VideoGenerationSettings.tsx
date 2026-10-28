@@ -2,13 +2,12 @@
 
 import AddIcon from '@mui/icons-material/Add';
 import { type ReactElement, useEffect, useState } from 'react';
-import type { MediaCapabilities } from '@shared/media-providers';
+import { isMediaProvider, MEDIA_PROVIDERS, mediaProviderInfo, mediaProvidersFor, type MediaCapabilities } from '@shared/media-providers';
 import { MediaCapabilitiesPanel } from './MediaCapabilitiesPanel';
 import { aspectOptions, modelOptions, resolutionOptions } from './generationOptions';
 import { Alert, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import type { VideoGenerationSettings as Settings } from '@shared/types';
 import { DURATION_RULES, DURATION_RULE_LABELS } from '@shared/types';
-import { useApp } from '../../../state';
 
 const RESOLUTIONS = ['1080p', '720p'];
 
@@ -25,17 +24,18 @@ export function VideoGenerationSettings({
   onAdd: () => void;
   onValidityChange?: (valid: boolean) => void;
 }): ReactElement {
-  const { agentProvider } = useApp();
   const [capabilities, setCapabilities] = useState<MediaCapabilities | null>(null);
   const providerSelected = value?.provider_selected === true;
   // Пустой неподтверждённый черновик сохраняется как null в ProjectSettingsCard и не блокирует обычное сохранение.
   const emptyUnselected = value !== null && !providerSelected && !value.provider.trim();
-  const canDiscover = Boolean(agentProvider) && providerSelected;
+  // Выбранный текстовый агент не влияет на провайдера видео: проверка зависит только от явного выбора.
+  const canDiscover = providerSelected;
   const capabilitiesReady = canDiscover && capabilities !== null && capabilities.provider === value?.provider;
   const capabilitiesConfirmed = capabilitiesReady && capabilities.available && capabilities.problems.length === 0;
   const models = capabilitiesReady ? capabilities.models : [];
   const availableModels = modelOptions(models, 'video');
   const modelChoices = ['', ...availableModels];
+  const defaultModelLabel = mediaProviderInfo(value?.provider, 'video')?.defaultModelLabel ?? 'Автоматически по задаче';
   // Сохранённый ID остаётся видимым, но не становится доступной моделью без подтверждения CLI.
   if (value?.model && !availableModels.includes(value.model)) modelChoices.push(value.model);
   const resolutions = capabilitiesReady ? resolutionOptions(models, value?.model) : RESOLUTIONS;
@@ -105,8 +105,14 @@ export function VideoGenerationSettings({
                 size="small"
               >
                 <MenuItem value="">Не выбрано</MenuItem>
-                {value.provider && value.provider !== 'kling' && <MenuItem value={value.provider}>{value.provider || 'Не задано'} (из файла)</MenuItem>}
-                <MenuItem value="kling">Kling</MenuItem>
+                {value.provider && !isMediaProvider(value.provider, 'video') && (
+                  <MenuItem value={value.provider}>{value.provider || 'Не задано'} (из файла)</MenuItem>
+                )}
+                {mediaProvidersFor('video').map((id) => (
+                  <MenuItem key={id} value={id}>
+                    {MEDIA_PROVIDERS[id].title}
+                  </MenuItem>
+                ))}
               </TextField>
               <TextField
                 select
@@ -126,8 +132,7 @@ export function VideoGenerationSettings({
                   select: {
                     displayEmpty: true,
                     // Закрытое поле остаётся однострочным, команды видны только в меню.
-                    renderValue: () =>
-                      value.model ? `${value.model}${availableModels.includes(value.model) ? '' : ' (недоступна)'}` : 'Автоматически по задаче'
+                    renderValue: () => (value.model ? `${value.model}${availableModels.includes(value.model) ? '' : ' (недоступна)'}` : defaultModelLabel)
                   }
                 }}
                 helperText={
@@ -139,7 +144,7 @@ export function VideoGenerationSettings({
                 {modelChoices.map((id) => (
                   <MenuItem key={id} value={id} disabled={Boolean(id) && !availableModels.includes(id)}>
                     <Box>
-                      <Typography variant="body2">{id ? `${id}${availableModels.includes(id) ? '' : ' (недоступна)'}` : 'Автоматически по задаче'}</Typography>
+                      <Typography variant="body2">{id ? `${id}${availableModels.includes(id) ? '' : ' (недоступна)'}` : defaultModelLabel}</Typography>
                       {availableModels.includes(id) && (
                         <Typography variant="caption" color="text.secondary">
                           {Array.from(new Set(models.filter((model) => model.id === id).map((model) => model.command))).join(', ')}

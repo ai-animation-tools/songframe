@@ -1,14 +1,15 @@
 /** Жизненный цикл временной обложки; платная отправка всегда отделена от подготовки цены. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CoverCrop, CoverGenerationApproval, CoverGenerationSession } from '@shared/cover-generation';
-import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
+import { MEDIA_PROVIDERS } from '@shared/media-providers';
 import { priceAllowsGeneration } from '@shared/generation-consent';
 import { aiActionProblem } from '@shared/ai-access';
 import { useApp } from '../../state';
 
 export function useCoverGeneration(project: string) {
-  const { describeError, notify, agentProvider, aiAccess } = useApp();
-  const blockedReason = !agentProvider ? COVER_AGENT_REQUIRED : aiActionProblem(aiAccess, 'image');
+  const { describeError, notify, aiAccess } = useApp();
+  // Обложку готовит провайдер изображений проекта; выбранный агент на неё не влияет.
+  const blockedReason = aiActionProblem(aiAccess, 'image');
   const [session, setSession] = useState<CoverGenerationSession | null>(null);
   const [working, setWorking] = useState(false);
   const [accepting, setAccepting] = useState(false);
@@ -102,7 +103,7 @@ export function useCoverGeneration(project: string) {
     perform(async () => {
       if (!session?.requestSha || preparedSha !== session.requestSha || approval.approvalToken !== session.approvalToken) return;
       if (currentBlock.current) throw new Error(currentBlock.current);
-      if (session.provider === 'kling' && !priceAllowsGeneration(session.quote, approval.allowUnknownCost)) return;
+      if (MEDIA_PROVIDERS[session.provider].paid && !priceAllowsGeneration(session.quote, approval.allowUnknownCost)) return;
       setPreparedSha(null);
       // Старый результат больше нельзя принять после запуска новой попытки, даже при ошибке IPC.
       setSession({ ...session, status: 'generating', image: null, error: null });

@@ -8,22 +8,41 @@ import { LyricsSection } from './components/LyricsSection';
 import { IdeaSection } from './components/IdeaSection';
 import { ReferenceEditor } from './components/ReferenceEditor';
 import type { AiAccess } from '@shared/ai-access';
-import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
 
 const aiState = vi.hoisted(() => ({ agentProvider: null as 'claude' | 'codex' | null, aiAccess: null as AiAccess | null }));
 vi.mock('../../state', () => ({ useApp: () => ({ notify: vi.fn(), describeError: String, ...aiState }) }));
 
 /** Области выбора доступны клавиатуре, а поля текста остаются отдельными редакторами. */
 describe('загрузка исходников', () => {
-  it('не разрешает генерацию обложки с невыбранным агентом', () => {
-    aiState.agentProvider = null;
-    aiState.aiAccess = null;
-    const html = renderToStaticMarkup(
-      createElement(CoverSection, { coverSrc: null, onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn(), onGenerate: vi.fn() })
-    );
+  const cover = (): string =>
+    renderToStaticMarkup(createElement(CoverSection, { coverSrc: null, onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn(), onGenerate: vi.fn() }));
+  const generateDisabled = (html: string): boolean => {
     const label = html.indexOf('Сгенерировать');
-    expect(html.slice(html.lastIndexOf('<button', label), label)).toContain('disabled=""');
-    expect(html).toContain(COVER_AGENT_REQUIRED);
+    return html.slice(html.lastIndexOf('<button', label), label).includes('disabled=""');
+  };
+
+  it('не разрешает генерацию обложки до проверки и без провайдера изображений', () => {
+    aiState.agentProvider = 'codex';
+    aiState.aiAccess = null;
+    expect(generateDisabled(cover())).toBe(true);
+    aiState.aiAccess = {
+      agent: { provider: 'codex', selected: true, available: true, message: '' },
+      image: { provider: null, selected: false, available: false, message: 'Сначала выберите провайдера изображений в настройках проекта.' },
+      video: { provider: null, selected: false, available: false, message: '' }
+    };
+    const html = cover();
+    expect(generateDisabled(html)).toBe(true);
+    expect(html).toContain('Сначала выберите провайдера изображений');
+  });
+
+  it('разрешает генерацию обложки без выбранного агента при доступном провайдере изображений', () => {
+    aiState.agentProvider = null;
+    aiState.aiAccess = {
+      agent: { provider: null, selected: false, available: false, message: 'Сначала выберите агента в настройках приложения.' },
+      image: { provider: 'codex', selected: true, available: true, message: '' },
+      video: { provider: null, selected: false, available: false, message: '' }
+    };
+    expect(generateDisabled(cover())).toBe(false);
   });
 
   it('предлагает четыре области выбора без отдельных кнопок импорта', () => {

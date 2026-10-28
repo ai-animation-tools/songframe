@@ -1,6 +1,6 @@
 /** Проверки формы без Electron: неизвестные предпочтения остаются видимыми, Codex не обещает параметры Kling. */
 
-import { createElement, type ChangeEvent } from 'react';
+import { Children, createElement, isValidElement, type ChangeEvent } from 'react';
 import type * as Material from '@mui/material';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,7 @@ import { DEFAULT_GENERATION, DEFAULT_IMAGE_GENERATION, DEFAULT_KLING_IMAGE_GENER
 import { VideoGenerationSettings } from './VideoGenerationSettings';
 import { ImageGenerationSettings } from './ImageGenerationSettings';
 import { normalizeProjectSettingsForSave } from './ProjectSettingsCard';
+import { MEDIA_PROVIDERS } from '@shared/media-providers';
 
 const { fields, discoveries, appState } = vi.hoisted(() => ({
   fields: new Map<string, Material.TextFieldProps>(),
@@ -40,6 +41,14 @@ vi.mock('./MediaCapabilitiesPanel', () => ({
 }));
 
 const unchanged = (): void => {};
+// Закрытое меню не попадает в SSR, поэтому варианты читаются из дочерних элементов поля.
+const menuItems = (id: string): { value: unknown; label: unknown; disabled: boolean }[] =>
+  Children.toArray(fields.get(id)?.children)
+    .filter(isValidElement)
+    .map((item) => {
+      const props = item.props as { value?: unknown; children?: unknown; disabled?: boolean };
+      return { value: props.value, label: props.children, disabled: Boolean(props.disabled) };
+    });
 
 describe('Настройки независимых медиапровайдеров', () => {
   it('показывает сохранённые неизвестные значения видео без замены на известные', () => {
@@ -175,7 +184,7 @@ describe('Настройки независимых медиапровайдер
     expect(html).toContain('а не модель самого генератора изображений.');
     expect(html).toContain('Доступные размеры и форматы определяет исполнитель');
     expect(html).toContain('Сейчас создаётся один вариант для каждой опоры.');
-    expect(html).toContain('Количество вариантов, разрешение и пропорции из параметров Kling к этому исполнителю не применяются.');
+    expect(html).toContain('Параметры запроса — количество вариантов, разрешение и пропорции — к этому исполнителю не применяются.');
     expect(html).toContain(
       'В наших проверках горизонтальные изображения получались размером 1672×941, в том числе при запросе 4K. Точный размер через промпт не гарантируется.'
     );
@@ -314,15 +323,20 @@ describe('Настройки независимых медиапровайдер
     expect(discoveries).toHaveBeenCalledTimes(2);
   });
 
-  it('не вызывает ни одного медиапровайдера без выбранного глобального агента', () => {
-    appState.agentProvider = null;
+  it.each([null, 'claude', 'codex'] as const)('предлагает Codex и Kling для изображений и читает их возможности при агенте %s', (agent) => {
+    appState.agentProvider = agent;
     discoveries.mockClear();
     for (const provider of ['codex', 'kling']) {
       const onChange = vi.fn();
       const html = renderToStaticMarkup(
         createElement(ImageGenerationSettings, { project: '/fixture/project', value: { provider, provider_selected: true }, onChange, onAdd: unchanged })
       );
-      expect(html).toContain('Для изображений Codex сначала выберите агента Codex в настройках приложения.');
+      expect(html).not.toContain('выберите агента Codex');
+      expect(menuItems('image-generation-provider')).toEqual([
+        { value: '', label: 'Не выбрано', disabled: false },
+        { value: 'kling', label: MEDIA_PROVIDERS.kling.title, disabled: false },
+        { value: 'codex', label: MEDIA_PROVIDERS.codex.title, disabled: false }
+      ]);
       expect(onChange).not.toHaveBeenCalled();
     }
     renderToStaticMarkup(
@@ -333,30 +347,30 @@ describe('Настройки независимых медиапровайдер
         onAdd: unchanged
       })
     );
-    expect(discoveries).not.toHaveBeenCalled();
+    expect(discoveries).toHaveBeenCalledTimes(3);
+    expect(discoveries.mock.calls.map(([props]) => (props as { provider: string }).provider)).toEqual(['codex', 'kling', 'kling']);
   });
 
-  it('при Claude сохраняет старый Codex видимым, запрещает его выбор и разрешает только явно выбранный Kling', () => {
+  it('разрешает выбрать Codex для изображений при агенте Claude и подставляет параметры только провайдеру с параметрами запроса', () => {
     appState.agentProvider = 'claude';
-    discoveries.mockClear();
     const onChange = vi.fn();
-    const value = { provider: 'codex', provider_selected: true, model: 'saved-model' };
-    const html = renderToStaticMarkup(createElement(ImageGenerationSettings, { project: '/fixture/project', value, onChange, onAdd: unchanged }));
-    expect(html).toContain('Codex');
-    expect(html).toContain('saved-model');
-    expect(html).toContain('Для изображений Codex сначала выберите агента Codex в настройках приложения.');
-    expect(fields.get('image-generation-provider')?.value).toBe('codex');
-    fields.get('image-generation-provider')?.onChange?.({ target: { value: 'codex' } } as ChangeEvent<HTMLInputElement>);
-    expect(onChange).not.toHaveBeenCalled();
-    expect(discoveries).not.toHaveBeenCalled();
-    renderToStaticMarkup(
-      createElement(ImageGenerationSettings, {
-        project: '/fixture/project',
-        value: { provider: 'kling', provider_selected: true },
-        onChange: unchanged,
-        onAdd: unchanged
-      })
-    );
+    const value = { provider: 'kling', provider_selected: false, model: 'saved-model' };
+    renderToStaticMarkup(createElement(ImageGenerationSettings, { project: '/fixture/project', value, onChange, onAdd: unchanged }));
+    const choose = fields.get('image-generation-provider')?.onChange;
+    choose?.({ target: { value: 'codex' } } as ChangeEvent<HTMLInputElement>);
+    expect(onChange).toHaveBeenLastCalledWith({ ...value, provider: 'codex', provider_selected: true });
+    choose?.({ target: { value: 'kling' } } as ChangeEvent<HTMLInputElement>);
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...value,
+      provider: 'kling',
+      provider_selected: true,
+      resolution: DEFAULT_KLING_IMAGE_GENERATION.resolution,
+      aspect_ratio: DEFAULT_KLING_IMAGE_GENERATION.aspect_ratio,
+      outputs: DEFAULT_KLING_IMAGE_GENERATION.outputs
+    });
+  });
+
+  it('предлагает для видео только провайдеров видео из реестра', () => {
     renderToStaticMarkup(
       createElement(VideoGenerationSettings, {
         project: '/fixture/project',
@@ -365,7 +379,19 @@ describe('Настройки независимых медиапровайдер
         onAdd: unchanged
       })
     );
-    expect(discoveries).toHaveBeenCalledTimes(2);
+    expect(menuItems('video-generation-provider')).toEqual([
+      { value: '', label: 'Не выбрано', disabled: false },
+      { value: 'kling', label: MEDIA_PROVIDERS.kling.title, disabled: false }
+    ]);
+  });
+
+  it('берёт подписи модели по умолчанию из реестра', () => {
+    for (const provider of ['codex', 'kling'] as const) {
+      const html = renderToStaticMarkup(
+        createElement(ImageGenerationSettings, { project: '/fixture/project', value: { provider }, onChange: unchanged, onAdd: unchanged })
+      );
+      expect(html).toContain(`>${MEDIA_PROVIDERS[provider].defaultModelLabel}</div>`);
+    }
   });
 
   it('сохраняет пустую неподтверждённую форму как null без выбора агента и не удаляет старые настройки', () => {

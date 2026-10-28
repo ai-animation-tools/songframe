@@ -2,12 +2,11 @@
 
 import AddIcon from '@mui/icons-material/Add';
 import { type ReactElement, useEffect, useState } from 'react';
-import type { MediaCapabilities } from '@shared/media-providers';
+import { isMediaProvider, MEDIA_PROVIDERS, mediaProviderInfo, mediaProvidersFor, type MediaCapabilities } from '@shared/media-providers';
 import { MediaCapabilitiesPanel } from './MediaCapabilitiesPanel';
 import { Alert, Autocomplete, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { DEFAULT_KLING_IMAGE_GENERATION, type ImageGenerationSettings as Settings } from '@shared/types';
 import { aspectOptions, modelOptions, resolutionOptions } from './generationOptions';
-import { useApp } from '../../../state';
 
 export function ImageGenerationSettings({
   project,
@@ -22,27 +21,30 @@ export function ImageGenerationSettings({
   onAdd: () => void;
   onValidityChange?: (valid: boolean) => void;
 }): ReactElement {
-  const { agentProvider } = useApp();
   const [capabilities, setCapabilities] = useState<MediaCapabilities | null>(null);
   const providerSelected = value?.provider_selected === true;
   // Пустой неподтверждённый черновик сохраняется как null в ProjectSettingsCard и не блокирует обычное сохранение.
   const emptyUnselected = value !== null && !providerSelected && !value.provider.trim();
-  // Даже сохранённый Codex не разрешает запуск CLI при другом глобальном агенте.
-  const canDiscover = Boolean(agentProvider) && providerSelected && (value?.provider !== 'codex' || agentProvider === 'codex');
+  // Сведения о провайдере берутся из реестра; неизвестное имя из файла ведёт себя как провайдер с параметрами запроса.
+  const info = mediaProviderInfo(value?.provider, 'image');
+  const executor = info?.executor ?? null;
+  const requestParameters = info?.requestParameters ?? true;
+  // Выбранный текстовый агент не влияет на провайдера изображений: проверка зависит только от явного выбора.
+  const canDiscover = providerSelected;
   const capabilitiesReady = canDiscover && capabilities !== null && capabilities.provider === value?.provider;
   const capabilitiesConfirmed = capabilitiesReady && capabilities.available && capabilities.problems.length === 0;
   const models = capabilitiesReady ? capabilities.models : [];
-  // Codex возвращает собственный порядок каталога агента; рейтинг моделей Kling к нему не относится.
-  const availableModels = value?.provider === 'codex' ? [...new Set(models.map((model) => model.id))] : modelOptions(models, 'image');
+  // Агент-исполнитель возвращает собственный порядок каталога; рейтинг моделей прямых провайдеров к нему не относится.
+  const availableModels = executor ? [...new Set(models.map((model) => model.id))] : modelOptions(models, 'image');
   const modelChoices = ['', ...availableModels];
-  const defaultModelLabel = value?.provider === 'codex' ? 'Как указано в настройках Codex' : 'Автоматически по задаче';
+  const defaultModelLabel = info?.defaultModelLabel ?? 'Автоматически по задаче';
   const resolutions = resolutionOptions(models, value?.model);
   const selectedResolution = value?.resolution ?? DEFAULT_KLING_IMAGE_GENERATION.resolution ?? '2k';
   const aspects = aspectOptions(models, value?.model);
   const defaultAspect = DEFAULT_KLING_IMAGE_GENERATION.aspect_ratio ?? '16:9';
   const selectedAspect = value?.aspect_ratio ?? (aspects.includes(defaultAspect) ? defaultAspect : '');
   const selectedOutputs = value?.outputs ?? DEFAULT_KLING_IMAGE_GENERATION.outputs ?? 1;
-  const needsProviderParameters = Boolean(value) && !emptyUnselected && value?.provider !== 'codex';
+  const needsProviderParameters = Boolean(value) && !emptyUnselected && requestParameters;
   // Неполный каталог и скрытые поля другого исполнителя не блокируют сохранение проекта.
   const providerError = value !== null && !emptyUnselected && !value.provider.trim();
   const modelError = capabilitiesConfirmed && Boolean(value?.model) && !availableModels.includes(value?.model ?? '');
@@ -75,11 +77,6 @@ export function ImageGenerationSettings({
                 Сохранённый провайдер: {value.provider}. Для запуска выберите его в меню и сохраните настройки.
               </Typography>
             )}
-            {agentProvider !== 'codex' && (
-              <Typography variant="caption" color="text.secondary">
-                Для изображений Codex сначала выберите агента Codex в настройках приложения.
-              </Typography>
-            )}
             <Box
               sx={{
                 display: 'grid',
@@ -107,12 +104,11 @@ export function ImageGenerationSettings({
                 onChange={(event) => {
                   setCapabilities(null);
                   const provider = event.target.value;
-                  if (provider === 'codex' && agentProvider !== 'codex') return;
                   // Только обработчик выбора подтверждает провайдера; параметры и расширения прежнего исполнителя сохраняются.
                   patch({
                     provider: provider || value.provider,
                     provider_selected: Boolean(provider),
-                    ...(provider === 'kling'
+                    ...(mediaProviderInfo(provider, 'image')?.requestParameters
                       ? {
                           resolution: value.resolution ?? DEFAULT_KLING_IMAGE_GENERATION.resolution,
                           aspect_ratio: value.aspect_ratio ?? DEFAULT_KLING_IMAGE_GENERATION.aspect_ratio,
@@ -124,25 +120,26 @@ export function ImageGenerationSettings({
                 size="small"
               >
                 <MenuItem value="">Не выбрано</MenuItem>
-                {value.provider && !['codex', 'kling'].includes(value.provider) && (
+                {value.provider && !isMediaProvider(value.provider, 'image') && (
                   <MenuItem value={value.provider}>{value.provider || 'Не задано'} (из файла)</MenuItem>
                 )}
-                <MenuItem value="codex" disabled={agentProvider !== 'codex'}>
-                  Codex
-                </MenuItem>
-                <MenuItem value="kling">Kling</MenuItem>
+                {mediaProvidersFor('image').map((id) => (
+                  <MenuItem key={id} value={id}>
+                    {MEDIA_PROVIDERS[id].title}
+                  </MenuItem>
+                ))}
               </TextField>
               <TextField
                 select
                 id="image-generation-model"
-                label={value.provider === 'codex' ? 'Модель агента Codex для изображений' : 'Предпочтительная модель изображений'}
+                label={executor && info ? `Модель агента ${info.title} для изображений` : 'Предпочтительная модель изображений'}
                 error={modelError}
                 value={value.model ?? ''}
                 onChange={(event) => {
                   const model = event.target.value || undefined;
                   // Несохранённый стандарт подставляем только при заявленной поддержке новой модели.
                   const aspect = aspectOptions(models, model).includes(defaultAspect) ? defaultAspect : undefined;
-                  patch({ model, ...(value.provider !== 'codex' && value.aspect_ratio === undefined ? { aspect_ratio: aspect } : {}) });
+                  patch({ model, ...(requestParameters && value.aspect_ratio === undefined ? { aspect_ratio: aspect } : {}) });
                 }}
                 size="small"
                 slotProps={{
@@ -155,11 +152,11 @@ export function ImageGenerationSettings({
                 }}
                 helperText={
                   modelError
-                    ? value.provider === 'codex'
-                      ? `Модель ${value.model} недоступна у провайдера. Выберите доступную модель или пункт «Как указано в настройках Codex».`
+                    ? executor
+                      ? `Модель ${value.model} недоступна у провайдера. Выберите доступную модель или пункт «${defaultModelLabel}».`
                       : `Модель ${value.model} недоступна у провайдера. Выберите доступную или автоматический подбор модели.`
-                    : value.provider === 'codex'
-                      ? 'По умолчанию используется модель из настроек Codex. Здесь выбирается модель агента, который готовит изображение, а не модель самого генератора изображений.'
+                    : executor && info
+                      ? `По умолчанию используется модель из настроек ${info.title}. Здесь выбирается модель агента, который готовит изображение, а не модель самого генератора изображений.`
                       : 'Автоматически — подбор по требованиям задачи. Выбранная модель — предпочтение; несовместимая будет заменена с объяснением при согласовании.'
                 }
               >
@@ -176,7 +173,7 @@ export function ImageGenerationSettings({
                   </MenuItem>
                 ))}
               </TextField>
-              {value.provider !== 'codex' && (
+              {requestParameters && (
                 <>
                   <Autocomplete
                     freeSolo
@@ -251,17 +248,17 @@ export function ImageGenerationSettings({
                 </>
               )}
             </Box>
-            {value.provider === 'codex' ? (
+            {!requestParameters && info ? (
               <Typography variant="caption" color="text.secondary">
-                Генерацию выполняет Codex встроенным инструментом изображений. Доступные размеры и форматы определяет исполнитель при подготовке запроса. Сейчас
-                создаётся один вариант для каждой опоры. Количество вариантов, разрешение и пропорции из параметров Kling к этому исполнителю не применяются.
+                {`Генерацию выполняет ${info.title} встроенным инструментом изображений. Доступные размеры и форматы определяет исполнитель при подготовке запроса. Сейчас создаётся один вариант для каждой опоры. Параметры запроса — количество вариантов, разрешение и пропорции — к этому исполнителю не применяются.`}
               </Typography>
             ) : (
               <Typography variant="caption" color="text.secondary">
                 Параметры сохраняются как предпочтения. Исполнитель подбирает доступную модель под требования запроса.
               </Typography>
             )}
-            {value.provider === 'codex' && (
+            {/* Наблюдение относится к агенту-исполнителю со встроенным генератором: точный размер не задаётся параметрами запроса. */}
+            {executor && (
               <Alert severity="info">
                 В наших проверках горизонтальные изображения получались размером 1672×941, в том числе при запросе 4K. Точный размер через промпт не
                 гарантируется.

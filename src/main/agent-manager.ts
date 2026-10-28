@@ -5,6 +5,7 @@ import { existsSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, resolve, sep } from 'node:path';
 import type { AgentEvent, AgentJob, AgentSettings, AgentStartInput } from '@shared/agents';
 import { agentTitle, type AgentProvider } from '@shared/agent-providers';
+import { mediaProviderInfo } from '@shared/media-providers';
 import { createAgentAdapter, type AgentAdapter, type AgentUpdate } from './agent-adapters';
 import { AgentHistory } from './agent-history';
 import { AgentError, JsonLines, providerFailure, redact } from './agent-protocol';
@@ -128,7 +129,7 @@ export class AgentManager {
     if (!globalConfig) throw new AgentError('INVALID_INPUT', 'Сначала выберите агента в настройках.');
     const imageSettings = imageDirectory ? readProjectSettings(project).generation?.image : null;
     // Пустая модель изображений оставляет выбор самому CLI; модель текстового агента сюда не переносится.
-    const model = imageModel?.trim() || (imageSettings?.provider === 'codex' ? imageSettings.model?.trim() : undefined);
+    const model = imageModel?.trim() || (mediaProviderInfo(imageSettings?.provider, 'image')?.executor ? imageSettings?.model?.trim() : undefined);
     const config = imageDirectory ? { ...globalConfig, model: model || undefined } : globalConfig;
     if (input.retryOf) {
       const previous = this.jobs.get(input.retryOf);

@@ -8,10 +8,13 @@ const ready: AiAccess = {
 };
 
 describe('причина блокировки ИИ', () => {
-  it('блокирует любые действия до проверки и при выключенном агенте даже с готовым медиапрофилем', () => {
+  it('до проверки блокирует всё, а без агента — только текстовые этапы', () => {
     expect(aiActionProblem(null, 'image')).toContain('Проверяем');
     const access: AiAccess = { ...ready, agent: { provider: null, selected: false, available: false, message: 'Выберите агента.' } };
-    for (const kind of ['agent', 'image', 'video'] as const) expect(aiActionProblem(access, kind)).toBe('Выберите агента.');
+    expect(aiActionProblem(access, 'agent')).toBe('Выберите агента.');
+    // Провайдеры медиа не зависят от выбранного агента.
+    expect(aiActionProblem(access, 'image')).toBeNull();
+    expect(aiActionProblem(access, 'video')).toBeNull();
   });
 
   it('не считает default provider выбором и не считает сохранённый ID доступным CLI', () => {

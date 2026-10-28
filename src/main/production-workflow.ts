@@ -15,6 +15,7 @@ import type {
   ProductionWorkflowView
 } from '@shared/production-workflow';
 import type { DurationRule } from '@shared/types';
+import { isMediaProvider, mediaProviderInfo, mediaProviderTitles } from '@shared/media-providers';
 import { readProjectSettings } from './checks';
 import type { AgentManager } from './agent-manager';
 import type { PythonLauncher } from './python-launcher';
@@ -292,9 +293,9 @@ export class ProductionWorkflow {
       typeof settings.resolution !== 'string' ||
       typeof settings.aspect_ratio !== 'string' ||
       typeof settings.watermark !== 'boolean' ||
-      settings.provider !== 'kling'
+      !isMediaProvider(settings.provider, 'video')
     )
-      problems.push('Заполните настройки генерации видео проекта: поддерживается провайдер Kling.');
+      problems.push(`Заполните настройки генерации видео проекта: поддерживается провайдер ${mediaProviderTitles('video')}.`);
     const packageDir = requested ? packagePath(project, requested) : null;
     let workflow: Workflow | null = null;
     if (packageDir) {
@@ -640,9 +641,11 @@ export class ProductionWorkflow {
     const hashes = snapshot(context.project, context.packageDir, packageDir, context.allowedPaths);
     // Совместимые принятые опоры остаются в пакете; отдельное image-задание готовит только недостающие.
     const frames = context.framePrompts.filter((prompt) => !context.workflow?.keyframes?.some((frame) => frame.id === prompt.id && frame.approved));
-    const imageProvider = readProjectSettings(context.project).generation?.image?.provider;
-    if (imageProvider === 'kling') {
-      if (!this.options.prepareImageRequest) throw new Error('Исполнитель изображений Kling не подключён.');
+    const imageProvider = mediaProviderInfo(readProjectSettings(context.project).generation?.image?.provider, 'image');
+    if (!imageProvider) throw new Error(`Выберите провайдера генерации изображений в настройках проекта: ${mediaProviderTitles('image')}.`);
+    // Провайдер без исполнителя-агента готовит платный запрос на одну опору; агент создаёт недостающие опоры заданием.
+    if (!imageProvider.executor) {
+      if (!this.options.prepareImageRequest) throw new Error(`Исполнитель изображений ${imageProvider.title} не подключён.`);
       const missing = frames.filter(
         (prompt) =>
           !context.workflow?.keyframes?.some(
@@ -659,7 +662,6 @@ export class ProductionWorkflow {
       }
       return this.view(context.project, shot, packageDir);
     }
-    if (imageProvider !== 'codex') throw new Error('Выберите провайдера генерации изображений в настройках проекта.');
     const job = this.options.generateImages({ project: context.project, shot, packageDir: context.packageDir!, frames });
     this.write(context.project, shot, {
       proposal: {

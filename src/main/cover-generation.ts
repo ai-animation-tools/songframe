@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import type { AgentJob, AgentSettings } from '@shared/agents';
 import type { CoverCrop, CoverGenerationApproval, CoverGenerationSession } from '@shared/cover-generation';
-import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
+import { isMediaProvider, MEDIA_PROVIDERS, mediaProviderInfo, mediaProviderTitles } from '@shared/media-providers';
 import { priceAllowsGeneration } from '@shared/generation-consent';
 import { AgentManager } from './agent-manager';
 import { readProjectSettings } from './checks';
@@ -122,9 +122,10 @@ export class CoverGeneration {
       options.prepareCandidate ??
       (async (input) => {
         const imageSettings = readProjectSettings(input.project).generation?.image;
-        if (imageSettings?.provider !== 'codex') throw new Error('Для Kling подключите подготовку запроса выбранного провайдера изображений.');
+        if (!mediaProviderInfo(imageSettings?.provider, 'image')?.executor)
+          throw new Error('Для провайдера без агента подключите подготовку запроса выбранного провайдера изображений.');
         // Самостоятельный Codex runner соблюдает тот же выбор проектной модели, что и общий coordinator.
-        const config = { ...options.settings.getImageAgent(), model: imageSettings.model?.trim() || undefined };
+        const config = { ...options.settings.getImageAgent(), model: imageSettings?.model?.trim() || undefined };
         const runner = createCodexCoverRunner(options.settings, options.createManager, config);
         return {
           provider: 'codex',
@@ -140,8 +141,6 @@ export class CoverGeneration {
 
   create(project: string, prompt: string): CoverGenerationSession {
     if (this.stopping) throw new Error('Приложение завершает работу.');
-    // Глобальный выбор агента обязателен: профиль изображений не включает генерацию самостоятельно.
-    if (!this.options.settings.getAgent()) throw new Error(COVER_AGENT_REQUIRED);
     if (typeof project !== 'string' || !isAbsolute(project) || project.includes('\0')) throw new Error('Выберите папку проекта.');
     let canonical: string;
     try {
@@ -151,8 +150,8 @@ export class CoverGeneration {
     }
     if (!existsSync(join(canonical, 'plan/project.json'))) throw new Error('В папке нет plan/project.json.');
     const imageSettings = readProjectSettings(canonical).generation?.image;
-    if (imageSettings?.provider !== 'codex' && imageSettings?.provider !== 'kling')
-      throw new Error('Выберите поддерживаемого провайдера изображений в настройках проекта: Codex или Kling.');
+    if (!isMediaProvider(imageSettings?.provider, 'image'))
+      throw new Error(`Выберите поддерживаемого провайдера изображений в настройках проекта: ${mediaProviderTitles('image')}.`);
     assertAiSelection(this.options.settings, canonical, 'image');
     if (typeof prompt !== 'string' || !prompt.trim() || prompt.includes('\0') || Buffer.byteLength(prompt) > 32 * 1024)
       throw new Error('Введите описание обложки длиной не более 32 КБ.');
@@ -177,7 +176,6 @@ export class CoverGeneration {
 
   async prepare(id: string): Promise<CoverGenerationSession> {
     const record = this.record(id);
-    if (!this.options.settings.getAgent()) throw new Error(COVER_AGENT_REQUIRED);
     assertAiSelection(this.options.settings, record.project, 'image');
     if (record.session.preparing || record.session.status === 'generating') throw new Error('Дождитесь завершения подготовки или генерации обложки.');
     if (record.session.status === 'accepted') throw new Error('Обложка уже выбрана.');
@@ -195,7 +193,7 @@ export class CoverGeneration {
         mkdirSync(workDir, { recursive: true });
         const candidate = await this.prepareCandidate({ workDir, project: record.project, prompt: record.session.prompt, signal: record.controller!.signal });
         if (record.closed) return;
-        if (!candidate.requestSha || !['codex', 'kling'].includes(candidate.provider)) throw new Error('Не удалось подготовить запрос обложки.');
+        if (!candidate.requestSha || !isMediaProvider(candidate.provider, 'image')) throw new Error('Не удалось подготовить запрос обложки.');
         record.prepared = { candidate, workDir };
         record.session.provider = candidate.provider;
         record.session.model = candidate.model;
@@ -217,7 +215,6 @@ export class CoverGeneration {
 
   generate(id: string, requestSha: string, approval: CoverGenerationApproval): CoverGenerationSession {
     const record = this.record(id);
-    if (!this.options.settings.getAgent()) throw new Error(COVER_AGENT_REQUIRED);
     assertAiSelection(this.options.settings, record.project, 'image');
     if (record.session.preparing || record.session.status === 'generating') throw new Error('Дождитесь завершения подготовки или генерации обложки.');
     if (record.session.status === 'accepted') throw new Error('Обложка уже выбрана. Откройте новую сессию для другой обложки.');
@@ -228,8 +225,9 @@ export class CoverGeneration {
       throw new Error('Подтвердите показанный промпт для текущей попытки генерации обложки.');
     if (readProjectSettings(record.project).generation?.image?.provider !== prepared.candidate.provider)
       throw new Error('Провайдер изображений изменился. Подготовьте новый запрос обложки.');
-    if (prepared.candidate.provider === 'kling' && !priceAllowsGeneration(prepared.candidate.quote, approval.allowUnknownCost === true))
-      throw new Error('Стоимость или баланс Kling не позволяют отправить этот запрос.');
+    const provider = MEDIA_PROVIDERS[prepared.candidate.provider];
+    if (provider.paid && !priceAllowsGeneration(prepared.candidate.quote, approval.allowUnknownCost === true))
+      throw new Error(`Стоимость или баланс ${provider.title} не позволяют отправить этот запрос.`);
     record.prepared = undefined;
     record.session.approvalToken = null;
     // Согласованный запрос расходуется один раз; старый кандидат удаляется только после явного запуска.
@@ -323,7 +321,6 @@ export class CoverGeneration {
     const workDir = prepared.workDir;
     try {
       // Настройки могли измениться между подтверждением и отложенным запуском исполнителя.
-      if (!this.options.settings.getAgent()) throw new Error(COVER_AGENT_REQUIRED);
       assertAiSelection(this.options.settings, record.project, 'image');
       if (readProjectSettings(record.project).generation?.image?.provider !== prepared.candidate.provider)
         throw new Error('Провайдер изображений изменился. Подготовьте новый запрос обложки.');

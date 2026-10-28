@@ -54,7 +54,14 @@ import { publishScenario } from './scenario-apply';
 import { ProductionWorkflow } from './production-workflow';
 import { KeyframeImages, isImageFile } from './keyframe-images';
 import type { ProductionWorkflowStart, ProductionFrameCandidate } from '@shared/production-workflow';
-import type { MediaKind } from '@shared/media-providers';
+import {
+  isMediaProvider,
+  mediaProviderTitles,
+  type MediaCapabilities,
+  type MediaKind,
+  type MediaProviderFor,
+  type MediaProviderId
+} from '@shared/media-providers';
 import { CodexImageProvider, KlingImageProvider, KlingVideoProvider } from './media-providers';
 import { frameImageRequest } from './frame-image-request';
 import { readCodexModels } from './codex-models';
@@ -245,10 +252,16 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   });
   const connectMedia = (): void => getServices().production.setMediaProviders({ image: klingImages, video: klingVideo });
   connectMedia();
+  // Record требует объявить исполнителя возможностей для каждого провайдера реестра и его видов медиа.
+  const mediaCapabilities: Record<MediaProviderId, Partial<Record<MediaKind, (project: string) => Promise<MediaCapabilities>>>> = {
+    codex: { image: (project) => codexImages.capabilities(project) },
+    kling: { image: (project) => klingImages.capabilities(project), video: (project) => klingVideo.capabilities(project) }
+  };
+  const videoProviders: Record<MediaProviderFor<'video'>, KlingVideoProvider> = { kling: klingVideo };
   ipcMain.handle('media:capabilities', (_event, project: string, kind: MediaKind, provider: string) => {
     if (!['image', 'video'].includes(kind)) throw new Error('Неизвестный вид медиа.');
-    if (provider === 'codex' && kind === 'image') return codexImages.capabilities(project);
-    if (provider === 'kling') return (kind === 'image' ? klingImages : klingVideo).capabilities(project);
+    const capabilities = isMediaProvider(provider, kind) ? mediaCapabilities[provider][kind] : undefined;
+    if (capabilities) return capabilities(project);
     return {
       provider,
       kind,
@@ -273,7 +286,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       assertAiSelection(getServices().settings, input.project, 'image');
       const prepared = codexImages.prepare(input);
       const execution = codexImages.submit(prepared, { requestSha: prepared.requestSha });
-      if (execution.provider !== 'codex') throw new Error('Исполнитель вернул неверный тип задания опор.');
+      if (execution.provider !== codexImages.provider) throw new Error('Исполнитель вернул неверный тип задания опор.');
       const job = agents.get(execution.agentJobId);
       if (!job) throw new Error('Задание изображений не создано.');
       return job;
@@ -300,8 +313,8 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     prepareVideoRequest: async ({ project, shot, requestDir, prompt, draft, durationConstraint }) => {
       await ai.requireAccess(project, 'video');
       const settings = readProjectSettings(project).generation?.video;
-      if (settings?.provider !== 'kling') throw new Error('Выберите поддерживаемого провайдера видео Kling.');
-      await klingVideo.prepare(
+      if (!isMediaProvider(settings?.provider, 'video')) throw new Error(`Выберите поддерживаемого провайдера видео: ${mediaProviderTitles('video')}.`);
+      await videoProviders[settings.provider].prepare(
         {
           project,
           shot,
@@ -314,7 +327,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
           requiredParameters: { resolution: settings.resolution, aspect_ratio: settings.aspect_ratio },
           projectOptions: settings.options
         },
-        await klingVideo.capabilities(project)
+        await videoProviders[settings.provider].capabilities(project)
       );
     }
   });

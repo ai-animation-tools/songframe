@@ -4,6 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AiAccess } from '@shared/ai-access';
 import type { PackageView, ProductionQuote } from '@shared/types';
+import { agentTitle } from '@shared/agent-providers';
+import { MEDIA_PROVIDERS } from '@shared/media-providers';
 import { ProductionFrameGenerationButton } from './ProductionFrameGenerationButton';
 import { PackageRequest } from './PackageRequest';
 import { PackageResult } from './PackageResult';
@@ -12,7 +14,7 @@ import { PackageDecision } from './PackageDecision';
 import { SendRequestDialog } from './SendRequestDialog';
 
 // Сохранённый выбор задаётся независимо от поставляемых моделям настроек по умолчанию.
-const context = vi.hoisted(() => ({ agentProvider: 'codex', aiAccess: null as AiAccess | null, quote: null as ProductionQuote | null }));
+const context = vi.hoisted(() => ({ agentProvider: 'codex' as string | null, aiAccess: null as AiAccess | null, quote: null as ProductionQuote | null }));
 vi.mock('../useRequestQuote', () => ({
   useRequestQuote: () => ({ quote: context.quote, error: null, loading: false, external: false, refreshQuote: () => {}, consumeQuote: () => {} })
 }));
@@ -89,6 +91,24 @@ describe('Генерация опор и результаты изображен
     expect(codex).not.toMatch(/<button[^>]*disabled/);
     expect(kling).toContain('Подготовить запрос изображения (Kling)');
     expect(kling).not.toContain('Codex');
+  });
+
+  it.each(['claude', null])('показывает знак Codex на кнопке опор Codex при агенте %s', (agent) => {
+    context.agentProvider = agent;
+    try {
+      const html = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { provider: 'codex', disabled: false, onGenerate: unchanged }));
+      expect(html).toContain(`Создать опоры в ${MEDIA_PROVIDERS.codex.title}`);
+      expect(html).toContain(`title="${agentTitle('codex')}"`);
+      expect(html).not.toMatch(/<button[^>]*disabled/);
+    } finally {
+      context.agentProvider = 'codex';
+    }
+  });
+
+  it('строит список поддерживаемых исполнителей опор из реестра', () => {
+    const html = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { disabled: false, onGenerate: unchanged }));
+    expect(html).toContain('Провайдер изображений не задан.');
+    expect(html).toContain(`Выберите ${MEDIA_PROVIDERS.kling.title} или ${MEDIA_PROVIDERS.codex.title} в настройках проекта.`);
   });
 
   it('блокирует неизвестного исполнителя с понятной диагностикой', () => {

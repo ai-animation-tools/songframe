@@ -3,7 +3,10 @@
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Stack, Typography } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
-import type { MediaCapabilities } from '@shared/media-providers';
+import { mediaProviderInfo, type MediaCapabilities } from '@shared/media-providers';
+
+// Неизвестный провайдер получает общее предупреждение: проверка возможностей не доказывает выполнение генерации.
+const DEFAULT_CAPABILITIES_NOTE = 'Эта проверка не подтверждает выполнение генерации. Параметры и доступ к модели проверяют перед запросом.';
 
 export function MediaCapabilitiesPanel({
   project,
@@ -68,11 +71,7 @@ export function MediaCapabilitiesPanel({
             </Typography>
           ))}
           {!result.generationVerified && (
-            <Typography variant="body2">
-              {result.provider === 'codex'
-                ? 'Проверка не создаёт изображений. Доступность встроенного генератора выясняется при согласованной генерации.'
-                : 'Эта проверка не подтверждает выполнение генерации. Параметры и доступ к модели проверяют перед запросом.'}
-            </Typography>
+            <Typography variant="body2">{mediaProviderInfo(result.provider, result.kind)?.capabilitiesNote ?? DEFAULT_CAPABILITIES_NOTE}</Typography>
           )}
           {result.models.length > 0 && (
             <Typography variant="body2">Модели: {result.models.map((model) => `${model.id} (${model.command})`).join(', ')}.</Typography>

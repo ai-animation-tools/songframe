@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Box, Paper, Stack, TextField, Typography } from '@mui/material';
 import type { ProductionWorkflowStart } from '@shared/production-workflow';
 import type { PackageView } from '@shared/types';
+import { mediaProviderInfo } from '@shared/media-providers';
 import { AgentButton } from '../../../components';
 import { AgentJobCard } from '../../../components/AgentJobCard';
 import { useProductionWorkflow } from '../useProductionWorkflow';
@@ -39,6 +40,7 @@ export function ProductionWorkflowPanel({
   const [validation, setValidation] = useState<string | null>(null);
   const view = workflow.view;
   const busy = workflow.busy || packageBusy;
+  const framesStage = view?.proposal?.stage === 'frames' || lastAction === 'frames';
   const reportBusy = useRef(onBusyChange);
   reportBusy.current = onBusyChange;
   useEffect(() => onBusyChange(workflow.busy), [workflow.busy, onBusyChange]);
@@ -97,8 +99,9 @@ export function ProductionWorkflowPanel({
           <AgentJobCard
             compact
             job={view.job}
-            retryKind={view.proposal?.stage === 'frames' || lastAction === 'frames' ? 'image' : 'agent'}
-            retryProvider={view.proposal?.stage === 'frames' || lastAction === 'frames' ? 'codex' : undefined}
+            retryKind={framesStage ? 'image' : 'agent'}
+            // Повтор опор выполняет программа-исполнитель провайдера изображений проекта, а не выбранный текстовый агент.
+            retryProvider={framesStage ? (mediaProviderInfo(view.imageProvider, 'image')?.executor ?? view.job.provider) : undefined}
             onCancel={workflow.cancel}
             onRetry={() => {
               const action =

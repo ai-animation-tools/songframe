@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentEvent, AgentJob, AgentStartInput } from '@shared/agents';
-import { COVER_AGENT_REQUIRED, type CoverGenerationApproval } from '@shared/cover-generation';
+import type { CoverGenerationApproval } from '@shared/cover-generation';
 import { CoverGeneration, type CoverGenerationOptions, type PreparedCoverCandidateInput } from './cover-generation';
 import { imageDimensions } from './keyframe-images';
 import { SettingsStore } from './settings';
@@ -62,20 +62,15 @@ async function launch(value: CoverGeneration, id: string): Promise<void> {
 }
 
 describe('Временная генерация обложки', () => {
-  it('под Claude запрещает сессию и ранее подготовленный Codex без чтения image profile', async () => {
+  it('под Claude готовит и отправляет обложку Codex: агент на провайдера изображений не влияет', async () => {
+    settings.saveAgent({ provider: 'claude' });
     const generate = vi.fn(async () => ({ path: 'cover.png' }));
     const prepareCandidate = vi.fn(async () => ({ provider: 'codex' as const, model: null, requestSha: 'request', quote: null, generate }));
     const value = create({ prepareCandidate });
     const { id } = value.create(project, 'Обложка');
     await value.prepare(id);
-    settings.saveAgent({ provider: 'claude' });
-    const getImageAgent = vi.spyOn(settings, 'getImageAgent');
-    expect(() => value.create(project, 'Другая обложка')).toThrow('выберите агента Codex');
-    await expect(value.prepare(id)).rejects.toThrow('выберите агента Codex');
-    expect(() => value.generate(id, 'request', approval(value, id))).toThrow('выберите агента Codex');
-    expect(getImageAgent).not.toHaveBeenCalled();
-    expect(generate).not.toHaveBeenCalled();
-    expect(prepareCandidate).toHaveBeenCalledTimes(1);
+    value.generate(id, 'request', approval(value, id));
+    await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(1));
   });
 
   it.each(['codex', 'kling'])('сохранённый %s без явного выбора не создаёт временную папку', (provider) => {
@@ -101,25 +96,12 @@ describe('Временная генерация обложки', () => {
     expect(generate).not.toHaveBeenCalled();
   });
 
-  it.each(['codex', 'kling'])('без глобального агента не создаёт сессию или временную папку для %s', (provider) => {
+  it.each(['codex', 'kling'] as const)('без выбранного агента готовит и отправляет обложку %s', async (provider) => {
     writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider, provider_selected: true } } }));
     settings.saveAgent(null);
-    const prepareCandidate = vi.fn();
-    const createManager = vi.fn();
-    const value = create({ prepareCandidate, createManager });
-    const temporaryDirectories = vi.mocked(mkdtempSync).mock.calls.length;
-
-    expect(() => value.create(project, 'Обложка')).toThrow(COVER_AGENT_REQUIRED);
-    expect(vi.mocked(mkdtempSync).mock.calls).toHaveLength(temporaryDirectories);
-    expect(prepareCandidate).not.toHaveBeenCalled();
-    expect(createManager).not.toHaveBeenCalled();
-  });
-
-  it.each(['codex', 'kling'])('запрещает подготовку и отправку готового SHA после отключения агента для %s', async (provider) => {
-    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider, provider_selected: true } } }));
     const generate = vi.fn(async () => ({ path: 'cover.png' }));
     const prepareCandidate = vi.fn(async () => ({
-      provider: provider as 'codex' | 'kling',
+      provider,
       model: null,
       requestSha: 'request',
       quote: { credits: 1, balance: 2, verdict: 'ok' as const },
@@ -127,28 +109,21 @@ describe('Временная генерация обложки', () => {
     }));
     const value = create({ prepareCandidate });
     const { id } = value.create(project, 'Обложка');
-    settings.saveAgent(null);
-    await expect(value.prepare(id)).rejects.toThrow(COVER_AGENT_REQUIRED);
-    expect(prepareCandidate).not.toHaveBeenCalled();
-
-    settings.saveAgent({ provider: provider === 'kling' ? 'claude' : 'codex' });
     const request = await value.prepare(id);
-    settings.saveAgent(null);
-    expect(() => value.generate(id, request.requestSha!, approval(value, id))).toThrow(COVER_AGENT_REQUIRED);
-    expect(generate).not.toHaveBeenCalled();
-    expect(prepareCandidate).toHaveBeenCalledTimes(1);
+    value.generate(id, request.requestSha!, approval(value, id));
+    await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(1));
     await value.close(id);
-    expect(() => value.view(id)).toThrow(/закрыта/);
   });
 
-  it('повторно проверяет выбор агента перед отложенной отправкой', async () => {
+  it('повторно проверяет выбор провайдера изображений перед отложенной отправкой', async () => {
     const generate = vi.fn(async () => ({ path: 'cover.png' }));
     const value = create({ prepareCandidate: async () => ({ provider: 'codex', model: null, requestSha: 'request', quote: null, generate }) });
     const { id } = value.create(project, 'Обложка');
     await value.prepare(id);
     value.generate(id, 'request', approval(value, id));
-    settings.saveAgent(null);
-    await vi.waitFor(() => expect(value.view(id)).toMatchObject({ status: 'failed', error: COVER_AGENT_REQUIRED, image: null }));
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: 'codex', provider_selected: false } } }));
+    await vi.waitFor(() => expect(value.view(id)).toMatchObject({ status: 'failed', image: null }));
+    expect(value.view(id).error).toContain('выберите провайдера изображений');
     expect(generate).not.toHaveBeenCalled();
   });
 

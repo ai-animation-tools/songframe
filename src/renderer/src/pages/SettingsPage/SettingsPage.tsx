@@ -7,6 +7,7 @@ import { useAgentSettings } from './useAgentSettings';
 import { AgentButton } from '../../components';
 import { useAgentAccount } from './useAgentAccount';
 import { useAgentModels } from './useAgentModels';
+import { useInstalledAgents } from './useInstalledAgents';
 import { AgentAccountPanel } from './components/AgentAccountPanel';
 
 export function SettingsPage(): ReactElement {
@@ -14,6 +15,7 @@ export function SettingsPage(): ReactElement {
   const accountReady = !form.loading && !form.loadError && !form.profileLoading && !form.profileError;
   const account = useAgentAccount(form.settings, accountReady);
   const models = useAgentModels(form.settings?.provider, accountReady);
+  const installed = useInstalledAgents();
   return (
     <Stack spacing={2} sx={{ minWidth: 0 }}>
       <Typography variant="h5">Настройки</Typography>
@@ -34,6 +36,7 @@ export function SettingsPage(): ReactElement {
                 models={models.models}
                 modelsLoading={models.loading}
                 modelsMessage={models.message}
+                installed={installed}
                 onChange={form.change}
               />
               {form.profileLoading && <LinearProgress aria-label="Загрузка профиля агента" />}

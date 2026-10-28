@@ -29,7 +29,7 @@ import type { Jobs } from './jobs';
 import { runTool } from './tools';
 import type { KlingImageProvider, KlingVideoProvider, PreparedMediaRequest } from './media-providers';
 import type { MediaModelSelection } from '@shared/media-providers';
-import { sameMediaProvider } from '@shared/media-providers';
+import { isPaidMediaProvider, sameMediaProvider } from '@shared/media-providers';
 import { sourceInputDigest } from './source-input-hash';
 import { checkedBuiltOutput } from './built-output-path';
 import { readProjectSettings } from './checks';
@@ -487,7 +487,7 @@ export class Production {
       throw new Error('Эта попытка уже отправлялась или не готова к отправке.');
     if (view.executor === 'agent' || view.pendingDecision?.executor === 'agent') throw new Error('Продолжением этого пакета владеет внешний агент.');
     // Универсальная подготовка не разрешает отправить запрос через адаптер другого провайдера.
-    if (!sameMediaProvider(view.request.provider, 'kling'))
+    if (!isPaidMediaProvider(view.request.provider))
       throw new Error(`Для провайдера ${view.request.provider ?? 'не указан'} не подключён исполнитель отправки.`);
     if (view.pendingDecision && (!decisionToken || decisionToken !== view.decisionToken || !view.pendingDecision.options.includes('send')))
       throw new Error('Вопрос или материалы изменились. Откройте подтверждение заново.');
@@ -782,7 +782,7 @@ export class Production {
     const view = readPackage(project, directory);
     if (!view?.request) throw new Error('В пакете нет попытки.');
     const request = view.request;
-    if (!sameMediaProvider(request.provider, 'kling'))
+    if (!isPaidMediaProvider(request.provider))
       throw new Error(`Для провайдера ${request.provider ?? 'не указан'} не подключён исполнитель получения результата.`);
     if (request.attemptStatus === 'prepared') throw new Error('Запрос ещё не отправлен.');
     if (!request.generationId && (!generationId || !/^[A-Za-z0-9_.:-]{1,256}$/.test(generationId)))

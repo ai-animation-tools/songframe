@@ -27,22 +27,28 @@ function fixture() {
   return { ai: createAiAccess({ settings: () => settings, checkAgent, checkKling }), checkAgent, checkKling };
 }
 describe('Явный выбор и доступность ИИ', () => {
-  it('под Claude не читает профиль Codex, не проверяет его CLI и не разрешает изображения Codex', async () => {
+  it('под Claude разрешает изображения Codex по доступности самого Codex', async () => {
     settings.saveAgent({ provider: 'claude' });
     project({ provider: 'codex', provider_selected: true });
-    const getImageAgent = vi.spyOn(settings, 'getImageAgent');
     const { ai, checkAgent, checkKling } = fixture();
-    expect(await ai.getAccess(root)).toMatchObject({
-      agent: { available: true },
-      image: { selected: true, available: false, message: 'Для изображений Codex выберите агента Codex в настройках приложения.' }
-    });
-    const execute = vi.fn();
-    await expect(ai.requireAccess(root, 'image').then(execute)).rejects.toThrow('выберите агента Codex');
-    expect(execute).not.toHaveBeenCalled();
-    expect(getImageAgent).not.toHaveBeenCalled();
-    expect(checkAgent).toHaveBeenCalledTimes(1);
+    expect(await ai.getAccess(root)).toMatchObject({ agent: { available: true }, image: { selected: true, available: true } });
+    await expect(ai.requireAccess(root, 'image')).resolves.toBeUndefined();
+    // Генерацию изображений запускает Codex, а не текстовый агент: проверяется именно он.
     expect(checkAgent).toHaveBeenCalledWith({ provider: 'claude' });
+    expect(checkAgent).toHaveBeenCalledWith({ provider: 'codex' });
     expect(checkKling).not.toHaveBeenCalled();
+  });
+
+  it('не разрешает изображения Codex, если сам Codex не найден', async () => {
+    settings.saveAgent({ provider: 'claude' });
+    project({ provider: 'codex', provider_selected: true });
+    const { ai, checkAgent } = fixture();
+    checkAgent.mockImplementation(async (config) =>
+      config.provider === 'codex' ? { availability: 'not_found', authorization: 'unknown', message: 'Codex не найден.' } : ready
+    );
+    const execute = vi.fn();
+    await expect(ai.requireAccess(root, 'image').then(execute)).rejects.toThrow('Codex не найден.');
+    expect(execute).not.toHaveBeenCalled();
   });
 
   it('разрешает изображения Kling при выбранном Claude без чтения профиля Codex', async () => {
@@ -54,13 +60,15 @@ describe('Явный выбор и доступность ИИ', () => {
     expect(getImageAgent).not.toHaveBeenCalled();
   });
 
-  it('без глобального агента не проверяет CLI, аккаунты или сохранённые media profiles', async () => {
+  it('без агента запрещает только текстовые этапы, а медиа проверяет по своим провайдерам', async () => {
     project({ provider: 'codex', provider_selected: true }, { provider: 'kling', provider_selected: true });
     const { ai, checkAgent, checkKling } = fixture();
-    expect(await ai.getAccess(root)).toMatchObject({ agent: { selected: false, available: false }, image: { available: false }, video: { available: false } });
-    await expect(ai.requireAccess(root, 'image')).rejects.toThrow('Сначала выберите агента');
-    expect(checkAgent).not.toHaveBeenCalled();
-    expect(checkKling).not.toHaveBeenCalled();
+    expect(await ai.getAccess(root)).toMatchObject({ agent: { selected: false, available: false }, image: { available: true }, video: { available: true } });
+    await expect(ai.requireAccess(root, 'agent')).rejects.toThrow('Сначала выберите агента');
+    await expect(ai.requireAccess(root, 'image')).resolves.toBeUndefined();
+    await expect(ai.requireAccess(root, 'video')).resolves.toBeUndefined();
+    expect(checkAgent).not.toHaveBeenCalledWith(expect.objectContaining({ provider: 'claude' }));
+    expect(checkKling).toHaveBeenCalled();
   });
 
   it.each([undefined, false])('сохранённый provider без явного выбора (%s) не вызывает media диагностику', async (provider_selected) => {

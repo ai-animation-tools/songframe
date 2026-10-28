@@ -2,6 +2,7 @@
 import { join } from 'node:path';
 import type { AgentSettings } from '@shared/agents';
 import { agentTitle, isAgentProvider, type AgentProvider } from '@shared/agent-providers';
+import { MEDIA_PROVIDERS } from '@shared/media-providers';
 import { readLocalJson, writeLocalJson } from './local-files';
 
 export interface Settings {
@@ -86,7 +87,7 @@ export class SettingsStore {
 
   /** Опоры и обложку создаёт Codex с моделью из настроек проекта; модель текстового Codex сюда не переносится. */
   getImageAgent(): AgentSettings {
-    return { provider: 'codex' };
+    return { provider: MEDIA_PROVIDERS.codex.executor };
   }
 
   getAgent(): AgentSettings | null {

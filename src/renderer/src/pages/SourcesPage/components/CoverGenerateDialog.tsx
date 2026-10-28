@@ -6,7 +6,7 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import type { CoverCrop, CoverGenerationSession } from '@shared/cover-generation';
-import { COVER_AGENT_REQUIRED } from '@shared/cover-generation';
+import { MEDIA_PROVIDERS, mediaProviderInfo } from '@shared/media-providers';
 import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration } from '@shared/generation-consent';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { useApp } from '../../../state';
@@ -24,8 +24,9 @@ interface Props {
 }
 
 export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Props): ReactElement {
-  const { agentProvider, aiAccess } = useApp();
-  const blockedReason = !agentProvider ? COVER_AGENT_REQUIRED : aiActionProblem(aiAccess, 'image');
+  const { aiAccess } = useApp();
+  // Обложку готовит провайдер изображений проекта; выбранный агент на неё не влияет.
+  const blockedReason = aiActionProblem(aiAccess, 'image');
   const [prompt, setPrompt] = useState(() => (idea.trim() ? `Создай выразительную квадратную обложку музыкального клипа.\n\nИдея клипа:\n${idea.trim()}` : ''));
   const [crop, setCrop] = useState<CoverCrop | null>(null);
   const { session, working, accepting, error, preparedSha, start, next, refreshQuote, generate, accept } = useCoverGeneration(project);
@@ -43,12 +44,17 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
 
   const generating = session?.status === 'generating';
   const preparing = working || !!session?.preparing;
-  const kling = session?.provider === 'kling';
+  // Платный провайдер показывает цену и требует её подтверждения; агент-исполнитель обозначается своим знаком.
+  const info = session ? MEDIA_PROVIDERS[session.provider] : null;
+  const paid = !!info?.paid;
+  const confirmationInfo = confirmation ? MEDIA_PROVIDERS[confirmation.provider] : null;
+  // До первой подготовки исполнитель известен из проверенного выбора проекта.
+  const generationExecutor = mediaProviderInfo(session?.provider ?? aiAccess?.image.provider, 'image')?.executor ?? null;
   const prepared = !!preparedSha && preparedSha === session?.requestSha && !!session?.approvalToken;
   const quote = prepared ? session?.quote : null;
   const agreedToUnknownCost = !!session?.approvalToken && agreedToken === session.approvalToken;
   const unknownCost = canAgreeToUnknownCost(quote);
-  const blockedQuote = kling && prepared && !priceAllowsGeneration(quote, agreedToUnknownCost);
+  const blockedQuote = paid && prepared && !priceAllowsGeneration(quote, agreedToUnknownCost);
   useEffect(() => {
     // Согласие относится к одной подготовке, даже если SHA повторился при обновлении цены.
     setAgreedToken(null);
@@ -56,7 +62,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
   }, [session?.approvalToken, error]);
   const isRetry = session?.status === 'ready' || session?.status === 'failed';
   const actionLabel = session ? (isRetry ? 'Ещё' : 'Сгенерировать') : 'Сгенерировать';
-  const generationLabel = kling && prepared && quote?.verdict === 'ok' ? `${actionLabel} · ${quote.credits} кредитов` : actionLabel;
+  const generationLabel = paid && prepared && quote?.verdict === 'ok' ? `${actionLabel} · ${quote.credits} кредитов` : actionLabel;
   const generationDisabled = Boolean(blockedReason) || preparing || generating || !!blockedQuote || (!session && !prompt.trim());
   const onGenerate = async (): Promise<void> => {
     if (preparingClick.current || blockedReason || generationDisabled) return;
@@ -64,7 +70,8 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
     try {
       const preparedSession = prepared ? session : await (session ? next() : start(prompt));
       if (!preparedSession?.approvalToken || !preparedSession.requestSha) return;
-      if (preparedSession.provider === 'kling' && !priceAllowsGeneration(preparedSession.quote, agreedToken === preparedSession.approvalToken)) return;
+      if (MEDIA_PROVIDERS[preparedSession.provider].paid && !priceAllowsGeneration(preparedSession.quote, agreedToken === preparedSession.approvalToken))
+        return;
       confirmingClick.current = false;
       setConfirmation(preparedSession);
     } finally {
@@ -74,7 +81,8 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
   const confirmGeneration = (): void => {
     if (confirmingClick.current || !confirmation?.approvalToken || confirmation.approvalToken !== session?.approvalToken || blockedReason) return;
     confirmingClick.current = true;
-    const allowUnknownCost = confirmation.provider === 'kling' && canAgreeToUnknownCost(confirmation.quote) && agreedToken === confirmation.approvalToken;
+    const allowUnknownCost =
+      MEDIA_PROVIDERS[confirmation.provider].paid && canAgreeToUnknownCost(confirmation.quote) && agreedToken === confirmation.approvalToken;
     setConfirmation(null);
     setAgreedToken(null);
     void generate({ approvalToken: confirmation.approvalToken, promptConfirmed: true, ...(allowUnknownCost ? { allowUnknownCost: true } : {}) });
@@ -115,7 +123,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
             {session && (
               <Stack spacing={0.5}>
                 <Typography variant="body2">
-                  Исполнитель: {kling ? 'Kling' : 'Codex'} · Модель: {session.model ?? (kling ? 'уточняется при подготовке' : 'из настроек Codex')}
+                  Исполнитель: {info?.title} · Модель: {session.model ?? (paid ? 'уточняется при подготовке' : info?.defaultModelLabel)}
                 </Typography>
                 {prepared && session.requestSha && (
                   <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere', fontFamily: 'monospace' }}>
@@ -124,7 +132,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
                 )}
               </Stack>
             )}
-            {kling && prepared && (
+            {paid && prepared && (
               <Alert severity={quote?.verdict === 'ok' ? 'info' : 'warning'}>
                 <Stack spacing={1} alignItems="flex-start">
                   <Typography variant="body2">
@@ -185,14 +193,20 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
             Закрыть
           </Button>
           <Box sx={{ flexGrow: 1 }} />
-          {kling ? (
+          {generationExecutor ? (
+            <AgentButton
+              aiKind="image"
+              provider={generationExecutor}
+              variant={image ? 'outlined' : 'contained'}
+              disabled={generationDisabled}
+              onClick={() => void onGenerate()}
+            >
+              {generationLabel}
+            </AgentButton>
+          ) : (
             <Button variant={image ? 'outlined' : 'contained'} startIcon={<AutoAwesomeIcon />} disabled={generationDisabled} onClick={() => void onGenerate()}>
               {generationLabel}
             </Button>
-          ) : (
-            <AgentButton aiKind="image" variant={image ? 'outlined' : 'contained'} disabled={generationDisabled} onClick={() => void onGenerate()}>
-              {generationLabel}
-            </AgentButton>
           )}
           <Button
             variant="contained"
@@ -215,8 +229,10 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
         title="Проверьте промпт перед генерацией"
         description="Вы уверены, что промпт правильный?"
         confirmLabel="Генерировать"
-        // Codex изображений доступен только при выбранном агенте Codex, поэтому знак берётся из сохранённого выбора.
-        {...(confirmation?.provider === 'codex' ? { confirmAgent: { aiKind: 'image' as const } } : { confirmIcon: <AutoAwesomeIcon /> })}
+        // Знак подтверждения — программа-исполнитель провайдера изображений, а не выбранный текстовый агент.
+        {...(confirmationInfo?.executor
+          ? { confirmAgent: { aiKind: 'image' as const, provider: confirmationInfo.executor } }
+          : { confirmIcon: <AutoAwesomeIcon /> })}
         cancelLabel="Отмена"
         onClose={() => setConfirmation(null)}
         onConfirm={confirmGeneration}
@@ -234,12 +250,12 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
               slotProps={{ input: { readOnly: true } }}
             />
             <Typography variant="body2">
-              Исполнитель: {confirmation.provider === 'kling' ? 'Kling' : 'Codex'} · Модель: {confirmation.model ?? 'из настроек Codex'}
+              Исполнитель: {confirmationInfo?.title} · Модель: {confirmation.model ?? confirmationInfo?.defaultModelLabel}
             </Typography>
             <Typography variant="body2">
-              {confirmation.provider === 'kling'
+              {confirmationInfo?.paid
                 ? `Стоимость: ${formatCredits(confirmation.quote?.credits)}. Будет отправлен один запрос.`
-                : 'Генерация через Codex по условиям вашего аккаунта.'}
+                : `Генерация через ${confirmationInfo?.title} по условиям вашего аккаунта.`}
             </Typography>
           </Stack>
         )}

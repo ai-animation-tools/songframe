@@ -8,7 +8,7 @@ type Props = ButtonProps & { aiKind: AiActionKind };
 
 export function AiButton({ aiKind, ...props }: Props): ReactElement {
   const { agentProvider, aiAccess } = useApp();
-  const reason = !agentProvider ? 'Сначала выберите агента в настройках приложения.' : aiActionProblem(aiAccess, aiKind);
+  const reason = aiKind === 'agent' && !agentProvider ? 'Сначала выберите агента в настройках приложения.' : aiActionProblem(aiAccess, aiKind);
   const button = <Button {...props} disabled={props.disabled || !!reason} title={reason ?? props.title} />;
   return reason ? (
     <Tooltip title={reason}>

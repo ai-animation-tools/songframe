@@ -3,6 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProductionWorkflowView } from '@shared/production-workflow';
+import { agentTitle } from '@shared/agent-providers';
 import { ProductionWorkflowPanel } from './ProductionWorkflowPanel';
 
 const workflow = vi.hoisted(() => ({
@@ -17,9 +18,12 @@ const workflow = vi.hoisted(() => ({
   discard: vi.fn()
 }));
 vi.mock('../useProductionWorkflow', () => ({ useProductionWorkflow: () => workflow }));
+// Повтор проверяется по кнопке задания; содержимое предложения к нему не относится.
+vi.mock('./ProductionProposalDialog', () => ({ ProductionProposalDialog: () => null }));
+const app = vi.hoisted(() => ({ agentProvider: 'codex' as 'codex' | 'claude' | null }));
 vi.mock('../../../state', () => ({
   useApp: () => ({
-    agentProvider: 'codex',
+    agentProvider: app.agentProvider,
     aiAccess: {
       agent: { selected: true, available: true, provider: 'codex', message: '' },
       image: { selected: true, available: true, provider: 'kling', message: '' },
@@ -51,6 +55,7 @@ const action = (html: string): string => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  app.agentProvider = 'codex';
   workflow.busy = false;
   workflow.view = {
     project: '/fixture',
@@ -114,5 +119,34 @@ describe('Явный запуск доработки плана', () => {
     expect(html).not.toContain('Запустить доработку с агентом');
     expect(html).not.toContain('<textarea');
     expect(workflow.start).not.toHaveBeenCalled();
+  });
+
+  it('показывает на повторе опор знак исполнителя провайдера изображений, а не выбранного агента', () => {
+    app.agentProvider = 'claude';
+    const view = workflow.view!;
+    view.canRevise = false;
+    view.imageProvider = 'codex';
+    view.proposal = { id: 'frames-1', stage: 'frames' } as NonNullable<ProductionWorkflowView['proposal']>;
+    view.job = {
+      schemaVersion: 1,
+      id: 'job-1',
+      sequence: 1,
+      project: '/fixture',
+      // Источник знака — реестр провайдера изображений, даже если журнал задания хранит другого агента.
+      provider: 'claude',
+      task: 'Опоры M44',
+      permissions: 'workspace-write',
+      inputHashes: { prompt: 'p', context: 'c' },
+      status: 'failed',
+      phase: 'done',
+      startedAt: '2026-10-28T10:00:00.000Z',
+      finishedAt: '2026-10-28T10:01:00.000Z',
+      exitCode: 1,
+      result: '',
+      log: ''
+    };
+    const html = render();
+    const retry = [...html.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g)].find((match) => match[0].includes('Повторить'));
+    expect(retry?.[0]).toContain(`title="${agentTitle('codex')}"`);
   });
 });

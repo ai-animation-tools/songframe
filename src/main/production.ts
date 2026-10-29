@@ -553,7 +553,6 @@ export class Production {
     const directory = this.available(project, packageDir);
     // Порядок запуска, а не завершения: запоздавшая прежняя оценка не должна вытеснить более новую, которую показывает окно.
     const issued = ++this.quoteSequence;
-    console.error('DEBUG quote start', issued, directory, expectedSha, decisionToken);
     const view = this.ready(project, directory, expectedSha, decisionToken);
     const price = await this.price(project, view.request!.dir);
     const current = this.ready(project, directory, expectedSha, decisionToken);
@@ -566,7 +565,6 @@ export class Production {
       if (record.directory === directory && (record.decisionToken !== current.decisionToken || record.quote.requestSha !== expectedSha))
         this.quotes.delete(token);
     this.quotes.set(quote.token, { project: realpathSync(project), directory, decisionToken: current.decisionToken!, quote, issued });
-    console.error('DEBUG quote done', issued, quote.token, [...this.quotes.keys()]);
     const same = [...this.quotes].filter(([, record]) => record.directory === directory).sort((a, b) => b[1].issued - a[1].issued);
     for (const [token] of same.slice(4)) this.quotes.delete(token);
     return quote;
@@ -784,15 +782,6 @@ export class Production {
   ): Promise<JobInfo> {
     const directory = this.available(project, packageDir);
     const record = this.quotes.get(quoteToken ?? '');
-    console.error(
-      'DEBUG submit',
-      quoteToken,
-      directory,
-      expectedSha,
-      decisionToken,
-      JSON.stringify(record ? { dir: record.directory, sha: record.quote.requestSha, verdict: record.quote.verdict, decision: record.decisionToken } : null),
-      [...this.quotes.keys()]
-    );
     // Отправка одноразовая для пакета: вместе с использованным сгорают и остальные оценки этих материалов.
     for (const [token, candidate] of this.quotes) if (token === quoteToken || (record && candidate.directory === record.directory)) this.quotes.delete(token);
     // Согласие относится ровно к показанной оценке и сгорает вместе с её одноразовым token.

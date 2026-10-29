@@ -15,8 +15,11 @@ interface CheckOptions {
   timeoutMs?: number;
 }
 
-export function agentEnvironment(env: NodeJS.ProcessEnv = process.env, home = homedir()): NodeJS.ProcessEnv {
-  const directories = [...new Set([...(env.PATH?.split(delimiter) ?? []), join(home, '.local', 'bin'), '/usr/local/bin', '/usr/bin', '/bin'])];
+/** Стандартные каталоги программ Linux, которых может не быть в PATH процесса, запущенного с рабочего стола. */
+export const SYSTEM_DIRECTORIES = ['/usr/local/bin', '/usr/bin', '/bin'];
+
+export function agentEnvironment(env: NodeJS.ProcessEnv = process.env, home = homedir(), system = SYSTEM_DIRECTORIES): NodeJS.ProcessEnv {
+  const directories = [...new Set([...(env.PATH?.split(delimiter) ?? []), join(home, '.local', 'bin'), ...system])];
   return { ...env, PATH: directories.filter(isAbsolute).join(delimiter) };
 }
 

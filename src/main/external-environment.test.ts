@@ -7,8 +7,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { externalEnvironment } from './external-environment';
 
 let work: string;
+// Минимальный GUI PATH без системного Node: результат не зависит от того, установлен ли Node на машине с тестами.
+let system: string;
 beforeEach(() => {
   work = mkdtempSync(join(tmpdir(), 'songframe-external-'));
+  system = join(work, 'system');
+  mkdirSync(system);
 });
 afterEach(() => rmSync(work, { recursive: true, force: true }));
 
@@ -50,7 +54,7 @@ describe.skipIf(process.platform !== 'linux')('Окружение внешних
     const bin = join(work, 'CLI с пробелами');
     binary(bin, 'node', '#!/bin/sh\nprintf "node-wrapper:%s\\n" "$*"\n');
     const cli = binary(bin, 'test-cli', '#!/usr/bin/env node\n');
-    const env = await externalEnvironment({ env: { PATH: '/usr/bin:/bin', NVM_BIN: bin }, home: work, platform: 'linux' });
+    const env = await externalEnvironment({ env: { PATH: system, NVM_BIN: bin }, home: work, platform: 'linux', systemDirectories: [system] });
     expect(env.PATH?.split(':')[0]).toBe(bin);
     expect(await cliVersion('test-cli', env)).toBe(`node-wrapper:${cli} --version`);
   });
@@ -65,9 +69,10 @@ describe.skipIf(process.platform !== 'linux')('Окружение внешних
       `printf 'startup output is ignored\\n'\nprintf '%s' "$1" > "$NVM_DIR/source-argument"\nnvm() { [ "$*" = 'which default' ] || return 9; printf '%s\\n' "$NVM_DIR/selected bin/node"; }\n`
     );
     const env = await externalEnvironment({
-      env: { PATH: '/usr/bin:/bin', NVM_DIR: directory, NVM_BIN: join(work, 'missing'), BASH_ENV: profile },
+      env: { PATH: system, NVM_DIR: directory, NVM_BIN: join(work, 'missing'), BASH_ENV: profile },
       home: work,
-      platform: 'linux'
+      platform: 'linux',
+      systemDirectories: [system]
     });
     expect(env.PATH?.split(':')[0]).toBe(join(directory, 'selected bin'));
     expect(await cliVersion(node, env)).toBe('');
@@ -80,9 +85,10 @@ describe.skipIf(process.platform !== 'linux')('Окружение внешних
     binary(bin, 'node');
     nvm(nvmDir, 'nvm() { [ "$*" = "which default" ] || return 9; printf "%s\\n" "$NVM_DIR/selected/node"; }\n');
     const env = await externalEnvironment({
-      env: { PATH: '/usr/bin:/bin', ...(location === 'xdg' ? { XDG_CONFIG_HOME: join(work, 'config') } : {}) },
+      env: { PATH: system, ...(location === 'xdg' ? { XDG_CONFIG_HOME: join(work, 'config') } : {}) },
       home: work,
-      platform: 'linux'
+      platform: 'linux',
+      systemDirectories: [system]
     });
     expect(env.PATH?.split(':')[0]).toBe(bin);
   });
@@ -90,9 +96,9 @@ describe.skipIf(process.platform !== 'linux')('Окружение внешних
   it('возвращает базовый PATH после ошибки resolver и ограничивает зависший resolver без блокировки event loop', async () => {
     const directory = join(work, '.nvm');
     nvm(directory, 'nvm() { return 7; }\n');
-    const options = { env: { PATH: '/usr/bin:/bin' }, home: work, platform: 'linux' as const, timeoutMs: 30 };
+    const options = { env: { PATH: system }, home: work, platform: 'linux' as const, timeoutMs: 30, systemDirectories: [system] };
     const failed = await externalEnvironment(options);
-    expect(failed.PATH?.split(':')[0]).toBe('/usr/bin');
+    expect(failed.PATH?.split(':')[0]).toBe(system);
     nvm(directory, 'nvm() { while :; do :; done; }\n');
     let heartbeat = false;
     const timer = setTimeout(() => {

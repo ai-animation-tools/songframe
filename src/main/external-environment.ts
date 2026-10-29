@@ -11,6 +11,8 @@ interface ExternalEnvironmentOptions {
   home?: string;
   platform?: NodeJS.Platform;
   timeoutMs?: number;
+  /** Стандартные каталоги программ; тесты подменяют их, чтобы не зависеть от Node, установленного в системе. */
+  systemDirectories?: string[];
 }
 
 async function executable(path: string): Promise<boolean> {
@@ -48,7 +50,7 @@ export async function externalEnvironment(options: ExternalEnvironmentOptions = 
   const input = options.env ?? process.env;
   if ((options.platform ?? process.platform) !== 'linux') return { ...input };
   const home = options.home ?? homedir();
-  const env = agentEnvironment(input, home);
+  const env = agentEnvironment(input, home, options.systemDirectories);
   // npm-установки агентов запускаются через shebang node: уже найденный Node не переключаем.
   if (await found('node', env)) return env;
 

@@ -1,7 +1,7 @@
 /** Приёмка конечного файла; AppImage не копируется за пределы build/release даже для проверки переноса. */
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, readdir, rename, copyFile, writeFile, stat, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rename, rmdir, copyFile, writeFile, stat, rm } from 'node:fs/promises';
 import { dirname, join, resolve, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -69,6 +69,8 @@ const container = (args, env = {}) =>
     ...args
   ]);
 let moved = false;
+// Временная папка для проверки запуска из пути с пробелами; после возврата AppImage удаляется.
+const portableFolder = join(dirname(original), 'Перенос AppImage с пробелами');
 try {
   console.log('[Проверка] Подготовка тестовой речи');
   const wav = join(work, 'voice.wav');
@@ -80,9 +82,8 @@ try {
   else await command('espeak-ng', ['-v', 'ru', '-s', '125', '-w', wav, 'Утром солнце светит ярко. Мы гуляем у реки.']);
   for (const phase of ['exercise', 'reopen']) {
     if (phase === 'reopen') {
-      const folder = join(dirname(original), 'Перенос AppImage с пробелами');
-      await mkdir(folder, { recursive: true });
-      image = join(folder, basename(original));
+      await mkdir(portableFolder, { recursive: true });
+      image = join(portableFolder, basename(original));
       await rename(original, image);
       moved = true;
     }
@@ -117,6 +118,7 @@ try {
     await rename(image, original);
     image = original;
     moved = false;
+    await rmdir(portableFolder);
   }
   if ((await mediaFiles.sha256(original)) !== imageHash) throw new Error('AppImage изменился при проверке.');
   const summary = {
@@ -136,6 +138,9 @@ try {
   await writeFile(join(work, 'result.json'), JSON.stringify({ ok: false, error: error.message }, null, 2) + '\n');
   throw error;
 } finally {
-  if (moved) await rename(image, original);
+  if (moved) {
+    await rename(image, original);
+    await rmdir(portableFolder).catch(() => undefined);
+  }
   await writeFile(join(work, 'smoke.log'), log.join(''));
 }

@@ -22,13 +22,13 @@ argument-hint: "[os=linux|win]"
 
 ## Linux
 
-- `yarn dist:linux --publish never` собирает AppImage с ресурсами.
+- `yarn dist:linux` собирает AppImage с ресурсами.
 - `yarn smoke:runtime` проверяет переносимый Python.
 - Для проверки конечного AppImage по рецепту проекта подготовь внешнюю тестовую модель командой `yarn prepare:smoke-model`, затем выполни `yarn smoke:appimage --docker --model="$PWD/build/runtime/smoke-model" --output=/tmp/songframe-appimage-check`. Для повторного прогона выбери новую папку отчёта. Подготовка модели может требовать сеть; сама проверка в Docker идёт без сети.
 - Успешный smoke создаёт рядом с AppImage файл SHA256 и `linux-smoke-result.json`. Сообщай отдельно о сборке и фактически выполненном smoke.
 
 ## Windows
 
-На Linux выполни `yarn dist:win --publish never`. Для проверки архива возьми версию из `package.json` и запусти `python3 -B scripts/runtime/check-windows-zip.py "build/release/songframe-<версия>-win-x64.zip" --version "<версия>"`. Проверка создаёт SHA256 и `build/release/windows-archive-check.json`; она проверяет архив и ресурсы, но не исполняет Windows-код. Не делай вывод о работоспособности runtime или полной поддержке Windows по результату проверки архива. Нативные проверки Windows в VM выполняй только по явному поручению.
+На Linux выполни `yarn dist:win`. Для проверки архива возьми версию из `package.json` и запусти `python3 -B scripts/runtime/check-windows-zip.py "build/release/songframe-<версия>-win-x64.zip" --version "<версия>"`. Проверка создаёт SHA256 и `build/release/windows-archive-check.json`; она проверяет архив и ресурсы, но не исполняет Windows-код. Не делай вывод о работоспособности runtime или полной поддержке Windows по результату проверки архива. Нативные проверки Windows в VM выполняй только по явному поручению.
 
 В ответе укажи пути полученных файлов, выполненные проверки и их результат, а также существенные невыполненные проверки. Сборка не разрешает commit, push или публикацию; выпуск релиза выполняется отдельно по явному поручению.

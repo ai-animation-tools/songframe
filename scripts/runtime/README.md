@@ -65,7 +65,7 @@ Linux использует `python/bin/python3`, Windows — `python/python.exe`
 Для **настоящего упакованного приложения** предусмотрена переменная `SONGFRAME_RUNTIME_SMOKE`: путь JSON-отчёта. Приложение не открывает окно, создаёт временную фикстуру, выполняет импорты, вложенный Python, `check_workspace` через launcher и Jobs, сохраняет отчёт и завершается с кодом 0/1. Пример Linux после упаковки:
 
 ```sh
-SONGFRAME_RUNTIME_SMOKE=/tmp/songframe-runtime-result.json SONGFRAME_LOCAL_DIR=/tmp/songframe-runtime-state build/release/linux-unpacked/songframe
+SONGFRAME_RUNTIME_SMOKE=/tmp/songframe-runtime-result.json SONGFRAME_LOCAL_DIR=/tmp/songframe-runtime-state build/release/songframe-<версия>-linux-x86_64.AppImage
 ```
 
 AppImage проверяется таким же образом. Нужна доступная графическая сессия для Electron (в CI — Xvfb), хотя окно не создаётся. В packaged smoke PATH Python-процессов содержит только `runtime/bin`, без системных команд; самостоятельный Python smoke использует пустой PATH.
@@ -82,7 +82,7 @@ CI запускает полные наборы тестов приложени�
 
 Отчёты `result.json` и `check.log` сохраняются рядом с EXE и `check-runtime.cmd`. CMD содержит только ASCII-команды с CRLF, без переключения кодировки; формат проверяется перед упаковкой. Он сначала переходит в папку приложения (включая UNC/shared folder через pushd), создаёт оба файла, затем запускает EXE. Начальный `stage: launcher` не является успешной проверкой: приложение заменяет его настоящим результатом. Если запуск не удался, отправьте оба файла и текст ошибки Windows. Можно перенести всю папку в каталог с кириллицей/пробелами и повторить запуск. Не переносите один EXE без ресурсов.
 
-Для отдельной подготовки из Linux: `yarn prepare:runtime --target=win32-x64`. Выпуск ZIP: `yarn dist:win --publish never`. Во время сборки не исполняется Windows-код; нативные проверки выполняются отдельно, по явному поручению. Нативная проверка Python сама по себе не подтверждает распознавание с моделью и полный медиапрогон. После обновления ZIP запускайте check-runtime.cmd повторно: отчёт должен содержать проверку встроенных FFmpeg/ffprobe и короткого кодирования/чтения тестового файла.
+Для отдельной подготовки из Linux: `yarn prepare:runtime --target=win32-x64`. Выпуск ZIP: `yarn dist:win`. Во время сборки не исполняется Windows-код; нативные проверки выполняются отдельно, по явному поручению. Нативная проверка Python сама по себе не подтверждает распознавание с моделью и полный медиапрогон. После обновления ZIP запускайте check-runtime.cmd повторно: отчёт должен содержать проверку встроенных FFmpeg/ffprobe и короткого кодирования/чтения тестового файла.
 
 ## Проект и инструменты
 

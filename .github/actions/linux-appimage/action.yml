@@ -21,7 +21,7 @@ runs:
         command -v zstd || { sudo apt-get update && sudo apt-get install -y --no-install-recommends zstd; }
     - name: Собрать AppImage с ресурсами
       shell: bash
-      run: yarn dist:linux --publish never
+      run: yarn dist:linux
     - name: Проверить переносимый Python
       shell: bash
       run: yarn smoke:runtime

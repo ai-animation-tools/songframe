@@ -28,7 +28,7 @@ runs:
       run: python3 -B -m unittest discover -s scripts/runtime -p test_check_windows_zip.py
     - name: Собрать Windows ZIP с ресурсами
       shell: bash
-      run: yarn dist:win --publish never
+      run: yarn dist:win
     - name: Проверить готовый Windows ZIP
       id: archive
       shell: bash

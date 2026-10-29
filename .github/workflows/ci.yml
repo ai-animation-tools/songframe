@@ -1,4 +1,5 @@
 # Проверки кода приложения и инструментов: на pull request и при слиянии в main.
+# Поставки здесь не собираются: их проверяют локально, а для релиза собирает release.yml.
 name: CI
 
 on:
@@ -35,6 +36,12 @@ jobs:
           # Версия совпадает с окружением разработчика. @link .nvmrc
           node-version-file: .nvmrc
           cache: yarn
+      # postinstall скачивает Electron (~100 МБ); кэш по yarn.lock избавляет от повторной загрузки.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/electron
+          key: electron-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: electron-${{ runner.os }}-
       - name: Зависимости
         run: yarn install --immutable
       - name: ESLint
@@ -77,94 +84,8 @@ jobs:
         run: |
           bash tools/run_tests/prepare_ci_media.sh
           python -m pip install pillow==13.0.0
+      # Наборы независимы (у каждого процесса своя копия образца) и идут параллельно по числу ядер раннера.
       - name: Тесты
-        run: python3 -B tools/run_tests/run_tests.py
-
-  runtime:
-    name: 'Linux: сборка и проверка runtime'
-    runs-on: ubuntu-24.04
-    env:
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-    steps:
-      - uses: actions/checkout@v7
-      # Сначала выбираем Node из проекта: Yarn нужен уже при вычислении пути кэша.
-      # Повторный setup-node только подключает кэш после подготовки Corepack. @link .nvmrc
-      - name: Node.js для Corepack
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          package-manager-cache: false
-      - name: Yarn 4 через corepack
-        run: |
-          corepack enable
-          node --version
-          corepack --version
-          yarn --version
-      - name: Кэш Yarn
-        uses: actions/setup-node@v7
-        with:
-          # Сборка использует ту же версию Node.js, что и проверки приложения.
-          node-version-file: .nvmrc
-          cache: yarn
-      - run: yarn install --immutable
-      - name: Собрать и проверить конечный AppImage
-        uses: ./.github/actions/linux-appimage
-        with:
-          report-dir: ${{ runner.temp }}/songframe-appimage
-      - name: Журналы приёмки
-        # После отмены не загружаем временный проект и журналы тяжёлой проверки.
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: linux-appimage-smoke
-          path: ${{ runner.temp }}/songframe-appimage
-          if-no-files-found: ignore
-      - name: Проверенный Linux AppImage
-        uses: actions/upload-artifact@v7
-        with:
-          name: linux-appimage
-          path: |
-            build/release/*.AppImage
-            build/release/*.AppImage.sha256
-            build/release/linux-distribution.json
-            build/release/linux-smoke-result.json
-            build/release/THIRD_PARTY_LICENSES.md
-          if-no-files-found: error
-
-  windows:
-    name: 'Windows: сборка ZIP и проверка архива на Linux'
-    runs-on: ubuntu-24.04
-    env:
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-    steps:
-      - uses: actions/checkout@v7
-      # Yarn нужен уже при подключении кэша; Node выбирается из настроек проекта.
-      - name: Node.js для Corepack
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          package-manager-cache: false
-      - name: Yarn 4 через corepack
-        run: |
-          corepack enable
-          node --version
-          corepack --version
-          yarn --version
-      - name: Кэш Yarn
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: yarn
-      - run: yarn install --immutable
-      - name: Собрать и проверить конечный Windows ZIP
-        id: windows
-        uses: ./.github/actions/windows-zip
-      - name: Проверенный Windows ZIP
-        uses: actions/upload-artifact@v7
-        with:
-          name: windows-zip
-          path: |
-            ${{ steps.windows.outputs.zip }}
-            ${{ steps.windows.outputs.sha256 }}
-            ${{ steps.windows.outputs.report }}
-          if-no-files-found: error
+        run: python3 -B tools/run_tests/run_tests.py --jobs "$(nproc)"
+      - name: Тесты скриптов поставки
+        run: python3 -B -m unittest discover -s scripts/runtime -p 'test_*.py'

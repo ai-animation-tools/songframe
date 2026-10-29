@@ -90,6 +90,14 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: yarn
+      # Electron для Linux и Windows и инструменты electron-builder (AppImage) не скачиваются заново при каждом релизе.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-${{ matrix.platform }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: electron-${{ matrix.platform }}-
       - name: Зависимости
         run: yarn install --immutable
       - name: Версия приложения только для сборки
@@ -113,12 +121,16 @@ jobs:
           name: release-linux-smoke
           path: ${{ runner.temp }}/songframe-appimage
           if-no-files-found: ignore
+          retention-days: 7
       - name: Проверенные файлы поставки
         uses: actions/upload-artifact@v7
         with:
           name: release-binaries-${{ matrix.platform }}
           path: ${{ matrix.files }}
           if-no-files-found: error
+          # Артефакт только передаёт файлы задаче публикации: AppImage и ZIP уже сжаты, а после релиза копия не нужна.
+          compression-level: 0
+          retention-days: 1
 
   publish:
     name: Опубликовать релиз с обеими поставками

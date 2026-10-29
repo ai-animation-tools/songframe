@@ -1,4 +1,4 @@
-# Один и тот же путь сборки и приёмки используется CI и Release.
+# Путь сборки и приёмки AppImage для Release; локально те же шаги выполняет скилл songframe-build.
 name: Linux AppImage
 description: Собрать и проверить конечный AppImage с внешней тестовой моделью
 inputs:
@@ -16,9 +16,9 @@ runs:
         key: linux-runtime-${{ hashFiles('scripts/runtime/*lock*') }}
     - name: Zstd для уведомлений CPython
       shell: bash
+      # В образе ubuntu-24.04 zstd обычно уже есть: apt-get update только при его отсутствии.
       run: |
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends zstd
+        command -v zstd || { sudo apt-get update && sudo apt-get install -y --no-install-recommends zstd; }
     - name: Собрать AppImage с ресурсами
       shell: bash
       run: yarn dist:linux --publish never
@@ -28,6 +28,21 @@ runs:
     - name: Подготовить внешнюю модель только для проверки
       shell: bash
       run: yarn prepare:smoke-model
+    # Тег совпадает с вычисляемым в smoke-appimage.mjs: найденный образ скрипт не пересобирает.
+    - name: Тег проверочного образа
+      id: smoke-image
+      shell: bash
+      run: echo "tag=songframe-smoke:$(sha256sum scripts/runtime/linux-smoke.Dockerfile | cut -c1-12)" >> "$GITHUB_OUTPUT"
+    - uses: docker/setup-buildx-action@v4
+    - name: Проверочный образ Ubuntu 22.04 из кэша
+      uses: docker/build-push-action@v7
+      with:
+        context: scripts/runtime
+        file: scripts/runtime/linux-smoke.Dockerfile
+        tags: ${{ steps.smoke-image.outputs.tag }}
+        load: true
+        cache-from: type=gha,scope=songframe-smoke
+        cache-to: type=gha,scope=songframe-smoke,mode=max
     - name: Проверить AppImage в чистом Linux без сети
       shell: bash
       env:

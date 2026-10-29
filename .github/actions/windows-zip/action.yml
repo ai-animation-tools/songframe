@@ -1,4 +1,4 @@
-# CI и Release проверяют одну и ту же готовую Windows-поставку без запуска Windows-кода.
+# Release проверяет готовую Windows-поставку без запуска Windows-кода.
 name: Windows ZIP
 description: Собрать Windows ZIP на Linux и проверить архив и обязательные ресурсы
 inputs:
@@ -21,7 +21,8 @@ runs:
     - uses: actions/cache@v6
       with:
         path: build/runtime/downloads
-        key: windows-runtime-${{ hashFiles('scripts/runtime/*lock*', 'yarn.lock') }}
+        # Загрузки зависят только от закреплённых версий runtime и FFmpeg, не от зависимостей Node.
+        key: windows-runtime-${{ hashFiles('scripts/runtime/*lock*') }}
     - name: Тесты проверки Windows ZIP
       shell: bash
       run: python3 -B -m unittest discover -s scripts/runtime -p test_check_windows_zip.py

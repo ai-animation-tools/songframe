@@ -1,5 +1,6 @@
 /** Приёмка конечного файла; AppImage не копируется за пределы build/release даже для проверки переноса. */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, readdir, rename, copyFile, writeFile, stat, rm } from 'node:fs/promises';
 import { dirname, join, resolve, basename } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -9,6 +10,12 @@ import mediaFiles from './media-files.cjs';
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const option = (name) => process.argv.find((arg) => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
 const docker = process.argv.includes('--docker');
+const dockerfile = join(repo, 'scripts/runtime/linux-smoke.Dockerfile');
+// Тег зависит от содержимого Dockerfile: готовый образ (локальный или из кэша Release) переиспользуется, изменённый собирается заново.
+const smokeImage = `songframe-smoke:${createHash('sha256')
+  .update(await readFile(dockerfile))
+  .digest('hex')
+  .slice(0, 12)}`;
 const release = join(repo, 'build/release');
 const names = (await readdir(release)).filter((name) => name.endsWith('.AppImage'));
 if (!option('appimage') && names.length !== 1) throw new Error('Укажите --appimage=<файл>, в build/release должен быть один конечный AppImage.');
@@ -58,7 +65,7 @@ const container = (args, env = {}) =>
     '--mount',
     `type=bind,source=${model},target=${model},readonly`,
     ...Object.entries({ HOME: join(work, 'home'), ...env }).flatMap(([key, value]) => ['-e', `${key}=${value}`]),
-    'songframe-smoke:ubuntu22',
+    smokeImage,
     ...args
   ]);
 let moved = false;
@@ -66,15 +73,8 @@ try {
   console.log('[Проверка] Подготовка тестовой речи');
   const wav = join(work, 'voice.wav');
   if (docker) {
-    await command('docker', [
-      'build',
-      '-q',
-      '-t',
-      'songframe-smoke:ubuntu22',
-      '-f',
-      join(repo, 'scripts/runtime/linux-smoke.Dockerfile'),
-      join(repo, 'scripts/runtime')
-    ]);
+    if (spawnSync('docker', ['image', 'inspect', smokeImage], { stdio: 'ignore' }).status !== 0)
+      await command('docker', ['build', '-q', '-t', smokeImage, '-f', dockerfile, join(repo, 'scripts/runtime')]);
     await container(['espeak-ng', '-v', 'ru', '-s', '125', '-w', wav, 'Утром солнце светит ярко. Мы гуляем у реки.']);
   } else if (option('audio')) await copyFile(resolve(option('audio')), wav);
   else await command('espeak-ng', ['-v', 'ru', '-s', '125', '-w', wav, 'Утром солнце светит ярко. Мы гуляем у реки.']);

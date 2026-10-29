@@ -1,4 +1,21 @@
 {
-  "files": [],
-  "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]
+  // Общий проект для редактора и инструментов навигации: «найти все ссылки» видит и главный процесс, и интерфейс.
+  // Строгая проверка каждого окружения — в tsconfig.node.json и tsconfig.web.json (yarn typecheck).
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": { "@shared/*": ["src/shared/*"], "@renderer/*": ["src/renderer/src/*"] }
+  },
+  "include": ["electron.vite.config.ts", "vitest.config.ts", "src/**/*.ts", "src/**/*.tsx"]
 }

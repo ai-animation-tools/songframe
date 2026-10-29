@@ -7,7 +7,7 @@ import type { LoginControl, PaidProviderAdapter } from '../types';
 import { KLING_ID, KLING_TITLE } from './kling-title';
 
 /** Проверка входа делает один бесплатный вызов сервиса; лимит покрывает обновление токена. */
-const AUTH_TIMEOUT_MS = 45000;
+const AUTH_TIMEOUT_MS = 135000;
 /** Python ждёт подтверждения в браузере до пяти минут; наружный лимит оставляет время на обмен кода. */
 const LOGIN_TIMEOUT_MS = 330000;
 const STATUSES = new Set<ProviderAuth['status']>(['authenticated', 'unauthenticated', 'unknown']);
@@ -131,7 +131,7 @@ path = kling_mcp.credentials_path()
 assert local_directory() == state and path.is_relative_to(state), 'Токены должны храниться в каталоге состояния'
 assert not path.exists(), 'Проверка поставки не должна находить чужой вход'
 tool = Path('tools/media_request/media_request.py').resolve()
-result = subprocess.run([sys.executable, '-B', '-X', 'utf8', str(tool), 'auth-status', '--provider', '${KLING_ID}', '--json'], capture_output=True, timeout=30)
+result = subprocess.run([sys.executable, '-B', '-X', 'utf8', str(tool), 'auth-status', '--provider', '${KLING_ID}', '--json'], capture_output=True, timeout=90)
 assert result.returncode == 0, result.stderr.decode('utf-8', errors='replace')
 status = json.loads(result.stdout)['status']
 assert status == 'unauthenticated', status

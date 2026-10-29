@@ -18,16 +18,20 @@ const MODULES = [
 const bundledHint = 'Python и библиотеки входят в приложение. Если комплект повреждён, распакуйте приложение заново.';
 const developmentHint = 'Для разработки: yarn prepare:runtime или Python 3.11+ с зависимостями из scripts/runtime/README.md.';
 type Update = (id: string, patch: Partial<EnvironmentCheck>) => void;
+/** Первый запуск программ из поставки на Windows может идти долго (антивирус, холодный диск): запас на проверку версии. */
+const COMMAND_TIMEOUT_MS = 45000;
+/** Импорт библиотек Python при холодном запуске. */
+const IMPORTS_TIMEOUT_MS = 360000;
 
 /** Версии проверяются независимо: медленный внешний CLI не блокирует главный процесс и остальные проверки. */
 export function run(command: string, args: string[], shell: boolean, env: NodeJS.ProcessEnv): Promise<{ ok: boolean; output: string; elapsedMs: number }> {
   const started = performance.now();
   return new Promise((resolve) => {
-    execFile(command, args, { encoding: 'utf-8', timeout: 15000, shell, env, windowsHide: true }, (error, stdout, stderr) => {
+    execFile(command, args, { encoding: 'utf-8', timeout: COMMAND_TIMEOUT_MS, shell, env, windowsHide: true }, (error, stdout, stderr) => {
       const elapsedMs = Math.round(performance.now() - started);
       if (error) {
         let output: string;
-        if (error.killed) output = 'Превышено время выполнения (15000 мс).';
+        if (error.killed) output = `Превышено время выполнения (${COMMAND_TIMEOUT_MS} мс).`;
         else if (error.code === 'ENOENT' || String(error.code) === '9009' || (shell && /is not recognized|не является.*командой/i.test(stderr)))
           output = `Команда не найдена: ${command}`;
         // CMD пишет в локальной кодировке: не выдаём повреждённый текст за сообщение инструмента.
@@ -110,7 +114,7 @@ for name in ('PIL', 'numpy', 'faster_whisper', 'ctranslate2'):
     progress({'kind': 'import', 'name': name, 'state': 'done', **result[name]})
 print(json.dumps({'version': version, 'executable': sys.executable, 'dependencies': result}))`
       ],
-      { timeoutMs: 120000, onOutput }
+      { timeoutMs: IMPORTS_TIMEOUT_MS, onOutput }
     );
     if (pendingStderr) line(pendingStderr);
     const stderr = imports.stderr

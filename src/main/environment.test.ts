@@ -126,7 +126,7 @@ describe('Диагностика среды', () => {
     for (const id of ['python', 'pillow', 'numpy', 'faster-whisper', 'ctranslate2', 'ffmpeg', 'ffprobe'])
       expect(checks.find((check) => check.id === id)?.bundled, id).toBe(true);
     expect(checks.find((check) => check.id === 'git')?.bundled).toBeUndefined();
-    expect(value.execute).toHaveBeenCalledWith(expect.any(Array), { timeoutMs: 120000, onOutput: expect.any(Function) });
+    expect(value.execute).toHaveBeenCalledWith(expect.any(Array), { timeoutMs: 360000, onOutput: expect.any(Function) });
     expect(processes.spawnSync).not.toHaveBeenCalled();
   });
 
@@ -207,7 +207,7 @@ describe('Диагностика среды', () => {
     expect(events.find((check) => check.id === 'pillow' && check.status === 'done')).toMatchObject({ ok: true, elapsedMs: 14 });
     expect(events.filter((check) => check.id === 'numpy').at(-1)).toMatchObject({ status: 'running', detail: 'Выполняется импорт' });
     finishVersions();
-    completePython({ code: null, stdout: '', stderr: lines + 'Превышено время выполнения (120000 мс).', command: 'python' });
+    completePython({ code: null, stdout: '', stderr: lines + 'Превышено время выполнения (360000 мс).', command: 'python' });
     const final = await result;
     expect(final.find((check) => check.id === 'python')).toMatchObject({ ok: true, status: 'done' });
     expect(final.find((check) => check.id === 'pillow')).toMatchObject({ ok: true, status: 'done', elapsedMs: 14 });
@@ -236,9 +236,9 @@ describe('Диагностика среды', () => {
     const result = checkEnvironment(work, launcher('win32'));
     const calls = processes.execFile.mock.calls;
     expect(calls.map(([command, , options]) => ({ command, options }))).toEqual([
-      { command: join(work, 'runtime/bin/ffmpeg.exe'), options: expect.objectContaining({ shell: false, timeout: 15000 }) },
-      { command: join(work, 'runtime/bin/ffprobe.exe'), options: expect.objectContaining({ shell: false, timeout: 15000 }) },
-      { command: 'git', options: expect.objectContaining({ shell: true, timeout: 15000 }) }
+      { command: join(work, 'runtime/bin/ffmpeg.exe'), options: expect.objectContaining({ shell: false, timeout: 45000 }) },
+      { command: join(work, 'runtime/bin/ffprobe.exe'), options: expect.objectContaining({ shell: false, timeout: 45000 }) },
+      { command: 'git', options: expect.objectContaining({ shell: true, timeout: 45000 }) }
     ]);
     finishVersions();
     await result;
@@ -254,17 +254,17 @@ describe('Диагностика среды', () => {
     const checks = await result;
     expect(checks.find(({ id }) => id === 'ffmpeg')).toMatchObject({ ok: false, detail: `Команда не найдена: ${ffmpeg}` });
     expect(checks.find(({ id }) => id === 'ffprobe')).toMatchObject({ ok: false, detail: 'ffprobe: повреждена библиотека' });
-    expect(checks.find(({ id }) => id === 'git')).toMatchObject({ ok: false, detail: 'Превышено время выполнения (15000 мс).' });
+    expect(checks.find(({ id }) => id === 'git')).toMatchObject({ ok: false, detail: 'Превышено время выполнения (45000 мс).' });
   });
 
   it('сохраняет ошибку Python и доступность независимых CLI после таймаута импорта', async () => {
     const value = launcher();
-    vi.mocked(value.execute).mockResolvedValue({ code: null, stdout: '', stderr: 'Превышено время выполнения (120000 мс).', command: 'python' });
+    vi.mocked(value.execute).mockResolvedValue({ code: null, stdout: '', stderr: 'Превышено время выполнения (360000 мс).', command: 'python' });
     const result = checkEnvironment(work, value);
     finishVersions();
     const checks = await result;
-    expect(checks.find(({ id }) => id === 'python')).toMatchObject({ ok: false, detail: 'Превышено время выполнения (120000 мс).' });
-    expect(checks.find(({ id }) => id === 'numpy')).toMatchObject({ ok: false, detail: 'Превышено время выполнения (120000 мс).' });
+    expect(checks.find(({ id }) => id === 'python')).toMatchObject({ ok: false, detail: 'Превышено время выполнения (360000 мс).' });
+    expect(checks.find(({ id }) => id === 'numpy')).toMatchObject({ ok: false, detail: 'Превышено время выполнения (360000 мс).' });
     expect(checks.find(({ id }) => id === 'ffmpeg')?.ok).toBe(true);
   });
 

@@ -40,7 +40,7 @@ describe('Среда Kling', () => {
   it('checkAuth проверяет вход тем же launcher, что и производство', async () => {
     const spy = launcherRun(result('{"status":"authenticated"}'));
     expect(await kling.checkAuth(options)).toEqual({ status: 'authenticated' });
-    expect(spy).toHaveBeenCalledWith(null, 'media_request', ['auth-status', '--provider', 'kling', '--json'], { timeoutMs: 45000 });
+    expect(spy).toHaveBeenCalledWith(null, 'media_request', ['auth-status', '--provider', 'kling', '--json'], { timeoutMs: 135000 });
     expect(spy.mock.contexts[0]).toMatchObject({ options });
   });
 

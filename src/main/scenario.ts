@@ -5,7 +5,18 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { BriefResult, CastFile, EntityState, ResolvedState, ScenarioView, SceneShot, ScenesFile, TimingFile, TreatmentFile } from '@shared/types';
+import type {
+  BriefResult,
+  CastFile,
+  EntityState,
+  ResolvedState,
+  ScenarioView,
+  SceneShot,
+  ScenesFile,
+  StateSource,
+  TimingFile,
+  TreatmentFile
+} from '@shared/types';
 import { castReferences, initialStates, loadDefaults, readCast, WORLD_ID } from './cast';
 import { readManifest } from './sources';
 import { parseLyricsLines } from './timing';
@@ -186,13 +197,58 @@ export function derivedFromProblems(scenes: SceneShot[]): string[] {
 
 /** Порт _resolve_states: наследование состояния по state_from с начальным состоянием кастинга. */
 export function resolveStates(data: ScenesFile, initial: EntityState): Record<string, ResolvedState> {
+  return Object.fromEntries(
+    Object.entries(resolveTracked(data, initial)).map(([sid, value]) => [sid, { before: plain(value.before), after: plain(value.after) }])
+  );
+}
+
+/** Состояние до правок блока плана: для первого кадра — пришедшее по state_from, для итога — первый кадр. */
+export function resolveInherited(data: ScenesFile, initial: EntityState): Record<string, ResolvedState> {
+  return Object.fromEntries(
+    Object.entries(resolveTracked(data, initial)).map(([sid, value]) => [sid, { before: plain(value.incoming), after: plain(value.before) }])
+  );
+}
+
+function plain(state: Tracked): EntityState {
+  return Object.fromEntries(
+    Object.entries(state).map(([entity, attributes]) => [entity, Object.fromEntries(Object.entries(attributes).map(([key, item]) => [key, item.value]))])
+  );
+}
+
+/** Где задано каждое значение вычисленного состояния: для перехода к месту правки из врезки. */
+export function resolveStateSources(
+  data: ScenesFile,
+  initial: EntityState
+): Record<string, Record<'before' | 'after', Record<string, Record<string, StateSource>>>> {
+  const sources = (state: Tracked): Record<string, Record<string, StateSource>> =>
+    Object.fromEntries(
+      Object.entries(state).map(([entity, attributes]) => [entity, Object.fromEntries(Object.entries(attributes).map(([key, item]) => [key, item.source]))])
+    );
+  return Object.fromEntries(
+    Object.entries(resolveTracked(data, initial)).map(([sid, value]) => [sid, { before: sources(value.before), after: sources(value.after) }])
+  );
+}
+
+type Tracked = Record<string, Record<string, { value: string; source: StateSource }>>;
+
+/** Значение несёт свой источник; порядок ключей и правила совпадают с _resolve_states, от них зависит отпечаток плана. */
+function resolveTracked(data: ScenesFile, initial: EntityState): Record<string, { before: Tracked; after: Tracked; incoming: Tracked }> {
   const scenes = new Map(data.scenes.map((s) => [s.id, s]));
   const previous = new Map(data.scenes.map((s, i) => [s.id, i ? data.scenes[i - 1].id : null]));
-  const resolved = new Map<string, ResolvedState>();
+  const resolved = new Map<string, { before: Tracked; after: Tracked; incoming: Tracked }>();
   const visiting: string[] = [];
-  const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+  const clone = (state: Tracked): Tracked =>
+    Object.fromEntries(
+      Object.entries(state).map(([entity, attributes]) => [entity, Object.fromEntries(Object.entries(attributes).map(([key, item]) => [key, { ...item }]))])
+    );
+  const start: Tracked = Object.fromEntries(
+    Object.entries(initial).map(([entity, attributes]) => [
+      entity,
+      Object.fromEntries(Object.entries(attributes).map(([key, value]) => [key, { value, source: { kind: 'cast' } as StateSource }]))
+    ])
+  );
 
-  const apply = (state: EntityState, delta: SceneShot['state_changes']['before'], sid: string): EntityState => {
+  const apply = (state: Tracked, delta: SceneShot['state_changes']['before'], sid: string, phase: 'before' | 'after'): Tracked => {
     const result = clone(state);
     if (!delta) return result;
     if (typeof delta !== 'object' || Array.isArray(delta)) throw new Error(`${sid}: изменения состояния должны быть объектом.`);
@@ -206,7 +262,7 @@ export function resolveStates(data: ScenesFile, initial: EntityState): Record<st
           if (result[entity]) delete result[entity][key];
         } else {
           result[entity] = result[entity] ?? {};
-          result[entity][key] = value;
+          result[entity][key] = { value, source: { kind: 'plan', shot: sid, phase } };
         }
       }
       if (result[entity] && !Object.keys(result[entity]).length) delete result[entity];
@@ -214,7 +270,7 @@ export function resolveStates(data: ScenesFile, initial: EntityState): Record<st
     return result;
   };
 
-  const visit = (sid: string): ResolvedState => {
+  const visit = (sid: string): { before: Tracked; after: Tracked; incoming: Tracked } => {
     const done = resolved.get(sid);
     if (done) return done;
     if (visiting.includes(sid)) throw new Error(`Цикл state_from: ${[...visiting, sid].join(' → ')}`);
@@ -234,14 +290,15 @@ export function resolveStates(data: ScenesFile, initial: EntityState): Record<st
       phase = 'after';
     }
     const changes = scene.state_changes ?? {};
-    const incoming: ResolvedState = source !== null ? visit(source) : { before: clone(initial), after: clone(initial) };
-    let value: ResolvedState;
+    const incoming = source !== null ? visit(source) : { before: clone(start), after: clone(start), incoming: clone(start) };
+    // incoming — состояние до правок первого кадра плана: от него видно, что план действительно меняет.
+    let value: { before: Tracked; after: Tracked; incoming: Tracked };
     if (phase === 'same') {
       if (changes.before || changes.after) throw new Error(`${sid}: повтор same не допускает своих state_changes.`);
-      value = clone(incoming);
+      value = { before: clone(incoming.before), after: clone(incoming.after), incoming: clone(incoming.before) };
     } else {
-      const before = apply(incoming[phase], changes.before, sid);
-      value = { before, after: apply(before, changes.after, sid) };
+      const before = apply(incoming[phase], changes.before, sid, 'before');
+      value = { before, after: apply(before, changes.after, sid, 'after'), incoming: clone(incoming[phase]) };
     }
     visiting.pop();
     resolved.set(sid, value);
@@ -267,6 +324,8 @@ export function saveScenes(project: string, data: ScenesFile): ScenesFile {
 export function buildBrief(data: ScenesFile, cast: CastFile | null, sid: string, phase: 'before' | 'after', toolsRoot: string | null): BriefResult {
   const states = resolveStates(data, initialStates(cast));
   const state = states[sid]?.[phase];
+  const sources = resolveStateSources(data, initialStates(cast))[sid]?.[phase] ?? {};
+  const inherited = resolveInherited(data, initialStates(cast))[sid]?.[phase] ?? {};
   const scene = data.scenes.find((s) => s.id === sid);
   if (!state || !scene) throw new Error(`${sid}: сцена отсутствует в реестре.`);
   const defaults = loadDefaults(toolsRoot);
@@ -284,6 +343,15 @@ export function buildBrief(data: ScenesFile, cast: CastFile | null, sid: string,
   ];
   const description: string[] = [];
   const checklist: string[] = [];
+  const labels: Record<string, Record<string, string>> = {};
+  for (const [entity, attributes] of Object.entries(state)) {
+    const info = names.get(entity);
+    const props = info ? vocab.get(info.kind) : undefined;
+    for (const key of Object.keys(attributes)) {
+      const label = props?.get(key)?.label;
+      if (label) (labels[entity] ??= {})[key] = label;
+    }
+  }
   for (const eid of order) {
     const info = names.get(eid);
     const props = info ? vocab.get(info.kind) : undefined;
@@ -303,7 +371,7 @@ export function buildBrief(data: ScenesFile, cast: CastFile | null, sid: string,
     ...(description.length ? description : ['Состояние не задано: в кастинге нет начального состояния, а в сценах нет изменений.'])
   ];
   if (checklist.length) text.push('', 'Проверить по кадру:', ...checklist.map((q) => `- [ ] ${q}`));
-  return { shot: sid, phase, state, paragraph, checklist, text: text.join('\n') };
+  return { shot: sid, phase, state, sources, labels, inherited, paragraph, checklist, text: text.join('\n') };
 }
 
 function round(value: number): number {

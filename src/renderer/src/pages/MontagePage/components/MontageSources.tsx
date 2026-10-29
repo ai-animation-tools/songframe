@@ -1,7 +1,9 @@
-import { memo, type ReactElement } from 'react';
-import { Box, Stack, Typography } from '@mui/material';
+import { memo, useState, type ReactElement } from 'react';
+import { Alert, Box, InputAdornment, Stack, TextField, Typography } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import type { MontageClip, MontageScene, MontageSource } from '@shared/montage';
 import { MontageSceneCard } from './MontageSceneCard';
+import { matchesWords, searchWords } from '../../../components/searchText';
 
 /** Каталог сохраняет выбор при открытии панели; ширина её содержимого определяет число колонок. */
 export const MontageSources = memo(function MontageSources({
@@ -24,6 +26,17 @@ export const MontageSources = memo(function MontageSources({
   onAdd: (id: string) => void;
 }): ReactElement {
   const availableScenes = new Set(sources.map((source) => source.scene)).size;
+  const [query, setQuery] = useState('');
+  const words = searchWords(query);
+  // Живой поиск по коду и названию сцены и по подписям её материалов; все слова запроса должны найтись.
+  const shown = words.length
+    ? scenes.filter((scene) =>
+        matchesWords(
+          [scene.id, scene.title, ...sources.filter((source) => source.scene === scene.id).flatMap((source) => [source.title, source.label])].join(' '),
+          words
+        )
+      )
+    : scenes;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, flex: 1, overflow: 'hidden' }}>
@@ -36,21 +49,45 @@ export const MontageSources = memo(function MontageSources({
             Доступно {availableScenes} из {scenes.length} сцен
           </Typography>
         </Stack>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="body2" color="text.primary">
           Добавьте материал на дорожку или замените выбранный вариант кнопкой. Полный оригинал даёт запас за границами принятого монтажа.
         </Typography>
+        <TextField
+          size="small"
+          type="search"
+          label="Поиск сцены"
+          placeholder="Код, название или материал: M13, квадроцикл"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          sx={{ mt: 1 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              )
+            }
+          }}
+        />
+        {words.length ? (
+          <Typography variant="caption" color="text.secondary" aria-live="polite">
+            Найдено сцен: {shown.length} из {scenes.length}
+          </Typography>
+        ) : null}
       </Stack>
       <Box sx={{ px: 2, pb: 2, minWidth: 0, minHeight: 0, overflowY: 'auto' }}>
         <Box
           sx={{
             display: 'grid',
             // Колонки учитывают отступы и полосу прокрутки; на узком экране карточка сжимается до ширины каталога.
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
+            // auto-fill сохраняет пустые колонки: найденные поиском карточки не растягиваются на всю панель.
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))',
             gap: 1.5,
             alignItems: 'start'
           }}
         >
-          {scenes.map((scene) => (
+          {shown.map((scene) => (
             <MontageSceneCard
               key={scene.id}
               project={project}
@@ -64,6 +101,7 @@ export const MontageSources = memo(function MontageSources({
             />
           ))}
         </Box>
+        {words.length && !shown.length ? <Alert severity="info">Ничего не найдено. Попробуйте код сцены или часть названия.</Alert> : null}
       </Box>
     </Box>
   );

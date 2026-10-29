@@ -45,13 +45,18 @@ export function checkDuration(seconds: number, window: number, rule: DurationRul
   const valid = rule === 'exact_window' ? seconds === window : rule === 'min_supported_not_less_than_window' ? seconds >= window : seconds > window;
   if (!valid) throw new Error(`Длительность ${seconds} с нарушает правило ${rule} для окна ${window} с.`);
 }
+/** Кандидаты части опор плана: каждая не больше одного раза и в порядке плана. Опоры создаются и импортируются по одной или несколько. */
 export function checkFrameCandidates(value: unknown, prompts: ProductionFramePrompt[]): ProductionFrameCandidate[] {
-  if (!Array.isArray(value) || value.length !== prompts.length) throw new Error('Нужно одно изображение для каждой опоры.');
-  return value.map((item, index) => {
+  if (!Array.isArray(value) || !value.length) throw new Error('Добавьте изображение хотя бы для одной опоры.');
+  const order = prompts.map((prompt) => prompt.id);
+  let previous = -1;
+  return value.map((item) => {
     if (!record(item)) throw new Error('Неверный кандидат опоры.');
     keys(item, ['id', 'path']);
-    if (item.id !== prompts[index].id || !text(item.path) || !isAbsolute(item.path))
-      throw new Error('ID и порядок кандидатов должны совпадать с планом опор; нужен абсолютный путь изображения.');
+    const position = order.indexOf(item.id as string);
+    if (position <= previous || !text(item.path) || !isAbsolute(item.path))
+      throw new Error('Кандидаты должны относиться к неутверждённым опорам плана, без повторов и в порядке плана; нужен абсолютный путь изображения.');
+    previous = position;
     const path = realpathSync(item.path);
     if (!lstatSync(path).isFile()) throw new Error(`${item.id}: нужен обычный файл изображения.`);
     const bytes = readFileSync(path);
@@ -80,6 +85,17 @@ export function agentResponseText(raw: string, stage: ProductionPass): string | 
   const clean = redact(chosen.replaceAll('\0', '').trim());
   if (!clean) return null;
   return clean.length > AGENT_TEXT_LIMIT ? `${clean.slice(0, AGENT_TEXT_LIMIT).trimEnd()}…` : clean;
+}
+/** Отказ по скиллу: вместо JSON агент вернул обычный текст с причиной. Испорченный JSON (начинается с «{» или блока кода) отказом не считается. */
+export function isAgentRefusal(raw: string): boolean {
+  const text = raw.trim();
+  if (!text || text.startsWith('{') || text.startsWith('```')) return false;
+  try {
+    JSON.parse(text);
+    return false;
+  } catch {
+    return true;
+  }
 }
 export function parseProductionProposal(raw: string, rules: ProposalRules): ProductionStageProposal {
   const value: unknown = JSON.parse(raw);

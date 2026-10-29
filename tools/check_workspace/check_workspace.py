@@ -15,6 +15,7 @@ import re
 from tools.common import ROOT, read_json
 from tools.montage_files import retained_montage_folders
 from tools.scene_registry.scene_registry import load as load_scenes
+from tools.scene_registry.scene_registry import project_shot_acceptance
 
 SHOT_NAME = re.compile(r"(M\d{2}(?:\.\d+)?)(?:[-_]|$)")
 PACKAGE_DOCUMENTS = ("workflow.json", "request.json", "request/request.json")
@@ -147,7 +148,10 @@ def collect(root=ROOT):
         # Без сценария проверка ещё невозможна; пустой реестр скрыл бы этот этап.
         raise ValueError("Сначала необходимо создать сценарий: отсутствует plan/scenes.json.") from None
     ids = [s["id"] for s in scenes["scenes"]]
+    # Порядок в папке зависит от наличия комплекта: устаревший по постановке комплект по-прежнему
+    # заменяет карточку в сборке. Актуальность принятия выводится отдельно и несоответствием не считается.
     accepted = {sid for sid in ids if (root / "assets/shots" / sid / "manifest.json").is_file()}
+    acceptance = project_shot_acceptance(root, scenes)
     problems = []
 
     def add(kind, path, message):
@@ -219,7 +223,14 @@ def collect(root=ROOT):
                 folder.relative_to(root),
                 f"пакет очереди принятого плана {folder.name}; приёмка без --clean",
             )
-    return {"accepted": sorted(accepted, key=lambda s: float(s[1:])), "problems": problems}
+    def number(sid):
+        return float(sid[1:])
+
+    return {
+        "accepted": sorted((sid for sid in accepted if acceptance[sid] == "completed"), key=number),
+        "stale": sorted((sid for sid in accepted if acceptance[sid] == "stale"), key=number),
+        "problems": problems,
+    }
 
 
 def main():
@@ -237,6 +248,10 @@ def main():
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
         print(f"Принятых планов: {len(result['accepted'])}.")
+        if result["stale"]:
+            print(
+                "Постановка изменена после приёмки, нужно новое производство: " + ", ".join(result["stale"]) + "."
+            )
         for problem in result["problems"]:
             print(f"- {problem['path']}: {problem['message']}")
         print(

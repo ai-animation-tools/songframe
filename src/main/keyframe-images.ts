@@ -113,17 +113,38 @@ export class KeyframeImages {
         return copies.get(source)!;
       })
     }));
+    // Утверждённые опоры пакета копируются рядом с референсами: следующий кадр согласуется с ними.
+    const approved = (input.approvedFrames ?? []).map((frame) => {
+      if (!/^K\d{2}$/.test(frame.id) || !isImageFile(frame.path)) throw new Error(`Недоступна утверждённая опора ${frame.id}.`);
+      const copy = `approved-${frame.id}${extname(frame.path).toLowerCase()}`;
+      copyFileSync(frame.path, join(directory, copy));
+      chmodSync(join(directory, copy), 0o444);
+      inputs.push({ path: frame.path, copy, sha256: digest(frame.path) });
+      return { id: frame.id, role: frame.role, path: copy };
+    });
+    const notes = (input.notes ?? []).map((note) => note.trim()).filter(Boolean);
     const job = this.options.agents.startImages(
       {
         project,
-        task: `Опоры ${input.shot}: ${mediaProviderTitle(request.provider)}`,
+        task: `Опоры ${input.shot}: ${frames.map((frame) => frame.id).join(', ')} · ${mediaProviderTitle(request.provider)}`,
         prompt:
           'Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. ' +
+          (approved.length
+            ? 'approvedFrames — уже утверждённые кадры этого же плана: передай их генератору как референсы и сохрани с ними внешность и одежду героев, свет, место, ' +
+              'расстановку и направление транспорта и героев; меняй только то, что задаёт промпт создаваемой опоры. '
+            : '') +
+          (notes.length ? 'notes — исправления пользователя к прежним вариантам: выполни их, они важнее совпадения с прежним результатом. ' : '') +
           'Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. ' +
           'Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. ' +
           'Не изменяй референсы, исходный проект или принятые материалы. ' +
           'Финальный ответ — один JSON без Markdown: {"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png"}]}.',
-        context: JSON.stringify({ stage: 'frames', shot: input.shot, frames })
+        context: JSON.stringify({
+          stage: 'frames',
+          shot: input.shot,
+          frames,
+          ...(approved.length ? { approvedFrames: approved } : {}),
+          ...(notes.length ? { notes } : {})
+        })
       },
       directory,
       request.agent

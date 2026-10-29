@@ -131,8 +131,8 @@ class DecisionTests(unittest.TestCase):
             patch.object(
                 tool,
                 "ask",
-                wraps=lambda directory, stage, question, options: tool_ask(
-                    directory, stage, question, options, self.root
+                wraps=lambda directory, stage, question, options, frame=None: tool_ask(
+                    directory, stage, question, options, self.root, frame
                 ),
             ),
         ):

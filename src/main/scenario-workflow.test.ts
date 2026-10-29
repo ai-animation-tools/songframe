@@ -556,4 +556,12 @@ describe('чистая нормализация', () => {
     expect(() => normalizeTreatment({ ...treatment, sequences: [null] }, 10)).toThrow('структура');
     expect(() => normalizeTreatment({ ...treatment, sequences: [{ ...treatment.sequences[0], start: '0' }] }, 10)).toThrow('структура');
   });
+  it('проверяет словарь свойств: подпись, варианты и повтор кода', () => {
+    const property = { key: 'contact', label: 'Опора', values: ['на земле'] };
+    const withProperties = (items: unknown[]) => ({ ...cast, properties: { ...cast.properties, character: items } });
+    expect(() => normalizeCast(withProperties([property]), null)).not.toThrow();
+    expect(() => normalizeCast(withProperties([{ ...property, label: ' ' }]), null)).toThrow('словарь');
+    expect(() => normalizeCast(withProperties([{ ...property, values: [1] }]), null)).toThrow('словарь');
+    expect(() => normalizeCast(withProperties([property, { ...property, label: 'Дубль' }]), null)).toThrow('contact повторяется');
+  });
 });

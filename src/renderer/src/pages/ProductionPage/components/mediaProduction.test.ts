@@ -58,6 +58,8 @@ const fixture = (kind?: 'image' | 'video'): PackageView => ({
   retryOf: null,
   batch: null,
   timing: null,
+  keyframeNotes: [],
+  sceneChanged: false,
   keyframes: [],
   description: null,
   prompt: null,
@@ -122,6 +124,17 @@ describe('Генерация опор и результаты изображен
     }
   });
 
+  it('подписывает кнопку опорой, которую создаст следующее задание', () => {
+    const agent = renderToStaticMarkup(
+      createElement(ProductionFrameGenerationButton, { provider: TEST_AGENT_PROVIDER, frame: 'K02', disabled: false, onGenerate: unchanged })
+    );
+    const paid = renderToStaticMarkup(
+      createElement(ProductionFrameGenerationButton, { provider: TEST_PROVIDER, frame: 'K02', disabled: false, onGenerate: unchanged })
+    );
+    expect(agent).toContain(`Создать K02 в ${MEDIA_PROVIDERS[TEST_AGENT_PROVIDER].title}`);
+    expect(paid).toContain(`Подготовить запрос изображения K02 (${MEDIA_PROVIDERS[TEST_PROVIDER].title})`);
+  });
+
   it('строит список поддерживаемых исполнителей опор из реестра', () => {
     const html = renderToStaticMarkup(createElement(ProductionFrameGenerationButton, { disabled: false, onGenerate: unchanged }));
     expect(html).toContain('Провайдер изображений не задан.');
@@ -144,7 +157,7 @@ describe('Генерация опор и результаты изображен
     );
     expect(html).toContain('<img');
     expect(html).toContain('Выбрать как опору');
-    expect(html).toContain('Утверждение опор выполняется отдельно');
+    expect(html).toContain('Утвердить её нужно отдельно');
     expect(html).not.toContain('<video');
     expect(html).not.toContain('>Принять<');
     expect(html).not.toContain('Сделать техническую сводку');

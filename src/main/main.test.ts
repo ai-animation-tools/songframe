@@ -14,6 +14,7 @@ import { resolvePython } from './python-runtime';
 import { PythonLauncher } from './python-launcher';
 import { computeStatus, sha256Text } from './status';
 import { renderPlaceholders } from './template';
+import { stampAcceptedShots } from './testing/accepted-shots';
 
 const REPO = resolve(__dirname, '../..');
 let work: string;
@@ -101,8 +102,13 @@ describe('status', () => {
     writeFileSync(join(work, 'plan/scenes.json'), scenes);
     expect(computeStatus(work)).toMatchObject({ state: 'scripted', checks: { shotsTotal: 2, shotsDone: 0 } });
     writeJson(join(work, 'assets/shots/M01/manifest.json'), { shot: 'M01' });
+    // Комплект без принятого отпечатка постановки не считается готовым.
+    expect(computeStatus(work)).toMatchObject({ state: 'in_production', checks: { shotsDone: 0 } });
+    expect(computeStatus(work).problems).toContain('Постановка изменена после приёмки: M01. Нужно новое производство этих планов.');
+    stampAcceptedShots(work, ['M01']);
     expect(computeStatus(work)).toMatchObject({ state: 'in_production', checks: { shotsDone: 1 } });
     writeJson(join(work, 'assets/shots/M02/manifest.json'), { shot: 'M02' });
+    stampAcceptedShots(work, ['M02']);
     const all = computeStatus(work);
     expect(all.state).toBe('in_production');
     expect(all.problems[0]).toMatch(/не собран/);
@@ -128,7 +134,12 @@ describe('status', () => {
     expect(computeStatus(work).problems[0]).toMatch(/устаревшему/);
     writeJson(join(latest, 'manifest.json'), { ...built, scene_registry_sha256: sha256Text(scenes) });
     expect(computeStatus(work).problems[0]).toMatch(/не принят/);
-    writeJson(join(work, 'plan/production-status.json'), { current_animatic_status: 'approved', approved_animatic: { video_sha256: sha256Text('mp4') } });
+    const status = JSON.parse(readFileSync(join(work, 'plan/production-status.json'), 'utf8'));
+    writeJson(join(work, 'plan/production-status.json'), {
+      ...status,
+      current_animatic_status: 'approved',
+      approved_animatic: { video_sha256: sha256Text('mp4') }
+    });
     expect(computeStatus(work)).toMatchObject({ state: 'complete', problems: [] });
   });
 
@@ -593,10 +604,12 @@ describe('производство', () => {
     writeFileSync(join(pkg, 'request/prompt.txt'), 'Согласованный промпт попытки');
     writeFileSync(join(pkg, 'description.md'), 'Описание');
     writeFileSync(join(pkg, 'request/original.mp4'), 'video');
+    const { projectFingerprints } = await import('./shot-acceptance');
     writeJson(join(pkg, 'workflow.json'), {
       schema_version: 1,
       shot: 'M01',
       stage: 'downloaded',
+      scene_sha256: projectFingerprints(project, JSON.parse(readFileSync(join(project, 'plan/scenes.json'), 'utf8'))).M01,
       mode: 'shot',
       request_dir: 'request',
       timing: { frames: 60, window_seconds: 2, request_seconds: 3 },
@@ -629,6 +642,7 @@ describe('производство', () => {
     });
     writeFileSync(join(project, 'assets/shots/M02/video.mp4'), 'монтаж');
     writeFileSync(join(project, 'assets/shots/M02/original.mp4'), 'оригинал');
+    stampAcceptedShots(project, ['M02']);
     const view = viewProduction(project);
     expect(view.shots.map((s) => [s.id, s.state])).toEqual([
       ['M01', 'progress'],
@@ -675,6 +689,7 @@ describe('производство', () => {
     });
     writeFileSync(join(asset, 'original.mp4'), 'сохранённый платный оригинал');
     writeFileSync(join(asset, 'video.mp4'), 'принятый монтаж');
+    stampAcceptedShots(work, ['M01']);
     expect(viewProduction(work).shots[0].asset?.video).toBe(join(asset, 'video.mp4'));
 
     // Потеря производного файла не должна стирать приёмку или скрывать сохранённый оригинал.
@@ -1188,6 +1203,8 @@ describe('дашборд сцен', () => {
         processing_note: 'обрезка'
       }
     });
+    stampAcceptedShots(project, ['M01']);
+    const { projectFingerprints } = await import('./shot-acceptance');
     // M02: пакет с кандидатом опоры и промптом, карточка аниматика.
     const pkg = join(project, 'plan/batches/M02-attempt-01');
     mkdirSync(join(pkg, 'frames'), { recursive: true });
@@ -1197,6 +1214,7 @@ describe('дашборд сцен', () => {
       schema_version: 1,
       shot: 'M02',
       stage: 'keyframes_review',
+      scene_sha256: projectFingerprints(project, JSON.parse(readFileSync(join(project, 'plan/scenes.json'), 'utf8'))).M02,
       keyframes: [{ id: 'K01', role: 'first', time_seconds: 0, path: 'frames/K01.png', approved: false }],
       prompt: { path: 'video-prompt.txt', approved: false }
     });
@@ -1204,7 +1222,7 @@ describe('дашборд сцен', () => {
     writeFileSync(join(project, 'plan/animatic/cards/M02.png'), 'png');
 
     const view = viewDashboard(project, REPO);
-    expect(view.summary).toEqual({ total: 2, completed: 1, progress: 1, planned: 0, duration: 4, completedSeconds: 2 });
+    expect(view.summary).toEqual({ total: 2, completed: 1, stale: 0, progress: 1, planned: 0, duration: 4, completedSeconds: 2 });
     const [m1, m2] = view.shots;
     expect(m1.state).toBe('completed');
     expect(m1.asset?.video).toBe(join(asset, 'video.mp4'));

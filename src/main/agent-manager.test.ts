@@ -245,6 +245,30 @@ describe.skipIf(process.platform !== 'linux')('Жизненный цикл об�
     expect(await terminal(value, start(value).id)).toMatchObject({ status: 'failed', diagnostic: 'OUTPUT_LIMIT' });
   });
 
+  it('codex: переподключение потока не обрывает задание, а причина сбоя видна в сообщении', async () => {
+    const notice =
+      'send({type:"error",message:"Reconnecting... 1/5 (stream disconnected)"}); send({type:"item.completed",item:{id:"w",type:"error",message:"access_token=SECRET предупреждение"}});';
+    fake('codex', notice + success('codex'));
+    let value = manager();
+    let done = await terminal(value, start(value).id);
+    expect(done).toMatchObject({ status: 'completed', result: 'Привет мир' });
+    expect(done.log).toContain('Агент сообщил: Reconnecting... 1/5 (stream disconnected)');
+    expect(done.log).not.toContain('SECRET');
+
+    fake('codex', 'send({type:"turn.failed",error:{message:"image generation is not available for this account"}});');
+    value = manager();
+    done = await terminal(value, start(value).id);
+    expect(done).toMatchObject({ status: 'failed', diagnostic: 'CLI_ERROR' });
+    expect(done.message).toContain('Сообщение агента: «image generation is not available for this account»');
+
+    // Ход оборвался без turn.failed: причиной служит последнее уведомление, а не общая фраза о протоколе.
+    fake('codex', 'send({type:"error",message:"stream disconnected before completion"});');
+    value = manager();
+    done = await terminal(value, start(value).id);
+    expect(done).toMatchObject({ status: 'failed', diagnostic: 'CLI_ERROR' });
+    expect(done.message).toContain('«stream disconnected before completion»');
+  });
+
   it('резервирует проект до проверки, учитывает symlink и позволяет отменить до spawn', async () => {
     fake('codex', success('codex'));
     const value = manager();

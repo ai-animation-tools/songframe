@@ -8,6 +8,7 @@ import { FPS } from '@shared/video';
 import type { EntityOption } from '../types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { countLabel } from '@shared/plural';
+import { ShotPageButton } from '../../../components/ShotPageButton';
 
 /** Редактирует постановку плана, референсы и границу с соседним планом. */
 export function SceneShotEditor({
@@ -15,6 +16,7 @@ export function SceneShotEditor({
   shotIndex,
   scenes,
   referenceOptions,
+  leaveReason,
   updateShot,
   setBoundary,
   split,
@@ -24,6 +26,8 @@ export function SceneShotEditor({
   shotIndex: number;
   scenes: ScenesFile;
   referenceOptions: EntityOption[];
+  /** Уход на «Производство» сбросит несохранённые черновики страницы: тогда переход недоступен. */
+  leaveReason: string | null;
   updateShot(patch: Partial<SceneShot>): void;
   setBoundary(frames: number): void;
   split(): void;
@@ -149,7 +153,7 @@ export function SceneShotEditor({
         </TextField>
         <FormControlLabel control={<Checkbox checked={shot.lipsync} onChange={(e) => updateShot({ lipsync: e.target.checked })} />} label="Липсинк" />
       </Box>
-      {/* Парные действия границ плана стоят рядом внизу карточки; объединение явно подтверждает потерю отдельного плана. */}
+      {/* Парные действия границ плана стоят рядом внизу карточки; объединение явно подтверждает потерю отдельного плана. Последним — переход к производству плана. */}
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
         <Button variant="outlined" size="small" startIcon={<CallSplitIcon />} onClick={split}>
           Разделить план пополам
@@ -166,6 +170,7 @@ export function SceneShotEditor({
           confirmLabel="Объединить"
           onConfirm={mergeNext}
         />
+        <ShotPageButton page="production" shot={shot.id} disabledReason={leaveReason} />
       </Stack>
     </Paper>
   );

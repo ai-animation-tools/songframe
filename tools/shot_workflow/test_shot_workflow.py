@@ -9,10 +9,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
 import json
+import os
+import subprocess
 import tempfile
 import unittest
 import unittest.mock
 
+from tools.lint_registry import lint_registry
 from tools.shot_workflow import shot_workflow as tool
 from tools.testing import fake_media_request as fake
 
@@ -235,6 +238,202 @@ class ShotWorkflowTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             tool.init("M01", wrong, root=self.root, retry_of=self.package)
         self.assertFalse(wrong.exists())
+
+    def keyframe_package(self, candidates=("K01", "K02")):
+        """Пакет с тремя опорами и кандидатами для указанных опор."""
+        tool.init("M02", self.package, root=self.root)
+        tool.plan_keyframes(self.package, 4, [(2.0, "середина")], self.root)
+        for frame in candidates:
+            source = self.root / f"{frame}.png"
+            source.write_bytes(frame.encode())
+            tool.propose(self.package, frame, source, self.root)
+
+    def test_init_writes_empty_notes_and_old_format_is_rejected(self):
+        data = tool.init("M02", self.package, root=self.root)
+        self.assertEqual(data["keyframe_notes"], [])
+        stored = json.loads((self.package / "workflow.json").read_text(encoding="utf-8"))
+        del stored["keyframe_notes"]
+        (self.package / "workflow.json").write_text(json.dumps(stored), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "keyframe_notes"):
+            tool.load_workflow(self.package)
+
+    def test_ask_about_single_keyframe(self):
+        self.keyframe_package()
+        data = tool.ask(self.package, "keyframes_review", root=self.root, frame="K02")
+        pending = data["pending_decision"]
+        self.assertEqual(
+            (pending["question"], pending["options"], pending["frame"]),
+            ("Утвердить опору K02?", ["approve", "revise"], "K02"),
+        )
+        with self.assertRaisesRegex(ValueError, "нет кандидата"):
+            tool.ask(self.package, "keyframes_review", root=self.root, frame="K03")
+        with self.assertRaisesRegex(ValueError, "не входит в план"):
+            tool.ask(self.package, "keyframes_review", root=self.root, frame="K09")
+        with self.assertRaisesRegex(ValueError, "keyframes_review"):
+            tool.ask(self.package, "prompt_review", root=self.root, frame="K01")
+        # Без --frame вопрос прежний и поля frame нет.
+        data = tool.ask(self.package, "keyframes_review", root=self.root)
+        self.assertEqual(data["pending_decision"]["question"], "Утвердить опоры?")
+        self.assertNotIn("frame", data["pending_decision"])
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K01")
+        tool.decide(self.package, "approve", root=self.root)
+        with self.assertRaisesRegex(ValueError, "уже утверждена"):
+            tool.ask(self.package, "keyframes_review", root=self.root, frame="K01")
+
+    def test_approve_single_keyframe_keeps_other_candidates(self):
+        self.keyframe_package()
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K02")
+        data = tool.decide(self.package, "approve", root=self.root)
+        frames = {k["id"]: k for k in data["keyframes"]}
+        self.assertTrue(frames["K02"]["approved"])
+        self.assertFalse(frames["K01"]["approved"])
+        self.assertEqual(frames["K01"]["path"], "frames/K01.png")
+        self.assertEqual(data["approved_frames"], {"K02": frames["K02"]["sha256"]})
+        self.assertEqual((data["decision"]["verdict"], data["pending_decision"]), ("approve", None))
+        # Изменённый файл кандидата не принимается.
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K01")
+        (self.package / "frames/K01.png").write_bytes(b"other")
+        with self.assertRaisesRegex(ValueError, "изменён"):
+            tool.decide(self.package, "approve", root=self.root)
+        self.assertFalse(tool.load_workflow(self.package)["keyframes"][0]["approved"])
+
+    def test_revise_single_keyframe_records_note_with_scope(self):
+        self.keyframe_package()
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K02")
+        data = tool.decide(self.package, "revise", note="  Фонарь левее  ", root=self.root, note_scope="frame")
+        frames = {k["id"]: k for k in data["keyframes"]}
+        self.assertEqual(
+            (frames["K02"]["path"], frames["K02"]["sha256"], frames["K02"]["approved"]), (None, None, False)
+        )
+        self.assertEqual(frames["K01"]["path"], "frames/K01.png")
+        self.assertTrue((self.package / "frames/K02.png").is_file())
+        [note] = data["keyframe_notes"]
+        self.assertEqual(
+            {key: note[key] for key in ("id", "frame", "note", "scope", "active")},
+            {"id": 1, "frame": "K02", "note": "Фонарь левее", "scope": "frame", "active": True},
+        )
+        self.assertTrue(note["at"])
+        # По умолчанию замечание распространяется на следующие опоры; пустое не записывается.
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K01")
+        data = tool.decide(self.package, "revise", note="Теплее свет", root=self.root)
+        last = data["keyframe_notes"][-1]
+        self.assertEqual((last["id"], last["frame"], last["scope"]), (2, "K01", "following"))
+        self.propose_again("K01")
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K01")
+        data = tool.decide(self.package, "revise", note=" ", root=self.root)
+        self.assertEqual(len(data["keyframe_notes"]), 2)
+        # Ответ без опоры снимает всех неутверждённых и пишет замечание с frame=null.
+        self.propose_again("K01")
+        tool.ask(self.package, "keyframes_review", root=self.root)
+        data = tool.decide(self.package, "revise", note="Общий тон", root=self.root)
+        self.assertEqual((data["keyframe_notes"][-1]["frame"], data["keyframe_notes"][-1]["id"]), (None, 3))
+        self.assertTrue(all(k["path"] is None for k in data["keyframes"]))
+        with self.assertRaises(ValueError):
+            tool.decide(self.package, "revise", note="x", root=self.root, note_scope="all")
+
+    def propose_again(self, frame):
+        source = self.root / f"{frame}-again.png"
+        source.write_bytes(b"again " + frame.encode())
+        tool.propose(self.package, frame, source, self.root)
+
+    def approve_all(self):
+        self.keyframe_package(("K01", "K02", "K03"))
+        tool.ask(self.package, "keyframes_review", root=self.root)
+        return tool.decide(self.package, "approve", root=self.root)
+
+    def test_reopen_returns_approved_keyframe_with_note(self):
+        self.approve_all()
+        with self.assertRaisesRegex(ValueError, "замечание"):
+            tool.reopen(self.package, "K02", " ", root=self.root)
+        data = tool.reopen(self.package, "K02", "Руки в кадре", "frame", root=self.root)
+        frame = data["keyframes"][1]
+        self.assertEqual((frame["approved"], frame["path"], frame["sha256"]), (False, None, None))
+        self.assertNotIn("K02", data["approved_frames"])
+        self.assertEqual(set(data["approved_frames"]), {"K01", "K03"})
+        self.assertEqual(
+            (data["stage"], data["pending_decision"], data["current_keyframe"]), ("keyframes_review", None, "K02")
+        )
+        self.assertEqual(
+            {key: data["decision"][key] for key in ("stage", "verdict", "note")},
+            {"stage": "keyframes_review", "verdict": "revise", "note": "Руки в кадре"},
+        )
+        self.assertEqual((data["prompt"]["approved"], data["approved_prompt_sha256"]), (False, None))
+        self.assertEqual(data["keyframe_notes"][-1]["frame"], "K02")
+        self.assertTrue((self.package / "frames/K02.png").is_file())
+        with self.assertRaisesRegex(ValueError, "не утверждена"):
+            tool.reopen(self.package, "K02", "Ещё раз", root=self.root)
+
+    def test_reopen_is_refused_after_prompt_approval_or_request(self):
+        self.approve_all()
+        (self.package / "video-prompt.txt").write_text("Один план.", encoding="utf-8")
+        tool.approve_prompt(self.package, root=self.root)
+        before = (self.package / "workflow.json").read_bytes()
+        with self.assertRaisesRegex(ValueError, "Видеопромпт уже утверждён"):
+            tool.reopen(self.package, "K01", "Другой ракурс", root=self.root)
+        self.assertEqual((self.package / "workflow.json").read_bytes(), before)
+        data = tool.load_workflow(self.package)
+        data["prompt"]["approved"] = False
+        data["request_dir"] = "request"
+        tool.save_workflow(self.package, data)
+        with self.assertRaisesRegex(ValueError, "запрос подготовлен"):
+            tool.reopen(self.package, "K01", "Другой ракурс", root=self.root)
+
+    def test_set_note_toggles_activity_and_show_lists_active_notes(self):
+        self.keyframe_package()
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K01")
+        tool.decide(self.package, "revise", note="Без тумана", root=self.root)
+        self.assertIn("Без тумана", tool.table(tool.report(self.package, self.root)))
+        data = tool.set_note(self.package, 1, False, self.root)
+        self.assertFalse(data["keyframe_notes"][0]["active"])
+        info = tool.report(self.package, self.root)
+        self.assertEqual(info["keyframe_notes"][0]["note"], "Без тумана")
+        self.assertNotIn("Без тумана", tool.table(info))
+        self.assertTrue(tool.set_note(self.package, 1, True, self.root)["keyframe_notes"][0]["active"])
+        with self.assertRaisesRegex(ValueError, "Замечания 7 нет"):
+            tool.set_note(self.package, 7, True, self.root)
+
+    def test_cli_keyframe_commands(self):
+        self.keyframe_package()
+        script = str(Path(__file__).with_name("shot_workflow.py"))
+        env = {**os.environ, "SONGFRAME_PROJECT": str(self.root)}
+
+        def run(*args):
+            return subprocess.run(
+                [sys.executable, "-B", script, *args, "--dir", str(self.package)],
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+
+        self.assertEqual(run("ask", "--stage", "keyframes_review", "--frame", "K01").returncode, 0)
+        result = run("decide", "--verdict", "revise", "--note", "Ниже горизонт", "--note-scope", "frame")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(run("set-note", "--id", "1", "--active", "false").returncode, 0)
+        shown = json.loads(run("show", "--json").stdout)
+        self.assertEqual((shown["keyframe_notes"][0]["scope"], shown["keyframe_notes"][0]["active"]), ("frame", False))
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K02")
+        tool.decide(self.package, "approve", root=self.root)
+        result = run("reopen", "K02", "--note", "Без бликов")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(tool.load_workflow(self.package)["keyframe_notes"][-1]["scope"], "following")
+        self.assertNotEqual(run("reopen", "K02", "--note", "").returncode, 0)
+
+    def test_workflow_schema_describes_notes_and_frame_question(self):
+        schema = lint_registry.load_schema("workflow")
+        self.keyframe_package()
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K01")
+        tool.decide(self.package, "revise", note="Мягче тени", root=self.root, note_scope="frame")
+        tool.ask(self.package, "keyframes_review", root=self.root, frame="K02")
+        data = tool.load_workflow(self.package)
+        self.assertEqual(lint_registry.validate(data, schema), [])
+        broken = json.loads(json.dumps(data))
+        broken["keyframe_notes"][0]["scope"] = "all"
+        broken["pending_decision"]["frame"] = "кадр"
+        errors = lint_registry.validate(broken, schema)
+        self.assertTrue(any(".keyframe_notes[0].scope" in e for e in errors), errors)
+        self.assertTrue(any(".pending_decision.frame" in e for e in errors), errors)
+        del broken["keyframe_notes"]
+        self.assertIn("$: нет обязательного поля keyframe_notes", lint_registry.validate(broken, schema))
 
     def test_transitions_follow_single_vocabulary(self):
         tool.init("M01", self.package, root=self.root)

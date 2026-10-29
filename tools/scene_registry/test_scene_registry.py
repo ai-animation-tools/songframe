@@ -16,8 +16,13 @@ import tools.testing.sample_project  # noqa: E402,F401  Проект-образ�
 from tools.project_views.project_views import Sources, documents
 from tools.scene_registry.scene_registry import (
     ROOT,
+    accepted_fingerprints,
     load,
+    project_shot_acceptance,
     scene_fingerprint,
+    scene_fingerprints,
+    shot_acceptance,
+    with_accepted_fingerprints,
     scene_state,
     shots,
     validate,
@@ -334,6 +339,39 @@ class SceneRegistryTests(unittest.TestCase):
         self.assertNotEqual(original, scene_fingerprint(data, "M04"))
         # Начало истории не зависит от изменения позднего события.
         self.assertEqual(scene_fingerprint(load(), "M01"), scene_fingerprint(data, "M01"))
+
+    def test_fingerprints_match_shared_reference_of_sample_project(self):
+        # Тот же эталон проверяет тест главного процесса: Python и TypeScript считают отпечатки побайтно одинаково.
+        expected = json.loads((Path(__file__).resolve().parents[1] / "testdata/scene-fingerprints.json").read_text())
+        data = load()
+        self.assertEqual({sid: scene_fingerprint(data, sid) for sid in expected}, expected)
+        self.assertEqual(scene_fingerprints(data), expected)
+
+    def test_acceptance_follows_scene_fingerprint_and_derived_source(self):
+        data = load()
+        # Образец: M01 и M02 приняты по текущей постановке, M05 собирается из материала M02.
+        self.assertEqual(project_shot_acceptance(ROOT), {"M01": "completed", "M02": "completed"})
+        current = scene_fingerprints(data)
+        accepted = {sid: current[sid] for sid in ("M01", "M02", "M05")}
+        kits = {"M01", "M02", "M05"}
+        self.assertEqual(set(shot_acceptance(data, kits, accepted).values()), {"completed"})
+        next(s for s in data["scenes"] if s["id"] == "M02")["action"] = "Другое действие"
+        self.assertEqual(
+            shot_acceptance(data, kits, accepted), {"M01": "completed", "M02": "stale", "M05": "stale"}
+        )
+        # Без записи отпечатка комплект считается принятым по неизвестной постановке.
+        self.assertEqual(shot_acceptance(load(), {"M01"}, {}), {"M01": "stale"})
+
+    def test_production_status_shots_are_validated_and_merged(self):
+        self.assertEqual(accepted_fingerprints({"schema_version": 1}), {})
+        for broken in ({"shots": []}, {"shots": {"M01": {}}}, {"shots": {"x": {"scene_sha256": "a" * 64}}}):
+            with self.assertRaises(ValueError):
+                accepted_fingerprints(broken)
+        status = {"schema_version": 1, "current_animatic": None, "shots": {"M10": {"scene_sha256": "b" * 64}}}
+        merged = with_accepted_fingerprints(status, {"M02": "a" * 64})
+        self.assertEqual(list(merged["shots"]), ["M02", "M10"])
+        self.assertIsNone(merged["current_animatic"])
+        self.assertNotIn("M02", status["shots"])
 
     def test_gap_duplicate_and_wrong_song_end_are_rejected(self):
         data = load()

@@ -56,6 +56,7 @@ export function ScenesTimeline({
         <ToggleButtonGroup size="small" exclusive value={filter} onChange={(_e, v: Filter | null) => v && onFilter(v)}>
           <ToggleButton value="all">все</ToggleButton>
           <ToggleButton value="completed">принятые</ToggleButton>
+          <ToggleButton value="stale">постановка изменена</ToggleButton>
           <ToggleButton value="progress">в работе</ToggleButton>
           <ToggleButton value="planned">не начатые</ToggleButton>
         </ToggleButtonGroup>

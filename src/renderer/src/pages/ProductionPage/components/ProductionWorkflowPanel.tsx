@@ -34,7 +34,8 @@ export function ProductionWorkflowPanel({
   onApplied(packageDir: string | null): Promise<void>;
 }): ReactElement {
   const workflow = useProductionWorkflow(project, shot, packageDir, onApplied);
-  const savedNote = decision?.verdict === 'revise' ? (decision.note ?? '') : '';
+  // Замечание к опоре уже в списке замечаний и уходит в создание опоры: в поле доработки агентом его не подставляем.
+  const savedNote = decision?.verdict === 'revise' && decision.stage !== 'keyframes_review' ? (decision.note ?? '') : '';
   // Возврат уже содержит замечание: для явного запуска агенту не нужно вводить его второй раз.
   const [noteDraft, setNoteDraft] = useState<{ token?: string; text: string }>({ token: decisionToken, text: savedNote });
   const note = noteDraft.token === decisionToken ? noteDraft.text : savedNote;
@@ -146,7 +147,7 @@ export function ProductionWorkflowPanel({
         {packageDir && view?.framePrompts.length ? (
           <ProductionFrameImport
             key={`${packageDir}:${decisionToken ?? ''}`}
-            frames={view.framePrompts}
+            frames={view.framePrompts.filter((frame) => !view.approvedFrameIds.includes(frame.id))}
             busy={busy || !view.canGenerateFrames}
             busyReason={busy ? BUSY_REASON : (view.reasons.frames ?? 'Сначала утвердите описание и план опор.')}
             onImport={workflow.importFrames}
@@ -175,7 +176,12 @@ export function ProductionWorkflowPanel({
                 provider={view.imageProvider}
                 disabled={busy || !view.canGenerateFrames}
                 disabledReason={busy ? BUSY_REASON : view.reasons.frames}
-                title="Генерирует кандидатов опор по принятому описанию"
+                frame={view.nextFrame}
+                title={
+                  view.nextFrame
+                    ? `Создаёт кандидата опоры ${view.nextFrame} по принятому описанию; утверждённые опоры и действующие замечания передаются в задание`
+                    : 'Создаёт кандидата следующей опоры по принятому описанию'
+                }
                 onGenerate={() => {
                   setLastAction('frames');
                   void workflow.generateFrames();

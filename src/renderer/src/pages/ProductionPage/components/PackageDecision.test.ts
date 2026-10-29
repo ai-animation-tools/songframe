@@ -95,4 +95,17 @@ describe('Замечание при согласовании пакета', () =
     expect(html).toContain('Переносит результат в assets');
     expect(button(html, 'Повторить запрос')).toContain('title="Готовит новую попытку');
   });
+
+  it('для вопроса об опоре показывает её код, обязательное замечание и охват «для следующих» по умолчанию', () => {
+    const html = render({
+      pending: { stage: 'keyframes_review', question: 'Утвердить опору K02?', options: ['approve', 'revise'], frame: 'K02' }
+    });
+    expect(html).toContain('Опора K02');
+    expect(html).toContain('Что исправить в опоре K02');
+    expect(html).toContain('Учесть и для следующих опор');
+    expect(html).toMatch(/<input[^>]*type="checkbox"[^>]*checked=""/);
+    expect(button(html, 'Утвердить K02')).not.toContain('disabled=""');
+    expect(button(html, 'Доработать K02')).toContain('disabled=""');
+    expect(html).not.toContain('Запустить доработку с агентом');
+  });
 });

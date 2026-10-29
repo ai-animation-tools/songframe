@@ -20,6 +20,8 @@ import type {
   ProjectSettings,
   ReviewOptions,
   ScenesFile,
+  ScenesSaveMode,
+  KeyframeNoteScope,
   SourcesInput,
   TimingFile,
   TimingGenerateOptions,
@@ -160,14 +162,20 @@ const api: Api = {
     status: (project: string) => ipcRenderer.invoke('scenario:status', project),
     view: (project: string) => ipcRenderer.invoke('scenario:view', project),
     saveTreatment: (project: string, treatment: TreatmentFile) => ipcRenderer.invoke('scenario:saveTreatment', project, treatment),
-    saveScenes: (project: string, scenes: ScenesFile) => ipcRenderer.invoke('scenario:saveScenes', project, scenes),
+    saveScenes: (project: string, scenes: ScenesFile, mode: ScenesSaveMode) => ipcRenderer.invoke('scenario:saveScenes', project, scenes, mode),
+    saveImpact: (project: string, scenes: ScenesFile) => ipcRenderer.invoke('scenario:saveImpact', project, scenes),
     validateScenes: (project: string, scenes: ScenesFile) => ipcRenderer.invoke('scenario:validateScenes', project, scenes),
     brief: (project: string, scenes: ScenesFile, shot: string, phase: 'before' | 'after') => ipcRenderer.invoke('scenario:brief', project, scenes, shot, phase)
   },
   production: {
     view: (project: string) => ipcRenderer.invoke('production:view', project),
-    decide: (project: string, packageDir: string, verdict: string, note?: string, decisionToken?: string) =>
-      ipcRenderer.invoke('production:decide', project, packageDir, verdict, note ?? '', decisionToken),
+    decide: (project: string, packageDir: string, verdict: string, note?: string, decisionToken?: string, noteScope?: KeyframeNoteScope) =>
+      ipcRenderer.invoke('production:decide', project, packageDir, verdict, note ?? '', decisionToken, noteScope),
+    reopenFrame: (project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope) =>
+      ipcRenderer.invoke('production:reopenFrame', project, packageDir, frame, note, noteScope),
+    keepPackageForScene: (project: string, packageDir: string) => ipcRenderer.invoke('production:keepPackageForScene', project, packageDir),
+    setKeyframeNote: (project: string, packageDir: string, id: number, active: boolean) =>
+      ipcRenderer.invoke('production:setKeyframeNote', project, packageDir, id, active),
     quote: (project: string, packageDir: string, expectedSha: string, decisionToken?: string) =>
       ipcRenderer.invoke('production:quote', project, packageDir, expectedSha, decisionToken),
     submit: (project: string, packageDir: string, expectedSha: string, decisionToken?: string, quoteToken?: string, unknownCostConsentToken?: string) =>

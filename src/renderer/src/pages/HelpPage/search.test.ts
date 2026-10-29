@@ -24,6 +24,24 @@ describe('поиск по справке', () => {
     }
   });
 
+  it('объясняет статус изменённой постановки и сохранение без производства', () => {
+    for (const query of ['постановка изменена', 'сохранить без производства', 'опечатка в реестре']) {
+      expect(
+        searchGlossary(GLOSSARY, query).entries.map((entry) => entry.id),
+        query
+      ).toContain('staging-changed');
+    }
+  });
+
+  it('объясняет словарь свойств и откуда берутся варианты значений', () => {
+    for (const query of ['словарь свойств', 'откуда варианты', 'выпадающий список', 'своё свойство код', 'шаблон проверки']) {
+      expect(
+        searchGlossary(GLOSSARY, query).entries.map((entry) => entry.id),
+        query
+      ).toContain('property-dictionary');
+    }
+  });
+
   it('находит нужные инструкции по естественным вопросам о монтаже', () => {
     const queries: Record<string, string> = {
       'переход между сценами': 'montage-cut-preview',

@@ -510,6 +510,45 @@ describe('провайдеры медиа', () => {
     expect(selected.modelSelection.reason).toContain('16:9');
   });
 
+  it('пропорции ролика с начальным кадром задаёт кадр: aspect_ratio можно не передавать, а кадр сверяется с проектом', () => {
+    const adapter = { ...testPaidAdapter, rules: { ...testPaidAdapter.rules, frameDefined: { slots: /^first_image$/, parameters: ['aspect_ratio'] } } };
+    const videoCaps: MediaCapabilities = {
+      ...caps,
+      kind: 'video',
+      models: [
+        {
+          id: 'keyframes',
+          command: 'image_to_video',
+          arguments: { prompt: { required: true }, aspect_ratio: { allowed: ['16:9', '1:1'] } },
+          slots: { first_image: { required: true } },
+          limits: {}
+        }
+      ]
+    };
+    // Размеры PNG читаются из заголовка IHDR: кадр 1920×1080 соответствует 16:9.
+    const wide = Buffer.from(png);
+    wide.writeUInt32BE(1920, 16);
+    wide.writeUInt32BE(1080, 20);
+    writeFileSync(join(project, 'source/wide.png'), wide);
+    const request: PreparePaidInput = {
+      ...input,
+      kind: 'video',
+      command: 'image_to_video',
+      model: 'keyframes',
+      parameters: {},
+      inputs: [{ flag: 'input', slot: 'first_image', path: 'source/wide.png', role: 'first' }],
+      requiredParameters: { aspect_ratio: '16:9' }
+    };
+    expect(selectPaidRequest(adapter, request, videoCaps).parameters).not.toHaveProperty('aspect_ratio');
+    // Переданный параметр по-прежнему обязан совпадать с настройкой проекта.
+    expect(() => selectPaidRequest(adapter, { ...request, parameters: { aspect_ratio: '1:1' } }, videoCaps)).toThrow('должен совпадать');
+    // Без правила провайдера настройка проекта остаётся обязательным параметром.
+    expect(() => select(request, videoCaps)).toThrow('должен совпадать');
+    expect(() => selectPaidRequest(adapter, { ...request, inputs: [{ ...request.inputs[0], path: 'source/reference.png' }] }, videoCaps)).toThrow(
+      'не совпадает с пропорциями проекта 16:9'
+    );
+  });
+
   it('отсутствующее предпочтение допускает exact fallback и blank автоматически выбирает модель', () => {
     const selected = select({ ...input, model: 'image-alias' }, caps);
     expect(selected.model).toBe('image-exact');

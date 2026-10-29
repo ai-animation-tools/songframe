@@ -107,7 +107,10 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
           label="Своё свойство (код)"
           value={customKey}
           onChange={(e) => setCustomKey(e.target.value)}
-          placeholder="helmet"
+          placeholder="например, helmet"
+          // Поле общее для начального состояния кастинга и изменений плана: подсказка объясняет и ввод, и последствия.
+          helperText="Деталь состояния, которой нет среди полей выше. Код латиницей; после «+» появится поле для значения. Значение войдёт во врезку непрерывности и промпты опор, а следующие планы его унаследуют. Подпись, варианты и пункт проверки появятся, если добавить свойство в словарь кастинга."
+          slotProps={{ inputLabel: { shrink: true } }}
           sx={{ minWidth: 0 }}
         />
         <ActionIconButton

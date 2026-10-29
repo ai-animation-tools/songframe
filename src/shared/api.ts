@@ -12,6 +12,7 @@ import type { ScenarioStatus } from './scenario-status';
 import type { CoverGenerationApi } from './cover-generation';
 import type { AiAccess } from './ai-access';
 import type {
+  KeyframeNoteScope,
   AcceptOptions,
   PackageView,
   SpeechPlan,
@@ -38,8 +39,10 @@ import type {
   ProductionView,
   ProductionQuote,
   ProjectStatus,
+  ScenarioSaveImpact,
   ScenarioView,
   ScenesFile,
+  ScenesSaveMode,
   SourceManifest,
   SourcesInput,
   SourcesView,
@@ -143,7 +146,10 @@ export interface Api {
     status(project: string): Promise<ScenarioStatus>;
     view(project: string): Promise<ScenarioView>;
     saveTreatment(project: string, treatment: TreatmentFile): Promise<TreatmentFile>;
-    saveScenes(project: string, scenes: ScenesFile): Promise<ScenesFile>;
+    /** mode=keep оставляет принятые комплекты и пакеты затронутых планов в силе: правка не относится к сюжету. */
+    saveScenes(project: string, scenes: ScenesFile, mode: ScenesSaveMode): Promise<ScenesFile>;
+    /** Какие планы затронет сохранение черновика: сравнение отпечатков постановки без записи. */
+    saveImpact(project: string, scenes: ScenesFile): Promise<ScenarioSaveImpact>;
     /** Проверка реестра без записи: список проблем. */
     validateScenes(project: string, scenes: ScenesFile): Promise<string[]>;
     brief(project: string, scenes: ScenesFile, shot: string, phase: 'before' | 'after'): Promise<BriefResult>;
@@ -151,7 +157,13 @@ export interface Api {
   production: {
     view(project: string): Promise<ProductionView>;
     /** Ответ пользователя на вопрос пакета: пишется через shot_workflow decide. */
-    decide(project: string, packageDir: string, verdict: string, note?: string, decisionToken?: string): Promise<void>;
+    decide(project: string, packageDir: string, verdict: string, note?: string, decisionToken?: string, noteScope?: KeyframeNoteScope): Promise<void>;
+    /** Вернуть утверждённую опору на доработку с замечанием, пока видеопромпт не утверждён. */
+    reopenFrame(project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope): Promise<void>;
+    /** Оставить неотправленный пакет в силе для текущей постановки плана: правка сценария не меняет его материалы. */
+    keepPackageForScene(project: string, packageDir: string): Promise<void>;
+    /** Включить или снять замечание к опорам пакета. */
+    setKeyframeNote(project: string, packageDir: string, id: number, active: boolean): Promise<void>;
     /** Платная отправка подготовленной попытки пакета; разрешение даёт нажатие кнопки. */
     quote(project: string, packageDir: string, expectedSha: string, decisionToken?: string): Promise<ProductionQuote>;
     submit(

@@ -1,4 +1,3 @@
-import BuildIcon from '@mui/icons-material/Build';
 import MovieIcon from '@mui/icons-material/Movie';
 import CloseIcon from '@mui/icons-material/Close';
 import type { ReactElement } from 'react';
@@ -14,8 +13,9 @@ import { ShotSection } from './ShotSection';
 import { ShotStaging } from './ShotStaging';
 import { ShotStateBlock } from './ShotStateBlock';
 import { countLabel } from '@shared/plural';
+import { ShotPageButton } from '../../../components/ShotPageButton';
 
-/** Собирает подробности выбранной сцены и действия перехода к её производству. */
+/** Собирает подробности выбранной сцены и действия перехода к её постановке и производству. */
 export function ShotDetails({
   shot,
   onOpen,
@@ -64,9 +64,8 @@ export function ShotDetails({
           </Box>
         </ShotSection>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Button startIcon={<BuildIcon />} size="small" variant="outlined" onClick={() => onNavigate(`/project/production?shot=${shot.id}`)}>
-            В производстве
-          </Button>
+          <ShotPageButton page="production" shot={shot.id} />
+          <ShotPageButton page="scenario" shot={shot.id} />
           <Button startIcon={<MovieIcon />} size="small" variant="outlined" onClick={() => onNavigate(`/project/animatic?shot=${shot.id}`)}>
             В аниматике
           </Button>

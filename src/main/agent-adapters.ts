@@ -14,6 +14,8 @@ export type AgentUpdate =
   | { type: 'text_delta'; text: string }
   | { type: 'tool_started' | 'tool_finished'; tool: string }
   | { type: 'completed'; result?: string }
+  /** Нефатальное уведомление CLI (переподключение, предупреждение): задание продолжается. */
+  | { type: 'notice'; message: string }
   | { type: 'failed'; error: AgentError };
 
 /** read — только чтение проекта; write — запись кандидатов во временную рабочую папку задания. */
@@ -120,9 +122,14 @@ export class ClaudeAdapter implements AgentAdapter {
         return [
           {
             type: 'failed',
-            error: providerFailure(
-              [value.subtype, value.result, ...(Array.isArray(value.errors) ? value.errors.filter((error) => typeof error === 'string') : [])].join(' ')
-            )
+            error: (() => {
+              const reason = [
+                value.subtype,
+                value.result,
+                ...(Array.isArray(value.errors) ? value.errors.filter((error) => typeof error === 'string') : [])
+              ].join(' ');
+              return providerFailure(reason, reason);
+            })()
           }
         ];
       return [...session(value.session_id), { type: 'completed', result: text(value.result) }];
@@ -163,8 +170,13 @@ export class CodexAdapter implements AgentAdapter {
   parse(value: Record<string, unknown>): AgentUpdate[] {
     if (value.type === 'thread.started') return session(value.thread_id);
     if (value.type === 'turn.completed') return [{ type: 'completed', result: this.completedMessage }];
-    if (value.type === 'turn.failed' || value.type === 'error')
-      return [{ type: 'failed', error: providerFailure(object(value.error).message ?? value.message) }];
+    // Фатален только turn.failed. Событие error верхнего уровня Codex шлёт и при переподключении потока,
+    // после которого ход продолжается; если ход всё же оборвётся, менеджер покажет последнее уведомление.
+    if (value.type === 'turn.failed') {
+      const reason = object(value.error).message ?? value.message;
+      return [{ type: 'failed', error: providerFailure(reason, reason) }];
+    }
+    if (value.type === 'error') return [{ type: 'notice', message: text(value.message ?? object(value.error).message) }];
     const item = object(value.item);
     if (value.type === 'item.completed' || value.type === 'item.updated' || value.type === 'item.started') {
       if (item.type === 'agent_message') {
@@ -181,7 +193,8 @@ export class CodexAdapter implements AgentAdapter {
       if (['command_execution', 'mcp_tool_call', 'web_search', 'file_change'].includes(text(item.type))) {
         return [{ type: value.type === 'item.completed' ? 'tool_finished' : 'tool_started', tool: text(item.type) }];
       }
-      if (item.type === 'error') return [{ type: 'failed', error: providerFailure(item.message) }];
+      // Элемент error в codex exec — нефатальное уведомление; ход продолжается до turn.completed или turn.failed.
+      if (item.type === 'error' && value.type === 'item.completed') return [{ type: 'notice', message: text(item.message) }];
     }
     return [];
   }

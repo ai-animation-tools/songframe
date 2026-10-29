@@ -39,3 +39,7 @@ export function productionInputLabel(input: { slot?: string; role?: string }): s
   const slot = numbered ? `${NUMBERED_INPUT_SLOTS[numbered[1]]} ${numbered[2]}` : input.slot ? (INPUT_SLOTS[input.slot] ?? input.slot) : undefined;
   return role ? `${role}${slot && slot !== role ? ` (${slot})` : ''}` : (slot ?? input.role ?? 'Входной материал');
 }
+
+/** Пакет подготовлен по прежней постановке плана: общий текст для проблемы пакета и её показа в интерфейсе. */
+export const SCENE_CHANGED =
+  'Постановка или унаследованное состояние плана изменились после подготовки пакета: описание, опоры и промпт могут не соответствовать сценарию.';

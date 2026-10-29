@@ -89,7 +89,9 @@ export const kling: PaidProviderAdapter = {
       series: { names: ['story_mode', 'storyMode'], off: false }
     },
     // Обычному плану до этапа запроса нужен только режим по опорам; остальные режимы агент видит при запросе и для липсинка.
-    draftVideoCommands: ['image_to_video']
+    draftVideoCommands: ['image_to_video'],
+    // Пропорции ролика с начальным кадром задаёт кадр; у части моделей aspect_ratio с кадром не передаётся.
+    frameDefined: { slots: /^first_image$/, parameters: ['aspect_ratio'] }
   },
 
   // Клиент входит в Python-поставку: отдельной программы провайдера нет.

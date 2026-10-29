@@ -13,7 +13,8 @@ export function HelpPage(): ReactElement {
   const categories = [...new Set(entries.map((entry) => entry.category))];
 
   return (
-    <Stack spacing={3} sx={{ width: '100%', maxWidth: 1500, mx: 'auto', minWidth: 0 }}>
+    // Справка занимает всю рабочую область, как остальные страницы: на широком экране просто больше колонок статей.
+    <Stack spacing={3} sx={{ width: '100%', minWidth: 0 }}>
       {/* Заголовок и поиск в общей панели страницы: поиск доступен при любой прокрутке. */}
       <PageActionBar>
         <Typography variant="h5" component="h1">
@@ -50,13 +51,13 @@ export function HelpPage(): ReactElement {
           <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
             <HighlightedText text={category} words={words} />
           </Typography>
-          {/* Карточки заполняют доступную рабочую область и перестраиваются при изменении размера окна. */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', alignItems: 'stretch', gap: 2 }}>
+          {/* Колонки «кирпичной кладкой»: каждая карточка своей высоты, длинная статья не растягивает соседние. */}
+          <Box sx={{ columnWidth: 340, columnGap: 2 }}>
             {entries
               .filter((entry) => entry.category === category)
               .sort((left, right) => (left.id === 'getting-started' ? -1 : right.id === 'getting-started' ? 1 : left.term.localeCompare(right.term, 'ru')))
               .map((entry) => (
-                <Paper key={entry.id} variant="outlined" sx={{ px: 2, minWidth: 0 }}>
+                <Paper key={entry.id} variant="outlined" sx={{ px: 2, minWidth: 0, mb: 2, breakInside: 'avoid', display: 'inline-block', width: '100%' }}>
                   <GlossaryItem entry={entry} words={words} />
                 </Paper>
               ))}

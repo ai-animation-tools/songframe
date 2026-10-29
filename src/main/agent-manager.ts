@@ -7,7 +7,7 @@ import type { AgentEvent, AgentJob, AgentSettings, AgentStartInput } from '@shar
 import { agentTitle, type AgentProvider } from '@shared/agent-providers';
 import { createAgentAdapter, type AgentAdapter, type AgentUpdate } from './agent-adapters';
 import { AgentHistory } from './agent-history';
-import { AgentError, JsonLines, providerFailure, redact } from './agent-protocol';
+import { AgentError, JsonLines, providerDetail, providerFailure, redact } from './agent-protocol';
 import { agentEnvironment } from './agents';
 import type { SettingsStore } from './settings';
 
@@ -21,6 +21,8 @@ interface Running {
   ended: boolean;
   completed: boolean;
   outputBytes: number;
+  /** Последнее нефатальное уведомление CLI: причина, если процесс завершится без результата. */
+  lastNotice?: string;
 }
 
 interface Options {
@@ -257,8 +259,12 @@ export class AgentManager {
         try {
           parser.finish();
           if (run.ended) return;
-          if (code !== 0) throw providerFailure(stderr);
-          if (!run.completed) throw new AgentError('PROTOCOL_ERROR', 'Агент завершился без подтверждения результата.');
+          // stderr только классифицирует сбой и не показывается; причину даёт последнее уведомление агента.
+          if (code !== 0) throw providerFailure(`${stderr} ${run.lastNotice ?? ''}`, run.lastNotice);
+          if (!run.completed)
+            throw run.lastNotice
+              ? providerFailure(run.lastNotice, run.lastNotice)
+              : new AgentError('PROTOCOL_ERROR', 'Агент завершился без подтверждения результата.');
           this.finish(run, 'completed');
         } catch (error) {
           this.fail(run, error);
@@ -277,6 +283,13 @@ export class AgentManager {
   private update(run: Running, update: AgentUpdate): void {
     if (run.ended) return;
     if (update.type === 'failed') throw update.error;
+    if (update.type === 'notice') {
+      const message = providerDetail(update.message);
+      if (message) {
+        run.lastNotice = message;
+        this.log(run, `Агент сообщил: ${message}`);
+      }
+    }
     if (update.type === 'session') run.job.sessionId = update.id;
     if (update.type === 'completed') {
       run.completed = true;

@@ -117,6 +117,26 @@ class LintRegistryTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertEqual(warnings, ["service: устаревшее имя поля; каноническое — provider"])
 
+    def test_production_status_shots_form_and_targets(self):
+        status = self.root / "plan/production-status.json"
+        status.write_text(json.dumps({"schema_version": 1, "shots": {"M01": {"scene_sha256": "кривой"}}}))
+        errors, _ = self.messages(tool.lint(self.root))
+        self.assertEqual(len([e for e in errors if e.startswith("shots:")]), 1)
+        digest = "a" * 64
+        status.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "shots": {sid: {"scene_sha256": digest} for sid in ("M01", "M02", "M09")},
+                }
+            )
+        )
+        errors, warnings = self.messages(tool.lint(self.root))
+        self.assertEqual(errors, [])
+        self.assertIn("shots.M02: отпечаток принятия плана без комплекта в assets", warnings)
+        self.assertIn("shots.M09: отпечаток принятия плана, которого нет в реестре", warnings)
+        self.assertFalse(any(w.startswith("shots.M01") for w in warnings))
+
     def test_history_and_recipes_in_staging_are_errors_but_story_words_are_not(self):
         self.registry["scenes"][0]["action"] = (
             "Мира кивает; направление принято. Участок оригинала 2–8 с ускорен на 60/53 ≈ 1,13×."
@@ -197,7 +217,7 @@ class LintRegistryTests(unittest.TestCase):
         package = self.root / "plan/awaiting/M02"
         (package / "request").mkdir(parents=True)
         (package / "workflow.json").write_text(
-            json.dumps({"schema_version": 1, "shot": "M02", "stage": "prompt_review"})
+            json.dumps({"schema_version": 1, "shot": "M02", "stage": "prompt_review", "keyframe_notes": []})
         )
         (package / "request/request.json").write_text(
             json.dumps(
@@ -270,6 +290,7 @@ class LintRegistryTests(unittest.TestCase):
             "shot": "M02",
             "stage": "image_request_choice",
             "request_dir": None,
+            "keyframe_notes": [],
             "image_request_dir": "image-01",
             "image_frame_id": "K01",
             "image_requests": [

@@ -8,6 +8,8 @@ import SyncIcon from '@mui/icons-material/Sync';
 interface CastToolbarProps {
   busy: boolean;
   dirty: boolean;
+  /** Что мешает сохранить черновик (например, ошибка словаря свойств); null — можно сохранять. */
+  saveBlockedReason: string | null;
   hasManifest: boolean;
   hasCast: boolean;
   onInit: () => void;
@@ -15,7 +17,7 @@ interface CastToolbarProps {
 }
 
 /** Действия кастинга учитывают несохранённые изменения и выполняющуюся операцию. */
-export function CastToolbar({ busy, dirty, hasManifest, hasCast, onInit, onSave }: CastToolbarProps): ReactElement {
+export function CastToolbar({ busy, dirty, saveBlockedReason, hasManifest, hasCast, onInit, onSave }: CastToolbarProps): ReactElement {
   // Дополнение перечитывает файл кастинга, поэтому несохранённые правки сначала нужно сохранить.
   const initBlockedReason = busy ? null : !hasManifest ? 'Сначала загрузите исходники.' : dirty ? 'Сначала сохраните правки.' : null;
   const busyReason = 'Дождитесь завершения текущей операции.';
@@ -38,8 +40,8 @@ export function CastToolbar({ busy, dirty, hasManifest, hasCast, onInit, onSave 
       <ActionButton
         variant="contained"
         startIcon={<SaveIcon />}
-        disabled={busy || !dirty}
-        disabledReason={busy ? busyReason : 'Нет изменений для сохранения.'}
+        disabled={busy || !dirty || Boolean(saveBlockedReason)}
+        disabledReason={busy ? busyReason : !dirty ? 'Нет изменений для сохранения.' : saveBlockedReason}
         onClick={onSave}
       >
         Сохранить

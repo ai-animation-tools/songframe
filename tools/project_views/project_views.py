@@ -17,7 +17,15 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from tools.common import ROOT
 from tools.project_inputs import project_inputs_match
-from tools.scene_registry.scene_registry import clock, shots, validate, validate_project
+from tools.scene_registry.scene_registry import (
+    PRODUCTION_STATUS,
+    accepted_fingerprints,
+    clock,
+    shot_acceptance,
+    shots,
+    validate,
+    validate_project,
+)
 
 
 class Sources:
@@ -116,7 +124,7 @@ def in_progress(sources):
 
 def progress(items, states, fps):
     """Строит диаграмму и проценты из тех же состояний, что и строки ROADMAP."""
-    counts = {state: 0 for state in ["Готово", "В процессе", "Запланировано"]}
+    counts = {state: 0 for state in ["Готово", "Постановка изменена", "В процессе", "Запланировано"]}
     total_frames = sum(s["frames"] for s in items)
     ready_frames = 0
     for scene in items:
@@ -139,7 +147,9 @@ def progress(items, states, fps):
         lines += ["```", ""]
     lines += ["| Состояние | Планов | Доля от общего числа |", "| --- | ---: | ---: |"]
     for state, count in counts.items():
-        lines.append(f"| {state} | {count} | {percent(count, len(items))} |")
+        # Строка изменённой постановки появляется только при таких планах; прочие состояния видны всегда.
+        if count or state != "Постановка изменена":
+            lines.append(f"| {state} | {count} | {percent(count, len(items))} |")
     ready_time = clock((Decimal(ready_frames) / fps).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
     total_time = clock((Decimal(total_frames) / fps).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
     lines += [
@@ -147,8 +157,8 @@ def progress(items, states, fps):
         f"**По хронометражу готово {percent(ready_frames, total_frames)}** — {ready_time} из {total_time}.",
         (
             "Доли по планам считаются по их количеству, по хронометражу — по "
-            "кадровым границам. Готовность определяется наличием выбранного "
-            "комплекта в assets."
+            "кадровым границам. Готов план, выбранный комплект которого в assets "
+            "принят по текущей постановке; после её правки план требует нового производства."
         ),
         "",
     ]
@@ -164,7 +174,7 @@ def render(sources):
     data, items, packages = prepared(sources)
     # Просмотр не зависит от готовности провайдеров и настроек другого медиа.
     project = validate_project(sources.json("plan/project.json"), validate_generation=False)
-    work = sources.json("plan/production-status.json")
+    work = sources.json(PRODUCTION_STATUS)
     latest_path = work["current_animatic"]
     compiled = {s["id"]: s for s in sources.json(latest_path)["shots"]} if latest_path in sources.files else {}
     manifest = sources.json(latest_path) if latest_path in sources.files else {}
@@ -189,10 +199,14 @@ def render(sources):
         else "Сборка устарела относительно исходников; требуется пересборка."
     )
     active = in_progress(sources)
+    # Принятие привязано к постановке: правило общее с shot_status, @link ../scene_registry/README.md#принятие-планов
+    acceptance = shot_acceptance(data, set(packages), accepted_fingerprints(work))
+    labels = {"completed": "Готово", "stale": "Постановка изменена"}
     states = {
-        s["id"]: ("Готово" if s["id"] in packages else ("В процессе" if s["id"] in active else "Запланировано"))
+        s["id"]: labels.get(acceptance.get(s["id"])) or ("В процессе" if s["id"] in active else "Запланировано")
         for s in items
     }
+    ready = sum(state == "Готово" for state in states.values())
     lines = [
         f"# ROADMAP — состояние клипа «{project['name']}»",
         "",
@@ -202,7 +216,7 @@ def render(sources):
         ),
         "",
         (
-            f"Всего {len(items)} планов; готовы {len(packages)}. [Текущий "
+            f"Всего {len(items)} планов; готовы {ready}. [Текущий "
             f"полный монтаж](plan/animatic/latest/README.md). {build_state}"
         ),
         "",

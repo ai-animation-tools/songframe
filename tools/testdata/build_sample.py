@@ -472,6 +472,7 @@ def make_kit(work, sid, color, pricing):
             "request_dir": "request",
             "mode": "shot",
             "keyframes": [],
+            "keyframe_notes": [],
         },
     )
     accept_shot.accept(

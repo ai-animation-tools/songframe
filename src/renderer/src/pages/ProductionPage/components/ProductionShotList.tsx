@@ -1,6 +1,7 @@
 /** Сетка карточек планов, как на странице «Сцены»: состояние, предпросмотр, этап или ожидающее действие. */
 import type { ReactElement } from 'react';
 import { Alert, Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
+import { proposalAttention } from '@shared/production-workflow';
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import NotificationImportantIcon from '@mui/icons-material/NotificationImportant';
 import type { ShotProduction } from '@shared/types';
@@ -71,7 +72,20 @@ export function ProductionShotList({
                     sx={{ height: 18 }}
                   />
                 ) : null}
-                {shot.state === 'completed' && !shot.asset?.video ? <Chip size="small" color="warning" label="Видео отсутствует" sx={{ height: 18 }} /> : null}
+                {/* Непринятое предложение агента: без отметки его видно только в панели подготовки выбранного плана. */}
+                {shot.proposal ? (
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    color={shot.proposal.status === 'ready' && !shot.proposal.stale ? 'info' : 'warning'}
+                    label={shot.proposal.status === 'ready' && !shot.proposal.stale ? 'предложение агента' : 'предложение: отклоните'}
+                    title={proposalAttention(shot.proposal)}
+                    sx={{ height: 18 }}
+                  />
+                ) : null}
+                {(shot.state === 'completed' || shot.state === 'stale') && !shot.asset?.video ? (
+                  <Chip size="small" color="warning" label="Видео отсутствует" sx={{ height: 18 }} />
+                ) : null}
               </>
             }
             caption={shot.attention ? `ждёт вас: ${shot.attention}` : undefined}

@@ -184,12 +184,12 @@ describe.skipIf(process.platform !== 'linux')('сквозная image-ветка
       const selected = readPackage(project, pkg)!;
       expect(selected.keyframes.find((frame) => frame.id === frameId)).toMatchObject({ approved: false });
       expect(selected.keyframes.find((frame) => frame.id === frameId)!.imagePath).not.toBe(original);
-      expect(selected.pendingDecision?.stage ?? null).toBe(frameId === 'K02' ? 'keyframes_review' : null);
+      // Выбранная опора сразу получает свой вопрос и утверждается до подготовки следующей.
+      expect(selected.pendingDecision).toMatchObject({ stage: 'keyframes_review', frame: frameId });
       expect(json(join(pkg, 'workflow.json')).request_dir).toBe('video-request');
+      await production.decide(project, pkg, 'approve', '', selected.decisionToken);
+      expect(readPackage(project, pkg)!.keyframes.find((frame) => frame.id === frameId)).toMatchObject({ approved: true });
     }
-    const beforeApproval = readPackage(project, pkg)!;
-    expect(beforeApproval.keyframes.every((frame) => !frame.approved)).toBe(true);
-    await production.decide(project, pkg, 'approve', '', beforeApproval.decisionToken);
     expect(readPackage(project, pkg)!.keyframes.every((frame) => frame.approved)).toBe(true);
     expect(json(join(pkg, 'workflow.json')).image_requests as unknown[]).toHaveLength(2);
     expect(serviceCalls('poll').map((call) => call.generation_id)).toEqual(['image-job-1']);

@@ -32,11 +32,12 @@ plan/awaiting/Mxx/
 
 - `schema_version: 1`, `shot: "Mxx"`, `stage` из единого порядка видео `description_review → keyframes_review → prompt_review → request_choice → ready → submitted → downloaded → edit_review → accepted`, этапов платных опор `image_request_choice → image_submitted → image_downloaded` и `needs_revision` с любого этапа. `edit_review` означает, что результат получен и принят по содержанию, но монтажный участок или обработка ещё не определены;
 - в очереди пакет находится на `ready` или `needs_revision`, а отложенный запрос опоры — на `image_request_choice`;
-- `pending_decision`: вопрос согласования для страницы «Производство» (`stage`, `question`, `options`, `asked_at`) или `null`; `decision`: последний ответ пользователя (`stage`, `verdict`, `note`, `at`) или `null`;
+- `pending_decision`: вопрос согласования для страницы «Производство» (`stage`, `question`, `options`, `asked_at`, для вопроса об одной опоре — `frame: "Kxx"`) или `null`; `decision`: последний ответ пользователя (`stage`, `verdict`, `note`, `at`) или `null`;
 - `mode`: режим согласования `shot` или `frame`; `timing`: кадры, окно и длительность запроса; `current_keyframe`: первая непринятая опора, вычисляется инструментом;
 - `wait_reason`: `user_saved` (так сохраняет кнопка «Сохранить в очередь»), `insufficient_balance` или `cost_or_balance_unknown`; после начала отправки убирается;
 - `description_approved`: принято ли описание;
 - `keyframes`: упорядоченный план опор с `id`, `role` (`first`/`middle`/`last`), `time_seconds`, `note`, `approved`, а для созданных изображений `path` и `sha256`; `approved_frames`: SHA-256 принятых опор по их ID;
+- `keyframe_notes`: обязательный список замечаний пользователя к опорам (`[]` у нового пакета). Элемент: `id` (номер подряд с 1 в пакете), `frame` (`Kxx` или `null` для ответа по всем кандидатам), `note`, `scope` (`frame` — только эта опора, `following` — эта и все следующие генерации опор пакета), `active` (выключенное замечание не учитывается), `at`;
 - `prompt`: `{path, approved}` видеопромпта; `approved_prompt_sha256`: SHA-256 принятого текста;
 - `request_dir`: имя текущей замороженной попытки видео (`request-NN`) или `null`;
 - `image_requests`: история платных запросов опор (`frame_id`, `request_dir`, `request_sha256`, `provider`), активный — `image_request_dir` и `image_frame_id`;

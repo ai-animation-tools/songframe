@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import type { JobInfo, ProductionQuote, ToolResult } from '@shared/types';
 import { Jobs } from './jobs';
 import { Production, readPackage, viewProduction } from './production';
+import { currentShotFingerprint } from './shot-acceptance';
 import { PythonLauncher } from './python-launcher';
 import { registerTestMediaProvider, TEST_PROVIDER } from './testing/media-provider';
 
@@ -95,6 +96,8 @@ function fixture(name = 'M01-attempt-01', shot = 'M01'): string {
   const directory = join(project, 'plan/batches', name);
   write(join(directory, 'workflow.json'), {
     shot,
+    // Пакет подготовлен по текущей постановке плана, как это делает shot_workflow init.
+    scene_sha256: currentShotFingerprint(project, shot),
     stage: 'request_choice',
     request_dir: 'request',
     pending_decision: { stage: 'request_choice', question: 'Отправить?', options: ['send', 'park', 'revise'] }

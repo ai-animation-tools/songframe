@@ -1,5 +1,13 @@
 {
   "schema_version": 1,
   "current_animatic": "plan/animatic/latest/manifest.json",
-  "current_animatic_status": "review"
+  "current_animatic_status": "review",
+  "shots": {
+    "M01": {
+      "scene_sha256": "a6cb3fb499ac2caf1589f2ecd4127504a1a9d766598493d9a61547a3fe720366"
+    },
+    "M02": {
+      "scene_sha256": "277499fd8f9387443cb75cc72ad2d0e2fb47afcca1d50ba9911c40c4f67c841d"
+    }
+  }
 }

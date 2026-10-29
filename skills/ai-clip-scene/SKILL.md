@@ -14,7 +14,7 @@
 | `scene` (и его копия `shot`) | План из реестра: окно, `camera`, `action`, `continuity`, `references`, `lipsync`, `state_from`, `state_changes`, а также `visual_direction` реестра и `sequence_direction` его части песни |
 | `cast` | Сущности кастинга в кадре и `world`: `appearance`, `role`, `initial_state`, изображения |
 | `references` | Карта референсов плана: подписи и пути в `source/` |
-| `brief.before`, `brief.after` | Врезка непрерывности на первый и последний кадр: `paragraph` для дословной вставки, `checklist` с вопросами проверки кадра, полный текст |
+| `brief.before`, `brief.after` | Врезка непрерывности на первый и последний кадр: `paragraph` для дословной вставки в промпт опоры и источник фактов видеопромпта, `checklist` с вопросами проверки кадра, полный текст |
 | `settings` | Блок `generation.video` проекта: провайдер, `resolution`, `aspect_ratio`, `watermark`, `duration_rule`, необязательные `model` и `options` |
 | `existing`, `description`, `prompt`, `keyframes` | Состояние пакета, принятое или текущее описание, видеопромпт и план опор с промптами |
 | `speech` | Подготовленный точный WAV речевого плана: `path` и `sourceSeconds` (начало и конец среза в песне); `null`, пока WAV не нарезан |

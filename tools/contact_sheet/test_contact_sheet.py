@@ -60,6 +60,7 @@ class ContactSheetTests(unittest.TestCase):
                         {"id": "K01", "role": "first", "path": "frames/K01.png", "approved": True},
                         {"id": "K02", "role": "last", "path": "frames/K02.png", "approved": True},
                     ],
+                    "keyframe_notes": [],
                 }
             )
         )

@@ -1,12 +1,11 @@
 import { Add } from '@mui/icons-material';
 import type { ReactElement } from 'react';
-import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
-import MovieOutlinedIcon from '@mui/icons-material/MovieOutlined';
 import { Box, ButtonBase, Chip, Paper, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { MontageClip, MontageScene, MontageSource } from '@shared/montage';
 import { frameLabel } from '../model';
 import { MontageSourceThumbnail } from './MontageSourceThumbnail';
+import { materialColor, MontageMaterialChip } from './MontageMaterialChip';
 import { ActionButton } from '../../../components/ActionButton';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
@@ -68,8 +67,7 @@ export function MontageSceneCard({
       <Stack spacing={1} sx={{ mt: sources.length ? 1.5 : 0 }}>
         {sources.map((source) => {
           const selected = used?.path === source.path;
-          // Результат попытки выделяется предупреждающим цветом: он ещё не принят и легко теряется среди принятых материалов.
-          const materialColor = source.kind === 'card' ? null : source.attempt ? 'warning' : source.original ? 'info' : 'success';
+          const color = materialColor(source);
           return (
             <Box
               key={source.id}
@@ -81,13 +79,13 @@ export function MontageSceneCard({
               sx={{
                 p: 1,
                 border: 1,
-                borderColor: selected ? 'primary.main' : materialColor ? `${materialColor}.main` : 'divider',
+                borderColor: selected ? 'primary.main' : color ? `${color}.main` : 'divider',
                 borderWidth: source.attempt ? 2 : 1,
                 // Цвет всего материала различает полный оригинал и принятый монтаж в обеих темах.
                 bgcolor: (theme) =>
-                  materialColor
+                  color
                     ? alpha(
-                        theme.palette[materialColor].main,
+                        theme.palette[color].main,
                         source.attempt ? (theme.palette.mode === 'dark' ? 0.32 : 0.2) : theme.palette.mode === 'dark' ? 0.18 : 0.09
                       )
                     : 'background.default',
@@ -98,13 +96,7 @@ export function MontageSceneCard({
             >
               <MontageSourceThumbnail project={project} source={source} sceneLabel={`${scene.id} — ${scene.title}`} onOpen={() => onPreview(source)} />
               <Stack direction="row" gap={0.75} alignItems="center" flexWrap="wrap">
-                {source.kind === 'card' ? <ImageOutlinedIcon fontSize="small" color="action" /> : <MovieOutlinedIcon fontSize="small" color="action" />}
-                <Chip
-                  size="small"
-                  label={source.kind === 'card' ? 'Карточка' : source.attempt ? 'Не принят' : source.original ? 'Полный оригинал' : 'Принятый'}
-                  color={materialColor ?? 'default'}
-                  variant={source.attempt ? 'filled' : 'outlined'}
-                />
+                <MontageMaterialChip source={source} />
                 <Typography variant="caption" color="text.secondary">
                   {source.kind === 'card' ? 'Опора' : source.frames === null ? 'Читаем длину…' : frameLabel(source.frames)}
                 </Typography>

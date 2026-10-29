@@ -81,11 +81,37 @@ python3 -B tools/scene_registry/scene_registry.py M37 --phase after
 
 `load`/`validate` проверяют шкалу, ссылки, циклы и форму изменений, но не соответствие сценарию и изображениям. `shots` вычисляет длительности и подписи. `scene_state(data, sid)` возвращает независимые `before` и `after`; изменение результата не меняет исходные данные. `scene_fingerprint(data, sid)` — SHA-256 текущего контекста с унаследованным состоянием: изменение M29 обнаруживается при продолжении пакета M37. Поля `state_from` и `state_changes` обязательны у каждого плана.
 
+`scene_fingerprints(data, initial=None)` возвращает отпечатки всех планов за одно вычисление состояния; значения совпадают со `scene_fingerprint`. Эталон отпечатков проекта-образца — [tools/testdata/scene-fingerprints.json](../testdata/scene-fingerprints.json): по нему тесты Python и главного процесса приложения проверяют побайтное совпадение.
+
 После изменения реестра запускать [update_scene_views](../update_scene_views/README.md); полная сборка — по [описанию аниматика](../../templates/project/plan/animatic/README.md). Чтение состояния ничего не пересобирает.
+
+## Принятие планов
+
+Принятие плана привязано к версии его постановки. В [plan/production-status.json](../../templates/project/plan/README.md) поле `shots` хранит `{"Mxx": {"scene_sha256": "<64 hex>"}}` — `scene_fingerprint` постановки, по которой принят комплект `assets/shots/Mxx`. Записывают поле [accept_shot](../accept_shot/README.md) при приёмке и [apply_montage](../apply_montage/README.md) при ручном монтаже; отсутствующее поле читается как пустой объект.
+
+| Комплект | Отпечаток | Статус |
+| --- | --- | --- |
+| есть | совпадает с отпечатком текущего реестра | `completed` — принят |
+| есть | отсутствует или не совпадает | `stale` — постановка изменена, нужно новое производство |
+| есть, план производный (`derived_from`) | свой совпадает, а план-источник сейчас `stale` | `stale` |
+| нет | — | статус по рабочим пакетам, как раньше |
+
+Комплект `stale` остаётся принятым материалом: сборка аниматика, проба и монтаж используют его дальше; меняется только то, что план не считается готовым. То же правило реализует главный процесс приложения.
+
+| Функция | Назначение |
+| --- | --- |
+| `read_production_status(root)` | Объект файла; отсутствующий файл — `None`, повреждённый — `ValueError` |
+| `accepted_fingerprints(status)` | `{Mxx: sha}` из `shots` с проверкой формы; без поля — `{}` |
+| `with_accepted_fingerprints(status, updates)` | Копия статуса с новыми отпечатками; прочие поля и записи других планов сохраняются, `shots` упорядочены по номеру плана, без файла берутся поля шаблона |
+| `write_accepted_fingerprints(root, updates)` | Атомарная запись через временный файл и замену |
+| `shot_acceptance(data, kits, accepted, initial=None)` | `{Mxx: "completed" \| "stale"}` для планов из `kits` по правилу выше |
+| `project_shot_acceptance(root, data=None)` | То же по файлам проекта: комплекты `assets/shots/Mxx/manifest.json`, отпечатки из `production-status.json`, начальное состояние из кастинга этого проекта |
+
+Статусы показывают [shot_status](../shot_status/README.md), ROADMAP ([project_views](../project_views/README.md)) и [check_workspace](../check_workspace/README.md).
 
 ## Тесты
 
-Непрерывность шкалы, граф сюжетных зависимостей, входные и выходные изменения, повтор сцен и актуальность хеша отложенного пакета.
+Непрерывность шкалы, граф сюжетных зависимостей, входные и выходные изменения, повтор сцен, актуальность хеша отложенного пакета, совпадение отпечатков образца с общим эталоном, статусы принятия `completed`/`stale` с производным планом и проверка поля `shots`.
 
 ```sh
 python3 -B tools/scene_registry/test_scene_registry.py

@@ -15,6 +15,8 @@ import type {
   ProjectSettings,
   ReviewOptions,
   ScenesFile,
+  ScenesSaveMode,
+  KeyframeNoteScope,
   SourcesInput,
   TimingFile,
   TimingGenerateOptions,
@@ -29,7 +31,8 @@ import { viewDashboard } from './dashboard';
 import { listBundles, Production, viewProduction, readPackage, pricingArgs } from './production';
 import { speechPlan } from './speech';
 import { initCast, readCast, viewCast, writeCast } from './cast';
-import { buildBrief, saveScenes, saveTreatment, validateScenes, viewScenario } from './scenario';
+import { buildBrief, saveTreatment, validateScenes, viewScenario } from './scenario';
+import { saveScenesWithMode, scenesSaveImpact } from './scenario-save';
 import { runEnvironmentTask } from './environment-task';
 import { resolvePaths } from './paths';
 import { Projects, validateNewProject } from './projects';
@@ -54,7 +57,7 @@ import { ScenarioWorkflow } from './scenario-workflow';
 import { publishScenario } from './scenario-apply';
 import { ProductionWorkflow } from './production-workflow';
 import { KeyframeImages, isImageFile } from './keyframe-images';
-import type { ProductionWorkflowStart, ProductionFrameCandidate } from '@shared/production-workflow';
+import { proposalAttention, type ProductionWorkflowStart, type ProductionFrameCandidate } from '@shared/production-workflow';
 import {
   isMediaProvider,
   MEDIA_PROVIDERS,
@@ -543,7 +546,8 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   ipcMain.handle('scenario:view', (_event, project: string) => viewScenario(project, getServices().toolsRoot));
   ipcMain.handle('scenario:status', (_event, project: string) => readScenarioRegistry(project).status);
   ipcMain.handle('scenario:saveTreatment', (_event, project: string, treatment: TreatmentFile) => saveTreatment(project, treatment));
-  ipcMain.handle('scenario:saveScenes', (_event, project: string, scenes: ScenesFile) => saveScenes(project, scenes));
+  ipcMain.handle('scenario:saveScenes', (_event, project: string, scenes: ScenesFile, mode: ScenesSaveMode) => saveScenesWithMode(project, scenes, mode));
+  ipcMain.handle('scenario:saveImpact', (_event, project: string, scenes: ScenesFile) => scenesSaveImpact(project, scenes));
   ipcMain.handle('scenario:validateScenes', (_event, project: string, scenes: ScenesFile) => validateScenes(scenes, readCast(project) || null));
   ipcMain.handle('scenario:brief', (_event, project: string, scenes: ScenesFile, shot: string, phase: 'before' | 'after') =>
     buildBrief(scenes, readCast(project) || null, shot, phase, getServices().toolsRoot)
@@ -553,11 +557,32 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const view = viewProduction(project, getServices().launcher);
     const problem = reviewProblem(project);
     if (problem) view.problems.push(problem);
+    // Непринятые предложения агента видны в списке планов и попадают в «Ждут вашего действия».
+    const proposals = productionFlow.pendingProposals(project);
+    view.shots = view.shots.map((shot) => {
+      const proposal = proposals[shot.id] ?? null;
+      return { ...shot, proposal, attention: shot.attention ?? (proposal ? proposalAttention(proposal) : null) };
+    });
     return view;
   });
-  ipcMain.handle('production:decide', (_event, project: string, packageDir: string, verdict: string, note: string, decisionToken?: string) => {
+  ipcMain.handle(
+    'production:decide',
+    (_event, project: string, packageDir: string, verdict: string, note: string, decisionToken?: string, noteScope?: KeyframeNoteScope) => {
+      productionIdle(project, packageDir);
+      return getServices().production.decide(project, packageDir, verdict, note, decisionToken, noteScope);
+    }
+  );
+  ipcMain.handle('production:reopenFrame', (_event, project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope) => {
     productionIdle(project, packageDir);
-    return getServices().production.decide(project, packageDir, verdict, note, decisionToken);
+    return getServices().production.reopenFrame(project, packageDir, frame, note, noteScope);
+  });
+  ipcMain.handle('production:keepPackageForScene', (_event, project: string, packageDir: string) => {
+    productionIdle(project, packageDir);
+    return getServices().production.keepPackageForScene(project, packageDir);
+  });
+  ipcMain.handle('production:setKeyframeNote', (_event, project: string, packageDir: string, id: number, active: boolean) => {
+    productionIdle(project, packageDir);
+    return getServices().production.setKeyframeNote(project, packageDir, id, active);
   });
   ipcMain.handle('production:quote', async (_event, project: string, packageDir: string, sha: string, decisionToken?: string) => {
     await requirePackageAccess(project, packageDir);

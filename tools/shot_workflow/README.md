@@ -44,7 +44,7 @@ python3 -B tools/shot_workflow/shot_workflow.py select-image --dir plan/batches/
 
 ## Тесты
 
-Полный цикл от `init` до очереди, правила длительности и обязательный `generation.video`, предел промпта из адаптера тестового провайдера, сохранение принятых опор при перепланировании, обнаружение изменённых байтов и изменившейся постановки, словарь переходов и запрет папок вне рабочих.
+Полный цикл от `init` до очереди, правила длительности и обязательный `generation.video`, предел промпта из адаптера тестового провайдера, сохранение принятых опор при перепланировании, обнаружение изменённых байтов и изменившейся постановки, словарь переходов и запрет папок вне рабочих. Согласование опор по одной: вопрос `--frame`, принятие и доработка одной опоры при нескольких кандидатах, замечания со `scope`, `reopen` (и отказ после принятия промпта), `set-note`, CLI и схема `workflow.json`.
 
 ```sh
 python3 -B tools/shot_workflow/test_shot_workflow.py
@@ -65,9 +65,19 @@ Image-ветка: `python3 -B tools/shot_workflow/test_shot_workflow_images.py`;
 python3 -B tools/shot_workflow/shot_workflow.py propose --dir plan/batches/M32-attempt-01 K01 /tmp/k01.png
 python3 -B tools/shot_workflow/shot_workflow.py ask --dir plan/batches/M32-attempt-01 --stage keyframes_review
 python3 -B tools/shot_workflow/shot_workflow.py decide --dir plan/batches/M32-attempt-01 --verdict revise --note "Убрать лишнюю руку"
+# Согласование опор по одной и замечания к ним:
+python3 -B tools/shot_workflow/shot_workflow.py ask --dir plan/batches/M32-attempt-01 --stage keyframes_review --frame K02
+python3 -B tools/shot_workflow/shot_workflow.py decide --dir plan/batches/M32-attempt-01 --verdict revise --note "Фонарь левее" --note-scope frame
+python3 -B tools/shot_workflow/shot_workflow.py reopen --dir plan/batches/M32-attempt-01 K01 --note "Теплее свет"
+python3 -B tools/shot_workflow/shot_workflow.py set-note --dir plan/batches/M32-attempt-01 --id 2 --active false
 ```
 
 - `propose K01 ПУТЬ` регистрирует кандидата опоры: файл копируется в `frames/`, `approved: false`; принятие делает пользователь. Этап `description_review` переходит в `keyframes_review`.
 - `ask --stage <этап> [--question …] [--options a,b]` записывает вопрос для приложения и очищает прежний ответ; этап не меняется. Этапы: `description_review`, `keyframes_review`, `prompt_review`, `request_choice`, `downloaded`, `edit_review`, `image_request_choice`; варианты по умолчанию зависят от этапа (`approve`/`revise`, для запроса `send`/`park`/`revise`, для результата `accept`/`retry`/`review`/`revise`).
 - `decide --verdict … [--note …] [--json]` пишет ответ (с `--json` печатает записанный `decision`); его вызывает приложение. На `keyframes_review` ответ `approve` принимает всех кандидатов опор, на `prompt_review` принимает промпт (`approve-prompt`). Остальные ответы только записываются: отправку, сохранение в очередь, приёмку и повтор выполняет приложение.
-- `show --json` включает `pending_decision` и `decision`. Само решение `send` не запускает генерацию: это только ответ на вопрос, отправку отдельно выполняет приложение по правилам согласования точного запроса.
+- `ask --stage keyframes_review --frame Kxx` задаёт вопрос об одной опоре «Утвердить опору Kxx?» (`approve`/`revise`) и пишет `frame` в `pending_decision`. Опора должна входить в план, иметь кандидата (`path`) и быть неутверждённой; `--frame` на других этапах — ошибка.
+- При вопросе об одной опоре `decide --verdict approve` утверждает только её (файл и SHA кандидата проверяются, запись в `approved_frames`); остальные кандидаты ждут своих вопросов. `decide --verdict revise --note ТЕКСТ [--note-scope frame|following]` снимает кандидата только этой опоры (`path`/`sha256` = `null`, `approved: false`, файл остаётся в пакете). Без `frame` ответ `revise` по-прежнему снимает всех неутверждённых кандидатов.
+- Непустое замечание ответа `revise` на `keyframes_review` добавляется в обязательный список `keyframe_notes` (у нового пакета `[]`): `{id, frame, note, scope, active, at}`. `id` — номер подряд с 1 в пакете, `frame` — опора вопроса или `null` для ответа по всем кандидатам, `scope` — `frame` (только эта опора) или `following` (эта и все следующие генерации опор пакета, по умолчанию), `active` — учитывается ли замечание. Учитывает замечания при генерации приложение; инструмент только хранит их. Пакет без `keyframe_notes` не читается: его нужно привести к актуальному формату.
+- `reopen Kxx --note ТЕКСТ [--note-scope frame|following]` возвращает утверждённую опору на доработку с обязательным непустым замечанием: опора становится неутверждённой, кандидат снимается (файл остаётся), запись удаляется из `approved_frames`, `prompt.approved` и `approved_prompt_sha256` сбрасываются (промпт строился по прежним опорам), этап — `keyframes_review`, вопрос очищается, `decision` = `{stage: keyframes_review, verdict: revise, note, at}`. Допустимо, только пока видеопромпт не утверждён и нет `request_dir`, и на этапах `keyframes_review`, `prompt_review`, `image_request_choice`, `needs_revision` (не во время отправки изображения); иначе ошибка с объяснением, а для готового промпта — исправленная попытка `init --retry-of`.
+- `set-note --id N --active true|false` включает или выключает замечание.
+- `show` выводит активные замечания, `show --json` и `check --json` включают `pending_decision`, `decision` и `keyframe_notes`. Само решение `send` не запускает генерацию: это только ответ на вопрос, отправку отдельно выполняет приложение по правилам согласования точного запроса.

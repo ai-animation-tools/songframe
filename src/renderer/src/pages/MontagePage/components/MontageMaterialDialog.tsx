@@ -5,6 +5,7 @@ import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, 
 import type { MontageSource } from '@shared/montage';
 import { ActionButton } from '../../../components/ActionButton';
 import { projectMediaUrl } from '../model';
+import { MontageMaterialChip } from './MontageMaterialChip';
 
 /** Просмотр материала перед добавлением: видео запускается вручную, опора открывается в масштабе 1:1. */
 export function MontageMaterialDialog({
@@ -32,7 +33,6 @@ export function MontageMaterialDialog({
   const failed = failedUrl === url;
   const isImage = source.kind === 'card';
   const title = `${source.scene} — ${source.title}`;
-  const materialType = isImage ? 'Опорное изображение' : source.original ? 'Видео · полный оригинал' : 'Видео · принятый материал';
 
   const navigate = (callback: (() => void) | undefined): void => {
     if (!callback) return;
@@ -84,9 +84,10 @@ export function MontageMaterialDialog({
       }}
     >
       <DialogTitle id={titleId} sx={{ overflowWrap: 'anywhere' }}>
-        <Typography component="span" variant="overline" display="block" color="text.secondary">
-          {materialType}
-        </Typography>
+        {/* Вид материала тем же чипом и цветом, что в каталоге: оригинал, принятый монтаж или непринятая попытка. */}
+        <Box component="span" sx={{ display: 'flex', mb: 0.5 }}>
+          <MontageMaterialChip source={source} />
+        </Box>
         {title}
         <Typography component="span" variant="body2" display="block" color="text.secondary">
           {source.label}

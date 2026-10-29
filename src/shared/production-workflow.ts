@@ -35,6 +35,8 @@ export interface ProductionProposal {
   message?: string;
   /** Текст ответа агента, не прошедшего проверку: показывается вместо предложения вместе с причиной. */
   agentText?: string;
+  /** Агент ответил текстом вместо JSON — штатный отказ по скиллу, а не ошибка формата; причина в agentText. */
+  refused?: boolean;
   before: string;
   after: ProductionStageProposal | null;
 }
@@ -67,6 +69,10 @@ export interface ProductionWorkflowView {
   /** Провайдер видео проекта: по нему интерфейс подписывает команды черновика запроса. */
   videoProvider?: string;
   framePrompts: ProductionFramePrompt[];
+  /** Опора, которую создаст следующее задание: опоры генерируются и согласуются по одной. */
+  nextFrame: string | null;
+  /** Утверждённые опоры пакета: для них импорт своих файлов недоступен до возврата на доработку. */
+  approvedFrameIds: string[];
   problems: string[];
   proposal: ProductionProposal | null;
   job: AgentJob | null;
@@ -76,9 +82,30 @@ export interface ProductionImagesInput {
   shot: string;
   packageDir: string;
   frames: ProductionFramePrompt[];
+  /** Действующие замечания пользователя к создаваемой опоре. */
+  notes?: string[];
+  /** Утверждённые опоры пакета: референсы согласованности следующих кадров (абсолютные пути). */
+  approvedFrames?: { id: string; role: ProductionFramePrompt['role']; path: string }[];
 }
 
 /** Причина блокировки подготовки и повтора для плана, который собирается из материала другого плана. */
 export function derivedShotReason(source: string): string {
   return `План собирается из материала ${source}: описание, опоры и генерация для него не нужны.`;
+}
+
+/** Предложение агента, которое ещё ждёт решения: отметка плана в списке «Производства». */
+export interface ProductionProposalSummary {
+  stage: ProductionPass;
+  status: 'ready' | 'invalid' | 'failed';
+  stale: boolean;
+  /** Пакет предложения; null — новая подготовка. */
+  packageDir: string | null;
+}
+
+/** Что сказать о непринятом предложении в списке планов: по этому тексту план попадает в «Ждут вашего действия». */
+export function proposalAttention(proposal: ProductionProposalSummary): string {
+  if (proposal.stale) return 'предложение агента устарело: отклоните его или подготовьте заново';
+  if (proposal.status === 'ready') return 'предложение агента ждёт применения или отклонения';
+  if (proposal.status === 'invalid') return 'ответ агента не прошёл проверку: просмотрите и отклоните';
+  return 'задание агента завершилось ошибкой: просмотрите и отклоните';
 }

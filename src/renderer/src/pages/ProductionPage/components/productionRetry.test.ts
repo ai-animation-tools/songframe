@@ -53,6 +53,8 @@ const fixturePackage = (provider: string, attemptStatus = 'downloaded'): Package
   retryOf: null,
   batch: null,
   timing: null,
+  keyframeNotes: [],
+  sceneChanged: false,
   keyframes: [],
   description: null,
   prompt: null,

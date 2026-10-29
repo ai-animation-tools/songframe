@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
   "current_animatic": null,
-  "current_animatic_status": "none"
+  "current_animatic_status": "none",
+  "shots": {}
 }

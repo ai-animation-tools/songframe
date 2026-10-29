@@ -12,9 +12,12 @@ export function ProductionFrameGenerationButton({
   disabled,
   disabledReason,
   title,
+  frame,
   onGenerate
 }: {
   provider?: string;
+  /** Опора, которую создаст задание: опоры создаются по одной; без неё — общая подпись и причина из disabledReason. */
+  frame?: string | null;
   disabled: boolean;
   disabledReason?: string | null;
   /** Назначение кнопки для подсказки при наведении. */
@@ -27,13 +30,13 @@ export function ProductionFrameGenerationButton({
   if (info?.executor)
     return (
       <AgentButton aiKind="image" provider={info.executor} disabled={disabled} disabledReason={disabledReason} title={title} onClick={onGenerate}>
-        Создать опоры в {info.title}
+        {frame ? `Создать ${frame}` : 'Создать опоры'} в {info.title}
       </AgentButton>
     );
   if (info?.paid)
     return (
       <AiButton aiKind="image" startIcon={<BuildIcon />} disabled={disabled} disabledReason={disabledReason} title={title} onClick={onGenerate}>
-        Подготовить запрос изображения ({info.title})
+        Подготовить запрос изображения{frame ? ` ${frame}` : ''} ({info.title})
       </AiButton>
     );
   const titles = mediaProvidersFor('image').map((id) => MEDIA_PROVIDERS[id].title);

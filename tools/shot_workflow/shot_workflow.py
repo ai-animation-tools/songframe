@@ -58,6 +58,10 @@ DEFAULT_QUESTIONS = {
     "edit_review": ("Принять этот монтажный участок?", ["accept", "revise"]),
 }
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
+# Замечание пользователя к опоре: только к ней или к ней и всем следующим генерациям опор пакета.
+NOTE_SCOPES = ("frame", "following")
+# Вернуть утверждённую опору можно, пока не началась отправка изображения и не согласован видеопромпт.
+REOPEN_STAGES = ("keyframes_review", "prompt_review", "image_request_choice", REVISION)
 
 
 def atomic_json(path, value):
@@ -91,6 +95,9 @@ def load_workflow(directory):
         raise ValueError("Неизвестный этап: " + str(data.get("stage")))
     data.setdefault("keyframes", [])
     data.setdefault("approved_frames", {})
+    notes = data.get("keyframe_notes")
+    if not isinstance(notes, list) or any(not isinstance(item, dict) for item in notes):
+        raise ValueError("В workflow.json нет списка keyframe_notes: пакет нужно привести к актуальному формату.")
     return data
 
 
@@ -147,6 +154,7 @@ def init(shot, directory, mode="shot", root=ROOT, batch=None, retry_of=None):
         },
         "keyframes": [],
         "approved_frames": {},
+        "keyframe_notes": [],
         "prompt": {"path": "video-prompt.txt", "approved": False},
         "approved_prompt_sha256": None,
         "retry_of": retry_of,
@@ -469,13 +477,55 @@ def select_image(directory, file, root=ROOT):
     return save_workflow(directory, data)
 
 
-def ask(directory, stage, question=None, options=None, root=ROOT):
-    """Записывает вопрос для приложения и очищает прежний ответ."""
+def keyframe_of(data, frame_id):
+    keyframe = next((k for k in data["keyframes"] if k["id"] == frame_id), None)
+    if keyframe is None:
+        raise ValueError("Опора не входит в план: " + str(frame_id))
+    return keyframe
+
+
+def add_note(data, frame_id, note, scope):
+    """Добавляет непустое замечание к опоре; номера идут подряд с 1 в пределах пакета."""
+    if scope not in NOTE_SCOPES:
+        raise ValueError("Область замечания: " + ", ".join(NOTE_SCOPES))
+    text = (note or "").strip()
+    if not text:
+        return None
+    notes = data["keyframe_notes"]
+    item = {
+        "id": max((n.get("id", 0) for n in notes), default=0) + 1,
+        "frame": frame_id,
+        "note": text,
+        "scope": scope,
+        "active": True,
+        "at": now(),
+    }
+    notes.append(item)
+    return item
+
+
+def withdraw_candidate(data, keyframe):
+    """Снимает кандидата с опоры; файл в пакете остаётся."""
+    keyframe.update(path=None, sha256=None, approved=False)
+    data["approved_frames"].pop(keyframe["id"], None)
+
+
+def ask(directory, stage, question=None, options=None, root=ROOT, frame=None):
+    """Записывает вопрос для приложения и очищает прежний ответ; frame — вопрос об одной опоре."""
     directory = package_dir(directory, root)
     data = load_workflow(directory)
     if stage not in DECISION_STAGES:
         raise ValueError("Вопрос задаётся на этапах: " + ", ".join(DECISION_STAGES))
     default_question, default_options = DEFAULT_QUESTIONS[stage]
+    if frame is not None:
+        if stage != "keyframes_review":
+            raise ValueError("Вопрос об отдельной опоре задаётся только на этапе keyframes_review.")
+        keyframe = keyframe_of(data, frame)
+        if not keyframe.get("path"):
+            raise ValueError(f"{frame}: у опоры нет кандидата для согласования.")
+        if keyframe.get("approved"):
+            raise ValueError(f"{frame}: опора уже утверждена.")
+        default_question = f"Утвердить опору {frame}?"
     options = options or default_options
     if any(o not in VERDICTS for o in options):
         raise ValueError("Варианты ответа: " + ", ".join(VERDICTS))
@@ -485,28 +535,51 @@ def ask(directory, stage, question=None, options=None, root=ROOT):
         "options": list(options),
         "asked_at": now(),
     }
+    if frame is not None:
+        data["pending_decision"]["frame"] = frame
     data["decision"] = None
     return save_workflow(directory, data)
 
 
-def decide(directory, verdict, note="", root=ROOT):
+def decide(directory, verdict, note="", root=ROOT, note_scope="following"):
     """Применить принятие опор и промпта; остальные ответы исполняет приложение."""
     directory = package_dir(directory, root)
     data = load_workflow(directory)
     if verdict not in VERDICTS:
         raise ValueError("Неизвестный ответ: " + verdict)
+    if note_scope not in NOTE_SCOPES:
+        raise ValueError("Область замечания: " + ", ".join(NOTE_SCOPES))
     pending = data.get("pending_decision") or {}
     stage = pending.get("stage") or data["stage"]
+    frame = pending.get("frame")
     if pending.get("options") and verdict not in pending["options"]:
         raise ValueError(f"Для вопроса «{pending.get('question')}» допустимы ответы: {', '.join(pending['options'])}.")
     if stage == "description_review" and verdict in ("approve", "revise"):
         data["description_approved"] = verdict == "approve"
     if verdict == "revise" and stage == "keyframes_review":
         # Отклонённый кандидат перестаёт считаться готовой опорой; файлы и paid originals остаются.
-        for keyframe in data["keyframes"]:
-            if not keyframe.get("approved"):
-                keyframe.update(path=None, sha256=None)
-    if verdict == "approve" and stage == "keyframes_review":
+        if frame is not None:
+            keyframe = keyframe_of(data, frame)
+            if keyframe.get("approved"):
+                raise ValueError(f"{frame}: опора уже утверждена; верните её командой reopen.")
+            withdraw_candidate(data, keyframe)
+        else:
+            for keyframe in data["keyframes"]:
+                if not keyframe.get("approved"):
+                    keyframe.update(path=None, sha256=None)
+        add_note(data, frame, note, note_scope)
+    if verdict == "approve" and stage == "keyframes_review" and frame is not None:
+        # Вопрос об одной опоре утверждает только её, остальные кандидаты ждут своих вопросов.
+        keyframe = keyframe_of(data, frame)
+        path = directory / keyframe["path"] if keyframe.get("path") else None
+        if keyframe.get("approved") or path is None:
+            raise ValueError(f"{frame}: нет неутверждённого кандидата для принятия.")
+        if not path.is_file() or sha(path) != keyframe["sha256"]:
+            raise ValueError(f"{frame}: файл кандидата отсутствует или изменён.")
+        keyframe["approved"] = True
+        data["approved_frames"][frame] = keyframe["sha256"]
+        save_workflow(directory, data)
+    elif verdict == "approve" and stage == "keyframes_review":
         candidates = [k for k in data["keyframes"] if k.get("path") and not k.get("approved")]
         if not candidates and not all(k.get("approved") for k in data["keyframes"]):
             raise ValueError("Нет кандидатов опор для принятия.")
@@ -522,6 +595,52 @@ def decide(directory, verdict, note="", root=ROOT):
         data, _ = approve_prompt(directory, None, root)
     data["decision"] = {"stage": stage, "verdict": verdict, "note": note or "", "at": now()}
     data["pending_decision"] = None
+    return save_workflow(directory, data)
+
+
+def reopen(directory, frame, note, scope="following", root=ROOT):
+    """Возвращает утверждённую опору на доработку с обязательным замечанием. @link README.md"""
+    directory = package_dir(directory, root)
+    data = load_workflow(directory)
+    keyframe = keyframe_of(data, frame)
+    if not keyframe.get("approved"):
+        raise ValueError(f"{frame}: опора не утверждена; доработка задаётся ответом revise на её вопрос.")
+    if not (note or "").strip():
+        raise ValueError("Для возврата опоры на доработку нужно замечание.")
+    if scope not in NOTE_SCOPES:
+        raise ValueError("Область замечания: " + ", ".join(NOTE_SCOPES))
+    if (data.get("prompt") or {}).get("approved") or data.get("request_dir"):
+        raise ValueError(
+            "Видеопромпт уже утверждён или запрос подготовлен: опору нельзя вернуть в этом пакете; "
+            "создайте исправленную попытку (init --retry-of)."
+        )
+    if data["stage"] not in REOPEN_STAGES:
+        raise ValueError(
+            f"На этапе {data['stage']} опору вернуть нельзя: сначала завершите текущую отправку изображения "
+            "и выберите её результат."
+        )
+    withdraw_candidate(data, keyframe)
+    item = add_note(data, frame, note, scope)
+    # Промпт строился по прежним опорам и согласуется заново.
+    data["prompt"] = {**(data.get("prompt") or {"path": "video-prompt.txt"}), "approved": False}
+    data.update(
+        approved_prompt_sha256=None,
+        stage="keyframes_review",
+        wait_reason=None,
+        pending_decision=None,
+        decision={"stage": "keyframes_review", "verdict": "revise", "note": item["note"], "at": item["at"]},
+    )
+    return save_workflow(directory, data)
+
+
+def set_note(directory, note_id, active, root=ROOT):
+    """Включает или выключает замечание к опорам."""
+    directory = package_dir(directory, root)
+    data = load_workflow(directory)
+    item = next((n for n in data["keyframe_notes"] if n.get("id") == note_id), None)
+    if item is None:
+        raise ValueError(f"Замечания {note_id} нет в пакете.")
+    item["active"] = bool(active)
     return save_workflow(directory, data)
 
 
@@ -691,6 +810,7 @@ def report(directory, root=ROOT):
         "image_requests": data.get("image_requests", []),
         "image_attempt_status": image_status,
         "description_approved": data.get("description_approved") is True,
+        "keyframe_notes": data["keyframe_notes"],
         "pending_decision": data.get("pending_decision"),
         "decision": data.get("decision"),
         "problems": problems(directory, data, root),
@@ -744,6 +864,13 @@ def table(info):
                 f"| {k['id']} | {k['role']} | {k['time_seconds']:g} | "
                 f"{'да' if k.get('approved') else 'нет'} | {k.get('path') or '—'} |"
             )
+    notes = [n for n in info.get("keyframe_notes", []) if n.get("active")]
+    if notes:
+        scopes = {"frame": "только эта опора", "following": "эта и следующие"}
+        lines += ["", "Активные замечания к опорам:"]
+        for n in notes:
+            scope = scopes.get(n.get("scope"), n.get("scope"))
+            lines.append(f"- №{n['id']} {n.get('frame') or 'все опоры'} ({scope}): {n['note']}")
     prompt = info.get("prompt") or {}
     lines += [
         "",
@@ -811,11 +938,22 @@ def main():
     p.add_argument("--stage", required=True, choices=DECISION_STAGES)
     p.add_argument("--question")
     p.add_argument("--options", help="Через запятую: " + ",".join(VERDICTS))
+    p.add_argument("--frame", help="Вопрос об одной опоре Kxx (только keyframes_review)")
     p = sub.add_parser("decide")
     p.add_argument("--dir", required=True)
     p.add_argument("--verdict", required=True, choices=VERDICTS)
     p.add_argument("--note", default="")
+    p.add_argument("--note-scope", choices=NOTE_SCOPES, default="following")
     p.add_argument("--json", action="store_true")
+    p = sub.add_parser("reopen")
+    p.add_argument("--dir", required=True)
+    p.add_argument("keyframe")
+    p.add_argument("--note", required=True)
+    p.add_argument("--note-scope", choices=NOTE_SCOPES, default="following")
+    p = sub.add_parser("set-note")
+    p.add_argument("--dir", required=True)
+    p.add_argument("--id", type=int, required=True)
+    p.add_argument("--active", choices=("true", "false"), required=True)
     for action in ("show", "check"):
         p = sub.add_parser(action)
         p.add_argument("--dir", required=True)
@@ -856,18 +994,26 @@ def main():
             data = propose(args.dir, args.keyframe, args.path)
             print(f"{args.keyframe} предложена как кандидат; ждёт решения пользователя.")
         elif args.action == "ask":
-            data = ask(args.dir, args.stage, args.question, args.options.split(",") if args.options else None)
+            data = ask(
+                args.dir, args.stage, args.question, args.options.split(",") if args.options else None, frame=args.frame
+            )
             print(
                 f"Вопрос записан для приложения: {data['pending_decision']['question']} "
                 f"({', '.join(data['pending_decision']['options'])})."
             )
         elif args.action == "decide":
-            data = decide(args.dir, args.verdict, args.note)
+            data = decide(args.dir, args.verdict, args.note, note_scope=args.note_scope)
             print(
                 json.dumps(data["decision"], ensure_ascii=False)
                 if args.json
                 else f"Ответ записан: {args.verdict}" + (f" ({args.note})" if args.note else "")
             )
+        elif args.action == "reopen":
+            reopen(args.dir, args.keyframe, args.note, args.note_scope)
+            print(f"{args.keyframe} возвращена на доработку; видеопромпт согласуется заново.")
+        elif args.action == "set-note":
+            set_note(args.dir, args.id, args.active == "true")
+            print(f"Замечание {args.id} " + ("включено." if args.active == "true" else "выключено."))
         else:
             info = report(args.dir)
             print(json.dumps(info, ensure_ascii=False, indent=2) if args.json else table(info))

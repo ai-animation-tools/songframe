@@ -28,6 +28,11 @@ function announce(previous: Observed | null, view: ProductionWorkflowView, notif
   if (proposal && current.proposal !== previous.proposal) {
     const stage = PRODUCTION_PASS_LABELS[proposal.stage];
     if (proposal.status === 'ready') notify(`${stage}: предложение агента готово. Откройте «Просмотреть предложение и сравнение».`, 'success');
+    else if (proposal.status === 'invalid' && proposal.refused)
+      notify(
+        `${stage}: агент отказался подготовить предложение. Возможно, в сценарии есть противоречия. Причина — в «Просмотреть предложение и сравнение».`,
+        'warning'
+      );
     else if (proposal.status === 'invalid')
       notify(`${stage}: результат агента требует исправления.${proposal.message ? ` ${proposal.message}` : ''}`, 'warning');
     else if (proposal.status === 'failed' || proposal.status === 'interrupted')

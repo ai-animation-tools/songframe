@@ -100,6 +100,24 @@ describe('preview производства', () => {
     expect(html).not.toContain('&quot;model&quot;');
   });
 
+  it('показывает отказ агента его причиной, без ошибки разбора JSON', () => {
+    const html = render({
+      ...proposal,
+      stage: 'description',
+      status: 'invalid',
+      before: '',
+      after: null,
+      refused: true,
+      message: 'Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.',
+      agentText: 'Не могу подготовить согласованное предложение M59: нужно уточнить конечную эмоцию в сценарии.'
+    });
+    expect(html).toContain('Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.');
+    expect(html).toContain('Причина отказа');
+    expect(html).toContain('нужно уточнить конечную эмоцию');
+    expect(html).not.toContain('Причина проверки');
+    expect(html).not.toContain('Ответ агента');
+  });
+
   it('показывает ответ агента и причину, когда предложение не прошло проверку', () => {
     const html = render({
       ...proposal,

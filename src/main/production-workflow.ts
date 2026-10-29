@@ -1,6 +1,6 @@
 /** Один план и один пакет проходят подготовку предложений; проект меняется только отдельным Apply. */
 import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import type { AgentJob } from '@shared/agents';
@@ -10,6 +10,7 @@ import type {
   ProductionImagesInput,
   ProductionPass,
   ProductionProposal,
+  ProductionProposalSummary,
   ProductionRequestDraft,
   ProductionWorkflowStart,
   ProductionWorkflowView
@@ -26,9 +27,11 @@ import { readPackageSpeech } from './speech';
 import { derivedShotSource } from './derived-shot';
 import { providerGuide } from './provider-guides';
 import { cachedFileDigest } from './animatic-freshness';
+import { currentShotFingerprint } from './shot-acceptance';
 import { sourceInputDigest } from './source-input-hash';
 import {
   agentResponseText,
+  isAgentRefusal,
   checkFrameCandidates,
   checkProductionCapabilities,
   parseProductionProposal,
@@ -79,7 +82,9 @@ interface Workflow {
   prompt?: { path?: string; approved?: boolean; sha256?: string };
   approved_prompt_sha256?: string;
   decision?: { stage: string; verdict: string; note?: string } | null;
-  pending_decision?: { stage: string } | null;
+  pending_decision?: { stage: string; frame?: string } | null;
+  keyframe_notes?: { id: number; frame: string | null; note: string; scope: 'frame' | 'following'; active: boolean }[];
+  scene_sha256?: string | null;
 }
 interface Stored {
   proposal: ProductionProposal;
@@ -110,7 +115,12 @@ interface Context {
   problems: string[];
   /** План-источник производного плана: подготовка агентом и генерация для такого плана не нужны. */
   derivedFrom: string | null;
+  /** Постановка плана изменилась после подготовки пакета: продолжать его можно только после решения пользователя. */
+  sceneChanged: boolean;
 }
+/** Причина блокировки устаревшего пакета: выход — оставить пакет, доработать описание или подготовить новый. */
+const SCENE_CHANGED_REASON =
+  'постановка плана изменилась после подготовки пакета: оставьте пакет для текущей постановки, доработайте описание или подготовьте новый пакет';
 const digest = (data: string | Buffer): string => createHash('sha256').update(data).digest('hex');
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 function json(path: string): unknown {
@@ -175,6 +185,21 @@ function snapshot(project: string, packageDir: string | null, target: string, al
 function sameSnapshot(project: string, stored: Stored): boolean {
   const current = snapshot(project, stored.packageDir, stored.target, stored.rules.allowedPaths);
   return JSON.stringify(current) === JSON.stringify(stored.hashes);
+}
+/** Кандидат, который ждёт решения: пока он есть, следующая опора не создаётся. */
+function undecidedFrame(context: Context): string | null {
+  return context.workflow?.keyframes?.find((frame) => frame.path && !frame.approved)?.id ?? null;
+}
+/** Опоры создаются по одной в порядке плана: следующая — первая без кандидата и утверждения. */
+function nextFrame(context: Context): string | null {
+  if (undecidedFrame(context)) return null;
+  return context.framePrompts.find((prompt) => !context.workflow?.keyframes?.some((frame) => frame.id === prompt.id && frame.approved))?.id ?? null;
+}
+/** Замечания к создаваемой опоре: её собственные и сквозные, кроме снятых пользователем. */
+function frameNotes(context: Context, frame: string): string[] {
+  return (context.workflow?.keyframe_notes ?? [])
+    .filter((note) => note.active && note.note.trim() && (note.scope === 'following' || note.frame === frame))
+    .map((note) => note.note.trim());
 }
 function approvedFrames(context: Context): boolean {
   const frames = context.workflow?.keyframes ?? [];
@@ -310,6 +335,9 @@ export class ProductionWorkflow {
       if (!record(value) || value.shot !== shot || typeof value.stage !== 'string') throw new Error('Пакет отсутствует или относится к другому плану.');
       workflow = value as unknown as Workflow;
     }
+    // Тот же отпечаток, что пишет shot_workflow init: пакет, подготовленный по прежней постановке, дальше не продолжается молча.
+    const currentScene = workflow && workflow.stage !== 'accepted' ? currentShotFingerprint(project, shot) : null;
+    const sceneChanged = !!currentScene && workflow!.scene_sha256 !== currentScene;
     const cast = json(join(project, 'plan/cast.json'));
     const references: Record<string, unknown> = {};
     const allowed = new Set<string>();
@@ -375,7 +403,8 @@ export class ProductionWorkflow {
       allowedPaths: [...allowed].sort(),
       paid: packageDir ? productionPackageVideoPaid(packageDir) : false,
       problems,
-      derivedFrom: derivedShotSource(project, scene)
+      derivedFrom: derivedShotSource(project, scene),
+      sceneChanged
     };
   }
   private refresh(context: Context, stored: Stored | null): AgentJob | null {
@@ -413,6 +442,11 @@ export class ProductionWorkflow {
         if (!stored.imageJob) {
           const answer = agentResponseText(job.result ?? '', proposal.stage);
           if (answer) proposal.agentText = answer;
+          // Текст вместо JSON — штатный отказ: ошибка разбора JSON пользователю ничего не объясняет.
+          if (answer && isAgentRefusal(job.result ?? '')) {
+            proposal.refused = true;
+            proposal.message = 'Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.';
+          }
         }
       }
     }
@@ -424,8 +458,13 @@ export class ProductionWorkflow {
     const stored = this.read(canonical, shot);
     // Отсутствующий выбор означает новую подготовку; созданный пакет Apply возвращает явно.
     const context = this.context(canonical, shot, packageDir);
+    // Производный план не готовится агентом: предложение, оставшееся до отметки derived_from, больше не показывается.
     const relevant =
-      stored && (stored.proposal.status === 'applied' ? stored.target === context.packageDir : stored.packageDir === context.packageDir) ? stored : null;
+      stored &&
+      !(context.derivedFrom && stored.proposal.status !== 'running') &&
+      (stored.proposal.status === 'applied' ? stored.target === context.packageDir : stored.packageDir === context.packageDir)
+        ? stored
+        : null;
     const job = this.refresh(context, relevant);
     const busy =
       this.busy.has(this.key(canonical, shot)) ||
@@ -472,40 +511,46 @@ export class ProductionWorkflow {
         derived ??
         (!context.packageDir
           ? 'нужен выбранный пакет с принятым описанием и опорами'
-          : (common ??
-            (context.paid
-              ? 'попытка уже отправлена: дальше только повтор или возврат с замечанием'
-              : context.problems.length
-                ? context.problems.join(' ')
-                : imagePhase
-                  ? 'сначала завершите согласование или получение изображения'
-                  : nextStage === 'request' && context.scene.lipsync === true && !context.speech
-                    ? 'речевой план: сначала подготовьте WAV речи в блоке «Речь»'
-                    : nextStage === 'request' && speechMismatch
-                      ? speechMismatch
-                      : !nextStage || nextStage === 'description'
-                        ? framesApproved
-                          ? 'опоры приняты, видеопромпт готовится этой кнопкой после принятия описания'
-                          : descriptionApproved
-                            ? 'сначала создайте и примите опоры'
-                            : 'сначала примените и примите описание плана'
-                        : null))),
+          : context.sceneChanged
+            ? SCENE_CHANGED_REASON
+            : (common ??
+              (context.paid
+                ? 'попытка уже отправлена: дальше только повтор или возврат с замечанием'
+                : context.problems.length
+                  ? context.problems.join(' ')
+                  : imagePhase
+                    ? 'сначала завершите согласование или получение изображения'
+                    : nextStage === 'request' && context.scene.lipsync === true && !context.speech
+                      ? 'речевой план: сначала подготовьте WAV речи в блоке «Речь»'
+                      : nextStage === 'request' && speechMismatch
+                        ? speechMismatch
+                        : !nextStage || nextStage === 'description'
+                          ? framesApproved
+                            ? 'опоры приняты, видеопромпт готовится этой кнопкой после принятия описания'
+                            : descriptionApproved
+                              ? 'сначала создайте и примите опоры'
+                              : 'сначала примените и примите описание плана'
+                          : null))),
       frames:
         derived ??
         (!context.packageDir
           ? 'нужен выбранный пакет с принятым описанием'
-          : (common ??
-            (context.paid
-              ? 'попытка уже отправлена'
-              : framesApproved
-                ? 'опоры уже приняты'
-                : !context.framePrompts.length
-                  ? 'в пакете нет плана опор: примените описание с промптами опор'
-                  : !(descriptionApproved || frameRevision)
-                    ? 'сначала примите описание плана'
-                    : imagePhase
-                      ? 'сначала завершите согласование или получение изображения'
-                      : null)))
+          : context.sceneChanged
+            ? SCENE_CHANGED_REASON
+            : (common ??
+              (context.paid
+                ? 'попытка уже отправлена'
+                : framesApproved
+                  ? 'опоры уже приняты'
+                  : undecidedFrame(context)
+                    ? `сначала утвердите опору ${undecidedFrame(context)} или отправьте её на доработку`
+                    : !context.framePrompts.length
+                      ? 'в пакете нет плана опор: примените описание с промптами опор'
+                      : !(descriptionApproved || frameRevision)
+                        ? 'сначала примите описание плана'
+                        : imagePhase
+                          ? 'сначала завершите согласование или получение изображения'
+                          : null)))
     };
     const generation = readProjectSettings(canonical).generation;
     return {
@@ -519,6 +564,7 @@ export class ProductionWorkflow {
       canPrepare: !derived && !busy && !imagePhase && scenarioApproved && !context.problems.length,
       canContinue:
         !derived &&
+        !context.sceneChanged &&
         enabled &&
         !imagePhase &&
         !!stageFor(context) &&
@@ -527,11 +573,19 @@ export class ProductionWorkflow {
       // Пока у пакета есть вопрос, замечание вводится в его карточке; панель подхватывает сохранённый ответ «вернуть».
       canRevise: !derived && !busy && !proposalPending && !imagePhase && !!context.packageDir && !context.problems.length && !pending,
       canGenerateFrames:
-        !derived && imageEnabled && !!context.packageDir && !approvedFrames(context) && !!context.framePrompts.length && (descriptionApproved || frameRevision),
+        !derived &&
+        !context.sceneChanged &&
+        imageEnabled &&
+        !!context.packageDir &&
+        !approvedFrames(context) &&
+        !!nextFrame(context) &&
+        (descriptionApproved || frameRevision),
       paid: context.paid,
       imageProvider: generation?.image?.provider,
       videoProvider: generation?.video?.provider,
       framePrompts: context.framePrompts,
+      nextFrame: nextFrame(context),
+      approvedFrameIds: (context.workflow?.keyframes ?? []).filter((frame) => frame.approved).map((frame) => frame.id),
       problems: context.problems,
       proposal: relevant?.proposal ?? null,
       job
@@ -568,6 +622,8 @@ export class ProductionWorkflow {
       if (!stage) throw new Error('На этом этапе требуется согласование описания или опор.');
       const appropriate = stage === 'description' ? true : stage === 'prompt' ? approvedFrames(context) : promptApproved(context);
       if (!appropriate || (input.action === 'continue' && stage !== stageFor(context))) throw new Error('Запрошенный этап ещё не доступен.');
+      // Устаревший пакет продолжается только новым описанием: оно строится по текущей постановке.
+      if (context.sceneChanged && stage !== 'description') throw new Error(`Сначала решите судьбу пакета: ${SCENE_CHANGED_REASON}.`);
     }
     const key = this.key(context.project, input.shot);
     this.busy.add(key);
@@ -699,30 +755,41 @@ export class ProductionWorkflow {
     if (!this.view(context.project, shot, packageDir).canGenerateFrames) throw new Error('Сначала утвердите описание и план опор.');
     this.ensureNoPending(context);
     const hashes = snapshot(context.project, context.packageDir, packageDir, context.allowedPaths);
-    // Совместимые принятые опоры остаются в пакете; отдельное image-задание готовит только недостающие.
-    const frames = context.framePrompts.filter((prompt) => !context.workflow?.keyframes?.some((frame) => frame.id === prompt.id && frame.approved));
+    // Опоры создаются по одной: задание готовит следующую по плану, а решение по ней открывает следующую.
+    const target = nextFrame(context);
+    const prompt = context.framePrompts.find((item) => item.id === target);
+    if (!prompt)
+      throw new Error(undecidedFrame(context) ? `Сначала утвердите опору ${undecidedFrame(context)} или отправьте её на доработку.` : 'Все опоры уже созданы.');
+    const notes = frameNotes(context, prompt.id);
+    const frames = [prompt];
     const imageProvider = mediaProviderInfo(readProjectSettings(context.project).generation?.image?.provider, 'image');
     if (!imageProvider) throw new Error(`Выберите провайдера генерации изображений в настройках проекта: ${mediaProviderTitles('image')}.`);
     // Провайдер без исполнителя-агента готовит платный запрос на одну опору; агент создаёт недостающие опоры заданием.
     if (!imageProvider.executor) {
       if (!this.options.prepareImageRequest) throw new Error(`Исполнитель изображений ${imageProvider.title} не подключён.`);
-      const missing = frames.filter(
-        (prompt) =>
-          !context.workflow?.keyframes?.some(
-            (frame) => frame.id === prompt.id && frame.path && existsSync(productionPath(context.project, join(context.packageDir!, frame.path)))
-          )
-      );
-      if (!missing.length) throw new Error('Кандидаты всех опор уже сохранены. Просмотрите и утвердите их.');
+      // Замечания пользователя входят в текст замороженного запроса: его SHA и цена подтверждаются как обычно.
+      const framed = notes.length ? { ...prompt, prompt: `${prompt.prompt}\n\nИсправления к прежним вариантам: ${notes.join(' ')}` } : prompt;
       const key = this.key(context.project, shot);
       this.busy.add(key);
       try {
-        await this.options.prepareImageRequest({ project: context.project, shot, packageDir: context.packageDir!, frames: [missing[0]] });
+        await this.options.prepareImageRequest({ project: context.project, shot, packageDir: context.packageDir!, frames: [framed] });
       } finally {
         this.busy.delete(key);
       }
       return this.view(context.project, shot, packageDir);
     }
-    const job = this.options.generateImages({ project: context.project, shot, packageDir: context.packageDir!, frames });
+    // Утверждённые опоры этого пакета — референсы согласованности: внешность, одежда, свет и расстановка следующего кадра.
+    const approvedFrameFiles = (context.workflow?.keyframes ?? [])
+      .filter((frame) => frame.approved && frame.path)
+      .map((frame) => ({ id: frame.id, role: frame.role, path: productionPath(context.project, join(context.packageDir!, frame.path!)) }));
+    const job = this.options.generateImages({
+      project: context.project,
+      shot,
+      packageDir: context.packageDir!,
+      frames,
+      notes,
+      approvedFrames: approvedFrameFiles
+    });
     this.write(context.project, shot, {
       proposal: {
         id: randomUUID(),
@@ -746,7 +813,9 @@ export class ProductionWorkflow {
     if (context.derivedFrom) throw new Error(derivedShotReason(context.derivedFrom));
     if (!this.view(context.project, shot, packageDir).canGenerateFrames) throw new Error('Сначала утвердите описание и план опор.');
     this.ensureNoPending(context);
-    const checked = checkFrameCandidates(images, context.framePrompts);
+    // Свои опоры можно добавить для любых ещё не утверждённых кадров; утверждённую сначала возвращают на доработку.
+    const open = context.framePrompts.filter((prompt) => !context.workflow?.keyframes?.some((frame) => frame.id === prompt.id && frame.approved));
+    const checked = checkFrameCandidates(images, open);
     const stored: Stored = {
       proposal: {
         id: randomUUID(),
@@ -770,6 +839,68 @@ export class ProductionWorkflow {
     const pending = this.read(context.project, context.shot);
     if (pending && ['running', 'ready'].includes(pending.proposal.status)) throw new Error('Сначала примените или отклоните текущее предложение.');
   }
+  /**
+   * Непринятые предложения по планам проекта для списка «Производства». Заодно удаляются записи, которые
+   * уже нельзя показать: план убран из реестра или стал производным, пакет предложения удалён.
+   */
+  pendingProposals(path: string): Record<string, ProductionProposalSummary> {
+    let project: string;
+    try {
+      project = realpathSync(path);
+    } catch {
+      return {};
+    }
+    const registry = json(join(project, 'plan/scenes.json'));
+    if (!record(registry) || !Array.isArray(registry.scenes)) return {};
+    const scenes = registry.scenes.filter((scene): scene is Record<string, unknown> => record(scene) && typeof scene.id === 'string');
+    const byFile = new Map(scenes.map((scene) => [`${digest(this.key(project, scene.id as string))}.json`, scene]));
+    const folder = join(this.options.localDir, 'production-workflow');
+    const result: Record<string, ProductionProposalSummary> = {};
+    for (const name of existsSync(folder) ? readdirSync(folder) : []) {
+      if (!name.endsWith('.json') || name.endsWith('-request.json')) continue;
+      let value: unknown;
+      try {
+        value = json(join(folder, name));
+      } catch {
+        continue;
+      }
+      // Записи других проектов не трогаем: проект указан в правилах предложения.
+      if (!record(value) || !record(value.rules) || value.rules.project !== project || !record(value.proposal)) continue;
+      const scene = byFile.get(name);
+      // Завершённое задание переводит предложение в итоговый статус только при чтении вида плана: обновляем его здесь,
+      // иначе ответ агента по плану, на который пользователь не возвращался, не попадёт в «Ждут вашего действия».
+      if (scene && value.proposal.status === 'running') {
+        try {
+          this.view(project, scene.id as string, typeof value.packageDir === 'string' ? value.packageDir : undefined);
+          value = json(join(folder, name));
+        } catch {
+          // Вид плана недоступен (например, реестр повреждён): запись остаётся как есть.
+        }
+        if (!record(value) || !record(value.proposal)) continue;
+      }
+      const status = String(value.proposal.status);
+      const packageDir = typeof value.packageDir === 'string' ? value.packageDir : null;
+      const target = typeof value.target === 'string' ? value.target : null;
+      const orphan =
+        !scene ||
+        !!derivedShotSource(project, scene) ||
+        (packageDir !== null && !existsSync(packageDir)) ||
+        (status === 'applied' && (!target || !existsSync(target)));
+      if (orphan) {
+        if (status !== 'running') rmSync(join(folder, name), { force: true });
+        continue;
+      }
+      if (status === 'ready' || status === 'invalid' || status === 'failed')
+        result[scene.id as string] = {
+          stage: value.proposal.stage as ProductionProposalSummary['stage'],
+          status,
+          stale: value.proposal.stale === true,
+          packageDir
+        };
+    }
+    return result;
+  }
+
   discard(project: string, shot: string, packageDir: string | undefined, id: string): ProductionWorkflowView {
     const context = this.context(project, shot, packageDir);
     const stored = this.read(context.project, shot);
@@ -868,6 +999,9 @@ export class ProductionWorkflow {
           }
           workflow.approved_frames = approved;
           workflow.description_approved = false;
+          // Новое описание построено по текущей постановке: пакет снова соответствует сценарию.
+          const currentScene = currentShotFingerprint(view.project, shot);
+          if (currentScene) workflow.scene_sha256 = currentScene;
           workflow.prompt = { path: 'video-prompt.txt', approved: false };
           workflow.request_dir = null;
           workflow.approved_prompt_sha256 = null;
@@ -876,7 +1010,11 @@ export class ProductionWorkflow {
           await ask('description_review');
         } else if (after.stage === 'frames') {
           for (const image of after.images) await run('shot_workflow', ['propose', '--dir', stored.target, image.id, image.path]);
-          await ask('keyframes_review');
+          // Вопрос задаётся о первом в плане неутверждённом кандидате; остальные получат свой после решения по нему.
+          const proposed = json(join(stored.target, 'workflow.json'));
+          const keyframes = record(proposed) && Array.isArray(proposed.keyframes) ? (proposed.keyframes as Frame[]) : [];
+          const first = keyframes.find((frame) => frame.path && !frame.approved);
+          if (first) await run('shot_workflow', ['ask', '--dir', stored.target, '--stage', 'keyframes_review', '--frame', first.id]);
         } else if (after.stage === 'prompt') {
           if (!approvedFrames(context)) throw new Error('Утверждённые опоры изменились.');
           writeFileSync(join(stored.target, 'video-prompt.txt'), after.prompt);

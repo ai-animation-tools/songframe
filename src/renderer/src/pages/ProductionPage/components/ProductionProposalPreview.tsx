@@ -1,11 +1,11 @@
 /** Предложение показывается отдельно от сохранённых материалов: завершение задания не означает согласование. */
-import type { ReactElement, ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { Alert, Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
 import type { AgentSettings } from '@shared/agents';
 import type { ProductionFramePrompt, ProductionProposal, ProductionRequestDraft } from '@shared/production-workflow';
 import { productionInputLabel } from '@shared/production-labels';
 import { mediaCommandLabel } from '@shared/media-providers';
-import { AgentIcon } from '../../../components';
+import { AgentIcon, ImageGallery, ImageThumbnail } from '../../../components';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import CheckIcon from '@mui/icons-material/Check';
 import { BUSY_REASON, PRODUCTION_PASS_LABELS, PRODUCTION_PROPOSAL_LABELS } from '../constants';
@@ -79,6 +79,27 @@ function Frames({ frames }: { frames: ProductionFramePrompt[] }): ReactElement {
   );
 }
 
+/** Кандидаты опор задания: подпись без пути файла, путь — в подсказке; щелчок открывает набор крупно. */
+function FrameCandidates({ images }: { images: { id: string; path: string }[] }): ReactElement {
+  const [active, setActive] = useState<number | null>(null);
+  const gallery = images.map((image) => ({ imagePath: image.path, label: `${image.id} · кандидат, не принят` }));
+  return (
+    <>
+      <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+        {gallery.map((image, index) => (
+          <Box key={image.imagePath} sx={{ width: 240, minWidth: 0 }}>
+            <ImageThumbnail path={image.imagePath} label={image.label} title={image.imagePath} dashed highlight="warning" onOpen={() => setActive(index)} />
+            <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+              {image.label}
+            </Typography>
+          </Box>
+        ))}
+      </Stack>
+      {active !== null ? <ImageGallery kind="Кандидат опоры" images={gallery} initialIndex={active} onClose={() => setActive(null)} /> : null}
+    </>
+  );
+}
+
 function RequestDraft({ request, videoProvider }: { request: ProductionRequestDraft; videoProvider: string | null }): ReactElement {
   return (
     <Stack spacing={1.5}>
@@ -142,6 +163,16 @@ function Current({ proposal }: { proposal: ProductionProposal }): ReactElement {
 
 function Proposed({ proposal, videoProvider }: { proposal: ProductionProposal; videoProvider: string | null }): ReactElement {
   const after = proposal.after;
+  if (!after && proposal.agentText && proposal.refused)
+    // Штатный отказ агента: его причина и есть объяснение, технической ошибки разбора здесь нет.
+    return (
+      <Stack spacing={1.5}>
+        <Typography variant="subtitle2">Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.</Typography>
+        <Section title="Причина отказа">
+          <Paragraphs text={proposal.agentText} />
+        </Section>
+      </Stack>
+    );
   if (!after && proposal.agentText)
     // Ответ агента не прошёл проверку: показываем, что он ответил, и почему приложение его отклонило.
     return (
@@ -264,22 +295,7 @@ export function ProductionProposalPreview({
         Применение сохраняет материалы для отдельного согласования; оно не принимает опоры, промпт или платную отправку.
       </Alert>
       {after?.stage === 'frames' ? (
-        <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
-          {after.images.map((image) => (
-            <Box key={image.id} sx={{ width: 240 }}>
-              <Box
-                component="img"
-                src={window.api.shell.fileUrl(image.path)}
-                alt={`Кандидат ${image.id}`}
-                sx={{ width: '100%', maxHeight: 180, objectFit: 'contain' }}
-              />
-              <Typography variant="caption">{image.id} · кандидат, не принят</Typography>
-              <Typography variant="caption" display="block" sx={{ overflowWrap: 'anywhere' }}>
-                {image.path}
-              </Typography>
-            </Box>
-          ))}
-        </Stack>
+        <FrameCandidates images={after.images} />
       ) : (
         <Box
           sx={{

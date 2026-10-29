@@ -11,6 +11,8 @@ import { JobStatus } from '../../../components/JobStatus';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON, PYTHON_REASON } from '../constants';
 import { DerivedShotNotice } from './DerivedShotNotice';
+import { LinkedText } from '../../../components/LinkedText';
+import { ShotPageButton } from '../../../components/ShotPageButton';
 
 export function ProductionShotCard({
   shot,
@@ -62,6 +64,12 @@ export function ProductionShotCard({
         <Box sx={{ mt: 1.5 }}>
           <DerivedShotNotice source={shot.derivedFrom} />
         </Box>
+      ) : null}
+      {/* Статус задаёт главный процесс по отпечатку постановки; комплект остаётся доступен для просмотра. */}
+      {shot.state === 'stale' ? (
+        <Alert severity="info" sx={{ mt: 1.5 }}>
+          <LinkedText text="Постановка плана изменилась после приёмки: комплект в assets принят по прежней постановке. Подготовьте новое производство в блоке «Подготовка плана» и примите новый результат." />
+        </Alert>
       ) : null}
       {broken.map((item) => (
         <Alert
@@ -126,9 +134,9 @@ export function ProductionShotCard({
           </Box>
         </Box>
       ) : null}
-      {/* Действие блока внизу слева, того же вида, что ряд подготовки плана; результат — сразу под ним, причина недоступности — в подсказке кнопки. */}
-      {shot.state === 'completed' || shot.packages.length ? (
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
+      {/* Действия блока внизу слева, того же вида, что ряд подготовки плана; результат — сразу под ним, причина недоступности — в подсказке кнопки. */}
+      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center" sx={{ mt: 2 }}>
+        {shot.state === 'completed' || shot.packages.length ? (
           <ActionButton
             startIcon={<ReplayIcon />}
             title="Создать новую попытку по сохранённому запросу без отправки и оплаты"
@@ -138,8 +146,10 @@ export function ProductionShotCard({
           >
             Подготовить повтор
           </ActionButton>
-        </Stack>
-      ) : null}
+        ) : null}
+        {/* Постановку плана правят в реестре сцен; переход открывает её редактор у этого же плана. */}
+        <ShotPageButton page="scenario" shot={shot.id} size="medium" />
+      </Stack>
       <JobStatus {...operation} />
     </Paper>
   );

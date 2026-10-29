@@ -15,7 +15,7 @@ import re
 from copy import deepcopy
 from decimal import Decimal
 
-from tools.common import ROOT
+from tools.common import ROOT, write_json_atomic
 
 
 def validate_project(data, *, validate_generation=True):
@@ -277,6 +277,112 @@ def scene_fingerprint(data, sid, initial=None):
     return hashlib.sha256(
         json.dumps(context, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
     ).hexdigest()
+
+
+def scene_fingerprints(data, initial=None):
+    """Отпечатки всех планов за одно вычисление состояния; значения совпадают со scene_fingerprint."""
+    validate(data, initial)
+    states = _resolve_states(data, initial)
+    directions = {s["id"]: s.get("direction", "") for s in data["sequences"]}
+    result = {}
+    for scene in data["scenes"]:
+        context = {
+            "scene": scene,
+            "sequence_direction": directions[scene["sequence"]],
+            "visual_direction": data.get("visual_direction", ""),
+            "state": states[scene["id"]],
+        }
+        result[scene["id"]] = hashlib.sha256(
+            json.dumps(context, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+        ).hexdigest()
+    return result
+
+
+# Принятие плана привязано к постановке: отпечаток хранится в plan/production-status.json → shots.
+# То же правило повторяет главный процесс приложения; @link README.md#принятие-планов
+PRODUCTION_STATUS = "plan/production-status.json"
+SHA256 = re.compile(r"[0-9a-f]{64}")
+# Содержимое нового файла совпадает с шаблоном проекта, если файла ещё нет.
+EMPTY_PRODUCTION_STATUS = {
+    "schema_version": 1,
+    "current_animatic": None,
+    "current_animatic_status": "none",
+    "shots": {},
+}
+
+
+def read_production_status(root=ROOT):
+    """Объект plan/production-status.json; отсутствующий файл — None, повреждённый — ValueError."""
+    path = Path(root) / PRODUCTION_STATUS
+    try:
+        status = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError) as error:
+        raise ValueError(f"Не удалось прочитать {PRODUCTION_STATUS}: {error}") from None
+    if not isinstance(status, dict):
+        raise ValueError(f"{PRODUCTION_STATUS} должен быть объектом.")
+    return status
+
+
+def accepted_fingerprints(status):
+    """Отпечатки постановки, по которым приняты комплекты: {Mxx: sha}; без поля shots — пусто."""
+    shots_field = (status or {}).get("shots", {})
+    if not isinstance(shots_field, dict):
+        raise ValueError(f'{PRODUCTION_STATUS}: shots должен быть объектом {{"Mxx": {{"scene_sha256": "..."}}}}.')
+    result = {}
+    for sid, entry in shots_field.items():
+        digest = entry.get("scene_sha256") if isinstance(entry, dict) else None
+        if not SHOT_ID.fullmatch(sid) or not isinstance(digest, str) or not SHA256.fullmatch(digest):
+            raise ValueError(f"{PRODUCTION_STATUS}: shots.{sid} должен содержать scene_sha256 из 64 hex-символов.")
+        result[sid] = digest
+    return result
+
+
+def with_accepted_fingerprints(status, updates):
+    """Копия статуса с новыми отпечатками принятых планов; прочие поля и записи других планов сохраняются."""
+    result = deepcopy(status) if status is not None else deepcopy(EMPTY_PRODUCTION_STATUS)
+    accepted_fingerprints(result)
+    shots_field = dict(result.get("shots", {}))
+    for sid, digest in updates.items():
+        if not SHOT_ID.fullmatch(sid) or not isinstance(digest, str) or not SHA256.fullmatch(digest):
+            raise ValueError(f"{sid}: неверный отпечаток постановки {digest!r}.")
+        shots_field[sid] = {**shots_field.get(sid, {}), "scene_sha256": digest}
+    # Порядок по монтажному номеру, как у записи главного процесса: файл не перестраивается от записи к записи.
+    result["shots"] = dict(sorted(shots_field.items(), key=lambda item: float(item[0][1:])))
+    return result
+
+
+def write_accepted_fingerprints(root, updates):
+    """Атомарно записывает отпечатки принятых планов в plan/production-status.json."""
+    root = Path(root)
+    write_json_atomic(root / PRODUCTION_STATUS, with_accepted_fingerprints(read_production_status(root), updates))
+
+
+def shot_acceptance(data, kits, accepted, initial=None):
+    """Состояние планов с комплектом: completed по текущей постановке или stale после её изменения.
+
+    `kits` — планы с assets/shots/Mxx/manifest.json, `accepted` — результат accepted_fingerprints.
+    Производный план устаревает и вместе со своим источником; цепочки derived_from запрещены реестром.
+    """
+    current = scene_fingerprints(data, initial)
+    result = {
+        sid: "completed" if accepted.get(sid) == digest else "stale" for sid, digest in current.items() if sid in kits
+    }
+    for scene in data["scenes"]:
+        source = (scene.get("derived_from") or {}).get("shot")
+        if result.get(scene["id"]) == "completed" and result.get(source) == "stale":
+            result[scene["id"]] = "stale"
+    return result
+
+
+def project_shot_acceptance(root=ROOT, data=None):
+    """shot_acceptance по файлам проекта: комплекты в assets/shots и отпечатки из production-status."""
+    root = Path(root)
+    data = load(root) if data is None else data
+    kits = {s["id"] for s in data["scenes"] if (root / "assets/shots" / s["id"] / "manifest.json").is_file()}
+    accepted = accepted_fingerprints(read_production_status(root))
+    return shot_acceptance(data, kits, accepted, initial_states_for(root))
 
 
 def load(root=ROOT):

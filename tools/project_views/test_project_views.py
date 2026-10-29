@@ -95,6 +95,21 @@ class RoadmapTests(unittest.TestCase):
         self.assertNotIn("[Решение](", roadmap)
         self.assertFalse(any(path.startswith("assets/") and "approval" in path for path in sources.inputs))
 
+    def test_edited_direction_marks_accepted_shot_as_changed_not_ready(self):
+        # Комплект остаётся материалом сборки, но после правки постановки план не считается готовым.
+        sources = Sources()
+        read_json = sources.json
+        scenes = read_json("plan/scenes.json")
+        next(s for s in scenes["scenes"] if s["id"] == "M02")["action"] = "Новое действие после приёмки"
+        sources.json = lambda name: scenes if name == "plan/scenes.json" else read_json(name)
+        roadmap = render(sources)
+        row = next(line for line in roadmap.splitlines() if line.startswith("| **M02**"))
+        self.assertIn("**Постановка изменена**", row)
+        self.assertIn("assets/shots/M02/manifest.json", row)
+        self.assertIn("| Постановка изменена | 1 | 20,0% |", roadmap)
+        self.assertIn("готовы 1.", roadmap)
+        self.assertNotIn("Постановка изменена", render(Sources()))
+
     def test_current_edit_includes_fractional_shot_and_new_intro_links(self):
         # Реальная таблица должна целиком попадать в сводку; собственные
         # разделы вступления важнее чисел из ссылок на использованный материал.

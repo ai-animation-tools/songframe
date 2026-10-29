@@ -10,7 +10,7 @@
 | Разметить песню | «Тайминги» | [plan/audio](plan/README.md) |
 | Собрать кастинг и сценарий | «Кастинг» · «Сценарий» | `plan/cast.json` · `plan/treatment.json` · `plan/scenes.json` |
 | Подготовить и сгенерировать сцену, продолжить отложенную генерацию | «Производство» | [Очередь пакетов](plan/awaiting/README.md) · `plan/batches` |
-| Понять следующий шаг | «Проект» · «Проверки» → «Статусы планов» | `workflow.json` пакетов в `plan/batches` и [очереди](plan/awaiting/README.md), комплекты `assets/shots/Mxx`; принятие аниматика — [plan/production-status.json](plan/production-status.json) |
+| Понять следующий шаг | «Проект» · «Проверки» → «Статусы планов» | `workflow.json` пакетов в `plan/batches` и [очереди](plan/awaiting/README.md), комплекты `assets/shots/Mxx`; принятие планов по текущей постановке и принятие аниматика — [plan/production-status.json](plan/production-status.json) |
 | Найти выбранный ролик, кадры или речевое аудио | «Сцены» | **[Каталог материалов](assets/README.md)**: папка на план |
 | Посмотреть и принять полный монтаж | «Аниматик» | [Последняя полная сборка](plan/animatic/latest/README.md) · [правила сборки](plan/animatic/README.md) |
 | Интервалы и действия | «Сцены» | [Монтажный список](plan/edit-list.md) · [Раскадровка](plan/storyboard.md) |
@@ -34,7 +34,7 @@
 | Общие изображения персонажей, транспорта, локаций и их исходные промпты | Только [source](source/README.md); в assets ссылки с `root: "source"` и SHA-256 |
 | Оригинал, принятый монтаж, кадры, промпт, WAV и рецепт обработки сцены | `assets/shots/Mxx/manifest.json` по [контракту assets](assets/README.md#локальный-манифест-и-воспроизведение) |
 | Незавершённая работа над планом | `workflow.json` его пакета в `plan/batches` или [plan/awaiting/Mxx](plan/awaiting/README.md) |
-| Состояние просмотра и принятия полной сборки | [plan/production-status.json](plan/production-status.json) |
+| Состояние просмотра и принятия полной сборки; отпечаток постановки, по которой принят каждый комплект (`shots`) | [plan/production-status.json](plan/production-status.json) |
 | Речевые и музыкальные оценки | `plan/audio/timing.json`; монтажные окна они не задают |
 | Отложенные запросы и рабочие пакеты | [plan/awaiting/Mxx](plan/awaiting/README.md) и `plan/batches` |
 | Последняя полная сборка | [plan/animatic/latest](plan/animatic/latest/README.md); её манифест снимок сборки, не источник постановки |
@@ -51,7 +51,7 @@ plan/project.json             Название проекта, имя MP4 ани
 plan/cast.json                Кастинг: сущности, изображения, роль, внешность, начальное состояние
 plan/treatment.json           Трактовка первого прохода сценария
 plan/scenes.json              Постановка и единая монтажная шкала
-plan/production-status.json   Состояние просмотра и принятия полной сборки
+plan/production-status.json   Принятие полной сборки и отпечатки постановки принятых планов
 plan/animatic/latest/         Единственная последняя полная сборка
 plan/animatic/cards/          Производные карточки незавершённых сцен
 plan/animatic/.cache/         Необязательный кэш сборки, вне Git

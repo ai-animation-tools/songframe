@@ -1,5 +1,6 @@
 /** Общие типы главного процесса и рендерера: состояние приложения, проект, исходники, среда. */
 import type { MediaModelSelection } from './media-providers';
+import type { ProductionProposalSummary } from './production-workflow';
 import type { WhisperModelId } from './whisper-models';
 import type { FPS } from './video';
 
@@ -377,17 +378,59 @@ export interface ScenarioView {
   problems: string[];
 }
 
+/** Где задано значение состояния: начальное состояние кастинга или изменение плана в его фазе. */
+export type StateSource = { kind: 'cast' } | { kind: 'plan'; shot: string; phase: 'before' | 'after' };
+
 export interface BriefResult {
   shot: string;
   phase: 'before' | 'after';
   state: EntityState;
+  /** Источник каждого значения state: по нему интерфейс ведёт к месту правки. */
+  sources: Record<string, Record<string, StateSource>>;
+  /** Подписи свойств из словаря кастинга или набора по умолчанию — те же, что в тексте врезки. */
+  labels: Record<string, Record<string, string>>;
+  /** Состояние до правок этого блока плана: для первого кадра — унаследованное, для итога — первый кадр. */
+  inherited: EntityState;
   paragraph: string;
   checklist: string[];
   text: string;
 }
 
-/** Производство: completed означает приёмку; доступность монтажного файла отражена в asset.video. */
-export type ShotProductionState = 'planned' | 'progress' | 'completed' | 'unknown';
+/**
+ * Производство: completed означает приёмку по текущей постановке, stale — комплект принят по прежней постановке
+ * и требует нового производства; доступность монтажного файла отражена в asset.video.
+ */
+export type ShotProductionState = 'planned' | 'progress' | 'completed' | 'stale' | 'unknown';
+
+/** Как сохранять реестр: изменение постановки требует нового производства либо принятые материалы остаются в силе. */
+export type ScenesSaveMode = 'production' | 'keep';
+
+/** План, чей отпечаток постановки меняет черновик реестра. */
+export interface ScenarioImpactShot {
+  id: string;
+  /** Причина по формальным связям: своя постановка, границы, унаследованное состояние, правила части, источник. */
+  reason: string;
+  state: ShotProductionState;
+  /** Есть принятый комплект или пакет плана: только для них изменение означает новое производство. */
+  produced: boolean;
+}
+
+export interface ScenarioSaveImpact {
+  /** Затронутые планы в порядке реестра; пусто, если постановка ни одного плана не меняется. */
+  shots: ScenarioImpactShot[];
+}
+
+/** frame — только эта опора; following — эта и все следующие генерации опор пакета. */
+export type KeyframeNoteScope = 'frame' | 'following';
+
+export interface KeyframeNote {
+  id: number;
+  frame: string | null;
+  note: string;
+  scope: KeyframeNoteScope;
+  active: boolean;
+  at?: string;
+}
 
 export interface PackageKeyframe {
   id: string;
@@ -468,8 +511,13 @@ export interface PackageView {
   } | null;
   /** Речевой план: подготовленный точный WAV пакета или null. */
   speech?: PackageSpeech | null;
-  pendingDecision: { stage: string; question: string; options: string[]; asked_at?: string } | null;
+  /** frame — вопрос о конкретной опоре: опоры создаются и согласуются по одной. */
+  pendingDecision: { stage: string; question: string; options: string[]; asked_at?: string; frame?: string } | null;
   decision: { stage: string; verdict: string | null; note?: string; at?: string } | null;
+  /** Замечания к опорам пакета: учитываются при генерации этой опоры или и следующих. */
+  keyframeNotes: KeyframeNote[];
+  /** Постановка плана изменилась после подготовки пакета: отправка и согласования заблокированы до решения пользователя. */
+  sceneChanged: boolean;
   /** Файлы технической сводки (контактный лист, превью), если она уже сделана. */
   preview: string[];
   problems: string[];
@@ -493,6 +541,8 @@ export interface ShotProduction {
   /** Принятые материалы в assets: пути только к существующим файлам видео и оригинала. */
   asset: { dir: string; video: string | null; original: string | null } | null;
   packages: PackageView[];
+  /** Предложение агента, которое ещё не применено и не отклонено; null — такого нет. */
+  proposal?: ProductionProposalSummary | null;
 }
 
 /** Папка в plan/awaiting или plan/batches без читаемого workflow.json: приложение её не ведёт, но она мешает очереди. */
@@ -814,6 +864,6 @@ export interface DashboardShot {
 
 export interface DashboardView {
   shots: DashboardShot[];
-  summary: { total: number; completed: number; progress: number; planned: number; duration: number; completedSeconds: number };
+  summary: { total: number; completed: number; stale: number; progress: number; planned: number; duration: number; completedSeconds: number };
   problems: string[];
 }

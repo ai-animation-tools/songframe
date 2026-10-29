@@ -154,6 +154,19 @@ function normalizeInputs(rules: PaidRequestRules, input: PreparePaidInput, model
   });
 }
 
+/** Пропорции начального кадра должны совпадать с настройкой проекта «W:H», иначе ролик выйдет другого формата. */
+function frameMatchesProject(path: string, name: string, expected: unknown): void {
+  const ratio = typeof expected === 'string' ? /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(expected.trim()) : null;
+  if (!ratio) return;
+  const size = imageDimensions(path);
+  if (!size) throw new Error(`Начальный кадр не прочитан как изображение: ${path}`);
+  const wanted = Number(ratio[1]) / Number(ratio[2]);
+  if (Math.abs(size.width / size.height - wanted) / wanted > 0.01)
+    throw new Error(
+      `Начальный кадр ${size.width}×${size.height} не совпадает с пропорциями проекта ${expected} (${name}); ролик вышел бы другого формата. Используйте опору с пропорциями ${expected}.`
+    );
+}
+
 /** Значения ограничений берутся только из переданного snapshot; названия моделей не подменяются алиасами. */
 function validatePaid(
   rules: PaidRequestRules,
@@ -187,8 +200,14 @@ function validatePaid(
     if (rules.outputCount.includes(name) && String(value) !== String(input.outputs))
       throw new Error('Число outputs отличается от параметра количества изображений.');
   }
+  const frame = rules.frameDefined ? inputs.find((item) => item.flag === 'input' && rules.frameDefined!.slots.test(item.slot ?? '')) : undefined;
   for (const [supplied, expected] of Object.entries(input.requiredParameters ?? {})) {
     const name = argumentName(model.arguments, supplied);
+    // Параметр, который задаёт переданный начальный кадр, можно опустить: тогда с настройкой сверяется сам кадр.
+    if (name && frame && parameters[name] === undefined && rules.frameDefined!.parameters.includes(name)) {
+      frameMatchesProject(resolve(input.project, frame.path), name, expected);
+      continue;
+    }
     if (name && parameters[name] !== expected)
       throw new Error(`Параметр ${name}=${JSON.stringify(parameters[name])} должен совпадать с настройкой проекта ${JSON.stringify(expected)}.`);
   }

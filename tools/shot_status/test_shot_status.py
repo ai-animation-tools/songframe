@@ -12,7 +12,7 @@ import json
 import tempfile
 import unittest
 
-from tools.scene_registry.scene_registry import load
+from tools.scene_registry.scene_registry import load, scene_fingerprints
 from tools.shot_status import shot_status as tool
 
 
@@ -58,17 +58,13 @@ class ShotStatusTests(unittest.TestCase):
                 scene("M06", 450, 540, "M05", {}),
             ],
         }
+        self.registry = registry
         self.write("plan/scenes.json", registry)
         self.write("plan/project.json", {"schema_version": 1, "name": "Тест", "animatic_video": "test.mp4"})
-        self.write(
-            "plan/production-status.json",
-            {
-                "schema_version": 1,
-                "current_animatic": None,
-                "current_animatic_status": "none",
-            },
-        )
+        # Кастинга нет: начальное состояние пустое. M01 принят по текущей постановке, у M05 отпечатка нет.
+        self.accept_current("M01")
         self.write("assets/shots/M01/manifest.json", {"schema_version": 1, "shot": "M01"})
+        self.write("assets/shots/M05/manifest.json", {"schema_version": 1, "shot": "M05"})
         self.write(
             "plan/awaiting/M02/workflow.json",
             {
@@ -77,6 +73,7 @@ class ShotStatusTests(unittest.TestCase):
                 "stage": "ready",
                 "wait_reason": "insufficient_balance",
                 "request_dir": "request",
+                "keyframe_notes": [],
             },
         )
         self.write("plan/awaiting/M02/request/attempt.json", {"status": "prepared", "request_sha256": "x"})
@@ -87,6 +84,18 @@ class ShotStatusTests(unittest.TestCase):
         )
         (self.root / "plan/awaiting/M06").mkdir()
         (self.root / "plan/awaiting/M06/workflow.json").write_text("{повреждено", encoding="utf-8")
+
+    def accept_current(self, *ids):
+        fingerprints = scene_fingerprints(self.registry, {})
+        self.write(
+            "plan/production-status.json",
+            {
+                "schema_version": 1,
+                "current_animatic": None,
+                "current_animatic_status": "none",
+                "shots": {sid: {"scene_sha256": fingerprints[sid]} for sid in ids},
+            },
+        )
 
     def write(self, name, value):
         path = self.root / name
@@ -105,7 +114,8 @@ class ShotStatusTests(unittest.TestCase):
         self.assertEqual(rows["M03"]["stage"], "генерируется")
         self.assertEqual(rows["M04"]["status"], "planned")
         self.assertEqual(rows["M04"]["notes"], ["проба: plan/batches/M03-review/review.json"])
-        self.assertEqual(rows["M05"]["status"], "planned")
+        self.assertEqual(rows["M05"]["status"], "stale")
+        self.assertEqual(rows["M05"]["stage"], "постановка изменена после приёмки: нужно новое производство")
         self.assertEqual(rows["M06"]["status"], "unknown")
         self.assertEqual(result["queue"], ["M02", "M06"])
         self.assertEqual(result["next"], "M02")
@@ -118,11 +128,48 @@ class ShotStatusTests(unittest.TestCase):
         self.assertEqual(rows["M01"]["status"], "completed")
         self.assertIn("batch: plan/batches/M01-attempt-02 (результат получен, ожидает просмотра)", rows["M01"]["notes"])
 
+    def test_action_edit_makes_accepted_shot_stale_and_next_candidate(self):
+        self.accept_current("M01", "M05")
+        result, rows = self.rows()
+        self.assertEqual((rows["M01"]["status"], rows["M05"]["status"]), ("completed", "completed"))
+        self.registry["scenes"][0]["action"] = "другое действие"
+        self.write("plan/scenes.json", self.registry)
+        result, rows = self.rows()
+        self.assertEqual((rows["M01"]["status"], rows["M01"]["label"]), ("stale", "постановка изменена"))
+        self.assertEqual(result["next"], "M01")
+        # Действие не входит в унаследованное состояние: отпечаток M05 и его принятие не меняются.
+        self.assertEqual(rows["M05"]["status"], "completed")
+        text = tool.table(result, "stale")
+        self.assertIn("| M01 |", text)
+        self.assertNotIn("| M05 |", text)
+        self.assertIn("постановка изменена: 1", text)
+
+    def test_derived_shot_is_stale_while_its_source_is_stale(self):
+        self.registry["scenes"][3]["derived_from"] = {"shot": "M01"}
+        self.write("plan/scenes.json", self.registry)
+        self.write("assets/shots/M04/manifest.json", {"schema_version": 1, "shot": "M04"})
+        self.accept_current("M01", "M04")
+        _, rows = self.rows()
+        self.assertEqual((rows["M01"]["status"], rows["M04"]["status"]), ("completed", "completed"))
+        # Правка камеры M01 не входит в состояние M04, но материал M04 взят из устаревшего M01.
+        self.registry["scenes"][0]["camera"] = "наезд"
+        self.write("plan/scenes.json", self.registry)
+        _, rows = self.rows()
+        self.assertEqual((rows["M01"]["status"], rows["M04"]["status"]), ("stale", "stale"))
+        self.assertEqual(rows["M04"]["stage"], "постановка M01 изменена после приёмки: нужно новое производство")
+
     def test_fresh_package_without_request_dir_is_in_progress_not_a_crash(self):
         # shot_workflow init пишет request_dir: null до заморозки запроса; статус берётся из stage.
         self.write(
             "plan/batches/M04-attempt-01/workflow.json",
-            {"schema_version": 1, "shot": "M04", "stage": "keyframes_review", "request_dir": None, "keyframes": []},
+            {
+                "schema_version": 1,
+                "shot": "M04",
+                "stage": "keyframes_review",
+                "request_dir": None,
+                "keyframes": [],
+                "keyframe_notes": [],
+            },
         )
         _, rows = self.rows()
         self.assertEqual(
@@ -140,6 +187,7 @@ class ShotStatusTests(unittest.TestCase):
                     "request_dir": None,
                     "image_request_dir": "image-01",
                     "image_frame_id": "K01",
+                    "keyframe_notes": [],
                 },
             )
             _, rows = self.rows()

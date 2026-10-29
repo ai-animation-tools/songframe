@@ -1,7 +1,7 @@
 {
   "title": "workflow.json — текущее состояние подготовки пакета плана",
   "type": "object",
-  "required": ["schema_version", "shot", "stage"],
+  "required": ["schema_version", "shot", "stage", "keyframe_notes"],
   "properties": {
     "schema_version": {"const": 1},
     "shot": {"type": "string", "pattern": "^M\\d{2}(\\.\\d+)?$"},
@@ -28,6 +28,11 @@
                      "time_seconds": {"type": "number", "minimum": 0}, "note": {"type": ["string", "null"]},
                      "path": {"type": ["string", "null"]}, "sha256": {"type": ["string", "null"]}, "approved": {"type": "boolean"}}}},
     "approved_frames": {"type": "object"},
+    "keyframe_notes": {"type": "array", "items": {
+      "type": "object", "required": ["id", "frame", "note", "scope", "active", "at"],
+      "properties": {"id": {"type": "integer", "minimum": 1}, "frame": {"type": ["string", "null"], "pattern": "^K\\d{2}$"},
+                     "note": {"type": "string", "minLength": 1, "pattern": "\\S"}, "scope": {"enum": ["frame", "following"]},
+                     "active": {"type": "boolean"}, "at": {"type": "string"}}}},
     "approved_prompt_sha256": {"type": ["string", "null"]},
     "prompt": {"type": "object"},
     "retry_of": {"type": ["string", "null"]},
@@ -37,7 +42,7 @@
     "batch": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9_.-]{1,40}$"},
     "pending_decision": {"type": ["object", "null"], "required": ["stage", "question", "options"],
       "properties": {"stage": {"type": "string"}, "question": {"type": "string"}, "options": {"type": "array", "items": {"type": "string"}},
-                     "asked_at": {"type": "string"}}},
+                     "asked_at": {"type": "string"}, "frame": {"type": "string", "pattern": "^K\\d{2}$"}}},
     "decision": {"type": ["object", "null"], "required": ["stage", "verdict"],
       "properties": {"stage": {"type": "string"}, "verdict": {"type": ["string", "null"]}, "note": {"type": "string"}, "at": {"type": "string"}}}
   }

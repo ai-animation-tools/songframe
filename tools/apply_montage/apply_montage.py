@@ -18,7 +18,16 @@ from tools.accept_shot.accept_shot import AUDIO_POLICY, REBUILD_NOTE, descriptor
 from tools.asset_package.asset_package import descriptor_file, local_file, validate_package
 from tools.build_review.build_review import integer, prepare, probe, run
 from tools.common import ROOT, TOOLS_ROOT, sha
-from tools.scene_registry.scene_registry import load, validate
+from tools.scene_registry.scene_registry import (
+    PRODUCTION_STATUS,
+    accepted_fingerprints,
+    initial_states_for,
+    load,
+    read_production_status,
+    scene_fingerprints,
+    validate,
+    with_accepted_fingerprints,
+)
 
 HISTORY = "plan/montage-history"
 
@@ -281,10 +290,26 @@ def publish_file(source, target):
         target.unlink(missing_ok=True)
 
 
+def carried_acceptance(root, candidate, shots):
+    """Новый статус производства, если перенос границ меняет отпечатки актуальных планов, иначе None.
+
+    Граница плана входит в его постановку. Монтаж переносит принятие только тем планам, что были приняты
+    по текущей постановке: прежняя сюжетная правка не должна «прощаться» ручным монтажом.
+    """
+    status = read_production_status(root)
+    accepted = accepted_fingerprints(status)
+    initial = initial_states_for(root)
+    before, after = scene_fingerprints(load(root), initial), scene_fingerprints(candidate, initial)
+    updates = {sid: after[sid] for sid in shots if accepted.get(sid) == before[sid] != after[sid]}
+    return with_accepted_fingerprints(status, updates) if updates else None
+
+
 def apply(draft, root=ROOT, update_views=True):
     root = Path(root).resolve()
     recover(root)
     candidate, packages, plan = prepare_draft(draft, root)
+    status_sha = digest_or_none(root / PRODUCTION_STATUS)
+    status = carried_acceptance(root, candidate, packages)
     transaction = uuid4().hex
     directory = root / HISTORY / transaction
     directory.mkdir(parents=True)
@@ -298,6 +323,9 @@ def apply(draft, root=ROOT, update_views=True):
         # При неизменных границах сохраняются даже форматирование и SHA реестра.
         if candidate != load(root):
             replace_bytes(stage / "plan/scenes.json", json_bytes(candidate))
+        # Статус пишется до обновления представлений: ROADMAP показывает принятие по новым границам.
+        if status is not None:
+            replace_bytes(stage / PRODUCTION_STATUS, json_bytes(status))
         version = run(["ffmpeg", "-version"]).decode().splitlines()[0]
         for clip, item in zip(draft["clips"], plan["shots"]):
             sid = clip["scene"]
@@ -326,7 +354,7 @@ def apply(draft, root=ROOT, update_views=True):
                 cwd=TOOLS_ROOT,
                 capture_output=True,
             )
-        names = {"plan/scenes.json"} | {f"assets/shots/{sid}/manifest.json" for sid in packages}
+        names = {"plan/scenes.json", PRODUCTION_STATUS} | {f"assets/shots/{sid}/manifest.json" for sid in packages}
         if update_views:
             names |= view_paths(stage, root)
         for name in sorted(names):
@@ -341,6 +369,8 @@ def apply(draft, root=ROOT, update_views=True):
         # Все входы сверяются после render и непосредственно перед первой записью
         # выбранного состояния: устаревший черновик не затронет ни одного соседа.
         assert_baseline(draft, root)
+        if digest_or_none(root / PRODUCTION_STATUS) != status_sha:
+            raise ValueError("Статус производства изменился во время монтажа. Повторите применение.")
         for sid in packages:
             validate_package(root / "assets/shots" / sid / "manifest.json", sid, root)
         for item in [*plan["shots"], plan["audio"]]:

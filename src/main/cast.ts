@@ -191,11 +191,17 @@ export function normalizeCast(value: unknown, toolsRoot: string | null): CastFil
           typeof p.key === 'string' &&
           SLUG.test(p.key) &&
           typeof p.label === 'string' &&
+          !!p.label.trim() &&
           (p.hint === undefined || typeof p.hint === 'string') &&
+          (p.values === undefined || (Array.isArray(p.values) && p.values.every((item) => typeof item === 'string'))) &&
           (p.checklist === undefined || typeof p.checklist === 'string')
       )
     )
       throw new Error('cast.json: неверный словарь свойств.');
+    // Код — адрес значения в состоянии: повтор внутри типа сделал бы одно из полей недостижимым.
+    const keys = properties.map((p) => (p as { key: string }).key);
+    const duplicate = keys.find((key, index) => keys.indexOf(key) !== index);
+    if (duplicate) throw new Error(`cast.json: свойство ${duplicate} повторяется в словаре типа ${kind}.`);
   }
   const cast = value as unknown as CastFile;
   const normalized = ensureProperties(

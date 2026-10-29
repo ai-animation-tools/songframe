@@ -1,13 +1,15 @@
 import { type ReactElement, useState } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
-import { ScenarioToolbar, TreatmentEditor, SceneRegistry } from './components';
+import { ScenarioToolbar, ScenesSaveDialog, TreatmentEditor, SceneRegistry } from './components';
 import { useScenario } from './useScenario';
 import { useScenarioWorkflow } from './useScenarioWorkflow';
 import { ScenarioWorkflowPanel } from './components/ScenarioWorkflowPanel';
 import { PageActionBar } from '../../components/PageActionBar';
+import { useStickyTop } from '../../hooks/useStickyTop';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { LinkedText } from '../../components/LinkedText';
+import { unsavedDraftsReason } from './shotNavigation';
 
 /** Сценарий связывает независимые черновики трактовки и реестра с их редакторами. */
 export function ScenarioPage(): ReactElement {
@@ -26,6 +28,9 @@ export function ScenarioPage(): ReactElement {
     setScenes,
     selected,
     setSelected,
+    revealShot,
+    clearReveal,
+    openShotState,
     problems,
     brief,
     busy,
@@ -40,12 +45,17 @@ export function ScenarioPage(): ReactElement {
     updatePart,
     saveTreatment,
     saveScenes,
+    saveRequest,
+    confirmSaveScenes,
+    cancelSaveScenes,
+    keepUseless,
     scaffold,
-    copy,
     scaffoldProblem,
     notify
   } = scenario;
 
+  // Отступ закреплённого списка планов: шапка, панель действий и зазор сетки.
+  const { barRef, stickyTop } = useStickyTop([view]);
   // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
   usePageLoading(!view && !loadError);
   if (loadError)
@@ -65,7 +75,7 @@ export function ScenarioPage(): ReactElement {
 
   return (
     <Stack spacing={2} inert={busy || undefined} aria-busy={busy} sx={{ width: '100%', minWidth: 0, pb: 8 }}>
-      <PageActionBar>
+      <PageActionBar barRef={barRef}>
         <ScenarioToolbar
           tab={tab}
           onTabChange={setTab}
@@ -82,9 +92,11 @@ export function ScenarioPage(): ReactElement {
           partsFromTiming={partsFromTiming}
           saveTreatment={saveTreatment}
           saveScenes={saveScenes}
+          keepUseless={keepUseless}
           scaffold={scaffold}
         />
       </PageActionBar>
+      <ScenesSaveDialog request={saveRequest} busy={busy} onConfirm={() => void confirmSaveScenes()} onClose={cancelSaveScenes} />
       {view.problems.length ? (
         <Alert severity="warning">
           <LinkedText text={view.problems.join(' ')} />
@@ -103,7 +115,7 @@ export function ScenarioPage(): ReactElement {
         onResolveDrafts={scenario.resolveWorkflowDrafts}
       />
       {workflow.busy && (
-        <Alert severity="info">
+        <Alert severity="warning">
           {/* Блокировка держится и пока готовое предложение ждёт решения, а не только во время работы агента. */}
           {workflow.view?.proposal?.status === 'ready'
             ? 'Предложение агента ждёт решения. Редактирование приостановлено, пока вы не примените или не отклоните его.'
@@ -115,18 +127,23 @@ export function ScenarioPage(): ReactElement {
           <TreatmentEditor treatment={treatment} setTreatment={setTreatment} entityOptions={entityOptions} duration={duration} updatePart={updatePart} />
         ) : scenes ? (
           <SceneRegistry
+            stickyTop={stickyTop}
             scenes={scenes}
             setScenes={setScenes}
             selected={selected}
             setSelected={setSelected}
+            revealShot={revealShot}
+            onRevealed={clearReveal}
+            onOpenShotState={openShotState}
+            leaveReason={unsavedDraftsReason(treatmentDirty, scenesDirty)}
             showGlobal={showGlobal}
             problems={problems}
             duration={duration}
             brief={brief}
+            cast={cast}
             entityOptions={entityOptions}
             referenceOptions={referenceOptions}
             propertiesOf={propertiesOf}
-            copy={copy}
             notify={notify}
           />
         ) : (

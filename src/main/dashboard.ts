@@ -113,7 +113,7 @@ export function viewDashboard(project: string, toolsRoot: string | null): Dashbo
   if (!scenes)
     return {
       shots: [],
-      summary: { total: 0, completed: 0, progress: 0, planned: 0, duration: 0, completedSeconds: 0 },
+      summary: { total: 0, completed: 0, stale: 0, progress: 0, planned: 0, duration: 0, completedSeconds: 0 },
       problems: ['Сначала нужен сценарий. Создайте его на странице «Сценарий».']
     };
   // Частота кадров принадлежит реестру сцен (schema требует 30), приложение её не выбирает и не хранит отдельно.
@@ -196,6 +196,7 @@ export function viewDashboard(project: string, toolsRoot: string | null): Dashbo
   const summary = {
     total: shots.length,
     completed: shots.filter((s) => s.state === 'completed').length,
+    stale: shots.filter((s) => s.state === 'stale').length,
     progress: shots.filter((s) => s.state === 'progress' || s.state === 'unknown').length,
     planned: shots.filter((s) => s.state === 'planned').length,
     duration,

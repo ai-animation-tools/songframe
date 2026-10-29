@@ -2,6 +2,7 @@
 import type { ReactElement } from 'react';
 import { Alert, Link } from '@mui/material';
 import { Link as RouterLink, useInRouterContext } from 'react-router-dom';
+import { shotPageRoute } from '../../../components/shotRoutes';
 
 export function DerivedShotNotice({ source }: { source: string }): ReactElement {
   // Вне маршрутизатора (изолированный тест блока) переходить некуда: код плана остаётся текстом.
@@ -10,7 +11,7 @@ export function DerivedShotNotice({ source }: { source: string }): ReactElement 
     <Alert severity="info">
       План собирается из материала{' '}
       {routed ? (
-        <Link component={RouterLink} to={`/project/production?shot=${encodeURIComponent(source)}`} color="inherit" underline="always">
+        <Link component={RouterLink} to={shotPageRoute('production', source)} color="inherit" underline="always">
           {source}
         </Link>
       ) : (

@@ -14,7 +14,12 @@ import re
 
 from tools import media_adapters
 from tools.common import ROOT
-from tools.scene_registry.scene_registry import DERIVED_FORMAT, derived_from_problems
+from tools.scene_registry.scene_registry import (
+    DERIVED_FORMAT,
+    PRODUCTION_STATUS,
+    accepted_fingerprints,
+    derived_from_problems,
+)
 
 SCHEMAS = Path(__file__).with_name("schemas")
 
@@ -386,6 +391,26 @@ def lint_packages(root, report):
                     report.error(str(request.relative_to(root)), message.split(":")[0], message.split(": ", 1)[1])
 
 
+def lint_production_status(root, data, report):
+    """Форма отпечатков принятия в plan/production-status.json → shots; @link ../scene_registry/README.md"""
+    status = read_json(root, PRODUCTION_STATUS, report)
+    if not isinstance(status, dict):
+        if status is not None:
+            report.error(PRODUCTION_STATUS, "$", "файл должен быть объектом")
+        return
+    try:
+        accepted = accepted_fingerprints(status)
+    except ValueError as error:
+        report.error(PRODUCTION_STATUS, "shots", str(error).removeprefix(PRODUCTION_STATUS + ": "))
+        return
+    ids = {s.get("id") for s in data.get("scenes", []) if isinstance(s, dict)} if isinstance(data, dict) else set()
+    for sid in accepted:
+        if sid not in ids:
+            report.warning(PRODUCTION_STATUS, f"shots.{sid}", "отпечаток принятия плана, которого нет в реестре")
+        elif not (root / "assets/shots" / sid / "manifest.json").is_file():
+            report.warning(PRODUCTION_STATUS, f"shots.{sid}", "отпечаток принятия плана без комплекта в assets")
+
+
 def lint(root=ROOT):
     root = Path(root).resolve()
     report = Report()
@@ -393,6 +418,7 @@ def lint(root=ROOT):
     lint_cast(root, data, report)
     lint_description(root, data, report)
     lint_assets(root, report)
+    lint_production_status(root, data, report)
     lint_packages(root, report)
     return report
 

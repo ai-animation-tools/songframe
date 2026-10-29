@@ -46,6 +46,8 @@ export function CastEntityCard({
       onChange={(_e, open) => onExpandedChange(open)}
       disableGutters
       variant="outlined"
+      // По этой метке «Кастинг» прокручивает к карточке при переходе с ?entity=.
+      data-cast-entity={entity.id}
       // Свёрнутое содержимое не держим в DOM: скрытые поля и кнопки не попадают в обход и проверки доступности.
       slotProps={{ transition: { unmountOnExit: true } }}
       sx={{ minWidth: 0, m: '0 !important', gridColumn: expanded ? '1 / -1' : undefined }}

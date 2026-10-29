@@ -19,6 +19,7 @@ import unittest.mock
 
 from tools.accept_shot import accept_shot as tool
 from tools.asset_package.asset_package import validate_package
+from tools.scene_registry.scene_registry import project_shot_acceptance, scene_fingerprint
 
 
 def scene(sid, start, end, lipsync=False):
@@ -174,6 +175,7 @@ class AcceptShotTests(unittest.TestCase):
                     "request_dir": "request",
                     "mode": "shot",
                     "keyframes": [],
+                    "keyframe_notes": [],
                 }
             )
         )
@@ -220,6 +222,53 @@ class AcceptShotTests(unittest.TestCase):
         observations = json.loads((self.state / "providers/test/pricing-observations.json").read_text())
         self.assertEqual([item["credits"] for item in observations["observed"]], [30.0])
         self.assertTrue(self.package.exists())
+
+    def test_acceptance_records_scene_fingerprint_and_keeps_other_fields(self):
+        status = self.root / "plan/production-status.json"
+        other = "1" * 64
+        status.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "current_animatic": "plan/animatic/latest/manifest.json",
+                    "current_animatic_status": "review",
+                    "shots": {"M01": {"scene_sha256": other}},
+                }
+            )
+        )
+        result = self.accept(cut=(12, 72))
+        current = scene_fingerprint(self.registry, "M02", {})
+        saved = json.loads(status.read_text(encoding="utf-8"))
+        self.assertEqual(result["scene_sha256"], current)
+        self.assertEqual(saved["shots"], {"M01": {"scene_sha256": other}, "M02": {"scene_sha256": current}})
+        self.assertEqual(
+            (saved["current_animatic"], saved["current_animatic_status"]),
+            ("plan/animatic/latest/manifest.json", "review"),
+        )
+        self.assertEqual(project_shot_acceptance(self.root)["M02"], "completed")
+        self.assertEqual(result["warnings"], [])
+        # Правка действия после приёмки делает комплект устаревшим.
+        self.registry["scenes"][1]["action"] = "другое действие"
+        self.write_registry()
+        self.assertEqual(project_shot_acceptance(self.root)["M02"], "stale")
+
+    def test_package_fingerprint_is_recorded_even_if_scene_changed_since_preparation(self):
+        workflow = json.loads((self.package / "workflow.json").read_text())
+        prepared = "2" * 64
+        (self.package / "workflow.json").write_text(json.dumps(workflow | {"scene_sha256": prepared}))
+        result = self.accept(cut=(12, 72))
+        saved = json.loads((self.root / "plan/production-status.json").read_text(encoding="utf-8"))
+        # Файла не было: он создан с полями шаблона.
+        self.assertEqual(saved["current_animatic_status"], "none")
+        self.assertEqual(saved["shots"], {"M02": {"scene_sha256": prepared}})
+        self.assertEqual(project_shot_acceptance(self.root)["M02"], "stale")
+        self.assertIn("постановка плана изменилась", result["warnings"][0])
+
+    def test_broken_production_status_stops_before_transfer(self):
+        (self.root / "plan/production-status.json").write_text('{"schema_version": 1, "shots": []}')
+        with self.assertRaises(ValueError):
+            self.accept(cut=(12, 72))
+        self.assertFalse((self.root / "assets/shots/M02").exists())
 
     def test_observation_write_failure_is_warning_after_kit_transfer(self):
         # Файл на месте каталога состояния: запись наблюдения невозможна, но комплект уже перенесён.
@@ -303,7 +352,14 @@ class AcceptShotTests(unittest.TestCase):
         (batches / "M02-attempt-02").mkdir()
         (batches / "M02-attempt-02/workflow.json").write_text(
             json.dumps(
-                {"schema_version": 1, "shot": "M02", "stage": "keyframes_review", "request_dir": None, "keyframes": []}
+                {
+                    "schema_version": 1,
+                    "shot": "M02",
+                    "stage": "keyframes_review",
+                    "request_dir": None,
+                    "keyframes": [],
+                    "keyframe_notes": [],
+                }
             )
         )
         (batches / "retry-m02").mkdir()
@@ -316,13 +372,15 @@ class AcceptShotTests(unittest.TestCase):
         )
         (batches / "M01-attempt-01").mkdir()
         (batches / "M01-attempt-01/workflow.json").write_text(
-            json.dumps({"schema_version": 1, "shot": "M01", "stage": "ready", "request_dir": None})
+            json.dumps(
+                {"schema_version": 1, "shot": "M01", "stage": "ready", "request_dir": None, "keyframe_notes": []}
+            )
         )
         (batches / "notes").mkdir()
         (batches / "notes/readme.txt").write_text("не пакет")
         (self.root / "plan/awaiting/M01").mkdir()
         (self.root / "plan/awaiting/M01/workflow.json").write_text(
-            json.dumps({"schema_version": 1, "shot": "M01", "stage": "ready"})
+            json.dumps({"schema_version": 1, "shot": "M01", "stage": "ready", "keyframe_notes": []})
         )
         self.assertEqual(self.accept(cut=(0, 60))["cleaned"], [])
         self.assertTrue(self.package.exists())

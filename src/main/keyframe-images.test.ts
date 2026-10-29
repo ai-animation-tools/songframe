@@ -108,7 +108,7 @@ describe('кандидаты опор', () => {
     expect(launched.input.prompt).toContain('Не используй внешние сервисы генерации');
     // Программу и название задания даёт реестр провайдера, а не выбранный текстовый агент.
     expect(launched.config).toEqual(AGENT);
-    expect(launched.input.task).toBe(`Опоры S01: ${testAgentProviderInfo.title}`);
+    expect(launched.input.task).toBe(`Опоры S01: K01, K02 · ${testAgentProviderInfo.title}`);
     const candidates = collect(response());
     expect(candidates).toEqual([
       { id: 'K01', path: join(launched.workDir, 'K01.png') },
@@ -116,6 +116,33 @@ describe('кандидаты опор', () => {
     ]);
     expect(validateImage).toHaveBeenCalledTimes(2);
     expect(['source/reference.png', 'plan/project.json'].map((path) => digest(join(project, path)))).toEqual(before);
+  });
+
+  it('передаёт утверждённые опоры копиями-референсами и замечания пользователя', () => {
+    const approvedPath = join(project, 'approved-K01.png');
+    writeFileSync(approvedPath, png);
+    adapter.start(
+      {
+        ...input,
+        frames: [input.frames[1]],
+        notes: [' Транспорт едет слева направо. ', ''],
+        approvedFrames: [{ id: 'K01', role: 'first', path: approvedPath }]
+      },
+      { provider: TEST_AGENT_PROVIDER, requestSha: SHA, agent: AGENT }
+    );
+    const context = JSON.parse(launched.input.context!);
+    expect(context.approvedFrames).toEqual([{ id: 'K01', role: 'first', path: 'approved-K01.png' }]);
+    expect(context.notes).toEqual(['Транспорт едет слева направо.']);
+    expect(readFileSync(join(launched.workDir, 'approved-K01.png'))).toEqual(png);
+    expect(statSync(join(launched.workDir, 'approved-K01.png')).mode & 0o222).toBe(0);
+    expect(launched.input.prompt).toContain('approvedFrames');
+    expect(launched.input.prompt).toContain('notes');
+    // Изменённая после запуска утверждённая опора делает результат задания недействительным.
+    writeFileSync(approvedPath, Buffer.concat([png, Buffer.from('x')]));
+    writeFileSync(join(launched.workDir, 'K02.png'), png);
+    expect(() => collect({ ...launched.job, result: JSON.stringify({ schemaVersion: 1, stage: 'frames', images: [{ id: 'K02', path: 'K02.png' }] }) })).toThrow(
+      /Референсы изменились/
+    );
   });
 
   it.each(['не JSON', 'null', '[]', '{"schemaVersion":1,"stage":"frames","images":[],"extra":true}'])(

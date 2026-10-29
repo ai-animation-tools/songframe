@@ -1,15 +1,14 @@
 import GridViewIcon from '@mui/icons-material/GridView';
 /** Скачанные оригиналы, техническая сводка и действие приёмки результата; изображения открываются в общей галерее. */
 import { useState, type ReactElement } from 'react';
-import { Box, ButtonBase, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import type { PackageView } from '@shared/types';
 import { ImageGallery } from '../../../components/ImageGallery';
+import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
-
-const focusRing = { borderRadius: 1.5, '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2 } };
 
 export function PackageResult({
   pkg,
@@ -44,7 +43,8 @@ export function PackageResult({
           : null;
   const downloaded = pkg.request?.downloads.length ? pkg.request.downloads : [];
   const [gallery, setGallery] = useState<{ kind: string; images: { imagePath: string; label: string }[]; index: number } | null>(null);
-  const variants = image ? downloaded.map((path, index) => ({ imagePath: path, label: `Вариант опорного кадра ${index + 1}` })) : [];
+  const frame = pkg.request?.frameId ? `${pkg.request.frameId} · ` : '';
+  const variants = image ? downloaded.map((path, index) => ({ imagePath: path, label: `${frame}вариант ${index + 1} · кандидат, не принят` })) : [];
   const previews = pkg.preview.map((path, index) => ({ imagePath: path, label: `Техническая сводка · ${path.split(/[\\/]/).pop() ?? index + 1}` }));
   return (
     <>
@@ -56,18 +56,19 @@ export function PackageResult({
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             {downloaded.map((path, index) =>
               image ? (
-                <Box key={path} sx={{ minWidth: 0, maxWidth: 420 }}>
-                  <ButtonBase
-                    onClick={() => setGallery({ kind: 'Вариант опорного кадра', images: variants, index })}
-                    aria-label={`Открыть вариант опорного кадра ${index + 1}`}
-                    sx={{ width: '100%', ...focusRing }}
-                  >
-                    <img
-                      src={window.api.shell.fileUrl(path)}
-                      alt={`Вариант опорного кадра ${index + 1}`}
-                      style={{ width: '100%', maxWidth: 420, borderRadius: 8, display: 'block' }}
-                    />
-                  </ButtonBase>
+                <Box key={path} sx={{ width: 420, minWidth: 0, maxWidth: '100%' }}>
+                  <ImageThumbnail
+                    path={path}
+                    label={variants[index].label}
+                    title={path}
+                    aspectRatio={null}
+                    dashed
+                    highlight="warning"
+                    onOpen={() => setGallery({ kind: 'Вариант опорного кадра', images: variants, index })}
+                  />
+                  <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                    {variants[index].label}
+                  </Typography>
                   <ActionButton
                     startIcon={<CheckCircleIcon />}
                     variant="outlined"
@@ -92,19 +93,20 @@ export function PackageResult({
           </Box>
           {image ? (
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-              Выбор сохраняет оригинал как опору. Утверждение опор выполняется отдельно на следующем этапе.
+              Выбор сохраняет оригинал кандидатом опоры. Утвердить её нужно отдельно: приложение задаст вопрос об этой опоре.
             </Typography>
           ) : pkg.preview.length ? (
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
               {previews.map((preview, index) => (
-                <ButtonBase
-                  key={preview.imagePath}
-                  onClick={() => setGallery({ kind: 'Техническая сводка', images: previews, index })}
-                  aria-label={`Открыть: ${preview.label}`}
-                  sx={{ maxWidth: 420, ...focusRing }}
-                >
-                  <img src={window.api.shell.fileUrl(preview.imagePath)} alt={preview.label} style={{ maxWidth: '100%', borderRadius: 6, display: 'block' }} />
-                </ButtonBase>
+                <Box key={preview.imagePath} sx={{ width: 420, maxWidth: '100%' }}>
+                  <ImageThumbnail
+                    path={preview.imagePath}
+                    label={preview.label}
+                    title={preview.imagePath}
+                    aspectRatio={null}
+                    onOpen={() => setGallery({ kind: 'Техническая сводка', images: previews, index })}
+                  />
+                </Box>
               ))}
             </Box>
           ) : (

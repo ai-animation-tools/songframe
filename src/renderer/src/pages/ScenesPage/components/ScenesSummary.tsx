@@ -9,6 +9,16 @@ export function ScenesSummary({ summary }: { summary: DashboardView['summary'] }
     <>
       <Typography variant="h5">Сцены</Typography>
       <Chip size="small" color="success" variant="outlined" label={`принято ${summary.completed}`} />
+      {/* Принятые по прежней постановке планы не считаются принятыми: чип виден, только когда такие есть. */}
+      {summary.stale ? (
+        <Chip
+          size="small"
+          color="info"
+          variant="outlined"
+          label={`постановка изменена ${summary.stale}`}
+          title="Комплект принят по прежней постановке: нужно новое производство"
+        />
+      ) : null}
       <Chip size="small" color="warning" variant="outlined" label={`в работе ${summary.progress}`} />
       <Chip size="small" variant="outlined" label={`не начато ${summary.planned}`} />
       <Typography variant="caption" color="text.secondary">

@@ -24,7 +24,7 @@ export const PYTHON_REASON = 'Python не найден: проверьте ег�
 
 export { SHOT_STATE_LABELS as STATE_LABELS } from '../../components/shotState';
 
-export type ProductionFilter = 'all' | 'attention' | 'progress' | 'planned' | 'completed' | 'queued';
+export type ProductionFilter = 'all' | 'attention' | 'progress' | 'planned' | 'completed' | 'stale' | 'queued';
 
 /** Подписи фильтра и пояснение пустого списка: одинаковое оформление для всех значений, как у очереди. */
 export const FILTER_LABELS: Record<ProductionFilter, string> = {
@@ -33,6 +33,7 @@ export const FILTER_LABELS: Record<ProductionFilter, string> = {
   progress: 'В работе',
   planned: 'Не начатые',
   completed: 'Принятые',
+  stale: 'Постановка изменена',
   queued: 'Очередь'
 };
 export const FILTER_EMPTY_HINTS: Record<ProductionFilter, string> = {
@@ -42,6 +43,7 @@ export const FILTER_EMPTY_HINTS: Record<ProductionFilter, string> = {
   progress: 'Нет планов в работе. Они появятся после подготовки описания или повтора по сохранённому запросу.',
   planned: 'Нет не начатых планов: у каждого есть пакет или принятый комплект.',
   completed: 'Принятых планов ещё нет. Они появятся после приёмки результата в assets.',
+  stale: 'Нет планов, принятых по прежней постановке. Они появятся, если сохранить правку постановки принятого плана на странице «Сценарий».',
   queued: 'Очередь пуста. Здесь появятся запросы после нажатия «Сохранить в очередь».'
 };
 

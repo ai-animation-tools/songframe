@@ -6,8 +6,9 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import type { ProjectState, ProjectStatus } from '@shared/types';
+import type { ProjectState, ProjectStatus, ScenesFile } from '@shared/types';
 import { viewAnimatic } from './animatic';
+import { shotAcceptance } from './shot-acceptance';
 
 export const PROJECT_MARKER = join('plan', 'project.json');
 
@@ -82,6 +83,7 @@ export function computeStatus(path: string): ProjectStatus {
 
   const scenesPath = join(path, 'plan', 'scenes.json');
   let sceneIds: string[] = [];
+  let registry: ScenesFile | null = null;
   if (existsSync(scenesPath)) {
     const scenesText = readFileSync(scenesPath, 'utf-8');
     let scenes: unknown;
@@ -92,6 +94,7 @@ export function computeStatus(path: string): ProjectStatus {
     }
     if (isObject(scenes) && Array.isArray(scenes.scenes) && scenes.scenes.length > 0) {
       sceneIds = scenes.scenes.filter(isObject).map((s) => String(s.id));
+      registry = scenes as unknown as ScenesFile;
       checks.scenes = true;
     } else {
       problems.push('plan/scenes.json повреждён или не содержит сцен.');
@@ -100,13 +103,22 @@ export function computeStatus(path: string): ProjectStatus {
   checks.shotsTotal = sceneIds.length;
 
   const shotsDir = join(path, 'assets', 'shots');
+  let kits = 0;
   if (existsSync(shotsDir)) {
     const done = new Set(
       readdirSync(shotsDir, { withFileTypes: true })
         .filter((e) => e.isDirectory() && existsSync(join(shotsDir, e.name, 'manifest.json')))
         .map((e) => e.name)
     );
-    checks.shotsDone = sceneIds.length ? sceneIds.filter((id) => done.has(id)).length : done.size;
+    kits = sceneIds.length ? sceneIds.filter((id) => done.has(id)).length : done.size;
+    // Готовым считается только комплект, принятый по текущей постановке: правило общее со страницами планов.
+    if (registry) {
+      const acceptance = shotAcceptance(path, registry);
+      if (acceptance.problem) problems.push(acceptance.problem);
+      const stale = sceneIds.filter((id) => acceptance.accepted.get(id) === 'stale');
+      checks.shotsDone = sceneIds.filter((id) => acceptance.accepted.get(id) === 'completed').length;
+      if (stale.length) problems.push(`Постановка изменена после приёмки: ${stale.join(', ')}. Нужно новое производство этих планов.`);
+    } else checks.shotsDone = done.size;
     const orphans = [...done].filter((id) => sceneIds.length && !sceneIds.includes(id));
     if (orphans.length) problems.push(`Комплекты без сцены в реестре: ${orphans.join(', ')}.`);
   }
@@ -121,7 +133,7 @@ export function computeStatus(path: string): ProjectStatus {
   if (!checks.sources) state = 'empty';
   else if (!checks.timing) state = 'sourced';
   else if (!checks.scenes) state = 'timed';
-  else if (checks.shotsDone === 0) state = 'scripted';
+  else if (kits === 0) state = 'scripted';
   else if (checks.shotsDone < checks.shotsTotal) state = 'in_production';
   else if (checks.animaticBuilt && checks.animaticFresh && checks.animaticApproved) state = 'complete';
   else {

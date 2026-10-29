@@ -16,6 +16,7 @@ from tools.apply_montage import apply_montage as tool
 from tools.asset_package.asset_package import replay, validate_package
 from tools.build_review.build_review import prepare, probe, run
 from tools.common import sha
+from tools.scene_registry.scene_registry import project_shot_acceptance
 
 
 class ApplyMontageTests(unittest.TestCase):
@@ -123,6 +124,32 @@ class ApplyMontageTests(unittest.TestCase):
                 (self.root / f"assets/shots/{sid}/original.mp4").read_bytes(),
                 before[f"assets/shots/{sid}/original.mp4"],
             )
+
+    def test_boundary_move_keeps_acceptance_only_of_previously_current_shots(self):
+        status_path = self.root / "plan/production-status.json"
+        status = json.loads(status_path.read_text())
+        # M02 принят по прежней постановке: монтаж не должен «простить» сюжетную правку.
+        old_m02 = "3" * 64
+        status["shots"]["M02"]["scene_sha256"] = old_m02
+        status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + "\n")
+        self.assertEqual(project_shot_acceptance(self.root), {"M01": "completed", "M02": "stale"})
+        result = tool.apply(self.draft((("M01", 0, 255), ("M02", 5, 110))), self.root, update_views=False)
+        saved = json.loads(status_path.read_text())
+        self.assertNotEqual(saved["shots"]["M01"], status["shots"]["M01"])
+        self.assertEqual(saved["shots"]["M02"], {"scene_sha256": old_m02})
+        self.assertEqual(
+            {key: value for key, value in saved.items() if key != "shots"},
+            {key: value for key, value in status.items() if key != "shots"},
+        )
+        self.assertEqual(project_shot_acceptance(self.root), {"M01": "completed", "M02": "stale"})
+        # Статус входит в журнал публикации вместе с реестром и манифестами.
+        journal = json.loads((self.root / result["history"] / "journal.json").read_text())
+        self.assertIn("plan/production-status.json", [entry["path"] for entry in journal["files"]])
+
+    def test_boundary_move_keeps_both_current_shots_accepted(self):
+        tool.apply(self.draft((("M01", 0, 255), ("M02", 5, 110))), self.root)
+        self.assertEqual(project_shot_acceptance(self.root), {"M01": "completed", "M02": "completed"})
+        self.assertIn("готовы 2", (self.root / "ROADMAP.md").read_text())
 
     def test_accepted_source_keeps_exact_input_and_replays_without_original_reencoding(self):
         old = json.loads((self.root / "assets/shots/M02/manifest.json").read_text())

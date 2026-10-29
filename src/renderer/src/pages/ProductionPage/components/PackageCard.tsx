@@ -1,7 +1,7 @@
 /** Пакет производства объединяет вопрос, материалы запроса и полученный результат. */
 import type { ReactElement } from 'react';
 import { Alert, Box, Chip, Paper, Typography } from '@mui/material';
-import type { JobInfo, PackageView } from '@shared/types';
+import type { JobInfo, KeyframeNoteScope, PackageView } from '@shared/types';
 import { normalizeMediaProvider } from '@shared/media-providers';
 import { JobStatus } from '../../../components/JobStatus';
 import { DestructiveButton } from '../../../components/DestructiveButton';
@@ -10,6 +10,8 @@ import { BUSY_REASON, VERDICT_LABELS } from '../constants';
 import { isQueuedPackage } from '../decisions';
 import { PackageDecision } from './PackageDecision';
 import { PackageRevisionNotice } from './PackageRevisionNotice';
+import { PackageSceneChanged } from './PackageSceneChanged';
+import { SCENE_CHANGED } from '@shared/production-labels';
 import { PackageKeyframes } from './PackageKeyframes';
 import { PackageRequest } from './PackageRequest';
 import { PackageResume } from './PackageResume';
@@ -35,6 +37,9 @@ export function PackageCard({
   onAttachResult,
   onNotCreated,
   onSelectImage,
+  onReopenFrame,
+  onKeepForScene,
+  onSetKeyframeNote,
   onOpenRevision
 }: {
   pkg: PackageView;
@@ -46,7 +51,7 @@ export function PackageCard({
   operation?: { job?: JobInfo; error?: string; running?: boolean; label?: string };
   /** Найдена ли программа каждого платного провайдера (по id). */
   providers: Record<string, boolean>;
-  onDecide(verdict: string): void;
+  onDecide(verdict: string, noteScope?: KeyframeNoteScope): void;
   onSubmit(): void;
   onAccept(): void;
   onContactSheet(): void;
@@ -57,8 +62,17 @@ export function PackageCard({
   onAttachResult(files: string[]): void;
   onNotCreated(): void;
   onSelectImage(index: number): void;
-  onOpenRevision?(): void;
+  /** Вернуть утверждённую опору на доработку с замечанием. */
+  onReopenFrame(frame: string, note: string, scope: KeyframeNoteScope): void;
+  /** Оставить неотправленный пакет в силе для текущей постановки плана. */
+  onKeepForScene(): void;
+  /** Снять или вернуть замечание к опорам. */
+  onSetKeyframeNote(id: number, active: boolean): void;
+  /** focusNote=false — только прокрутить к блоку подготовки, не фокусируя поле доработки агентом. */
+  onOpenRevision?(focusNote?: boolean): void;
 }): ReactElement {
+  // Проблема устаревшей постановки показывается отдельным блоком с выбором действия.
+  const otherProblems = pkg.problems.filter((problem) => !(pkg.sceneChanged && problem === SCENE_CHANGED));
   const pending = pkg.pendingDecision;
   // Отправка и получение доступны, только если найдена программа провайдера сохранённого запроса.
   const providerAvailable = providers[normalizeMediaProvider(pkg.request?.provider) ?? ''] === true;
@@ -98,15 +112,18 @@ export function PackageCard({
           списанием кредитов.
         </Alert>
       ) : null}
-      {pkg.problems.length ? (
+      {pkg.sceneChanged ? (
+        <PackageSceneChanged pkg={pkg} busy={busy} busyReason={busyReason} onKeep={onKeepForScene} onOpenRevision={() => onOpenRevision?.(true)} />
+      ) : null}
+      {otherProblems.length ? (
         <Alert severity="warning" sx={{ mb: 1 }}>
-          <LinkedText text={pkg.problems.join(' ')} />
+          <LinkedText text={otherProblems.join(' ')} />
         </Alert>
       ) : null}
 
       {pkg.description ? <PackageTextSection title="Описание плана" text={pkg.description} maxHeight={260} /> : null}
 
-      <PackageKeyframes pkg={pkg} />
+      <PackageKeyframes pkg={pkg} busy={busy} busyReason={busyReason} onReopen={onReopenFrame} onSetNote={onSetKeyframeNote} />
 
       {pkg.prompt ? (
         <PackageTextSection

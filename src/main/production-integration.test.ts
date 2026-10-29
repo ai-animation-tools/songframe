@@ -244,15 +244,21 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
       };
       expect(view.canGenerateFrames).toBe(false);
       await approve();
-      view = await workflow.generateFrames(project, 'M01', pkg);
-      expect(() => agents.start({ project, task: 'Конкурирующий проход', prompt: 'Не запускайся' })).toThrow('PROJECT_BUSY');
-      const imageJob = await agentDone(agents, view.proposal!.jobId);
-      expect(imageJob).toMatchObject({ provider: 'codex', permissions: 'workspace-write' });
-      // Без проектной модели программа-агент использует конфигурацию CLI, а не скрытый прежний профиль опор.
-      expect(imageJob.model).toBeUndefined();
-      await workflow.apply(project, 'M01', pkg, view.proposal!.id);
-      expect(readPackage(project, pkg)!.keyframes.every((frame) => !frame.approved)).toBe(true);
-      await approve();
+      // Опоры создаются по одной: вопрос о каждой задаётся сразу, следующая создаётся после решения.
+      const frameIds = workflow.view(project, 'M01', pkg).framePrompts.map((frame) => frame.id);
+      expect(frameIds.length).toBeGreaterThan(1);
+      for (const [index, id] of frameIds.entries()) {
+        expect(workflow.view(project, 'M01', pkg).nextFrame).toBe(id);
+        view = await workflow.generateFrames(project, 'M01', pkg);
+        if (!index) expect(() => agents.start({ project, task: 'Конкурирующий проход', prompt: 'Не запускайся' })).toThrow('PROJECT_BUSY');
+        const imageJob = await agentDone(agents, view.proposal!.jobId);
+        expect(imageJob).toMatchObject({ provider: 'codex', permissions: 'workspace-write' });
+        // Без проектной модели программа-агент использует конфигурацию CLI, а не скрытый прежний профиль опор.
+        expect(imageJob.model).toBeUndefined();
+        await workflow.apply(project, 'M01', pkg, view.proposal!.id);
+        expect(readPackage(project, pkg)!.pendingDecision?.frame).toBe(id);
+        await approve();
+      }
       view = await workflow.start({ project, shot: 'M01', packageDir: pkg, action: 'continue' });
       await agentDone(agents, view.proposal!.jobId);
       await workflow.apply(project, 'M01', pkg, view.proposal!.id);
@@ -267,7 +273,8 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
       expect(paidCalls()).toEqual([]);
       expect(agents.list(project).map((job) => job.provider)).toEqual(expect.arrayContaining([provider, 'codex']));
       const calls = agentCalls();
-      expect(calls.map((call) => call.stage).sort()).toEqual(['description', 'frames', 'prompt', 'request']);
+      // Отдельный проход изображений на каждую опору.
+      expect(calls.map((call) => call.stage).sort()).toEqual(['description', ...frameIds.map(() => 'frames'), 'prompt', 'request'].sort());
       expect(calls.filter((call) => call.stage !== 'frames').every((call) => call.provider === provider && call.cwd === project)).toBe(true);
       expect(calls.find((call) => call.stage === 'frames')!.cwd.startsWith(join(localDir, 'image-jobs'))).toBe(true);
       expect(calls.find((call) => call.stage === 'frames')!.args).toContain('workspace-write');
@@ -276,7 +283,7 @@ describe.skipIf(process.platform !== 'linux')('сквозное производ
       const countBeforeRestart = calls.length;
       const reopened = new AgentManager(settings);
       managers.push(reopened);
-      expect(reopened.list(project)).toHaveLength(4);
+      expect(reopened.list(project)).toHaveLength(countBeforeRestart);
       expect(agentCalls()).toHaveLength(countBeforeRestart);
       expect(
         new ProductionWorkflow({

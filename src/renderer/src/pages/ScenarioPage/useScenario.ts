@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CastProperty, ScenarioView, ScenesFile, TreatmentFile, TreatmentSequence } from '@shared/types';
+import { useSearchParams } from 'react-router-dom';
+import type { CastProperty, ScenarioSaveImpact, ScenarioView, ScenesFile, ScenesSaveMode, TreatmentFile, TreatmentSequence } from '@shared/types';
 import type { ScenarioPass } from '@shared/scenario-workflow';
 import { useApp } from '../../state';
-import type { ScenarioBrief, ScenarioTab } from './types';
+import { KEEP_NOTHING_REASON, type ScenarioBrief, type ScenarioTab, type ScenesSaveRequest, type ShotReveal, type OpenShotState } from './types';
 import { workflowUpdatedView } from './workflowDrafts';
+import { requestedShot } from './shotNavigation';
+import { SHOT_PARAM } from '../../components/shotRoutes';
 
 /** Загружает сценарий и сохраняет вкладки независимо; проверка следует текущему черновику. */
 export function useScenario() {
@@ -19,7 +22,15 @@ export function useScenario() {
   const [problems, setProblems] = useState<string[]>([]);
   const [brief, setBrief] = useState<ScenarioBrief>(null);
   const [busy, setBusy] = useState(false);
+  // Последний расчёт затронутых планов для текущего черновика: по нему заранее блокируется «Сохранить без производства».
+  const [impact, setImpact] = useState<ScenarioSaveImpact | null>(null);
+  const [saveRequest, setSaveRequest] = useState<ScenesSaveRequest | null>(null);
   const scaffoldRunning = useRef(false);
+  const [params] = useSearchParams();
+  const shotParam = params.get(SHOT_PARAM);
+  // План, к которому после перехода с другой страницы или по источнику значения врезки нужно прокрутить реестр; сбрасывается после прокрутки.
+  const [revealShot, setRevealShot] = useState<ShotReveal | null>(null);
+  const clearReveal = useCallback(() => setRevealShot(null), []);
 
   useEffect(() => {
     activeProject.current = project;
@@ -40,7 +51,30 @@ export function useScenario() {
     load().catch((error) => setLoadError(describeError(error)));
   }, [load, notify, describeError]);
 
-  // Проверка и врезка пересчитываются по текущему черновику реестра, не по файлу.
+  const scenesDirty = JSON.stringify(scenes) !== JSON.stringify(view?.scenes ?? null);
+
+  // Переход с ?shot= (с «Производства», «Сцен» или по ссылке на открытой странице) только выбирает план в черновике:
+  // реестр не перечитывается, поэтому правки других планов остаются. Отсутствующий план оставляет обычный выбор.
+  const scenesRef = useRef(scenes);
+  scenesRef.current = scenes;
+  const scenesReady = scenes !== null;
+  useEffect(() => {
+    const shot = requestedShot(scenesRef.current, shotParam);
+    if (!shot) return;
+    setTab('scenes');
+    setSelected(shot);
+    setRevealShot({ shot, target: 'shot' });
+  }, [shotParam, scenesReady]);
+
+  // Источник значения врезки: выбрать план в черновике (правки других планов остаются) и прокрутить к его блоку состояния.
+  const openShotState = useCallback<OpenShotState>((shot, entity, phase) => {
+    if (!requestedShot(scenesRef.current, shot)) return;
+    setTab('scenes');
+    setSelected(shot);
+    setRevealShot({ shot, target: 'state', entity, phase });
+  }, []);
+
+  // Проверка, врезка и затронутые планы пересчитываются по текущему черновику реестра, не по файлу.
   useEffect(() => {
     if (!scenes) return;
     let cancelled = false;
@@ -51,6 +85,16 @@ export function useScenario() {
           if (!cancelled) setProblems(next);
         })
         .catch(() => undefined);
+      // Без правок сохранять нечего; ошибка расчёта не блокирует кнопку: перед диалогом расчёт повторяется.
+      if (scenesDirty)
+        window.api.scenario
+          .saveImpact(project, scenes)
+          .then((value) => {
+            if (!cancelled) setImpact(value);
+          })
+          .catch(() => {
+            if (!cancelled) setImpact(null);
+          });
       if (selected && scenes.scenes.some((s) => s.id === selected)) {
         Promise.all([window.api.scenario.brief(project, scenes, selected, 'before'), window.api.scenario.brief(project, scenes, selected, 'after')])
           .then(([before, after]) => {
@@ -65,7 +109,7 @@ export function useScenario() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [scenes, selected, project]);
+  }, [scenes, selected, project, scenesDirty]);
 
   const cast = view?.cast ?? null;
   const entityOptions = useMemo(() => (cast?.entities ?? []).map((e) => ({ id: e.id, label: e.name, images: e.images.length > 0, kind: e.kind })), [cast]);
@@ -75,7 +119,6 @@ export function useScenario() {
     return entity ? (cast?.properties[entity.kind] ?? []) : [];
   };
   const duration = view?.duration ?? 0;
-  const scenesDirty = JSON.stringify(scenes) !== JSON.stringify(view?.scenes ?? null);
   const treatmentDirty = JSON.stringify(treatment) !== JSON.stringify(view?.treatment ?? null);
   // Каркас нужен и агенту для подробного сценария: без разметки и кастинга с изображениями его не создать.
   const scenesInputProblem = !view?.timing?.lines?.length
@@ -131,7 +174,8 @@ export function useScenario() {
         setView((current) => current && { ...current, treatment: saved });
       }
       if (scenesDirty && scenes) {
-        const saved = await window.api.scenario.saveScenes(project, scenes);
+        // Перед запуском агента реестр сохраняется обычным образом: изменённая постановка требует нового производства.
+        const saved = await window.api.scenario.saveScenes(project, scenes, 'production');
         if (activeProject.current !== project) return false;
         setScenes(saved);
         setView((current) => current && { ...current, scenes: saved });
@@ -217,25 +261,51 @@ export function useScenario() {
     }
   };
 
-  const saveScenes = async (): Promise<void> => {
+  // Записывает именно тот черновик, по которому показан список затронутых планов.
+  const writeScenes = async (draft: ScenesFile, mode: ScenesSaveMode): Promise<void> => {
+    const saved = await window.api.scenario.saveScenes(project, draft, mode);
+    if (activeProject.current !== project) return;
+    setScenes(saved);
+    setView((current) => current && { ...current, scenes: saved });
+    setImpact(null);
+    await refresh();
+    notify(mode === 'keep' ? 'Реестр сцен сохранён без нового производства' : 'Реестр сцен сохранён', 'success');
+  };
+
+  // Перед записью расчёт затронутых планов повторяется: черновик мог измениться после фонового расчёта.
+  const saveScenes = async (mode: ScenesSaveMode): Promise<void> => {
     if (!scenes) return;
+    const draft = scenes;
     setBusy(true);
     try {
-      const saved = await window.api.scenario.saveScenes(project, scenes);
-      setScenes(saved);
-      setView((current) => current && { ...current, scenes: saved });
-      await refresh();
-      notify('Реестр сцен сохранён', 'success');
+      const value = await window.api.scenario.saveImpact(project, draft);
+      if (activeProject.current !== project) return;
+      setImpact(value);
+      const produced = value.shots.some((shot) => shot.produced);
+      if (!produced && mode === 'production') await writeScenes(draft, mode);
+      else if (!produced) notify(KEEP_NOTHING_REASON, 'info');
+      else setSaveRequest({ mode, scenes: draft, shots: value.shots });
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
       setBusy(false);
     }
   };
-  const copy = async (text: string): Promise<void> => {
-    await navigator.clipboard.writeText(text);
-    notify('Скопировано', 'success');
+  const confirmSaveScenes = async (): Promise<void> => {
+    if (!saveRequest) return;
+    setBusy(true);
+    try {
+      await writeScenes(saveRequest.scenes, saveRequest.mode);
+      setSaveRequest(null);
+    } catch (error) {
+      notify(describeError(error), 'error');
+    } finally {
+      setBusy(false);
+    }
   };
+  const cancelSaveScenes = (): void => setSaveRequest(null);
+  // Последний известный расчёт; без него кнопка доступна, а нажатие пересчитывает затронутые планы.
+  const keepUseless = !!impact && !impact.shots.some((shot) => shot.produced);
 
   const retry = (): void => {
     load().catch((error) => setLoadError(describeError(error)));
@@ -253,6 +323,9 @@ export function useScenario() {
     setScenes,
     selected,
     setSelected,
+    revealShot,
+    clearReveal,
+    openShotState,
     problems,
     brief,
     busy,
@@ -269,8 +342,11 @@ export function useScenario() {
     updatePart,
     saveTreatment,
     saveScenes,
+    saveRequest,
+    confirmSaveScenes,
+    cancelSaveScenes,
+    keepUseless,
     scaffold,
-    copy,
     scaffoldProblem,
     scenesInputProblem,
     notify

@@ -1,11 +1,11 @@
 /** Производственные переходы проверяются на копии sample: без CLI аккаунта, генерации и платных запросов. */
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { AgentJob, AgentStartInput } from '@shared/agents';
-import type { ProductionStageProposal } from '@shared/production-workflow';
+import type { ProductionImagesInput, ProductionStageProposal } from '@shared/production-workflow';
 import { PythonLauncher, type LaunchOptions } from './python-launcher';
 import { registerTestAgentProvider, registerTestMediaProvider, TEST_AGENT_PROVIDER, TEST_PROVIDER, testPaidAdapter } from './testing/media-provider';
 import { ProductionWorkflow, recoverInterruptedProductionApplies } from './production-workflow';
@@ -140,6 +140,17 @@ async function decide(launcher: Launcher, pkg: string, verdict = 'approve') {
   const result = await launcher.run(project, 'shot_workflow', ['decide', '--dir', pkg, '--verdict', verdict]);
   expect(result.code, result.stderr).toBe(0);
 }
+/** Опоры утверждаются по одной: как Production.decide, после ответа задаём вопрос о следующем кандидате. */
+async function approveFrames(launcher: Launcher, pkg: string) {
+  for (;;) {
+    await decide(launcher, pkg);
+    const workflow = JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8'));
+    const next = workflow.keyframes.find((frame: { path: string | null; approved: boolean }) => frame.path && !frame.approved);
+    if (!next) return;
+    const asked = await launcher.run(project, 'shot_workflow', ['ask', '--dir', pkg, '--stage', 'keyframes_review', '--frame', next.id]);
+    expect(asked.code, asked.stderr).toBe(0);
+  }
+}
 function candidates() {
   return ['K01', 'K02'].map((id) => {
     const path = join(work, `${id}.png`);
@@ -195,6 +206,39 @@ describe('ProductionWorkflow', () => {
     expect(workflow.view(project, 'M01').derivedFrom).toBeNull();
   });
 
+  it('сводка непринятых предложений и уборка записей без плана', async () => {
+    const { workflow, agents } = setup();
+    await workflow.start({ project, shot: 'M01', action: 'prepare' });
+    agents.finish(description());
+    expect(workflow.pendingProposals(project)).toEqual({ M01: { stage: 'description', status: 'ready', stale: false, packageDir: null } });
+    const folder = join(localDir, 'production-workflow');
+    const proposalFiles = readdirSync(folder).filter((name) => name.endsWith('.json') && !name.endsWith('-request.json'));
+    expect(proposalFiles).toHaveLength(1);
+    // Запись чужого проекта не трогается, даже если её план не найден в этом реестре.
+    const foreign = join(folder, 'foreign.json');
+    write(foreign, { proposal: { status: 'ready' }, rules: { project: '/другой/проект' } });
+    // План убран из реестра: его предложение больше негде показать, запись удаляется.
+    const scenesPath = join(project, 'plan/scenes.json');
+    const scenes = JSON.parse(readFileSync(scenesPath, 'utf8'));
+    write(scenesPath, { ...scenes, scenes: scenes.scenes.filter((scene: { id: string }) => scene.id !== 'M01') });
+    expect(workflow.pendingProposals(project)).toEqual({});
+    expect(proposalFiles.filter((name) => existsSync(join(folder, name)))).toEqual([]);
+    expect(existsSync(foreign)).toBe(true);
+  });
+
+  it('предложение, оставшееся до отметки плана производным, больше не показывается', async () => {
+    const { workflow, agents } = setup();
+    await workflow.start({ project, shot: 'M01', action: 'prepare' });
+    agents.finish(description());
+    expect(workflow.view(project, 'M01').proposal?.status).toBe('ready');
+    const scenesPath = join(project, 'plan/scenes.json');
+    const scenes = JSON.parse(readFileSync(scenesPath, 'utf8'));
+    const source = scenes.scenes.find((scene: { id: string; derived_from?: unknown }) => scene.id !== 'M01' && !scene.derived_from).id;
+    scenes.scenes[0] = { ...scenes.scenes[0], derived_from: { shot: source } };
+    write(scenesPath, scenes);
+    expect(workflow.view(project, 'M01')).toMatchObject({ derivedFrom: source, proposal: null });
+  });
+
   it('сохраняет ответ агента, не прошедший проверку, для показа вместо предложения', async () => {
     const { workflow, agents } = setup();
     const view = await workflow.start({ project, shot: 'M01', action: 'prepare' });
@@ -222,6 +266,20 @@ describe('ProductionWorkflow', () => {
     expect(text).toMatch(/^План не подходит\. api_key=\[скрыто\]/);
     expect(text).not.toContain('abc123secret');
     expect(text.length).toBeLessThanOrEqual(4001);
+    // Текст вместо JSON — отказ по скиллу: вместо ошибки разбора JSON пользователь видит отказ.
+    const refused = workflow.view(project, 'M01').proposal!;
+    expect(refused.refused).toBe(true);
+    expect(refused.message).toBe('Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.');
+  });
+
+  it('испорченный JSON остаётся ошибкой формата, а не отказом', async () => {
+    const { workflow, agents } = setup();
+    await workflow.start({ project, shot: 'M01', action: 'prepare' });
+    Object.assign(agents.jobs.at(-1)!, { result: '{"schemaVersion": 1, "stage": "description",', status: 'completed', exitCode: 0 });
+    const invalid = workflow.view(project, 'M01').proposal!;
+    expect(invalid.status).toBe('invalid');
+    expect(invalid.refused).toBeUndefined();
+    expect(invalid.message).toMatch(/JSON/);
   });
 
   it('дорабатывает повтор сохранённого запроса через описание только после явного запуска', async () => {
@@ -370,7 +428,7 @@ describe('ProductionWorkflow', () => {
     await decide(launcher, pkg);
     const imported = await workflow.importFrames(project, 'M01', pkg, candidates());
     await workflow.apply(project, 'M01', pkg, imported.proposal!.id);
-    await decide(launcher, pkg);
+    await approveFrames(launcher, pkg);
     expect(workflow.view(project, 'M01', pkg).canContinue).toBe(true);
     expect(workflow.view(project, 'M01', pkg).proposal?.status).toBe('applied');
     const fresh = workflow.view(project, 'M01', undefined);
@@ -407,7 +465,7 @@ describe('ProductionWorkflow', () => {
     const images = await workflow.importFrames(project, 'M01', pkg, candidates());
     await workflow.apply(project, 'M01', pkg, images.proposal!.id);
     expect(workflow.view(project, 'M01', pkg).canContinue).toBe(false);
-    await decide(launcher, pkg);
+    await approveFrames(launcher, pkg);
     expect(workflow.view(project, 'M01', pkg).canContinue).toBe(true);
     const prompt = await workflow.start({ project, shot: 'M01', packageDir: pkg, action: 'continue' });
     agents.finish({ schemaVersion: 1, stage: 'prompt', prompt: 'Лодка плывёт вперёд по реке без склеек.' });
@@ -486,7 +544,7 @@ describe('ProductionWorkflow', () => {
     await decide(launcher, pkg);
     const imported = await workflow.importFrames(project, 'M01', pkg, candidates());
     await workflow.apply(project, 'M01', pkg, imported.proposal!.id);
-    await decide(launcher, pkg);
+    await approveFrames(launcher, pkg);
     const revise = await workflow.start({
       project,
       shot: 'M01',
@@ -515,7 +573,7 @@ describe('ProductionWorkflow', () => {
     await decide(launcher, pkg);
     const imported = await workflow.importFrames(project, 'M01', pkg, candidates());
     await workflow.apply(project, 'M01', pkg, imported.proposal!.id);
-    await decide(launcher, pkg);
+    await approveFrames(launcher, pkg);
     const original = JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8'));
     const frames = original.keyframes.map((frame: { path: string }) => readFileSync(join(pkg, frame.path)));
     const revise = await workflow.start({
@@ -557,6 +615,88 @@ describe('ProductionWorkflow', () => {
     await expect(locked.importFrames(project, 'M01', pkg, candidates())).rejects.toThrow();
     await expect(locked.start({ project, shot: 'M01', packageDir: pkg, action: 'prepare' })).rejects.toThrow('завершения');
     expect(launcher.calls).toHaveLength(count);
+  });
+  it('создаёт опоры по одной: ждёт решения, передаёт замечание и утверждённые кадры следующему заданию', async () => {
+    const { options, agents, launcher, pkg } = await prepared();
+    const inputs: ProductionImagesInput[] = [];
+    const workflow = new ProductionWorkflow({
+      ...options,
+      generateImages: (input: ProductionImagesInput) => {
+        inputs.push(input);
+        return agents.start({ project, task: 'frames', prompt: '' });
+      }
+    });
+    await decide(launcher, pkg);
+    expect(workflow.view(project, 'M01', pkg)).toMatchObject({ nextFrame: 'K01', canGenerateFrames: true });
+    const first = await workflow.generateFrames(project, 'M01', pkg);
+    expect(inputs[0].frames.map((frame) => frame.id)).toEqual(['K01']);
+    expect(inputs[0]).toMatchObject({ notes: [], approvedFrames: [] });
+    agents.finish({ schemaVersion: 1, stage: 'frames', images: [candidates()[0]] });
+    await workflow.apply(project, 'M01', pkg, first.proposal!.id);
+    expect(JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8')).pending_decision).toMatchObject({ frame: 'K01', options: ['approve', 'revise'] });
+    const waiting = workflow.view(project, 'M01', pkg);
+    expect(waiting).toMatchObject({ nextFrame: null, canGenerateFrames: false });
+    await expect(workflow.generateFrames(project, 'M01', pkg)).rejects.toThrow();
+
+    // Доработка снимает только этого кандидата, а замечание уходит в повторное задание.
+    const revised = await launcher.run(project, 'shot_workflow', [
+      'decide',
+      '--dir',
+      pkg,
+      '--verdict',
+      'revise',
+      '--note',
+      'Транспорт едет слева направо',
+      '--note-scope',
+      'following'
+    ]);
+    expect(revised.code, revised.stderr).toBe(0);
+    expect(workflow.view(project, 'M01', pkg).nextFrame).toBe('K01');
+    const again = await workflow.generateFrames(project, 'M01', pkg);
+    expect(inputs[1]).toMatchObject({ notes: ['Транспорт едет слева направо'], approvedFrames: [] });
+    agents.finish({ schemaVersion: 1, stage: 'frames', images: [candidates()[0]] });
+    await workflow.apply(project, 'M01', pkg, again.proposal!.id);
+    await decide(launcher, pkg);
+
+    // Следующая опора получает утверждённую K01 референсом и сквозное замечание.
+    expect(workflow.view(project, 'M01', pkg).nextFrame).toBe('K02');
+    await workflow.generateFrames(project, 'M01', pkg);
+    expect(inputs[2].frames.map((frame) => frame.id)).toEqual(['K02']);
+    expect(inputs[2].notes).toEqual(['Транспорт едет слева направо']);
+    expect(inputs[2].approvedFrames).toEqual([{ id: 'K01', role: 'first', path: join(realpathSync(pkg), 'frames/K01.png') }]);
+  });
+  it('после правки постановки пакет не продолжается, пока описание не построено заново', async () => {
+    const { workflow, agents, launcher, pkg } = await prepared();
+    await decide(launcher, pkg);
+    expect(workflow.view(project, 'M01', pkg).canGenerateFrames).toBe(true);
+    const scenesPath = join(project, 'plan/scenes.json');
+    const scenes = JSON.parse(readFileSync(scenesPath, 'utf8'));
+    scenes.scenes[0].action += ' Лодка покачивается.';
+    writeFileSync(scenesPath, JSON.stringify(scenes, null, 2));
+    const stale = workflow.view(project, 'M01', pkg);
+    expect(stale).toMatchObject({ canGenerateFrames: false, canContinue: false });
+    expect(stale.reasons.frames).toContain('постановка плана изменилась после подготовки пакета');
+    await expect(workflow.generateFrames(project, 'M01', pkg)).rejects.toThrow();
+    // Доработка описания строит его по текущей постановке и снова связывает пакет со сценарием.
+    const revise = await workflow.start({ project, shot: 'M01', packageDir: pkg, action: 'revise', stage: 'description', note: 'Учесть покачивание лодки' });
+    agents.finish(description());
+    await workflow.apply(project, 'M01', pkg, revise.proposal!.id);
+    await decide(launcher, pkg);
+    expect(workflow.view(project, 'M01', pkg)).toMatchObject({ canGenerateFrames: true, reasons: { frames: null } });
+  });
+  it('свою опору можно импортировать отдельно: недостающую агент создаёт с утверждённой референсом', async () => {
+    const { workflow, launcher, pkg } = await prepared();
+    await decide(launcher, pkg);
+    const own = candidates()[1];
+    const imported = await workflow.importFrames(project, 'M01', pkg, [own]);
+    await workflow.apply(project, 'M01', pkg, imported.proposal!.id);
+    expect(JSON.parse(readFileSync(join(pkg, 'workflow.json'), 'utf8')).pending_decision).toMatchObject({ frame: 'K02' });
+    expect(workflow.view(project, 'M01', pkg).nextFrame).toBeNull();
+    await decide(launcher, pkg);
+    expect(workflow.view(project, 'M01', pkg)).toMatchObject({ nextFrame: 'K01', approvedFrameIds: ['K02'] });
+    // Утверждённую опору повторно импортировать нельзя: её сначала возвращают на доработку.
+    await expect(workflow.importFrames(project, 'M01', pkg, [own])).rejects.toThrow(/неутверждённым/);
+    await expect(workflow.importFrames(project, 'M01', pkg, [candidates()[1], candidates()[0]])).rejects.toThrow(/порядке плана/);
   });
   it('утверждение сценария требуется только для новой подготовки, а отменённое задание не применяется', async () => {
     const { workflow, agents, launcher, pkg, revokeScenario } = await prepared();

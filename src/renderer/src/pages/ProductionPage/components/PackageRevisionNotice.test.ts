@@ -27,6 +27,8 @@ const fixture = (overrides: Partial<PackageView> = {}): PackageView => ({
   request: null,
   pendingDecision: null,
   decision: { stage: 'prompt_review', verdict: 'revise', note },
+  keyframeNotes: [],
+  sceneChanged: false,
   preview: [],
   problems: [],
   ...overrides
@@ -98,6 +100,9 @@ describe('Продолжение после возврата пакета', () =
         onAttachResult: vi.fn(),
         onNotCreated: vi.fn(),
         onSelectImage: vi.fn(),
+        onReopenFrame: vi.fn(),
+        onKeepForScene: vi.fn(),
+        onSetKeyframeNote: vi.fn(),
         onOpenRevision: vi.fn()
       })
     );

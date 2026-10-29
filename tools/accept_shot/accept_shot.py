@@ -22,7 +22,15 @@ from tools.build_review.build_review import prepare as review_prepare
 from tools.check_workspace.check_workspace import package_owners
 from tools.common import ROOT, TOOLS_ROOT
 from tools.cost_check.cost_check import learn as learn_cost
-from tools.scene_registry.scene_registry import load
+from tools.scene_registry.scene_registry import (
+    SHA256,
+    accepted_fingerprints,
+    initial_states_for,
+    load,
+    read_production_status,
+    scene_fingerprint,
+    write_accepted_fingerprints,
+)
 
 FPS = 30
 ROLE_LABELS = {"first": "Первый кадр", "last": "Последний кадр", "middle": "Промежуточный кадр"}
@@ -169,6 +177,9 @@ def accept(
         raise ValueError("Скачанный оригинал не найден в попытке.")
     if scene.get("lipsync") and audio is None:
         raise ValueError(f"{shot}: речевой план требует --audio с точным WAV липсинка.")
+    scene_digest, current_digest = acceptance_fingerprint(registry, shot, workflow, root)
+    # Повреждённый статус производства обнаруживается до переноса: комплект без записи отпечатка был бы устаревшим.
+    accepted_fingerprints(read_production_status(root))
     staging = target.parent / f".accept-{shot}"
     if staging.exists():
         shutil.rmtree(staging)
@@ -362,17 +373,25 @@ def accept(
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise
+    # Сразу после переноса: комплект без отпечатка считается принятым по прежней постановке (stale).
+    write_accepted_fingerprints(root, {shot: scene_digest})
     validate_package(target / "manifest.json", shot, root)
     result = {
         "shot": shot,
         "target": str(target.relative_to(root)),
         "frames": frames,
         "video_sha256": video["sha256"],
+        "scene_sha256": scene_digest,
         "replaced": str(replaced.relative_to(root)) if replaced else None,
         "observed_credits": None,
         "cleaned": [],
         "warnings": [],
     }
+    if scene_digest != current_digest:
+        result["warnings"].append(
+            f"{shot}: постановка плана изменилась после подготовки пакета; комплект принят по прежней постановке "
+            "и требует нового производства."
+        )
     if attempt.get("credits_consumed") is not None:
         # Комплект уже перенесён: сбой записи наблюдения цены не отменяет приёмку и не мешает обновлению
         # представлений и очистке, а возвращается предупреждением.
@@ -396,6 +415,20 @@ def accept(
     if clean:
         result["cleaned"] = clean_work(root, shot, package, work_dir, review)
     return result
+
+
+def acceptance_fingerprint(registry, shot, workflow, root):
+    """Отпечаток постановки, по которой сделан комплект, и текущий отпечаток плана.
+
+    Пакет shot_workflow запоминает scene_sha256 при подготовке; без пакета или поля берётся текущая постановка.
+    """
+    current = scene_fingerprint(registry, shot, initial_states_for(root))
+    saved = workflow.get("scene_sha256") if isinstance(workflow, dict) else None
+    if saved is None:
+        return current, current
+    if not isinstance(saved, str) or not SHA256.fullmatch(saved):
+        raise ValueError(f"{shot}: scene_sha256 в workflow.json пакета должен состоять из 64 hex-символов.")
+    return saved, current
 
 
 def retire_kit(root, shot):

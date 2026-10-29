@@ -80,6 +80,8 @@ beforeEach(() => {
     derivedFrom: null,
     imageProvider: 'test',
     framePrompts: [],
+    nextFrame: null,
+    approvedFrameIds: [],
     problems: [],
     proposal: null,
     job: null

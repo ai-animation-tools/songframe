@@ -5,7 +5,7 @@
 
 import { FPS } from '@shared/video';
 import { canAgreeToUnknownCost, priceAllowsGeneration } from '@shared/generation-consent';
-import { ATTEMPT_LABELS } from '@shared/production-labels';
+import { ATTEMPT_LABELS, SCENE_CHANGED } from '@shared/production-labels';
 import { createHash, randomUUID } from 'node:crypto';
 import { closeSync, existsSync, mkdirSync, openSync, readSync, readdirSync, readFileSync, statSync, realpathSync, lstatSync, rmSync } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
@@ -15,6 +15,7 @@ import type {
   BundleInfo,
   ExportBundleOptions,
   JobInfo,
+  KeyframeNoteScope,
   PackageKeyframe,
   PackageView,
   ProductionView,
@@ -34,6 +35,7 @@ import { checkedBuiltOutput } from './built-output-path';
 import { readProjectSettings } from './checks';
 import { readPackageSpeech } from './speech';
 import { derivedShotSource } from './derived-shot';
+import { currentShotFingerprint, restampPackage, shotAcceptance } from './shot-acceptance';
 import { derivedShotReason } from '@shared/production-workflow';
 
 const STAGE_LABELS: Record<string, string> = {
@@ -81,12 +83,16 @@ interface Workflow {
   image_requests?: { request_dir: string; frame_id: string; request_sha256: string; provider: string }[];
   retry_of?: string | null;
   batch?: string | null;
+  scene_sha256?: string | null;
   timing?: PackageView['timing'];
   keyframes?: { id: string; role: 'first' | 'middle' | 'last'; time_seconds: number; note?: string | null; path?: string | null; approved?: boolean }[];
   prompt?: { path?: string; approved?: boolean };
   pending_decision?: PackageView['pendingDecision'];
   decision?: PackageView['decision'];
+  keyframe_notes?: PackageView['keyframeNotes'];
 }
+
+export { SCENE_CHANGED };
 
 export function readPackage(project: string, dir: string): PackageView | null {
   const workflow = readJson<Workflow>(join(dir, 'workflow.json'));
@@ -189,6 +195,10 @@ export function readPackage(project: string, dir: string): PackageView | null {
   } catch (error) {
     problems.push(error instanceof Error ? error.message : String(error));
   }
+  // Пакет подготовлен по отпечатку постановки: после её правки отправка и согласования ждут решения пользователя.
+  const currentScene = workflow.stage === 'accepted' ? null : currentShotFingerprint(project, workflow.shot);
+  const sceneChanged = !!currentScene && workflow.scene_sha256 !== currentScene;
+  if (sceneChanged) problems.push(SCENE_CHANGED);
   return {
     dir,
     decisionToken,
@@ -209,6 +219,8 @@ export function readPackage(project: string, dir: string): PackageView | null {
     speech: readPackageSpeech(dir),
     pendingDecision: workflow.pending_decision ?? null,
     decision: workflow.decision ?? null,
+    keyframeNotes: workflow.keyframe_notes ?? [],
+    sceneChanged,
     preview,
     problems
   };
@@ -382,6 +394,8 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
   const videoGeneration = scenes.scenes.length ? readProjectSettings(project).generation?.video : null;
   const selectedProvider = videoGeneration?.provider_selected === true && typeof videoGeneration.provider === 'string' ? videoGeneration.provider.trim() : '';
   const fps = Number(scenes.fps) || FPS;
+  const acceptance = shotAcceptance(project, scenes);
+  if (acceptance.problem) problems.push(acceptance.problem);
   const shots: ShotProduction[] = scenes.scenes.map((scene) => {
     const assetDir = join(project, 'assets', 'shots', scene.id);
     const manifest = readJson<{ accepted_edit?: { video?: { path?: string } }; generation?: { original?: { path?: string } } }>(
@@ -389,19 +403,23 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
     );
     const video = existingAssetFile(assetDir, manifest?.accepted_edit?.video?.path);
     const mine = packages.filter((p) => p.shot === scene.id);
-    // completed обозначает художественную приёмку; наличие готового файла показывается отдельно.
-    let state: ShotProduction['state'] = manifest ? 'completed' : mine.length ? 'progress' : 'planned';
-    let stageLabel = manifest
-      ? video
-        ? 'принят, монтажное видео сохранено'
-        : 'принят, файл монтажного видео отсутствует'
-      : (mine[0]?.stageLabel ?? 'постановка есть, работа не начата');
+    // completed обозначает художественную приёмку по текущей постановке; наличие готового файла показывается отдельно.
+    const accepted = manifest ? (acceptance.accepted.get(scene.id) ?? 'stale') : null;
+    let state: ShotProduction['state'] = accepted ?? (mine.length ? 'progress' : 'planned');
+    let stageLabel =
+      accepted === 'stale'
+        ? 'принят по прежней постановке: нужно новое производство'
+        : manifest
+          ? video
+            ? 'принят, монтажное видео сохранено'
+            : 'принят, файл монтажного видео отсутствует'
+          : (mine[0]?.stageLabel ?? 'постановка есть, работа не начата');
     const waiting = mine.find((p) => p.pendingDecision);
     if (waiting)
       stageLabel = manifest
         ? `принят; новая попытка ждёт решения: ${waiting.pendingDecision!.question}`
         : `ждёт вашего решения: ${waiting.pendingDecision!.question}`;
-    if (mine.some((p) => p.problems.length)) state = state === 'completed' ? state : 'unknown';
+    if (mine.some((p) => p.problems.length)) state = manifest ? state : 'unknown';
     const attention = mine.map(packageAttention).find((text) => text) ?? null;
     const derivedFrom = derivedShotSource(project, scene);
     return {
@@ -480,6 +498,7 @@ export class Production {
 
   private ready(project: string, directory: string, expectedSha: string, decisionToken?: string): PackageView {
     const view = readPackage(project, directory);
+    if (view?.sceneChanged) throw new Error(`${SCENE_CHANGED} Оставьте пакет для текущей постановки или подготовьте новый.`);
     if (!view?.decisionToken || view.problems.length || !view?.request?.sha256 || view.request.sha256 !== expectedSha || !/^[a-f0-9]{64}$/.test(expectedSha))
       throw new Error('Показанный запрос изменился. Откройте подтверждение заново.');
     if (!['request_choice', 'ready', 'image_request_choice'].includes(view.stage) || view.request.attemptStatus !== 'prepared')
@@ -558,7 +577,17 @@ export class Production {
     private readonly jobs: Jobs
   ) {}
 
-  async decide(project: string, packageDir: string, verdict: string, note: string, decisionToken?: string): Promise<void> {
+  /** Опоры согласуются по одной: вопрос задаётся о первом в плане кандидате, ещё не утверждённом. */
+  private async askNextFrame(project: string, directory: string): Promise<void> {
+    const current = readPackage(project, directory);
+    if (!current || current.pendingDecision) return;
+    const frame = current.keyframes.find((item) => item.imagePath && !item.approved);
+    if (!frame) return;
+    const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', 'keyframes_review', '--frame', frame.id]);
+    if (question.code !== 0) throw new Error(`Кандидат сохранён; не удалось записать вопрос об опоре ${frame.id}.`);
+  }
+
+  async decide(project: string, packageDir: string, verdict: string, note: string, decisionToken?: string, noteScope?: KeyframeNoteScope): Promise<void> {
     packageDir = this.available(project, packageDir);
     const view = readPackage(project, packageDir);
     if (decisionToken && decisionToken !== view?.decisionToken) throw new Error('Вопрос или материалы изменились. Обновите пакет перед ответом.');
@@ -570,7 +599,16 @@ export class Production {
         this.toolsRoot,
         project,
         'shot_workflow',
-        ['decide', '--dir', packageDir, '--verdict', verdict, ...(note ? ['--note', note] : [])],
+        [
+          'decide',
+          '--dir',
+          packageDir,
+          '--verdict',
+          verdict,
+          ...(note ? ['--note', note] : []),
+          // Охват замечания важен только при доработке опоры: оно уходит в генерацию этой опоры или и следующих.
+          ...(verdict === 'revise' && view?.pendingDecision?.frame ? ['--note-scope', noteScope === 'frame' ? 'frame' : 'following'] : [])
+        ],
         undefined,
         this.jobs.launcher
       );
@@ -580,9 +618,62 @@ export class Production {
         const reset = await this.jobs.launcher.run(project, 'shot_workflow', ['set-stage', '--dir', packageDir, 'keyframes_review']);
         if (reset.code !== 0) throw new Error('Замечание сохранено; не удалось вернуться к подготовке изображения.');
       }
+      // После утверждения одной опоры следующий уже готовый кандидат (например, свой импорт) сразу получает вопрос.
+      if (verdict === 'approve' && view?.pendingDecision?.frame) await this.askNextFrame(project, packageDir);
     } finally {
       this.operations.delete(packageDir);
     }
+  }
+
+  async reopenFrame(project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope): Promise<void> {
+    packageDir = this.available(project, packageDir);
+    if (!/^K\d{2}$/.test(frame)) throw new Error('Неизвестная опора.');
+    if (!note.trim()) throw new Error('Опишите, что исправить в опоре.');
+    this.operations.add(packageDir);
+    try {
+      const result = await this.jobs.launcher.run(project, 'shot_workflow', [
+        'reopen',
+        '--dir',
+        packageDir,
+        frame,
+        '--note',
+        note.trim(),
+        '--note-scope',
+        noteScope === 'frame' ? 'frame' : 'following'
+      ]);
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || 'Не удалось вернуть опору на доработку.');
+      await this.askNextFrame(project, packageDir);
+    } finally {
+      this.operations.delete(packageDir);
+    }
+  }
+
+  /** Пользователь подтверждает, что правка сценария не затрагивает материалы неотправленного пакета. */
+  keepPackageForScene(project: string, packageDir: string): void {
+    packageDir = this.available(project, packageDir);
+    const view = readPackage(project, packageDir);
+    if (!view?.sceneChanged) throw new Error('Постановка пакета не менялась.');
+    if (view.request && view.request.attemptStatus !== 'prepared')
+      throw new Error('Попытка уже отправлялась: её материалы относятся к прежней постановке, оставить их для новой нельзя.');
+    const workflow = readJson<Workflow>(join(packageDir, 'workflow.json'));
+    const current = currentShotFingerprint(project, view.shot);
+    if (!workflow || !current || !restampPackage(packageDir, workflow.scene_sha256 ?? null, current))
+      throw new Error('Не удалось обновить отпечаток постановки в workflow.json пакета.');
+  }
+
+  async setKeyframeNote(project: string, packageDir: string, id: number, active: boolean): Promise<void> {
+    packageDir = this.available(project, packageDir);
+    if (!Number.isInteger(id) || id < 1) throw new Error('Неизвестное замечание.');
+    const result = await this.jobs.launcher.run(project, 'shot_workflow', [
+      'set-note',
+      '--dir',
+      packageDir,
+      '--id',
+      String(id),
+      '--active',
+      active ? 'true' : 'false'
+    ]);
+    if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || 'Не удалось изменить замечание.');
   }
 
   /** Отказ от попытки удаляет пакет целиком вместе с оплаченным оригиналом: после него повтор по сохранённому запросу доступен снова. */
@@ -928,11 +1019,8 @@ export class Production {
         media.collect({ provider: media.provider, kind: 'image', project, requestDir: request.dir, requestSha: request.sha256!, frameId: request.frameId });
       const selected = await this.jobs.launcher.run(project, 'shot_workflow', ['select-image', '--dir', directory, '--file', request.downloads[index]]);
       if (selected.code !== 0) throw new Error((selected.stderr || selected.stdout).trim() || 'Не удалось выбрать опору.');
-      const current = readPackage(project, directory);
-      if (current?.keyframes.length && current.keyframes.every((frame) => frame.imagePath)) {
-        const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', 'keyframes_review']);
-        if (question.code !== 0) throw new Error('Кандидат сохранён; не удалось записать вопрос утверждения опор.');
-      }
+      // Каждая опора утверждается сразу после выбора, не дожидаясь остальных.
+      await this.askNextFrame(project, directory);
     } finally {
       this.operations.delete(directory);
     }

@@ -62,11 +62,25 @@ export function redact(text: string): string {
     .replace(/((?:api[_-]?key|access[_-]?token|refresh[_-]?token|authorization)\s*[=:]\s*["']?)[^\s,"'}]+/gi, '$1[скрыто]');
 }
 
-export function providerFailure(value: unknown): AgentError {
+const DETAIL_LIMIT = 400;
+
+/** Текст причины от CLI для показа: без секретов, в одну строку и ограниченной длины. */
+export function providerDetail(value: unknown): string {
+  const text = typeof value === 'string' ? redact(value).replace(/\s+/g, ' ').trim() : '';
+  return text.length > DETAIL_LIMIT ? `${text.slice(0, DETAIL_LIMIT)}…` : text;
+}
+
+/**
+ * value служит только для классификации (в нём может быть stderr); detail — структурированное сообщение
+ * агента о сбое, которое показывается пользователю, чтобы причина не терялась за общей фразой.
+ */
+export function providerFailure(value: unknown, detail?: unknown): AgentError {
   const text = typeof value === 'string' ? value : '';
+  const reason = providerDetail(detail);
+  const suffix = reason ? ` Сообщение агента: «${reason}»` : '';
   if (/auth|not logged|login|unauthorized|invalid.?api.?key|\b401\b/i.test(text))
-    return new AgentError('AUTH_REQUIRED', 'Агент сообщил об ошибке входа. Проверьте авторизацию в настройках.');
+    return new AgentError('AUTH_REQUIRED', `Агент сообщил об ошибке входа. Проверьте авторизацию в настройках.${suffix}`);
   if (/rate.?limit|quota|usage.?limit|budget|\b429\b/i.test(text))
-    return new AgentError('RATE_LIMIT', 'Агент сообщил об ограничении использования. Проверьте лимиты аккаунта.');
-  return new AgentError('CLI_ERROR', 'Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели.');
+    return new AgentError('RATE_LIMIT', `Агент сообщил об ограничении использования. Проверьте лимиты аккаунта.${suffix}`);
+  return new AgentError('CLI_ERROR', `Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели.${suffix}`);
 }

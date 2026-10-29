@@ -1,7 +1,7 @@
 /** Состояние производства и действия выбранного пакета; платная отправка требует подтверждения снимка. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import type { AcceptOptions, BrokenPackage, JobInfo, PackageView, ProductionView } from '@shared/types';
+import type { AcceptOptions, BrokenPackage, JobInfo, KeyframeNoteScope, PackageView, ProductionView } from '@shared/types';
 import { useApp } from '../../state';
 import { VERDICT_LABELS, type ProductionFilter } from './constants';
 import {
@@ -105,7 +105,12 @@ export function useProductionPage() {
     setSelected((current) =>
       current && next.shots.some((shot) => shot.id === current)
         ? current
-        : (next.shots.find((shot) => shot.state === 'progress')?.id ?? next.shots.find((shot) => shot.state === 'planned')?.id ?? next.shots[0]?.id ?? null)
+        : // После планов в работе — принятые по прежней постановке: им нужно новое производство раньше не начатых.
+          (next.shots.find((shot) => shot.state === 'progress')?.id ??
+          next.shots.find((shot) => shot.state === 'stale')?.id ??
+          next.shots.find((shot) => shot.state === 'planned')?.id ??
+          next.shots[0]?.id ??
+          null)
     );
   }, [project, projectScope]);
 
@@ -167,11 +172,14 @@ export function useProductionPage() {
   const shot = view?.shots.find((item) => item.id === selected) ?? null;
   // После выбора пакет закреплён: появление новой попытки не переключает текущий просмотр.
   const rememberedPackage = selectedPackages[selectionKey];
-  const packageSelection = rememberedPackage ?? (shot?.packages.length === 1 ? shot.packages[0].dir : shot?.packages.length ? '' : '__new__');
+  // Непринятое предложение агента открывается сразу: выбирается его пакет или «Новая подготовка».
+  const proposalSelection = shot?.proposal ? (shot.proposal.packageDir ?? '__new__') : undefined;
+  const packageSelection =
+    rememberedPackage ?? proposalSelection ?? (shot?.packages.length === 1 ? shot.packages[0].dir : shot?.packages.length ? '' : '__new__');
   const selectedPackage = shot?.packages.find((pkg) => pkg.dir === packageSelection) ?? null;
   navigationScope.update(`${project}\0${selected ?? ''}\0${packageSelection}\0${filter}`);
   useEffect(() => {
-    if (rememberedPackage === undefined && shot?.packages.length === 1) selectPackage(shot.packages[0].dir);
+    if (rememberedPackage === undefined && !shot?.proposal && shot?.packages.length === 1) selectPackage(shot.packages[0].dir);
   }, [rememberedPackage, shot, selectPackage]);
   const queued = useMemo(() => (view?.shots ?? []).flatMap((item) => item.packages.filter(isQueuedPackage)), [view]);
   const visible = useMemo(
@@ -229,8 +237,9 @@ export function useProductionPage() {
 
   const noteFor = (pkg: PackageView): string => notes[decisionNoteKey(pkg)] ?? '';
   const setNoteFor = (pkg: PackageView, value: string): void => setNotes((current) => ({ ...current, [decisionNoteKey(pkg)]: value }));
-  const decide = (pkg: PackageView, verdict: string): void => {
+  const decide = (pkg: PackageView, verdict: string, noteScope?: KeyframeNoteScope): void => {
     const note = noteFor(pkg).trim();
+    const frame = pkg.pendingDecision?.frame;
     if (verdict === 'revise' && !note) {
       notify('Для возврата напишите замечание: что исправить.', 'warning');
       return;
@@ -253,11 +262,15 @@ export function useProductionPage() {
     void act(
       verdict === 'park'
         ? 'Пакет сохранён в очередь: он в списке «Очередь», генерация не запускалась.'
-        : verdict === 'revise'
-          ? 'Замечание сохранено. Нажмите «Запустить доработку с агентом» в блоке подготовки.'
-          : `Ответ записан: ${VERDICT_LABELS[verdict]?.label ?? verdict}`,
+        : verdict === 'revise' && frame
+          ? `Замечание к ${frame} сохранено. Создайте опору заново кнопкой «Создать ${frame}» в блоке «Подготовка плана».`
+          : verdict === 'revise'
+            ? 'Замечание сохранено. Нажмите «Запустить доработку с агентом» в блоке подготовки.'
+            : verdict === 'approve' && frame
+              ? `Опора ${frame} утверждена.`
+              : `Ответ записан: ${VERDICT_LABELS[verdict]?.label ?? verdict}`,
       async () => {
-        await window.api.production.decide(project, pkg.dir, verdict, note, pkg.decisionToken);
+        await window.api.production.decide(project, pkg.dir, verdict, note, pkg.decisionToken, frame && verdict === 'revise' ? noteScope : undefined);
         if (verdict === 'park') {
           await window.api.production.park(project, pkg.dir);
           if (!current()) return;
@@ -284,6 +297,32 @@ export function useProductionPage() {
         if (verdict === 'accept') openAccept(pkg, !!shot?.asset, !!shot?.lipsync);
         if (verdict === 'retry') setConfirmRegenerate(pkg.shot);
       },
+      pkg.dir
+    );
+  };
+
+  /** Возврат утверждённой опоры: главный процесс откажет, если видеопромпт или запрос видео уже построены на ней. */
+  const reopenFrame = (pkg: PackageView, frame: string, note: string, scope: KeyframeNoteScope): void => {
+    void act(
+      `Опора ${frame} возвращена на доработку. Создайте её заново кнопкой «Создать ${frame}» в блоке «Подготовка плана».`,
+      () => window.api.production.reopenFrame(project, pkg.dir, frame, note, scope),
+      pkg.dir
+    );
+  };
+
+  /** Пользователь решил, что правка сценария не меняет материалы неотправленного пакета. */
+  const keepPackageForScene = (pkg: PackageView): void => {
+    void act(
+      'Пакет оставлен для текущей постановки: подготовку и отправку можно продолжать.',
+      () => window.api.production.keepPackageForScene(project, pkg.dir),
+      pkg.dir
+    );
+  };
+
+  const setKeyframeNote = (pkg: PackageView, id: number, active: boolean): void => {
+    void act(
+      active ? 'Замечание к опорам снова действует.' : 'Замечание снято: агент больше не получит его при создании опор.',
+      () => window.api.production.setKeyframeNote(project, pkg.dir, id, active),
       pkg.dir
     );
   };
@@ -371,6 +410,9 @@ export function useProductionPage() {
     visible,
     act,
     decide,
+    reopenFrame,
+    keepPackageForScene,
+    setKeyframeNote,
     selectImage,
     packageSelection,
     selectedPackage,

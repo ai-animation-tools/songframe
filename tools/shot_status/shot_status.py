@@ -13,7 +13,7 @@ import json
 import re
 
 from tools.common import ROOT
-from tools.scene_registry.scene_registry import load
+from tools.scene_registry.scene_registry import load, project_shot_acceptance
 from tools.scene_registry.scene_registry import shots as registry_shots
 
 # Названия статусов и этапов описаны в README инструмента; здесь они только вычисляются.
@@ -22,6 +22,7 @@ STATUS_LABELS = {
     "planned": "запланирована",
     "progress": "в работе",
     "completed": "готова",
+    "stale": "постановка изменена",
     "unknown": "статус не установлен",
 }
 STAGE_LABELS = {
@@ -142,16 +143,27 @@ def collect(root=ROOT):
     data = load(root)
     items = registry_shots(data)
     packages, reviews = work_packages(root)
+    acceptance = project_shot_acceptance(root, data)
     rows = []
     for scene in items:
         sid = scene["id"]
         own = packages.get(sid, [])
         notes = [f"{p['kind']}: {p['path']} ({p['stage']})" for p in own]
         notes += [f"проба: {path}" for path in reviews.get(sid, [])]
-        if (root / "assets/shots" / sid / "manifest.json").is_file():
-            # Наличие локального комплекта означает одобрение; незавершённая
+        if acceptance.get(sid) == "completed":
+            # Комплект принят по текущей постановке; незавершённая
             # альтернатива не отменяет готовность и показывается примечанием.
             status, stage = "completed", "выбранный комплект в assets"
+        elif acceptance.get(sid) == "stale":
+            # Комплект сделан по прежней постановке плана или его источника: нужно новое производство.
+            source = (scene.get("derived_from") or {}).get("shot")
+            status = "stale"
+            if acceptance.get(source) == "stale":
+                stage = f"постановка {source} изменена после приёмки: нужно новое производство"
+            else:
+                stage = "постановка изменена после приёмки: нужно новое производство"
+            if own:
+                stage += f"; новая работа: {own[0]['stage']}"
         elif any(p["unknown"] for p in own):
             status, stage = "unknown", own[0]["stage"]
         elif own:
@@ -261,7 +273,9 @@ def table(result, status_filter="all"):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--filter", choices=["all", "planned", "progress", "completed", "unknown"], default="all")
+    parser.add_argument(
+        "--filter", choices=["all", "planned", "progress", "completed", "stale", "unknown"], default="all"
+    )
     parser.add_argument("--json", action="store_true", help="Машиночитаемый вывод для приложения.")
     parser.add_argument("--next", action="store_true", help="Только кандидат next и очередь.")
     parser.add_argument("--independent", nargs="+", metavar="Mxx", help="Проверить независимость партии планов.")

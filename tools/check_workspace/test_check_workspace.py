@@ -16,6 +16,7 @@ import unittest
 from tools.check_workspace.check_workspace import collect, package_owners
 from tools.export_edit_bundle import export_edit_bundle
 from tools.export_edit_bundle import test_export_edit_bundle as bundle_fixture
+from tools.scene_registry.scene_registry import load, scene_fingerprint, write_accepted_fingerprints
 
 
 class CheckWorkspaceTests(unittest.TestCase):
@@ -49,6 +50,7 @@ class CheckWorkspaceTests(unittest.TestCase):
             )
         )
         (self.root / "assets/shots/M01/manifest.json").write_text('{"shot": "M01"}')
+        write_accepted_fingerprints(self.root, {"M01": scene_fingerprint(load(self.root), "M01", {})})
         for sid in ("M02", "M03"):
             (self.root / f"plan/animatic/cards/{sid}.png").write_bytes(b"png")
         (self.root / "plan/animatic/cards/manifest.json").write_text(json.dumps({"cards": {"M02": {}, "M03": {}}}))
@@ -56,6 +58,21 @@ class CheckWorkspaceTests(unittest.TestCase):
     def test_clean_tree_has_no_problems(self):
         result = collect(self.root)
         self.assertEqual((result["accepted"], result["problems"]), (["M01"], []))
+
+    def test_changed_direction_is_reported_as_stale_without_workspace_problem(self):
+        registry = json.loads((self.root / "plan/scenes.json").read_text())
+        registry["scenes"][0]["action"] = "новое действие"
+        (self.root / "plan/scenes.json").write_text(json.dumps(registry))
+        result = collect(self.root)
+        # Карточка устаревшего плана не нужна: в сборке по-прежнему его комплект.
+        self.assertEqual((result["accepted"], result["stale"], result["problems"]), ([], ["M01"], []))
+        completed = subprocess.run(
+            [sys.executable, "-B", str(Path(__file__).with_name("check_workspace.py")), "--project", str(self.root)],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("Постановка изменена после приёмки, нужно новое производство: M01.", completed.stdout)
 
     def exported_project(self, copy=False):
         """Настоящий export на временной фикстуре; готовый снимок переживает дальнейшую приёмку."""
@@ -202,7 +219,7 @@ class CheckWorkspaceTests(unittest.TestCase):
     def test_json_cli_preserves_clean_tree_result(self):
         result = self.run_cli("--json")
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(json.loads(result.stdout), {"accepted": ["M01"], "problems": []})
+        self.assertEqual(json.loads(result.stdout), {"accepted": ["M01"], "stale": [], "problems": []})
         self.assertEqual(result.stderr, "")
 
     def test_json_cli_preserves_workspace_problems_and_failure_exit(self):

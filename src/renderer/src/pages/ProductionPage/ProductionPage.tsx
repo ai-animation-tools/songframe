@@ -52,6 +52,9 @@ export function ProductionPage(): ReactElement {
     visible,
     act,
     decide,
+    reopenFrame,
+    keepPackageForScene,
+    setKeyframeNote,
     selectImage
   } = useProductionPage();
 
@@ -203,13 +206,16 @@ export function ProductionPage(): ReactElement {
                   busy={busyFor(selectedPackage.dir) || workflowBusyFor(selectedPackage.dir) || !view.tools.python}
                   busyReason={view.tools.python ? BUSY_REASON : PYTHON_REASON}
                   operation={operationFor(selectedPackage.dir)}
-                  onOpenRevision={() => {
+                  onOpenRevision={(focusNote = true) => {
                     const panel = workflowPanel.current;
-                    const target = panel?.querySelector<HTMLTextAreaElement>('textarea') ?? panel;
+                    const target = (focusNote ? panel?.querySelector<HTMLTextAreaElement>('textarea') : null) ?? panel;
                     target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     target?.focus({ preventScroll: true });
                   }}
-                  onDecide={(verdict) => decide(selectedPackage, verdict)}
+                  onDecide={(verdict, noteScope) => decide(selectedPackage, verdict, noteScope)}
+                  onReopenFrame={(frame, note, scope) => reopenFrame(selectedPackage, frame, note, scope)}
+                  onKeepForScene={() => keepPackageForScene(selectedPackage)}
+                  onSetKeyframeNote={(id, active) => setKeyframeNote(selectedPackage, id, active)}
                   onSubmit={() => setConfirmSend(selectedPackage)}
                   onSelectImage={(index) => selectImage(selectedPackage, index)}
                   onAccept={() => openAccept(selectedPackage, !!shot.asset, shot.lipsync)}

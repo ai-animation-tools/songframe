@@ -12,6 +12,7 @@ interface Journal {
 }
 const FIXED = new Set([
   'plan/scenes.json',
+  'plan/production-status.json',
   'ROADMAP.md',
   'plan/edit-list.md',
   'plan/storyboard.md',

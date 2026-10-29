@@ -112,6 +112,7 @@ class UpdateSceneViewsTests(unittest.TestCase):
                             "path": "frames/K02.png",
                         },
                     ],
+                    "keyframe_notes": [],
                 }
             )
         )

@@ -26,6 +26,7 @@ export function ProductionToolbar({
     progress: view.shots.filter((s) => s.state === 'progress').length,
     planned: view.shots.filter((s) => s.state === 'planned').length,
     completed: view.shots.filter((s) => s.state === 'completed').length,
+    stale: view.shots.filter((s) => s.state === 'stale').length,
     queued: view.shots.flatMap((shot) => shot.packages.filter(isQueuedPackage)).length + view.broken.length
   };
 
@@ -50,6 +51,16 @@ export function ProductionToolbar({
           label={`ждут вас: ${counts.attention}`}
           title="Планы, у которых пакет ждёт вашего действия; щелчок показывает их"
           onClick={() => onFilter('attention')}
+        />
+      ) : null}
+      {/* Принятые по прежней постановке планы ждут нового производства: чип показывает их фильтр. */}
+      {counts.stale ? (
+        <Chip
+          size="small"
+          color="info"
+          label={`постановка изменена: ${counts.stale}`}
+          title="Планы, принятые по прежней постановке: им нужно новое производство; щелчок показывает их"
+          onClick={() => onFilter('stale')}
         />
       ) : null}
       <Box sx={{ flex: 1 }} />

@@ -3,6 +3,7 @@
  * Обычное сохранение делает принятые комплекты затронутых планов устаревшими; режим keep оставляет их в силе.
  */
 
+import { scenarioTexts } from '@shared/texts/scenario';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ScenarioImpactShot, ScenarioSaveImpact, SceneShot, ScenesFile, ScenesSaveMode } from '@shared/types';
@@ -34,15 +35,15 @@ const withoutBounds = ({ start_frame: _start, end_frame_exclusive: _end, ...rest
 function reasonOf(project: string, before: ScenesFile, after: ScenesFile, id: string): string {
   const previous = before.scenes.find((scene) => scene.id === id);
   const next = after.scenes.find((scene) => scene.id === id)!;
-  if (!previous) return 'новый план в реестре';
-  if (JSON.stringify(withoutBounds(previous)) !== JSON.stringify(withoutBounds(next))) return 'изменена постановка плана';
-  if (previous.start_frame !== next.start_frame || previous.end_frame_exclusive !== next.end_frame_exclusive) return 'сдвинуты границы плана';
+  if (!previous) return scenarioTexts.main.impactNewShot;
+  if (JSON.stringify(withoutBounds(previous)) !== JSON.stringify(withoutBounds(next))) return scenarioTexts.main.impactStagingChanged;
+  if (previous.start_frame !== next.start_frame || previous.end_frame_exclusive !== next.end_frame_exclusive) return scenarioTexts.main.impactBoundsChanged;
   const initial = initialStates(readCast(project) || null);
   if (JSON.stringify(resolveStates(before, initial)[id]) !== JSON.stringify(resolveStates(after, initial)[id])) {
     const source = typeof next.state_from === 'string' ? next.state_from : (next.state_from?.scene ?? null);
-    return source ? `изменилось состояние, унаследованное от ${source}` : 'изменилось начальное состояние';
+    return source ? scenarioTexts.main.impactInheritedState({ source }) : scenarioTexts.main.impactInitialState;
   }
-  return 'изменены общие правила или направление части';
+  return scenarioTexts.main.impactGlobalRules;
 }
 
 /** Планы, чей отпечаток различается у сохранённого реестра и черновика, плюс производные от них планы. */
@@ -54,7 +55,7 @@ function affectedShots(project: string, before: ScenesFile | null, after: Scenes
   for (const scene of after.scenes) if (previous[scene.id] !== next[scene.id]) changed.set(scene.id, reasonOf(project, before, after, scene.id));
   for (const scene of after.scenes) {
     const source = scene.derived_from?.shot;
-    if (source && changed.has(source) && !changed.has(scene.id)) changed.set(scene.id, `собирается из материала ${source}`);
+    if (source && changed.has(source) && !changed.has(scene.id)) changed.set(scene.id, scenarioTexts.main.impactDerivedSource({ source }));
   }
   return after.scenes.filter((scene) => changed.has(scene.id)).map((scene) => ({ id: scene.id, reason: changed.get(scene.id)! }));
 }
@@ -97,7 +98,7 @@ function restampPackages(project: string, shots: Set<string>, previous: Record<s
  * остаются устаревшими, чтобы правка опечатки не отменяла прежнюю сюжетную правку.
  */
 export function saveScenesWithMode(project: string, data: ScenesFile, mode: ScenesSaveMode): ScenesFile {
-  if (mode !== 'production' && mode !== 'keep') throw new Error('Неизвестный режим сохранения реестра.');
+  if (mode !== 'production' && mode !== 'keep') throw new Error(scenarioTexts.main.invalidSaveMode);
   // Проверяем файл принятых отпечатков до записи реестра, чтобы не оставить полусохранение.
   if (mode === 'keep') writableProductionStatus(project);
   const before = readRegistry(project);

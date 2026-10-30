@@ -1,3 +1,6 @@
+import { scenesTexts } from '@shared/texts/scenes';
+import { commonTexts } from '@shared/texts/common';
+import { SlottedText } from '../../../components/SlottedText';
 import type { ReactElement } from 'react';
 import type { DashboardShot } from '@shared/types';
 import { Box, Chip, Stack, Typography } from '@mui/material';
@@ -7,7 +10,7 @@ import { ShotSection } from './ShotSection';
 export function ShotStaging({ shot }: { shot: DashboardShot }): ReactElement {
   return (
     <>
-      <ShotSection title="Постановка">
+      <ShotSection title={scenesTexts.staging.title}>
         <Stack spacing={0.5}>
           {shot.original ? (
             <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
@@ -15,14 +18,20 @@ export function ShotStaging({ shot }: { shot: DashboardShot }): ReactElement {
             </Typography>
           ) : null}
           <Typography variant="body2">
-            <b>Камера.</b> {shot.camera || 'не задана'}
+            <SlottedText
+              text={commonTexts.staging.camera}
+              slots={{ label: <b>{commonTexts.staging.cameraLabel}</b>, camera: shot.camera || commonTexts.staging.cameraMissing }}
+            />
           </Typography>
           <Typography variant="body2">
-            <b>Действие.</b> {shot.action || 'не задано'}
+            <SlottedText
+              text={commonTexts.staging.action}
+              slots={{ label: <b>{commonTexts.staging.actionLabel}</b>, action: shot.action || commonTexts.staging.actionMissing }}
+            />
           </Typography>
           {shot.continuity ? (
             <Typography variant="body2">
-              <b>Связь.</b> {shot.continuity}
+              <SlottedText text={scenesTexts.staging.continuity} slots={{ label: <b>{scenesTexts.staging.continuityLabel}</b>, continuity: shot.continuity }} />
             </Typography>
           ) : null}
           {shot.notes ? (

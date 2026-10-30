@@ -1,3 +1,4 @@
+import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { HomeRedirect, Layout, RequireProject, RequireScenario } from './components';
@@ -83,7 +84,7 @@ export function App(): ReactElement {
               path="project/production"
               element={
                 <RequireProject>
-                  <RequireScenario title="Производство">
+                  <RequireScenario title={navigationTexts.pages.production}>
                     <ProductionPage />
                   </RequireScenario>
                 </RequireProject>
@@ -93,7 +94,7 @@ export function App(): ReactElement {
               path="project/scenes"
               element={
                 <RequireProject>
-                  <RequireScenario title="Сцены">
+                  <RequireScenario title={navigationTexts.pages.scenes}>
                     <ScenesPage />
                   </RequireScenario>
                 </RequireProject>
@@ -103,7 +104,7 @@ export function App(): ReactElement {
               path="project/montage"
               element={
                 <RequireProject>
-                  <RequireScenario title="Монтаж пробы">
+                  <RequireScenario title={navigationTexts.pages.montage}>
                     <MontagePage />
                   </RequireScenario>
                 </RequireProject>
@@ -113,7 +114,7 @@ export function App(): ReactElement {
               path="project/checks"
               element={
                 <RequireProject>
-                  <RequireScenario title="Проверки">
+                  <RequireScenario title={navigationTexts.pages.checks}>
                     <ChecksPage />
                   </RequireScenario>
                 </RequireProject>
@@ -123,7 +124,7 @@ export function App(): ReactElement {
               path="project/animatic"
               element={
                 <RequireProject>
-                  <RequireScenario title="Аниматик">
+                  <RequireScenario title={navigationTexts.pages.animatic}>
                     <AnimaticPage />
                   </RequireScenario>
                 </RequireProject>

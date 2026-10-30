@@ -1,3 +1,6 @@
+import { navigationTexts } from '@shared/texts/navigation';
+import { commonTexts } from '@shared/texts/common';
+import { sourcesTexts } from '@shared/texts/sources';
 /** Исходники проекта: трек, текст песни, идея, обложка и референсы. */
 import { useEffect, useRef, type ReactElement } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
@@ -35,7 +38,7 @@ export function SourcesPage(): ReactElement {
         severity="error"
         action={
           <Button startIcon={<RefreshIcon />} onClick={form.retry}>
-            Повторить
+            {commonTexts.retry}
           </Button>
         }
       >
@@ -51,23 +54,23 @@ export function SourcesPage(): ReactElement {
   const saveBlockedReason = form.busy
     ? null
     : form.hasPromptErrors
-      ? 'Не удалось прочитать некоторые промпты референсов: восстановите файлы или введите текст заново.'
+      ? sourcesTexts.promptReadBlocked
       : problems.length
-        ? `Исправьте проблемы формы (${problems.length}): список — в начале страницы, ошибки отмечены у полей.`
+        ? sourcesTexts.formProblems({ count: problems.length })
         : !form.dirty
-          ? 'Нет несохранённых правок.'
+          ? sourcesTexts.noUnsavedChanges
           : null;
 
   return (
     <Stack spacing={2} inert={form.busy || undefined} aria-busy={form.busy} sx={{ width: '100%', minWidth: 0, pb: 10 }}>
       <PageActionBar>
-        <Typography variant="h5">Исходники</Typography>
-        {form.dirty ? <Chip size="small" color="warning" label="Есть несохранённые правки" /> : null}
+        <Typography variant="h5">{navigationTexts.pages.sources}</Typography>
+        {form.dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
         {problemCount ? (
           <Chip
             size="small"
             color="warning"
-            label={`Проблем: ${problemCount}`}
+            label={sourcesTexts.problemCount({ count: problemCount })}
             // Список проблем стоит в начале страницы, а правка обычно идёт в карточке ниже.
             onClick={() => problemsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
           />
@@ -77,10 +80,10 @@ export function SourcesPage(): ReactElement {
           variant="contained"
           startIcon={<SaveIcon />}
           disabled={form.busy || !!saveBlockedReason}
-          disabledReason={form.busy ? 'Дождитесь окончания текущей операции.' : saveBlockedReason}
+          disabledReason={form.busy ? sourcesTexts.operationPending : saveBlockedReason}
           onClick={form.save}
         >
-          Сохранить
+          {commonTexts.save}
         </ActionButton>
       </PageActionBar>
       {form.view.problems.length ? (
@@ -90,11 +93,7 @@ export function SourcesPage(): ReactElement {
       ) : null}
       {problemCount ? (
         <Stack ref={problemsRef} spacing={1}>
-          {form.hasPromptErrors ? (
-            <Alert severity="warning">
-              Не удалось прочитать некоторые промпты. Раскройте отмеченные референсы и восстановите файл либо введите текст заново.
-            </Alert>
-          ) : null}
+          {form.hasPromptErrors ? <Alert severity="warning">{sourcesTexts.promptReadWarning}</Alert> : null}
           {problems.length ? (
             <Alert severity="warning">
               <ul style={{ margin: 0, paddingLeft: 18 }}>

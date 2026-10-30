@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { Dispatch, SetStateAction } from 'react';
 import type { SceneShot, ScenesFile, StateDelta } from '@shared/types';
 import { renumberShots } from '@shared/scene-editing';
@@ -29,7 +30,7 @@ export function useSceneDraft(
     if (!scenes || !shot) return;
     const middle = Math.round((shot.start_frame + shot.end_frame_exclusive) / 2);
     if (middle - shot.start_frame < 15 || shot.end_frame_exclusive - middle < 15) {
-      notify('План слишком короткий для деления.', 'warning');
+      notify(scenarioTexts.notice.shotTooShort, 'warning');
       return;
     }
     const second: SceneShot = { ...shot, id: `${shot.id}.1`, start_frame: middle, state_from: shot.id, state_changes: {}, continuity: '' };

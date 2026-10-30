@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 import { useId, type ReactElement } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
 import { Prose } from '../../../components/Prose';
@@ -8,7 +9,7 @@ export function RequestPrompt({ text }: { text: string }): ReactElement {
   return (
     <Paper component="section" variant="outlined" aria-labelledby={labelId} sx={{ p: 2, minWidth: 0, bgcolor: 'action.hover' }}>
       <Typography id={labelId} component="h3" variant="subtitle2" sx={{ mb: 1 }}>
-        Промпт запроса
+        {productionTexts.requestPrompt.heading}
       </Typography>
       <Box
         tabIndex={0}

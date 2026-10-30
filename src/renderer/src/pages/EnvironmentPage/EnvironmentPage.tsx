@@ -1,3 +1,6 @@
+import { environmentTexts } from '@shared/texts/environment';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 /** Проверка среды: что найдено, чего не хватает и для чего это нужно; восстановление ресурсов разработки. */
 
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
@@ -40,7 +43,7 @@ export function EnvironmentPage(): ReactElement {
         })
         .catch((reason) => {
           if (!mounted.current) return;
-          setAuth((previous) => ({ ...previous, [provider]: { status: 'unknown', message: `Не удалось проверить вход: ${describeError(reason)}` } }));
+          setAuth((previous) => ({ ...previous, [provider]: { status: 'unknown', message: environmentTexts.authCheckFailed(describeError(reason)) } }));
         })
         .finally(() => {
           authInFlight.current.delete(provider);
@@ -118,14 +121,11 @@ export function EnvironmentPage(): ReactElement {
     const next = lastChecks.current as EnvironmentCheck[] | null;
     if (!next || !mounted.current) return;
     const missing = next.filter((check) => !check.ok).map((check) => check.label);
-    notify(
-      missing.length ? `Проверка среды завершена. Не найдено: ${missing.join(', ')}.` : 'Проверка среды завершена: всё доступно.',
-      missing.length ? 'warning' : 'success'
-    );
+    notify(missing.length ? environmentTexts.checksMissing(missing.join(', ')) : environmentTexts.allAvailable, missing.length ? 'warning' : 'success');
   };
 
   const chooseToolsRoot = async (): Promise<void> => {
-    const path = await window.api.dialog.pickFolder({ title: 'Папка исходников SongFrame' });
+    const path = await window.api.dialog.pickFolder({ title: environmentTexts.sourceFolderTitle });
     if (!path) return;
     try {
       // Смена ресурсов начинает следующую проверку после завершения запроса к прежней папке.
@@ -133,7 +133,7 @@ export function EnvironmentPage(): ReactElement {
       await window.api.app.setToolsRoot(path);
       await refresh();
       await load();
-      notify('Папка исходников сохранена', 'success');
+      notify(environmentTexts.sourceFolderSaved, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     }
@@ -200,16 +200,16 @@ export function EnvironmentPage(): ReactElement {
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
       <PageActionBar>
         <Typography variant="h5" sx={{ flex: 1 }}>
-          Среда
+          {navigationTexts.pages.environment}
         </Typography>
         <ActionButton
           variant="contained"
           startIcon={<FactCheckIcon />}
           onClick={() => void recheck()}
           disabled={busy || anyLoggingIn}
-          disabledReason={busy ? 'Дождитесь окончания проверки.' : 'Дождитесь окончания входа в провайдера или отмените его.'}
+          disabledReason={busy ? commonTexts.waitForCheck : environmentTexts.waitForLogin}
         >
-          {busy ? 'Проверка' : 'Проверить'}
+          {busy ? commonTexts.checking : commonTexts.check}
         </ActionButton>
       </PageActionBar>
       {state?.problems?.map((problem) => (
@@ -220,11 +220,11 @@ export function EnvironmentPage(): ReactElement {
       <ApplicationResources state={state} onChooseToolsRoot={chooseToolsRoot} onResetToolsRoot={resetToolsRoot} />
       {elapsedMs !== null && (
         <Typography variant="body2" color="text.secondary">
-          Время проверки: {(elapsedMs / 1000).toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} с
+          {environmentTexts.elapsed((elapsedMs / 1000).toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }))}
         </Typography>
       )}
       <Typography variant="caption" color="text.secondary">
-        Python показывает время запуска интерпретатора, библиотеки — время их импорта.
+        {environmentTexts.timingExplanation}
       </Typography>
       <EnvironmentDiagnostics checks={checks} loading={busy} error={error} logins={logins} />
     </Stack>

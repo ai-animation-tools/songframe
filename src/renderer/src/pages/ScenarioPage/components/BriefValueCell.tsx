@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { OpenShotState } from '../types';
 import type { ReactElement } from 'react';
 import { Box, TableCell, Typography } from '@mui/material';
@@ -10,9 +11,9 @@ import { BriefSourceLink } from './BriefSourceLink';
 
 // Отличие за план показывается в ячейке последнего кадра: цвет, значок и подпись, чтобы читалось и без цвета.
 const MARKS: Record<Exclude<BriefChange, 'same'>, { label: string; color: 'warning' | 'success' | 'error'; icon: ReactElement }> = {
-  changed: { label: 'изменено', color: 'warning', icon: <ChangeCircleOutlinedIcon fontSize="inherit" color="warning" /> },
-  added: { label: 'добавлено', color: 'success', icon: <AddCircleOutlineIcon fontSize="inherit" color="success" /> },
-  removed: { label: 'снято', color: 'error', icon: <RemoveCircleOutlineIcon fontSize="inherit" color="error" /> }
+  changed: { label: scenarioTexts.comparison.changed, color: 'warning', icon: <ChangeCircleOutlinedIcon fontSize="inherit" color="warning" /> },
+  added: { label: scenarioTexts.comparison.added, color: 'success', icon: <AddCircleOutlineIcon fontSize="inherit" color="success" /> },
+  removed: { label: scenarioTexts.comparison.removed, color: 'error', icon: <RemoveCircleOutlineIcon fontSize="inherit" color="error" /> }
 };
 
 /** Значение свойства на одной границе плана с источником; ячейка последнего кадра отмечает отличие от первого. */
@@ -54,12 +55,12 @@ export function BriefValueCell({
           <Typography variant="body2">{cell.value}</Typography>
         ) : (
           <Typography variant="body2" color="text.secondary" fontStyle="italic">
-            пусто
+            {scenarioTexts.brief.empty}
           </Typography>
         )
       ) : (
-        <Typography variant="body2" color="text.disabled" aria-label="не задано">
-          —
+        <Typography variant="body2" color="text.disabled" aria-label={scenarioTexts.brief.unspecified}>
+          {scenarioTexts.brief.unsetMark}
         </Typography>
       )}
       {mark || cell?.source ? (

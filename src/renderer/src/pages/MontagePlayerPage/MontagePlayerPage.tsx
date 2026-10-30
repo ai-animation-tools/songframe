@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { Box, Typography } from '@mui/material';
 import type { MontageWindowState } from '@shared/montage-window';
@@ -49,7 +50,7 @@ export function MontagePlayerPage(): ReactElement {
     window.api.montageWindow.send({ type: 'preferences', loop, volume });
   }, []);
 
-  if (!state) return <Typography sx={{ p: 2 }}>Ожидание монтажной пробы…</Typography>;
+  if (!state) return <Typography sx={{ p: 2 }}>{montageTexts.waitingDraft}</Typography>;
   return (
     <Box sx={{ p: 1.5, minWidth: 0 }}>
       <MontagePreview
@@ -60,7 +61,7 @@ export function MontagePlayerPage(): ReactElement {
         seekVersion={state.seekVersion}
         selectedClipId={state.selectedClipId}
         suspended={state.suspended}
-        suspendedReason="Просмотр приостановлен в основном окне монтажа: закройте открытое там окно или дождитесь завершения операции."
+        suspendedReason={montageTexts.detachedSuspended}
         loop={state.loop}
         volume={state.volume}
         onPreferences={onPreferences}

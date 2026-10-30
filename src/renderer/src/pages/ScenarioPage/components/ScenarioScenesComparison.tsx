@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { ReactElement } from 'react';
 import { Alert, Stack, Typography } from '@mui/material';
 import type { SceneShot, ScenesFile } from '@shared/types';
@@ -18,40 +19,35 @@ export function ScenarioScenesComparison({
   const ids = [...new Set([...(before?.scenes ?? []).map((shot) => shot.id), ...(after?.scenes ?? []).map((shot) => shot.id)])];
   const displayed = selectedIds.length ? ids.filter((id) => selectedIds.includes(id) || changedIds.includes(id)) : ids;
   const fields: { key: keyof SceneShot; label: string }[] = [
-    { key: 'title', label: 'Название' },
-    { key: 'original', label: 'Строка песни' },
-    { key: 'sequence', label: 'Часть' },
-    { key: 'start_frame', label: 'Первый кадр' },
-    { key: 'end_frame_exclusive', label: 'Конец (не включая)' },
-    { key: 'camera', label: 'Камера' },
-    { key: 'action', label: 'Действие' },
-    { key: 'continuity', label: 'Непрерывность' },
-    { key: 'references', label: 'Референсы' },
-    { key: 'lipsync', label: 'Липсинк' },
-    { key: 'card', label: 'Карточка' },
-    { key: 'state_from', label: 'Наследование состояния' },
-    { key: 'state_changes', label: 'Изменения состояния' },
-    { key: 'derived_from', label: 'Собирается из плана' },
-    { key: 'notes', label: 'Примечания' }
+    { key: 'title', label: scenarioTexts.fields.title },
+    { key: 'original', label: scenarioTexts.fields.lyric },
+    { key: 'sequence', label: scenarioTexts.fields.part },
+    { key: 'start_frame', label: scenarioTexts.fields.firstFrame },
+    { key: 'end_frame_exclusive', label: scenarioTexts.fields.endExclusive },
+    { key: 'camera', label: scenarioTexts.fields.camera },
+    { key: 'action', label: scenarioTexts.fields.action },
+    { key: 'continuity', label: scenarioTexts.fields.continuity },
+    { key: 'references', label: scenarioTexts.fields.references },
+    { key: 'lipsync', label: scenarioTexts.fields.lipsync },
+    { key: 'card', label: scenarioTexts.fields.card },
+    { key: 'state_from', label: scenarioTexts.fields.stateFrom },
+    { key: 'state_changes', label: scenarioTexts.fields.stateChanges },
+    { key: 'derived_from', label: scenarioTexts.fields.derivedFrom },
+    { key: 'notes', label: scenarioTexts.fields.notes }
   ];
   return (
     <Stack spacing={2}>
-      <Typography variant="h6">Реестр сцен</Typography>
-      {selectedIds.length > 0 && (
-        <Alert severity="info">
-          Разрешённые цели: {selectedIds.join(', ')}. Изменения состояния могут влиять на наследуемое состояние следующих планов; проверьте непрерывность ниже и
-          в редакторе перед дальнейшим производством.
-        </Alert>
-      )}
+      <Typography variant="h6">{scenarioTexts.fields.registry}</Typography>
+      {selectedIds.length > 0 && <Alert severity="info">{scenarioTexts.comparison.allowedTargets({ ids: selectedIds })}</Alert>}
       <ScenarioComparison
-        title="Общие правила и шкала"
+        title={scenarioTexts.comparison.globalRules}
         defaultExpanded={false}
         fields={[
-          { label: 'Визуальные правила', before: before?.visual_direction, after: after?.visual_direction },
-          { label: 'Части', before: before?.sequences, after: after?.sequences },
-          { label: 'Референсы', before: before?.references, after: after?.references },
-          { label: 'Аудио', before: before?.audio, after: after?.audio },
-          { label: 'Частота кадров', before: before?.fps, after: after?.fps }
+          { label: scenarioTexts.fields.visualRules, before: before?.visual_direction, after: after?.visual_direction },
+          { label: scenarioTexts.fields.parts, before: before?.sequences, after: after?.sequences },
+          { label: scenarioTexts.fields.references, before: before?.references, after: after?.references },
+          { label: scenarioTexts.fields.audio, before: before?.audio, after: after?.audio },
+          { label: scenarioTexts.fields.fps, before: before?.fps, after: after?.fps }
         ]}
       />
       {displayed.map((id) => {
@@ -60,7 +56,7 @@ export function ScenarioScenesComparison({
         return (
           <ScenarioComparison
             key={id}
-            title={`План ${id}${changedIds.includes(id) ? ' · изменён' : ''}`}
+            title={scenarioTexts.comparison.shotTitle({ id, changed: changedIds.includes(id) })}
             fields={fields.map(({ key, label }) => ({ label, before: previous?.[key], after: next?.[key] }))}
           />
         );

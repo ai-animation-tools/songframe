@@ -1,3 +1,4 @@
+import { commonTexts } from '@shared/texts/common';
 import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Stack, Typography } from '@mui/material';
@@ -36,7 +37,7 @@ export function RequireScenario({ title, children }: { title: string; children: 
     return (
       <Stack spacing={2}>
         <Typography variant="h5">{title}</Typography>
-        <Typography color="text.secondary">Читаем сценарий…</Typography>
+        <Typography color="text.secondary">{commonTexts.scenario.loading}</Typography>
       </Stack>
     );
   if (result.status !== 'ready') return <ScenarioRequired title={title} status={result.status} onRefresh={() => void load()} />;

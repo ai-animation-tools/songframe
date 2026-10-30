@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 /** Свободное описание истории клипа с импортом текста из файла. */
 import type { ReactElement } from 'react';
 import { Box, Paper, TextField, Typography } from '@mui/material';
@@ -14,10 +15,10 @@ export function IdeaSection({ idea, onChange, onPick, onDrop }: Props): ReactEle
   return (
     <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-        Идея клипа
+        {sourcesTexts.idea}
       </Typography>
       <TextField
-        label="Идея клипа"
+        label={sourcesTexts.idea}
         multiline
         minRows={14}
         maxRows={30}
@@ -25,20 +26,20 @@ export function IdeaSection({ idea, onChange, onPick, onDrop }: Props): ReactEle
         sx={{ '& .MuiInputBase-inputMultiline': { lineHeight: 1.6 } }}
         value={idea}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Общая история прозой: кто герои, что с ними происходит, настроение, без привязки к таймингам."
+        placeholder={sourcesTexts.ideaPlaceholder}
       />
       <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-        Сохраняется в source/description.md. Сценарий по сценам составляется позже, из этого текста, слов песни и разметки.
+        {sourcesTexts.ideaHint}
       </Typography>
       {/* Выбор файла не перехватывает нажатия и перетаскивание текста в редакторе. */}
       <Box sx={{ mt: 'auto', pt: 1 }}>
         <FileDropZone
-          label="Загрузить идею клипа из файла"
+          label={sourcesTexts.uploadIdea}
           kind="text"
           onFiles={onDrop}
           onPick={onPick}
-          hint="Один файл TXT или MD в UTF-8."
-          message="Перетащите файл с идеей или нажмите для выбора"
+          hint={sourcesTexts.textFileHint}
+          message={sourcesTexts.ideaFileMessage}
         />
       </Box>
     </Paper>

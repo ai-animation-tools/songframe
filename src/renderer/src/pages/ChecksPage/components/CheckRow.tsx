@@ -1,3 +1,5 @@
+import { checksTexts } from '@shared/texts/checks';
+import { commonTexts } from '@shared/texts/common';
 import type { ReactElement } from 'react';
 import { Box, Checkbox, Chip, CircularProgress, FormControlLabel, Typography } from '@mui/material';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -32,7 +34,7 @@ export function CheckRow({ check, result, disabled, disabledReason, strict, next
             <Chip
               size="small"
               color={result.status === 'done' ? 'success' : result.status === 'skipped' ? 'default' : 'error'}
-              label={result.status === 'done' ? 'ok' : result.status === 'skipped' ? 'пропуск' : result.code}
+              label={result.status === 'done' ? checksTexts.checkDone : result.status === 'skipped' ? checksTexts.checkSkipped : result.code}
               sx={{ height: 20, minWidth: 32 }}
             />
           )
@@ -50,30 +52,30 @@ export function CheckRow({ check, result, disabled, disabledReason, strict, next
         <FormControlLabel
           sx={{ m: 0 }}
           control={<Checkbox size="small" checked={strict} onChange={(e) => setStrict(e.target.checked)} />}
-          label={<Typography variant="caption">Предупреждения считать ошибками</Typography>}
+          label={<Typography variant="caption">{checksTexts.strictMode}</Typography>}
         />
       ) : null}
       {check.id === 'status' ? (
         <FormControlLabel
           sx={{ m: 0 }}
           control={<Checkbox size="small" checked={next} onChange={(e) => setNext(e.target.checked)} />}
-          label={<Typography variant="caption">Следующий план и очередь</Typography>}
+          label={<Typography variant="caption">{checksTexts.nextShotAndQueue}</Typography>}
         />
       ) : null}
       {check.id === 'views' ? (
         <ActionButton
           size="small"
           startIcon={<AutorenewIcon />}
-          title="Пересобрать монтажный список, раскадровку и карточки по реестру сцен"
+          title={checksTexts.rebuildViewsHint}
           disabled={disabled}
           disabledReason={disabledReason}
           onClick={onUpdateViews}
         >
-          Пересобрать карточки
+          {checksTexts.rebuildViews}
         </ActionButton>
       ) : null}
       <ActionButton size="small" variant="outlined" startIcon={<PlayArrowIcon />} disabled={disabled} disabledReason={disabledReason} onClick={onRun}>
-        Запустить
+        {commonTexts.run}
       </ActionButton>
     </Box>
   );

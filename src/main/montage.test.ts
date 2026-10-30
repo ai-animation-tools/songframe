@@ -367,3 +367,52 @@ describe('локальные задания', () => {
     expect((read(spec) as MontageDraft).clips[0].source_end_frame_exclusive).toBe(30);
   });
 });
+
+// Полные сообщения проверяются через операции main: словарь не участвует в ожидаемом результате.
+describe('дословные сообщения и неизменность данных', () => {
+  it.each([
+    ['/tmp/«ролик» & <1>.mp4', 'Укажите относительный путь от корня проекта через /.'],
+    ['assets/../«ролик» & <1>.mp4', 'Недопустимый путь проекта: assets/../«ролик» & <1>.mp4'],
+    ['assets/«ролик» & <1>.mp4', 'Файл проекта не найден: assets/«ролик» & <1>.mp4']
+  ])('сохраняет путь %s в сообщении и останавливает запись', (path, expected) => {
+    const value = draft();
+    const saved = montage.save(project, value);
+    const previous = readFileSync(join(project, `plan/montage/${saved.id}.json`));
+    value.clips[0].path = path;
+    expect(() => montage.save(project, value, saved.id)).toThrow(new Error(expected));
+    expect(readFileSync(join(project, `plan/montage/${saved.id}.json`))).toEqual(previous);
+    expect(start).not.toHaveBeenCalled();
+  });
+
+  it('передаёт целые названия заданий с пользовательскими кавычками и сохраняет каталог только для чтения', () => {
+    const value = draft();
+    value.name = '«Проба» & <черновик>\nC:\\видео';
+    const registry = readFileSync(join(project, 'plan/scenes.json'));
+    const asset = readFileSync(join(project, 'assets/shots/M01/manifest.json'));
+    montage.view(project);
+    expect(readFileSync(join(project, 'plan/scenes.json'))).toEqual(registry);
+    expect(readFileSync(join(project, 'assets/shots/M01/manifest.json'))).toEqual(asset);
+    montage.export(project, value);
+    montage.apply(project, value);
+    expect(start.mock.calls.map(([kind, title, , steps]) => [kind, title, steps[0].label])).toEqual([
+      ['review', 'Ручная проба: «Проба» & <черновик>\nC:\\видео', 'Сборка ручной пробы'],
+      ['tool', 'Применение монтажа: «Проба» & <черновик>\nC:\\видео', 'Применение ручного монтажа к сценам']
+    ]);
+    expect(readFileSync(join(project, 'plan/scenes.json'))).toEqual(registry);
+    expect(readFileSync(join(project, 'assets/shots/M01/manifest.json'))).toEqual(asset);
+  });
+
+  it.each([
+    [null, 'Разметка строк песни недоступна. Создайте её на странице «Тайминги».'],
+    [{ version: 2, sha256: 'b'.repeat(64), lines: [], sections: [] }, 'Разметка относится к другому треку. Проверьте её на странице «Тайминги».'],
+    [
+      { version: 2, lines: [{ id: 1, source_line: 1, start: 0, end: 1 }], sections: [] },
+      'Разметка не соответствует тексту или содержит неверные границы. Проверьте её на странице «Тайминги».'
+    ],
+    [{ version: 2, lines: [], sections: [] }, 'В разметке пока нет строк песни. Добавьте их на странице «Тайминги».']
+  ])('оставляет полную причину недоступности строк песни (%j)', (timing, expected) => {
+    if (timing) json('plan/audio/timing.json', timing);
+    expect(montage.view(project)).toMatchObject({ lyricLines: [], lyricProblem: expected });
+    expect(start).not.toHaveBeenCalled();
+  });
+});

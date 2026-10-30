@@ -1,4 +1,5 @@
 /** Один план и один пакет проходят подготовку предложений; проект меняется только отдельным Apply. */
+import { productionTexts } from '@shared/texts/production';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
@@ -40,6 +41,8 @@ import {
   type ProposalRules
 } from './production-proposal';
 import { applyProductionPackage, productionPackageVideoPaid, writeProductionJson } from './production-workflow-apply';
+
+const texts = productionTexts.main.workflow;
 export { recoverInterruptedProductionApplies } from './production-workflow-apply';
 
 interface Options {
@@ -119,8 +122,7 @@ interface Context {
   sceneChanged: boolean;
 }
 /** Причина блокировки устаревшего пакета: выход — оставить пакет, доработать описание или подготовить новый. */
-const SCENE_CHANGED_REASON =
-  'постановка плана изменилась после подготовки пакета: оставьте пакет для текущей постановки, доработайте описание или подготовьте новый пакет';
+const SCENE_CHANGED_REASON = texts.sceneChangedReason;
 const digest = (data: string | Buffer): string => createHash('sha256').update(data).digest('hex');
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 function json(path: string): unknown {
@@ -134,7 +136,7 @@ function rel(project: string, path: string): string {
 }
 function packagePath(project: string, path: string): string {
   const target = productionPath(project, path);
-  if (!/^plan\/(batches|awaiting)\/[^/]+$/.test(rel(project, target))) throw new Error('Выберите отдельный пакет в plan/batches или plan/awaiting.');
+  if (!/^plan\/(batches|awaiting)\/[^/]+$/.test(rel(project, target))) throw new Error(texts.packageFolderRequired);
   return target;
 }
 function nextPackage(project: string, shot: string): string {
@@ -145,7 +147,7 @@ function nextPackage(project: string, shot: string): string {
 // Один общий кэш читает большие исходники блоками; недоступный файл не считается отсутствующим.
 function requiredFileDigest(path: string): string {
   const hash = cachedFileDigest(path);
-  if (hash === null) throw new Error(`Не удалось прочитать файл: ${path}`);
+  if (hash === null) throw new Error(texts.fileUnreadable({ path }));
   return hash;
 }
 function snapshot(project: string, packageDir: string | null, target: string, allowed: string[]): Record<string, string | null> {
@@ -157,7 +159,7 @@ function snapshot(project: string, packageDir: string | null, target: string, al
       return;
     }
     const stat = lstatSync(path);
-    if (stat.isSymbolicLink()) throw new Error(`Пакет содержит ссылку: ${local}`);
+    if (stat.isSymbolicLink()) throw new Error(texts.packageLink({ path: local }));
     if (stat.isDirectory()) {
       paths.add(`${local}/`);
       for (const name of readdirSync(path).sort()) walk(join(path, name));
@@ -295,15 +297,15 @@ export class ProductionWorkflow {
     writeProductionJson(this.path(project, shot), stored);
   }
   private context(path: string, shot: string, requested?: string): Context {
-    if (!/^M\d{2}(?:\.\d+)?$/.test(shot)) throw new Error('Укажите один явный ID плана Mxx.');
+    if (!/^M\d{2}(?:\.\d+)?$/.test(shot)) throw new Error(texts.shotIdRequired);
     const project = realpathSync(path);
     const scenes = json(join(project, 'plan/scenes.json'));
-    if (!record(scenes) || !Array.isArray(scenes.scenes)) throw new Error('Нет корректного plan/scenes.json.');
+    if (!record(scenes) || !Array.isArray(scenes.scenes)) throw new Error(texts.sceneRegistryInvalid);
     const scene = scenes.scenes.find((scene) => record(scene) && scene.id === shot);
-    if (!record(scene)) throw new Error(`План ${shot} отсутствует в реестре.`);
+    if (!record(scene)) throw new Error(texts.shotMissing({ shot }));
     const fps = Number(scenes.fps);
     const window = (Number(scene.end_frame_exclusive) - Number(scene.start_frame)) / fps;
-    if (!Number.isFinite(window) || window <= 0) throw new Error('Неверное кадровое окно плана.');
+    if (!Number.isFinite(window) || window <= 0) throw new Error(texts.shotWindowInvalid);
     const settings = (readProjectSettings(project).generation?.video ?? {}) as Record<string, unknown>;
     const durationRule = settings.duration_rule;
     const problems: string[] = [];
@@ -315,24 +317,19 @@ export class ProductionWorkflow {
       typeof settings.watermark !== 'boolean' ||
       !isMediaProvider(settings.provider, 'video')
     )
-      problems.push(`Заполните настройки генерации видео проекта: поддерживается провайдер ${mediaProviderTitles('video')}.`);
+      problems.push(texts.videoSettingsRequired({ providers: mediaProviderTitles('video') }));
     // Речевой план готовится только у провайдера, который синхронизирует губы с заданным звуком и принимает такую длину.
     const provider = mediaProviderInfo(settings.provider, 'video');
     if (scene.lipsync === true && provider) {
-      if (!provider.lipSync)
-        problems.push(
-          `Речевой план: ${provider.title} не синхронизирует губы с заданным звуком. Снимите отметку «Липсинк» у плана на странице «Сценарий» или выберите другого провайдера видео.`
-        );
+      if (!provider.lipSync) problems.push(texts.providerLipSyncUnsupported({ provider: provider.title }));
       else if (window > provider.lipSync.max)
-        problems.push(
-          `Речевой план: окно плана ${window.toFixed(2)} с длиннее, чем ${provider.title} принимает звук (до ${provider.lipSync.max} с). Разделите план на странице «Сценарий».`
-        );
+        problems.push(texts.speechWindowTooLong({ seconds: window.toFixed(2), provider: provider.title, max: provider.lipSync.max }));
     }
     const packageDir = requested ? packagePath(project, requested) : null;
     let workflow: Workflow | null = null;
     if (packageDir) {
       const value = json(join(packageDir, 'workflow.json'));
-      if (!record(value) || value.shot !== shot || typeof value.stage !== 'string') throw new Error('Пакет отсутствует или относится к другому плану.');
+      if (!record(value) || value.shot !== shot || typeof value.stage !== 'string') throw new Error(texts.packageMissingOrWrongShot);
       workflow = value as unknown as Workflow;
     }
     // Тот же отпечаток, что пишет shot_workflow init: пакет, подготовленный по прежней постановке, дальше не продолжается молча.
@@ -422,11 +419,11 @@ export class ProductionWorkflow {
     if (proposal.status !== 'running') return job;
     if (!job || job.project !== context.project || job.status === 'interrupted') {
       proposal.status = 'interrupted';
-      proposal.message = 'Задание прервано; подготовьте новое предложение.';
+      proposal.message = texts.jobInterrupted;
     } else if (job.status === 'running') return job;
     else if (job.status !== 'completed' || job.exitCode !== 0) {
       proposal.status = 'failed';
-      proposal.message = job.message || 'Агент не завершил подготовку предложения.';
+      proposal.message = job.message || texts.proposalIncomplete;
     } else {
       try {
         const raw = stored.imageJob ? JSON.stringify({ schemaVersion: 1, stage: 'frames', images: this.options.collectImages(job) }) : job.result;
@@ -445,7 +442,7 @@ export class ProductionWorkflow {
           // Текст вместо JSON — штатный отказ: ошибка разбора JSON пользователю ничего не объясняет.
           if (answer && isAgentRefusal(job.result ?? '')) {
             proposal.refused = true;
-            proposal.message = 'Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.';
+            proposal.message = texts.agentRefused;
           }
         }
       }
@@ -477,79 +474,67 @@ export class ProductionWorkflow {
     const enabled = !busy && !proposalPending && !context.problems.length && !pending && !context.paid;
     const imagePhase = context.workflow?.stage?.startsWith('image_');
     const imageEnabled =
-      !busy && !context.problems.some((problem) => !problem.startsWith('Заполните настройки генерации видео')) && !pending && !context.paid && !imagePhase;
+      !busy && !context.problems.some((problem) => !problem.startsWith(texts.videoSettingsIncomplete)) && !pending && !context.paid && !imagePhase;
     const scenarioApproved = this.options.isScenarioApproved(canonical);
     const framesApproved = approvedFrames(context);
     const nextStage = stageFor(context);
-    const common = busy
-      ? 'идёт задание агента или операция пакета'
-      : proposalPending
-        ? 'сначала примените или отклоните текущее предложение'
-        : pending
-          ? 'сначала ответьте на вопрос согласования в карточке пакета'
-          : null;
+    const common = busy ? texts.operationBusy : proposalPending ? texts.resolveProposalFirst : pending ? texts.resolvePackageQuestionFirst : null;
     // Срез должен уложиться в допустимую длину звукового входа провайдера, иначе сервис отклонит запрос.
     const lipSync = mediaProviderInfo(context.settings.provider, 'video')?.lipSync ?? null;
     const speechLength = context.speech ? context.speech.sourceSeconds[1] - context.speech.sourceSeconds[0] : null;
     const speechMismatch =
       context.scene.lipsync === true && lipSync && speechLength !== null && (speechLength < lipSync.min - 1e-6 || speechLength > lipSync.max + 1e-6)
-        ? `речевой план: WAV длится ${speechLength.toFixed(2)} с, а провайдер принимает звук от ${lipSync.min} до ${lipSync.max} с — обрежьте заново в блоке «Речь»`
+        ? texts.speechLengthOutOfRange({ seconds: speechLength.toFixed(2), min: lipSync.min, max: lipSync.max })
         : null;
     // Производный план собирается из чужого материала: эта причина постоянна и важнее временной занятости.
     const derived = context.derivedFrom ? derivedShotReason(context.derivedFrom) : null;
     const reasons = {
       prepare:
         derived ??
-        (busy
-          ? 'идёт задание агента или операция пакета'
-          : imagePhase
-            ? 'сначала завершите согласование или получение изображения'
-            : !scenarioApproved
-              ? 'сценарий не утверждён в приложении: утвердите кастинг, трактовку и сцены на странице «Сценарий»'
-              : (context.problems[0] ?? null)),
+        (busy ? texts.operationBusy : imagePhase ? texts.resolveImageFirst : !scenarioApproved ? texts.approveScenarioFirst : (context.problems[0] ?? null)),
       continue:
         derived ??
         (!context.packageDir
-          ? 'нужен выбранный пакет с принятым описанием и опорами'
+          ? texts.acceptedDescriptionAndFramesRequired
           : context.sceneChanged
             ? SCENE_CHANGED_REASON
             : (common ??
               (context.paid
-                ? 'попытка уже отправлена: дальше только повтор или возврат с замечанием'
+                ? texts.sentAttemptNeedsRetry
                 : context.problems.length
                   ? context.problems.join(' ')
                   : imagePhase
-                    ? 'сначала завершите согласование или получение изображения'
+                    ? texts.resolveImageFirst
                     : nextStage === 'request' && context.scene.lipsync === true && !context.speech
-                      ? 'речевой план: сначала подготовьте WAV речи в блоке «Речь»'
+                      ? texts.speechRequiredHint
                       : nextStage === 'request' && speechMismatch
                         ? speechMismatch
                         : !nextStage || nextStage === 'description'
                           ? framesApproved
-                            ? 'опоры приняты, видеопромпт готовится этой кнопкой после принятия описания'
+                            ? texts.framesAcceptedPromptNext
                             : descriptionApproved
-                              ? 'сначала создайте и примите опоры'
-                              : 'сначала примените и примите описание плана'
+                              ? texts.createAndAcceptFramesFirst
+                              : texts.applyAndAcceptDescriptionFirst
                           : null))),
       frames:
         derived ??
         (!context.packageDir
-          ? 'нужен выбранный пакет с принятым описанием'
+          ? texts.acceptedDescriptionRequired
           : context.sceneChanged
             ? SCENE_CHANGED_REASON
             : (common ??
               (context.paid
-                ? 'попытка уже отправлена'
+                ? texts.attemptAlreadySent
                 : framesApproved
-                  ? 'опоры уже приняты'
+                  ? texts.framesAlreadyAccepted
                   : undecidedFrame(context)
-                    ? `сначала утвердите опору ${undecidedFrame(context)} или отправьте её на доработку`
+                    ? texts.acceptFrameFirstHint({ frame: undecidedFrame(context) })
                     : !context.framePrompts.length
-                      ? 'в пакете нет плана опор: примените описание с промптами опор'
+                      ? texts.framePlanMissing
                       : !(descriptionApproved || frameRevision)
-                        ? 'сначала примите описание плана'
+                        ? texts.acceptDescriptionFirst
                         : imagePhase
-                          ? 'сначала завершите согласование или получение изображения'
+                          ? texts.resolveImageFirst
                           : null)))
     };
     const generation = readProjectSettings(canonical).generation;
@@ -598,38 +583,37 @@ export class ProductionWorkflow {
       (input.note !== undefined && typeof input.note !== 'string') ||
       (input.stage !== undefined && !['description', 'prompt', 'request'].includes(input.stage))
     )
-      throw new Error('Неверные параметры подготовки производства.');
+      throw new Error(texts.startParametersInvalid);
     const context = this.context(input.project, input.shot, input.packageDir);
     if (context.derivedFrom) throw new Error(derivedShotReason(context.derivedFrom));
     const view = this.view(context.project, input.shot, input.packageDir);
-    if (context.workflow?.stage.startsWith('image_'))
-      throw new Error('Сначала завершите согласование или получение текущего изображения. Новая отправка автоматически не создаётся.');
-    if (view.busy) throw new Error('Дождитесь завершения текущего задания.');
+    if (context.workflow?.stage.startsWith('image_')) throw new Error(texts.currentImageUnresolved);
+    if (view.busy) throw new Error(texts.waitForJob);
     const existing = this.read(context.project, input.shot);
-    if (existing && ['running', 'ready'].includes(existing.proposal.status)) throw new Error('Сначала примените или отклоните текущее предложение.');
+    if (existing && ['running', 'ready'].includes(existing.proposal.status)) throw new Error(texts.resolveProposalFirstError);
     let stage: Exclude<ProductionPass, 'frames'>;
     const newPackage = input.action === 'prepare' || (context.paid && input.action === 'revise');
     if (newPackage) {
-      if (!view.canPrepare) throw new Error('Сначала утвердите актуальный сценарий и настройки генерации.');
+      if (!view.canPrepare) throw new Error(texts.scenarioAndSettingsRequired);
       stage = 'description';
     } else {
-      if (!context.packageDir || context.paid || context.problems.length) throw new Error(context.problems.join(' ') || 'Выберите доступный пакет приложения.');
-      if (context.workflow?.pending_decision) throw new Error('Сначала ответьте на текущий вопрос согласования.');
+      if (!context.packageDir || context.paid || context.problems.length) throw new Error(context.problems.join(' ') || texts.packageUnavailable);
+      if (context.workflow?.pending_decision) throw new Error(texts.resolveQuestionFirst);
       stage =
         input.stage ??
         stageFor(context) ??
         (input.action === 'revise' ? (promptApproved(context) ? 'request' : approvedFrames(context) ? 'prompt' : 'description') : null)!;
-      if (!stage) throw new Error('На этом этапе требуется согласование описания или опор.');
+      if (!stage) throw new Error(texts.descriptionOrFramesReviewRequired);
       const appropriate = stage === 'description' ? true : stage === 'prompt' ? approvedFrames(context) : promptApproved(context);
-      if (!appropriate || (input.action === 'continue' && stage !== stageFor(context))) throw new Error('Запрошенный этап ещё не доступен.');
+      if (!appropriate || (input.action === 'continue' && stage !== stageFor(context))) throw new Error(texts.stageUnavailable);
       // Устаревший пакет продолжается только новым описанием: оно строится по текущей постановке.
-      if (context.sceneChanged && stage !== 'description') throw new Error(`Сначала решите судьбу пакета: ${SCENE_CHANGED_REASON}.`);
+      if (context.sceneChanged && stage !== 'description') throw new Error(texts.resolveSceneChangedPackageFirst({ reason: SCENE_CHANGED_REASON }));
     }
     const key = this.key(context.project, input.shot);
     this.busy.add(key);
     try {
       const root = this.options.toolsRoot();
-      if (!root) throw new Error('Корень комплекса не найден.');
+      if (!root) throw new Error(texts.toolsRootMissing);
       const hashes = snapshot(
         context.project,
         context.packageDir,
@@ -641,7 +625,7 @@ export class ProductionWorkflow {
       const briefs: Record<string, unknown> = {};
       for (const phase of ['before', 'after']) {
         const result = await launcher.run(context.project, 'continuity_brief', [input.shot, '--phase', phase, '--json']);
-        if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || 'Не удалось получить врезку непрерывности.');
+        if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || texts.continuityFailed);
         briefs[phase] = JSON.parse(result.stdout);
       }
       const reports: unknown[] = [];
@@ -650,7 +634,7 @@ export class ProductionWorkflow {
       const lipsync = context.scene.lipsync === true;
       try {
         const adapter = paidAdapter(context.settings.provider);
-        if (!adapter) throw new Error('Выбранный провайдер видео не объявляет возможности.');
+        if (!adapter) throw new Error(texts.providerCapabilitiesMissing);
         const draft = stage === 'request' || lipsync ? undefined : adapter.rules.draftVideoCommands;
         const visible = (command: string): boolean => !draft || draft.includes(command);
         // Производство использует тот же снимок, что и настройки, без отдельных запросов для каждой команды.
@@ -663,16 +647,12 @@ export class ProductionWorkflow {
       const capabilities: unknown = reports;
       const capabilitiesProblem = discoveryProblems.join(' ');
       if (stage === 'request' && !reports.length)
-        throw new Error(
-          `Не удалось получить актуальные модели ${mediaProviderInfo(context.settings.provider, 'video')?.title ?? 'провайдера видео'}: ${capabilitiesProblem || 'нет объявлений аккаунта'}`
-        );
+        throw new Error(texts.providerModelsFailed({ provider: mediaProviderInfo(context.settings.provider, 'video')?.title, problem: capabilitiesProblem }));
       if (lipsync) {
-        if (stage === 'request' && !context.speech) throw new Error('Речевой план: сначала подготовьте WAV речи в блоке «Речь».');
+        if (stage === 'request' && !context.speech) throw new Error(texts.speechRequired);
         // Проверяем до запуска агента: без звукового входа точный липсинк невозможен, и агент всё равно вернул бы ошибку.
         if (reports.length && !acceptsAudioInput(reports))
-          throw new Error(
-            `Модели ${mediaProviderInfo(context.settings.provider, 'video')?.title ?? 'провайдера'} в этом аккаунте не принимают звуковой вход: точный липсинк по WAV недоступен. Чтобы сделать план без синхронизации губ, снимите отметку «Липсинк» у плана на странице «Сценарий».`
-          );
+          throw new Error(texts.providerAudioUnsupported({ provider: mediaProviderInfo(context.settings.provider, 'video')?.title }));
       }
       const rules = rulesFor(context, stage);
       const skill = [
@@ -686,14 +666,23 @@ export class ProductionWorkflow {
         .filter((part): part is string => !!part)
         .join('\n\n');
       const prompt =
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция и JSON-контракт задания агента сохраняются у владельца промпта.
         `${skill}\n\nРежим приложения: output=proposal, stage=${stage}. Верни ровно один JSON без Markdown, записей файлов, shell и вызовов инструментов. ` +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция и JSON-контракт задания агента сохраняются у владельца промпта.
         'Форма: description={"schemaVersion":1,"stage":"description","description":"текст","requestSeconds":целое,"keyframes":[{"id":"K01","role":"first","timeSeconds":0,"prompt":"полный промпт изображения","referencePaths":["source/..."]},...,{"id":"KNN","role":"last","timeSeconds":requestSeconds,"prompt":"...","referencePaths":[]}]}; ' +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция и JSON-контракт задания агента сохраняются у владельца промпта.
         'prompt={"schemaVersion":1,"stage":"prompt","prompt":"полный видеопромпт"}; request={"schemaVersion":1,"stage":"request","request":{"model":"точное имя из capabilities","command":"точное имя команды из capabilities","parameters":{"duration":requestSeconds,...параметры capabilities},"inputs":[{"flag":"input","slot":"слот из capabilities","path":"объявленный путь","role":"назначение файла"}],"outputs":1}}. ' +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция и JSON-контракт задания агента сохраняются у владельца промпта.
         'Команду, параметры и слоты входов бери только из capabilities выбранной модели; какой слот служит первым и последним кадром, а какой референсом, — в указаниях провайдера видео. ' +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция и JSON-контракт задания агента сохраняются у владельца промпта.
         'flag — input с объявленным slot либо короткий флаг из inputFlags без slot; не смешивай эти способы в одном запросе. ' +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция и JSON-контракт задания агента сохраняются у владельца промпта.
         'Никаких других полей. ID опор K01,K02,... подряд, first на 0 и last на requestSeconds, middle строго между. Сохраняй утверждённую постановку, внешность и непрерывность. ' +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция и JSON-контракт задания агента сохраняются у владельца промпта.
         'settings.model — необязательное предпочтение. Сначала выбери по capabilities модель, совместимую с длительностью, разрешением, пропорциями и всеми референсами задачи. ' +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция и JSON-контракт задания агента сохраняются у владельца промпта.
         'Если предпочтение несовместимо, предложи другую модель и её собственные объявленные параметры; не переноси флаги другой модели и не уменьшай требования ради предпочтения. ' +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция и JSON-контракт задания агента сохраняются у владельца промпта.
         'Соблюдай settings.duration_rule и выбери ближайшую поддерживаемую длительность, если capabilities доступны. Не выдумывай возможности моделей, путь WAV и цену. Для липсинка нужен готовый точный WAV: на этапе request передай speech.path входом объявленного звукового слота модели, а duration запроса выбери не меньше длины speech (sourceSeconds) и выбери модель с таким слотом (какой слот — в указаниях провайдера видео); если на этапе request speech нет, сообщи диагностическую ошибку вместо произвольной команды. На этапах description и prompt speech может ещё отсутствовать: приложение режет WAV в блоке «Речь» после описания, длиной requestSeconds от начала окна; не прерывайся из-за этого. Для речевого плана requestSeconds выбирай в пределах lipSync.min..lipSync.max (длина звука, которую принимает провайдер) и по правилу длительности; запас после окна уходит в монтаж обрезкой. Пути только из allowedPaths.';
       const agentContext = JSON.stringify({
         stage,
@@ -725,7 +714,7 @@ export class ProductionWorkflow {
         rules,
         capabilities
       };
-      if (!sameSnapshot(context.project, check)) throw new Error('Входные материалы изменились во время подготовки задания.');
+      if (!sameSnapshot(context.project, check)) throw new Error(texts.inputsChangedDuringPreparation);
       const job = this.options.agents.start({ project: context.project, task: `ai-clip-scene:${input.shot}:${stage}`, prompt, context: agentContext });
       check.proposal = {
         id: randomUUID(),
@@ -752,22 +741,22 @@ export class ProductionWorkflow {
   async generateFrames(project: string, shot: string, packageDir: string): Promise<ProductionWorkflowView> {
     const context = this.context(project, shot, packageDir);
     if (context.derivedFrom) throw new Error(derivedShotReason(context.derivedFrom));
-    if (!this.view(context.project, shot, packageDir).canGenerateFrames) throw new Error('Сначала утвердите описание и план опор.');
+    if (!this.view(context.project, shot, packageDir).canGenerateFrames) throw new Error(texts.descriptionAndFramePlanRequired);
     this.ensureNoPending(context);
     const hashes = snapshot(context.project, context.packageDir, packageDir, context.allowedPaths);
     // Опоры создаются по одной: задание готовит следующую по плану, а решение по ней открывает следующую.
     const target = nextFrame(context);
     const prompt = context.framePrompts.find((item) => item.id === target);
-    if (!prompt)
-      throw new Error(undecidedFrame(context) ? `Сначала утвердите опору ${undecidedFrame(context)} или отправьте её на доработку.` : 'Все опоры уже созданы.');
+    if (!prompt) throw new Error(undecidedFrame(context) ? texts.acceptFrameFirst({ frame: undecidedFrame(context) }) : texts.allFramesCreated);
     const notes = frameNotes(context, prompt.id);
     const frames = [prompt];
     const imageProvider = mediaProviderInfo(readProjectSettings(context.project).generation?.image?.provider, 'image');
-    if (!imageProvider) throw new Error(`Выберите провайдера генерации изображений в настройках проекта: ${mediaProviderTitles('image')}.`);
+    if (!imageProvider) throw new Error(texts.imageProviderRequired({ providers: mediaProviderTitles('image') }));
     // Провайдер без исполнителя-агента готовит платный запрос на одну опору; агент создаёт недостающие опоры заданием.
     if (!imageProvider.executor) {
-      if (!this.options.prepareImageRequest) throw new Error(`Исполнитель изображений ${imageProvider.title} не подключён.`);
+      if (!this.options.prepareImageRequest) throw new Error(texts.imageAdapterMissing({ provider: imageProvider.title }));
       // Замечания пользователя входят в текст замороженного запроса: его SHA и цена подтверждаются как обычно.
+      // eslint-disable-next-line no-restricted-syntax -- Исправления добавляются в замороженный промпт и участвуют в SHA платного запроса.
       const framed = notes.length ? { ...prompt, prompt: `${prompt.prompt}\n\nИсправления к прежним вариантам: ${notes.join(' ')}` } : prompt;
       const key = this.key(context.project, shot);
       this.busy.add(key);
@@ -811,7 +800,7 @@ export class ProductionWorkflow {
   async importFrames(project: string, shot: string, packageDir: string, images: ProductionFrameCandidate[]): Promise<ProductionWorkflowView> {
     const context = this.context(project, shot, packageDir);
     if (context.derivedFrom) throw new Error(derivedShotReason(context.derivedFrom));
-    if (!this.view(context.project, shot, packageDir).canGenerateFrames) throw new Error('Сначала утвердите описание и план опор.');
+    if (!this.view(context.project, shot, packageDir).canGenerateFrames) throw new Error(texts.descriptionAndFramePlanRequired);
     this.ensureNoPending(context);
     // Свои опоры можно добавить для любых ещё не утверждённых кадров; утверждённую сначала возвращают на доработку.
     const open = context.framePrompts.filter((prompt) => !context.workflow?.keyframes?.some((frame) => frame.id === prompt.id && frame.approved));
@@ -837,7 +826,7 @@ export class ProductionWorkflow {
   }
   private ensureNoPending(context: Context): void {
     const pending = this.read(context.project, context.shot);
-    if (pending && ['running', 'ready'].includes(pending.proposal.status)) throw new Error('Сначала примените или отклоните текущее предложение.');
+    if (pending && ['running', 'ready'].includes(pending.proposal.status)) throw new Error(texts.resolveProposalFirstError);
   }
   /**
    * Непринятые предложения по планам проекта для списка «Производства». Заодно удаляются записи, которые
@@ -911,9 +900,9 @@ export class ProductionWorkflow {
       stored.proposal.status === 'running' ||
       stored.proposal.status === 'applied'
     )
-      throw new Error('Предложение недоступно для отклонения; выполняющееся задание сначала отмените.');
+      throw new Error(texts.discardUnavailable);
     stored.proposal.status = 'interrupted';
-    stored.proposal.message = 'Предложение отклонено пользователем.';
+    stored.proposal.message = texts.proposalDiscarded;
     this.write(context.project, shot, stored);
     // Отклонение убирает предложение из UI, сохраняя историю самого AgentJob.
     const path = this.path(context.project, shot);
@@ -932,12 +921,12 @@ export class ProductionWorkflow {
       view.proposal?.stale ||
       !stored.proposal.after
     )
-      throw new Error('Применимо только завершённое актуальное предложение.');
+      throw new Error(texts.applyUnavailable);
     const context = this.context(view.project, shot, view.packageDir ?? undefined);
-    if (stored.target === context.packageDir && context.workflow?.pending_decision) throw new Error('Сначала ответьте на текущий вопрос согласования.');
-    if (stored.target !== context.packageDir && !this.options.isScenarioApproved(view.project)) throw new Error('Утверждение сценария устарело.');
+    if (stored.target === context.packageDir && context.workflow?.pending_decision) throw new Error(texts.resolveQuestionFirst);
+    if (stored.target !== context.packageDir && !this.options.isScenarioApproved(view.project)) throw new Error(texts.scenarioApprovalStale);
     const job = stored.proposal.jobId ? this.options.agents.get(stored.proposal.jobId) : null;
-    if (stored.proposal.jobId && (!job || job.status !== 'completed' || job.exitCode !== 0)) throw new Error('Нет успешного результата агента.');
+    if (stored.proposal.jobId && (!job || job.status !== 'completed' || job.exitCode !== 0)) throw new Error(texts.agentResultMissing);
     const raw = job
       ? stored.imageJob
         ? JSON.stringify({ schemaVersion: 1, stage: 'frames', images: this.options.collectImages(job) })
@@ -946,8 +935,8 @@ export class ProductionWorkflow {
     const after = parseProductionProposal(raw, stored.rules);
     checkProductionCapabilities(after, stored.rules, stored.capabilities, context.settings);
     if (Object.entries(stored.imageHashes ?? {}).some(([path, hash]) => !existsSync(path) || cachedFileDigest(path) !== hash))
-      throw new Error('Изображения предложения изменились.');
-    if (!sameSnapshot(view.project, stored)) throw new Error('Предложение устарело: изменились материалы или пакет.');
+      throw new Error(texts.proposalImagesChanged);
+    if (!sameSnapshot(view.project, stored)) throw new Error(texts.proposalStale);
     const key = this.key(view.project, shot);
     this.busy.add(key);
     try {
@@ -955,7 +944,7 @@ export class ProductionWorkflow {
         const launcher = this.options.launcher();
         const run = async (tool: string, args: string[]): Promise<void> => {
           const result = await launcher.run(view.project, tool, args);
-          if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || `${tool}: код ${result.code}`);
+          if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || texts.toolExitCode({ tool, code: result.code }));
         };
         const ask = async (stage: string): Promise<void> => run('shot_workflow', ['ask', '--dir', stored.target, '--stage', stage]);
         if (after.stage === 'description') {
@@ -977,17 +966,18 @@ export class ProductionWorkflow {
             stored.target,
             '--request-seconds',
             String(after.requestSeconds),
+            // eslint-disable-next-line no-restricted-syntax -- Подпись опоры входит в данные аргумента --middle штатного инструмента.
             ...after.keyframes.filter((frame) => frame.role === 'middle').flatMap((frame) => ['--middle', `${frame.timeSeconds}:опора ${frame.id}`])
           ]);
           writeProductionJson(join(stored.target, 'keyframe-prompts.json'), after.keyframes);
           // Исправленное описание требует нового согласования промпта и запроса; старые request-NN сохраняются.
           const workflow = json(join(stored.target, 'workflow.json'));
-          if (!record(workflow)) throw new Error('Инструмент не создал workflow.json.');
+          if (!record(workflow)) throw new Error(texts.workflowNotCreated);
           // Одинаковые роль, время, текст и референсы сохраняют принятую опору; изменённый промпт требует нового кадра.
           const frames = Array.isArray(workflow.keyframes) ? workflow.keyframes : [];
           const approved = record(workflow.approved_frames) ? workflow.approved_frames : {};
           for (const frame of frames) {
-            if (!record(frame)) throw new Error('Неверная опора в workflow.');
+            if (!record(frame)) throw new Error(texts.workflowFrameInvalid);
             const next = after.keyframes.find((item) => item.id === frame.id);
             const previous = context.framePrompts.find((item) => item.id === frame.id);
             if (!isDeepStrictEqual(previous, next)) {
@@ -1016,10 +1006,10 @@ export class ProductionWorkflow {
           const first = keyframes.find((frame) => frame.path && !frame.approved);
           if (first) await run('shot_workflow', ['ask', '--dir', stored.target, '--stage', 'keyframes_review', '--frame', first.id]);
         } else if (after.stage === 'prompt') {
-          if (!approvedFrames(context)) throw new Error('Утверждённые опоры изменились.');
+          if (!approvedFrames(context)) throw new Error(texts.acceptedFramesChanged);
           writeFileSync(join(stored.target, 'video-prompt.txt'), after.prompt);
           const workflow = json(join(stored.target, 'workflow.json'));
-          if (!record(workflow)) throw new Error('Отсутствует workflow.json.');
+          if (!record(workflow)) throw new Error(texts.workflowMissing);
           workflow.prompt = { path: 'video-prompt.txt', approved: false };
           workflow.approved_prompt_sha256 = null;
           workflow.request_dir = null;
@@ -1027,16 +1017,15 @@ export class ProductionWorkflow {
           await run('shot_workflow', ['set-stage', '--dir', stored.target, 'prompt_review']);
           await ask('prompt_review');
         } else {
-          if (!promptApproved(context) || !approvedFrames(context)) throw new Error('Утверждение опор или промпта устарело.');
+          if (!promptApproved(context) || !approvedFrames(context)) throw new Error(texts.frameOrPromptApprovalStale);
           // Звуковой вход — именно подготовленный WAV пакета: отдельным флагом audio или именованным слотом audio_N.
           const speechInput = (input: { flag: string; slot?: string; path: string }): boolean =>
             (input.flag === 'audio' || (input.flag === 'input' && /^audio/i.test(input.slot ?? ''))) && input.path === context.speech?.path;
-          if (context.scene.lipsync && !after.request.inputs.some(speechInput))
-            throw new Error('Речевой план: запрос должен передавать подготовленный WAV из блока «Речь» звуковым входом модели.');
+          if (context.scene.lipsync && !after.request.inputs.some(speechInput)) throw new Error(texts.speechInputRequired);
           // Видео короче среза оборвало бы речь: длительность запроса покрывает весь WAV.
           const speechLength = context.speech ? context.speech.sourceSeconds[1] - context.speech.sourceSeconds[0] : 0;
           if (context.scene.lipsync && Number(after.request.parameters?.duration) < speechLength - 1e-6)
-            throw new Error(`Речевой план: длительность запроса должна быть не меньше длины WAV (${speechLength.toFixed(2)} с).`);
+            throw new Error(texts.requestShorterThanSpeech({ seconds: speechLength.toFixed(2) }));
           let number = 1;
           while (existsSync(join(stored.target, `request-${String(number).padStart(2, '0')}`))) number++;
           const requestName = `request-${String(number).padStart(2, '0')}`;

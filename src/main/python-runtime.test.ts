@@ -142,7 +142,7 @@ describe('общий launcher', () => {
     const launcher = fakeLauncher('setInterval(() => {}, 1000);');
     const result = await runTool(work, work, 'probe', [], 100, launcher);
     expect(result).toMatchObject({ code: null });
-    expect(result.stderr).toContain('Превышено время');
+    expect(result.stderr).toBe('\nПревышено время выполнения (100 мс).\n');
     const jobs = new Jobs(work, join(work, 'logs'), launcher);
     const job = jobs.start('check', 'Долго', work, [{ tool: 'probe', args: [], timeoutMs: 100 }]);
     await vi.waitFor(() => expect(job.status).toBe('failed'));
@@ -172,18 +172,18 @@ describe('общий launcher', () => {
       }
     });
     expect(result.code).toBeNull();
-    expect(result.stderr).toContain('остановлено пользователем');
+    expect(result.stderr).toBe('\nВыполнение остановлено пользователем.\n');
     await new Promise((r) => setTimeout(r, 600));
     expect(existsSync(marker)).toBe(false);
     vi.mocked(launcher.runtime).mockClear();
     const before = await launcher.run(work, 'probe', [], { signal: controller.signal });
-    expect(before.code).toBeNull();
+    expect(before).toMatchObject({ code: null, stdout: '', stderr: 'Выполнение остановлено пользователем.', command: '' });
     expect(launcher.runtime).not.toHaveBeenCalled();
   });
 
   it.skipIf(process.platform === 'win32')('отличает сигнал от обычного кода завершения', async () => {
     const result = await fakeLauncher("process.kill(process.pid, 'SIGTERM');").run(work, 'probe', []);
     expect(result.code).toBeNull();
-    expect(result.stderr).toContain('SIGTERM');
+    expect(result.stderr).toBe('\nPython остановлен сигналом SIGTERM.\n');
   });
 });

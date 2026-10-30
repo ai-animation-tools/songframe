@@ -1,3 +1,6 @@
+import { checksTexts } from '@shared/texts/checks';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
 import { Box, Button, Checkbox, Chip, FormControlLabel, Paper, Typography } from '@mui/material';
 import MovieFilterIcon from '@mui/icons-material/MovieFilter';
@@ -48,54 +51,48 @@ export function ReviewPanel({
 }: ReviewPanelProps): ReactElement {
   // Проба собирается под непрерывный участок песни: несмежный выбор инструмент отклонит, поэтому объясняем заранее.
   const positions = selected.map((id) => shots.findIndex((shot) => shot.id === id)).sort((a, b) => a - b);
-  const gapReason = positions.some((value, index) => index > 0 && value !== positions[index - 1] + 1)
-    ? 'Выберите сцены подряд: проба собирается под непрерывный участок песни. Диапазон удобно выбрать щелчком с Shift.'
-    : null;
+  const gapReason = positions.some((value, index) => index > 0 && value !== positions[index - 1] + 1) ? checksTexts.contiguousShotsRequired : null;
   const buildReason =
     (disabled ? disabledReason : null) ??
-    (deletingReview !== null ? 'Дождитесь окончания удаления пробы.' : !selected.length ? 'Выберите сцены для пробы.' : gapReason);
+    (deletingReview !== null ? checksTexts.reviewDeletionPending : !selected.length ? checksTexts.selectReviewShots : gapReason);
   return (
     <Paper variant="outlined" sx={{ p: 2 }} data-anchor={ANCHORS.checksReview}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <MovieFilterIcon color="action" />
         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
-          Проба стыков
+          {navigationTexts.blocks.checksReview}
         </Typography>
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        Соберите временный ролик, чтобы оценить переходы между планами. Готовые планы будут показаны принятыми клипами, остальные — карточками, под непрерывный
-        участок музыки. Проба сохраняется в plan/batches. Она не заменяет аниматик, её сборка не означает приёмку сцен.
+        {checksTexts.reviewDescription}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        Для диапазона выберите первую сцену, затем последнюю с зажатым Shift. Диапазон добавится к выбранным сценам. С клавиатуры: Shift + Enter.
+        {checksTexts.reviewRangeHint}
       </Typography>
       {shots.length ? (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
           {shots.map((shot) => (
             <Chip
               key={shot.id}
-              label={`${shot.id}${shot.asset && !shot.asset.video ? ' · видео отсутствует' : ''}`}
+              label={checksTexts.reviewShotLabel({ id: shot.id, missingVideo: !!shot.asset && !shot.asset.video })}
               size="small"
               color={selected.includes(shot.id) ? 'primary' : 'default'}
               variant={shot.asset?.video ? 'filled' : 'outlined'}
               aria-pressed={selected.includes(shot.id)}
               onClick={(event) => toggleShot(shot.id, event.shiftKey)}
-              title={`${shot.title} · ${shot.stageLabel}${shot.asset?.video ? '' : ' · пойдёт карточкой'}`}
+              title={checksTexts.reviewShotHint({ title: shot.title, stage: shot.stageLabel, hasVideo: !!shot.asset?.video })}
             />
           ))}
         </Box>
       ) : (
         <Typography variant="caption" color="text.secondary">
-          Планы появятся после сборки реестра сцен.
+          {checksTexts.shotsUnavailable}
         </Typography>
       )}
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-        <FormControlLabel
-          control={<Checkbox checked={planOnly} onChange={(e) => setPlanOnly(e.target.checked)} />}
-          label="Только проверить, без создания видео"
-        />
+        <FormControlLabel control={<Checkbox checked={planOnly} onChange={(e) => setPlanOnly(e.target.checked)} />} label={checksTexts.reviewPlanOnly} />
         <Typography variant="caption" color="text.secondary">
-          Заливка: принятое видео доступно; контур: пойдёт карточкой.
+          {checksTexts.reviewChipLegend}
         </Typography>
       </Box>
       <ReviewList
@@ -115,11 +112,11 @@ export function ReviewPanel({
           disabledReason={buildReason}
           onClick={buildReview}
         >
-          {planOnly ? 'Проверить' : 'Собрать'}
+          {planOnly ? commonTexts.check : commonTexts.build}
         </ActionButton>
         {selected.length ? (
           <Button size="small" startIcon={<ClearIcon />} onClick={clearSelection}>
-            Снять выбор
+            {commonTexts.clearSelection}
           </Button>
         ) : null}
       </Box>

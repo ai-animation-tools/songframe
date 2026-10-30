@@ -20,6 +20,7 @@ import { DesktopNotifications } from './desktop-notifications';
 import { TaskNotifications } from './task-notifications';
 import { recoverMontageApplications } from './montage-recovery';
 import { registerMontageWindow } from './montage-window';
+import { applicationTexts } from '@shared/texts/application';
 
 // У SongFrame отдельное состояние: первый запуск не открывает проект прежнего приложения.
 app.setName('songframe');
@@ -30,6 +31,7 @@ if (!process.env.SONGFRAME_LINUX_SMOKE && !process.env.SONGFRAME_RUNTIME_SMOKE) 
   try {
     diagnostics = new AppDiagnostics(resolvePaths(pathOptions()).localDir);
   } catch (error) {
+    // eslint-disable-next-line no-restricted-syntax -- Журнал запуска остаётся в адаптере Electron и не показывается как текст интерфейса.
     console.error('Журнал сбоев недоступен:', error);
   }
 }
@@ -61,6 +63,7 @@ function registerLocalFileProtocol(): void {
     let path = decodeURIComponent(url.pathname);
     if (process.platform === 'win32' && /^\/[A-Za-z]:/.test(path)) path = path.slice(1);
     if (!existsSync(path) || !statSync(path).isFile()) {
+      // eslint-disable-next-line no-restricted-syntax -- Отсутствующий ресурс локального протокола записывается только в технический журнал.
       console.warn(`local-file: нет файла ${path} (${request.url})`);
       return new Response('Not found', { status: 404 });
     }
@@ -206,10 +209,7 @@ app
         // Ошибка одного восстановления не закрывает приложение; незавершённый проект не открываем автоматически.
         services.projects.close();
         const message = error instanceof Error ? error.message : String(error);
-        dialog.showErrorBox(
-          'Не удалось восстановить файлы проекта',
-          `${message}\n\nРезервные копии сохранены. Текущий проект закрыт: устраните причину перед дальнейшей работой с ним. Можно открыть другой проект.`
-        );
+        dialog.showErrorBox(applicationTexts.projectRecoveryTitle, applicationTexts.projectRecoveryFailed({ reason: message }));
       }
     services.agents = new AgentManager(services.settings);
     registerIpc(
@@ -228,7 +228,7 @@ app
     const message = error instanceof Error ? error.message : String(error);
     console.error(message);
     diagnostics?.log.write('startup', describeFailure(error));
-    if (!process.env.SONGFRAME_LINUX_SMOKE) dialog.showErrorBox('SongFrame: ошибка запуска', message);
+    if (!process.env.SONGFRAME_LINUX_SMOKE) dialog.showErrorBox(applicationTexts.startupFailedTitle, message);
     app.exit(1);
   });
 
@@ -248,6 +248,7 @@ app.on('before-quit', (event) => {
   event.preventDefault();
   coverCleanup ??= services.cover
     .shutdown()
+    // eslint-disable-next-line no-restricted-syntax -- Ошибка очистки записывается только в журнал завершения приложения.
     .catch((error: unknown) => console.error('Не удалось очистить временные обложки:', error))
     .finally(() => {
       coversClosed = true;

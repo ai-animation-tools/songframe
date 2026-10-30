@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Получение по уже существующему ID не создаёт повторной платной отправки; без ID исход выясняет пользователь по истории генераций сервиса. */
 import { useState, type ReactElement } from 'react';
 import { Alert, Stack, Typography } from '@mui/material';
@@ -57,13 +58,17 @@ export function PackageResume({
     return null;
   const kind = request.kind === 'image' ? 'image' : 'video';
   const provider = mediaProviderInfo(normalizeMediaProvider(request.provider), kind);
-  const title = provider?.title ?? request.provider ?? 'сервиса';
+  const title = provider?.title ?? request.provider ?? productionTexts.packageResume.service;
   // Без ID задания продолжить получение нельзя: исход выясняет пользователь в истории генераций сервиса.
   const unknown = !request.generationId && !request.manualResult && ['submission_unknown', 'submitting'].includes(request.attemptStatus ?? '');
   const attach = async (): Promise<void> => {
     const files = await window.api.dialog.pickFiles({
-      title: kind === 'image' ? 'Изображение из истории генераций' : 'Видео из истории генераций',
-      filters: [kind === 'image' ? { name: 'Изображение', extensions: ['png', 'jpg', 'jpeg', 'webp'] } : { name: 'Видео MP4', extensions: ['mp4'] }],
+      title: kind === 'image' ? productionTexts.packageResume.imageHistory : productionTexts.packageResume.videoHistory,
+      filters: [
+        kind === 'image'
+          ? { name: productionTexts.packageResume.image, extensions: ['png', 'jpg', 'jpeg', 'webp'] }
+          : { name: productionTexts.packageResume.video, extensions: ['mp4'] }
+      ],
       multiple: true
     });
     if (files.length) onAttach(files);
@@ -71,32 +76,32 @@ export function PackageResume({
   return (
     <Stack spacing={1} sx={{ mb: 2 }}>
       <Typography variant="body2">
-        {kind === 'image' ? `Получение изображения${request.frameId ? ` · опора ${request.frameId}` : ''}` : 'Получение видео'}
+        {kind === 'image' ? productionTexts.packageResume.receivingImage({ frameId: request.frameId }) : productionTexts.packageResume.receivingVideo}
         {request.provider ? ` · ${title}` : ''}
         {request.command ? ` · ${request.command}` : ''}
       </Typography>
       {unknown ? (
         <>
           <Alert severity="warning">
-            Исход отправки неизвестен: {title} мог создать задание и списать кредиты, но приложение не получило ID задания, а узнать его позже нельзя. Проверьте
-            сами: откройте {provider?.generationHistory ?? `историю генераций ${title}`} и найдите генерацию с промптом этой попытки, созданную во время её
-            отправки.
+            {productionTexts.packageResume.unknownDescription({
+              title,
+              history: provider?.generationHistory ?? productionTexts.packageResume.history({ title })
+            })}
             <br />
-            Нашли — скачайте оригинал и загрузите его сюда: он станет результатом попытки без новой оплаты. Не нашли — отметьте, что задание не создано, и
-            отправьте запрос заново с новым подтверждением стоимости. Если генерация ещё в работе, дождитесь её завершения в истории.
+            {productionTexts.packageResume.recoveryDescription}
           </Alert>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <ActionButton variant="contained" startIcon={<UploadFileIcon />} disabled={busy} disabledReason={busyReason} onClick={() => void attach()}>
-              Загрузить результат вручную
+              {productionTexts.packageResume.upload}
             </ActionButton>
             <ActionButton startIcon={<BlockIcon />} disabled={busy} disabledReason={busyReason} onClick={() => setConfirmNotCreated(true)}>
-              Задание не создано
+              {productionTexts.packageResume.notCreated}
             </ActionButton>
           </Stack>
           <ConfirmationDialog
             open={confirmNotCreated}
-            title="Задание не создано?"
-            confirmLabel="Задание не создано"
+            title={productionTexts.packageResume.notCreatedTitle}
+            confirmLabel={productionTexts.packageResume.notCreatedConfirm}
             confirmIcon={<BlockIcon />}
             confirmColor="warning"
             onClose={() => setConfirmNotCreated(false)}
@@ -105,12 +110,9 @@ export function PackageResume({
               onNotCreated();
             }}
           >
-            <Typography variant="body2">
-              Отмечайте, только если генерации нет в истории {title}. Попытка снова станет неотправленной, и на вопрос об отправке можно будет ответить заново:
-              потребуется новая оценка стоимости и отдельное подтверждение.
-            </Typography>
+            <Typography variant="body2">{productionTexts.packageResume.notCreatedDescription({ title })}</Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>
-              Если задание всё-таки было создано, повторная отправка спишет кредиты ещё раз.
+              {productionTexts.packageResume.duplicateWarning}
             </Typography>
           </ConfirmationDialog>
         </>
@@ -120,10 +122,10 @@ export function PackageResume({
           startIcon={<DownloadIcon />}
           sx={{ alignSelf: 'start' }}
           disabled={busy || !providerAvailable}
-          disabledReason={busy ? busyReason : `Программа ${title} не найдена: проверьте её на странице «Среда».`}
+          disabledReason={busy ? busyReason : productionTexts.packageResume.providerMissing({ title })}
           onClick={() => onResume()}
         >
-          Продолжить получение
+          {productionTexts.packageResume.resume}
         </AiButton>
       )}
     </Stack>

@@ -1,3 +1,4 @@
+import { animaticTexts } from '@shared/texts/animatic';
 /** Список глав с переходом плеера на выбранный план. */
 
 import type { ReactElement } from 'react';
@@ -18,7 +19,7 @@ export function AnimaticChapters({
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-        Главы
+        {animaticTexts.chapters}
       </Typography>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', xl: '1fr 1fr 1fr' }, gap: 1 }}>
         {shots.map((shot) => (

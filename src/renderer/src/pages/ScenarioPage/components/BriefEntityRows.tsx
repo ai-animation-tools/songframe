@@ -1,7 +1,7 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { OpenShotState } from '../types';
 import type { ReactElement } from 'react';
 import { TableBody, TableCell, TableRow, Typography } from '@mui/material';
-import { countLabel } from '@shared/plural';
 import type { BriefEntity } from '../briefComparison';
 import { BriefValueCell } from './BriefValueCell';
 
@@ -29,8 +29,7 @@ export function BriefEntityRows({
             {entity.name}
           </Typography>
           <Typography variant="caption" component="span" color="text.secondary" sx={{ ml: 1 }}>
-            {entity.changes ? `изменений: ${entity.changes}` : 'без изменений за план'}
-            {hidden ? ` · скрыто без изменений: ${countLabel(hidden, 'свойство', 'свойства', 'свойств')}` : ''}
+            {scenarioTexts.brief.entityChanges({ changes: entity.changes, hidden })}
           </Typography>
         </TableCell>
       </TableRow>
@@ -39,7 +38,7 @@ export function BriefEntityRows({
           <TableCell
             component="th"
             scope="row"
-            title={row.label === row.key ? undefined : `Код свойства: ${row.key}`}
+            title={row.label === row.key ? undefined : scenarioTexts.brief.propertyCode({ key: row.key })}
             sx={{ verticalAlign: 'top', overflowWrap: 'anywhere' }}
           >
             <Typography variant="body2" color="text.secondary">

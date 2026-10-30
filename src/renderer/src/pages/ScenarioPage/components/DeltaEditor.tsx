@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import { type ReactElement, useEffect, useState } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -62,7 +63,7 @@ export function DeltaEditor({
     <Stack spacing={1.5} sx={{ minWidth: 0 }}>
       {!listed.length ? (
         <Typography variant="body2" color="text.secondary">
-          Изменений пока нет. Состояние наследуется.
+          {scenarioTexts.delta.empty}
         </Typography>
       ) : null}
       <Box sx={{ minWidth: 0 }}>
@@ -91,8 +92,12 @@ export function DeltaEditor({
                   size="small"
                   variant="outlined"
                   color={same ? 'warning' : 'default'}
-                  label={same ? `изменений: ${changing.length} из ${set.length}` : `изменений: ${changing.length}`}
-                  title={`Задано свойств в этом блоке: ${set.length}; отличаются от унаследованного: ${changing.length}.${same ? ` Совпадают с унаследованным и ничего не меняют: ${same} — их можно убрать.` : ''}`}
+                  label={
+                    same
+                      ? scenarioTexts.delta.partialChanges({ changing: changing.length, total: set.length })
+                      : scenarioTexts.delta.changes({ count: changing.length })
+                  }
+                  title={scenarioTexts.delta.changeSummary({ total: set.length, changing: changing.length, same })}
                   sx={{ flexShrink: 0 }}
                 />
               </AccordionSummary>
@@ -107,13 +112,13 @@ export function DeltaEditor({
                 />
                 <Box sx={{ mt: 1 }}>
                   <DestructiveButton
-                    label={`Удалить изменения сущности «${labelOf(entity)}»`}
-                    description="Все изменения этой сущности в данном блоке будут удалены. Состояние снова будет наследоваться."
+                    label={scenarioTexts.delta.removeEntity({ name: labelOf(entity) })}
+                    description={scenarioTexts.delta.removeDescription}
                     size="small"
                     startIcon={<DeleteOutlineIcon />}
                     onConfirm={() => onChange(entity, {})}
                   >
-                    Удалить изменения
+                    {scenarioTexts.delta.removeChanges}
                   </DestructiveButton>
                 </Box>
               </AccordionDetails>
@@ -126,11 +131,11 @@ export function DeltaEditor({
         <TextField
           select
           size="small"
-          label="Сущность для изменения"
+          label={scenarioTexts.delta.entity}
           value={selectedEntity}
           onChange={(e) => setAdding(e.target.value)}
           disabled={!available.length}
-          helperText={!available.length ? (entities.length ? 'Все сущности уже добавлены' : 'В кастинге пока нет сущностей') : undefined}
+          helperText={!available.length ? (entities.length ? scenarioTexts.delta.allAdded : scenarioTexts.delta.noEntities) : undefined}
           sx={{ flex: '1 1 220px', minWidth: 0, maxWidth: 360 }}
         >
           {available.map((entity) => (
@@ -145,7 +150,7 @@ export function DeltaEditor({
           startIcon={<AddIcon />}
           disabled={!selectedEntity}
           disabledReason={
-            available.length ? 'Сначала выберите сущность для изменения.' : entities.length ? 'Все сущности уже добавлены.' : 'В кастинге пока нет сущностей.'
+            available.length ? scenarioTexts.delta.selectEntity : entities.length ? scenarioTexts.delta.allAddedReason : scenarioTexts.delta.noEntitiesReason
           }
           sx={{ mt: 0.5, flexShrink: 0 }}
           onClick={() => {
@@ -155,7 +160,7 @@ export function DeltaEditor({
             setAdding('');
           }}
         >
-          Добавить сущность
+          {scenarioTexts.delta.addEntity}
         </ActionButton>
       </Box>
     </Stack>

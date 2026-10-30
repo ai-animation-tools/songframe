@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 import { useId, type ReactElement } from 'react';
 import { Stack, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material';
 import { ReadableValue } from '../../../components/ReadableValue';
@@ -9,7 +10,7 @@ export function RequestParameters({ parameters }: { parameters: Record<string, u
   return (
     <Stack component="section" spacing={1} aria-labelledby={labelId} sx={{ minWidth: 0 }}>
       <Typography id={labelId} component="h3" variant="subtitle2">
-        Параметры запроса
+        {productionTexts.requestParameters.heading}
       </Typography>
       {entries.length ? (
         <Table size="small" aria-labelledby={labelId} sx={{ tableLayout: 'fixed', width: '100%' }}>
@@ -28,7 +29,7 @@ export function RequestParameters({ parameters }: { parameters: Record<string, u
         </Table>
       ) : (
         <Typography variant="body2" color="text.secondary">
-          Дополнительные параметры не заданы.
+          {productionTexts.requestParameters.empty}
         </Typography>
       )}
     </Stack>

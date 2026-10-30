@@ -3,6 +3,8 @@ import type { MediaModelSelection } from './media-providers';
 import type { ProductionProposalSummary } from './production-workflow';
 import type { WhisperModelId } from './whisper-models';
 import type { FPS } from './video';
+import { generationTexts } from './texts/generation';
+import { projectDataTexts } from './texts/project-data';
 
 /** Вычисляемое состояние проекта; хранится нигде, выводится из файлов папки. */
 export type ProjectState = 'invalid' | 'empty' | 'sourced' | 'timed' | 'scripted' | 'in_production' | 'complete';
@@ -67,10 +69,15 @@ export interface SourceKind {
 }
 
 export const DEFAULT_SOURCE_KINDS: SourceKind[] = [
+  // eslint-disable-next-line no-restricted-syntax -- Исходные подписи типов сохраняются в kinds файла source/manifest.json и принадлежат формату данных.
   { id: 'character', label: 'Персонаж', dir: 'heroes' },
+  // eslint-disable-next-line no-restricted-syntax -- Исходные подписи типов сохраняются в kinds файла source/manifest.json и принадлежат формату данных.
   { id: 'vehicle', label: 'Транспорт', dir: 'vehicles' },
+  // eslint-disable-next-line no-restricted-syntax -- Исходные подписи типов сохраняются в kinds файла source/manifest.json и принадлежат формату данных.
   { id: 'location', label: 'Локация', dir: 'locations' },
+  // eslint-disable-next-line no-restricted-syntax -- Исходные подписи типов сохраняются в kinds файла source/manifest.json и принадлежат формату данных.
   { id: 'prop', label: 'Предмет', dir: 'props' },
+  // eslint-disable-next-line no-restricted-syntax -- Исходные подписи типов сохраняются в kinds файла source/manifest.json и принадлежат формату данных.
   { id: 'style', label: 'Стиль', dir: 'style' }
 ];
 export type ReferenceView = 'full' | 'face' | 'front' | 'side' | 'back' | 'top' | 'other';
@@ -190,25 +197,9 @@ export interface PickOptions {
   multiple?: boolean;
 }
 
-export const REFERENCE_VIEW_LABELS: Record<ReferenceView, string> = {
-  full: 'В полный рост',
-  face: 'Лицо',
-  front: 'Спереди',
-  side: 'Сбоку',
-  back: 'Сзади',
-  top: 'Сверху',
-  other: 'Другое'
-};
+export const REFERENCE_VIEW_LABELS: Record<ReferenceView, string> = projectDataTexts.referenceViews;
 
-export const PROJECT_STATE_LABELS: Record<ProjectState, string> = {
-  invalid: 'Не проект',
-  empty: 'Создан',
-  sourced: 'Исходники загружены',
-  timed: 'Трек размечен',
-  scripted: 'Готов к производству',
-  in_production: 'В производстве',
-  complete: 'Завершён'
-};
+export const PROJECT_STATE_LABELS: Record<ProjectState, string> = projectDataTexts.projectStates;
 
 /** Строка разметки песни: физический номер строки text.md и оценка границ в секундах трека. */
 export interface TimingLine {
@@ -380,6 +371,10 @@ export interface ScenarioView {
 
 /** Где задано значение состояния: начальное состояние кастинга или изменение плана в его фазе. */
 export type StateSource = { kind: 'cast' } | { kind: 'plan'; shot: string; phase: 'before' | 'after' };
+
+/** Префикс формата вычисленной врезки: main создаёт строку, renderer распознаёт отсутствие состояния. */
+// eslint-disable-next-line no-restricted-syntax -- Служебный маркер данных BriefResult сохраняет прежнюю фильтрацию, это не редактируемая UI-подпись.
+export const BRIEF_STATE_UNSET_PREFIX = 'Состояние не задано';
 
 export interface BriefResult {
   shot: string;
@@ -605,7 +600,7 @@ export interface JobInfo {
 }
 
 /** Подпись и причина задания, прерванного закрытием программы. */
-export const JOB_INTERRUPTED_MESSAGE = 'Прервано закрытием или сбоем программы';
+export const JOB_INTERRUPTED_MESSAGE = projectDataTexts.jobInterrupted;
 
 /** Сведения о прошлом сеансе программы для уведомления и отчёта разработчику. */
 export interface PreviousSessionInfo {
@@ -663,11 +658,7 @@ export type DurationRule = 'min_supported_strictly_greater_than_window' | 'min_s
 
 export const DURATION_RULES: DurationRule[] = ['min_supported_strictly_greater_than_window', 'min_supported_not_less_than_window', 'exact_window'];
 
-export const DURATION_RULE_LABELS: Record<DurationRule, string> = {
-  min_supported_strictly_greater_than_window: 'Ближайшая поддерживаемая длительность строго больше окна',
-  min_supported_not_less_than_window: 'Ближайшая поддерживаемая длительность не меньше окна',
-  exact_window: 'Ровно окно сцены'
-};
+export const DURATION_RULE_LABELS: Record<DurationRule, string> = generationTexts.durationRules;
 
 /** Настройки видео; неизвестные параметры сохраняются для подключаемых провайдеров. */
 export interface VideoGenerationSettings {

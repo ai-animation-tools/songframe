@@ -1,4 +1,5 @@
 /** Обложка живёт во временной сессии; только общая форма переносит принятый PNG в проект. */
+import { sourcesTexts } from '@shared/texts/sources';
 import { randomUUID } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -52,21 +53,20 @@ export class CoverGeneration {
   constructor(private readonly options: CoverGenerationOptions) {}
 
   create(project: string, prompt: string): CoverGenerationSession {
-    if (this.stopping) throw new Error('Приложение завершает работу.');
-    if (typeof project !== 'string' || !isAbsolute(project) || project.includes('\0')) throw new Error('Выберите папку проекта.');
+    if (this.stopping) throw new Error(sourcesTexts.main.applicationStopping);
+    if (typeof project !== 'string' || !isAbsolute(project) || project.includes('\0')) throw new Error(sourcesTexts.main.projectRequired);
     let canonical: string;
     try {
       canonical = realpathSync(project);
     } catch {
-      throw new Error('Папка проекта не найдена. Выберите её заново.');
+      throw new Error(sourcesTexts.main.projectMissing);
     }
-    if (!existsSync(join(canonical, 'plan/project.json'))) throw new Error('В папке нет plan/project.json.');
+    if (!existsSync(join(canonical, 'plan/project.json'))) throw new Error(sourcesTexts.main.projectPlanMissing);
     const imageSettings = readProjectSettings(canonical).generation?.image;
-    if (!isMediaProvider(imageSettings?.provider, 'image'))
-      throw new Error(`Выберите поддерживаемого провайдера изображений в настройках проекта: ${mediaProviderTitles('image')}.`);
+    if (!isMediaProvider(imageSettings?.provider, 'image')) throw new Error(sourcesTexts.main.imageProviderRequired({ titles: mediaProviderTitles('image') }));
     assertAiSelection(this.options.settings, canonical, 'image');
     if (typeof prompt !== 'string' || !prompt.trim() || prompt.includes('\0') || Buffer.byteLength(prompt) > 32 * 1024)
-      throw new Error('Введите описание обложки длиной не более 32 КБ.');
+      throw new Error(sourcesTexts.main.coverPromptInvalid);
     const id = randomUUID();
     const root = realpathSync(mkdtempSync(join(tmpdir(), 'songframe-cover-')));
     const session: CoverGenerationSession = {
@@ -89,8 +89,8 @@ export class CoverGeneration {
   async prepare(id: string): Promise<CoverGenerationSession> {
     const record = this.record(id);
     assertAiSelection(this.options.settings, record.project, 'image');
-    if (record.session.preparing || record.session.status === 'generating') throw new Error('Дождитесь завершения подготовки или генерации обложки.');
-    if (record.session.status === 'accepted') throw new Error('Обложка уже выбрана.');
+    if (record.session.preparing || record.session.status === 'generating') throw new Error(sourcesTexts.main.coverBusy);
+    if (record.session.status === 'accepted') throw new Error(sourcesTexts.main.coverAlreadyAccepted);
     if (record.prepared) rmSync(record.prepared.workDir, { recursive: true, force: true });
     record.prepared = undefined;
     record.session.preparing = true;
@@ -110,7 +110,7 @@ export class CoverGeneration {
           signal: record.controller!.signal
         });
         if (record.closed) return;
-        if (!candidate.requestSha || !isMediaProvider(candidate.provider, 'image')) throw new Error('Не удалось подготовить запрос обложки.');
+        if (!candidate.requestSha || !isMediaProvider(candidate.provider, 'image')) throw new Error(sourcesTexts.main.coverRequestPrepareFailed);
         record.prepared = { candidate, workDir };
         record.session.provider = candidate.provider;
         record.session.model = candidate.model;
@@ -121,7 +121,7 @@ export class CoverGeneration {
         if (record.closed) return;
         rmSync(workDir, { recursive: true, force: true });
         record.session.status = record.session.image ? 'ready' : 'failed';
-        record.session.error = error instanceof Error ? error.message : 'Не удалось подготовить генерацию обложки.';
+        record.session.error = error instanceof Error ? error.message : sourcesTexts.main.coverPrepareFailed;
       } finally {
         record.session.preparing = false;
       }
@@ -133,18 +133,18 @@ export class CoverGeneration {
   generate(id: string, requestSha: string, approval: CoverGenerationApproval): CoverGenerationSession {
     const record = this.record(id);
     assertAiSelection(this.options.settings, record.project, 'image');
-    if (record.session.preparing || record.session.status === 'generating') throw new Error('Дождитесь завершения подготовки или генерации обложки.');
-    if (record.session.status === 'accepted') throw new Error('Обложка уже выбрана. Откройте новую сессию для другой обложки.');
+    if (record.session.preparing || record.session.status === 'generating') throw new Error(sourcesTexts.main.coverBusy);
+    if (record.session.status === 'accepted') throw new Error(sourcesTexts.main.coverAcceptedNeedsNewSession);
     const prepared = record.prepared;
-    if (!prepared || !requestSha || prepared.candidate.requestSha !== requestSha) throw new Error('Сначала подготовьте и проверьте новый запрос обложки.');
+    if (!prepared || !requestSha || prepared.candidate.requestSha !== requestSha) throw new Error(sourcesTexts.main.coverRequestRequired);
     // Согласие относится к показанному промпту и этой подготовке, даже когда SHA следующей попытки совпадает.
     if (approval?.promptConfirmed !== true || !record.session.approvalToken || approval.approvalToken !== record.session.approvalToken)
-      throw new Error('Подтвердите показанный промпт для текущей попытки генерации обложки.');
+      throw new Error(sourcesTexts.main.coverPromptConfirmationRequired);
     if (readProjectSettings(record.project).generation?.image?.provider !== prepared.candidate.provider)
-      throw new Error('Провайдер изображений изменился. Подготовьте новый запрос обложки.');
+      throw new Error(sourcesTexts.main.coverProviderChanged);
     const provider = MEDIA_PROVIDERS[prepared.candidate.provider];
     if (provider.paid && !priceAllowsGeneration(prepared.candidate.quote, approval.allowUnknownCost === true))
-      throw new Error(`Стоимость или баланс ${provider.title} не позволяют отправить этот запрос.`);
+      throw new Error(sourcesTexts.main.coverCostBlocked({ title: provider.title }));
     record.prepared = undefined;
     record.session.approvalToken = null;
     // Согласованный запрос расходуется один раз; старый кандидат удаляется только после явного запуска.
@@ -171,7 +171,7 @@ export class CoverGeneration {
   accept(id: string, crop: CoverCrop): { id: string; path: string } {
     const record = this.record(id);
     const image = record.session.image;
-    if (record.session.preparing || record.session.status !== 'ready' || !image) throw new Error('Сначала дождитесь готовой обложки.');
+    if (record.session.preparing || record.session.status !== 'ready' || !image) throw new Error(sourcesTexts.main.coverNotReady);
     if (
       !crop ||
       ![crop.x, crop.y, crop.size].every(Number.isSafeInteger) ||
@@ -181,7 +181,7 @@ export class CoverGeneration {
       crop.x + crop.size > image.width ||
       crop.y + crop.size > image.height
     )
-      throw new Error('Выберите квадратную область внутри изображения с целыми координатами.');
+      throw new Error(sourcesTexts.main.coverCropInvalid);
     const path = join(record.root, 'accepted.png');
     try {
       // Агент мог оставить одноимённый артефакт; обрезка должна создать собственный новый файл.
@@ -196,7 +196,7 @@ export class CoverGeneration {
         size?.width !== crop.size ||
         size.height !== crop.size
       )
-        throw new Error('Не удалось сохранить квадратную обложку в PNG.');
+        throw new Error(sourcesTexts.main.coverCropSaveFailed);
     } catch (error) {
       rmSync(path, { force: true });
       throw error;
@@ -227,7 +227,7 @@ export class CoverGeneration {
 
   private record(id: string): Record {
     const record = this.sessions.get(id);
-    if (!record || record.closed) throw new Error('Сессия обложки закрыта. Откройте генерацию заново.');
+    if (!record || record.closed) throw new Error(sourcesTexts.main.coverSessionClosed);
     return record;
   }
   private clear(record: Record, keep?: string): void {
@@ -240,7 +240,7 @@ export class CoverGeneration {
       // Настройки могли измениться между подтверждением и отложенным запуском исполнителя.
       assertAiSelection(this.options.settings, record.project, 'image');
       if (readProjectSettings(record.project).generation?.image?.provider !== prepared.candidate.provider)
-        throw new Error('Провайдер изображений изменился. Подготовьте новый запрос обложки.');
+        throw new Error(sourcesTexts.main.coverProviderChanged);
       const output = await prepared.candidate.generate(record.controller!.signal, approval);
       if (record.closed) return;
       const path = resolve(workDir, output.path);
@@ -256,10 +256,10 @@ export class CoverGeneration {
         !isImageFile(path) ||
         !imageExtensionMatches(path)
       )
-        throw new Error('Нужен настоящий PNG, JPEG или WebP внутри временной папки обложки без символических ссылок.');
+        throw new Error(sourcesTexts.main.coverFileInvalid);
       const size = this.options.readImage(path);
       if (!size || !Number.isSafeInteger(size.width) || !Number.isSafeInteger(size.height) || size.width <= 0 || size.height <= 0)
-        throw new Error('Не удалось прочитать созданное изображение обложки.');
+        throw new Error(sourcesTexts.main.coverImageReadFailed);
       record.session.image = { path, ...size };
       record.session.status = 'ready';
     } catch (error) {
@@ -267,7 +267,7 @@ export class CoverGeneration {
       this.clear(record);
       record.session.image = null;
       record.session.status = 'failed';
-      record.session.error = error instanceof Error && !('code' in error) ? error.message : 'Не удалось прочитать файл обложки. Создайте изображение заново.';
+      record.session.error = error instanceof Error && !('code' in error) ? error.message : sourcesTexts.main.coverFileReadFailed;
     }
   }
 }

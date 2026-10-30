@@ -1,3 +1,5 @@
+import { commonTexts } from '@shared/texts/common';
+import { montageTexts } from '@shared/texts/montage';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import MovieOutlinedIcon from '@mui/icons-material/MovieOutlined';
@@ -26,7 +28,7 @@ export function MontageSourceThumbnail({
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const imageUrl = source.kind === 'card' ? url : poster?.url === url ? poster.image : undefined;
   const failed = failedUrl === url;
-  const alt = `${sceneLabel}: ${source.label}`;
+  const alt = montageTexts.sourceLabel({ title: sceneLabel, label: source.label });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -85,7 +87,7 @@ export function MontageSourceThumbnail({
     <ButtonBase
       ref={containerRef}
       onClick={onOpen}
-      aria-label={`Открыть материал: ${alt}`}
+      aria-label={montageTexts.openMaterial(alt)}
       sx={{
         aspectRatio: '16 / 9',
         width: '100%',
@@ -113,7 +115,7 @@ export function MontageSourceThumbnail({
         <Stack role="img" aria-label={alt} alignItems="center" justifyContent="center" spacing={0.5} sx={{ height: '100%', color: 'grey.400', p: 1 }}>
           {source.kind === 'card' ? <ImageOutlinedIcon /> : <MovieOutlinedIcon />}
           <Typography variant="caption" textAlign="center">
-            {failed ? 'Превью недоступно' : 'Загрузка превью…'}
+            {failed ? montageTexts.previewUnavailable : montageTexts.previewLoading}
           </Typography>
         </Stack>
       )}
@@ -138,7 +140,7 @@ export function MontageSourceThumbnail({
       >
         {source.kind === 'video' ? <PlayCircleOutlineIcon fontSize="small" /> : <ZoomInIcon fontSize="small" />}
         <Typography component="span" variant="caption">
-          {source.kind === 'video' ? 'Смотреть' : 'Увеличить'}
+          {source.kind === 'video' ? commonTexts.watch : montageTexts.enlarge}
         </Typography>
       </Stack>
     </ButtonBase>

@@ -1,4 +1,5 @@
 /** Единственная кнопка действий агента: знак всегда соответствует одному агенту, обычно сохранённому в настройках. */
+import { componentsTexts } from '@shared/texts/components';
 import type { ReactElement } from 'react';
 import { Button, type ButtonProps } from '@mui/material';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
@@ -25,7 +26,7 @@ export function AgentButton({ provider, aiKind = 'agent', setup = false, disable
   const problem = useAiActionProblem(aiKind);
   const selected = provider ?? (setup ? undefined : (agentProvider ?? undefined));
   const ownReason = props.disabled ? (disabledReason ?? null) : null;
-  const reason = setup ? (selected ? ownReason : 'Выберите агента в форме настроек.') : (problem ?? ownReason);
+  const reason = setup ? (selected ? ownReason : componentsTexts.agent.chooseInSettings) : (problem ?? ownReason);
   const disabled = props.disabled || !!reason;
   // Подсказка при наведении: назначение кнопки и, если она недоступна, причина — вместо отдельных сводок рядом с кнопками.
   const hint = buttonHint(props.title, reason);
@@ -34,7 +35,7 @@ export function AgentButton({ provider, aiKind = 'agent', setup = false, disable
     <Button
       {...props}
       disabled={disabled}
-      title={hint ?? (selected ? agentTitle(selected) : 'Агент не выбран')}
+      title={hint ?? (selected ? agentTitle(selected) : componentsTexts.agent.notSelected)}
       // Без выбранного агента показываем нейтральный знак, а не оба логотипа.
       startIcon={selected ? <AgentIcon provider={selected} monochrome={monochrome} /> : <SmartToyOutlinedIcon />}
     />

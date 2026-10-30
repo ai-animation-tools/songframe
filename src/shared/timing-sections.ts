@@ -24,6 +24,7 @@ export function buildSections(lyrics: LyricsLine[], lines: TimingLine[], duratio
       parts.push(current);
     } else if (lyric.text) {
       if (!current) {
+        // eslint-disable-next-line no-restricted-syntax -- Имя секции сохраняется в timing.json, это значение данных музыкальной карты.
         current = { name: 'Без названия', members: [] };
         parts.push(current);
       }
@@ -39,6 +40,7 @@ export function buildSections(lyrics: LyricsLine[], lines: TimingLine[], duratio
         name: p.name,
         start: sorted[0].start,
         end: Math.max(...sorted.map((l) => l.end)),
+        // eslint-disable-next-line no-restricted-syntax -- Диапазон строк записывается в note музыкальной карты timing.json.
         note: `строки ${sorted[0].id}–${sorted[sorted.length - 1].id}`
       };
     });
@@ -47,9 +49,11 @@ export function buildSections(lyrics: LyricsLine[], lines: TimingLine[], duratio
   named.forEach((part, index) => {
     if (part.start - cursor >= GAP_THRESHOLD) {
       sections.push({
+        // eslint-disable-next-line no-restricted-syntax -- Автоматические имена секций принадлежат сохраняемой музыкальной карте timing.json.
         name: index === 0 ? 'Вступление' : `Проигрыш после «${named[index - 1].name}»`,
         start: round(cursor),
         end: round(part.start),
+        // eslint-disable-next-line no-restricted-syntax -- Служебная заметка сохраняется в note секции timing.json.
         note: 'без вокала'
       });
     }
@@ -57,6 +61,7 @@ export function buildSections(lyrics: LyricsLine[], lines: TimingLine[], duratio
     cursor = part.end;
   });
   if (duration && duration - cursor >= GAP_THRESHOLD)
+    // eslint-disable-next-line no-restricted-syntax -- Имя и заметка финала являются значениями сохраняемой музыкальной карты timing.json.
     sections.push({ name: 'Финал без вокала', start: round(cursor), end: round(duration), note: 'до конца трека' });
   return sections;
 }

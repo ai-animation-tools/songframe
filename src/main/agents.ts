@@ -1,4 +1,5 @@
 /** Диагностика внешних CLI: только версия и статус входа, без рабочих запросов и хранения вывода. */
+import { agentsTexts } from '@shared/texts/agents';
 import { execFile } from 'node:child_process';
 import { constants } from 'node:fs';
 import { access, stat } from 'node:fs/promises';
@@ -45,9 +46,9 @@ function run(executable: string, args: string[], env: NodeJS.ProcessEnv, home: s
 }
 
 function failureMessage(result: CommandResult): string | null {
-  if (result.failure === 'timeout') return 'Агент не ответил вовремя. Проверьте его запуск в терминале и повторите проверку.';
-  if (result.failure === 'output_limit') return 'Агент превысил допустимый объём ответа. Проверьте его запуск в терминале.';
-  if (result.failure === 'launch') return 'Не удалось запустить агента. Проверьте права файла и наличие зависимостей, например Node.js для npm-установки.';
+  if (result.failure === 'timeout') return agentsTexts.checkTimeout;
+  if (result.failure === 'output_limit') return agentsTexts.checkOutputLimit;
+  if (result.failure === 'launch') return agentsTexts.checkLaunchFailed;
   return null;
 }
 
@@ -60,17 +61,17 @@ function authorization(probe: AgentCliProbe, result: CommandResult): Pick<AgentC
     result.code !== 0 &&
     /\b(ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH)\b|\b(network is unreachable|failed to connect|connection refused)\b/i.test(result.output)
   ) {
-    return { authorization: 'unknown', message: 'Агент сообщил об ошибке соединения. Проверьте сеть и повторите проверку.' };
+    return { authorization: 'unknown', message: agentsTexts.checkConnectionFailed };
   }
   return {
     authorization: 'unknown',
-    message: 'Не удалось определить вход по ответу агента. Проверьте статус в терминале; может потребоваться обновление агента.'
+    message: agentsTexts.authorizationUnknown
   };
 }
 
 export async function checkAgent(input: unknown, options: CheckOptions = {}): Promise<AgentCheckResult> {
   const config = normalizeAgentSettings(input);
-  if (!config) throw new Error('Сначала выберите агента.');
+  if (!config) throw new Error(agentsTexts.chooseAgent);
   const probe = AGENT_CLI_PROBES[config.provider];
   const home = options.home ?? homedir();
   // GUI часто не наследует PATH терминала; ~/.local/bin используется нативной установкой Claude.
@@ -92,7 +93,7 @@ export async function checkAgent(input: unknown, options: CheckOptions = {}): Pr
     return {
       availability: 'not_found',
       authorization: 'unknown',
-      message: `${agentTitle(config.provider)} не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку.`
+      message: agentsTexts.notFound({ provider: agentTitle(config.provider) })
     };
   }
   const base = { executablePath, authorization: 'unknown' as const };
@@ -102,7 +103,7 @@ export async function checkAgent(input: unknown, options: CheckOptions = {}): Pr
     return {
       ...base,
       availability: 'error',
-      message: failed ?? `Команда версии завершилась с ошибкой. Проверьте ${agentTitle(config.provider)} и его зависимости в терминале.`
+      message: failed ?? agentsTexts.versionCheckFailed({ provider: agentTitle(config.provider) })
     };
   }
   const version = probe.version(versionResult.output);
@@ -110,7 +111,7 @@ export async function checkAgent(input: unknown, options: CheckOptions = {}): Pr
     return {
       ...base,
       availability: 'available',
-      message: `${agentTitle(config.provider)} запускается, но его версия не распознана. Обновите его до поддерживаемой версии.`
+      message: agentsTexts.checkVersionUnknown({ provider: agentTitle(config.provider) })
     };
   const status = await run(executablePath, probe.statusArgs, env, home, options.timeoutMs ?? 10_000);
   return { ...base, availability: 'available', version, ...authorization(probe, status) };

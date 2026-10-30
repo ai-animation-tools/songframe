@@ -1,3 +1,5 @@
+import { scenarioTexts } from '@shared/texts/scenario';
+import { commonTexts } from '@shared/texts/common';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import type { ReactElement } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
@@ -24,32 +26,26 @@ export function ScenarioReviseDialog({
 }): ReactElement {
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Доработать выбранный план</DialogTitle>
+      <DialogTitle>{scenarioTexts.revise.title}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
-          <Typography>Планы: {ids.join(', ') || 'не выбраны'}. Соседние планы используются как контекст; их постановка не меняется.</Typography>
-          <TextField autoFocus multiline minRows={4} label="Что нужно изменить" value={note} onChange={(event) => onNote(event.target.value)} />
+          <Typography>{scenarioTexts.revise.context({ ids })}</Typography>
+          <TextField autoFocus multiline minRows={4} label={scenarioTexts.revise.note} value={note} onChange={(event) => onNote(event.target.value)} />
         </Stack>
       </DialogContent>
       <DialogActions>
-        <ActionButton startIcon={<CancelOutlinedIcon />} disabled={busy} disabledReason="Дождитесь завершения текущей операции." onClick={onClose}>
-          Отмена
+        <ActionButton startIcon={<CancelOutlinedIcon />} disabled={busy} disabledReason={commonTexts.operationPending} onClick={onClose}>
+          {commonTexts.cancel}
         </ActionButton>
         <AgentButton
           disabled={busy || !ids.length || !note.trim()}
           disabledReason={
-            busy
-              ? 'Дождитесь завершения текущей операции.'
-              : !ids.length
-                ? 'Сначала выберите план для доработки.'
-                : !note.trim()
-                  ? 'Опишите, что нужно изменить.'
-                  : null
+            busy ? commonTexts.operationPending : !ids.length ? scenarioTexts.revise.selectShot : !note.trim() ? scenarioTexts.revise.explainChanges : null
           }
           variant="contained"
           onClick={onStart}
         >
-          Подготовить доработку
+          {scenarioTexts.revise.prepare}
         </AgentButton>
       </DialogActions>
     </Dialog>

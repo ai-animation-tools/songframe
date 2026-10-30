@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Черновик замечания и платное подтверждение относятся к показанному вопросу, а не ко всему плану. */
 import type { Api } from '@shared/api';
 import type { AcceptOptions, JobInfo, PackageView, ProductionView } from '@shared/types';
@@ -14,12 +15,12 @@ export async function sendConfirmedRequest(
   quoteToken?: string,
   unknownCostConsentToken?: string
 ): Promise<JobInfo | void> {
-  if (!pkg.request?.sha256) throw new Error('У показанного запроса нет SHA256. Обновите пакет перед отправкой.');
-  if (!quoteToken) throw new Error('Перед отправкой обновите и подтвердите стоимость запроса.');
+  if (!pkg.request?.sha256) throw new Error(productionTexts.decisions.requestHashMissing);
+  if (!quoteToken) throw new Error(productionTexts.decisions.quoteRequired);
   // Главный процесс атомарно связывает разрешение и отправку с этим снимком запроса.
   if (unknownCostConsentToken) {
     // Согласие относится к показанной оценке; новая подготовка или обновление цены потребуют другого токена.
-    if (unknownCostConsentToken !== quoteToken) throw new Error('Согласие относится к другой проверке стоимости. Подтвердите запрос заново.');
+    if (unknownCostConsentToken !== quoteToken) throw new Error(productionTexts.decisions.consentMismatch);
     return api.production.submit(project, pkg.dir, pkg.request.sha256, pkg.decisionToken, quoteToken, unknownCostConsentToken);
   } else {
     return api.production.submit(project, pkg.dir, pkg.request.sha256, pkg.decisionToken, quoteToken);
@@ -65,8 +66,8 @@ export function defaultAcceptOptions(target: AcceptTarget): AcceptOptions {
 }
 
 export async function acceptShownResult(api: Api, project: string, target: AcceptTarget, options: AcceptOptions): Promise<JobInfo> {
-  if (!target.resultToken) throw new Error('Результат не подтверждён. Обновите пакет и откройте приёмку заново.');
-  if (target.hasAsset && !options.replaceExisting) throw new Error('У плана уже есть принятый комплект. Подтвердите замену в диалоге приёмки.');
+  if (!target.resultToken) throw new Error(productionTexts.decisions.resultUnconfirmed);
+  if (target.hasAsset && !options.replaceExisting) throw new Error(productionTexts.decisions.replacementRequired);
   return api.production.accept(project, target.shot, target.dir, { ...options, expectedResultToken: target.resultToken });
 }
 

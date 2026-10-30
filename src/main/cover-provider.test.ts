@@ -113,7 +113,7 @@ describe('выбор провайдера обложки', () => {
     const paid = vi.fn();
     const agent = vi.fn();
     await expect(prepareProjectCover(input, { settings, paid, agent })).rejects.toThrow('провайдера изображений');
-    await expect(prepareProjectCover({ ...input, signal: AbortSignal.abort() }, { settings, paid, agent })).rejects.toThrow('остановлена');
+    await expect(prepareProjectCover({ ...input, signal: AbortSignal.abort() }, { settings, paid, agent })).rejects.toThrow('Подготовка обложки остановлена.');
     expect(agent).not.toHaveBeenCalled();
     expect(paid).not.toHaveBeenCalled();
   });

@@ -1,9 +1,12 @@
 /** Узкий журнал замены рабочего пакета: платные попытки никогда не откатываются и не заменяются. */
+import { productionTexts } from '@shared/texts/production';
 import { isPaidMediaProvider } from '@shared/media-providers';
 import { createHash, randomUUID } from 'node:crypto';
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmdirSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { productionPath, record } from './production-proposal';
+
+const texts = productionTexts.main.apply;
 
 const digest = (value: string | Buffer): string => createHash('sha256').update(value).digest('hex');
 interface ProtectedImage {
@@ -23,14 +26,14 @@ interface Pending {
 function packagePath(project: string, path: string): string {
   const full = productionPath(project, path);
   const local = relative(project, full).split('\\').join('/');
-  if (!/^plan\/(batches|awaiting)\/[^/]+$/.test(local)) throw new Error('Нужен отдельный рабочий пакет внутри plan/batches или plan/awaiting.');
+  if (!/^plan\/(batches|awaiting)\/[^/]+$/.test(local)) throw new Error(texts.packageFolderRequired);
   return full;
 }
 function workflow(directory: string): Record<string, unknown> {
   const path = join(directory, 'workflow.json');
   if (!existsSync(path)) return {};
   const value: unknown = JSON.parse(readFileSync(path, 'utf8'));
-  if (!record(value)) throw new Error('Повреждён workflow рабочего пакета.');
+  if (!record(value)) throw new Error(texts.workflowCorrupt);
   return value;
 }
 function nested(path: string, parent: string): boolean {
@@ -62,10 +65,10 @@ export const productionPackagePaid = paid;
 
 function imageRoots(directory: string, data = workflow(directory)): Omit<ProtectedImage, 'files'>[] {
   if (data.image_requests === undefined) {
-    if (data.image_request_dir) throw new Error('Активная image-попытка отсутствует в истории.');
+    if (data.image_request_dir) throw new Error(texts.activeImageHistoryMissing);
     return [];
   }
-  if (!Array.isArray(data.image_requests)) throw new Error('Повреждена история запросов изображений.');
+  if (!Array.isArray(data.image_requests)) throw new Error(texts.imageHistoryCorrupt);
   const roots: Omit<ProtectedImage, 'files'>[] = [];
   for (const item of data.image_requests) {
     if (
@@ -79,15 +82,14 @@ function imageRoots(directory: string, data = workflow(directory)): Omit<Protect
       typeof item.request_sha256 !== 'string' ||
       !/^[a-f0-9]{64}$/.test(item.request_sha256)
     )
-      throw new Error('Неверная запись истории image-попытки.');
+      throw new Error(texts.imageHistoryEntryInvalid);
     const path = resolve(directory, item.request_dir);
     const local = relative(directory, path);
     if (!local || local === '..' || local.startsWith('..' + sep) || isAbsolute(local) || !existsSync(path) || realpathSync(path) !== path)
-      throw new Error('Папка image-попытки недоступна внутри пакета.');
+      throw new Error(texts.imageFolderUnavailable);
     if (roots.some((root) => nested(path, resolve(directory, root.requestDir)) || nested(resolve(directory, root.requestDir), path)))
-      throw new Error('Папки image-попыток пересекаются.');
-    if (typeof data.request_dir === 'string' && resolve(directory, data.request_dir) === path)
-      throw new Error('Image-попытка не должна заменять video request_dir.');
+      throw new Error(texts.imageFoldersOverlap);
+    if (typeof data.request_dir === 'string' && resolve(directory, data.request_dir) === path) throw new Error(texts.imageReplacesVideoRequest);
     const requestBytes = readFileSync(join(path, 'request.json'));
     const request: unknown = JSON.parse(requestBytes.toString('utf8'));
     const attempt: unknown = JSON.parse(readFileSync(join(path, 'attempt.json'), 'utf8'));
@@ -112,13 +114,13 @@ function imageRoots(directory: string, data = workflow(directory)): Omit<Protect
       attempt.request_sha256 !== item.request_sha256 ||
       digest(requestBytes) !== item.request_sha256
     )
-      throw new Error('SHA или kind защищённой image-попытки не совпадает с историей.');
+      throw new Error(texts.imageHashOrKindMismatch);
     if (
       readdirSync(path, { withFileTypes: true }).some(
         (entry) => /^original(?:-\d+)?\.mp4$/i.test(entry.name) || (entry.isDirectory() && attemptsPaid(join(path, entry.name)))
       )
     )
-      throw new Error('Image-попытка содержит видео или вложенную неизвестную оплату.');
+      throw new Error(texts.imageContainsVideoOrPaidRequest);
     roots.push({ requestDir: local, requestSha256: item.request_sha256, frameId: item.frame_id });
   }
   return roots;
@@ -140,12 +142,12 @@ function files(directory: string): ProtectedImage['files'] {
     for (const entry of readdirSync(folder, { withFileTypes: true })) {
       const path = join(folder, entry.name);
       const local = relative(directory, path);
-      if (lstatSync(path).isSymbolicLink()) throw new Error('Защищённая image-попытка содержит ссылку вместо локального файла.');
+      if (lstatSync(path).isSymbolicLink()) throw new Error(texts.imageContainsLink);
       if (entry.isDirectory()) {
         result[local] = null;
         visit(path);
       } else if (entry.isFile()) result[local] = digest(readFileSync(path));
-      else throw new Error('Защищённая image-попытка содержит неизвестный тип файла.');
+      else throw new Error(texts.imageFileTypeUnknown);
     }
   }
   visit(directory);
@@ -153,7 +155,7 @@ function files(directory: string): ProtectedImage['files'] {
 }
 function verifyImages(target: string, protectedImages: ProtectedImage[], data = workflow(target)): void {
   const current = imageRoots(target, data);
-  if (current.length !== protectedImages.length) throw new Error('История защищённых image-попыток изменилась.');
+  if (current.length !== protectedImages.length) throw new Error(texts.protectedImageHistoryChanged);
   for (const image of protectedImages) {
     const root = current.find((item) => item.requestDir === image.requestDir);
     if (
@@ -162,7 +164,7 @@ function verifyImages(target: string, protectedImages: ProtectedImage[], data = 
       root.frameId !== image.frameId ||
       JSON.stringify(files(resolve(target, image.requestDir))) !== JSON.stringify(image.files)
     )
-      throw new Error('Защищённая image-попытка или её оригиналы изменились; автоматическое восстановление остановлено.');
+      throw new Error(texts.protectedImageChanged);
   }
   if (
     videoStage(target, data) ||
@@ -171,7 +173,7 @@ function verifyImages(target: string, protectedImages: ProtectedImage[], data = 
       current.map((image) => resolve(target, image.requestDir))
     )
   )
-    throw new Error('Пакет содержит видео или неизвестную платную попытку; резерв сохранён.');
+    throw new Error(texts.packageContainsPaidRequest);
 }
 function copyMutable(source: string, target: string, protectedImages: ProtectedImage[]): void {
   cpSync(source, target, {
@@ -194,30 +196,30 @@ function removeMutable(target: string, protectedImages: ProtectedImage[]): void 
   visit(target);
 }
 function restore(directory: string, pending: Pending): void {
-  if (!existsSync(join(pending.project, 'plan/project.json'))) throw new Error('Проект недоступен по прежнему пути; резерв сохранён.');
+  if (!existsSync(join(pending.project, 'plan/project.json'))) throw new Error(texts.projectUnavailable);
   const target = packagePath(pending.project, pending.packageDir);
   const protectedImages = pending.schemaVersion === 2 ? pending.protectedImages! : [];
   const backup = join(directory, 'package');
-  if (pending.existed && !existsSync(backup)) throw new Error('Отсутствует резерв рабочего пакета.');
+  if (pending.existed && !existsSync(backup)) throw new Error(texts.backupMissing);
   if (pending.schemaVersion === 2) {
     // Обрыв после удаления mutable files оставляет originals на месте, но временно убирает workflow.
     // Только в этом случае его backup доказывает прежнюю history; существующий чужой workflow не заменяем.
     const proof = !existsSync(join(target, 'workflow.json')) && pending.existed ? workflow(backup) : workflow(target);
     verifyImages(target, protectedImages, proof);
-  } else if (paid(target)) throw new Error('Пакет уже содержит платную попытку; автоматическое восстановление остановлено, резерв сохранён.');
-  if (pending.existed && paid(backup)) throw new Error('Резерв содержит платную попытку; автоматическое восстановление остановлено.');
+  } else if (paid(target)) throw new Error(texts.paidPackageBlocksRecovery);
+  if (pending.existed && paid(backup)) throw new Error(texts.paidBackupBlocksRecovery);
   removeMutable(target, protectedImages);
   if (pending.existed) copyMutable(backup, target, protectedImages);
   else if (existsSync(target)) rmdirSync(target);
 }
 export async function applyProductionPackage(localDir: string, project: string, target: string, apply: () => Promise<void>): Promise<void> {
   const packageDir = packagePath(project, target);
-  if (productionPackageVideoPaid(packageDir)) throw new Error('После платной отправки видео или неизвестного запроса нужна новая попытка с retry_of.');
+  if (productionPackageVideoPaid(packageDir)) throw new Error(texts.paidVideoRequiresRetry);
   if (['image_request_choice', 'image_submitted', 'image_downloaded'].includes(String(workflow(packageDir).stage)))
-    throw new Error('Сначала завершите image-попытку и выберите опору.');
+    throw new Error(texts.resolveImageAttemptFirst);
   const directory = join(localDir, 'production-apply', digest(`${project}\0${packageDir}`));
   const pendingPath = join(directory, 'pending.json');
-  if (existsSync(pendingPath)) throw new Error('Предыдущее применение не восстановлено. Перезапустите приложение.');
+  if (existsSync(pendingPath)) throw new Error(texts.previousApplyUnrecovered);
   const protectedImages = imageRoots(packageDir).map((item) => ({ ...item, files: files(resolve(packageDir, item.requestDir)) }));
   rmSync(directory, { recursive: true, force: true });
   mkdirSync(directory, { recursive: true });
@@ -232,7 +234,7 @@ export async function applyProductionPackage(localDir: string, project: string, 
       restore(directory, pending);
       rmSync(directory, { recursive: true, force: true });
     } catch (restoreError) {
-      throw new Error(`Применение прервано: ${String(error)}. Восстановление не завершено: ${String(restoreError)}. Резерв сохранён.`, { cause: restoreError });
+      throw new Error(texts.applyRecoveryFailed({ error: String(error), restoreError: String(restoreError) }), { cause: restoreError });
     }
     throw error;
   }
@@ -267,7 +269,7 @@ export function recoverInterruptedProductionApplies(localDir: string): void {
         isAbsolute(pending.packageDir) ||
         typeof pending.existed !== 'boolean'
       )
-        throw new Error('Неверная запись восстановления.');
+        throw new Error(texts.recoveryRecordInvalid);
       if (
         pending.schemaVersion === 2 &&
         (!Array.isArray(pending.protectedImages) ||
@@ -286,9 +288,9 @@ export function recoverInterruptedProductionApplies(localDir: string): void {
               Object.values(image.files).some((hash) => hash !== null && (typeof hash !== 'string' || !/^[a-f0-9]{64}$/.test(hash)))
           ))
       )
-        throw new Error('Неверный снимок защищённых image-попыток.');
+        throw new Error(texts.protectedImagesSnapshotInvalid);
       const target = packagePath(pending.project, pending.packageDir);
-      if (digest(`${resolve(pending.project)}\0${target}`) !== basename(directory)) throw new Error('Путь восстановления не совпадает с журналом.');
+      if (digest(`${resolve(pending.project)}\0${target}`) !== basename(directory)) throw new Error(texts.recoveryPathMismatch);
       restore(directory, pending as unknown as Pending);
       rmSync(path);
       rmSync(directory, { recursive: true, force: true });
@@ -296,5 +298,5 @@ export function recoverInterruptedProductionApplies(localDir: string): void {
       errors.push(String(error));
     }
   }
-  if (errors.length) throw new Error(`Не удалось восстановить применение производства: ${errors.join(' ')}`);
+  if (errors.length) throw new Error(texts.recoveryFailed({ errors: errors.join(' ') }));
 }

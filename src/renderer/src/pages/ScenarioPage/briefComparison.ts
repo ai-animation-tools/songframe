@@ -1,3 +1,5 @@
+import { scenarioTexts } from '@shared/texts/scenario';
+import { navigationTexts } from '@shared/texts/navigation';
 /** Сравнение состояния на первом и последнем кадре плана: строки по сущностям с подписями и источниками значений. */
 import type { BriefResult, CastFile, StateSource } from '@shared/types';
 
@@ -36,7 +38,7 @@ export function propertyLabel(key: string, label?: string): string {
 
 /** Короткая подпись источника значения: «Кастинг», «M57 · первый кадр», «M57 · итог». */
 export function sourceLabel(source: StateSource): string {
-  return source.kind === 'cast' ? 'Кастинг' : `${source.shot} · ${source.phase === 'before' ? 'первый кадр' : 'итог'}`;
+  return source.kind === 'cast' ? navigationTexts.pages.cast : scenarioTexts.brief.planSource({ shot: source.shot, phase: source.phase });
 }
 
 function cell(brief: BriefResult, entity: string, key: string): BriefCell | null {

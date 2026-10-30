@@ -4,9 +4,12 @@
  * Принятие раньше записывал агент руками; здесь оно делается нажатием кнопки по тем же полям.
  */
 
+import { animaticTexts } from '@shared/texts/animatic';
+import { commonTexts } from '@shared/texts/common';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AnimaticApproval, AnimaticShot, AnimaticView, JobInfo } from '@shared/types';
+import { notificationsTexts } from '@shared/texts/notifications';
 import type { Jobs } from './jobs';
 import { animaticInputProblems, cachedFileDigest, type AnimaticManifest as Manifest } from './animatic-freshness';
 
@@ -53,14 +56,14 @@ export function viewAnimatic(project: string): AnimaticView {
   const status = readStatus(project);
   const cards = readJson<{ registry_sha256?: string }>(join(project, CARDS_RECEIPT));
   const cardsFresh = !!cards && !!registry && cards.registry_sha256 === registry;
-  if (!registry) problems.push('Сначала нужен сценарий. Создайте его на странице «Сценарий».');
+  if (!registry) problems.push(commonTexts.scenario.requiredForWork);
 
   let shots: AnimaticShot[] = [];
   let built: AnimaticView['built'] = null;
   if (manifest && Array.isArray(manifest.shots)) {
     const videoPath = manifest.video_file ? join(project, 'plan', 'animatic', 'latest', manifest.video_file) : null;
     const videoExists = !!videoPath && existsSync(videoPath);
-    if (!videoExists) problems.push(`MP4 сборки не найден: ${manifest.video_file ?? 'имя не записано'}. Соберите аниматик заново.`);
+    if (!videoExists) problems.push(animaticTexts.main.videoMissing({ filename: manifest.video_file }));
     shots = manifest.shots.map((s) => ({
       id: s.id,
       title: s.title ?? s.id,
@@ -93,9 +96,9 @@ export function viewAnimatic(project: string): AnimaticView {
         keyframes: shots.filter((s) => s.media === 'keyframes').length
       }
     };
-    if (!registry || manifest.scene_registry_sha256 !== registry) problems.push('Реестр сцен изменился после сборки: аниматик устарел, нужна пересборка.');
+    if (!registry || manifest.scene_registry_sha256 !== registry) problems.push(animaticTexts.main.registryChanged);
   } else if (existsSync(manifestPath)) {
-    problems.push('plan/animatic/latest/manifest.json повреждён.');
+    problems.push(animaticTexts.main.manifestCorrupt);
   }
 
   const approvedSha = status.approved_animatic?.video_sha256 ?? null;
@@ -117,21 +120,21 @@ export class Animatic {
   build(project: string, planOnly: boolean): JobInfo {
     // У нового проекта ещё нет сценария: сообщаем об этом до создания задания и запуска Python.
     if (!statSync(join(project, 'plan', 'scenes.json'), { throwIfNoEntry: false })?.isFile()) {
-      throw new Error('Сначала нужен сценарий. Создайте его на странице «Сценарий».');
+      throw new Error(commonTexts.scenario.requiredForWork);
     }
     const steps = [
-      { tool: 'update_scene_views', args: [], label: 'карточки и представления' },
-      { tool: 'build_animatic', args: planOnly ? ['--plan-only'] : [], label: planOnly ? 'проверка входов' : 'сборка аниматика' }
+      { tool: 'update_scene_views', args: [], label: animaticTexts.main.updateViewsStep },
+      { tool: 'build_animatic', args: planOnly ? ['--plan-only'] : [], label: planOnly ? animaticTexts.main.checkInputsStep : animaticTexts.main.buildStep }
     ];
-    return this.jobs.start('animatic', planOnly ? 'Проверка входов аниматика' : 'Сборка аниматика', project, steps);
+    return this.jobs.start('animatic', planOnly ? notificationsTexts.animaticCheckTitle : animaticTexts.main.buildTitle, project, steps);
   }
 }
 
 /** Принятие текущей сборки или возврат на просмотр; прочие поля production-status.json сохраняются. */
 export function setAnimaticStatus(project: string, status: 'approved' | 'review'): AnimaticView {
   const view = viewAnimatic(project);
-  if (!view.built?.videoPath || !view.built.videoSha256) throw new Error('Нет собранного аниматика: сначала соберите его.');
-  if (status === 'approved' && !view.built.fresh) throw new Error('Аниматик собран по устаревшему реестру или входам: пересоберите перед принятием.');
+  if (!view.built?.videoPath || !view.built.videoSha256) throw new Error(animaticTexts.main.buildRequired);
+  if (status === 'approved' && !view.built.fresh) throw new Error(animaticTexts.main.freshBuildRequired);
   const data = readStatus(project);
   const manifest = readJson<Manifest>(join(project, MANIFEST));
   const next: ProductionStatus = {

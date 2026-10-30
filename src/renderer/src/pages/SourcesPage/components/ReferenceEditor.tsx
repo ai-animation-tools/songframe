@@ -1,3 +1,5 @@
+import { commonTexts } from '@shared/texts/common';
+import { sourcesTexts } from '@shared/texts/sources';
 /** Сворачиваемая сущность объединяет общие правила и отдельные строки её изображений. */
 import { useState, type ReactElement } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Box, MenuItem, Stack, TextField, Typography } from '@mui/material';
@@ -40,14 +42,10 @@ export function ReferenceEditor({
   const [expanded, setExpanded] = useState(!reference.files.length);
   const kind = kinds.find((item) => item.id === reference.kind)?.label ?? reference.kind;
   // Те же правила, что у проверки сохранения: ошибка видна у поля, а не только в общем списке в начале страницы.
-  const nameError = reference.name.trim() ? null : 'Укажите название';
-  const idError = !ID_PATTERN.test(reference.id)
-    ? 'Латиница в нижнем регистре, цифры и _, начиная с буквы'
-    : duplicateId
-      ? 'Этот код уже есть у другого референса'
-      : null;
-  const kindError = kinds.some((item) => item.id === reference.kind) ? null : 'Выберите тип из списка';
-  const filesError = reference.files.length ? null : 'Добавьте хотя бы одно изображение.';
+  const nameError = reference.name.trim() ? null : sourcesTexts.nameRequired;
+  const idError = !ID_PATTERN.test(reference.id) ? sourcesTexts.referenceIdInvalid : duplicateId ? sourcesTexts.duplicateReferenceId : null;
+  const kindError = kinds.some((item) => item.id === reference.kind) ? null : sourcesTexts.kindRequired;
+  const filesError = reference.files.length ? null : sourcesTexts.imageRequired;
   const hasErrors = Boolean(nameError || idError || kindError || filesError);
   return (
     <Accordion
@@ -62,19 +60,19 @@ export function ReferenceEditor({
       <AccordionSummary expandIcon={<ExpandMoreIcon />} id={`reference-${reference.key}-summary`} aria-controls={`reference-${reference.key}-details`}>
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', minWidth: 0 }}>
           <Typography component="span" fontWeight={600}>
-            {reference.name || 'Новый референс'}
+            {reference.name || sourcesTexts.newReference}
           </Typography>
           <Typography component="span" variant="caption" color="text.secondary">
-            {kind} · изображений: {reference.files.length}
+            {sourcesTexts.referenceImages({ kind, count: reference.files.length })}
           </Typography>
           {hasErrors ? (
             <Typography component="span" variant="caption" color="warning.main">
-              Требует исправления
+              {sourcesTexts.needsCorrection}
             </Typography>
           ) : null}
           {reference.promptError || reference.files.some((file) => file.promptError) ? (
             <Typography component="span" variant="caption" color="warning.main">
-              Ошибка чтения промпта
+              {sourcesTexts.promptReadFailed}
             </Typography>
           ) : null}
         </Box>
@@ -90,7 +88,7 @@ export function ReferenceEditor({
             }}
           >
             <TextField
-              label="Название"
+              label={commonTexts.title}
               value={reference.name}
               error={!!nameError}
               helperText={nameError ?? undefined}
@@ -99,15 +97,15 @@ export function ReferenceEditor({
               }
             />
             <TextField
-              label="Код (id)"
+              label={sourcesTexts.referenceId}
               value={reference.id}
               onChange={(e) => onUpdate({ id: e.target.value })}
               error={!!idError}
-              helperText={idError ?? 'латиница, цифры, _'}
+              helperText={idError ?? sourcesTexts.referenceIdHint}
             />
             <TextField
               select
-              label="Тип"
+              label={commonTexts.type}
               value={kinds.some((item) => item.id === reference.kind) ? reference.kind : ''}
               error={!!kindError}
               helperText={kindError ?? undefined}
@@ -120,21 +118,21 @@ export function ReferenceEditor({
               ))}
             </TextField>
             <TextField
-              label="Короткая подпись"
+              label={sourcesTexts.shortName}
               value={reference.short_name}
               onChange={(e) => onUpdate({ short_name: e.target.value })}
               placeholder={reference.name}
             />
           </Box>
           <TextField
-            label="Общее описание сущности"
+            label={sourcesTexts.entityDescription}
             fullWidth
             multiline
             minRows={2}
             maxRows={8}
             value={reference.description}
             onChange={(e) => onUpdate({ description: e.target.value })}
-            placeholder="Внешность и правила, общие для всех изображений"
+            placeholder={sourcesTexts.entityDescriptionPlaceholder}
           />
           {reference.files.map((file) => (
             <ReferenceFileCard
@@ -153,17 +151,17 @@ export function ReferenceEditor({
             </Typography>
           ) : null}
           <FileDropZone
-            label={`Выбрать изображения референса ${reference.name || 'без названия'}`}
+            label={sourcesTexts.pickReferenceImages({ name: reference.name })}
             kind="image"
             multiple
             onFiles={onDropFiles}
             onPick={onAddFiles}
-            hint="PNG, JPG, WebP. Можно выбрать несколько файлов."
-            message="Перетащите изображения или нажмите для выбора"
+            hint={sourcesTexts.referenceFilesHint}
+            message={sourcesTexts.referenceFilesMessage}
           />
           <DestructiveButton
-            label={`Удалить референс «${reference.name || 'без названия'}»`}
-            description="Референс будет удалён вместе с изображениями, описаниями и промптами. После сохранения исходников сохранённые в проекте файлы этого референса также будут удалены."
+            label={sourcesTexts.removeReference({ name: reference.name })}
+            description={sourcesTexts.removeReferenceDescription}
             onConfirm={onRemove}
             startIcon={<DeleteOutlineIcon />}
             sx={{ alignSelf: 'flex-start' }}

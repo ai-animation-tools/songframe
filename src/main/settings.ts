@@ -1,5 +1,6 @@
 /** Настройки лежат рядом с историей и журналами, включая явно выбранный SONGFRAME_LOCAL_DIR. */
 import { join } from 'node:path';
+import { settingsTexts } from '@shared/texts/settings';
 import type { AgentSettings } from '@shared/agents';
 import { agentTitle, isAgentProvider, type AgentProvider } from '@shared/agent-providers';
 import { mediaProviderInfo, type MediaProviderId } from '@shared/media-providers';
@@ -13,23 +14,22 @@ export interface Settings {
 
 export function normalizeAgentSettings(value: unknown): AgentSettings | null {
   if (value === undefined || value === null) return null;
-  if (typeof value !== 'object' || Array.isArray(value)) throw new Error('Неверный формат настроек агента.');
+  if (typeof value !== 'object' || Array.isArray(value)) throw new Error(settingsTexts.main.invalidAgentSettings);
   const input = value as Record<string, unknown>;
-  if (!isAgentProvider(input.provider)) throw new Error(`Выберите ${agentTitle(null)}.`);
-  if (input.model !== undefined && (typeof input.model !== 'string' || input.model.includes('\0')))
-    throw new Error('Модель должна быть текстом без нулевых символов.');
+  if (!isAgentProvider(input.provider)) throw new Error(settingsTexts.main.selectAgent(agentTitle(null)));
+  if (input.model !== undefined && (typeof input.model !== 'string' || input.model.includes('\0'))) throw new Error(settingsTexts.main.invalidModel);
   const model = input.model?.trim();
   return { provider: input.provider, ...(model ? { model } : {}) };
 }
 
 function profiles(value: unknown): Partial<Record<AgentProvider, AgentSettings>> {
   if (value === undefined) return {};
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Неверный формат профилей агентов.');
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(settingsTexts.main.invalidProfiles);
   const result: Partial<Record<AgentProvider, AgentSettings>> = {};
   for (const [provider, input] of Object.entries(value)) {
-    if (!isAgentProvider(provider)) throw new Error('Неизвестный агент.');
+    if (!isAgentProvider(provider)) throw new Error(settingsTexts.main.unknownAgent);
     const normalized = normalizeAgentSettings(input);
-    if (!normalized || normalized.provider !== provider) throw new Error('Агент профиля не совпадает с его именем.');
+    if (!normalized || normalized.provider !== provider) throw new Error(settingsTexts.main.profileAgentMismatch);
     result[provider] = normalized;
   }
   return result;
@@ -49,7 +49,7 @@ export class SettingsStore {
       Array.isArray(value) ||
       (value.toolsRootOverride !== undefined && value.toolsRootOverride !== null && typeof value.toolsRootOverride !== 'string')
     ) {
-      throw new Error(`Неверный формат ${this.file}. Настройки сохранены; исправьте файл или перенесите его в резервную папку.`);
+      throw new Error(settingsTexts.main.invalidSettingsFile(this.file));
     }
     try {
       // Старый файл без agent остаётся рабочим: выбор провайдера не появляется неявно.
@@ -57,7 +57,7 @@ export class SettingsStore {
       const agentProfiles = profiles(value.agentProfiles);
       return { ...value, ...(agent ? { agent } : {}), ...(value.agentProfiles ? { agentProfiles } : {}) };
     } catch {
-      throw new Error(`Неверный формат агента в ${this.file}. Настройки сохранены; исправьте файл или перенесите его в резервную папку.`);
+      throw new Error(settingsTexts.main.invalidAgentFile(this.file));
     }
   }
 
@@ -72,14 +72,14 @@ export class SettingsStore {
 
   /** Модель другого CLI не переносится при смене исполнителя. */
   getProviderAgent(provider: AgentProvider): AgentSettings | null {
-    if (!isAgentProvider(provider)) throw new Error('Неизвестный агент.');
+    if (!isAgentProvider(provider)) throw new Error(settingsTexts.main.unknownAgent);
     const saved = this.read();
     return saved.agent?.provider === provider ? saved.agent : (saved.agentProfiles?.[provider] ?? null);
   }
 
   saveProviderAgent(value: unknown): AgentSettings {
     const agent = normalizeAgentSettings(value);
-    if (!agent) throw new Error('Укажите профиль агента.');
+    if (!agent) throw new Error(settingsTexts.main.profileRequired);
     const saved = this.read();
     this.write({ agentProfiles: { ...saved.agentProfiles, [agent.provider]: agent }, ...(saved.agent?.provider === agent.provider ? { agent } : {}) });
     return agent;
@@ -91,7 +91,7 @@ export class SettingsStore {
    */
   getImageAgent(provider: MediaProviderId, model?: string): AgentSettings {
     const executor = mediaProviderInfo(provider, 'image')?.executor;
-    if (!executor) throw new Error('Выбранный провайдер изображений не исполняется программой-агентом.');
+    if (!executor) throw new Error(settingsTexts.main.imageAgentRequired);
     const value = model?.trim();
     return { provider: executor, ...(value ? { model: value } : {}) };
   }

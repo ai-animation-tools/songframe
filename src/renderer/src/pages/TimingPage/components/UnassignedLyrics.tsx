@@ -1,3 +1,4 @@
+import { timingTexts } from '@shared/texts/timing';
 import type { ReactElement } from 'react';
 import { Box, IconButton, Paper, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -13,15 +14,21 @@ export function UnassignedLyrics({ lyrics, onAdd }: UnassignedLyricsProps): Reac
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="subtitle2" gutterBottom>
-        Строки текста без оценки ({lyrics.length})
+        {timingTexts.unassignedTitle({ count: lyrics.length })}
       </Typography>
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-        Поставьте плейхед в начало строки и добавьте её; длина по умолчанию 2 секунды.
+        {timingTexts.unassignedHelp}
       </Typography>
       <Stack spacing={0.5}>
         {lyrics.map((lyric) => (
           <Box key={lyric.number} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton size="small" color="success" aria-label={`Добавить строку ${lyric.number}`} title="Добавить строку" onClick={() => onAdd(lyric)}>
+            <IconButton
+              size="small"
+              color="success"
+              aria-label={timingTexts.addLine({ line: lyric.number })}
+              title={timingTexts.addLineHint}
+              onClick={() => onAdd(lyric)}
+            >
               <AddIcon fontSize="small" />
             </IconButton>
             <Typography variant="body2" color="text.secondary" sx={{ minWidth: 36 }}>

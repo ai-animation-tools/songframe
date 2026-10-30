@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import { useState, type ReactElement } from 'react';
 import { Box, Chip, InputAdornment, Paper, TextField, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -32,8 +33,8 @@ export function SceneList({
           size="small"
           type="search"
           fullWidth
-          label="Поиск плана"
-          placeholder="Код, строка песни или действие"
+          label={scenarioTexts.list.search}
+          placeholder={scenarioTexts.list.searchPlaceholder}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           slotProps={{
@@ -47,16 +48,19 @@ export function SceneList({
           }}
         />
         <Typography variant="caption" color="text.secondary" component="div" aria-live="polite" sx={{ mt: 0.5 }}>
-          {words.length ? `Найдено планов: ${shown.length} из ${scenes.scenes.length}` : `Планов: ${scenes.scenes.length}`}
+          {words.length
+            ? scenarioTexts.list.foundShots({ shown: shown.length, total: scenes.scenes.length })
+            : scenarioTexts.list.shots({ count: scenes.scenes.length })}
         </Typography>
       </Box>
       <Box sx={{ overflowY: 'auto', minHeight: 0, flex: 1 }}>
         {words.length && !shown.length ? (
           <Typography variant="body2" color="text.secondary" sx={{ p: 1.5 }}>
-            Ничего не найдено. Попробуйте код плана или часть строки песни.
+            {scenarioTexts.list.nothingFound}
           </Typography>
         ) : null}
         {shown.map((s) => {
+          // eslint-disable-next-line no-restricted-syntax -- Маркер каркаса из данных scene_scaffold, а не подпись интерфейса.
           const filled = !s.action.startsWith('ЗАПОЛНИТЬ') && !s.camera.startsWith('ЗАПОЛНИТЬ');
           return (
             <Box
@@ -78,10 +82,10 @@ export function SceneList({
                   {s.id}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {formatClock(s.start_frame / FPS)}–{formatClock(s.end_frame_exclusive / FPS)}
+                  {scenarioTexts.timeline.range({ start: formatClock(s.start_frame / FPS), end: formatClock(s.end_frame_exclusive / FPS) })}
                 </Typography>
-                {!filled ? <Chip size="small" label="пусто" color="warning" variant="outlined" sx={{ height: 18 }} /> : null}
-                {s.lipsync ? <Chip size="small" label="речь" sx={{ height: 18 }} /> : null}
+                {!filled ? <Chip size="small" label={scenarioTexts.brief.empty} color="warning" variant="outlined" sx={{ height: 18 }} /> : null}
+                {s.lipsync ? <Chip size="small" label={scenarioTexts.list.speech} sx={{ height: 18 }} /> : null}
               </Box>
               <Typography variant="caption" noWrap display="block" color="text.secondary">
                 {s.original}

@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import { useEffect, useRef, type ReactElement } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
@@ -82,7 +83,7 @@ export function SceneRegistry({
             {problems.slice(0, 8).map((p) => (
               <li key={p}>{p}</li>
             ))}
-            {problems.length > 8 ? <li>… и ещё {problems.length - 8}</li> : null}
+            {problems.length > 8 ? <li>{scenarioTexts.registry.moreProblems({ count: problems.length - 8 })}</li> : null}
           </ul>
         </Alert>
       ) : null}
@@ -127,7 +128,7 @@ export function SceneRegistry({
           </Stack>
         ) : (
           <Paper variant="outlined" sx={{ p: 3 }}>
-            <Typography color="text.secondary">Выберите план.</Typography>
+            <Typography color="text.secondary">{scenarioTexts.registry.selectShot}</Typography>
           </Paper>
         )}
       </Box>

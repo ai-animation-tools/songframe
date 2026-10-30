@@ -1,11 +1,11 @@
 /** Общий формат текста песни для формы, загрузки файла и редактора таймингов. */
 import type { LyricsLine, TimingLine } from './types';
+import { lyricsTexts } from './texts/lyrics';
 
 const HEADER = /^\[([^[\]]+)\]$/;
 const SECTION_TITLE = /^(?:[а-яёa-z]+\s+){0,2}(?:припев|куплет|бридж|интро|вступление|аутро|проигрыш|кода|финал|запев)(?:\s+(?:[а-яёa-z]+|\d+)){0,2}[:.]?$/i;
 
-export const LYRICS_FORMAT_HINT =
-  'Одна исполняемая строка — на одной строке текста. Название секции — отдельно в квадратных скобках: [Куплет 1], [Припев]. Заголовки и пустые строки не размечаются. Повторы записывайте полностью в порядке исполнения.';
+export const LYRICS_FORMAT_HINT = lyricsTexts.formatHint;
 
 export function analyzeLyrics(text: string): { rows: LyricsLine[]; lines: number; sections: string[]; problems: string[] } {
   const sections: string[] = [];
@@ -22,10 +22,10 @@ export function analyzeLyrics(text: string): { rows: LyricsLine[]; lines: number
     } else if (line.includes('[') || line.includes(']')) {
       // Ошибочный заголовок не превращаем в строку песни даже при чтении старого файла.
       header = true;
-      problems.push(`Строка ${number}: заголовок секции должен быть отдельной строкой вида [Припев], с непустым названием и обеими скобками.`);
+      problems.push(lyricsTexts.invalidHeader({ number }));
     } else if (/^(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|```|~~~)/.test(line)) {
       header = true;
-      problems.push(`Строка ${number}: уберите Markdown-разметку или нумерацию. Слова песни пишутся обычным текстом, секции — как [Припев].`);
+      problems.push(lyricsTexts.markdown({ number }));
     } else if (SECTION_TITLE.test(line)) {
       header = true;
       unmarked.push({ number, text: line });
@@ -33,10 +33,14 @@ export function analyzeLyrics(text: string): { rows: LyricsLine[]; lines: number
     return { number, text: line, header };
   });
   const lines = rows.filter((row) => row.text && !row.header).length;
-  if (!lines) problems.push('В тексте песни нет ни одной строки. Добавьте слова песни под заголовком секции.');
+  if (!lines) problems.push(lyricsTexts.noLines);
   if (unmarked.length) {
     problems.push(
-      `Похоже на названия частей без скобок: ${unmarked.map((row) => `«${row.text}»`).join(', ')} (строки ${unmarked.map((row) => row.number).join(', ')}). Оформите их как [${unmarked[0].text.replace(/[:.]$/, '')}].`
+      lyricsTexts.unmarkedSections({
+        titles: unmarked.map((row) => row.text),
+        numbers: unmarked.map((row) => row.number),
+        example: unmarked[0].text.replace(/[:.]$/, '')
+      })
     );
   }
   return { rows, lines, sections, problems };

@@ -1,7 +1,10 @@
 /** Речевые планы: строки песни в окне плана и точный WAV липсинка в пакете (режет штатный cut_speech). */
+import { productionTexts } from '@shared/texts/production';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PackageSpeech, SpeechLine, SpeechPlan } from '@shared/types';
+
+const texts = productionTexts.main.speech;
 
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
@@ -24,9 +27,9 @@ export function speechPlan(
   limits: { requestSeconds?: number | null; lipSync?: { min: number; max: number } | null } = {}
 ): SpeechPlan {
   const scenes = readJson(join(project, 'plan/scenes.json'));
-  if (!record(scenes) || !Array.isArray(scenes.scenes) || !finite(scenes.fps)) throw new Error('Не удалось прочитать реестр сцен.');
+  if (!record(scenes) || !Array.isArray(scenes.scenes) || !finite(scenes.fps)) throw new Error(texts.sceneRegistryUnreadable);
   const scene = scenes.scenes.find((item) => record(item) && item.id === shot);
-  if (!record(scene) || !finite(scene.start_frame) || !finite(scene.end_frame_exclusive)) throw new Error(`${shot}: план отсутствует в реестре сцен.`);
+  if (!record(scene) || !finite(scene.start_frame) || !finite(scene.end_frame_exclusive)) throw new Error(texts.shotMissing({ shot }));
   const window = { start: scene.start_frame / scenes.fps, end: scene.end_frame_exclusive / scenes.fps };
   const timing = readJson(join(project, 'plan/audio/timing.json'));
   let text: string[] = [];

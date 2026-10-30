@@ -1,4 +1,5 @@
 /** Обложка использует отдельную временную попытку; показ цены отделён от единственной платной отправки. */
+import { sourcesTexts } from '@shared/texts/sources';
 import { join } from 'node:path';
 import type { CoverGenerationSession } from '@shared/cover-generation';
 import { MEDIA_PROVIDERS, sameMediaProvider, type MediaModel } from '@shared/media-providers';
@@ -17,12 +18,7 @@ export interface PaidCoverOptions {
 type Quote = NonNullable<CoverGenerationSession['quote']>;
 
 function checkAbort(signal: AbortSignal, title: string, submitted = false): void {
-  if (signal.aborted)
-    throw new Error(
-      submitted
-        ? `Получение обложки остановлено. Запрос мог быть отправлен в ${title}; отмена ожидания не возвращает кредиты.`
-        : 'Подготовка или генерация обложки остановлена. Отправка не выполнялась.'
-    );
+  if (signal.aborted) throw new Error(submitted ? sourcesTexts.main.coverStoppedAfterSubmit({ title }) : sourcesTexts.main.coverStoppedBeforeSubmit);
 }
 
 /** Объявленные синонимы раскрываются общим селектором; неподдерживаемые значения не заменяются догадкой. */
@@ -42,7 +38,7 @@ function parametersForModel(
   const suppliedResolutions = resolutionKeys.filter((key) => key in parameters);
   if (resolution !== undefined) {
     for (const key of suppliedResolutions) {
-      if (parameters[key] !== resolution) throw new Error('Разрешение обложки конфликтует с явной настройкой generation.image.resolution.');
+      if (parameters[key] !== resolution) throw new Error(sourcesTexts.main.coverResolutionConflict);
       delete parameters[key];
     }
     parameters.resolution = resolution;
@@ -52,7 +48,7 @@ function parametersForModel(
   const series = rules.image.series;
   if (series) {
     if (series.names.some((name) => parameters[name] === true || parameters[name] === 'true'))
-      throw new Error(`Для обложки нужен обычный режим без серии ${series.names[0]}.`);
+      throw new Error(sourcesTexts.main.coverSeriesUnsupported({ series: series.names[0] }));
     const declared = series.names.find((key) => key in model.arguments);
     if (declared && !series.names.some((name) => name in parameters)) parameters[declared] = series.off;
   }
@@ -65,7 +61,7 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
   const title = info.title;
   checkAbort(input.signal, title);
   const settings = readProjectSettings(input.project).generation?.image;
-  if (!settings || !sameMediaProvider(settings.provider, adapter.id)) throw new Error(`Выберите ${title} для изображений в настройках проекта.`);
+  if (!settings || !sameMediaProvider(settings.provider, adapter.id)) throw new Error(sourcesTexts.main.coverProviderRequired({ title }));
   const capabilities = await options.provider.capabilities(input.project);
   checkAbort(input.signal, title);
   const request: PreparePaidInput = {
@@ -110,7 +106,7 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
       checkAbort(signal, title);
       if (error instanceof Error && error.name === 'AbortError') throw error;
       // Сбой проверки цены оставляет пользователю явный выбор; сам по себе он не разрешает отправку.
-      return { credits: null, balance: null, verdict: 'cost_or_balance_unknown', message: `Не удалось получить стоимость и остаток кредитов ${title}.` };
+      return { credits: null, balance: null, verdict: 'cost_or_balance_unknown', message: sourcesTexts.main.coverPriceFailed({ title }) };
     }
   };
   const quote = Object.freeze(await price(input.signal));
@@ -122,22 +118,21 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
     quote,
     async generate(signal, approval) {
       checkAbort(signal, title);
-      if (used) throw new Error('Эта попытка уже запускалась. Для новой генерации подготовьте и подтвердите новый запрос.');
+      if (used) throw new Error(sourcesTexts.main.coverAttemptUsed);
       used = true;
-      if (!priceAllowsGeneration(quote, approval?.allowUnknownCost === true))
-        throw new Error('Стоимость или остаток не подтверждены. Подготовьте запрос и подтвердите цену либо согласие на неизвестную стоимость.');
+      if (!priceAllowsGeneration(quote, approval?.allowUnknownCost === true)) throw new Error(sourcesTexts.main.coverPriceUnconfirmed);
       const current = await price(signal);
       // Согласие на неизвестную цену допускает появление цены перед отправкой, но не нехватку средств.
       const approvedUnknownCost = canAgreeToUnknownCost(quote) && approval?.allowUnknownCost === true;
       const currentApproved = approvedUnknownCost
         ? priceAllowsGeneration(current, true)
         : current.verdict === 'ok' && current.credits === quote.credits && current.balance === quote.balance;
-      if (!currentApproved) throw new Error('Стоимость или остаток изменились. Подготовьте запрос и подтвердите цену заново; отправка не выполнялась.');
+      if (!currentApproved) throw new Error(sourcesTexts.main.coverPriceChanged);
       checkAbort(signal, title);
       let submitted = false;
       try {
         await options.provider.submit(prepared, async (action, reference) => {
-          if (action !== 'submit') throw new Error('Ожидалась единственная отправка подготовленного запроса.');
+          if (action !== 'submit') throw new Error(sourcesTexts.main.coverSubmitActionRequired);
           checkAbort(signal, title);
           // После старта submit исход может быть неизвестен: отмена не разрешает повторный платный запрос.
           submitted = true;
@@ -147,7 +142,7 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
               signal
             });
           checkAbort(signal, title, submitted);
-          if (result.code !== 0) throw new Error(result.stderr.trim() || 'Не удалось отправить обложку. Повторная отправка этой попытки запрещена.');
+          if (result.code !== 0) throw new Error(result.stderr.trim() || sourcesTexts.main.coverSubmitFailed);
         });
         checkAbort(signal, title, submitted);
         const result = await options.launcher().run(input.project, 'media_request', ['watch', '--work-dir', prepared.requestDir, '--max-minutes', '15'], {
@@ -155,14 +150,14 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
           timeoutMs: 15 * 60 * 1000
         });
         checkAbort(signal, title, submitted);
-        if (result.code !== 0) throw new Error(result.stderr.trim() || 'Обложка ещё не получена. Запрос мог быть оплачен; повторная отправка не выполнялась.');
+        if (result.code !== 0) throw new Error(result.stderr.trim() || sourcesTexts.main.coverWatchFailed);
         // Фактическое списание запоминается: если сервис не сообщает цену заранее, такой же запрос в следующий раз покажет цену.
         await options
           .launcher()
           .run(input.project, 'cost_check', ['learn', '--work-dir', prepared.requestDir, ...(options.pricingArgs?.() ?? [])], { signal })
           .catch(() => undefined);
         const artifacts = options.provider.collect(prepared);
-        if (artifacts.length !== 1 || artifacts[0].kind !== 'image') throw new Error(`${title} должен вернуть ровно одно изображение обложки.`);
+        if (artifacts.length !== 1 || artifacts[0].kind !== 'image') throw new Error(sourcesTexts.main.coverSingleImageRequired({ title }));
         return { path: artifacts[0].path };
       } catch (error) {
         checkAbort(signal, title, submitted);

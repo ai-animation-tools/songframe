@@ -1,3 +1,5 @@
+import { castTexts } from '@shared/texts/cast';
+import { commonTexts } from '@shared/texts/common';
 import type { ReactElement } from 'react';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { DestructiveButton } from '../../../components/DestructiveButton';
@@ -18,7 +20,7 @@ export function CastEntityImages({ images, imagePaths, imageOptions, onChange }:
   return (
     <Box>
       <Typography variant="subtitle2" gutterBottom>
-        Изображения (первое основное для карточек)
+        {castTexts.images}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Нажатие на изображение меняет основное; удаление привязки требует отдельного подтверждения. */}
@@ -34,10 +36,10 @@ export function CastEntityImages({ images, imagePaths, imageOptions, onChange }:
             />
             <DestructiveButton
               icon
-              label={`Убрать изображение «${imageLabels.get(image) ?? image}»`}
-              description="Привязка изображения к сущности будет удалена. Исходный файл останется в проекте."
+              label={castTexts.removeImage({ name: imageLabels.get(image) ?? image })}
+              description={castTexts.removeImageDescription}
               onConfirm={() => onChange(images.filter((i) => i !== image))}
-              confirmLabel="Убрать"
+              confirmLabel={commonTexts.remove}
             >
               <DeleteOutlineIcon fontSize="small" />
             </DestructiveButton>
@@ -46,7 +48,7 @@ export function CastEntityImages({ images, imagePaths, imageOptions, onChange }:
         <TextField
           select
           size="small"
-          label="Добавить из исходников"
+          label={castTexts.addImage}
           value=""
           onChange={(e) => e.target.value && onChange([...images, e.target.value])}
           sx={{ minWidth: 240 }}
@@ -63,7 +65,7 @@ export function CastEntityImages({ images, imagePaths, imageOptions, onChange }:
       </Box>
       {!images.length ? (
         <Typography variant="caption" color="warning.main">
-          Без изображения сущность не попадает в references реестра: её нельзя указать в кадре, пока референс не нарисован и не загружен.
+          {castTexts.imageMissing}
         </Typography>
       ) : null}
     </Box>

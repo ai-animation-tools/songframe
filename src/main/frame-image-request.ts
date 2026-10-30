@@ -1,4 +1,5 @@
 /** Один image request соответствует одной опоре; модель и слоты выбираются до показа платного подтверждения. */
+import { productionTexts } from '@shared/texts/production';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { MEDIA_PROVIDERS, sameMediaProvider, type MediaCapabilities } from '@shared/media-providers';
@@ -9,6 +10,8 @@ import type { PaidProviderAdapter } from './providers/types';
 import { isImageFile } from './keyframe-images';
 import { productionPath } from './production-proposal';
 
+const texts = productionTexts.main.imageRequest;
+
 export function frameImageRequest(
   adapter: Pick<PaidProviderAdapter, 'id' | 'rules'>,
   input: ProductionImagesInput,
@@ -18,9 +21,9 @@ export function frameImageRequest(
 ): PreparePaidInput {
   const info = MEDIA_PROVIDERS[adapter.id];
   const { rules } = adapter;
-  if (!settings || !sameMediaProvider(settings.provider, adapter.id)) throw new Error(`Выберите ${info.title} для изображений в настройках проекта.`);
+  if (!settings || !sameMediaProvider(settings.provider, adapter.id)) throw new Error(texts.providerRequired({ provider: info.title }));
   const frame = input.frames[0];
-  if (!frame || input.frames.length !== 1) throw new Error('Один платный запрос подготавливается для одной опоры.');
+  if (!frame || input.frames.length !== 1) throw new Error(texts.oneFrameRequired);
   const parameters: Record<string, unknown> = { ...(settings.options ?? {}) };
   for (const [name, rule] of Object.entries(rules.enforced)) if (rule.rejected.includes(parameters[name])) throw new Error(rule.message);
   const defaults = info.defaults.image ?? {};
@@ -36,10 +39,10 @@ export function frameImageRequest(
   }
   const series = rules.image.series;
   if (series?.names.some((name) => parameters[name] === true || parameters[name] === 'true'))
-    throw new Error(`Для одной опоры выберите обычный режим без серии ${series.names[0]}.`);
+    throw new Error(texts.seriesUnsupported({ series: series.names[0] }));
   const inputs = frame.referencePaths.map((path, index) => {
     const full = productionPath(input.project, path);
-    if (!isImageFile(full) || !validateImage(full)) throw new Error(`Недоступен референс опоры: ${path}`);
+    if (!isImageFile(full) || !validateImage(full)) throw new Error(texts.referenceUnavailable({ path }));
     return { flag: 'input', slot: rules.image.referenceSlot(index), path: full, role: 'reference' };
   });
   let number = 1;

@@ -1,3 +1,4 @@
+import { projectTexts } from '@shared/texts/project';
 /** Следующий шаг и переход к соответствующему разделу проекта. */
 
 import type { ReactElement } from 'react';
@@ -14,7 +15,7 @@ export function NextStepCard({ status }: { status: ProjectStatus }): ReactElemen
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="subtitle2" gutterBottom>
-        Следующий шаг
+        {projectTexts.nextStep.title}
       </Typography>
       <Typography variant="h6" gutterBottom>
         {step.title}

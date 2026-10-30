@@ -1,5 +1,7 @@
 /** Адаптер Kling: правила запроса для общего платного адаптера; вход и вызовы сервиса выполняет Python-клиент из поставки. */
 import type { ProviderAuth } from '@shared/media-providers';
+import { environmentTexts } from '@shared/texts/environment';
+import { providerTexts } from '@shared/texts/providers';
 import type { EnvironmentCheck } from '@shared/types';
 import { PythonLauncher } from '../../python-launcher';
 import type { PythonOptions } from '../../python-runtime';
@@ -34,11 +36,11 @@ export async function checkKlingAuth(options: PythonOptions): Promise<ProviderAu
   } catch {
     // Повреждённая поставка Python не подтверждает отсутствие сохранённого входа.
   }
-  return { status: 'unknown', message: `Не удалось проверить вход в ${KLING_TITLE}. Проверьте соединение и повторите проверку.` };
+  return { status: 'unknown', message: providerTexts.authCheckFailed(KLING_TITLE) };
 }
 
 export async function loginKling(options: PythonOptions, control: LoginControl = {}): Promise<{ ok: boolean; message: string }> {
-  const fallback = `Вход в ${KLING_TITLE} не завершён. Подтвердите вход в браузере и повторите при необходимости.`;
+  const fallback = providerTexts.loginIncomplete(KLING_TITLE);
   let stderr = '';
   let announced = false;
   try {
@@ -57,7 +59,7 @@ export async function loginKling(options: PythonOptions, control: LoginControl =
         }
       }
     });
-    if (control.signal?.aborted) return { ok: false, message: `Вход в ${KLING_TITLE} отменён.` };
+    if (control.signal?.aborted) return { ok: false, message: providerTexts.loginCancelled(KLING_TITLE) };
     const value = payload(result.stdout);
     const message = typeof value?.message === 'string' ? value.message : fallback;
     return { ok: result.code === 0 && value?.ok === true, message };
@@ -80,6 +82,7 @@ export const kling: PaidProviderAdapter = {
     },
     // Проект использует оригиналы без логотипа; старые options не должны разрешить новый запрос с водяным знаком.
     enforced: {
+      // eslint-disable-next-line no-restricted-syntax -- Ограничение параметра watermark задаётся только конкретным провайдером.
       watermark: { value: false, rejected: [true, 'true'], message: 'Снимите устаревшую настройку watermark=true: оригиналы запрашиваются без логотипа.' }
     },
     image: {
@@ -101,10 +104,11 @@ export const kling: PaidProviderAdapter = {
     const check: EnvironmentCheck = {
       id: KLING_ID,
       label: KLING_TITLE,
+      // eslint-disable-next-line no-restricted-syntax -- Способ поставки и входа через браузер является особенностью адаптера Kling.
       hint: 'Клиент входит в поставку. Войдите кнопкой входа в браузере; без сети состояние входа не определяется.',
       productionOnly: true,
       ok: false,
-      detail: 'Ожидание проверки',
+      detail: environmentTexts.main.waiting,
       status: 'pending',
       bundled: true,
       loginProvider: KLING_ID
@@ -113,7 +117,7 @@ export const kling: PaidProviderAdapter = {
       checks: [check],
       // Строка проверяет только наличие клиента; состояние входа страница узнаёт одним отдельным запросом.
       async run(update) {
-        update(KLING_ID, { status: 'done', ok: true, detail: 'Клиент SongFrame входит в поставку', elapsedMs: 0 });
+        update(KLING_ID, { status: 'done', ok: true, detail: providerTexts.bundledClient, elapsedMs: 0 });
       }
     };
   },
@@ -121,6 +125,7 @@ export const kling: PaidProviderAdapter = {
   checkAuth: (options) => checkKlingAuth(options),
   login: (options, control) => loginKling(options, control),
 
+  /* eslint-disable no-restricted-syntax -- Название и Python-код служебной smoke-проверки поставки принадлежат адаптеру. */
   smokeChecks: () => [
     {
       name: `Клиент ${KLING_TITLE} без сети`,
@@ -140,4 +145,5 @@ assert status == 'unauthenticated', status
 print(json.dumps({'credentials': str(path.relative_to(state)), 'authStatus': status, 'networkUsed': False}))`
     }
   ]
+  /* eslint-enable no-restricted-syntax */
 };

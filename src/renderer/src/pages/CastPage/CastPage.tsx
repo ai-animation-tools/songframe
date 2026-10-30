@@ -1,3 +1,5 @@
+import { castTexts } from '@shared/texts/cast';
+import { commonTexts } from '@shared/texts/common';
 /** Кастинг: сущности клипа, их изображения из исходников, роль, внешность и начальное состояние. */
 
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -5,10 +7,10 @@ import { usePageLoading } from '../../components/PageLoader';
 import AddIcon from '@mui/icons-material/Add';
 import { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Stack, Typography } from '@mui/material';
 import { DEFAULT_SOURCE_KINDS, type CastEntity, type CastFile, type CastView } from '@shared/types';
 import { useApp } from '../../state';
-import { CastEntityCard, CastPropertiesEditor, CastToolbar } from './components';
+import { CastEmptyState, CastEntityCard, CastPropertiesEditor, CastToolbar } from './components';
 import { WORLD } from './constants';
 import { castImageOptions } from './helpers';
 import { cleanProperties, dictionaryProblem } from './properties';
@@ -69,7 +71,7 @@ export function CastPage(): ReactElement {
     const fromManifest = view?.manifest?.kinds?.length ? view.manifest.kinds : DEFAULT_SOURCE_KINDS;
     const ids = new Set(fromManifest.map((k) => k.id));
     const extra = (cast?.entities ?? []).map((e) => e.kind).filter((k) => !ids.has(k) && k !== WORLD);
-    return [...fromManifest, ...[...new Set(extra)].map((k) => ({ id: k, label: k, dir: k })), { id: WORLD, label: 'Мир сцены', dir: '' }];
+    return [...fromManifest, ...[...new Set(extra)].map((k) => ({ id: k, label: k, dir: k })), { id: WORLD, label: castTexts.world, dir: '' }];
   }, [view, cast]);
   const imageOptions = useMemo(() => castImageOptions(view?.manifest ?? null), [view]);
   const dirty = JSON.stringify(cast) !== JSON.stringify(view?.cast ?? null);
@@ -96,7 +98,7 @@ export function CastPage(): ReactElement {
       await window.api.cast.init(project);
       await load();
       await refresh();
-      notify('Кастинг дополнен из исходников', 'success');
+      notify(castTexts.supplemented, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -112,7 +114,7 @@ export function CastPage(): ReactElement {
       await window.api.cast.save(project, { ...cast, properties: cleanProperties(cast.properties) });
       await load();
       await refresh();
-      notify('Кастинг сохранён', 'success');
+      notify(castTexts.saved, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -128,7 +130,7 @@ export function CastPage(): ReactElement {
         severity="error"
         action={
           <Button startIcon={<RefreshIcon />} onClick={() => load().catch((error) => setLoadError(describeError(error)))}>
-            Повторить
+            {commonTexts.retry}
           </Button>
         }
       >
@@ -156,15 +158,11 @@ export function CastPage(): ReactElement {
       ) : null}
       {!view.manifest ? (
         <Alert severity="info">
-          <LinkedText text="Исходников ещё нет: загрузите референсы на странице «Исходники», затем создайте кастинг." />
+          <LinkedText text={castTexts.sourcesMissing} />
         </Alert>
       ) : null}
       {!cast ? (
-        <Paper variant="outlined" sx={{ p: 3 }}>
-          <Typography color="text.secondary">
-            <LinkedText text="Кастинга пока нет. Он собирается из референсов исходников: каждый референс становится сущностью с кодом, типом и изображениями, плюс сущность «Мир сцены» для времени суток, погоды и сторон дороги. Роль, внешность и начальное состояние заполняются здесь или агентом: кнопка «Создать трактовку» на странице «Сценарий» готовит предложение кастинга вместе с трактовкой." />
-          </Typography>
-        </Paper>
+        <CastEmptyState hasReadProblem={view.problems.length > 0} />
       ) : (
         // Карточки занимают несколько колонок, раскрытый редактор использует всю строку.
         <Box
@@ -191,7 +189,7 @@ export function CastPage(): ReactElement {
               onRename={(nextId) => {
                 // Проверка выполняется до смены кода, чтобы не создать дубликат ключа карточки.
                 if (cast.entities.some((other) => other !== entity && other.id === nextId)) {
-                  notify('Этот код уже занят другой сущностью.', 'warning');
+                  notify(castTexts.entityCodeTaken, 'warning');
                   return;
                 }
                 update(entity.id, { id: nextId });
@@ -204,15 +202,8 @@ export function CastPage(): ReactElement {
       )}
       {cast && (
         <Box>
-          <ActionButton
-            variant="outlined"
-            color="success"
-            startIcon={<AddIcon />}
-            disabled={busy}
-            disabledReason="Дождитесь завершения текущей операции."
-            onClick={add}
-          >
-            Добавить сущность
+          <ActionButton variant="outlined" color="success" startIcon={<AddIcon />} disabled={busy} disabledReason={commonTexts.operationPending} onClick={add}>
+            {castTexts.addEntity}
           </ActionButton>
         </Box>
       )}
@@ -227,7 +218,7 @@ export function CastPage(): ReactElement {
         />
       ) : null}
       <Typography variant="caption" color="text.secondary">
-        Код сущности используется в реестре сцен: после переименования сущности реестр сцен нужно обновить.
+        {castTexts.entityCodeHint}
       </Typography>
     </Stack>
   );

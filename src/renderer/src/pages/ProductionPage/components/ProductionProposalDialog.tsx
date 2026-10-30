@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 /** Просмотр предложения можно закрыть без записи пакета; применение остаётся отдельным действием. */
 import { useId, useState, type ReactElement } from 'react';
@@ -36,7 +37,7 @@ export function ProductionProposalDialog({
   return (
     <Box data-production-proposal={proposal.id}>
       <Button startIcon={<CompareArrowsIcon />} onClick={() => setOpen(true)}>
-        Просмотреть предложение и сравнение
+        {productionTexts.productionProposalDialog.open}
       </Button>
       {/* Окно занимает всё рабочее пространство, как галерея: сравнение двух длинных текстов требует места. */}
       <Dialog
@@ -47,8 +48,8 @@ export function ProductionProposalDialog({
         fullWidth
         slotProps={{ paper: { sx: { width: 'calc(100% - 32px)', height: 'calc(100% - 32px)', maxHeight: 'calc(100% - 32px)', m: 2 } } }}
       >
-        <DialogTitle id={titleId}>Предложение для производства · {PRODUCTION_PASS_LABELS[proposal.stage]}</DialogTitle>
-        {busy ? <LinearProgress aria-label="Применяем предложение" /> : null}
+        <DialogTitle id={titleId}>{productionTexts.productionProposalDialog.title({ stage: PRODUCTION_PASS_LABELS[proposal.stage] })}</DialogTitle>
+        {busy ? <LinearProgress aria-label={productionTexts.productionProposalDialog.applying} /> : null}
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {error ? (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -68,7 +69,7 @@ export function ProductionProposalDialog({
         </DialogContent>
         <DialogActions sx={{ gap: 1, flexWrap: 'wrap' }}>
           <Button startIcon={<CancelOutlinedIcon />} onClick={() => setOpen(false)}>
-            Закрыть без применения
+            {productionTexts.productionProposalDialog.close}
           </Button>
           <Box sx={{ flex: 1 }} />
           <ProposalActions proposal={proposal} busy={busy} onApply={apply} onDiscard={discard} />

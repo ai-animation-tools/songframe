@@ -1,11 +1,12 @@
+import { scenesTexts } from '@shared/texts/scenes';
 import type { ReactElement } from 'react';
 import { Box, Typography } from '@mui/material';
-import type { DashboardShot } from '@shared/types';
+import { BRIEF_STATE_UNSET_PREFIX, type DashboardShot } from '@shared/types';
 
 /** Показывает вычисленное состояние и проверки непрерывности для одного края сцены. */
 export function ShotStateBlock({ title, data }: { title: string; data: DashboardShot['before'] }): ReactElement {
-  if (!data) return <Typography variant="body2">{title}: не вычислено.</Typography>;
-  const known = data.lines.filter((line) => !line.startsWith('Состояние не задано'));
+  if (!data) return <Typography variant="body2">{scenesTexts.state.notComputed({ title })}</Typography>;
+  const known = data.lines.filter((line) => !line.startsWith(BRIEF_STATE_UNSET_PREFIX));
   return (
     <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
       <Typography variant="caption" fontWeight={600} display="block" gutterBottom>
@@ -23,12 +24,12 @@ export function ShotStateBlock({ title, data }: { title: string; data: Dashboard
         })
       ) : (
         <Typography variant="body2" color="text.secondary">
-          состояние не задано
+          {scenesTexts.state.missing}
         </Typography>
       )}
       {data.checklist.length ? (
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-          Проверить по кадру: {data.checklist.join('; ')}
+          {scenesTexts.state.checklist({ checklist: data.checklist.join('; ') })}
         </Typography>
       ) : null}
     </Box>

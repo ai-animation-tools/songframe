@@ -1,5 +1,6 @@
 /** Где лежит комплекс (tools, templates) и где хранить локальное состояние приложения. */
 
+import { environmentTexts } from '@shared/texts/environment';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
@@ -53,7 +54,7 @@ export function resolvePaths(options: {
   } else if (options.override) {
     // Явный выбор проверяется точно: поиск вверх может незаметно выбрать другой checkout.
     toolsRoot = existsSync(join(options.override, MARKER)) ? resolve(options.override) : null;
-    if (!toolsRoot) problems.push(`Сохранённая папка комплекса недоступна: ${options.override}. Выберите её заново на странице «Среда».`);
+    if (!toolsRoot) problems.push(environmentTexts.main.savedToolsUnavailable(options.override));
   } else {
     toolsRoot = findToolsRoot([options.appPath, dirname(options.execPath), options.cwd]);
   }

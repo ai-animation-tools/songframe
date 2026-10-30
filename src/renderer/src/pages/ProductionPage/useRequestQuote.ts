@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Оценка стоимости относится к одному открытому подтверждению и не переживает смену запроса. */
 import { useEffect, useState } from 'react';
 import { aiActionProblem } from '@shared/ai-access';
@@ -28,7 +29,7 @@ export function useRequestQuote(project: string, pkg: PackageView | null) {
       .quote(project, dir, sha, decisionToken)
       .then((next) => {
         if (!active) return;
-        if (next.requestSha !== sha) throw new Error('Оценка относится к другому запросу. Откройте пакет заново.');
+        if (next.requestSha !== sha) throw new Error(productionTexts.useRequestQuote.quoteMismatch);
         setQuote({ context, value: next });
       })
       .catch((reason) => {

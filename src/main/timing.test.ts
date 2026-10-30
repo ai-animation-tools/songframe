@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import type { SourceManifest, TimingFile } from '@shared/types';
 import { withTimingVerification } from '@shared/timing-verification';
-import { buildSections, saveTiming, viewTiming } from './timing';
+import { buildSections, saveTiming, timingStatus, validateTiming, viewTiming } from './timing';
 
 let project: string;
 beforeEach(() => {
@@ -160,4 +160,55 @@ it('нормализует старые подтверждённые строк�
   const unverified = saveTiming(project, { ...saved, lines: saved.lines.map((line) => ({ ...line, verified: false })) });
   expect(unverified.lines[0].note).toBe(timing.lines[0].note);
   expect(unverified.lines[1].note).toBe(timing.lines[1].note);
+});
+
+// Целые ожидаемые фразы фиксируют исходную диагностику независимо от словаря.
+it('сохраняет сообщения проверки границ, номеров и пересечений', () => {
+  const timing = writeMusicalTiming();
+  const lyrics = viewTiming(project).lyrics;
+  const line = { id: 7, source_line: 2, start: 1, end: 3 };
+  const validate = (lines: TimingFile['lines']) => validateTiming({ ...timing, lines }, lyrics, 10);
+  expect(validate([{ ...line, start: NaN }])).toEqual(['строка 7: границы не числа.']);
+  expect(validate([{ ...line, end: 1.2 }])).toEqual(['строка 7: длиннее 0.3 с должна быть каждая строка.']);
+  expect(validate([{ ...line, start: -1 }])).toEqual(['строка 7: начало раньше нуля.']);
+  expect(validate([{ ...line, end: 11 }])).toEqual(['строка 7: конец за пределами трека.']);
+  expect(validate([{ ...line, source_line: 99 }])).toEqual(['строка 7: в тексте нет строки песни с номером 99.']);
+  expect(validate([{ ...line, source_line: 1 }])).toEqual(['строка 7: в тексте нет строки песни с номером 1.']);
+  expect(validate([line, { ...line, start: 4, end: 6 }])).toEqual(['Повторяется id 7.', 'строка 7: строка текста 2 размечена дважды.']);
+  expect(validate([line, { id: 8, source_line: 3, start: 2, end: 4 }])).toEqual(['Строки 7 и 8 пересекаются.']);
+});
+
+it('возвращает целые сообщения чтения разметки и не меняет повреждённый файл', () => {
+  rmSync(join(project, 'source/text.md'));
+  expect(viewTiming(project).problems).toEqual(['Сначала добавьте текст песни на странице «Исходники».']);
+  writeFileSync(join(project, 'source/text.md'), '[Куплет]\nПервая строка\nВторая строка\n');
+  const target = join(project, 'plan/audio/timing.json');
+  const broken = '{«повреждённая разметка»';
+  writeFileSync(target, broken);
+  expect(viewTiming(project).problems).toEqual([
+    'Не удалось прочитать сохранённую разметку. Восстановите её из копии или выполните автоматическую разметку заново.'
+  ]);
+  expect(readFileSync(target, 'utf8')).toBe(broken);
+  const timing = writeMusicalTiming();
+  writeFileSync(target, JSON.stringify({ ...timing, sha256: 'other', lines: [{ ...timing.lines[0], source_line: 99 }] }));
+  expect(viewTiming(project).problems).toEqual([
+    'Разметка сделана для другого трека: трек заменён после разметки.',
+    'После изменения текста часть строк разметки больше не соответствует словам песни и скрыта в редакторе. Повторите автоматическую разметку, чтобы восстановить соответствие. Сохранённая разметка пока не изменена.'
+  ]);
+});
+
+// status и clock — данные файла: перенос UI-текстов не меняет их формат и разбор регуляркой.
+it('сохраняет прежние status, clock и ручные заметки разметки', () => {
+  const original = writeMusicalTiming();
+  const line = original.lines[0];
+  expect(timingStatus([line], 'Черновик; подтверждено на слух 3 из 5 строк.')).toBe('Черновик; подтверждено на слух 0 из 1 строк.');
+  expect(timingStatus([], '')).toBe('Разметка; подтверждено на слух 0 из 0 строк.');
+  expect(timingStatus([{ ...line, verified: true }], original.status)).toBe('Разметка подтверждена на слух.');
+  const saved = saveTiming(project, original);
+  const persisted = JSON.parse(readFileSync(join(project, 'plan/audio/timing.json'), 'utf8')) as TimingFile;
+  for (const timing of [saved, persisted]) {
+    expect(timing.status).toBe('Ручная музыкальная разметка; подтверждено на слух 0 из 2 строк.');
+    expect(timing.clock).toBe('Секунды от начала декодированного звука, не SMPTE');
+    expect(timing.lines.map(({ note }) => note)).toEqual(['Первый вокальный вход', 'Вторая строка']);
+  }
 });

@@ -1,4 +1,5 @@
 /** Запись задания инструментов в журнале: карточка, хвост журнала прошлого сеанса с диска и копирование для разработчика. */
+import { jobsTexts } from '@shared/texts/jobs';
 import { useEffect, useState, type ReactElement } from 'react';
 import { Box, Button, Stack } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -28,7 +29,7 @@ export function ToolJobEntry({ job, onCopy }: { job: JobInfo; onCopy: (job: JobI
       <JobCard job={saved ?? job} />
       <Box>
         <Button size="small" startIcon={<ContentCopyIcon />} onClick={() => onCopy(job)}>
-          Скопировать журнал
+          {jobsTexts.copyLog}
         </Button>
       </Box>
     </Stack>

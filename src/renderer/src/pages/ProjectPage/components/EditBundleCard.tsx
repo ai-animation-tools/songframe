@@ -1,3 +1,5 @@
+import { projectTexts } from '@shared/texts/project';
+import { commonTexts } from '@shared/texts/common';
 /** Пакет для монтажёра: выбор папки, копирование медиа, запуск export_edit_bundle и список собранных пакетов. */
 
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
@@ -41,14 +43,14 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
       if (next) setJob(next);
       if (next && next.status !== 'running') {
         await load();
-        notify(next.status === 'done' ? 'Пакет для монтажёра собран' : 'Сборка пакета завершилась с ошибкой', next.status === 'done' ? 'success' : 'error');
+        notify(next.status === 'done' ? projectTexts.bundle.built : projectTexts.bundle.failed, next.status === 'done' ? 'success' : 'error');
       }
     }, 1500);
     return () => clearInterval(handle);
   }, [job, load, notify]);
 
   const pickFolder = async (): Promise<void> => {
-    const folder = await window.api.dialog.pickFolder({ title: 'Где создать папку пакета (вне проекта)' });
+    const folder = await window.api.dialog.pickFolder({ title: projectTexts.bundle.pickFolder });
     if (folder) setTarget(joinPath(folder, `edit-bundle-${stamp()}`));
   };
 
@@ -67,13 +69,13 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
   // Сборка и удаление пакетов не идут одновременно: обе операции меняют plan/batches.
   const operationReason =
     job?.status === 'running'
-      ? 'Дождитесь окончания сборки пакета.'
+      ? projectTexts.bundle.waitBuilding
       : busy
-        ? 'Дождитесь запуска сборки.'
+        ? projectTexts.bundle.waitStarting
         : deletingBundle !== null
-          ? 'Дождитесь удаления пакета.'
+          ? projectTexts.bundle.waitDeleting
           : null;
-  const buildReason = operationReason ?? (!pythonAvailable ? 'Нужен Python: проверьте его на странице «Среда».' : null);
+  const buildReason = operationReason ?? (!pythonAvailable ? projectTexts.bundle.pythonRequired : null);
 
   /** Удаляем папку собранного пакета вместе с копиями; исходники проекта остаются на месте. */
   const removeBundle = async (bundle: BundleInfo): Promise<void> => {
@@ -86,7 +88,7 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
       // Сводка удалённого результата больше не предлагает открыть несуществующую папку.
       if (summary?.target === bundle.dir) setJob(null);
       await load();
-      notify('Пакет для монтажёра удалён', 'success');
+      notify(projectTexts.bundle.removed, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -100,28 +102,26 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <InventoryIcon color="action" />
         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
-          Пакет для монтажёра
+          {projectTexts.bundle.title}
         </Typography>
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        Таблица планов с таймкодами песни и выбранными участками оригиналов, EDL, FCPXML с точной шкалой аниматика, строки песни и README. С копированием медиа
-        в пакет попадают оригиналы, принятые клипы, опоры, промпты, WAV, карточки неготовых планов, референсы и песня; без копирования пути относительны
-        проекту. Неготовые планы идут карточками.
+        {projectTexts.bundle.description}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <TextField
-          label="Папка пакета"
+          label={projectTexts.bundle.folder}
           value={target}
           onChange={(e) => setTarget(e.target.value)}
           sx={{ flex: 1, minWidth: 320 }}
-          helperText="Пустая папка: внутри проекта только в plan/batches, иначе любая вне проекта"
+          helperText={projectTexts.bundle.folderHelp}
         />
         <Button variant="outlined" startIcon={<FolderOpenIcon />} onClick={pickFolder} sx={{ mt: 0.25 }}>
-          Вне проекта
+          {projectTexts.bundle.outsideProject}
         </Button>
       </Box>
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mt: 1 }}>
-        <FormControlLabel control={<Checkbox checked={copy} onChange={(e) => setCopy(e.target.checked)} />} label="Скопировать медиа в пакет" />
+        <FormControlLabel control={<Checkbox checked={copy} onChange={(e) => setCopy(e.target.checked)} />} label={projectTexts.bundle.copyMedia} />
         <ActionButton
           variant="contained"
           disabled={busy || deletingBundle !== null || !pythonAvailable || job?.status === 'running'}
@@ -129,12 +129,12 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
           onClick={run}
           startIcon={job?.status === 'running' ? <CircularProgress size={16} color="inherit" /> : <BuildIcon />}
         >
-          {job?.status === 'running' ? 'Собираем' : 'Собрать пакет'}
+          {job?.status === 'running' ? projectTexts.bundle.building : projectTexts.bundle.build}
         </ActionButton>
       </Box>
       {job ? (
         <Box sx={{ mt: 1.5 }}>
-          {job.status === 'failed' ? <Alert severity="error">Сборка не удалась, подробности в журнале заданий.</Alert> : null}
+          {job.status === 'failed' ? <Alert severity="error">{projectTexts.bundle.buildFailed}</Alert> : null}
           {summary ? (
             <Alert
               severity="success"
@@ -144,11 +144,11 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
                   startIcon={<FolderOpenIcon />}
                   onClick={() => window.api.shell.openPath(summary.target).catch((error) => notify(describeError(error), 'error'))}
                 >
-                  Открыть папку
+                  {commonTexts.openFolder}
                 </Button>
               }
             >
-              Планов {summary.shots}, из них видео {summary.videos}, скопировано файлов {summary.copied}.
+              {projectTexts.bundle.summary({ shots: summary.shots, videos: summary.videos, copied: summary.copied })}
             </Alert>
           ) : null}
           <JobStatus running={job.status === 'running'} />
@@ -156,14 +156,14 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
       ) : null}
       {bundles.length ? (
         <Stack spacing={0.5} sx={{ mt: 2 }}>
-          <Typography variant="subtitle2">Собранные пакеты в plan/batches</Typography>
+          <Typography variant="subtitle2">{projectTexts.bundle.builtList}</Typography>
           {bundles.map((b) => (
             <Box key={b.dir} sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Typography variant="body2" sx={{ fontFamily: 'monospace', flex: 1 }} noWrap title={b.dir}>
                 {b.dir.split(/[\\/]/).pop()}
               </Typography>
-              <Chip size="small" variant="outlined" label={`${b.videos} видео из ${b.shots}`} />
-              {b.copied ? <Chip size="small" variant="outlined" label="с медиа" /> : null}
+              <Chip size="small" variant="outlined" label={projectTexts.bundle.videos({ videos: b.videos, shots: b.shots })} />
+              {b.copied ? <Chip size="small" variant="outlined" label={projectTexts.bundle.withMedia} /> : null}
               <Typography variant="caption" color="text.secondary">
                 {b.createdAt ? <DateTime value={b.createdAt} /> : ''}
               </Typography>
@@ -172,12 +172,12 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
                 startIcon={<FolderOpenIcon />}
                 onClick={() => window.api.shell.openPath(b.dir).catch((error) => notify(describeError(error), 'error'))}
               >
-                Открыть
+                {commonTexts.open}
               </Button>
               <DestructiveButton
                 icon
-                label="Удалить пакет для монтажёра"
-                description={`Будет удалена папка «${b.dir.split(/[\\/]/).pop()}» со всем содержимым, включая скопированные медиа. Исходные файлы проекта сохранятся.`}
+                label={projectTexts.bundle.remove}
+                description={projectTexts.bundle.removeDescription({ folder: b.dir.split(/[\\/]/).pop() })}
                 disabled={deletingBundle !== null || busy || job?.status === 'running'}
                 disabledReason={operationReason}
                 onConfirm={() => void removeBundle(b)}

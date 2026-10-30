@@ -1,4 +1,5 @@
 /** Применение сценария: проверка в отдельной копии и ограниченное восстановление файлов после сбоя. */
+import { scenarioTexts } from '@shared/texts/scenario';
 import { createHash } from 'node:crypto';
 import { constants, createReadStream, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { copyFile, mkdir, mkdtemp, readdir, rm } from 'node:fs/promises';
@@ -62,14 +63,14 @@ function fileStat(path: string): ReturnType<typeof lstatSync> | null {
 
 /** Копии и восстановление не следуют ссылкам: даже скрытая папка не должна подменять рабочие данные. */
 function checkedPath(project: string, relative: string): string {
-  if (!relativePath(relative)) throw new Error(`Недопустимый относительный путь сценария: ${relative}`);
+  if (!relativePath(relative)) throw new Error(scenarioTexts.main.invalidRelativePath({ path: relative }));
   const parts = relative.split('/');
   for (let index = 1; index <= parts.length; index++) {
     const name = parts.slice(0, index).join('/');
     const stat = fileStat(join(project, name));
     if (!stat) continue;
     if (stat.isSymbolicLink() || (index < parts.length ? !stat.isDirectory() : !stat.isFile())) {
-      throw new Error(`${name}: для применения сценария нужен обычный ${index < parts.length ? 'каталог' : 'файл'}, без ссылки.`);
+      throw new Error(scenarioTexts.main.ordinaryPathRequired({ name, directory: index < parts.length }));
     }
   }
   return join(project, relative);
@@ -93,7 +94,7 @@ async function verifyHashes(project: string, hashes: Record<string, string | nul
     // source/manifest в новых предложениях описывает содержательные входы, остальные файлы защищены побайтово.
     // Совпадающий прежний raw SHA остаётся допустим для предложений старой версии.
     if (path === 'source/manifest.json' && sourceInputDigest(project) === expected) continue;
-    if ((await fileDigest(project, path)) !== expected) throw new Error(`Предложение устарело: изменился ${path}. Подготовьте новое предложение.`);
+    if ((await fileDigest(project, path)) !== expected) throw new Error(scenarioTexts.main.staleFile({ path }));
   }
 }
 function backupDirectory(localDir: string, project: string): string {
@@ -110,11 +111,11 @@ async function stageInputs(project: string): Promise<string[]> {
     const directory = join(project, relative);
     const stat = fileStat(directory);
     if (!stat) return;
-    if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error(`${relative}: staging требует обычную папку без ссылки.`);
+    if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error(scenarioTexts.main.stagingDirectoryRequired({ path: relative }));
     for (const item of await readdir(directory, { withFileTypes: true })) {
       if (SKIP_DIRECTORIES.has(item.name)) continue;
       const child = `${relative}/${item.name}`;
-      if (item.isSymbolicLink()) throw new Error(`${child}: staging не копирует символические ссылки.`);
+      if (item.isSymbolicLink()) throw new Error(scenarioTexts.main.stagingSymlink({ path: child }));
       if (item.isDirectory()) await visit(child);
       else if (item.isFile() && COPY_EXTENSIONS.has(extname(item.name).toLowerCase())) files.add(child);
     }
@@ -126,9 +127,9 @@ async function stageInputs(project: string): Promise<string[]> {
     if (!/^assets\/shots\/M\d{2}(?:\.\d+)?\/manifest\.json$/.test(path)) continue;
     const value = JSON.parse(readFileSync(checkedPath(project, path), 'utf8')) as { accepted_edit?: { video?: { path?: unknown } } };
     const video = value.accepted_edit?.video?.path;
-    if (typeof video !== 'string' || !relativePath(video)) throw new Error(`${path}: не задан относительный путь принятого видео.`);
+    if (typeof video !== 'string' || !relativePath(video)) throw new Error(scenarioTexts.main.acceptedVideoPathRequired({ path }));
     const accepted = `${path.slice(0, -'manifest.json'.length)}${video}`;
-    if (!fileStat(checkedPath(project, accepted))) throw new Error(`Нет принятого видео: ${accepted}`);
+    if (!fileStat(checkedPath(project, accepted))) throw new Error(scenarioTexts.main.acceptedVideoMissing({ path: accepted }));
     files.add(accepted);
   }
   return [...files].sort();
@@ -144,7 +145,7 @@ export function scenarioOutputPaths(project: string): string[] {
   const cards = join(project, 'plan/animatic/cards');
   const cardsStat = fileStat(cards);
   if (cardsStat) {
-    if (!cardsStat.isDirectory() || cardsStat.isSymbolicLink()) throw new Error('plan/animatic/cards: нужна обычная папка.');
+    if (!cardsStat.isDirectory() || cardsStat.isSymbolicLink()) throw new Error(scenarioTexts.main.cardsDirectoryRequired);
     for (const entry of readdirSync(cards, { withFileTypes: true })) {
       if (entry.name.endsWith('.png')) outputs.add(`plan/animatic/cards/${entry.name}`);
     }
@@ -152,7 +153,7 @@ export function scenarioOutputPaths(project: string): string[] {
   const shots = join(project, 'assets/shots');
   const shotsStat = fileStat(shots);
   if (shotsStat) {
-    if (!shotsStat.isDirectory() || shotsStat.isSymbolicLink()) throw new Error('assets/shots: нужна обычная папка.');
+    if (!shotsStat.isDirectory() || shotsStat.isSymbolicLink()) throw new Error(scenarioTexts.main.shotsDirectoryRequired);
     for (const entry of readdirSync(shots, { withFileTypes: true })) {
       if (/^M\d{2}(?:\.\d+)?$/.test(entry.name) && fileStat(join(shots, entry.name, 'README.md'))) outputs.add(`assets/shots/${entry.name}/README.md`);
     }
@@ -168,9 +169,7 @@ function restoreApplication(directory: string, pending: PendingApplication): voi
   // После переноса проекта нельзя создавать прежнюю папку из одних резервов и терять pending.
   // Пользователь возвращает доступ к исходному пути; другие проекты продолжают восстанавливаться отдельно.
   if (!existsSync(pending.project) || !readProjectMarker(pending.project)) {
-    throw new Error(
-      `Проект недоступен по прежнему пути или отсутствует plan/project.json: ${pending.project}. Восстановите доступ к папке проекта; резервные копии сохранены.`
-    );
+    throw new Error(scenarioTexts.main.recoveryProjectUnavailable({ project: pending.project }));
   }
   checkedPath(pending.project, 'plan/project.json');
   const originals = pending.files.map((entry) => ({ entry, original: entry.backup === null ? null : readFileSync(join(directory, entry.backup)) }));
@@ -199,13 +198,13 @@ function publishChanges(project: string, localDir: string, changes: Change[]): v
   if (!changes.length) return;
   const directory = backupDirectory(localDir, project);
   const pendingPath = join(directory, 'pending.json');
-  if (existsSync(pendingPath)) throw new Error('Не завершено восстановление прошлого применения сценария. Перезапустите приложение.');
+  if (existsSync(pendingPath)) throw new Error(scenarioTexts.main.recoveryPending);
   clearBackups(directory);
   mkdirSync(directory, { recursive: true });
   const pending: PendingApplication = { schemaVersion: 1, project, files: [] };
   // До первой замены сохраняются и прежние байты, и отсутствие каждого нового файла.
   for (const [index, change] of changes.entries()) {
-    if (!allowedTarget(change.path)) throw new Error(`Неподдерживаемый файл применения: ${change.path}`);
+    if (!allowedTarget(change.path)) throw new Error(scenarioTexts.main.unsupportedApplicationFile({ path: change.path }));
     const path = checkedPath(project, change.path);
     const previous = bytes(project, change.path);
     const backup = previous === null ? null : `${index}.bak`;
@@ -227,10 +226,9 @@ function publishChanges(project: string, localDir: string, changes: Change[]): v
       rmSync(pendingPath);
       clearBackups(directory);
     } catch (restoreError) {
-      throw new Error(
-        `Применение сценария прервано: ${(error as Error).message}. Восстановление не завершено: ${(restoreError as Error).message}. Резервы сохранены для следующего запуска.`,
-        { cause: restoreError }
-      );
+      throw new Error(scenarioTexts.main.recoveryIncomplete({ error: (error as Error).message, restoreError: (restoreError as Error).message }), {
+        cause: restoreError
+      });
     }
     throw error;
   }
@@ -249,18 +247,16 @@ function changesFrom(project: string, candidates: Map<string, Buffer | null>): C
 /** Первый проход пишет только пару; сценический проход публикует лишь известные выходы штатных инструментов. */
 export async function publishScenario(input: ScenarioPublication, options: { localDir: string; launcher: PythonLauncher }): Promise<void> {
   const project = resolve(input.project);
-  if (!input.expectedHashes || !Object.keys(input.expectedHashes).length)
-    throw new Error('Нет исходного снимка файлов сценарного предложения. Повторите подготовку.');
+  if (!input.expectedHashes || !Object.keys(input.expectedHashes).length) throw new Error(scenarioTexts.main.snapshotMissing);
   await verifyHashes(project, input.expectedHashes);
   // Новая карточка или README между Start и Apply отсутствовали в исходном снимке, даже если прежние файлы не менялись.
   if (Object.hasOwn(input.expectedHashes, 'ROADMAP.md')) {
     const added = scenarioOutputPaths(project).find((path) => !Object.hasOwn(input.expectedHashes, path));
-    if (added) throw new Error(`Предложение устарело: появился производный файл ${added}. Подготовьте новое предложение.`);
+    if (added) throw new Error(scenarioTexts.main.staleAddedFile({ path: added }));
   }
-  if (existsSync(join(backupDirectory(options.localDir, project), 'pending.json')))
-    throw new Error('Не завершено восстановление прошлого применения сценария. Перезапустите приложение.');
+  if (existsSync(join(backupDirectory(options.localDir, project), 'pending.json'))) throw new Error(scenarioTexts.main.recoveryPending);
   if (input.pass === 'treatment') {
-    if (!input.after.cast || !input.after.treatment) throw new Error('Для применения нужны кастинг и трактовка.');
+    if (!input.after.cast || !input.after.treatment) throw new Error(scenarioTexts.main.applyPairRequired);
     const timing = bytes(project, 'plan/audio/timing.json');
     const duration = timing ? Number((JSON.parse(timing.toString('utf8')) as { duration_decoded?: number }).duration_decoded) : null;
     const problems = [...validateCast(input.after.cast), ...validateTreatment(input.after.treatment, duration)];
@@ -273,7 +269,7 @@ export async function publishScenario(input: ScenarioPublication, options: { loc
     publishChanges(project, options.localDir, changesFrom(project, candidates));
     return;
   }
-  if (!input.after.scenes) throw new Error('Нет предложенного реестра сцен.');
+  if (!input.after.scenes) throw new Error(scenarioTexts.main.proposedRegistryMissing);
   const problems = validateScenes(input.after.scenes, input.after.cast);
   if (problems.length) throw new Error(problems.join(' '));
   resolveStates(input.after.scenes, initialStates(input.after.cast));
@@ -286,12 +282,18 @@ export async function publishScenario(input: ScenarioPublication, options: { loc
       const target = join(stage, relative);
       await mkdir(dirname(target), { recursive: true });
       await copyFile(checkedPath(project, relative), target, constants.COPYFILE_FICLONE);
-      if ((await fileDigest(stage, relative)) !== hashes[relative]) throw new Error(`Предложение устарело: изменился ${relative} при подготовке проверки.`);
+      if ((await fileDigest(stage, relative)) !== hashes[relative]) throw new Error(scenarioTexts.main.staleStagingFile({ path: relative }));
     }
     writeLocalJson(join(stage, 'plan/scenes.json'), input.after.scenes);
     const run = async (name: string, args: string[]): Promise<void> => {
       const result = await options.launcher.run(stage, name, args);
-      if (result.code !== 0) throw new Error(`Не пройдена проверка ${name}: ${(result.stderr || result.stdout || `код ${result.code}`).trim().slice(-1200)}`);
+      if (result.code !== 0)
+        throw new Error(
+          scenarioTexts.main.validationFailed({
+            name,
+            details: (result.stderr || result.stdout || scenarioTexts.main.validationExitCode({ code: result.code })).trim().slice(-1200)
+          })
+        );
     };
     await run('lint_registry', []);
     for (const scene of input.after.scenes.scenes) {
@@ -302,7 +304,7 @@ export async function publishScenario(input: ScenarioPublication, options: { loc
     await verifyHashes(project, input.expectedHashes);
     await verifyHashes(project, hashes);
     if (!sameNames(initialFiles, await stageInputs(project)) || !sameNames(initialOutputs, scenarioOutputPaths(project))) {
-      throw new Error('Предложение устарело: изменился состав материалов или производных файлов проекта. Подготовьте новое предложение.');
+      throw new Error(scenarioTexts.main.staleMaterials);
     }
     const candidates = new Map<string, Buffer | null>([['plan/scenes.json', jsonBytes(input.after.scenes)]]);
     for (const relative of new Set([...initialOutputs, ...scenarioOutputPaths(stage)])) candidates.set(relative, bytes(stage, relative));
@@ -343,7 +345,7 @@ export function recoverScenarioApplications(localDir: string): void {
         ) ||
         new Set(value.files.map((entry) => entry.path)).size !== value.files.length
       )
-        throw new Error('Неизвестный формат pending или недопустимые пути восстановления.');
+        throw new Error(scenarioTexts.main.recoveryFormatInvalid);
       restoreApplication(directory, value);
       rmSync(pendingPath);
       clearBackups(directory);
@@ -351,5 +353,5 @@ export function recoverScenarioApplications(localDir: string): void {
       failures.push(`${directoryName.name}: ${(error as Error).message}`);
     }
   }
-  if (failures.length) throw new Error(`Не удалось восстановить применение сценария; резервы сохранены. ${failures.join(' ')}`);
+  if (failures.length) throw new Error(scenarioTexts.main.recoveryFailed({ failures: failures.join(' ') }));
 }

@@ -1,3 +1,4 @@
+import { timingTexts } from '@shared/texts/timing';
 import { useState, type ReactElement } from 'react';
 import { TextField } from '@mui/material';
 
@@ -20,7 +21,7 @@ export function TimingBoundaryField({
   const commit = (): void => {
     const next = Number(text);
     if (!text.trim() || !Number.isFinite(next) || next < min || next > max) {
-      setError(`От ${min.toFixed(2)}${Number.isFinite(max) ? ` до ${max.toFixed(2)}` : ''} с. Граница не изменена.`);
+      setError(timingTexts.invalidBoundary({ min, max }));
       setText(String(value));
       return;
     }

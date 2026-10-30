@@ -1,3 +1,4 @@
+import { animaticTexts } from '@shared/texts/animatic';
 /** Загрузка сборки, наблюдение за заданиями и переходы плеера для страницы аниматика. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -43,7 +44,10 @@ export function useAnimaticPage() {
         await load();
         await refresh();
         const failed = finished.filter((j) => j.status === 'failed');
-        notify(failed.length ? `${failed[0].title}: ошибка, см. журнал` : `${finished[0].title}: готово`, failed.length ? 'error' : 'success');
+        notify(
+          failed.length ? animaticTexts.jobFailed({ title: failed[0].title }) : animaticTexts.jobReady({ title: finished[0].title }),
+          failed.length ? 'error' : 'success'
+        );
       }
     }, 2000);
     return () => clearInterval(handle);
@@ -92,7 +96,7 @@ export function useAnimaticPage() {
     try {
       setView(await window.api.animatic.setStatus(project, status));
       await refresh();
-      notify(status === 'approved' ? 'Результат принят' : 'Возвращено на просмотр', 'success');
+      notify(status === 'approved' ? animaticTexts.approvedNotice : animaticTexts.reviewNotice, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     }

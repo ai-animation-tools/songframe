@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { ReactElement } from 'react';
 import { Autocomplete, Box, Checkbox, FormControlLabel, Paper, TextField } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -30,18 +31,24 @@ export function TreatmentPartEditor({
           '& > *': { minWidth: 0 }
         }}
       >
-        <TextField label="Код" value={part.id} onChange={(e) => onChange({ id: e.target.value })} />
-        <TextField label="Название" value={part.title} onChange={(e) => onChange({ title: e.target.value })} />
+        <TextField label={scenarioTexts.fields.code} value={part.id} onChange={(e) => onChange({ id: e.target.value })} />
+        <TextField label={scenarioTexts.fields.title} value={part.title} onChange={(e) => onChange({ title: e.target.value })} />
         <TextField
-          label="Начало, с"
+          label={scenarioTexts.fields.startSeconds}
           type="number"
           value={part.start}
           onChange={(e) => onChange({ start: Number(e.target.value) })}
           inputProps={{ step: 0.01 }}
         />
-        <TextField label="Конец, с" type="number" value={part.end} onChange={(e) => onChange({ end: Number(e.target.value) })} inputProps={{ step: 0.01 }} />
         <TextField
-          label="Макс. план, с"
+          label={scenarioTexts.fields.endSeconds}
+          type="number"
+          value={part.end}
+          onChange={(e) => onChange({ end: Number(e.target.value) })}
+          inputProps={{ step: 0.01 }}
+        />
+        <TextField
+          label={scenarioTexts.fields.maxShotShortSeconds}
           type="number"
           value={part.max_shot_seconds ?? 6}
           onChange={(e) => onChange({ max_shot_seconds: Number(e.target.value) })}
@@ -49,8 +56,8 @@ export function TreatmentPartEditor({
         />
         <DestructiveButton
           icon
-          label={`Удалить часть трактовки «${part.title || part.id || 'без названия'}»`}
-          description="Часть трактовки будет удалена вместе с её описанием, участниками и временными границами."
+          label={scenarioTexts.treatment.deletePart({ title: part.title, id: part.id })}
+          description={scenarioTexts.treatment.deleteDescription}
           onConfirm={onRemove}
         >
           <DeleteOutlineIcon />
@@ -60,7 +67,7 @@ export function TreatmentPartEditor({
         fullWidth
         multiline
         minRows={2}
-        label="Что происходит и зачем"
+        label={scenarioTexts.treatment.direction}
         value={part.direction}
         onChange={(e) => onChange({ direction: e.target.value })}
         sx={{ mt: 1.5 }}
@@ -73,12 +80,12 @@ export function TreatmentPartEditor({
           getOptionLabel={(o) => o.label}
           value={entityOptions.filter((o) => part.entities.includes(o.id))}
           onChange={(_e, value) => onChange({ entities: value.map((v) => v.id) })}
-          renderInput={(params) => <TextField {...params} label="Участники" />}
+          renderInput={(params) => <TextField {...params} label={scenarioTexts.fields.entities} />}
           sx={{ flex: 1, minWidth: 'min(100%, 320px)' }}
         />
         <FormControlLabel
           control={<Checkbox checked={!!part.lipsync} onChange={(e) => onChange({ lipsync: e.target.checked })} />}
-          label="Поют в кадре (липсинк)"
+          label={scenarioTexts.treatment.singing}
         />
       </Box>
     </Paper>

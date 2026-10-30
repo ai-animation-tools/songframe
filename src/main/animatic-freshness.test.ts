@@ -214,3 +214,29 @@ it('кеш не перечитывает MP4 на повторных опрос�
   viewAnimatic(project);
   expect(vi.mocked(readSync).mock.calls.length).toBe(afterFirstPoll);
 });
+
+it('возвращает целые причины в прежнем порядке и не перезаписывает свежесть или историю', () => {
+  write('source/track.mp3', 'changed');
+  manifest.source_hashes!['source/hero.png'] = '';
+  write(snapshot, manifest);
+  const manifestBefore = readFileSync(join(project, snapshot));
+  const statusBefore = readFileSync(join(project, 'plan/production-status.json'));
+  const view = viewAnimatic(project);
+  expect(view.problems).toEqual([
+    'Вход аниматика изменён или отсутствует: source/track.mp3. Нужна пересборка.',
+    'Нет сохранённого хеша входа source/hero.png: пересоберите аниматик для проверки свежести.'
+  ]);
+  expect(view.built?.fresh).toBe(false);
+  expect(view.approval.current).toBe(false);
+  expect(() => setAnimaticStatus(project, 'approved')).toThrow(new Error('Аниматик собран по устаревшему реестру или входам: пересоберите перед принятием.'));
+  expect(readFileSync(join(project, snapshot))).toEqual(manifestBefore);
+  expect(readFileSync(join(project, 'plan/production-status.json'))).toEqual(statusBefore);
+});
+
+it('сохраняет кавычки и спецсимволы в пути референса при проверке хеша', () => {
+  write('plan/scenes.json', { references: { hero: { path: 'source/«герой» & <1>.png' } } });
+  // Обновляем только снимок реестра, чтобы причина касалась отсутствующего входа, а не сценария.
+  manifest.scene_registry_sha256 = hash(readFileSync(join(project, 'plan/scenes.json'), 'utf8'));
+  write(snapshot, manifest);
+  expect(viewAnimatic(project).problems).toEqual(['Нет сохранённого хеша входа source/«герой» & <1>.png: пересоберите аниматик для проверки свежести.']);
+});

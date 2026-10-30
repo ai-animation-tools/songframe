@@ -1,3 +1,5 @@
+import { scenesTexts } from '@shared/texts/scenes';
+import { commonTexts } from '@shared/texts/common';
 import type { ReactElement } from 'react';
 import type { DashboardShot } from '@shared/types';
 import { Box, Button, Chip, Typography } from '@mui/material';
@@ -14,13 +16,13 @@ export function ShotPrompt({ shot }: { shot: DashboardShot }): ReactElement {
   const request = asset?.request ?? shot.package?.request ?? null;
   const copy = async (text: string): Promise<void> => {
     await navigator.clipboard.writeText(text);
-    notify('Скопировано', 'success');
+    notify(commonTexts.copied, 'success');
   };
 
   return (
     <>
       {prompt ? (
-        <ShotSection title={asset ? 'Промпт принятой генерации' : 'Видеопромпт пакета'}>
+        <ShotSection title={asset ? scenesTexts.prompt.accepted : scenesTexts.prompt.package}>
           <Box sx={{ position: 'relative' }}>
             <Box sx={{ p: 1, pr: 5, bgcolor: 'action.hover', borderRadius: 1, maxHeight: 220, overflowY: 'auto' }}>
               <Prose text={prompt} />
@@ -43,7 +45,7 @@ export function ShotPrompt({ shot }: { shot: DashboardShot }): ReactElement {
             </Box>
           ) : null}
           <Button size="small" startIcon={<ContentCopyIcon />} onClick={() => copy(prompt)}>
-            Скопировать промпт
+            {scenesTexts.prompt.copy}
           </Button>
         </ShotSection>
       ) : null}

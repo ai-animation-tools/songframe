@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 import ClearIcon from '@mui/icons-material/Clear';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -27,9 +28,9 @@ export function ProductionFrameImport({
   const choose = async (id: string): Promise<void> => {
     try {
       const files = await window.api.dialog.pickFiles({
-        title: `Изображение опоры ${id}`,
+        title: productionTexts.productionFrameImport.title({ id }),
         multiple: false,
-        filters: [{ name: 'Изображения', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+        filters: [{ name: productionTexts.productionFrameImport.images, extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
       });
       if (files[0]) setPaths((current) => ({ ...current, [id]: files[0] }));
     } catch (reason) {
@@ -39,19 +40,19 @@ export function ProductionFrameImport({
   return (
     <Box component="details">
       <Typography component="summary" variant="body2" sx={{ cursor: 'pointer' }}>
-        Импортировать свои опоры PNG, JPG, WebP
+        {productionTexts.productionFrameImport.heading}
       </Typography>
       <Stack spacing={1} sx={{ mt: 1 }}>
         <Typography variant="caption" color="text.secondary">
-          Выберите файлы только для нужных опор. Каждая получит свой вопрос об утверждении; недостающие агент создаст по одной, учитывая утверждённые.
+          {productionTexts.productionFrameImport.description}
         </Typography>
         {frames.map((frame) => (
           <Stack key={frame.id} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <ActionButton startIcon={<FolderOpenIcon />} size="small" disabled={busy} disabledReason={busyReason} onClick={() => void choose(frame.id)}>
-              Выбрать {frame.id}
+              {productionTexts.productionFrameImport.choose({ id: frame.id })}
             </ActionButton>
             <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>
-              {frame.role} · {frame.timeSeconds} с · {paths[frame.id] ?? 'Файл не выбран'}
+              {productionTexts.productionFrameImport.caption({ role: frame.role, timeSeconds: frame.timeSeconds, path: paths[frame.id] })}
             </Typography>
           </Stack>
         ))}
@@ -59,22 +60,22 @@ export function ProductionFrameImport({
           <ActionButton
             startIcon={<VisibilityIcon />}
             disabled={busy || !frames.some((frame) => paths[frame.id])}
-            disabledReason={busy ? busyReason : 'Выберите файл хотя бы для одной опоры.'}
+            disabledReason={busy ? busyReason : productionTexts.productionFrameImport.fileRequired}
             onClick={async () => {
               // Порядок кандидатов — порядок плана, как требует главный процесс.
               const chosen = frames.filter((frame) => paths[frame.id]).map((frame) => ({ id: frame.id, path: paths[frame.id] }));
               if (await onImport(chosen)) setPaths({});
             }}
           >
-            Показать кандидаты
+            {productionTexts.productionFrameImport.preview}
           </ActionButton>
           <ActionButton
             startIcon={<ClearIcon />}
             disabled={busy || !Object.keys(paths).length}
-            disabledReason={busy ? busyReason : 'Файлы ещё не выбраны.'}
+            disabledReason={busy ? busyReason : productionTexts.productionFrameImport.filesMissing}
             onClick={() => setPaths({})}
           >
-            Очистить выбор
+            {productionTexts.productionFrameImport.clear}
           </ActionButton>
         </Stack>
       </Stack>

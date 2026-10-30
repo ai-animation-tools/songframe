@@ -6,8 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
 import { LinkedText } from './LinkedText';
-import { ANCHORS, linkLocation, linkSegments } from './linkTargets';
-import { NAV_PAGES } from '../navigation';
+import { linkLocation, linkSegments } from './linkTargets';
 
 const render = (text: string, at = '/project', renderText?: (value: string) => string): string =>
   renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [at] }, createElement(LinkedText, { text, renderText })));
@@ -28,26 +27,61 @@ describe('LinkedText', () => {
     expect(html.endsWith('</a>.')).toBe(true);
   });
 
-  it('берёт маршруты из общей таблицы навигации', () => {
-    for (const page of NAV_PAGES) {
-      expect(links(render(`Откройте страницу «${page.label}».`, '/elsewhere'))).toEqual([{ href: page.to, text: `«${page.label}»` }]);
-    }
+  // Ожидания независимы от словаря и таблиц целей: перенос не должен менять существующие названия и переходы.
+  it.each([
+    ['Проекты', '/projects'],
+    ['Проект', '/project'],
+    ['Исходники', '/project/sources'],
+    ['Тайминги', '/project/timing'],
+    ['Кастинг', '/project/cast'],
+    ['Сценарий', '/project/scenario'],
+    ['Производство', '/project/production'],
+    ['Сцены', '/project/scenes'],
+    ['Монтаж пробы', '/project/montage'],
+    ['Проверки', '/project/checks'],
+    ['Аниматик', '/project/animatic'],
+    ['Журнал заданий', '/jobs'],
+    ['Среда', '/environment'],
+    ['Настройки', '/settings'],
+    ['Справка', '/help']
+  ])('сохраняет название страницы «%s» и маршрут %s', (name, href) => {
+    expect(links(render(`Откройте страницу «${name}».`, '/elsewhere'))).toEqual([{ href, text: `«${name}»` }]);
   });
 
-  it('понимает падежные формы названий страниц', () => {
-    expect(links(render('Подробности — в «Журнале заданий», модель — в «Таймингах».')).map((link) => link.href)).toEqual(['/jobs', '/project/timing']);
+  it.each([
+    ['Исходниках', '/project/sources'],
+    ['Таймингах', '/project/timing'],
+    ['Таймингов', '/project/timing'],
+    ['Кастинге', '/project/cast'],
+    ['Сценарии', '/project/scenario'],
+    ['Производстве', '/project/production'],
+    ['Проверках', '/project/checks'],
+    ['Аниматике', '/project/animatic'],
+    ['Журнале заданий', '/jobs'],
+    ['Среде', '/environment'],
+    ['Настройках', '/settings'],
+    ['Справке', '/help']
+  ])('понимает падежную форму «%s» и ведёт на %s', (name, href) => {
+    expect(links(render(`Подробности — в «${name}».`, '/elsewhere'))).toEqual([{ href, text: `«${name}»` }]);
   });
 
-  it('ведёт к известному блоку с якорем', () => {
-    expect(links(render('Речевой план: сначала подготовьте WAV речи в блоке «Речь».'))).toEqual([
-      { href: `/project/production?anchor=${ANCHORS.productionSpeech}`, text: '«Речь»' }
-    ]);
-    expect(links(render('Запуск — в блоке «Подготовка плана».'))[0].href).toBe(`/project/production?anchor=${ANCHORS.productionWorkflow}`);
+  it.each([
+    ['Подготовка плана', '/project/production?anchor=production-workflow'],
+    ['Речь', '/project/production?anchor=production-speech'],
+    ['Речь (липсинк)', '/project/production?anchor=production-speech'],
+    ['Очередь', '/project/production?anchor=production-filter'],
+    ['Проверки проекта', '/project/checks?anchor=checks-project'],
+    ['Проба стыков', '/project/checks?anchor=checks-review'],
+    ['Генерация видео', '/project?anchor=project-video-generation'],
+    ['Генерация изображений', '/project?anchor=project-image-generation'],
+    ['Имя MP4 аниматика', '/project?anchor=project-animatic-name']
+  ])('ведёт из блока «%s» к ожидаемому якорю %s', (name, href) => {
+    expect(links(render(`Перейдите в блок «${name}».`, '/elsewhere'))).toEqual([{ href, text: `«${name}»` }]);
   });
 
   it('на той же странице сохраняет её параметры и добавляет якорь', () => {
     const html = render('Подготовьте WAV в блоке «Речь».', '/project/production?shot=M01');
-    expect(links(html)[0].href).toBe(`/project/production?shot=M01&anchor=${ANCHORS.productionSpeech}`);
+    expect(links(html)[0].href).toBe('/project/production?shot=M01&anchor=production-speech');
   });
 
   it('оставляет текстом кавычки без цели и ссылку на текущую страницу без якоря', () => {
@@ -57,11 +91,32 @@ describe('LinkedText', () => {
   });
 
   it('ведёт к строке провайдера на странице «Среда», если он назван в том же предложении', () => {
-    expect(links(render(`Войдите в ${testProviderInfo.title} на странице «Среда».`))[0].href).toBe(`/environment?anchor=${TEST_PROVIDER}`);
+    expect(links(render('Войдите в Тестовый сервис на странице «Среда».'))).toEqual([{ href: '/environment?anchor=test', text: '«Среда»' }]);
     // Провайдер из соседнего предложения не определяет строку.
-    expect(links(render(`${testProviderInfo.title} доступен. Укажите папку на странице «Среда».`))[0].href).toBe('/environment');
+    expect(links(render('Тестовый сервис доступен. Укажите папку на странице «Среда».'))[0].href).toBe('/environment');
     // Сокращение «См.» не разрывает предложение.
     expect(links(render('Python не найден: проверки недоступны. См. страницу «Среда».'))[0].href).toBe('/environment?anchor=python');
+  });
+
+  it.each([
+    ['Python', '/environment?anchor=python'],
+    ['FFmpeg', '/environment?anchor=ffmpeg'],
+    ['ffprobe', '/environment?anchor=ffprobe']
+  ])('находит строку зависимости %s на странице среды', (title, href) => {
+    expect(links(render(`Проверьте ${title} на странице «Среда».`))).toEqual([{ href, text: '«Среда»' }]);
+  });
+
+  it('учитывает порядок упоминаний, отдельные слова и границу строки в ссылке на среду', () => {
+    expect(links(render('Проверьте FFmpeg и Python на странице «Среда».'))[0].href).toBe('/environment?anchor=ffmpeg');
+    expect(links(render('Проверьте Pythonista на странице «Среда».'))[0].href).toBe('/environment');
+    expect(links(render('Тестовый сервис доступен\nУкажите папку на странице «Среда».'))[0].href).toBe('/environment');
+    expect(links(render('Войдите в Тестовый сервис в «Среде».'))).toEqual([{ href: '/environment?anchor=test', text: '«Среде»' }]);
+  });
+
+  it('без маршрутизатора сохраняет исходный текст и переданное оформление', () => {
+    const text = 'Откройте «Исходники» и блок «Речь», затем нажмите «Сохранить».';
+    expect(renderToStaticMarkup(createElement(LinkedText, { text }))).toBe(text);
+    expect(renderToStaticMarkup(createElement(LinkedText, { text, renderText: (value) => value.toUpperCase() }))).toBe(text.toUpperCase());
   });
 
   it('оформляет части текста и ссылки переданной функцией', () => {
@@ -77,6 +132,17 @@ describe('linkSegments и linkLocation', () => {
     const segments = linkSegments(text, '/project');
     expect(segments.map((segment) => segment.text).join('')).toBe(text);
     expect(segments.filter((segment) => segment.target).map((segment) => segment.target?.path)).toEqual(['/project/timing', '/project/cast']);
+  });
+
+  it('сохраняет кавычки, пробелы и неизвестные названия среди ссылок', () => {
+    const text = '  «Тайминги»\n«Сохранить» — «Речь (липсинк)»; «Сценарий».  ';
+    expect(linkSegments(text, '/project/scenario')).toEqual([
+      { text: '  ' },
+      { text: '«Тайминги»', target: { path: '/project/timing' } },
+      { text: '\n«Сохранить» — ' },
+      { text: '«Речь (липсинк)»', target: { path: '/project/production', anchor: 'production-speech' } },
+      { text: '; «Сценарий».  ' }
+    ]);
   });
 
   it('заменяет прежний якорь и не переносит параметры другой страницы', () => {

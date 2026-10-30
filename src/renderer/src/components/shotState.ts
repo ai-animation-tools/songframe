@@ -1,3 +1,4 @@
+import { componentsTexts } from '@shared/texts/components';
 import type { ShotProductionState } from '@shared/types';
 
 /**
@@ -5,11 +6,11 @@ import type { ShotProductionState } from '@shared/types';
  * stale отличается от «проблемы»: комплект цел, но принят по прежней постановке и ждёт нового производства.
  */
 export const SHOT_STATE_LABELS: Record<ShotProductionState, { label: string; color: 'default' | 'warning' | 'success' | 'error' | 'info'; bar: string }> = {
-  planned: { label: 'не начат', color: 'default', bar: 'grey.400' },
-  progress: { label: 'в работе', color: 'warning', bar: 'warning.main' },
-  completed: { label: 'принят', color: 'success', bar: 'success.main' },
-  stale: { label: 'постановка изменена', color: 'info', bar: 'info.main' },
-  unknown: { label: 'проблема', color: 'error', bar: 'error.main' }
+  planned: { label: componentsTexts.shot.states.planned, color: 'default', bar: 'grey.400' },
+  progress: { label: componentsTexts.shot.states.progress, color: 'warning', bar: 'warning.main' },
+  completed: { label: componentsTexts.shot.states.completed, color: 'success', bar: 'success.main' },
+  stale: { label: componentsTexts.shot.states.stale, color: 'info', bar: 'info.main' },
+  unknown: { label: componentsTexts.shot.states.unknown, color: 'error', bar: 'error.main' }
 };
 
 const VIDEO_EXTENSION = /\.(?:mp4|webm|mov|m4v|ogv|ogg|avi|mkv)$/i;

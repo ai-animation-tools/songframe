@@ -1,3 +1,4 @@
+import { scenesTexts } from '@shared/texts/scenes';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { mapAcceptedTime, type VideoComparisonEdit } from './videoComparison';
 
@@ -55,7 +56,7 @@ export function useSynchronizedVideos({ edit, originalPath, videoPath }: Compari
     };
     const fail = (reason: unknown): void => {
       stop();
-      if (!disposed) setError(`Не удалось включить синхронное сравнение: ${reason instanceof Error ? reason.message : String(reason)}`);
+      if (!disposed) setError(scenesTexts.comparison.failed({ reason: reason instanceof Error ? reason.message : String(reason) }));
     };
 
     const align = (force = false): void => {
@@ -116,7 +117,7 @@ export function useSynchronizedVideos({ edit, originalPath, videoPath }: Compari
     };
     const onMediaError = (): void => {
       setReady(false);
-      fail(new Error('Не удалось загрузить одно из видео.'));
+      fail(new Error(scenesTexts.comparison.mediaLoadFailed));
     };
     const onEmptied = (): void => {
       if (active) stop();

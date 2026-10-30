@@ -138,7 +138,9 @@ it.each([
 ])('не отправляет при изменении цены/баланса или неизвестном тарифе: %s, %s, %s', async (credits, balance, verdict, code) => {
   const candidate = await prepare();
   run.mockResolvedValue(priceResult(credits, balance, verdict, code));
-  await expect(candidate.generate(controller.signal)).rejects.toThrow('Стоимость или остаток изменились');
+  await expect(candidate.generate(controller.signal)).rejects.toThrow(
+    'Стоимость или остаток изменились. Подготовьте запрос и подтвердите цену заново; отправка не выполнялась.'
+  );
   expect(options.provider.submit).not.toHaveBeenCalled();
 });
 
@@ -155,7 +157,7 @@ it('оставляет повреждённую проверку цены для
     credits: null,
     balance: null,
     verdict: 'cost_or_balance_unknown',
-    message: `Не удалось получить стоимость и остаток кредитов ${testProviderInfo.title}.`
+    message: 'Не удалось получить стоимость и остаток кредитов Тестовый сервис.'
   });
   settings({ options: { quality: 'unknown' } });
   await expect(prepare()).rejects.toThrow('Нет совместимой модели');
@@ -206,7 +208,9 @@ it('при отмене ожидания не повторяет submit и не 
     if (args[0] === 'watch') controller.abort();
     return result();
   });
-  await expect(candidate.generate(controller.signal)).rejects.toThrow('отмена ожидания не возвращает кредиты');
+  await expect(candidate.generate(controller.signal)).rejects.toThrow(
+    'Получение обложки остановлено. Запрос мог быть отправлен в Тестовый сервис; отмена ожидания не возвращает кредиты.'
+  );
   expect(options.provider.collect).not.toHaveBeenCalled();
   expect(options.provider.submit).toHaveBeenCalledTimes(1);
 });
@@ -269,7 +273,9 @@ it.each([
     expect(options.provider.submit).toHaveBeenCalledTimes(1);
     expect(run.mock.calls.filter((call) => call[1] === 'media_request' && call[2][0] === 'submit')).toHaveLength(1);
   } else {
-    await expect(candidate.generate(controller.signal, { allowUnknownCost: true })).rejects.toThrow('Стоимость или остаток изменились');
+    await expect(candidate.generate(controller.signal, { allowUnknownCost: true })).rejects.toThrow(
+      'Стоимость или остаток изменились. Подготовьте запрос и подтвердите цену заново; отправка не выполнялась.'
+    );
     expect(options.provider.submit).not.toHaveBeenCalled();
   }
   await expect(candidate.generate(controller.signal, { allowUnknownCost: true })).rejects.toThrow('уже запускалась');

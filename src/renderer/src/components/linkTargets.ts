@@ -3,6 +3,7 @@
  * Новый блок, на который ссылается текст, получает здесь якорь и `data-anchor` у своего элемента.
  */
 import { MEDIA_PROVIDERS } from '@shared/media-providers';
+import { navigationTexts } from '@shared/texts/navigation';
 import { NAV_PAGES } from '../navigation';
 
 /** Параметр маршрута, по которому страница прокручивается к элементу `[data-anchor="<id>"]`. */
@@ -37,32 +38,32 @@ const PROJECT = '/project';
 
 /** Блоки, поля и строки страниц по их названию в кавычках. */
 export const BLOCK_TARGETS: Readonly<Record<string, LinkTarget>> = {
-  'Подготовка плана': { path: PRODUCTION, anchor: ANCHORS.productionWorkflow },
-  Речь: { path: PRODUCTION, anchor: ANCHORS.productionSpeech },
-  'Речь (липсинк)': { path: PRODUCTION, anchor: ANCHORS.productionSpeech },
+  [navigationTexts.blocks.productionWorkflow]: { path: PRODUCTION, anchor: ANCHORS.productionWorkflow },
+  [navigationTexts.blocks.productionSpeech]: { path: PRODUCTION, anchor: ANCHORS.productionSpeech },
+  [navigationTexts.blocks.productionLipSync]: { path: PRODUCTION, anchor: ANCHORS.productionSpeech },
   // Очередь открывается фильтром «Показать» панели производства.
-  Очередь: { path: PRODUCTION, anchor: ANCHORS.productionFilter },
-  'Проверки проекта': { path: CHECKS, anchor: ANCHORS.checksProject },
-  'Проба стыков': { path: CHECKS, anchor: ANCHORS.checksReview },
-  'Генерация видео': { path: PROJECT, anchor: ANCHORS.projectVideoGeneration },
-  'Генерация изображений': { path: PROJECT, anchor: ANCHORS.projectImageGeneration },
-  'Имя MP4 аниматика': { path: PROJECT, anchor: ANCHORS.projectAnimaticName }
+  [navigationTexts.blocks.productionQueue]: { path: PRODUCTION, anchor: ANCHORS.productionFilter },
+  [navigationTexts.blocks.checksProject]: { path: CHECKS, anchor: ANCHORS.checksProject },
+  [navigationTexts.blocks.checksReview]: { path: CHECKS, anchor: ANCHORS.checksReview },
+  [navigationTexts.blocks.projectVideoGeneration]: { path: PROJECT, anchor: ANCHORS.projectVideoGeneration },
+  [navigationTexts.blocks.projectImageGeneration]: { path: PROJECT, anchor: ANCHORS.projectImageGeneration },
+  [navigationTexts.blocks.projectAnimaticName]: { path: PROJECT, anchor: ANCHORS.projectAnimaticName }
 };
 
 /** Падежные формы названий страниц, встречающиеся в текстах: «в «Исходниках»», «на «Производстве»». */
 export const PAGE_ALIASES: Readonly<Record<string, string>> = {
-  Исходниках: 'Исходники',
-  Таймингах: 'Тайминги',
-  Таймингов: 'Тайминги',
-  Кастинге: 'Кастинг',
-  Сценарии: 'Сценарий',
-  Производстве: 'Производство',
-  Проверках: 'Проверки',
-  Аниматике: 'Аниматик',
-  'Журнале заданий': 'Журнал заданий',
-  Среде: 'Среда',
-  Настройках: 'Настройки',
-  Справке: 'Справка'
+  [navigationTexts.pageForms.sourcesPrepositional]: navigationTexts.pages.sources,
+  [navigationTexts.pageForms.timingPrepositional]: navigationTexts.pages.timing,
+  [navigationTexts.pageForms.timingGenitive]: navigationTexts.pages.timing,
+  [navigationTexts.pageForms.castPrepositional]: navigationTexts.pages.cast,
+  [navigationTexts.pageForms.scenarioPrepositional]: navigationTexts.pages.scenario,
+  [navigationTexts.pageForms.productionPrepositional]: navigationTexts.pages.production,
+  [navigationTexts.pageForms.checksPrepositional]: navigationTexts.pages.checks,
+  [navigationTexts.pageForms.animaticPrepositional]: navigationTexts.pages.animatic,
+  [navigationTexts.pageForms.jobsPrepositional]: navigationTexts.pages.jobs,
+  [navigationTexts.pageForms.environmentPrepositional]: navigationTexts.pages.environment,
+  [navigationTexts.pageForms.settingsPrepositional]: navigationTexts.pages.settings,
+  [navigationTexts.pageForms.helpPrepositional]: navigationTexts.pages.help
 };
 
 /**

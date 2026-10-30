@@ -1,5 +1,6 @@
 /** Выбор проекта: история открытых папок, открытие любой папки, переход к созданию нового. */
 
+import { projectsTexts } from '@shared/texts/projects';
 import { type ReactElement, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Stack } from '@mui/material';
@@ -50,7 +51,7 @@ export function ProjectsPage(): ReactElement {
 
   const pickFolder = async (): Promise<void> => {
     try {
-      const path = await window.api.dialog.pickFolder({ title: 'Папка проекта клипа' });
+      const path = await window.api.dialog.pickFolder({ title: projectsTexts.chooseProjectFolder });
       if (path) await open(path);
     } catch (error) {
       notify(describeError(error), 'error');
@@ -73,7 +74,7 @@ export function ProjectsPage(): ReactElement {
       <ProjectsToolbar busy={!!busy} onPickFolder={pickFolder} onCreateProject={() => navigate('/projects/new')} />
       {state && !state.toolsRoot ? (
         <Alert severity="warning">
-          <LinkedText text="Ресурсы приложения не найдены: создание проектов и инструменты недоступны, просмотр работает. Подробности на странице «Среда»." />
+          <LinkedText text={projectsTexts.toolsUnavailable} />
         </Alert>
       ) : null}
       <ProjectHistory history={history} states={states} currentPath={state?.current} busy={!!busy} onOpen={open} onForget={forget} />

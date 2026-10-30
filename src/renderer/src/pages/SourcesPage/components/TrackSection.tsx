@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 /** Текущий MP3 и выбор его замены. */
 import type { ReactElement } from 'react';
 import { Chip, Paper, Typography } from '@mui/material';
@@ -18,9 +19,9 @@ export function TrackSection({ track, trackNew, fileUrl, onPick, onClear, onDrop
   return (
     <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-        Трек
+        {sourcesTexts.track}
       </Typography>
-      {trackNew ? <Chip label={`Новый: ${trackNew}`} onDelete={onClear} sx={{ alignSelf: 'flex-start', mb: 1 }} /> : null}
+      {trackNew ? <Chip label={sourcesTexts.newTrack({ path: trackNew })} onDelete={onClear} sx={{ alignSelf: 'flex-start', mb: 1 }} /> : null}
       {track && !trackNew ? (
         <>
           <Typography variant="body2" color="text.secondary">
@@ -31,12 +32,12 @@ export function TrackSection({ track, trackNew, fileUrl, onPick, onClear, onDrop
       ) : null}
       {/* Управление воспроизведением и удалением выбора остаётся вне кликабельной области загрузки. */}
       <FileDropZone
-        label="Загрузка трека"
+        label={sourcesTexts.uploadTrack}
         kind="audio"
         onFiles={onDrop}
         onPick={onPick}
-        hint="Один файл MP3."
-        message="Перетащите MP3 или нажмите для выбора"
+        hint={sourcesTexts.trackFileHint}
+        message={sourcesTexts.trackFileMessage}
       />
     </Paper>
   );

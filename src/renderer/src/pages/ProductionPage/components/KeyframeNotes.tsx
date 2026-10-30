@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Действующие замечания к опорам пакета: их получает агент при создании опор; снятое больше не передаётся. */
 import type { ReactElement } from 'react';
 import NotInterestedIcon from '@mui/icons-material/NotInterested';
@@ -22,15 +23,13 @@ export function KeyframeNotes({
   if (!active.length) return null;
   return (
     <Box sx={{ mt: 1.5 }}>
-      <Typography variant="subtitle2">Замечания к опорам · {active.length}</Typography>
+      <Typography variant="subtitle2">{productionTexts.keyframeNotes.heading({ active: active.length })}</Typography>
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-        Агент получает их в задании создания опоры. Замечание «только Kxx» учитывается при создании этой опоры, «Kxx и следующие» — также при создании всех
-        следующих опор пакета.
-        {inactive ? ` Снятых замечаний: ${inactive}, они больше не передаются.` : ''}
+        {productionTexts.keyframeNotes.description({ inactive })}
       </Typography>
       <Stack component="ul" spacing={0.5} sx={{ m: 0, p: 0, listStyle: 'none' }}>
         {active.map((note) => {
-          const target = note.frame ?? 'все';
+          const target = note.frame ?? productionTexts.keyframeNotes.allFrames;
           return (
             <Box
               component="li"
@@ -45,11 +44,11 @@ export function KeyframeNotes({
                 <Typography variant="caption" color="text.secondary">
                   {note.scope === 'following'
                     ? note.frame
-                      ? `${note.frame} и следующие опоры`
-                      : 'все опоры'
+                      ? productionTexts.keyframeNotes.followingFrames({ frame: note.frame })
+                      : productionTexts.keyframeNotes.allFramesLabel
                     : note.frame
-                      ? `только ${note.frame}`
-                      : 'только одна опора'}
+                      ? productionTexts.keyframeNotes.singleFrame({ frame: note.frame })
+                      : productionTexts.keyframeNotes.singleFrameLabel}
                   {note.at ? (
                     <>
                       {' · '}
@@ -60,8 +59,8 @@ export function KeyframeNotes({
               </Box>
               <ActionIconButton
                 size="small"
-                aria-label={note.frame ? `Снять замечание к ${note.frame}` : 'Снять замечание ко всем опорам'}
-                title="Снять замечание: агент перестанет его получать"
+                aria-label={note.frame ? productionTexts.keyframeNotes.removeFrame({ frame: note.frame }) : productionTexts.keyframeNotes.removeAll}
+                title={productionTexts.keyframeNotes.removeHint}
                 disabled={busy}
                 disabledReason={busyReason}
                 onClick={() => onDeactivate(note.id)}

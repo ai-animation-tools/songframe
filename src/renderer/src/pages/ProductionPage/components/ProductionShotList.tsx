@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Сетка карточек планов, как на странице «Сцены»: состояние, предпросмотр, этап или ожидающее действие. */
 import type { ReactElement } from 'react';
 import { Alert, Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
@@ -37,7 +38,7 @@ export function ProductionShotList({
           </Alert>
           {filter !== 'all' && onResetFilter ? (
             <Button size="small" startIcon={<FilterAltOffIcon />} onClick={onResetFilter} sx={{ alignSelf: 'start' }}>
-              Показать все планы
+              {productionTexts.productionShotList.showAll}
             </Button>
           ) : null}
         </Stack>
@@ -67,8 +68,8 @@ export function ProductionShotList({
                   <Chip
                     size="small"
                     variant="outlined"
-                    label={`из ${shot.derivedFrom}`}
-                    title={`План собирается из материала ${shot.derivedFrom}`}
+                    label={productionTexts.productionShotList.derivedFrom({ derivedFrom: shot.derivedFrom })}
+                    title={productionTexts.productionShotList.derivedHint({ derivedFrom: shot.derivedFrom })}
                     sx={{ height: 18 }}
                   />
                 ) : null}
@@ -78,19 +79,27 @@ export function ProductionShotList({
                     size="small"
                     variant="outlined"
                     color={shot.proposal.status === 'ready' && !shot.proposal.stale ? 'info' : 'warning'}
-                    label={shot.proposal.status === 'ready' && !shot.proposal.stale ? 'предложение агента' : 'предложение: отклоните'}
+                    label={
+                      shot.proposal.status === 'ready' && !shot.proposal.stale
+                        ? productionTexts.productionShotList.proposal
+                        : productionTexts.productionShotList.invalidProposal
+                    }
                     title={proposalAttention(shot.proposal)}
                     sx={{ height: 18 }}
                   />
                 ) : null}
                 {(shot.state === 'completed' || shot.state === 'stale') && !shot.asset?.video ? (
-                  <Chip size="small" color="warning" label="Видео отсутствует" sx={{ height: 18 }} />
+                  <Chip size="small" color="warning" label={productionTexts.productionShotList.missingVideo} sx={{ height: 18 }} />
                 ) : null}
               </>
             }
-            caption={shot.attention ? `ждёт вас: ${shot.attention}` : undefined}
+            caption={shot.attention ? productionTexts.productionShotList.attention({ attention: shot.attention }) : undefined}
             captionColor={shot.attention ? 'primary.main' : undefined}
-            captionIcon={shot.attention ? <NotificationImportantIcon fontSize="inherit" color="primary" titleAccess="Ждёт вашего действия" /> : null}
+            captionIcon={
+              shot.attention ? (
+                <NotificationImportantIcon fontSize="inherit" color="primary" titleAccess={productionTexts.productionShotList.attentionLabel} />
+              ) : null
+            }
             selected={shot.id === selected}
             onSelect={onSelect}
           />

@@ -1,3 +1,4 @@
+import { projectsTexts } from '@shared/texts/projects';
 import type { ReactElement } from 'react';
 import { Box, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -25,12 +26,12 @@ export function ProjectHistoryRow({ entry, projectState, current, busy, onOpen, 
       secondaryAction={
         <DestructiveButton
           icon
-          label={`Убрать проект «${entry.name}» из истории`}
-          description="Из истории будет удалена только запись о проекте. Папка проекта и все её файлы останутся на диске."
+          label={projectsTexts.forget({ name: entry.name })}
+          description={projectsTexts.forgetDescription}
           disabled={busy}
-          disabledReason="Дождитесь открытия проекта."
+          disabledReason={projectsTexts.opening}
           onConfirm={() => onForget(entry.path)}
-          confirmLabel="Убрать из истории"
+          confirmLabel={projectsTexts.forgetConfirm}
         >
           <DeleteOutlineIcon fontSize="small" />
         </DestructiveButton>
@@ -44,13 +45,17 @@ export function ProjectHistoryRow({ entry, projectState, current, busy, onOpen, 
               {entry.exists ? projectState ? <StateChip state={projectState} size="small" /> : null : <StateChip state="invalid" size="small" />}
               {current ? (
                 <Typography variant="caption" color="primary">
-                  текущий
+                  {projectsTexts.current}
                 </Typography>
               ) : null}
             </Box>
           }
           slotProps={{ secondary: { sx: { overflowWrap: 'anywhere' } } }}
-          secondary={`${entry.path}${entry.exists ? '' : ' (папка не найдена)'}${entry.lastOpened ? ` · открыт ${formatDateTime(entry.lastOpened)}` : ''}`}
+          secondary={projectsTexts.historyDetails({
+            path: entry.path,
+            exists: entry.exists,
+            openedAt: entry.lastOpened ? formatDateTime(entry.lastOpened) : undefined
+          })}
         />
       </ListItemButton>
     </ListItem>

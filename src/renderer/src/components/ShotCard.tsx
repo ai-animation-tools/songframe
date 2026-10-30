@@ -1,4 +1,5 @@
 /** Карточка плана в сетке: одинаковая на страницах «Сцены» и «Производство», предпросмотр запускается при наведении. */
+import { componentsTexts } from '@shared/texts/components';
 import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
 import { alpha } from '@mui/material/styles';
 import { Box, Chip, Paper, Typography } from '@mui/material';
@@ -114,7 +115,7 @@ export function ShotCard({
         </Typography>
         <Chip size="small" color={state.color} label={state.label} sx={{ height: 18 }} />
         {chips}
-        {shot.lipsync ? <Chip size="small" variant="outlined" label="речь" sx={{ height: 18 }} /> : null}
+        {shot.lipsync ? <Chip size="small" variant="outlined" label={componentsTexts.shot.speech} sx={{ height: 18 }} /> : null}
         <Box sx={{ flex: 1 }} />
         <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }}>
           {formatClock(shot.start)}–{formatClock(shot.end)}

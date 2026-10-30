@@ -1,3 +1,4 @@
+import { projectsTexts } from '@shared/texts/projects';
 import type { ReactElement } from 'react';
 import { Box, Paper, TextField } from '@mui/material';
 import { slugify } from '../helpers';
@@ -31,19 +32,19 @@ export function NewProjectForm({ values, changeField, pickParent, problems, touc
         }}
       >
         <TextField
-          label="Название клипа"
+          label={projectsTexts.clipName}
           value={name}
           onChange={(event) => changeField('name', event.target.value)}
           autoFocus
-          helperText="Попадёт в plan/project.json, README и заголовки документов"
+          helperText={projectsTexts.nameHelp}
         />
         <NewProjectFolderField value={path} onChange={(value) => changeField('path', value)} onPickParent={pickParent} />
         <TextField
-          label="Имя MP4 аниматика (необязательно)"
+          label={projectsTexts.animaticName}
           value={video}
           onChange={(event) => changeField('video', event.target.value)}
           placeholder={`${slug || 'animatic'}${slug ? '-animatic' : ''}.mp4`}
-          helperText="Латиница, цифры, дефис; по умолчанию образуется из названия"
+          helperText={projectsTexts.animaticNameHelp}
         />
         {touched && problems.length ? (
           <Box sx={{ gridColumn: '1 / -1' }}>

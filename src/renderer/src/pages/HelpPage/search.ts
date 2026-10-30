@@ -2,6 +2,8 @@ import type { GlossaryEntry } from './glossary';
 
 /** Поиск и подсветка используют одинаковое сравнение, сохраняя исходное написание в тексте. */
 export function searchable(value: string): string {
+  // Техническая нормализация поиска сохраняет исходное написание статей и не относится к UI-подписям.
+  // eslint-disable-next-line no-restricted-syntax
   return value.toLocaleLowerCase('ru-RU').replace(/ё/g, 'е');
 }
 

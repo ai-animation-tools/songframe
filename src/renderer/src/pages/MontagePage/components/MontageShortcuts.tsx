@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import type { ReactElement } from 'react';
 import { Typography } from '@mui/material';
 
@@ -5,8 +6,7 @@ import { Typography } from '@mui/material';
 export function MontageShortcuts(): ReactElement {
   return (
     <Typography variant="caption" color="text.secondary" display="block">
-      Клавиши: Ctrl+Z отмена, Ctrl+Shift+Z или Ctrl+Y повтор, пробел воспроизведение / пауза, стрелки влево и вправо шаг на кадр, Delete удаление выбранного
-      фрагмента с подтверждением.
+      {montageTexts.shortcuts}
     </Typography>
   );
 }

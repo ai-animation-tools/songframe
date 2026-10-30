@@ -1,3 +1,5 @@
+import { checksTexts } from '@shared/texts/checks';
+import { commonTexts } from '@shared/texts/common';
 import { FPS } from '@shared/video';
 import { useRef, type ReactElement } from 'react';
 import { Box, Chip, IconButton, Typography } from '@mui/material';
@@ -42,7 +44,7 @@ export function ReviewItem({ review, openReview, deletingReview, setOpenReview, 
           {review.dir.split(/[\\/]/).pop()}
         </Typography>
         <Chip size="small" variant="outlined" label={review.shots.join(' ')} />
-        <Chip size="small" variant="outlined" label={`${(review.totalFrames / FPS).toFixed(1)} с`} />
+        <Chip size="small" variant="outlined" label={checksTexts.reviewDuration(review.totalFrames / FPS)} />
         <Typography variant="caption" color="text.secondary">
           <DateTime value={review.createdAt} />
         </Typography>
@@ -50,20 +52,20 @@ export function ReviewItem({ review, openReview, deletingReview, setOpenReview, 
           size="small"
           startIcon={openReview?.video === review.video ? <VisibilityOffIcon /> : <VisibilityIcon />}
           disabled={deletingReview === review.video}
-          disabledReason="Проба удаляется."
+          disabledReason={checksTexts.reviewDeleting}
           onClick={() => setOpenReview(openReview?.video === review.video ? null : review)}
         >
-          {openReview?.video === review.video ? 'Скрыть' : 'Смотреть'}
+          {openReview?.video === review.video ? commonTexts.hide : commonTexts.watch}
         </ActionButton>
-        <IconButton size="small" onClick={() => openDirectory(review.dir)} title="Открыть папку" aria-label="Открыть папку">
+        <IconButton size="small" onClick={() => openDirectory(review.dir)} title={commonTexts.openFolder} aria-label={commonTexts.openFolder}>
           <FolderOpenIcon fontSize="small" />
         </IconButton>
         <DestructiveButton
           icon
-          label="Удалить пробу"
-          description={`Будут удалены MP4 пробы «${review.video.split(/[\\/]/).pop()}» и её рецепт. Исходные медиа и другие файлы в папке сохранятся.`}
+          label={checksTexts.deleteReview}
+          description={checksTexts.deleteReviewDescription(String(review.video.split(/[\\/]/).pop()))}
           disabled={deletingReview !== null}
-          disabledReason="Дождитесь окончания удаления пробы."
+          disabledReason={checksTexts.reviewDeletionPending}
           onConfirm={remove}
         >
           <DeleteOutlineIcon fontSize="small" />

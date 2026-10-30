@@ -4,11 +4,14 @@
  * главного процесса; то же правило повторяют инструменты Python.
  */
 
+import { productionTexts } from '@shared/texts/production';
 import { existsSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ScenesFile } from '@shared/types';
 import { initialStates, readCast } from './cast';
 import { sceneFingerprints } from './scene-fingerprint';
+
+const texts = productionTexts.main.acceptance;
 
 export const PRODUCTION_STATUS = join('plan', 'production-status.json');
 
@@ -53,7 +56,7 @@ export function shotAcceptance(project: string, scenes: ScenesFile): ShotAccepta
   try {
     fingerprints = projectFingerprints(project, scenes);
   } catch (error) {
-    problem = `Постановку планов не удалось сверить с принятыми комплектами: ${error instanceof Error ? error.message : String(error)}`;
+    problem = texts.sceneComparisonFailed({ error: error instanceof Error ? error.message : String(error) });
   }
   const stored = acceptedFingerprints(project);
   const accepted = new Map<string, AcceptanceState>();
@@ -74,7 +77,7 @@ export function writableProductionStatus(project: string): Record<string, unknow
   const path = join(project, PRODUCTION_STATUS);
   if (!existsSync(path)) return null;
   const current = readJson(path);
-  if (!record(current)) throw new Error(`${PRODUCTION_STATUS} повреждён: исправьте файл, чтобы записать принятые отпечатки.`);
+  if (!record(current)) throw new Error(texts.productionStatusCorrupt({ path: PRODUCTION_STATUS }));
   return current;
 }
 

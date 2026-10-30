@@ -1,8 +1,9 @@
 /** Признак сети для интерфейса: без подключения сетевые действия блокируются заранее, а не завершаются ошибкой. */
+import { commonTexts } from '@shared/texts/common';
 import { useEffect, useState } from 'react';
 import type { AiAccess, AiExecutorAccess } from '@shared/ai-access';
 
-export const OFFLINE_MESSAGE = 'Нет подключения к сети. Действие станет доступно после восстановления связи.';
+export const OFFLINE_MESSAGE = commonTexts.network.actionOffline;
 
 /** navigator.onLine отражает подключение компьютера к сети; доступность конкретного сервиса проверяется отдельно. */
 export function useOnline(): boolean {

@@ -1,4 +1,5 @@
 /** Экспорт копирует только завершённую пробу; исходники проекта не становятся местом сохранения. */
+import { montageTexts } from '@shared/texts/montage';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { copyFile, rename, rm } from 'node:fs/promises';
@@ -7,16 +8,15 @@ import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } 
 export function montageVideoPath(project: string, video: string): string {
   const path = resolve(project, video);
   const name = relative(resolve(project), path).split(sep).join('/');
-  if (!/^plan\/batches\/review-manual-[\w-]+\/review\.mp4$/.test(name) || !existsSync(path))
-    throw new Error('Готовая видеопроба не найдена. Дождитесь успешного экспорта.');
+  if (!/^plan\/batches\/review-manual-[\w-]+\/review\.mp4$/.test(name) || !existsSync(path)) throw new Error(montageTexts.main.exportVideoMissing);
   const recipe = path.slice(0, -4) + '.json';
   let manifest: { video_sha256?: string; total_frames?: number };
   try {
     manifest = JSON.parse(readFileSync(recipe, 'utf8'));
   } catch {
-    throw new Error('Экспорт ещё не завершён: нет рецепта готовой пробы.');
+    throw new Error(montageTexts.main.exportRecipeMissing);
   }
-  if (!manifest.video_sha256 || !(Number(manifest.total_frames) > 0)) throw new Error('Нет подтверждения успешной сборки пробы.');
+  if (!manifest.video_sha256 || !(Number(manifest.total_frames) > 0)) throw new Error(montageTexts.main.exportUnconfirmed);
   return path;
 }
 
@@ -28,8 +28,7 @@ export async function copyMontageVideo(project: string, video: string, destinati
   const actualTarget = existsSync(target) ? realpathSync(target) : join(realpathSync(dirname(target)), basename(target));
   const name = relative(projectRoot, actualTarget);
   const inside = name !== '..' && !name.startsWith(`..${sep}`) && !isAbsolute(name);
-  if (inside && /^(source|assets|plan)(\/|\\|$)/.test(name))
-    throw new Error('Выберите папку для показа результата вне source, assets и plan: здесь хранятся рабочие материалы проекта.');
+  if (inside && /^(source|assets|plan)(\/|\\|$)/.test(name)) throw new Error(montageTexts.main.exportDestinationInvalid);
   const temporary = `${target}.${randomUUID()}.tmp`;
   try {
     await copyFile(source, temporary);

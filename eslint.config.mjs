@@ -32,5 +32,27 @@ export default tseslint.config(
     files: ['scripts/**/*.cjs'],
     rules: { '@typescript-eslint/no-require-imports': 'off' }
   },
+  {
+    // Область расширяется только после дословного переноса; исключения и формат — в docs/ui/texts.md.
+    files: ['src/**/*.{ts,tsx}'],
+    // Статьи справочника и служебные smoke-проверки сохраняют своих владельцев.
+    ignores: [
+      '**/*.test.{ts,tsx}',
+      '**/testing/**',
+      'src/shared/texts/**',
+      'src/renderer/src/pages/HelpPage/glossary.ts',
+      'src/main/linux-smoke.ts',
+      'src/main/runtime-smoke.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...['JSXText[value=/[А-Яа-яЁё]/]', 'Literal[value=/[А-Яа-яЁё]/]', 'TemplateElement[value.cooked=/[А-Яа-яЁё]/]'].map((selector) => ({
+          selector,
+          message: 'Перенесите текст интерфейса в src/shared/texts/. Исключение данных, промпта или журнала поясните точечно.'
+        }))
+      ]
+    }
+  },
   prettier
 );

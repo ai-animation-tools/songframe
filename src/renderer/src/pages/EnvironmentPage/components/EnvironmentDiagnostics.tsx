@@ -1,3 +1,4 @@
+import { environmentTexts } from '@shared/texts/environment';
 import type { ReactElement } from 'react';
 import { Alert, Box, CircularProgress, LinearProgress } from '@mui/material';
 import type { EnvironmentCheck } from '@shared/types';
@@ -15,11 +16,11 @@ interface EnvironmentDiagnosticsProps {
 /** Модель и внешние CLI не влияют на готовность основных ресурсов приложения. */
 export function EnvironmentDiagnostics({ checks, loading, error, logins }: EnvironmentDiagnosticsProps): ReactElement {
   if (!checks?.length) {
-    if (error) return <Alert severity="error">Не удалось проверить среду: {error}</Alert>;
-    if (!loading) return <Alert severity="info">{checks === null ? 'Проверка среды ещё не выполнена.' : 'Проверка завершилась без результатов.'}</Alert>;
+    if (error) return <Alert severity="error">{environmentTexts.checkFailed(error)}</Alert>;
+    if (!loading) return <Alert severity="info">{checks === null ? environmentTexts.notChecked : environmentTexts.noResults}</Alert>;
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress aria-label="Проверка среды" />
+        <CircularProgress aria-label={environmentTexts.checkingEnvironment} />
       </Box>
     );
   }
@@ -46,21 +47,17 @@ export function EnvironmentDiagnostics({ checks, loading, error, logins }: Envir
         '& > .MuiAlert-root': { gridColumn: '1 / -1' }
       }}
     >
-      {loading && <LinearProgress aria-label="Проверка среды" />}
-      {error && <Alert severity="error">Не удалось завершить проверку: {error}. Показаны последние доступные результаты.</Alert>}
-      {missingCore.length ? (
-        <Alert severity="error">Без этого приложение работает не полностью: {missingCore.map((check) => check.label).join(', ')}.</Alert>
-      ) : null}
+      {loading && <LinearProgress aria-label={environmentTexts.checkingEnvironment} />}
+      {error && <Alert severity="error">{environmentTexts.checkInterrupted(error)}</Alert>}
+      {missingCore.length ? <Alert severity="error">{environmentTexts.missingCore(missingCore.map((check) => check.label).join(', '))}</Alert> : null}
       {missingProduction.length ? (
-        <Alert severity="warning">
-          Просмотр и редактирование работают. Не найдены локальные зависимости: {missingProduction.map((check) => check.label).join(', ')}.
-        </Alert>
+        <Alert severity="warning">{environmentTexts.missingProduction(missingProduction.map((check) => check.label).join(', '))}</Alert>
       ) : completed && missingCore.length === 0 ? (
-        <Alert severity="success">Ресурсы и библиотеки приложения доступны.</Alert>
+        <Alert severity="success">{environmentTexts.resourcesAvailable}</Alert>
       ) : null}
-      <EnvironmentCheckGroup title="Ресурсы и библиотеки приложения" items={coreChecks} category="core" logins={logins} />
-      <EnvironmentCheckGroup title="Отдельно устанавливаемая модель" items={checks.filter((check) => check.id === 'whisper-model')} category="model" />
-      <EnvironmentCheckGroup title="Внешние программы — по необходимости" items={externalChecks} category="external" logins={logins} />
+      <EnvironmentCheckGroup title={environmentTexts.coreGroup} items={coreChecks} category="core" logins={logins} />
+      <EnvironmentCheckGroup title={environmentTexts.modelGroup} items={checks.filter((check) => check.id === 'whisper-model')} category="model" />
+      <EnvironmentCheckGroup title={environmentTexts.externalGroup} items={externalChecks} category="external" logins={logins} />
     </Box>
   );
 }

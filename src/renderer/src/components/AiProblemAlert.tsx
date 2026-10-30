@@ -1,4 +1,5 @@
 /** Причина недоступности действий ИИ с переходом туда, где её можно устранить. */
+import { componentsTexts } from '@shared/texts/components';
 import type { ReactElement } from 'react';
 import { Alert, Button } from '@mui/material';
 import { SettingsOutlined, TuneOutlined } from '@mui/icons-material';
@@ -22,12 +23,12 @@ export function AiProblemAlert({ kinds = ['agent'] }: { kinds?: AiActionKind[] }
           <>
             {agent ? (
               <Button color="inherit" size="small" startIcon={<SettingsOutlined />} href="#/settings">
-                Открыть настройки
+                {componentsTexts.aiProblem.openSettings}
               </Button>
             ) : null}
             {media ? (
               <Button color="inherit" size="small" startIcon={<TuneOutlined />} href="#/project">
-                Настройки проекта
+                {componentsTexts.aiProblem.projectSettings}
               </Button>
             ) : null}
           </>

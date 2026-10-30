@@ -1,3 +1,4 @@
+import { animaticTexts } from '@shared/texts/animatic';
 /** Принятие текущей сборки или возврат на просмотр с учётом её свежести. */
 
 import type { ReactElement } from 'react';
@@ -24,26 +25,26 @@ export function AnimaticAcceptance({
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column', gap: 1.5 }}>
         <Typography variant="subtitle1" fontWeight={600}>
-          Принятие
+          {animaticTexts.acceptance.title}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
           {accepted
-            ? 'Текущий результат принят.'
+            ? animaticTexts.acceptance.accepted
             : approval.status === 'approved'
               ? !built.fresh
-                ? 'Сценарий изменился после сборки. Пересоберите видео и просмотрите результат.'
-                : 'После пересборки результат изменился. Просмотрите его и примите заново.'
-              : 'Просмотрите видео целиком. Если результат устраивает, нажмите «Принять».'}
+                ? animaticTexts.acceptance.scenarioChanged
+                : animaticTexts.acceptance.videoChanged
+              : animaticTexts.acceptance.reviewInstruction}
         </Typography>
         {approval.current ? (
           <ActionButton
             size="small"
             disabled={running}
-            disabledReason="Дождитесь завершения сборки."
+            disabledReason={animaticTexts.buildPending}
             startIcon={<UndoIcon />}
             onClick={() => onConfirm('review')}
           >
-            Вернуть на просмотр
+            {animaticTexts.acceptance.returnToReview}
           </ActionButton>
         ) : (
           <ActionButton
@@ -54,16 +55,16 @@ export function AnimaticAcceptance({
             disabled={running || !built.fresh || !built.videoPath}
             disabledReason={
               running
-                ? 'Дождитесь завершения сборки.'
+                ? animaticTexts.buildPending
                 : !built.fresh
-                  ? 'Сценарий изменился после сборки: пересоберите видео.'
+                  ? animaticTexts.acceptance.rebuildScenario
                   : !built.videoPath
-                    ? 'Видео ещё не собрано: нажмите «Собрать».'
+                    ? animaticTexts.acceptance.buildFirst
                     : null
             }
             onClick={() => onConfirm('approved')}
           >
-            Принять
+            {animaticTexts.acceptance.approve}
           </ActionButton>
         )}
       </Box>

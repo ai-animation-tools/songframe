@@ -86,9 +86,9 @@ describe('опоры Codex', () => {
     });
     expect(prepared.references[0].sha256).toBe(hash(png));
     expect(start).not.toHaveBeenCalled();
-    expect(() => provider.submit(prepared, { requestSha: 'wrong' })).toThrow(/изменились/);
+    expect(() => provider.submit(prepared, { requestSha: 'wrong' })).toThrow('Запрос или референсы изменились после согласования.');
     writeFileSync(join(project, 'source/reference.png'), Buffer.concat([png, Buffer.from('изменено')]));
-    expect(() => provider.submit(prepared, { requestSha: prepared.requestSha })).toThrow(/изменились/);
+    expect(() => provider.submit(prepared, { requestSha: prepared.requestSha })).toThrow('Запрос или референсы изменились после согласования.');
     expect(start).not.toHaveBeenCalled();
   });
 
@@ -130,11 +130,17 @@ describe('опоры Codex', () => {
     const permit = { requestSha: prepared.requestSha };
     const start = vi.spyOn(options.images, 'start').mockReturnValue({ id: 'agent-job' } as AgentJob);
     provider.submit(prepared, permit);
-    expect(() => provider.submit(prepared, permit)).toThrow(/уже использованы/);
-    expect(() => provider.submit(prepared, { requestSha: prepared.requestSha })).toThrow(/уже использованы/);
+    expect(() => provider.submit(prepared, permit)).toThrow(
+      'Эта подготовка или подтверждение уже использованы. Для нового запуска подготовьте и подтвердите новый запрос.'
+    );
+    expect(() => provider.submit(prepared, { requestSha: prepared.requestSha })).toThrow(
+      'Эта подготовка или подтверждение уже использованы. Для нового запуска подготовьте и подтвердите новый запрос.'
+    );
     const next = provider.prepare(source);
     expect(next.requestSha).toBe(prepared.requestSha);
-    expect(() => provider.submit(next, permit)).toThrow(/уже использованы/);
+    expect(() => provider.submit(next, permit)).toThrow(
+      'Эта подготовка или подтверждение уже использованы. Для нового запуска подготовьте и подтвердите новый запрос.'
+    );
     expect(start).toHaveBeenCalledTimes(1);
     provider.submit(next, { requestSha: next.requestSha });
     expect(start).toHaveBeenCalledTimes(2);
@@ -157,9 +163,13 @@ describe('опоры Codex', () => {
       })
       .mockReturnValue({ id: 'retry-job' } as AgentJob);
     expect(() => provider.submit(prepared, permit)).toThrow(/Не удалось запустить CLI/);
-    expect(() => provider.submit(prepared, { requestSha: prepared.requestSha })).toThrow(/уже использованы/);
+    expect(() => provider.submit(prepared, { requestSha: prepared.requestSha })).toThrow(
+      'Эта подготовка или подтверждение уже использованы. Для нового запуска подготовьте и подтвердите новый запрос.'
+    );
     const retry = provider.prepare(source);
-    expect(() => provider.submit(retry, permit)).toThrow(/уже использованы/);
+    expect(() => provider.submit(retry, permit)).toThrow(
+      'Эта подготовка или подтверждение уже использованы. Для нового запуска подготовьте и подтвердите новый запрос.'
+    );
     expect(start).toHaveBeenCalledTimes(1);
     provider.submit(retry, { requestSha: retry.requestSha });
     expect(start).toHaveBeenCalledTimes(2);

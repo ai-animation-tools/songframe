@@ -1,3 +1,4 @@
+import { scenesTexts } from '@shared/texts/scenes';
 import type { ReactElement } from 'react';
 import type { DashboardShot } from '@shared/types';
 import { Alert, Box, Stack, Typography } from '@mui/material';
@@ -6,7 +7,6 @@ import PauseIcon from '@mui/icons-material/Pause';
 import { useSynchronizedVideos } from '../useSynchronizedVideos';
 import { ShotSection } from './ShotSection';
 import { ActionButton } from '../../../components/ActionButton';
-import { countLabel } from '@shared/plural';
 
 /** Одинаковая область видео и подписи под ней сохраняют выравнивание пары при длинном рецепте монтажа. */
 export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | null {
@@ -16,21 +16,21 @@ export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | nul
   const recipe = edit
     ? [
         edit.stillAt !== null
-          ? `стоп-кадр оригинала на ${edit.stillAt.toFixed(2)} с`
+          ? scenesTexts.mediaEdit.still({ time: edit.stillAt.toFixed(2) })
           : edit.sourceInterval
-            ? `участок оригинала ${edit.sourceInterval[0].toFixed(2)}–${edit.sourceInterval[1].toFixed(2)} с`
-            : 'оригинал целиком',
-        edit.speed && edit.speed !== '1' ? `скорость ${edit.speed}` : null,
-        edit.holdFirst ? `удержание первого кадра ${edit.holdFirst} с` : null,
-        edit.holdLast ? `удержание последнего кадра ${edit.holdLast} с` : null,
-        `${countLabel(edit.frames, 'кадр', 'кадра', 'кадров')}, ${edit.duration.toFixed(2)} с`
+            ? scenesTexts.mediaEdit.interval({ start: edit.sourceInterval[0].toFixed(2), end: edit.sourceInterval[1].toFixed(2) })
+            : scenesTexts.mediaEdit.wholeOriginal,
+        edit.speed && edit.speed !== '1' ? scenesTexts.mediaEdit.speed({ speed: edit.speed }) : null,
+        edit.holdFirst ? scenesTexts.mediaEdit.holdFirst({ duration: edit.holdFirst }) : null,
+        edit.holdLast ? scenesTexts.mediaEdit.holdLast({ duration: edit.holdLast }) : null,
+        scenesTexts.mediaEdit.duration({ frames: edit.frames, duration: edit.duration.toFixed(2) })
       ].filter(Boolean)
     : [];
   const viewport = { aspectRatio: '16 / 9', bgcolor: '#000', borderRadius: 1, overflow: 'hidden', display: 'grid', placeItems: 'center' };
   const videoStyle = { width: '100%', height: '100%', objectFit: 'contain' as const, display: 'block' };
 
   return asset ? (
-    <ShotSection title="Оригинал генерации и принятый монтаж">
+    <ShotSection title={scenesTexts.mediaEdit.acceptedAndOriginal}>
       <Stack spacing={1}>
         {comparison.error ? <Alert severity="warning">{comparison.error}</Alert> : null}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1, alignItems: 'start' }}>
@@ -39,7 +39,7 @@ export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | nul
               {asset.original ? (
                 <video
                   ref={comparison.originalRef}
-                  aria-label="Оригинал генерации"
+                  aria-label={scenesTexts.mediaEdit.original}
                   controls
                   preload="metadata"
                   src={window.api.shell.fileUrl(asset.original)}
@@ -47,12 +47,12 @@ export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | nul
                 />
               ) : (
                 <Typography variant="body2" color="white">
-                  файла нет
+                  {scenesTexts.mediaEdit.missingFile}
                 </Typography>
               )}
             </Box>
             <Typography component="p" variant="caption" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>
-              Оригинал{asset.originalMedia ? ` · ${asset.originalMedia}` : ''}
+              {scenesTexts.mediaEdit.originalCaption({ media: asset.originalMedia })}
             </Typography>
           </Box>
           <Box sx={{ minWidth: 0 }}>
@@ -60,7 +60,7 @@ export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | nul
               {asset.video ? (
                 <video
                   ref={comparison.acceptedRef}
-                  aria-label="Принятый монтаж"
+                  aria-label={scenesTexts.mediaEdit.accepted}
                   controls
                   preload="metadata"
                   src={window.api.shell.fileUrl(asset.video)}
@@ -68,12 +68,12 @@ export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | nul
                 />
               ) : (
                 <Typography variant="body2" color="white">
-                  файла нет
+                  {scenesTexts.mediaEdit.missingFile}
                 </Typography>
               )}
             </Box>
             <Typography component="p" variant="caption" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>
-              Принятый монтаж · {recipe.join(', ')}
+              {scenesTexts.mediaEdit.acceptedCaption({ recipe: recipe.join(', ') })}
             </Typography>
           </Box>
         </Box>
@@ -87,20 +87,16 @@ export function ShotMedia({ shot }: { shot: DashboardShot }): ReactElement | nul
             variant="outlined"
             startIcon={comparison.synchronized ? <PauseIcon /> : <PlayArrowIcon />}
             disabled={!comparison.ready}
-            disabledReason={
-              !asset.original || !asset.video
-                ? 'Для сравнения нужны оба видео: оригинал генерации и принятый монтаж.'
-                : (comparison.error ?? 'Дождитесь загрузки обоих видео.')
-            }
+            disabledReason={!asset.original || !asset.video ? scenesTexts.mediaEdit.bothRequired : (comparison.error ?? scenesTexts.mediaEdit.loading)}
             onClick={comparison.toggle}
           >
-            {comparison.synchronized ? 'Приостановить синхронно' : 'Воспроизвести синхронно'}
+            {comparison.synchronized ? scenesTexts.mediaEdit.pauseTogether : scenesTexts.mediaEdit.playTogether}
           </ActionButton>
         </Box>
       </Stack>
     </ShotSection>
   ) : shot.package?.request?.downloads.length ? (
-    <ShotSection title="Результат генерации (не принят)">
+    <ShotSection title={scenesTexts.mediaEdit.unaccepted}>
       <video
         controls
         preload="metadata"

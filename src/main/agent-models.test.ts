@@ -143,7 +143,7 @@ describe('readAgentModels', () => {
     });
     const result = await readAgentModels(adapter, { provider: 'claude' }, { home: work, env: { PATH: work } });
     expect(result.models).toEqual([]);
-    expect(result.message).toContain('вручную');
+    expect(result.message).toBe('Каталог моделей Claude Code сейчас недоступен. Модель можно ввести вручную.');
     expect(result.message).not.toContain('SECRET');
   });
 
@@ -153,7 +153,7 @@ describe('readAgentModels', () => {
       { provider: 'claude' }
     );
     expect(result).toMatchObject({ models: [] });
-    expect(result.message).toContain('вручную');
+    expect(result.message).toBe('Claude Code не вернул доступные модели. Модель можно ввести вручную.');
   });
 
   it('читает модели найденного файла с расширенным PATH и home', async () => {

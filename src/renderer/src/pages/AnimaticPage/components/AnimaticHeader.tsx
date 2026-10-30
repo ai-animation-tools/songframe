@@ -1,3 +1,6 @@
+import { animaticTexts } from '@shared/texts/animatic';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 /** Состояние текущей сборки и команды проверки и сборки. */
 
 import type { ReactElement } from 'react';
@@ -26,42 +29,42 @@ export function AnimaticHeader({
   onBuild: (planOnly: boolean) => Promise<void>;
 }): ReactElement {
   const disabled = running || !!blockedReason;
-  const disabledReason = running ? 'Дождитесь завершения сборки.' : blockedReason;
+  const disabledReason = running ? animaticTexts.buildPending : blockedReason;
   return (
     <Box sx={{ display: 'flex', width: '100%', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-      <Typography variant="h5">Аниматик</Typography>
+      <Typography variant="h5">{navigationTexts.pages.animatic}</Typography>
       {built ? (
         <Chip
           size="small"
           color={accepted ? 'success' : built.fresh ? 'info' : 'warning'}
-          label={accepted ? 'принят' : built.fresh ? 'собран, на просмотре' : 'устарел'}
+          label={accepted ? animaticTexts.header.accepted : built.fresh ? animaticTexts.header.review : animaticTexts.header.stale}
         />
       ) : (
-        <Chip size="small" variant="outlined" label="не собран" />
+        <Chip size="small" variant="outlined" label={animaticTexts.header.notBuilt} />
       )}
       {/* Индикатор сборки в закреплённой панели виден при любой прокрутке. */}
       <JobStatus running={running} />
       <Box sx={{ flex: 1 }} />
       <Button startIcon={<RefreshIcon />} onClick={onRefresh}>
-        Обновить
+        {commonTexts.refresh}
       </Button>
       <ActionButton
-        title="Проверить материалы и длительности без сборки видео"
+        title={animaticTexts.header.checkHint}
         startIcon={<FactCheckIcon />}
         disabled={disabled}
         disabledReason={disabledReason}
         onClick={() => onBuild(true)}
       >
-        Проверить
+        {commonTexts.check}
       </ActionButton>
       {built ? (
         // Назначение показывается у доступной кнопки; у выключенной подсказку с причиной даёт сама кнопка.
-        <Tooltip title={disabled ? '' : 'Обновить карточки и собрать видео. Текущий результат будет заменён'}>
+        <Tooltip title={disabled ? '' : animaticTexts.header.rebuildHint}>
           <span>
             <DestructiveButton
-              label="Пересобрать"
-              description="Текущий результат сборки будет заменён. После пересборки результат потребуется проверить заново."
-              confirmLabel="Пересобрать"
+              label={animaticTexts.header.rebuild}
+              description={animaticTexts.header.rebuildDescription}
+              confirmLabel={animaticTexts.header.rebuild}
               startIcon={<BuildIcon />}
               size="medium"
               disabled={disabled}
@@ -72,14 +75,14 @@ export function AnimaticHeader({
         </Tooltip>
       ) : (
         <ActionButton
-          title="Обновить карточки и собрать видео"
+          title={animaticTexts.header.buildHint}
           variant="contained"
           startIcon={<BuildIcon />}
           disabled={disabled}
           disabledReason={disabledReason}
           onClick={() => onBuild(false)}
         >
-          Собрать
+          {commonTexts.build}
         </ActionButton>
       )}
     </Box>

@@ -1,3 +1,5 @@
+import { timingTexts } from '@shared/texts/timing';
+import { commonTexts } from '@shared/texts/common';
 import type { ReactElement } from 'react';
 import { Checkbox, IconButton, TableCell, TableRow, TextField, Tooltip } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -38,7 +40,7 @@ export function TimingLineRow({ line, selected, text, prevEnd, nextStart, onSele
           value={line.start}
           min={prevEnd}
           max={line.end - MIN_LENGTH}
-          label={`Начало строки ${line.id}`}
+          label={timingTexts.lineStart({ id: line.id })}
           onCommit={(value) => onUpdate(line.id, { start: value })}
         />
       </TableCell>
@@ -48,7 +50,7 @@ export function TimingLineRow({ line, selected, text, prevEnd, nextStart, onSele
           value={line.end}
           min={line.start + MIN_LENGTH}
           max={nextStart}
-          label={`Конец строки ${line.id}`}
+          label={timingTexts.lineEnd({ id: line.id })}
           onCommit={(value) => onUpdate(line.id, { end: value })}
         />
       </TableCell>
@@ -59,7 +61,7 @@ export function TimingLineRow({ line, selected, text, prevEnd, nextStart, onSele
           color="success"
           checked={!!line.verified}
           onChange={(e) => onUpdate(line.id, { verified: e.target.checked })}
-          slotProps={{ input: { 'aria-label': `Подтвердить на слух строку ${line.id}` } }}
+          slotProps={{ input: { 'aria-label': timingTexts.verifyLine({ id: line.id }) } }}
         />
       </TableCell>
       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -68,21 +70,22 @@ export function TimingLineRow({ line, selected, text, prevEnd, nextStart, onSele
           fullWidth
           value={line.note ?? ''}
           onChange={(e) => onUpdate(line.id, { note: e.target.value })}
-          inputProps={{ 'aria-label': `Примечание к строке ${line.id}`, style: { fontSize: 12 } }}
+          inputProps={{ 'aria-label': timingTexts.lineNote({ id: line.id }), style: { fontSize: 12 } }}
         />
       </TableCell>
       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-        <Tooltip title="Прослушать строку">
-          <IconButton size="small" aria-label="Воспроизвести строку" title="Воспроизвести строку" onClick={() => onPlay(line)}>
+        {/* Подсказкой управляет Tooltip: собственный title кнопки вызывает конфликт в MUI. */}
+        <Tooltip title={timingTexts.listenLine}>
+          <IconButton size="small" aria-label={timingTexts.playLine} onClick={() => onPlay(line)}>
             <PlayArrowIcon fontSize="small" />
           </IconButton>
         </Tooltip>
         <DestructiveButton
           icon
-          label={`Убрать строку ${line.id} из разметки`}
-          description={`Будут удалены временные границы и заметка строки «${text}». Исходный текст песни сохранится.`}
+          label={timingTexts.removeLine({ id: line.id })}
+          description={timingTexts.removeLineDescription({ text })}
           onConfirm={() => onRemove(line.id)}
-          confirmLabel="Убрать"
+          confirmLabel={commonTexts.remove}
         >
           <DeleteOutlineIcon fontSize="small" />
         </DestructiveButton>

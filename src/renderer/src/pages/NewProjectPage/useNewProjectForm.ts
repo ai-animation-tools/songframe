@@ -1,3 +1,4 @@
+import { projectsTexts } from '@shared/texts/projects';
 import { useEffect, useState } from 'react';
 import { joinPath } from '../../format';
 import { slugify } from './helpers';
@@ -48,7 +49,7 @@ export function useNewProjectForm(describeError: (error: unknown) => string) {
   };
 
   const pickParent = async (): Promise<void> => {
-    const parent = await window.api.dialog.pickFolder({ title: 'Где создать папку проекта' });
+    const parent = await window.api.dialog.pickFolder({ title: projectsTexts.chooseParent });
     if (!parent) return;
     changeField('path', joinPath(parent, slugify(name) || 'new-clip'));
   };

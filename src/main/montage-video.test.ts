@@ -20,7 +20,7 @@ afterEach(() => temporary.splice(0).forEach((path) => rmSync(path, { recursive: 
 describe('выгрузка монтажной пробы', () => {
   it('не копирует видео до появления итогового рецепта', async () => {
     const { project, video } = fixture();
-    expect(() => montageVideoPath(project, video)).toThrow('не завершён');
+    expect(() => montageVideoPath(project, video)).toThrow(new Error('Экспорт ещё не завершён: нет рецепта готовой пробы.'));
     await expect(copyMontageVideo(project, video, join(project, 'результат.mp4'))).rejects.toThrow();
   });
 
@@ -38,8 +38,17 @@ describe('выгрузка монтажной пробы', () => {
     mkdirSync(join(project, 'source'));
     const original = join(project, 'source/original.mp4');
     writeFileSync(original, 'исходник');
-    await expect(copyMontageVideo(project, video, original)).rejects.toThrow('Выберите папку');
+    await expect(copyMontageVideo(project, video, original)).rejects.toThrow(
+      new Error('Выберите папку для показа результата вне source, assets и plan: здесь хранятся рабочие материалы проекта.')
+    );
     expect(readFileSync(original, 'utf8')).toBe('исходник');
-    expect(() => montageVideoPath(project, original)).toThrow('не найдена');
+    expect(() => montageVideoPath(project, original)).toThrow(new Error('Готовая видеопроба не найдена. Дождитесь успешного экспорта.'));
   });
+});
+
+it.each([{ video_sha256: 'hash', total_frames: 0 }, { total_frames: 30 }])('не принимает неполное подтверждение экспорта %j', (recipe) => {
+  const { project, video } = fixture();
+  writeFileSync(video.slice(0, -4) + '.json', JSON.stringify(recipe));
+  expect(() => montageVideoPath(project, video)).toThrow(new Error('Нет подтверждения успешной сборки пробы.'));
+  expect(readFileSync(video, 'utf8')).toBe('готовый ролик');
 });

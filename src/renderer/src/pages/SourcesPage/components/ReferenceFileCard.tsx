@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 /** Изображение, описание и его собственный промпт образуют одну строку, чтобы виды не смешивались. */
 import type { ReactElement } from 'react';
 import { Box, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
@@ -33,23 +34,26 @@ export function ReferenceFileCard({ file, referenceName, fileUrl, onUpdate, onRe
         <Box sx={{ position: 'relative' }}>
           <img
             src={src}
-            alt={`${referenceName || 'Референс'} — ${REFERENCE_VIEW_LABELS[file.view]}`}
+            alt={sourcesTexts.referenceImageAlt({ name: referenceName, view: REFERENCE_VIEW_LABELS[file.view] })}
             style={{ width: '100%', height: 150, objectFit: 'contain', borderRadius: 6, display: 'block' }}
           />
           <DestructiveButton
             icon
-            label={`Удалить изображение: ${REFERENCE_VIEW_LABELS[file.view]}`}
-            description={
-              file.sourcePath
-                ? 'Изображение вместе с описанием и промптом будет убрано из референса. Выбранный исходный файл останется на диске.'
-                : 'Изображение вместе с описанием и промптом будет удалено из референса. После сохранения исходников его файл и отдельный промпт также будут удалены из проекта.'
-            }
+            label={sourcesTexts.removeReferenceImage({ view: REFERENCE_VIEW_LABELS[file.view] })}
+            description={file.sourcePath ? sourcesTexts.removeNewReferenceImage : sourcesTexts.removeSavedReferenceImage}
             onConfirm={onRemove}
             sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'background.paper' }}
           >
             <CloseIcon fontSize="inherit" />
           </DestructiveButton>
-          <TextField select fullWidth label="Вид" value={file.view} onChange={(e) => onUpdate({ view: e.target.value as ReferenceView })} sx={{ mt: 1 }}>
+          <TextField
+            select
+            fullWidth
+            label={sourcesTexts.view}
+            value={file.view}
+            onChange={(e) => onUpdate({ view: e.target.value as ReferenceView })}
+            sx={{ mt: 1 }}
+          >
             {(Object.keys(REFERENCE_VIEW_LABELS) as ReferenceView[]).map((v) => (
               <MenuItem key={v} value={v}>
                 {REFERENCE_VIEW_LABELS[v]}
@@ -58,7 +62,7 @@ export function ReferenceFileCard({ file, referenceName, fileUrl, onUpdate, onRe
           </TextField>
           {file.sourcePath ? (
             <Typography variant="caption" color="primary" display="block" noWrap title={file.sourcePath} sx={{ mt: 0.5 }}>
-              новый файл
+              {sourcesTexts.newFile}
             </Typography>
           ) : (
             <Typography variant="caption" color="text.secondary" display="block" noWrap sx={{ mt: 0.5 }}>
@@ -71,10 +75,10 @@ export function ReferenceFileCard({ file, referenceName, fileUrl, onUpdate, onRe
           multiline
           minRows={7}
           maxRows={14}
-          label="Описание изображения"
+          label={sourcesTexts.imageDescription}
           value={file.note}
           onChange={(e) => onUpdate({ note: e.target.value })}
-          placeholder="Особенности именно этого изображения или вида"
+          placeholder={sourcesTexts.imageDescriptionPlaceholder}
         />
         <Stack spacing={1}>
           {file.promptError ? <ReferencePromptError error={file.promptError} onRetry={onRetryPrompt} /> : null}
@@ -83,10 +87,10 @@ export function ReferenceFileCard({ file, referenceName, fileUrl, onUpdate, onRe
             multiline
             minRows={7}
             maxRows={14}
-            label="Промпт этого изображения"
+            label={sourcesTexts.imagePrompt}
             value={file.prompt}
             onChange={(e) => onUpdate({ prompt: e.target.value })}
-            placeholder="Точный текст, которым создано это изображение"
+            placeholder={sourcesTexts.imagePromptPlaceholder}
           />
         </Stack>
       </Box>

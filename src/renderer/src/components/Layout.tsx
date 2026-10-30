@@ -1,5 +1,6 @@
 /** Оболочка: шапка с проектом и темой, боковая навигация по этапам, область страницы. */
 
+import { commonTexts } from '@shared/texts/common';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { PageLoaderArea } from './PageLoader';
 import {
@@ -134,10 +135,12 @@ export function Layout(): ReactElement {
                   size="small"
                   color="inherit"
                   startIcon={<FolderOpenIcon fontSize="small" />}
-                  title={`Открыть папку проекта: ${status.path}`}
-                  aria-label={`Открыть папку проекта: ${status.path}`}
+                  title={commonTexts.shell.openProjectFolder({ path: status.path })}
+                  aria-label={commonTexts.shell.openProjectFolder({ path: status.path })}
                   onClick={() =>
-                    window.api.shell.openPath(status.path).catch((error) => notify(`Не удалось открыть папку проекта: ${describeError(error)}`, 'error'))
+                    window.api.shell
+                      .openPath(status.path)
+                      .catch((error) => notify(commonTexts.shell.openProjectFolderFailed({ reason: describeError(error) }), 'error'))
                   }
                   sx={{ minWidth: 0, maxWidth: '100%', color: 'text.secondary', textTransform: 'none' }}
                 >
@@ -147,16 +150,16 @@ export function Layout(): ReactElement {
                 </Button>
               </>
             ) : (
-              <Chip size="small" variant="outlined" label="Проект не выбран" />
+              <Chip size="small" variant="outlined" label={commonTexts.shell.noProject} />
             )}
           </Box>
-          <Tooltip title={resolved === 'dark' ? 'Светлая тема' : 'Тёмная тема'}>
+          <Tooltip title={resolved === 'dark' ? commonTexts.shell.lightTheme : commonTexts.shell.darkTheme}>
             <Button
               size="small"
               startIcon={resolved === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
               onClick={() => setMode(resolved === 'dark' ? 'light' : 'dark')}
             >
-              {resolved === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+              {resolved === 'dark' ? commonTexts.shell.lightTheme : commonTexts.shell.darkTheme}
             </Button>
           </Tooltip>
         </Toolbar>
@@ -179,7 +182,7 @@ export function Layout(): ReactElement {
                 sx={{ '&.active': { bgcolor: 'action.selected', '& .MuiListItemIcon-root': { color: 'primary.main' } } }}
               >
                 <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.label} secondary={item.stage ? `этап ${item.stage}` : undefined} />
+                <ListItemText primary={item.label} secondary={item.stage ? commonTexts.shell.stage({ stage: item.stage }) : undefined} />
               </ListItemButton>
             );
             return (
@@ -187,10 +190,7 @@ export function Layout(): ReactElement {
                 {index === 1 || item.to === '/settings' ? <Divider sx={{ my: 1 }} /> : null}
                 {/* Недоступный пункт меню объясняет причину при наведении. */}
                 {disabled ? (
-                  <Tooltip
-                    title={item.stage ? `Появится на этапе ${item.stage}` : 'Сначала откройте или создайте проект на странице «Проекты».'}
-                    placement="right"
-                  >
+                  <Tooltip title={item.stage ? commonTexts.shell.availableAtStage({ stage: item.stage }) : commonTexts.shell.selectProject} placement="right">
                     <span>{button}</span>
                   </Tooltip>
                 ) : (

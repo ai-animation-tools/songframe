@@ -1,4 +1,5 @@
 /** Строгая форма ответа агента: пути и технические поля проверяются до изменения пакета. */
+import { productionTexts } from '@shared/texts/production';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import type { ProductionFrameCandidate, ProductionFramePrompt, ProductionPass, ProductionStageProposal } from '@shared/production-workflow';
@@ -8,25 +9,27 @@ import { selectPaidRequest } from './media-providers';
 import { paidAdapter } from './providers';
 import { redact } from './agent-protocol';
 
+const texts = productionTexts.main.proposal;
+
 export const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const text = (value: unknown): value is string => typeof value === 'string' && !!value.trim() && !value.includes('\0');
 function keys(value: Record<string, unknown>, allowed: string[]): void {
-  if (Object.keys(value).some((key) => !allowed.includes(key))) throw new Error('Ответ содержит неизвестные поля.');
+  if (Object.keys(value).some((key) => !allowed.includes(key))) throw new Error(texts.unknownFields);
 }
 export function productionPath(root: string, value: string): string {
-  if (!text(value)) throw new Error('Нужен путь файла.');
+  if (!text(value)) throw new Error(texts.pathRequired);
   const full = resolve(root, value);
   const local = relative(root, full);
-  if (local === '..' || local.startsWith('../') || isAbsolute(local)) throw new Error(`Путь выходит из проекта: ${value}`);
+  if (local === '..' || local.startsWith('../') || isAbsolute(local)) throw new Error(texts.pathOutsideProject({ path: value }));
   // Проверяется и существующий родитель нового файла: ссылка не должна перенаправить запись из проекта.
   let parent = full;
   while (!existsSync(parent)) {
     const next = resolve(parent, '..');
-    if (next === parent) throw new Error('Не найден родитель пути.');
+    if (next === parent) throw new Error(texts.parentMissing);
     parent = next;
   }
   const actual = relative(realpathSync(root), realpathSync(parent));
-  if (actual === '..' || actual.startsWith('../') || isAbsolute(actual)) throw new Error(`Ссылка ведёт за пределы проекта: ${value}`);
+  if (actual === '..' || actual.startsWith('../') || isAbsolute(actual)) throw new Error(texts.linkOutsideProject({ path: value }));
   return full;
 }
 export interface ProposalRules {
@@ -41,29 +44,28 @@ export interface ProposalRules {
   lipSync?: { min: number; max: number } | null;
 }
 export function checkDuration(seconds: number, window: number, rule: DurationRule): void {
-  if (!Number.isInteger(seconds) || seconds <= 0) throw new Error('Длительность запроса должна быть положительным целым числом секунд.');
+  if (!Number.isInteger(seconds) || seconds <= 0) throw new Error(texts.durationPositiveIntegerRequired);
   const valid = rule === 'exact_window' ? seconds === window : rule === 'min_supported_not_less_than_window' ? seconds >= window : seconds > window;
-  if (!valid) throw new Error(`Длительность ${seconds} с нарушает правило ${rule} для окна ${window} с.`);
+  if (!valid) throw new Error(texts.durationRuleViolation({ seconds, rule, window }));
 }
 /** Кандидаты части опор плана: каждая не больше одного раза и в порядке плана. Опоры создаются и импортируются по одной или несколько. */
 export function checkFrameCandidates(value: unknown, prompts: ProductionFramePrompt[]): ProductionFrameCandidate[] {
-  if (!Array.isArray(value) || !value.length) throw new Error('Добавьте изображение хотя бы для одной опоры.');
+  if (!Array.isArray(value) || !value.length) throw new Error(texts.frameImageRequired);
   const order = prompts.map((prompt) => prompt.id);
   let previous = -1;
   return value.map((item) => {
-    if (!record(item)) throw new Error('Неверный кандидат опоры.');
+    if (!record(item)) throw new Error(texts.frameCandidateInvalid);
     keys(item, ['id', 'path']);
     const position = order.indexOf(item.id as string);
-    if (position <= previous || !text(item.path) || !isAbsolute(item.path))
-      throw new Error('Кандидаты должны относиться к неутверждённым опорам плана, без повторов и в порядке плана; нужен абсолютный путь изображения.');
+    if (position <= previous || !text(item.path) || !isAbsolute(item.path)) throw new Error(texts.frameCandidateOrderInvalid);
     previous = position;
     const path = realpathSync(item.path);
-    if (!lstatSync(path).isFile()) throw new Error(`${item.id}: нужен обычный файл изображения.`);
+    if (!lstatSync(path).isFile()) throw new Error(texts.frameFileRequired({ frame: item.id }));
     const bytes = readFileSync(path);
     const png = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
     const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
     const webp = bytes.subarray(0, 4).toString() === 'RIFF' && bytes.subarray(8, 12).toString() === 'WEBP';
-    if (!png && !jpeg && !webp) throw new Error(`${item.id}: требуется PNG, JPEG или WebP.`);
+    if (!png && !jpeg && !webp) throw new Error(texts.frameFormatRequired({ frame: item.id }));
     return { id: item.id as string, path };
   });
 }
@@ -99,7 +101,7 @@ export function isAgentRefusal(raw: string): boolean {
 }
 export function parseProductionProposal(raw: string, rules: ProposalRules): ProductionStageProposal {
   const value: unknown = JSON.parse(raw);
-  if (!record(value) || value.schemaVersion !== 1 || value.stage !== rules.stage) throw new Error('Неверная версия или этап предложения.');
+  if (!record(value) || value.schemaVersion !== 1 || value.stage !== rules.stage) throw new Error(texts.proposalVersionOrStageInvalid);
   if (value.stage === 'description') {
     keys(value, ['schemaVersion', 'stage', 'description', 'requestSeconds', 'keyframes']);
     if (
@@ -109,15 +111,13 @@ export function parseProductionProposal(raw: string, rules: ProposalRules): Prod
       value.keyframes.length < 2 ||
       value.keyframes.length > 20
     )
-      throw new Error('Описание требует текст, длительность и минимум две опоры.');
+      throw new Error(texts.descriptionInvalid);
     checkDuration(value.requestSeconds, rules.windowSeconds, rules.durationRule);
     if (rules.lipSync && (value.requestSeconds < rules.lipSync.min || value.requestSeconds > rules.lipSync.max))
-      throw new Error(
-        `Речевой план: длительность запроса должна быть от ${rules.lipSync.min} до ${rules.lipSync.max} с — столько звука принимает провайдер видео.`
-      );
+      throw new Error(texts.speechDurationRange({ min: rules.lipSync.min, max: rules.lipSync.max }));
     let previous = -1;
     for (const [index, frame] of value.keyframes.entries()) {
-      if (!record(frame)) throw new Error('Неверная структура опоры.');
+      if (!record(frame)) throw new Error(texts.frameStructureInvalid);
       keys(frame, ['id', 'role', 'timeSeconds', 'prompt', 'referencePaths']);
       const role = index === 0 ? 'first' : index === value.keyframes.length - 1 ? 'last' : 'middle';
       if (
@@ -130,13 +130,13 @@ export function parseProductionProposal(raw: string, rules: ProposalRules): Prod
         !Array.isArray(frame.referencePaths) ||
         !frame.referencePaths.every((path) => text(path) && /\.(png|jpe?g|webp)$/i.test(path) && rules.allowedPaths.includes(path))
       )
-        throw new Error('Неверные ID, роли, порядок, промпт или референсы опор.');
+        throw new Error(texts.framePlanInvalid);
       if (
         (role === 'first' && frame.timeSeconds !== 0) ||
         (role === 'last' && frame.timeSeconds !== value.requestSeconds) ||
         frame.timeSeconds > value.requestSeconds
       )
-        throw new Error('Первая опора должна быть на 0, последняя — на границе запроса.');
+        throw new Error(texts.frameBoundariesInvalid);
       previous = frame.timeSeconds;
     }
   } else if (value.stage === 'frames') {
@@ -144,11 +144,11 @@ export function parseProductionProposal(raw: string, rules: ProposalRules): Prod
     value.images = checkFrameCandidates(value.images, rules.framePrompts);
   } else if (value.stage === 'prompt') {
     keys(value, ['schemaVersion', 'stage', 'prompt']);
-    if (!text(value.prompt)) throw new Error('Нужен непустой видеопромпт.');
+    if (!text(value.prompt)) throw new Error(texts.videoPromptRequired);
   } else {
     keys(value, ['schemaVersion', 'stage', 'request']);
     const request = value.request;
-    if (!record(request)) throw new Error('Нужна спецификация запроса.');
+    if (!record(request)) throw new Error(texts.requestSpecificationRequired);
     keys(request, ['model', 'command', 'parameters', 'inputs', 'outputs']);
     // Команды и флаги входов объявляет провайдер: они сверяются с его возможностями в checkProductionCapabilities.
     if (
@@ -160,18 +160,18 @@ export function parseProductionProposal(raw: string, rules: ProposalRules): Prod
       Number(request.outputs) < 1 ||
       Number(request.outputs) > 9
     )
-      throw new Error('Неверная модель, команда, параметры, входы или число результатов.');
+      throw new Error(texts.requestStructureInvalid);
     const reserved = new Set(['model', 'prompt', 'poll', 'quiet', 'q', 'help', 'version', 'base-url', 'credentials', 'token', 'input']);
     if (
       Object.keys(request.parameters).some(
         (name) => !/^[A-Za-z][A-Za-z0-9_-]*$/.test(name) || reserved.has(name) || /token|credential|password|base_url/i.test(name)
       )
     )
-      throw new Error('Недопустимое техническое поле параметров; файлы задаются только через inputs, промпт — сохранённым файлом.');
-    if (request.parameters.duration !== rules.requestSeconds) throw new Error('Длительность запроса отличается от согласованного плана опор.');
+      throw new Error(texts.requestReservedParameter);
+    if (request.parameters.duration !== rules.requestSeconds) throw new Error(texts.requestDurationMismatch);
     if (rules.requestSeconds !== null) checkDuration(rules.requestSeconds, rules.windowSeconds, rules.durationRule);
     for (const input of request.inputs) {
-      if (!record(input)) throw new Error('Неверный вход запроса.');
+      if (!record(input)) throw new Error(texts.requestInputInvalid);
       keys(input, ['flag', 'slot', 'path', 'role']);
       if (
         !text(input.flag) ||
@@ -180,7 +180,7 @@ export function parseProductionProposal(raw: string, rules: ProposalRules): Prod
         (input.slot !== undefined && !text(input.slot)) ||
         (input.role !== undefined && !text(input.role))
       )
-        throw new Error('Вход запроса должен ссылаться на объявленный исходник или утверждённую опору.');
+        throw new Error(texts.requestInputPathInvalid);
       productionPath(rules.project, input.path);
     }
   }
@@ -215,13 +215,12 @@ export function checkProductionCapabilities(
       : []
   );
   const adapter = paidAdapter(settings.provider);
-  if (!adapter) throw new Error(`Для провайдера видео ${mediaProviderTitle(settings.provider, 'не указан')} не подключён исполнитель запроса.`);
+  if (!adapter) throw new Error(texts.videoAdapterMissing({ provider: mediaProviderTitle(settings.provider, texts.providerUnspecified) }));
   // Короткие флаги входов объявляет адаптер провайдера; файл нельзя передать параметром под именем флага.
   const flags = Object.keys(adapter.rules.inputFlags);
-  if (Object.keys(proposal.request.parameters).some((name) => flags.includes(name)))
-    throw new Error('Недопустимое техническое поле параметров; файлы задаются только через inputs, промпт — сохранённым файлом.');
+  if (Object.keys(proposal.request.parameters).some((name) => flags.includes(name))) throw new Error(texts.requestReservedParameter);
   const unknownFlag = proposal.request.inputs.find((input) => input.flag !== 'input' && !flags.includes(input.flag));
-  if (unknownFlag) throw new Error(`Неизвестный флаг входа ${unknownFlag.flag}; допустимы input и ${flags.join(', ')}.`);
+  if (unknownFlag) throw new Error(texts.inputFlagUnknown({ flag: unknownFlag.flag, flags: flags.join(', ') }));
   const caps: MediaCapabilities = {
     provider: adapter.id,
     kind: 'video',
@@ -238,6 +237,7 @@ export function checkProductionCapabilities(
       workDir: rules.project,
       shot: '',
       kind: 'video',
+      // eslint-disable-next-line no-restricted-syntax -- Служебный промпт проверки совместимости передаётся адаптеру; это не сообщение интерфейса.
       prompt: 'Проверка совместимости запроса.',
       ...proposal.request,
       preferredModel: typeof settings.model === 'string' ? settings.model : null,

@@ -1,3 +1,4 @@
+import { timingTexts } from '@shared/texts/timing';
 /** Команда для терминала с копированием точного текста без выделения мышью. */
 import type { ReactElement } from 'react';
 import { Box, Button, Stack } from '@mui/material';
@@ -9,7 +10,7 @@ export function TerminalCommand({ command }: { command: string }): ReactElement 
   const copy = async (): Promise<void> => {
     try {
       await navigator.clipboard.writeText(command);
-      notify('Команда скопирована', 'success');
+      notify(timingTexts.commandCopied, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     }
@@ -21,7 +22,7 @@ export function TerminalCommand({ command }: { command: string }): ReactElement 
         {command}
       </Box>
       <Button size="small" startIcon={<ContentCopyIcon />} onClick={copy} sx={{ m: 0.5 }}>
-        Копировать команду
+        {timingTexts.copyCommand}
       </Button>
     </Stack>
   );

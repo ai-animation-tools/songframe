@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { OpenShotState } from '../types';
 import type { ReactElement } from 'react';
 import { Box, Table, TableCell, TableHead, TableRow } from '@mui/material';
@@ -25,9 +26,9 @@ export function BriefComparisonTable({
       <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 560, '& tbody:last-of-type tr:last-of-type > *': { borderBottom: 0 } }}>
         <TableHead>
           <TableRow>
-            <TableCell sx={{ width: '24%' }}>Свойство</TableCell>
-            <TableCell>Первый кадр {shot}</TableCell>
-            <TableCell>Последний кадр {shot}</TableCell>
+            <TableCell sx={{ width: '24%' }}>{scenarioTexts.fields.property}</TableCell>
+            <TableCell>{scenarioTexts.brief.firstShotFrame({ shot })}</TableCell>
+            <TableCell>{scenarioTexts.brief.lastShotFrame({ shot })}</TableCell>
           </TableRow>
         </TableHead>
         {entities.map((entity) => (

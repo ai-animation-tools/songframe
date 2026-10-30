@@ -4,6 +4,7 @@
  * Рядом с <id>.log лежит <id>.json со сведениями без текста лога: журнал заданий переживает перезапуск и сбой программы.
  */
 
+import { jobsTexts } from '@shared/texts/jobs';
 import { appendFileSync, closeSync, existsSync, fstatSync, mkdirSync, openSync, readdirSync, readSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { JOB_INTERRUPTED_MESSAGE, type JobInfo, type JobKind, type JobStepInfo } from '@shared/types';
@@ -67,11 +68,14 @@ export function loadSavedJobs(directory: string, limit = SAVED_JOBS_LIMIT, now =
     if (!id) continue;
     const file = join(directory, name);
     try {
+      // eslint-disable-next-line no-restricted-syntax -- Внутренняя причина отказа чтения перехватывается ниже и не попадает в UI.
       if (statSync(file).size > 1024 * 1024) throw new Error('размер');
       const saved = readLocalJson<unknown>(file);
+      // eslint-disable-next-line no-restricted-syntax -- Внутренняя причина отказа чтения перехватывается ниже и не попадает в UI.
       if (!isJobInfo(saved, id)) throw new Error('формат');
       jobs.push({ ...saved, log: '', previousSession: true });
     } catch {
+      // eslint-disable-next-line no-restricted-syntax -- Служебный журнал пропуска повреждённой записи остаётся у загрузчика истории.
       console.warn(`Не удалось прочитать сведения задания ${file}; файл пропущен.`);
     }
   }
@@ -97,6 +101,7 @@ function saveJob(directory: string, job: JobInfo): void {
   try {
     writeLocalJson(join(directory, `${job.id}.json`), info);
   } catch (error) {
+    // eslint-disable-next-line no-restricted-syntax -- Служебный журнал сбоя сохранения не относится к каталогу UI.
     console.warn(`Не удалось сохранить сведения задания: ${(error as Error).message}`);
   }
 }
@@ -169,7 +174,7 @@ export class Jobs {
 
   /** Запускает шаги по очереди; падение обязательного шага завершает задание как неудачное. */
   start(kind: JobKind, title: string, project: string | null, steps: Step[]): JobInfo {
-    if (!this.toolsRoot) throw new Error('Корень комплекса не найден: инструменты недоступны.');
+    if (!this.toolsRoot) throw new Error(jobsTexts.main.toolsUnavailable);
     this.launcher.runtime();
     this.counter += 1;
     const id = `${Date.now().toString(36)}-${this.counter}`;
@@ -202,10 +207,11 @@ export class Jobs {
         const result = await this.launcher.run(project, step.tool, step.args, { onOutput: write, timeoutMs: step.timeoutMs ?? 2 * 60 * 60 * 1000 });
         const code = result.code ?? -1;
         // Причина берётся из вывода именно этого шага: последующие шаги могут затереть хвост журнала.
-        const error = result.stderr.trim() || result.stdout.trim() || `Шаг «${step.label ?? step.tool}» завершился с кодом ${code}.`;
+        const error = result.stderr.trim() || result.stdout.trim() || jobsTexts.main.stepFailed({ label: step.label ?? step.tool, code });
         return { code, ...(code !== 0 ? { error: error.slice(-ERROR_LIMIT) } : {}) };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        // eslint-disable-next-line no-restricted-syntax -- Запись журнала запуска остаётся у исполнителя шагов.
         write(`\nОшибка запуска: ${message}\n`);
         return { code: -1, error: message.slice(-ERROR_LIMIT) };
       }
@@ -223,9 +229,11 @@ export class Jobs {
           if (failed === null) job.error = error;
           failed = failed ?? code;
           if (step.stop !== false) {
+            // eslint-disable-next-line no-restricted-syntax -- Запись журнала остановки остаётся у исполнителя шагов.
             write(`\nШаг «${step.label ?? step.tool}» завершился с кодом ${code}; задание остановлено.\n`);
             break;
           }
+          // eslint-disable-next-line no-restricted-syntax -- Запись журнала завершения остаётся у исполнителя шагов.
           write(`\nШаг «${step.label ?? step.tool}» завершился с кодом ${code}.\n`);
         }
       }
@@ -238,6 +246,7 @@ export class Jobs {
           // Отдельная копия защищает историю и остальных подписчиков от изменений снимка.
           listener(structuredClone(job), project);
         } catch {
+          // eslint-disable-next-line no-restricted-syntax -- Служебный журнал доставки события не относится к каталогу UI.
           console.warn('Не удалось доставить завершение задания подписчику.');
         }
       }

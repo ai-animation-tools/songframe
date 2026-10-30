@@ -18,6 +18,7 @@ import type {
   VideoGenerationSettings
 } from '@shared/types';
 import { DURATION_RULES } from '@shared/types';
+import { checksTexts } from '@shared/texts/checks';
 import type { Jobs, Step } from './jobs';
 import { writeLocalJson } from './local-files';
 import { checkedBuiltOutput } from './built-output-path';
@@ -33,36 +34,36 @@ function readJson<T>(path: string): T | null {
 export const CHECKS: CheckInfo[] = [
   {
     id: 'lint',
-    label: 'Данные сцен',
-    description: 'Проверить формат реестра сцен, комплектов и рабочих пакетов. Постановка, исходники и результаты должны храниться в отведённых им файлах.',
+    label: checksTexts.sceneDataLabel,
+    description: checksTexts.sceneDataDescription,
     tool: 'lint_registry',
     needsScenes: true
   },
   {
     id: 'views',
-    label: 'Карточки и списки',
-    description: 'Проверить, что монтажный список, раскадровка, карточки и список принятых материалов соответствуют реестру сцен.',
+    label: checksTexts.viewsLabel,
+    description: checksTexts.viewsDescription,
     tool: 'update_scene_views',
     needsScenes: true
   },
   {
     id: 'assets',
-    label: 'Комплекты сцен',
-    description: 'Проверить сохранность файлов принятых сцен и совпадение длительности монтажа с данными о приёмке.',
+    label: checksTexts.assetsLabel,
+    description: checksTexts.assetsDescription,
     tool: 'check_assets',
     needsScenes: true
   },
   {
     id: 'workspace',
-    label: 'Порядок в папке проекта',
-    description: 'Найти лишние рабочие пакеты, карточки и пустые папки, оставшиеся после приёмки сцен.',
+    label: checksTexts.workspaceLabel,
+    description: checksTexts.workspaceDescription,
     tool: 'check_workspace',
     needsScenes: true
   },
   {
     id: 'status',
-    label: 'Статусы планов',
-    description: 'Показать готовые планы, текущие попытки и очередь согласования. Помогает выбрать следующий план для работы.',
+    label: checksTexts.statusLabel,
+    description: checksTexts.statusDescription,
     tool: 'shot_status',
     needsScenes: true
   }
@@ -72,7 +73,7 @@ const SHOT_ID = /^M\d{2}(?:\.\d+)?$/;
 
 export function checkStep(id: CheckId, options: CheckOptions = {}): Step {
   const info = CHECKS.find((c) => c.id === id);
-  if (!info) throw new Error(`Неизвестная проверка: ${id}`);
+  if (!info) throw new Error(checksTexts.unknownCheck(id));
   const args: string[] = [];
   if (id === 'lint' && options.strict) args.push('--strict');
   if (id === 'views') args.push('--check');
@@ -99,30 +100,30 @@ export class Checks {
 
   run(project: string, id: CheckId, options: CheckOptions = {}): JobInfo {
     const step = checkStep(id, options);
-    return this.jobs.start('check', `Проверка: ${step.label}`, project, [step]);
+    return this.jobs.start('check', checksTexts.checkJobTitle(step.label), project, [step]);
   }
 
   /** Все проверки одним заданием: неудача одной не отменяет остальные, но делает задание неудачным. */
   runAll(project: string, options: CheckOptions = {}): JobInfo {
     const steps = CHECKS.map((c) => ({ ...checkStep(c.id, options), stop: false }));
-    return this.jobs.start('check', 'Все проверки', project, steps);
+    return this.jobs.start('check', checksTexts.allChecksJobTitle, project, steps);
   }
 
   updateViews(project: string): JobInfo {
-    return this.jobs.start('tool', 'Обновление карточек и списков', project, [
-      { tool: 'update_scene_views', args: [], label: 'Обновление карточек и списков' }
+    return this.jobs.start('tool', checksTexts.updateViewsJobTitle, project, [
+      { tool: 'update_scene_views', args: [], label: checksTexts.updateViewsJobTitle }
     ]);
   }
 
   buildReview(project: string, options: ReviewOptions): JobInfo {
     const shots = options.shots.map((s) => s.trim()).filter(Boolean);
-    if (!shots.length) throw new Error('Выберите хотя бы один план для пробы.');
+    if (!shots.length) throw new Error(checksTexts.reviewShotsRequired);
     const bad = shots.filter((s) => !SHOT_ID.test(s));
-    if (bad.length) throw new Error(`Коды планов вида M05 или M05.1: ${bad.join(', ')}`);
+    if (bad.length) throw new Error(checksTexts.invalidReviewShots(bad));
     const output = reviewOutput(project, shots);
     const args = ['--shots', ...shots, '--output', output, ...(options.planOnly ? ['--plan-only'] : [])];
-    const job = this.jobs.start('review', `Проба ${shots.join(' ')}${options.planOnly ? ' (проверка без видео)' : ''}`, project, [
-      { tool: 'build_review', args, label: options.planOnly ? 'Проверка пробы без видео' : 'Сборка пробы стыков' }
+    const job = this.jobs.start('review', checksTexts.reviewJobTitle({ shots, planOnly: options.planOnly }), project, [
+      { tool: 'build_review', args, label: options.planOnly ? checksTexts.checkReviewStep : checksTexts.buildReviewStep }
     ]);
     this.reviewJobs.set(resolve(output), job.id);
     return job;
@@ -131,9 +132,9 @@ export class Checks {
   /** Проба может лежать рядом с рабочими материалами: удаляем только её MP4 и одноимённый рецепт. */
   removeReview(project: string, path: string): void {
     const video = checkedBuiltOutput(project, path, 'file');
-    if (this.jobs.get(this.reviewJobs.get(video) ?? '')?.status === 'running') throw new Error('Проба ещё собирается. Дождитесь завершения задания.');
+    if (this.jobs.get(this.reviewJobs.get(video) ?? '')?.status === 'running') throw new Error(checksTexts.reviewStillBuilding);
     const review = listReviews(project).find((item) => resolve(item.video) === video);
-    if (!review) throw new Error('Собранная проба не найдена. Обновите список.');
+    if (!review) throw new Error(checksTexts.reviewNotFound);
     const manifest = checkedBuiltOutput(project, review.manifest, 'file');
     unlinkSync(video);
     unlinkSync(manifest);
@@ -178,9 +179,9 @@ function readProjectFile(project: string): Record<string, unknown> {
   try {
     data = JSON.parse(readFileSync(path, 'utf-8'));
   } catch (error) {
-    throw new Error(`Не удалось прочитать ${PROJECT_FILE}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+    throw new Error(checksTexts.projectReadFailed({ path: PROJECT_FILE, error: error instanceof Error ? error.message : String(error) }), { cause: error });
   }
-  if (typeof data !== 'object' || data === null || Array.isArray(data)) throw new Error(`${PROJECT_FILE} должен быть объектом.`);
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) throw new Error(checksTexts.projectObjectRequired(PROJECT_FILE));
   return data as Record<string, unknown>;
 }
 
@@ -210,45 +211,43 @@ export function readProjectSettings(project: string): ProjectSettings {
 /** Структурные правила совпадают с scene_registry; готовность провайдера проверяется отдельно для каждого медиа. */
 export function validateProjectSettings(settings: ProjectSettings): string[] {
   const problems: string[] = [];
-  if (!settings.name.trim()) problems.push('Название проекта не может быть пустым.');
-  if (!/^[\w.-]+\.mp4$/.test(settings.animaticVideo) || settings.animaticVideo.startsWith('.'))
-    problems.push('Имя MP4 аниматика: буквы, цифры, точки и дефисы, без пути к папке, с расширением .mp4.');
+  if (!settings.name.trim()) problems.push(checksTexts.projectNameRequired);
+  if (!/^[\w.-]+\.mp4$/.test(settings.animaticVideo) || settings.animaticVideo.startsWith('.')) problems.push(checksTexts.animaticFilenameInvalid);
   const g = settings.generation;
   if (!g) return problems;
   for (const kind of ['video', 'image'] as const) {
     const block = g[kind];
     if (block === null || block === undefined) continue;
-    const prefix = `generation.${kind}: `;
     if (!isRecord(block)) {
-      problems.push(`${prefix}ожидается объект настроек.`);
+      problems.push(checksTexts.generationObjectRequired(kind));
       continue;
     }
     const required = kind === 'video' ? ['provider', 'resolution', 'aspect_ratio', 'duration_rule'] : ['provider'];
     for (const field of required) {
-      if (typeof block[field] !== 'string' || !(block[field] as string).trim()) problems.push(`${prefix}не заполнено поле ${field}.`);
+      if (typeof block[field] !== 'string' || !(block[field] as string).trim()) problems.push(checksTexts.generationFieldRequired({ kind, field }));
     }
     // IPC сохраняет ключи со значением undefined: для необязательных полей это
     // явное удаление настройки, которое mergeSettings сохраняет до записи JSON.
     for (const field of ['resolution', 'aspect_ratio', 'model']) {
       if (block[field] !== undefined && (typeof block[field] !== 'string' || !(block[field] as string).trim()) && !required.includes(field))
-        problems.push(`${prefix}${field} должен быть непустой строкой.`);
+        problems.push(checksTexts.generationStringRequired({ kind, field }));
     }
     // auto сохраняется для обоих медиа; поддержку конкретной моделью проверяет подготовка запроса.
     if (
       block.aspect_ratio !== undefined &&
       (typeof block.aspect_ratio !== 'string' || (!/^\d+:\d+$/.test(block.aspect_ratio) && block.aspect_ratio !== 'auto'))
     )
-      problems.push(`${prefix}пропорции записываются как 16:9 или auto.`);
+      problems.push(checksTexts.generationAspectRatioInvalid(kind));
     if ((kind === 'video' || block.watermark !== undefined) && typeof block.watermark !== 'boolean')
-      problems.push(`${prefix}watermark должен быть логическим значением.`);
+      problems.push(checksTexts.generationWatermarkInvalid(kind));
     if (kind === 'video' && !DURATION_RULES.includes(block.duration_rule as VideoGenerationSettings['duration_rule']))
-      problems.push(`${prefix}правило длительности должно быть одним из: ${DURATION_RULES.join(', ')}.`);
+      problems.push(checksTexts.generationDurationRuleInvalid({ kind, rules: DURATION_RULES }));
     // Имя провайдера без маркера не подтверждает явный выбор пользователя.
     if (block.provider_selected !== undefined && typeof block.provider_selected !== 'boolean')
-      problems.push(`${prefix}provider_selected должен быть логическим значением.`);
-    if (block.options !== undefined && !isRecord(block.options)) problems.push(`${prefix}options должен быть объектом.`);
+      problems.push(checksTexts.generationProviderSelectedInvalid(kind));
+    if (block.options !== undefined && !isRecord(block.options)) problems.push(checksTexts.generationOptionsInvalid(kind));
     if (kind === 'image' && block.outputs !== undefined && (!Number.isInteger(block.outputs) || Number(block.outputs) < 1))
-      problems.push(`${prefix}outputs должен быть положительным целым числом.`);
+      problems.push(checksTexts.generationOutputsInvalid(kind));
   }
   return problems;
 }

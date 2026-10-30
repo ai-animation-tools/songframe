@@ -1,3 +1,5 @@
+import { projectTexts } from '@shared/texts/project';
+import { commonTexts } from '@shared/texts/common';
 /** Отдельное переименование не требует заполнения настроек генерации. */
 import { useState, type ReactElement } from 'react';
 import { Alert, Box, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
@@ -23,7 +25,7 @@ export function ProjectRenameDialog({ project, name, onClose }: Props): ReactEle
     try {
       await window.api.projects.rename(project, value);
       await refresh();
-      notify('Проект переименован', 'success');
+      notify(projectTexts.rename.done, 'success');
       onClose();
     } catch (reason) {
       setError(describeError(reason));
@@ -40,18 +42,18 @@ export function ProjectRenameDialog({ project, name, onClose }: Props): ReactEle
           if (!busy && value.trim() && value.trim() !== name) void save();
         }}
       >
-        <DialogTitle>Переименовать проект</DialogTitle>
+        <DialogTitle>{projectTexts.rename.title}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             required
             fullWidth
-            label="Название проекта"
+            label={projectTexts.rename.name}
             value={value}
             disabled={busy}
             onChange={(event) => setValue(event.target.value)}
             sx={{ mt: 1 }}
-            helperText="Папка проекта и имя MP4 останутся прежними."
+            helperText={projectTexts.rename.help}
           />
           {error && (
             <Alert severity="error" sx={{ mt: 2 }}>
@@ -60,19 +62,17 @@ export function ProjectRenameDialog({ project, name, onClose }: Props): ReactEle
           )}
         </DialogContent>
         <DialogActions>
-          <ActionButton startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy} disabledReason="Дождитесь окончания переименования.">
-            Отмена
+          <ActionButton startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy} disabledReason={projectTexts.rename.wait}>
+            {commonTexts.cancel}
           </ActionButton>
           <ActionButton
             type="submit"
             startIcon={<SaveIcon />}
             variant="contained"
             disabled={busy || !value.trim() || value.trim() === name}
-            disabledReason={
-              busy ? 'Дождитесь окончания переименования.' : !value.trim() ? 'Введите название проекта.' : 'Введите новое название: оно совпадает с текущим.'
-            }
+            disabledReason={busy ? projectTexts.rename.wait : !value.trim() ? projectTexts.rename.nameRequired : projectTexts.rename.nameUnchanged}
           >
-            {busy ? 'Сохранение' : 'Сохранить'}
+            {busy ? commonTexts.saving : commonTexts.save}
           </ActionButton>
         </DialogActions>
       </Box>

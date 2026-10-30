@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Пакет подготовлен по прежней постановке плана: объясняет выбор и даёт оставить пакет для текущей постановки. */
 import { useState, type ReactElement } from 'react';
 import { Alert, Box } from '@mui/material';
@@ -26,7 +27,7 @@ export function PackageSceneChanged({
   const sent = !!pkg.request && pkg.request.attemptStatus !== 'prepared';
   return (
     <Alert severity="warning" sx={{ mb: 1 }}>
-      {SCENE_CHANGED} Пока это не решено, опоры, промпт и отправка для пакета недоступны.
+      {productionTexts.packageSceneChanged.blockedDescription({ reason: SCENE_CHANGED })}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
         <ActionButton
           size="small"
@@ -34,20 +35,20 @@ export function PackageSceneChanged({
           color="warning"
           startIcon={<TaskAltIcon />}
           disabled={busy || sent}
-          disabledReason={busy ? busyReason : 'Попытка уже отправлялась по прежней постановке: подготовьте новый пакет.'}
+          disabledReason={busy ? busyReason : productionTexts.packageSceneChanged.sentReason}
           onClick={() => setConfirm(true)}
         >
-          Оставить пакет для текущей постановки
+          {productionTexts.packageSceneChanged.retain}
         </ActionButton>
         <ActionButton size="small" startIcon={<EditNoteIcon />} disabled={busy} disabledReason={busyReason} onClick={onOpenRevision}>
-          Доработать описание
+          {productionTexts.packageSceneChanged.revise}
         </ActionButton>
       </Box>
       <ConfirmationDialog
         open={confirm}
-        title="Оставить пакет для текущей постановки?"
-        description="Описание, опоры, видеопромпт и подготовленный запрос останутся как есть и будут считаться соответствующими текущему сценарию плана. Выбирайте это, если правка сценария их не меняет: например, сокращены формулировки или исправлена опечатка. Если изменились действие, положение героев или их состояние в кадре, лучше доработать описание."
-        confirmLabel="Оставить пакет"
+        title={productionTexts.packageSceneChanged.confirmTitle}
+        description={productionTexts.packageSceneChanged.description}
+        confirmLabel={productionTexts.packageSceneChanged.confirm}
         confirmColor="warning"
         onClose={() => setConfirm(false)}
         onConfirm={() => {

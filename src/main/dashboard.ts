@@ -5,6 +5,9 @@
  * Ничего не пишет: это чтение файлов и переиспользование резолвера состояния.
  */
 
+import { scenesTexts } from '@shared/texts/scenes';
+import { commonTexts } from '@shared/texts/common';
+import { productionTexts } from '@shared/texts/production';
 import { FPS } from '@shared/video';
 import { mediaProviderTitles } from '@shared/media-providers';
 import { existsSync, readFileSync } from 'node:fs';
@@ -88,7 +91,13 @@ function readAsset(project: string, sid: string, fps: number): DashboardShot['as
     video: descriptorPath(project, dir, edit.video),
     original: descriptorPath(project, dir, generation.original),
     originalMedia: media
-      ? `${media.width ?? '?'}×${media.height ?? '?'}, ${media.r_frame_rate ?? '?'} кадр/с, ${media.nb_frames ?? '?'} кадров, ${Number(media.duration ?? 0).toFixed(2)} с`
+      ? scenesTexts.main.originalMedia({
+          width: media.width ?? '?',
+          height: media.height ?? '?',
+          rate: media.r_frame_rate ?? '?',
+          frames: media.nb_frames ?? '?',
+          duration: Number(media.duration ?? 0).toFixed(2)
+        })
       : null,
     edit: {
       frames: Number(edit.frames ?? 0),
@@ -114,7 +123,7 @@ export function viewDashboard(project: string, toolsRoot: string | null): Dashbo
     return {
       shots: [],
       summary: { total: 0, completed: 0, stale: 0, progress: 0, planned: 0, duration: 0, completedSeconds: 0 },
-      problems: ['Сначала нужен сценарий. Создайте его на странице «Сценарий».']
+      problems: [commonTexts.scenario.requiredForWork]
     };
   // Частота кадров принадлежит реестру сцен (schema требует 30), приложение её не выбирает и не хранит отдельно.
   const fps = Number(scenes.fps) || FPS;
@@ -136,7 +145,7 @@ export function viewDashboard(project: string, toolsRoot: string | null): Dashbo
       const end = body.indexOf('');
       return { state: result.state, lines: end === -1 ? body : body.slice(0, end), checklist: result.checklist };
     } catch (error) {
-      problems.push(`${sid}: состояние не вычислено: ${error instanceof Error ? error.message : String(error)}`);
+      problems.push(scenesTexts.main.stateFailed({ shot: sid, reason: error instanceof Error ? error.message : String(error) }));
       return null;
     }
   };
@@ -148,7 +157,7 @@ export function viewDashboard(project: string, toolsRoot: string | null): Dashbo
     const latest = packages[0] ?? null;
     const card = join(project, 'plan', 'animatic', 'cards', `${scene.id}.png`);
     const keyframes = asset?.inputs.length
-      ? asset.inputs.map((i) => ({ imagePath: i.path, label: i.role || 'вход запроса', approved: true }))
+      ? asset.inputs.map((i) => ({ imagePath: i.path, label: i.role || scenesTexts.main.requestInput, approved: true }))
       : (latest?.keyframes ?? [])
           .filter((k) => k.imagePath)
           .map((k) => ({ imagePath: k.imagePath!, label: `${k.id} · ${k.role}${k.note ? ` · ${k.note}` : ''}`, approved: k.approved }));
@@ -172,7 +181,7 @@ export function viewDashboard(project: string, toolsRoot: string | null): Dashbo
       lipsync: scene.lipsync,
       references,
       state: prod?.state ?? 'planned',
-      stageLabel: prod?.stageLabel ?? 'постановка есть, работа не начата',
+      stageLabel: prod?.stageLabel ?? productionTexts.main.package.notStarted,
       asset,
       package: latest
         ? {

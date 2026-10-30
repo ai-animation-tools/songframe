@@ -34,6 +34,7 @@ describe('Фоновая загрузка модели', () => {
     const { jobs, run, pending } = harness();
     const job = startWhisperDownload(jobs, 'medium');
     expect(job.status).toBe('running');
+    expect(job.title).toBe('Загрузка модели medium');
     const directory = join(work, 'songframe/models/faster-whisper-medium');
     expect(job.modelDownload).toEqual({ model: 'medium', directory });
     await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
@@ -80,7 +81,7 @@ describe('Фоновая загрузка модели', () => {
 
   it('не создаёт задание для неизвестной модели', () => {
     const { jobs, run } = harness();
-    expect(() => startWhisperDownload(jobs, '../unknown')).toThrow('поддерживаемую модель');
+    expect(() => startWhisperDownload(jobs, '../unknown')).toThrow('Выберите поддерживаемую модель распознавания.');
     expect(jobs.list()).toHaveLength(0);
     expect(run).not.toHaveBeenCalled();
   });

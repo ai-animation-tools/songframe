@@ -1,3 +1,5 @@
+import { commonTexts } from '@shared/texts/common';
+import { montageTexts } from '@shared/texts/montage';
 import { Close, FileDownload } from '@mui/icons-material';
 import { useState, type ReactElement } from 'react';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
@@ -20,11 +22,11 @@ export function MontageExportDialog({
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Готовая проба MP4</DialogTitle>
+      <DialogTitle>{montageTexts.exportTitle}</DialogTitle>
       <DialogContent>
         {failedUrl === url ? (
           <Alert severity="error" sx={{ mb: 1 }}>
-            Не удалось воспроизвести готовую пробу. Проверьте, что файл доступен в папке проекта.
+            {montageTexts.exportPlaybackFailed}
           </Alert>
         ) : null}
         {open ? (
@@ -33,22 +35,22 @@ export function MontageExportDialog({
             src={url}
             controls
             preload="metadata"
-            aria-label="Готовая проба MP4"
+            aria-label={montageTexts.exportTitle}
             onError={() => setFailedUrl(url)}
             sx={{ display: 'block', width: '100%', maxHeight: '65vh', bgcolor: '#000' }}
           />
         ) : null}
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-          Экспорт содержит состояние монтажа на момент запуска задания.
+          {montageTexts.exportSnapshot}
         </Typography>
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
         <Button startIcon={<Close />} onClick={onClose}>
-          Закрыть
+          {commonTexts.close}
         </Button>
         <Box sx={{ flex: 1 }} />
-        <ActionButton variant="contained" startIcon={<FileDownload />} disabled={busy} disabledReason="Дождитесь завершения текущей операции." onClick={onSave}>
-          Сохранить MP4 как
+        <ActionButton variant="contained" startIcon={<FileDownload />} disabled={busy} disabledReason={commonTexts.operationPending} onClick={onSave}>
+          {montageTexts.saveVideoAs}
         </ActionButton>
       </DialogActions>
     </Dialog>

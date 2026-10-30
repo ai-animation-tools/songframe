@@ -1,3 +1,5 @@
+import { settingsTexts } from '@shared/texts/settings';
+import { commonTexts } from '@shared/texts/common';
 /** Поля глобального выбора агента; пустой выбор сохраняет работу приложения без CLI. */
 import type { ReactElement } from 'react';
 import { Autocomplete, createFilterOptions, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Stack, TextField, Typography } from '@mui/material';
@@ -39,7 +41,7 @@ export function AgentSettingsForm({
   return (
     <Stack spacing={2}>
       <FormControl disabled={disabled}>
-        <FormLabel id="agent-provider">Агент</FormLabel>
+        <FormLabel id="agent-provider">{settingsTexts.agent}</FormLabel>
         <RadioGroup
           row
           aria-labelledby="agent-provider"
@@ -49,7 +51,7 @@ export function AgentSettingsForm({
             else onChange(null);
           }}
         >
-          <FormControlLabel value="" control={<Radio />} label="Без агента" />
+          <FormControlLabel value="" control={<Radio />} label={settingsTexts.withoutAgent} />
           {AGENT_PROVIDER_IDS.map((provider) => {
             // Пока идёт проверка, вариант недоступен; ненайденный агент выбрать нельзя.
             const missing = installed?.[provider] === false;
@@ -59,13 +61,13 @@ export function AgentSettingsForm({
                 value={provider}
                 control={<Radio />}
                 disabled={!installed || missing}
-                title={missing ? `${AGENT_PROVIDERS[provider].title} не найден на компьютере` : undefined}
+                title={missing ? settingsTexts.agentMissing(AGENT_PROVIDERS[provider].title) : undefined}
                 label={
                   <Stack component="span" direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
                     <AgentIcon provider={provider} monochrome={missing} /> <span>{AGENT_PROVIDERS[provider].title}</span>
                     {missing ? (
                       <Typography component="span" variant="caption" color="text.secondary">
-                        не найден
+                        {settingsTexts.missingAgent}
                       </Typography>
                     ) : null}
                   </Stack>
@@ -83,7 +85,7 @@ export function AgentSettingsForm({
           value={selected}
           inputValue={model}
           loading={modelsLoading}
-          loadingText="Чтение каталога моделей"
+          loadingText={settingsTexts.modelsLoading}
           disabled={disabled || fieldsDisabled}
           filterOptions={filterModels}
           getOptionLabel={(option) => (typeof option === 'string' ? option : option.id)}
@@ -98,10 +100,7 @@ export function AgentSettingsForm({
             return (
               <li key={key} {...rest}>
                 <Stack sx={{ minWidth: 0 }}>
-                  <Typography variant="body2">
-                    {option.label}
-                    {option.isDefault ? ' · по умолчанию' : ''}
-                  </Typography>
+                  <Typography variant="body2">{option.isDefault ? settingsTexts.defaultModel(option.label) : option.label}</Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>
                     {option.id}
                     {option.description ? ` — ${option.description}` : ''}
@@ -110,13 +109,7 @@ export function AgentSettingsForm({
               </li>
             );
           }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Модель"
-              helperText={modelsMessage ?? 'Пусто — модель по умолчанию агента. Выберите из списка или введите название вручную.'}
-            />
-          )}
+          renderInput={(params) => <TextField {...params} label={commonTexts.model} helperText={modelsMessage ?? settingsTexts.modelHint} />}
         />
       ) : null}
     </Stack>

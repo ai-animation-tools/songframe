@@ -1,5 +1,8 @@
 /** Панель проверок: инструменты комплекса, проба стыков и текущие результаты. */
 
+import { checksTexts } from '@shared/texts/checks';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
 import { Alert, Box, Button, Stack, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -12,27 +15,23 @@ import { LinkedText } from '../../components/LinkedText';
 export function ChecksPage(): ReactElement {
   const page = useChecksPage();
   // Причины блокировки общие для проверок и пробы; показываются в подсказках выключенных кнопок.
-  const toolsReason = !page.pythonAvailable
-    ? 'Нужен Python: проверьте его на странице «Среда».'
-    : page.running
-      ? 'Дождитесь окончания текущего задания.'
-      : null;
-  const checksReason = toolsReason ?? (!page.scenesReady ? 'Сначала соберите реестр сцен.' : null);
+  const toolsReason = !page.pythonAvailable ? checksTexts.pythonRequired : page.running ? checksTexts.jobPending : null;
+  const checksReason = toolsReason ?? (!page.scenesReady ? checksTexts.scenesRequired : null);
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
       <PageActionBar>
-        <Typography variant="h5">Проверки</Typography>
+        <Typography variant="h5">{navigationTexts.pages.checks}</Typography>
         {/* Индикатор задания стоит в закреплённой панели, чтобы был виден при любой прокрутке. */}
         <JobStatus running={page.running} />
         <Box sx={{ flex: 1 }} />
         <Button startIcon={<RefreshIcon />} onClick={() => Promise.all([page.loadJobs(), page.loadReviews()])}>
-          Обновить
+          {commonTexts.refresh}
         </Button>
       </PageActionBar>
       {!page.pythonAvailable ? (
         <Alert severity="warning">
-          <LinkedText text="Python не найден: проверки и проба недоступны. См. страницу «Среда»." />
+          <LinkedText text={checksTexts.pythonUnavailable} />
         </Alert>
       ) : null}
       {/* Независимые проверки и проба стыков стоят рядом, когда рабочая область достаточно широка. */}

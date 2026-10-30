@@ -1,3 +1,4 @@
+import { timingTexts } from '@shared/texts/timing';
 import type { ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Slider, Stack, Typography } from '@mui/material';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -54,38 +55,46 @@ export function TimingPlayer({ player, lines, stickyTop }: TimingPlayerProps): R
       <audio key={trackUrl} ref={audioRef} src={trackUrl ?? undefined} preload="auto" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 1 }}>
         <Button onClick={togglePlay} color="primary" startIcon={playing ? <PauseIcon /> : <PlayArrowIcon />}>
-          {playing ? 'Пауза' : 'Воспроизвести'}
+          {playing ? timingTexts.pause : timingTexts.play}
         </Button>
         <Typography sx={{ fontFamily: 'monospace', minWidth: 72 }}>{formatClock(time)}</Typography>
         <Typography variant="caption" color="text.secondary">
-          из {formatClock(duration)}
+          {timingTexts.totalDuration({ duration: formatClock(duration) })}
         </Typography>
         <Stack direction="row" spacing={1} alignItems="center">
           <VolumeUpIcon fontSize="small" color="action" />
           <Typography variant="caption" color="text.secondary">
-            Громкость
+            {timingTexts.volume}
           </Typography>
           <Slider
-            aria-label="Громкость"
+            aria-label={timingTexts.volume}
             size="small"
             min={0}
             max={100}
             value={Math.round(volume * 100)}
             onChange={(_event, value) => setVolume((value as number) / 100)}
             valueLabelDisplay="auto"
-            valueLabelFormat={(value) => `${value}%`}
-            getAriaValueText={(value) => `${value}%`}
+            valueLabelFormat={(value) => timingTexts.volumePercent({ value })}
+            getAriaValueText={(value) => timingTexts.volumePercent({ value })}
             sx={{ width: 110 }}
           />
           <Typography variant="caption" sx={{ minWidth: 32 }}>
-            {Math.round(volume * 100)}%
+            {timingTexts.volumePercent({ value: Math.round(volume * 100) })}
           </Typography>
         </Stack>
         <Box sx={{ flex: 1 }} />
         <Typography variant="caption" color="text.secondary">
-          масштаб
+          {timingTexts.scale}
         </Typography>
-        <Slider aria-label="Масштаб шкалы" size="small" min={8} max={400} value={pps} onChange={(_e, v) => setPps(v as number)} sx={{ width: 160 }} />
+        <Slider
+          aria-label={timingTexts.timelineScale}
+          size="small"
+          min={8}
+          max={400}
+          value={pps}
+          onChange={(_e, v) => setPps(v as number)}
+          sx={{ width: 160 }}
+        />
       </Box>
       <Box
         ref={scrollRef}
@@ -122,12 +131,11 @@ export function TimingPlayer({ player, lines, stickyTop }: TimingPlayerProps): R
         </Alert>
       ) : !peaks ? (
         <Typography variant="caption" color="text.secondary">
-          Загрузка волны…
+          {timingTexts.loadingWaveform}
         </Typography>
       ) : null}
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-        Клик по волне ставит плейхед, тянуть за край строки меняет границу, за середину двигает строку, двойной клик проигрывает строку. Клавиши: пробел пауза,
-        Enter строка, [ и ] перенос границы к плейхеду, стрелки выбор, V подтверждение, Ctrl и колесо масштаб.
+        {timingTexts.waveformHelp}
       </Typography>
     </Paper>
   );

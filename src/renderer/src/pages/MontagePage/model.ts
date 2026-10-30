@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { FPS } from '@shared/video';
 import type { MontageClip, MontageDraft, MontageSource, MontageView } from '@shared/montage';
 
@@ -102,7 +103,7 @@ export function initialDraft(view: MontageView, selected: string[], trackPath: s
   const start = scenes[0]?.startFrame ?? 0;
   return {
     schema_version: 1,
-    name: 'Монтажная проба',
+    name: montageTexts.defaultName,
     audio: { path: trackPath, start_frame: start, end_frame_exclusive: scenes.at(-1)?.endFrame ?? start },
     clips,
     base_scenes_sha256: view.scenesSha256,

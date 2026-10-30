@@ -1,4 +1,6 @@
+import { environmentTexts } from '@shared/texts/environment';
 import type { ReactElement } from 'react';
+import { SlottedText } from '../../../components/SlottedText';
 import { Box, Button, Chip, CircularProgress, Link, ListItem, ListItemIcon, ListItemText, Stack, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -47,12 +49,12 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
     : login.offline
       ? OFFLINE_MESSAGE
       : !completed
-        ? 'Дождитесь окончания проверки среды.'
+        ? environmentTexts.waitForEnvironment
         : !check.ok
-          ? 'Сначала устраните проблему, указанную в этой строке, и повторите проверку.'
+          ? environmentTexts.fixCheckProblem
           : login.status === 'checking'
-            ? 'Дождитесь окончания проверки входа.'
-            : 'Повторите проверку среды кнопкой «Проверить».';
+            ? environmentTexts.waitForAuth
+            : environmentTexts.repeatEnvironment;
   return (
     // id строки совпадает с id провайдера из реестра: ссылка «на странице «Среда»» прокручивает к ней.
     <ListItem divider alignItems="flex-start" data-anchor={check.id}>
@@ -60,7 +62,7 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
         {pending ? (
           <ScheduleIcon color="disabled" />
         ) : running ? (
-          <CircularProgress size={20} aria-label={`${check.label}: выполняется проверка`} />
+          <CircularProgress size={20} aria-label={environmentTexts.checking(check.label)} />
         ) : check.ok ? (
           <CheckCircleIcon color="success" />
         ) : category !== 'core' ? (
@@ -73,7 +75,9 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
           <ErrorIcon color="error" />
         )}
       </ListItemIcon>
+      {/* Действия входа содержат блочный Stack: стандартный абзац secondary не может быть их родителем. */}
       <ListItemText
+        slotProps={{ secondary: { component: 'div' } }}
         primary={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Typography fontWeight={600}>{check.label}</Typography>
@@ -83,12 +87,12 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
                 variant="outlined"
                 label={
                   check.bundled
-                    ? 'в поставке'
+                    ? environmentTexts.bundled
                     : category === 'external'
-                      ? 'внешняя программа'
+                      ? environmentTexts.external
                       : category === 'model'
-                        ? 'выбирается при разметке'
-                        : 'для разработки'
+                        ? environmentTexts.chosenDuringTiming
+                        : environmentTexts.development
                 }
               />
             ) : null}
@@ -97,10 +101,10 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
         secondary={
           <>
             <Typography variant="body2" component="span" display="block">
-              {pending ? 'Ожидает проверки' : running ? 'Проверка выполняется' : check.detail}
+              {pending ? environmentTexts.pending : running ? environmentTexts.running : check.detail}
               {completed && check.elapsedMs !== undefined && (
                 <Typography variant="caption" component="span" color="text.secondary" sx={{ ml: 1, whiteSpace: 'nowrap' }}>
-                  · {(check.elapsedMs / 1000).toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} с
+                  {environmentTexts.checkElapsed((check.elapsedMs / 1000).toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }))}
                 </Typography>
               )}
             </Typography>
@@ -114,23 +118,26 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
                 {completed && check.ok && login.status !== 'checking' && (
                   <Typography variant="caption" component="span" display="block" color={login.status === 'unknown' ? 'error' : 'text.secondary'}>
                     {login.status === 'unknown'
-                      ? login.message || 'Не удалось определить, выполнен ли вход. Повторите проверку.'
+                      ? login.message || environmentTexts.authUnknown
                       : login.status === 'authenticated'
-                        ? 'Вход выполнен.'
-                        : 'Вход не выполнен.'}
+                        ? environmentTexts.authenticated
+                        : environmentTexts.unauthenticated}
                   </Typography>
                 )}
                 {login.loggingIn && (
                   <Typography variant="caption" component="span" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Страница входа открыта в браузере; приложение ждёт подтверждения до 5 минут.{' '}
+                    {environmentTexts.loginWaiting}
                     {login.authorizeUrl ? (
-                      <>
-                        Если браузер не открылся,{' '}
-                        <Link href={login.authorizeUrl} target="_blank" rel="noreferrer">
-                          откройте страницу входа
-                        </Link>
-                        .
-                      </>
+                      <SlottedText
+                        text={environmentTexts.browserNotOpened}
+                        slots={{
+                          link: (
+                            <Link href={login.authorizeUrl} target="_blank" rel="noreferrer">
+                              {environmentTexts.openLogin}
+                            </Link>
+                          )
+                        }}
+                      />
                     ) : null}
                   </Typography>
                 )}
@@ -145,16 +152,16 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
                     disabledReason={loginReason}
                   >
                     {login.status === 'checking'
-                      ? 'Проверка входа'
+                      ? environmentTexts.checkingLogin
                       : login.status === 'authenticated'
-                        ? 'Сменить аккаунт'
+                        ? environmentTexts.changeAccount
                         : login.status === 'unauthenticated'
-                          ? 'Войти'
-                          : 'Проверить вход'}
+                          ? environmentTexts.login
+                          : environmentTexts.checkLogin}
                   </ActionButton>
                   {login.loggingIn && login.onCancel ? (
                     <Button size="small" startIcon={<CloseIcon />} onClick={login.onCancel}>
-                      Отменить вход
+                      {environmentTexts.cancelLogin}
                     </Button>
                   ) : null}
                 </Stack>

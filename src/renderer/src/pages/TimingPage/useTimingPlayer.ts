@@ -246,6 +246,7 @@ export function useTimingPlayer({
       } else if (event.key === ']' && current) {
         const { nextStart } = neighbours(current.id, linesRef.current, duration);
         updateLine(current.id, { end: round(Math.min(nextStart, Math.max(current.start + MIN_LENGTH, audioRef.current?.currentTime ?? 0))) });
+        // eslint-disable-next-line no-restricted-syntax -- Физическая горячая клавиша в русской раскладке, а не текст интерфейса.
       } else if ((event.key === 'v' || event.key === 'м') && current) {
         updateLine(current.id, { verified: !current.verified });
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {

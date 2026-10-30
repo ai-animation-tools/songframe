@@ -1,3 +1,6 @@
+import { projectTexts } from '@shared/texts/project';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 /** Предпочтения видео сохраняются отдельно от возможностей провайдера перед запросом. */
 
 import AddIcon from '@mui/icons-material/Add';
@@ -37,7 +40,8 @@ export function VideoGenerationSettings({
   const models = capabilitiesReady ? capabilities.models : [];
   const availableModels = modelOptions(models, 'video', value?.provider);
   const modelChoices = ['', ...availableModels];
-  const defaultModelLabel = (providerSelected ? mediaProviderInfo(value?.provider, 'video')?.defaultModelLabel : null) ?? 'Автоматически по задаче';
+  const defaultModelLabel =
+    (providerSelected ? mediaProviderInfo(value?.provider, 'video')?.defaultModelLabel : null) ?? projectTexts.generation.automaticModel;
   const savedTitle = mediaProviderInfo(value?.provider, 'video')?.title ?? value?.provider;
   // Сохранённый ID остаётся видимым, но не становится доступной моделью без подтверждения CLI.
   if (value?.model && !availableModels.includes(value.model)) modelChoices.push(value.model);
@@ -63,17 +67,17 @@ export function VideoGenerationSettings({
   return (
     <Paper component="section" variant="outlined" data-anchor={ANCHORS.projectVideoGeneration} sx={{ p: 2, minWidth: 0 }}>
       <Stack spacing={1} sx={{ minWidth: 0 }}>
-        <Typography variant="subtitle2">Генерация видео</Typography>
+        <Typography variant="subtitle2">{navigationTexts.blocks.projectVideoGeneration}</Typography>
         {!value ? (
-          <Alert severity="info">Предпочтения видео не заданы. Добавьте их перед подготовкой видео.</Alert>
+          <Alert severity="info">{projectTexts.generation.videoMissing}</Alert>
         ) : (
           <>
             <Typography variant="caption" color="text.secondary">
-              Параметры ниже — предпочтения проекта. Исполнитель подбирает доступную модель под требования запроса.
+              {projectTexts.generation.videoPreferences}
             </Typography>
             {!providerSelected && value.provider && (
               <Typography variant="caption" color="text.secondary">
-                Сохранённый провайдер: {savedTitle}. Для запуска выберите его в меню и сохраните настройки.
+                {projectTexts.generation.savedProvider({ provider: savedTitle ?? '' })}
               </Typography>
             )}
             <Box
@@ -90,13 +94,13 @@ export function VideoGenerationSettings({
               <TextField
                 select
                 id="video-generation-provider"
-                label="Провайдер видео"
+                label={projectTexts.generation.videoProvider}
                 error={providerError}
                 helperText={
                   emptyUnselected
-                    ? 'Провайдер не выбран. Сохранение оставит генерацию отключённой.'
+                    ? projectTexts.generation.providerUnselected
                     : providerError || !providerSelected
-                      ? 'Выберите провайдера видео и сохраните настройки.'
+                      ? projectTexts.generation.chooseVideoProvider
                       : undefined
                 }
                 value={providerSelected ? value.provider : ''}
@@ -110,9 +114,9 @@ export function VideoGenerationSettings({
                 }}
                 size="small"
               >
-                <MenuItem value="">Не выбрано</MenuItem>
+                <MenuItem value="">{commonTexts.notSelected}</MenuItem>
                 {value.provider && !isMediaProvider(value.provider, 'video') && (
-                  <MenuItem value={value.provider}>{value.provider || 'Не задано'} (из файла)</MenuItem>
+                  <MenuItem value={value.provider}>{projectTexts.generation.fromFile(value.provider || commonTexts.notSpecified)}</MenuItem>
                 )}
                 {mediaProvidersFor('video').map((id) => (
                   <MenuItem key={id} value={id}>
@@ -123,7 +127,7 @@ export function VideoGenerationSettings({
               <TextField
                 select
                 id="video-generation-model"
-                label="Предпочтительная модель видео"
+                label={projectTexts.generation.preferredVideoModel}
                 error={modelError}
                 value={value.model ?? ''}
                 onChange={(event) => {
@@ -138,19 +142,20 @@ export function VideoGenerationSettings({
                   select: {
                     displayEmpty: true,
                     // Закрытое поле остаётся однострочным, команды видны только в меню.
-                    renderValue: () => (value.model ? `${value.model}${availableModels.includes(value.model) ? '' : ' (недоступна)'}` : defaultModelLabel)
+                    renderValue: () =>
+                      value.model
+                        ? projectTexts.generation.modelChoice({ model: value.model, available: availableModels.includes(value.model) })
+                        : defaultModelLabel
                   }
                 }}
-                helperText={
-                  modelError
-                    ? `Модель ${value.model} недоступна у провайдера. Выберите доступную или автоматический подбор модели.`
-                    : 'Автоматически — подбор по требованиям задачи. Выбранная модель — предпочтение; несовместимая будет заменена с объяснением при согласовании.'
-                }
+                helperText={modelError ? projectTexts.generation.modelUnavailable({ model: value.model }) : projectTexts.generation.modelHelp}
               >
                 {modelChoices.map((id) => (
                   <MenuItem key={id} value={id} disabled={Boolean(id) && !availableModels.includes(id)}>
                     <Box>
-                      <Typography variant="body2">{id ? `${id}${availableModels.includes(id) ? '' : ' (недоступна)'}` : defaultModelLabel}</Typography>
+                      <Typography variant="body2">
+                        {id ? projectTexts.generation.modelChoice({ model: id, available: availableModels.includes(id) }) : defaultModelLabel}
+                      </Typography>
                       {availableModels.includes(id) && (
                         <Typography variant="caption" color="text.secondary">
                           {Array.from(new Set(models.filter((model) => model.id === id).map((model) => model.command))).join(', ')}
@@ -162,22 +167,22 @@ export function VideoGenerationSettings({
               </TextField>
               <TextField
                 select
-                label="Разрешение видео"
+                label={projectTexts.generation.videoResolution}
                 value={value.resolution}
                 onChange={(event) => patch({ resolution: event.target.value })}
                 size="small"
                 error={resolutionError}
                 helperText={
                   !value.resolution.trim()
-                    ? 'Выберите разрешение видео.'
+                    ? projectTexts.generation.chooseVideoResolution
                     : resolutionError
-                      ? `Разрешение ${value.resolution} не поддерживается ${value.model ? 'предпочтительной моделью' : 'доступными моделями'}. Выберите доступное или автоматический подбор модели.`
-                      : 'Разрешения выбранной модели; при автоматическом подборе — всех доступных моделей.'
+                      ? projectTexts.generation.resolutionUnsupported({ resolution: value.resolution, preferredModel: Boolean(value.model) })
+                      : projectTexts.generation.videoResolutionHelp
                 }
               >
                 {!resolutions.includes(value.resolution) && (
                   <MenuItem value={value.resolution} disabled>
-                    {value.resolution || 'Не задано'} (недоступно для модели)
+                    {projectTexts.generation.resolutionUnavailable(value.resolution || commonTexts.notSpecified)}
                   </MenuItem>
                 )}
                 {resolutions.map((resolution) => (
@@ -189,7 +194,7 @@ export function VideoGenerationSettings({
               <TextField
                 select
                 id="video-generation-aspect-ratio"
-                label="Пропорции видео"
+                label={projectTexts.generation.videoAspect}
                 error={aspectError}
                 value={selectedAspect}
                 onChange={(event) => patch({ aspect_ratio: event.target.value })}
@@ -197,18 +202,18 @@ export function VideoGenerationSettings({
                 slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}
                 helperText={
                   !selectedAspect.trim()
-                    ? 'Выберите пропорции видео.'
+                    ? projectTexts.generation.chooseVideoAspect
                     : aspectError
-                      ? `Пропорции ${selectedAspect} не поддерживаются ${value.model ? 'предпочтительной моделью' : 'доступными моделями'}. Выберите доступное или автоматический подбор модели.`
-                      : 'Пропорции выбранной модели; при автоматическом подборе — всех доступных моделей.'
+                      ? projectTexts.generation.aspectUnsupported({ aspect: selectedAspect, preferredModel: Boolean(value.model) })
+                      : projectTexts.generation.videoAspectHelp
                 }
               >
                 <MenuItem value="" disabled>
-                  Выберите пропорции
+                  {projectTexts.generation.chooseAspect}
                 </MenuItem>
                 {selectedAspect && !aspects.includes(selectedAspect) && (
                   <MenuItem value={selectedAspect} disabled>
-                    {selectedAspect} (недоступны для модели)
+                    {projectTexts.generation.aspectUnavailable(selectedAspect)}
                   </MenuItem>
                 )}
                 {aspects.map((aspect) => (
@@ -219,16 +224,16 @@ export function VideoGenerationSettings({
               </TextField>
               <TextField
                 select
-                label="Правило длительности"
+                label={projectTexts.generation.durationRule}
                 error={durationError}
                 value={value.duration_rule}
                 onChange={(event) => patch({ duration_rule: event.target.value as Settings['duration_rule'] })}
                 size="small"
                 sx={{ gridColumn: '1 / -1' }}
-                helperText={durationError ? 'Выберите известное правило длительности.' : 'Как выбирать длительность запроса относительно окна сцены на шкале'}
+                helperText={durationError ? projectTexts.generation.chooseDurationRule : projectTexts.generation.durationRuleHelp}
               >
                 {!DURATION_RULES.includes(value.duration_rule) && (
-                  <MenuItem value={value.duration_rule}>{value.duration_rule || 'Не задано'} (из файла)</MenuItem>
+                  <MenuItem value={value.duration_rule}>{projectTexts.generation.fromFile(value.duration_rule || commonTexts.notSpecified)}</MenuItem>
                 )}
                 {DURATION_RULES.map((rule) => (
                   <MenuItem key={rule} value={rule}>
@@ -245,7 +250,7 @@ export function VideoGenerationSettings({
         )}
         {!value && (
           <Button size="small" variant="outlined" color="success" startIcon={<AddIcon />} onClick={onAdd} sx={{ alignSelf: 'start' }}>
-            Добавить
+            {commonTexts.add}
           </Button>
         )}
       </Stack>

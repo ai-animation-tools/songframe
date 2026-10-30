@@ -11,6 +11,33 @@ const payload = () => ({
 const response = (value: unknown = payload()): ToolResult => ({ code: 0, stdout: JSON.stringify(value), stderr: '', command: 'тест' });
 
 describe('единый каталог платного провайдера', () => {
+  it.each([
+    { value: null, expected: 'Сервис «QA»\n<1> вернул неверное объявление возможностей.' },
+    {
+      value: {
+        reports: [
+          { command: 'text_to_image', models: {} },
+          { command: 'text_to_image', models: {} }
+        ],
+        problems: []
+      },
+      expected: 'Сервис «QA»\n<1> вернул неверный состав команд возможностей.'
+    }
+  ])('сохраняет полную ошибку каталога и название сервиса: $expected', async ({ value, expected }) => {
+    await expect(readMediaCatalog({ run: vi.fn(async () => response(value)) }, '/project', 'Сервис «QA»\n<1>', 'image')).rejects.toThrowError(
+      new Error(expected)
+    );
+  });
+
+  it('сохраняет fallback отказа сервиса и приоритет внешнего stderr дословно', async () => {
+    for (const [stderr, expected] of [
+      ['  ', 'Сервис «QA»\n<1> не подтвердил возможности.'],
+      ['  Отказ «QA»\n<1>  ', 'Отказ «QA»\n<1>']
+    ]) {
+      const launcher = { run: vi.fn(async () => ({ code: 1, stdout: '', stderr, command: '' })) };
+      await expect(readMediaCatalog(launcher, '/project', 'Сервис «QA»\n<1>', 'image')).rejects.toThrowError(new Error(expected));
+    }
+  });
   it('объединяет одновременные панели одного вида медиа и повтор эффекта', async () => {
     let finish!: (value: ToolResult) => void;
     const launcher = {

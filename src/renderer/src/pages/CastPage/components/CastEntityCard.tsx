@@ -1,3 +1,4 @@
+import { castTexts } from '@shared/texts/cast';
 import type { ReactElement } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Avatar, Box, Chip, Stack, TextField, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -60,7 +61,7 @@ export function CastEntityCard({
           </Avatar>
           {/* Имя и код не сжимаются, пока помещаются; при нехватке места обрезается роль справа. */}
           <Typography fontWeight={600} noWrap title={entity.name || undefined} sx={{ flexShrink: 0, maxWidth: '40%' }}>
-            {entity.name || '(без названия)'}
+            {entity.name || castTexts.unnamedEntity}
           </Typography>
           <Chip
             size="small"
@@ -76,7 +77,7 @@ export function CastEntityCard({
           </Typography>
           <Chip
             size="small"
-            label={stateCount ? `состояние: ${stateCount}` : 'без состояния'}
+            label={stateCount ? castTexts.stateCount({ count: stateCount }) : castTexts.noState}
             color={stateCount ? 'default' : 'warning'}
             variant="outlined"
             sx={{ flexShrink: 0 }}
@@ -86,26 +87,21 @@ export function CastEntityCard({
       <AccordionDetails>
         <Stack spacing={2}>
           <CastEntityIdentityFields entity={entity} entities={entities} kinds={kinds} onUpdate={onUpdate} onRename={onRename} />
+          <TextField label={castTexts.role} value={entity.role} onChange={(e) => onUpdate({ role: e.target.value })} placeholder={castTexts.rolePlaceholder} />
           <TextField
-            label="Роль в сюжете"
-            value={entity.role}
-            onChange={(e) => onUpdate({ role: e.target.value })}
-            placeholder="главный герой и рассказчик; самоуверенный водитель"
-          />
-          <TextField
-            label="Внешность и неизменные правила"
+            label={castTexts.appearance}
             multiline
             minRows={2}
             value={entity.appearance}
             onChange={(e) => onUpdate({ appearance: e.target.value })}
-            placeholder={entity.kind === WORLD ? 'Общие условия клипа, которые не меняются' : 'Только то, что видно на референсах и следует из идеи'}
+            placeholder={entity.kind === WORLD ? castTexts.worldAppearancePlaceholder : castTexts.appearancePlaceholder}
           />
           {entity.kind !== WORLD ? (
             <CastEntityImages images={entity.images} imagePaths={imagePaths} imageOptions={imageOptions} onChange={(images) => onUpdate({ images })} />
           ) : null}
           <Box>
             <Typography variant="subtitle2" gutterBottom>
-              Начальное состояние (до первого события сюжета)
+              {castTexts.initialState}
             </Typography>
             <StateEditor
               properties={properties}
@@ -116,10 +112,10 @@ export function CastEntityCard({
           <Box>
             {/* Мир сцены обязателен для состояния сцены: выключенная кнопка объясняет причину. */}
             <DestructiveButton
-              label={`Удалить сущность «${entity.name || entity.id}»`}
-              description="Сущность и её настройки будут удалены из состава проекта."
+              label={castTexts.removeEntity({ name: entity.name || entity.id })}
+              description={castTexts.removeEntityDescription}
               disabled={entity.kind === WORLD}
-              disabledReason="Мир сцены нельзя удалить: в нём хранятся общие условия сцен."
+              disabledReason={castTexts.worldCannotBeRemoved}
               onConfirm={onRemove}
               startIcon={<DeleteOutlineIcon />}
             />

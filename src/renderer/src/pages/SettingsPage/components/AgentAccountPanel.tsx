@@ -1,3 +1,6 @@
+import { settingsTexts } from '@shared/texts/settings';
+import { commonTexts } from '@shared/texts/common';
+import { technicalTexts } from '@shared/texts/technical';
 /** Показываем только подтверждённые CLI поля; неизвестные значения не подменяем предположениями о подписке. */
 import type { ReactElement } from 'react';
 import { Alert, Box, Divider, LinearProgress, Link, Stack, Typography, type Theme } from '@mui/material';
@@ -8,7 +11,7 @@ import { AGENT_PROVIDERS, type AgentProvider } from '@shared/agent-providers';
 import { formatDateTime } from '../../../format';
 import { ActionButton } from '../../../components/ActionButton';
 
-const unknown = 'Не удалось уточнить';
+const unknown = settingsTexts.unknownAccount;
 const percent = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
 // Общая сетка сохраняет одну вертикаль значений аккаунта и всех показателей лимитов.
 const fieldRowSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'minmax(140px, 0.65fr) minmax(0, 1fr)' }, columnGap: 2 };
@@ -25,10 +28,10 @@ const toneColor = { warning: (theme: Theme) => theme.palette.warning[theme.palet
 
 /** Порог считается от использованной доли: от 75% лимит заканчивается, от 90% почти исчерпан. */
 function remaining(usedPercent: number): Pick<AccountField, 'value' | 'tone'> {
-  const value = `${percent.format(100 - usedPercent)}%`;
-  if (usedPercent >= 100) return { value: `${value} (Лимит исчерпан)`, tone: 'error' };
-  if (usedPercent >= 90) return { value: `${value} (Лимит почти исчерпан)`, tone: 'error' };
-  if (usedPercent >= 75) return { value: `${value} (Лимит заканчивается)`, tone: 'warning' };
+  const value = technicalTexts.percent(percent.format(100 - usedPercent));
+  if (usedPercent >= 100) return { value: settingsTexts.limitExhausted(value), tone: 'error' };
+  if (usedPercent >= 90) return { value: settingsTexts.limitAlmostExhausted(value), tone: 'error' };
+  if (usedPercent >= 75) return { value: settingsTexts.limitRunningOut(value), tone: 'warning' };
   return { value };
 }
 
@@ -52,34 +55,36 @@ interface Props {
 
 export function AgentAccountPanel({ provider, result, loading, failed, disabled, disabledReason, onRefresh }: Props): ReactElement {
   const available = result?.diagnostic.availability === 'available';
-  const authorization = result ? { authenticated: 'Вход выполнен', unauthenticated: 'Вход не выполнен', unknown }[result.diagnostic.authorization] : unknown;
+  const authorization = result
+    ? { authenticated: settingsTexts.authenticated, unauthenticated: settingsTexts.unauthenticated, unknown }[result.diagnostic.authorization]
+    : unknown;
   const fields: AccountField[] =
     available && result
       ? [
-          { label: 'Вход', value: authorization, ...(result.diagnostic.authorization === 'unauthenticated' ? { tone: 'error' as const } : {}) },
-          { label: 'Аккаунт (email)', value: result.email },
-          { label: 'Организация', value: result.organization },
-          { label: 'Способ входа', value: result.authenticationMethod },
-          { label: 'Тариф', value: result.plan },
-          { label: 'Статус подписки', value: result.subscriptionStatus },
-          { label: 'Срок подписки', value: date(result.subscriptionExpiresAt) },
-          { label: 'Кредиты', value: result.credits }
+          { label: settingsTexts.login, value: authorization, ...(result.diagnostic.authorization === 'unauthenticated' ? { tone: 'error' as const } : {}) },
+          { label: settingsTexts.email, value: result.email },
+          { label: settingsTexts.organization, value: result.organization },
+          { label: settingsTexts.authenticationMethod, value: result.authenticationMethod },
+          { label: settingsTexts.plan, value: result.plan },
+          { label: settingsTexts.subscriptionStatus, value: result.subscriptionStatus },
+          { label: settingsTexts.subscriptionExpires, value: date(result.subscriptionExpiresAt) },
+          { label: settingsTexts.credits, value: result.credits }
         ]
       : [];
   const limitGroups: AccountField[][] = result?.limits?.length
     ? result.limits.map((limit) => [
-        { label: 'Лимит', value: limit.label },
-        { label: 'Использовано', value: `${percent.format(limit.usedPercent)}%` },
+        { label: settingsTexts.limit, value: limit.label },
+        { label: settingsTexts.used, value: technicalTexts.percent(percent.format(limit.usedPercent)) },
         // Цвет дублируется текстом пометки; неизвестные показатели остаются нейтральными.
-        { label: 'Осталось', ...remaining(limit.usedPercent) },
-        { label: 'Окно', value: limit.windowMinutes === null ? unknown : `${limit.windowMinutes} мин` },
-        { label: 'Сброс', value: date(limit.resetsAt) }
+        { label: settingsTexts.remaining, ...remaining(limit.usedPercent) },
+        { label: settingsTexts.window, value: limit.windowMinutes === null ? unknown : settingsTexts.minutes(limit.windowMinutes) },
+        { label: settingsTexts.resets, value: date(limit.resetsAt) }
       ])
-    : [[{ label: 'Лимит', value: unknown }]];
+    : [[{ label: settingsTexts.limit, value: unknown }]];
   return (
     <Stack spacing={1.5}>
       <Divider />
-      <Typography fontWeight={600}>Аккаунт и лимиты</Typography>
+      <Typography fontWeight={600}>{settingsTexts.accountTitle}</Typography>
       {/* Ссылка открывается во внешнем браузере; там видны полные сведения подписки, которые CLI может не отдавать. */}
       <Link
         href={AGENT_PROVIDERS[provider].accountUrl}
@@ -87,23 +92,23 @@ export function AgentAccountPanel({ provider, result, loading, failed, disabled,
         rel="noreferrer"
         sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, alignSelf: 'flex-start' }}
       >
-        Личный кабинет {AGENT_PROVIDERS[provider].title}
+        {settingsTexts.accountLink(AGENT_PROVIDERS[provider].title)}
         <OpenInNewIcon fontSize="inherit" aria-hidden="true" />
       </Link>
       <Typography variant="body2" color="text.secondary">
-        Сведения относятся к выбранному агенту и его текущему входу. Чтение не сохраняет форму и не запускает генерацию.
+        {settingsTexts.accountExplanation}
       </Typography>
-      {loading && <LinearProgress aria-label="Чтение аккаунта" />}
+      {loading && <LinearProgress aria-label={settingsTexts.readingAccount} />}
       {failed && <Alert severity="warning">{unknown}</Alert>}
       {/* message формируется приложением; служебный diagnostic.message здесь не выводим. */}
       {!loading && result && (result.message || result.usageAllowed === false) && (
         <Alert severity={result.usageAllowed === false ? 'error' : 'warning'}>
-          {result.message || `${AGENT_PROVIDERS[provider].title} сообщает об ограничении использования.`}
+          {result.message || settingsTexts.usageRestricted(AGENT_PROVIDERS[provider].title)}
         </Alert>
       )}
       {!loading && result && !available && (
         <Typography variant="body2" role="status">
-          Аккаунт не прочитан: {`${AGENT_PROVIDERS[provider].title} ${result.diagnostic.availability === 'not_found' ? 'не найден' : 'недоступен'}`}.
+          {settingsTexts.accountUnavailable({ name: AGENT_PROVIDERS[provider].title, missing: result.diagnostic.availability === 'not_found' })}
         </Typography>
       )}
       {!loading && available && result && (
@@ -121,7 +126,7 @@ export function AgentAccountPanel({ provider, result, loading, failed, disabled,
             ))}
           </Box>
           <Typography variant="body2" fontWeight={600}>
-            Лимиты
+            {settingsTexts.limits}
           </Typography>
           {limitGroups.map((group, index) => (
             <Box component="dl" key={index} sx={fieldListSx}>
@@ -138,7 +143,7 @@ export function AgentAccountPanel({ provider, result, loading, failed, disabled,
             </Box>
           ))}
           <Typography variant="caption" color="text.secondary">
-            Проверено: {date(result.checkedAt)}
+            {settingsTexts.checkedAt(date(result.checkedAt))}
           </Typography>
         </Stack>
       )}
@@ -146,10 +151,10 @@ export function AgentAccountPanel({ provider, result, loading, failed, disabled,
         sx={{ alignSelf: 'flex-start' }}
         startIcon={<RefreshIcon />}
         disabled={disabled || loading}
-        disabledReason={(disabled ? disabledReason : null) ?? (loading ? 'Дождитесь окончания чтения аккаунта.' : null)}
+        disabledReason={(disabled ? disabledReason : null) ?? (loading ? settingsTexts.waitForAccount : null)}
         onClick={onRefresh}
       >
-        Обновить
+        {commonTexts.refresh}
       </ActionButton>
     </Stack>
   );

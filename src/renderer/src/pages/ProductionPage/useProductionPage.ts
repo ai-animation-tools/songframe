@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Состояние производства и действия выбранного пакета; платная отправка требует подтверждения снимка. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -163,7 +164,9 @@ export function useProductionPage() {
         setFilter((current) => (current === 'queued' ? 'all' : current));
       }
       notify(
-        job.status === 'failed' ? `${job.title}: ${job.error ?? `завершилось с кодом ${job.code}`}` : `${job.title}: выполнено.`,
+        job.status === 'failed'
+          ? productionTexts.useProductionPage.jobFailed({ title: job.title, error: job.error, code: job.code })
+          : productionTexts.useProductionPage.jobDone({ title: job.title }),
         job.status === 'failed' ? 'error' : 'success'
       );
     }
@@ -208,7 +211,7 @@ export function useProductionPage() {
     const current = projectScope.capture(project);
     if (!current()) return;
     const key = operationKey(dir, shotId);
-    setOperations((current) => ({ ...current, [key]: { running: true, label: 'Запуск действия…' } }));
+    setOperations((current) => ({ ...current, [key]: { running: true, label: productionTexts.useProductionPage.launchingAction } }));
     setBusyPackages((packages) => [...packages, dir]);
     let startedJob: JobInfo | void = undefined;
     try {
@@ -241,11 +244,11 @@ export function useProductionPage() {
     const note = noteFor(pkg).trim();
     const frame = pkg.pendingDecision?.frame;
     if (verdict === 'revise' && !note) {
-      notify('Для возврата напишите замечание: что исправить.', 'warning');
+      notify(productionTexts.useProductionPage.revisionNoteRequired, 'warning');
       return;
     }
     if (verdict === 'retry' && shot?.packages.some((item) => ['submission_unknown', 'submitting'].includes(item.request?.attemptStatus ?? ''))) {
-      notify('Исход отправки ещё неизвестен. Продолжите получение по существующему ID.', 'warning');
+      notify(productionTexts.useProductionPage.submissionUnknown, 'warning');
       return;
     }
     if (verdict === 'send') {
@@ -261,14 +264,14 @@ export function useProductionPage() {
     const currentNavigation = navigationScope.capture();
     void act(
       verdict === 'park'
-        ? 'Пакет сохранён в очередь: он в списке «Очередь», генерация не запускалась.'
+        ? productionTexts.useProductionPage.parked
         : verdict === 'revise' && frame
-          ? `Замечание к ${frame} сохранено. Создайте опору заново кнопкой «Создать ${frame}» в блоке «Подготовка плана».`
+          ? productionTexts.useProductionPage.frameNoteSaved({ frame })
           : verdict === 'revise'
-            ? 'Замечание сохранено. Нажмите «Запустить доработку с агентом» в блоке подготовки.'
+            ? productionTexts.useProductionPage.revisionSaved
             : verdict === 'approve' && frame
-              ? `Опора ${frame} утверждена.`
-              : `Ответ записан: ${VERDICT_LABELS[verdict]?.label ?? verdict}`,
+              ? productionTexts.useProductionPage.frameApproved({ frame })
+              : productionTexts.useProductionPage.answerSaved({ label: VERDICT_LABELS[verdict]?.label ?? verdict }),
       async () => {
         await window.api.production.decide(project, pkg.dir, verdict, note, pkg.decisionToken, frame && verdict === 'revise' ? noteScope : undefined);
         if (verdict === 'park') {
@@ -289,7 +292,7 @@ export function useProductionPage() {
           else if (!parked && currentNavigation()) {
             setFilter('queued');
             selectPackage('');
-            notify('Пакет перенесён. Откройте его в очереди на странице «Производство».', 'info');
+            notify(productionTexts.useProductionPage.relocated, 'info');
           }
         }
         if (!current()) return;
@@ -304,7 +307,7 @@ export function useProductionPage() {
   /** Возврат утверждённой опоры: главный процесс откажет, если видеопромпт или запрос видео уже построены на ней. */
   const reopenFrame = (pkg: PackageView, frame: string, note: string, scope: KeyframeNoteScope): void => {
     void act(
-      `Опора ${frame} возвращена на доработку. Создайте её заново кнопкой «Создать ${frame}» в блоке «Подготовка плана».`,
+      productionTexts.useProductionPage.frameReopened({ frame }),
       () => window.api.production.reopenFrame(project, pkg.dir, frame, note, scope),
       pkg.dir
     );
@@ -312,16 +315,12 @@ export function useProductionPage() {
 
   /** Пользователь решил, что правка сценария не меняет материалы неотправленного пакета. */
   const keepPackageForScene = (pkg: PackageView): void => {
-    void act(
-      'Пакет оставлен для текущей постановки: подготовку и отправку можно продолжать.',
-      () => window.api.production.keepPackageForScene(project, pkg.dir),
-      pkg.dir
-    );
+    void act(productionTexts.useProductionPage.sceneRetained, () => window.api.production.keepPackageForScene(project, pkg.dir), pkg.dir);
   };
 
   const setKeyframeNote = (pkg: PackageView, id: number, active: boolean): void => {
     void act(
-      active ? 'Замечание к опорам снова действует.' : 'Замечание снято: агент больше не получит его при создании опор.',
+      active ? productionTexts.useProductionPage.frameNoteActivated : productionTexts.useProductionPage.frameNoteDeactivated,
       () => window.api.production.setKeyframeNote(project, pkg.dir, id, active),
       pkg.dir
     );
@@ -330,14 +329,10 @@ export function useProductionPage() {
   // Выбор опоры связан с показанным оригиналом; это ещё не художественное утверждение кадра.
   const selectImage = (pkg: PackageView, index: number): void => {
     if (!pkg.resultToken) {
-      notify('Результат не подтверждён. Обновите пакет перед выбором опоры.', 'warning');
+      notify(productionTexts.useProductionPage.candidateUnconfirmed, 'warning');
       return;
     }
-    void act(
-      'Изображение выбрано как опора. Утвердите опоры отдельно.',
-      () => window.api.production.selectImage(project, pkg.dir, index, pkg.resultToken!),
-      pkg.dir
-    );
+    void act(productionTexts.useProductionPage.candidateSelected, () => window.api.production.selectImage(project, pkg.dir, index, pkg.resultToken!), pkg.dir);
   };
 
   const confirmRequest = async (quoteToken?: string, unknownCostConsentToken?: string): Promise<void> => {
@@ -352,7 +347,7 @@ export function useProductionPage() {
           const key = operationKey(pkg.dir, pkg.shot);
           setOperations((current) => ({ ...current, [key]: { job } }));
           // Диалог закрывается сразу: подтверждаем, что платный запрос ушёл, а итог придёт отдельным уведомлением.
-          notify(`Запрос ${pkg.shot} отправлен. Результат придёт уведомлением, когда сервис его вернёт.`, 'info');
+          notify(productionTexts.useProductionPage.requestSubmitted({ shot: pkg.shot }), 'info');
         }
       }),
       () => currentProject() && currentDialog(),
@@ -364,7 +359,7 @@ export function useProductionPage() {
   /** После удаления попытки выбор пакета возвращается к новой подготовке: другие пакеты плана пользователь выбирает сам. */
   const discardPackage = (pkg: PackageView): void => {
     void act(
-      `Попытка ${pkg.relative} удалена`,
+      productionTexts.useProductionPage.attemptDeleted({ relative: pkg.relative }),
       async () => {
         await window.api.production.discardAttempt(project, pkg.dir);
         setSelectedPackages((current) => ({ ...current, [`${project}\0${pkg.shot}`]: '__new__' }));
@@ -376,7 +371,12 @@ export function useProductionPage() {
 
   /** Повреждённая папка не является пакетом: удаление не трогает выбор и просто обновляет сводку. */
   const discardBroken = (item: BrokenPackage): void => {
-    void act(`Папка ${item.relative} удалена`, () => window.api.production.discardAttempt(project, item.dir), item.dir, item.shot ?? selected);
+    void act(
+      productionTexts.useProductionPage.folderDeleted({ relative: item.relative }),
+      () => window.api.production.discardAttempt(project, item.dir),
+      item.dir,
+      item.shot ?? selected
+    );
   };
 
   return {

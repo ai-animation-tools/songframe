@@ -1,3 +1,5 @@
+import { castTexts } from '@shared/texts/cast';
+import { commonTexts } from '@shared/texts/common';
 import type { ReactElement } from 'react';
 import { Autocomplete, Box, Chip, Paper, TextField, Typography } from '@mui/material';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -27,8 +29,6 @@ interface CastPropertyRowProps {
   onRemove: () => void;
 }
 
-const entitiesGenitive = (count: number): string => (count % 10 === 1 && count % 100 !== 11 ? 'сущности' : 'сущностей');
-
 /** Строка словаря: краткая сводка с действиями записи и раскрываемые поля свойства. */
 export function CastPropertyRow({
   property,
@@ -44,14 +44,12 @@ export function CastPropertyRow({
   onMove,
   onRemove
 }: CastPropertyRowProps): ReactElement {
-  const name = property.label.trim() || property.key || 'без подписи';
+  const name = property.label.trim() || property.key || castTexts.unlabeledProperty;
   const labelProblem = propertyLabelProblem(property.label);
   const checklistWithoutValue = Boolean(property.checklist?.trim()) && !property.checklist?.includes('{value}');
   const removeDescription = fresh
-    ? 'Новое свойство ещё не сохранено и будет убрано из словаря.'
-    : `Свойство исчезнет из словаря типа «${kindLabel}»: в редакторах состояния пропадут его подпись, подсказка, варианты и пункт проверки. ` +
-      `Уже записанные значения в начальном состоянии сущностей и изменениях состояния планов не удаляются и останутся под кодом ${property.key} как свои свойства без подписи.` +
-      (usage ? ` Сейчас значение записано в начальном состоянии у ${usage} ${entitiesGenitive(usage)} этого типа.` : '');
+    ? castTexts.removeFreshPropertyDescription
+    : castTexts.removePropertyDescription({ kind: kindLabel, key: property.key, usage });
   return (
     <Paper variant="outlined" sx={{ p: 1.5, minWidth: 0 }}>
       {/* Сводка переносится по ширине: действия записи остаются в строке справа. */}
@@ -64,46 +62,46 @@ export function CastPropertyRow({
             variant="caption"
             color="text.secondary"
             noWrap
-            title={fresh ? undefined : 'Код не меняется: под ним хранятся значения состояния.'}
+            title={fresh ? undefined : castTexts.propertyCodeImmutable}
             sx={{ fontFamily: 'monospace', flexShrink: 0 }}
           >
             {property.key}
           </Typography>
         </Box>
-        {fresh ? <Chip size="small" variant="outlined" color="success" label="новое, не сохранено" /> : null}
-        {property.values?.length ? <Chip size="small" variant="outlined" label={`вариантов: ${property.values.length}`} /> : null}
-        {property.checklist?.trim() ? <Chip size="small" variant="outlined" label="есть проверка" /> : null}
-        {keyProblem || labelProblem ? <Chip size="small" variant="outlined" color="error" label="нужно исправить" /> : null}
+        {fresh ? <Chip size="small" variant="outlined" color="success" label={castTexts.newProperty} /> : null}
+        {property.values?.length ? <Chip size="small" variant="outlined" label={castTexts.valuesCount({ count: property.values.length })} /> : null}
+        {property.checklist?.trim() ? <Chip size="small" variant="outlined" label={castTexts.hasChecklist} /> : null}
+        {keyProblem || labelProblem ? <Chip size="small" variant="outlined" color="error" label={castTexts.propertyInvalid} /> : null}
         <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <ActionIconButton
             size="small"
-            aria-label={`Поднять свойство «${name}»`}
-            title="Поднять выше: порядок задаёт порядок полей в редакторах состояния"
+            aria-label={castTexts.movePropertyUp({ name })}
+            title={castTexts.movePropertyUpHint}
             disabled={first}
-            disabledReason="Свойство уже первое в словаре."
+            disabledReason={castTexts.propertyAlreadyFirst}
             onClick={() => onMove(-1)}
           >
             <ArrowUpwardIcon fontSize="small" />
           </ActionIconButton>
           <ActionIconButton
             size="small"
-            aria-label={`Опустить свойство «${name}»`}
-            title="Опустить ниже: порядок задаёт порядок полей в редакторах состояния"
+            aria-label={castTexts.movePropertyDown({ name })}
+            title={castTexts.movePropertyDownHint}
             disabled={last}
-            disabledReason="Свойство уже последнее в словаре."
+            disabledReason={castTexts.propertyAlreadyLast}
             onClick={() => onMove(1)}
           >
             <ArrowDownwardIcon fontSize="small" />
           </ActionIconButton>
           <ActionIconButton
             size="small"
-            aria-label={expanded ? `Свернуть свойство «${name}»` : `Изменить свойство «${name}»`}
+            aria-label={expanded ? castTexts.collapseProperty({ name }) : castTexts.editProperty({ name })}
             aria-expanded={expanded}
             onClick={() => onExpandedChange(!expanded)}
           >
             {expanded ? <ExpandLessIcon fontSize="small" /> : <EditOutlinedIcon fontSize="small" />}
           </ActionIconButton>
-          <DestructiveButton icon label={`Удалить свойство «${name}»`} description={removeDescription} onConfirm={onRemove}>
+          <DestructiveButton icon label={castTexts.removeProperty({ name })} description={removeDescription} onConfirm={onRemove}>
             <DeleteOutlineIcon fontSize="small" />
           </DestructiveButton>
         </Box>
@@ -122,31 +120,31 @@ export function CastPropertyRow({
           {fresh ? (
             <TextField
               size="small"
-              label="Код"
+              label={commonTexts.code}
               required
               value={property.key}
               onChange={(e) => onChange({ key: e.target.value })}
               error={Boolean(keyProblem)}
-              helperText={keyProblem ?? 'Латиницей; под этим кодом значение хранится в состоянии сущностей и планов. После сохранения код не меняется.'}
+              helperText={keyProblem ?? castTexts.propertyCodeHint}
               slotProps={{ htmlInput: { spellCheck: false, style: { fontFamily: 'monospace' } } }}
               sx={{ gridColumn: '1 / -1' }}
             />
           ) : null}
           <TextField
             size="small"
-            label="Подпись"
+            label={commonTexts.label}
             required
             value={property.label}
             onChange={(e) => onChange({ label: e.target.value })}
             error={Boolean(labelProblem)}
-            helperText={labelProblem ?? 'Название поля в редакторах начального состояния («Кастинг») и изменений состояния плана («Сценарий»).'}
+            helperText={labelProblem ?? castTexts.propertyLabelHint}
           />
           <TextField
             size="small"
-            label="Подсказка"
+            label={castTexts.propertyHint}
             value={property.hint ?? ''}
             onChange={(e) => onChange({ hint: e.target.value })}
-            helperText="Серая подсказка в пустом поле состояния."
+            helperText={castTexts.propertyHintHelp}
           />
           <Autocomplete
             multiple
@@ -160,22 +158,19 @@ export function CastPropertyRow({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Варианты значений"
-                placeholder={property.values?.length ? undefined : 'вариант и Enter'}
-                helperText="Выпадающий список поля состояния; своё значение вписать всё равно можно. Введите вариант и нажмите Enter, лишний уберите крестиком."
+                label={castTexts.propertyValues}
+                placeholder={property.values?.length ? undefined : castTexts.propertyValuePlaceholder}
+                helperText={castTexts.propertyValuesHelp}
               />
             )}
           />
           <TextField
             size="small"
-            label="Шаблон проверки"
+            label={castTexts.propertyChecklist}
             value={property.checklist ?? ''}
             onChange={(e) => onChange({ checklist: e.target.value })}
-            placeholder="Опора и глубина погружения: {value}?"
-            helperText={
-              'Пункт «что сверить» во врезке непрерывности: {value} заменяется значением состояния. Пусто — пункта нет.' +
-              (checklistWithoutValue ? ' В шаблоне нет {value}: пункт выйдет без записанного значения.' : '')
-            }
+            placeholder={castTexts.propertyChecklistPlaceholder}
+            helperText={castTexts.checklistHelp({ withoutValue: checklistWithoutValue })}
             slotProps={{ inputLabel: { shrink: true } }}
           />
         </Box>

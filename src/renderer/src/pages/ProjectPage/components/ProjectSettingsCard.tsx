@@ -1,3 +1,6 @@
+import { projectTexts } from '@shared/texts/project';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 /** Настройки проекта из plan/project.json: имя MP4 аниматика и предпочтения генерации; название меняется кнопкой «Переименовать» в шапке. */
 
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
@@ -60,15 +63,15 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
   }, [name]);
 
   if (error && !form) return <Alert severity="error">{error}</Alert>;
-  if (!form) return <Typography color="text.secondary">Читаем plan/project.json…</Typography>;
+  if (!form) return <Typography color="text.secondary">{projectTexts.settings.reading}</Typography>;
 
   const generation = form.generation;
   const dirty = JSON.stringify(form) !== JSON.stringify(saved);
   const animaticError = !/^[\w.-]+\.mp4$/.test(form.animaticVideo) || form.animaticVideo.startsWith('.');
   const valid = !animaticError && videoValid && imageValid;
-  const busyReason = busy ? 'Дождитесь окончания записи настроек.' : null;
-  const noChangesReason = !dirty ? 'Нет изменений для сохранения.' : null;
-  const saveReason = busyReason ?? noChangesReason ?? (!valid ? 'Исправьте ошибки в отмеченных полях формы.' : null);
+  const busyReason = busy ? projectTexts.settings.waitSaving : null;
+  const noChangesReason = !dirty ? commonTexts.noChangesToSave : null;
+  const saveReason = busyReason ?? noChangesReason ?? (!valid ? projectTexts.settings.invalidFields : null);
   const setGeneration = (patch: Partial<GenerationSettings>): void => setForm({ ...form, generation: { video: null, image: null, ...generation, ...patch } });
 
   const save = async (): Promise<void> => {
@@ -81,7 +84,7 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
       const next = await window.api.projects.saveSettings(project, normalizeProjectSettingsForSave(form));
       setSaved(next);
       setForm(next);
-      notify('Настройки проекта записаны в plan/project.json', 'success');
+      notify(projectTexts.settings.saved, 'success');
     } catch (e) {
       notify(describeError(e), 'error');
     } finally {
@@ -101,23 +104,23 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>
         <TuneIcon color="action" />
         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
-          Настройки проекта
+          {projectTexts.settings.title}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          plan/project.json
+          {projectTexts.settings.filename}
         </Typography>
       </Box>
       <Stack spacing={1.5}>
         {/* Поля перестраиваются по ширине карточки, в том числе в боковой колонке проекта. */}
         <TextField
-          label="Имя MP4 аниматика"
+          label={navigationTexts.blocks.projectAnimaticName}
           slotProps={{ htmlInput: { 'data-anchor': ANCHORS.projectAnimaticName } }}
           value={form.animaticVideo}
           onChange={(e) => setForm({ ...form, animaticVideo: e.target.value })}
           size="small"
           sx={{ minWidth: 0, maxWidth: 480 }}
           error={animaticError}
-          helperText={animaticError ? 'Укажите имя .mp4: буквы, цифры, точки и дефисы, без пути к папке.' : 'Без пути к папке'}
+          helperText={animaticError ? projectTexts.settings.animaticNameInvalid : projectTexts.settings.animaticNameHelp}
         />
         <VideoGenerationSettings
           key={`video:${project}`}
@@ -137,35 +140,27 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
         />
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
           <ActionButton variant="contained" startIcon={<SaveIcon />} disabled={!dirty || busy || !valid} disabledReason={saveReason} onClick={save}>
-            Сохранить
+            {commonTexts.save}
           </ActionButton>
           <DestructiveButton
             startIcon={<RestartAltIcon />}
-            label="Сбросить правки настроек проекта"
-            description="Все несохранённые изменения настроек будут потеряны. Форма вернётся к последним сохранённым значениям."
+            label={projectTexts.settings.resetTitle}
+            description={projectTexts.settings.resetDescription}
             disabled={!dirty || busy}
-            disabledReason={busyReason ?? (!dirty ? 'Нет несохранённых правок.' : null)}
+            disabledReason={busyReason ?? (!dirty ? projectTexts.settings.noUnsavedChanges : null)}
             onConfirm={() => setForm(saved)}
-            confirmLabel="Сбросить правки"
+            confirmLabel={commonTexts.resetChanges}
           >
-            Сбросить правки
+            {commonTexts.resetChanges}
           </DestructiveButton>
           <Typography variant="caption" color="text.secondary">
-            Прочие поля файла сохраняются как есть. Изменение настроек не трогает уже подготовленные запросы: повтор по снимку с другим форматом остановится.
+            {projectTexts.settings.preferencesHelp}
           </Typography>
         </Box>
         {!valid && (
           <Typography variant="caption" color="error">
             {/* Сообщение называет блоки с ошибками ссылками: переход прокручивает к блоку. */}
-            <LinkedText
-              text={`Исправьте ошибки перед сохранением: ${[
-                animaticError ? 'поле «Имя MP4 аниматика»' : null,
-                videoValid ? null : 'блок «Генерация видео»',
-                imageValid ? null : 'блок «Генерация изображений»'
-              ]
-                .filter(Boolean)
-                .join(', ')}.`}
-            />
+            <LinkedText text={projectTexts.settings.fixBeforeSave({ animaticError, videoValid, imageValid })} />
           </Typography>
         )}
       </Stack>

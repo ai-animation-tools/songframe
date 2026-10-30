@@ -1,3 +1,5 @@
+import { timingTexts } from '@shared/texts/timing';
+import { commonTexts } from '@shared/texts/common';
 import { PageActionBar } from '../../components/PageActionBar';
 import { usePageLoading } from '../../components/PageLoader';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -72,7 +74,10 @@ export function TimingPage(): ReactElement {
   const { duration, time, playLine, scrollTo } = player;
 
   const lyricsByNumber = useMemo(() => new Map((view?.lyrics ?? []).map((l) => [l.number, l])), [view]);
-  const textOf = useCallback((line: TimingLine) => lyricsByNumber.get(line.source_line)?.text ?? `(строка ${line.source_line} отсутствует)`, [lyricsByNumber]);
+  const textOf = useCallback(
+    (line: TimingLine) => lyricsByNumber.get(line.source_line)?.text ?? timingTexts.missingSourceLine({ line: line.source_line }),
+    [lyricsByNumber]
+  );
   const unassigned = useMemo<LyricsLine[]>(() => {
     const used = new Set(lines.map((l) => l.source_line));
     return (view?.lyrics ?? []).filter((l) => l.text && !l.header && !used.has(l.number));
@@ -114,11 +119,22 @@ export function TimingPage(): ReactElement {
     const start = Math.max(after?.end ?? 0, time);
     const end = Math.min((before?.start ?? duration) || start + 2, start + 2);
     if (end - start < MIN_LENGTH) {
-      notify('На позиции плейхеда нет места для новой строки: сдвиньте плейхед в свободное место.', 'warning');
+      notify(timingTexts.noRoomForLine, 'warning');
       return;
     }
     const id = Math.max(0, ...lines.map((l) => l.id)) + 1;
-    setLines((current) => [...current, { id, source_line: lyric.number, start: round(start), end: round(end), verified: false, note: 'добавлена вручную' }]);
+    setLines((current) => [
+      ...current,
+      {
+        id,
+        source_line: lyric.number,
+        start: round(start),
+        end: round(end),
+        verified: false,
+        // eslint-disable-next-line no-restricted-syntax -- Сохраняемая заметка строки timing.json остаётся у владельца формата данных.
+        note: 'добавлена вручную'
+      }
+    ]);
     setSelected(id);
     setDirty(true);
   };
@@ -136,13 +152,13 @@ export function TimingPage(): ReactElement {
     const ordered = [...lines].sort((a, b) => a.start - b.start).map((line, index) => ({ ...line, id: index + 1 }));
     setSections(buildSections(view.lyrics, ordered, duration || null));
     setDirty(true);
-    notify('Секции пересчитаны по текущим строкам. Сохраните или отмените правки.', 'info');
+    notify(timingTexts.sectionsRecalculated, 'info');
   };
 
   const save = async (): Promise<void> => {
     // Не удаляем скрытые устаревшие строки из файла побочным эффектом сохранения других правок.
     if (invalidBindings) {
-      notify('После изменения текста сначала повторите автоматическую разметку.', 'warning');
+      notify(timingTexts.lyricsChanged, 'warning');
       return;
     }
     setBusy(true);
@@ -154,7 +170,7 @@ export function TimingPage(): ReactElement {
       setSections(saved.sections);
       setDirty(false);
       await refresh();
-      notify('Разметка сохранена', 'success');
+      notify(timingTexts.saved, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -173,10 +189,11 @@ export function TimingPage(): ReactElement {
     }
     try {
       const result = await window.api.timing.generate(project, { model: model.trim() || undefined, device, reset: resetAll });
-      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim().split('\n').slice(-3).join(' ') || `код ${result.code}`);
+      if (result.code !== 0)
+        throw new Error((result.stderr || result.stdout).trim().split('\n').slice(-3).join(' ') || timingTexts.exitCode({ code: result.code }));
       await load();
       await refresh();
-      notify('Черновик разметки записан; подтвердите строки на слух', 'success');
+      notify(timingTexts.draftReady, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -192,7 +209,7 @@ export function TimingPage(): ReactElement {
         severity="error"
         action={
           <Button startIcon={<RefreshIcon />} onClick={() => load().catch((error) => setLoadError(describeError(error)))}>
-            Повторить
+            {commonTexts.retry}
           </Button>
         }
       >
@@ -204,11 +221,11 @@ export function TimingPage(): ReactElement {
 
   // Причина недоступности разметки без учёта правок и операций: общая для панели и диалога.
   const generateBlockedReason = !view.trackPath
-    ? 'Сначала добавьте трек на странице «Исходники».'
+    ? timingTexts.addTrack
     : !hasLyrics
-      ? 'Сначала добавьте текст песни на странице «Исходники».'
+      ? timingTexts.addLyrics
       : !state?.toolsRoot
-        ? 'Инструменты комплекса не найдены.'
+        ? timingTexts.toolsMissing
         : null;
 
   return (
@@ -236,24 +253,23 @@ export function TimingPage(): ReactElement {
           action={
             !view.trackPath || !hasLyrics ? (
               <Button startIcon={<FolderOpenIcon />} component={RouterLink} to="/project/sources">
-                Открыть исходники
+                {timingTexts.openSources}
               </Button>
             ) : undefined
           }
         >
-          <LinkedText text={`${!view.trackPath ? 'Сначала добавьте трек на странице «Исходники». ' : ''}${view.problems.join(' ')}`} />
+          <LinkedText text={timingTexts.sourceProblems({ trackMissing: !view.trackPath, problems: view.problems })} />
         </Alert>
       ) : null}
       {lines.length ? (
         <Typography variant="body2" color="text.secondary">
-          Секций: {player.sections.length}. Секции песни сохраняются отдельно от границ строк; «Пересчитать секции» заменяет их границы, названия и заметки по
-          текущей разметке.
+          {timingTexts.sectionsHelp({ count: player.sections.length })}
         </Typography>
       ) : null}
       {/* Статус из файла разметки: черновик правок отражает чип в панели. */}
       {view.timing?.status ? (
         <Typography variant="caption" color="text.secondary">
-          В файле: {view.timing.status}
+          {timingTexts.fileStatus({ status: view.timing.status })}
         </Typography>
       ) : null}
 
@@ -278,13 +294,7 @@ export function TimingPage(): ReactElement {
         device={device}
         resetAll={resetAll}
         canGenerate={canGenerate && !dirty && !busy && !generating}
-        generateBlockedReason={
-          generating || busy
-            ? 'Дождитесь окончания текущей операции.'
-            : dirty
-              ? 'Сохраните или отмените правки перед автоматической разметкой.'
-              : generateBlockedReason
-        }
+        generateBlockedReason={generating || busy ? timingTexts.operationPending : dirty ? timingTexts.saveBeforeGenerate : generateBlockedReason}
         onClose={() => setGenerateOpen(false)}
         onModelChange={setModel}
         onDeviceChange={setDevice}

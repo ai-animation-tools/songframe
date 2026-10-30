@@ -40,6 +40,66 @@ function fixture() {
   return { ai: createAiAccess({ settings: () => settings, checkAgent, checkProviderAuth }), checkAgent, checkProviderAuth };
 }
 describe('Явный выбор и доступность ИИ', () => {
+  // Полные ожидания проверяют публичную диагностику независимо от доменного словаря.
+  it('возвращает прежние причины отсутствия выбора и неподдерживаемого провайдера', async () => {
+    const { ai, checkAgent, checkProviderAuth } = fixture();
+    const empty = await ai.getAccess(root);
+    expect(empty.agent.message).toBe('Сначала выберите агента в настройках приложения.');
+    expect(empty.image.message).toBe('Сначала выберите провайдера изображений в настройках проекта.');
+    expect(empty.video.message).toBe('Сначала выберите провайдера видео в настройках проекта.');
+    project({ provider: 'missing-provider', provider_selected: true });
+    expect((await ai.getAccess(root)).image.message).toBe('Выбранный провайдер не поддерживается.');
+    expect(checkAgent).not.toHaveBeenCalled();
+    expect(checkProviderAuth).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['authenticated', true, 'Вход в Тестовый сервис подтверждён.'],
+    ['unknown', false, 'Выполните вход в Тестовый сервис в настройках приложения.']
+  ] as const)('сохраняет готовую фразу входа при статусе %s', async (status, available, message) => {
+    project({ provider: TEST_PROVIDER, provider_selected: true });
+    const { ai, checkProviderAuth } = fixture();
+    checkProviderAuth.mockResolvedValue({ status });
+    expect((await ai.getAccess(root)).image).toMatchObject({ available, message });
+  });
+
+  it('сохраняет внешнюю ошибку дословно, а неизвестный сбой объясняет общей фразой', async () => {
+    settings.saveAgent({ provider: 'claude' });
+    project({ provider: TEST_PROVIDER, provider_selected: true });
+    const { ai, checkAgent, checkProviderAuth } = fixture();
+    checkAgent.mockRejectedValue(new Error('Ошибка «CLI» в C:\\Агенты\\bin & <node>'));
+    checkProviderAuth.mockRejectedValue(null);
+    const access = await ai.getAccess(root);
+    expect(access.agent.message).toBe('Ошибка «CLI» в C:\\Агенты\\bin & <node>');
+    expect(access.image.message).toBe('Не удалось проверить доступность провайдера.');
+    checkAgent.mockRejectedValue(null);
+    expect((await ai.getAccess(root)).agent.message).toBe('Не удалось проверить доступность агента.');
+  });
+
+  it('объясняет неизвестный сбой настроек без запуска диагностики', async () => {
+    vi.spyOn(settings, 'getAgent').mockImplementation(() => {
+      throw null;
+    });
+    const { ai, checkAgent, checkProviderAuth } = fixture();
+    const access = await ai.getAccess(root);
+    for (const executor of [access.agent, access.image, access.video])
+      expect(executor).toMatchObject({ selected: false, available: false, message: 'Не удалось прочитать настройки ИИ.' });
+    expect(checkAgent).not.toHaveBeenCalled();
+    expect(checkProviderAuth).not.toHaveBeenCalled();
+  });
+
+  it('при смене модели во время проверки отказывает до запуска действия с прежней фразой', async () => {
+    settings.saveAgent({ provider: 'claude', model: 'before' });
+    const { ai, checkAgent } = fixture();
+    checkAgent.mockImplementation(async () => {
+      settings.saveAgent({ provider: 'claude', model: 'after' });
+      return ready;
+    });
+    const execute = vi.fn();
+    await expect(ai.requireAccess(root, 'agent').then(execute)).rejects.toThrow('Настройки ИИ изменились во время проверки. Повторите действие.');
+    expect(execute).not.toHaveBeenCalled();
+  });
+
   it('под Claude разрешает изображения Codex по доступности самого Codex', async () => {
     settings.saveAgent({ provider: 'claude' });
     project({ provider: TEST_AGENT_PROVIDER, provider_selected: true });

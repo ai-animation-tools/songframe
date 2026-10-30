@@ -1,4 +1,7 @@
 /** Хранение ручного монтажа и запуск локальных инструментов; @link ../../docs/montage.md. */
+import { montageTexts } from '@shared/texts/montage';
+import { commonTexts } from '@shared/texts/common';
+import { scenesTexts } from '@shared/texts/scenes';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, win32 } from 'node:path';
@@ -31,11 +34,11 @@ function hash(path: string): string {
 /** В JSON сохраняются только переносимые пути. Оба вида абсолютных путей отклоняются на любой ОС. */
 function projectPath(project: string, value: unknown, requireFile = true): string {
   if (typeof value !== 'string' || !value || value.includes('\\') || isAbsolute(value) || win32.isAbsolute(value))
-    throw new Error('Укажите относительный путь от корня проекта через /.');
+    throw new Error(montageTexts.main.relativePathRequired);
   const parts = value.split('/');
-  if (parts.some((part) => !part || part === '.' || part === '..')) throw new Error(`Недопустимый путь проекта: ${value}`);
+  if (parts.some((part) => !part || part === '.' || part === '..')) throw new Error(montageTexts.main.invalidProjectPath({ value }));
   const full = resolve(project, value);
-  if (requireFile && (!existsSync(full) || !statSync(full).isFile())) throw new Error(`Файл проекта не найден: ${value}`);
+  if (requireFile && (!existsSync(full) || !statSync(full).isFile())) throw new Error(montageTexts.main.projectFileMissing({ value }));
   return full;
 }
 
@@ -46,15 +49,15 @@ function portable(project: string, path: string): string {
 function readObject(path: string, label: string): Json {
   try {
     const value = readLocalJson<unknown>(path);
-    if (!object(value)) throw new Error('Некорректная структура данных.');
+    if (!object(value)) throw new Error(montageTexts.main.invalidData);
     return value;
   } catch (error) {
-    throw new Error(`Не удалось прочитать ${label}. Файл сохранён; исправьте его или перенесите в резервную папку.`, { cause: error });
+    throw new Error(montageTexts.main.readFailed({ label }), { cause: error });
   }
 }
 
 function idPath(project: string, id: string): string {
-  if (!UUID.test(id)) throw new Error('Некорректный идентификатор монтажного черновика.');
+  if (!UUID.test(id)) throw new Error(montageTexts.main.invalidDraftId);
   return join(project, 'plan', 'montage', `${id}.json`);
 }
 
@@ -94,15 +97,15 @@ export class Montage {
     const scenario = readScenarioRegistry(project);
     view.scenarioStatus = scenario.status;
     if (scenario.status === 'missing') {
-      view.problems.push('Сначала нужен сценарий. Создайте его на странице «Сценарий».');
+      view.problems.push(commonTexts.scenario.requiredForWork);
       return view;
     }
     if (scenario.status === 'empty') {
-      view.problems.push('В сценарии пока нет сцен. Добавьте их на странице «Сценарий».');
+      view.problems.push(montageTexts.main.emptyScenario);
       return view;
     }
     if (scenario.status === 'invalid' || !scenario.registry) {
-      view.problems.push('Не удалось прочитать сценарий. Проверьте и исправьте его на странице «Сценарий».');
+      view.problems.push(montageTexts.main.invalidScenario);
       return view;
     }
     // Общая проверка завершается целиком до музыки и материалов, исключая частичный каталог сцен.
@@ -122,9 +125,8 @@ export class Montage {
     view.trackSha256 = timing.trackSha256;
     view.duration = timing.duration;
     view.problems.push(...timing.problems);
-    if (!timing.timing) view.lyricProblem = 'Разметка строк песни недоступна. Создайте её на странице «Тайминги».';
-    else if (timing.timing.sha256 && timing.trackSha256 && timing.timing.sha256 !== timing.trackSha256)
-      view.lyricProblem = 'Разметка относится к другому треку. Проверьте её на странице «Тайминги».';
+    if (!timing.timing) view.lyricProblem = montageTexts.main.lyricTimingMissing;
+    else if (timing.timing.sha256 && timing.trackSha256 && timing.timing.sha256 !== timing.trackSha256) view.lyricProblem = montageTexts.main.lyricTrackChanged;
     else {
       const selected = selectLyricTimings(timing.timing.lines, timing.lyrics);
       const lyrics = new Map(timing.lyrics.map((line) => [line.number, line.text]));
@@ -132,7 +134,7 @@ export class Montage {
         selected.invalidIds.length ||
         selected.lines.some((line) => !Number.isFinite(line.start) || !Number.isFinite(line.end) || line.start < 0 || line.end <= line.start)
       )
-        view.lyricProblem = 'Разметка не соответствует тексту или содержит неверные границы. Проверьте её на странице «Тайминги».';
+        view.lyricProblem = montageTexts.main.lyricTimingInvalid;
       else {
         // Строки и склейки используют одну сетку 30 FPS и абсолютную ось исходного трека.
         view.lyricLines = selected.lines.map((line) => ({
@@ -141,7 +143,7 @@ export class Montage {
           startFrame: secondsToFrames(line.start),
           endFrame: secondsToFrames(line.end)
         }));
-        if (!view.lyricLines.length) view.lyricProblem = 'В разметке пока нет строк песни. Добавьте их на странице «Тайминги».';
+        if (!view.lyricLines.length) view.lyricProblem = montageTexts.main.lyricTimingEmpty;
       }
     }
     const addSource = (
@@ -172,11 +174,11 @@ export class Montage {
       // Ошибка отдельного комплекта не меняет доступность самого сценария.
       try {
         view.manifestSha256[scene.id] = hash(manifestPath);
-        const manifest = readObject(manifestPath, 'описание материалов сцены');
+        const manifest = readObject(manifestPath, montageTexts.main.sceneMaterialsLabel);
         const generation = object(manifest.generation) ? manifest.generation : {};
         const edit = object(manifest.accepted_edit) ? manifest.accepted_edit : {};
-        addSource(scene.id, scene.title, 'Оригинал генерации', dir, generation.original, originalFrames(generation.original_media), true);
-        addSource(scene.id, scene.title, 'Принятый монтаж', dir, edit.video, frame(edit.frames) && edit.frames > 0 ? edit.frames : null, false);
+        addSource(scene.id, scene.title, scenesTexts.mediaEdit.original, dir, generation.original, originalFrames(generation.original_media), true);
+        addSource(scene.id, scene.title, scenesTexts.mediaEdit.accepted, dir, edit.video, frame(edit.frames) && edit.frames > 0 ? edit.frames : null, false);
       } catch (error) {
         view.problems.push(`${scene.id}: ${message(error)}`);
       }
@@ -191,14 +193,14 @@ export class Montage {
         const dir = join(folder, entry.name);
         if (!existsSync(join(dir, 'workflow.json'))) continue;
         try {
-          const workflow = readObject(join(dir, 'workflow.json'), 'состояние рабочего пакета');
+          const workflow = readObject(join(dir, 'workflow.json'), montageTexts.main.workflowLabel);
           const scene = view.scenes.find((item) => item.id === workflow.shot);
           if (!scene || typeof workflow.request_dir !== 'string') continue;
           const requestDir = projectPath(project, portable(project, join(dir, workflow.request_dir)), false);
-          const request = readObject(join(requestDir, 'request.json'), 'запрос рабочего пакета');
+          const request = readObject(join(requestDir, 'request.json'), montageTexts.main.requestLabel);
           if (request.kind === 'image') continue;
           const attemptPath = join(requestDir, 'attempt.json');
-          const attempt = existsSync(attemptPath) ? readObject(attemptPath, 'результат попытки генерации') : {};
+          const attempt = existsSync(attemptPath) ? readObject(attemptPath, montageTexts.main.attemptLabel) : {};
           const downloads = Array.isArray(attempt.downloads)
             ? attempt.downloads
                 .filter((item): item is Json => object(item))
@@ -207,7 +209,7 @@ export class Montage {
             : [];
           downloads.push(...readdirSync(requestDir).filter((name) => /^original(?:-\d+)?\.mp4$/i.test(name)));
           for (const name of new Set(downloads))
-            addSource(scene.id, scene.title, `Результат попытки: ${entry.name}`, requestDir, { path: name }, null, true, true);
+            addSource(scene.id, scene.title, montageTexts.main.attemptSource({ name: entry.name }), requestDir, { path: name }, null, true, true);
         } catch (error) {
           view.problems.push(`${entry.name}: ${message(error)}`);
         }
@@ -221,13 +223,13 @@ export class Montage {
           id: `${scene.id}:${path}`,
           scene: scene.id,
           title: scene.title,
-          label: 'Карточка сцены',
+          label: montageTexts.main.sceneCard,
           path,
           kind: 'card',
           frames: null,
           original: false
         });
-      else view.problems.push(`${scene.id}: нет видео и карточки ${path}.`);
+      else view.problems.push(montageTexts.main.sceneMediaMissing({ scene: scene.id, path }));
     }
     const folder = join(project, 'plan', 'montage');
     if (existsSync(folder)) {
@@ -237,7 +239,7 @@ export class Montage {
           const draft = this.load(project, file.slice(0, -5));
           view.saved.push({ id: file.slice(0, -5), name: draft.name, updatedAt: statSync(join(folder, file)).mtime.toISOString() });
         } catch (error) {
-          view.problems.push(`Черновик ${file}: ${message(error)}`);
+          view.problems.push(montageTexts.main.draftReadFailed({ file, reason: message(error) }));
         }
       }
       view.saved.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -248,15 +250,15 @@ export class Montage {
   /** Незавершённый черновик допустим: проверка совпадения длин выполняется перед экспортом и применением. */
   private validate(project: string, value: unknown, complete: boolean, view?: MontageView, checkFiles = true): asserts value is MontageDraft {
     if (!object(value) || value.schema_version !== 1 || typeof value.name !== 'string' || !object(value.audio) || !Array.isArray(value.clips))
-      throw new Error('Некорректная структура монтажного черновика.');
+      throw new Error(montageTexts.main.invalidDraft);
     if (typeof value.base_scenes_sha256 !== 'string' || !SHA256.test(value.base_scenes_sha256) || !object(value.base_manifest_sha256))
-      throw new Error('Черновик не содержит снимок реестра и манифестов.');
+      throw new Error(montageTexts.main.snapshotMissing);
     for (const [scene, sha] of Object.entries(value.base_manifest_sha256)) {
-      if (!SHOT.test(scene) || typeof sha !== 'string' || !SHA256.test(sha)) throw new Error(`Некорректный снимок манифеста: ${scene}`);
+      if (!SHOT.test(scene) || typeof sha !== 'string' || !SHA256.test(sha)) throw new Error(montageTexts.main.invalidManifestSnapshot({ scene }));
     }
     projectPath(project, value.audio.path, checkFiles);
     if (!frame(value.audio.start_frame) || !frame(value.audio.end_frame_exclusive) || value.audio.end_frame_exclusive < value.audio.start_frame)
-      throw new Error('Некорректные кадровые границы музыки.');
+      throw new Error(montageTexts.main.invalidAudioBounds);
     const scenes = new Set<string>();
     const ids = new Set<string>();
     let total = 0;
@@ -270,16 +272,16 @@ export class Montage {
         !SHOT.test(clip.scene) ||
         scenes.has(clip.scene)
       )
-        throw new Error('Коды сцен и идентификаторы фрагментов должны быть неповторяющимися.');
+        throw new Error(montageTexts.main.duplicateClip);
       ids.add(clip.id);
       scenes.add(clip.scene);
-      if (clip.kind !== 'video' && clip.kind !== 'card') throw new Error(`${clip.scene}: неизвестный вид материала.`);
+      if (clip.kind !== 'video' && clip.kind !== 'card') throw new Error(montageTexts.main.unknownClipKind({ scene: clip.scene }));
       projectPath(project, clip.path, checkFiles);
       if (!frame(clip.source_start_frame) || !frame(clip.source_end_frame_exclusive) || clip.source_end_frame_exclusive <= clip.source_start_frame)
-        throw new Error(`${clip.scene}: задайте целые кадровые границы непустого участка.`);
+        throw new Error(montageTexts.main.invalidClipBounds({ scene: clip.scene }));
       if (clip.source_frames !== null && (!frame(clip.source_frames) || clip.source_frames === 0))
-        throw new Error(`${clip.scene}: некорректная длина исходника.`);
-      if (clip.kind === 'card' && clip.source_start_frame !== 0) throw new Error(`${clip.scene}: карточка должна начинаться с кадра 0.`);
+        throw new Error(montageTexts.main.invalidSourceLength({ scene: clip.scene }));
+      if (clip.kind === 'card' && clip.source_start_frame !== 0) throw new Error(montageTexts.main.invalidCardStart({ scene: clip.scene }));
       const source = view?.sources.find((item) => item.path === clip.path && item.scene === clip.scene && item.kind === clip.kind);
       let limit = source?.frames ?? clip.source_frames;
       // При сохранении проверяем известную длину даже при source_frames=null. Изменённый комплект
@@ -288,7 +290,7 @@ export class Montage {
         const dir = join(project, 'assets', 'shots', clip.scene);
         const path = join(dir, 'manifest.json');
         if (existsSync(path) && value.base_manifest_sha256[clip.scene] === hash(path)) {
-          const manifest = readObject(path, 'описание материалов сцены');
+          const manifest = readObject(path, montageTexts.main.sceneMaterialsLabel);
           const generation = object(manifest.generation) ? manifest.generation : {};
           const edit = object(manifest.accepted_edit) ? manifest.accepted_edit : {};
           for (const [descriptor, frames] of [
@@ -303,22 +305,21 @@ export class Montage {
         }
       }
       if (clip.kind === 'video' && typeof limit === 'number' && clip.source_end_frame_exclusive > limit)
-        throw new Error(`${clip.scene}: выбранный участок выходит за пределы исходника.`);
-      if (complete && !view?.scenes.some((scene) => scene.id === clip.scene)) throw new Error(`В реестре больше нет сцены ${clip.scene}.`);
+        throw new Error(montageTexts.main.sourceBoundsExceeded({ scene: clip.scene }));
+      if (complete && !view?.scenes.some((scene) => scene.id === clip.scene)) throw new Error(montageTexts.main.sceneMissing({ scene: clip.scene }));
       total += clip.source_end_frame_exclusive - clip.source_start_frame;
-      if (!Number.isSafeInteger(total)) throw new Error('Суммарная длина монтажа слишком велика.');
+      if (!Number.isSafeInteger(total)) throw new Error(montageTexts.main.totalLengthExceeded);
     }
     if (complete) {
-      if (!value.clips.length || total !== value.audio.end_frame_exclusive - value.audio.start_frame)
-        throw new Error('Длина видеодорожки должна совпадать с выбранным участком музыки.');
-      if (value.audio.path !== view?.trackPath) throw new Error('Выбранная музыка не совпадает с текущим треком проекта.');
+      if (!value.clips.length || total !== value.audio.end_frame_exclusive - value.audio.start_frame) throw new Error(montageTexts.main.lengthMismatch);
+      if (value.audio.path !== view?.trackPath) throw new Error(montageTexts.main.audioChanged);
       if (typeof view?.duration === 'number' && Number.isFinite(view.duration) && value.audio.end_frame_exclusive > secondsToFrames(view.duration))
-        throw new Error('Выбранный участок выходит за пределы музыки.');
+        throw new Error(montageTexts.main.audioBoundsExceeded);
     }
   }
 
   load(project: string, id: string): MontageDraft {
-    const value: unknown = readObject(idPath(project, id), 'монтажный черновик');
+    const value: unknown = readObject(idPath(project, id), montageTexts.main.draftLabel);
     this.validate(project, value, false);
     return value;
   }
@@ -328,7 +329,7 @@ export class Montage {
     this.validate(project, draft, false);
     // Проверяем структуру прежнего JSON, но его устаревшие пути не должны мешать
     // сохранить исправленный черновик после переноса или повторного выбора исходника.
-    if (existsSync(path)) this.validate(project, readObject(path, 'монтажный черновик'), false, undefined, false);
+    if (existsSync(path)) this.validate(project, readObject(path, montageTexts.main.draftLabel), false, undefined, false);
     writeLocalJson(path, draft);
     return { id, name: draft.name, updatedAt: statSync(path).mtime.toISOString() };
   }
@@ -351,10 +352,10 @@ export class Montage {
       })),
       audio: { path: draft.audio.path, start_frame: draft.audio.start_frame }
     });
-    const job = this.jobs.start('review', `Ручная проба: ${draft.name}`, project, [
+    const job = this.jobs.start('review', montageTexts.main.exportTitle({ name: draft.name }), project, [
       // CLI читает эти два аргумента от cwd комплекса, поэтому разрешаем их при запуске.
       // В самом рецепте и сохранённом черновике пути остаются относительно проекта.
-      { tool: 'build_review', args: ['--spec', join(project, spec), '--output', join(project, video)], label: 'Сборка ручной пробы' }
+      { tool: 'build_review', args: ['--spec', join(project, spec), '--output', join(project, video)], label: montageTexts.main.exportStep }
     ]);
     return { job, video };
   }
@@ -362,13 +363,13 @@ export class Montage {
   apply(project: string, draft: MontageDraft): JobInfo {
     const view = this.view(project);
     this.validate(project, draft, true, view);
-    if (draft.base_scenes_sha256 !== view.scenesSha256) throw new Error('Реестр сцен изменился: заново откройте материалы перед применением.');
+    if (draft.base_scenes_sha256 !== view.scenesSha256) throw new Error(montageTexts.main.registryChanged);
     if (draft.clips.some((clip) => !view.manifestSha256[clip.scene] || draft.base_manifest_sha256[clip.scene] !== view.manifestSha256[clip.scene]))
-      throw new Error('Манифесты комплектов изменились: заново откройте материалы перед применением.');
+      throw new Error(montageTexts.main.manifestsChanged);
     const spec = `plan/batches/apply-manual-${randomUUID()}/montage.json`;
     writeLocalJson(join(project, spec), draft);
-    return this.jobs.start('tool', `Применение монтажа: ${draft.name}`, project, [
-      { tool: 'apply_montage', args: ['--spec', spec], label: 'Применение ручного монтажа к сценам' }
+    return this.jobs.start('tool', montageTexts.main.applyTitle({ name: draft.name }), project, [
+      { tool: 'apply_montage', args: ['--spec', spec], label: montageTexts.main.applyStep }
     ]);
   }
 }

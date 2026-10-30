@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { OpenShotState } from '../types';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -27,13 +28,13 @@ export function BriefSourceLink({
 }): ReactElement {
   const navigate = useNavigate();
   const plan = source.kind === 'plan';
-  const block = source.kind === 'plan' ? (source.phase === 'before' ? '«Первый кадр (before)»' : '«Итог плана (after)»') : '';
+  const block = source.kind === 'plan' ? (source.phase === 'before' ? scenarioTexts.brief.beforeBlockQuoted : scenarioTexts.brief.afterBlockQuoted) : '';
   const title =
     source.kind === 'cast'
-      ? `Открыть начальное состояние «${entityName}» на странице «Кастинг»`
+      ? scenarioTexts.brief.openCastState({ name: entityName })
       : source.shot === currentShot
-        ? `Прокрутить к блоку «Состояние героев и мира» этого плана: значение задано в ${block}`
-        : `Открыть план ${source.shot} и его блок «Состояние героев и мира»: значение задано в ${block}`;
+        ? scenarioTexts.brief.scrollCurrentState({ block })
+        : scenarioTexts.brief.openShotState({ shot: source.shot, block });
   return (
     <ActionButton
       size="small"

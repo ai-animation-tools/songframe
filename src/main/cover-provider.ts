@@ -1,4 +1,5 @@
 /** Обложку готовит провайдер изображений проекта; выбранный текстовый агент на него не влияет. */
+import { sourcesTexts } from '@shared/texts/sources';
 import { createHash } from 'node:crypto';
 import type { AgentSettings } from '@shared/agents';
 import { isMediaProvider, MEDIA_PROVIDERS, mediaProviderTitles, type MediaProviderId } from '@shared/media-providers';
@@ -18,16 +19,15 @@ interface Options {
 
 function adapterCover(provider: MediaProviderId, config: AgentSettings): CoverCandidateRunner {
   const adapter = agentAdapter(provider);
-  if (!adapter) throw new Error(`Для провайдера ${MEDIA_PROVIDERS[provider].title} не подключён исполнитель обложки.`);
+  if (!adapter) throw new Error(sourcesTexts.main.coverAdapterMissing({ title: MEDIA_PROVIDERS[provider].title }));
   return adapter.cover({ config });
 }
 
 export async function prepareProjectCover(input: CoverCandidateInput, options: Options): Promise<PreparedCoverCandidate> {
   assertAiSelection(options.settings, input.project, 'image');
-  if (input.signal.aborted) throw new Error('Подготовка обложки остановлена.');
+  if (input.signal.aborted) throw new Error(sourcesTexts.main.coverPreparationStopped);
   const settings = readProjectSettings(input.project).generation?.image;
-  if (!isMediaProvider(settings?.provider, 'image'))
-    throw new Error(`Выберите поддерживаемого провайдера изображений в настройках проекта: ${mediaProviderTitles('image')}.`);
+  if (!isMediaProvider(settings?.provider, 'image')) throw new Error(sourcesTexts.main.imageProviderRequired({ titles: mediaProviderTitles('image') }));
   const provider = settings.provider;
   if (!MEDIA_PROVIDERS[provider].executor) return options.paid(input, provider);
   // Провайдер-агент: пустая проектная модель означает настройки самой программы, как и при генерации опор.

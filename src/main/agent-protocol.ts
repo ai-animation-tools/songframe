@@ -1,4 +1,5 @@
 /** JSONL разбирается по строкам, независимо от границ буферов и многобайтовых символов UTF-8. */
+import { agentsTexts } from '@shared/texts/agents';
 import { StringDecoder } from 'node:string_decoder';
 import type { AgentDiagnosticCode } from '@shared/agents';
 
@@ -38,7 +39,7 @@ export class JsonLines {
   }
 
   private checkSize(line: string): void {
-    if (Buffer.byteLength(line) > this.lineBytes) throw new AgentError('OUTPUT_LIMIT', 'Строка ответа агента слишком велика.');
+    if (Buffer.byteLength(line) > this.lineBytes) throw new AgentError('OUTPUT_LIMIT', agentsTexts.lineTooLarge);
   }
 
   private parse(line: string): void {
@@ -48,18 +49,23 @@ export class JsonLines {
     try {
       value = JSON.parse(line);
     } catch {
-      throw new AgentError('PROTOCOL_ERROR', 'Агент вернул некорректный JSONL.');
+      throw new AgentError('PROTOCOL_ERROR', agentsTexts.invalidJsonLines);
     }
-    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AgentError('PROTOCOL_ERROR', 'Ожидался объект события агента.');
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AgentError('PROTOCOL_ERROR', agentsTexts.eventObjectRequired);
     this.onValue(value as Record<string, unknown>);
   }
 }
 
 /** В журнал не попадает сырой CLI output; в тексте результата убираем распознаваемые секреты. */
 export function redact(text: string): string {
-  return text
-    .replace(/\b(?:sk-[A-Za-z0-9_-]{8,}|Bearer\s+[A-Za-z0-9._~-]+)/gi, '[скрыто]')
-    .replace(/((?:api[_-]?key|access[_-]?token|refresh[_-]?token|authorization)\s*[=:]\s*["']?)[^\s,"'}]+/gi, '$1[скрыто]');
+  // Маркеры редактирования входят в очищенные результаты и журналы; их формат не является UI-подписью.
+  return (
+    text
+      // eslint-disable-next-line no-restricted-syntax -- Служебный маркер замены секрета сохраняется дословно.
+      .replace(/\b(?:sk-[A-Za-z0-9_-]{8,}|Bearer\s+[A-Za-z0-9._~-]+)/gi, '[скрыто]')
+      // eslint-disable-next-line no-restricted-syntax -- Подстановка $1 сохраняет имя поля перед служебным маркером.
+      .replace(/((?:api[_-]?key|access[_-]?token|refresh[_-]?token|authorization)\s*[=:]\s*["']?)[^\s,"'}]+/gi, '$1[скрыто]')
+  );
 }
 
 const DETAIL_LIMIT = 400;
@@ -77,10 +83,8 @@ export function providerDetail(value: unknown): string {
 export function providerFailure(value: unknown, detail?: unknown): AgentError {
   const text = typeof value === 'string' ? value : '';
   const reason = providerDetail(detail);
-  const suffix = reason ? ` Сообщение агента: «${reason}»` : '';
   if (/auth|not logged|login|unauthorized|invalid.?api.?key|\b401\b/i.test(text))
-    return new AgentError('AUTH_REQUIRED', `Агент сообщил об ошибке входа. Проверьте авторизацию в настройках.${suffix}`);
-  if (/rate.?limit|quota|usage.?limit|budget|\b429\b/i.test(text))
-    return new AgentError('RATE_LIMIT', `Агент сообщил об ограничении использования. Проверьте лимиты аккаунта.${suffix}`);
-  return new AgentError('CLI_ERROR', `Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели.${suffix}`);
+    return new AgentError('AUTH_REQUIRED', agentsTexts.authorizationFailed({ reason }));
+  if (/rate.?limit|quota|usage.?limit|budget|\b429\b/i.test(text)) return new AgentError('RATE_LIMIT', agentsTexts.rateLimited({ reason }));
+  return new AgentError('CLI_ERROR', agentsTexts.taskFailed({ reason }));
 }

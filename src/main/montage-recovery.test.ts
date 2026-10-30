@@ -45,9 +45,11 @@ describe('восстановление ручного монтажа', () => {
   });
 
   it('проверяет весь набор до отката и сохраняет последующую ручную правку', () => {
-    const { project } = fixture();
+    const { project, history } = fixture();
     writeAtomicText(join(project, 'assets/shots/M01/manifest.json'), 'ручная правка');
-    expect(() => recoverMontageApplications(project)).toThrow('изменён');
+    expect(() => recoverMontageApplications(project)).toThrow(
+      new Error(`После прерывания монтажа изменён assets/shots/M01/manifest.json. Восстановление остановлено; резервы: ${history}.`)
+    );
     expect(readFileSync(join(project, 'plan/scenes.json'), 'utf8')).toBe('новый реестр');
     expect(readFileSync(join(project, 'assets/shots/M01/manifest.json'), 'utf8')).toBe('ручная правка');
   });
@@ -55,7 +57,19 @@ describe('восстановление ручного монтажа', () => {
   it('не затирает файлы при повреждении резервной копии', () => {
     const { project, history } = fixture();
     writeAtomicText(join(history, 'before/plan/scenes.json'), 'повреждённый резерв');
-    expect(() => recoverMontageApplications(project)).toThrow('Повреждён резерв');
+    expect(() => recoverMontageApplications(project)).toThrow(new Error(`Повреждён резерв plan/scenes.json: ${history}.`));
     expect(readFileSync(join(project, 'plan/scenes.json'), 'utf8')).toBe('новый реестр');
   });
+});
+
+it('отклоняет неизвестный журнал с полным путём, сохраняя файлы и резерв', () => {
+  const { project, history } = fixture();
+  const path = join(history, 'journal.json');
+  const journal = JSON.parse(readFileSync(path, 'utf8'));
+  writeLocalJson(path, { ...journal, schema_version: 2 });
+  const previous = readFileSync(path);
+  expect(() => recoverMontageApplications(project)).toThrow(new Error(`Неизвестный журнал ручного монтажа: ${path}. Резервы сохранены.`));
+  expect(readFileSync(path)).toEqual(previous);
+  expect(readFileSync(join(project, 'plan/scenes.json'), 'utf8')).toBe('новый реестр');
+  expect(readFileSync(join(history, 'before/plan/scenes.json'), 'utf8')).toBe('старый реестр');
 });

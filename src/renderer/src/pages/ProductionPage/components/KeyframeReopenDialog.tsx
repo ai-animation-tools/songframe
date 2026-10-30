@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Возврат утверждённой опоры: замечание обязательно, кандидат снимается, видеопромпт согласуется заново. */
 import { useState, type ReactElement } from 'react';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -20,13 +21,13 @@ export function KeyframeReopenDialog({
   return (
     <ConfirmationDialog
       open
-      title={`Вернуть опору ${frame} на доработку`}
-      description={`Утверждение ${frame} будет снято, файл кандидата останется в папке пакета. Опору нужно создать заново кнопкой «Создать ${frame}» в блоке «Подготовка плана», затем снова утвердить; видеопромпт после этого согласуется заново.`}
-      confirmLabel="Вернуть на доработку"
+      title={productionTexts.keyframeReopenDialog.title({ frame })}
+      description={productionTexts.keyframeReopenDialog.description({ frame })}
+      confirmLabel={productionTexts.keyframeReopenDialog.confirm}
       confirmIcon={<ReplayIcon />}
       confirmColor="warning"
       confirmDisabled={!note.trim()}
-      confirmDisabledReason="Опишите, что исправить в опоре."
+      confirmDisabledReason={productionTexts.keyframeReopenDialog.reason}
       onClose={onClose}
       onConfirm={() => onConfirm(note.trim(), scope)}
     >
@@ -36,9 +37,9 @@ export function KeyframeReopenDialog({
         multiline
         minRows={3}
         maxRows={8}
-        label="Что исправить в опоре"
-        placeholder="Например: сохранить одежду героя из предыдущего плана, свет — тёплый вечерний."
-        helperText="Обязательно. Замечание сохраняется в пакете и передаётся агенту при создании опоры."
+        label={productionTexts.keyframeReopenDialog.note}
+        placeholder={productionTexts.keyframeReopenDialog.placeholder}
+        helperText={productionTexts.keyframeReopenDialog.hint}
         value={note}
         onChange={(event) => setNote(event.target.value)}
         sx={{ mt: 2, mb: 1 }}

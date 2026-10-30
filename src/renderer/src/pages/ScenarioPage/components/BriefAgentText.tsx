@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import { type ReactElement, useId, useState } from 'react';
 import { Box, Button, Collapse, Typography } from '@mui/material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -16,12 +17,12 @@ export function BriefAgentText({ before, after }: { before: string; after: strin
         aria-controls={id}
         onClick={() => setOpen((value) => !value)}
       >
-        Текст для агента
+        {scenarioTexts.brief.agentText}
       </Button>
       <Collapse in={open} unmountOnExit>
         <Box id={id} sx={{ mt: 1, p: 1.5, borderRadius: 1, bgcolor: 'action.hover', minWidth: 0 }}>
           <Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 1 }}>
-            Эти абзацы идут в промпт опор дословно; копировать их не нужно.
+            {scenarioTexts.brief.agentTextHint}
           </Typography>
           {[before, after].map((paragraph, index) => (
             <Typography key={index} variant="body2" sx={{ overflowWrap: 'anywhere', mt: index ? 1 : 0 }}>

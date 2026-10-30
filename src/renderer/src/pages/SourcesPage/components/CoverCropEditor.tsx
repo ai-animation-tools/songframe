@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 /** Квадрат поверх оригинала: перетаскивание и клавиатура меняют натуральные координаты. */
 import { useId, useRef, type ReactElement } from 'react';
 import { Box, Slider, Stack, Typography } from '@mui/material';
@@ -21,11 +22,17 @@ export function CoverCropEditor({ image, crop, onCrop, disabled = false }: Props
       <Box sx={{ display: 'flex', justifyContent: 'center', overflow: 'hidden', bgcolor: 'action.hover', borderRadius: 1 }}>
         {/* Пропорции оригинала задают размеры контейнера и сохраняют квадрат в пикселях экрана. */}
         <Box ref={imageRef} sx={{ position: 'relative', width: '100%', maxWidth: `${(image.width / image.height) * 400}px`, lineHeight: 0 }}>
-          <Box component="img" src={window.api.shell.fileUrl(image.path)} alt="Созданная обложка" draggable={false} sx={{ width: '100%', display: 'block' }} />
+          <Box
+            component="img"
+            src={window.api.shell.fileUrl(image.path)}
+            alt={sourcesTexts.createdCoverAlt}
+            draggable={false}
+            sx={{ width: '100%', display: 'block' }}
+          />
           <Box
             role="group"
             tabIndex={disabled ? -1 : 0}
-            aria-label="Квадратная область обложки"
+            aria-label={sourcesTexts.cropArea}
             aria-describedby={helpId}
             aria-disabled={disabled}
             onKeyDown={(event) => {
@@ -75,7 +82,7 @@ export function CoverCropEditor({ image, crop, onCrop, disabled = false }: Props
         </Box>
       </Box>
       <Typography id={sizeId} variant="body2">
-        Размер области: {crop.size} × {crop.size} пикселей
+        {sourcesTexts.cropSize({ size: crop.size })}
       </Typography>
       <Slider
         aria-labelledby={sizeId}
@@ -88,7 +95,7 @@ export function CoverCropEditor({ image, crop, onCrop, disabled = false }: Props
         valueLabelDisplay="auto"
       />
       <Typography id={helpId} variant="caption" color="text.secondary">
-        Перетащите квадрат и выберите его размер. Стрелки сдвигают область на 1 пиксель, Shift + стрелки — на 10.
+        {sourcesTexts.cropHelp}
       </Typography>
     </Stack>
   );

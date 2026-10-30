@@ -1,3 +1,5 @@
+import { projectTexts } from '@shared/texts/project';
+import { SlottedText } from '../../../components/SlottedText';
 /** Проверка возможностей читает сведения провайдера и не отправляет генерацию. */
 
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
@@ -60,13 +62,13 @@ export function MediaCapabilitiesPanel({
   return (
     <Stack spacing={1} sx={{ minWidth: 0 }}>
       <Typography variant="caption" color="text.secondary">
-        Модели и параметры провайдера проверяются автоматически при открытии и смене провайдера. Настройки не сохраняются, генерация не запускается.
+        {projectTexts.capabilities.automaticCheck}
       </Typography>
-      {busy && <LinearProgress aria-label="Проверяем возможности провайдера" />}
-      {!online && provider ? <Alert severity="info">Возможности провайдера проверятся после подключения к сети.</Alert> : null}
+      {busy && <LinearProgress aria-label={projectTexts.capabilities.checking} />}
+      {!online && provider ? <Alert severity="info">{projectTexts.capabilities.checkWhenOnline}</Alert> : null}
       {error && (
         <Alert severity="error">
-          <LinkedText text={`Не удалось проверить возможности: ${error}`} />
+          <LinkedText text={projectTexts.capabilities.failed({ error })} />
         </Alert>
       )}
       {result && (
@@ -79,7 +81,7 @@ export function MediaCapabilitiesPanel({
           ))}
           {!result.generationVerified && <Typography variant="body2">{capabilitiesNote(result)}</Typography>}
           <Typography variant="caption" color="text.secondary">
-            Проверено: <DateTime value={result.checkedAt} />
+            <SlottedText text={projectTexts.capabilities.checkedAt} slots={{ date: <DateTime value={result.checkedAt} /> }} />
           </Typography>
         </Alert>
       )}
@@ -93,7 +95,7 @@ export function MediaCapabilitiesPanel({
           }}
           sx={{ alignSelf: 'start' }}
         >
-          Повторить проверку
+          {projectTexts.capabilities.retry}
         </Button>
       ) : null}
     </Stack>

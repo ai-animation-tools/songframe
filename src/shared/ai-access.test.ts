@@ -25,3 +25,14 @@ describe('причина блокировки ИИ', () => {
     expect(aiActionProblem(ready, 'image')).toBeNull();
   });
 });
+
+it('сохраняет полные резервные сообщения до проверки и для каждого вида исполнителя', () => {
+  expect(aiActionProblem(undefined)).toBe('Проверяем выбор и доступность исполнителей ИИ…');
+  expect(aiActionProblem({ ...ready, agent: { ...ready.agent, available: false } })).toBe('Сначала выберите доступного агента в настройках приложения.');
+  expect(aiActionProblem({ ...ready, image: { ...ready.image, selected: false } }, 'image')).toBe(
+    'Сначала выберите доступного провайдера изображений в настройках проекта.'
+  );
+  expect(aiActionProblem({ ...ready, video: { ...ready.video, available: false } }, 'video')).toBe(
+    'Сначала выберите доступного провайдера видео в настройках проекта.'
+  );
+});

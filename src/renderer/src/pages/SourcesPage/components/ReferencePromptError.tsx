@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 import type { ReactElement } from 'react';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { Alert, Box, Button } from '@mui/material';
@@ -14,14 +15,14 @@ export function ReferencePromptError({ error, onRetry }: Props): ReactElement {
       severity="warning"
       action={
         <Button startIcon={<RefreshIcon />} onClick={onRetry}>
-          Повторить чтение
+          {sourcesTexts.retryRead}
         </Button>
       }
     >
-      Не удалось прочитать source/{error.path}. Верните файл и повторите чтение либо введите промпт заново.
+      {sourcesTexts.promptReadError({ path: error.path })}
       <Box component="details" sx={{ mt: 0.5 }}>
         <Box component="summary" sx={{ cursor: 'pointer' }}>
-          Технические подробности
+          {sourcesTexts.errorDetails}
         </Box>
         {error.message}
       </Box>

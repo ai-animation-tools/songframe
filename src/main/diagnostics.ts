@@ -54,6 +54,7 @@ export function sanitize(text: string, home?: string): string {
 }
 
 export function runtimeLine(info: RuntimeInfo): string {
+  // eslint-disable-next-line no-restricted-syntax -- Строка версий относится к формату журнала и отчёта разработчика, а не к UI.
   return `SongFrame ${info.app}; Electron ${info.electron}; Node ${info.node}; ОС ${info.os}; архитектура ${info.arch}; ${info.packaged ? 'готовая поставка' : 'запуск из checkout'}`;
 }
 
@@ -77,6 +78,7 @@ export class CrashLog {
       appendFileSync(this.path, `${(this.options.now?.() ?? new Date()).toISOString()} [${kind}] ${body}\n`);
     } catch (error) {
       // Недоступный журнал не должен становиться ещё одним сбоем.
+      // eslint-disable-next-line no-restricted-syntax -- Внутренний отказ записи журнала выводится только в консоль процесса.
       console.error('Не удалось записать журнал сбоев:', error);
     }
   }
@@ -86,6 +88,7 @@ export class CrashLog {
 export function describeFailure(value: unknown): string {
   if (value instanceof Error) {
     const text = value.stack || `${value.name}: ${value.message}`;
+    // eslint-disable-next-line no-restricted-syntax -- Причина ошибки дополняет стек только в журнале сбоев и отчёте разработчика.
     return value.cause !== undefined ? `${text}\nПричина: ${describeFailure(value.cause)}` : text;
   }
   if (typeof value === 'string') return value;
@@ -140,6 +143,7 @@ function readText(path: string): string | null {
   }
 }
 
+/* eslint-disable no-restricted-syntax -- Сводка и копия задания сохраняют служебный формат журнала и отчёта разработчика. */
 function jobInfo(job: JobInfo): string {
   const lines = [
     `Задание ${job.id}: ${job.title}`,
@@ -156,6 +160,8 @@ function jobInfo(job: JobInfo): string {
 export function jobText(job: JobInfo, log: string, home?: string): string {
   return sanitize(`${jobInfo(job)}\n\nЖурнал:\n${log.trim() || 'Журнал пуст.'}\n`, home);
 }
+
+/* eslint-enable no-restricted-syntax */
 
 export interface ReportInput {
   localDir: string;
@@ -175,6 +181,7 @@ export interface ReportInput {
  * Один текстовый отчёт для разработчика. Не включает settings.json, файлы входа провайдеров, промпты и вывод агента;
  * домашний каталог заменён на «~». Журналы заданий добавляются, пока отчёт не превысит limit.
  */
+/* eslint-disable no-restricted-syntax -- Содержимое текстового отчёта разработчика сохраняет свой формат и владельца согласно docs/ui/texts.md. */
 export function buildReport(input: ReportInput): string {
   const limit = input.limit ?? REPORT_LIMIT;
   const clean = (text: string): string => sanitize(text, input.home);
@@ -239,3 +246,4 @@ export function buildReport(input: ReportInput): string {
   // Журнал сбоев сам ограничен 2 МБ, но итог всё равно не превышает лимит.
   return Buffer.byteLength(report) > limit ? Buffer.from(report).subarray(0, limit).toString('utf8') : report;
 }
+/* eslint-enable no-restricted-syntax */

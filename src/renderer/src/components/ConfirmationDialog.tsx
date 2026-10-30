@@ -1,3 +1,4 @@
+import { commonTexts } from '@shared/texts/common';
 import { useId, type ReactElement, type ReactNode } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
@@ -48,7 +49,7 @@ export function ConfirmationDialog({
   cancelDisabled = false,
   cancelDisabledReason,
   closeDisabled = false,
-  cancelLabel = 'Отмена',
+  cancelLabel = commonTexts.cancel,
   cancelAutoFocus = false,
   extraActions
 }: Props): ReactElement {

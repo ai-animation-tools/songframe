@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import { useEffect, useState, type ReactElement } from 'react';
 import { Box, Chip, Paper, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import { alpha, useTheme, type Theme } from '@mui/material/styles';
@@ -66,20 +67,20 @@ export function SceneTimeline({
     <Paper variant="outlined" sx={{ p: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.75 }}>
         <Typography variant="caption" color="text.secondary">
-          Цвет планов:
+          {scenarioTexts.timeline.color}
         </Typography>
         <ToggleButtonGroup
           size="small"
           exclusive
           value={mode}
           onChange={(_event, next: Mode | null) => next && setMode(next)}
-          aria-label="Цвет планов на шкале"
+          aria-label={scenarioTexts.timeline.colorAccessibleName}
         >
           <ToggleButton value="parts" sx={{ py: 0.25, px: 1 }}>
-            По частям
+            {scenarioTexts.timeline.byPart}
           </ToggleButton>
           <ToggleButton value="status" sx={{ py: 0.25, px: 1 }}>
-            По статусу
+            {scenarioTexts.timeline.byStatus}
           </ToggleButton>
         </ToggleButtonGroup>
         {/* Легенда показывает только встречающиеся статусы с числом планов. */}
@@ -91,7 +92,7 @@ export function SceneTimeline({
                   key={key}
                   size="small"
                   variant="outlined"
-                  label={`${SHOT_STATE_LABELS[key].label}: ${counts.get(key)}`}
+                  label={scenarioTexts.timeline.statusCount({ label: SHOT_STATE_LABELS[key].label, count: counts.get(key) })}
                   icon={<Box component="span" sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: SHOT_STATE_LABELS[key].bar, ml: '6px !important' }} />}
                 />
               ))
@@ -136,7 +137,12 @@ export function SceneTimeline({
           return (
             <Tooltip
               key={s.id}
-              title={`${s.id} · ${formatClock(s.start_frame / FPS)}–${formatClock(s.end_frame_exclusive / FPS)}${mode === 'status' ? ` · ${SHOT_STATE_LABELS[shotState(s.id)].label}` : ''}`}
+              title={scenarioTexts.timeline.shotHint({
+                id: s.id,
+                start: formatClock(s.start_frame / FPS),
+                end: formatClock(s.end_frame_exclusive / FPS),
+                status: mode === 'status' ? SHOT_STATE_LABELS[shotState(s.id)].label : null
+              })}
             >
               <Box
                 onClick={() => onSelect(s.id)}

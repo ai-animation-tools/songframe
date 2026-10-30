@@ -1,4 +1,5 @@
 /** Опоры провайдера-агента: программа пишет только кандидаты, регистрация и принятие принадлежат производственному процессу. */
+import { productionTexts } from '@shared/texts/production';
 import { randomUUID, createHash } from 'node:crypto';
 import { copyFileSync, chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { extname, isAbsolute, join, relative, resolve } from 'node:path';
@@ -6,6 +7,8 @@ import type { AgentJob, AgentSettings, AgentStartInput } from '@shared/agents';
 import { mediaProviderInfo, mediaProviderTitle, type MediaProviderId } from '@shared/media-providers';
 import type { ProductionFrameCandidate, ProductionImagesInput } from '@shared/production-workflow';
 import { writeLocalJson, readLocalJson } from './local-files';
+
+const texts = productionTexts.main.images;
 
 interface ImagesRecord {
   schemaVersion: 1;
@@ -91,7 +94,7 @@ export class KeyframeImages {
   start(input: ProductionImagesInput, request: KeyframeImagesRequest): AgentJob {
     const project = realpathSync(input.project);
     if (!input.frames.length || input.frames.some((frame) => !/^K\d{2}$/.test(frame.id) || !frame.prompt.trim()))
-      throw new Error('Сначала подготовьте описания опор.');
+      throw new Error(texts.frameDescriptionsRequired);
     const base = join(this.options.localDir, 'image-jobs');
     const directory = join(base, randomUUID());
     mkdirSync(directory, { recursive: true });
@@ -102,7 +105,7 @@ export class KeyframeImages {
       referencePaths: frame.referencePaths.map((path) => {
         const source = resolve(project, path);
         const local = relative(project, realpathSync(source));
-        if (isAbsolute(local) || local.startsWith('..') || !isImageFile(source)) throw new Error(`Недоступен референс опоры: ${path}`);
+        if (isAbsolute(local) || local.startsWith('..') || !isImageFile(source)) throw new Error(texts.referenceUnavailable({ path }));
         if (!copies.has(source)) {
           const target = `reference-${String(copies.size + 1).padStart(2, '0')}${extname(source).toLowerCase()}`;
           copyFileSync(source, join(directory, target));
@@ -115,7 +118,7 @@ export class KeyframeImages {
     }));
     // Утверждённые опоры пакета копируются рядом с референсами: следующий кадр согласуется с ними.
     const approved = (input.approvedFrames ?? []).map((frame) => {
-      if (!/^K\d{2}$/.test(frame.id) || !isImageFile(frame.path)) throw new Error(`Недоступна утверждённая опора ${frame.id}.`);
+      if (!/^K\d{2}$/.test(frame.id) || !isImageFile(frame.path)) throw new Error(texts.approvedFrameUnavailable({ frame: frame.id }));
       const copy = `approved-${frame.id}${extname(frame.path).toLowerCase()}`;
       copyFileSync(frame.path, join(directory, copy));
       chmodSync(join(directory, copy), 0o444);
@@ -126,17 +129,25 @@ export class KeyframeImages {
     const job = this.options.agents.startImages(
       {
         project,
-        task: `Опоры ${input.shot}: ${frames.map((frame) => frame.id).join(', ')} · ${mediaProviderTitle(request.provider)}`,
+        task: texts.jobTitle({ shot: input.shot, frames: frames.map((frame) => frame.id).join(', '), provider: mediaProviderTitle(request.provider) }),
         prompt:
+          // eslint-disable-next-line no-restricted-syntax -- Инструкция и формат ответа генератора сохраняются у владельца промпта.
           'Создай перечисленные опорные изображения встроенным инструментом генерации изображений. Используй только переданные копии референсов. ' +
           (approved.length
-            ? 'approvedFrames — уже утверждённые кадры этого же плана: передай их генератору как референсы и сохрани с ними внешность и одежду героев, свет, место, ' +
+            ? // eslint-disable-next-line no-restricted-syntax -- Инструкция и формат ответа генератора сохраняются у владельца промпта.
+              'approvedFrames — уже утверждённые кадры этого же плана: передай их генератору как референсы и сохрани с ними внешность и одежду героев, свет, место, ' +
+              // eslint-disable-next-line no-restricted-syntax -- Инструкция и формат ответа генератора сохраняются у владельца промпта.
               'расстановку и направление транспорта и героев; меняй только то, что задаёт промпт создаваемой опоры. '
             : '') +
+          // eslint-disable-next-line no-restricted-syntax -- Инструкция и формат ответа генератора сохраняются у владельца промпта.
           (notes.length ? 'notes — исправления пользователя к прежним вариантам: выполни их, они важнее совпадения с прежним результатом. ' : '') +
+          // eslint-disable-next-line no-restricted-syntax -- Инструкция и формат ответа генератора сохраняются у владельца промпта.
           'Сохрани каждый результат как Kxx.png, Kxx.jpg или Kxx.webp в текущей папке, сохраняя фактический формат генератора. Не используй внешние сервисы генерации, API-ключи или другие генераторы. ' +
+          // eslint-disable-next-line no-restricted-syntax -- Инструкция и формат ответа генератора сохраняются у владельца промпта.
           'Если встроенный image tool недоступен, сообщи об этом и не подменяй его другим способом. ' +
+          // eslint-disable-next-line no-restricted-syntax -- Инструкция и формат ответа генератора сохраняются у владельца промпта.
           'Не изменяй референсы, исходный проект или принятые материалы. ' +
+          // eslint-disable-next-line no-restricted-syntax -- Инструкция и формат ответа генератора сохраняются у владельца промпта.
           'Финальный ответ — один JSON без Markdown: {"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png"}]}.',
         context: JSON.stringify({
           stage: 'frames',
@@ -162,7 +173,7 @@ export class KeyframeImages {
   }
 
   collect(job: AgentJob, requestSha: string): ProductionFrameCandidate[] {
-    if (job.status !== 'completed' || job.exitCode !== 0) throw new Error('Задание опор не завершено успешно.');
+    if (job.status !== 'completed' || job.exitCode !== 0) throw new Error(texts.jobIncomplete);
     const base = join(this.options.localDir, 'image-jobs');
     for (const entry of existsSync(base) ? readdirSync(base, { withFileTypes: true }) : []) {
       if (!entry.isDirectory()) continue;
@@ -174,7 +185,7 @@ export class KeyframeImages {
         continue;
       }
       if (record?.jobId !== job.id) continue;
-      if (record.requestSha !== requestSha) throw new Error('Задание опор относится к другому согласованному запросу.');
+      if (record.requestSha !== requestSha) throw new Error(texts.jobRequestMismatch);
       // Задание выполнила программа-агент провайдера из записи: её название и показывается в ошибках результата.
       if (
         record.schemaVersion !== 1 ||
@@ -183,7 +194,7 @@ export class KeyframeImages {
         !Array.isArray(record.ids) ||
         !Array.isArray(record.inputs)
       )
-        throw new Error('Повреждена запись задания опор.');
+        throw new Error(texts.jobRecordCorrupt);
       const title = mediaProviderTitle(record.provider);
       for (const file of record.inputs)
         if (
@@ -192,9 +203,9 @@ export class KeyframeImages {
           !existsSync(join(directory, file.copy)) ||
           digest(join(directory, file.copy)) !== file.sha256
         )
-          throw new Error('Референсы изменились: подготовьте опоры заново.');
+          throw new Error(texts.referencesChanged);
       const response: unknown = JSON.parse(job.result);
-      if (!response || typeof response !== 'object' || Array.isArray(response)) throw new Error(`${title} не вернул список файлов опор.`);
+      if (!response || typeof response !== 'object' || Array.isArray(response)) throw new Error(texts.fileListMissing({ provider: title }));
       const value = response as Record<string, unknown>;
       if (
         value.schemaVersion !== 1 ||
@@ -202,12 +213,12 @@ export class KeyframeImages {
         Object.keys(value).some((key) => !['schemaVersion', 'stage', 'images'].includes(key)) ||
         !Array.isArray(value.images)
       )
-        throw new Error('Неверный контракт результата опор.');
+        throw new Error(texts.resultContractInvalid);
       const candidates = value.images.map((candidate: unknown) => {
-        if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) throw new Error('Неверная запись опоры.');
+        if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) throw new Error(texts.frameEntryInvalid);
         const item = candidate as Record<string, unknown>;
         if (typeof item.id !== 'string' || typeof item.path !== 'string' || Object.keys(item).some((key) => key !== 'id' && key !== 'path'))
-          throw new Error('Неверный путь опоры.');
+          throw new Error(texts.framePathInvalid);
         const file = resolve(directory, item.path);
         const local = relative(directory, file);
         if (
@@ -220,9 +231,8 @@ export class KeyframeImages {
           !isImageFile(file) ||
           (this.options.validateImage && !this.options.validateImage(file))
         )
-          throw new Error(`Опора ${item.id}: нужен настоящий файл изображения в папке кандидатов.`);
-        if (!imageExtensionMatches(file))
-          throw new Error(`Опора ${item.id}: расширение не соответствует фактическому формату изображения. Исходный файл сохранён.`);
+          throw new Error(texts.frameImageRequired({ frame: item.id }));
+        if (!imageExtensionMatches(file)) throw new Error(texts.frameExtensionMismatch({ frame: item.id }));
         return { id: item.id, path: file };
       });
       if (
@@ -230,10 +240,10 @@ export class KeyframeImages {
         new Set(candidates.map((item) => item.id)).size !== record.ids.length ||
         candidates.some((item) => !record.ids.includes(item.id))
       )
-        throw new Error(`${title} вернул не все согласованные опоры.`);
+        throw new Error(texts.framesIncomplete({ provider: title }));
       return record.ids.map((id) => candidates.find((candidate) => candidate.id === id)!);
     }
-    throw new Error('Рабочая папка опор недоступна. Подготовьте новое задание.');
+    throw new Error(texts.workDirectoryUnavailable);
   }
 
   /** После перезапуска восстанавливаем связь с запросом из существующей записи, не создавая второй журнал. */
@@ -248,10 +258,10 @@ export class KeyframeImages {
         continue;
       }
       if (record?.jobId !== job.id) continue;
-      if (record.schemaVersion !== 1 || record.project !== job.project) throw new Error('Повреждена запись задания опор.');
-      if (typeof record.requestSha !== 'string' || !/^[a-f0-9]{64}$/.test(record.requestSha)) throw new Error('Повреждён SHA запроса опор.');
+      if (record.schemaVersion !== 1 || record.project !== job.project) throw new Error(texts.jobRecordCorrupt);
+      if (typeof record.requestSha !== 'string' || !/^[a-f0-9]{64}$/.test(record.requestSha)) throw new Error(texts.requestHashCorrupt);
       return record.requestSha;
     }
-    throw new Error('Рабочая папка опор недоступна. Подготовьте новое задание.');
+    throw new Error(texts.workDirectoryUnavailable);
   }
 }

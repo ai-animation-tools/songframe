@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { formatDateTime } from './format';
+import { formatBytes, formatDateTime, formatDuration } from './format';
 import { DateTime } from './components/DateTime';
 
 describe('дата и время для человека', () => {
@@ -24,5 +24,24 @@ describe('дата и время для человека', () => {
     expect(renderToStaticMarkup(createElement(DateTime, { value: moment.toISOString() }))).toBe(
       `<time dateTime="${moment.toISOString()}">28 октября 2026 11:20:30</time>`
     );
+  });
+});
+
+// Значения фиксируют прежние единицы и округление по обе стороны границ размера.
+describe('форматирование размера и длительности', () => {
+  it.each([
+    [0, '0 Б'],
+    [1, '1 Б'],
+    [1023, '1023 Б'],
+    [1024, '1.0 КБ'],
+    [1536, '1.5 КБ'],
+    [1048575, '1024.0 КБ'],
+    [1048576, '1.0 МБ'],
+    [-1, '-1 Б'],
+    [0.5, '0.5 Б']
+  ] as const)('сохраняет размер %s', (bytes, expected) => expect(formatBytes(bytes)).toBe(expected));
+
+  it.each([null, NaN, Infinity, -Infinity])('объясняет неопределённую длительность %s', (value) => {
+    expect(formatDuration(value)).toBe('длительность не определена');
   });
 });

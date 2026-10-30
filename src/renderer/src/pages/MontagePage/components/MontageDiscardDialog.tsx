@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { SwapHoriz } from '@mui/icons-material';
 import type { ReactElement } from 'react';
 import { Typography } from '@mui/material';
@@ -9,14 +10,14 @@ export function MontageDiscardDialog({ open, onClose, onContinue }: { open: bool
     <ConfirmationDialog
       open={open}
       onClose={onClose}
-      title="Заменить текущий монтаж?"
+      title={montageTexts.replaceTitle}
       onConfirm={onContinue}
-      confirmLabel="Заменить"
+      confirmLabel={montageTexts.replace}
       confirmIcon={<SwapHoriz />}
       confirmColor="error"
-      cancelLabel="Вернуться и сохранить"
+      cancelLabel={montageTexts.returnAndSave}
     >
-      <Typography>В текущем черновике есть несохранённые изменения. Сохраните его перед открытием другого или продолжите с заменой.</Typography>
+      <Typography>{montageTexts.replaceWarning}</Typography>
     </ConfirmationDialog>
   );
 }

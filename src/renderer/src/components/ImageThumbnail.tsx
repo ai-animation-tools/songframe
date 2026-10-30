@@ -1,4 +1,5 @@
 /** Миниатюра-кнопка: щелчок или Enter открывает изображение крупно в общей ImageGallery. */
+import { componentsTexts } from '@shared/texts/components';
 import type { ReactElement } from 'react';
 import { Box, ButtonBase, Tooltip } from '@mui/material';
 
@@ -32,7 +33,7 @@ export function ImageThumbnail({
   const button = (
     <ButtonBase
       onClick={onOpen}
-      aria-label={`Открыть крупно: ${label}`}
+      aria-label={componentsTexts.gallery.openLarge({ label })}
       sx={{
         display: 'block',
         width,

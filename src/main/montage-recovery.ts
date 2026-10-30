@@ -1,4 +1,5 @@
 /** При старте окна восстанавливает прерванную замену сцен без Python; @link ../../docs/montage.md. */
+import { montageTexts } from '@shared/texts/montage';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -55,13 +56,13 @@ export function recoverMontageApplications(project: string): void {
       ) ||
       new Set(journal.files.map((file) => file.path)).size !== journal.files.length
     )
-      throw new Error(`Неизвестный журнал ручного монтажа: ${path}. Резервы сохранены.`);
+      throw new Error(montageTexts.main.unknownJournal({ path }));
     const backups = journal.files.map((file) => {
       const current = digest(join(project, file.path));
-      if (current !== file.before && current !== file.after)
-        throw new Error(`После прерывания монтажа изменён ${file.path}. Восстановление остановлено; резервы: ${directory}.`);
+      if (current !== file.before && current !== file.after) throw new Error(montageTexts.main.recoveryFileChanged({ path: file.path, directory }));
       const backup = file.before === null ? null : readFileSync(join(directory, 'before', file.path));
-      if (backup !== null && createHash('sha256').update(backup).digest('hex') !== file.before) throw new Error(`Повреждён резерв ${file.path}: ${directory}.`);
+      if (backup !== null && createHash('sha256').update(backup).digest('hex') !== file.before)
+        throw new Error(montageTexts.main.recoveryBackupCorrupt({ path: file.path, directory }));
       return { file, backup };
     });
     for (const { file, backup } of backups.reverse()) {

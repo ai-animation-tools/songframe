@@ -1,3 +1,5 @@
+import { commonTexts } from '@shared/texts/common';
+import { montageTexts } from '@shared/texts/montage';
 import { Check } from '@mui/icons-material';
 import type { ReactElement } from 'react';
 import { Alert, Stack, Typography } from '@mui/material';
@@ -26,26 +28,20 @@ export function MontageApplyDialog({
     <ConfirmationDialog
       open={open}
       onClose={onClose}
-      title="Применить монтаж к принятым сценам?"
+      title={montageTexts.applyTitle}
       onConfirm={onApply}
-      confirmLabel="Применить к сценам"
+      confirmLabel={montageTexts.applyToScenes}
       confirmIcon={<Check />}
       confirmColor="error"
       confirmDisabled={busy}
-      confirmDisabledReason="Дождитесь завершения текущей операции."
+      confirmDisabledReason={commonTexts.operationPending}
       cancelDisabled={busy}
-      cancelDisabledReason="Дождитесь завершения текущей операции."
+      cancelDisabledReason={commonTexts.operationPending}
       closeDisabled={busy}
     >
       <Stack spacing={1.5}>
-        <Alert severity="warning">
-          Это действие изменит принятые монтажные версии сцен и внутренние границы в реестре. Оригиналы и прежние версии сохранятся. Исходная песня и её
-          разметка не меняются.
-        </Alert>
-        <Typography variant="body2">
-          Нужны принятые комплекты соседних сцен в исходном порядке и сохранение внешних границ участка. Сдвиг стыка изменит оба соседних комплекта. Приложение
-          проверит эти условия и актуальность материалов перед применением.
-        </Typography>
+        <Alert severity="warning">{montageTexts.applyConsequences}</Alert>
+        <Typography variant="body2">{montageTexts.applyRequirements}</Typography>
         {draft.clips.map((clip) => {
           const start = cursor;
           cursor += clipLength(clip);
@@ -53,8 +49,12 @@ export function MontageApplyDialog({
           const changed = canonical && (canonical.startFrame !== start || canonical.endFrame !== cursor);
           return (
             <Typography key={clip.id} variant="body2" color={changed ? 'warning.main' : 'text.primary'}>
-              {clip.scene}: {frameLabel(start)} — {frameLabel(cursor)}
-              {changed ? ` (было ${frameLabel(canonical.startFrame)} — ${frameLabel(canonical.endFrame)})` : ''}
+              {montageTexts.applyRange({
+                scene: clip.scene,
+                start: frameLabel(start),
+                end: frameLabel(cursor),
+                previous: changed ? { start: frameLabel(canonical.startFrame), end: frameLabel(canonical.endFrame) } : undefined
+              })}
             </Typography>
           );
         })}

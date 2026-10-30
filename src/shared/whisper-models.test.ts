@@ -31,3 +31,9 @@ describe('Выбор модели faster-whisper', () => {
     expect(recommendWhisper({ ...cpu, vramMiB: 1024 }).gpuSuggestion).toBeNull();
   });
 });
+
+it('сохраняет полные причины CPU и CUDA, десятичные значения и прежнюю грамматику потоков', () => {
+  expect(recommendWhisper(cpu).reason).toBe('Обработка на CPU: 8 потоков, 16.0 ГБ RAM. Medium подходит для обычной локальной работы.');
+  expect(recommendWhisper({ ...cpu, cpuThreads: 1, ramGiB: 3.25 }).reason).toBe('Обработка на CPU: 1 потоков, 3.3 ГБ RAM. Small требует меньше ресурсов.');
+  expect(recommendWhisper({ ...cpu, cudaReady: true, vramMiB: 4608 }).reason).toBe('Доступно ускорение CUDA, видеопамять 4.5 ГБ.');
+});

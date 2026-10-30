@@ -1,3 +1,5 @@
+import { commonTexts } from '@shared/texts/common';
+import { sourcesTexts } from '@shared/texts/sources';
 /** Генерация и выбор обложки остаются временными до сохранения формы исходников. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Box, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
@@ -29,7 +31,12 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
   const { aiAccess } = useApp();
   // Обложку готовит провайдер изображений проекта; выбранный агент на неё не влияет.
   const blockedReason = aiActionProblem(aiAccess, 'image');
-  const [prompt, setPrompt] = useState(() => (idea.trim() ? `Создай выразительную квадратную обложку музыкального клипа.\n\nИдея клипа:\n${idea.trim()}` : ''));
+  const [prompt, setPrompt] = useState(() =>
+    idea.trim()
+      ? // eslint-disable-next-line no-restricted-syntax -- Исходная инструкция генерации принадлежит диалогу, а не словарю подписей интерфейса.
+        `Создай выразительную квадратную обложку музыкального клипа.\n\nИдея клипа:\n${idea.trim()}`
+      : ''
+  );
   const [crop, setCrop] = useState<CoverCrop | null>(null);
   const { session, working, accepting, error, preparedSha, start, next, refreshQuote, generate, accept } = useCoverGeneration(project);
   const [agreedToken, setAgreedToken] = useState<string | null>(null);
@@ -64,27 +71,30 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
     setConfirmation((current) => (current?.approvalToken === session?.approvalToken && !error ? current : null));
   }, [session?.approvalToken, error]);
   const isRetry = session?.status === 'ready' || session?.status === 'failed';
-  const actionLabel = isRetry ? 'Ещё' : 'Сгенерировать обложку';
-  const generationLabel = paid && prepared && quote?.verdict === 'ok' ? `${actionLabel} · ${formatCredits(quote.credits)}` : actionLabel;
+  const actionLabel = isRetry ? sourcesTexts.more : sourcesTexts.generateCover;
+  const generationLabel =
+    paid && prepared && quote?.verdict === 'ok'
+      ? sourcesTexts.generationCostLabel({ action: actionLabel, credits: formatCredits(quote.credits) })
+      : actionLabel;
   const generationDisabled = Boolean(blockedReason) || preparing || generating || !!blockedQuote || (!session && !prompt.trim());
   // Причины блокировки для подсказок; недоступность исполнителя AgentButton показывает сам, обычной кнопке её передаём явно.
-  const waitReason = preparing ? 'Дождитесь окончания подготовки запроса.' : generating ? 'Дождитесь окончания генерации обложки.' : null;
+  const waitReason = preparing ? sourcesTexts.waitRequestPreparation : generating ? sourcesTexts.waitCoverGeneration : null;
   const quoteReason = blockedQuote
     ? unknownCost
-      ? 'Сначала нажмите «Я согласен» для показанной оценки стоимости.'
+      ? sourcesTexts.agreeToShownCost
       : quote?.verdict === 'insufficient_balance'
-        ? 'Кредитов недостаточно: пополните баланс и обновите стоимость.'
-        : 'Стоимость или остаток не подтверждены: обновите стоимость.'
+        ? sourcesTexts.insufficientCredits
+        : sourcesTexts.costUnconfirmed
     : null;
-  const ownGenerationReason = waitReason ?? quoteReason ?? (!session && !prompt.trim() ? 'Введите промпт обложки.' : null);
+  const ownGenerationReason = waitReason ?? quoteReason ?? (!session && !prompt.trim() ? sourcesTexts.enterCoverPrompt : null);
   const acceptReason = preparing
-    ? 'Дождитесь окончания подготовки.'
+    ? sourcesTexts.waitPreparation
     : !image
-      ? 'Сначала сгенерируйте обложку.'
+      ? sourcesTexts.generateCoverFirst
       : session?.status !== 'ready'
-        ? 'Дождитесь готовой обложки.'
+        ? sourcesTexts.waitReadyCover
         : !crop
-          ? 'Выберите область обложки.'
+          ? sourcesTexts.chooseCoverCrop
           : null;
   const onGenerate = async (): Promise<void> => {
     if (preparingClick.current || blockedReason || generationDisabled) return;
@@ -120,19 +130,15 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
         aria-labelledby="cover-generation-title"
         PaperProps={{ sx: { maxHeight: 'calc(100% - 32px)' } }}
       >
-        <DialogTitle id="cover-generation-title">Создать обложку</DialogTitle>
+        <DialogTitle id="cover-generation-title">{sourcesTexts.createCover}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2}>
             <AiProblemAlert kinds={['image']} />
             <Typography variant="body2" color="text.secondary">
-              {session
-                ? 'Промпт зафиксирован для этой сессии. Каждая новая попытка использует тот же текст.'
-                : idea.trim()
-                  ? 'Идея клипа уже добавлена в промпт. Уточните содержание и стиль обложки перед генерацией.'
-                  : 'Идея клипа пока не заполнена. Опишите вручную содержание и стиль обложки.'}
+              {session ? sourcesTexts.promptSessionFixed : idea.trim() ? sourcesTexts.ideaAddedToPrompt : sourcesTexts.ideaMissingForPrompt}
             </Typography>
             <TextField
-              label="Промпт обложки"
+              label={sourcesTexts.coverPrompt}
               value={session?.prompt ?? prompt}
               onChange={(event) => setPrompt(event.target.value)}
               multiline
@@ -140,16 +146,16 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
               maxRows={7}
               fullWidth
               slotProps={{ input: { readOnly: !!session || preparing } }}
-              helperText={session ? 'Промпт зафиксирован. «Ещё» создаёт новую попытку по этому же тексту.' : 'Промпт можно изменить до первого запуска.'}
+              helperText={session ? sourcesTexts.promptRetryFixed : sourcesTexts.promptEditable}
             />
             {session && (
               <Stack spacing={0.5}>
                 <Typography variant="body2">
-                  Исполнитель: {info?.title} · Модель: {session.model ?? (paid ? 'уточняется при подготовке' : info?.defaultModelLabel)}
+                  {sourcesTexts.executorModel({ provider: info?.title, model: session.model ?? (paid ? sourcesTexts.modelPending : info?.defaultModelLabel) })}
                 </Typography>
                 {prepared && session.requestSha && (
                   <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere', fontFamily: 'monospace' }}>
-                    SHA запроса: {session.requestSha}
+                    {sourcesTexts.requestSha({ sha: session.requestSha })}
                   </Typography>
                 )}
               </Stack>
@@ -158,8 +164,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
               <Alert severity={coverNotice?.severity ?? 'warning'}>
                 <Stack spacing={1} alignItems="flex-start">
                   <Typography variant="body2">
-                    {coverNotice?.text ?? 'Цена или остаток не подтверждены. Отправка недоступна.'}{' '}
-                    {quote?.verdict === 'ok' ? 'Перед отправкой проверьте и подтвердите промпт.' : ''}
+                    {coverNotice?.text ?? sourcesTexts.costUnavailable} {quote?.verdict === 'ok' ? sourcesTexts.confirmPromptBeforeSend : ''}
                     {/* Пояснение инструмента нужно, только когда цену не узнать обычным путём. */}
                     {quote?.message && coverNotice?.severity !== 'info' && quote.verdict !== 'ok' ? ` ${quote.message}` : ''}
                   </Typography>
@@ -168,20 +173,20 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
                       variant={agreedToUnknownCost ? 'outlined' : 'contained'}
                       startIcon={<CheckIcon />}
                       disabled={Boolean(blockedReason) || preparing || agreedToUnknownCost}
-                      disabledReason={blockedReason ?? (preparing ? 'Дождитесь окончания подготовки запроса.' : 'Согласие для этой оценки уже получено.')}
+                      disabledReason={blockedReason ?? (preparing ? sourcesTexts.waitRequestPreparation : sourcesTexts.costAlreadyAgreed)}
                       onClick={() => setAgreedToken(session?.approvalToken ?? null)}
                     >
-                      {agreedToUnknownCost ? 'Согласие получено' : 'Я согласен'}
+                      {agreedToUnknownCost ? sourcesTexts.costAgreed : sourcesTexts.agree}
                     </ActionButton>
                   )}
                   {quote?.verdict !== 'ok' && (
                     <ActionButton
                       startIcon={<RefreshIcon />}
                       disabled={Boolean(blockedReason) || preparing}
-                      disabledReason={blockedReason ?? 'Дождитесь окончания подготовки запроса.'}
+                      disabledReason={blockedReason ?? sourcesTexts.waitRequestPreparation}
                       onClick={() => void refreshQuote()}
                     >
-                      Обновить стоимость
+                      {sourcesTexts.refreshCost}
                     </ActionButton>
                   )}
                 </Stack>
@@ -191,11 +196,7 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
               <Stack direction="row" spacing={1} alignItems="center" role="status">
                 <CircularProgress size={20} />
                 <Typography variant="body2">
-                  {accepting
-                    ? 'Подготовка выбранной области…'
-                    : generating
-                      ? 'Создаётся обложка… Закрытие отменит ожидание и удалит временные файлы.'
-                      : 'Подготовка запроса и сведений о модели…'}
+                  {accepting ? sourcesTexts.preparingCrop : generating ? sourcesTexts.generatingCover : sourcesTexts.preparingRequest}
                 </Typography>
               </Stack>
             )}
@@ -203,23 +204,18 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
             {image && crop && <CoverCropEditor image={image} crop={crop} onCrop={setCrop} disabled={working} />}
             {session?.status === 'failed' && (
               <Typography variant="body2" color="text.secondary">
-                Нажмите «Ещё», чтобы подготовить новую попытку с тем же промптом.
+                {sourcesTexts.retryCoverHint}
               </Typography>
             )}
             <Typography variant="body2" color="text.secondary">
-              Принятая область подставится в форму. Чтобы сохранить обложку в проекте, нажмите «Сохранить» на странице исходников.
+              {sourcesTexts.acceptedCoverHint}
             </Typography>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1, flexWrap: 'wrap' }}>
           {/* Закрытие без «Принять» не меняет форму исходников, поэтому это всегда отмена. */}
-          <ActionButton
-            startIcon={<CancelOutlinedIcon />}
-            onClick={onClose}
-            disabled={accepting}
-            disabledReason="Дождитесь окончания подготовки выбранной области."
-          >
-            Отмена
+          <ActionButton startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={accepting} disabledReason={sourcesTexts.waitCropPreparation}>
+            {commonTexts.cancel}
           </ActionButton>
           <Box sx={{ flexGrow: 1 }} />
           {generationExecutor ? (
@@ -257,31 +253,29 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
                 });
             }}
           >
-            Принять
+            {sourcesTexts.accept}
           </ActionButton>
         </DialogActions>
       </Dialog>
       <ConfirmationDialog
         open={!!confirmation}
-        title="Проверьте промпт перед генерацией"
-        description="Вы уверены, что промпт правильный?"
-        confirmLabel="Сгенерировать обложку"
+        title={sourcesTexts.confirmPromptTitle}
+        description={sourcesTexts.confirmPromptQuestion}
+        confirmLabel={sourcesTexts.generateCover}
         // Знак подтверждения — программа-исполнитель провайдера изображений, а не выбранный текстовый агент.
         {...(confirmationInfo?.executor
           ? { confirmAgent: { aiKind: 'image' as const, provider: confirmationInfo.executor } }
           : { confirmIcon: <AutoAwesomeIcon /> })}
-        cancelLabel="Отмена"
+        cancelLabel={commonTexts.cancel}
         onClose={() => setConfirmation(null)}
         onConfirm={confirmGeneration}
         confirmDisabled={Boolean(blockedReason) || preparing || !confirmation?.approvalToken || confirmation.approvalToken !== session?.approvalToken}
-        confirmDisabledReason={
-          blockedReason ?? (preparing ? 'Дождитесь окончания подготовки запроса.' : 'Запрос изменился: закройте окно и подготовьте попытку заново.')
-        }
+        confirmDisabledReason={blockedReason ?? (preparing ? sourcesTexts.waitRequestPreparation : sourcesTexts.requestChanged)}
       >
         {confirmation && (
           <Stack spacing={2} sx={{ mt: 2 }}>
             <TextField
-              label="Подтверждаемый промпт"
+              label={sourcesTexts.confirmedPrompt}
               value={confirmation.prompt}
               multiline
               fullWidth
@@ -290,12 +284,12 @@ export function CoverGenerateDialog({ project, idea, onAccepted, onClose }: Prop
               slotProps={{ input: { readOnly: true } }}
             />
             <Typography variant="body2">
-              Исполнитель: {confirmationInfo?.title} · Модель: {confirmation.model ?? confirmationInfo?.defaultModelLabel}
+              {sourcesTexts.executorModel({ provider: confirmationInfo?.title, model: confirmation.model ?? confirmationInfo?.defaultModelLabel })}
             </Typography>
             <Typography variant="body2">
               {confirmationInfo?.paid
-                ? `Стоимость: ${formatCredits(confirmation.quote?.credits)}. Будет отправлен один запрос.`
-                : `Генерация через ${confirmationInfo?.title} по условиям вашего аккаунта.`}
+                ? sourcesTexts.confirmPaidRequest({ credits: formatCredits(confirmation.quote?.credits) })
+                : sourcesTexts.confirmAccountGeneration({ provider: confirmationInfo?.title })}
             </Typography>
           </Stack>
         )}

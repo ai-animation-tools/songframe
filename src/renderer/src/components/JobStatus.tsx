@@ -1,4 +1,5 @@
 /** Результат операции остаётся у действия; полный журнал доступен из сообщения о сбое. */
+import { commonTexts } from '@shared/texts/common';
 import type { ReactElement } from 'react';
 import { Alert, AlertTitle, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import ListAltIcon from '@mui/icons-material/ListAlt';
@@ -9,12 +10,12 @@ export function JobStatus({ running = false, label, job, error }: { running?: bo
   if (error || job?.status === 'failed' || job?.status === 'interrupted') {
     return (
       <Alert severity="error" sx={{ mt: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
-        <AlertTitle>{job?.title ?? 'Действие не выполнено'}</AlertTitle>
+        <AlertTitle>{job?.title ?? commonTexts.job.failed}</AlertTitle>
         <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-          {error ?? job?.error ?? `Задание завершилось с кодом ${job?.code}. Подробности доступны в журнале.`}
+          {error ?? job?.error ?? commonTexts.job.failedWithCode({ code: job?.code })}
         </Typography>
         <Button component={Link} to="/jobs" color="inherit" size="small" startIcon={<ListAltIcon />} sx={{ mt: 1 }}>
-          Открыть журнал
+          {commonTexts.job.openLog}
         </Button>
       </Alert>
     );
@@ -22,7 +23,7 @@ export function JobStatus({ running = false, label, job, error }: { running?: bo
   if (job?.status === 'done')
     return (
       <Alert severity="success" sx={{ mt: 1 }}>
-        {job.title}: выполнено.
+        {commonTexts.job.done({ title: job.title })}
       </Alert>
     );
   running ||= job?.status === 'running';
@@ -33,7 +34,7 @@ export function JobStatus({ running = false, label, job, error }: { running?: bo
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
       {running && <CircularProgress size={14} />}
       <Typography variant="body2" color="text.secondary">
-        {label ?? 'Выполняется'}
+        {label ?? commonTexts.job.running}
       </Typography>
     </Stack>
   );

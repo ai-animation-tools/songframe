@@ -1,4 +1,5 @@
 /** Свежесть сборки по её штатным source_hashes и текущему выбору принятых материалов. */
+import { animaticTexts } from '@shared/texts/animatic';
 import { FPS } from '@shared/video';
 import { createHash } from 'node:crypto';
 import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from 'node:fs';
@@ -130,17 +131,16 @@ export function animaticInputProblems(project: string, manifest: AnimaticManifes
   const check = (name: string, digest: unknown): void => {
     const path = projectPath(project, name);
     if (typeof digest !== 'string' || !/^[a-f0-9]{64}$/.test(digest)) {
-      problems.push(`Нет сохранённого хеша входа ${name}: пересоберите аниматик для проверки свежести.`);
+      problems.push(animaticTexts.main.inputHashMissing({ name }));
     } else if (!path || cachedFileDigest(path) !== digest) {
-      problems.push(`Вход аниматика изменён или отсутствует: ${name}. Нужна пересборка.`);
+      problems.push(animaticTexts.main.inputChanged({ name }));
     }
   };
   // Snapshot отделяет настройки генерации и форматирование JSON от реальных входов аниматика.
   const projectFile = join(project, 'plan/project.json');
   const currentProject = readJson<unknown>(projectFile);
-  if (!('project_inputs' in manifest)) problems.push('В манифесте аниматика отсутствует обязательное поле project_inputs; пересоберите аниматик.');
-  else if (!animaticProjectInputsMatch(manifest.project_inputs, currentProject))
-    problems.push('Значимые поля plan/project.json изменены или snapshot project_inputs повреждён; нужна пересборка аниматика.');
+  if (!('project_inputs' in manifest)) problems.push(animaticTexts.main.projectInputsMissing);
+  else if (!animaticProjectInputsMatch(manifest.project_inputs, currentProject)) problems.push(animaticTexts.main.projectInputsChanged);
   for (const [name, digest] of Object.entries(sources)) check(name, digest);
   for (const name of [manifest.source_audio ?? 'source/track.mp3']) {
     if (!(name in sources)) check(name, name === manifest.source_audio ? manifest.source_audio_sha256 : undefined);
@@ -149,7 +149,7 @@ export function animaticInputProblems(project: string, manifest: AnimaticManifes
   const registry = readJson<{ references?: Record<string, { path?: string }> }>(join(project, 'plan/scenes.json'));
   for (const shot of manifest.shots ?? []) {
     if (!shot.path) {
-      problems.push(`${shot.id}: в манифесте нет входного файла; нужна пересборка.`);
+      problems.push(animaticTexts.main.shotInputMissing({ shot: shot.id }));
       continue;
     }
     if (!(shot.path in sources)) check(shot.path, shot.sha256);
@@ -170,12 +170,12 @@ export function animaticInputProblems(project: string, manifest: AnimaticManifes
         edit?.fps !== FPS ||
         edit.frames !== shot.frames
       ) {
-        problems.push(`${shot.id}: выбранный принятый монтаж изменился после сборки; нужна пересборка.`);
+        problems.push(animaticTexts.main.acceptedEditChanged({ shot: shot.id }));
       }
       continue;
     }
     if (existsSync(assetPath)) {
-      problems.push(`${shot.id}: вместо карточки появился принятый монтаж; нужна пересборка.`);
+      problems.push(animaticTexts.main.acceptedEditAdded({ shot: shot.id }));
       continue;
     }
     const selected = selectedFrames(project, shot.id);
@@ -188,16 +188,15 @@ export function animaticInputProblems(project: string, manifest: AnimaticManifes
     const recorded = shot.keyframes ?? (receiptMatches ? entry?.keyframes : undefined) ?? null;
     const normalize = (frames: FrameSource[] | null): unknown =>
       frames?.map(({ id, role, time_seconds, path, sha256 }) => ({ id, role, time_seconds, path, sha256 })) ?? null;
-    if (JSON.stringify(normalize(selected)) !== JSON.stringify(normalize(recorded)))
-      problems.push(`${shot.id}: выбор принятых опор изменился после сборки; нужна пересборка.`);
-    if (shot.media === 'keyframes' && !recorded) problems.push(`${shot.id}: нет сведений об исходных опорах старой сборки; пересоберите аниматик.`);
+    if (JSON.stringify(normalize(selected)) !== JSON.stringify(normalize(recorded))) problems.push(animaticTexts.main.keyframesChanged({ shot: shot.id }));
+    if (shot.media === 'keyframes' && !recorded) problems.push(animaticTexts.main.keyframeSourcesMissing({ shot: shot.id }));
     for (const frame of recorded ?? []) if (!(frame.path in sources)) check(frame.path, frame.sha256);
     if (!recorded) {
       // «—» помечает план без референсов и источником карточки не является.
       const references = new Set([...(shot.references ?? shot.refs ?? []), shot.card?.primary_reference].filter((id): id is string => !!id && id !== '—'));
       for (const id of references) {
         const name = registry?.references?.[id]?.path;
-        if (!name) problems.push(`${shot.id}: нет пути референса ${id}; нужна пересборка.`);
+        if (!name) problems.push(animaticTexts.main.referencePathMissing({ shot: shot.id, id }));
         else if (!(name in sources)) check(name, receiptMatches ? receipt?.reference_hashes?.[name] : undefined);
       }
     }

@@ -1,6 +1,8 @@
 import type { AgentEvent } from '@shared/agents';
 import { agentTitle } from '@shared/agent-providers';
 import type { NotificationTarget } from '@shared/notifications';
+import { checksTexts } from '@shared/texts/checks';
+import { notificationsTexts } from '@shared/texts/notifications';
 import type { JobInfo } from '@shared/types';
 
 export interface TaskNotice {
@@ -24,20 +26,20 @@ export class TaskNotifications {
     // Режимы проверки из checks.ts и animatic.ts завершаются без сборки MP4.
     const operation =
       job.kind === 'review'
-        ? job.title.endsWith(' (проверка без видео)')
-          ? 'Проверка пробы'
-          : 'Проба'
-        : job.title === 'Проверка входов аниматика'
-          ? 'Проверка входов аниматика'
-          : 'Аниматик';
+        ? job.title.endsWith(checksTexts.reviewPlanOnlySuffix)
+          ? notificationsTexts.reviewCheckOperation
+          : notificationsTexts.reviewOperation
+        : job.title === notificationsTexts.animaticCheckTitle
+          ? notificationsTexts.animaticCheckTitle
+          : notificationsTexts.animaticOperation;
     const success = job.status === 'done';
     const title = success
-      ? operation === 'Проверка входов аниматика'
-        ? 'Входы аниматика проверены'
-        : operation === 'Проверка пробы'
-          ? 'Проба проверена'
-          : `${operation} готов${operation === 'Проба' ? 'а' : ''}`
-      : `Ошибка: ${job.title}`;
+      ? operation === notificationsTexts.animaticCheckTitle
+        ? notificationsTexts.animaticInputsChecked
+        : operation === notificationsTexts.reviewCheckOperation
+          ? notificationsTexts.reviewChecked
+          : notificationsTexts.operationReady(operation)
+      : notificationsTexts.jobFailed(job.title);
     this.send({ title, body: job.title, target: { project, route: job.kind === 'review' ? '/project/checks' : '/project/animatic' } });
   }
 
@@ -50,7 +52,7 @@ export class TaskNotifications {
     // Завершение ответа не подтверждает корректность предложения и не заменяет согласование пользователем.
     const provider = agentTitle(job.provider);
     this.send({
-      title: job.status === 'completed' ? `Ответ ${provider} готов` : `Ошибка ${provider}`,
+      title: job.status === 'completed' ? notificationsTexts.agentCompleted(provider) : notificationsTexts.agentFailed(provider),
       body: job.task,
       target: { project: job.project, route: job.task.startsWith('ai-clip-scenario:') ? '/project/scenario' : '/project/production' }
     });
@@ -58,8 +60,8 @@ export class TaskNotifications {
 
   timingFinished(project: string, success: boolean): void {
     this.send({
-      title: success ? 'Черновик разметки готов' : 'Ошибка разметки',
-      body: success ? 'Откройте разметку для проверки черновика.' : 'Не удалось подготовить черновик разметки. Вернитесь на страницу «Тайминги».',
+      title: success ? notificationsTexts.timingCompletedTitle : notificationsTexts.timingFailedTitle,
+      body: success ? notificationsTexts.timingCompletedBody : notificationsTexts.timingFailedBody,
       target: { project, route: '/project/timing' }
     });
   }
@@ -69,6 +71,7 @@ export class TaskNotifications {
       this.deliver(notice);
     } catch (error) {
       // Недоступность системных уведомлений не должна менять результат производственного задания.
+      // eslint-disable-next-line no-restricted-syntax -- Сообщение журнала остаётся у адаптера доставки и не относится к текстам интерфейса.
       console.warn('Не удалось показать системное уведомление:', error);
     }
   }

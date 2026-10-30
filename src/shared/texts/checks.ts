@@ -1,0 +1,77 @@
+import { commonTexts } from './common';
+
+/** Тексты проверок общие для заданий главного процесса и панели результатов; правила — @link ../../../docs/ui/texts.md. */
+const REVIEW_PLAN_ONLY_SUFFIX = ' (проверка без видео)';
+
+export const checksTexts = {
+  sceneDataLabel: 'Данные сцен',
+  sceneDataDescription:
+    'Проверить формат реестра сцен, комплектов и рабочих пакетов. Постановка, исходники и результаты должны храниться в отведённых им файлах.',
+  viewsLabel: 'Карточки и списки',
+  viewsDescription: 'Проверить, что монтажный список, раскадровка, карточки и список принятых материалов соответствуют реестру сцен.',
+  assetsLabel: 'Комплекты сцен',
+  assetsDescription: 'Проверить сохранность файлов принятых сцен и совпадение длительности монтажа с данными о приёмке.',
+  workspaceLabel: 'Порядок в папке проекта',
+  workspaceDescription: 'Найти лишние рабочие пакеты, карточки и пустые папки, оставшиеся после приёмки сцен.',
+  statusLabel: 'Статусы планов',
+  statusDescription: 'Показать готовые планы, текущие попытки и очередь согласования. Помогает выбрать следующий план для работы.',
+  unknownCheck: (id: string) => `Неизвестная проверка: ${id}`,
+  checkJobTitle: (label: string | undefined) => `Проверка: ${label}`,
+  allChecksJobTitle: 'Все проверки',
+  updateViewsJobTitle: 'Обновление карточек и списков',
+  reviewShotsRequired: 'Выберите хотя бы один план для пробы.',
+  invalidReviewShots: (shots: readonly string[]) => `Коды планов вида M05 или M05.1: ${shots.join(', ')}`,
+  // Уведомления распознают режим по тому же суффиксу, что добавляет производитель задания.
+  reviewPlanOnlySuffix: REVIEW_PLAN_ONLY_SUFFIX,
+  reviewJobTitle: ({ shots, planOnly }: { shots: readonly string[]; planOnly: boolean }) =>
+    `Проба ${shots.join(' ')}${planOnly ? REVIEW_PLAN_ONLY_SUFFIX : ''}`,
+  checkReviewStep: 'Проверка пробы без видео',
+  buildReviewStep: 'Сборка пробы стыков',
+  reviewStillBuilding: 'Проба ещё собирается. Дождитесь завершения задания.',
+  reviewNotFound: 'Собранная проба не найдена. Обновите список.',
+  projectReadFailed: ({ path, error }: { path: string; error: string }) => `Не удалось прочитать ${path}: ${error}`,
+  projectObjectRequired: (path: string) => `${path} должен быть объектом.`,
+  projectNameRequired: commonTexts.project.nameEmpty,
+  animaticFilenameInvalid: 'Имя MP4 аниматика: буквы, цифры, точки и дефисы, без пути к папке, с расширением .mp4.',
+  generationObjectRequired: (kind: 'video' | 'image') => `generation.${kind}: ожидается объект настроек.`,
+  generationFieldRequired: ({ kind, field }: { kind: 'video' | 'image'; field: string }) => `generation.${kind}: не заполнено поле ${field}.`,
+  generationStringRequired: ({ kind, field }: { kind: 'video' | 'image'; field: string }) => `generation.${kind}: ${field} должен быть непустой строкой.`,
+  generationAspectRatioInvalid: (kind: 'video' | 'image') => `generation.${kind}: пропорции записываются как 16:9 или auto.`,
+  generationWatermarkInvalid: (kind: 'video' | 'image') => `generation.${kind}: watermark должен быть логическим значением.`,
+  generationDurationRuleInvalid: ({ kind, rules }: { kind: 'video' | 'image'; rules: readonly string[] }) =>
+    `generation.${kind}: правило длительности должно быть одним из: ${rules.join(', ')}.`,
+  generationProviderSelectedInvalid: (kind: 'video' | 'image') => `generation.${kind}: provider_selected должен быть логическим значением.`,
+  generationOptionsInvalid: (kind: 'video' | 'image') => `generation.${kind}: options должен быть объектом.`,
+  generationOutputsInvalid: (kind: 'video' | 'image') => `generation.${kind}: outputs должен быть положительным целым числом.`,
+  pythonRequired: commonTexts.runtime.pythonRequired,
+  jobPending: 'Дождитесь окончания текущего задания.',
+  scenesRequired: 'Сначала соберите реестр сцен.',
+  pythonUnavailable: 'Python не найден: проверки и проба недоступны. См. страницу «Среда».',
+  jobsFailed: (titles: readonly string[]) => `Завершено с ошибками: ${titles.join(', ')}. Подробности — в журнале заданий.`,
+  jobsDone: (titles: readonly string[]) => `Готово: ${titles.join(', ')}`,
+  reviewRemoved: 'Проба и её рецепт удалены',
+  checkDone: 'ok',
+  checkSkipped: 'пропуск',
+  strictMode: 'Предупреждения считать ошибками',
+  nextShotAndQueue: 'Следующий план и очередь',
+  rebuildViewsHint: 'Пересобрать монтажный список, раскадровку и карточки по реестру сцен',
+  rebuildViews: 'Пересобрать карточки',
+  runAll: 'Запустить все',
+  reviewDuration: (seconds: number) => `${seconds.toFixed(1)} с`,
+  reviewDeleting: 'Проба удаляется.',
+  deleteReview: 'Удалить пробу',
+  deleteReviewDescription: (filename: string) => `Будут удалены MP4 пробы «${filename}» и её рецепт. Исходные медиа и другие файлы в папке сохранятся.`,
+  reviewDeletionPending: 'Дождитесь окончания удаления пробы.',
+  savedReviews: 'Собранные пробы в plan/batches',
+  contiguousShotsRequired: 'Выберите сцены подряд: проба собирается под непрерывный участок песни. Диапазон удобно выбрать щелчком с Shift.',
+  selectReviewShots: 'Выберите сцены для пробы.',
+  reviewDescription:
+    'Соберите временный ролик, чтобы оценить переходы между планами. Готовые планы будут показаны принятыми клипами, остальные — карточками, под непрерывный участок музыки. Проба сохраняется в plan/batches. Она не заменяет аниматик, её сборка не означает приёмку сцен.',
+  reviewRangeHint: 'Для диапазона выберите первую сцену, затем последнюю с зажатым Shift. Диапазон добавится к выбранным сценам. С клавиатуры: Shift + Enter.',
+  reviewShotLabel: ({ id, missingVideo }: { id: string; missingVideo: boolean }) => `${id}${missingVideo ? ' · видео отсутствует' : ''}`,
+  reviewShotHint: ({ title, stage, hasVideo }: { title: string; stage: string; hasVideo: boolean }) =>
+    `${title} · ${stage}${hasVideo ? '' : ' · пойдёт карточкой'}`,
+  shotsUnavailable: 'Планы появятся после сборки реестра сцен.',
+  reviewPlanOnly: 'Только проверить, без создания видео',
+  reviewChipLegend: 'Заливка: принятое видео доступно; контур: пойдёт карточкой.'
+} as const;

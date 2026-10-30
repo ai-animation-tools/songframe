@@ -1,3 +1,4 @@
+import { settingsTexts } from '@shared/texts/settings';
 /** Каталог моделей читается для текущего CLI; ответ прежнего провайдера не попадает в форму другого. */
 import { useEffect, useRef, useState } from 'react';
 import type { AgentModelsResult } from '@shared/agents';
@@ -27,8 +28,7 @@ export function useAgentModels(provider: AgentProvider | undefined, ready: boole
         if (current()) setSnapshot({ current, result, loading: false });
       },
       () => {
-        if (current())
-          setSnapshot({ current, result: { models: [], message: 'Не удалось прочитать каталог моделей. Модель можно ввести вручную.' }, loading: false });
+        if (current()) setSnapshot({ current, result: { models: [], message: settingsTexts.modelsFailed }, loading: false });
       }
     );
     return () => scope.invalidate();

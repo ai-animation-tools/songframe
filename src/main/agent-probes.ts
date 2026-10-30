@@ -1,4 +1,5 @@
 /** Как распознать версию и вход каждого CLI; общий порядок диагностики и разбор сбоев запуска — в agents.ts. */
+import { agentsTexts } from '@shared/texts/agents';
 import type { AgentCheckResult } from '@shared/agents';
 import { AGENT_PROVIDERS, type AgentProvider } from '@shared/agent-providers';
 
@@ -27,9 +28,10 @@ const claude: AgentCliProbe = {
       // CLI может вернуть адрес аккаунта и другие поля: наружу передаётся только признак входа.
       const data = JSON.parse(result.stdout.trim());
       if (data?.loggedIn === true && result.code === 0)
+        // eslint-disable-next-line no-restricted-syntax -- Только Claude подтверждает выполненный вход этим ответом своего auth status.
         return { authorization: 'authenticated', message: `${AGENT_PROVIDERS.claude.title} сообщает, что вход выполнен.` };
       if (data?.loggedIn === false && result.code === 1)
-        return { authorization: 'unauthenticated', message: `Выполните ${AGENT_PROVIDERS.claude.loginCommand} в терминале.` };
+        return { authorization: 'unauthenticated', message: agentsTexts.login({ command: AGENT_PROVIDERS.claude.loginCommand }) };
     } catch {
       // Старый или изменившийся формат не доказывает отсутствие входа.
     }
@@ -43,9 +45,10 @@ const codex: AgentCliProbe = {
   statusArgs: ['login', 'status'],
   authorization(result) {
     if (result.code === 0 && /^Logged in using [^\r\n]+$/m.test(result.output))
+      // eslint-disable-next-line no-restricted-syntax -- Codex подтверждает наличие учётных данных, что отличается от ответа Claude.
       return { authorization: 'authenticated', message: `${AGENT_PROVIDERS.codex.title} сообщает, что учётные данные для входа найдены.` };
     if (result.code === 1 && /^Not logged in\s*$/m.test(result.output))
-      return { authorization: 'unauthenticated', message: `Выполните ${AGENT_PROVIDERS.codex.loginCommand} в терминале.` };
+      return { authorization: 'unauthenticated', message: agentsTexts.login({ command: AGENT_PROVIDERS.codex.loginCommand }) };
     return null;
   }
 };

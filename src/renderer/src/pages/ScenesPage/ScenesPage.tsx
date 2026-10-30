@@ -1,3 +1,5 @@
+import { scenesTexts } from '@shared/texts/scenes';
+import { commonTexts } from '@shared/texts/common';
 /** Дашборд сцен: сводка, шкала, сетка карточек и подробности плана: оригинал против монтажа, опоры, промпт, состояние до и после. */
 
 import { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
@@ -64,7 +66,7 @@ export function ScenesPage(): ReactElement {
         severity="error"
         action={
           <Button startIcon={<ReplayIcon />} onClick={load}>
-            Повторить
+            {commonTexts.retry}
           </Button>
         }
       >
@@ -80,14 +82,14 @@ export function ScenesPage(): ReactElement {
         <ScenesSummary summary={summary} />
         <Box sx={{ flex: 1 }} />
         <Button startIcon={<RefreshIcon />} onClick={load}>
-          Обновить
+          {commonTexts.refresh}
         </Button>
         {/* Выбор для пробы независим от открытой карточки: сцены попадут в монтаж в порядке песни. */}
         <ActionButton
           startIcon={<MovieIcon />}
           variant="contained"
           disabled={!montageShots.length}
-          disabledReason="Отметьте сцены флажком «В монтажную пробу»."
+          disabledReason={scenesTexts.selectForMontage}
           onClick={() =>
             navigate(
               `/project/montage?shots=${encodeURIComponent(
@@ -99,7 +101,7 @@ export function ScenesPage(): ReactElement {
             )
           }
         >
-          Монтаж выбранных ({montageShots.length})
+          {scenesTexts.montageSelected({ count: montageShots.length })}
         </ActionButton>
       </PageActionBar>
       {view.problems.length ? (
@@ -130,19 +132,19 @@ export function ScenesPage(): ReactElement {
               startIcon={<SelectAllIcon />}
               size="small"
               disabled={!visible.length}
-              disabledReason="Нет видимых сцен: измените фильтр или поиск."
+              disabledReason={scenesTexts.noVisibleScenes}
               onClick={() => setMontageShots((current) => [...new Set([...current, ...visible.map((item) => item.id)])])}
             >
-              Отметить видимые
+              {scenesTexts.markVisible}
             </ActionButton>
             <ActionButton
               startIcon={<DeselectIcon />}
               size="small"
               disabled={!montageShots.length}
-              disabledReason="Нет отмеченных сцен."
+              disabledReason={scenesTexts.noMarkedScenes}
               onClick={() => setMontageShots([])}
             >
-              Снять отметки
+              {scenesTexts.unmarkAll}
             </ActionButton>
           </>
         }
@@ -169,12 +171,12 @@ export function ScenesPage(): ReactElement {
                     onChange={(event) => setMontageShots((current) => (event.target.checked ? [...current, s.id] : current.filter((id) => id !== s.id)))}
                   />
                 }
-                label={<Typography variant="caption">В монтажную пробу</Typography>}
+                label={<Typography variant="caption">{scenesTexts.forMontage}</Typography>}
               />
               <SceneCard shot={s} selected={selected === s.id} onSelect={select} />
             </Box>
           ))}
-          {!visible.length ? <Typography color="text.secondary">Ничего не найдено.</Typography> : null}
+          {!visible.length ? <Typography color="text.secondary">{scenesTexts.nothingFound}</Typography> : null}
         </Box>
         {shot ? (
           // Как на «Производстве»: при двух колонках выбранный план закреплён под панелью действий и прокручивается внутри себя.

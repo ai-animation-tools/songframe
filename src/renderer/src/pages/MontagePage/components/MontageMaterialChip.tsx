@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 /** Вид материала сцены одним чипом: тот же цвет, что у карточки материала, в каталоге и в окне просмотра. */
 import type { ReactElement } from 'react';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
@@ -13,7 +14,13 @@ export function materialColor(source: MontageSource): MaterialColor | null {
 }
 
 export function materialLabel(source: MontageSource): string {
-  return source.kind === 'card' ? 'Карточка' : source.attempt ? 'Не принят' : source.original ? 'Полный оригинал' : 'Принятый монтаж';
+  return source.kind === 'card'
+    ? montageTexts.materialCard
+    : source.attempt
+      ? montageTexts.materialAttempt
+      : source.original
+        ? montageTexts.materialOriginal
+        : montageTexts.materialAccepted;
 }
 
 export function MontageMaterialChip({ source, size = 'small' }: { source: MontageSource; size?: 'small' | 'medium' }): ReactElement {

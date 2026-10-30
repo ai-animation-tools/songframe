@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 import GridViewIcon from '@mui/icons-material/GridView';
 /** Скачанные оригиналы, техническая сводка и действие приёмки результата; изображения открываются в общей галерее. */
 import { useState, type ReactElement } from 'react';
@@ -35,23 +36,28 @@ export function PackageResult({
   const selectReason = busy
     ? busyReason
     : pending
-      ? 'Сначала ответьте на вопрос пакета.'
+      ? productionTexts.packageResult.decisionRequired
       : pkg.stage !== 'image_downloaded'
-        ? 'Попытка уже не ждёт выбора варианта опоры.'
+        ? productionTexts.packageResult.selectionUnavailable
         : !pkg.resultToken
-          ? 'Данные показанного результата не подтверждены: обновите страницу.'
+          ? productionTexts.packageResult.resultUnconfirmed
           : null;
   const downloaded = pkg.request?.downloads.length ? pkg.request.downloads : [];
   const [gallery, setGallery] = useState<{ kind: string; images: { imagePath: string; label: string }[]; index: number } | null>(null);
   const frame = pkg.request?.frameId ? `${pkg.request.frameId} · ` : '';
-  const variants = image ? downloaded.map((path, index) => ({ imagePath: path, label: `${frame}вариант ${index + 1} · кандидат, не принят` })) : [];
-  const previews = pkg.preview.map((path, index) => ({ imagePath: path, label: `Техническая сводка · ${path.split(/[\\/]/).pop() ?? index + 1}` }));
+  const variants = image
+    ? downloaded.map((path, index) => ({ imagePath: path, label: productionTexts.packageResult.candidateLabel({ frame, variant: index + 1 }) }))
+    : [];
+  const previews = pkg.preview.map((path, index) => ({
+    imagePath: path,
+    label: productionTexts.packageResult.summaryLabel({ filename: path.split(/[\\/]/).pop() ?? index + 1 })
+  }));
   return (
     <>
       {downloaded.length ? (
         <Box sx={{ mb: 1 }}>
           <Typography variant="subtitle2" gutterBottom>
-            Результат
+            {productionTexts.packageResult.heading}
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             {downloaded.map((path, index) =>
@@ -64,7 +70,7 @@ export function PackageResult({
                     aspectRatio={null}
                     dashed
                     highlight="warning"
-                    onOpen={() => setGallery({ kind: 'Вариант опорного кадра', images: variants, index })}
+                    onOpen={() => setGallery({ kind: productionTexts.packageResult.galleryKind, images: variants, index })}
                   />
                   <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
                     {variants[index].label}
@@ -77,7 +83,7 @@ export function PackageResult({
                     disabledReason={selectReason}
                     onClick={() => onSelectImage(index)}
                   >
-                    Выбрать как опору
+                    {productionTexts.packageResult.select}
                   </ActionButton>
                 </Box>
               ) : (
@@ -93,7 +99,7 @@ export function PackageResult({
           </Box>
           {image ? (
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-              Выбор сохраняет оригинал кандидатом опоры. Утвердить её нужно отдельно: приложение задаст вопрос об этой опоре.
+              {productionTexts.packageResult.selectionHint}
             </Typography>
           ) : pkg.preview.length ? (
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
@@ -104,24 +110,24 @@ export function PackageResult({
                     label={preview.label}
                     title={preview.imagePath}
                     aspectRatio={null}
-                    onOpen={() => setGallery({ kind: 'Техническая сводка', images: previews, index })}
+                    onOpen={() => setGallery({ kind: productionTexts.packageResult.summary, images: previews, index })}
                   />
                 </Box>
               ))}
             </Box>
           ) : (
             <ActionButton startIcon={<GridViewIcon />} size="small" sx={{ mt: 1 }} onClick={onContactSheet} disabled={busy} disabledReason={busyReason}>
-              Сделать техническую сводку
+              {productionTexts.packageResult.createSummary}
             </ActionButton>
           )}
           {!image && !pending && ['downloaded', 'edit_review'].includes(pkg.stage) ? (
             <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
               <ActionButton variant="contained" color="error" startIcon={<CheckCircleIcon />} disabled={busy} disabledReason={busyReason} onClick={onAccept}>
-                Принять
+                {productionTexts.packageResult.accept}
               </ActionButton>
               {onReopenQuestion ? (
                 <ActionButton variant="outlined" startIcon={<HelpOutlineIcon />} disabled={busy} disabledReason={busyReason} onClick={onReopenQuestion}>
-                  Вернуть вопрос о результате
+                  {productionTexts.packageResult.reopen}
                 </ActionButton>
               ) : null}
             </Box>

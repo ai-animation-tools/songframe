@@ -1,3 +1,4 @@
+import { productionTexts } from './texts/production';
 /** Предметные задания производства; вопросы и решения по-прежнему принадлежат workflow.json пакета. */
 import type { AgentJob } from './agents';
 
@@ -90,7 +91,7 @@ export interface ProductionImagesInput {
 
 /** Причина блокировки подготовки и повтора для плана, который собирается из материала другого плана. */
 export function derivedShotReason(source: string): string {
-  return `План собирается из материала ${source}: описание, опоры и генерация для него не нужны.`;
+  return productionTexts.workflow.derived({ source });
 }
 
 /** Предложение агента, которое ещё ждёт решения: отметка плана в списке «Производства». */
@@ -104,8 +105,8 @@ export interface ProductionProposalSummary {
 
 /** Что сказать о непринятом предложении в списке планов: по этому тексту план попадает в «Ждут вашего действия». */
 export function proposalAttention(proposal: ProductionProposalSummary): string {
-  if (proposal.stale) return 'предложение агента устарело: отклоните его или подготовьте заново';
-  if (proposal.status === 'ready') return 'предложение агента ждёт применения или отклонения';
-  if (proposal.status === 'invalid') return 'ответ агента не прошёл проверку: просмотрите и отклоните';
-  return 'задание агента завершилось ошибкой: просмотрите и отклоните';
+  if (proposal.stale) return productionTexts.workflow.stale;
+  if (proposal.status === 'ready') return productionTexts.workflow.ready;
+  if (proposal.status === 'invalid') return productionTexts.workflow.invalid;
+  return productionTexts.workflow.failed;
 }

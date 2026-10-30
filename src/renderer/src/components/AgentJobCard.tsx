@@ -1,4 +1,6 @@
 /** Поток предложения и остановка агента; повтор после прерывания требует нового явного запроса. */
+import { commonTexts } from '@shared/texts/common';
+import { componentsTexts } from '@shared/texts/components';
 import { useState, type ReactElement } from 'react';
 import { Alert, Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
 import type { AgentJob } from '@shared/agents';
@@ -10,7 +12,7 @@ import type { AiActionKind } from '@shared/ai-access';
 import { AgentIcon } from './AgentIcon';
 import { DateTime } from './DateTime';
 
-const LABELS = { running: 'Выполняется', completed: 'Завершено', failed: 'Ошибка', cancelled: 'Остановлено', interrupted: 'Прервано' };
+const LABELS = componentsTexts.agentJob.statuses;
 
 export function AgentJobCard({
   job,
@@ -42,7 +44,7 @@ export function AgentJobCard({
         <Box sx={{ flex: 1 }} />
         {['failed', 'cancelled', 'interrupted'].includes(job.status) && (
           <AgentButton aiKind={retryKind} provider={retryProvider} size="small" onClick={() => onRetry(job)}>
-            Повторить
+            {commonTexts.retry}
           </AgentButton>
         )}
         {job.status === 'running' && (
@@ -51,7 +53,7 @@ export function AgentJobCard({
             size="small"
             color="warning"
             disabled={cancelling}
-            disabledReason="Задание уже останавливается: дождитесь завершения."
+            disabledReason={componentsTexts.agentJob.cancelling}
             onClick={async () => {
               setCancelling(true);
               try {
@@ -61,7 +63,7 @@ export function AgentJobCard({
               }
             }}
           >
-            Остановить
+            {commonTexts.stop}
           </ActionButton>
         )}
       </Stack>
@@ -84,7 +86,7 @@ export function AgentJobCard({
       {!compact && job.log && (
         <Box component="details">
           <Typography component="summary" variant="caption" sx={{ cursor: 'pointer' }}>
-            Журнал
+            {commonTexts.log}
           </Typography>
           <Typography component="pre" variant="caption" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 160, overflow: 'auto' }}>
             {job.log}

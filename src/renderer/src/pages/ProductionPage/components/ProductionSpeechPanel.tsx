@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Речь речевого плана: точный срез песни для липсинка готовится в пакете до запроса и сохраняется при приёмке. */
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert, Box, Paper, Stack, TextField, Typography } from '@mui/material';
@@ -12,7 +13,7 @@ import { LinkedText } from '../../../components/LinkedText';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
 
-const seconds = (value: number): string => `${value.toFixed(2).replace('.', ',')} с`;
+const seconds = productionTexts.productionSpeechPanel.seconds;
 
 export function ProductionSpeechPanel({
   project,
@@ -63,13 +64,13 @@ export function ProductionSpeechPanel({
   const endValue = Number(end.replace(',', '.'));
   const boundsProblem =
     start.trim() === '' || end.trim() === '' || !Number.isFinite(startValue) || !Number.isFinite(endValue) || startValue < 0 || endValue <= startValue
-      ? 'Укажите начало и конец среза в секундах; конец позже начала.'
+      ? productionTexts.productionSpeechPanel.invalidRange
       : plan && !plan.lipSync
-        ? 'Провайдер видео проекта не синхронизирует губы с заданным звуком.'
+        ? productionTexts.productionSpeechPanel.unsupported
         : plan?.lipSync && (endValue - startValue < plan.lipSync.min - 1e-6 || endValue - startValue > plan.lipSync.max + 1e-6)
-          ? `Провайдер видео принимает звук длиной от ${plan.lipSync.min} до ${plan.lipSync.max} с.`
+          ? productionTexts.productionSpeechPanel.duration({ min: plan.lipSync.min, max: plan.lipSync.max })
           : null;
-  const sentReason = 'Запрос этой попытки уже отправлен: её WAV менять нельзя.';
+  const sentReason = productionTexts.productionSpeechPanel.sent;
   const reason = sent ? sentReason : working ? BUSY_REASON : busy ? busyReason : boundsProblem;
   const lines = speech?.lines.length ? speech.lines : (plan?.lines ?? []);
 
@@ -79,7 +80,7 @@ export function ProductionSpeechPanel({
     setError(null);
     try {
       await window.api.production.prepareSpeech(project, pkg.dir, { start: startValue, end: endValue });
-      notify(`WAV речи ${pkg.shot} подготовлен: ${seconds(endValue - startValue)}.`, 'success');
+      notify(productionTexts.productionSpeechPanel.prepared({ shot: pkg.shot, seconds: seconds(endValue - startValue) }), 'success');
       await onPrepared();
     } catch (reasonError) {
       const text = describeError(reasonError);
@@ -96,40 +97,55 @@ export function ProductionSpeechPanel({
         <Stack direction="row" spacing={1} alignItems="center">
           <RecordVoiceOverIcon color="action" />
           <Typography variant="subtitle1" fontWeight={600}>
-            Речь (липсинк)
+            {productionTexts.productionSpeechPanel.heading}
           </Typography>
         </Stack>
         <Typography variant="body2" color="text.secondary">
-          Губы синхронизируются с точным фрагментом песни. Срез берётся из исходного трека без обработки и начинается с начала окна плана, поэтому в монтаже
-          губы совпадут с песней. Он уходит в запрос звуковым входом и сохраняется в комплекте при приёмке. Прослушайте срез перед подготовкой запроса.
+          {productionTexts.productionSpeechPanel.description}
         </Typography>
         {plan ? (
           <Typography variant="caption" color="text.secondary">
-            Окно плана: {formatClock(plan.window.start)}–{formatClock(plan.window.end)}
+            {productionTexts.productionSpeechPanel.window({ start: formatClock(plan.window.start), end: formatClock(plan.window.end) })}
           </Typography>
         ) : null}
         {lines.length ? (
           <Stack component="ul" spacing={0.25} sx={{ m: 0, pl: 2.5 }}>
             {lines.map((line) => (
               <Typography component="li" variant="body2" key={`${line.start}-${line.end}`}>
-                {formatClock(line.start)}–{formatClock(line.end)} · {line.text ?? 'строка без текста'}
+                {formatClock(line.start)}–{formatClock(line.end)} · {line.text ?? productionTexts.productionSpeechPanel.emptyLine}
               </Typography>
             ))}
           </Stack>
         ) : plan ? (
-          <Alert severity="info">В окне плана нет строк разметки: задайте границы среза вручную.</Alert>
+          <Alert severity="info">{productionTexts.productionSpeechPanel.noTiming}</Alert>
         ) : null}
         {speech ? (
           <Stack spacing={0.5}>
             <Typography variant="body2">
-              Подготовлен срез {formatClock(speech.start)}–{formatClock(speech.end)} ({seconds(speech.end - speech.start)}).
+              {productionTexts.productionSpeechPanel.ready({
+                start: formatClock(speech.start),
+                end: formatClock(speech.end),
+                seconds: seconds(speech.end - speech.start)
+              })}
             </Typography>
             <Box component="audio" controls preload="metadata" src={window.api.shell.fileUrl(speech.path)} sx={{ width: '100%', maxWidth: 520 }} />
           </Stack>
         ) : null}
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <TextField label="Начало, с" value={start} onChange={(event) => setStart(event.target.value)} disabled={sent} sx={{ width: 160 }} />
-          <TextField label="Конец, с" value={end} onChange={(event) => setEnd(event.target.value)} disabled={sent} sx={{ width: 160 }} />
+          <TextField
+            label={productionTexts.productionSpeechPanel.cutStart}
+            value={start}
+            onChange={(event) => setStart(event.target.value)}
+            disabled={sent}
+            sx={{ width: 160 }}
+          />
+          <TextField
+            label={productionTexts.productionSpeechPanel.cutEnd}
+            value={end}
+            onChange={(event) => setEnd(event.target.value)}
+            disabled={sent}
+            sx={{ width: 160 }}
+          />
         </Box>
         {error ? (
           <Alert severity="error">
@@ -138,7 +154,7 @@ export function ProductionSpeechPanel({
         ) : null}
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           <ActionButton variant="contained" startIcon={<ContentCutIcon />} disabled={!!reason} disabledReason={reason} onClick={() => void prepare()}>
-            {speech ? 'Обрезать заново' : 'Подготовить WAV'}
+            {speech ? productionTexts.productionSpeechPanel.recut : productionTexts.productionSpeechPanel.prepare}
           </ActionButton>
           {plan?.proposed ? (
             <ActionButton
@@ -150,7 +166,7 @@ export function ProductionSpeechPanel({
                 setEnd(String(plan.proposed!.end));
               }}
             >
-              Границы по разметке
+              {productionTexts.productionSpeechPanel.timing}
             </ActionButton>
           ) : null}
         </Stack>

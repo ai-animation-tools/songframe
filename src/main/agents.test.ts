@@ -121,7 +121,9 @@ describe.skipIf(process.platform !== 'linux')('Диагностика Linux CLI'
   it('объясняет отсутствие CLI и игнорирует прежнее поле пути в настройках', async () => {
     const missing = await checkAgent({ provider: 'codex' }, isolated());
     expect(missing).toMatchObject({ availability: 'not_found', authorization: 'unknown' });
-    expect(missing.message).toContain('Codex не найден');
+    expect(missing.message).toBe(
+      'Codex не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку.'
+    );
     const elsewhere = cli('codex', 'console.log("Logged in using ChatGPT");', join(work, 'вне PATH', 'codex'));
     expect(await checkAgent({ provider: 'codex', executablePath: elsewhere }, isolated())).toMatchObject({ availability: 'not_found' });
     expect(() => readFileSync(join(work, 'calls'))).toThrow();
@@ -162,7 +164,7 @@ describe.skipIf(process.platform !== 'linux')('Диагностика Linux CLI'
       expect(JSON.stringify(result)).not.toContain('SECRET');
     }
     cli('codex', 'console.error("failed to connect SECRET"); process.exit(1);');
-    expect((await checkAgent({ provider: 'codex' }, isolated())).message).toContain('соединения');
+    expect((await checkAgent({ provider: 'codex' }, isolated())).message).toBe('Агент сообщил об ошибке соединения. Проверьте сеть и повторите проверку.');
   });
 
   it('не запускает статус для неизвестной версии CLI', async () => {
@@ -170,6 +172,7 @@ describe.skipIf(process.platform !== 'linux')('Диагностика Linux CLI'
     const result = await checkAgent({ provider: 'claude' }, isolated());
     expect(result).toMatchObject({ availability: 'available', authorization: 'unknown' });
     expect(result.version).toBeUndefined();
+    expect(result.message).toBe('Claude Code запускается, но его версия не распознана. Обновите его до поддерживаемой версии.');
     expect(JSON.stringify(result)).not.toContain('SECRET');
   });
 
@@ -178,12 +181,12 @@ describe.skipIf(process.platform !== 'linux')('Диагностика Linux CLI'
     const start = Date.now();
     const result = await checkAgent({ provider: 'codex' }, { ...isolated(), timeoutMs: 150 });
     expect(result).toMatchObject({ availability: 'available', version: '0.159.2', authorization: 'unknown' });
-    expect(result.message).toContain('вовремя');
+    expect(result.message).toBe('Агент не ответил вовремя. Проверьте его запуск в терминале и повторите проверку.');
     expect(Date.now() - start).toBeLessThan(2500);
     cli('codex', 'process.stdout.write("SECRET".repeat(10000));');
     const overflow = await checkAgent({ provider: 'codex' }, isolated());
     expect(overflow.authorization).toBe('unknown');
-    expect(overflow.message).toContain('объём');
+    expect(overflow.message).toBe('Агент превысил допустимый объём ответа. Проверьте его запуск в терминале.');
     expect(JSON.stringify(overflow)).not.toContain('SECRET');
   });
 });

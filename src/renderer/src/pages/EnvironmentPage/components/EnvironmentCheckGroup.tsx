@@ -1,3 +1,4 @@
+import { environmentTexts } from '@shared/texts/environment';
 import type { ReactElement } from 'react';
 import { List, Paper, Typography } from '@mui/material';
 import type { EnvironmentCheck } from '@shared/types';
@@ -19,7 +20,7 @@ export function EnvironmentCheckGroup({ title, items, category, logins }: Enviro
       </Typography>
       {category === 'external' ? (
         <Typography variant="body2" color="text.secondary" sx={{ px: 2, pt: 1 }}>
-          Эти программы устанавливаются отдельно по необходимости; без них приложение работает.
+          {environmentTexts.externalExplanation}
         </Typography>
       ) : null}
       <List dense disablePadding>

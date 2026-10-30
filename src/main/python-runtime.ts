@@ -1,5 +1,6 @@
 /** Выбор поставляемого Python; системный интерпретатор допустим только при разработке. @link ../../scripts/runtime/README.md */
 
+import { environmentTexts } from '@shared/texts/environment';
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -57,7 +58,8 @@ export function probePython(runtime: Pick<PythonRuntime, 'command' | 'argsPrefix
     windowsHide: true,
     shell: false
   });
-  if (result.error || result.status !== 0) throw new Error((result.stderr || result.error?.message || `Python завершился с кодом ${result.status}`).trim());
+  if (result.error || result.status !== 0)
+    throw new Error((result.stderr || result.error?.message || environmentTexts.main.pythonExited(result.status)).trim());
   return result.stdout.trim();
 }
 
@@ -72,12 +74,12 @@ export function resolvePython(options: PythonOptions): PythonRuntime {
   if (options.packaged || existsSync(root)) {
     try {
       const manifest = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf-8')) as { target: string; python: string };
-      if (manifest.target !== target) throw new Error(`Комплект ${manifest.target} не подходит для ${target}.`);
+      if (manifest.target !== target) throw new Error(environmentTexts.main.runtimeTargetMismatch({ actual: manifest.target, expected: target }));
       const command = join(root, 'python', platform === 'win32' ? 'python.exe' : 'bin/python3');
-      if (!existsSync(command)) throw new Error(`Нет файла ${command}.`);
+      if (!existsSync(command)) throw new Error(environmentTexts.main.runtimeFileMissing(command));
       return { source: 'bundled', command, argsPrefix: ['-B', '-X', 'utf8'], cwd, env, version: manifest.python };
     } catch (error) {
-      throw new Error(`Встроенный Python недоступен (${root}): ${(error as Error).message}`, { cause: error });
+      throw new Error(environmentTexts.main.bundledPythonUnavailable({ root, reason: (error as Error).message }), { cause: error });
     }
   }
   const candidates = platform === 'win32' ? [['python'], ['py', '-3'], ['python3']] : [['python3'], ['python']];
@@ -92,5 +94,5 @@ export function resolvePython(options: PythonOptions): PythonRuntime {
       // Следующий кандидат нужен только разработчику; отсутствие не кэшируется навсегда.
     }
   }
-  throw new Error('Python 3.11+ не найден. Подготовьте runtime: yarn prepare:runtime; для разработки допустим Python из PATH.');
+  throw new Error(environmentTexts.main.developmentPythonMissing);
 }

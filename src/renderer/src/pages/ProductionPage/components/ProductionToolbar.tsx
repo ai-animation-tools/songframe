@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Итоги производства, фильтр планов со счётчиками и ручное обновление. */
 import type { ReactElement } from 'react';
 import { Box, Button, Chip, MenuItem, TextField, Typography } from '@mui/material';
@@ -33,13 +34,13 @@ export function ProductionToolbar({
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
       <Typography variant="h5" noWrap>
-        Производство
+        {productionTexts.productionToolbar.heading}
       </Typography>
       {/* Счётчик появляется после создания планов: пустой проект ещё нечего принимать. */}
       {view.shots.length ? (
         <Chip
           size="small"
-          label={`принято ${counts.completed} из ${view.shots.length}`}
+          label={productionTexts.productionToolbar.accepted({ completed: counts.completed, total: view.shots.length })}
           color={counts.completed === view.shots.length ? 'success' : 'default'}
         />
       ) : null}
@@ -48,8 +49,8 @@ export function ProductionToolbar({
         <Chip
           size="small"
           color="primary"
-          label={`ждут вас: ${counts.attention}`}
-          title="Планы, у которых пакет ждёт вашего действия; щелчок показывает их"
+          label={productionTexts.productionToolbar.attention({ attention: counts.attention })}
+          title={productionTexts.productionToolbar.attentionHint}
           onClick={() => onFilter('attention')}
         />
       ) : null}
@@ -58,8 +59,8 @@ export function ProductionToolbar({
         <Chip
           size="small"
           color="info"
-          label={`постановка изменена: ${counts.stale}`}
-          title="Планы, принятые по прежней постановке: им нужно новое производство; щелчок показывает их"
+          label={productionTexts.productionToolbar.stale({ stale: counts.stale })}
+          title={productionTexts.productionToolbar.staleHint}
           onClick={() => onFilter('stale')}
         />
       ) : null}
@@ -68,7 +69,7 @@ export function ProductionToolbar({
       <TextField
         select
         size="small"
-        label="Показать"
+        label={productionTexts.productionToolbar.show}
         data-anchor={ANCHORS.productionFilter}
         value={filter}
         onChange={(e) => onFilter(e.target.value as ProductionFilter)}
@@ -81,7 +82,7 @@ export function ProductionToolbar({
         ))}
       </TextField>
       <Button startIcon={<RefreshIcon />} onClick={onRefresh} sx={{ flexShrink: 0 }}>
-        Обновить
+        {productionTexts.productionToolbar.refresh}
       </Button>
     </Box>
   );

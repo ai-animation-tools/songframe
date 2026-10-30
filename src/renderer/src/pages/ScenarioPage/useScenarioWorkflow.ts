@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScenarioPass, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import { useApp } from '../../state';
@@ -93,15 +94,19 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
     refresh: () => execute(() => window.api.scenarioWorkflow.view(project)),
     start: (pass: ScenarioPass, note?: string, selectedIds?: string[]) =>
       execute(() => window.api.scenarioWorkflow.start({ project, pass, note, selectedIds })),
-    approve: () => execute(() => window.api.scenarioWorkflow.approveCurrent(project), undefined, 'Кастинг и трактовка утверждены'),
-    approveScenes: () => execute(() => window.api.scenarioWorkflow.approveScenes(project), undefined, 'Сценарий утверждён'),
+    approve: () => execute(() => window.api.scenarioWorkflow.approveCurrent(project), undefined, scenarioTexts.workflow.treatmentApproved),
+    approveScenes: () => execute(() => window.api.scenarioWorkflow.approveScenes(project), undefined, scenarioTexts.workflow.scenesApproved),
     apply: () => {
       const proposal = view?.proposal;
-      return proposal ? execute(() => window.api.scenarioWorkflow.apply(project, proposal.id), proposal.pass, 'Предложение применено') : Promise.resolve(false);
+      return proposal
+        ? execute(() => window.api.scenarioWorkflow.apply(project, proposal.id), proposal.pass, scenarioTexts.notice.proposalApplied)
+        : Promise.resolve(false);
     },
     discard: () => {
       const proposal = view?.proposal;
-      return proposal ? execute(() => window.api.scenarioWorkflow.discard(project, proposal.id), undefined, 'Предложение отклонено') : Promise.resolve(false);
+      return proposal
+        ? execute(() => window.api.scenarioWorkflow.discard(project, proposal.id), undefined, scenarioTexts.notice.proposalDiscarded)
+        : Promise.resolve(false);
     },
     cancel: async (id: string): Promise<void> => {
       await execute(async () => {

@@ -1,3 +1,6 @@
+import { animaticTexts } from '@shared/texts/animatic';
+import { commonTexts } from '@shared/texts/common';
+import { SlottedText } from '../../../components/SlottedText';
 /** Плеер собранного видео, полоса глав и сведения о сборке. */
 
 import type { ReactElement, RefObject } from 'react';
@@ -77,11 +80,20 @@ export function AnimaticPlayer({
       </Box>
       <Stack spacing={1} sx={{ mt: 1, alignItems: 'flex-start' }}>
         <Typography variant="caption" color="text.secondary">
-          {formatClock(time)} / {formatClock(duration)} · {shots.length} планов: {built.counts.video} анимация, {built.counts.keyframes} опоры,{' '}
-          {built.counts.cards} карточки · собрано <DateTime value={built.builtAt} />
+          <SlottedText
+            text={animaticTexts.playbackSummary({
+              time: formatClock(time),
+              duration: formatClock(duration),
+              shots: shots.length,
+              video: built.counts.video,
+              keyframes: built.counts.keyframes,
+              cards: built.counts.cards
+            })}
+            slots={{ builtAt: <DateTime value={built.builtAt} /> }}
+          />
         </Typography>
         <Button size="small" startIcon={<FolderOpenIcon />} onClick={onOpenFolder}>
-          Открыть папку
+          {commonTexts.openFolder}
         </Button>
       </Stack>
     </Paper>

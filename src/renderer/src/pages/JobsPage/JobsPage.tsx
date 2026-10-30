@@ -1,4 +1,6 @@
 /** Единая хронология сохраняет штатные карточки и операции двух разных API заданий. */
+import { jobsTexts } from '@shared/texts/jobs';
+import { navigationTexts } from '@shared/texts/navigation';
 import { useEffect, useState, type ReactElement } from 'react';
 import { ActionButton } from '../../components/ActionButton';
 import { usePageLoading } from '../../components/PageLoader';
@@ -41,7 +43,7 @@ export function JobsPage(): ReactElement {
   const copyJob = async (job: JobInfo): Promise<void> => {
     try {
       await navigator.clipboard.writeText(await window.api.jobs.copyText(job.id));
-      notify(`Журнал задания «${job.title}» скопирован`, 'success');
+      notify(jobsTexts.copied({ title: job.title }), 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     }
@@ -51,7 +53,7 @@ export function JobsPage(): ReactElement {
     setSaving(true);
     try {
       const path = await window.api.diagnostics.saveReport();
-      if (path) notify(`Отчёт сохранён: ${path}. Отправьте этот файл разработчику.`, 'success');
+      if (path) notify(jobsTexts.reportSaved({ path }), 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -67,12 +69,12 @@ export function JobsPage(): ReactElement {
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
       <PageActionBar>
-        <Typography variant="h5">Журнал заданий</Typography>
+        <Typography variant="h5">{navigationTexts.pages.jobs}</Typography>
         <Box sx={{ flex: 1 }} />
         <TextField
           select
           size="small"
-          label="Проект"
+          label={navigationTexts.pages.project}
           value={selectedScope}
           onChange={(event) => {
             setScope(event.target.value);
@@ -80,9 +82,9 @@ export function JobsPage(): ReactElement {
           }}
           sx={{ minWidth: 240, maxWidth: '100%' }}
         >
-          <MenuItem value="current">{state?.current ? `Текущий: ${projectName(state.current)}` : 'Общие задания приложения'}</MenuItem>
-          <MenuItem value="all">Все проекты</MenuItem>
-          <MenuItem value="global">Только общие задания приложения</MenuItem>
+          <MenuItem value="current">{state?.current ? jobsTexts.currentProject({ name: projectName(state.current) }) : jobsTexts.globalJobs}</MenuItem>
+          <MenuItem value="all">{jobsTexts.allProjects}</MenuItem>
+          <MenuItem value="global">{jobsTexts.onlyGlobalJobs}</MenuItem>
           {projects
             .filter((path) => path !== state?.current)
             .map((path) => (
@@ -94,20 +96,18 @@ export function JobsPage(): ReactElement {
         <ActionButton
           startIcon={<BugReportOutlinedIcon />}
           disabled={saving}
-          disabledReason="Отчёт уже сохраняется."
+          disabledReason={jobsTexts.savingReport}
           onClick={() => void saveReport()}
-          title="Один текстовый файл с версиями, журналом сбоев и последними заданиями, без настроек и данных входа"
+          title={jobsTexts.reportDescription}
         >
-          Сохранить отчёт для разработчика
+          {jobsTexts.saveReport}
         </ActionButton>
       </PageActionBar>
       <Typography variant="body2" color="text.secondary">
-        Инструменты и агенты в порядке запуска, новые сверху. Общие задания приложения видны вместе с заданиями выбранного проекта. Статусы обновляются
-        автоматически. Журнал сохраняется между запусками: задания прошлых сеансов отмечены отдельно. Если программа завершилась сбоем, сохраните отчёт для
-        разработчика и отправьте ему файл.
+        {jobsTexts.description}
       </Typography>
-      {journal.error && <Alert severity="error">Не удалось обновить журнал: {journal.error}</Alert>}
-      {!visible.length && <Typography color="text.secondary">{journal.loading ? 'Читаем журнал…' : 'Заданий пока нет.'}</Typography>}
+      {journal.error && <Alert severity="error">{jobsTexts.refreshFailed({ reason: journal.error })}</Alert>}
+      {!visible.length && <Typography color="text.secondary">{journal.loading ? jobsTexts.loading : jobsTexts.empty}</Typography>}
       {visible.map((entry) => (
         <Paper
           key={`${entry.type}-${entry.job.id}`}
@@ -117,9 +117,9 @@ export function JobsPage(): ReactElement {
         >
           <Stack spacing={1} sx={{ minWidth: 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Chip size="small" variant="outlined" label={entry.type === 'agent' ? 'Агент' : 'Инструмент'} />
+              <Chip size="small" variant="outlined" label={entry.type === 'agent' ? jobsTexts.agent : jobsTexts.tool} />
               <Typography variant="caption" color="text.secondary" title={entry.job.project ?? undefined} sx={{ overflowWrap: 'anywhere' }}>
-                {entry.job.project ? projectName(entry.job.project) : 'Общее задание приложения'}
+                {entry.job.project ? projectName(entry.job.project) : jobsTexts.globalJob}
               </Typography>
             </Box>
             {entry.type === 'agent' ? (

@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { ReactElement } from 'react';
 import { Box, Typography } from '@mui/material';
 import { mergeChecklist } from '../briefComparison';
@@ -8,15 +9,14 @@ export function BriefChecklist({ before, after }: { before: string[]; after: str
   if (!items.length) return null;
   return (
     <Box sx={{ minWidth: 0 }}>
-      <Typography variant="subtitle2">Что сверить в опорах и результате</Typography>
+      <Typography variant="subtitle2">{scenarioTexts.brief.checklist}</Typography>
       <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
         {items.map((item) => (
           <Typography key={`${item.phase ?? 'both'}:${item.text}`} component="li" variant="body2" sx={{ overflowWrap: 'anywhere' }}>
             {item.text}
             {item.phase ? (
               <Typography component="span" variant="caption" color="text.secondary">
-                {' '}
-                · {item.phase === 'before' ? 'первый кадр' : 'последний кадр'}
+                {item.phase === 'before' ? scenarioTexts.brief.firstFrameMarker : scenarioTexts.brief.lastFrameMarker}
               </Typography>
             ) : null}
           </Typography>

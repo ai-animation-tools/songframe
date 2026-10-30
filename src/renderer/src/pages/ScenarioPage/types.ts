@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { BriefResult, ScenarioImpactShot, ScenesFile, ScenesSaveMode } from '@shared/types';
 
 export interface EntityOption {
@@ -31,4 +32,4 @@ export interface ScenesSaveRequest {
 }
 
 /** Причина недоступности «Сохранить без производства»: черновик не затрагивает планы с материалами. */
-export const KEEP_NOTHING_REASON = 'Изменения не затрагивают принятые планы и пакеты: используйте «Сохранить».';
+export const KEEP_NOTHING_REASON = scenarioTexts.save.keepNothingReason;

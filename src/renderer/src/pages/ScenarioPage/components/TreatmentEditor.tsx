@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { ReactElement } from 'react';
 import { Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -23,21 +24,18 @@ export function TreatmentEditor({
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
       {!treatment ? (
         <Paper variant="outlined" sx={{ p: 3 }}>
-          <Typography color="text.secondary">
-            Трактовка делит песню на части и говорит, что происходит в каждой и кто участвует. Начните с частей из разметки трека или поручите первый проход
-            агенту Claude Code/Codex кнопкой «Создать трактовку» выше.
-          </Typography>
+          <Typography color="text.secondary">{scenarioTexts.treatment.emptyHint}</Typography>
           <Button startIcon={<AddIcon />} color="success" onClick={() => setTreatment({ schema_version: 1, logline: '', sequences: [] })}>
-            Создать вручную
+            {scenarioTexts.treatment.createManually}
           </Button>
         </Paper>
       ) : (
         <>
           <TextField
-            label="Логлайн"
+            label={scenarioTexts.fields.logline}
             value={treatment.logline}
             onChange={(e) => setTreatment({ ...treatment, logline: e.target.value })}
-            placeholder="Одна фраза: о чём клип и в чём его комизм или драма"
+            placeholder={scenarioTexts.treatment.loglineHint}
           />
           {/* Части сохраняют порядок песни и занимают две колонки только в широкой рабочей области. */}
           <Box
@@ -82,7 +80,7 @@ export function TreatmentEditor({
               })
             }
           >
-            Добавить часть
+            {scenarioTexts.treatment.addPart}
           </Button>
         </>
       )}

@@ -1,3 +1,5 @@
+import { checksTexts } from '@shared/texts/checks';
+import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
 import { Box, Divider, Paper, Stack, Typography } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -42,7 +44,7 @@ export function ProjectChecksPanel({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
         <PlaylistAddCheckIcon color="action" />
         <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
-          Проверки проекта
+          {navigationTexts.blocks.checksProject}
         </Typography>
       </Box>
       <Stack divider={<Divider />} spacing={1}>
@@ -71,7 +73,7 @@ export function ProjectChecksPanel({
         disabledReason={disabledReason}
         onClick={runAll}
       >
-        Запустить все
+        {checksTexts.runAll}
       </ActionButton>
     </Paper>
   );

@@ -176,17 +176,17 @@ describe('Временная генерация обложки', () => {
       { x: 0.5, y: 0, size: 10 },
       { x: 80, y: 0, size: 1 }
     ])
-      expect(() => value.accept(id, crop)).toThrow(/квадратную область/);
+      expect(() => value.accept(id, crop)).toThrow('Выберите квадратную область внутри изображения с целыми координатами.');
     const next = await value.prepare(id);
     expect(next.image?.path).toBe(original);
     const accepted = value.accept(id, { x: 20, y: 0, size: 60 });
     expect(value.view(id)).toMatchObject({ status: 'accepted', image: { width: 60, height: 60 } });
     expect(existsSync(original)).toBe(false);
     expect(readdirSync(dirname(accepted.path))).toEqual(['accepted.png']);
-    expect(() => value.generate(id, next.requestSha!, approval(value, id))).toThrow(/уже выбрана/);
+    expect(() => value.generate(id, next.requestSha!, approval(value, id))).toThrow('Обложка уже выбрана. Откройте новую сессию для другой обложки.');
     await value.close(id);
     expect(existsSync(accepted.path)).toBe(false);
-    expect(() => value.view(id)).toThrow(/закрыта/);
+    expect(() => value.view(id)).toThrow('Сессия обложки закрыта. Откройте генерацию заново.');
   });
 
   it.each(['../outside.png', 'link.png', 'wrong.jpg', 'broken.png'])('отклоняет неверный результат %s и очищает кандидаты', async (path) => {
@@ -378,11 +378,34 @@ describe('Временная генерация обложки', () => {
     expect(existsSync(workDir)).toBe(false);
   });
 
+  it('возвращает готовые ошибки подготовки и не запускает неподготовленную попытку', async () => {
+    const generate = vi.fn();
+    const value = create({
+      prepareCandidate: async () => {
+        throw null;
+      }
+    });
+    const { id } = value.create(project, 'Промпт «&»\nбез изменений');
+    expect(await value.prepare(id)).toMatchObject({
+      prompt: 'Промпт «&»\nбез изменений',
+      status: 'failed',
+      error: 'Не удалось подготовить генерацию обложки.',
+      requestSha: null
+    });
+    expect(() => value.generate(id, 'missing', { promptConfirmed: true, approvalToken: 'missing' })).toThrow(
+      'Сначала подготовьте и проверьте новый запрос обложки.'
+    );
+    const invalid = create({ prepareCandidate: async () => ({ provider: TEST_AGENT_PROVIDER, model: null, requestSha: '', quote: null, generate }) });
+    const session = invalid.create(project, 'Точный текст');
+    expect(await invalid.prepare(session.id)).toMatchObject({ status: 'failed', error: 'Не удалось подготовить запрос обложки.' });
+    expect(generate).not.toHaveBeenCalled();
+  });
+
   it('проверяет проект и описание до создания сессии', () => {
     const value = create();
-    expect(() => value.create(project, '  ')).toThrow(/описание/);
-    expect(() => value.create(project, 'a'.repeat(33 * 1024))).toThrow(/32 КБ/);
-    expect(() => value.create(root, 'Обложка')).toThrow(/plan\/project.json/);
+    expect(() => value.create(project, '  ')).toThrow('Введите описание обложки длиной не более 32 КБ.');
+    expect(() => value.create(project, 'a'.repeat(33 * 1024))).toThrow('Введите описание обложки длиной не более 32 КБ.');
+    expect(() => value.create(root, 'Обложка')).toThrow('В папке нет plan/project.json.');
   });
 
   it('сразу показывает платного провайдера и сохраняет его при ошибке подготовки', async () => {

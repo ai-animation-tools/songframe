@@ -2,6 +2,7 @@
  * Общий прелоадер страницы: страница сообщает, что ещё загружает данные, а оболочка показывает индикатор над рабочей областью.
  * Индикатор появляется с задержкой, чтобы быстрые переходы не мигали.
  */
+import { commonTexts } from '@shared/texts/common';
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Box, CircularProgress, Fade } from '@mui/material';
 
@@ -51,7 +52,7 @@ export function PageLoaderArea({ children }: { children: ReactNode }): ReactElem
         <Fade in={visible} unmountOnExit>
           <Box
             role="progressbar"
-            aria-label="Страница загружается"
+            aria-label={commonTexts.pageLoading}
             sx={{
               position: 'absolute',
               inset: 0,

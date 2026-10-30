@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Предметные действия работают только с выбранным пакетом; агент возвращает проверяемое предложение. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Paper, Stack, TextField, Typography } from '@mui/material';
@@ -60,7 +61,7 @@ export function ProductionWorkflowPanel({
   const start = async (action: ProductionWorkflowStart['action']): Promise<void> => {
     if (busy) return;
     if (action === 'revise' && !note.trim()) {
-      setValidation('Напишите, что агенту нужно исправить.');
+      setValidation(productionTexts.productionWorkflowPanel.noteRequired);
       return;
     }
     setValidation(null);
@@ -71,13 +72,11 @@ export function ProductionWorkflowPanel({
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Stack spacing={2}>
         <Typography variant="subtitle1" fontWeight={600}>
-          Подготовка плана {shot}
+          {productionTexts.productionWorkflowPanel.title({ shot })}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {packageDir ? `Выбран пакет: ${packageDir}` : 'Новая подготовка: папка пакета появится после применения описания.'}{' '}
-          {view?.paid
-            ? 'Запрос этой попытки уже отправлен: решения о результате принимаются в карточке пакета ниже. Возврат с замечанием создаст новый пакет для доработки.'
-            : 'Описание, опоры, видеопромпт и запрос согласуются по отдельности. Платная отправка провайдеру подтверждается отдельно.'}
+          {packageDir ? productionTexts.productionWorkflowPanel.package({ packageDir }) : productionTexts.productionWorkflowPanel.newPreparation}{' '}
+          {view?.paid ? productionTexts.productionWorkflowPanel.sent : productionTexts.productionWorkflowPanel.description}
         </Typography>
         {view?.derivedFrom ? <DerivedShotNotice source={view.derivedFrom} /> : null}
         {view?.problems.length ? (
@@ -87,18 +86,15 @@ export function ProductionWorkflowPanel({
         ) : null}
         {view?.canRevise ? (
           <Stack spacing={1}>
-            <Alert severity="info">
-              {savedNote ? 'Замечание из возврата подставлено ниже. ' : ''}Агент автоматически не запускается. Проверьте замечание и нажмите «Запустить
-              доработку с агентом». После завершения появится предложение для просмотра и отдельного применения.
-            </Alert>
+            <Alert severity="info">{productionTexts.productionWorkflowPanel.revisionHint({ savedNote })}</Alert>
             <TextField
-              label={savedNote ? 'Сохранённое замечание для доработки' : 'Что исправить в текущем этапе'}
+              label={savedNote ? productionTexts.productionWorkflowPanel.savedNote : productionTexts.productionWorkflowPanel.note}
               size="small"
               multiline
               fullWidth
               minRows={3}
               maxRows={8}
-              helperText="Можно уточнить текст перед запуском. Генерация изображения или видео согласуется отдельно."
+              helperText={productionTexts.productionWorkflowPanel.noteHint}
               value={note}
               onChange={(event) => setNote(event.target.value)}
             />
@@ -106,10 +102,10 @@ export function ProductionWorkflowPanel({
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <AgentButton
                 disabled={busy || !note.trim()}
-                disabledReason={busy ? BUSY_REASON : 'Опишите в поле выше, что агенту нужно исправить.'}
+                disabledReason={busy ? BUSY_REASON : productionTexts.productionWorkflowPanel.noteReason}
                 onClick={() => void start('revise')}
               >
-                Запустить доработку с агентом
+                {productionTexts.productionWorkflowPanel.revise}
               </AgentButton>
             </Stack>
             {reviseError ? errorAlert : null}
@@ -149,7 +145,7 @@ export function ProductionWorkflowPanel({
             key={`${packageDir}:${decisionToken ?? ''}`}
             frames={view.framePrompts.filter((frame) => !view.approvedFrameIds.includes(frame.id))}
             busy={busy || !view.canGenerateFrames}
-            busyReason={busy ? BUSY_REASON : (view.reasons.frames ?? 'Сначала утвердите описание и план опор.')}
+            busyReason={busy ? BUSY_REASON : (view.reasons.frames ?? productionTexts.productionWorkflowPanel.descriptionRequired)}
             onImport={workflow.importFrames}
           />
         ) : null}
@@ -157,19 +153,19 @@ export function ProductionWorkflowPanel({
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <AgentButton
               disabled={busy || !view?.canPrepare}
-              disabledReason={busy ? BUSY_REASON : (view?.reasons.prepare ?? 'Дождитесь загрузки состояния плана.')}
-              title="Начинает новый пакет с описания плана"
+              disabledReason={busy ? BUSY_REASON : (view?.reasons.prepare ?? productionTexts.productionWorkflowPanel.loadingReason)}
+              title={productionTexts.productionWorkflowPanel.prepareHint}
               onClick={() => void start('prepare')}
             >
-              Подготовить описание
+              {productionTexts.productionWorkflowPanel.prepare}
             </AgentButton>
             <AgentButton
               disabled={busy || !view?.canContinue}
-              disabledReason={busy ? BUSY_REASON : (view?.reasons.continue ?? 'Дождитесь загрузки состояния плана.')}
-              title="Готовит следующий этап: видеопромпт, затем запрос"
+              disabledReason={busy ? BUSY_REASON : (view?.reasons.continue ?? productionTexts.productionWorkflowPanel.loadingReason)}
+              title={productionTexts.productionWorkflowPanel.continueHint}
               onClick={() => void start('continue')}
             >
-              Продолжить подготовку
+              {productionTexts.productionWorkflowPanel.continue}
             </AgentButton>
             {view ? (
               <ProductionFrameGenerationButton
@@ -179,8 +175,8 @@ export function ProductionWorkflowPanel({
                 frame={view.nextFrame}
                 title={
                   view.nextFrame
-                    ? `Создаёт кандидата опоры ${view.nextFrame} по принятому описанию; утверждённые опоры и действующие замечания передаются в задание`
-                    : 'Создаёт кандидата следующей опоры по принятому описанию'
+                    ? productionTexts.productionWorkflowPanel.frameHint({ nextFrame: view.nextFrame })
+                    : productionTexts.productionWorkflowPanel.createHint
                 }
                 onGenerate={() => {
                   setLastAction('frames');

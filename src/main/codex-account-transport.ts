@@ -1,5 +1,6 @@
 /** Короткая сессия диагностики CLI: ограниченный вывод и обязательное завершение дочернего процесса. */
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { settingsTexts } from '@shared/texts/settings';
 
 export interface AccountProcessOptions {
   env: NodeJS.ProcessEnv;
@@ -20,7 +21,7 @@ export async function withAccountProcess<T>(
   const failure = new Promise<never>((_, reject) => {
     rejectFailure = reject;
   });
-  const fail = (): void => rejectFailure(new Error('Не удалось получить диагностику агента.'));
+  const fail = (): void => rejectFailure(new Error(settingsTexts.main.diagnosticsFailed));
   const closed = new Promise<number | null>((resolve) => child.once('close', resolve));
   let bytes = 0;
   const count = (chunk: Buffer | string): void => {
@@ -66,6 +67,7 @@ export async function readAccountCommand(executable: string, args: string[], opt
       output += chunk;
     });
     child.stdin.end();
+    // eslint-disable-next-line no-restricted-syntax -- Служебный отказ auth status перехватывается claudeAccount и заменяется сообщением о частичных данных.
     if ((await closed) !== 0) throw new Error('Команда диагностики завершилась с ошибкой.');
     return JSON.parse(output);
   });
@@ -86,7 +88,7 @@ export async function withCodexAppServer<T>(
   const pending = new Map<number, { resolve: (value: unknown) => void; reject: (reason: Error) => void }>();
   let stopped = false;
   const rejectPending = (): void => {
-    for (const request of pending.values()) request.reject(new Error('Сессия диагностики закрыта.'));
+    for (const request of pending.values()) request.reject(new Error(settingsTexts.main.diagnosticsSessionClosed));
     pending.clear();
   };
   try {
@@ -114,6 +116,7 @@ export async function withCodexAppServer<T>(
             const request = pending.get(reply.id);
             if (!request) continue;
             pending.delete(reply.id);
+            // eslint-disable-next-line no-restricted-syntax -- Ошибка ответа app-server относится к протоколу адаптера Codex.
             if ('error' in reply || !('result' in reply)) request.reject(new Error('Codex не поддерживает запрос диагностики.'));
             else request.resolve(reply.result);
           } catch {
@@ -123,7 +126,7 @@ export async function withCodexAppServer<T>(
         }
       });
       const request = (method: string, params: Record<string, unknown>): Promise<unknown> => {
-        if (stopped) return Promise.reject(new Error('Сессия диагностики закрыта.'));
+        if (stopped) return Promise.reject(new Error(settingsTexts.main.diagnosticsSessionClosed));
         const id = ++nextId;
         return new Promise((resolve, reject) => {
           pending.set(id, { resolve, reject });

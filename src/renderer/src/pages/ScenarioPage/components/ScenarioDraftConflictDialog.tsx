@@ -1,3 +1,5 @@
+import { commonTexts } from '@shared/texts/common';
+import { scenarioTexts } from '@shared/texts/scenario';
 import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
 import type { ReactElement } from 'react';
@@ -24,26 +26,32 @@ export function ScenarioDraftConflictDialog({
   return (
     <ConfirmationDialog
       open={open}
-      title="Есть несохранённые правки"
+      title={commonTexts.unsavedChanges}
       onClose={onClose}
-      cancelLabel="Вернуться к редактору"
+      cancelLabel={scenarioTexts.drafts.returnToEditor}
       cancelDisabled={busy}
-      cancelDisabledReason="Дождитесь сохранения правок."
+      cancelDisabledReason={scenarioTexts.drafts.waitSaving}
       closeDisabled={busy}
       confirmDisabled={busy}
-      confirmDisabledReason="Дождитесь сохранения правок."
-      confirmLabel="Сохранить и продолжить"
+      confirmDisabledReason={scenarioTexts.drafts.waitSaving}
+      confirmLabel={scenarioTexts.drafts.saveAndContinue}
       confirmIcon={<SaveIcon />}
       onConfirm={() => onResolve('save')}
       extraActions={
-        <ActionButton startIcon={<UndoIcon />} disabled={busy} disabledReason="Дождитесь сохранения правок." color="error" onClick={() => onResolve('discard')}>
-          Отменить правки и продолжить
+        <ActionButton
+          startIcon={<UndoIcon />}
+          disabled={busy}
+          disabledReason={scenarioTexts.drafts.waitSaving}
+          color="error"
+          onClick={() => onResolve('discard')}
+        >
+          {scenarioTexts.drafts.discardAndContinue}
         </ActionButton>
       }
     >
       <Stack spacing={2}>
-        <Typography>Изменены: {[treatmentDirty && 'трактовка', scenesDirty && 'реестр сцен'].filter(Boolean).join(', ')}.</Typography>
-        <Alert severity="warning">Сначала сохраните правки или явно отмените их. Агент получает только сохранённые данные проекта.</Alert>
+        <Typography>{scenarioTexts.drafts.changed({ treatment: treatmentDirty, scenes: scenesDirty })}</Typography>
+        <Alert severity="warning">{scenarioTexts.drafts.resolveBeforeAgent}</Alert>
       </Stack>
     </ConfirmationDialog>
   );

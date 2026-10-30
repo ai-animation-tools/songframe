@@ -270,7 +270,8 @@ describe('Диагностика среды', () => {
 
   it.skipIf(process.platform === 'win32')('проверяет версию и реальные импорты одним Python-процессом, продолжая после ошибки одного модуля', async () => {
     // Маленькие модули проверяют исполняемый Python-контракт без загрузки тяжёлых библиотек и сетевых ресурсов.
-    for (const name of ['PIL', 'numpy', 'ctranslate2']) writeFileSync(join(work, `${name}.py`), '__version__ = "test-version"\n');
+    for (const name of ['PIL', 'numpy']) writeFileSync(join(work, `${name}.py`), '__version__ = "test-version"\n');
+    writeFileSync(join(work, 'ctranslate2.py'), '# Модуль без номера версии\n');
     writeFileSync(join(work, 'faster_whisper.py'), 'raise ImportError("DLL load failed: test-library")\n');
     const value = launcher();
     vi.mocked(value.execute).mockImplementation(
@@ -300,7 +301,18 @@ describe('Диагностика среды', () => {
       detail: 'DLL load failed: test-library',
       elapsedMs: expect.any(Number)
     });
-    expect(checks.find(({ id }) => id === 'ctranslate2')).toMatchObject({ ok: true, detail: 'test-version', elapsedMs: expect.any(Number) });
+    expect(checks.find(({ id }) => id === 'ctranslate2')).toMatchObject({ ok: true, detail: 'доступен', elapsedMs: expect.any(Number) });
+    // Проверяем настоящий вывод script независимо от словаря: JSON stdout и помеченный stderr сохраняют одну подпись.
+    const execution = await vi.mocked(value.execute).mock.results[0].value;
+    expect(JSON.parse(execution.stdout).dependencies.ctranslate2.detail).toBe('доступен');
+    const progress = execution.stderr
+      .trim()
+      .split('\n')
+      .map((line: string) => JSON.parse(line.slice('SONGFRAME_ENV_CHECK '.length)));
+    expect(progress.find((item: { name?: string; state?: string }) => item.name === 'ctranslate2' && item.state === 'done')).toMatchObject({
+      ok: true,
+      detail: 'доступен'
+    });
     expect(processes.spawnSync).not.toHaveBeenCalled();
   });
 });

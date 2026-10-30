@@ -1,5 +1,6 @@
 /** Редактор состояния одной сущности по словарю свойств: подписи, подсказки, типовые значения, свои ключи. */
 
+import { componentsTexts } from '@shared/texts/components';
 import { type ReactElement, useState } from 'react';
 import { Autocomplete, Box, IconButton, TextField, Tooltip, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -23,9 +24,9 @@ interface Props {
 
 /** Почему нельзя добавить своё свойство с таким кодом; null — можно. */
 function customKeyProblem(key: string, exists: boolean): string | null {
-  if (!key) return 'Введите код свойства.';
-  if (!/^[a-z][a-z0-9_]*$/.test(key)) return 'Код начинается со строчной латинской буквы и содержит только a–z, цифры и «_».';
-  return exists ? 'Такое свойство уже есть в списке.' : null;
+  if (!key) return componentsTexts.stateEditor.enterKey;
+  if (!/^[a-z][a-z0-9_]*$/.test(key)) return componentsTexts.stateEditor.invalidKey;
+  return exists ? componentsTexts.stateEditor.duplicateKey : null;
 }
 
 export function StateEditor({ properties, value, onChange, baseline = {}, allowRemove = false, compact = false }: Props): ReactElement {
@@ -69,8 +70,14 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
                 <TextField
                   {...params}
                   label={row.label}
-                  placeholder={removed ? 'снято' : inherited || row.hint}
-                  helperText={!compact && inherited && current === undefined ? `унаследовано: ${inherited}` : removed ? 'свойство будет снято' : undefined}
+                  placeholder={removed ? componentsTexts.stateEditor.removed : inherited || row.hint}
+                  helperText={
+                    !compact && inherited && current === undefined
+                      ? componentsTexts.stateEditor.inherited({ value: inherited })
+                      : removed
+                        ? componentsTexts.stateEditor.willRemove
+                        : undefined
+                  }
                   slotProps={{ inputLabel: { shrink: true } }}
                 />
               )}
@@ -79,17 +86,21 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
             <Box sx={{ minWidth: 0, mt: 0.5 }}>
               {allowRemove && (inherited || current !== undefined) ? (
                 removed ? (
-                  <Tooltip title="Вернуть унаследованное">
-                    <IconButton size="small" aria-label={`Вернуть унаследованное свойство ${row.label}`} onClick={() => set(row.key, undefined)}>
+                  <Tooltip title={componentsTexts.stateEditor.restore}>
+                    <IconButton
+                      size="small"
+                      aria-label={componentsTexts.stateEditor.restoreProperty({ label: row.label })}
+                      onClick={() => set(row.key, undefined)}
+                    >
                       <UndoIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 ) : (
                   <DestructiveButton
                     icon
-                    label={`Снять свойство «${row.label}»`}
-                    description="Свойство будет снято из состояния сущности в этой сцене, включая унаследованное значение."
-                    confirmLabel="Снять"
+                    label={componentsTexts.stateEditor.removeProperty({ label: row.label })}
+                    description={componentsTexts.stateEditor.removeDescription}
+                    confirmLabel={componentsTexts.stateEditor.remove}
                     onConfirm={() => set(row.key, null)}
                   >
                     <ClearIcon fontSize="small" />
@@ -104,19 +115,19 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
       <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 34px', gap: 0.5, alignItems: 'start', minWidth: 0 }}>
         <TextField
           size="small"
-          label="Своё свойство (код)"
+          label={componentsTexts.stateEditor.customKey}
           value={customKey}
           onChange={(e) => setCustomKey(e.target.value)}
-          placeholder="например, helmet"
+          placeholder={componentsTexts.stateEditor.customKeyExample}
           // Поле общее для начального состояния кастинга и изменений плана: подсказка объясняет и ввод, и последствия.
-          helperText="Деталь состояния, которой нет среди полей выше. Код латиницей; после «+» появится поле для значения. Значение войдёт во врезку непрерывности и промпты опор, а следующие планы его унаследуют. Подпись, варианты и пункт проверки появятся, если добавить свойство в словарь кастинга."
+          helperText={componentsTexts.stateEditor.customKeyHint}
           slotProps={{ inputLabel: { shrink: true } }}
           sx={{ minWidth: 0 }}
         />
         <ActionIconButton
           size="small"
           color="success"
-          aria-label="Добавить своё свойство"
+          aria-label={componentsTexts.stateEditor.addCustomProperty}
           sx={{ mt: 0.5 }}
           disabled={!/^[a-z][a-z0-9_]*$/.test(customKey) || customKey in value || known.has(customKey)}
           disabledReason={customKeyProblem(customKey, customKey in value || known.has(customKey))}
@@ -130,7 +141,7 @@ export function StateEditor({ properties, value, onChange, baseline = {}, allowR
       </Box>
       {!rows.length ? (
         <Typography variant="caption" color="text.secondary">
-          У этого типа нет словаря свойств: добавьте свои ключи.
+          {componentsTexts.stateEditor.noDictionary}
         </Typography>
       ) : null}
     </Box>

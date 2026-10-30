@@ -1,3 +1,5 @@
+import { timingTexts } from '@shared/texts/timing';
+import { commonTexts } from '@shared/texts/common';
 import { CancelOutlined, PlayArrow } from '@mui/icons-material';
 import type { ReactElement } from 'react';
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
@@ -35,33 +37,27 @@ export function TimingGenerateDialog({
 }: TimingGenerateDialogProps): ReactElement {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Автоматическая разметка</DialogTitle>
+      <DialogTitle>{timingTexts.generateTitle}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          <Typography variant="body2">
-            Трек распознаётся локальной моделью faster-whisper без сети, затем текст песни выравнивается по словам. На CPU это несколько минут. Подтверждённые
-            строки сохраняются, если не включён полный пересчёт.
-          </Typography>
+          <Typography variant="body2">{timingTexts.generateDescription}</Typography>
           {open ? <WhisperModelSetup path={model} onPathChange={onModelChange} /> : null}
           <TextField
             select
-            label="Обработка"
+            label={timingTexts.processing}
             value={device}
             onChange={(event) => onDeviceChange(event.target.value as 'auto' | 'cpu')}
-            helperText="Автоматически: CUDA, если она доступна, иначе CPU. При ошибке видеопамяти выберите меньшую модель или CPU."
+            helperText={timingTexts.processingHint}
           >
-            <MenuItem value="auto">Автоматически (CPU / NVIDIA CUDA)</MenuItem>
-            <MenuItem value="cpu">Только CPU</MenuItem>
+            <MenuItem value="auto">{timingTexts.automaticDevice}</MenuItem>
+            <MenuItem value="cpu">{timingTexts.cpuOnly}</MenuItem>
           </TextField>
-          <FormControlLabel
-            control={<Checkbox checked={resetAll} onChange={(e) => onResetChange(e.target.checked)} />}
-            label="Пересчитать все строки, включая подтверждённые"
-          />
+          <FormControlLabel control={<Checkbox checked={resetAll} onChange={(e) => onResetChange(e.target.checked)} />} label={timingTexts.resetAll} />
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button startIcon={<CancelOutlined />} onClick={onClose}>
-          Отмена
+          {commonTexts.cancel}
         </Button>
         <ActionButton
           startIcon={<PlayArrow />}
@@ -71,7 +67,7 @@ export function TimingGenerateDialog({
           disabled={!canGenerate}
           disabledReason={generateBlockedReason}
         >
-          Запустить
+          {commonTexts.run}
         </ActionButton>
       </DialogActions>
     </Dialog>

@@ -1,5 +1,6 @@
 /** Создание проекта из шаблона, открытие существующего, история и текущий проект. */
 
+import { projectsTexts } from '@shared/texts/projects';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
@@ -22,17 +23,17 @@ export function defaultAnimaticName(name: string): string {
 
 export function validateNewProject(input: CreateProjectInput): string[] {
   const problems: string[] = [];
-  if (!input.name.trim()) problems.push('Укажите название проекта.');
-  if (!input.path.trim()) problems.push('Укажите полный путь к папке проекта.');
-  else if (!isAbsolute(input.path)) problems.push('Путь должен быть абсолютным.');
+  if (!input.name.trim()) problems.push(projectsTexts.main.nameRequired);
+  if (!input.path.trim()) problems.push(projectsTexts.main.pathRequired);
+  else if (!isAbsolute(input.path)) problems.push(projectsTexts.main.absolutePathRequired);
   else {
     const target = resolve(input.path);
-    if (existsSync(target)) problems.push('Папка уже существует: выберите новый путь или откройте её как существующий проект.');
+    if (existsSync(target)) problems.push(projectsTexts.main.targetExists);
     const parent = dirname(target);
-    if (!existsSync(parent) || !statSync(parent).isDirectory()) problems.push(`Родительская папка не существует: ${parent}`);
+    if (!existsSync(parent) || !statSync(parent).isDirectory()) problems.push(projectsTexts.main.parentMissing({ path: parent }));
   }
   const video = input.animaticVideo?.trim();
-  if (video && !/^[A-Za-z0-9._-]+\.mp4$/.test(video)) problems.push('Имя MP4: латиница, цифры, точка, дефис, подчёркивание и расширение .mp4.');
+  if (video && !/^[A-Za-z0-9._-]+\.mp4$/.test(video)) problems.push(projectsTexts.main.invalidAnimaticName);
   return problems;
 }
 
@@ -68,7 +69,7 @@ export class Projects {
   open(path: string): ProjectStatus {
     const target = resolve(path);
     const marker = existsSync(target) ? readProjectMarker(target) : null;
-    if (!marker) throw new Error(`В папке нет plan/project.json с названием проекта: ${target}`);
+    if (!marker) throw new Error(projectsTexts.main.markerMissingAtPath({ path: target }));
     this.state.readHistory();
     this.state.writeCurrent(target);
     this.state.touchHistory(target, marker.name);
@@ -81,12 +82,12 @@ export class Projects {
 
   /** Меняется только название: переименование не зависит от generation и не переносит папку или MP4. */
   rename(path: string, name: string): ProjectStatus {
-    if (typeof name !== 'string' || !name.trim()) throw new Error('Название проекта не может быть пустым.');
-    if (/[\0\r\n]/.test(name)) throw new Error('Название проекта содержит недопустимый символ.');
+    if (typeof name !== 'string' || !name.trim()) throw new Error(projectsTexts.main.emptyName);
+    if (/[\0\r\n]/.test(name)) throw new Error(projectsTexts.main.invalidNameCharacter);
     const target = resolve(path);
     const file = join(target, 'plan/project.json');
     const data = readLocalJson<Record<string, unknown>>(file);
-    if (!data || Array.isArray(data) || !readProjectMarker(target)) throw new Error('В папке нет корректного plan/project.json с названием проекта.');
+    if (!data || Array.isArray(data) || !readProjectMarker(target)) throw new Error(projectsTexts.main.invalidMarker);
     this.state.readHistory();
     const next = name.trim();
     writeLocalJson(file, { ...data, name: next });
@@ -102,7 +103,7 @@ export class Projects {
   create(input: CreateProjectInput): ProjectStatus {
     const problems = validateNewProject(input);
     if (problems.length) throw new Error(problems.join(' '));
-    if (!this.toolsRoot) throw new Error('Корень комплекса не найден: шаблон проекта недоступен. Укажите его на странице «Среда».');
+    if (!this.toolsRoot) throw new Error(projectsTexts.main.templateUnavailable);
     const target = resolve(input.path);
     const name = input.name.trim();
     const values = { project_name: name, animatic_video: input.animaticVideo?.trim() || defaultAnimaticName(name) };
@@ -111,6 +112,7 @@ export class Projects {
     const git = spawnSync('git', ['init', '-q', target], { encoding: 'utf-8' });
     // Отсутствие необязательного Git не мешает созданию обычного локального проекта.
     if (git.status !== 0 && (git.error as NodeJS.ErrnoException | undefined)?.code !== 'ENOENT') {
+      // eslint-disable-next-line no-restricted-syntax -- Содержимое служебного файла о Git остаётся у операции создания проекта.
       writeFileSync(join(target, 'GIT-INIT-FAILED.txt'), `git init не удался: ${git.stderr || git.error?.message || 'неизвестная ошибка'}\n`);
     }
     return this.open(target);

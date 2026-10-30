@@ -1,7 +1,8 @@
+import { aiAccessTexts } from './texts/ai-access';
 import type { MediaProviderId } from './media-providers';
 
 /** Без выбранного агента недоступны текстовые этапы; генерация медиа от агента не зависит. */
-export const COVER_AGENT_REQUIRED = 'Сначала выберите агента в настройках приложения.';
+export const COVER_AGENT_REQUIRED = aiAccessTexts.agentRequired;
 
 /** Временная сессия обложки не меняет исходники до сохранения общей формы. */
 export interface CoverCrop {

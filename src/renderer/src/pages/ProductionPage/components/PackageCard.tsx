@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Пакет производства объединяет вопрос, материалы запроса и полученный результат. */
 import type { ReactElement } from 'react';
 import { Alert, Box, Chip, Paper, Typography } from '@mui/material';
@@ -95,21 +96,22 @@ export function PackageCard({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 1 }}>
         <Typography fontWeight={600}>{pkg.relative}</Typography>
         <Chip size="small" label={pkg.stageLabel} color={pending ? 'primary' : 'default'} variant="outlined" />
-        {pkg.retryOf ? <Chip size="small" variant="outlined" label={`повтор ${pkg.retryOf.split('/').pop()}`} /> : null}
+        {pkg.retryOf ? <Chip size="small" variant="outlined" label={productionTexts.packageCard.retry({ attempt: pkg.retryOf.split('/').pop() })} /> : null}
         {pkg.waitReason ? <Chip size="small" variant="outlined" color="warning" label={pkg.waitReason} /> : null}
         <Box sx={{ flex: 1 }} />
         {pkg.decision && !returnedForRevision ? (
           <Typography variant="caption" color="text.secondary">
-            последний ответ: {VERDICT_LABELS[pkg.decision.verdict ?? '']?.label ?? pkg.decision.verdict}
-            {pkg.decision.note ? ` («${pkg.decision.note}»)` : ''}
+            {productionTexts.packageCard.lastAnswer({
+              label: VERDICT_LABELS[pkg.decision.verdict ?? '']?.label ?? pkg.decision.verdict,
+              note: pkg.decision.note
+            })}
           </Typography>
         ) : null}
       </Box>
       <PackageRevisionNotice pkg={pkg} onOpenRevision={onOpenRevision} />
       {isQueuedPackage(pkg) ? (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Запрос сохранён в очереди, генерация не запущена. Нажмите «Отправить» ниже: приложение заново проверит стоимость и покажет подтверждение перед
-          списанием кредитов.
+          {productionTexts.packageCard.queued}
         </Alert>
       ) : null}
       {pkg.sceneChanged ? (
@@ -121,13 +123,13 @@ export function PackageCard({
         </Alert>
       ) : null}
 
-      {pkg.description ? <PackageTextSection title="Описание плана" text={pkg.description} maxHeight={260} /> : null}
+      {pkg.description ? <PackageTextSection title={productionTexts.packageCard.description} text={pkg.description} maxHeight={260} /> : null}
 
       <PackageKeyframes pkg={pkg} busy={busy} busyReason={busyReason} onReopen={onReopenFrame} onSetNote={onSetKeyframeNote} />
 
       {pkg.prompt ? (
         <PackageTextSection
-          title={`Видеопромпт ${pkg.prompt.approved ? '· принят' : '· не принят'} · ${pkg.prompt.text.length} символов`}
+          title={productionTexts.packageCard.promptTitle({ approved: pkg.prompt.approved, characters: pkg.prompt.text.length })}
           text={pkg.prompt.text}
           maxHeight={220}
         />
@@ -168,17 +170,13 @@ export function PackageCard({
       {canDiscard ? (
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
           <DestructiveButton
-            label="Отказаться от попытки"
-            confirmLabel="Удалить попытку"
+            label={productionTexts.packageCard.discard}
+            confirmLabel={productionTexts.packageCard.delete}
             startIcon={<DeleteForeverIcon />}
             variant="outlined"
             disabled={busy}
             disabledReason={busyReason}
-            description={
-              `Папка ${pkg.relative} будет удалена безвозвратно вместе с запросом, опорами и промптом` +
-              (paidAttempt ? ', включая оплаченный оригинал генерации: кредиты не возвращаются' : '') +
-              '. Принятый комплект сцены и исходники не затрагиваются; после удаления снова доступны новая подготовка и «Подготовить повтор».'
-            }
+            description={productionTexts.packageCard.discardFolder({ relative: pkg.relative, paid: paidAttempt })}
             onConfirm={onDiscard!}
           />
         </Box>

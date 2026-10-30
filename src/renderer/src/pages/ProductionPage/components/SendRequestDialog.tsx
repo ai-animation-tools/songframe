@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 import CheckIcon from '@mui/icons-material/Check';
 import RefreshIcon from '@mui/icons-material/Refresh';
 /** Общее подтверждение платной отправки с замороженным промптом, входами и хешем запроса. */
@@ -36,7 +37,7 @@ export function SendRequestDialog({
   const { quote, error, loading, refreshQuote, consumeQuote } = useRequestQuote(project, pkg);
   // Название и правила цены берём у провайдера запроса из реестра, а не по имени сервиса.
   const providerInfo = pkg?.request ? mediaProviderInfo(normalizeMediaProvider(pkg.request.provider), pkg.request.kind === 'image' ? 'image' : 'video') : null;
-  const providerTitle = providerInfo?.title ?? pkg?.request?.provider ?? 'сервисе';
+  const providerTitle = providerInfo?.title ?? pkg?.request?.provider ?? productionTexts.sendRequestDialog.service;
   const notice = priceNotice(quote, providerInfo);
   const mounted = useRef(false);
   useEffect(() => {
@@ -58,21 +59,22 @@ export function SendRequestDialog({
     setSendError(null);
   }, [pkg]);
   // Причины по тем же ветвям, что и блокировка кнопок: подсказка выключенной кнопки говорит, что сделать дальше.
-  const commonReason = aiProblem ?? (sending ? 'Запрос уже отправляется.' : busy ? BUSY_REASON : loading ? 'Дождитесь проверки стоимости.' : null);
+  const commonReason =
+    aiProblem ?? (sending ? productionTexts.sendRequestDialog.sending : busy ? BUSY_REASON : loading ? productionTexts.sendRequestDialog.quotePending : null);
   const priceReason = !quote
-    ? 'Стоимость не проверена: нажмите «Обновить стоимость».'
+    ? productionTexts.sendRequestDialog.quoteRequired
     : quote.verdict === 'insufficient_balance'
-      ? 'Кредитов недостаточно: пополните баланс и обновите стоимость.'
+      ? productionTexts.sendRequestDialog.insufficient
       : canAgreeToUnknownCost(quote) && !agreedToUnknownCost
-        ? 'Стоимость неизвестна: нажмите «Я согласен», чтобы разрешить один запрос.'
+        ? productionTexts.sendRequestDialog.unknownBalance
         : !priceAllowsGeneration(quote, agreedToUnknownCost)
-          ? 'Остаток кредитов не подтверждён: обновите стоимость.'
+          ? productionTexts.sendRequestDialog.balanceUnconfirmed
           : null;
   const confirmReason =
     commonReason ??
     (!pkg?.request?.sha256
-      ? 'У запроса нет хеша: подготовьте запрос заново.'
-      : (priceReason ?? (quote?.requestSha !== pkg.request.sha256 ? 'Стоимость проверена для другой версии запроса: обновите стоимость.' : null)));
+      ? productionTexts.sendRequestDialog.hashMissing
+      : (priceReason ?? (quote?.requestSha !== pkg.request.sha256 ? productionTexts.sendRequestDialog.quoteMismatch : null)));
   const confirm = async (): Promise<void> => {
     if (sendingNow.current || aiProblem || !priceAllowsGeneration(quote, agreedToUnknownCost)) return;
     sendingNow.current = true;
@@ -95,9 +97,9 @@ export function SendRequestDialog({
     <ConfirmationDialog
       open={!!pkg}
       onClose={onClose}
-      title="Вы уверены, что промпт правильный?"
+      title={productionTexts.sendRequestDialog.title}
       cancelDisabled={sending}
-      cancelDisabledReason="Дождитесь окончания отправки запроса."
+      cancelDisabledReason={productionTexts.sendRequestDialog.sendPending}
       closeDisabled={sending}
       confirmDisabled={
         !!aiProblem ||
@@ -109,20 +111,23 @@ export function SendRequestDialog({
         quote?.requestSha !== pkg.request.sha256
       }
       confirmDisabledReason={confirmReason}
-      confirmLabel="Отправить и списать кредиты"
+      confirmLabel={productionTexts.sendRequestDialog.confirm}
       confirmIcon={<SendIcon />}
       onConfirm={() => void confirm()}
     >
       {pkg?.request ? (
         <Stack spacing={2} sx={{ mt: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
-          <Typography variant="body2">
-            Проверьте промпт и материалы перед отправкой платного запроса. Подтверждение разрешает одну попытку генерации.
-          </Typography>
+          <Typography variant="body2">{productionTexts.sendRequestDialog.description}</Typography>
           <RequestModelSelection selection={pkg.request.modelSelection} />
           <Typography variant="body2">
-            План {pkg.shot}
-            {pkg.request.kind === 'image' && pkg.request.frameId ? `, опора ${pkg.request.frameId}` : ''}, провайдер {pkg.request.provider ?? 'не указан'}
-            {pkg.request.command ? `, команда ${pkg.request.command}` : ''}, модель {pkg.request.model}.
+            {productionTexts.sendRequestDialog.requestSummary({
+              shot: pkg.shot,
+              image: pkg.request.kind === 'image' && pkg.request.frameId,
+              frameId: pkg.request.frameId,
+              provider: pkg.request.provider,
+              command: pkg.request.command,
+              model: pkg.request.model
+            })}
           </Typography>
           <RequestParameters parameters={pkg.request.parameters} />
           {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} /> : null}
@@ -131,12 +136,9 @@ export function SendRequestDialog({
               {productionInputLabel(input)}: {input.path}
             </Typography>
           ))}
-          <Typography variant="body2">
-            Это платная операция: будут списаны кредиты аккаунта {providerTitle}. Запрос отправляется ровно один раз, затем приложение ждёт результат и запишет
-            его в пакет.
-          </Typography>
+          <Typography variant="body2">{productionTexts.sendRequestDialog.paymentDescription({ providerTitle })}</Typography>
           <Stack spacing={1}>
-            {loading ? <Alert severity="info">Проверяем стоимость запроса и остаток кредитов в {providerTitle}.</Alert> : null}
+            {loading ? <Alert severity="info">{productionTexts.sendRequestDialog.checking({ providerTitle })}</Alert> : null}
             {error ? <Alert severity="error">{error}</Alert> : null}
             {quote && notice ? (
               <Alert severity={notice.severity}>
@@ -145,15 +147,15 @@ export function SendRequestDialog({
                 {quote.reasons.length && notice.severity !== 'info' ? ` ${quote.reasons.join(' ')}` : ''}
                 {canAgreeToUnknownCost(quote) ? (
                   <Stack spacing={1} sx={{ mt: 1 }}>
-                    {agreedToUnknownCost ? <Typography variant="body2">Вы согласились отправить этот запрос с неизвестной стоимостью.</Typography> : null}
+                    {agreedToUnknownCost ? <Typography variant="body2">{productionTexts.sendRequestDialog.agreed}</Typography> : null}
                     <ActionButton
                       startIcon={<CheckIcon />}
                       sx={{ alignSelf: 'start' }}
                       disabled={!!aiProblem || loading || sending || busy || agreedToUnknownCost}
-                      disabledReason={commonReason ?? 'Согласие на этот запрос уже дано.'}
+                      disabledReason={commonReason ?? productionTexts.sendRequestDialog.consentGiven}
                       onClick={() => setUnknownCostConsentToken(quote.token)}
                     >
-                      Я согласен
+                      {productionTexts.sendRequestDialog.agree}
                     </ActionButton>
                   </Stack>
                 ) : null}
@@ -166,14 +168,12 @@ export function SendRequestDialog({
               disabledReason={commonReason}
               onClick={refreshQuote}
             >
-              Обновить стоимость
+              {productionTexts.sendRequestDialog.refresh}
             </ActionButton>
           </Stack>
-          {sendError ? (
-            <Alert severity="error">{sendError} Закройте диалог для проверки состояния пакета или обновите стоимость для нового подтверждения.</Alert>
-          ) : null}
+          {sendError ? <Alert severity="error">{productionTexts.sendRequestDialog.sendError({ sendError })}</Alert> : null}
           <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', overflowWrap: 'anywhere' }}>
-            Хеш запроса (SHA-256): {pkg.request.sha256}
+            {productionTexts.sendRequestDialog.hash({ sha256: pkg.request.sha256 })}
           </Typography>
         </Stack>
       ) : null}

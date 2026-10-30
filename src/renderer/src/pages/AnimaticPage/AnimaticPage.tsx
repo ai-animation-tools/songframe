@@ -1,3 +1,5 @@
+import { animaticTexts } from '@shared/texts/animatic';
+import { commonTexts } from '@shared/texts/common';
 import { PageActionBar } from '../../components/PageActionBar';
 import { usePageLoading } from '../../components/PageLoader';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -20,7 +22,7 @@ export function AnimaticPage(): ReactElement {
         severity="error"
         action={
           <Button startIcon={<RefreshIcon />} onClick={load}>
-            Повторить
+            {commonTexts.retry}
           </Button>
         }
       >
@@ -77,7 +79,7 @@ export function AnimaticPage(): ReactElement {
             onOpenFolder={page.openFolder}
           />
           <Paper variant="outlined" sx={{ p: 2 }}>
-            {current ? <ShotCard shot={current} /> : <Typography color="text.secondary">Запустите видео или выберите план на полосе глав.</Typography>}
+            {current ? <ShotCard shot={current} /> : <Typography color="text.secondary">{animaticTexts.chooseShot}</Typography>}
           </Paper>
         </Box>
       ) : null}

@@ -26,8 +26,10 @@ async function codexModelRows(executable: string, options: AccountProcessOptions
         !Array.isArray(result.data) ||
         (result.nextCursor !== null && result.nextCursor !== undefined && typeof result.nextCursor !== 'string')
       )
+        // eslint-disable-next-line no-restricted-syntax -- Диагностика структуры model/list принадлежит адаптеру Codex.
         throw new Error('Codex вернул неизвестный формат каталога моделей.');
       for (const item of result.data) {
+        // eslint-disable-next-line no-restricted-syntax -- Точное имя model является частью протокола каталога Codex.
         if (!record(item) || typeof item.model !== 'string' || !item.model.trim()) throw new Error('Codex вернул модель без точного имени.');
         if (item.hidden === true) continue;
         // В exec передаётся именно model из объявления; displayName не является идентификатором CLI.
@@ -38,6 +40,7 @@ async function codexModelRows(executable: string, options: AccountProcessOptions
         });
       }
       cursor = typeof result.nextCursor === 'string' && result.nextCursor ? result.nextCursor : undefined;
+      // eslint-disable-next-line no-restricted-syntax -- Повтор курсора относится к пагинации model/list адаптера Codex.
       if (cursor && cursors.has(cursor)) throw new Error('Codex повторил страницу каталога моделей.');
       if (cursor) cursors.add(cursor);
     } while (cursor);
@@ -47,6 +50,7 @@ async function codexModelRows(executable: string, options: AccountProcessOptions
 
 /** Модели агента для опор: каталог провайдера изображений Codex. */
 export async function readCodexModels(config: AgentSettings, options: Partial<AccountProcessOptions> = {}): Promise<MediaModel[]> {
+  // eslint-disable-next-line no-restricted-syntax -- Метод каталога изображений принадлежит конкретному адаптеру Codex.
   if (config.provider !== 'codex') throw new Error('Каталог моделей доступен только для агента Codex.');
   const home = options.home ?? homedir();
   const rows = await codexModelRows(AGENT_PROVIDERS.codex.executable, { ...options, home, env: agentEnvironment(options.env, home) });

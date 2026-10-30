@@ -1,3 +1,4 @@
+import { scenesTexts } from '@shared/texts/scenes';
 import type { ReactElement, ReactNode } from 'react';
 import { Box, Paper, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
 import type { DashboardShot } from '@shared/types';
@@ -54,23 +55,23 @@ export function ScenesTimeline({
       </Box>
       <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center', flexWrap: 'wrap' }}>
         <ToggleButtonGroup size="small" exclusive value={filter} onChange={(_e, v: Filter | null) => v && onFilter(v)}>
-          <ToggleButton value="all">все</ToggleButton>
-          <ToggleButton value="completed">принятые</ToggleButton>
-          <ToggleButton value="stale">постановка изменена</ToggleButton>
-          <ToggleButton value="progress">в работе</ToggleButton>
-          <ToggleButton value="planned">не начатые</ToggleButton>
+          <ToggleButton value="all">{scenesTexts.timeline.all}</ToggleButton>
+          <ToggleButton value="completed">{scenesTexts.timeline.completed}</ToggleButton>
+          <ToggleButton value="stale">{scenesTexts.timeline.stale}</ToggleButton>
+          <ToggleButton value="progress">{scenesTexts.timeline.progress}</ToggleButton>
+          <ToggleButton value="planned">{scenesTexts.timeline.planned}</ToggleButton>
         </ToggleButtonGroup>
         {/* Подпись видна и после ввода поискового запроса. */}
         <TextField
           size="small"
-          label="Поиск планов"
-          placeholder="По коду, строке, действию"
+          label={scenesTexts.timeline.search}
+          placeholder={scenesTexts.timeline.searchHint}
           value={query}
           onChange={(e) => onQuery(e.target.value)}
           sx={{ minWidth: 280 }}
         />
         <Typography variant="caption" color="text.secondary">
-          {visibleCount} из {shots.length} · {formatClock(duration)}
+          {scenesTexts.timeline.visible({ visible: visibleCount, total: shots.length, duration: formatClock(duration) })}
         </Typography>
       </Box>
       {actions ? <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>{actions}</Box> : null}

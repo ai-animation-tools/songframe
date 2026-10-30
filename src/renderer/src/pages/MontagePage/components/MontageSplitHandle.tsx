@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { useRef, type KeyboardEvent, type PointerEvent, type ReactElement } from 'react';
 import { Box } from '@mui/material';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
@@ -31,14 +32,14 @@ export function MontageSplitHandle({ value, min, max, controls, onChange }: Prop
     <Box
       role="separator"
       tabIndex={0}
-      aria-label="Высота плеера и шкалы"
+      aria-label={montageTexts.splitHeight}
       aria-orientation="horizontal"
       aria-controls={controls}
       aria-valuemin={Math.round(min)}
       aria-valuemax={Math.round(max)}
       aria-valuenow={Math.round(value)}
-      aria-valuetext={`Высота верхней панели ${Math.round(value)} пикселей`}
-      title="Перетащите разделитель или используйте стрелки вверх и вниз"
+      aria-valuetext={montageTexts.panelHeight(Math.round(value))}
+      title={montageTexts.splitHint}
       onKeyDown={keyDown}
       onPointerDown={start}
       onPointerMove={(event) => {

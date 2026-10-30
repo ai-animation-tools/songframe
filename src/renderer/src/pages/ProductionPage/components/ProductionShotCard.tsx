@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Описание выбранного плана, повтор по сохранённому запросу и принятые видео. */
 import type { ReactElement } from 'react';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
@@ -41,20 +42,19 @@ export function ProductionShotCard({
   const sending = shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''));
   // Несовместимость запроса устраняет пользователь, поэтому она важнее временной занятости.
   const regenerateReason =
-    shot.regenerateProblem ??
-    (busy
-      ? BUSY_REASON
-      : !pythonAvailable
-        ? PYTHON_REASON
-        : sending
-          ? 'Исход отправки попытки этого плана ещё не известен: сначала выясните его в карточке пакета.'
-          : null);
+    shot.regenerateProblem ?? (busy ? BUSY_REASON : !pythonAvailable ? PYTHON_REASON : sending ? productionTexts.productionShotCard.submissionUnknown : null);
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
         <Typography variant="h6">{shot.id}</Typography>
         <Typography variant="body2" color="text.secondary">
-          {shot.title} · {formatClock(shot.start)}–{formatClock(shot.end)} · {(shot.end - shot.start).toFixed(2)} с{shot.lipsync ? ' · липсинк' : ''}
+          {productionTexts.productionShotCard.title({
+            title: shot.title,
+            start: formatClock(shot.start),
+            end: formatClock(shot.end),
+            seconds: (shot.end - shot.start).toFixed(2),
+            lipsync: shot.lipsync
+          })}
         </Typography>
       </Box>
       <Typography variant="body2" sx={{ mt: 1 }}>
@@ -68,7 +68,7 @@ export function ProductionShotCard({
       {/* Статус задаёт главный процесс по отпечатку постановки; комплект остаётся доступен для просмотра. */}
       {shot.state === 'stale' ? (
         <Alert severity="info" sx={{ mt: 1.5 }}>
-          <LinkedText text="Постановка плана изменилась после приёмки: комплект в assets принят по прежней постановке. Подготовьте новое производство в блоке «Подготовка плана» и примите новый результат." />
+          <LinkedText text={productionTexts.productionShotCard.stale} />
         </Alert>
       ) : null}
       {broken.map((item) => (
@@ -79,9 +79,9 @@ export function ProductionShotCard({
           action={
             onDiscardBroken ? (
               <DestructiveButton
-                label="Удалить папку"
-                description={`Папка ${item.relative} будет удалена безвозвратно вместе со всем содержимым. Принятый комплект сцены и исходники не затрагиваются.`}
-                confirmLabel="Удалить папку"
+                label={productionTexts.productionShotCard.deleteFolder}
+                description={productionTexts.productionShotCard.deleteFolderDescription({ relative: item.relative })}
+                confirmLabel={productionTexts.productionShotCard.deleteFolder}
                 startIcon={<DeleteForeverIcon />}
                 disabled={busy}
                 disabledReason={BUSY_REASON}
@@ -90,7 +90,7 @@ export function ProductionShotCard({
             ) : undefined
           }
         >
-          Папка {item.relative}: {item.reason}. Пока она есть, «Сохранить в очередь» для этого плана не сработает.
+          {productionTexts.productionShotCard.brokenHint({ relative: item.relative, reason: item.reason })}
         </Alert>
       ))}
       {waiting.map((pkg) => (
@@ -101,22 +101,22 @@ export function ProductionShotCard({
           action={
             onOpenPackage ? (
               <Button size="small" color="inherit" startIcon={<FolderOpenIcon />} onClick={() => onOpenPackage(pkg.dir)}>
-                Открыть пакет
+                {productionTexts.productionShotCard.openPackage}
               </Button>
             ) : undefined
           }
         >
-          Пакет {pkg.relative} ждёт вашего решения: {pkg.pendingDecision!.question}
+          {productionTexts.productionShotCard.pending({ relative: pkg.relative, question: pkg.pendingDecision!.question })}
         </Alert>
       ))}
       {shot.asset ? (
         <Box sx={{ mt: 1.5 }}>
           <Typography variant="subtitle2" gutterBottom>
-            Принятые материалы
+            {productionTexts.productionShotCard.accepted}
           </Typography>
           {!shot.asset.video ? (
             <Alert severity="warning" sx={{ mb: 1 }}>
-              Файл принятого монтажного видео отсутствует. Приёмка сохранена; восстановите файл перед сборкой с этим видео.
+              {productionTexts.productionShotCard.missingVideo}
             </Alert>
           ) : null}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -139,12 +139,12 @@ export function ProductionShotCard({
         {shot.state === 'completed' || shot.packages.length ? (
           <ActionButton
             startIcon={<ReplayIcon />}
-            title="Создать новую попытку по сохранённому запросу без отправки и оплаты"
+            title={productionTexts.productionShotCard.retryHint}
             disabled={busy || !pythonAvailable || !!shot.regenerateProblem || sending}
             disabledReason={regenerateReason}
             onClick={() => onRegenerate(shot.id)}
           >
-            Подготовить повтор
+            {productionTexts.productionShotCard.retry}
           </ActionButton>
         ) : null}
         {/* Постановку плана правят в реестре сцен; переход открывает её редактор у этого же плана. */}

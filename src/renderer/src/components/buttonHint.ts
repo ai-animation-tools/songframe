@@ -1,6 +1,7 @@
 /** Подсказка кнопки при наведении: назначение и, для недоступной кнопки, причина с подсказкой, что сделать. */
 
 /** Причины приходят и из главного процесса в разном виде: предложение с заглавной буквы и с точкой на конце. */
+import { commonTexts } from '@shared/texts/common';
 function sentence(text: string): string {
   const value = text.trim();
   if (!value) return value;
@@ -11,5 +12,5 @@ function sentence(text: string): string {
 export function buttonHint(purpose: unknown, reason: string | null | undefined): string | undefined {
   const text = typeof purpose === 'string' && purpose.trim() ? purpose.trim().replace(/[.]$/, '') : null;
   if (!reason) return text ?? undefined;
-  return text ? `${text}. Недоступно: ${sentence(reason)}` : sentence(reason);
+  return text ? commonTexts.unavailable({ purpose: text, reason: sentence(reason) }) : sentence(reason);
 }

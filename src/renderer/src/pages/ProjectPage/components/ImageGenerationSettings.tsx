@@ -1,3 +1,6 @@
+import { projectTexts } from '@shared/texts/project';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 /** Выбор исполнителя изображений не меняет отдельные настройки текстового агента. */
 
 import AddIcon from '@mui/icons-material/Add';
@@ -41,7 +44,7 @@ export function ImageGenerationSettings({
   // Агент-исполнитель возвращает собственный порядок каталога; рейтинг моделей прямых провайдеров к нему не относится.
   const availableModels = executor ? [...new Set(models.map((model) => model.id))] : modelOptions(models, 'image', value?.provider);
   const modelChoices = ['', ...availableModels];
-  const defaultModelLabel = info?.defaultModelLabel ?? 'Автоматически по задаче';
+  const defaultModelLabel = info?.defaultModelLabel ?? projectTexts.generation.automaticModel;
   const resolutions = resolutionOptions(models, value?.model);
   // Значения по умолчанию задаёт провайдер в реестре.
   const defaults = info?.defaults.image ?? {};
@@ -74,14 +77,14 @@ export function ImageGenerationSettings({
   return (
     <Paper component="section" variant="outlined" data-anchor={ANCHORS.projectImageGeneration} sx={{ p: 2, minWidth: 0 }}>
       <Stack spacing={1} sx={{ minWidth: 0 }}>
-        <Typography variant="subtitle2">Генерация изображений</Typography>
+        <Typography variant="subtitle2">{navigationTexts.blocks.projectImageGeneration}</Typography>
         {!value ? (
-          <Alert severity="info">Исполнитель изображений не задан. Добавьте его перед подготовкой опорных кадров.</Alert>
+          <Alert severity="info">{projectTexts.generation.imageMissing}</Alert>
         ) : (
           <>
             {!providerSelected && value.provider && (
               <Typography variant="caption" color="text.secondary">
-                Сохранённый провайдер: {savedTitle}. Для запуска выберите его в меню и сохраните настройки.
+                {projectTexts.generation.savedProvider({ provider: savedTitle ?? '' })}
               </Typography>
             )}
             <Box
@@ -97,13 +100,13 @@ export function ImageGenerationSettings({
               <TextField
                 select
                 id="image-generation-provider"
-                label="Провайдер изображений"
+                label={projectTexts.generation.imageProvider}
                 error={providerError}
                 helperText={
                   emptyUnselected
-                    ? 'Провайдер не выбран. Сохранение оставит генерацию отключённой.'
+                    ? projectTexts.generation.providerUnselected
                     : providerError || !providerSelected
-                      ? 'Выберите провайдера изображений и сохраните настройки.'
+                      ? projectTexts.generation.chooseImageProvider
                       : undefined
                 }
                 value={providerSelected ? value.provider : ''}
@@ -125,9 +128,9 @@ export function ImageGenerationSettings({
                 }}
                 size="small"
               >
-                <MenuItem value="">Не выбрано</MenuItem>
+                <MenuItem value="">{commonTexts.notSelected}</MenuItem>
                 {value.provider && !isMediaProvider(value.provider, 'image') && (
-                  <MenuItem value={value.provider}>{value.provider || 'Не задано'} (из файла)</MenuItem>
+                  <MenuItem value={value.provider}>{projectTexts.generation.fromFile(value.provider || commonTexts.notSpecified)}</MenuItem>
                 )}
                 {mediaProvidersFor('image').map((id) => (
                   <MenuItem key={id} value={id}>
@@ -139,7 +142,7 @@ export function ImageGenerationSettings({
                 <TextField
                   select
                   id="image-generation-model"
-                  label={executor && info ? `Модель агента ${info.title} для изображений` : 'Предпочтительная модель изображений'}
+                  label={executor && info ? projectTexts.generation.agentImageModel({ provider: info.title }) : projectTexts.generation.preferredImageModel}
                   error={modelError}
                   value={value.model ?? ''}
                   onChange={(event) => {
@@ -154,23 +157,28 @@ export function ImageGenerationSettings({
                     select: {
                       displayEmpty: true,
                       // Закрытое поле остаётся однострочным, команды видны только в меню.
-                      renderValue: () => (value.model ? `${value.model}${availableModels.includes(value.model) ? '' : ' (недоступна)'}` : defaultModelLabel)
+                      renderValue: () =>
+                        value.model
+                          ? projectTexts.generation.modelChoice({ model: value.model, available: availableModels.includes(value.model) })
+                          : defaultModelLabel
                     }
                   }}
                   helperText={
                     modelError
                       ? executor
-                        ? `Модель ${value.model} недоступна у провайдера. Выберите доступную модель или пункт «${defaultModelLabel}».`
-                        : `Модель ${value.model} недоступна у провайдера. Выберите доступную или автоматический подбор модели.`
+                        ? projectTexts.generation.agentModelUnavailable({ model: value.model, defaultModelLabel })
+                        : projectTexts.generation.modelUnavailable({ model: value.model })
                       : executor && info
-                        ? `По умолчанию используется модель из настроек ${info.title}. Здесь выбирается модель агента, который готовит изображение, а не модель самого генератора изображений.`
-                        : 'Автоматически — подбор по требованиям задачи. Выбранная модель — предпочтение; несовместимая будет заменена с объяснением при согласовании.'
+                        ? projectTexts.generation.agentModelHelp({ provider: info.title })
+                        : projectTexts.generation.modelHelp
                   }
                 >
                   {modelChoices.map((id) => (
                     <MenuItem key={id} value={id} disabled={Boolean(id) && !availableModels.includes(id)}>
                       <Box>
-                        <Typography variant="body2">{id ? `${id}${availableModels.includes(id) ? '' : ' (недоступна)'}` : defaultModelLabel}</Typography>
+                        <Typography variant="body2">
+                          {id ? projectTexts.generation.modelChoice({ model: id, available: availableModels.includes(id) }) : defaultModelLabel}
+                        </Typography>
                         {availableModels.includes(id) && (
                           <Typography variant="caption" color="text.secondary">
                             {Array.from(new Set(models.filter((model) => model.id === id).map((model) => model.command))).join(', ')}
@@ -196,14 +204,14 @@ export function ImageGenerationSettings({
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label="Разрешение изображений"
+                        label={projectTexts.generation.imageResolution}
                         error={resolutionError}
                         helperText={
                           !selectedResolution.trim()
-                            ? 'Выберите разрешение изображений.'
+                            ? projectTexts.generation.chooseImageResolution
                             : resolutionError
-                              ? `Разрешение ${selectedResolution} не поддерживается ${value.model ? 'предпочтительной моделью' : 'доступными моделями'}. Выберите доступное или автоматический подбор модели.`
-                              : 'Разрешения выбранной модели; при автоматическом подборе — всех доступных моделей. Можно ввести вручную.'
+                              ? projectTexts.generation.resolutionUnsupported({ resolution: selectedResolution, preferredModel: Boolean(value.model) })
+                              : projectTexts.generation.imageResolutionHelp
                         }
                       />
                     )}
@@ -211,7 +219,7 @@ export function ImageGenerationSettings({
                   <TextField
                     select
                     id="image-generation-aspect-ratio"
-                    label="Пропорции изображений"
+                    label={projectTexts.generation.imageAspect}
                     error={aspectError}
                     value={selectedAspect}
                     onChange={(event) => patch({ aspect_ratio: event.target.value })}
@@ -219,18 +227,18 @@ export function ImageGenerationSettings({
                     slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}
                     helperText={
                       aspectError && !selectedAspect.trim()
-                        ? 'Выберите пропорции изображений.'
+                        ? projectTexts.generation.chooseImageAspect
                         : aspectError
-                          ? `Пропорции ${selectedAspect} не поддерживаются ${value.model ? 'предпочтительной моделью' : 'доступными моделями'}. Выберите доступное или автоматический подбор модели.`
-                          : 'Пропорции выбранной модели: от широких к вертикальным, auto в конце. При автоматическом подборе — варианты всех моделей.'
+                          ? projectTexts.generation.aspectUnsupported({ aspect: selectedAspect, preferredModel: Boolean(value.model) })
+                          : projectTexts.generation.imageAspectHelp
                     }
                   >
                     <MenuItem value="" disabled>
-                      Выберите пропорции
+                      {projectTexts.generation.chooseAspect}
                     </MenuItem>
                     {selectedAspect && !aspects.includes(selectedAspect) && (
                       <MenuItem value={selectedAspect} disabled>
-                        {selectedAspect} (недоступны для модели)
+                        {projectTexts.generation.aspectUnavailable(selectedAspect)}
                       </MenuItem>
                     )}
                     {aspects.map((aspect) => (
@@ -240,29 +248,25 @@ export function ImageGenerationSettings({
                     ))}
                   </TextField>
                   <TextField
-                    label="Количество изображений"
+                    label={projectTexts.generation.imageCount}
                     type="number"
                     value={Number.isFinite(selectedOutputs) ? selectedOutputs : ''}
                     onChange={(event) => patch({ outputs: event.target.value === '' ? Number.NaN : Number(event.target.value) })}
                     error={outputsError}
                     size="small"
                     inputProps={{ min: 1, step: 1 }}
-                    helperText={
-                      outputsError
-                        ? 'Введите целое количество изображений от 1.'
-                        : 'Число вариантов одной опоры в запросе, а не число кадров. Больше вариантов может увеличить стоимость.'
-                    }
+                    helperText={outputsError ? projectTexts.generation.imageCountInvalid : projectTexts.generation.imageCountHelp}
                   />
                 </>
               )}
             </Box>
             {!providerSelected ? null : !requestParameters && info ? (
               <Typography variant="caption" color="text.secondary">
-                {`Генерацию выполняет ${info.title} встроенным инструментом изображений. Доступные размеры и форматы определяет исполнитель при подготовке запроса. Сейчас создаётся один вариант для каждой опоры. Параметры запроса — количество вариантов, разрешение и пропорции — к этому исполнителю не применяются.`}
+                {projectTexts.generation.agentExecution({ provider: info.title })}
               </Typography>
             ) : (
               <Typography variant="caption" color="text.secondary">
-                Параметры сохраняются как предпочтения. Исполнитель подбирает доступную модель под требования запроса.
+                {projectTexts.generation.imagePreferences}
               </Typography>
             )}
             {/* Наблюдение конкретного провайдера хранится в реестре и показывается только при его выборе. */}
@@ -275,7 +279,7 @@ export function ImageGenerationSettings({
         )}
         {!value && (
           <Button size="small" variant="outlined" color="success" startIcon={<AddIcon />} onClick={onAdd} sx={{ alignSelf: 'start' }}>
-            Добавить
+            {commonTexts.add}
           </Button>
         )}
       </Stack>

@@ -12,7 +12,7 @@ const state = vi.hoisted(() => ({
 class FakeWindow extends EventEmitter {
   destroyed = false;
   webContents = Object.assign(new EventEmitter(), { send: vi.fn() });
-  constructor() {
+  constructor(readonly options?: { title?: string }) {
     super();
     state.windows.push(this);
   }
@@ -105,5 +105,28 @@ describe('Отдельное окно плеера', () => {
     expect(child.destroyed).toBe(true);
     state.resolveLoad?.();
     await pending;
+  });
+});
+
+describe('тексты и ограничения отдельного окна', () => {
+  it('сохраняет нативный заголовок и объясняет повторное открытие без потери владельца', async () => {
+    state.handles.clear();
+    state.events.clear();
+    state.windows.length = 0;
+    const { registerMontageWindow } = await import('./montage-window');
+    registerMontageWindow('/tmp/songframe-montage-window-text-test');
+    const open = state.handles.get('montage-window:open') as unknown as (event: unknown, session: string) => Promise<void>;
+    const owner = new FakeWindow();
+    const pending = open({ sender: owner.webContents }, 'original');
+    const child = state.windows[1];
+    expect(child.options?.title).toBe('Плеер монтажа — SongFrame');
+    await expect(open({ sender: owner.webContents }, 'duplicate')).rejects.toThrow(new Error('Не удалось открыть отдельное окно плеера.'));
+    expect(state.windows).toHaveLength(2);
+    expect(child.destroyed).toBe(false);
+    state.resolveLoad?.();
+    await pending;
+    owner.close();
+    expect(child.destroyed).toBe(true);
+    expect(owner.webContents.send).not.toHaveBeenCalled();
   });
 });

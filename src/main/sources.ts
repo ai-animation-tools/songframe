@@ -3,6 +3,7 @@
  * Имена трека и текста фиксированы (track.mp3, text.md, description.md), потому что их читают инструменты.
  */
 
+import { sourcesTexts } from '@shared/texts/sources';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -39,12 +40,12 @@ export function validateKinds(kinds: SourceKind[]): string[] {
   const ids = new Set<string>();
   const dirs = new Set<string>();
   for (const kind of kinds) {
-    if (!SLUG.test(kind.id)) problems.push(`Код типа «${kind.label || kind.id}»: латиница в нижнем регистре, цифры и подчёркивание.`);
-    if (kind.id === RESERVED_KIND) problems.push('Тип world зарезервирован для общих условий сцены.');
-    if (!kind.label.trim()) problems.push(`У типа ${kind.id} нет подписи.`);
-    if (!DIR_SLUG.test(kind.dir)) problems.push(`Папка типа ${kind.id}: латиница, цифры, дефис и подчёркивание.`);
-    if (ids.has(kind.id)) problems.push(`Код типа повторяется: ${kind.id}.`);
-    if (dirs.has(kind.dir)) problems.push(`Папка повторяется: ${kind.dir}.`);
+    if (!SLUG.test(kind.id)) problems.push(sourcesTexts.main.kindIdInvalid({ label: kind.label, id: kind.id }));
+    if (kind.id === RESERVED_KIND) problems.push(sourcesTexts.main.kindReserved);
+    if (!kind.label.trim()) problems.push(sourcesTexts.main.kindLabelMissing({ id: kind.id }));
+    if (!DIR_SLUG.test(kind.dir)) problems.push(sourcesTexts.main.kindDirectoryInvalid({ id: kind.id }));
+    if (ids.has(kind.id)) problems.push(sourcesTexts.main.kindIdDuplicate({ id: kind.id }));
+    if (dirs.has(kind.dir)) problems.push(sourcesTexts.main.kindDirectoryDuplicate({ dir: kind.dir }));
     ids.add(kind.id);
     dirs.add(kind.dir);
   }
@@ -72,19 +73,19 @@ export function validateReferences(references: ReferenceInput[], kinds: SourceKi
   const seen = new Set<string>();
   const kindIds = new Set(kinds.map((k) => k.id));
   for (const ref of references) {
-    const label = ref.name || ref.id || '(без имени)';
-    if (!ID_PATTERN.test(ref.id)) problems.push(`Код референса «${label}»: латиница в нижнем регистре, цифры и подчёркивание, начиная с буквы.`);
-    if (seen.has(ref.id)) problems.push(`Код референса повторяется: ${ref.id}.`);
+    const label = ref.name || ref.id || sourcesTexts.main.unnamedReference;
+    if (!ID_PATTERN.test(ref.id)) problems.push(sourcesTexts.main.referenceIdInvalid({ label }));
+    if (seen.has(ref.id)) problems.push(sourcesTexts.main.referenceIdDuplicate({ id: ref.id }));
     seen.add(ref.id);
-    if (!ref.name.trim()) problems.push(`У референса ${ref.id} нет названия.`);
-    if (!kindIds.has(ref.kind)) problems.push(`У референса ${ref.id} неизвестный тип ${ref.kind}: добавьте тип в список типов.`);
-    if (ref.files.length === 0) problems.push(`У референса ${ref.id} нет ни одного изображения.`);
+    if (!ref.name.trim()) problems.push(sourcesTexts.main.referenceNameMissing({ id: ref.id }));
+    if (!kindIds.has(ref.kind)) problems.push(sourcesTexts.main.referenceKindUnknown({ id: ref.id, kind: ref.kind }));
+    if (ref.files.length === 0) problems.push(sourcesTexts.main.referenceImageMissing({ id: ref.id }));
     for (const file of ref.files) {
       const source = file.sourcePath ?? file.existingPath;
-      if (!source) problems.push(`У референса ${ref.id} файл без пути.`);
+      if (!source) problems.push(sourcesTexts.main.referencePathMissing({ id: ref.id }));
       else if (file.sourcePath && !IMAGE_EXTENSIONS.has(extname(file.sourcePath).toLowerCase()))
-        problems.push(`Референс ${ref.id}: допустимы PNG, JPG и WebP, получен ${basename(file.sourcePath)}.`);
-      else if (file.sourcePath && !existsSync(file.sourcePath)) problems.push(`Референс ${ref.id}: файл не найден: ${file.sourcePath}.`);
+        problems.push(sourcesTexts.main.referenceImageInvalid({ id: ref.id, filename: basename(file.sourcePath) }));
+      else if (file.sourcePath && !existsSync(file.sourcePath)) problems.push(sourcesTexts.main.referenceFileMissing({ id: ref.id, path: file.sourcePath }));
     }
   }
   return problems;
@@ -121,20 +122,20 @@ export function viewSources(project: string): SourcesView {
   const referenceFilePaths: Record<string, string> = {};
   if (manifest) {
     const check = (file: ManifestFile | null, label: string): void => {
-      if (file && !existsSync(join(source, file.path))) problems.push(`${label}: файл ${file.path} отсутствует.`);
+      if (file && !existsSync(join(source, file.path))) problems.push(sourcesTexts.main.manifestFileMissing({ label, path: file.path }));
     };
-    check(manifest.track, 'Трек');
-    check(manifest.lyrics, 'Текст песни');
-    check(manifest.idea, 'Идея');
-    check(manifest.cover, 'Обложка');
+    check(manifest.track, sourcesTexts.main.trackLabel);
+    check(manifest.lyrics, sourcesTexts.main.lyricsLabel);
+    check(manifest.idea, sourcesTexts.main.ideaLabel);
+    check(manifest.cover, sourcesTexts.main.coverLabel);
     for (const ref of manifest.references) {
       for (const file of ref.files) {
-        check(file, `Референс ${ref.id}`);
+        check(file, sourcesTexts.main.referenceLabel({ id: ref.id }));
         referenceFilePaths[file.path] = join(source, file.path);
       }
     }
   } else if (existsSync(join(source, MANIFEST_NAME))) {
-    problems.push('source/manifest.json повреждён или другой версии.');
+    problems.push(sourcesTexts.main.manifestInvalid);
   }
   return {
     manifest,
@@ -150,26 +151,26 @@ export function viewSources(project: string): SourcesView {
 export function validateSources(project: string, input: SourcesInput): string[] {
   const existing = readManifest(project);
   const problems: string[] = [];
-  if (!input.track && !existing?.track) problems.push('Трек обязателен.');
+  if (!input.track && !existing?.track) problems.push(sourcesTexts.main.trackRequired);
   if (input.track) {
-    if (!existsSync(input.track.path)) problems.push(`Файл трека не найден: ${input.track.path}`);
-    else if (extname(input.track.path).toLowerCase() !== '.mp3') problems.push('Трек должен быть в формате MP3.');
+    if (!existsSync(input.track.path)) problems.push(sourcesTexts.main.trackFileMissing({ path: input.track.path }));
+    else if (extname(input.track.path).toLowerCase() !== '.mp3') problems.push(sourcesTexts.main.trackFormatInvalid);
   }
   const textProblem = (value: SourcesInput['lyrics'], saved: unknown, label: string, requiredMessage: string): void => {
     if (!value && !saved) problems.push(requiredMessage);
-    if (value && 'path' in value && !existsSync(value.path)) problems.push(`${label}: файл не найден: ${value.path}`);
-    if (value && 'text' in value && !value.text.trim()) problems.push(`${label}: пустой текст.`);
+    if (value && 'path' in value && !existsSync(value.path)) problems.push(sourcesTexts.main.textFileMissing({ label, path: value.path }));
+    if (value && 'text' in value && !value.text.trim()) problems.push(sourcesTexts.main.textEmpty({ label }));
   };
-  textProblem(input.lyrics, existing?.lyrics, 'Текст песни', 'Текст песни обязателен.');
-  textProblem(input.idea, existing?.idea, 'Идея клипа', 'Идея клипа обязательна.');
+  textProblem(input.lyrics, existing?.lyrics, sourcesTexts.main.lyricsLabel, sourcesTexts.main.lyricsRequired);
+  textProblem(input.idea, existing?.idea, sourcesTexts.main.clipIdeaLabel, sourcesTexts.main.ideaRequired);
   const lyricsPath = input.lyrics && 'path' in input.lyrics ? input.lyrics.path : existing?.lyrics ? join(project, SOURCE_DIR, existing.lyrics.path) : null;
   const lyricsText =
     input.lyrics && 'text' in input.lyrics ? input.lyrics.text : lyricsPath && existsSync(lyricsPath) ? readFileSync(lyricsPath, 'utf-8') : null;
   // Тот же разбор применяется к вводу, импорту и уже сохранённому тексту.
   if (lyricsText !== null) problems.push(...parseLyrics(lyricsText).problems);
   if (input.cover && 'path' in input.cover) {
-    if (!existsSync(input.cover.path)) problems.push(`Файл обложки не найден: ${input.cover.path}`);
-    else if (!IMAGE_EXTENSIONS.has(extname(input.cover.path).toLowerCase())) problems.push('Обложка: допустимы PNG, JPG и WebP.');
+    if (!existsSync(input.cover.path)) problems.push(sourcesTexts.main.coverFileMissing({ path: input.cover.path }));
+    else if (!IMAGE_EXTENSIONS.has(extname(input.cover.path).toLowerCase())) problems.push(sourcesTexts.main.coverFormatInvalid);
   }
   const kinds = resolveKinds(input, existing);
   problems.push(...validateKinds(kinds));

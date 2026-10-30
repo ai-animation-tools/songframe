@@ -1,4 +1,5 @@
 /** Проверка среды: независимые результаты и этапы импорта поступают по мере готовности. */
+import { environmentTexts } from '@shared/texts/environment';
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,13 +11,13 @@ import { paidAdapters } from './providers';
 
 const PROGRESS_PREFIX = 'SONGFRAME_ENV_CHECK ';
 const MODULES = [
-  ['PIL', 'pillow', 'Pillow'],
-  ['numpy', 'numpy', 'NumPy'],
-  ['faster_whisper', 'faster-whisper', 'faster-whisper'],
-  ['ctranslate2', 'ctranslate2', 'CTranslate2']
+  ['PIL', 'pillow', environmentTexts.main.pillowLabel],
+  ['numpy', 'numpy', environmentTexts.main.numpyLabel],
+  ['faster_whisper', 'faster-whisper', environmentTexts.main.fasterWhisperLabel],
+  ['ctranslate2', 'ctranslate2', environmentTexts.main.ctranslateLabel]
 ] as const;
-const bundledHint = 'Python и библиотеки входят в приложение. Если комплект повреждён, распакуйте приложение заново.';
-const developmentHint = 'Для разработки: yarn prepare:runtime или Python 3.11+ с зависимостями из scripts/runtime/README.md.';
+const bundledHint = environmentTexts.main.bundledPythonHint;
+const developmentHint = environmentTexts.main.developmentPythonHint;
 type Update = (id: string, patch: Partial<EnvironmentCheck>) => void;
 /** Первый запуск программ из поставки на Windows может идти долго (антивирус, холодный диск): запас на проверку версии. */
 const COMMAND_TIMEOUT_MS = 45000;
@@ -31,11 +32,12 @@ export function run(command: string, args: string[], shell: boolean, env: NodeJS
       const elapsedMs = Math.round(performance.now() - started);
       if (error) {
         let output: string;
-        if (error.killed) output = `Превышено время выполнения (${COMMAND_TIMEOUT_MS} мс).`;
+        if (error.killed) output = environmentTexts.main.commandTimedOut(COMMAND_TIMEOUT_MS);
+        // Регулярка распознаёт штатную ошибку внешнего CMD; это контракт stderr, а не текст UI.
         else if (error.code === 'ENOENT' || String(error.code) === '9009' || (shell && /is not recognized|не является.*командой/i.test(stderr)))
-          output = `Команда не найдена: ${command}`;
+          output = environmentTexts.main.commandNotFound(command);
         // CMD пишет в локальной кодировке: не выдаём повреждённый текст за сообщение инструмента.
-        else if (shell && /\uFFFD/.test(stderr || error.message)) output = `Команда завершилась с ошибкой (код ${error.code ?? 'неизвестен'}): ${command}`;
+        else if (shell && /\uFFFD/.test(stderr || error.message)) output = environmentTexts.main.commandFailed({ code: error.code, command });
         else output = stderr.trim() || error.message;
         resolve({ ok: false, output, elapsedMs });
       } else resolve({ ok: true, output: (stdout || stderr).trim(), elapsedMs });
@@ -56,14 +58,14 @@ async function checkPython(launcher: PythonLauncher, update: Update): Promise<vo
         update('python', {
           status: 'done',
           ok: true,
-          detail: `Python ${progress.version} (${progress.executable})`,
+          detail: environmentTexts.main.pythonVersion({ version: progress.version, executable: progress.executable }),
           elapsedMs: Math.round(performance.now() - started)
         });
       } else if (progress.kind === 'import') {
         const module = MODULES.find(([name]) => name === progress.name);
         if (!module) return;
         const id = module[1];
-        if (progress.state === 'running') update(id, { status: 'running', detail: 'Выполняется импорт' });
+        if (progress.state === 'running') update(id, { status: 'running', detail: environmentTexts.main.importRunning });
         else if (progress.state === 'done' && typeof progress.ok === 'boolean' && typeof progress.detail === 'string' && Number.isFinite(progress.elapsedMs)) {
           completed.add(id);
           update(id, { status: 'done', ok: progress.ok, detail: progress.detail, elapsedMs: progress.elapsedMs });
@@ -82,16 +84,17 @@ async function checkPython(launcher: PythonLauncher, update: Update): Promise<vo
       pendingStderr = pendingStderr.slice(newline + 1);
     }
   };
-  update('python', { status: 'running', detail: 'Запускается Python' });
+  update('python', { status: 'running', detail: environmentTexts.main.pythonStarting });
   try {
     const runtime = launcher.runtime();
     update('python', {
-      label: runtime.source === 'bundled' ? 'Встроенный Python' : 'Python (разработка)',
+      label: runtime.source === 'bundled' ? environmentTexts.main.bundledPython : environmentTexts.main.developmentPython,
       hint: runtime.source === 'bundled' ? bundledHint : developmentHint,
       bundled: runtime.source === 'bundled'
     });
     // Библиотеки поставляются вместе с тем Python, которым запущены.
     for (const [, id] of MODULES) update(id, { bundled: runtime.source === 'bundled' });
+    // Fallback подписи сериализуется как строка Python: вывод и протокол прогресса остаются прежними.
     // Один процесс сохраняет итоговый JSON в stdout; помеченный stderr показывает настоящий зависший импорт до завершения процесса.
     const imports = await launcher.execute(
       [
@@ -107,7 +110,7 @@ for name in ('PIL', 'numpy', 'faster_whisper', 'ctranslate2'):
     started = time.perf_counter()
     try:
         module = importlib.import_module(name)
-        result[name] = {'ok': True, 'detail': getattr(module, '__version__', 'доступен')}
+        result[name] = {'ok': True, 'detail': getattr(module, '__version__', ${JSON.stringify(environmentTexts.main.importAvailable)})}
     except Exception as error:
         result[name] = {'ok': False, 'detail': str(error)}
     result[name]['elapsedMs'] = round((time.perf_counter() - started) * 1000)
@@ -122,18 +125,23 @@ print(json.dumps({'version': version, 'executable': sys.executable, 'dependencie
       .filter((text) => !text.startsWith(PROGRESS_PREFIX))
       .join('\n')
       .trim();
-    if (imports.code !== 0) throw new Error(stderr || imports.stdout || 'Не удалось проверить Python-библиотеки.');
+    if (imports.code !== 0) throw new Error(stderr || imports.stdout || environmentTexts.main.pythonLibrariesFailed);
     const result = JSON.parse(imports.stdout);
     // Итог остаётся доступен вызывающим без подписки; события импорта не заменяют настоящую проверку библиотек.
     update('python', {
       status: 'done',
       ok: true,
-      detail: `Python ${result.version} (${result.executable})`,
+      detail: environmentTexts.main.pythonVersion({ version: result.version, executable: result.executable }),
       ...(!completed.has('python') ? { elapsedMs: Math.round(performance.now() - started) } : {})
     });
     for (const [name, id] of MODULES) {
       const status = result.dependencies[name];
-      update(id, { status: 'done', ok: status?.ok ?? false, detail: status?.detail ?? 'Нет результата импорта', elapsedMs: status?.elapsedMs });
+      update(id, {
+        status: 'done',
+        ok: status?.ok ?? false,
+        detail: status?.detail ?? environmentTexts.main.importResultMissing,
+        elapsedMs: status?.elapsedMs
+      });
     }
   } catch (error) {
     for (const id of ['python', ...MODULES.map(([, id]) => id)]) {
@@ -162,40 +170,33 @@ export async function checkEnvironment(
     hint,
     productionOnly,
     ok: false,
-    detail: 'Ожидание проверки',
+    detail: environmentTexts.main.waiting,
     status: 'pending'
   });
   const checks: EnvironmentCheck[] = [
     initial(
       'tools',
-      'Комплекс SongFrame',
-      launcher.options.packaged
-        ? 'Ресурсы входят в поставку приложения. При их отсутствии распакуйте приложение заново.'
-        : 'Папка с tools/common.py и templates/project.',
+      environmentTexts.main.toolsLabel,
+      launcher.options.packaged ? environmentTexts.main.bundledToolsHint : environmentTexts.main.developmentToolsHint,
       false
     ),
-    initial('python', launcher.options.packaged ? 'Встроенный Python' : 'Python (разработка)', pythonHint),
+    initial('python', launcher.options.packaged ? environmentTexts.main.bundledPython : environmentTexts.main.developmentPython, pythonHint),
     ...MODULES.map(([, id, label]) => initial(id, label, pythonHint)),
-    initial(
-      'whisper-model',
-      'Внешняя модель faster-whisper',
-      'Модель устанавливается отдельно. Откройте «Тайминги → Разметить»: там рекомендации, инструкция и ссылки; путь можно выбрать вручную.'
-    ),
+    initial('whisper-model', environmentTexts.main.whisperModelLabel, environmentTexts.main.whisperModelHint),
     ...(['ffmpeg', 'ffprobe'] as const).map((id) => ({
       ...initial(
         id,
-        `${media ? 'Встроенный ' : ''}${id === 'ffmpeg' ? 'FFmpeg' : 'ffprobe'}`,
-        media ? 'Бинарник входит в приложение. Восстановите поставку.' : 'Для разработки установите FFmpeg/ffprobe или выполните yarn prepare:media.'
+        environmentTexts.main.mediaLabel({
+          bundled: Boolean(media),
+          name: id === 'ffmpeg' ? environmentTexts.main.ffmpegLabel : environmentTexts.main.ffprobeLabel
+        }),
+        media ? environmentTexts.main.bundledMediaHint : environmentTexts.main.developmentMediaHint
       ),
       bundled: Boolean(media)
     })),
     ...providerChecks.map((check) => ({ ...check })),
     {
-      ...initial(
-        'git',
-        'Git',
-        'Приложению не нужен: все страницы и производство работают без него. Если Git установлен, новый проект сразу создаётся репозиторием, чтобы при желании вести историю версий клипа.'
-      ),
+      ...initial('git', environmentTexts.main.gitLabel, environmentTexts.main.gitHint),
       external: true
     }
   ];
@@ -207,18 +208,23 @@ export async function checkEnvironment(
   };
 
   const toolsStarted = performance.now();
-  update('tools', { status: 'running', detail: 'Проверяются ресурсы' });
+  update('tools', { status: 'running', detail: environmentTexts.main.resourcesChecking });
   const toolsOk = !!toolsRoot && existsSync(join(toolsRoot, 'tools', 'common.py')) && existsSync(join(toolsRoot, 'templates', 'project'));
-  update('tools', { status: 'done', ok: toolsOk, detail: toolsRoot ?? 'не найден', elapsedMs: Math.round(performance.now() - toolsStarted) });
+  update('tools', {
+    status: 'done',
+    ok: toolsOk,
+    detail: toolsRoot ?? environmentTexts.main.toolsNotFound,
+    elapsedMs: Math.round(performance.now() - toolsStarted)
+  });
   const modelStarted = performance.now();
-  update('whisper-model', { status: 'running', detail: 'Проверяются стандартные каталоги модели' });
+  update('whisper-model', { status: 'running', detail: environmentTexts.main.modelChecking });
   const candidates = [modelDirectory(launcher.options), ...WHISPER_MODELS.map(({ id }) => modelDirectory(launcher.options, id))];
   const modelDir = candidates.find((path) => missingModelFiles(path).length === 0) ?? candidates[0];
   const missing = missingModelFiles(modelDir);
   update('whisper-model', {
     status: 'done',
     ok: missing.length === 0,
-    detail: missing.length ? 'В стандартных папках модель не найдена. Можно выбрать другую локальную папку при разметке.' : modelDir,
+    detail: missing.length ? environmentTexts.main.modelNotFound : modelDir,
     elapsedMs: Math.round(performance.now() - modelStarted)
   });
 
@@ -230,7 +236,7 @@ export async function checkEnvironment(
     { id: 'git', command: 'git', args: ['--version'], shell }
   ];
   const pending = commands.map(async ({ id, command, args, shell: commandShell }) => {
-    update(id, { status: 'running', detail: 'Проверяется версия' });
+    update(id, { status: 'running', detail: environmentTexts.main.versionChecking });
     const probe = await run(command, args, commandShell, externalEnv);
     const detail = probe.ok && (id === 'ffmpeg' || id === 'ffprobe') ? `${probe.output.split('\n')[0]} (${command})` : probe.output;
     update(id, { status: 'done', ok: probe.ok, detail, elapsedMs: probe.elapsedMs });

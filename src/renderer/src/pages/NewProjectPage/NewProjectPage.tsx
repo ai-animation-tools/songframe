@@ -1,5 +1,8 @@
 /** Создание проекта: название, полный путь новой папки, имя MP4; папка создаётся из шаблона, Git используется при наличии. */
 
+import { projectsTexts } from '@shared/texts/projects';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Button, Stack, Typography } from '@mui/material';
@@ -25,7 +28,7 @@ export function NewProjectPage(): ReactElement {
     try {
       const status = await window.api.projects.create({ name: name.trim(), path: path.trim(), animaticVideo: video.trim() || undefined });
       await refresh();
-      notify(`Проект «${status.name}» создан`, 'success');
+      notify(projectsTexts.created({ name: status.name }), 'success');
       navigate('/project/sources');
     } catch (error) {
       notify(describeError(error), 'error');
@@ -37,25 +40,25 @@ export function NewProjectPage(): ReactElement {
   // Причина недоступности «Создать» по ветвям её условия; проблемы формы перечислены у полей.
   const { name, path } = form.values;
   const createReason = busy
-    ? 'Дождитесь создания проекта.'
+    ? projectsTexts.creating
     : !state?.toolsRoot
-      ? 'Ресурсы приложения не найдены: см. страницу «Среда».'
+      ? projectsTexts.resourcesMissing
       : !name.trim()
-        ? 'Введите название проекта.'
+        ? projectsTexts.nameRequired
         : !path.trim()
-          ? 'Укажите папку проекта.'
+          ? projectsTexts.folderRequired
           : form.problems.length
-            ? 'Исправьте проблемы, перечисленные в форме.'
-            : 'Дождитесь окончания проверки формы.';
+            ? projectsTexts.formProblems
+            : projectsTexts.validating;
 
   return (
     <Stack spacing={2} inert={busy || undefined} aria-busy={busy} sx={{ width: '100%', minWidth: 0 }}>
       <PageActionBar>
         <Typography variant="h5" sx={{ flex: 1 }}>
-          Новый проект
+          {navigationTexts.pages.newProject}
         </Typography>
         <Button startIcon={<CloseIcon />} onClick={() => navigate('/projects')}>
-          Отмена
+          {commonTexts.cancel}
         </Button>
         <ActionButton
           variant="contained"
@@ -65,17 +68,17 @@ export function NewProjectPage(): ReactElement {
           disabledReason={createReason}
           onClick={create}
         >
-          Создать
+          {commonTexts.create}
         </ActionButton>
       </PageActionBar>
       {!state?.toolsRoot ? (
         <Alert severity="error">
-          <LinkedText text="Ресурсы приложения не найдены, шаблон проекта недоступен. Подробности на странице «Среда»." />
+          <LinkedText text={projectsTexts.templateUnavailable} />
         </Alert>
       ) : null}
       <NewProjectForm {...form} />
       <Typography variant="body2" color="text.secondary">
-        После создания откроется страница исходников: трек, текст песни, идея клипа, обложка и референсы.
+        {projectsTexts.afterCreation}
       </Typography>
     </Stack>
   );

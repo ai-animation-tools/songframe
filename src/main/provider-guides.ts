@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { mediaProviderInfo, normalizeMediaProvider, type MediaKind } from '@shared/media-providers';
 
+// eslint-disable-next-line no-restricted-syntax -- Заголовок распознаёт раздел документа провайдера, который входит в промпт агента.
 export const PROVIDER_GUIDE_HEADING = '## Указания агенту';
 
 /** Путь документа провайдера относительно корня комплекса (в поставке — resources). */
@@ -23,5 +24,6 @@ export function providerGuide(root: string, kind: MediaKind, provider: unknown):
   const body = document.slice(start + PROVIDER_GUIDE_HEADING.length + 2);
   const end = body.search(/\n## /);
   const section = (end < 0 ? body : body.slice(0, end)).trim();
+  // eslint-disable-next-line no-restricted-syntax -- Заголовок и вид медиа принадлежат обвязке промпта выбранного провайдера.
   return section ? `## Указания провайдера ${kind === 'video' ? 'видео' : 'изображений'}: ${info.title}\n\n${section}` : null;
 }

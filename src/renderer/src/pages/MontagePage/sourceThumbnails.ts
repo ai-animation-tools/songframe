@@ -14,8 +14,11 @@ function firstFrame(url: string, signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
     let finished = false;
+    // eslint-disable-next-line no-restricted-syntax -- Служебная причина отказа очереди: UI показывает общий статус превью, а не message.
     const timeout = window.setTimeout(() => finish(new Error('Не удалось дождаться кадра видео.')), 15000);
+    // eslint-disable-next-line no-restricted-syntax -- Служебная причина отказа очереди: UI показывает общий статус превью, а не message.
     const abort = (): void => finish(new DOMException('Загрузка превью отменена.', 'AbortError'));
+    // eslint-disable-next-line no-restricted-syntax -- Служебная причина отказа очереди: UI показывает общий статус превью, а не message.
     const failed = (): void => finish(new Error('Не удалось прочитать кадр видео.'));
     const loaded = (): void => {
       if (!video.videoWidth || !video.videoHeight || video.readyState < 2) return;
@@ -24,6 +27,7 @@ function firstFrame(url: string, signal: AbortSignal): Promise<string> {
         canvas.width = 320;
         canvas.height = 180;
         const context = canvas.getContext('2d');
+        // eslint-disable-next-line no-restricted-syntax -- Служебная причина отказа очереди: UI показывает общий статус превью, а не message.
         if (!context) throw new Error('Не удалось подготовить изображение превью.');
         const scale = Math.min(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
         const width = video.videoWidth * scale;
@@ -96,6 +100,7 @@ export function requestSourceThumbnail(url: string): { promise: Promise<string>;
       if (job.state === 'queued') {
         queue.splice(queue.indexOf(job), 1);
         job.state = 'done';
+        // eslint-disable-next-line no-restricted-syntax -- Служебная причина отказа очереди: UI показывает общий статус превью, а не message.
         job.reject(new DOMException('Загрузка превью отменена.', 'AbortError'));
       } else job.controller.abort();
     }

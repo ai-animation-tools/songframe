@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Сохранённые параметры запроса и переход к общему подтверждению отправки. */
 import type { ReactElement } from 'react';
 import { Box, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
@@ -29,42 +30,42 @@ export function PackageRequest({
   const canSubmit = !pending && ['request_choice', 'image_request_choice', 'ready'].includes(pkg.stage) && pkg.request?.attemptStatus === 'prepared';
   // Название исполнителя берётся из реестра провайдеров, а не из текста интерфейса.
   const providerId = normalizeMediaProvider(pkg.request?.provider);
-  const providerTitle = providerId ? MEDIA_PROVIDERS[providerId].title : 'Провайдер генерации';
+  const providerTitle = providerId ? MEDIA_PROVIDERS[providerId].title : productionTexts.packageRequest.provider;
   return (
     <>
       {pkg.request ? (
         <Box sx={{ mb: 2, minWidth: 0 }}>
           <Typography variant="subtitle2" gutterBottom>
-            {pkg.request.kind === 'image' ? 'Запрос изображения' : 'Запрос видео'}
+            {pkg.request.kind === 'image' ? productionTexts.packageRequest.image : productionTexts.packageRequest.video}
           </Typography>
           <RequestModelSelection selection={pkg.request.modelSelection} />
           <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', '& .MuiTableCell-root': { overflowWrap: 'anywhere' } }}>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ width: '35%' }}>Параметр</TableCell>
-                <TableCell>Значение</TableCell>
+                <TableCell sx={{ width: '35%' }}>{productionTexts.packageRequest.parameter}</TableCell>
+                <TableCell>{productionTexts.packageRequest.value}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               <TableRow>
-                <TableCell>Исполнитель</TableCell>
+                <TableCell>{productionTexts.packageRequest.executor}</TableCell>
                 <TableCell>
-                  {pkg.request.provider ?? 'не указан'}
+                  {pkg.request.provider ?? productionTexts.packageRequest.unspecified}
                   {pkg.request.command ? ` · ${pkg.request.command}` : ''}
                 </TableCell>
               </TableRow>
               {pkg.request.kind === 'image' && pkg.request.frameId ? (
                 <TableRow>
-                  <TableCell>Опорный кадр</TableCell>
+                  <TableCell>{productionTexts.packageRequest.frame}</TableCell>
                   <TableCell>{pkg.request.frameId}</TableCell>
                 </TableRow>
               ) : null}
               <TableRow>
-                <TableCell>Модель</TableCell>
+                <TableCell>{productionTexts.packageRequest.model}</TableCell>
                 <TableCell>{pkg.request.model}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>Входные материалы</TableCell>
+                <TableCell>{productionTexts.packageRequest.inputs}</TableCell>
                 <TableCell>
                   {pkg.request.inputs.map((input) => (
                     <Typography
@@ -78,15 +79,17 @@ export function PackageRequest({
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>Попытка</TableCell>
+                <TableCell>{productionTexts.packageRequest.attempt}</TableCell>
                 <TableCell>
-                  {pkg.request.attemptStatus ? (ATTEMPT_LABELS[pkg.request.attemptStatus] ?? pkg.request.attemptStatus) : '—'}
-                  {pkg.request.generationId ? ` · ID ${pkg.request.generationId}` : ''}
-                  {pkg.request.creditsConsumed !== null ? ` · списано ${pkg.request.creditsConsumed}` : ''}
+                  {productionTexts.packageRequest.charged({
+                    status: pkg.request.attemptStatus ? (ATTEMPT_LABELS[pkg.request.attemptStatus] ?? pkg.request.attemptStatus) : '—',
+                    generationId: pkg.request.generationId,
+                    credits: pkg.request.creditsConsumed
+                  })}
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>Хеш запроса (SHA-256)</TableCell>
+                <TableCell>{productionTexts.packageRequest.hash}</TableCell>
                 <TableCell sx={{ fontFamily: 'monospace', fontSize: 11 }}>{pkg.request.sha256 ?? '—'}</TableCell>
               </TableRow>
             </TableBody>
@@ -101,12 +104,12 @@ export function PackageRequest({
               sx={{ mt: 1.5 }}
               variant="contained"
               startIcon={<SendIcon />}
-              title="Платная отправка из приложения"
+              title={productionTexts.packageRequest.sendHint}
               disabled={busy || !providerAvailable}
-              disabledReason={busy ? busyReason : `${providerTitle} не найден: проверьте его на странице «Среда».`}
+              disabledReason={busy ? busyReason : productionTexts.packageRequest.providerMissing({ providerTitle })}
               onClick={onSubmit}
             >
-              Отправить
+              {productionTexts.packageRequest.send}
             </AiButton>
           ) : null}
         </Box>

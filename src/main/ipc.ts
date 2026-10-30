@@ -22,6 +22,12 @@ import type {
   TimingGenerateOptions,
   TreatmentFile
 } from '@shared/types';
+import { applicationTexts } from '@shared/texts/application';
+import { commonTexts } from '@shared/texts/common';
+import { settingsTexts } from '@shared/texts/settings';
+import { timingTexts } from '@shared/texts/timing';
+import { jobsTexts } from '@shared/texts/jobs';
+import { productionTexts } from '@shared/texts/production';
 import { Jobs } from './jobs';
 import { runtimeInfo, type AppDiagnostics } from './app-diagnostics';
 import { buildReport, jobText } from './diagnostics';
@@ -150,7 +156,7 @@ export function createServices(input: { restoreJobs?: boolean; previousJobs?: Jo
 
 export function registerIpc(getServices: () => Services, setServices: (services: Services) => void): void {
   const agents = getServices().agents;
-  if (!agents) throw new Error('Менеджер агента не создан.');
+  if (!agents) throw new Error(applicationTexts.agentManagerMissing);
   const notifications = getServices().notifications;
   const diagnostics = getServices().diagnostics;
   const watchJobs = (jobs: Jobs): void => {
@@ -164,7 +170,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     toolsRoot: () => getServices().toolsRoot,
     scaffold: async (project) => {
       const result = await getServices().launcher.run(project, 'scene_scaffold', ['--dry-run', '--json']);
-      if (result.code !== 0) throw new Error(`Не удалось подготовить каркас: ${(result.stderr || result.stdout).trim().slice(-2000)}`);
+      if (result.code !== 0) throw new Error(applicationTexts.scaffoldFailed({ details: (result.stderr || result.stdout).trim().slice(-2000) }));
       return JSON.parse(result.stdout) as ScenesFile;
     },
     publish: (input) => publishScenario(input, { localDir: getServices().settings.localDir, launcher: getServices().launcher })
@@ -186,13 +192,13 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   );
   const projectAgentImages = (project: string): AgentImageExecutor => {
     const executor = agentImages[normalizeMediaProvider(readProjectSettings(project).generation?.image?.provider) ?? ''];
-    if (!executor) throw new Error('Выбранный провайдер изображений не рисует опоры программой-агентом.');
+    if (!executor) throw new Error(applicationTexts.imageAgentUnsupported);
     return executor;
   };
   // Задание опор собирает исполнитель провайдера, чья программа-агент его выполнила, даже если настройки проекта уже сменились.
   const jobAgentImages = (job: AgentJob): AgentImageExecutor => {
     const id = Object.keys(agentImages).find((provider) => MEDIA_PROVIDERS[provider]?.executor === job.provider);
-    if (!id) throw new Error('Нет исполнителя опор для программы-агента этого задания.');
+    if (!id) throw new Error(applicationTexts.imageExecutorMissing);
     return agentImages[id];
   };
   // Общий платный адаптер для каждого провайдера таблицы и каждого вида медиа из реестра.
@@ -204,7 +210,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   );
   const requirePaid = (provider: unknown): PaidProviderAdapter => {
     const adapter = paidAdapter(provider);
-    if (!adapter) throw new Error('Для провайдера не подключён исполнитель платного запроса.');
+    if (!adapter) throw new Error(applicationTexts.paidExecutorMissing);
     return adapter;
   };
   const ai = createAiAccess({
@@ -220,7 +226,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     },
     cropImage: (input, output, crop) => {
       const image = nativeImage.createFromPath(input).crop({ x: crop.x, y: crop.y, width: crop.size, height: crop.size });
-      if (image.isEmpty()) throw new Error('Не удалось вырезать выбранную область обложки.');
+      if (image.isEmpty()) throw new Error(applicationTexts.coverCropFailed);
       writeFileSync(output, image.toPNG());
     },
     prepareCandidate: (input) =>
@@ -244,7 +250,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   const coverProjects = new Map<string, string>();
   ipcMain.handle('cover:create', async (event, project: string, prompt: string) => {
     await ai.requireAccess(project, 'image');
-    if (event.sender.isDestroyed()) throw new Error('Окно генерации обложки закрыто.');
+    if (event.sender.isDestroyed()) throw new Error(applicationTexts.coverWindowClosed);
     let owned = coverOwners.get(event.sender.id);
     if (!owned) {
       owned = new Set<string>();
@@ -254,6 +260,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
         owned!.clear();
         for (const id of ids) {
           coverProjects.delete(id);
+          // eslint-disable-next-line no-restricted-syntax -- Это сообщение журнала очистки, оно не передаётся пользователю через IPC.
           void cover.close(id).catch((error: unknown) => console.error('Не удалось очистить временную обложку:', error));
         }
       };
@@ -291,7 +298,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     return executor && ((project) => executor.capabilities(project));
   };
   ipcMain.handle('media:capabilities', (_event, project: string, kind: MediaKind, provider: string) => {
-    if (!['image', 'video'].includes(kind)) throw new Error('Неизвестный вид медиа.');
+    if (!['image', 'video'].includes(kind)) throw new Error(applicationTexts.mediaKindUnknown);
     const capabilities = mediaCapabilities(provider, kind);
     if (capabilities) return capabilities(project);
     return {
@@ -300,7 +307,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       available: false,
       checkedAt: new Date().toISOString(),
       models: [],
-      problems: ['Провайдер не поддерживается. Сохранённое значение оставлено без изменений.'],
+      problems: [applicationTexts.providerUnsupported],
       generationVerified: false
     };
   });
@@ -319,9 +326,9 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       const executor = projectAgentImages(input.project);
       const prepared = executor.prepare(input);
       const execution = executor.submit(prepared, { requestSha: prepared.requestSha });
-      if (execution.provider !== executor.provider) throw new Error('Исполнитель вернул неверный тип задания опор.');
+      if (execution.provider !== executor.provider) throw new Error(applicationTexts.imageJobKindInvalid);
       const job = agents.get(execution.agentJobId);
-      if (!job) throw new Error('Задание изображений не создано.');
+      if (!job) throw new Error(applicationTexts.imageJobMissing);
       return job;
     },
     collectImages: (job) =>
@@ -334,7 +341,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       const provider = paidMedia[normalizeMediaProvider(settings?.provider) ?? '']?.image;
       if (!provider) {
         const paid = mediaProvidersFor('image').filter((id) => MEDIA_PROVIDERS[id].paid);
-        throw new Error(`Выберите ${paid.map((id) => MEDIA_PROVIDERS[id].title).join(' или ') || 'платного провайдера'} для изображений в настройках проекта.`);
+        throw new Error(applicationTexts.choosePaidImageProvider({ titles: paid.map((id) => MEDIA_PROVIDERS[id].title) }));
       }
       const capabilities = await provider.capabilities(input.project);
       const request = frameImageRequest(provider.adapter, input, settings, capabilities, (path) => !nativeImage.createFromPath(path).isEmpty());
@@ -349,13 +356,13 @@ export function registerIpc(getServices: () => Services, setServices: (services:
         '--request-dir',
         requestName
       ]);
-      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || 'Не удалось записать согласование изображения.');
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || applicationTexts.imageConsentFailed);
     },
     prepareVideoRequest: async ({ project, shot, requestDir, prompt, draft, durationConstraint }) => {
       await ai.requireAccess(project, 'video');
       const settings = readProjectSettings(project).generation?.video;
       const provider = isMediaProvider(settings?.provider, 'video') ? paidMedia[settings.provider]?.video : undefined;
-      if (!settings || !provider) throw new Error(`Выберите поддерживаемого провайдера видео: ${mediaProviderTitles('video')}.`);
+      if (!settings || !provider) throw new Error(applicationTexts.chooseVideoProvider({ titles: mediaProviderTitles('video') }));
       await provider.prepare(
         {
           project,
@@ -393,21 +400,19 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       !Array.isArray(candidates) ||
       candidates.some((item) => !item || typeof item.path !== 'string' || !isImageFile(item.path) || nativeImage.createFromPath(item.path).isEmpty())
     )
-      throw new Error('Выберите настоящие изображения PNG, JPG или WebP.');
+      throw new Error(applicationTexts.actualImagesRequired);
     return productionFlow.importFrames(project, shot, packageDir, candidates);
   });
   const productionIdle = (project: string, packageDir: string): void => {
     const pkg = readPackage(project, packageDir);
-    if (pkg && productionFlow.view(project, pkg.shot, packageDir).busy) throw new Error('Для этого пакета уже выполняется задание. Дождитесь завершения.');
+    if (pkg && productionFlow.view(project, pkg.shot, packageDir).busy) throw new Error(applicationTexts.packageBusy);
   };
   const requirePackageAccess = (project: string, packageDir: string): Promise<void> => requireProductionPackageAccess(project, packageDir, ai.requireAccess);
   const reviewProblem = (project: string): string | null => {
     try {
-      return workflow.view(project).scenesNeedReview
-        ? 'Кастинг, трактовка или исходники изменились: проверьте и утвердите актуальный сценарий на странице «Сценарий».'
-        : null;
+      return workflow.view(project).scenesNeedReview ? applicationTexts.scenarioReviewRequired : null;
     } catch (error) {
-      return `Не удалось проверить актуальность сценария: ${error instanceof Error ? error.message : String(error)}`;
+      return applicationTexts.scenarioReviewFailed({ reason: error instanceof Error ? error.message : String(error) });
     }
   };
   ipcMain.handle('scenarioWorkflow:view', (_event, project: string) => workflow.view(project));
@@ -448,18 +453,18 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   ipcMain.handle('agents:check', (_event, settings: AgentSettings) => checkAgent(settings));
   ipcMain.handle('agents:account', (_event, settings: AgentSettings) => {
     const config = normalizeAgentSettings(settings);
-    if (!config) throw new Error('Сначала выберите агента.');
+    if (!config) throw new Error(settingsTexts.selectAgent);
     return createAgentAdapter(config.provider).account(config);
   });
   ipcMain.handle('agents:models', (_event, settings: AgentSettings) => {
     const config = normalizeAgentSettings(settings);
-    if (!config) throw new Error('Сначала выберите агента.');
+    if (!config) throw new Error(settingsTexts.selectAgent);
     return readAgentModels(createAgentAdapter(config.provider), config);
   });
   ipcMain.handle('app:state', () => getServices().projects.appState());
   ipcMain.handle('app:setToolsRoot', (_event, path: string | null) => {
-    if (app.isPackaged && path) throw new Error('Готовое приложение использует собственные ресурсы. Выбор checkout доступен только при разработке.');
-    if (path && !existsSync(join(path, 'tools', 'common.py'))) throw new Error(`В папке нет tools/common.py: ${path}`);
+    if (app.isPackaged && path) throw new Error(applicationTexts.packagedResources);
+    if (path && !existsSync(join(path, 'tools', 'common.py'))) throw new Error(applicationTexts.sourcesInvalid({ path }));
     const settings = getServices().settings;
     settings.write({ ...settings.read(), toolsRootOverride: path });
     // Смена ресурсов не создаёт второй менеджер и не объявляет живые задания прерванными.
@@ -513,9 +518,9 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     try {
       // Предусловие проверяется и в IPC: файл мог исчезнуть после открытия диалога.
       const textPath = join(project, 'source/text.md');
-      if (!existsSync(textPath)) throw new Error('Сначала добавьте текст песни на странице «Исходники».');
+      if (!existsSync(textPath)) throw new Error(timingTexts.addLyrics);
       const formatProblems = parseLyrics(readFileSync(textPath, 'utf8')).problems;
-      if (formatProblems.length) throw new Error(`Исправьте текст песни на странице «Исходники»: ${formatProblems.join(' ')}`);
+      if (formatProblems.length) throw new Error(applicationTexts.lyricsInvalid({ problems: formatProblems }));
       const args = ['--json'];
       // Пустое поле использует рекомендацию, а не отсутствующие веса внутри AppImage.
       if (!options.recognition) {
@@ -622,7 +627,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   ipcMain.handle('production:regenerate', (_event, project: string, shot: string) => {
     // Повтор только копирует сохранённый запрос; выбор провайдера проверяется без входа в сервис и запуска ИИ.
     // Повтор не должен создавать пакет одновременно с применением предложения того же кадра.
-    if (productionFlow.view(project, shot).busy) throw new Error('Для этого кадра уже выполняется задание. Дождитесь завершения.');
+    if (productionFlow.view(project, shot).busy) throw new Error(applicationTexts.shotBusy);
     return getServices().production.regenerate(project, shot);
   });
   ipcMain.handle('production:accept', (_event, project: string, shot: string, packageDir: string, options: AcceptOptions) => {
@@ -650,9 +655,9 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   ipcMain.handle('production:prepareSpeech', async (_event, project: string, packageDir: string, bounds?: { start: number; end: number }) => {
     productionIdle(project, packageDir);
     const { lipSync } = speechLimits(project, packageDir);
-    if (!lipSync) throw new Error('Провайдер видео проекта не синхронизирует губы с заданным звуком.');
+    if (!lipSync) throw new Error(productionTexts.productionSpeechPanel.unsupported);
     if (bounds && (bounds.end - bounds.start < lipSync.min - 1e-6 || bounds.end - bounds.start > lipSync.max + 1e-6))
-      throw new Error(`Провайдер видео принимает звук длиной от ${lipSync.min} до ${lipSync.max} с: поправьте границы среза.`);
+      throw new Error(applicationTexts.speechDuration({ min: lipSync.min, max: lipSync.max }));
     return getServices().production.prepareSpeech(project, packageDir, bounds);
   });
   ipcMain.handle('production:exportBundle', (_event, project: string, options: ExportBundleOptions) => getServices().production.exportBundle(project, options));
@@ -706,9 +711,10 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const source = montageVideoPath(project, video);
     const window = BrowserWindow.fromWebContents(event.sender);
     const result = await dialog.showSaveDialog(window!, {
-      title: 'Сохранить видеопробу',
+      title: applicationTexts.saveMontageVideo,
+      // eslint-disable-next-line no-restricted-syntax -- Предлагаемое имя экспортного файла остаётся значением пути у операции сохранения.
       defaultPath: 'Монтажная проба.mp4',
-      filters: [{ name: 'Видео MP4', extensions: ['mp4'] }]
+      filters: [{ name: productionTexts.packageResume.video, extensions: ['mp4'] }]
     });
     if (result.canceled || !result.filePath) return null;
     return copyMontageVideo(project, source, result.filePath);
@@ -717,7 +723,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   ipcMain.handle('jobs:get', (_event, id: string) => getServices().jobs.get(id));
   ipcMain.handle('jobs:copyText', (_event, id: string) => {
     const job = getServices().jobs.get(id);
-    if (!job) throw new Error('Задание не найдено в журнале.');
+    if (!job) throw new Error(applicationTexts.jobMissing);
     return jobText(job, getServices().jobs.readLog(id));
   });
 
@@ -730,9 +736,9 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
     const window = BrowserWindow.fromWebContents(event.sender);
     const result = await dialog.showSaveDialog(window!, {
-      title: 'Сохранить отчёт для разработчика',
+      title: jobsTexts.saveReport,
       defaultPath: join(app.getPath('downloads'), `songframe-report-${stamp}.txt`),
-      filters: [{ name: 'Текст', extensions: ['txt'] }]
+      filters: [{ name: commonTexts.files.text, extensions: ['txt'] }]
     });
     if (result.canceled || !result.filePath) return null;
     const report = buildReport({
@@ -831,7 +837,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   });
   ipcMain.handle('shell:openPath', (_event, path: string) => openDesktopPath(path, (target) => shell.openPath(target)));
   ipcMain.handle('shell:readText', (_event, path: string) => {
-    if (statSync(path).size > 2 * 1024 * 1024) throw new Error('Файл больше 2 МБ: выберите текстовый файл меньшего размера.');
+    if (statSync(path).size > 2 * 1024 * 1024) throw new Error(applicationTexts.textFileTooLarge);
     return readFileSync(path, 'utf-8');
   });
 }

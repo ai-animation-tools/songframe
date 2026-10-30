@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { CastProperty, ScenarioSaveImpact, ScenarioView, ScenesFile, ScenesSaveMode, TreatmentFile, TreatmentSequence } from '@shared/types';
@@ -122,27 +123,27 @@ export function useScenario() {
   const treatmentDirty = JSON.stringify(treatment) !== JSON.stringify(view?.treatment ?? null);
   // Каркас нужен и агенту для подробного сценария: без разметки и кастинга с изображениями его не создать.
   const scenesInputProblem = !view?.timing?.lines?.length
-    ? 'На странице «Тайминги» разметьте строки песни и сохраните результат.'
+    ? scenarioTexts.prerequisites.timing
     : !cast
-      ? 'На странице «Кастинг» создайте героев и другие объекты клипа.'
+      ? scenarioTexts.prerequisites.cast
       : !referenceOptions.length
-        ? 'На странице «Кастинг» добавьте изображение хотя бы одному герою или объекту.'
+        ? scenarioTexts.prerequisites.reference
         : null;
   // Те же обязательные данные нужны scene_scaffold; объяснение используем и в кнопке, и при запуске.
   const scaffoldProblem = !view?.timing?.lines?.length
-    ? 'На странице «Тайминги» разметьте строки песни и сохраните результат.'
+    ? scenarioTexts.prerequisites.timing
     : !(Number(view.timing.duration_decoded || view.timing.duration_container) > 0)
-      ? 'На странице «Тайминги» заново разметьте трек, чтобы определить его длительность.'
+      ? scenarioTexts.prerequisites.duration
       : !cast
-        ? 'На странице «Кастинг» создайте героев и другие объекты клипа.'
+        ? scenarioTexts.prerequisites.cast
         : !referenceOptions.length
-          ? 'На странице «Кастинг» добавьте изображение хотя бы одному герою или объекту.'
+          ? scenarioTexts.prerequisites.reference
           : !view.treatment
-            ? 'Заполните и сохраните трактовку перед построением каркаса.'
+            ? scenarioTexts.prerequisites.treatment
             : treatmentDirty || scenesDirty
-              ? 'Сохраните изменения трактовки и реестра сцен перед построением каркаса.'
+              ? scenarioTexts.prerequisites.savedDrafts
               : !state?.toolsRoot
-                ? 'Выберите папку комплекса в настройках, чтобы построить каркас.'
+                ? scenarioTexts.prerequisites.tools
                 : null;
 
   // После публикации меняем только принадлежащий проходу черновик: другая вкладка сохраняет свои правки.
@@ -195,15 +196,20 @@ export function useScenario() {
     if (!view?.timing) return;
     const used = new Set<string>();
     const slug = (name: string, index: number): string => {
+      // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
       const base = name.toLowerCase().includes('припев')
         ? 'chorus'
-        : name.toLowerCase().includes('куплет')
+        : // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
+          name.toLowerCase().includes('куплет')
           ? 'verse'
-          : name.toLowerCase().includes('вступ')
+          : // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
+            name.toLowerCase().includes('вступ')
             ? 'intro'
-            : name.toLowerCase().includes('финал')
+            : // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
+              name.toLowerCase().includes('финал')
               ? 'final'
-              : name.toLowerCase().includes('проигрыш')
+              : // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
+                name.toLowerCase().includes('проигрыш')
                 ? 'bridge'
                 : `part${index + 1}`;
       let candidate = base;
@@ -235,7 +241,7 @@ export function useScenario() {
       setTreatment(saved);
       setView((current) => current && { ...current, treatment: saved });
       await refresh();
-      notify('Трактовка сохранена', 'success');
+      notify(scenarioTexts.notice.treatmentSaved, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -252,7 +258,7 @@ export function useScenario() {
       await load();
       await refresh();
       setTab('scenes');
-      notify('Каркас реестра сцен построен', 'success');
+      notify(scenarioTexts.notice.scaffoldCreated, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -269,7 +275,7 @@ export function useScenario() {
     setView((current) => current && { ...current, scenes: saved });
     setImpact(null);
     await refresh();
-    notify(mode === 'keep' ? 'Реестр сцен сохранён без нового производства' : 'Реестр сцен сохранён', 'success');
+    notify(mode === 'keep' ? scenarioTexts.notice.scenesSavedKeep : scenarioTexts.notice.scenesSaved, 'success');
   };
 
   // Перед записью расчёт затронутых планов повторяется: черновик мог измениться после фонового расчёта.

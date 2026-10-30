@@ -131,7 +131,16 @@ describe.skipIf(process.platform !== 'linux')('Жизненный цикл об�
     expect(invocation.cwd).toBe(project);
     expect(invocation.args).toContain('модель с пробелами;$(touch injected)');
     expect(invocation.args.join(' ')).not.toMatch(/ТЕКСТ ЗАПРОСА|dangerously|yolo|bypassPermissions/);
-    expect(readFileSync(join(work, 'stdin'), 'utf8')).toContain('ТЕКСТ ЗАПРОСА; $(touch injected)');
+    // Полная инструкция и разделители stdin являются контрактом запроса, включая пользовательские спецсимволы.
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).toBe(
+      'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nЗадача:\nТЕКСТ ЗАПРОСА; $(touch injected) "кириллица"\n\nДополнительный контекст:\nКОНТЕКСТ'
+    );
+    expect(job.phase).toBe('Проверка агента');
+    expect(done.phase).toBe('Завершено');
+    expect(events.map((event) => event.phase)).toEqual(
+      expect.arrayContaining(['Проверка агента', 'Агент выполняет задачу', 'Чтение проекта', 'Получение ответа', 'Завершено'])
+    );
+    expect(done.log).toBe('Агент начал работу инструмента.\nАгент завершил работу инструмента.\nЗадание завершено.\n');
     expect(invocation.args).toContain(provider === 'claude' ? 'Read,Glob,Grep' : 'read-only');
     const persisted = readFileSync(join(work, 'state/jobs', `agent-${job.id}.json`), 'utf8');
     expect(persisted).not.toMatch(/SECRET|source lyrics|ТЕКСТ ЗАПРОСА|КОНТЕКСТ/);
@@ -139,6 +148,16 @@ describe.skipIf(process.platform !== 'linux')('Жизненный цикл об�
     expect(readFileSync(join(project, 'plan/project.json'), 'utf8')).toContain('test');
     unsubscribe();
     expect(manager().get(job.id)).toEqual(done);
+  });
+
+  it.each([undefined, ''])('сохраняет переносы промпта и пропускает пустой контекст %s', async (context) => {
+    fake('codex', 'send({type:"turn.completed"});');
+    const value = manager();
+    const job = value.start({ project, task: 'Проверка', prompt: '  /мой клип/"a & b.json"\r\n$(touch файл)\n', context });
+    expect(await terminal(value, job.id)).toMatchObject({ status: 'completed', phase: 'Завершено' });
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).toBe(
+      'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nЗадача:\n  /мой клип/"a & b.json"\r\n$(touch файл)\n'
+    );
   });
 
   it('codex: сохраняет финальный JSON отдельно от commentary и чтения проекта', async () => {
@@ -200,7 +219,16 @@ describe.skipIf(process.platform !== 'linux')('Жизненный цикл об�
       '-'
     ]);
     expect(invocation.cwd).toBe(project);
-    expect(readFileSync(join(work, 'stdin'), 'utf8')).toContain('ТЕКСТ ЗАПРОСА; $(touch injected)');
+    // Полная инструкция и разделители stdin являются контрактом запроса, включая пользовательские спецсимволы.
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).toBe(
+      'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nЗадача:\nТЕКСТ ЗАПРОСА; $(touch injected) "кириллица"\n\nДополнительный контекст:\nКОНТЕКСТ'
+    );
+    expect(job.phase).toBe('Проверка агента');
+    expect(done.phase).toBe('Завершено');
+    expect(events.map((event) => event.phase)).toEqual(
+      expect.arrayContaining(['Проверка агента', 'Агент выполняет задачу', 'Чтение проекта', 'Получение ответа', 'Завершено'])
+    );
+    expect(done.log).toBe('Агент начал работу инструмента.\nАгент завершил работу инструмента.\nЗадание завершено.\n');
     expect(manager().get(job.id)?.result).toBe(finalResult);
   });
 
@@ -227,6 +255,7 @@ describe.skipIf(process.platform !== 'linux')('Жизненный цикл об�
       const done = await terminal(value, start(value).id);
       expect(done).toMatchObject({ status: 'failed', diagnostic });
       expect(done.log).not.toContain('SECRET');
+      expect(done.message).not.toContain('SECRET');
     }
   });
 
@@ -317,7 +346,12 @@ describe.skipIf(process.platform !== 'linux')('Жизненный цикл об�
     const file = join(work, 'state/jobs', `agent-${done.id}.json`);
     writeFileSync(file, JSON.stringify({ ...done, status: 'running', finishedAt: null }));
     const restored = manager();
-    expect(restored.get(done.id)).toMatchObject({ status: 'interrupted', diagnostic: 'INTERRUPTED' });
+    expect(restored.get(done.id)).toMatchObject({
+      status: 'interrupted',
+      diagnostic: 'INTERRUPTED',
+      phase: 'Прервано перезапуском',
+      message: 'Приложение завершилось до получения результата. Автоматический повтор не выполнялся; для нового запуска подготовьте запрос заново.'
+    });
     const clone = restored.get(done.id)!;
     clone.result = 'замена';
     expect(restored.get(done.id)?.result).toBe('Привет мир');

@@ -39,6 +39,32 @@ async function finished(value: Jobs, id: string): Promise<JobInfo> {
 }
 
 describe('Завершение Jobs', () => {
+  it('отклоняет запуск без ресурсов до проверки Python и записи истории', () => {
+    const value = jobs([]);
+    const unavailable = new Jobs(null, localDir, value.launcher, { restore: false });
+    expect(() => unavailable.start('tool', 'Не запустится', null, [{ tool: 'first', args: [] }])).toThrowError(
+      new Error('Корень комплекса не найден: инструменты недоступны.')
+    );
+    expect(value.launcher.runtime).not.toHaveBeenCalled();
+    expect(value.launcher.run).not.toHaveBeenCalled();
+    expect(unavailable.list()).toEqual([]);
+    expect(existsSync(join(localDir, 'jobs'))).toBe(false);
+  });
+
+  it.each([
+    [{ code: null }, -1, 'Шаг «Проверка «&» <1>» завершился с кодом -1.'],
+    [{ code: 7, stdout: ' \n', stderr: '\n ' }, 7, 'Шаг «Проверка «&» <1>» завершился с кодом 7.'],
+    [{ code: null, stdout: ' Вывод «&» <1>\n', stderr: ' \n' }, -1, 'Вывод «&» <1>'],
+    [{ code: 3, stdout: 'Вывод stdout', stderr: ' Ошибка stderr «&» <1>\n' }, 3, 'Ошибка stderr «&» <1>']
+  ])('сохраняет целую причину шага при nullable-коде и выводе %j', async (outcome, code, reason) => {
+    const value = jobs([outcome]);
+    const job = value.start('tool', 'Проверка', null, [{ tool: 'first', label: 'Проверка «&» <1>', args: [] }]);
+    await finished(value, job.id);
+    expect(job).toMatchObject({ status: 'failed', code, error: reason, steps: [{ status: 'failed', code }] });
+    const saved = JSON.parse(readFileSync(join(localDir, 'jobs', `${job.id}.json`), 'utf8'));
+    expect(saved.error).toBe(reason);
+  });
+
   it('публикует одно событие после всех шагов с исходным проектом и отдельным снимком', async () => {
     let complete!: (code: number) => void;
     const secondStep = new Promise<number>((resolve) => {

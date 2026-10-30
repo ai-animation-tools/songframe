@@ -14,6 +14,7 @@ import {
   type MediaProviderId,
   type PaidMediaExecutionRef
 } from '@shared/media-providers';
+import { mediaTexts } from '@shared/texts/media';
 import type { DurationRule } from '@shared/types';
 import type { PythonLauncher } from './python-launcher';
 import { readMediaCatalog } from './media-catalog';
@@ -69,7 +70,7 @@ const hash = (value: string | Buffer): string => createHash('sha256').update(val
 const fileHash = (path: string): string => hash(readFileSync(path));
 const read = (path: string): Record<string, unknown> => {
   const value: unknown = JSON.parse(readFileSync(path, 'utf8'));
-  if (!record(value)) throw new Error('Ожидается JSON-объект медиа.');
+  if (!record(value)) throw new Error(mediaTexts.jsonObjectRequired);
   return value;
 };
 /** Файл попытки или референс: только обычный файл внутри своей папки, без символических ссылок. */
@@ -83,7 +84,7 @@ export function localFile(directory: string, path: string): string {
     lstatSync(file).isSymbolicLink() ||
     !lstatSync(file).isFile()
   )
-    throw new Error('Нужен локальный файл внутри рабочей папки.');
+    throw new Error(mediaTexts.localFileRequired);
   return file;
 }
 
@@ -98,7 +99,7 @@ function argumentMap(value: unknown, title: string): Record<string, MediaArgumen
         ('max_items' in entry && (!Number.isInteger(entry.max_items) || Number(entry.max_items) < 1))
     )
   )
-    throw new Error(`${title} вернул неверное объявление параметров.`);
+    throw new Error(mediaTexts.invalidArguments(title));
   return value as Record<string, MediaArgument>;
 }
 
@@ -124,7 +125,7 @@ function withProjectOptions(rules: PaidRequestRules, input: PreparePaidInput, mo
     const matches = Object.keys(merged).filter((key) => (parameterName(rules, input.kind, model, key) ?? key) === name);
     for (const key of matches) {
       if (!isDeepStrictEqual(merged[key], expected))
-        throw new Error(`Параметр ${name}=${JSON.stringify(merged[key])} конфликтует с явной настройкой проекта ${JSON.stringify(expected)}.`);
+        throw new Error(mediaTexts.projectOptionConflict({ name, value: JSON.stringify(merged[key]), expected: JSON.stringify(expected) }));
     }
     if (!matches.length) merged[supplied] = expected;
   }
@@ -134,22 +135,20 @@ function withProjectOptions(rules: PaidRequestRules, input: PreparePaidInput, mo
 /** Короткие флаги входов раскрываем в объявленные слоты до фиксации SHA и показа запроса человеку. */
 function normalizeInputs(rules: PaidRequestRules, input: PreparePaidInput, model: MediaModel): PreparePaidInput['inputs'] {
   const named = input.inputs.some((item) => item.flag === 'input');
-  if (named && input.inputs.some((item) => item.flag !== 'input'))
-    throw new Error(`Не смешивайте именованные входы с короткими флагами ${Object.keys(rules.inputFlags).join('/')}.`);
+  if (named && input.inputs.some((item) => item.flag !== 'input')) throw new Error(mediaTexts.mixedInputs(Object.keys(rules.inputFlags).join('/')));
   if (named) return input.inputs.map((item) => ({ ...item }));
   const used = new Set<string>();
   return input.inputs.map((item) => {
-    if (item.slot) throw new Error('slot допустим только для именованного входа input.');
+    if (item.slot) throw new Error(mediaTexts.slotRequiresNamedInput);
     const pattern = Object.hasOwn(rules.inputFlags, item.flag) ? rules.inputFlags[item.flag] : undefined;
-    if (!pattern) throw new Error(`Неизвестный флаг входа ${item.flag}.`);
+    if (!pattern) throw new Error(mediaTexts.unknownInputFlag(item.flag));
     const candidates = Object.keys(model.slots).filter((slot) => pattern.test(slot));
     const slot = candidates.find((name) => !used.has(name));
     if (slot) {
       used.add(slot);
       return { ...item, flag: 'input', slot };
     }
-    if (candidates.length || !argumentName(model.arguments, item.flag))
-      throw new Error(`Нет однозначного объявленного слота для ${item.flag}; укажите именованные input slots.`);
+    if (candidates.length || !argumentName(model.arguments, item.flag)) throw new Error(mediaTexts.ambiguousInputSlot(item.flag));
     return { ...item };
   });
 }
@@ -159,12 +158,10 @@ function frameMatchesProject(path: string, name: string, expected: unknown): voi
   const ratio = typeof expected === 'string' ? /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(expected.trim()) : null;
   if (!ratio) return;
   const size = imageDimensions(path);
-  if (!size) throw new Error(`Начальный кадр не прочитан как изображение: ${path}`);
+  if (!size) throw new Error(mediaTexts.unreadableInitialFrame(path));
   const wanted = Number(ratio[1]) / Number(ratio[2]);
   if (Math.abs(size.width / size.height - wanted) / wanted > 0.01)
-    throw new Error(
-      `Начальный кадр ${size.width}×${size.height} не совпадает с пропорциями проекта ${expected} (${name}); ролик вышел бы другого формата. Используйте опору с пропорциями ${expected}.`
-    );
+    throw new Error(mediaTexts.initialFrameRatioMismatch({ width: size.width, height: size.height, expected, name }));
 }
 
 /** Значения ограничений берутся только из переданного snapshot; названия моделей не подменяются алиасами. */
@@ -174,17 +171,15 @@ function validatePaid(
   caps: MediaCapabilities
 ): { parameters: Record<string, unknown>; inputs: PreparePaidInput['inputs'] } {
   const model = caps.models.find((item) => item.command === input.command && item.id === input.model);
-  if (!model) throw new Error('Модель не объявлена для выбранной команды.');
+  if (!model) throw new Error(mediaTexts.modelNotDeclared);
   const inputs = normalizeInputs(rules, input, model);
-  if (!input.prompt.trim() || !Number.isInteger(input.outputs) || input.outputs < 1 || input.outputs > 9)
-    throw new Error('Неверная команда, промпт или число результатов.');
+  if (!input.prompt.trim() || !Number.isInteger(input.outputs) || input.outputs < 1 || input.outputs > 9) throw new Error(mediaTexts.invalidRequest);
   const parameters: Record<string, unknown> = {};
   for (const [supplied, value] of Object.entries(input.parameters)) {
     // Синонимы провайдера (например, два написания разрешения) обозначают одно требование; значение не меняем.
     const name = parameterName(rules, input.kind, model, supplied);
-    if (!name || ['prompt', 'model'].includes(name))
-      throw new Error(`Параметр ${supplied}=${JSON.stringify(value)} не объявлен для модели или передаётся отдельно.`);
-    if (name in parameters) throw new Error(`Параметр ${name} указан дважды.`);
+    if (!name || ['prompt', 'model'].includes(name)) throw new Error(mediaTexts.undeclaredParameter({ name: supplied, value: JSON.stringify(value) }));
+    if (name in parameters) throw new Error(mediaTexts.duplicateParameter(name));
     parameters[name] = value;
   }
   // Обязательные значения провайдера (например, оригинал без логотипа) не переопределяются старыми options.
@@ -193,12 +188,11 @@ function validatePaid(
     if (model.arguments[name]) parameters[name] = rule.value;
   }
   const countParameter = rules.outputCount.find((name) => name in model.arguments);
-  if (!countParameter && input.outputs !== 1) throw new Error(`Модель не объявляет выбор числа результатов outputs=${input.outputs}.`);
+  if (!countParameter && input.outputs !== 1) throw new Error(mediaTexts.outputCountNotDeclared(input.outputs));
   if (countParameter && !(countParameter in parameters)) parameters[countParameter] = input.outputs;
   const values: Record<string, unknown> = { ...parameters, prompt: input.prompt, model: input.model };
   for (const [name, value] of Object.entries(parameters)) {
-    if (rules.outputCount.includes(name) && String(value) !== String(input.outputs))
-      throw new Error('Число outputs отличается от параметра количества изображений.');
+    if (rules.outputCount.includes(name) && String(value) !== String(input.outputs)) throw new Error(mediaTexts.outputCountMismatch);
   }
   const frame = rules.frameDefined ? inputs.find((item) => item.flag === 'input' && rules.frameDefined!.slots.test(item.slot ?? '')) : undefined;
   for (const [supplied, expected] of Object.entries(input.requiredParameters ?? {})) {
@@ -209,32 +203,32 @@ function validatePaid(
       continue;
     }
     if (name && parameters[name] !== expected)
-      throw new Error(`Параметр ${name}=${JSON.stringify(parameters[name])} должен совпадать с настройкой проекта ${JSON.stringify(expected)}.`);
+      throw new Error(mediaTexts.projectParameterMismatch({ name, value: JSON.stringify(parameters[name]), expected: JSON.stringify(expected) }));
   }
   const assigned = new Map<string, number>();
   for (const item of inputs) {
     const name = item.flag === 'input' ? item.slot : argumentName(model.arguments, item.flag);
-    if (!name || (item.flag !== 'input' && item.slot)) throw new Error('Неверный именованный вход.');
+    if (!name || (item.flag !== 'input' && item.slot)) throw new Error(mediaTexts.invalidNamedInput);
     const declaration = item.flag === 'input' ? model.slots[name] : model.arguments[name];
-    if (!declaration) throw new Error(`Вход ${name} не объявлен для выбранной команды.`);
+    if (!declaration) throw new Error(mediaTexts.inputNotDeclared(name));
     assigned.set(name, (assigned.get(name) ?? 0) + 1);
-    if (assigned.get(name)! > (declaration.max_items ?? 1)) throw new Error(`Превышено число входов ${name}.`);
-    if (/^https?:/i.test(item.path)) throw new Error('Подготовка принимает только локальные входы.');
+    if (assigned.get(name)! > (declaration.max_items ?? 1)) throw new Error(mediaTexts.inputCountExceeded(name));
+    if (/^https?:/i.test(item.path)) throw new Error(mediaTexts.localInputsRequired);
     const path = resolve(input.project, item.path);
-    if (!existsSync(path) || !lstatSync(path).isFile()) throw new Error(`Вход недоступен: ${item.path}`);
+    if (!existsSync(path) || !lstatSync(path).isFile()) throw new Error(mediaTexts.inputUnavailable(item.path));
   }
   for (const [name, declaration] of Object.entries(model.slots)) {
-    if (declaration.required && !assigned.has(name)) throw new Error(`Не заполнен обязательный слот ${name}.`);
+    if (declaration.required && !assigned.has(name)) throw new Error(mediaTexts.requiredSlotMissing(name));
   }
   for (const [name, declaration] of Object.entries(model.arguments)) {
     const value = values[name];
     if (declaration.required && value === undefined && !assigned.has(name) && declaration.default === undefined)
-      throw new Error(`Не заполнен обязательный параметр ${name}.`);
+      throw new Error(mediaTexts.requiredParameterMissing(name));
     if (value === undefined) continue;
     const items = Array.isArray(value) ? value : [value];
     if (declaration.allowed && items.some((entry) => !declaration.allowed!.includes(String(entry))))
-      throw new Error(`Параметр ${name} имеет неподдерживаемое значение ${JSON.stringify(value)}; допустимо: ${declaration.allowed.join(', ')}.`);
-    if (declaration.max_items !== undefined && items.length > declaration.max_items) throw new Error(`Превышено число элементов ${name}.`);
+      throw new Error(mediaTexts.unsupportedParameter({ name, value: JSON.stringify(value), allowed: declaration.allowed.join(', ') }));
+    if (declaration.max_items !== undefined && items.length > declaration.max_items) throw new Error(mediaTexts.itemCountExceeded(name));
   }
   const constraint = input.durationConstraint;
   if (constraint) {
@@ -254,12 +248,18 @@ function validatePaid(
     // Согласованную длительность не уменьшаем ради модели; правило проверяем для каждого кандидата.
     if (!supported?.length || Number(parameters.duration) !== Math.min(...supported))
       throw new Error(
-        `Длительность duration=${JSON.stringify(parameters.duration)} должна быть ближайшей поддерживаемой по правилу ${constraint.rule} для окна ${constraint.windowSeconds} с${constraint.minSeconds ? ` и не короче ${constraint.minSeconds} с` : ''}${supported?.length ? `: ${Math.min(...supported)} с` : '; подходящие длительности не объявлены'}.`
+        mediaTexts.durationMismatch({
+          duration: JSON.stringify(parameters.duration),
+          rule: constraint.rule,
+          windowSeconds: constraint.windowSeconds,
+          minSeconds: constraint.minSeconds,
+          supported
+        })
       );
   }
   const limit = model.limits.combined_item_cap;
   if (limit !== undefined && (!record(limit) || !Number.isInteger(limit.maxItems) || Number(limit.maxItems) < 1))
-    throw new Error('Общий лимит модели объявлен в неизвестном формате.');
+    throw new Error(mediaTexts.invalidCombinedLimit);
   if (record(limit) && typeof limit.maxItems === 'number') {
     const names = Array.isArray(limit.arguments) ? limit.arguments : [];
     const argumentNames = new Set(names.filter((name): name is string => typeof name === 'string'));
@@ -275,7 +275,7 @@ function validatePaid(
           total + (argumentNames.has(name) || prefixes.some((prefix) => typeof prefix === 'string' && name.startsWith(prefix)) ? count : 0),
         0
       );
-    if (count > limit.maxItems) throw new Error('Превышен общий лимит входных материалов модели.');
+    if (count > limit.maxItems) throw new Error(mediaTexts.combinedLimitExceeded);
   }
   return { parameters, inputs };
 }
@@ -288,8 +288,7 @@ export function selectPaidRequest(
   candidateParameters: (model: MediaModel) => Record<string, unknown> = () => input.parameters
 ): PreparePaidInput & { modelSelection: MediaModelSelection } {
   const title = mediaProviderTitle(adapter.id, adapter.id);
-  if (caps.provider !== adapter.id || caps.kind !== input.kind || !caps.available)
-    throw new Error(`Нет подтверждённых возможностей выбранного медиа ${title}.`);
+  if (caps.provider !== adapter.id || caps.kind !== input.kind || !caps.available) throw new Error(mediaTexts.capabilitiesUnavailable(title));
   const preferredModel = (input.preferredModel === undefined ? input.model : input.preferredModel)?.trim() || null;
   const models = caps.models.filter((model) => model.command === input.command);
   const ids = [...new Set([preferredModel, input.model.trim(), ...models.map((model) => model.id)].filter((id): id is string => !!id))];
@@ -297,7 +296,7 @@ export function selectPaidRequest(
   for (const id of ids) {
     const model = models.find((model) => model.id === id);
     try {
-      if (!model) throw new Error(`Модель ${id} не объявлена для команды ${input.command}.`);
+      if (!model) throw new Error(mediaTexts.commandModelNotDeclared({ id, command: input.command }));
       const candidate = { ...input, model: id, parameters: withProjectOptions(adapter.rules, input, model, candidateParameters(model)) };
       const normalized = validatePaid(adapter.rules, candidate, caps);
       const previous = input.modelSelection;
@@ -305,17 +304,17 @@ export function selectPaidRequest(
         previous?.selectedModel === id && previous.preferredModel === preferredModel
           ? previous.reason
           : preferredModel === id
-            ? `Предпочтительная модель ${id} поддерживает все параметры запроса.`
+            ? mediaTexts.preferredModelCompatible(id)
             : preferredModel
-              ? `Предпочтительная модель ${preferredModel} не подходит: ${failures.get(preferredModel)} Выбрана совместимая модель ${id}.`
-              : `Предпочтительная модель не задана. Выбрана совместимая модель ${id}${id === input.model ? ', указанная в запросе' : ''}.`;
+              ? mediaTexts.preferredModelRejected({ preferredModel, failure: failures.get(preferredModel), id })
+              : mediaTexts.automaticModelSelected({ id, requested: id === input.model });
       return { ...candidate, ...normalized, preferredModel, modelSelection: { preferredModel, selectedModel: id, reason } };
     } catch (error) {
       failures.set(id, error instanceof Error ? error.message : String(error));
     }
   }
   const details = [...failures].map(([id, reason]) => `${id}: ${reason}`).join(' ');
-  throw new Error(`Нет совместимой модели ${title} для команды ${input.command}. ${details || 'Аккаунт не объявляет модели этой команды.'}`);
+  throw new Error(mediaTexts.compatibleModelUnavailable({ title, command: input.command, details }));
 }
 
 /** Общий платный адаптер: lifecycle делегирует submit/resume владельцу согласования и использует прежний frozen request. */
@@ -342,13 +341,13 @@ export class PaidMediaProvider {
       for (const report of batch.reports) {
         const command = report.command;
         try {
-          if (!record(report.models)) throw new Error(`${this.title} вернул неверное объявление моделей.`);
+          if (!record(report.models)) throw new Error(mediaTexts.invalidModels(this.title));
           const commandModels: MediaModel[] = Object.entries(report.models).map(([id, value]) => {
-            if (!record(value) || !record(value.limits)) throw new Error(`${this.title} вернул неверное объявление модели.`);
+            if (!record(value) || !record(value.limits)) throw new Error(mediaTexts.invalidModel(this.title));
             return { id, command, arguments: argumentMap(value.arguments, this.title), slots: argumentMap(value.slots, this.title), limits: value.limits };
           });
           models.push(...commandModels);
-          if (!commandModels.length) problems.push(`${command}: модели аккаунта не объявлены.`);
+          if (!commandModels.length) problems.push(mediaTexts.commandModelsMissing(command));
         } catch (error) {
           problems.push(`${command}: ${error instanceof Error ? error.message : String(error)}`);
         }
@@ -370,7 +369,7 @@ export class PaidMediaProvider {
   }
 
   async prepare(input: PreparePaidInput, capabilities: MediaCapabilities): Promise<PreparedMediaRequest> {
-    if (input.kind !== this.kind) throw new Error('Исполнитель не соответствует виду медиа.');
+    if (input.kind !== this.kind) throw new Error(mediaTexts.executorKindMismatch);
     input = selectPaidRequest(this.adapter, input, capabilities);
     const { parameters, inputs } = input;
     const directory = mkdtempSync(join(tmpdir(), 'songframe-media-prepare-'));
@@ -393,10 +392,10 @@ export class PaidMediaProvider {
       writeFileSync(specPath, JSON.stringify(spec), 'utf8');
       const requestDir = resolve(input.project, input.workDir);
       const result = await this.options.launcher().run(input.project, 'media_request', ['prepare', '--request', specPath, '--work-dir', requestDir]);
-      if (result.code !== 0) throw new Error(result.stderr.trim() || `Не удалось подготовить запрос ${this.title}.`);
+      if (result.code !== 0) throw new Error(result.stderr.trim() || mediaTexts.prepareFailed(this.title));
       const prepared: unknown = JSON.parse(result.stdout);
       if (!record(prepared) || typeof prepared.request_sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(prepared.request_sha256))
-        throw new Error('Подготовка не вернула SHA запроса.');
+        throw new Error(mediaTexts.requestShaMissing);
       const reference: PreparedMediaRequest = {
         provider: this.provider,
         kind: this.kind,
@@ -413,7 +412,7 @@ export class PaidMediaProvider {
   }
 
   protected verify(reference: PreparedMediaRequest): { request: Record<string, unknown>; attempt: Record<string, unknown> } {
-    if (reference.provider !== this.provider || reference.kind !== this.kind) throw new Error('Исполнитель не соответствует подготовленному запросу.');
+    if (reference.provider !== this.provider || reference.kind !== this.kind) throw new Error(mediaTexts.executorRequestMismatch);
     const request = read(join(reference.requestDir, 'request.json'));
     const attempt = read(join(reference.requestDir, 'attempt.json'));
     if (
@@ -421,8 +420,8 @@ export class PaidMediaProvider {
       attempt.request_sha256 !== reference.requestSha ||
       fileHash(join(reference.requestDir, 'request.json')) !== reference.requestSha
     )
-      throw new Error('Подготовленный запрос изменён или относится к другому медиа.');
-    if (!record(request.prompt) || !Array.isArray(request.inputs)) throw new Error('Повреждены входы подготовленного запроса.');
+      throw new Error(mediaTexts.requestChanged);
+    if (!record(request.prompt) || !Array.isArray(request.inputs)) throw new Error(mediaTexts.requestInputsDamaged);
     for (const item of [request.prompt, ...request.inputs]) {
       if (
         !record(item) ||
@@ -430,14 +429,14 @@ export class PaidMediaProvider {
         typeof item.sha256 !== 'string' ||
         fileHash(localFile(reference.requestDir, item.path)) !== item.sha256
       )
-        throw new Error('Промпт или вход изменён: требуется новая подготовка.');
+        throw new Error(mediaTexts.requestInputChanged);
     }
     return { request, attempt };
   }
 
   async submit(reference: PreparedMediaRequest, execute: MediaExecutor): Promise<PaidMediaExecutionRef> {
     const { attempt } = this.verify(reference);
-    if (attempt.status !== 'prepared' || attempt.generation_id) throw new Error('Эта попытка уже отправлялась; продолжите её через resume.');
+    if (attempt.status !== 'prepared' || attempt.generation_id) throw new Error(mediaTexts.alreadySubmitted);
     await execute('submit', reference);
     return { provider: this.provider, kind: this.kind, requestDir: reference.requestDir, requestSha: reference.requestSha };
   }
@@ -451,7 +450,7 @@ export class PaidMediaProvider {
   collect(reference: PreparedMediaRequest): MediaArtifact[] {
     const { request, attempt } = this.verify(reference);
     if (attempt.status !== 'downloaded' || !Array.isArray(attempt.downloads) || attempt.downloads.length !== request.outputs)
-      throw new Error('Оригиналы ещё не сохранены полностью.');
+      throw new Error(mediaTexts.originalsIncomplete);
     const indices = new Set<number>();
     return attempt.downloads
       .map((value) => {
@@ -463,21 +462,20 @@ export class PaidMediaProvider {
           Number(value.number) > Number(request.outputs) ||
           indices.has(Number(value.number))
         )
-          throw new Error('Повреждён список оригиналов.');
+          throw new Error(mediaTexts.originalListDamaged);
         indices.add(Number(value.number));
         const path = localFile(reference.requestDir, value.path);
-        if (lstatSync(path).size !== value.bytes) throw new Error('Сохранённый оригинал изменён.');
+        if (lstatSync(path).size !== value.bytes) throw new Error(mediaTexts.originalChanged);
         const sha256 = fileHash(path);
-        if (typeof value.sha256 === 'string' && value.sha256 !== sha256) throw new Error('Хеш оригинала отличается от сохранённого.');
+        if (typeof value.sha256 === 'string' && value.sha256 !== sha256) throw new Error(mediaTexts.originalHashMismatch);
         const dimensions = this.kind === 'image' ? imageDimensions(path) : null;
         if (this.kind === 'image' && (!dimensions || (this.options.validateImage && !this.options.validateImage(path))))
-          throw new Error('Результат не является изображением с корректными размерами.');
-        if (this.kind === 'image' && !imageExtensionMatches(path))
-          throw new Error('Расширение оригинала не соответствует фактическому формату изображения. Исходный файл сохранён.');
+          throw new Error(mediaTexts.invalidImage);
+        if (this.kind === 'image' && !imageExtensionMatches(path)) throw new Error(mediaTexts.imageExtensionMismatch);
         if (this.kind === 'video') {
           const header = readFileSync(path).subarray(0, 16);
           if (header.length < 12 || header.toString('ascii', 4, 8) !== 'ftyp' || (this.options.validateVideo && !this.options.validateVideo(path)))
-            throw new Error('Результат не является корректным видео MP4.');
+            throw new Error(mediaTexts.invalidVideo);
         }
         return {
           path,

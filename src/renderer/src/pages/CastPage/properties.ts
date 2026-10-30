@@ -1,3 +1,4 @@
+import { castTexts } from '@shared/texts/cast';
 /** Чистые операции над словарём свойств кастинга: проверка кода, порядок, очистка перед сохранением. */
 import type { CastEntity, CastProperty } from '@shared/types';
 
@@ -6,13 +7,13 @@ export const PROPERTY_KEY = /^[a-z][a-z0-9_]*$/;
 
 /** Почему код свойства нельзя использовать; null — можно. Сравнение с кодами остальных свойств того же типа. */
 export function propertyKeyProblem(key: string, otherKeys: readonly string[]): string | null {
-  if (!key) return 'Введите код свойства.';
-  if (!PROPERTY_KEY.test(key)) return 'Код начинается со строчной латинской буквы и содержит только a–z, цифры и «_».';
-  return otherKeys.includes(key) ? `Свойство с кодом «${key}» уже есть в словаре этого типа.` : null;
+  if (!key) return castTexts.propertyCodeRequired;
+  if (!PROPERTY_KEY.test(key)) return castTexts.propertyCodeInvalid;
+  return otherKeys.includes(key) ? castTexts.propertyCodeTaken({ key }) : null;
 }
 
 export function propertyLabelProblem(label: string): string | null {
-  return label.trim() ? null : 'Введите подпись: без неё поле состояния останется без названия.';
+  return label.trim() ? null : castTexts.propertyLabelRequired;
 }
 
 /** Перестановка элемента на offset позиций; за границами списка порядок не меняется. */
@@ -61,14 +62,14 @@ export function cleanProperties(properties: Record<string, CastProperty[]>): Rec
 /** Первая проблема словаря, мешающая сохранению; null — словарь можно сохранять. */
 export function dictionaryProblem(properties: Record<string, CastProperty[]>, kindLabel: (kind: string) => string): string | null {
   for (const [kind, list] of Object.entries(properties)) {
-    const where = `Словарь свойств, тип «${kindLabel(kind)}»`;
+    const label = kindLabel(kind);
     for (const [index, property] of list.entries()) {
       const keyProblem = propertyKeyProblem(
         property.key,
         list.filter((_, other) => other !== index).map((p) => p.key)
       );
-      if (keyProblem) return `${where}, свойство «${property.label.trim() || property.key || 'без кода'}»: ${keyProblem}`;
-      if (propertyLabelProblem(property.label)) return `${where}: у свойства ${property.key} нет подписи. Введите её.`;
+      if (keyProblem) return castTexts.dictionaryKeyProblem({ kind: label, name: property.label.trim() || property.key, problem: keyProblem });
+      if (propertyLabelProblem(property.label)) return castTexts.dictionaryLabelProblem({ kind: label, key: property.key });
     }
   }
   return null;

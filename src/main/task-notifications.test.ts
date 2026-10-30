@@ -54,16 +54,21 @@ describe('TaskNotifications', () => {
     expect(deliver).toHaveBeenCalledExactlyOnceWith({ title: expectedTitle, body: title, target: { project, route } });
   });
 
-  it.each(['review', 'animatic'] as const)('сообщает об ошибке целого задания %s один раз', (kind) => {
+  it.each([
+    ['review', 'Проба M01 M02', 'Ошибка: Проба M01 M02', '/project/checks'],
+    ['review', 'Проба M01 (проверка без видео)', 'Ошибка: Проба M01 (проверка без видео)', '/project/checks'],
+    ['animatic', 'Сборка аниматика', 'Ошибка: Сборка аниматика', '/project/animatic'],
+    ['animatic', 'Проверка входов аниматика', 'Ошибка: Проверка входов аниматика', '/project/animatic']
+  ] as const)('сообщает об ошибке целого задания %s: %s один раз', (kind, title, expectedTitle, route) => {
     const deliver = vi.fn();
     const notifications = new TaskNotifications(deliver);
-    const failed = job({ kind, title: 'Операция', status: 'failed', code: 1, steps: [{ tool: 'build', label: 'Шаг', status: 'failed', code: 1 }] });
+    const failed = job({ kind, title, status: 'failed', code: 1, steps: [{ tool: 'build', label: 'Шаг', status: 'failed', code: 1 }] });
     notifications.jobFinished(failed, project);
     notifications.jobFinished(failed, project);
     expect(deliver).toHaveBeenCalledExactlyOnceWith({
-      title: 'Ошибка: Операция',
-      body: 'Операция',
-      target: { project, route: kind === 'review' ? '/project/checks' : '/project/animatic' }
+      title: expectedTitle,
+      body: title,
+      target: { project, route }
     });
   });
 
@@ -117,13 +122,26 @@ describe('TaskNotifications', () => {
     expect(deliver).toHaveBeenCalledTimes(2);
   });
 
-  it.each([true, false])('открывает разметку после завершения авторазметки: %s', (success) => {
+  it.each([
+    [true, 'Черновик разметки готов', 'Откройте разметку для проверки черновика.'],
+    [false, 'Ошибка разметки', 'Не удалось подготовить черновик разметки. Вернитесь на страницу «Тайминги».']
+  ] as const)('открывает разметку после завершения авторазметки: %s', (success, title, body) => {
     const deliver = vi.fn();
     new TaskNotifications(deliver).timingFinished(project, success);
     expect(deliver).toHaveBeenCalledExactlyOnceWith({
-      title: success ? 'Черновик разметки готов' : 'Ошибка разметки',
-      body: expect.any(String),
+      title,
+      body,
       target: { project, route: '/project/timing' }
+    });
+  });
+
+  it('сохраняет кавычки, пути и специальные символы параметров уведомления об ошибке', () => {
+    const deliver = vi.fn();
+    new TaskNotifications(deliver).jobFinished(job({ title: 'Проба «M01» /tmp/клип & <draft> "версия"\n2', status: 'failed' }), project);
+    expect(deliver).toHaveBeenCalledExactlyOnceWith({
+      title: 'Ошибка: Проба «M01» /tmp/клип & <draft> "версия"\n2',
+      body: 'Проба «M01» /tmp/клип & <draft> "версия"\n2',
+      target: { project, route: '/project/checks' }
     });
   });
 

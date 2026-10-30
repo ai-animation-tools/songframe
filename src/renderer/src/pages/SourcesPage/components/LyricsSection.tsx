@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 /** Текст песни и сообщения об обязательном формате строк и секций. */
 import type { ReactElement } from 'react';
 import { Box, Paper, TextField, Typography } from '@mui/material';
@@ -16,35 +17,34 @@ export function LyricsSection({ lyrics, lyricsCheck, onChange, onPick, onDrop }:
   return (
     <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-        Текст песни
+        {sourcesTexts.lyrics}
       </Typography>
       <TextField
         multiline
         minRows={14}
         maxRows={30}
         fullWidth
-        label="Текст песни"
+        label={sourcesTexts.lyrics}
         value={lyrics}
         error={lyricsCheck.problems.length > 0}
         helperText={lyricsCheck.problems.length ? lyricsCheck.problems.join(' ') : LYRICS_FORMAT_HINT}
         sx={{ '& .MuiInputBase-inputMultiline': { lineHeight: 1.6 } }}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={'[Куплет 1]\nпервая строка\nвторая строка\n\n[Припев]\n…'}
+        placeholder={sourcesTexts.lyricsPlaceholder}
       />
       {/* Статистика отделена от подсказки поля, чтобы пояснения не сливались в один абзац. */}
       <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-        Сейчас: {lyricsCheck.lines} строк песни, секций: {lyricsCheck.sections.length}. Пустые строки между секциями необязательны. Файл — TXT или MD в UTF-8,
-        без Markdown-заголовков и списков. Текст должен совпадать с исполнением.
+        {sourcesTexts.lyricsStatistics({ lines: lyricsCheck.lines, sections: lyricsCheck.sections.length })}
       </Typography>
       {/* Выбор файла не перехватывает нажатия и перетаскивание текста в редакторе. */}
       <Box sx={{ mt: 'auto', pt: 1 }}>
         <FileDropZone
-          label="Загрузить текст песни из файла"
+          label={sourcesTexts.uploadLyrics}
           kind="text"
           onFiles={onDrop}
           onPick={onPick}
-          hint="Один файл TXT или MD в UTF-8."
-          message="Перетащите файл с текстом песни или нажмите для выбора"
+          hint={sourcesTexts.textFileHint}
+          message={sourcesTexts.lyricsFileMessage}
         />
       </Box>
     </Paper>

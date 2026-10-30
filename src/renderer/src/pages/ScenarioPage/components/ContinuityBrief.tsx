@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { OpenShotState } from '../types';
 import { type ReactElement, useMemo, useState } from 'react';
 import { Box, Chip, FormControlLabel, Paper, Stack, Switch, Typography } from '@mui/material';
@@ -29,29 +30,28 @@ export function ContinuityBrief({
     <Paper variant="outlined" sx={{ p: 2, minWidth: 0 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
         <Typography variant="subtitle1" fontWeight={600}>
-          Врезка непрерывности
+          {scenarioTexts.brief.title}
         </Typography>
         {brief && entities.length ? (
           <Chip
             size="small"
             variant="outlined"
             color={changes ? 'warning' : 'default'}
-            label={changes ? `Изменений за план: ${changes}` : 'Без изменений за план'}
+            label={changes ? scenarioTexts.brief.changes({ count: changes }) : scenarioTexts.brief.noChanges}
           />
         ) : null}
         <Box sx={{ flex: 1 }} />
         {brief && entities.length ? (
           <FormControlLabel
             control={<Switch size="small" checked={onlyChanges} onChange={(event) => setOnlyChanges(event.target.checked)} />}
-            label="Только изменения за план"
+            label={scenarioTexts.brief.onlyChanges}
             slotProps={{ typography: { variant: 'body2' } }}
             sx={{ mr: 0 }}
           />
         ) : null}
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        Складывается из начального состояния сущностей в кастинге и изменений «Первый кадр (before)» и «Итог плана (after)» в блоке «Состояние героев и мира»
-        этого и предыдущих планов; приложение само передаёт её агенту для опор и видеопромпта. Чтобы исправить или сократить значение, нажмите его источник.
+        {scenarioTexts.brief.description}
       </Typography>
       {brief ? (
         <Stack spacing={1.5} sx={{ minWidth: 0 }}>
@@ -65,7 +65,7 @@ export function ContinuityBrief({
             />
           ) : (
             <Typography variant="body2" color="text.secondary">
-              Состояние не задано: в кастинге нет начального состояния, а в планах нет изменений.
+              {scenarioTexts.brief.stateMissing}
             </Typography>
           )}
           <BriefChecklist before={brief.before.checklist} after={brief.after.checklist} />
@@ -73,7 +73,7 @@ export function ContinuityBrief({
         </Stack>
       ) : (
         <Typography variant="body2" color="text.secondary">
-          Врезка появится, когда реестр пройдёт проверку.
+          {scenarioTexts.brief.availableAfterValidation}
         </Typography>
       )}
     </Paper>

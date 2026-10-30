@@ -2,6 +2,7 @@
 import { release } from 'node:os';
 import { app, dialog, type BrowserWindow } from 'electron';
 import type { PreviousSessionInfo, RendererErrorReport } from '@shared/types';
+import { diagnosticsTexts } from '@shared/texts/diagnostics';
 import { beginSession, CrashLog, describeFailure, endSession, previousSessionInfo, runtimeLine, type RuntimeInfo, type SessionRecord } from './diagnostics';
 
 const RENDERER_TEXT_LIMIT = 8000;
@@ -28,6 +29,7 @@ export class AppDiagnostics {
   constructor(readonly localDir: string) {
     this.log = new CrashLog(localDir);
     const info = runtimeInfo();
+    // eslint-disable-next-line no-restricted-syntax -- Запись старта сеанса принадлежит служебному журналу.
     this.log.write('session', `Запуск: ${runtimeLine(info)}; pid ${process.pid}`);
     let session: SessionRecord | null = null;
     let previous: PreviousSessionInfo = { crashed: false, startedAt: null, version: null };
@@ -38,9 +40,11 @@ export class AppDiagnostics {
       if (started.crashed)
         this.log.write(
           'previousSessionCrash',
+          // eslint-disable-next-line no-restricted-syntax -- Сведения предыдущего процесса сохраняются только в журнале сбоев.
           `Прошлый сеанс (начат ${started.previous?.startedAt}, версия ${started.previous?.version}, pid ${started.previous?.pid}) не завершился штатно.`
         );
     } catch (error) {
+      // eslint-disable-next-line no-restricted-syntax -- Отказ записи файла сеанса выводится только в журнал сбоев.
       this.log.write('session', `Не удалось записать файл сеанса: ${describeFailure(error)}`);
     }
     this.session = session;
@@ -54,10 +58,7 @@ export class AppDiagnostics {
       this.log.write('uncaughtException', describeFailure(error));
       console.error(error);
       // Как и стандартное окно Electron, сообщаем о сбое, но добавляем, где искать подробности.
-      dialog.showErrorBox(
-        'SongFrame: ошибка программы',
-        `${error instanceof Error ? error.message : String(error)}\n\nПодробности записаны в журнал сбоев. Отчёт для разработчика можно сохранить на странице «Журнал заданий».`
-      );
+      dialog.showErrorBox(diagnosticsTexts.crashTitle, diagnosticsTexts.crashDetails({ details: error instanceof Error ? error.message : String(error) }));
     });
     process.on('unhandledRejection', (reason) => {
       this.log.write('unhandledRejection', describeFailure(reason));
@@ -65,14 +66,18 @@ export class AppDiagnostics {
     });
     app.on('render-process-gone', (_event, contents, details) => {
       if (details.reason === 'clean-exit') return;
+      // eslint-disable-next-line no-restricted-syntax -- Причина завершения renderer записывается только в служебный журнал.
       this.log.write('render-process-gone', `Окно «${contents.getTitle()}»: причина ${details.reason}, код ${details.exitCode}`);
     });
     app.on('child-process-gone', (_event, details) => {
       if (details.reason === 'clean-exit') return;
+      // eslint-disable-next-line no-restricted-syntax -- Причина завершения дочернего процесса принадлежит журналу Electron.
       this.log.write('child-process-gone', `${details.type}${details.name ? ` (${details.name})` : ''}: причина ${details.reason}, код ${details.exitCode}`);
     });
     app.on('browser-window-created', (_event, window: BrowserWindow) => {
+      // eslint-disable-next-line no-restricted-syntax -- Событие зависания окна записывается только в журнал сбоев.
       window.on('unresponsive', () => this.log.write('unresponsive', `Окно «${window.getTitle()}» не отвечает.`));
+      // eslint-disable-next-line no-restricted-syntax -- Событие восстановления окна записывается только в журнал сбоев.
       window.on('responsive', () => this.log.write('responsive', `Окно «${window.getTitle()}» снова отвечает.`));
     });
   }
@@ -96,8 +101,10 @@ export class AppDiagnostics {
     this.finished = true;
     try {
       endSession(this.localDir, this.session);
+      // eslint-disable-next-line no-restricted-syntax -- Штатное завершение сохраняет служебный формат журнала сеанса.
       this.log.write('session', 'Штатный выход.');
     } catch (error) {
+      // eslint-disable-next-line no-restricted-syntax -- Отказ записи завершения сеанса выводится только в журнал сбоев.
       this.log.write('session', `Не удалось отметить штатный выход: ${describeFailure(error)}`);
     }
   }

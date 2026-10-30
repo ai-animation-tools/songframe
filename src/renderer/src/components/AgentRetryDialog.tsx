@@ -1,4 +1,6 @@
 /** Повтор всегда создаёт новое задание по заново введённому запросу, без скрытого возобновления сессии. */
+import { componentsTexts } from '@shared/texts/components';
+import { commonTexts } from '@shared/texts/common';
 import { useState, type ReactElement } from 'react';
 import { Alert, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
@@ -33,17 +35,16 @@ export function AgentRetryDialog({ job, onClose }: { job: AgentJob; onClose(): v
     <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {agentProvider ? <AgentIcon provider={agentProvider} /> : null}
-        Повторить задание
+        {componentsTexts.agentRetry.title}
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           <Typography>{job.task}</Typography>
           <Typography variant="body2" color="text.secondary">
-            Предыдущий запрос не сохраняется. Введите его заново: будет создано отдельное задание с текущими настройками агента. Агент подготовит предложение
-            без изменения файлов проекта.
+            {componentsTexts.agentRetry.description}
           </Typography>
           <TextField
-            label="Запрос"
+            label={componentsTexts.agentRetry.prompt}
             multiline
             minRows={4}
             autoFocus
@@ -53,7 +54,7 @@ export function AgentRetryDialog({ job, onClose }: { job: AgentJob; onClose(): v
             disabled={busy}
           />
           <TextField
-            label="Дополнительный контекст"
+            label={componentsTexts.agentRetry.context}
             multiline
             minRows={2}
             value={context}
@@ -64,17 +65,17 @@ export function AgentRetryDialog({ job, onClose }: { job: AgentJob; onClose(): v
         </Stack>
       </DialogContent>
       <DialogActions>
-        <ActionButton startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy} disabledReason="Дождитесь запуска задания.">
-          Отмена
+        <ActionButton startIcon={<CancelOutlinedIcon />} onClick={onClose} disabled={busy} disabledReason={componentsTexts.agentRetry.waitForStart}>
+          {commonTexts.cancel}
         </ActionButton>
         {/* Причину недоступности агента кнопка показывает в подсказке сама. */}
         <AgentButton
           variant="contained"
           onClick={submit}
           disabled={busy || !prompt.trim()}
-          disabledReason={busy ? 'Дождитесь запуска задания.' : 'Введите запрос для нового задания.'}
+          disabledReason={busy ? componentsTexts.agentRetry.waitForStart : componentsTexts.agentRetry.enterPrompt}
         >
-          {busy ? 'Запуск' : 'Запустить'}
+          {busy ? componentsTexts.agentRetry.starting : commonTexts.run}
         </AgentButton>
       </DialogActions>
     </Dialog>

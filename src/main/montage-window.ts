@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BrowserWindow, ipcMain, screen } from 'electron';
@@ -10,7 +11,7 @@ export function registerMontageWindow(localDir: string): void {
   const boundsFile = join(localDir, 'montage-window.json');
   ipcMain.handle('montage-window:open', async (event, session: string) => {
     const owner = BrowserWindow.fromWebContents(event.sender);
-    if (!owner || owner.isDestroyed() || !session || current) throw new Error('Не удалось открыть отдельное окно плеера.');
+    if (!owner || owner.isDestroyed() || !session || current) throw new Error(montageTexts.main.windowOpenFailed);
     let bounds;
     try {
       bounds = usableMontageBounds(
@@ -28,7 +29,7 @@ export function registerMontageWindow(localDir: string): void {
       minHeight: 270,
       show: false,
       autoHideMenuBar: true,
-      title: 'Плеер монтажа — SongFrame',
+      title: montageTexts.main.windowTitle,
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
         contextIsolation: true,

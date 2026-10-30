@@ -1,10 +1,10 @@
+import { montageTexts } from '@shared/texts/montage';
 import { ArrowBack, ArrowForward, DeleteOutline } from '@mui/icons-material';
 import { memo, type ReactElement } from 'react';
 import { Alert, Button, Paper, Stack, TextField, Typography } from '@mui/material';
 import { ActionButton } from '../../../components/ActionButton';
 import type { MontageClip, MontageDraft } from '@shared/montage';
 import { clipLength, frameLabel, rollCut, slipClip, trimClip } from '../model';
-import { countLabel } from '@shared/plural';
 
 interface Props {
   draft: MontageDraft;
@@ -30,36 +30,33 @@ export const MontageClipEditor = memo(function MontageClipEditor({
   if (!clip)
     return (
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography color="text.secondary">Выберите фрагмент на видеодорожке для точной обрезки.</Typography>
+        <Typography color="text.secondary">{montageTexts.selectClipToTrim}</Typography>
       </Paper>
     );
   const change = (clips: MontageClip[]): void => onChange({ ...draft, clips });
   const next = draft.clips[draft.clips.findIndex((item) => item.id === clip.id) + 1];
-  const slipReason = 'У опоры нет видео: сдвиг участка доступен только для видеофрагмента.';
+  const slipReason = montageTexts.cardCannotSlip;
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Stack spacing={1.5}>
-        <Typography variant="subtitle1">Выбранная сцена · {clip.scene}</Typography>
+        <Typography variant="subtitle1">{montageTexts.selectedScene(clip.scene)}</Typography>
         {title ? <Typography variant="body2">{title}</Typography> : null}
         <Typography variant="caption" color="text.secondary">
-          {clip.kind === 'card' ? 'Опора' : 'Видео'}
+          {clip.kind === 'card' ? montageTexts.cardSource : montageTexts.videoSource}
         </Typography>
         <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>
           {clip.path}
         </Typography>
         <Typography variant="body2">
-          В исходнике: {frameLabel(clip.source_start_frame)} — {frameLabel(clip.source_end_frame_exclusive)} ·{' '}
-          {countLabel(clipLength(clip), 'кадр', 'кадра', 'кадров')}
+          {montageTexts.sourceRange({ start: frameLabel(clip.source_start_frame), end: frameLabel(clip.source_end_frame_exclusive), frames: clipLength(clip) })}
         </Typography>
-        {clip.kind === 'video' && clip.source_frames === null ? (
-          <Alert severity="info">Ожидаем метаданные длины исходника. Расширение конца станет доступно после загрузки видео.</Alert>
-        ) : null}
+        {clip.kind === 'video' && clip.source_frames === null ? <Alert severity="info">{montageTexts.awaitSourceMetadata}</Alert> : null}
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
           <TextField
             key={`start-${clip.id}-${clip.source_start_frame}`}
             size="small"
             type="number"
-            label="Начало, кадр"
+            label={montageTexts.sourceStart}
             sx={{ width: 240, maxWidth: '100%', flexShrink: 0 }}
             disabled={clip.kind === 'card'}
             defaultValue={clip.source_start_frame}
@@ -73,7 +70,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({
             key={`end-${clip.id}-${clip.source_end_frame_exclusive}`}
             size="small"
             type="number"
-            label="Конец (исключая), кадр"
+            label={montageTexts.sourceEnd}
             sx={{ width: 240, maxWidth: '100%', flexShrink: 0 }}
             defaultValue={clip.source_end_frame_exclusive}
             slotProps={{
@@ -90,14 +87,14 @@ export const MontageClipEditor = memo(function MontageClipEditor({
           />
         </Stack>
         <Typography variant="caption" color="text.secondary">
-          Сдвиг участка внутри исходника меняет выбранный момент, сохраняя длительность фрагмента.
+          {montageTexts.slipHint}
         </Typography>
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" alignItems="center">
           <TextField
             key={`slip-${clip.id}-${clip.source_start_frame}`}
             size="small"
             type="number"
-            label="Сдвиг участка, кадров"
+            label={montageTexts.slipFrames}
             sx={{ width: 240, maxWidth: '100%', flexShrink: 0 }}
             disabled={clip.kind === 'card'}
             defaultValue={0}
@@ -111,7 +108,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({
         </Stack>
         {next ? (
           <Typography variant="caption" color="text.secondary">
-            Общий стык {clip.scene} → {next.scene}: кадры переходят от одного плана другому, длина монтажа сохраняется.
+            {montageTexts.sharedCut({ scene: clip.scene, next: next.scene })}
           </Typography>
         ) : null}
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
@@ -122,7 +119,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({
             disabledReason={slipReason}
             onClick={() => change(slipClip(draft.clips, clip.id, -1))}
           >
-            Сдвиг −1 кадр
+            {montageTexts.slipBackward}
           </ActionButton>
           <ActionButton
             startIcon={<ArrowForward />}
@@ -131,20 +128,20 @@ export const MontageClipEditor = memo(function MontageClipEditor({
             disabledReason={slipReason}
             onClick={() => change(slipClip(draft.clips, clip.id, 1))}
           >
-            Сдвиг +1 кадр
+            {montageTexts.slipForward}
           </ActionButton>
           {next ? (
             <>
               <Button startIcon={<ArrowBack />} size="small" onClick={() => change(rollCut(draft.clips, clip.id, -1))}>
-                Стык −1
+                {montageTexts.cutBackward}
               </Button>
               <Button startIcon={<ArrowForward />} size="small" onClick={() => change(rollCut(draft.clips, clip.id, 1))}>
-                Стык +1
+                {montageTexts.cutForward}
               </Button>
             </>
           ) : null}
           <ActionButton startIcon={<DeleteOutline />} color="error" size="small" disabled={disabled} disabledReason={disabledReason} onClick={onRequestRemove}>
-            Удалить с дорожки
+            {montageTexts.removeFromTrack}
           </ActionButton>
         </Stack>
       </Stack>

@@ -1,3 +1,5 @@
+import { scenarioTexts } from '@shared/texts/scenario';
+import { commonTexts } from '@shared/texts/common';
 import { type ReactElement, useState } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material';
@@ -64,7 +66,7 @@ export function ScenarioPage(): ReactElement {
         severity="error"
         action={
           <Button startIcon={<ReplayIcon />} onClick={retry}>
-            Повторить
+            {commonTexts.retry}
           </Button>
         }
       >
@@ -102,7 +104,7 @@ export function ScenarioPage(): ReactElement {
           <LinkedText text={view.problems.join(' ')} />
         </Alert>
       ) : null}
-      {!cast ? <Alert severity="info">Сначала создайте кастинг: без сущностей нет референсов для планов и состояния героев.</Alert> : null}
+      {!cast ? <Alert severity="info">{scenarioTexts.page.castMissing}</Alert> : null}
       <ScenarioWorkflowPanel
         key={scenario.project}
         project={scenario.project}
@@ -117,9 +119,7 @@ export function ScenarioPage(): ReactElement {
       {workflow.busy && (
         <Alert severity="warning">
           {/* Блокировка держится и пока готовое предложение ждёт решения, а не только во время работы агента. */}
-          {workflow.view?.proposal?.status === 'ready'
-            ? 'Предложение агента ждёт решения. Редактирование приостановлено, пока вы не примените или не отклоните его.'
-            : 'Агент работает с сохранёнными данными. Редактирование приостановлено до завершения или остановки задания.'}
+          {workflow.view?.proposal?.status === 'ready' ? scenarioTexts.page.proposalEditingPaused : scenarioTexts.page.agentEditingPaused}
         </Alert>
       )}
       <Box inert={workflow.busy || undefined} aria-busy={workflow.busy}>
@@ -148,7 +148,7 @@ export function ScenarioPage(): ReactElement {
           />
         ) : (
           <Paper variant="outlined" sx={{ p: 3 }}>
-            <Typography color="text.secondary">Реестра сцен нет. Сохраните трактовку и постройте каркас.</Typography>
+            <Typography color="text.secondary">{scenarioTexts.page.registryMissing}</Typography>
           </Paper>
         )}
       </Box>

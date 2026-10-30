@@ -1,4 +1,5 @@
 /** Пути медиакомплекта вычисляются относительно runtime целевой ОС, без привязки к checkout сборщика. */
+import { environmentTexts } from '@shared/texts/environment';
 import { accessSync, constants, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
@@ -42,6 +43,7 @@ export function missingModelFiles(path: string): string[] {
   };
   const files = MODEL_FILES.filter(missing);
   // Medium использует txt, large-v3 и turbo — json; обе разновидности поддерживаются CTranslate2.
+  // eslint-disable-next-line no-restricted-syntax -- Это составное имя ожидаемых файлов модели; формат результата используют проверки установки.
   if (missing('vocabulary.json') && missing('vocabulary.txt')) files.push('vocabulary.json или vocabulary.txt');
   return files;
 }
@@ -54,7 +56,7 @@ export function requireMediaBinaries(options: PythonOptions): void {
     try {
       accessSync(media[name], constants.X_OK);
     } catch {
-      throw new Error(`Встроенный ${name} недоступен (${media.binDir}). Распакуйте приложение заново.`);
+      throw new Error(environmentTexts.main.bundledMediaUnavailable({ name, binDir: media.binDir }));
     }
   }
 }

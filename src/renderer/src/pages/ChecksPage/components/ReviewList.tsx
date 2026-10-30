@@ -1,3 +1,4 @@
+import { checksTexts } from '@shared/texts/checks';
 import type { ReactElement } from 'react';
 import { Stack, Typography } from '@mui/material';
 import type { ReviewInfo } from '@shared/types';
@@ -17,7 +18,7 @@ export function ReviewList({ reviews, openReview, deletingReview, setOpenReview,
   if (!reviews.length) return null;
   return (
     <Stack spacing={0.5} sx={{ mt: 2 }}>
-      <Typography variant="subtitle2">Собранные пробы в plan/batches</Typography>
+      <Typography variant="subtitle2">{checksTexts.savedReviews}</Typography>
       {reviews.map((review) => (
         <ReviewItem
           key={review.video}

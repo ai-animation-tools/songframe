@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Подготовка новой попытки по сохранённому запросу без платной отправки. */
 import type { ReactElement } from 'react';
 import { Typography } from '@mui/material';
@@ -19,19 +20,18 @@ export function RegenerateDialog({
     <ConfirmationDialog
       open={!!shot}
       onClose={onClose}
-      title={`Подготовить повтор ${shot ?? ''}`}
+      title={productionTexts.regenerateDialog.title({ shot: shot ?? '' })}
       onConfirm={() => {
         if (!problem) onConfirm();
       }}
       confirmDisabled={!!problem}
       confirmDisabledReason={problem}
-      confirmLabel="Подготовить повтор"
+      confirmLabel={productionTexts.regenerateDialog.confirm}
       confirmIcon={<ReplayIcon />}
       confirmColor="warning"
     >
       <Typography variant="body2" sx={{ mt: 1 }}>
-        Будет взят сохранённый запрос плана и создана новая попытка. Запрос не отправляется, кредиты не списываются. Перед платной отправкой приложение покажет
-        новую таблицу параметров, входы и SHA256 запроса для отдельного подтверждения.
+        {productionTexts.regenerateDialog.description}
       </Typography>
     </ConfirmationDialog>
   );

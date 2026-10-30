@@ -1,3 +1,6 @@
+import { castTexts } from '@shared/texts/cast';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
 import { PageActionBar } from '../../../components/PageActionBar';
 import { Box, Chip, Typography } from '@mui/material';
@@ -19,12 +22,12 @@ interface CastToolbarProps {
 /** Действия кастинга учитывают несохранённые изменения и выполняющуюся операцию. */
 export function CastToolbar({ busy, dirty, saveBlockedReason, hasManifest, hasCast, onInit, onSave }: CastToolbarProps): ReactElement {
   // Дополнение перечитывает файл кастинга, поэтому несохранённые правки сначала нужно сохранить.
-  const initBlockedReason = busy ? null : !hasManifest ? 'Сначала загрузите исходники.' : dirty ? 'Сначала сохраните правки.' : null;
-  const busyReason = 'Дождитесь завершения текущей операции.';
+  const initBlockedReason = busy ? null : !hasManifest ? castTexts.sourcesRequired : dirty ? castTexts.saveFirst : null;
+  const busyReason = commonTexts.operationPending;
   return (
     <PageActionBar>
-      <Typography variant="h5">Кастинг</Typography>
-      {dirty ? <Chip size="small" color="warning" label="Есть несохранённые правки" /> : null}
+      <Typography variant="h5">{navigationTexts.pages.cast}</Typography>
+      {dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
       <Box sx={{ flex: 1 }} />
       {/* Действие добавляет сущности, поэтому зелёное; как второстепенное в панели — текстовое. */}
       <ActionButton
@@ -35,16 +38,16 @@ export function CastToolbar({ busy, dirty, saveBlockedReason, hasManifest, hasCa
         disabledReason={busy ? busyReason : initBlockedReason}
         onClick={onInit}
       >
-        {hasCast ? 'Дополнить из исходников' : 'Создать из исходников'}
+        {hasCast ? castTexts.supplement : castTexts.create}
       </ActionButton>
       <ActionButton
         variant="contained"
         startIcon={<SaveIcon />}
         disabled={busy || !dirty || Boolean(saveBlockedReason)}
-        disabledReason={busy ? busyReason : !dirty ? 'Нет изменений для сохранения.' : saveBlockedReason}
+        disabledReason={busy ? busyReason : !dirty ? commonTexts.noChangesToSave : saveBlockedReason}
         onClick={onSave}
       >
-        Сохранить
+        {commonTexts.save}
       </ActionButton>
     </PageActionBar>
   );

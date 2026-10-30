@@ -1,3 +1,4 @@
+import { scenesTexts } from '@shared/texts/scenes';
 import type { ReactElement } from 'react';
 import { Chip } from '@mui/material';
 import type { DashboardShot } from '@shared/types';
@@ -13,7 +14,7 @@ export function SceneCard({ shot, selected, onSelect }: { shot: DashboardShot; s
       imagePath={shot.thumbnail}
       chips={
         (shot.state === 'completed' || shot.state === 'stale') && !shot.asset?.video ? (
-          <Chip size="small" color="warning" label="Видео отсутствует" sx={{ height: 18 }} />
+          <Chip size="small" color="warning" label={scenesTexts.missingVideo} sx={{ height: 18 }} />
         ) : null
       }
       selected={selected}

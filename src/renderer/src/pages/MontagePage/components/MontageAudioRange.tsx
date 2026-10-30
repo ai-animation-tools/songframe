@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { Sync } from '@mui/icons-material';
 import type { ReactElement } from 'react';
 import { Stack, TextField, Typography } from '@mui/material';
@@ -24,7 +25,7 @@ export function MontageAudioRange({
           key={`audio-start-${draft.audio.start_frame}`}
           size="small"
           type="number"
-          label="Музыка: начало, кадр"
+          label={montageTexts.audioStart}
           sx={{ width: 240, maxWidth: '100%', flexShrink: 0 }}
           defaultValue={draft.audio.start_frame}
           slotProps={{ htmlInput: { min: 0, max: draft.audio.end_frame_exclusive - 1, step: 1 } }}
@@ -38,7 +39,7 @@ export function MontageAudioRange({
           key={`audio-end-${draft.audio.end_frame_exclusive}`}
           size="small"
           type="number"
-          label="Музыка: конец, кадр"
+          label={montageTexts.audioEnd}
           sx={{ width: 240, maxWidth: '100%', flexShrink: 0 }}
           defaultValue={draft.audio.end_frame_exclusive}
           slotProps={{ htmlInput: { min: draft.audio.start_frame + 1, max: trackFrames ?? undefined, step: 1 } }}
@@ -53,20 +54,17 @@ export function MontageAudioRange({
         />
       </Stack>
       <Typography variant="caption" color="text.secondary">
-        Участок песни: {frameLabel(draft.audio.start_frame)} — {frameLabel(draft.audio.end_frame_exclusive)}. Положение на обеих дорожках считается от начала
-        исходной песни.
+        {montageTexts.audioRange({ start: frameLabel(draft.audio.start_frame), end: frameLabel(draft.audio.end_frame_exclusive) })}
       </Typography>
       <ActionButton
         startIcon={<Sync />}
         size="small"
         sx={{ alignSelf: 'flex-start' }}
         disabled={!length || pastTrackEnd}
-        disabledReason={
-          !length ? 'Добавьте фрагменты на видеодорожку.' : 'Видео длиннее остатка трека от начала участка: сдвиньте начало музыки раньше или обрежьте видео.'
-        }
+        disabledReason={!length ? montageTexts.addClipsToTrack : montageTexts.videoPastTrack}
         onClick={() => onChange({ ...draft, audio: { ...draft.audio, end_frame_exclusive: draft.audio.start_frame + length } })}
       >
-        Конец музыки по видео
+        {montageTexts.fitAudioToVideo}
       </ActionButton>
     </Stack>
   );

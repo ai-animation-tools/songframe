@@ -1,4 +1,6 @@
 /** Справка доступна без проекта: объяснения ищутся по названиям, синонимам и содержанию. */
+import { helpTexts } from '@shared/texts/help';
+import { navigationTexts } from '@shared/texts/navigation';
 import { useState, type ReactElement } from 'react';
 import { Alert, Box, InputAdornment, Paper, Stack, TextField, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -18,13 +20,13 @@ export function HelpPage(): ReactElement {
       {/* Заголовок и поиск в общей панели страницы: поиск доступен при любой прокрутке. */}
       <PageActionBar>
         <Typography variant="h5" component="h1">
-          Справка
+          {navigationTexts.pages.help}
         </Typography>
         <TextField
           size="small"
           type="search"
-          label="Поиск по справке"
-          placeholder="Например: с чего начать, стоимость, как перенести проект"
+          label={helpTexts.search}
+          placeholder={helpTexts.searchExample}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           sx={{ flex: 1, minWidth: 260 }}
@@ -39,13 +41,11 @@ export function HelpPage(): ReactElement {
           }}
         />
         <Typography variant="body2" color="text.secondary" aria-live="polite">
-          {words.length ? `Найдено статей: ${entries.length} из ${GLOSSARY.length}` : `Всего статей: ${GLOSSARY.length}`}
+          {words.length ? helpTexts.found({ count: entries.length, total: GLOSSARY.length }) : helpTexts.total(GLOSSARY.length)}
         </Typography>
       </PageActionBar>
-      <Typography color="text.secondary">
-        Как начать работу над клипом и что означают действия в приложении. Ищите по названию, вопросу или знакомым словам.
-      </Typography>
-      {!entries.length ? <Alert severity="info">Ничего не найдено. Попробуйте другое слово или его часть.</Alert> : null}
+      <Typography color="text.secondary">{helpTexts.description}</Typography>
+      {!entries.length ? <Alert severity="info">{helpTexts.empty}</Alert> : null}
       {categories.map((category) => (
         <Box component="section" key={category}>
           <Typography variant="h6" component="h2" sx={{ mb: 1 }}>

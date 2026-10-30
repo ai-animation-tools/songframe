@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 /** Список референсов объединяет редакторы сущностей и настройку типов. */
 import type { ReactElement } from 'react';
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
@@ -46,11 +47,10 @@ export function ReferencesSection({
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
         <Box sx={{ flex: 1 }}>
           <Typography variant="subtitle1" fontWeight={600}>
-            Референсы
+            {sourcesTexts.references}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Персонажи, транспорт, локации, предметы и стиль. Код референса становится идентификатором сущности в сценарии и состоянии героев. Несколько
-            изображений одной сущности задают разные виды. Если референсов пока нет, их можно добавить после сценария.
+            {sourcesTexts.referencesHint}
           </Typography>
         </Box>
       </Box>
@@ -58,7 +58,7 @@ export function ReferencesSection({
       <Stack spacing={1}>
         {refs.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-            Референсов нет.
+            {sourcesTexts.noReferences}
           </Typography>
         ) : null}
         {refs.map((reference) => (
@@ -79,7 +79,7 @@ export function ReferencesSection({
         ))}
       </Stack>
       <Button sx={{ mt: 2 }} variant="outlined" color="success" startIcon={<AddIcon />} onClick={onAdd}>
-        Новый референс
+        {sourcesTexts.newReference}
       </Button>
     </Paper>
   );

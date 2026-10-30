@@ -1,3 +1,5 @@
+import { commonTexts } from '@shared/texts/common';
+import { componentsTexts } from '@shared/texts/components';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CloseIcon from '@mui/icons-material/Close';
@@ -15,7 +17,7 @@ interface ImageGalleryProps {
 }
 
 /** Общий просмотр изображений без обрезки; режим 1:1 сохраняет размер файла и даёт прокрутку. */
-export function ImageGallery({ images, initialIndex, kind = 'Изображение', onClose }: ImageGalleryProps): ReactElement {
+export function ImageGallery({ images, initialIndex, kind = componentsTexts.gallery.image, onClose }: ImageGalleryProps): ReactElement {
   const [index, setIndex] = useState(Math.min(initialIndex, images.length - 1));
   const [originalSize, setOriginalSize] = useState(false);
   const titleId = useId();
@@ -44,7 +46,7 @@ export function ImageGallery({ images, initialIndex, kind = 'Изображен�
     >
       <DialogTitle id={titleId} sx={{ overflowWrap: 'anywhere' }}>
         <Typography component="span" variant="overline" display="block" color="text.secondary">
-          {kind} · {index + 1} / {images.length}
+          {componentsTexts.gallery.position({ kind, position: index + 1, total: images.length })}
         </Typography>
         {image.label}
       </DialogTitle>
@@ -81,19 +83,19 @@ export function ImageGallery({ images, initialIndex, kind = 'Изображен�
           startIcon={<NavigateBeforeIcon />}
           onClick={() => navigate(index - 1)}
           disabled={index === 0}
-          disabledReason="Это первое изображение."
-          aria-label="Предыдущее изображение"
+          disabledReason={componentsTexts.gallery.firstImage}
+          aria-label={componentsTexts.gallery.previousImage}
         >
-          Назад
+          {commonTexts.back}
         </ActionButton>
         <ActionButton
           startIcon={<NavigateNextIcon />}
           onClick={() => navigate(index + 1)}
           disabled={index === images.length - 1}
-          disabledReason="Это последнее изображение."
-          aria-label="Следующее изображение"
+          disabledReason={componentsTexts.gallery.lastImage}
+          aria-label={componentsTexts.gallery.nextImage}
         >
-          Вперёд
+          {commonTexts.next}
         </ActionButton>
         <Button
           startIcon={<ZoomInIcon />}
@@ -101,10 +103,10 @@ export function ImageGallery({ images, initialIndex, kind = 'Изображен�
           aria-pressed={originalSize}
           variant={originalSize ? 'contained' : 'outlined'}
         >
-          Оригинальный размер (1:1)
+          {componentsTexts.gallery.originalSize}
         </Button>
         <Button startIcon={<CloseIcon />} onClick={onClose}>
-          Закрыть
+          {commonTexts.close}
         </Button>
       </DialogActions>
     </Dialog>

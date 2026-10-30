@@ -52,6 +52,7 @@ describe('обложка Codex', () => {
     expect(call.config).toBe(config);
     expect(call.workDir).toBe(workDir);
     expect(call.input.project).toBe(root);
+    expect(call.input.task).toBe('Обложка проекта');
     expect(call.input.prompt).toContain('image_gen');
     expect(call.input.context).toBe(JSON.stringify({ userPrompt: '  Ёж у костра  ' }));
     // История и настройки временного проекта остаются в папке обложки.
@@ -60,15 +61,19 @@ describe('обложка Codex', () => {
     expect(existsSync('/fixture/project')).toBe(false);
   });
 
-  it.each(['не JSON', '{"path":1}', '{"path":"cover.png","extra":true}'])('отклоняет неверный финальный ответ %s', async (result) => {
+  it.each([
+    ['не JSON', 'Агент не вернул путь к созданной обложке.'],
+    ['{"path":1}', 'Агент вернул неверный результат обложки. Ожидается JSON с одним полем path.'],
+    ['{"path":"cover.png","extra":true}', 'Агент вернул неверный результат обложки. Ожидается JSON с одним полем path.']
+  ])('отклоняет неверный финальный ответ %s', async (result, message) => {
     const runner = createCodexCoverRunner({ config: { provider: 'codex' }, createManager: fakeManager(result, []) });
-    await expect(runner({ workDir, project: root, prompt: 'Обложка', signal: new AbortController().signal })).rejects.toThrow(/Агент/);
+    await expect(runner({ workDir, project: root, prompt: 'Обложка', signal: new AbortController().signal })).rejects.toThrow(message);
   });
 
   it('не запускает заранее отменённую генерацию', async () => {
     const calls: Call[] = [];
     const runner = createCodexCoverRunner({ config: { provider: 'codex' }, createManager: fakeManager('{"path":"cover.png"}', calls) });
-    await expect(runner({ workDir, project: root, prompt: 'Обложка', signal: AbortSignal.abort() })).rejects.toThrow(/остановлена/);
+    await expect(runner({ workDir, project: root, prompt: 'Обложка', signal: AbortSignal.abort() })).rejects.toThrow('Генерация обложки остановлена.');
     expect(calls).toEqual([]);
   });
 });

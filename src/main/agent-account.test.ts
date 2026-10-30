@@ -78,7 +78,7 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
     cli('codex', server(account, { ...rates, ...(usageAllowed === null ? {} : { ordinaryUsageAllowed: usageAllowed }) }));
     const result = await codexAccount({ provider: 'codex' }, options());
     expect(result.usageAllowed).toBe(usageAllowed);
-    if (usageAllowed === false) expect(result.message).toContain('ограничении использования');
+    if (usageAllowed === false) expect(result.message).toBe('Codex сообщает об ограничении использования.');
   });
 
   it('адаптеры предоставляют отдельный метод чтения аккаунта', () => {
@@ -221,6 +221,14 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
     expect((await claudeAccount({ provider: 'claude' }, options())).limits).toBeNull();
   });
 
+  it('сохраняет полную причину неподдерживаемой версии Claude без чтения аккаунта', async () => {
+    cli('claude', 'console.log(JSON.stringify({loggedIn:true}));', undefined, '2.0.10 (Claude Code)');
+    const result = await claudeAccount({ provider: 'claude' }, options());
+    expect(result.message).toBe('Данные аккаунта недоступны для этой версии Claude Code.');
+    expect(result).toMatchObject({ email: null, organization: null, authenticationMethod: null, plan: null, limits: null, usageAllowed: null, credits: null });
+    expect(calls()).toEqual([['--version'], ['auth', 'status', '--json']]);
+  });
+
   it('не вызывает экспериментальный метод Claude в старой версии', async () => {
     cli('claude', 'console.log(JSON.stringify({loggedIn:true,authMethod:"claude.ai",apiProvider:"firstParty"}));', undefined, '2.1.272 (Claude Code)');
     expect((await claudeAccount({ provider: 'claude' }, options())).limits).toBeNull();
@@ -284,6 +292,24 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
     expect(result.credits).toBe('0');
   });
 
+  it('показывает подтверждённые состояния кредитов с прежним приоритетом и разделителем', async () => {
+    cli(
+      'codex',
+      server(account, {
+        rateLimitsByLimitId: {
+          unlimited: { credits: { unlimited: true, hasCredits: false, balance: 'игнорировать' } },
+          absent: { credits: { hasCredits: false } },
+          present: { credits: { hasCredits: true } },
+          duplicate: { credits: { hasCredits: true } },
+          unknown: { credits: {} }
+        }
+      })
+    );
+    const result = await codexAccount({ provider: 'codex' }, options());
+    expect(result.credits).toBe('Без ограничений; Нет кредитов; Есть кредиты');
+    expect(result.limits).toBeNull();
+  });
+
   it.each(['apiKey', 'amazonBedrock'])('не угадывает подписку и email по режиму Codex %s', async (type) => {
     cli('codex', server({ account: { type, email: 'unexpected@example.test', planType: 'pro' } }, { rateLimits: {} }));
     const result = await codexAccount({ provider: 'codex' }, options());
@@ -314,8 +340,8 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
       credits: null,
       diagnostic: { availability: 'available', authorization: 'unauthenticated' }
     });
-    expect(result.message).toContain('codex login');
-    expect(result.diagnostic.message).toContain('вход не выполнен');
+    expect(result.message).toBe('Codex сообщает, что вход не выполнен. Выполните codex login в терминале.');
+    expect(result.diagnostic.message).toBe('Codex сообщает, что вход не выполнен. Выполните codex login в терминале.');
     stopped();
   });
 
@@ -323,7 +349,8 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
     cli('codex', server({ requiresOpenaiAuth: true }, { rateLimits: {} }));
     const result = await codexAccount({ provider: 'codex' }, options());
     expect(result.diagnostic.authorization).toBe('unknown');
-    expect(result.message).toContain('недоступна');
+    expect(result.diagnostic.message).toBe('Не удалось подтвердить вход по ответу Codex.');
+    expect(result.message).toBe('Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии.');
   });
 
   it('отбрасывает некорректные проценты вместо превращения их в нулевое использование', async () => {
@@ -345,7 +372,7 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
     const result = await codexAccount({ provider: 'codex' }, options());
     expect(result.email).toBe('user@example.test');
     expect(result.limits).toBeNull();
-    expect(result.message).toContain('недоступна');
+    expect(result.message).toBe('Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии.');
     expect(JSON.stringify(result)).not.toMatch(/SECRET|private@example/);
     stopped();
   });
@@ -364,7 +391,7 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
     expect(result.email).toBeNull();
     expect(result.diagnostic.authorization).toBe('unknown');
     expect(result.limits?.[0].usedPercent).toBe(22);
-    expect(result.message).toContain('недоступна');
+    expect(result.message).toBe('Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии.');
   });
 
   it.each(['malformed', 'overflow', 'earlyExit', 'timeout'])('завершает сервер при %s и не отдаёт его сырой вывод', async (mode) => {
@@ -381,7 +408,7 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
     const result = await codexAccount({ provider: 'codex' }, { ...options(), timeoutMs: 250 });
     expect(result).toMatchObject({ email: null, plan: null, limits: null });
     expect(result.diagnostic.authorization).toBe('unknown');
-    expect(result.message).toContain('недоступна');
+    expect(result.message).toBe('Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии.');
     expect(JSON.stringify(result)).not.toContain('SECRET');
     expect(Date.now() - start).toBeLessThan(2500);
     stopped();
@@ -407,6 +434,7 @@ describe.skipIf(process.platform !== 'linux')('Штатная диагности
     cli('codex', 'process.exit(99);', undefined, 'codex-cli 0.158.0');
     const result = await codexAccount({ provider: 'codex' }, options());
     expect(result.diagnostic).toMatchObject({ version: '0.158.0', authorization: 'authenticated' });
+    expect(result.message).toBe('Данные аккаунта недоступны для этой версии Codex.');
     expect(result.limits).toBeNull();
     expect(calls()).toEqual([['--version'], ['login', 'status']]);
   });

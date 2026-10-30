@@ -3,6 +3,7 @@
  * Алгоритмы повторяют tools/scene_registry и tools/continuity_brief, чтобы редактор работал без Python.
  */
 
+import { scenarioTexts } from '@shared/texts/scenario';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type {
@@ -21,6 +22,7 @@ import { castReferences, initialStates, loadDefaults, readCast, WORLD_ID } from 
 import { readManifest } from './sources';
 import { parseLyricsLines } from './timing';
 import { FPS } from '@shared/video';
+import { BRIEF_STATE_UNSET_PREFIX } from '@shared/types';
 
 const SLUG = /^[a-z][a-z0-9_]*$/;
 const SCENE_ID = /^M\d{2}(\.\d+)?$/;
@@ -38,7 +40,7 @@ export function viewScenario(project: string, toolsRoot: string | null): Scenari
   const problems: string[] = [];
   const read = <T>(relative: string, label: string): T | null => {
     const value = readJson<T>(join(project, relative));
-    if (value === false) problems.push(`${label} повреждён.`);
+    if (value === false) problems.push(scenarioTexts.main.damagedDocument({ label }));
     return value || null;
   };
   const scenes = read<ScenesFile>('plan/scenes.json', 'plan/scenes.json');
@@ -46,7 +48,7 @@ export function viewScenario(project: string, toolsRoot: string | null): Scenari
   const timing = read<TimingFile>('plan/audio/timing.json', 'plan/audio/timing.json');
   let cast = readCast(project);
   if (cast === false) {
-    problems.push('plan/cast.json повреждён.');
+    problems.push(scenarioTexts.main.damagedCast);
     cast = null;
   }
   const manifest = readManifest(project);
@@ -54,8 +56,7 @@ export function viewScenario(project: string, toolsRoot: string | null): Scenari
   const trackPath = join(project, 'source', 'track.mp3');
   if (scenes) {
     problems.push(...validateScenes(scenes, cast));
-    if (cast && JSON.stringify(scenes.references) !== JSON.stringify(castReferences(cast)))
-      problems.push('Карта references реестра расходится с кастингом; при сохранении она будет обновлена.');
+    if (cast && JSON.stringify(scenes.references) !== JSON.stringify(castReferences(cast))) problems.push(scenarioTexts.main.referencesRefresh);
   }
   void loadDefaults(toolsRoot);
   return {
@@ -72,21 +73,22 @@ export function viewScenario(project: string, toolsRoot: string | null): Scenari
 
 export function validateTreatment(treatment: TreatmentFile, duration: number | null): string[] {
   const problems: string[] = [];
-  if (treatment.schema_version !== 1 || !Array.isArray(treatment.sequences) || !treatment.sequences.length)
-    return ['Трактовка: нужны schema_version 1 и хотя бы одна часть.'];
+  if (treatment.schema_version !== 1 || !Array.isArray(treatment.sequences) || !treatment.sequences.length) return [scenarioTexts.main.treatmentRequiresParts];
   const sorted = [...treatment.sequences].sort((a, b) => a.start - b.start);
   const ids = new Set<string>();
   let cursor = 0;
   for (const part of sorted) {
-    if (!SLUG.test(part.id)) problems.push(`Часть «${part.title || part.id}»: код латиницей.`);
-    if (ids.has(part.id)) problems.push(`Код части повторяется: ${part.id}.`);
+    if (!SLUG.test(part.id)) problems.push(scenarioTexts.main.partCodeLatin({ title: part.title || part.id }));
+    if (ids.has(part.id)) problems.push(scenarioTexts.main.duplicatePartCode({ id: part.id }));
     ids.add(part.id);
-    if (!part.title.trim()) problems.push(`Часть ${part.id}: нет названия.`);
-    if (Math.abs(part.start - cursor) > 0.06) problems.push(`Часть ${part.id}: начало ${part.start} не стыкуется с ${cursor.toFixed(2)}.`);
-    if (part.end <= part.start) problems.push(`Часть ${part.id}: конец раньше начала.`);
+    if (!part.title.trim()) problems.push(scenarioTexts.main.partTitleMissing({ id: part.id }));
+    if (Math.abs(part.start - cursor) > 0.06)
+      problems.push(scenarioTexts.main.partStartMismatch({ id: part.id, start: part.start, previousEnd: cursor.toFixed(2) }));
+    if (part.end <= part.start) problems.push(scenarioTexts.main.partEndsBeforeStart({ id: part.id }));
     cursor = part.end;
   }
-  if (duration && Math.abs(cursor - duration) > 0.06) problems.push(`Части заканчиваются на ${cursor.toFixed(2)}, а трек длится ${duration.toFixed(2)}.`);
+  if (duration && Math.abs(cursor - duration) > 0.06)
+    problems.push(scenarioTexts.main.treatmentDurationMismatch({ end: cursor.toFixed(2), duration: duration.toFixed(2) }));
   return problems;
 }
 
@@ -94,7 +96,7 @@ export function validateTreatment(treatment: TreatmentFile, duration: number | n
 export function normalizeTreatment(value: unknown, duration: number | null): TreatmentFile {
   const record = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
   if (!record(value) || value.schema_version !== 1 || typeof value.logline !== 'string' || !Array.isArray(value.sequences))
-    throw new Error('Трактовка: нужны schema_version 1, logline и sequences.');
+    throw new Error(scenarioTexts.main.treatmentInvalidDocument);
   for (const part of value.sequences) {
     if (
       !record(part) ||
@@ -109,7 +111,7 @@ export function normalizeTreatment(value: unknown, duration: number | null): Tre
       (part.max_shot_seconds !== undefined &&
         (typeof part.max_shot_seconds !== 'number' || !Number.isFinite(part.max_shot_seconds) || part.max_shot_seconds <= 0))
     )
-      throw new Error('Трактовка: неверная структура части песни.');
+      throw new Error(scenarioTexts.main.treatmentInvalidPart);
   }
   const treatment = value as unknown as TreatmentFile;
   const normalized: TreatmentFile = {
@@ -143,31 +145,33 @@ export function saveTreatment(project: string, treatment: TreatmentFile): Treatm
 export function validateScenes(data: ScenesFile, cast: CastFile | null): string[] {
   const problems: string[] = [];
   if (data.schema_version !== 1 || data.fps !== FPS || !Array.isArray(data.scenes) || !data.scenes.length)
-    return [`Реестр: нужны schema_version 1, fps ${FPS} и хотя бы одна сцена.`];
+    return [scenarioTexts.main.registryRequiresScenes({ fps: FPS })];
   const groups = new Set(data.sequences.map((s) => s.id));
   const seen = new Set<string>();
   let end = 0;
   for (const scene of data.scenes) {
     const sid = scene.id;
-    if (!SCENE_ID.test(sid)) problems.push(`${sid}: код плана вида M01 или M23.5.`);
-    if (seen.has(sid)) problems.push(`${sid}: код повторяется.`);
+    if (!SCENE_ID.test(sid)) problems.push(scenarioTexts.main.shotCodeInvalid({ shot: sid }));
+    if (seen.has(sid)) problems.push(scenarioTexts.main.duplicateShotCode({ shot: sid }));
     seen.add(sid);
-    if (!Number.isInteger(scene.start_frame) || !Number.isInteger(scene.end_frame_exclusive)) problems.push(`${sid}: границы в кадрах должны быть целыми.`);
+    if (!Number.isInteger(scene.start_frame) || !Number.isInteger(scene.end_frame_exclusive))
+      problems.push(scenarioTexts.main.shotFramesInteger({ shot: sid }));
     else {
-      if (scene.start_frame !== end) problems.push(`${sid}: начало ${scene.start_frame} не совпадает с концом предыдущего плана ${end}.`);
-      if (scene.end_frame_exclusive <= scene.start_frame) problems.push(`${sid}: конец раньше начала.`);
+      if (scene.start_frame !== end) problems.push(scenarioTexts.main.shotStartMismatch({ shot: sid, start: scene.start_frame, previousEnd: end }));
+      if (scene.end_frame_exclusive <= scene.start_frame) problems.push(scenarioTexts.main.shotEndsBeforeStart({ shot: sid }));
       end = scene.end_frame_exclusive;
     }
-    if (!groups.has(scene.sequence)) problems.push(`${sid}: неизвестная часть ${scene.sequence}.`);
-    if (!scene.camera?.trim()) problems.push(`${sid}: не заполнена камера.`);
-    if (!scene.action?.trim()) problems.push(`${sid}: не заполнено действие.`);
-    for (const ref of scene.references) if (ref !== '—' && !data.references[ref]) problems.push(`${sid}: неизвестный референс ${ref}.`);
-    if (!data.references[scene.card?.primary_reference]) problems.push(`${sid}: главный референс карточки не объявлен.`);
+    if (!groups.has(scene.sequence)) problems.push(scenarioTexts.main.shotUnknownPart({ shot: sid, part: scene.sequence }));
+    if (!scene.camera?.trim()) problems.push(scenarioTexts.main.shotCameraMissing({ shot: sid }));
+    if (!scene.action?.trim()) problems.push(scenarioTexts.main.shotActionMissing({ shot: sid }));
+    for (const ref of scene.references)
+      if (ref !== '—' && !data.references[ref]) problems.push(scenarioTexts.main.shotUnknownReference({ shot: sid, reference: ref }));
+    if (!data.references[scene.card?.primary_reference]) problems.push(scenarioTexts.main.shotPrimaryReferenceMissing({ shot: sid }));
   }
   problems.push(...derivedFromProblems(data.scenes));
   const endSeconds = Number(data.audio?.end_seconds);
   if (!Number.isFinite(endSeconds) || Math.abs(end / FPS - endSeconds) >= 1 / FPS)
-    problems.push(`Монтажный конец ${(end / FPS).toFixed(3)} с расходится с концом песни ${data.audio?.end_seconds}.`);
+    problems.push(scenarioTexts.main.registryDurationMismatch({ end: (end / FPS).toFixed(3), duration: data.audio?.end_seconds }));
   try {
     resolveStates(data, initialStates(cast));
   } catch (error) {
@@ -186,11 +190,10 @@ export function derivedFromProblems(scenes: SceneShot[]): string[] {
     const value: unknown = scene.derived_from;
     const source =
       value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).join() === 'shot' ? (value as { shot: unknown }).shot : null;
-    if (typeof source !== 'string' || !SCENE_ID.test(source)) problems.push(`${scene.id}: derived_from должен быть объектом {"shot": "Mxx"}.`);
-    else if (source === scene.id) problems.push(`${scene.id}: derived_from не может ссылаться на сам план.`);
-    else if (!byId.has(source)) problems.push(`${scene.id}: derived_from ссылается на неизвестный план ${source}.`);
-    else if (byId.get(source)!.derived_from !== undefined)
-      problems.push(`${scene.id}: источник ${source} сам собирается из другого плана; укажите исходный план.`);
+    if (typeof source !== 'string' || !SCENE_ID.test(source)) problems.push(scenarioTexts.main.derivedInvalidShape({ shot: scene.id }));
+    else if (source === scene.id) problems.push(scenarioTexts.main.derivedSelfReference({ shot: scene.id }));
+    else if (!byId.has(source)) problems.push(scenarioTexts.main.derivedUnknownSource({ shot: scene.id, source }));
+    else if (byId.get(source)!.derived_from !== undefined) problems.push(scenarioTexts.main.derivedChainedSource({ shot: scene.id, source }));
   }
   return problems;
 }
@@ -251,13 +254,13 @@ function resolveTracked(data: ScenesFile, initial: EntityState): Record<string, 
   const apply = (state: Tracked, delta: SceneShot['state_changes']['before'], sid: string, phase: 'before' | 'after'): Tracked => {
     const result = clone(state);
     if (!delta) return result;
-    if (typeof delta !== 'object' || Array.isArray(delta)) throw new Error(`${sid}: изменения состояния должны быть объектом.`);
+    if (typeof delta !== 'object' || Array.isArray(delta)) throw new Error(scenarioTexts.main.stateChangesInvalid({ shot: sid }));
     for (const [entity, attributes] of Object.entries(delta)) {
       if (!SLUG.test(entity) || typeof attributes !== 'object' || attributes === null || Array.isArray(attributes))
-        throw new Error(`${sid}: неверный объект состояния ${entity}.`);
+        throw new Error(scenarioTexts.main.stateEntityInvalid({ shot: sid, entity }));
       for (const [key, value] of Object.entries(attributes)) {
         if (!SLUG.test(key) || (value !== null && (typeof value !== 'string' || !value.trim())))
-          throw new Error(`${sid}: неверное свойство состояния ${entity}.${key}.`);
+          throw new Error(scenarioTexts.main.statePropertyInvalid({ shot: sid, entity, property: key }));
         if (value === null) {
           if (result[entity]) delete result[entity][key];
         } else {
@@ -273,9 +276,9 @@ function resolveTracked(data: ScenesFile, initial: EntityState): Record<string, 
   const visit = (sid: string): { before: Tracked; after: Tracked; incoming: Tracked } => {
     const done = resolved.get(sid);
     if (done) return done;
-    if (visiting.includes(sid)) throw new Error(`Цикл state_from: ${[...visiting, sid].join(' → ')}`);
+    if (visiting.includes(sid)) throw new Error(scenarioTexts.main.stateCycle({ chain: [...visiting, sid].join(' → ') }));
     const scene = scenes.get(sid);
-    if (!scene) throw new Error(`${sid}: неизвестный источник state_from.`);
+    if (!scene) throw new Error(scenarioTexts.main.stateUnknownSource({ shot: sid }));
     visiting.push(sid);
     let source: string | null =
       scene.state_from === undefined
@@ -284,7 +287,7 @@ function resolveTracked(data: ScenesFile, initial: EntityState): Record<string, 
           ? scene.state_from.scene
           : scene.state_from;
     let phase: 'before' | 'after' | 'same' = typeof scene.state_from === 'object' && scene.state_from !== null ? scene.state_from.phase : 'after';
-    if (source === null && phase !== 'after') throw new Error(`${sid}: неверная фаза state_from.`);
+    if (source === null && phase !== 'after') throw new Error(scenarioTexts.main.stateInvalidPhase({ shot: sid }));
     if (source !== null && typeof source !== 'string') {
       source = null;
       phase = 'after';
@@ -294,7 +297,7 @@ function resolveTracked(data: ScenesFile, initial: EntityState): Record<string, 
     // incoming — состояние до правок первого кадра плана: от него видно, что план действительно меняет.
     let value: { before: Tracked; after: Tracked; incoming: Tracked };
     if (phase === 'same') {
-      if (changes.before || changes.after) throw new Error(`${sid}: повтор same не допускает своих state_changes.`);
+      if (changes.before || changes.after) throw new Error(scenarioTexts.main.stateSameHasChanges({ shot: sid }));
       value = { before: clone(incoming.before), after: clone(incoming.after), incoming: clone(incoming.before) };
     } else {
       const before = apply(incoming[phase], changes.before, sid, 'before');
@@ -327,7 +330,7 @@ export function buildBrief(data: ScenesFile, cast: CastFile | null, sid: string,
   const sources = resolveStateSources(data, initialStates(cast))[sid]?.[phase] ?? {};
   const inherited = resolveInherited(data, initialStates(cast))[sid]?.[phase] ?? {};
   const scene = data.scenes.find((s) => s.id === sid);
-  if (!state || !scene) throw new Error(`${sid}: сцена отсутствует в реестре.`);
+  if (!state || !scene) throw new Error(scenarioTexts.main.briefShotMissing({ shot: sid }));
   const defaults = loadDefaults(toolsRoot);
   const names = new Map((cast?.entities ?? []).map((e) => [e.id, { name: e.name, kind: e.kind }]));
   const vocab = new Map<string, Map<string, { label: string; checklist?: string }>>();
@@ -363,13 +366,17 @@ export function buildBrief(data: ScenesFile, cast: CastFile | null, sid: string,
     }
     description.push(`${info?.name ?? eid}: ${parts.join('; ')}.`);
   }
+  // eslint-disable-next-line no-restricted-syntax -- Заголовок входит в формат continuity_brief, совпадающий с Python-инструментом.
   const title = phase === 'before' ? 'Состояние на первый кадр' : 'Состояние на последний кадр';
+  // eslint-disable-next-line no-restricted-syntax -- Абзац передаётся в производственный промпт как данные непрерывности.
   const paragraph = description.length ? `${title} ${sid}. ${description.join(' ')}` : `${title} ${sid}: состояние не задано.`;
   const text = [
     `${title} ${sid} (${scene.action.slice(0, 80)}${scene.action.length > 80 ? '…' : ''})`,
     '',
-    ...(description.length ? description : ['Состояние не задано: в кастинге нет начального состояния, а в сценах нет изменений.'])
+    // eslint-disable-next-line no-restricted-syntax -- Строка формата brief; префикс распознаётся в ShotStateBlock, первые две строки убирает dashboard.
+    ...(description.length ? description : [`${BRIEF_STATE_UNSET_PREFIX}: в кастинге нет начального состояния, а в сценах нет изменений.`])
   ];
+  // eslint-disable-next-line no-restricted-syntax -- Заголовок списка входит в Markdown-формат continuity_brief для производства.
   if (checklist.length) text.push('', 'Проверить по кадру:', ...checklist.map((q) => `- [ ] ${q}`));
   return { shot: sid, phase, state, sources, labels, inherited, paragraph, checklist, text: text.join('\n') };
 }

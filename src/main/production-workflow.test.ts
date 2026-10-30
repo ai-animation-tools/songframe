@@ -177,6 +177,23 @@ beforeEach(() => {
 afterEach(() => rmSync(work, { recursive: true, force: true }));
 
 describe('ProductionWorkflow', () => {
+  it('ошибка настройки видео не блокирует согласованные опоры при сохранённом провайдере изображений', async () => {
+    const { workflow, agents, launcher, pkg } = await prepared();
+    await decide(launcher, pkg);
+    const path = join(project, 'plan/project.json');
+    const settings = JSON.parse(readFileSync(path, 'utf8'));
+    // Отсутствие видео блокирует его подготовку, но не локальный импорт и создание изображений.
+    settings.generation.video.provider = '';
+    write(path, settings);
+    const beforeCalls = launcher.calls.length;
+    const beforeJobs = agents.inputs.length;
+    const view = workflow.view(project, 'M01', pkg);
+    expect(view.problems).toEqual(['Заполните настройки генерации видео проекта: поддерживается провайдер Kling или Тестовый сервис.']);
+    expect(view).toMatchObject({ canPrepare: false, canContinue: false, canGenerateFrames: true, nextFrame: 'K01', reasons: { frames: null } });
+    expect(launcher.calls).toHaveLength(beforeCalls);
+    expect(agents.inputs).toHaveLength(beforeJobs);
+  });
+
   it('речевой план с окном длиннее допустимого звука провайдера блокирует подготовку с объяснением', () => {
     const { workflow } = setup();
     const scenesPath = join(project, 'plan/scenes.json');

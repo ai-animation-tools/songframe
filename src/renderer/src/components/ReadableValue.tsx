@@ -1,34 +1,12 @@
 /** Человекочитаемый показ значений: текст с лёгкой разметкой, списки и объекты реестра без JSON. */
+import { componentsTexts } from '@shared/texts/components';
 import type { ReactElement } from 'react';
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import { inline, Prose } from './Prose';
 
 /** Подписи известных ключей реестра, кастинга и трактовки; неизвестные ключи показываются как есть. */
-const KEY_LABELS: Record<string, string> = {
-  id: 'Код',
-  title: 'Название',
-  direction: 'Действие',
-  start: 'Начало, с',
-  end: 'Конец, с',
-  entities: 'Участники',
-  lipsync: 'Липсинк',
-  max_shot_seconds: 'Максимум плана, с',
-  name: 'Имя',
-  short_name: 'Краткое имя',
-  path: 'Файл',
-  end_seconds: 'Конец песни, с',
-  primary_reference: 'Главный референс',
-  scene: 'План',
-  phase: 'Момент',
-  before: 'На первый кадр',
-  after: 'На последний кадр',
-  key: 'Ключ',
-  label: 'Подпись',
-  hint: 'Подсказка',
-  values: 'Типовые значения',
-  checklist: 'Проверка по кадру'
-};
-const PHASES: Record<string, string> = { before: 'состояние на первый кадр', after: 'состояние на последний кадр', same: 'то же состояние' };
+const KEY_LABELS: Record<string, string> = componentsTexts.readableValue.keys;
+const PHASES: Record<string, string> = componentsTexts.readableValue.phases;
 
 function keyLabel(key: string): string {
   return KEY_LABELS[key] ?? key.replace(/_/g, ' ');
@@ -43,7 +21,7 @@ function Pairs({ value }: { value: Record<string, unknown> }): ReactElement {
   if (!entries.length)
     return (
       <Typography variant="body2" color="text.secondary">
-        пусто
+        {componentsTexts.readableValue.empty}
       </Typography>
     );
   return (
@@ -68,7 +46,7 @@ function StateTable({ value }: { value: Record<string, Record<string, unknown>> 
   if (!entities.length)
     return (
       <Typography variant="body2" color="text.secondary">
-        без изменений
+        {componentsTexts.readableValue.unchanged}
       </Typography>
     );
   return (
@@ -77,8 +55,10 @@ function StateTable({ value }: { value: Record<string, Record<string, unknown>> 
         <Typography key={entity} variant="body2" sx={{ overflowWrap: 'anywhere' }}>
           <b>{entity}:</b>{' '}
           {Object.entries(props)
-            .map(([key, item]) => `${keyLabel(key)}: ${item === null ? 'снять' : String(item)}`)
-            .join('; ') || 'без свойств'}
+            .map(([key, item]) =>
+              componentsTexts.readableValue.property({ label: keyLabel(key), value: item === null ? componentsTexts.readableValue.remove : String(item) })
+            )
+            .join('; ') || componentsTexts.readableValue.noProperties}
         </Typography>
       ))}
     </Stack>
@@ -99,10 +79,11 @@ export function ReadableValue({ value, nested = false }: { value: unknown; neste
   if (value === null || value === undefined || value === '')
     return (
       <Typography variant="body2" color="text.secondary">
-        {nested ? 'нет' : '—'}
+        {nested ? componentsTexts.readableValue.none : componentsTexts.readableValue.emptyValue}
       </Typography>
     );
-  if (typeof value === 'boolean') return <Typography variant="body2">{value ? 'Да' : 'Нет'}</Typography>;
+  if (typeof value === 'boolean')
+    return <Typography variant="body2">{value ? componentsTexts.readableValue.yes : componentsTexts.readableValue.no}</Typography>;
   if (typeof value === 'number') return <Typography variant="body2">{value}</Typography>;
   if (typeof value === 'string')
     return value.includes('\n') || /\*\*|^#/.test(value) ? (
@@ -116,7 +97,7 @@ export function ReadableValue({ value, nested = false }: { value: unknown; neste
     if (!value.length)
       return (
         <Typography variant="body2" color="text.secondary">
-          пусто
+          {componentsTexts.readableValue.empty}
         </Typography>
       );
     if (isPrimitiveArray(value))
@@ -142,7 +123,7 @@ export function ReadableValue({ value, nested = false }: { value: unknown; neste
   if (typeof record.scene === 'string' && typeof record.phase === 'string' && Object.keys(record).length === 2)
     return (
       <Typography variant="body2">
-        от плана {record.scene}: {PHASES[record.phase] ?? record.phase}
+        {componentsTexts.readableValue.inheritedState({ scene: record.scene, phase: PHASES[record.phase] ?? record.phase })}
       </Typography>
     );
   if (isStateMap(record)) return <StateTable value={record} />;

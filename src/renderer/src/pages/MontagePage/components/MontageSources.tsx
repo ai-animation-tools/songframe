@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { memo, useState, type ReactElement } from 'react';
 import { Alert, Box, InputAdornment, Stack, TextField, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -43,20 +44,20 @@ export const MontageSources = memo(function MontageSources({
       <Stack spacing={0.5} sx={{ p: 2, pr: 7, pb: 1.5 }}>
         <Stack direction="row" gap={1} justifyContent="space-between" alignItems="baseline" flexWrap="wrap">
           <Typography id="montage-sources-title" variant="h6">
-            Материалы сцен
+            {montageTexts.sceneMaterials}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Доступно {availableScenes} из {scenes.length} сцен
+            {montageTexts.availableScenes({ available: availableScenes, total: scenes.length })}
           </Typography>
         </Stack>
         <Typography variant="body2" color="text.primary">
-          Добавьте материал на дорожку или замените выбранный вариант кнопкой. Полный оригинал даёт запас за границами принятого монтажа.
+          {montageTexts.sourcesHint}
         </Typography>
         <TextField
           size="small"
           type="search"
-          label="Поиск сцены"
-          placeholder="Код, название или материал: M13, квадроцикл"
+          label={montageTexts.searchScene}
+          placeholder={montageTexts.searchPlaceholder}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           sx={{ mt: 1 }}
@@ -72,7 +73,7 @@ export const MontageSources = memo(function MontageSources({
         />
         {words.length ? (
           <Typography variant="caption" color="text.secondary" aria-live="polite">
-            Найдено сцен: {shown.length} из {scenes.length}
+            {montageTexts.foundScenes({ found: shown.length, total: scenes.length })}
           </Typography>
         ) : null}
       </Stack>
@@ -101,7 +102,7 @@ export const MontageSources = memo(function MontageSources({
             />
           ))}
         </Box>
-        {words.length && !shown.length ? <Alert severity="info">Ничего не найдено. Попробуйте код сцены или часть названия.</Alert> : null}
+        {words.length && !shown.length ? <Alert severity="info">{montageTexts.nothingFound}</Alert> : null}
       </Box>
     </Box>
   );

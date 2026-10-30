@@ -1,3 +1,5 @@
+import { scenarioTexts } from '@shared/texts/scenario';
+import { commonTexts } from '@shared/texts/common';
 /** Подтверждение сохранения реестра, которое меняет постановку планов с принятым комплектом или пакетом. */
 import type { ReactElement } from 'react';
 import { Box, Chip, List, ListItem, Typography } from '@mui/material';
@@ -8,20 +10,18 @@ import { LinkedText } from '../../../components/LinkedText';
 import { SHOT_STATE_LABELS } from '../../../components/shotState';
 import type { ScenesSaveRequest } from '../types';
 
-const BUSY_REASON = 'Дождитесь завершения сохранения.';
-// Аниматик собирается из реестра, поэтому пересборка нужна при любом режиме; она локальная и бесплатная.
-const ANIMATIC_NOTE = 'Аниматик после сохранения потребует пересборки — это локальная операция без оплаты.';
+const BUSY_REASON = scenarioTexts.save.wait;
 
 const TEXTS = {
   production: {
-    title: 'Сохранить изменения постановки?',
-    description: `Сохранение меняет постановку планов ниже. Принятые из них получат статус «постановка изменена» и потребуют нового производства, а их пакеты — нового согласования. Если правка не меняет сюжет, например исправляет опечатку, выберите «Сохранить без производства». ${ANIMATIC_NOTE}`,
-    confirm: 'Сохранить'
+    title: scenarioTexts.save.productionTitle,
+    description: scenarioTexts.save.productionDescription(),
+    confirm: commonTexts.save
   },
   keep: {
-    title: 'Сохранить без нового производства?',
-    description: `Подходит для опечаток и правок, не меняющих сюжет. Принятые комплекты и пакеты перечисленных планов останутся в силе, хотя их постановка в реестре изменится. ${ANIMATIC_NOTE}`,
-    confirm: 'Сохранить без производства'
+    title: scenarioTexts.save.keepTitle,
+    description: scenarioTexts.save.keepDescription(),
+    confirm: scenarioTexts.toolbar.saveWithoutProduction
   }
 } as const;
 
@@ -55,7 +55,7 @@ export function ScenesSaveDialog({
     >
       {/* Список берётся только из расчёта главного процесса: формальные связи постановки, без догадок о смысле правки. */}
       <Typography variant="subtitle2" sx={{ mt: 2 }}>
-        Затронутые планы: {request?.shots.length ?? 0}
+        {scenarioTexts.save.affectedShots({ count: request?.shots.length ?? 0 })}
       </Typography>
       <List dense disablePadding sx={{ maxHeight: 320, overflowY: 'auto' }}>
         {(request?.shots ?? []).map((shot) => {

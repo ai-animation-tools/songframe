@@ -1,3 +1,5 @@
+import { castTexts } from '@shared/texts/cast';
+import { commonTexts } from '@shared/texts/common';
 import { type ReactElement, useState } from 'react';
 import { Box, TextField } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -15,7 +17,7 @@ export function CastPropertyAddForm({ existingKeys, onAdd }: CastPropertyAddForm
   const [key, setKey] = useState('');
   const [label, setLabel] = useState('');
   const keyProblem = propertyKeyProblem(key, existingKeys);
-  const problem = keyProblem ?? (label.trim() ? null : 'Введите подпись свойства.');
+  const problem = keyProblem ?? (label.trim() ? null : castTexts.enterPropertyLabel);
   // Ошибку кода показываем после начала ввода, чтобы пустая форма не выглядела ошибочной.
   const keyError = Boolean(key) && Boolean(keyProblem);
   return (
@@ -39,31 +41,29 @@ export function CastPropertyAddForm({ existingKeys, onAdd }: CastPropertyAddForm
     >
       <TextField
         size="small"
-        label="Код нового свойства"
+        label={castTexts.newPropertyCode}
         required
         value={key}
         onChange={(e) => setKey(e.target.value)}
-        placeholder="например, helmet"
+        placeholder={castTexts.propertyCodePlaceholder}
         error={keyError}
-        helperText={
-          keyError ? keyProblem : 'Латиницей: a–z, цифры и «_». Под ним значение хранится в состоянии сущностей и планов; после сохранения не меняется.'
-        }
+        helperText={keyError ? keyProblem : castTexts.newPropertyCodeHint}
         slotProps={{ inputLabel: { shrink: true }, htmlInput: { spellCheck: false, style: { fontFamily: 'monospace' } } }}
       />
       <TextField
         size="small"
-        label="Подпись"
+        label={commonTexts.label}
         required
         value={label}
         onChange={(e) => setLabel(e.target.value)}
-        placeholder="например, Шлем"
-        helperText="Название поля в редакторах состояния."
+        placeholder={castTexts.propertyLabelPlaceholder}
+        helperText={castTexts.newPropertyLabelHint}
         slotProps={{ inputLabel: { shrink: true } }}
       />
       {/* Действие блока — внизу слева, после полей. */}
       <Box sx={{ gridColumn: '1 / -1' }}>
         <ActionButton type="submit" variant="outlined" color="success" startIcon={<AddIcon />} disabled={Boolean(problem)} disabledReason={problem}>
-          Добавить свойство
+          {castTexts.addProperty}
         </ActionButton>
       </Box>
     </Box>

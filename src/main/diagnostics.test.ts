@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { AgentJob } from '@shared/agents';
 import type { JobInfo } from '@shared/types';
-import { beginSession, buildReport, CrashLog, endSession, hideHome, jobText, previousSessionInfo, type RuntimeInfo } from './diagnostics';
+import { beginSession, buildReport, CrashLog, describeFailure, endSession, hideHome, jobText, previousSessionInfo, type RuntimeInfo } from './diagnostics';
 
 let localDir: string;
 beforeEach(() => {
@@ -56,6 +56,37 @@ function agentJob(): AgentJob {
     log: 'Вывод агента'
   };
 }
+
+describe('Текст ошибки', () => {
+  it('сохраняет стек и полную цепочку причин с путями и спецсимволами', () => {
+    const cause = new Error('Файл «C:\\Клипы\\A&B <дубль>.json»');
+    cause.stack = undefined;
+    const failure = new Error('Не удалось прочитать', { cause });
+    failure.stack = 'Error: Не удалось прочитать\n    at /Клипы/A&B <дубль>/index.js:7:2';
+    expect(describeFailure(failure)).toBe(
+      'Error: Не удалось прочитать\n    at /Клипы/A&B <дубль>/index.js:7:2\nПричина: Error: Файл «C:\\Клипы\\A&B <дубль>.json»'
+    );
+    const outer = new Error('Сбой', { cause: failure });
+    outer.stack = '';
+    expect(describeFailure(outer)).toBe(
+      'Error: Сбой\nПричина: Error: Не удалось прочитать\n    at /Клипы/A&B <дубль>/index.js:7:2\nПричина: Error: Файл «C:\\Клипы\\A&B <дубль>.json»'
+    );
+  });
+
+  it('оставляет строковые причины, unknown и fallback сериализации без изменения', () => {
+    const failure = new Error('Сбой', { cause: null });
+    failure.stack = undefined;
+    expect(describeFailure(failure)).toBe('Error: Сбой\nПричина: null');
+    expect(describeFailure('Отказ «&<>»\nC:\\Клипы\\plan.json')).toBe('Отказ «&<>»\nC:\\Клипы\\plan.json');
+    expect(describeFailure({ path: '/Клипы/A&B', code: 2 })).toBe('{"path":"/Клипы/A&B","code":2}');
+    expect(describeFailure(undefined)).toBe('undefined');
+    expect(describeFailure(Symbol('сбой'))).toBe('Symbol(сбой)');
+    expect(describeFailure(2n)).toBe('2');
+    const circular = { toString: () => 'Объект «сбой»', self: {} };
+    circular.self = circular;
+    expect(describeFailure(circular)).toBe('Объект «сбой»');
+  });
+});
 
 describe('Журнал сбоев', () => {
   it('пишет время, вид и стек с отступом, скрывая домашний каталог и токены', () => {

@@ -1,5 +1,6 @@
 /** Карточка задания: состояние, шаги с кодами завершения и журнал инструментов. */
 
+import { componentsTexts } from '@shared/texts/components';
 import { type ReactElement, useState } from 'react';
 import { Box, Button, Chip, LinearProgress, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -9,9 +10,9 @@ import { JobStatusIcon } from './JobStatusIcon';
 import { DateTime } from './DateTime';
 
 function statusChip(job: JobInfo): { color: 'success' | 'error' | 'warning'; label: string } {
-  if (job.status === 'done') return { color: 'success', label: 'без ошибок' };
-  if (job.status === 'interrupted') return { color: 'warning', label: 'прервано' };
-  return { color: 'error', label: `код ${job.code}` };
+  if (job.status === 'done') return { color: 'success', label: componentsTexts.job.success };
+  if (job.status === 'interrupted') return { color: 'warning', label: componentsTexts.job.interrupted };
+  return { color: 'error', label: componentsTexts.job.exitCode({ code: job.code }) };
 }
 
 function stepColor(step: JobStepInfo): 'default' | 'success' | 'error' | 'info' {
@@ -36,7 +37,7 @@ export function JobCard({ job, lines = 14, expanded = false }: { job: JobInfo; l
           <DateTime value={job.startedAt} />
         </Typography>
         {job.status !== 'running' ? <Chip size="small" variant="outlined" {...statusChip(job)} sx={{ height: 20 }} /> : null}
-        {job.previousSession ? <Chip size="small" variant="outlined" label="Прошлый сеанс" sx={{ height: 20 }} /> : null}
+        {job.previousSession ? <Chip size="small" variant="outlined" label={componentsTexts.job.previousSession} sx={{ height: 20 }} /> : null}
         <Box sx={{ flex: 1 }} />
         {job.steps.length > 1
           ? job.steps.map((step, index) => (
@@ -45,7 +46,7 @@ export function JobCard({ job, lines = 14, expanded = false }: { job: JobInfo; l
                 size="small"
                 color={stepColor(step)}
                 variant={step.status === 'pending' ? 'outlined' : 'filled'}
-                label={step.code !== null && step.code !== 0 ? `${step.label}: код ${step.code}` : step.label}
+                label={step.code !== null && step.code !== 0 ? componentsTexts.job.stepExitCode({ label: step.label, code: step.code }) : step.label}
                 sx={{ height: 20 }}
               />
             ))
@@ -54,7 +55,7 @@ export function JobCard({ job, lines = 14, expanded = false }: { job: JobInfo; l
       {job.status === 'running' ? <LinearProgress sx={{ my: 0.5 }} /> : null}
       {job.status === 'interrupted' ? (
         <Typography variant="body2" color="warning.main" sx={{ mt: 0.5 }}>
-          {JOB_INTERRUPTED_MESSAGE}. Результат задания неизвестен: проверьте его на рабочей странице и при необходимости запустите заново.
+          {componentsTexts.job.interruptedExplanation({ message: JOB_INTERRUPTED_MESSAGE })}
         </Typography>
       ) : null}
       <Typography
@@ -73,11 +74,11 @@ export function JobCard({ job, lines = 14, expanded = false }: { job: JobInfo; l
           borderRadius: 1
         }}
       >
-        {shown || 'Журнал пуст.'}
+        {shown || componentsTexts.job.emptyLog}
       </Typography>
       {text.split('\n').length > lines ? (
         <Button size="small" startIcon={full ? <ExpandLessIcon /> : <ExpandMoreIcon />} onClick={() => setFull(!full)}>
-          {full ? 'Свернуть журнал' : 'Весь журнал'}
+          {full ? componentsTexts.job.collapseLog : componentsTexts.job.fullLog}
         </Button>
       ) : null}
     </Box>

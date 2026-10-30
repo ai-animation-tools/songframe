@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { useEffect, useRef, useState, type DragEvent, type PointerEvent, type ReactElement } from 'react';
 import { Alert, Box, Checkbox, FormControlLabel, Slider, Stack, Typography, useTheme } from '@mui/material';
 import { FPS } from '@shared/video';
@@ -77,7 +78,7 @@ export function MontageTimeline({
         if (!cancelled) setPeaks(value);
       })
       .catch((error: unknown) => {
-        if (!cancelled) setWaveError(`Волна недоступна: ${String(error)}`);
+        if (!cancelled) setWaveError(montageTexts.waveFailed(String(error)));
       });
     return () => {
       cancelled = true;
@@ -239,7 +240,7 @@ export function MontageTimeline({
         }}
       >
         <Box
-          title="Обрезать начало"
+          title={montageTexts.trimStart}
           onPointerDown={(event) => begin(event, 'start', clip.id)}
           sx={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 8, bgcolor: 'rgba(255,255,255,.25)', cursor: 'ew-resize', zIndex: 2 }}
         />
@@ -248,17 +249,17 @@ export function MontageTimeline({
             {clip.scene}
           </Typography>
           <Typography noWrap variant="caption">
-            {clipLength(clip)} к · {clip.kind === 'card' ? 'опора' : 'видео'}
+            {clip.kind === 'card' ? montageTexts.cardClipLength(clipLength(clip)) : montageTexts.videoClipLength(clipLength(clip))}
           </Typography>
         </Box>
         <Box
-          title="Обрезать конец"
+          title={montageTexts.trimEnd}
           onPointerDown={(event) => begin(event, 'end', clip.id)}
           sx={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 8, bgcolor: 'rgba(255,255,255,.25)', cursor: 'ew-resize', zIndex: 2 }}
         />
         {index < active.clips.length - 1 ? (
           <Box
-            title="Перенести общий стык, сохранив длину"
+            title={montageTexts.rollCut}
             onPointerDown={(event) => begin(event, 'roll', clip.id)}
             sx={{
               position: 'absolute',
@@ -284,10 +285,17 @@ export function MontageTimeline({
     // Ручки и курсор шкалы остаются в её слое и не рисуются поверх закреплённого плеера при прокрутке.
     <Stack spacing={1} sx={{ isolation: 'isolate' }}>
       <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
-        <Typography variant="subtitle2">Музыка и видеодорожка</Typography>
-        <Typography variant="caption">Масштаб</Typography>
-        <Slider aria-label="Масштаб таймлайна" value={pps} min={10} max={300} onChange={(_event, value) => setPps(value as number)} sx={{ maxWidth: 230 }} />
-        <Typography variant="caption">{pps} px/с</Typography>
+        <Typography variant="subtitle2">{montageTexts.timelineTitle}</Typography>
+        <Typography variant="caption">{montageTexts.scale}</Typography>
+        <Slider
+          aria-label={montageTexts.scaleAccessible}
+          value={pps}
+          min={10}
+          max={300}
+          onChange={(_event, value) => setPps(value as number)}
+          sx={{ maxWidth: 230 }}
+        />
+        <Typography variant="caption">{montageTexts.scaleValue(pps)}</Typography>
         <FormControlLabel
           control={
             <Checkbox
@@ -297,14 +305,13 @@ export function MontageTimeline({
               onChange={(_event, checked) => setSnapToLyrics(checked)}
             />
           }
-          label="Привязка стыка к строкам песни"
+          label={montageTexts.snapLyrics}
         />
       </Stack>
       <Typography variant="caption" color="text.secondary">
-        По волне: протяните участок, края зелёной области меняют выделение, клик ставит плейхед. Видео: перетащите для перестановки, края — обрезка, жёлтый стык
-        — перенос склейки, Alt + перетаскивание — сдвиг участка внутри исходника.
+        {montageTexts.timelineHint}
       </Typography>
-      {waveError ? <Alert severity="warning">{waveError} Выделение и прослушивание остаются доступны.</Alert> : null}
+      {waveError ? <Alert severity="warning">{montageTexts.waveWarning(waveError)}</Alert> : null}
       {lyricProblem ? (
         <Alert severity="info">
           <LinkedText text={lyricProblem} />
@@ -353,11 +360,11 @@ export function MontageTimeline({
             }}
           />
           {/* Строки размещены на общей оси песни; длинный текст доступен в подсказке. */}
-          <Box aria-label="Размеченные строки песни" sx={{ position: 'relative', height: 32, width: timelineWidth, bgcolor: 'background.paper' }}>
+          <Box aria-label={montageTexts.lyricLines} sx={{ position: 'relative', height: 32, width: timelineWidth, bgcolor: 'background.paper' }}>
             {lyricLines.map((line) => (
               <Box
                 key={line.id}
-                title={`${frameLabel(line.startFrame)} — ${line.text}`}
+                title={montageTexts.lyricTitle({ time: frameLabel(line.startFrame), text: line.text })}
                 sx={{
                   position: 'absolute',
                   left: xFor(line.startFrame),

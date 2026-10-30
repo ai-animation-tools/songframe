@@ -81,6 +81,124 @@ beforeEach(() => {
 afterEach(() => rmSync(work, { recursive: true, force: true }));
 
 describe('провайдеры медиа', () => {
+  it('сохраняет полные объяснения всех вариантов выбора и прежнее объяснение frozen запроса', () => {
+    expect(select(input, caps).modelSelection).toEqual({
+      preferredModel: 'image-exact',
+      selectedModel: 'image-exact',
+      reason: 'Предпочтительная модель image-exact поддерживает все параметры запроса.'
+    });
+    expect(select({ ...input, preferredModel: null }, caps).modelSelection).toEqual({
+      preferredModel: null,
+      selectedModel: 'image-exact',
+      reason: 'Предпочтительная модель не задана. Выбрана совместимая модель image-exact, указанная в запросе.'
+    });
+    expect(select({ ...input, preferredModel: null, model: '' }, caps).modelSelection).toEqual({
+      preferredModel: null,
+      selectedModel: 'image-exact',
+      reason: 'Предпочтительная модель не задана. Выбрана совместимая модель image-exact.'
+    });
+    expect(select({ ...input, preferredModel: 'missing «A»\n<B>' }, caps).modelSelection).toEqual({
+      preferredModel: 'missing «A»\n<B>',
+      selectedModel: 'image-exact',
+      reason:
+        'Предпочтительная модель missing «A»\n<B> не подходит: Модель missing «A»\n<B> не объявлена для команды image_to_image. Выбрана совместимая модель image-exact.'
+    });
+    const previous = { preferredModel: null, selectedModel: 'image-exact', reason: 'Согласованный выбор «A»\n<B>' };
+    expect(select({ ...input, preferredModel: null, modelSelection: previous }, caps).modelSelection).toEqual(previous);
+  });
+
+  it.each([
+    {
+      constraint: { windowSeconds: 8, rule: 'min_supported_strictly_greater_than_window' as const },
+      allowed: ['9', '10'],
+      expected:
+        'Нет совместимой модели Тестовый сервис для команды text_to_video. video: Длительность duration=10 должна быть ближайшей поддерживаемой по правилу min_supported_strictly_greater_than_window для окна 8 с: 9 с.'
+    },
+    {
+      constraint: { windowSeconds: 8, rule: 'min_supported_not_less_than_window' as const, minSeconds: 9 },
+      allowed: ['8', '9', '10'],
+      expected:
+        'Нет совместимой модели Тестовый сервис для команды text_to_video. video: Длительность duration=10 должна быть ближайшей поддерживаемой по правилу min_supported_not_less_than_window для окна 8 с и не короче 9 с: 9 с.'
+    },
+    {
+      constraint: { windowSeconds: 8, rule: 'exact_window' as const, minSeconds: 0 },
+      allowed: ['10'],
+      expected:
+        'Нет совместимой модели Тестовый сервис для команды text_to_video. video: Длительность duration=10 должна быть ближайшей поддерживаемой по правилу exact_window для окна 8 с; подходящие длительности не объявлены.'
+    },
+    {
+      constraint: { windowSeconds: 8, rule: 'exact_window' as const, minSeconds: 9 },
+      allowed: ['8', '10'],
+      expected:
+        'Нет совместимой модели Тестовый сервис для команды text_to_video. video: Длительность duration=10 должна быть ближайшей поддерживаемой по правилу exact_window для окна 8 с и не короче 9 с; подходящие длительности не объявлены.'
+    }
+  ])('сохраняет полную диагностику длительности и отказывает до записи: $expected', async ({ constraint, allowed, expected }) => {
+    const run = vi.fn(options.launcher().run);
+    options.launcher = () => ({ run });
+    const videoCaps: MediaCapabilities = {
+      ...caps,
+      kind: 'video',
+      models: [{ id: 'video', command: 'text_to_video', arguments: { duration: { allowed } }, slots: {}, limits: {} }]
+    };
+    await expect(
+      videoProvider().prepare(
+        { ...input, kind: 'video', command: 'text_to_video', model: 'video', parameters: { duration: 10 }, inputs: [], durationConstraint: constraint },
+        videoCaps
+      )
+    ).rejects.toThrowError(new Error(expected));
+    expect(run).not.toHaveBeenCalled();
+    expect(existsSync(input.workDir)).toBe(false);
+  });
+
+  it('сохраняет JSON-экранирование и undefined в ошибках настроек до записи попытки', async () => {
+    const run = vi.fn(options.launcher().run);
+    options.launcher = () => ({ run });
+    await expect(imageProvider().prepare({ ...input, parameters: { unknown: '«A»\n"B"\\C' } }, caps)).rejects.toThrowError(
+      new Error(
+        'Нет совместимой модели Тестовый сервис для команды image_to_image. image-exact: Параметр unknown="«A»\\n\\"B\\"\\\\C" не объявлен для модели или передаётся отдельно.'
+      )
+    );
+    await expect(imageProvider().prepare({ ...input, parameters: { image_count: 1 }, requiredParameters: { resolution: '1k' } }, caps)).rejects.toThrowError(
+      new Error(
+        'Нет совместимой модели Тестовый сервис для команды image_to_image. image-exact: Параметр resolution=undefined должен совпадать с настройкой проекта "1k".'
+      )
+    );
+    await expect(imageProvider().prepare({ ...input, projectOptions: { resolution: '«2k»' } }, caps)).rejects.toThrowError(
+      new Error(
+        'Нет совместимой модели Тестовый сервис для команды image_to_image. image-exact: Параметр resolution="1k" конфликтует с явной настройкой проекта "«2k»".'
+      )
+    );
+    expect(run).not.toHaveBeenCalled();
+    expect(existsSync(input.workDir)).toBe(false);
+  });
+
+  it('сохраняет пустой состав моделей и ранний отказ неподтверждённого каталога дословно', async () => {
+    const run = vi.fn(options.launcher().run);
+    options.launcher = () => ({ run });
+    await expect(imageProvider().prepare(input, { ...caps, available: false })).rejects.toThrowError(
+      new Error('Нет подтверждённых возможностей выбранного медиа Тестовый сервис.')
+    );
+    await expect(imageProvider().prepare({ ...input, model: '', preferredModel: null }, { ...caps, models: [] })).rejects.toThrowError(
+      new Error('Нет совместимой модели Тестовый сервис для команды image_to_image. Аккаунт не объявляет модели этой команды.')
+    );
+    expect(run).not.toHaveBeenCalled();
+    expect(existsSync(input.workDir)).toBe(false);
+  });
+
+  it('сохраняет сообщения запрета повторной отправки и изменения входа, не вызывая исполнителя', async () => {
+    const provider = imageProvider();
+    const prepared = await provider.prepare(input, caps);
+    const execute = vi.fn();
+    const attemptPath = join(prepared.requestDir, 'attempt.json');
+    const attempt = JSON.parse(readFileSync(attemptPath, 'utf8'));
+    writeFileSync(attemptPath, JSON.stringify({ ...attempt, generation_id: 'paid-once' }));
+    await expect(provider.submit(prepared, execute)).rejects.toThrowError(new Error('Эта попытка уже отправлялась; продолжите её через resume.'));
+    writeFileSync(attemptPath, JSON.stringify(attempt));
+    writeFileSync(join(prepared.requestDir, 'prompt.txt'), 'Изменённый промпт');
+    await expect(provider.submit(prepared, execute)).rejects.toThrowError(new Error('Промпт или вход изменён: требуется новая подготовка.'));
+    expect(execute).not.toHaveBeenCalled();
+    expect(readFileSync(join(project, 'source/reference.png'))).toEqual(png);
+  });
   it('не разрешает водяной знак и явно выключает его, если модель объявляет параметр', () => {
     for (const kind of ['image', 'video'] as const) {
       const command = kind === 'image' ? 'text_to_image' : 'text_to_video';

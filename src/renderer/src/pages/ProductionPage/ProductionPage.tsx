@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Производство: планы, пакеты, решения и подтверждения платных действий. */
 import { useRef, type ReactElement } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
@@ -77,11 +78,9 @@ export function ProductionPage(): ReactElement {
         </Alert>
       ) : null}
       {!view.tools.python ? (
-        <Alert severity="info">Python не найден: просмотр работает, кнопки решений и отправки недоступны.</Alert>
+        <Alert severity="info">{productionTexts.productionPage.pythonMissing}</Alert>
       ) : !Object.values(view.tools.providers).every(Boolean) ? (
-        <Alert severity="info">
-          Программа платного провайдера генерации не найдена: отправка и получение результатов недоступны, подготовка и согласования работают.
-        </Alert>
+        <Alert severity="info">{productionTexts.productionPage.paidProviderMissing}</Alert>
       ) : null}
 
       {/* Пока планов нет, предупреждение выше объясняет следующий шаг без пустых панелей выбора. */}
@@ -147,19 +146,18 @@ export function ProductionPage(): ReactElement {
 
               <TextField
                 select
-                label="Пакет для просмотра и подготовки"
+                label={productionTexts.productionPage.packageLabel}
                 value={packageSelection}
                 onChange={(event) => selectPackage(event.target.value)}
-                helperText="Выбор закреплён: пакеты, созданные агентом, не переключают просмотр. Новая попытка после «Подготовить повтор» открывается сама."
+                helperText={productionTexts.productionPage.packageSelectionHint}
               >
                 <MenuItem value="" disabled>
-                  Выберите пакет
+                  {productionTexts.productionPage.choosePackage}
                 </MenuItem>
-                <MenuItem value="__new__">Новая подготовка</MenuItem>
+                <MenuItem value="__new__">{productionTexts.productionPage.newPreparation}</MenuItem>
                 {shot.packages.map((pkg) => (
                   <MenuItem key={pkg.dir} value={pkg.dir}>
-                    {isQueuedPackage(pkg) ? 'В очереди · ' : ''}
-                    {pkg.relative} · {pkg.stageLabel}
+                    {productionTexts.productionPage.queuedPrefix({ queued: isQueuedPackage(pkg), relative: pkg.relative, stage: pkg.stageLabel })}
                   </MenuItem>
                 ))}
               </TextField>
@@ -182,7 +180,7 @@ export function ProductionPage(): ReactElement {
                   />
                 </Box>
               ) : (
-                <Alert severity="info">Выберите пакет, чтобы увидеть материалы, согласования и действия агента.</Alert>
+                <Alert severity="info">{productionTexts.productionPage.choosePackageHint}</Alert>
               )}
 
               {/* Речевому плану нужен точный срез песни до подготовки запроса и для приёмки. */}
@@ -219,18 +217,34 @@ export function ProductionPage(): ReactElement {
                   onSubmit={() => setConfirmSend(selectedPackage)}
                   onSelectImage={(index) => selectImage(selectedPackage, index)}
                   onAccept={() => openAccept(selectedPackage, !!shot.asset, shot.lipsync)}
-                  onContactSheet={() => act('Сводка запущена', () => window.api.production.contactSheet(project, selectedPackage.dir), selectedPackage.dir)}
+                  onContactSheet={() =>
+                    act(
+                      productionTexts.productionPage.summaryStarted,
+                      () => window.api.production.contactSheet(project, selectedPackage.dir),
+                      selectedPackage.dir
+                    )
+                  }
                   onReopenQuestion={() =>
-                    act('Вопрос о результате задан снова', () => window.api.production.reopenQuestion(project, selectedPackage.dir), selectedPackage.dir)
+                    act(
+                      productionTexts.productionPage.resultQuestionReopened,
+                      () => window.api.production.reopenQuestion(project, selectedPackage.dir),
+                      selectedPackage.dir
+                    )
                   }
                   onDiscard={() => discardPackage(selectedPackage)}
-                  onResume={() => act('Получение результата запущено', () => window.api.production.resume(project, selectedPackage.dir), selectedPackage.dir)}
+                  onResume={() =>
+                    act(productionTexts.productionPage.resumeStarted, () => window.api.production.resume(project, selectedPackage.dir), selectedPackage.dir)
+                  }
                   onAttachResult={(files) =>
-                    act('Загрузка результата запущена', () => window.api.production.attachResult(project, selectedPackage.dir, files), selectedPackage.dir)
+                    act(
+                      productionTexts.productionPage.importStarted,
+                      () => window.api.production.attachResult(project, selectedPackage.dir, files),
+                      selectedPackage.dir
+                    )
                   }
                   onNotCreated={() =>
                     act(
-                      'Попытка снова ждёт подтверждения отправки',
+                      productionTexts.productionPage.submissionReset,
                       () => window.api.production.markNotCreated(project, selectedPackage.dir),
                       selectedPackage.dir
                     )
@@ -241,7 +255,7 @@ export function ProductionPage(): ReactElement {
             </Stack>
           ) : (
             <Paper variant="outlined" sx={{ p: 3 }}>
-              <Typography color="text.secondary">Выберите план.</Typography>
+              <Typography color="text.secondary">{productionTexts.productionPage.chooseShot}</Typography>
             </Paper>
           )}
         </Box>
@@ -263,7 +277,7 @@ export function ProductionPage(): ReactElement {
         onConfirm={() => {
           const id = confirmRegenerate!;
           setConfirmRegenerate(null);
-          void act('Подготовка повтора запущена', () => window.api.production.regenerate(project, id), '', id);
+          void act(productionTexts.productionPage.retryStarted, () => window.api.production.regenerate(project, id), '', id);
         }}
       />
 
@@ -275,7 +289,7 @@ export function ProductionPage(): ReactElement {
         onConfirm={() => {
           const target = acceptDialog!;
           setAcceptDialog(null);
-          void act('Приёмка запущена', () => acceptShownResult(window.api, project, target, acceptOptions), target.dir);
+          void act(productionTexts.productionPage.acceptanceStarted, () => acceptShownResult(window.api, project, target, acceptOptions), target.dir);
         }}
       />
     </Stack>

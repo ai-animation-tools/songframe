@@ -6,6 +6,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CastEntity, CastFile, CastProperty, CastView, SourceManifest } from '@shared/types';
+import { castTexts } from '@shared/texts/cast';
 import { readManifest } from './sources';
 
 const SLUG = /^[a-z][a-z0-9_]*$/;
@@ -17,6 +18,7 @@ interface Defaults {
   world: CastEntity;
 }
 
+/* eslint-disable no-restricted-syntax -- Резервные свойства и сущность world сохраняются в cast.json как данные проекта; их значения не являются UI-подписями. */
 const FALLBACK: Defaults = {
   default: {},
   generic: [
@@ -41,6 +43,7 @@ const FALLBACK: Defaults = {
     initial_state: {}
   }
 };
+/* eslint-enable no-restricted-syntax */
 
 let cachedDefaults: Defaults | null = null;
 
@@ -61,26 +64,26 @@ export function loadDefaults(toolsRoot: string | null): Defaults {
 export function validateCast(cast: CastFile): string[] {
   const problems: string[] = [];
   if (cast.schema_version !== 1 || !Array.isArray(cast.entities) || typeof cast.properties !== 'object' || !cast.properties) {
-    return ['cast.json: нужны schema_version 1, entities и properties.'];
+    return [castTexts.main.structureRequired];
   }
   const seen = new Set<string>();
   let worlds = 0;
   for (const entity of cast.entities) {
-    const label = entity.name || entity.id || '(без имени)';
-    if (!SLUG.test(entity.id)) problems.push(`Код сущности «${label}»: латиница в нижнем регистре, цифры и подчёркивание, начиная с буквы.`);
-    if (seen.has(entity.id)) problems.push(`Код сущности повторяется: ${entity.id}.`);
+    const label = entity.name || entity.id || castTexts.main.unnamedEntity;
+    if (!SLUG.test(entity.id)) problems.push(castTexts.main.entityCodeInvalid({ label }));
+    if (seen.has(entity.id)) problems.push(castTexts.main.entityCodeDuplicate({ id: entity.id }));
     seen.add(entity.id);
-    if (!SLUG.test(entity.kind)) problems.push(`${label}: тип должен быть кодом латиницей.`);
-    if (!entity.name.trim()) problems.push(`Сущность ${entity.id}: нет названия.`);
+    if (!SLUG.test(entity.kind)) problems.push(castTexts.main.entityKindInvalid({ label }));
+    if (!entity.name.trim()) problems.push(castTexts.main.entityNameMissing({ id: entity.id }));
     if (entity.kind === 'world') worlds += 1;
     for (const image of entity.images)
-      if (!/^[a-z][a-z0-9_-]*\/[^/]+\.(png|jpe?g|webp)$/i.test(image)) problems.push(`${label}: путь изображения должен быть вида heroes/<файл>.png: ${image}`);
+      if (!/^[a-z][a-z0-9_-]*\/[^/]+\.(png|jpe?g|webp)$/i.test(image)) problems.push(castTexts.main.imagePathInvalid({ label, image }));
     for (const [key, value] of Object.entries(entity.initial_state)) {
-      if (!SLUG.test(key)) problems.push(`${label}: свойство ${key} должно быть кодом латиницей.`);
-      if (typeof value !== 'string' || !value.trim()) problems.push(`${label}: свойство ${key} пустое.`);
+      if (!SLUG.test(key)) problems.push(castTexts.main.propertyCodeInvalid({ label, key }));
+      if (typeof value !== 'string' || !value.trim()) problems.push(castTexts.main.propertyEmpty({ label, key }));
     }
   }
-  if (worlds > 1) problems.push('Сущность типа world должна быть одна.');
+  if (worlds > 1) problems.push(castTexts.main.worldMustBeUnique);
   return problems;
 }
 
@@ -140,7 +143,7 @@ export function viewCast(project: string, toolsRoot: string | null): CastView {
   const manifest = readManifest(project);
   let cast = readCast(project);
   if (cast === false) {
-    problems.push('plan/cast.json повреждён.');
+    problems.push(castTexts.main.fileDamaged);
     cast = null;
   }
   if (cast) {
@@ -149,7 +152,7 @@ export function viewCast(project: string, toolsRoot: string | null): CastView {
     cast = current;
     const known = new Set(manifest?.references.map((r) => r.id) ?? []);
     const fresh = [...known].filter((id) => !current.entities.some((e) => e.id === id));
-    if (fresh.length) problems.push(`В исходниках есть референсы без сущности в кастинге: ${fresh.join(', ')}. Нажмите «Дополнить из исходников».`);
+    if (fresh.length) problems.push(castTexts.main.referencesMissing({ ids: fresh }));
   }
   const imagePaths: Record<string, string> = {};
   for (const entity of cast?.entities ?? []) for (const image of entity.images) imagePaths[image] = join(project, 'source', image);
@@ -159,7 +162,7 @@ export function viewCast(project: string, toolsRoot: string | null): CastView {
 
 export function initCast(project: string, toolsRoot: string | null): CastFile {
   const manifest = readManifest(project);
-  if (!manifest) throw new Error('Нет source/manifest.json: сначала загрузите исходники.');
+  if (!manifest) throw new Error(castTexts.main.manifestMissing);
   const existing = readCast(project);
   const cast = castFromSources(manifest, existing || null, loadDefaults(toolsRoot));
   return writeCast(project, cast, toolsRoot);
@@ -170,7 +173,7 @@ export function normalizeCast(value: unknown, toolsRoot: string | null): CastFil
   const record = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
   const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every((s) => typeof s === 'string');
   if (!record(value) || value.schema_version !== 1 || !Array.isArray(value.entities) || !record(value.properties))
-    throw new Error('cast.json: нужны schema_version 1, entities и properties.');
+    throw new Error(castTexts.main.structureRequired);
   for (const entity of value.entities) {
     if (
       !record(entity) ||
@@ -179,7 +182,7 @@ export function normalizeCast(value: unknown, toolsRoot: string | null): CastFil
       !record(entity.initial_state) ||
       !Object.values(entity.initial_state).every((v) => typeof v === 'string')
     )
-      throw new Error('cast.json: неверная структура сущности.');
+      throw new Error(castTexts.main.entityStructureInvalid);
   }
   for (const [kind, properties] of Object.entries(value.properties)) {
     if (
@@ -197,11 +200,11 @@ export function normalizeCast(value: unknown, toolsRoot: string | null): CastFil
           (p.checklist === undefined || typeof p.checklist === 'string')
       )
     )
-      throw new Error('cast.json: неверный словарь свойств.');
+      throw new Error(castTexts.main.propertiesInvalid);
     // Код — адрес значения в состоянии: повтор внутри типа сделал бы одно из полей недостижимым.
     const keys = properties.map((p) => (p as { key: string }).key);
     const duplicate = keys.find((key, index) => keys.indexOf(key) !== index);
-    if (duplicate) throw new Error(`cast.json: свойство ${duplicate} повторяется в словаре типа ${kind}.`);
+    if (duplicate) throw new Error(castTexts.main.propertyDuplicate({ key: duplicate, kind }));
   }
   const cast = value as unknown as CastFile;
   const normalized = ensureProperties(
@@ -233,7 +236,8 @@ export function normalizeCast(value: unknown, toolsRoot: string | null): CastFil
 export function writeCast(project: string, cast: CastFile, toolsRoot: string | null): CastFile {
   const normalized = normalizeCast(cast, toolsRoot);
   for (const entity of normalized.entities)
-    for (const image of entity.images) if (!existsSync(join(project, 'source', image))) throw new Error(`${entity.name}: нет файла source/${image}.`);
+    for (const image of entity.images)
+      if (!existsSync(join(project, 'source', image))) throw new Error(castTexts.main.imageMissing({ name: entity.name, image }));
   mkdirSync(join(project, 'plan'), { recursive: true });
   writeFileSync(join(project, 'plan', 'cast.json'), JSON.stringify(normalized, null, 2) + '\n', 'utf-8');
   return normalized;

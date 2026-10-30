@@ -1,4 +1,5 @@
 /** Единая область выбора и перетаскивания файлов; сохранение остаётся за вызывающей страницей. */
+import { componentsTexts } from '@shared/texts/components';
 import { useRef, useState, type DragEvent, type ReactElement } from 'react';
 import { Box, Typography } from '@mui/material';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
@@ -36,23 +37,29 @@ export function FileDropZone({ label, kind, multiple = false, hint, message, onF
     setActive(false);
     const files = Array.from(event.dataTransfer.files);
     if (!files.length) {
-      notify(image ? 'Перетащите файл изображения с диска.' : audio ? 'Перетащите MP3 с диска.' : 'Перетащите текстовый файл с диска.', 'warning');
+      notify(
+        image ? componentsTexts.fileDrop.image.fromDisk : audio ? componentsTexts.fileDrop.audio.fromDisk : componentsTexts.fileDrop.text.fromDisk,
+        'warning'
+      );
       return;
     }
     if ((!multiple || audio) && files.length !== 1) {
-      notify(image ? 'Для обложки выберите одно изображение.' : audio ? 'Для трека выберите один MP3.' : 'Перетащите один текстовый файл.', 'warning');
+      notify(image ? componentsTexts.fileDrop.image.single : audio ? componentsTexts.fileDrop.audio.single : componentsTexts.fileDrop.text.single, 'warning');
       return;
     }
     const extensions = (image ? IMAGE_FILTER : audio ? AUDIO_FILTER : TEXT_FILTER)[0].extensions;
     if (files.some((file) => !extensions.includes(file.name.split('.').pop()?.toLowerCase() ?? ''))) {
-      notify(image ? 'Допустимы изображения PNG, JPG и WebP.' : audio ? 'Для трека допустим только файл MP3.' : 'Допустимы файлы TXT и MD.', 'warning');
+      notify(
+        image ? componentsTexts.fileDrop.image.allowed : audio ? componentsTexts.fileDrop.audio.allowed : componentsTexts.fileDrop.text.allowed,
+        'warning'
+      );
       return;
     }
     try {
       // File.path больше не поддерживается Electron: нативный путь извлекает из File только preload.
       const paths = files.map((file) => window.api.shell.pathForFile(file));
       if (paths.some((path) => !path)) {
-        notify('Перетащите сохранённый файл с диска или выберите его через диалог.', 'warning');
+        notify(componentsTexts.fileDrop.noNativePath, 'warning');
         return;
       }
       await onFiles([...new Set(paths)]);
@@ -120,23 +127,23 @@ export function FileDropZone({ label, kind, multiple = false, hint, message, onF
             <>
               {onPick
                 ? multiple
-                  ? 'Перетащите изображения сюда или нажмите, чтобы выбрать файлы.'
-                  : 'Перетащите изображение сюда или нажмите, чтобы выбрать файл.'
+                  ? componentsTexts.fileDrop.image.pickMultiple
+                  : componentsTexts.fileDrop.image.pickSingle
                 : multiple
-                  ? 'Перетащите изображения сюда.'
-                  : 'Перетащите изображение сюда.'}{' '}
-              PNG, JPG, WebP.
+                  ? componentsTexts.fileDrop.image.dropMultiple
+                  : componentsTexts.fileDrop.image.dropSingle}{' '}
+              {componentsTexts.fileDrop.image.formats}
             </>
           ) : audio ? (
             onPick ? (
-              'Перетащите MP3 сюда или нажмите, чтобы выбрать файл.'
+              componentsTexts.fileDrop.audio.pick
             ) : (
-              'Перетащите MP3 сюда.'
+              componentsTexts.fileDrop.audio.drop
             )
           ) : onPick ? (
-            'Перетащите сюда TXT или MD либо нажмите, чтобы выбрать файл.'
+            componentsTexts.fileDrop.text.pick
           ) : (
-            'Перетащите сюда TXT или MD.'
+            componentsTexts.fileDrop.text.drop
           ))}
       </Typography>
     </Box>

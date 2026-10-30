@@ -1,3 +1,4 @@
+import { timingTexts } from '@shared/texts/timing';
 import type { ReactElement } from 'react';
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import type { TimingLine } from '@shared/types';
@@ -23,15 +24,15 @@ export function TimingLinesTable({ lines, selected, duration, textOf, onSelect, 
       <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
-            <TableCell width={40}>№</TableCell>
-            <TableCell>Строка</TableCell>
-            <TableCell width={110}>Начало</TableCell>
-            <TableCell width={110}>Конец</TableCell>
-            <TableCell width={70}>Длит.</TableCell>
+            <TableCell width={40}>{timingTexts.numberColumn}</TableCell>
+            <TableCell>{timingTexts.lineColumn}</TableCell>
+            <TableCell width={110}>{timingTexts.startColumn}</TableCell>
+            <TableCell width={110}>{timingTexts.endColumn}</TableCell>
+            <TableCell width={70}>{timingTexts.durationColumn}</TableCell>
             <TableCell width={60} align="center">
-              Слух
+              {timingTexts.verifiedColumn}
             </TableCell>
-            <TableCell>Примечание</TableCell>
+            <TableCell>{timingTexts.noteColumn}</TableCell>
             <TableCell width={90} />
           </TableRow>
         </TableHead>
@@ -53,7 +54,7 @@ export function TimingLinesTable({ lines, selected, duration, textOf, onSelect, 
             <TableRow>
               <TableCell colSpan={8}>
                 <Typography color="text.secondary" sx={{ py: 2 }}>
-                  Разметки ещё нет. Нажмите «Разметить» или добавляйте строки из списка ниже на позиции плейхеда.
+                  {timingTexts.empty}
                 </Typography>
               </TableCell>
             </TableRow>

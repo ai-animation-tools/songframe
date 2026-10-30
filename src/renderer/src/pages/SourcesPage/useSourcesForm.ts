@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 /** Загрузка, проверка и сохранение общей формы исходников. */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_SOURCE_KINDS, type ReferenceKind, type ReferenceView, type SourceKind, type SourcesInput, type SourcesView } from '@shared/types';
@@ -141,15 +142,14 @@ export function useSourcesForm() {
     setTrackNew(path === savedPath ? null : path);
   };
   const pickTrack = async (): Promise<void> => {
-    selectTrack(await window.api.dialog.pickFiles({ title: 'Трек в MP3', filters: AUDIO_FILTER }));
+    selectTrack(await window.api.dialog.pickFiles({ title: sourcesTexts.pickTrackTitle, filters: AUDIO_FILTER }));
   };
   // Оба способа импорта используют одно чтение и одинаковую проверку текста песни.
   const importText = async (setter: (text: string) => void, path: string): Promise<void> => {
     try {
       const text = await window.api.shell.readText(path);
       setter(text);
-      if (setter === setLyrics && analyzeLyrics(text).problems.length)
-        notify('Текст загружен в поле. Исправьте отмеченные ошибки формата перед сохранением.', 'warning');
+      if (setter === setLyrics && analyzeLyrics(text).problems.length) notify(sourcesTexts.lyricsImportedWarning, 'warning');
     } catch (error) {
       notify(describeError(error), 'error');
     }
@@ -168,7 +168,7 @@ export function useSourcesForm() {
     }
   };
   const pickCover = async (): Promise<void> => {
-    selectCover(await window.api.dialog.pickFiles({ title: 'Обложка клипа', filters: IMAGE_FILTER }));
+    selectCover(await window.api.dialog.pickFiles({ title: sourcesTexts.pickCoverTitle, filters: IMAGE_FILTER }));
   };
 
   const updateRef = (key: number, patch: Partial<ReferenceForm>): void =>
@@ -205,7 +205,7 @@ export function useSourcesForm() {
   const kindLabel = (id: ReferenceKind): string => kinds.find((k) => k.id === id)?.label ?? id;
   const removeKind = (id: string): void => {
     if (refs.some((r) => r.kind === id)) {
-      notify(`Тип «${kindLabel(id)}» используется референсами: сначала смените их тип.`, 'warning');
+      notify(sourcesTexts.kindInUse({ label: kindLabel(id) }), 'warning');
       return;
     }
     setKinds((current) => current.filter((k) => k.id !== id));
@@ -215,11 +215,11 @@ export function useSourcesForm() {
     const id = kindDialog.id.trim();
     const dir = kindDialog.dir.trim() || id;
     if (!/^[a-z][a-z0-9_]*$/.test(id) || !kindDialog.label.trim()) {
-      notify('Код типа: латиница в нижнем регистре, цифры, подчёркивание; подпись обязательна.', 'warning');
+      notify(sourcesTexts.kindValidation, 'warning');
       return;
     }
     if (kinds.some((k) => k.id === id || k.dir === dir)) {
-      notify('Такой код или папка уже есть.', 'warning');
+      notify(sourcesTexts.duplicateKind, 'warning');
       return;
     }
     setKinds((current) => [...current, { id, label: kindDialog.label.trim(), dir }]);
@@ -250,7 +250,7 @@ export function useSourcesForm() {
     );
   };
   const addFiles = async (key: number): Promise<void> => {
-    appendFiles(key, await window.api.dialog.pickFiles({ title: 'Изображения референса', filters: IMAGE_FILTER, multiple: true }));
+    appendFiles(key, await window.api.dialog.pickFiles({ title: sourcesTexts.pickReferenceImagesTitle, filters: IMAGE_FILTER, multiple: true }));
   };
   const updateFile = (refKey: number, fileKey: number, patch: Partial<FileForm>): void =>
     setRefs((current) =>
@@ -268,10 +268,7 @@ export function useSourcesForm() {
   const save = async (): Promise<void> => {
     // Непрочитанный промпт нельзя передавать как пустой: saveSources удаляет прежний файл и ссылку на него.
     if (hasPromptErrors) {
-      notify(
-        'Не удалось прочитать описания референсов. Восстановите файлы или замените текст промптов в соответствующих карточках перед сохранением.',
-        'warning'
-      );
+      notify(sourcesTexts.promptReadSaveBlocked, 'warning');
       return;
     }
     setBusy(true);
@@ -283,7 +280,7 @@ export function useSourcesForm() {
         throw error;
       });
       await refresh();
-      notify('Исходники сохранены', 'success');
+      notify(sourcesTexts.saved, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -332,20 +329,20 @@ export function useSourcesForm() {
         setCoverNew(result.path);
         setCoverRemove(false);
         setGeneratedCover(result);
-        notify('Обложка выбрана. Нажмите «Сохранить», чтобы записать её в проект.', 'info');
+        notify(sourcesTexts.coverSelected, 'info');
       }
     },
     lyricsProps: {
       lyrics,
       lyricsCheck,
       onChange: setLyrics,
-      onPick: () => pickText(setLyrics, 'Файл с текстом песни'),
+      onPick: () => pickText(setLyrics, sourcesTexts.pickLyricsTitle),
       onDrop: (paths: string[]) => importText(setLyrics, paths[0])
     },
     ideaProps: {
       idea,
       onChange: setIdea,
-      onPick: () => pickText(setIdea, 'Файл с описанием идеи'),
+      onPick: () => pickText(setIdea, sourcesTexts.pickIdeaTitle),
       onDrop: (paths: string[]) => importText(setIdea, paths[0])
     },
     referencesProps: {

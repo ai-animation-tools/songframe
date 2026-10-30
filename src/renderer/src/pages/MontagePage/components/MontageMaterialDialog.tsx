@@ -1,3 +1,5 @@
+import { commonTexts } from '@shared/texts/common';
+import { montageTexts } from '@shared/texts/montage';
 import { Close, FitScreen, AspectRatio } from '@mui/icons-material';
 import { useCallback, useId, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
@@ -32,7 +34,7 @@ export function MontageMaterialDialog({
   const url = projectMediaUrl(project, source.path);
   const failed = failedUrl === url;
   const isImage = source.kind === 'card';
-  const title = `${source.scene} — ${source.title}`;
+  const title = montageTexts.sceneTitle({ scene: source.scene, title: source.title });
 
   const navigate = (callback: (() => void) | undefined): void => {
     if (!callback) return;
@@ -95,31 +97,31 @@ export function MontageMaterialDialog({
         <Box component="span" sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 1 }}>
           <ActionButton
             startIcon={<ArrowBack />}
-            aria-label="Предыдущий материал"
+            aria-label={montageTexts.previousMaterial}
             disabled={!onPrevious}
-            disabledReason="Это первый материал каталога."
+            disabledReason={montageTexts.firstMaterial}
             onClick={() => navigate(onPrevious)}
           >
-            Назад
+            {commonTexts.back}
           </ActionButton>
           <Typography component="span" variant="body2" color="text.secondary">
-            Материал {position + 1} из {total}
+            {montageTexts.materialPosition({ position: position + 1, total })}
           </Typography>
           <ActionButton
             endIcon={<ArrowForward />}
-            aria-label="Следующий материал"
+            aria-label={montageTexts.nextMaterial}
             disabled={!onNext}
-            disabledReason="Это последний материал каталога."
+            disabledReason={montageTexts.lastMaterial}
             onClick={() => navigate(onNext)}
           >
-            Вперёд
+            {commonTexts.next}
           </ActionButton>
         </Box>
       </DialogTitle>
       <DialogContent key={`${source.id}:${url}`} sx={{ p: 0, mx: 2, minHeight: 0, flex: 1, overflow: 'auto', bgcolor: 'background.default' }}>
         {failed ? (
           <Alert severity="error" sx={{ m: 2 }}>
-            {isImage ? 'Не удалось открыть изображение материала.' : 'Не удалось воспроизвести видео материала.'} Проверьте, что файл доступен в папке проекта.
+            {isImage ? montageTexts.materialImageFailed : montageTexts.materialVideoFailed}
           </Alert>
         ) : null}
         {isImage ? (
@@ -138,7 +140,7 @@ export function MontageMaterialDialog({
             <Box
               component="img"
               src={url}
-              alt={`${title}: ${source.label}`}
+              alt={montageTexts.sourceLabel({ title, label: source.label })}
               onError={() => setFailedUrl(url)}
               sx={{
                 display: 'block',
@@ -159,7 +161,7 @@ export function MontageMaterialDialog({
             controls
             playsInline
             preload="metadata"
-            aria-label={`${title}: ${source.label}`}
+            aria-label={montageTexts.sourceLabel({ title, label: source.label })}
             onError={() => setFailedUrl(url)}
             sx={{ display: failed ? 'none' : 'block', width: '100%', height: '100%', objectFit: 'contain', bgcolor: '#000' }}
           />
@@ -174,7 +176,7 @@ export function MontageMaterialDialog({
               aria-pressed={originalSize}
               variant={originalSize ? 'contained' : 'outlined'}
             >
-              Оригинальный размер (1:1)
+              {montageTexts.originalSize}
             </Button>
             <Button
               startIcon={<FitScreen />}
@@ -182,12 +184,12 @@ export function MontageMaterialDialog({
               aria-pressed={!originalSize}
               variant={originalSize ? 'outlined' : 'contained'}
             >
-              Вписать в окно
+              {montageTexts.fitToWindow}
             </Button>
           </>
         ) : null}
         <Button startIcon={<Close />} onClick={onClose}>
-          Закрыть
+          {commonTexts.close}
         </Button>
       </DialogActions>
     </Dialog>

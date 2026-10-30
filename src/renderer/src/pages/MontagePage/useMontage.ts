@@ -1,13 +1,13 @@
+import { montageTexts } from '@shared/texts/montage';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import type { MontageApi, MontageDraft, MontageSource, MontageView } from '@shared/montage';
 import type { JobInfo } from '@shared/types';
 import { useApp } from '../../state';
 import { clipLength, historyReducer, initialDraft, montageLength, moveClip, sourceClip } from './model';
-import { countLabel } from '@shared/plural';
 
 const EMPTY: MontageDraft = {
   schema_version: 1,
-  name: 'Монтажная проба',
+  name: montageTexts.defaultName,
   audio: { path: '', start_frame: 0, end_frame_exclusive: 0 },
   clips: [],
   base_scenes_sha256: '',
@@ -126,7 +126,7 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       setSavedId(saved.id);
       setBaseline(captured);
       setView((current) => (current ? { ...current, saved: [saved, ...current.saved.filter((item) => item.id !== saved.id)] } : current));
-      notify('Монтажный черновик сохранён', 'success');
+      notify(montageTexts.draftSaved, 'success');
     });
   const open = (id: string): Promise<void> =>
     operate(async () => {
@@ -146,19 +146,19 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
   const reportJob = useCallback(
     async (next: JobInfo, action: 'export' | 'apply'): Promise<void> => {
       if (next.status === 'failed') {
-        const reason = next.error ?? 'Подробности в журнале заданий.';
-        notify(action === 'export' ? `Экспорт MP4 не выполнен. ${reason}` : `Применение к сценам не выполнено. ${reason}`, 'error');
+        const reason = next.error ?? montageTexts.jobDetails;
+        notify(action === 'export' ? montageTexts.exportFailed(reason) : montageTexts.applyFailed(reason), 'error');
         return;
       }
       if (next.status !== 'done') return;
       if (action === 'export') {
-        notify('Проба MP4 готова', 'success');
+        notify(montageTexts.exportReady, 'success');
         return;
       }
       const refreshed = await api().view(project);
       if (!alive.current) return;
       setView(refreshed);
-      notify('Монтаж применён. Переоткройте материалы перед следующими изменениями сцен.', 'success');
+      notify(montageTexts.applied, 'success');
     },
     [project, notify]
   );
@@ -185,7 +185,7 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
     operate(async () => {
       if (!video) return;
       const path = await api().saveVideo(project, video);
-      if (alive.current && path) notify(`Проба сохранена: ${path}`, 'success');
+      if (alive.current && path) notify(montageTexts.videoSaved(path), 'success');
     });
 
   const jobId = job?.id;
@@ -199,7 +199,7 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
         const next = await window.api.jobs.get(jobId);
         if (cancelled || !alive.current) return;
         if (!next) {
-          notify('Задание монтажа больше не найдено в истории.', 'error');
+          notify(montageTexts.jobMissing, 'error');
           return;
         }
         if (next.status !== 'running' && jobAction) {
@@ -267,23 +267,23 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
     (draft.base_scenes_sha256 !== view.scenesSha256 || draft.clips.some((clip) => draft.base_manifest_sha256[clip.scene] !== view.manifestSha256[clip.scene]));
   const unknown = draft.clips.some((clip) => clip.kind === 'video' && clip.source_frames === null);
   const exportProblem = !draft.clips.length
-    ? 'Добавьте хотя бы один фрагмент.'
+    ? montageTexts.addClipRequired
     : !draft.audio.path
-      ? 'В проекте нет музыкальной дорожки.'
+      ? montageTexts.noTrack
       : unknown
-        ? 'Ожидаем метаданные длины видео. Если загрузка не завершится, проверьте доступность исходников.'
+        ? montageTexts.awaitVideoLength
         : length !== audioLength
-          ? `Музыка: ${countLabel(audioLength, 'кадр', 'кадра', 'кадров')}, видео: ${countLabel(length, 'кадр', 'кадра', 'кадров')}. Разница ${length - audioLength > 0 ? '+' : ''}${countLabel(length - audioLength, 'кадр', 'кадра', 'кадров')}. Выровняйте выделение музыки или обрежьте видео.`
+          ? montageTexts.lengthMismatch({ audioLength, length })
           : null;
   // Короткая причина для чипа панели; полный текст остаётся под дорожкой и в подсказке кнопки.
   const exportProblemLabel = !draft.clips.length
-    ? 'Нет фрагментов'
+    ? montageTexts.noClips
     : !draft.audio.path
-      ? 'Нет музыки'
+      ? montageTexts.noMusic
       : unknown
-        ? 'Ждём длину видео'
+        ? montageTexts.waitingLength
         : length !== audioLength
-          ? 'Длины не совпадают'
+          ? montageTexts.lengthsDiffer
           : null;
   return {
     project,

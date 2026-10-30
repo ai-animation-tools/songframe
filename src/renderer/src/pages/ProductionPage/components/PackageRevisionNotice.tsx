@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Сохранённый возврат объясняет следующий шаг, не выдавая ответ пакета за состояние процесса агента. */
 import type { ReactElement } from 'react';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -13,7 +14,7 @@ export function PackageRevisionNotice({ pkg, onOpenRevision }: { pkg: PackageVie
     return (
       <Alert severity="info" sx={{ mb: 2 }}>
         <Typography fontWeight={600} gutterBottom>
-          Опора возвращена на доработку
+          {productionTexts.packageRevisionNotice.frameTitle}
         </Typography>
         {pkg.decision.note ? (
           <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', mb: 1 }}>
@@ -21,12 +22,12 @@ export function PackageRevisionNotice({ pkg, onOpenRevision }: { pkg: PackageVie
           </Typography>
         ) : null}
         <Typography variant="body2">
-          <LinkedText text="Замечание сохранено в списке «Замечания к опорам» ниже и будет передано агенту при создании опоры. Создайте её заново кнопкой «Создать …» в блоке «Подготовка плана». Доработка с агентом нужна, только если надо изменить само описание или промпты опор." />
+          <LinkedText text={productionTexts.packageRevisionNotice.frameDescription} />
         </Typography>
         {onOpenRevision ? (
           <Box sx={{ mt: 1 }}>
             <Button size="small" variant="outlined" startIcon={<ArrowForwardIcon />} onClick={() => onOpenRevision(false)}>
-              Перейти к подготовке плана
+              {productionTexts.packageRevisionNotice.openPreparation}
             </Button>
           </Box>
         ) : null}
@@ -35,7 +36,7 @@ export function PackageRevisionNotice({ pkg, onOpenRevision }: { pkg: PackageVie
   return (
     <Alert severity="info" sx={{ mb: 2 }}>
       <Typography fontWeight={600} gutterBottom>
-        Пакет возвращён с замечанием
+        {productionTexts.packageRevisionNotice.title}
       </Typography>
       {pkg.decision.note ? (
         <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', mb: 1 }}>
@@ -43,12 +44,12 @@ export function PackageRevisionNotice({ pkg, onOpenRevision }: { pkg: PackageVie
         </Typography>
       ) : null}
       <Typography variant="body2">
-        <LinkedText text="Возврат с замечанием не запускает агента автоматически. Запуск и результат доработки — в блоке «Подготовка плана». Нажмите там «Запустить доработку с агентом», если ещё не запускали её." />
+        <LinkedText text={productionTexts.packageRevisionNotice.description} />
       </Typography>
       {onOpenRevision ? (
         <Box sx={{ mt: 1 }}>
           <Button size="small" variant="outlined" startIcon={<ArrowForwardIcon />} onClick={() => onOpenRevision()}>
-            Перейти к доработке
+            {productionTexts.packageRevisionNotice.openRevision}
           </Button>
         </Box>
       ) : null}

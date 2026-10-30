@@ -1,3 +1,5 @@
+import { projectTexts } from '@shared/texts/project';
+import { commonTexts } from '@shared/texts/common';
 /** Название проекта и действия над открытой папкой; путь и статус уже показаны в шапке приложения. */
 
 import type { ReactElement } from 'react';
@@ -27,19 +29,19 @@ export function ProjectHeader({ status, onRefresh, onOpenFolder, onClose, onRena
       <Typography variant="h5">{status.name}</Typography>
       <Box sx={{ flex: 1 }} />
       <Button startIcon={<RefreshIcon />} onClick={onRefresh}>
-        Обновить
+        {commonTexts.refresh}
       </Button>
       <Button startIcon={<EditOutlinedIcon />} onClick={onRename}>
-        Переименовать
+        {commonTexts.rename}
       </Button>
       <Button startIcon={<FolderOpenIcon />} onClick={onOpenFolder} loading={openingFolder}>
-        Открыть папку
+        {commonTexts.openFolder}
       </Button>
       <Button startIcon={<SwapHorizIcon />} onClick={() => navigate('/projects')}>
-        Сменить проект
+        {projectTexts.changeProject}
       </Button>
       <Button color="inherit" startIcon={<CloseIcon />} onClick={onClose}>
-        Закрыть
+        {commonTexts.close}
       </Button>
     </PageActionBar>
   );

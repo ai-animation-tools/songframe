@@ -52,3 +52,50 @@ describe('сообщение о цене', () => {
     expect(priceNotice({ credits: 24, balance: 1167, verdict: 'ok' }, learns)?.text).toBe('Стоимость: 24 кредита. Остаток: 1167 кредитов.');
   });
 });
+
+/** Целые сообщения проверяются независимо от словаря, включая сохранённое согласование чисел. */
+describe('дословные сообщения согласования цены', () => {
+  it.each([
+    [0, '0 кредитов'],
+    [1, '1 кредит'],
+    [2, '2 кредита'],
+    [5, '5 кредитов'],
+    [11, '11 кредитов'],
+    [21, '21 кредит'],
+    [-21, '-21 кредит'],
+    [2.5, '2.5 кредита']
+  ] as const)('сохраняет форму числа %s в полной подтверждённой цене', (credits, expected) => {
+    expect(priceNotice({ credits, balance: 21, verdict: 'ok' }, null)).toEqual({
+      severity: 'info',
+      text: `Стоимость: ${expected}. Остаток: 21 кредит.`
+    });
+  });
+
+  it('сохраняет полные причины запрета при нехватке средств и неподтверждённом остатке', () => {
+    expect(priceNotice({ credits: 5, balance: 2, verdict: 'insufficient_balance' }, null)).toEqual({
+      severity: 'error',
+      text: 'Стоимость: 5 кредитов. Остаток: 2 кредита. Кредитов недостаточно.'
+    });
+    expect(priceNotice({ credits: 5, balance: null, verdict: 'cost_or_balance_unknown' }, null)).toEqual({
+      severity: 'warning',
+      text: 'Стоимость: 5 кредитов. Остаток: неизвестно. Остаток кредитов не подтверждён, отправка недоступна.'
+    });
+    expect(priceNotice({ credits: null, balance: null, verdict: 'cost_or_balance_unknown' }, null)).toEqual({
+      severity: 'warning',
+      text: 'Стоимость: неизвестно. Остаток: неизвестно. Остаток кредитов не подтверждён, отправка недоступна.'
+    });
+  });
+
+  it('сохраняет обе полные фразы согласия и передаёт название провайдера без интерпретации', () => {
+    const quote: GenerationPrice = { credits: null, balance: 0, verdict: 'cost_or_balance_unknown' };
+    expect(priceNotice(quote, null)).toEqual({
+      severity: 'warning',
+      text: 'Стоимость: неизвестно. Остаток: 0 кредитов. Чтобы разрешить один запрос с неизвестным списанием, нажмите «Я согласен».'
+    });
+    expect(priceNotice(quote, { title: '«Сервис» <test> & C:\\media\\{name}', learnsPriceFromCharges: true })).toEqual({
+      severity: 'info',
+      text: 'Стоимость: станет известна после первого такого запроса. Остаток: 0 кредитов. «Сервис» <test> & C:\\media\\{name} не сообщает цену заранее; приложение запомнит фактическое списание и покажет цену для таких же запросов. Чтобы разрешить этот запрос, нажмите «Я согласен».'
+    });
+    expect(priceNotice(null, null)).toBeNull();
+  });
+});

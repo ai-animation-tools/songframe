@@ -1,4 +1,5 @@
 /** Переход к тому же плану на другой странице: «В сценарии» открывает редактор его постановки, «В производстве» — его пакеты. */
+import { componentsTexts } from '@shared/texts/components';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BuildIcon from '@mui/icons-material/Build';
@@ -8,8 +9,8 @@ import { shotPageRoute, type ShotPage } from './shotRoutes';
 
 // Значки те же, что у страниц в боковой навигации.
 const PAGES: Record<ShotPage, { label: string; title: string; icon: ReactElement }> = {
-  production: { label: 'В производстве', title: 'на странице «Производство»', icon: <BuildIcon /> },
-  scenario: { label: 'В сценарии', title: 'в реестре сцен на странице «Сценарий»', icon: <TheatersIcon /> }
+  production: { ...componentsTexts.shot.pages.production, icon: <BuildIcon /> },
+  scenario: { ...componentsTexts.shot.pages.scenario, icon: <TheatersIcon /> }
 };
 
 export function ShotPageButton({
@@ -32,7 +33,7 @@ export function ShotPageButton({
       startIcon={icon}
       size={size}
       variant="outlined"
-      title={`Открыть план ${shot} ${title}`}
+      title={componentsTexts.shot.openPlan({ shot, title })}
       disabled={!!disabledReason}
       disabledReason={disabledReason}
       onClick={() => navigate(shotPageRoute(page, shot))}

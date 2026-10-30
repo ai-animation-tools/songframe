@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Вопрос пакета и варианты ответа; ответ сразу выполняет приложение. */
 import { useState, type ReactElement } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -17,19 +18,13 @@ import { ActionButton } from '../../../components/ActionButton';
 import { KeyframeNoteScopeField } from './KeyframeNoteScopeField';
 
 /** Пример относится к текущему согласованию и помогает описать конкретное изменение. */
-const REVISION_EXAMPLES: Record<string, string> = {
-  description_review: 'Например: герой должен выйти из дома, а не остаться у окна.',
-  keyframes_review: 'Например: в первом опорном кадре сохранить одежду героя из предыдущего плана.',
-  prompt_review: 'Например: камера медленно приближается к герою, без смены ракурса.',
-  request_choice: 'Например: заменить последнюю опору и уточнить движение камеры перед отправкой.',
-  image_request_choice: 'Например: уточнить позу героя и освещение в запросе изображения.'
-};
+const REVISION_EXAMPLES: Record<string, string> = productionTexts.revisionExamples;
 
 /** Вопрос об одной опоре: ответы касаются только её, замечание уходит в следующее создание опоры. */
 function frameHints(frame: string): Record<string, string> {
   return {
-    approve: `Утверждает опору ${frame}: она станет референсом следующих опор, приложение спросит о следующем готовом кандидате.`,
-    revise: `Снимает кандидата ${frame} и сохраняет замечание; опору создайте заново кнопкой «Создать ${frame}» в блоке «Подготовка плана».`
+    approve: productionTexts.packageDecision.approveHint({ frame }),
+    revise: productionTexts.packageDecision.reviseHint({ frame })
   };
 }
 
@@ -64,14 +59,18 @@ export function PackageDecision({
   const scope = scopeDraft.key === questionKey ? scopeDraft.scope : 'following';
   const hints = frame ? { ...VERDICT_HINTS, ...frameHints(frame) } : VERDICT_HINTS;
   const label = (verdict: string): string =>
-    frame && verdict === 'approve' ? `Утвердить ${frame}` : frame && verdict === 'revise' ? `Доработать ${frame}` : (VERDICT_LABELS[verdict]?.label ?? verdict);
+    frame && verdict === 'approve'
+      ? productionTexts.packageDecision.approve({ frame })
+      : frame && verdict === 'revise'
+        ? productionTexts.packageDecision.revise({ frame })
+        : (VERDICT_LABELS[verdict]?.label ?? verdict);
   return (
     <>
       {pending ? (
         <Alert severity="info" sx={{ mb: 2 }} icon={false}>
           {frame ? (
             <Typography variant="overline" color="text.secondary" display="block" sx={{ lineHeight: 1.6 }}>
-              Опора {frame}
+              {productionTexts.packageDecision.frame({ frame })}
             </Typography>
           ) : null}
           <Typography fontWeight={600} gutterBottom>
@@ -79,16 +78,11 @@ export function PackageDecision({
           </Typography>
           {frame ? (
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-              Кандидат {frame} показан в блоке «Опоры» выше (щелчок открывает его крупно). Опоры утверждаются по одной: «Утвердить {frame}» утверждает только
-              её, «Доработать {frame}» снимает кандидата, а обязательное замечание получит агент при повторном создании опоры кнопкой «Создать {frame}» в блоке
-              «Подготовка плана».
+              {productionTexts.packageDecision.candidateHint({ frame })}
             </Typography>
           ) : (
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-              Этот пакет ведёт приложение: нажатие кнопки сразу записывает ответ и выполняет действие. «Отправить» открывает подтверждение стоимости перед
-              списанием, «Сохранить в очередь» переносит пакет в очередь, «Принять» открывает приёмку. Поле ниже нужно только для «Вернуть с замечанием»:
-              замечание сохраняется в пакете и передаётся агенту, когда вы нажмёте «Запустить доработку с агентом» в блоке «Подготовка плана». Текст запроса
-              здесь не редактируется.
+              {productionTexts.packageDecision.workflowHint}
             </Typography>
           )}
           {options.includes('revise') ? (
@@ -98,17 +92,9 @@ export function PackageDecision({
               multiline
               minRows={3}
               maxRows={8}
-              label={frame ? `Что исправить в опоре ${frame}` : 'Что нужно исправить'}
-              placeholder={
-                frame
-                  ? 'Например: сохранить одежду героя из предыдущего плана, камера ниже, свет тёплый вечерний.'
-                  : (REVISION_EXAMPLES[pending.stage] ?? 'Например: укажите, что изменить в показанных материалах и каким должен быть результат.')
-              }
-              helperText={
-                frame
-                  ? `Обязательно для «Доработать ${frame}». Замечание сохранится в списке замечаний к опорам и будет передано агенту при создании ${frame}.`
-                  : 'Опишите нужные изменения. Обязательно только для «Вернуть с замечанием». Замечание сохранится вместе с ответом. Агент автоматически не запускается. После возврата нажмите «Запустить доработку с агентом» в блоке «Подготовка плана».'
-              }
+              label={frame ? productionTexts.packageDecision.frameNote({ frame }) : productionTexts.packageDecision.note}
+              placeholder={frame ? productionTexts.packageDecision.frameExample : (REVISION_EXAMPLES[pending.stage] ?? productionTexts.packageDecision.example)}
+              helperText={frame ? productionTexts.packageDecision.frameNoteHint({ frame }) : productionTexts.packageDecision.noteHint}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               sx={{ mb: 1 }}
@@ -137,11 +123,11 @@ export function PackageDecision({
                 (busy
                   ? busyReason
                   : sendingBlocked && paid
-                    ? 'Исход отправки этой попытки ещё не известен: дождитесь его или разберите в блоке получения выше.'
+                    ? productionTexts.packageDecision.submissionUnknown
                     : verdict === 'revise' && !note.trim()
                       ? frame
-                        ? `Опишите в поле выше, что исправить в опоре ${frame}.`
-                        : 'Опишите в поле выше, что нужно исправить.'
+                        ? productionTexts.packageDecision.frameNoteRequired({ frame })
+                        : productionTexts.packageDecision.noteRequired
                       : null);
               return (
                 <ActionButton

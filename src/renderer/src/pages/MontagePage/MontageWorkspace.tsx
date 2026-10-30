@@ -1,3 +1,6 @@
+import { navigationTexts } from '@shared/texts/navigation';
+import { commonTexts } from '@shared/texts/common';
+import { montageTexts } from '@shared/texts/montage';
 import { Refresh, OpenInNew, CallReceived } from '@mui/icons-material';
 import { usePageLoading } from '../../components/PageLoader';
 import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
@@ -30,7 +33,6 @@ import { MontageActionBar } from './components/MontageActionBar';
 import { MontageExportDialog } from './components/MontageExportDialog';
 import { useThemeMode } from '../../theme';
 import { useDetachedMontage } from './useDetachedMontage';
-import { countLabel } from '@shared/plural';
 import { useHeaderHeight } from '../../components/headerHeight';
 import { LinkedText } from '../../components/LinkedText';
 
@@ -81,7 +83,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
   const { view, draft, commit, job } = page;
   const running = job?.status === 'running';
   const locked = page.busy || running;
-  const lockedReason = running ? 'Дождитесь завершения задания.' : 'Дождитесь завершения текущей операции.';
+  const lockedReason = running ? montageTexts.jobPending : commonTexts.operationPending;
   const selectedClip = draft.clips.find((clip) => clip.id === page.selected);
   // Результат попытки на дорожке подписывается явно: пользователь сравнивает его с принятым клипом, а не наоборот.
   const attemptsOnTrack = draft.clips.flatMap((clip) => {
@@ -106,7 +108,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
   });
   const trackUrl = draft.audio.path ? projectMediaUrl(project, draft.audio.path) : null;
   const suspended = sourcesOpen || page.applyOpen || videoOpen || pendingOpen !== null || remove.target !== null || material !== null || locked;
-  const suspendedReason = locked ? lockedReason : 'Закройте открытое окно, чтобы продолжить просмотр.';
+  const suspendedReason = locked ? lockedReason : montageTexts.closeDialogToWatch;
   const detachedPlayer = useDetachedMontage(
     { project, draft, trackUrl, frame: page.frame, seekVersion: page.seekVersion, selectedClipId: page.selected, suspended, theme, loop, volume },
     {
@@ -117,7 +119,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
         setLoop(nextLoop);
         setVolume(nextVolume);
       },
-      onError: (error) => page.notify(`Не удалось открыть или закрыть окно плеера: ${String(error)}`, 'error')
+      onError: (error) => page.notify(montageTexts.playerWindowFailed(String(error)), 'error')
     }
   );
   const metadataSources = useMemo(() => {
@@ -144,7 +146,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
         severity="error"
         action={
           <Button startIcon={<Refresh />} onClick={() => void page.load()}>
-            Повторить
+            {commonTexts.retry}
           </Button>
         }
       >
@@ -153,11 +155,11 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
     ) : (
       <></>
     );
-  if (view.scenarioStatus !== 'ready') return <ScenarioRequired title="Монтаж пробы" status={view.scenarioStatus} onRefresh={() => void page.load()} />;
-  const boundsProblem =
-    trackFrames !== null && draft.audio.end_frame_exclusive > trackFrames ? 'Выделение музыки выходит за конец трека. Уменьшите конец участка.' : null;
+  if (view.scenarioStatus !== 'ready')
+    return <ScenarioRequired title={navigationTexts.pages.montage} status={view.scenarioStatus} onRefresh={() => void page.load()} />;
+  const boundsProblem = trackFrames !== null && draft.audio.end_frame_exclusive > trackFrames ? montageTexts.audioPastEnd : null;
   const exportProblem = boundsProblem ?? page.exportProblem;
-  const exportProblemLabel = boundsProblem ? 'За концом трека' : page.exportProblemLabel;
+  const exportProblemLabel = boundsProblem ? montageTexts.pastEndLabel : page.exportProblemLabel;
   const requestOpen = (id: string): void => {
     if (page.dirty) setPendingOpen(id);
     else if (id === '__refresh') void page.load();
@@ -229,18 +231,11 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
       {attemptsOnTrack.length ? (
         <Alert severity="warning">
           {attemptsOnTrack.map((item) => (
-            <div key={item.scene}>
-              На дорожке {item.scene} стоит «{item.label}»: этот ролик ещё не принят в assets. Принятый клип сцены доступен в материалах справа.
-            </div>
+            <div key={item.scene}>{montageTexts.attemptOnTrack({ scene: item.scene, label: item.label })}</div>
           ))}
         </Alert>
       ) : null}
-      {page.stale ? (
-        <Alert severity="warning">
-          Реестр или материалы сцен изменились после создания черновика. Его можно просматривать и сохранять. Перед применением переоткройте актуальные
-          материалы и соберите монтаж заново.
-        </Alert>
-      ) : null}
+      {page.stale ? <Alert severity="warning">{montageTexts.staleDraft}</Alert> : null}
       {/* Общий контейнер продолжается до конца дорожки: sticky не ограничивается высотой первого ряда. */}
       <Stack sx={{ width: '100%', minWidth: 0 }}>
         <Paper
@@ -290,16 +285,16 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
                   suspended={suspended}
                   suspendedReason={suspendedReason}
                   actions={
-                    <ActionIconButton aria-label="Открыть плеер в отдельном окне" onClick={detachedPlayer.open} disabled={locked} disabledReason={lockedReason}>
+                    <ActionIconButton aria-label={montageTexts.detachPlayer} onClick={detachedPlayer.open} disabled={locked} disabledReason={lockedReason}>
                       <OpenInNew />
                     </ActionIconButton>
                   }
                 />
               ) : (
                 <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                  <Typography color="text.secondary">Плеер открыт в отдельном окне.</Typography>
+                  <Typography color="text.secondary">{montageTexts.playerDetached}</Typography>
                   <ActionButton startIcon={<CallReceived />} onClick={detachedPlayer.close} disabled={locked} disabledReason={lockedReason}>
-                    Вернуть плеер
+                    {montageTexts.returnPlayer}
                   </ActionButton>
                 </Stack>
               )}
@@ -314,16 +309,16 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
                   <TextField
                     key={`name-${page.savedId}-${draft.name}`}
                     size="small"
-                    label="Название пробы"
+                    label={montageTexts.draftName}
                     defaultValue={draft.name}
-                    onBlur={(event) => commit({ ...draft, name: event.target.value.trim() || 'Монтажная проба' })}
+                    onBlur={(event) => commit({ ...draft, name: event.target.value.trim() || montageTexts.defaultName })}
                     fullWidth
                   />
                   <FormControl size="small" fullWidth>
-                    <InputLabel id={savedLabelId}>Открыть черновик</InputLabel>
+                    <InputLabel id={savedLabelId}>{montageTexts.openDraft}</InputLabel>
                     <Select
                       labelId={savedLabelId}
-                      label="Открыть черновик"
+                      label={montageTexts.openDraft}
                       value=""
                       disabled={locked || !view.saved.length}
                       onChange={(event) => requestOpen(event.target.value)}
@@ -346,7 +341,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
                 aria-haspopup="dialog"
                 aria-expanded={sourcesOpen}
               >
-                Материалы сцен
+                {montageTexts.sceneMaterials}
               </Button>
               <Box sx={{ minWidth: 0, pointerEvents: locked ? 'none' : undefined, opacity: locked ? 0.7 : 1 }}>
                 <MontageClipEditor
@@ -381,7 +376,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
               draft={draft}
               trackUrl={trackUrl}
               lyricLines={draft.audio.path === view.trackPath ? view.lyricLines : []}
-              lyricProblem={draft.audio.path === view.trackPath ? view.lyricProblem : 'Черновик использует другой трек; строки текущей песни недоступны.'}
+              lyricProblem={draft.audio.path === view.trackPath ? view.lyricProblem : montageTexts.differentTrack}
               duration={trackFrames === null ? (view.duration ?? 0) : trackFrames / FPS}
               frame={page.frame}
               selected={page.selected}
@@ -397,7 +392,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
                 {exportProblem}
               </Alert>
             ) : (
-              <Alert severity="success">Музыкальный участок и видео совпадают: {countLabel(page.length, 'кадр', 'кадра', 'кадров')}.</Alert>
+              <Alert severity="success">{montageTexts.lengthsMatch(page.length)}</Alert>
             )}
           </Stack>
         </Paper>

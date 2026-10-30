@@ -1,3 +1,6 @@
+import { timingTexts } from '@shared/texts/timing';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
 import { Box, Chip, CircularProgress, Typography } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
@@ -43,48 +46,52 @@ export function TimingToolbar({
 }: TimingToolbarProps): ReactElement {
   const working = busy || generating;
   // Причина видна в подсказке: предупреждения на странице могут быть далеко от панели.
-  const waitReason = generating ? 'Дождитесь окончания распознавания.' : busy ? 'Дождитесь окончания текущей операции.' : null;
-  const generateReason = waitReason ?? (dirty ? 'Сохраните или отмените правки перед автоматической разметкой.' : generateBlockedReason);
-  const invalidBindingsReason = 'Текст песни изменился: сначала повторите автоматическую разметку.';
-  const saveReason = working ? null : invalidBindings ? invalidBindingsReason : !dirty ? 'Нет несохранённых правок.' : null;
+  const waitReason = generating ? timingTexts.recognitionPending : busy ? timingTexts.operationPending : null;
+  const generateReason = waitReason ?? (dirty ? timingTexts.saveBeforeGenerate : generateBlockedReason);
+  const invalidBindingsReason = timingTexts.invalidBindings;
+  const saveReason = working ? null : invalidBindings ? invalidBindingsReason : !dirty ? timingTexts.noUnsavedChanges : null;
   return (
     <Box sx={{ display: 'flex', width: '100%', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', minWidth: 0 }}>
-        <Typography variant="h5">Тайминги</Typography>
+        <Typography variant="h5">{navigationTexts.pages.timing}</Typography>
         {lineCount ? (
-          <Chip size="small" color={verifiedCount === lineCount ? 'success' : 'warning'} label={`подтверждено ${verifiedCount} из ${lineCount}`} />
+          <Chip
+            size="small"
+            color={verifiedCount === lineCount ? 'success' : 'warning'}
+            label={timingTexts.verifiedCount({ verified: verifiedCount, total: lineCount })}
+          />
         ) : (
-          <Chip size="small" variant="outlined" label="разметки нет" />
+          <Chip size="small" variant="outlined" label={timingTexts.noTiming} />
         )}
-        {dirty ? <Chip size="small" color="warning" label="Есть несохранённые правки" /> : null}
+        {dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
       </Box>
       {/* Действия держатся одной группой справа: при переносе «Сохранить» остаётся последней справа. */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end', ml: 'auto' }}>
         <ActionButton
           startIcon={generating ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-          title={generating ? undefined : 'Распознать трек и расставить строки текста автоматически'}
+          title={generating ? undefined : timingTexts.generateHint}
           disabled={working || dirty || !canGenerate}
           disabledReason={generateReason}
           onClick={onGenerate}
         >
-          {generating ? 'Распознавание' : 'Разметить'}
+          {generating ? timingTexts.recognizing : timingTexts.generate}
         </ActionButton>
         <ActionButton
           startIcon={<DoneAllIcon />}
           disabled={working || verifiedCount === lineCount}
-          disabledReason={waitReason ?? (lineCount ? 'Все строки уже подтверждены.' : 'Нет строк разметки.')}
+          disabledReason={waitReason ?? (lineCount ? timingTexts.allVerified : timingTexts.noLines)}
           onClick={onConfirmAll}
         >
-          Подтвердить все
+          {timingTexts.verifyAll}
         </ActionButton>
         <DestructiveButton
-          label="Пересчитать секции"
-          description="Границы, названия и заметки секций будут заменены по текущим строкам. Результат можно сохранить или отменить вместе с остальными правками."
-          confirmLabel="Пересчитать"
+          label={timingTexts.recalculateSections}
+          description={timingTexts.recalculateDescription}
+          confirmLabel={timingTexts.recalculate}
           startIcon={<RestartAltIcon />}
           size="medium"
           disabled={working || !lineCount || invalidBindings}
-          disabledReason={waitReason ?? (!lineCount ? 'Нет строк разметки.' : invalidBindingsReason)}
+          disabledReason={waitReason ?? (!lineCount ? timingTexts.noLines : invalidBindingsReason)}
           onConfirm={onRecalculateSections}
         />
         {dirty ? (
@@ -92,9 +99,9 @@ export function TimingToolbar({
             icon
             size="medium"
             startIcon={<UndoIcon />}
-            label="Отменить правки"
-            description="Несохранённые изменения разметки будут потеряны. Сохранённая разметка останется прежней."
-            confirmLabel="Отменить правки"
+            label={timingTexts.discard}
+            description={timingTexts.discardDescription}
+            confirmLabel={timingTexts.discard}
             disabled={working}
             disabledReason={waitReason}
             onConfirm={onDiscard}
@@ -109,7 +116,7 @@ export function TimingToolbar({
           disabledReason={waitReason ?? saveReason}
           onClick={onSave}
         >
-          Сохранить
+          {commonTexts.save}
         </ActionButton>
       </Box>
     </Box>

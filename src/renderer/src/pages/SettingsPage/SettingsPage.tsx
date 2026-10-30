@@ -1,3 +1,6 @@
+import { settingsTexts } from '@shared/texts/settings';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 /** Глобальные настройки доступны и без проекта, Python, FFmpeg или установленного агента. */
 import type { ReactElement } from 'react';
 import { Alert, LinearProgress, Paper, Stack, Typography } from '@mui/material';
@@ -22,19 +25,16 @@ export function SettingsPage(): ReactElement {
   const models = useAgentModels(form.settings?.provider, networkReady);
   const installed = useInstalledAgents();
   // Причины блокировки кнопок формы: сначала идущая операция, затем состояние профиля.
-  const profileReason = form.profileLoading ? 'Дождитесь загрузки профиля агента.' : form.profileError ? 'Профиль агента не прочитан: см. ошибку выше.' : null;
-  const saveReason = form.saving ? 'Дождитесь окончания сохранения.' : profileReason;
-  const checkReason = !form.settings ? 'Сначала выберите агента.' : form.checking ? 'Дождитесь окончания проверки.' : saveReason;
+  const profileReason = form.profileLoading ? settingsTexts.profileLoading : form.profileError ? settingsTexts.profileFailed : null;
+  const saveReason = form.saving ? commonTexts.waitForSaving : profileReason;
+  const checkReason = !form.settings ? settingsTexts.selectAgent : form.checking ? commonTexts.waitForCheck : saveReason;
   return (
     <Stack spacing={2} sx={{ minWidth: 0 }}>
       <PageActionBar>
-        <Typography variant="h5">Настройки</Typography>
+        <Typography variant="h5">{navigationTexts.pages.settings}</Typography>
       </PageActionBar>
-      <Typography color="text.secondary">
-        Текстовый агент и его модель общие для всех проектов. Модель изображений выбирается в настройках проекта. Просмотр, редактирование и локальные
-        инструменты доступны без агента.
-      </Typography>
-      {form.loading && <LinearProgress aria-label="Загрузка настроек" />}
+      <Typography color="text.secondary">{settingsTexts.description}</Typography>
+      {form.loading && <LinearProgress aria-label={settingsTexts.loadingSettings} />}
       {form.loadError && <Alert severity="error">{form.loadError}</Alert>}
       {!form.loading && !form.loadError && (
         <>
@@ -50,10 +50,10 @@ export function SettingsPage(): ReactElement {
                 installed={installed}
                 onChange={form.change}
               />
-              {form.profileLoading && <LinearProgress aria-label="Загрузка профиля агента" />}
+              {form.profileLoading && <LinearProgress aria-label={settingsTexts.loadingProfile} />}
               {form.profileError && <Alert severity="error">{form.profileError}</Alert>}
               <Typography variant="body2" color="text.secondary">
-                Проверка не сохраняет форму и не запускает генерацию. Статус входа не подтверждает доступ к выбранной модели или наличие средств.
+                {settingsTexts.checkExplanation}
               </Typography>
               <Stack direction="row" spacing={1}>
                 <ActionButton
@@ -63,7 +63,7 @@ export function SettingsPage(): ReactElement {
                   disabled={form.saving || form.profileLoading || !!form.profileError}
                   disabledReason={saveReason}
                 >
-                  {form.saving ? 'Сохранение' : 'Сохранить настройки агента'}
+                  {form.saving ? commonTexts.saving : settingsTexts.saveAgent}
                 </ActionButton>
                 <AgentButton
                   setup
@@ -77,10 +77,10 @@ export function SettingsPage(): ReactElement {
                   disabled={!form.settings || form.checking || form.saving || form.profileLoading || !!form.profileError}
                   disabledReason={checkReason}
                 >
-                  {form.checking ? 'Проверка' : 'Проверить'}
+                  {form.checking ? commonTexts.checking : commonTexts.check}
                 </AgentButton>
               </Stack>
-              {form.checking && <LinearProgress aria-label="Проверка агента" />}
+              {form.checking && <LinearProgress aria-label={settingsTexts.checkingAgent} />}
               {/* Итог проверки сразу под кнопкой, а не после панели аккаунта. */}
               {form.result && <AgentDiagnostics result={form.result} />}
               {form.settings && accountReady && (
@@ -90,7 +90,7 @@ export function SettingsPage(): ReactElement {
                   loading={account.loading}
                   failed={account.failed}
                   disabled={form.saving || !online}
-                  disabledReason={form.saving ? 'Дождитесь окончания сохранения настроек.' : 'Нет подключения к сети.'}
+                  disabledReason={form.saving ? settingsTexts.waitForSettingsSaving : settingsTexts.offline}
                   onRefresh={account.refresh}
                 />
               )}

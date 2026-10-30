@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Предложение показывается отдельно от сохранённых материалов: завершение задания не означает согласование. */
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { Alert, Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
@@ -13,7 +14,7 @@ import { RequestParameters } from './RequestParameters';
 import { Prose } from '../../../components/Prose';
 import { ReadableValue } from '../../../components/ReadableValue';
 
-const FRAME_ROLES: Record<ProductionFramePrompt['role'], string> = { first: 'Первый кадр', middle: 'Промежуточный кадр', last: 'Последний кадр' };
+const FRAME_ROLES: Record<ProductionFramePrompt['role'], string> = productionTexts.inputRoles;
 
 function fileName(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
@@ -64,13 +65,13 @@ function Frames({ frames }: { frames: ProductionFramePrompt[] }): ReactElement {
               {FRAME_ROLES[frame.role] ?? frame.role}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {frame.timeSeconds} с от начала плана
+              {productionTexts.productionProposalPreview.time({ timeSeconds: frame.timeSeconds })}
             </Typography>
           </Stack>
           <Paragraphs text={frame.prompt} />
           {frame.referencePaths.length ? (
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>
-              Референсы: {frame.referencePaths.map(fileName).join(', ')}
+              {productionTexts.productionProposalPreview.references({ filenames: frame.referencePaths.map(fileName).join(', ') })}
             </Typography>
           ) : null}
         </Paper>
@@ -82,7 +83,7 @@ function Frames({ frames }: { frames: ProductionFramePrompt[] }): ReactElement {
 /** Кандидаты опор задания: подпись без пути файла, путь — в подсказке; щелчок открывает набор крупно. */
 function FrameCandidates({ images }: { images: { id: string; path: string }[] }): ReactElement {
   const [active, setActive] = useState<number | null>(null);
-  const gallery = images.map((image) => ({ imagePath: image.path, label: `${image.id} · кандидат, не принят` }));
+  const gallery = images.map((image) => ({ imagePath: image.path, label: productionTexts.productionProposalPreview.candidate({ id: image.id }) }));
   return (
     <>
       <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
@@ -95,7 +96,9 @@ function FrameCandidates({ images }: { images: { id: string; path: string }[] })
           </Box>
         ))}
       </Stack>
-      {active !== null ? <ImageGallery kind="Кандидат опоры" images={gallery} initialIndex={active} onClose={() => setActive(null)} /> : null}
+      {active !== null ? (
+        <ImageGallery kind={productionTexts.productionProposalPreview.galleryKind} images={gallery} initialIndex={active} onClose={() => setActive(null)} />
+      ) : null}
     </>
   );
 }
@@ -103,12 +106,16 @@ function FrameCandidates({ images }: { images: { id: string; path: string }[] })
 function RequestDraft({ request, videoProvider }: { request: ProductionRequestDraft; videoProvider: string | null }): ReactElement {
   return (
     <Stack spacing={1.5}>
-      <Section title="Модель и команда">
+      <Section title={productionTexts.productionProposalPreview.modelAndCommand}>
         <Typography variant="body2">
-          {request.model} · {mediaCommandLabel(videoProvider, request.command)} · результатов: {request.outputs}
+          {productionTexts.productionProposalPreview.requestSummary({
+            model: request.model,
+            command: mediaCommandLabel(videoProvider, request.command),
+            outputs: request.outputs
+          })}
         </Typography>
       </Section>
-      <Section title="Входные материалы">
+      <Section title={productionTexts.productionProposalPreview.inputs}>
         {request.inputs.length ? (
           <Stack spacing={0.25}>
             {request.inputs.map((input, index) => (
@@ -119,7 +126,7 @@ function RequestDraft({ request, videoProvider }: { request: ProductionRequestDr
           </Stack>
         ) : (
           <Typography variant="body2" color="text.secondary">
-            Без входных файлов
+            {productionTexts.productionProposalPreview.noInputs}
           </Typography>
         )}
       </Section>
@@ -138,13 +145,16 @@ function Current({ proposal }: { proposal: ProductionProposal }): ReactElement {
     } catch {
       workflow = null;
     }
-    if (!workflow) return <Paragraphs text="Текущий запрос пакета не прочитан." />;
+    if (!workflow) return <Paragraphs text={productionTexts.productionProposalPreview.unread} />;
     return (
       <Stack spacing={1}>
-        <Typography variant="body2">Этап пакета: {workflow.stage ?? 'не задан'}.</Typography>
+        <Typography variant="body2">{productionTexts.productionProposalPreview.stage({ stage: workflow.stage })}</Typography>
         <Typography variant="body2">
-          {workflow.request_dir ? `Подготовленный запрос: папка ${workflow.request_dir}. ` : 'Подготовленного запроса ещё нет. '}
-          Опор в пакете: {workflow.keyframes?.length ?? 0}; видеопромпт {workflow.prompt?.approved ? 'принят' : 'не принят'}.
+          {productionTexts.productionProposalPreview.currentState({
+            requestDir: workflow.request_dir,
+            frames: workflow.keyframes?.length ?? 0,
+            approved: workflow.prompt?.approved
+          })}
         </Typography>
       </Stack>
     );
@@ -152,9 +162,7 @@ function Current({ proposal }: { proposal: ProductionProposal }): ReactElement {
   if (!before.trim()) {
     return (
       <Alert severity="info">
-        {proposal.stage === 'description'
-          ? 'В пакете ещё нет описания и плана опор: это первое предложение для него. После применения здесь будет текущее описание для сравнения со следующими.'
-          : 'В пакете ещё нет видеопромпта: это первое предложение. После применения здесь будет текущий текст.'}
+        {proposal.stage === 'description' ? productionTexts.productionProposalPreview.firstDescription : productionTexts.productionProposalPreview.firstPrompt}
       </Alert>
     );
   }
@@ -167,8 +175,8 @@ function Proposed({ proposal, videoProvider }: { proposal: ProductionProposal; v
     // Штатный отказ агента: его причина и есть объяснение, технической ошибки разбора здесь нет.
     return (
       <Stack spacing={1.5}>
-        <Typography variant="subtitle2">Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.</Typography>
-        <Section title="Причина отказа">
+        <Typography variant="subtitle2">{productionTexts.productionProposalPreview.refused}</Typography>
+        <Section title={productionTexts.productionProposalPreview.refusalReason}>
           <Paragraphs text={proposal.agentText} />
         </Section>
       </Stack>
@@ -177,29 +185,29 @@ function Proposed({ proposal, videoProvider }: { proposal: ProductionProposal; v
     // Ответ агента не прошёл проверку: показываем, что он ответил, и почему приложение его отклонило.
     return (
       <Stack spacing={1.5}>
-        <Typography variant="subtitle2">Агент не подготовил предложение</Typography>
-        <Section title="Ответ агента">
+        <Typography variant="subtitle2">{productionTexts.productionProposalPreview.noProposal}</Typography>
+        <Section title={productionTexts.productionProposalPreview.agentAnswer}>
           <Paragraphs text={proposal.agentText} />
         </Section>
         {proposal.message ? (
-          <Section title="Причина проверки">
+          <Section title={productionTexts.productionProposalPreview.validationReason}>
             <Typography variant="body2">{proposal.message}</Typography>
           </Section>
         ) : null}
       </Stack>
     );
-  if (!after) return <Paragraphs text="Предложение ещё не получено." />;
+  if (!after) return <Paragraphs text={productionTexts.productionProposalPreview.pending} />;
   switch (after.stage) {
     case 'description':
       return (
         <Stack spacing={2}>
-          <Section title="Описание плана">
+          <Section title={productionTexts.productionProposalPreview.description}>
             <Paragraphs text={after.description} />
           </Section>
-          <Section title="Длительность запроса">
-            <Typography variant="body2">{after.requestSeconds} с</Typography>
+          <Section title={productionTexts.productionProposalPreview.duration}>
+            <Typography variant="body2">{productionTexts.productionProposalPreview.seconds({ requestSeconds: after.requestSeconds })}</Typography>
           </Section>
-          <Section title={`Опоры · ${after.keyframes.length}`}>
+          <Section title={productionTexts.productionProposalPreview.frames({ frames: after.keyframes.length })}>
             <Frames frames={after.keyframes} />
           </Section>
         </Stack>
@@ -229,26 +237,26 @@ export function ProposalActions({
   const applyReason = busy
     ? BUSY_REASON
     : proposal.stale
-      ? 'Исходные материалы изменились: отклоните предложение и подготовьте новое.'
+      ? productionTexts.productionProposalPreview.staleReason
       : proposal.status !== 'ready'
-        ? 'Агент не подготовил годное предложение: отклоните его и запустите агента заново.'
+        ? productionTexts.productionProposalPreview.invalidReason
         : !proposal.after
-          ? 'В предложении нет материалов для применения.'
+          ? productionTexts.productionProposalPreview.emptyReason
           : null;
   return (
     <>
       <DestructiveButton
-        label="Отклонить предложение"
-        description="Предложение будет отклонено без применения к пакету."
-        confirmLabel="Отклонить"
+        label={productionTexts.productionProposalPreview.discard}
+        description={productionTexts.productionProposalPreview.discardDescription}
+        confirmLabel={productionTexts.productionProposalPreview.discardConfirm}
         disabled={busy}
         disabledReason={BUSY_REASON}
         onConfirm={onDiscard}
       />
       <DestructiveButton
-        label="Применить предложение"
-        description="Предложение будет записано в пакет и изменит соответствующие материалы. Принятие и платная отправка требуют отдельного согласования."
-        confirmLabel="Применить"
+        label={productionTexts.productionProposalPreview.apply}
+        description={productionTexts.productionProposalPreview.applyDescription}
+        confirmLabel={productionTexts.productionProposalPreview.applyConfirm}
         startIcon={<CheckIcon />}
         variant="contained"
         disabled={busy || !ready}
@@ -286,13 +294,14 @@ export function ProductionProposalPreview({
     <Stack spacing={1.5} sx={fill ? { height: '100%', minHeight: 0 } : undefined}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         {provider ? <AgentIcon provider={provider} /> : null}
-        <Typography fontWeight={600}>Предложение агента · {PRODUCTION_PASS_LABELS[proposal.stage]}</Typography>
+        <Typography fontWeight={600}>{productionTexts.productionProposalPreview.title({ stage: PRODUCTION_PASS_LABELS[proposal.stage] })}</Typography>
       </Stack>
       <Alert severity={proposal.stale || ['failed', 'invalid', 'interrupted'].includes(proposal.status) ? 'warning' : 'info'}>
-        {proposal.stale
-          ? 'Исходные материалы изменились. Подготовьте новое предложение.'
-          : (proposal.message ?? `${PRODUCTION_PROPOSAL_LABELS[proposal.status]}.`)}{' '}
-        Применение сохраняет материалы для отдельного согласования; оно не принимает опоры, промпт или платную отправку.
+        {productionTexts.productionProposalPreview.notice({
+          stale: proposal.stale,
+          message: proposal.message,
+          status: PRODUCTION_PROPOSAL_LABELS[proposal.status]
+        })}
       </Alert>
       {after?.stage === 'frames' ? (
         <FrameCandidates images={after.images} />
@@ -307,10 +316,10 @@ export function ProductionProposalPreview({
             '& > *': { maxHeight: fill ? '100%' : 420 }
           }}
         >
-          <Column title="Сейчас в пакете" hint="Что уже сохранено и будет заменено применением">
+          <Column title={productionTexts.productionProposalPreview.current} hint={productionTexts.productionProposalPreview.currentHint}>
             <Current proposal={proposal} />
           </Column>
-          <Column title="Предложение агента" hint="Станет материалами пакета после применения; согласование отдельно">
+          <Column title={productionTexts.productionProposalPreview.proposed} hint={productionTexts.productionProposalPreview.proposedHint}>
             <Proposed proposal={proposal} videoProvider={videoProvider} />
           </Column>
         </Box>

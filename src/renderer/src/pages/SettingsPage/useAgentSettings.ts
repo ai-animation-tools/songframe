@@ -1,3 +1,4 @@
+import { settingsTexts } from '@shared/texts/settings';
 /** Поля профиля доступны только после его загрузки; старые ответы не меняют новую форму. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AgentCheckResult, AgentSettings } from '@shared/agents';
@@ -87,7 +88,7 @@ export function useAgentSettings() {
       await completeInScope(window.api.agents.saveSettings(settings), current, (saved) => {
         setSettings(saved);
         setAgentProvider(saved?.provider ?? null);
-        notify('Настройки сохранены', 'success');
+        notify(settingsTexts.saved, 'success');
       });
     } catch (error) {
       if (current()) notify(describeError(error), 'error');

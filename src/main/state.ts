@@ -3,6 +3,7 @@
  * Файлы лежат в постоянном userData (либо SONGFRAME_LOCAL_DIR), общем с CLI.
  */
 
+import { projectsTexts } from '@shared/texts/projects';
 import { existsSync, rmSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { readLocalJson, writeLocalJson } from './local-files';
@@ -37,7 +38,7 @@ export class LocalState {
   readCurrent(): string | null {
     const data = readLocalJson<CurrentProjectFile>(this.currentFile);
     if (data && (data.schema_version !== 1 || typeof data.path !== 'string' || !data.path))
-      throw new Error(`Неверный формат ${this.currentFile}. Файл сохранён; выберите резервную копию или исправьте path.`);
+      throw new Error(projectsTexts.main.invalidCurrentFile({ path: this.currentFile }));
     return data?.path ?? null;
   }
 
@@ -57,7 +58,7 @@ export class LocalState {
   readHistory(): ProjectHistoryEntry[] {
     const data = readLocalJson<HistoryFile>(this.historyFile);
     if (data && (data.schema_version !== 1 || !Array.isArray(data.projects) || data.projects.some((entry) => !entry || typeof entry.path !== 'string')))
-      throw new Error(`Неверный формат ${this.historyFile}. Файл сохранён; исправьте список projects.`);
+      throw new Error(projectsTexts.main.invalidHistoryFile({ path: this.historyFile }));
     const projects = data?.projects ?? [];
     return projects
       .filter((p) => typeof p.path === 'string' && p.path)

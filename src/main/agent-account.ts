@@ -1,5 +1,7 @@
 /** Снимок подтверждённых полей аккаунта: отсутствие ответа не означает нулевой лимит или оплаченную подписку. */
 import { homedir } from 'node:os';
+import { agentTitle } from '@shared/agent-providers';
+import { settingsTexts } from '@shared/texts/settings';
 import type { AgentAccountLimit, AgentAccountResult, AgentSettings } from '@shared/agents';
 import { agentEnvironment, checkAgent } from './agents';
 import { readAccountCommand, readCodexAccount } from './codex-account-transport';
@@ -50,13 +52,11 @@ async function prepare(config: AgentSettings, options: AgentAccountOptions): Pro
   };
 }
 
-const PARTIAL_MESSAGE = 'Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии.';
-
 export async function claudeAccount(config: AgentSettings, options: AgentAccountOptions = {}): Promise<AgentAccountResult> {
   const result = await prepare(config, options);
   const path = result.diagnostic.executablePath;
   if (!path || result.diagnostic.availability !== 'available') return result;
-  if (!supported(result.diagnostic.version, 2, 1)) return { ...result, message: 'Данные аккаунта недоступны для этой версии Claude Code.' };
+  if (!supported(result.diagnostic.version, 2, 1)) return { ...result, message: settingsTexts.main.accountVersionUnsupported(agentTitle('claude')) };
   if (result.diagnostic.authorization === 'unauthenticated') return result;
   const home = options.home ?? homedir();
   let canReadSubscriptionUsage = false;
@@ -72,16 +72,16 @@ export async function claudeAccount(config: AgentSettings, options: AgentAccount
         (response.authMethod === 'claude.ai' || response.authMethod === 'oauth_token') &&
         response.apiProvider === 'firstParty' &&
         (response.apiKeySource === undefined || response.apiKeySource === 'none');
-    } else if (response.loggedIn !== false) result.message = PARTIAL_MESSAGE;
+    } else if (response.loggedIn !== false) result.message = settingsTexts.main.partialAccount;
   } catch {
-    result.message = PARTIAL_MESSAGE;
+    result.message = settingsTexts.main.partialAccount;
   }
   const version = /^(\d+)\.(\d+)\.(\d+)$/.exec(result.diagnostic.version ?? '');
   if (canReadSubscriptionUsage && version && (+version[2] > 1 || +version[3] >= 273)) {
     const usage = await readClaudeUsage(path, { ...options, home, env: agentEnvironment(options.env, home) });
     if (usage) {
       result.limits = claudeLimits(usage);
-    } else result.message = PARTIAL_MESSAGE;
+    } else result.message = settingsTexts.main.partialAccount;
   }
   return result;
 }
@@ -97,7 +97,7 @@ function claudeLimits(usage: ClaudeUsageSnapshot): AgentAccountLimit[] | null {
         ? []
         : [
             {
-              label: `${row.group} · ${row.kind}`,
+              label: settingsTexts.main.limitLabel({ name: row.group, kind: row.kind, windowMinutes: null }),
               usedPercent: row.percent,
               windowMinutes: row.kind === 'five_hour' ? 300 : row.kind.startsWith('seven_day') ? 10080 : null,
               resetsAt: reset(row.resets_at)
@@ -111,7 +111,12 @@ function claudeLimits(usage: ClaudeUsageSnapshot): AgentAccountLimit[] | null {
     const window = rates[key];
     if (!window || window.utilization === null) continue;
     const windowMinutes = key === 'five_hour' ? 300 : 10080;
-    limits.push({ label: `${key} · ${windowMinutes} мин`, usedPercent: window.utilization, windowMinutes, resetsAt: reset(window.resets_at) });
+    limits.push({
+      label: settingsTexts.main.limitWithWindow({ name: key, windowMinutes }),
+      usedPercent: window.utilization,
+      windowMinutes,
+      resetsAt: reset(window.resets_at)
+    });
   }
   return limits.length ? limits : null;
 }
@@ -135,7 +140,7 @@ function codexLimits(response: Record<string, unknown>): Pick<AgentAccountResult
       if (usedPercent === null || usedPercent > 100) continue;
       const windowMinutes = number(window.windowDurationMins);
       limits.push({
-        label: `${name} · ${key}${windowMinutes === null ? '' : ` · ${windowMinutes} мин`}`,
+        label: settingsTexts.main.limitLabel({ name, kind: key, windowMinutes }),
         usedPercent,
         windowMinutes,
         resetsAt: number(window.resetsAt)
@@ -143,10 +148,10 @@ function codexLimits(response: Record<string, unknown>): Pick<AgentAccountResult
     }
     const credits = object(bucket.credits);
     const balance = text(credits.balance);
-    if (credits.unlimited === true) creditBalances.add('Без ограничений');
+    if (credits.unlimited === true) creditBalances.add(settingsTexts.main.unlimitedCredits);
     else if (balance !== null) creditBalances.add(balance);
-    else if (credits.hasCredits === false) creditBalances.add('Нет кредитов');
-    else if (credits.hasCredits === true) creditBalances.add('Есть кредиты');
+    else if (credits.hasCredits === false) creditBalances.add(settingsTexts.main.noCredits);
+    else if (credits.hasCredits === true) creditBalances.add(settingsTexts.main.availableCredits);
   }
   return { limits: limits.length ? limits : null, credits: creditBalances.size ? [...creditBalances].join('; ') : null };
 }
@@ -155,13 +160,14 @@ export async function codexAccount(config: AgentSettings, options: AgentAccountO
   const result = await prepare(config, options);
   const path = result.diagnostic.executablePath;
   if (!path || result.diagnostic.availability !== 'available') return result;
-  if (!supported(result.diagnostic.version, 0, 159)) return { ...result, message: 'Данные аккаунта недоступны для этой версии Codex.' };
+  if (!supported(result.diagnostic.version, 0, 159)) return { ...result, message: settingsTexts.main.accountVersionUnsupported(agentTitle('codex')) };
   if (result.diagnostic.authorization === 'unauthenticated') return result;
   const home = options.home ?? homedir();
   const snapshot = await readCodexAccount(path, { ...options, home, env: agentEnvironment(options.env, home) });
   const accountResponse = object(snapshot.account);
   // login status подтверждает локальные учётные данные; явный ответ сервера об отсутствии аккаунта важнее этого кэша.
   if (accountResponse.account === null && accountResponse.requiresOpenaiAuth === true) {
+    // eslint-disable-next-line no-restricted-syntax -- Инструкция повторного входа принадлежит адаптеру Codex и содержит его команду CLI.
     const message = 'Codex сообщает, что вход не выполнен. Выполните codex login в терминале.';
     return { ...result, diagnostic: { ...result.diagnostic, authorization: 'unauthenticated', message }, message };
   }
@@ -174,13 +180,13 @@ export async function codexAccount(config: AgentSettings, options: AgentAccountO
   } else if (method === 'apiKey') result.authenticationMethod = 'API key';
   else if (method === 'amazonBedrock') result.authenticationMethod = 'Amazon Bedrock';
   else {
-    result.diagnostic = { ...result.diagnostic, authorization: 'unknown', message: 'Не удалось подтвердить вход по ответу Codex.' };
-    result.message = PARTIAL_MESSAGE;
+    result.diagnostic = { ...result.diagnostic, authorization: 'unknown', message: settingsTexts.main.accountAuthorizationUnknown(agentTitle('codex')) };
+    result.message = settingsTexts.main.partialAccount;
   }
   Object.assign(result, codexLimits(object(snapshot.rateLimits)));
   const usageAllowed = object(snapshot.rateLimits).ordinaryUsageAllowed;
   result.usageAllowed = typeof usageAllowed === 'boolean' ? usageAllowed : null;
-  if (usageAllowed === false) result.message = 'Codex сообщает об ограничении использования.';
-  if (snapshot.partial || !snapshot.rateLimits || !snapshot.account) result.message = PARTIAL_MESSAGE;
+  if (usageAllowed === false) result.message = settingsTexts.main.usageRestricted(agentTitle('codex'));
+  if (snapshot.partial || !snapshot.rateLimits || !snapshot.account) result.message = settingsTexts.main.partialAccount;
   return result;
 }

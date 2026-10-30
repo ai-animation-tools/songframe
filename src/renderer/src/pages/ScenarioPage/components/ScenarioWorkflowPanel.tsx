@@ -1,3 +1,5 @@
+import { scenarioTexts } from '@shared/texts/scenario';
+import { commonTexts } from '@shared/texts/common';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { DestructiveButton } from '../../../components/DestructiveButton';
@@ -53,14 +55,14 @@ export function ScenarioWorkflowPanel({
   const disabled = busy || editorBusy || resolving;
   // Причина блокировки агентских кнопок видна в их подсказке.
   const busyReason = disabled
-    ? 'Дождитесь завершения текущей операции.'
+    ? commonTexts.operationPending
     : view?.busy
-      ? 'Агент уже готовит предложение.'
+      ? scenarioTexts.workflow.agentBusy
       : view?.proposal && view.proposal.status === 'ready'
-        ? 'Сначала примените или отклоните текущее предложение.'
+        ? scenarioTexts.workflow.resolveProposal
         : null;
   // Причина для обычных кнопок панели: их блокирует только выполняемая операция.
-  const operationReason = disabled ? 'Дождитесь завершения текущей операции.' : null;
+  const operationReason = disabled ? commonTexts.operationPending : null;
   const guard = (action: () => Promise<unknown>): void => {
     if (treatmentDirty || scenesDirty) setPendingAction(() => action);
     else void action();
@@ -89,21 +91,21 @@ export function ScenarioWorkflowPanel({
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Stack spacing={2}>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <Typography variant="h6">Подготовка с агентом</Typography>
+          <Typography variant="h6">{scenarioTexts.workflow.title}</Typography>
           {view && (
             <Chip
               size="small"
               color={view.treatmentApproved ? 'success' : 'default'}
-              label={view.treatmentApproved ? 'Кастинг и трактовка утверждены' : 'Кастинг и трактовка не утверждены'}
+              label={view.treatmentApproved ? scenarioTexts.workflow.treatmentApproved : scenarioTexts.workflow.treatmentUnapproved}
             />
           )}
         </Stack>
         <Typography variant="body2" color="text.secondary">
-          Агент готовит предложение. Сначала просмотрите сравнение, затем отдельно примените результат. Ручные редакторы доступны без агента.
+          {scenarioTexts.workflow.description}
         </Typography>
         <AiProblemAlert kinds={['agent']} />
         {view?.problems.length ? <ProblemList problems={view.problems} /> : null}
-        {view?.scenesNeedReview && <Alert severity="warning">Кастинг или трактовка изменились. Существующий сценарий требует пересмотра.</Alert>}
+        {view?.scenesNeedReview && <Alert severity="warning">{scenarioTexts.workflow.scenesNeedReview}</Alert>}
         {view?.job && (
           <AgentJobCard
             compact
@@ -118,13 +120,11 @@ export function ScenarioWorkflowPanel({
         {proposal && (
           <Stack spacing={1}>
             {proposal.status === 'applied' ? (
-              <Alert severity="success">{proposal.message || 'Предложение применено.'}</Alert>
+              <Alert severity="success">{proposal.message || scenarioTexts.workflow.proposalAppliedSentence}</Alert>
             ) : (
               proposal.message && <Alert severity={proposal.status === 'ready' || proposal.status === 'running' ? 'info' : 'warning'}>{proposal.message}</Alert>
             )}
-            {proposal.stale && proposal.status !== 'applied' && (
-              <Alert severity="warning">Предложение устарело. Исходные файлы изменились; нужен новый запуск.</Alert>
-            )}
+            {proposal.stale && proposal.status !== 'applied' && <Alert severity="warning">{scenarioTexts.workflow.proposalStale}</Alert>}
             {proposal.status !== 'applied' && proposal.status !== 'running' && (
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {proposal.status === 'ready' && (
@@ -135,7 +135,7 @@ export function ScenarioWorkflowPanel({
                     disabledReason={operationReason}
                     onClick={() => setPreview(true)}
                   >
-                    Просмотреть предложение и сравнение
+                    {scenarioTexts.workflow.reviewProposal}
                   </ActionButton>
                 )}
                 {(proposal.stale || proposal.status !== 'ready') && (
@@ -145,14 +145,14 @@ export function ScenarioWorkflowPanel({
                     disabledReason={operationReason}
                     onClick={() => begin(proposal.pass, proposal.selectedIds)}
                   >
-                    Создать новое предложение
+                    {scenarioTexts.workflow.newProposal}
                   </AgentButton>
                 )}
                 {proposal.status !== 'ready' && (
                   <DestructiveButton
-                    label="Отклонить предложение"
-                    description="Предложение будет отклонено без записи в проект."
-                    confirmLabel="Отклонить"
+                    label={scenarioTexts.proposal.discard}
+                    description={scenarioTexts.proposal.discardDescription}
+                    confirmLabel={scenarioTexts.proposal.discardConfirm}
                     variant="outlined"
                     size="medium"
                     disabled={disabled}
@@ -178,20 +178,15 @@ export function ScenarioWorkflowPanel({
               disabledReason={busyReason ?? view?.problems[0] ?? null}
               onClick={() => begin('treatment')}
             >
-              Создать трактовку
+              {scenarioTexts.workflow.createTreatment}
             </AgentButton>
             <AgentButton
               variant="outlined"
               disabled={disabled || !view?.canStartScenes || !!scenesInputProblem}
-              disabledReason={
-                busyReason ??
-                (view?.canStartScenes
-                  ? scenesInputProblem
-                  : 'Сначала утвердите текущие кастинг и трактовку: готовую ручную пару можно утвердить без повторной генерации.')
-              }
+              disabledReason={busyReason ?? (view?.canStartScenes ? scenesInputProblem : scenarioTexts.workflow.approveTreatmentHint)}
               onClick={() => begin('scenes')}
             >
-              Создать сценарий
+              {scenarioTexts.workflow.createScenes}
             </AgentButton>
             <AgentButton
               variant="outlined"
@@ -199,29 +194,29 @@ export function ScenarioWorkflowPanel({
               disabledReason={
                 busyReason ??
                 (!view?.treatmentApproved
-                  ? 'Сначала утвердите текущие кастинг и трактовку.'
+                  ? scenarioTexts.workflow.approveTreatmentReason
                   : !selected
-                    ? 'Выберите план в реестре сцен.'
-                    : 'Сначала исправьте ошибки реестра сцен.')
+                    ? scenarioTexts.workflow.selectShot
+                    : scenarioTexts.workflow.fixRegistry)
               }
               onClick={() => begin('revise')}
             >
-              Доработать выбранный план
+              {scenarioTexts.revise.title}
             </AgentButton>
           </Stack>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {view?.canApproveCurrent && (
               <ActionButton startIcon={<CheckCircleIcon />} disabled={disabled} disabledReason={operationReason} onClick={() => guard(workflow.approve)}>
-                Утвердить текущие кастинг и трактовку
+                {scenarioTexts.workflow.approveTreatment}
               </ActionButton>
             )}
             {view?.canApproveScenes && (
               <ActionButton startIcon={<CheckCircleIcon />} disabled={disabled} disabledReason={operationReason} onClick={() => guard(workflow.approveScenes)}>
-                Утвердить текущий сценарий
+                {scenarioTexts.workflow.approveScenes}
               </ActionButton>
             )}
             <ActionButton startIcon={<RefreshIcon />} disabled={disabled} disabledReason={operationReason} onClick={() => guard(workflow.refresh)}>
-              Обновить статус
+              {scenarioTexts.workflow.refreshStatus}
             </ActionButton>
           </Stack>
         </Stack>
@@ -282,7 +277,7 @@ function ProblemList({ problems }: { problems: string[] }): ReactElement {
       action={
         problems.length > 3 ? (
           <Button color="inherit" size="small" onClick={() => setExpanded((value) => !value)}>
-            {expanded ? 'Свернуть' : `Показать все (${problems.length})`}
+            {expanded ? scenarioTexts.workflow.collapseProblems : scenarioTexts.workflow.showAllProblems({ count: problems.length })}
           </Button>
         ) : undefined
       }

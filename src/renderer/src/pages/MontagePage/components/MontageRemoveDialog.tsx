@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { DeleteOutline } from '@mui/icons-material';
 import type { ReactElement } from 'react';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
@@ -14,10 +15,10 @@ export function MontageRemoveDialog({ scene, onClose, onConfirm }: Props): React
     <ConfirmationDialog
       open={scene !== undefined}
       onClose={onClose}
-      title="Удалить с дорожки?"
-      description={`Фрагмент сцены «${scene}» будет удалён из монтажа. Исходный файл сохранится.`}
+      title={montageTexts.removeTitle}
+      description={montageTexts.removeDescription(scene)}
       onConfirm={onConfirm}
-      confirmLabel="Удалить с дорожки"
+      confirmLabel={montageTexts.removeFromTrack}
       confirmIcon={<DeleteOutline />}
       confirmColor="error"
       cancelAutoFocus

@@ -1,8 +1,9 @@
 /** Необработанные ошибки окна уходят в журнал сбоев главного процесса: после вылета их можно отправить разработчику. */
+import { commonTexts } from '@shared/texts/common';
 import type { RendererErrorReport } from '@shared/types';
 
 /** Уведомление об аварийном прошлом сеансе; название страницы в кавычках становится ссылкой через LinkedText. */
-export const CRASH_NOTICE = 'Прошлый сеанс SongFrame завершился аварийно. Подробности и отчёт для разработчика — на странице «Журнал заданий».';
+export const CRASH_NOTICE = commonTexts.diagnostics.crashNotice;
 
 function describe(value: unknown): Pick<RendererErrorReport, 'message' | 'stack'> {
   if (value instanceof Error) return { message: `${value.name}: ${value.message}`, stack: value.stack };

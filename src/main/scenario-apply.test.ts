@@ -405,3 +405,38 @@ describe('публикация сценария', () => {
     expect(read('plan/scenes.json').toString()).toBe(json(scenes));
   });
 });
+
+it.each([
+  [{ code: 2, stdout: '', stderr: '  ошибка «пути» source/реф A.png  ' }, 'Не пройдена проверка lint_registry: ошибка «пути» source/реф A.png'],
+  [{ code: 5, stdout: '  выход stdout  ', stderr: '' }, 'Не пройдена проверка lint_registry: выход stdout'],
+  [{ code: 11, stdout: '', stderr: '' }, 'Не пройдена проверка lint_registry: код 11'],
+  [{ code: null, stdout: '', stderr: '' }, 'Не пройдена проверка lint_registry: код null']
+])('сохраняет приоритет и полный текст ошибки локальной проверки: %j', async (result, expected) => {
+  const launcher = fakeLauncher(() => ({ ...result, command: 'lint_registry' }));
+  await expect(publishScenario(publication(), { localDir, launcher })).rejects.toThrow(new Error(expected));
+  expect(existsSync(pendingPath())).toBe(false);
+});
+
+it('не читает stdout при наличии stderr и обрезает прежний хвост ошибки', async () => {
+  const launcher = fakeLauncher(() => ({
+    code: 2,
+    command: 'lint_registry',
+    stderr: `  ${'x'.repeat(1250)}ошибка  `,
+    get stdout(): string {
+      throw new Error('stdout не должен читаться');
+    }
+  }));
+  await expect(publishScenario(publication(), { localDir, launcher })).rejects.toThrow(
+    new Error(`Не пройдена проверка lint_registry: ${'x'.repeat(1194)}ошибка`)
+  );
+});
+
+it('сохраняет путь и кавычки в публичной ошибке устаревшего снимка', async () => {
+  const path = 'source/референс «А» с пробелами.png';
+  write(path, 'исходный образ');
+  const input = publication();
+  input.expectedHashes![path] = hash('другой образ');
+  await expect(publishScenario(input, { localDir, launcher: fakeLauncher() })).rejects.toThrow(
+    new Error('Предложение устарело: изменился source/референс «А» с пробелами.png. Подготовьте новое предложение.')
+  );
+});

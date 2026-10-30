@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Исполнитель опор определяется настройкой изображений; подготовка платного запроса ещё не разрешает отправку. */
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
 import BuildIcon from '@mui/icons-material/Build';
@@ -30,27 +31,32 @@ export function ProductionFrameGenerationButton({
   if (info?.executor)
     return (
       <AgentButton aiKind="image" provider={info.executor} disabled={disabled} disabledReason={disabledReason} title={title} onClick={onGenerate}>
-        {frame ? `Создать ${frame}` : 'Создать опоры'} в {info.title}
+        {productionTexts.productionFrameGenerationButton.create({ frame, title: info.title })}
       </AgentButton>
     );
   if (info?.paid)
     return (
       <AiButton aiKind="image" startIcon={<BuildIcon />} disabled={disabled} disabledReason={disabledReason} title={title} onClick={onGenerate}>
-        Подготовить запрос изображения{frame ? ` ${frame}` : ''} ({info.title})
+        {productionTexts.productionFrameGenerationButton.prepareRequest({ frame, title: info.title })}
       </AiButton>
     );
   const titles = mediaProvidersFor('image').map((id) => MEDIA_PROVIDERS[id].title);
-  const choices = titles.length > 1 ? `${titles.slice(0, -1).join(', ')} или ${titles.at(-1)}` : (titles[0] ?? 'провайдера');
-  const problem = provider ? `Провайдер изображений «${provider}» не поддерживается.` : 'Провайдер изображений не задан.';
+  const choices =
+    titles.length > 1
+      ? productionTexts.productionFrameGenerationButton.alternatives({ preceding: titles.slice(0, -1).join(', '), last: titles.at(-1) })
+      : (titles[0] ?? productionTexts.productionFrameGenerationButton.provider);
+  const problem = provider
+    ? productionTexts.productionFrameGenerationButton.unsupported({ provider })
+    : productionTexts.productionFrameGenerationButton.missing;
   return (
     <ActionButton
       startIcon={<AddPhotoAlternateOutlinedIcon />}
       title={title}
       disabled
-      disabledReason={`${problem} Выберите ${choices} в настройках проекта.`}
+      disabledReason={productionTexts.productionFrameGenerationButton.unavailable({ problem, choices })}
       sx={{ alignSelf: 'start' }}
     >
-      Создать опоры
+      {productionTexts.productionFrameGenerationButton.createFrames}
     </ActionButton>
   );
 }

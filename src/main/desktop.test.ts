@@ -43,7 +43,7 @@ describe('Открытие папок', () => {
     await openDesktopPath(directory, native, 'linux', run);
     expect(run).toHaveBeenLastCalledWith('xdg-open', [directory]);
     run.mockRejectedValue(new Error('Файловый менеджер не запустился'));
-    await expect(openDesktopPath(directory, native, 'linux', run)).rejects.toThrow(/Не удалось открыть.*Файловый менеджер не запустился/);
+    await expect(openDesktopPath(directory, native, 'linux', run)).rejects.toThrow(`Не удалось открыть «${directory}»: Файловый менеджер не запустился`);
     expect(native).not.toHaveBeenCalled();
   });
   it('сохраняет штатное открытие файлов и других ОС, учитывая строку ошибки Electron', async () => {
@@ -56,13 +56,28 @@ describe('Открытие папок', () => {
     expect(native).toHaveBeenCalledTimes(2);
     expect(run).not.toHaveBeenCalled();
     native.mockResolvedValue('Нет приложения');
-    await expect(openDesktopPath(file, native, 'linux', run)).rejects.toThrow(/Нет приложения/);
+    await expect(openDesktopPath(file, native, 'linux', run)).rejects.toThrow(`Не удалось открыть «${file}»: Нет приложения`);
   });
   it('не запускает файловый менеджер для отсутствующего пути', async () => {
     const run = vi.fn(async () => undefined);
     const native = vi.fn(async () => '');
-    await expect(openDesktopPath(join(directory, 'нет'), native, 'linux', run)).rejects.toThrow(/не найдены/);
+    const missing = join(directory, 'нет');
+    await expect(openDesktopPath(missing, native, 'linux', run)).rejects.toThrow(`Не удалось открыть «${missing}»: файл или папка не найдены либо недоступны.`);
     expect(run).not.toHaveBeenCalled();
+    expect(native).not.toHaveBeenCalled();
+  });
+
+  // Внешняя причина остаётся дословной и доступной через cause после добавления пользовательского пути.
+  it('сохраняет полную внешнюю ошибку с кавычками, переносами и причиной', async () => {
+    const failure = new Error('Ошибка «ОС» & <open>\nповторите попытку');
+    const run = vi.fn(async () => {
+      throw failure;
+    });
+    const native = vi.fn(async () => '');
+    await expect(openDesktopPath(directory, native, 'linux', run)).rejects.toMatchObject({
+      message: `Не удалось открыть «${directory}»: Ошибка «ОС» & <open>\nповторите попытку`,
+      cause: failure
+    });
     expect(native).not.toHaveBeenCalled();
   });
 });

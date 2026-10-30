@@ -1,6 +1,7 @@
 /** Адаптер Codex: опоры рисует программа-агент; подготовка и отправка отделены от восстановления существующего задания. */
 import { createHash } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
+import { mediaTexts } from '@shared/texts/media';
 import type { AgentCheckResult, AgentJob, AgentSettings } from '@shared/agents';
 import { sameMediaProvider, type AgentMediaExecutionRef, type MediaCapabilities, type MediaModel } from '@shared/media-providers';
 import type { ProductionImagesInput } from '@shared/production-workflow';
@@ -47,8 +48,10 @@ export class CodexImageProvider {
     if (available && this.options.listCodexModels) {
       try {
         models = await this.options.listCodexModels();
+        // eslint-disable-next-line no-restricted-syntax -- Диагностика конкретного каталога моделей Codex принадлежит адаптеру.
         if (!models.length) problems.push('Codex не вернул доступные модели агента.');
       } catch {
+        // eslint-disable-next-line no-restricted-syntax -- Особенности каталога и повторной проверки Codex остаются у адаптера.
         problems.push('Каталог моделей агента Codex сейчас недоступен. Повторите проверку возможностей.');
       }
     }
@@ -60,10 +63,10 @@ export class CodexImageProvider {
     const frozen = structuredClone(input);
     frozen.project = realpathSync(input.project);
     if (!frozen.frames.length || frozen.frames.some((frame) => !/^K\d{2}$/.test(frame.id) || !frame.prompt.trim()))
-      throw new Error('Сначала подготовьте описания опор.');
+      throw new Error(mediaTexts.agentImageFramesRequired);
     const references = [...new Set(frozen.frames.flatMap((frame) => frame.referencePaths))].map((path) => {
       const file = localFile(frozen.project, path);
-      if (!imageDimensions(file)) throw new Error('Референс не является изображением.');
+      if (!imageDimensions(file)) throw new Error(mediaTexts.agentImageReferenceInvalid);
       return { path: file, sha256: fileHash(file) };
     });
     const requestSha = hash(JSON.stringify({ input: frozen, references }));
@@ -71,15 +74,14 @@ export class CodexImageProvider {
   }
 
   submit(prepared: PreparedCodexRequest, permit: { requestSha: string }): AgentMediaExecutionRef {
-    if (this.submittedRequests.has(prepared) || this.consumedPermits.has(permit))
-      throw new Error('Эта подготовка или подтверждение уже использованы. Для нового запуска подготовьте и подтвердите новый запрос.');
+    if (this.submittedRequests.has(prepared) || this.consumedPermits.has(permit)) throw new Error(mediaTexts.agentImagePreparationUsed);
     if (
       prepared.provider !== 'codex' ||
       prepared.kind !== 'image' ||
       permit.requestSha !== prepared.requestSha ||
       this.prepare(prepared.input).requestSha !== prepared.requestSha
     )
-      throw new Error('Запрос или референсы изменились после согласования.');
+      throw new Error(mediaTexts.agentImageRequestChanged);
     // Подтверждение расходуется до запуска: исключение start не разрешает неявный повтор.
     // Новые prepared/permit допускают отдельно согласованную генерацию тех же входов и SHA.
     this.submittedRequests.add(prepared);
@@ -92,7 +94,7 @@ export class CodexImageProvider {
   }
 
   collect(reference: AgentMediaExecutionRef, job: AgentJob): MediaArtifact[] {
-    if (job.id !== reference.agentJobId) throw new Error('Неверное задание для согласованного запроса.');
+    if (job.id !== reference.agentJobId) throw new Error(mediaTexts.agentImageJobMismatch);
     return this.options.images.collect(job, reference.requestSha).map((candidate, index) => ({
       path: candidate.path,
       index: index + 1,

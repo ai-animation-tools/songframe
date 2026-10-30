@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import { PlayArrow, Pause, ArrowBack, ArrowForward, SkipPrevious, MovieFilterOutlined } from '@mui/icons-material';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Alert, Box, Checkbox, FormControlLabel, Slider, Stack, Typography } from '@mui/material';
@@ -48,7 +49,7 @@ export function MontagePreview({
   onMetadata,
   onTrackFrames,
   suspended,
-  suspendedReason = 'Закройте открытое окно или дождитесь завершения текущей операции.',
+  suspendedReason = montageTexts.playerSuspended,
   videoMaxWidth,
   actions
 }: Props): ReactElement {
@@ -68,8 +69,8 @@ export function MontagePreview({
       : null;
   const cutWindow = cut === null ? null : cutPreviewWindow(cut, length);
   // Причины недоступности управления плеером; приостановка проверяется последней.
-  const noTrackReason = trackUrl ? null : 'В проекте нет музыкальной дорожки.';
-  const emptyReason = length ? null : 'Музыкальный участок пуст: задайте его начало и конец.';
+  const noTrackReason = trackUrl ? null : montageTexts.noTrack;
+  const emptyReason = length ? null : montageTexts.emptyAudioRange;
   let offset = 0;
   const index = draft.clips.findIndex((clip) => {
     const end = offset + clipLength(clip);
@@ -260,7 +261,7 @@ export function MontagePreview({
             }}
             onLoadedData={() => syncVideosRef.current()}
             onError={() => {
-              if (source?.kind === 'video') setError(`Не удалось открыть видео ${source.scene}: ${source.path}`);
+              if (source?.kind === 'video') setError(montageTexts.videoOpenFailed({ scene: source.scene, path: source.path }));
             }}
             style={{
               position: 'absolute',
@@ -280,7 +281,9 @@ export function MontagePreview({
           />
         ) : null}
         {!clip ? (
-          <Typography sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#fff' }}>На этой позиции нет видео</Typography>
+          <Typography sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#fff' }}>
+            {montageTexts.noVideoAtPosition}
+          </Typography>
         ) : null}
         {/* Ошибка открытия медиа накладывается на кадр: под плеером она уходит из закреплённой области. */}
         {error ? (
@@ -312,13 +315,13 @@ export function MontagePreview({
           onEnded={() => playbackRef.current?.onEnded()}
           onError={() => {
             playbackRef.current?.pause();
-            setError('Не удалось открыть музыкальную дорожку.');
+            setError(montageTexts.trackOpenFailed);
           }}
         />
       ) : null}
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
         <ActionIconButton
-          aria-label={playing ? 'Пауза' : 'Воспроизвести'}
+          aria-label={playing ? montageTexts.pause : montageTexts.play}
           disabled={!trackUrl || !length || suspended}
           disabledReason={noTrackReason ?? emptyReason ?? suspendedReason}
           onClick={toggle}
@@ -331,13 +334,18 @@ export function MontagePreview({
         >
           {playing ? <Pause /> : <PlayArrow />}
         </ActionIconButton>
-        <ActionIconButton aria-label="В начало" disabled={!length || suspended} disabledReason={emptyReason ?? suspendedReason} onClick={() => seek(0)}>
+        <ActionIconButton
+          aria-label={montageTexts.toStart}
+          disabled={!length || suspended}
+          disabledReason={emptyReason ?? suspendedReason}
+          onClick={() => seek(0)}
+        >
           <SkipPrevious />
         </ActionIconButton>
         {/* Шаг по кадрам — часть управления воспроизведением: иконки того же размера, что и запуск. */}
         <ActionIconButton
-          aria-label="−1 кадр"
-          title="−1 кадр (стрелка влево)"
+          aria-label={montageTexts.previousFrame}
+          title={montageTexts.previousFrameHint}
           disabled={!length || suspended}
           disabledReason={emptyReason ?? suspendedReason}
           onClick={() => {
@@ -348,8 +356,8 @@ export function MontagePreview({
           <ArrowBack />
         </ActionIconButton>
         <ActionIconButton
-          aria-label="+1 кадр"
-          title="+1 кадр (стрелка вправо)"
+          aria-label={montageTexts.nextFrame}
+          title={montageTexts.nextFrameHint}
           disabled={!length || suspended}
           disabledReason={emptyReason ?? suspendedReason}
           onClick={() => {
@@ -361,33 +369,33 @@ export function MontagePreview({
         </ActionIconButton>
         <ActionButton
           startIcon={<MovieFilterOutlined />}
-          title="Две секунды до и после стыка выбранного фрагмента"
+          title={montageTexts.previewCutHint}
           disabled={!trackUrl || !cutWindow || suspended}
-          disabledReason={noTrackReason ?? (cutWindow ? suspendedReason : 'Выберите фрагмент со следующей сценой внутри музыкального участка.')}
+          disabledReason={noTrackReason ?? (cutWindow ? suspendedReason : montageTexts.selectCut)}
           onClick={previewCut}
         >
-          Проверить склейку
+          {montageTexts.previewCut}
         </ActionButton>
-        <FormControlLabel control={<Checkbox checked={loop} onChange={(event) => onPreferences(event.target.checked, volume)} />} label="Повторять" />
+        <FormControlLabel control={<Checkbox checked={loop} onChange={(event) => onPreferences(event.target.checked, volume)} />} label={montageTexts.loop} />
         <Stack direction="row" spacing={1} alignItems="center" sx={{ width: 220, maxWidth: '100%' }}>
           {volume === 0 ? <VolumeOffIcon fontSize="small" color="action" /> : <VolumeUpIcon fontSize="small" color="action" />}
           <Typography variant="caption" color="text.secondary">
-            Громкость
+            {montageTexts.volume}
           </Typography>
           <Slider
-            aria-label="Громкость"
+            aria-label={montageTexts.volume}
             value={volume}
             min={0}
             max={100}
             onChange={(_, value) => onPreferences(loop, value as number)}
             valueLabelDisplay="auto"
-            valueLabelFormat={(value) => `${value}%`}
-            getAriaValueText={(value) => `${value}%`}
+            valueLabelFormat={(value) => montageTexts.volumeValue(value)}
+            getAriaValueText={(value) => montageTexts.volumeValue(value)}
             size="small"
           />
         </Stack>
         <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-          {frameLabel(position)} / {frameLabel(length)} · {clip?.scene ?? '—'}
+          {montageTexts.playbackPosition({ position: frameLabel(position), length: frameLabel(length), scene: clip?.scene })}
         </Typography>
         {actions}
       </Stack>

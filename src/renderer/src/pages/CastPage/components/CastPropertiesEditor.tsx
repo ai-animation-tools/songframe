@@ -1,3 +1,4 @@
+import { castTexts } from '@shared/texts/cast';
 import { type ReactElement, useRef, useState } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Chip, Stack, Tab, Tabs, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -78,23 +79,23 @@ export function CastPropertiesEditor({ kinds, entities, properties, savedPropert
       <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ '& .MuiAccordionSummary-content': { minWidth: 0 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography fontWeight={600}>Словарь свойств</Typography>
+            <Typography fontWeight={600}>{castTexts.propertiesTitle}</Typography>
             <Typography variant="caption" color="text.secondary">
-              Поля состояния по типам сущностей: подписи, подсказки, варианты значений и пункты проверки.
+              {castTexts.propertiesDescription}
             </Typography>
           </Box>
-          {changed ? <Chip size="small" variant="outlined" color="warning" label="Словарь изменён" /> : null}
-          {problem ? <Chip size="small" variant="outlined" color="error" label="Нужно исправить" /> : null}
+          {changed ? <Chip size="small" variant="outlined" color="warning" label={castTexts.propertiesChanged} /> : null}
+          {problem ? <Chip size="small" variant="outlined" color="error" label={castTexts.propertiesInvalid} /> : null}
         </Box>
       </AccordionSummary>
       <AccordionDetails>
         <Stack spacing={2}>
           <Typography variant="body2" color="text.secondary">
-            <LinkedText text="Свойства типа задают поля состояния его сущностей — в начальном состоянии на этой странице и в изменениях состояния плана на странице «Сценарий», в порядке словаря. Тип без собственного словаря при создании сущности получает набор по умолчанию: известный тип — свой, остальные — общий. Правки словаря сохраняются кнопкой «Сохранить» вместе с сущностями." />
+            <LinkedText text={castTexts.propertiesHelp} />
           </Typography>
           {problem ? <Alert severity="error">{problem}</Alert> : null}
           {!kind ? (
-            <Typography color="text.secondary">Типов пока нет: словарь появится вместе с первой сущностью.</Typography>
+            <Typography color="text.secondary">{castTexts.noKinds}</Typography>
           ) : (
             <>
               <Tabs
@@ -105,7 +106,7 @@ export function CastPropertiesEditor({ kinds, entities, properties, savedPropert
                 }}
                 variant="scrollable"
                 scrollButtons="auto"
-                aria-label="Тип сущностей"
+                aria-label={castTexts.entityKinds}
                 sx={{ minHeight: 36, borderBottom: 1, borderColor: 'divider' }}
               >
                 {kindIds.map((k) => (
@@ -114,7 +115,11 @@ export function CastPropertiesEditor({ kinds, entities, properties, savedPropert
                     value={k}
                     id={`cast-properties-tab-${k}`}
                     aria-controls="cast-properties-panel"
-                    label={properties[k] ? `${kindLabel(k)} · ${properties[k].length}` : `${kindLabel(k)} · нет словаря`}
+                    label={
+                      properties[k]
+                        ? castTexts.dictionaryCount({ kind: kindLabel(k), count: properties[k].length })
+                        : castTexts.noDictionary({ kind: kindLabel(k) })
+                    }
                     sx={{ minHeight: 36 }}
                   />
                 ))}
@@ -122,12 +127,11 @@ export function CastPropertiesEditor({ kinds, entities, properties, savedPropert
               <Stack spacing={1} role="tabpanel" id="cast-properties-panel" aria-labelledby={`cast-properties-tab-${kind}`}>
                 {!properties[kind] ? (
                   <Typography variant="body2" color="text.secondary">
-                    У типа «{kindLabel(kind)}» пока нет своего словаря: при сохранении кастинга сущности этого типа получат набор по умолчанию. Свойство,
-                    добавленное здесь, создаст собственный словарь типа вместо набора по умолчанию.
+                    {castTexts.defaultDictionaryHelp({ kind: kindLabel(kind) })}
                   </Typography>
                 ) : !list.length ? (
                   <Typography variant="body2" color="text.secondary">
-                    В словаре типа нет свойств: в редакторах состояния останутся только свои свойства. Добавьте свойство ниже.
+                    {castTexts.noProperties}
                   </Typography>
                 ) : null}
                 {list.map((property, index) => {

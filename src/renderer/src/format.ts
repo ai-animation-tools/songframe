@@ -1,13 +1,14 @@
 /** Форматирование чисел и дат для интерфейса. */
 
+import { commonTexts } from '@shared/texts/common';
 export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} Б`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
+  if (bytes < 1024) return commonTexts.format.bytes(bytes);
+  if (bytes < 1024 * 1024) return commonTexts.format.kilobytes((bytes / 1024).toFixed(1));
+  return commonTexts.format.megabytes((bytes / 1024 / 1024).toFixed(1));
 }
 
 export function formatDuration(seconds: number | null): string {
-  if (seconds === null || !Number.isFinite(seconds)) return 'длительность не определена';
+  if (seconds === null || !Number.isFinite(seconds)) return commonTexts.format.unknownDuration;
   const minutes = Math.floor(seconds / 60);
   const rest = seconds - minutes * 60;
   return `${minutes}:${rest.toFixed(1).padStart(4, '0')}`;

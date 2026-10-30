@@ -1,5 +1,6 @@
 /** Копирование шаблона проекта с подстановкой плейсхолдеров. */
 
+import { projectsTexts } from '@shared/texts/projects';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
@@ -35,7 +36,7 @@ export function copyTemplate(source: string, target: string, values: Placeholder
       }
     }
   };
-  if (!existsSync(source) || !statSync(source).isDirectory()) throw new Error(`Шаблон проекта не найден: ${source}`);
+  if (!existsSync(source) || !statSync(source).isDirectory()) throw new Error(projectsTexts.main.templateMissing({ path: source }));
   walk(source, target);
   return written;
 }

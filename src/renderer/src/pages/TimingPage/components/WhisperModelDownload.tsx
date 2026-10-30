@@ -1,3 +1,4 @@
+import { timingTexts } from '@shared/texts/timing';
 import { Download } from '@mui/icons-material';
 /** Наблюдение за обычным заданием Jobs продолжается при повторном открытии диалога. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
@@ -60,11 +61,11 @@ export function WhisperModelDownload({ model, onDownloaded }: Props): ReactEleme
         const next = await window.api.jobs.get(jobId);
         if (!active) return;
         setJob(next);
-        setError(next ? '' : 'Задание загрузки не найдено. Можно запустить загрузку повторно.');
+        setError(next ? '' : timingTexts.downloadNotFound);
         if (next?.status !== 'running') return;
       } catch (reason) {
         if (!active) return;
-        setError(`Не удалось обновить загрузку: ${describeError(reason)}`);
+        setError(timingTexts.downloadRefreshFailed({ reason: describeError(reason) }));
       }
       if (active) timer = setTimeout(() => void poll(), 1000);
     };
@@ -102,17 +103,17 @@ export function WhisperModelDownload({ model, onDownloaded }: Props): ReactEleme
         startIcon={<Download />}
         onClick={download}
         disabled={!online || loading || starting || running}
-        disabledReason={starting || running ? 'Модель уже скачивается.' : !online ? OFFLINE_MESSAGE : 'Дождитесь окончания проверки загрузок.'}
+        disabledReason={starting || running ? timingTexts.downloadPending : !online ? OFFLINE_MESSAGE : timingTexts.downloadCheckPending}
         sx={{ alignSelf: 'flex-start' }}
       >
-        {loading ? 'Проверяем загрузки' : starting || running ? `Скачивается ${model}` : `Скачать модель ${model}`}
+        {loading ? timingTexts.checkingDownloads : starting || running ? timingTexts.downloading({ model }) : timingTexts.download({ model })}
       </ActionButton>
       <Typography variant="caption" color="text.secondary">
-        Повторная загрузка использует уже скачанные файлы. Диалог можно закрыть: загрузка продолжится. После завершения папка выберется автоматически.
+        {timingTexts.downloadHelp}
       </Typography>
       {error && <Alert severity="error">{error}</Alert>}
-      {job?.status === 'failed' && <Alert severity="error">Не удалось скачать модель. Подробности в журнале; повторите загрузку.</Alert>}
-      {job?.status === 'done' && <Alert severity="success">Модель скачана. Можно запускать разметку без перезапуска приложения.</Alert>}
+      {job?.status === 'failed' && <Alert severity="error">{timingTexts.downloadFailed}</Alert>}
+      {job?.status === 'done' && <Alert severity="success">{timingTexts.downloadReady}</Alert>}
       {job && <JobStatus running={running} />}
     </Stack>
   );

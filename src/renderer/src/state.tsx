@@ -233,6 +233,7 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
 
 export function useApp(): AppContextValue {
   const value = useContext(AppContext);
+  // eslint-disable-next-line no-restricted-syntax -- Ошибка программного контракта hook; пользовательским сообщением интерфейса не является.
   if (!value) throw new Error('useApp вне AppProvider');
   return value;
 }

@@ -18,6 +18,7 @@ export class AgentHistory {
       if (!/^agent-[\da-f-]{36}\.json$/.test(name)) continue;
       const file = join(this.directory, name);
       try {
+        // eslint-disable-next-line no-restricted-syntax -- Внутренняя причина отказа чтения перехватывается ниже и не показывается пользователю.
         if (statSync(file).size > 1024 * 1024) throw new Error('размер');
         const job = readLocalJson<AgentJob>(file);
         if (
@@ -40,10 +41,12 @@ export class AgentHistory {
           !/^[a-f0-9]{64}$/.test(job.inputHashes?.prompt ?? '') ||
           !/^[a-f0-9]{64}$/.test(job.inputHashes?.context ?? '')
         )
+          // eslint-disable-next-line no-restricted-syntax -- Внутренняя причина отказа чтения перехватывается ниже и не показывается пользователю.
           throw new Error('формат');
         jobs.push(job);
       } catch {
         // Повреждённая запись сохраняется для разбора и не блокирует остальные проекты/задания.
+        // eslint-disable-next-line no-restricted-syntax -- Это журнал повреждённой записи с путём для разбора, а не текст интерфейса.
         console.warn(`Не удалось прочитать запись агента ${file}. Файл сохранён.`);
       }
     }

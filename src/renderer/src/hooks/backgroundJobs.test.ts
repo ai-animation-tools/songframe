@@ -1,3 +1,7 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
+import { LinkedText } from '../components/LinkedText';
 import { describe, expect, it } from 'vitest';
 import { agentFinishedNotice, agentOwnerShowsResult, finishedNotice, ownerShowsResult, routeOf } from './backgroundJobs';
 
@@ -19,5 +23,36 @@ describe('общий наблюдатель заданий', () => {
     expect(agentOwnerShowsResult({ task: 'Опоры M23: Codex' }, '/project/production')).toBe(true);
     expect(agentFinishedNotice({ task: 'ai-clip-scenario:scenes', status: 'completed' }).message).toContain('«Сценарий»');
     expect(agentFinishedNotice({ task: 'ai-clip-scene:prepare', status: 'failed' }).severity).toBe('error');
+  });
+});
+
+// Целые сообщения и переходы ожидаются независимо от словарей и таблицы страниц.
+describe('сохранение фоновых уведомлений', () => {
+  it.each([
+    ['completed', 'Агент закончил работу: предложение готово к просмотру.', 'success'],
+    ['cancelled', 'Задание агента остановлено.', 'warning'],
+    ['failed', 'Задание агента не выполнено. Подробности — в журнале заданий.', 'error']
+  ] as const)('сохраняет фразу и ссылку при %s', (status, prefix, severity) => {
+    for (const [task, page, route] of [
+      ['ai-clip-scenario', 'Сценарий', '/project/scenario'],
+      ['ai-clip-scenario:scenes', 'Сценарий', '/project/scenario'],
+      ['ai-clip-scene:prepare', 'Производство', '/project/production']
+    ]) {
+      const notice = agentFinishedNotice({ task, status });
+      expect(notice).toEqual({ message: `${prefix} Откройте страницу «${page}».`, severity });
+      const html = renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: ['/jobs'] }, createElement(LinkedText, { text: notice.message })));
+      expect(html).toContain(`href="${route}"`);
+      expect(html).toContain(`«${page}»</a>.`);
+    }
+  });
+
+  it('сохраняет пробелы вокруг отсутствующей и сложной ошибки', () => {
+    expect(finishedNotice({ title: 'Запрос «А»', status: 'failed' })).toEqual({
+      message: 'Запрос «А»: не выполнено. Подробности — в журнале заданий.',
+      severity: 'error'
+    });
+    expect(finishedNotice({ title: 'Запрос «А»', status: 'failed', error: 'C:\\Клип & <кадр>\nОшибка' }).message).toBe(
+      'Запрос «А»: не выполнено. C:\\Клип & <кадр>\nОшибка Подробности — в журнале заданий.'
+    );
   });
 });

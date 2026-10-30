@@ -1,4 +1,5 @@
 /** Сценарный проход хранит предложение вне проекта и публикует его только после отдельного Apply. */
+import { scenarioTexts } from '@shared/texts/scenario';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
@@ -67,7 +68,7 @@ function checkStoredState(value: unknown): asserts value is WorkflowState {
         !!path && !isAbsolute(path) && !path.split('/').includes('..') && (hash === null || (typeof hash === 'string' && /^[a-f0-9]{64}$/.test(hash)))
     );
   const documents = (v: unknown): void => {
-    if (!isRecord(v)) throw new Error('Неверный снимок документов.');
+    if (!isRecord(v)) throw new Error(scenarioTexts.main.snapshotInvalidDocuments);
     if (v.cast !== null) normalizeCast(v.cast, null);
     if (v.treatment !== null) normalizeTreatment(v.treatment, null);
     if (v.scenes !== null) checkScenesShape(v.scenes);
@@ -84,7 +85,7 @@ function checkStoredState(value: unknown): asserts value is WorkflowState {
           (typeof value.scenesApproval.sceneHash !== 'string' || !/^[a-f0-9]{64}$/.test(value.scenesApproval.sceneHash))))) ||
     (value.needsScenesReview !== undefined && typeof value.needsScenesReview !== 'boolean')
   )
-    throw new Error('Неверная локальная запись сценария.');
+    throw new Error(scenarioTexts.main.workflowInvalidState);
   if (value.pending === undefined) return;
   const stored = value.pending;
   if (
@@ -95,7 +96,7 @@ function checkStoredState(value: unknown): asserts value is WorkflowState {
     stored.duration <= 0 ||
     !isRecord(stored.proposal)
   )
-    throw new Error('Неверная запись предложения.');
+    throw new Error(scenarioTexts.main.workflowInvalidProposal);
   if (stored.scaffold !== null) checkScenesShape(stored.scaffold);
   const proposal = stored.proposal;
   if (
@@ -113,7 +114,7 @@ function checkStoredState(value: unknown): asserts value is WorkflowState {
     typeof proposal.stale !== 'boolean' ||
     (proposal.message !== undefined && typeof proposal.message !== 'string')
   )
-    throw new Error('Неверные метаданные предложения.');
+    throw new Error(scenarioTexts.main.workflowInvalidProposalMetadata);
   documents(proposal.before);
   documents(proposal.after);
 }
@@ -163,29 +164,25 @@ export class ScenarioWorkflow {
       ...scenarioOutputPaths(project)
     ]);
     const sourcePath = (path: unknown): string => {
-      if (typeof path !== 'string' || !path || isAbsolute(path))
-        throw new Error('Не удалось прочитать путь исходного файла. Загрузите его заново на странице «Исходники».');
+      if (typeof path !== 'string' || !path || isAbsolute(path)) throw new Error(scenarioTexts.main.sourcePathUnreadable);
       const full = resolve(project, 'source', path);
       const local = relative(join(project, 'source'), full);
-      if (local.startsWith('..') || isAbsolute(local))
-        throw new Error('Исходный файл находится вне папки исходников проекта. Загрузите его заново на странице «Исходники».');
+      if (local.startsWith('..') || isAbsolute(local)) throw new Error(scenarioTexts.main.sourceOutsideProject);
       return `source/${local.split('\\').join('/')}`;
     };
     let manifest: SourceManifest | null = null;
     let timing: TimingFile | null = null;
     let duration: number | null = null;
     try {
-      if (!existsSync(join(project, 'plan/project.json'))) throw new Error('Не удалось прочитать настройки проекта. Выберите папку проекта заново.');
+      if (!existsSync(join(project, 'plan/project.json'))) throw new Error(scenarioTexts.main.projectSettingsUnreadable);
       const raw = json(project, 'source/manifest.json');
-      if (!isRecord(raw) || raw.schema_version !== 1 || !Array.isArray(raw.references))
-        throw new Error('Сведения об исходниках отсутствуют или повреждены. Загрузите трек, текст песни и идею на странице «Исходники».');
+      if (!isRecord(raw) || raw.schema_version !== 1 || !Array.isArray(raw.references)) throw new Error(scenarioTexts.main.sourcesMissing);
       for (const key of ['track', 'lyrics', 'idea'] as const) {
         const source = raw[key];
-        if (!isRecord(source) || typeof source.sha256 !== 'string')
-          throw new Error('Для сценария нужны трек, текст песни и идея. Загрузите недостающие файлы на странице «Исходники».');
+        if (!isRecord(source) || typeof source.sha256 !== 'string') throw new Error(scenarioTexts.main.scenarioSourcesRequired);
         const path = sourcePath(source.path);
         paths.add(path);
-        if (hash(project, path) !== source.sha256) throw new Error(`${path}: файл отсутствует или изменён после загрузки исходников.`);
+        if (hash(project, path) !== source.sha256) throw new Error(scenarioTexts.main.sourceFileChanged({ path }));
       }
       for (const reference of raw.references) {
         if (
@@ -193,13 +190,12 @@ export class ScenarioWorkflow {
           !['id', 'kind', 'name', 'short_name', 'description'].every((key) => typeof reference[key] === 'string') ||
           !Array.isArray(reference.files)
         )
-          throw new Error('Сведения об исходном референсе повреждены. Загрузите его заново на странице «Исходники».');
+          throw new Error(scenarioTexts.main.sourceReferenceInvalid);
         for (const file of reference.files) {
-          if (!isRecord(file) || typeof file.sha256 !== 'string')
-            throw new Error('Сведения об исходном изображении повреждены. Загрузите его заново на странице «Исходники».');
+          if (!isRecord(file) || typeof file.sha256 !== 'string') throw new Error(scenarioTexts.main.sourceImageInvalid);
           const path = sourcePath(file.path);
           paths.add(path);
-          if (hash(project, path) !== file.sha256) throw new Error(`${path}: изображение отсутствует или изменено после загрузки.`);
+          if (hash(project, path) !== file.sha256) throw new Error(scenarioTexts.main.sourceImageChanged({ path }));
         }
       }
       manifest = raw as unknown as SourceManifest;
@@ -232,16 +228,15 @@ export class ScenarioWorkflow {
             Number.isFinite(part.end)
         )
       )
-        throw new Error('Для сценария нужна разметка строк и длительность трека. На странице «Тайминги» разметьте трек и сохраните результат.');
+        throw new Error(scenarioTexts.main.scenarioTimingRequired);
       timing = rawTiming as unknown as TimingFile;
       duration = timing.duration_decoded;
       const lyrics = parseLyricsLines(readFileSync(join(project, 'source/text.md'), 'utf8'));
       const timingProblems = validateTiming(timing, lyrics, duration);
-      if (timing.sha256 !== manifest.track!.sha256) timingProblems.push('Разметка относится к другому треку.');
-      if (timing.lines.some((line) => !line.verified)) timingProblems.push('Подтвердите на слух все строки разметки.');
+      if (timing.sha256 !== manifest.track!.sha256) timingProblems.push(scenarioTexts.main.timingTrackMismatch);
+      if (timing.lines.some((line) => !line.verified)) timingProblems.push(scenarioTexts.main.timingUnverified);
       const covered = new Set(timing.lines.map((line) => line.source_line));
-      if (lyrics.some((line) => !line.header && !!line.text.trim() && !covered.has(line.number)))
-        timingProblems.push('Разметка должна покрывать все строки песни.');
+      if (lyrics.some((line) => !line.header && !!line.text.trim() && !covered.has(line.number))) timingProblems.push(scenarioTexts.main.timingIncomplete);
       if (timingProblems.length) throw new Error(timingProblems.join(' '));
     } catch (error) {
       problems.push(message(error));
@@ -266,7 +261,7 @@ export class ScenarioWorkflow {
         try {
           const path = sourcePath(image);
           paths.add(path);
-          if (!existsSync(join(project, path))) throw new Error(`${entity.name}: отсутствует ${path}.`);
+          if (!existsSync(join(project, path))) throw new Error(scenarioTexts.main.castImageMissing({ name: entity.name, path }));
         } catch (error) {
           castImagesValid = false;
           documentProblems.push(message(error));
@@ -315,11 +310,11 @@ export class ScenarioWorkflow {
     if (proposal.status !== 'running') return job;
     if (!job || job.project !== inputs.project || job.status === 'interrupted') {
       proposal.status = 'interrupted';
-      proposal.message = 'Задание прервано; подготовьте новое предложение.';
+      proposal.message = scenarioTexts.main.proposalInterrupted;
     } else if (job.status === 'running') return job;
     else if (job.status !== 'completed' || job.exitCode !== 0) {
       proposal.status = 'failed';
-      proposal.message = job.message || 'Агент завершил задание без успешного результата.';
+      proposal.message = job.message || scenarioTexts.main.proposalAgentFailed;
     } else {
       try {
         const after = proposalDocuments(
@@ -336,21 +331,17 @@ export class ScenarioWorkflow {
             for (const image of entity.images) {
               const full = resolve(inputs.project, 'source', image);
               const local = relative(join(inputs.project, 'source'), full);
-              if (isAbsolute(image) || local.startsWith('..') || !existsSync(full)) throw new Error(`${entity.name}: отсутствует изображение source/${image}.`);
+              if (isAbsolute(image) || local.startsWith('..') || !existsSync(full))
+                throw new Error(scenarioTexts.main.proposalImageMissing({ name: entity.name, image }));
               // Новое изображение тоже становится входом Apply, даже если его не было в исходной паре.
               const path = `source/${local.split('\\').join('/')}`;
-              if (!(path in stored.expectedHashes))
-                throw new Error(`${entity.name}: изображение не входило в исходный контекст. Загрузите его в исходники и повторите запрос.`);
+              if (!(path in stored.expectedHashes)) throw new Error(scenarioTexts.main.proposalImageOutsideContext({ name: entity.name }));
             }
         proposal.after = after;
         proposal.changedIds = proposal.pass === 'treatment' ? [] : changedSceneIds(proposal.before, after);
         // Сущности без изображения допустимы (место действия, реквизит): одно предупреждение вместо списка одинаковых.
         const withoutImages = after.cast?.entities.filter((entity) => entity.kind !== 'world' && !entity.images.length).map((entity) => entity.name) ?? [];
-        proposal.warnings = withoutImages.length
-          ? [
-              `Без референса в кастинге: ${withoutImages.join(', ')}. Агент описывает их в опорах только текстом; если нужна узнаваемость, добавьте изображение на странице «Исходники» и обновите кастинг.`
-            ]
-          : [];
+        proposal.warnings = withoutImages.length ? [scenarioTexts.main.castWithoutReferences({ names: withoutImages.join(', ') })] : [];
         proposal.status = 'ready';
       } catch (error) {
         proposal.status = 'invalid';
@@ -396,26 +387,26 @@ export class ScenarioWorkflow {
       (input.note !== undefined && typeof input.note !== 'string') ||
       (input.selectedIds !== undefined && (!Array.isArray(input.selectedIds) || !input.selectedIds.every((id) => typeof id === 'string')))
     )
-      throw new Error('Неверные параметры сценарного прохода.');
+      throw new Error(scenarioTexts.main.workflowInvalidStart);
     const initial = this.inputs(input.project);
     const view = this.view(initial.project);
     if (!(input.pass === 'treatment' ? view.canStartTreatment : input.pass === 'scenes' ? view.canStartScenes : view.canRevise))
-      throw new Error(view.problems.join(' ') || 'Сначала утвердите актуальные кастинг и трактовку; дождитесь завершения текущего задания.');
+      throw new Error(view.problems.join(' ') || scenarioTexts.main.workflowStartBlocked);
     const selectedIds = [...new Set(input.selectedIds ?? [])];
     if (
       input.pass === 'revise' &&
       (!input.note?.trim() || !selectedIds.length || selectedIds.some((id) => !initial.documents.scenes?.scenes.some((scene) => scene.id === id)))
     )
-      throw new Error('Для доработки выберите существующий план и заполните замечание.');
+      throw new Error(scenarioTexts.main.workflowReviseSelection);
     this.preparing.add(initial.project);
     try {
       const toolsRoot = this.options.toolsRoot();
-      if (!toolsRoot) throw new Error('Комплекс не найден. Выберите его папку заново.');
+      if (!toolsRoot) throw new Error(scenarioTexts.main.toolsMissing);
       const skill = readFileSync(join(toolsRoot, 'skills/ai-clip-scenario/SKILL.md'), 'utf8');
       const scaffold = input.pass === 'scenes' ? await this.options.scaffold(initial.project) : null;
       if (scaffold) checkScenesShape(scaffold);
       const current = this.inputs(initial.project);
-      if (!matches(initial.hashes, current.hashes)) throw new Error('Входные файлы изменились при подготовке задания. Повторите запуск.');
+      if (!matches(initial.hashes, current.hashes)) throw new Error(scenarioTexts.main.inputsChanged);
       const seedCast = initial.manifest ? castFromSources(initial.manifest, initial.documents.cast, loadDefaults(toolsRoot)) : null;
       // Обложка оформляет проект и не передаётся агенту как возможный референс сцены.
       // Явный состав сохраняет только исходники сценария и зарегистрированные референсы.
@@ -435,9 +426,13 @@ export class ScenarioWorkflow {
         note: input.note?.trim() || ''
       });
       const prompt =
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция сценарному агенту остаётся у владельца промпта, а не в каталоге UI.
         `${skill}\n\nРежим приложения: output=proposal, pass=${input.pass}. Верни ровно один JSON без Markdown, без записи файлов и вызовов инструментов производства. ` +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция сценарному агенту остаётся у владельца промпта, а не в каталоге UI.
         `Оболочка: {"schemaVersion":1,"pass":"${input.pass}",${input.pass === 'treatment' ? '"cast":{...},"treatment":{...}' : input.pass === 'scenes' ? '"scenes":{...}' : '"patches":[{"id":"выбранный ID",...поля постановки}]'} }. ` +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция сценарному агенту остаётся у владельца промпта, а не в каталоге UI.
         `Не меняй source, timing и assets. Конец песни равен timing.duration_decoded. Сохраняй ID, original, sequence и кадровые окна каркаса. ` +
+        // eslint-disable-next-line no-restricted-syntax -- Инструкция сценарному агенту остаётся у владельца промпта, а не в каталоге UI.
         `Для revise разрешены только ${STAGING_FIELDS.join(', ')} выбранных ID; derived_from: null снимает признак производного плана. Не меняй глобальные поля и остальные сцены. Заполни постановку без ЗАПОЛНИТЬ; используй только объявленные изображения и свойства кастинга.`;
       const job = this.options.agents.start({ project: initial.project, task: `ai-clip-scenario:${input.pass}`, prompt, context });
       const proposal: ScenarioProposal = {
@@ -466,13 +461,13 @@ export class ScenarioWorkflow {
     const state = this.read(view.project);
     const pending = state.pending;
     if (view.busy || !pending || pending.proposal.id !== id || pending.proposal.status !== 'ready' || view.proposal?.stale)
-      throw new Error('Применимо только завершённое актуальное предложение. Подготовьте новый запрос.');
+      throw new Error(scenarioTexts.main.proposalNotApplicable);
     const initial = this.inputs(view.project);
-    if (pending.proposal.pass !== 'treatment' && !view.treatmentApproved) throw new Error('Утверждение кастинга и трактовки устарело.');
+    if (pending.proposal.pass !== 'treatment' && !view.treatmentApproved) throw new Error(scenarioTexts.main.pairApprovalStale);
     if (initial.problems.length) throw new Error(initial.problems.join(' '));
     // Повторный разбор берёт успешный результат менеджера, а не доверяет сохранённому preview.
     const job = this.options.agents.get(pending.proposal.jobId);
-    if (!job || job.status !== 'completed' || job.exitCode !== 0) throw new Error('Нет успешно завершённого результата агента.');
+    if (!job || job.status !== 'completed' || job.exitCode !== 0) throw new Error(scenarioTexts.main.agentResultMissing);
     const after = proposalDocuments(
       job.result,
       pending.proposal.pass,
@@ -483,7 +478,7 @@ export class ScenarioWorkflow {
       this.options.toolsRoot()
     );
     if (!Object.entries(pending.expectedHashes).every(([path, value]) => hash(view.project, path) === value))
-      throw new Error('Предложение устарело: изменились файлы проекта.');
+      throw new Error(scenarioTexts.main.staleProjectFiles);
     this.preparing.add(view.project);
     try {
       await this.options.publish({
@@ -512,7 +507,7 @@ export class ScenarioWorkflow {
 
   approveCurrent(project: string): ScenarioWorkflowView {
     const view = this.view(project);
-    if (!view.canApproveCurrent) throw new Error(view.problems.join(' ') || 'Нет корректной неутверждённой пары кастинга и трактовки.');
+    if (!view.canApproveCurrent) throw new Error(view.problems.join(' ') || scenarioTexts.main.pairApprovalUnavailable);
     const input = this.inputs(view.project);
     const state = this.read(view.project);
     if (input.documents.scenes && state.approval && !matches(state.approval, input.approvalHashes)) state.needsScenesReview = true;
@@ -524,7 +519,7 @@ export class ScenarioWorkflow {
   /** Ручная постановка требует собственного явного утверждения после изменения трактовки. */
   approveScenes(project: string): ScenarioWorkflowView {
     const view = this.view(project);
-    if (!view.canApproveScenes) throw new Error(view.problems.join(' ') || 'Сначала утвердите актуальную пару и заполните весь сценарий.');
+    if (!view.canApproveScenes) throw new Error(view.problems.join(' ') || scenarioTexts.main.scenesApprovalUnavailable);
     const input = this.inputs(view.project);
     const state = this.read(view.project);
     state.scenesApproval = { hashes: input.approvalHashes, sceneHash: input.hashes['plan/scenes.json'] };
@@ -536,7 +531,7 @@ export class ScenarioWorkflow {
   discard(project: string, id: string): ScenarioWorkflowView {
     const input = this.inputs(project);
     const state = this.read(input.project);
-    if (!state.pending || state.pending.proposal.id !== id) throw new Error('Предложение больше не найдено.');
+    if (!state.pending || state.pending.proposal.id !== id) throw new Error(scenarioTexts.main.proposalMissing);
     delete state.pending;
     this.write(input.project, state);
     return this.view(input.project);

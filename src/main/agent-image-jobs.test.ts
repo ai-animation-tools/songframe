@@ -131,8 +131,10 @@ describe.skipIf(process.platform !== 'linux')('маршрут Codex изобра
       'модель Codex с пробелами',
       '-'
     ]);
-    expect(invocation.input).toContain('Не изменяй материалы исходного проекта');
-    expect(invocation.input).toContain('Нарисуй K01');
+    // Инструкция записи кандидатов сохраняется целиком и не превращается в редактируемую подпись UI.
+    expect(invocation.input).toBe(
+      'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы сервисам генерации. Верни финальный JSON в запрошенном формате.\n\nЗадача:\nНарисуй K01\n\nДополнительный контекст:\n{"stage":"frames"}'
+    );
     expect(readFileSync(join(candidateDir, 'K01.png'))).toEqual(Buffer.from(pngBase64, 'base64'));
     expect(settings.getAgent()).toEqual(selected);
     expect(settings.getProviderAgent('codex')).toBeNull();

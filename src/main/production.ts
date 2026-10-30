@@ -3,6 +3,8 @@
  * решения пользователя (через shot_workflow decide) и длинные задания (отправка, повтор, приёмка).
  */
 
+import { productionTexts } from '@shared/texts/production';
+import { commonTexts } from '@shared/texts/common';
 import { FPS } from '@shared/video';
 import { canAgreeToUnknownCost, priceAllowsGeneration } from '@shared/generation-consent';
 import { ATTEMPT_LABELS, SCENE_CHANGED } from '@shared/production-labels';
@@ -38,20 +40,22 @@ import { derivedShotSource } from './derived-shot';
 import { currentShotFingerprint, restampPackage, shotAcceptance } from './shot-acceptance';
 import { derivedShotReason } from '@shared/production-workflow';
 
+const texts = productionTexts.main.package;
+
 const STAGE_LABELS: Record<string, string> = {
-  description_review: 'описание на согласовании',
-  keyframes_review: 'опоры на согласовании',
-  prompt_review: 'видеопромпт на согласовании',
-  request_choice: 'запрос на подтверждении',
-  image_request_choice: 'запрос изображения на подтверждении',
-  image_submitted: 'изображение отправлено, ждём результат',
-  image_downloaded: 'изображение получено, выберите вариант опоры',
-  ready: 'отложено в очередь',
-  needs_revision: 'требует исправления',
-  submitted: 'отправлено, ждём результат',
-  downloaded: 'результат получен, ждёт просмотра',
-  edit_review: 'генерация принята, участок не выбран',
-  accepted: 'принята, перенос в assets не завершён'
+  description_review: texts.descriptionReview,
+  keyframes_review: texts.keyframesReview,
+  prompt_review: texts.promptReview,
+  request_choice: texts.requestChoice,
+  image_request_choice: texts.imageRequestChoice,
+  image_submitted: texts.imageSubmitted,
+  image_downloaded: texts.imageDownloaded,
+  ready: texts.queued,
+  needs_revision: texts.needsRevision,
+  submitted: texts.submitted,
+  downloaded: texts.downloaded,
+  edit_review: texts.editReview,
+  accepted: texts.acceptedPendingMove
 };
 function readJson<T>(path: string): T | null {
   try {
@@ -132,16 +136,16 @@ export function readPackage(project: string, dir: string): PackageView | null {
       downloads?: { path?: string }[];
     }>(join(requestDir, 'attempt.json'));
     if (frozen) {
-      if (typeof frozen.provider !== 'string' || !frozen.provider.trim()) problems.push('В сохранённом запросе не указан провайдер.');
-      if (imageRequest && frozen.kind !== 'image') problems.push('Активный запрос опоры должен иметь kind=image.');
-      if (!imageRequest && frozen.kind === 'image') problems.push('Видео-запрос не может ссылаться на попытку изображения.');
+      if (typeof frozen.provider !== 'string' || !frozen.provider.trim()) problems.push(texts.requestProviderMissing);
+      if (imageRequest && frozen.kind !== 'image') problems.push(texts.imageKindRequired);
+      if (!imageRequest && frozen.kind === 'image') problems.push(texts.videoReferencesImage);
       if (
         imageRequest &&
         !(workflow.image_requests ?? []).some(
           (entry) => entry.request_dir === activeRequest && entry.frame_id === workflow.image_frame_id && entry.request_sha256 === attempt?.request_sha256
         )
       )
-        problems.push('Активный запрос изображения не совпадает с историей пакета.');
+        problems.push(texts.imageHistoryMismatch);
       // В подтверждении показываем замороженный промпт запроса, а не редактируемый текст пакета.
       const frozenPromptPath = join(requestDir, typeof frozen.prompt === 'string' ? frozen.prompt : (frozen.prompt?.path ?? 'prompt.txt'));
       const downloads = [
@@ -173,7 +177,7 @@ export function readPackage(project: string, dir: string): PackageView | null {
         creditsConsumed: typeof attempt?.credits_consumed === 'number' ? attempt.credits_consumed : null,
         downloads: [...new Set(downloads)].filter((p) => existsSync(p))
       };
-    } else problems.push('В папке запроса нет request.json.');
+    } else problems.push(texts.requestFileMissing);
   }
   const descriptionPath = join(dir, 'description.md');
   const description = existsSync(descriptionPath) ? readFileSync(descriptionPath, 'utf-8') : null;
@@ -265,10 +269,11 @@ function packageToken(project: string, directory: string, workflow: Workflow, re
   }
   for (const path of [...paths].sort()) {
     const file = resolve(directory, path);
-    if (!file.startsWith(resolve(directory) + '/')) throw new Error('Материалы пакета ссылаются за пределы своей папки.');
+    if (!file.startsWith(resolve(directory) + '/')) throw new Error(texts.packageMaterialsOutside);
     hash
       .update(path)
       .update('\0')
+      // eslint-disable-next-line no-restricted-syntax -- Маркер отсутствующего файла входит в SHA материалов и сохраняет формат токена.
       .update(existsSync(file) && lstatSync(file).isFile() ? tokenDigest(file) : '<нет файла>')
       .update('\0');
   }
@@ -278,9 +283,11 @@ function packageToken(project: string, directory: string, workflow: Workflow, re
       .update(path)
       .update('\0')
       // Декоративная обложка не меняет показанное согласование или замороженный платный запрос.
+      // eslint-disable-next-line no-restricted-syntax -- Маркер отсутствующего файла входит в SHA материалов и сохраняет формат токена.
       .update(path === 'source/manifest.json' ? (sourceInputDigest(project) ?? '<нет файла>') : existsSync(file) ? tokenDigest(file) : '<нет файла>')
       .update('\0');
   }
+  // eslint-disable-next-line no-restricted-syntax -- Маркер отсутствующего результата входит в SHA и сохраняет формат токена.
   if (['downloaded', 'edit_review', 'image_downloaded'].includes(workflow.stage)) hash.update('result').update(resultToken ?? '<нет результата>');
   return hash.digest('hex');
 }
@@ -291,7 +298,7 @@ function packageResultToken(requestDir: string, downloads: string[]): string {
   const paths = new Set([join(requestDir, 'request.json'), join(requestDir, 'attempt.json'), ...downloads]);
   for (const path of [...paths].sort()) {
     const file = resolve(path);
-    if (!file.startsWith(resolve(requestDir) + '/') || !lstatSync(file).isFile()) throw new Error('Результат должен быть обычным файлом в папке запроса.');
+    if (!file.startsWith(resolve(requestDir) + '/') || !lstatSync(file).isFile()) throw new Error(texts.resultFileRequired);
     hash.update(relative(requestDir, file)).update('\0').update(tokenDigest(file)).update('\0');
   }
   return hash.digest('hex');
@@ -300,33 +307,31 @@ function packageResultToken(requestDir: string, downloads: string[]): string {
 function checkedPackage(project: string, packageDir: string): string {
   const directory = resolve(project, packageDir);
   const local = relative(realpathSync(project), realpathSync(directory));
-  if (!/^plan\/(batches|awaiting)\/[^/]+$/.test(local) || lstatSync(directory).isSymbolicLink())
-    throw new Error('Выберите обычную папку рабочего пакета в plan/batches или plan/awaiting.');
+  if (!/^plan\/(batches|awaiting)\/[^/]+$/.test(local) || lstatSync(directory).isSymbolicLink()) throw new Error(texts.packageFolderRequired);
   return realpathSync(directory);
 }
 
 /** Что ждёт от пользователя пакет: вопрос, замечание без доработки, отправка или просмотр результата. */
 function packageAttention(pkg: PackageView): string | null {
   const name = basename(pkg.dir);
-  if (pkg.pendingDecision) return `${name}: ${pkg.pendingDecision.question || 'вопрос ждёт ответа'}`;
-  if (pkg.decision?.verdict === 'revise' && pkg.stage !== 'accepted') return `${name}: замечание записано, доработка с агентом не запущена`;
+  if (pkg.pendingDecision) return texts.attentionQuestion({ name, question: pkg.pendingDecision.question });
+  if (pkg.decision?.verdict === 'revise' && pkg.stage !== 'accepted') return texts.attentionRevision({ name });
   const status = pkg.request?.attemptStatus ?? '';
-  if (['request_choice', 'image_request_choice', 'ready'].includes(pkg.stage) && status === 'prepared')
-    return `${name}: запрос подготовлен, ждёт отправки, очереди или отказа`;
-  if (['submission_unknown', 'submitting'].includes(status)) return `${name}: исход отправки неизвестен: проверьте историю генераций сервиса`;
-  if (['downloaded', 'edit_review'].includes(pkg.stage) && status === 'downloaded') return `${name}: результат получен, ждёт просмотра`;
-  if (pkg.stage === 'image_downloaded') return `${name}: изображение получено, выберите опору`;
+  if (['request_choice', 'image_request_choice', 'ready'].includes(pkg.stage) && status === 'prepared') return texts.attentionPrepared({ name });
+  if (['submission_unknown', 'submitting'].includes(status)) return texts.attentionUnknownSubmission({ name });
+  if (['downloaded', 'edit_review'].includes(pkg.stage) && status === 'downloaded') return texts.attentionResult({ name });
+  if (pkg.stage === 'image_downloaded') return texts.attentionImage({ name });
   return null;
 }
 
 /** Повтор выбирает источник как regenerate_shot --source auto; @link ../../tools/regenerate_shot/README.md. */
 function regenerateProblem(project: string, shot: string, packages: PackageView[], selectedProvider: string): string | null {
-  if (!selectedProvider) return `${shot}: сначала выберите провайдера видео в настройках проекта.`;
+  if (!selectedProvider) return texts.retryProviderRequired({ shot });
   const compareProvider = (value: unknown): string | null => {
     const provider = typeof value === 'string' ? value.trim() : '';
-    if (!provider) return `${shot}: провайдер сцены не указан. Подготовьте новый пакет.`;
+    if (!provider) return texts.retryOriginalProviderMissing({ shot });
     if (!sameMediaProvider(provider, selectedProvider)) {
-      return `${shot}: провайдер сцены — ${provider}, текущий выбранный — ${selectedProvider}. Для подготовки повтора провайдеры должны совпадать.`;
+      return texts.retryProviderMismatch({ shot, provider, selectedProvider });
     }
     return null;
   };
@@ -350,9 +355,9 @@ function regenerateProblem(project: string, shot: string, packages: PackageView[
   requests.sort((a, b) => a.modified - b.modified || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   if (requests.length) return compareProvider(requests[requests.length - 1].provider);
   const snapshotPath = join(project, 'assets', 'shots', shot, 'generation-request.json');
-  if (!existsSync(snapshotPath)) return `${shot}: нет сохранённого запроса для повтора. Подготовьте новый пакет.`;
+  if (!existsSync(snapshotPath)) return texts.retryRequestMissing({ shot });
   const snapshot = readJson<{ provider?: unknown }>(snapshotPath);
-  if (!snapshot || typeof snapshot !== 'object') return `${shot}: не удалось прочитать снимок сохранённого запроса.`;
+  if (!snapshot || typeof snapshot !== 'object') return texts.retrySnapshotUnreadable({ shot });
   return compareProvider(snapshot.provider);
 }
 
@@ -364,7 +369,7 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
     providers: Object.fromEntries(paidAdapters().map((adapter) => [adapter.id, adapter.installed(launcher.options)]))
   };
   const scenes = readJson<ScenesFile>(join(project, 'plan', 'scenes.json'));
-  if (!scenes) return { shots: [], broken: [], problems: ['Сначала нужен сценарий. Создайте его на странице «Сценарий».'], tools };
+  if (!scenes) return { shots: [], broken: [], problems: [commonTexts.scenario.requiredForWork], tools };
   const packages: PackageView[] = [];
   const broken: BrokenPackage[] = [];
   for (const base of ['plan/batches', 'plan/awaiting']) {
@@ -384,7 +389,7 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
             dir,
             relative: `${base}/${entry.name}`,
             shot: shotMatch?.[1] ?? null,
-            reason: 'нет workflow.json: папка осталась после прерванной операции'
+            reason: texts.brokenWorkflowMissing
           });
       }
     }
@@ -408,17 +413,17 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
     let state: ShotProduction['state'] = accepted ?? (mine.length ? 'progress' : 'planned');
     let stageLabel =
       accepted === 'stale'
-        ? 'принят по прежней постановке: нужно новое производство'
+        ? texts.acceptedOldScene
         : manifest
           ? video
-            ? 'принят, монтажное видео сохранено'
-            : 'принят, файл монтажного видео отсутствует'
-          : (mine[0]?.stageLabel ?? 'постановка есть, работа не начата');
+            ? texts.acceptedVideoSaved
+            : texts.acceptedVideoMissing
+          : (mine[0]?.stageLabel ?? texts.notStarted);
     const waiting = mine.find((p) => p.pendingDecision);
     if (waiting)
       stageLabel = manifest
-        ? `принят; новая попытка ждёт решения: ${waiting.pendingDecision!.question}`
-        : `ждёт вашего решения: ${waiting.pendingDecision!.question}`;
+        ? texts.acceptedDecisionPending({ question: waiting.pendingDecision!.question })
+        : texts.decisionPending({ question: waiting.pendingDecision!.question });
     if (mine.some((p) => p.problems.length)) state = manifest ? state : 'unknown';
     const attention = mine.map(packageAttention).find((text) => text) ?? null;
     const derivedFrom = derivedShotSource(project, scene);
@@ -446,8 +451,8 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
     };
   });
   const orphans = packages.filter((p) => !scenes.scenes.some((s) => s.id === p.shot));
-  if (orphans.length) problems.push(`Пакеты планов, которых нет в реестре: ${orphans.map((p) => basename(p.dir)).join(', ')}.`);
-  for (const item of broken) problems.push(`${item.relative}: ${item.reason}. Папка мешает сохранению в очередь; удалите её в очереди или у плана.`);
+  if (orphans.length) problems.push(texts.orphanPackages({ packages: orphans.map((p) => basename(p.dir)).join(', ') }));
+  for (const item of broken) problems.push(texts.brokenPackageBlocksQueue({ path: item.relative, reason: item.reason }));
   return { shots, broken, problems, tools };
 }
 
@@ -470,7 +475,7 @@ export class Production {
   private paidMedia(provider: string | null | undefined, kind: MediaKind): PaidMediaProvider | null {
     if (!this.media) return null;
     const adapter = this.media[normalizeMediaProvider(provider) ?? '']?.[kind];
-    if (!adapter) throw new Error(`Для провайдера ${provider ?? 'не указан'} не подключён исполнитель.`);
+    if (!adapter) throw new Error(texts.adapterMissing({ provider }));
     return adapter;
   }
   private readonly operations = new Set<string>();
@@ -492,22 +497,21 @@ export class Production {
 
   private available(project: string, packageDir: string): string {
     const directory = checkedPackage(project, packageDir);
-    if (this.isBusy(project, directory)) throw new Error('Для этого пакета уже выполняется операция. Дождитесь её завершения.');
+    if (this.isBusy(project, directory)) throw new Error(texts.packageBusy);
     return directory;
   }
 
   private ready(project: string, directory: string, expectedSha: string, decisionToken?: string): PackageView {
     const view = readPackage(project, directory);
-    if (view?.sceneChanged) throw new Error(`${SCENE_CHANGED} Оставьте пакет для текущей постановки или подготовьте новый.`);
+    if (view?.sceneChanged) throw new Error(texts.sceneChangedBeforeSubmit({ reason: SCENE_CHANGED }));
     if (!view?.decisionToken || view.problems.length || !view?.request?.sha256 || view.request.sha256 !== expectedSha || !/^[a-f0-9]{64}$/.test(expectedSha))
-      throw new Error('Показанный запрос изменился. Откройте подтверждение заново.');
+      throw new Error(texts.requestChanged);
     if (!['request_choice', 'ready', 'image_request_choice'].includes(view.stage) || view.request.attemptStatus !== 'prepared')
-      throw new Error('Эта попытка уже отправлялась или не готова к отправке.');
+      throw new Error(texts.attemptNotPrepared);
     // Универсальная подготовка не разрешает отправить запрос через адаптер другого провайдера.
-    if (!isPaidMediaProvider(view.request.provider))
-      throw new Error(`Для провайдера ${view.request.provider ?? 'не указан'} не подключён исполнитель отправки.`);
+    if (!isPaidMediaProvider(view.request.provider)) throw new Error(texts.submitAdapterMissing({ provider: view.request.provider }));
     if (view.pendingDecision && (!decisionToken || decisionToken !== view.decisionToken || !view.pendingDecision.options.includes('send')))
-      throw new Error('Вопрос или материалы изменились. Откройте подтверждение заново.');
+      throw new Error(texts.questionOrMaterialsChanged);
     return view;
   }
 
@@ -517,7 +521,7 @@ export class Production {
       verdict: 'cost_or_balance_unknown',
       credits: null,
       balance: null,
-      reasons: ['Не удалось определить стоимость и остаток кредитов.']
+      reasons: [texts.costAndBalanceUnknown]
     });
     let result;
     let value: Record<string, unknown>;
@@ -556,7 +560,7 @@ export class Production {
     const view = this.ready(project, directory, expectedSha, decisionToken);
     const price = await this.price(project, view.request!.dir);
     const current = this.ready(project, directory, expectedSha, decisionToken);
-    if (view.decisionToken !== current.decisionToken) throw new Error('Материалы изменились во время проверки стоимости.');
+    if (view.decisionToken !== current.decisionToken) throw new Error(texts.materialsChangedDuringQuote);
     const quote: ProductionQuote = { token: randomUUID(), requestSha: expectedSha, ...price };
     // Окно может запросить оценку несколько раз (повторный эффект, обновление доступа) и показать любую из них:
     // для тех же материалов действуют несколько последних оценок, оценки прежних материалов сгорают.
@@ -582,15 +586,15 @@ export class Production {
     const frame = current.keyframes.find((item) => item.imagePath && !item.approved);
     if (!frame) return;
     const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', 'keyframes_review', '--frame', frame.id]);
-    if (question.code !== 0) throw new Error(`Кандидат сохранён; не удалось записать вопрос об опоре ${frame.id}.`);
+    if (question.code !== 0) throw new Error(texts.frameQuestionWriteFailed({ frame: frame.id }));
   }
 
   async decide(project: string, packageDir: string, verdict: string, note: string, decisionToken?: string, noteScope?: KeyframeNoteScope): Promise<void> {
     packageDir = this.available(project, packageDir);
     const view = readPackage(project, packageDir);
-    if (decisionToken && decisionToken !== view?.decisionToken) throw new Error('Вопрос или материалы изменились. Обновите пакет перед ответом.');
-    if (!decisionToken) throw new Error('Обновите вопрос перед ответом.');
-    if (verdict === 'send') throw new Error('Используйте отдельное подтверждение запроса со стоимостью.');
+    if (decisionToken && decisionToken !== view?.decisionToken) throw new Error(texts.decisionMaterialsChanged);
+    if (!decisionToken) throw new Error(texts.refreshQuestion);
+    if (verdict === 'send') throw new Error(texts.separateCostConfirmationRequired);
     this.operations.add(packageDir);
     try {
       const result = await runTool(
@@ -610,11 +614,11 @@ export class Production {
         undefined,
         this.jobs.launcher
       );
-      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || `shot_workflow decide завершился с кодом ${result.code}`);
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || texts.decideFailed({ code: result.code }));
       if (verdict === 'revise' && view?.stage === 'image_request_choice' && view.request?.attemptStatus === 'prepared') {
         // Неотправленный frozen request остаётся в истории; новая подготовка получает другую папку и новый вопрос.
         const reset = await this.jobs.launcher.run(project, 'shot_workflow', ['set-stage', '--dir', packageDir, 'keyframes_review']);
-        if (reset.code !== 0) throw new Error('Замечание сохранено; не удалось вернуться к подготовке изображения.');
+        if (reset.code !== 0) throw new Error(texts.returnToImageFailed);
       }
       // После утверждения одной опоры следующий уже готовый кандидат (например, свой импорт) сразу получает вопрос.
       if (verdict === 'approve' && view?.pendingDecision?.frame) await this.askNextFrame(project, packageDir);
@@ -625,8 +629,8 @@ export class Production {
 
   async reopenFrame(project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope): Promise<void> {
     packageDir = this.available(project, packageDir);
-    if (!/^K\d{2}$/.test(frame)) throw new Error('Неизвестная опора.');
-    if (!note.trim()) throw new Error('Опишите, что исправить в опоре.');
+    if (!/^K\d{2}$/.test(frame)) throw new Error(texts.frameUnknown);
+    if (!note.trim()) throw new Error(texts.frameRevisionRequired);
     this.operations.add(packageDir);
     try {
       const result = await this.jobs.launcher.run(project, 'shot_workflow', [
@@ -639,7 +643,7 @@ export class Production {
         '--note-scope',
         noteScope === 'frame' ? 'frame' : 'following'
       ]);
-      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || 'Не удалось вернуть опору на доработку.');
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || texts.reopenFrameFailed);
       await this.askNextFrame(project, packageDir);
     } finally {
       this.operations.delete(packageDir);
@@ -650,18 +654,16 @@ export class Production {
   keepPackageForScene(project: string, packageDir: string): void {
     packageDir = this.available(project, packageDir);
     const view = readPackage(project, packageDir);
-    if (!view?.sceneChanged) throw new Error('Постановка пакета не менялась.');
-    if (view.request && view.request.attemptStatus !== 'prepared')
-      throw new Error('Попытка уже отправлялась: её материалы относятся к прежней постановке, оставить их для новой нельзя.');
+    if (!view?.sceneChanged) throw new Error(texts.sceneUnchanged);
+    if (view.request && view.request.attemptStatus !== 'prepared') throw new Error(texts.submittedOldSceneCannotRestamp);
     const workflow = readJson<Workflow>(join(packageDir, 'workflow.json'));
     const current = currentShotFingerprint(project, view.shot);
-    if (!workflow || !current || !restampPackage(packageDir, workflow.scene_sha256 ?? null, current))
-      throw new Error('Не удалось обновить отпечаток постановки в workflow.json пакета.');
+    if (!workflow || !current || !restampPackage(packageDir, workflow.scene_sha256 ?? null, current)) throw new Error(texts.restampFailed);
   }
 
   async setKeyframeNote(project: string, packageDir: string, id: number, active: boolean): Promise<void> {
     packageDir = this.available(project, packageDir);
-    if (!Number.isInteger(id) || id < 1) throw new Error('Неизвестное замечание.');
+    if (!Number.isInteger(id) || id < 1) throw new Error(texts.noteUnknown);
     const result = await this.jobs.launcher.run(project, 'shot_workflow', [
       'set-note',
       '--dir',
@@ -671,7 +673,7 @@ export class Production {
       '--active',
       active ? 'true' : 'false'
     ]);
-    if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || 'Не удалось изменить замечание.');
+    if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || texts.noteChangeFailed);
   }
 
   /** Отказ от попытки удаляет пакет целиком вместе с оплаченным оригиналом: после него повтор по сохранённому запросу доступен снова. */
@@ -682,14 +684,13 @@ export class Production {
       // Недописанная папка без workflow.json: удаляется, если в ней нет следов незавершённой отправки.
       const attempt = readJson<{ status?: string }>(join(directory, 'request', 'attempt.json'));
       if (attempt?.status && !['prepared', 'downloaded', 'failed', 'download_failed', 'download_partial'].includes(attempt.status))
-        throw new Error(`В папке есть попытка в состоянии «${attempt.status}»: удалять её без результата нельзя.`);
+        throw new Error(texts.unfinishedAttemptBlocksRemoval({ status: attempt.status }));
       const local = relative(realpathSync(project), directory).replaceAll('\\', '/');
-      for (const draft of montageDraftsUsing(project, local))
-        throw new Error(`Папка используется сохранённым черновиком монтажа «${draft}». Сначала удалите черновик.`);
+      for (const draft of montageDraftsUsing(project, local)) throw new Error(texts.folderUsedByMontageDraft({ draft }));
       rmSync(directory, { recursive: true, force: true });
       return;
     }
-    if (view.stage === 'accepted') throw new Error('Принятый пакет не удаляется: комплект уже в assets.');
+    if (view.stage === 'accepted') throw new Error(texts.acceptedPackageCannotRemove);
     const status = view.request?.attemptStatus ?? '';
     if (
       [
@@ -704,10 +705,9 @@ export class Production {
         'polling'
       ].includes(status)
     )
-      throw new Error('Отправка ещё не завершена: сначала получите результат, иначе оплаченная генерация потеряется без файла.');
+      throw new Error(texts.submissionBlocksRemoval);
     const packageRelative = view.relative.replaceAll('\\', '/');
-    for (const draft of montageDraftsUsing(project, packageRelative))
-      throw new Error(`Пакет используется сохранённым черновиком монтажа «${draft}». Сначала удалите черновик.`);
+    for (const draft of montageDraftsUsing(project, packageRelative)) throw new Error(texts.packageUsedByMontageDraft({ draft }));
     rmSync(directory, { recursive: true, force: true });
   }
 
@@ -715,9 +715,9 @@ export class Production {
   async reopenQuestion(project: string, packageDir: string): Promise<void> {
     packageDir = this.available(project, packageDir);
     const view = readPackage(project, packageDir);
-    if (!view) throw new Error('Пакет не найден. Обновите страницу производства.');
-    if (view.pendingDecision) throw new Error('Вопрос уже задан.');
-    if (!['downloaded', 'edit_review'].includes(view.stage)) throw new Error('Вернуть можно только вопрос о полученном результате.');
+    if (!view) throw new Error(texts.packageMissingRefresh);
+    if (view.pendingDecision) throw new Error(texts.questionAlreadyAsked);
+    if (!['downloaded', 'edit_review'].includes(view.stage)) throw new Error(texts.resultQuestionOnly);
     this.operations.add(packageDir);
     try {
       const result = await runTool(
@@ -728,7 +728,7 @@ export class Production {
         undefined,
         this.jobs.launcher
       );
-      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || `shot_workflow ask завершился с кодом ${result.code}`);
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || texts.askFailed({ code: result.code }));
     } finally {
       this.operations.delete(packageDir);
     }
@@ -739,7 +739,7 @@ export class Production {
     this.operations.add(packageDir);
     try {
       const result = await runTool(this.toolsRoot, project, 'shot_workflow', ['park', '--dir', packageDir], undefined, this.jobs.launcher);
-      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || `shot_workflow park завершился с кодом ${result.code}`);
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || texts.parkFailed({ code: result.code }));
     } finally {
       this.operations.delete(packageDir);
     }
@@ -749,11 +749,10 @@ export class Production {
   async prepareSpeech(project: string, packageDir: string, bounds?: { start: number; end: number }): Promise<PackageView> {
     const directory = this.available(project, packageDir);
     const view = readPackage(project, directory);
-    if (!view) throw new Error('Пакет не найден.');
-    if (view.request?.attemptStatus && view.request.attemptStatus !== 'prepared')
-      throw new Error('Запрос этой попытки уже отправлен: её WAV менять нельзя. Подготовьте новую попытку.');
+    if (!view) throw new Error(texts.packageMissing);
+    if (view.request?.attemptStatus && view.request.attemptStatus !== 'prepared') throw new Error(texts.submittedSpeechImmutable);
     if (bounds !== undefined && (!Number.isFinite(bounds.start) || !Number.isFinite(bounds.end) || bounds.start < 0 || bounds.end <= bounds.start))
-      throw new Error('Конец среза должен быть позже начала, границы — неотрицательные секунды.');
+      throw new Error(texts.speechBoundsInvalid);
     this.operations.add(directory);
     try {
       const audio = join(directory, 'audio');
@@ -762,12 +761,12 @@ export class Production {
       rmSync(join(audio, 'audio-recipe.json'), { force: true });
       const args = ['cut', view.shot, '--out', audio, '--json', ...(bounds ? ['--start', String(bounds.start), '--end', String(bounds.end)] : [])];
       const result = await runTool(this.toolsRoot, project, 'cut_speech', args, undefined, this.jobs.launcher);
-      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || `cut_speech завершился с кодом ${result.code}`);
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || texts.cutSpeechFailed({ code: result.code }));
     } finally {
       this.operations.delete(directory);
     }
     const next = readPackage(project, directory);
-    if (!next?.speech) throw new Error('WAV речи не появился в пакете.');
+    if (!next?.speech) throw new Error(texts.speechWavMissing);
     return next;
   }
 
@@ -793,9 +792,9 @@ export class Production {
       record.quote.requestSha !== expectedSha ||
       !priceAllowsGeneration(record.quote, agreedToUnknownCost)
     )
-      throw new Error('Сначала откройте запрос и подтвердите актуальную стоимость.');
+      throw new Error(texts.quoteRequired);
     const view = this.ready(project, directory, expectedSha!, decisionToken);
-    if (view.decisionToken !== record.decisionToken) throw new Error('Показанные материалы изменились: требуется новое подтверждение.');
+    if (view.decisionToken !== record.decisionToken) throw new Error(texts.quoteMaterialsChanged);
     this.operations.add(directory);
     try {
       const price = await this.price(project, view.request!.dir);
@@ -805,32 +804,32 @@ export class Production {
         (!agreedToUnknownCost && price.credits !== record.quote.credits) ||
         fresh.decisionToken !== record.decisionToken
       )
-        throw new Error('Стоимость, остаток или материалы изменились. Откройте подтверждение заново; отправка не выполнялась.');
+        throw new Error(texts.quoteExpired);
       if (fresh.stage === 'ready') {
         // Новый quote и нажатие подтверждения разрешают прежний frozen request; запись вопроса не создаёт новую попытку.
         const stage = await this.jobs.launcher.run(project, 'shot_workflow', ['set-stage', '--dir', directory, 'request_choice']);
-        if (stage.code !== 0) throw new Error('Не удалось возобновить отложенный пакет. Отправка не выполнялась.');
+        if (stage.code !== 0) throw new Error(texts.unparkFailed);
         const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', 'request_choice']);
-        if (question.code !== 0) throw new Error('Не удалось записать вопрос отложенного запроса. Отправка не выполнялась.');
+        if (question.code !== 0) throw new Error(texts.queuedQuestionFailed);
       }
       if (fresh.request?.kind === 'image' && !fresh.pendingDecision) {
         // Отложенный image-запрос снова подтверждается для того же SHA, а прежний park не выдаётся за send.
         const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', 'image_request_choice']);
-        if (question.code !== 0) throw new Error('Не удалось записать новое подтверждение изображения. Отправка не выполнялась.');
+        if (question.code !== 0) throw new Error(texts.imageConfirmationFailed);
       }
       if (fresh.pendingDecision || fresh.stage === 'ready' || fresh.request?.kind === 'image') {
         const result = await this.jobs.launcher.run(project, 'shot_workflow', ['decide', '--dir', directory, '--verdict', 'send']);
-        if (result.code !== 0) throw new Error('Не удалось записать подтверждение отправки.');
+        if (result.code !== 0) throw new Error(texts.submitConfirmationFailed);
       }
       const requestDir = fresh.request!.dir;
       const image = fresh.request!.kind === 'image';
       let job: JobInfo | null = null;
       const execute = async (): Promise<void> => {
-        job = this.jobs.start('submit', `Отправка ${image ? 'опоры ' + fresh.request!.frameId : fresh.shot}`, project, [
-          { tool: 'shot_workflow', args: ['check', '--dir', directory], label: 'проверка материалов' },
-          { tool: 'media_request', args: ['submit', '--work-dir', requestDir, '--confirm', expectedSha!], label: 'отправка' },
-          { tool: 'cost_check', args: ['learn', '--work-dir', requestDir, ...pricingArgs()], required: false, label: 'запись расхода' },
-          { tool: 'shot_workflow', args: ['set-stage', '--dir', directory, image ? 'image_submitted' : 'submitted'], label: 'задание отправлено' },
+        job = this.jobs.start('submit', image ? texts.submitImageJob({ frame: fresh.request!.frameId }) : texts.submitJob({ shot: fresh.shot }), project, [
+          { tool: 'shot_workflow', args: ['check', '--dir', directory], label: texts.verifyMaterialsStep },
+          { tool: 'media_request', args: ['submit', '--work-dir', requestDir, '--confirm', expectedSha!], label: texts.submitStep },
+          { tool: 'cost_check', args: ['learn', '--work-dir', requestDir, ...pricingArgs()], required: false, label: texts.recordChargeStep },
+          { tool: 'shot_workflow', args: ['set-stage', '--dir', directory, image ? 'image_submitted' : 'submitted'], label: texts.submittedStep },
           ...this.resumeSteps(directory, requestDir, image)
         ]);
       };
@@ -839,7 +838,7 @@ export class Production {
         const prepared: PreparedMediaRequest = { provider: media.provider, kind: media.kind, project, requestDir, requestSha: expectedSha! };
         await media.submit(prepared, execute);
       } else await execute();
-      if (!job) throw new Error('Исполнитель не создал задание.');
+      if (!job) throw new Error(texts.jobNotCreated);
       const started = job as JobInfo;
       this.packageJobs.set(directory, started.id);
       // Явный отказ сервиса оставляет попытку неотправленной: снова задаём вопрос, чтобы пакет можно было исправить или отправить заново.
@@ -861,16 +860,16 @@ export class Production {
   /** Подготовка повтора ничего не отправляет: новый пакет снова показывается пользователю. */
   regenerate(project: string, shot: string): JobInfo {
     const key = `${realpathSync(project)}:${shot}`;
-    if (this.jobs.get(this.shotJobs.get(key) ?? '')?.status === 'running') throw new Error('Повтор уже подготавливается.');
+    if (this.jobs.get(this.shotJobs.get(key) ?? '')?.status === 'running') throw new Error(texts.retryBusy);
     const view = viewProduction(project, this.jobs.launcher);
     const currentShot = view.shots.find((s) => s.id === shot);
-    if (!currentShot) throw new Error(`План ${shot} не найден. Обновите страницу производства.`);
+    if (!currentShot) throw new Error(texts.shotMissingRefresh({ shot }));
     const packages = currentShot.packages;
     if (packages.some((pkg) => ['submitting', 'submission_unknown'].includes(pkg.request?.attemptStatus ?? '') || this.isBusy(project, pkg.dir)))
-      throw new Error('Сначала выясните исход существующей отправки; новая оплата запрещена.');
+      throw new Error(texts.unknownSubmissionBlocksRetry);
     if (currentShot.regenerateProblem) throw new Error(currentShot.regenerateProblem);
-    const job = this.jobs.start('regenerate', `Подготовка повтора ${shot}`, project, [
-      { tool: 'regenerate_shot', args: [shot, '--json', ...pricingArgs()], label: 'новая попытка без отправки' }
+    const job = this.jobs.start('regenerate', texts.retryJob({ shot }), project, [
+      { tool: 'regenerate_shot', args: [shot, '--json', ...pricingArgs()], label: texts.prepareRetryStep }
     ]);
     this.shotJobs.set(key, job.id);
     return job;
@@ -878,11 +877,11 @@ export class Production {
 
   private resumeSteps(directory: string, requestDir: string, image = false): Parameters<Jobs['start']>[3] {
     return [
-      { tool: 'media_request', args: ['watch', '--work-dir', requestDir, '--max-minutes', '30'], label: 'получение прежнего задания' },
+      { tool: 'media_request', args: ['watch', '--work-dir', requestDir, '--max-minutes', '30'], label: texts.retrievePreviousStep },
       {
         tool: 'shot_workflow',
         args: ['set-stage', '--dir', directory, image ? 'image_downloaded' : 'downloaded'],
-        label: 'результат скачан',
+        label: texts.resultDownloadedStep,
         // watch завершается успешно и для failed: принимать можно только полностью сохранённый результат.
         before: () => {
           const attempt = readJson<{ status?: string; downloads?: { path?: string }[] }>(join(requestDir, 'attempt.json'));
@@ -891,13 +890,13 @@ export class Production {
             !attempt.downloads?.length ||
             attempt.downloads.some((item) => !item.path || !statSync(join(requestDir, item.path), { throwIfNoEntry: false })?.isFile())
           )
-            throw new Error('Результат не получен полностью. Проверьте состояние задания; вопрос приёмки не создан.');
+            throw new Error(texts.resultIncomplete);
         }
       },
       ...(!image
         ? [
-            { tool: 'shot_workflow', args: ['ask', '--dir', directory, '--stage', 'downloaded'], label: 'просмотр результата' },
-            { tool: 'contact_sheet', args: ['--package', directory, '--json'], required: false, label: 'техническая сводка' }
+            { tool: 'shot_workflow', args: ['ask', '--dir', directory, '--stage', 'downloaded'], label: texts.reviewResultStep },
+            { tool: 'contact_sheet', args: ['--package', directory, '--json'], required: false, label: texts.technicalSummaryStep }
           ]
         : [])
     ];
@@ -907,15 +906,11 @@ export class Production {
   resume(project: string, packageDir: string): JobInfo {
     const directory = this.available(project, packageDir);
     const view = readPackage(project, directory);
-    if (!view?.request) throw new Error('В пакете нет попытки.');
+    if (!view?.request) throw new Error(texts.attemptMissing);
     const request = view.request;
-    if (!isPaidMediaProvider(request.provider))
-      throw new Error(`Для провайдера ${request.provider ?? 'не указан'} не подключён исполнитель получения результата.`);
-    if (request.attemptStatus === 'prepared') throw new Error('Запрос ещё не отправлен.');
-    if (!request.generationId && !request.manualResult)
-      throw new Error(
-        'ID задания неизвестен. Проверьте историю генераций сервиса: загрузите найденный результат вручную или отметьте, что задание не создано.'
-      );
+    if (!isPaidMediaProvider(request.provider)) throw new Error(texts.retrieveAdapterMissing({ provider: request.provider }));
+    if (request.attemptStatus === 'prepared') throw new Error(texts.requestNotSubmitted);
+    if (!request.generationId && !request.manualResult) throw new Error(texts.generationIdUnknown);
     const steps: Parameters<Jobs['start']>[3] = [];
     // Этап мог остаться request_choice, если процесс оборвался между ответом сервиса и записью workflow.
     const image = request.kind === 'image';
@@ -923,10 +918,10 @@ export class Production {
       steps.push({
         tool: 'shot_workflow',
         args: ['set-stage', '--dir', directory, image ? 'image_submitted' : 'submitted'],
-        label: 'восстановление этапа отправки'
+        label: texts.restoreSubmissionStep
       });
     steps.push(...this.resumeSteps(directory, request.dir, image));
-    const job = this.jobs.start('submit', `Получение ${view.shot}`, project, steps);
+    const job = this.jobs.start('submit', texts.retrieveJob({ shot: view.shot }), project, steps);
     this.packageJobs.set(directory, job.id);
     return job;
   }
@@ -937,9 +932,8 @@ export class Production {
     const view = readPackage(project, directory);
     const request = view?.request;
     if (!view || !request || request.generationId || !['submitting', 'submission_unknown'].includes(request.attemptStatus ?? ''))
-      throw new Error('Действие доступно только попытке с неизвестным исходом отправки и без ID задания. Обновите пакет.');
-    if (!isPaidMediaProvider(request.provider))
-      throw new Error(`Для провайдера ${request.provider ?? 'не указан'} не подключён исполнитель получения результата.`);
+      throw new Error(texts.unknownSubmissionOnly);
+    if (!isPaidMediaProvider(request.provider)) throw new Error(texts.retrieveAdapterMissing({ provider: request.provider }));
     return { directory, view, request };
   }
 
@@ -947,18 +941,18 @@ export class Production {
   attachResult(project: string, packageDir: string, files: string[]): JobInfo {
     const { directory, view, request } = this.unknownAttempt(project, packageDir);
     if (!files.length || files.some((file) => !isAbsolute(file) || !statSync(file, { throwIfNoEntry: false })?.isFile()))
-      throw new Error('Выберите файл результата.');
+      throw new Error(texts.resultFileMissing);
     const image = request.kind === 'image';
     const steps: Parameters<Jobs['start']>[3] = [];
     if (['request_choice', 'ready', 'image_request_choice'].includes(view.stage))
       steps.push({
         tool: 'shot_workflow',
         args: ['set-stage', '--dir', directory, image ? 'image_submitted' : 'submitted'],
-        label: 'восстановление этапа отправки'
+        label: texts.restoreSubmissionStep
       });
-    steps.push({ tool: 'media_request', args: ['attach', '--work-dir', request.dir, '--file', ...files], label: 'загрузка результата вручную' });
+    steps.push({ tool: 'media_request', args: ['attach', '--work-dir', request.dir, '--file', ...files], label: texts.attachResultStep });
     steps.push(...this.resumeSteps(directory, request.dir, image));
-    const job = this.jobs.start('submit', `Ручной результат ${view.shot}`, project, steps);
+    const job = this.jobs.start('submit', texts.manualResultJob({ shot: view.shot }), project, steps);
     this.packageJobs.set(directory, job.id);
     return job;
   }
@@ -970,15 +964,15 @@ export class Production {
     try {
       const image = request.kind === 'image';
       const result = await this.jobs.launcher.run(project, 'media_request', ['not-created', '--work-dir', request.dir]);
-      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || 'Не удалось отметить, что задание не создано.');
+      if (result.code !== 0) throw new Error((result.stderr || result.stdout).trim() || texts.markNotCreatedFailed);
       // Назад по этапам разрешено: пакет возвращается к вопросу о запросе, прежний ответ send больше не действует.
       const stage = image ? 'image_request_choice' : 'request_choice';
       if (view.stage !== stage) {
         const back = await this.jobs.launcher.run(project, 'shot_workflow', ['set-stage', '--dir', directory, stage]);
-        if (back.code !== 0) throw new Error((back.stderr || back.stdout).trim() || 'Не удалось вернуть пакет к подтверждению запроса.');
+        if (back.code !== 0) throw new Error((back.stderr || back.stdout).trim() || texts.returnToRequestFailed);
       }
       const question = await this.jobs.launcher.run(project, 'shot_workflow', ['ask', '--dir', directory, '--stage', stage]);
-      if (question.code !== 0) throw new Error((question.stderr || question.stdout).trim() || 'Не удалось записать вопрос о запросе.');
+      if (question.code !== 0) throw new Error((question.stderr || question.stdout).trim() || texts.requestQuestionFailed);
     } finally {
       this.operations.delete(directory);
     }
@@ -999,7 +993,7 @@ export class Production {
       index < 0 ||
       !view.request.downloads[index]
     )
-      throw new Error('Кандидат изменился или недоступен. Обновите пакет и просмотрите результат.');
+      throw new Error(texts.candidateChanged);
     this.operations.add(directory);
     try {
       const request = view.request;
@@ -1007,7 +1001,7 @@ export class Production {
       if (media)
         media.collect({ provider: media.provider, kind: 'image', project, requestDir: request.dir, requestSha: request.sha256!, frameId: request.frameId });
       const selected = await this.jobs.launcher.run(project, 'shot_workflow', ['select-image', '--dir', directory, '--file', request.downloads[index]]);
-      if (selected.code !== 0) throw new Error((selected.stderr || selected.stdout).trim() || 'Не удалось выбрать опору.');
+      if (selected.code !== 0) throw new Error((selected.stderr || selected.stdout).trim() || texts.selectFrameFailed);
       // Каждая опора утверждается сразу после выбора, не дожидаясь остальных.
       await this.askNextFrame(project, directory);
     } finally {
@@ -1018,14 +1012,13 @@ export class Production {
   accept(project: string, shot: string, packageDir: string, options: AcceptOptions): JobInfo {
     packageDir = this.available(project, packageDir);
     const view = readPackage(project, packageDir);
-    if (view?.request?.kind === 'image') throw new Error('Изображение выбирается как кандидат опоры и утверждается отдельно.');
-    if (view?.shot !== shot) throw new Error('Пакет относится к другому плану.');
-    if (!view.resultToken || !options.expectedResultToken || options.expectedResultToken !== view.resultToken)
-      throw new Error('Результат изменился. Обновите пакет и просмотрите его перед приёмкой.');
-    if (view.request?.attemptStatus !== 'downloaded' || !view.request.downloads.length) throw new Error('Сначала получите полный результат задания.');
+    if (view?.request?.kind === 'image') throw new Error(texts.imageAcceptedSeparately);
+    if (view?.shot !== shot) throw new Error(texts.packageShotMismatch);
+    if (!view.resultToken || !options.expectedResultToken || options.expectedResultToken !== view.resultToken) throw new Error(texts.acceptResultChanged);
+    if (view.request?.attemptStatus !== 'downloaded' || !view.request.downloads.length) throw new Error(texts.completeResultRequired);
     // Замена принятого комплекта необратима для индекса сцены: прежний комплект переезжает в assets/replaced только по явному согласию.
     const accepted = existsSync(join(project, 'assets', 'shots', shot, 'manifest.json'));
-    if (accepted && !options.replaceExisting) throw new Error('У плана уже есть принятый комплект. Подтвердите замену в диалоге приёмки.');
+    if (accepted && !options.replaceExisting) throw new Error(texts.replacementConsentRequired);
     // UI задаёт секунды, accept_shot принимает границы в кадрах; неточные границы не округляем молча.
     const cutFrame = (seconds: number | undefined): number => {
       if (
@@ -1035,14 +1028,14 @@ export class Production {
         !Number.isSafeInteger(Math.round(seconds * FPS)) ||
         Math.abs(seconds * FPS - Math.round(seconds * FPS)) > 1e-6
       )
-        throw new Error(`Границы участка должны быть конечными неотрицательными секундами на сетке ${FPS} кадров/с.`);
+        throw new Error(texts.acceptBoundsInvalid({ fps: FPS }));
       return Math.round(seconds * FPS);
     };
     let edit = ['--full'];
     if (options.mode !== 'full') {
       const first = cutFrame(options.cutStart);
       const last = cutFrame(options.cutEnd);
-      if (last <= first) throw new Error('Конец участка должен быть позже начала.');
+      if (last <= first) throw new Error(texts.acceptEndInvalid);
       edit = ['--cut', `${first}:${last}`];
     }
     const extra = [
@@ -1053,13 +1046,13 @@ export class Production {
     // Речевой план принимается только с точным срезом песни, подготовленным в пакете.
     const scenes = readJson<{ scenes?: { id?: string; lipsync?: boolean }[] }>(join(project, 'plan', 'scenes.json'));
     const lipsync = !!scenes?.scenes?.find((scene) => scene.id === shot)?.lipsync;
-    if (lipsync && !view.speech) throw new Error('Речевой план: сначала подготовьте WAV речи в блоке «Речь» этого пакета.');
+    if (lipsync && !view.speech) throw new Error(texts.acceptSpeechRequired);
     const audio = lipsync && view.speech ? ['--audio', view.speech.path, '--audio-recipe', view.speech.recipe] : [];
-    const job = this.jobs.start('accept', `Приёмка ${shot}`, project, [
+    const job = this.jobs.start('accept', texts.acceptJob({ shot }), project, [
       {
         tool: 'accept_shot',
         args: [shot, '--package', packageDir, ...edit, ...extra, ...audio, ...(accepted ? ['--replace'] : []), '--clean'],
-        label: accepted ? 'замена комплекта в assets' : 'перенос в assets'
+        label: accepted ? texts.replaceAssetsStep : texts.moveAssetsStep
       }
     ]);
     this.packageJobs.set(packageDir, job.id);
@@ -1069,17 +1062,16 @@ export class Production {
   /** Пакет для монтажёра: папка должна быть пустой; внутри проекта допускается только plan/batches. */
   exportBundle(project: string, options: ExportBundleOptions): JobInfo {
     const target = resolve(options.target);
-    if (!isAbsolute(options.target)) throw new Error('Укажите абсолютный путь папки пакета.');
+    if (!isAbsolute(options.target)) throw new Error(texts.bundleAbsolutePathRequired);
     const inside = target.startsWith(resolve(project) + '/') || target.startsWith(resolve(project) + '\\');
-    if (inside && !target.startsWith(join(resolve(project), 'plan', 'batches')))
-      throw new Error('Внутри проекта пакет можно собирать только в plan/batches; иначе выберите папку вне проекта.');
-    if (existsSync(target) && readdirSync(target).length) throw new Error(`Папка не пуста: ${target}`);
+    if (inside && !target.startsWith(join(resolve(project), 'plan', 'batches'))) throw new Error(texts.bundlePathInvalid);
+    if (existsSync(target) && readdirSync(target).length) throw new Error(texts.bundleFolderNotEmpty({ path: target }));
     mkdirSync(target, { recursive: true });
     // С копированием в пакет входят карточки неготовых планов: их рисует обновление представлений.
-    const steps = options.copy ? [{ tool: 'update_scene_views', args: [], required: false, label: 'карточки и представления' }] : [];
-    const job = this.jobs.start('tool', `Пакет для монтажёра${options.copy ? ' с медиа' : ''}`, project, [
+    const steps = options.copy ? [{ tool: 'update_scene_views', args: [], required: false, label: texts.bundleViewsStep }] : [];
+    const job = this.jobs.start('tool', texts.bundleJob({ copy: options.copy }), project, [
       ...steps,
-      { tool: 'export_edit_bundle', args: ['--out', target, ...(options.copy ? ['--copy'] : [])], label: 'Сборка пакета для монтажёра' }
+      { tool: 'export_edit_bundle', args: ['--out', target, ...(options.copy ? ['--copy'] : [])], label: texts.bundleExportStep }
     ]);
     this.bundleJobs.set(target, job.id);
     return job;
@@ -1088,19 +1080,19 @@ export class Production {
   /** Удаление доступно после завершения сборки; весь пакет содержит только экспорт и его копии медиа. */
   removeBundle(project: string, path: string): void {
     const directory = checkedBuiltOutput(project, path, 'directory');
-    if (this.jobs.get(this.bundleJobs.get(directory) ?? '')?.status === 'running') throw new Error('Пакет ещё собирается. Дождитесь завершения задания.');
+    if (this.jobs.get(this.bundleJobs.get(directory) ?? '')?.status === 'running') throw new Error(texts.bundleBusy);
     checkedBuiltOutput(project, join(directory, 'bundle.json'), 'file');
-    if (!listBundles(project).some((bundle) => resolve(bundle.dir) === directory)) throw new Error('Собранный пакет не найден. Обновите список.');
+    if (!listBundles(project).some((bundle) => resolve(bundle.dir) === directory)) throw new Error(texts.bundleMissing);
     // Старые рабочие пакеты определяются по запросу, даже если workflow.json ещё не использовался.
     if (['workflow.json', 'request.json', join('request', 'request.json')].some((marker) => existsSync(join(directory, marker))))
-      throw new Error('Нельзя удалить рабочий пакет сцены как пакет для монтажёра.');
+      throw new Error(texts.scenePackageCannotRemoveAsBundle);
     rmSync(directory, { recursive: true });
   }
 
   contactSheet(project: string, packageDir: string): JobInfo {
     packageDir = this.available(project, packageDir);
-    const job = this.jobs.start('contact_sheet', `Сводка ${basename(packageDir)}`, project, [
-      { tool: 'contact_sheet', args: ['--package', packageDir, '--json'], label: 'контактный лист' }
+    const job = this.jobs.start('contact_sheet', texts.contactSheetJob({ name: basename(packageDir) }), project, [
+      { tool: 'contact_sheet', args: ['--package', packageDir, '--json'], label: texts.contactSheetStep }
     ]);
     this.packageJobs.set(packageDir, job.id);
     return job;

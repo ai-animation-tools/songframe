@@ -1,3 +1,4 @@
+import { projectsTexts } from '@shared/texts/projects';
 import type { ReactElement } from 'react';
 import { Box, List, Paper, Typography } from '@mui/material';
 import type { ProjectHistoryEntry, ProjectState } from '@shared/types';
@@ -18,7 +19,7 @@ export function ProjectHistory({ history, states, currentPath, busy, onOpen, onF
     <Paper variant="outlined">
       {history.length === 0 ? (
         <Box sx={{ p: 4, textAlign: 'center' }}>
-          <Typography color="text.secondary">История пуста. Откройте папку существующего клипа или создайте новый проект.</Typography>
+          <Typography color="text.secondary">{projectsTexts.emptyHistory}</Typography>
         </Box>
       ) : (
         // Сетка сохраняет порядок истории и переносит записи по фактической ширине рабочей области.

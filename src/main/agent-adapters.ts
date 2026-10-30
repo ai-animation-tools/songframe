@@ -1,5 +1,6 @@
 /** Адаптеры знают только аргументы CLI и формат событий; жизненным циклом владеет AgentManager.
  * Новый CLI подключается записью в shared/agent-providers.ts, описанием проверки в agent-probes.ts и адаптером здесь. */
+import { agentsTexts } from '@shared/texts/agents';
 import type { AgentAccountResult, AgentCheckResult, AgentModel, AgentSettings } from '@shared/agents';
 import type { AgentProvider } from '@shared/agent-providers';
 import { checkAgent } from './agents';
@@ -45,15 +46,12 @@ function session(value: unknown): AgentUpdate[] {
   const id = text(value);
   return /^[\w.-]{1,128}$/.test(id) ? [{ type: 'session', id }] : [];
 }
-const unsupportedMode = (): AgentError => new AgentError('UNSUPPORTED_VERSION', 'Выбранный агент не поддерживает штатный режим создания кандидатов.');
+const unsupportedMode = (): AgentError => new AgentError('UNSUPPORTED_VERSION', agentsTexts.unsupportedWriteMode);
 
 function supported(version: string, major: number, minor: number, patch: number): void {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
   if (!match || +match[1] !== major || +match[2] < minor || (+match[2] === minor && +match[3] < patch)) {
-    throw new AgentError(
-      'UNSUPPORTED_VERSION',
-      'Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию.'
-    );
+    throw new AgentError('UNSUPPORTED_VERSION', agentsTexts.unsupportedVersion);
   }
 }
 
@@ -116,7 +114,7 @@ export class ClaudeAdapter implements AgentAdapter {
     if (value.type === 'user')
       return blocks(object(value.message).content)
         .filter((block) => block.type === 'tool_result')
-        .map(() => ({ type: 'tool_finished', tool: 'Чтение проекта' }));
+        .map(() => ({ type: 'tool_finished', tool: agentsTexts.phase.reading }));
     if (value.type === 'result') {
       if (value.is_error === true || value.subtype !== 'success')
         return [
@@ -186,6 +184,7 @@ export class CodexAdapter implements AgentAdapter {
         if (value.type === 'item.completed') this.completedMessage = message;
         const previous = this.messages.get(id) ?? '';
         this.messages.set(id, message);
+        // eslint-disable-next-line no-restricted-syntax -- Особенность потокового протокола Codex остаётся у его адаптера.
         if (!message.startsWith(previous)) throw new AgentError('PROTOCOL_ERROR', 'Codex изменил уже полученный текст сообщения.');
         const delta = message.slice(previous.length);
         return delta ? [{ type: 'text_delta', text: `${!previous && this.messages.size > 1 ? '\n' : ''}${delta}` }] : [];

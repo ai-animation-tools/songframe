@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 /** Типы референсов проекта и управление их набором. */
 import type { ReactElement } from 'react';
 import { Box, Button, Chip, Typography } from '@mui/material';
@@ -16,7 +17,7 @@ export function ReferenceKinds({ kinds, onRemove, onAdd }: Props): ReactElement 
   return (
     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mb: 2 }}>
       <Typography variant="caption" color="text.secondary">
-        Типы:
+        {sourcesTexts.kinds}
       </Typography>
       {/* Удаление вынесено из Chip: отдельная кнопка показывает опасный цвет и открывает подтверждение. */}
       {kinds.map((kind) => (
@@ -24,8 +25,8 @@ export function ReferenceKinds({ kinds, onRemove, onAdd }: Props): ReactElement 
           <Chip size="small" label={`${kind.label} · ${kind.dir}/`} />
           <DestructiveButton
             icon
-            label={`Удалить тип «${kind.label}»`}
-            description="Тип будет удалён из списка типов референсов. Используемый референсами тип удалить нельзя."
+            label={sourcesTexts.removeKind({ label: kind.label })}
+            description={sourcesTexts.removeKindDescription}
             onConfirm={() => onRemove(kind.id)}
           >
             <DeleteOutlineIcon fontSize="small" />
@@ -33,7 +34,7 @@ export function ReferenceKinds({ kinds, onRemove, onAdd }: Props): ReactElement 
         </Box>
       ))}
       <Button size="small" color="success" startIcon={<AddIcon />} onClick={onAdd}>
-        Добавить тип
+        {sourcesTexts.addKind}
       </Button>
     </Box>
   );

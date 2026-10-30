@@ -1,3 +1,6 @@
+import { scenarioTexts } from '@shared/texts/scenario';
+import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 import BuildIcon from '@mui/icons-material/Build';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import type { ReactElement } from 'react';
@@ -10,7 +13,7 @@ import type { ScenesFile, ScenesSaveMode, TreatmentFile } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { KEEP_NOTHING_REASON, SCENE_PROBLEMS_ID, type ScenarioTab } from '../types';
 
-const BUSY_REASON = 'Дождитесь завершения текущей операции.';
+const BUSY_REASON = commonTexts.operationPending;
 
 /** Управляет вкладками и доступностью сохранения и построения каркаса. */
 export function ScenarioToolbar({
@@ -59,30 +62,35 @@ export function ScenarioToolbar({
   const saveReason = busy
     ? BUSY_REASON
     : sceneProblems && scenesDirty
-      ? `Исправьте проблемы реестра: ${sceneProblems}.`
+      ? scenarioTexts.toolbar.fixRegistry({ count: sceneProblems })
       : dirty
         ? null
-        : 'Нет изменений для сохранения.';
+        : scenarioTexts.toolbar.noChanges;
   // «Без производства» имеет смысл, только когда сохранение затрагивает планы с материалами.
   const keepDisabled = saveDisabled || keepUseless;
   const keepReason = saveReason ?? (keepUseless ? KEEP_NOTHING_REASON : null);
-  const timingReason = busy ? BUSY_REASON : 'На странице «Тайминги» разметьте строки песни и сохраните результат.';
+  const timingReason = busy ? BUSY_REASON : scenarioTexts.prerequisites.timing;
   const scaffoldDisabled = busy || !!scaffoldProblem;
   const scaffoldReason = busy ? BUSY_REASON : scaffoldProblem;
   return (
     <>
-      <Typography variant="h5">Сценарий</Typography>
+      <Typography variant="h5">{navigationTexts.pages.scenario}</Typography>
       <Tabs value={tab} onChange={(_e, v) => onTabChange(v)} sx={{ minHeight: 36 }}>
-        <Tab value="treatment" label={`Трактовка${treatment ? ` · ${treatment.sequences.length}` : ''}`} sx={{ minHeight: 36 }} />
-        <Tab value="scenes" label={`Реестр сцен${scenes ? ` · ${scenes.scenes.length}` : ''}`} sx={{ minHeight: 36 }} disabled={!scenes} />
+        <Tab value="treatment" label={scenarioTexts.toolbar.treatmentTab({ count: treatment ? treatment.sequences.length : null })} sx={{ minHeight: 36 }} />
+        <Tab
+          value="scenes"
+          label={scenarioTexts.toolbar.scenesTab({ count: scenes ? scenes.scenes.length : null })}
+          sx={{ minHeight: 36 }}
+          disabled={!scenes}
+        />
       </Tabs>
-      {dirty ? <Chip size="small" color="warning" label="Есть несохранённые правки" /> : null}
+      {dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
       {sceneProblems ? (
         <Chip
           size="small"
           color="error"
           variant="outlined"
-          label={`Проблем: ${sceneProblems}`}
+          label={scenarioTexts.toolbar.problems({ count: sceneProblems })}
           onClick={() => document.getElementById(SCENE_PROBLEMS_ID)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
         />
       ) : null}
@@ -93,29 +101,29 @@ export function ScenarioToolbar({
             {/* Повторное построение заменяет целиком части трактовки, сохраняя только логлайн. */}
             {treatment ? (
               <DestructiveButton
-                label="Заменить части трактовки по разметке"
-                description="Текущие части трактовки будут заменены частями из разметки. Их описания, участники и настройки будут потеряны. Логлайн сохранится; для записи результата в проект нужно сохранить трактовку."
+                label={scenarioTexts.toolbar.replaceParts}
+                description={scenarioTexts.toolbar.replacePartsDescription}
                 disabled={busy || !hasTiming}
                 disabledReason={timingReason}
                 size="medium"
                 startIcon={<TimelineIcon />}
                 onConfirm={partsFromTiming}
-                confirmLabel="Заменить части"
+                confirmLabel={scenarioTexts.toolbar.replacePartsConfirm}
               >
-                Части из разметки
+                {scenarioTexts.toolbar.partsFromTiming}
               </DestructiveButton>
             ) : (
               <ActionButton startIcon={<TimelineIcon />} onClick={partsFromTiming} disabled={busy || !hasTiming} disabledReason={timingReason}>
-                Части из разметки
+                {scenarioTexts.toolbar.partsFromTiming}
               </ActionButton>
             )}
             {scenes ? (
               // Назначение показывается у доступной кнопки; у выключенной подсказку с причиной даёт сама кнопка.
-              <Tooltip title={scaffoldDisabled ? '' : 'Реестр уже есть: каркас заменит постановку всех планов'}>
+              <Tooltip title={scaffoldDisabled ? '' : scenarioTexts.toolbar.scaffoldReplacesStaging}>
                 <span>
                   <DestructiveButton
-                    label="Пересобрать каркас"
-                    description="Реестр в plan/scenes.json будет сразу перезаписан каркасом по сохранённой трактовке и разметке. Постановка всех планов будет заменена; несохранённые изменения трактовки и реестра также будут потеряны."
+                    label={scenarioTexts.toolbar.rebuildScaffold}
+                    description={scenarioTexts.toolbar.rebuildScaffoldDescription}
                     disabled={scaffoldDisabled}
                     disabledReason={scaffoldReason}
                     size="medium"
@@ -123,36 +131,36 @@ export function ScenarioToolbar({
                     onConfirm={() => {
                       void scaffold(true);
                     }}
-                    confirmLabel="Пересобрать"
+                    confirmLabel={scenarioTexts.toolbar.rebuildConfirm}
                   />
                 </span>
               </Tooltip>
             ) : (
               <ActionButton
-                title="Создать начальный список планов по сохранённой трактовке и разметке песни"
+                title={scenarioTexts.toolbar.buildScaffoldHint}
                 startIcon={<BuildIcon />}
                 disabled={scaffoldDisabled}
                 disabledReason={scaffoldReason}
                 onClick={() => scaffold(false)}
               >
-                Построить каркас
+                {scenarioTexts.toolbar.buildScaffold}
               </ActionButton>
             )}
           </>
         ) : (
           <Button endIcon={<ExpandMoreIcon sx={{ transform: showGlobal ? 'rotate(180deg)' : 'none' }} />} onClick={() => onToggleGlobal()}>
-            Общие правила и части
+            {scenarioTexts.toolbar.globalRules}
           </Button>
         )}
         {tab === 'scenes' ? (
           <ActionButton
-            title="Сохранить правку, не меняющую сюжет: принятые комплекты и пакеты затронутых планов останутся в силе"
+            title={scenarioTexts.toolbar.saveWithoutProductionHint}
             startIcon={<SaveAsIcon />}
             disabled={keepDisabled}
             disabledReason={keepReason}
             onClick={() => void saveScenes('keep')}
           >
-            Сохранить без производства
+            {scenarioTexts.toolbar.saveWithoutProduction}
           </ActionButton>
         ) : null}
         <ActionButton
@@ -162,7 +170,7 @@ export function ScenarioToolbar({
           disabledReason={saveReason}
           onClick={() => void (tab === 'treatment' ? saveTreatment() : saveScenes('production'))}
         >
-          Сохранить
+          {commonTexts.save}
         </ActionButton>
       </Box>
     </>

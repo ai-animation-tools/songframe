@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 /** Жизненный цикл временной обложки; платная отправка всегда отделена от подготовки цены. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CoverCrop, CoverGenerationApproval, CoverGenerationSession } from '@shared/cover-generation';
@@ -144,7 +145,7 @@ export function useCoverGeneration(project: string) {
         if (next.status !== 'generating') return;
       } catch (failure) {
         if (cancelled || !alive.current) return;
-        setError(`Не удалось обновить состояние: ${describeError(failure)}. Проверка продолжится автоматически.`);
+        setError(sourcesTexts.coverRefreshError({ reason: describeError(failure) }));
       }
       timer = setTimeout(() => void poll(), 1000);
     };

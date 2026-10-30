@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Опоры пакета создаются и согласуются по одной: у каждой видно состояние, утверждённую можно вернуть на доработку. */
 import { useState, type ReactElement } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -14,7 +15,7 @@ import { BUSY_REASON } from '../constants';
 import { KeyframeNotes } from './KeyframeNotes';
 import { KeyframeReopenDialog } from './KeyframeReopenDialog';
 
-const ROLE_LABELS: Record<PackageKeyframe['role'], string> = { first: 'первый кадр', middle: 'промежуточный', last: 'последний кадр' };
+const ROLE_LABELS: Record<string, string> = productionTexts.frameRoleLabels;
 /** Этапы пакета, на которых инструмент принимает возврат утверждённой опоры (shot_workflow reopen). */
 const REOPEN_STAGES = ['keyframes_review', 'prompt_review', 'image_request_choice', 'needs_revision'];
 
@@ -27,17 +28,17 @@ function frameState(frame: PackageKeyframe, asked: string | undefined): FrameSta
 }
 
 const STATE_CHIPS: Record<FrameState, { label: string; color: 'default' | 'warning' | 'primary' | 'success'; icon: ReactElement }> = {
-  missing: { label: 'не создана', color: 'default', icon: <RadioButtonUncheckedIcon /> },
-  candidate: { label: 'кандидат ждёт решения', color: 'warning', icon: <HourglassEmptyIcon /> },
-  asked: { label: 'вопрос ниже: утвердить?', color: 'primary', icon: <HelpOutlineIcon /> },
-  approved: { label: 'утверждена', color: 'success', icon: <CheckCircleIcon /> }
+  missing: { label: productionTexts.packageKeyframes.missing, color: 'default', icon: <RadioButtonUncheckedIcon /> },
+  candidate: { label: productionTexts.packageKeyframes.candidate, color: 'warning', icon: <HourglassEmptyIcon /> },
+  asked: { label: productionTexts.packageKeyframes.pending, color: 'primary', icon: <HelpOutlineIcon /> },
+  approved: { label: productionTexts.packageKeyframes.approved, color: 'success', icon: <CheckCircleIcon /> }
 };
 
 /** Почему утверждённую опору нельзя вернуть: видеопромпт или запрос видео уже строятся на ней. */
 function reopenFrameReason(pkg: PackageView): string | null {
-  if (pkg.prompt?.approved) return 'Видеопромпт уже утверждён по этим опорам: исправленную опору создайте в новой попытке («Подготовить повтор»).';
-  if (pkg.request && pkg.request.kind !== 'image') return 'Запрос видео уже подготовлен по этим опорам: исправленную опору создайте в новой попытке.';
-  if (!REOPEN_STAGES.includes(pkg.stage)) return 'Сначала завершите отправку изображения и выберите её результат.';
+  if (pkg.prompt?.approved) return productionTexts.packageKeyframes.promptApproved;
+  if (pkg.request && pkg.request.kind !== 'image') return productionTexts.packageKeyframes.requestPrepared;
+  if (!REOPEN_STAGES.includes(pkg.stage)) return productionTexts.packageKeyframes.imagePending;
   return null;
 }
 
@@ -61,7 +62,12 @@ export function PackageKeyframes({
     .filter((k) => k.imagePath)
     .map((k) => ({
       imagePath: k.imagePath!,
-      label: `${k.id} · ${ROLE_LABELS[k.role] ?? k.role} · ${k.time_seconds} с · ${k.approved ? 'утверждена' : 'кандидат, не принят'}`
+      label: productionTexts.packageKeyframes.candidateLabel({
+        id: k.id,
+        role: ROLE_LABELS[k.role] ?? k.role,
+        timeSeconds: k.time_seconds,
+        approved: k.approved
+      })
     }));
   const blocked = reopenFrameReason(pkg);
   if (!pkg.keyframes.length) return null;
@@ -69,11 +75,15 @@ export function PackageKeyframes({
   return (
     <Box sx={{ mb: 2 }}>
       <Typography variant="subtitle2">
-        Опоры · утверждено {approved} из {pkg.keyframes.length}
-        {pkg.timing?.request_seconds ? ` · запрос ${pkg.timing.request_seconds} с на окно ${pkg.timing.window_seconds} с` : ''}
+        {productionTexts.packageKeyframes.heading({
+          approved,
+          frames: pkg.keyframes.length,
+          requestSeconds: pkg.timing?.request_seconds,
+          windowSeconds: pkg.timing?.window_seconds
+        })}
       </Typography>
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-        Опоры создаются и утверждаются по одной; утверждённые передаются агенту референсами следующих. Щелчок по миниатюре открывает её крупно.
+        {productionTexts.packageKeyframes.hint}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
         {pkg.keyframes.map((k) => {
@@ -104,7 +114,9 @@ export function PackageKeyframes({
                     color: 'text.secondary'
                   }}
                 >
-                  <Typography variant="caption">{k.approved ? 'файла нет' : 'ещё не создана'}</Typography>
+                  <Typography variant="caption">
+                    {k.approved ? productionTexts.packageKeyframes.fileMissing : productionTexts.packageKeyframes.notCreated}
+                  </Typography>
                 </Box>
               )}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', mt: 0.5 }}>
@@ -114,7 +126,7 @@ export function PackageKeyframes({
                 <Chip size="small" variant={state === 'asked' ? 'filled' : 'outlined'} color={chip.color} icon={chip.icon} label={chip.label} />
               </Box>
               <Typography variant="caption" color="text.secondary" display="block">
-                {ROLE_LABELS[k.role] ?? k.role} · {k.time_seconds} с
+                {productionTexts.packageKeyframes.frameCaption({ role: ROLE_LABELS[k.role] ?? k.role, timeSeconds: k.time_seconds })}
               </Typography>
               {k.note ? (
                 <Typography variant="caption" color="text.secondary" display="block">
@@ -126,12 +138,12 @@ export function PackageKeyframes({
                   size="small"
                   startIcon={<ReplayIcon />}
                   sx={{ mt: 0.5 }}
-                  title={`Снять утверждение ${k.id} и создать опору заново с замечанием`}
+                  title={productionTexts.packageKeyframes.reopenHint({ id: k.id })}
                   disabled={busy || !!blocked}
                   disabledReason={busy ? busyReason : blocked}
                   onClick={() => setReopening(k.id)}
                 >
-                  Вернуть на доработку
+                  {productionTexts.packageKeyframes.reopen}
                 </ActionButton>
               ) : null}
             </Box>
@@ -140,7 +152,7 @@ export function PackageKeyframes({
       </Box>
       <KeyframeNotes notes={pkg.keyframeNotes} busy={busy} busyReason={busyReason} onDeactivate={(id) => onSetNote(id, false)} />
       {activeIndex !== null && images.length ? (
-        <ImageGallery kind="Опора" images={images} initialIndex={activeIndex} onClose={() => setActiveIndex(null)} />
+        <ImageGallery kind={productionTexts.packageKeyframes.galleryKind} images={images} initialIndex={activeIndex} onClose={() => setActiveIndex(null)} />
       ) : null}
       {reopening ? (
         <KeyframeReopenDialog

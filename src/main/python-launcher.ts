@@ -1,5 +1,6 @@
 /** Общий запуск инструментов для коротких вызовов и Jobs, с одной обработкой ошибок и таймаутов. */
 
+import { environmentTexts } from '@shared/texts/environment';
 import { spawn, spawnSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { requireMediaBinaries } from './media-runtime';
@@ -32,8 +33,8 @@ export class PythonLauncher {
   }
 
   async run(project: string | null, name: string, args: string[], options: LaunchOptions = {}): Promise<ToolResult> {
-    if (!this.options.toolsRoot) throw new Error('Корень комплекса не найден.');
-    if (!/^[a-z_]+$/.test(name)) throw new Error(`Недопустимое имя инструмента: ${name}`);
+    if (!this.options.toolsRoot) throw new Error(environmentTexts.main.toolsRootMissing);
+    if (!/^[a-z_]+$/.test(name)) throw new Error(environmentTexts.main.toolNameInvalid(name));
     requireMediaBinaries(this.options);
     const script = resolve(this.options.toolsRoot, 'tools', name, `${name}.py`);
     return this.execute([script, ...(project ? ['--project', resolve(project)] : []), ...args], options, project ?? undefined);
@@ -41,7 +42,7 @@ export class PythonLauncher {
 
   /** Диагностика использует те же потоки и таймауты, не блокируя главный процесс spawnSync. */
   async execute(args: string[], options: LaunchOptions = {}, project?: string): Promise<ToolResult> {
-    if (options.signal?.aborted) return { code: null, stdout: '', stderr: 'Выполнение остановлено пользователем.', command: '' };
+    if (options.signal?.aborted) return { code: null, stdout: '', stderr: environmentTexts.main.executionStopped, command: '' };
     const runtime = this.runtime();
     const argv = [...runtime.argsPrefix, ...args];
     const command = [runtime.command, ...argv].map((part) => JSON.stringify(part)).join(' ');
@@ -92,23 +93,23 @@ export class PythonLauncher {
       const abort = (): void => {
         if (finished || aborted) return;
         aborted = true;
-        output('\nВыполнение остановлено пользователем.\n', true);
+        output(environmentTexts.main.executionStoppedOutput, true);
         stop();
       };
       const timer = setTimeout(() => {
         timedOut = true;
-        output(`\nПревышено время выполнения (${timeout} мс).\n`, true);
+        output(environmentTexts.main.executionTimedOutOutput(timeout), true);
         stop();
       }, timeout);
       child.stdout.setEncoding('utf8').on('data', (chunk: string) => output(chunk));
       child.stderr.setEncoding('utf8').on('data', (chunk: string) => output(chunk, true));
       child.on('error', (error) => {
-        output(`\nОшибка запуска Python: ${error.message}\n`, true);
+        output(environmentTexts.main.pythonLaunchFailedOutput(error.message), true);
         finish(null);
       });
       child.on('close', (code, signal) => {
         if (finished) return;
-        if (signal && !timedOut && !aborted) output(`\nPython остановлен сигналом ${signal}.\n`, true);
+        if (signal && !timedOut && !aborted) output(environmentTexts.main.pythonSignalOutput(signal), true);
         finish(timedOut || aborted ? null : code);
       });
       options.signal?.addEventListener('abort', abort, { once: true });

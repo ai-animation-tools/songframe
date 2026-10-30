@@ -115,6 +115,7 @@ async function controlRequests(
         const fail = (): void => {
           if (finished) return;
           finished = true;
+          // eslint-disable-next-line no-restricted-syntax -- Служебный отказ control protocol перехватывается чтением аккаунта/моделей и не попадает в UI.
           reject(new Error('Claude не ответил на служебный запрос.'));
         };
         const send = (): void => {
@@ -177,6 +178,7 @@ export async function readClaudeUsage(executable: string, options: AccountProces
 export async function readClaudeModels(executable: string, options: AccountProcessOptions): Promise<AgentModel[]> {
   const [initialize] = await controlRequests(executable, options, [{ subtype: 'initialize' }]);
   const models = object(initialize)?.models;
+  // eslint-disable-next-line no-restricted-syntax -- Служебный отказ initialize перехватывается чтением моделей и заменяется общим сообщением UI.
   if (!Array.isArray(models)) throw new Error('Claude не вернул список моделей.');
   return models.slice(0, 100).flatMap((value) => {
     const row = object(value);

@@ -1,4 +1,5 @@
 /** Диагностика запускает процессы и читает библиотеки вне главного потока, включая медленный Windows CreateProcess. */
+import { environmentTexts } from '@shared/texts/environment';
 import { Worker } from 'node:worker_threads';
 import { join } from 'node:path';
 import type { EnvironmentCheck } from '@shared/types';
@@ -32,7 +33,7 @@ export function runEnvironmentTask(
         reject(error);
       } else resolve(checks);
     };
-    const timer = setTimeout(() => finish(new Error('Превышено время проверки среды. Повторите проверку.')), execution.timeoutMs ?? 180000);
+    const timer = setTimeout(() => finish(new Error(environmentTexts.main.environmentTimedOut)), execution.timeoutMs ?? 180000);
     worker.on('message', (message: EnvironmentWorkerMessage) => {
       if (settled) return;
       if (message.type === 'progress') onProgress?.(message.check);
@@ -41,7 +42,7 @@ export function runEnvironmentTask(
     });
     worker.once('error', (error) => finish(error));
     worker.once('exit', (code) => {
-      if (!settled) finish(new Error(`Проверка среды завершилась без результата (код ${code}).`));
+      if (!settled) finish(new Error(environmentTexts.main.environmentExited(code)));
     });
   });
 }

@@ -1,3 +1,4 @@
+import { checksTexts } from '@shared/texts/checks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CheckId, CheckInfo, JobInfo, ReviewInfo, ShotProduction } from '@shared/types';
 import { useApp } from '../../state';
@@ -58,10 +59,7 @@ export function useChecksPage() {
         const failed = after.filter((j) => finished.includes(j.id) && j.status === 'failed');
         // Называем завершившиеся задания: страница запускает разные проверки, и общее «Задание завершено» не говорит, что именно готово.
         const titles = after.filter((j) => finished.includes(j.id)).map((j) => j.title);
-        notify(
-          failed.length ? `Завершено с ошибками: ${failed.map((j) => j.title).join(', ')}. Подробности — в журнале заданий.` : `Готово: ${titles.join(', ')}`,
-          failed.length ? 'warning' : 'success'
-        );
+        notify(failed.length ? checksTexts.jobsFailed(failed.map((j) => j.title)) : checksTexts.jobsDone(titles), failed.length ? 'warning' : 'success');
       }
     }, 1500);
     return () => clearInterval(handle);
@@ -131,7 +129,7 @@ export function useChecksPage() {
       await window.api.checks.removeReview(project, review.video);
       setReviews((current) => current.filter((item) => item.video !== review.video));
       await loadReviews();
-      notify('Проба и её рецепт удалены', 'success');
+      notify(checksTexts.reviewRemoved, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {

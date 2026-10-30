@@ -1,3 +1,5 @@
+import { scenesTexts } from '@shared/texts/scenes';
+import { commonTexts } from '@shared/texts/common';
 import MovieIcon from '@mui/icons-material/Movie';
 import CloseIcon from '@mui/icons-material/Close';
 import type { ReactElement } from 'react';
@@ -12,7 +14,6 @@ import { ShotPrompt } from './ShotPrompt';
 import { ShotSection } from './ShotSection';
 import { ShotStaging } from './ShotStaging';
 import { ShotStateBlock } from './ShotStateBlock';
-import { countLabel } from '@shared/plural';
 import { ShotPageButton } from '../../../components/ShotPageButton';
 
 /** Собирает подробности выбранной сцены и действия перехода к её постановке и производству. */
@@ -37,10 +38,12 @@ export function ShotDetails({
             {shot.id}
           </Typography>
           <Chip size="small" color={STATE_LABELS[shot.state].color} label={STATE_LABELS[shot.state].label} />
-          {shot.animaticMedia ? <Chip size="small" variant="outlined" label={`в аниматике: ${MEDIA_LABELS[shot.animaticMedia]}`} /> : null}
+          {shot.animaticMedia ? (
+            <Chip size="small" variant="outlined" label={scenesTexts.details.animaticMedia({ media: MEDIA_LABELS[shot.animaticMedia] })} />
+          ) : null}
           <Box sx={{ flex: 1 }} />
           <Typography variant="caption" color="text.secondary">
-            {formatClock(shot.start)}–{formatClock(shot.end)} · {countLabel(shot.frames, 'кадр', 'кадра', 'кадров')} · {shot.sequenceTitle}
+            {scenesTexts.details.timing({ start: formatClock(shot.start), end: formatClock(shot.end), frames: shot.frames, sequence: shot.sequenceTitle })}
           </Typography>
         </Box>
         <Typography variant="subtitle1" fontWeight={600}>
@@ -48,7 +51,7 @@ export function ShotDetails({
         </Typography>
         <Typography variant="caption" color="text.secondary">
           {shot.stageLabel}
-          {shot.packagesCount > 1 ? ` · пакетов: ${shot.packagesCount}` : ''}
+          {shot.packagesCount > 1 ? scenesTexts.details.packageCount({ count: shot.packagesCount }) : ''}
         </Typography>
         <Divider />
 
@@ -57,29 +60,29 @@ export function ShotDetails({
         <ShotPrompt shot={shot} />
         <ShotStaging shot={shot} />
 
-        <ShotSection title="Состояние героев и мира">
+        <ShotSection title={scenesTexts.details.worldState}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1 }}>
-            <ShotStateBlock title="На первый кадр" data={shot.before} />
-            <ShotStateBlock title="На последний кадр" data={shot.after} />
+            <ShotStateBlock title={scenesTexts.details.firstFrame} data={shot.before} />
+            <ShotStateBlock title={scenesTexts.details.lastFrame} data={shot.after} />
           </Box>
         </ShotSection>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <ShotPageButton page="production" shot={shot.id} />
           <ShotPageButton page="scenario" shot={shot.id} />
           <Button startIcon={<MovieIcon />} size="small" variant="outlined" onClick={() => onNavigate(`/project/animatic?shot=${shot.id}`)}>
-            В аниматике
+            {scenesTexts.details.inAnimatic}
           </Button>
           {asset ? (
             <Button size="small" startIcon={<FolderOpenIcon />} onClick={() => onOpen(asset.dir)}>
-              Папка комплекта
+              {scenesTexts.details.assetFolder}
             </Button>
           ) : shot.package ? (
             <Button size="small" startIcon={<FolderOpenIcon />} onClick={() => onOpen(shot.package!.dir)}>
-              Папка пакета
+              {scenesTexts.details.packageFolder}
             </Button>
           ) : null}
           <Button startIcon={<CloseIcon />} size="small" onClick={onClose}>
-            Закрыть
+            {commonTexts.close}
           </Button>
         </Box>
       </Stack>

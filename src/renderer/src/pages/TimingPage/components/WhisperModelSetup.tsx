@@ -1,3 +1,6 @@
+import { timingTexts } from '@shared/texts/timing';
+import { commonTexts } from '@shared/texts/common';
+import { SlottedText } from '../../../components/SlottedText';
 import { FolderOpen, Refresh, CheckCircle } from '@mui/icons-material';
 /** Рекомендация модели, её загрузка и выбор локальной папки для распознавания. */
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
@@ -54,7 +57,7 @@ export function WhisperModelSetup({ path, onPathChange }: Props): ReactElement {
     [onPathChange]
   );
   const pickFolder = async (): Promise<void> => {
-    const chosen = await window.api.dialog.pickFolder({ title: 'Папка скачанной модели faster-whisper' });
+    const chosen = await window.api.dialog.pickFolder({ title: timingTexts.modelFolderDialog });
     if (chosen) onPathChange(chosen);
   };
   return (
@@ -62,17 +65,21 @@ export function WhisperModelSetup({ path, onPathChange }: Props): ReactElement {
       {!setup && !error ? (
         <Stack direction="row" spacing={1}>
           <CircularProgress size={18} />
-          <Typography variant="body2">Проверяем CPU, память и доступность CUDA…</Typography>
+          <Typography variant="body2">{timingTexts.checkingHardware}</Typography>
         </Stack>
       ) : null}
-      {error ? <Alert severity="warning">Не удалось получить рекомендацию: {error}</Alert> : null}
+      {error ? <Alert severity="warning">{timingTexts.recommendationFailed({ reason: error })}</Alert> : null}
       {setup ? (
         <>
           <Alert severity="info">
-            <strong>Рекомендуем {setup.recommended}.</strong> {setup.recommendation}
+            <strong>{timingTexts.recommendedModel({ model: setup.recommended })}</strong> {setup.recommendation}
             <Typography variant="body2" sx={{ mt: 1 }}>
-              {setup.hardware.cpuName}; RAM {setup.hardware.ramGiB.toFixed(1)} ГБ.
-              {setup.hardware.gpuName ? ` NVIDIA: ${setup.hardware.gpuName}, ${(setup.hardware.vramMiB / 1024).toFixed(1)} ГБ видеопамяти.` : ''}
+              {timingTexts.hardwareSummary({
+                cpuName: setup.hardware.cpuName,
+                ramGiB: setup.hardware.ramGiB.toFixed(1),
+                gpuName: setup.hardware.gpuName,
+                vramGiB: setup.hardware.gpuName ? (setup.hardware.vramMiB / 1024).toFixed(1) : ''
+              })}
             </Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>
               {setup.hardware.reason}
@@ -80,67 +87,72 @@ export function WhisperModelSetup({ path, onPathChange }: Props): ReactElement {
           </Alert>
           {setup.gpuSuggestion && !setup.hardware.cudaReady ? (
             <Typography variant="body2">
-              После настройки CUDA можно попробовать {setup.gpuSuggestion}. Нужны драйвер NVIDIA, cuBLAS для CUDA 12 и cuDNN 9.{' '}
-              <Link href="https://github.com/SYSTRAN/faster-whisper#gpu" target="_blank" rel="noreferrer">
-                Требования faster-whisper
-              </Link>
-              ,{' '}
-              <Link
-                href={
-                  windows
-                    ? 'https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/'
-                    : 'https://docs.nvidia.com/cuda/cuda-installation-guide-linux/'
-                }
-                target="_blank"
-                rel="noreferrer"
-              >
-                CUDA для {windows ? 'Windows' : 'Linux'}
-              </Link>
-              ,{' '}
-              <Link href="https://docs.nvidia.com/deeplearning/cudnn/installation/latest/" target="_blank" rel="noreferrer">
-                установка cuDNN
-              </Link>
-              . После установки перезапустите приложение и нажмите «Обновить сведения».
+              <SlottedText
+                text={timingTexts.cudaSetup}
+                slots={{
+                  model: setup.gpuSuggestion,
+                  requirements: (
+                    <Link href="https://github.com/SYSTRAN/faster-whisper#gpu" target="_blank" rel="noreferrer">
+                      {timingTexts.whisperRequirements}
+                    </Link>
+                  ),
+                  cuda: (
+                    <Link
+                      href={
+                        windows
+                          ? 'https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/'
+                          : 'https://docs.nvidia.com/cuda/cuda-installation-guide-linux/'
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {timingTexts.cudaPlatform({ platform: windows ? 'Windows' : 'Linux' })}
+                    </Link>
+                  ),
+                  cudnn: (
+                    <Link href="https://docs.nvidia.com/deeplearning/cudnn/installation/latest/" target="_blank" rel="noreferrer">
+                      {timingTexts.cudnnInstallation}
+                    </Link>
+                  )
+                }}
+              />
             </Typography>
           ) : null}
           <TextField
             select
-            label="Модель распознавания"
+            label={timingTexts.recognitionModel}
             value={selected}
             onChange={(event) => {
               const id = event.target.value as WhisperModelId;
               setSelected(id);
               onPathChange(setup.directories[id]);
             }}
-            helperText="Это ориентир по ресурсам. Можно выбрать крупнее, но она потребует больше памяти и времени; точность песни не гарантируется."
+            helperText={timingTexts.modelHint}
           >
             {WHISPER_MODELS.map(({ id, size }) => (
               <MenuItem key={id} value={id}>
-                {id} — {size}
-                {id === setup.recommended ? ' (рекомендуется)' : ''}
+                {timingTexts.modelOption({ model: id, size, recommended: id === setup.recommended })}
               </MenuItem>
             ))}
           </TextField>
           <Typography variant="body2">{model.description}</Typography>
           <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
-            {installed ? '' : `Размер загрузки: ${model.size}. `}Папка: {directory}
+            {timingTexts.modelDirectory({ installed, size: model.size, directory })}
           </Typography>
           {/* Диагностика уже проверила файлы: установленной модели повторная загрузка не нужна. */}
           {installed ? (
-            <Alert severity="success">
-              Модель {selected} установлена.{usingDirectory ? ' Выбрана для распознавания.' : ''}
-            </Alert>
+            <Alert severity="success">{timingTexts.modelInstalled({ model: selected, selected: usingDirectory })}</Alert>
           ) : (
             <WhisperModelDownload key={selected} model={selected} onDownloaded={downloaded} />
           )}
           <Stack direction="row" spacing={2} flexWrap="wrap">
             {installed && !usingDirectory ? (
               <Button size="small" startIcon={<CheckCircle />} onClick={() => onPathChange(directory)}>
-                Использовать папку {selected}
+                {timingTexts.useModelDirectory({ model: selected })}
               </Button>
             ) : null}
             <Link href={`https://huggingface.co/${model.repository}/tree/main`} target="_blank" rel="noreferrer">
-              Файлы модели
+              {timingTexts.modelFiles}
             </Link>
           </Stack>
         </>
@@ -150,18 +162,18 @@ export function WhisperModelSetup({ path, onPathChange }: Props): ReactElement {
         <TextField
           fullWidth
           sx={{ minWidth: 0 }}
-          label="Папка модели faster-whisper"
+          label={timingTexts.modelFolder}
           value={path}
           onChange={(event) => onPathChange(event.target.value)}
-          placeholder={setup?.directories[setup.recommended] ?? 'Выберите папку скачанной модели'}
-          helperText="Можно выбрать любую локальную модель CTranslate2. Пусто: стандартная папка рекомендованной модели."
+          placeholder={setup?.directories[setup.recommended] ?? timingTexts.chooseModelFolder}
+          helperText={timingTexts.modelFolderHint}
         />
         <Button startIcon={<FolderOpen />} onClick={pickFolder} sx={{ flexShrink: 0, minHeight: 40 }}>
-          Обзор
+          {commonTexts.browse}
         </Button>
       </Stack>
       <Typography variant="caption" color="text.secondary">
-        «Обновить сведения» проверяет CPU, CUDA и стандартные папки моделей после ручной установки или изменения среды.
+        {timingTexts.refreshHardwareHint}
       </Typography>
       <Button
         size="small"
@@ -173,7 +185,7 @@ export function WhisperModelSetup({ path, onPathChange }: Props): ReactElement {
           setRevision((value) => value + 1);
         }}
       >
-        Обновить сведения
+        {timingTexts.refreshHardware}
       </Button>
     </Stack>
   );

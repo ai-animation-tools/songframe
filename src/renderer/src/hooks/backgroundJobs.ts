@@ -1,4 +1,7 @@
 /** Какая страница сама сообщает об итоге задания: на других страницах итог показывает общий наблюдатель. */
+import { commonTexts } from '@shared/texts/common';
+import { notificationsTexts } from '@shared/texts/notifications';
+import { navigationTexts } from '@shared/texts/navigation';
 import type { JobInfo, JobKind } from '@shared/types';
 import type { AgentJob } from '@shared/agents';
 
@@ -27,15 +30,15 @@ export function ownerShowsResult(job: Pick<JobInfo, 'kind'>, route: string): boo
 
 export function finishedNotice(job: Pick<JobInfo, 'title' | 'status' | 'error'>): { message: string; severity: 'success' | 'error' } {
   return job.status === 'failed'
-    ? { message: `${job.title}: не выполнено.${job.error ? ` ${job.error}` : ''} Подробности — в журнале заданий.`, severity: 'error' }
-    : { message: `${job.title}: выполнено.`, severity: 'success' };
+    ? { message: notificationsTexts.backgroundJobFailed({ title: job.title, error: job.error }), severity: 'error' }
+    : { message: commonTexts.job.done({ title: job.title }), severity: 'success' };
 }
 
 /** Задания агента ведут страницы «Сценарий» и «Производство» (опоры провайдера-агента тоже); правило совпадает с системными уведомлениями. */
 function agentPage(task: string): { route: string; page: string } {
   return task.startsWith('ai-clip-scenario:') || task === 'ai-clip-scenario'
-    ? { route: '/project/scenario', page: 'Сценарий' }
-    : { route: '/project/production', page: 'Производство' };
+    ? { route: '/project/scenario', page: navigationTexts.pages.scenario }
+    : { route: '/project/production', page: navigationTexts.pages.production };
 }
 
 export function agentOwnerShowsResult(job: Pick<AgentJob, 'task'>, route: string): boolean {
@@ -43,8 +46,8 @@ export function agentOwnerShowsResult(job: Pick<AgentJob, 'task'>, route: string
 }
 
 export function agentFinishedNotice(job: Pick<AgentJob, 'task' | 'status'>): { message: string; severity: 'success' | 'warning' | 'error' } {
-  const where = ` Откройте страницу «${agentPage(job.task).page}».`;
-  if (job.status === 'completed') return { message: `Агент закончил работу: предложение готово к просмотру.${where}`, severity: 'success' };
-  if (job.status === 'cancelled') return { message: `Задание агента остановлено.${where}`, severity: 'warning' };
-  return { message: `Задание агента не выполнено. Подробности — в журнале заданий.${where}`, severity: 'error' };
+  const page = agentPage(job.task).page;
+  if (job.status === 'completed') return { message: notificationsTexts.backgroundAgentCompleted({ page }), severity: 'success' };
+  if (job.status === 'cancelled') return { message: notificationsTexts.backgroundAgentCancelled({ page }), severity: 'warning' };
+  return { message: notificationsTexts.backgroundAgentFailed({ page }), severity: 'error' };
 }

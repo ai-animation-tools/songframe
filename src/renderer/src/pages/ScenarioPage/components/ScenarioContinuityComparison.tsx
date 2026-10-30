@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import { useEffect, useState, type ReactElement } from 'react';
 import { Alert, Stack, Typography } from '@mui/material';
 import type { EntityState, ScenesFile } from '@shared/types';
@@ -44,21 +45,21 @@ export function ScenarioContinuityComparison({
   }, [project, before, after, selectedIds]);
   return (
     <Stack spacing={1}>
-      <Typography variant="h6">Влияние на наследуемые состояния</Typography>
+      <Typography variant="h6">{scenarioTexts.comparison.continuity}</Typography>
       {error ? (
-        <Alert severity="warning">Не удалось рассчитать сравнение состояний соседей. Проверьте непрерывность перед применением.</Alert>
+        <Alert severity="warning">{scenarioTexts.comparison.continuityFailed}</Alert>
       ) : changes === null ? (
-        <Typography>Проверяем состояния остальных планов…</Typography>
+        <Typography>{scenarioTexts.comparison.continuityPending}</Typography>
       ) : changes.length ? (
         changes.map((change) => (
           <ScenarioComparison
             key={change.id}
-            title={`Состояние перед ${change.id}`}
-            fields={[{ label: 'Состояние сущностей', before: change.before, after: change.after }]}
+            title={scenarioTexts.comparison.stateBefore({ shot: change.id })}
+            fields={[{ label: scenarioTexts.comparison.entityState, before: change.before, after: change.after }]}
           />
         ))
       ) : (
-        <Typography>Наследуемые состояния остальных планов не изменились.</Typography>
+        <Typography>{scenarioTexts.comparison.continuityUnchanged}</Typography>
       )}
     </Stack>
   );

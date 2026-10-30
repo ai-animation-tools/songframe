@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Охват замечания к опоре: по умолчанию оно учитывается и при создании следующих опор пакета. */
 import type { ReactElement } from 'react';
 import { Checkbox, FormControlLabel, FormHelperText, Box } from '@mui/material';
@@ -23,12 +24,10 @@ export function KeyframeNoteScopeField({
             onChange={(event) => onChange(event.target.checked ? 'following' : 'frame')}
           />
         }
-        label="Учесть и для следующих опор"
+        label={productionTexts.keyframeNoteScopeField.following}
       />
       <FormHelperText sx={{ mt: 0 }}>
-        {scope === 'following'
-          ? 'Замечание передаётся агенту при создании этой опоры и всех следующих опор пакета.'
-          : 'Замечание передаётся агенту только при повторном создании этой опоры.'}
+        {scope === 'following' ? productionTexts.keyframeNoteScopeField.followingHint : productionTexts.keyframeNoteScopeField.singleHint}
       </FormHelperText>
     </Box>
   );

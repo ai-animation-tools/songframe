@@ -37,6 +37,28 @@ it('при ошибке Python всё равно возвращает реком
   vi.spyOn(launcher, 'execute').mockRejectedValue(new Error('Нет Python'));
   const result = await whisperSetup(launcher);
   expect(result.hardware.device).toBe('cpu');
-  expect(result.hardware.reason).toContain('Нет Python');
+  expect(result.hardware.reason).toBe('Не удалось проверить CUDA: Нет Python. Рекомендация рассчитана для CPU.');
   expect(result.recommended).toMatch(/small|medium/);
+});
+
+// Диагностика сохраняет сообщение внешнего процесса дословно, включая путь и знаки пунктуации.
+it.each([
+  ['', 'Python не ответил'],
+  ['  Ошибка «CUDA» в C:\\Модели\\Whisper & <gpu>  ', 'Ошибка «CUDA» в C:\\Модели\\Whisper & <gpu>']
+])('возвращает полное объяснение при ненулевом коде Python: %j', async (stderr, reason) => {
+  const launcher = new PythonLauncher({ toolsRoot: work, platform: 'linux', env: { XDG_DATA_HOME: work } });
+  vi.spyOn(launcher, 'execute').mockResolvedValue({ code: 1, command: '', stdout: '', stderr });
+  const result = await whisperSetup(launcher);
+  expect(result.hardware.reason).toBe(`Не удалось проверить CUDA: ${reason}. Рекомендация рассчитана для CPU.`);
+});
+
+it('оставляет исходное объяснение CPU и параметры проверки без изменений', async () => {
+  const launcher = new PythonLauncher({ toolsRoot: work, platform: 'linux', env: { XDG_DATA_HOME: work } });
+  const execute = vi.spyOn(launcher, 'execute').mockResolvedValue({ code: 0, command: '', stdout: '{}', stderr: '' });
+  const result = await whisperSetup(launcher);
+  expect(result.hardware.reason).toBe('Используется CPU.');
+  expect(execute).toHaveBeenCalledWith(
+    ['-c', 'import json; from tools.transcribe_local.hardware import detect_hardware; print(json.dumps(detect_hardware()))'],
+    { timeoutMs: 15000 }
+  );
 });

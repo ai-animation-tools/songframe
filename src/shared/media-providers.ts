@@ -1,3 +1,4 @@
+import { providerTexts } from './texts/providers';
 /** Возможности media-провайдеров независимы от текстового агента и не разрешают запуск генерации. */
 import type { AgentProvider } from './agent-providers';
 
@@ -56,9 +57,12 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     // Звуковые слоты audio_N режима omni_ref_video (kling-video-v4_0): 5–30 с по объявлению who_am_i.
     lipSync: { min: 5, max: 30 },
     learnsPriceFromCharges: true,
+    // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
     generationHistory: 'галерею созданных работ на сайте kling.ai (раздел Creations, адрес kling.ai/app/creations)',
     requestParameters: true,
+    // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
     defaultModelLabel: 'Автоматически по задаче',
+    // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
     capabilitiesNote: 'Проверка не запускает генерацию и не тратит кредиты. Подойдёт ли модель для конкретного плана, приложение проверит перед запросом.',
     settingsNotes: {},
     defaults: { image: { resolution: '2k', aspect_ratio: '16:9', outputs: 1 } },
@@ -84,9 +88,13 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
       ]
     },
     commandLabels: {
+      // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
       text_to_video: 'видео по тексту',
+      // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
       image_to_video: 'видео по опорным кадрам',
+      // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
       omni_ref_video: 'видео по референсам',
+      // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
       motion_control: 'видео по движению'
     }
   },
@@ -99,10 +107,13 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     learnsPriceFromCharges: false,
     generationHistory: null,
     requestParameters: false,
+    // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
     defaultModelLabel: 'Как указано в настройках Codex',
+    // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
     capabilitiesNote: 'Проверка не создаёт изображений. Сможет ли Codex их нарисовать, станет ясно при первой генерации.',
     settingsNotes: {
       image:
+        // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
         'В наших проверках горизонтальные изображения получались размером 1672×941, в том числе при запросе 4K. Точный размер через промпт не гарантируется.'
     },
     defaults: {},
@@ -160,7 +171,7 @@ export function isPaidMediaProvider(value: unknown): boolean {
 export function mediaProviderTitles(kind: MediaKind): string {
   return mediaProvidersFor(kind)
     .map((id) => MEDIA_PROVIDERS[id].title)
-    .join(' или ');
+    .join(providerTexts.alternativeSeparator);
 }
 
 /** Сведения о провайдере из сохранённой строки; неизвестное значение даёт null. */
@@ -230,7 +241,7 @@ export function mediaCommandLabel(provider: unknown, command: string): string {
 }
 
 /** Название провайдера для сообщений; неизвестное значение остаётся общим словом. */
-export function mediaProviderTitle(value: unknown, fallback = 'провайдер генерации'): string {
+export function mediaProviderTitle(value: unknown, fallback: string = providerTexts.generationProvider): string {
   const id = normalizeMediaProvider(value);
   return id ? MEDIA_PROVIDERS[id].title : fallback;
 }

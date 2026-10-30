@@ -1,3 +1,4 @@
+import { animaticTexts } from '@shared/texts/animatic';
 /** Подтверждение изменения статуса принятия аниматика. */
 
 import type { ReactElement } from 'react';
@@ -20,20 +21,16 @@ export function AnimaticConfirmDialog({
     <ConfirmationDialog
       open={!!confirm}
       onClose={onClose}
-      title={confirm === 'approved' ? 'Принять результат?' : 'Вернуть на просмотр?'}
+      title={confirm === 'approved' ? animaticTexts.confirm.approveTitle : animaticTexts.confirm.reviewTitle}
       onConfirm={() => {
         if (confirm) void onConfirm(confirm);
       }}
-      confirmLabel={confirm === 'approved' ? 'Принять' : 'Вернуть'}
+      confirmLabel={confirm === 'approved' ? animaticTexts.acceptance.approve : animaticTexts.confirm.return}
       confirmIcon={<CheckIcon />}
       confirmDisabled={running}
-      confirmDisabledReason="Дождитесь завершения сборки."
+      confirmDisabledReason={animaticTexts.buildPending}
     >
-      <Typography variant="body2">
-        {confirm === 'approved'
-          ? 'Результат будет отмечен как принятый. Если видео изменится после пересборки, просмотрите его и примите заново.'
-          : 'Результат снова будет ожидать просмотра и принятия.'}
-      </Typography>
+      <Typography variant="body2">{confirm === 'approved' ? animaticTexts.confirm.approveDescription : animaticTexts.confirm.reviewDescription}</Typography>
     </ConfirmationDialog>
   );
 }

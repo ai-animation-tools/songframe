@@ -1,3 +1,4 @@
+import { scenarioTexts } from '@shared/texts/scenario';
 import type { ReactElement } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -28,20 +29,24 @@ export function ScenarioComparison({ title, fields, defaultExpanded }: { title: 
           <Chip
             size="small"
             color="warning"
-            label={changed.length === 1 ? `изменено: ${changed[0].label}` : `изменено полей: ${changed.length}`}
+            label={
+              changed.length === 1
+                ? scenarioTexts.comparison.changedField({ label: changed[0].label })
+                : scenarioTexts.comparison.changedFields({ count: changed.length })
+            }
             sx={{ height: 20 }}
           />
         ) : (
-          <Chip size="small" variant="outlined" label="без изменений" sx={{ height: 20 }} />
+          <Chip size="small" variant="outlined" label={scenarioTexts.comparison.unchanged} sx={{ height: 20 }} />
         )}
       </AccordionSummary>
       <AccordionDetails sx={{ p: 0, overflow: 'auto' }}>
         <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 600 }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ width: '22%' }}>Поле</TableCell>
-              <TableCell>Сейчас в проекте</TableCell>
-              <TableCell>Предложение</TableCell>
+              <TableCell sx={{ width: '22%' }}>{scenarioTexts.comparison.field}</TableCell>
+              <TableCell>{scenarioTexts.comparison.current}</TableCell>
+              <TableCell>{scenarioTexts.comparison.proposal}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -50,7 +55,7 @@ export function ScenarioComparison({ title, fields, defaultExpanded }: { title: 
                 <TableCell sx={{ verticalAlign: 'top' }}>
                   <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
                     {field.label}
-                    {same(field) ? null : <Chip size="small" color="warning" variant="outlined" label="изменено" sx={{ height: 18 }} />}
+                    {same(field) ? null : <Chip size="small" color="warning" variant="outlined" label={scenarioTexts.comparison.changed} sx={{ height: 18 }} />}
                   </Box>
                 </TableCell>
                 <TableCell sx={{ verticalAlign: 'top', overflowWrap: 'anywhere' }}>

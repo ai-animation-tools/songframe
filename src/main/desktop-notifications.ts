@@ -17,6 +17,7 @@ export class DesktopNotifications {
       notification.once('close', () => this.active.delete(notification));
       notification.once('failed', (_event, error) => {
         this.active.delete(notification);
+        // eslint-disable-next-line no-restricted-syntax -- Сбой нативной доставки относится к журналу адаптера уведомлений.
         console.warn('Не удалось показать системное уведомление:', error);
       });
       notification.once('click', () => {
@@ -24,6 +25,7 @@ export class DesktopNotifications {
         try {
           this.open(notice.target);
         } catch (error) {
+          // eslint-disable-next-line no-restricted-syntax -- Ошибка обработчика click записывается только в журнал адаптера.
           console.warn('Не удалось открыть результат из уведомления:', error);
         }
       });
@@ -34,6 +36,7 @@ export class DesktopNotifications {
         throw error;
       }
     } catch (error) {
+      // eslint-disable-next-line no-restricted-syntax -- Сбой нативной доставки относится к журналу адаптера уведомлений.
       console.warn('Не удалось показать системное уведомление:', error);
     }
   }

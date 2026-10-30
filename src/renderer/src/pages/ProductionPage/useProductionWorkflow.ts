@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Опрос выбранного пакета не переносит ответы агента между планами и не перекрывает применение предложения. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ProductionFrameCandidate, ProductionWorkflowStart, ProductionWorkflowView } from '@shared/production-workflow';
@@ -27,21 +28,13 @@ function announce(previous: Observed | null, view: ProductionWorkflowView, notif
   const { proposal, job } = view;
   if (proposal && current.proposal !== previous.proposal) {
     const stage = PRODUCTION_PASS_LABELS[proposal.stage];
-    if (proposal.status === 'ready') notify(`${stage}: предложение агента готово. Откройте «Просмотреть предложение и сравнение».`, 'success');
-    else if (proposal.status === 'invalid' && proposal.refused)
-      notify(
-        `${stage}: агент отказался подготовить предложение. Возможно, в сценарии есть противоречия. Причина — в «Просмотреть предложение и сравнение».`,
-        'warning'
-      );
-    else if (proposal.status === 'invalid')
-      notify(`${stage}: результат агента требует исправления.${proposal.message ? ` ${proposal.message}` : ''}`, 'warning');
+    if (proposal.status === 'ready') notify(productionTexts.useProductionWorkflow.proposalReady({ stage }), 'success');
+    else if (proposal.status === 'invalid' && proposal.refused) notify(productionTexts.useProductionWorkflow.proposalRefused({ stage }), 'warning');
+    else if (proposal.status === 'invalid') notify(productionTexts.useProductionWorkflow.proposalInvalid({ stage, message: proposal.message }), 'warning');
     else if (proposal.status === 'failed' || proposal.status === 'interrupted')
-      notify(
-        `${stage}: задание агента ${proposal.status === 'failed' ? 'завершилось с ошибкой' : 'прервано'}.${proposal.message ? ` ${proposal.message}` : ''}`,
-        'error'
-      );
+      notify(productionTexts.useProductionWorkflow.proposalFailed({ stage, failed: proposal.status === 'failed', message: proposal.message }), 'error');
   } else if (!proposal && job && current.job !== previous.job && (job.status === 'failed' || job.status === 'interrupted')) {
-    notify(`${job.task}: задание агента ${job.status === 'failed' ? 'завершилось с ошибкой' : 'прервано'}.`, 'error');
+    notify(productionTexts.useProductionWorkflow.jobFailed({ task: job.task, failed: job.status === 'failed' }), 'error');
   }
 }
 
@@ -145,11 +138,15 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
       packageDir ? execute(() => window.api.productionWorkflow.importFrames(project, shot, packageDir, images)) : Promise.resolve(false),
     apply: () =>
       view?.proposal
-        ? execute(() => window.api.productionWorkflow.apply(project, shot, packageDir, view.proposal!.id), true, 'Предложение применено.')
+        ? execute(() => window.api.productionWorkflow.apply(project, shot, packageDir, view.proposal!.id), true, productionTexts.useProductionWorkflow.applied)
         : Promise.resolve(false),
     discard: () =>
       view?.proposal
-        ? execute(() => window.api.productionWorkflow.discard(project, shot, packageDir, view.proposal!.id), false, 'Предложение отклонено.')
+        ? execute(
+            () => window.api.productionWorkflow.discard(project, shot, packageDir, view.proposal!.id),
+            false,
+            productionTexts.useProductionWorkflow.discarded
+          )
         : Promise.resolve(false),
     cancel: async (id: string): Promise<void> => {
       await execute(async () => {

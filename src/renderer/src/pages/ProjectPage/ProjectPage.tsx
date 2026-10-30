@@ -1,3 +1,4 @@
+import { projectTexts } from '@shared/texts/project';
 /** Обзор проекта: состояние, признаки, проблемы и следующий шаг. */
 
 import { type ReactElement, useCallback, useEffect, useState } from 'react';
@@ -28,7 +29,7 @@ export function ProjectPage(): ReactElement {
     }
   };
   const navigate = useNavigate();
-  if (!status) return <Typography>Проект не выбран.</Typography>;
+  if (!status) return <Typography>{projectTexts.noProject}</Typography>;
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>

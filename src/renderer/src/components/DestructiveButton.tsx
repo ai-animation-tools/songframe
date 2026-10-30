@@ -1,3 +1,4 @@
+import { commonTexts } from '@shared/texts/common';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { Box, type SxProps, type Theme } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -33,7 +34,7 @@ export function DestructiveButton({
   disabledReason,
   size = 'small',
   sx,
-  confirmLabel = 'Удалить',
+  confirmLabel = commonTexts.delete,
   startIcon,
   variant = 'text'
 }: Props): ReactElement {
@@ -70,7 +71,7 @@ export function DestructiveButton({
           onConfirm();
         }}
         confirmLabel={confirmLabel}
-        confirmIcon={startIcon ?? (confirmLabel === 'Удалить' ? <DeleteOutlineIcon /> : <WarningAmberIcon />)}
+        confirmIcon={startIcon ?? (confirmLabel === commonTexts.delete ? <DeleteOutlineIcon /> : <WarningAmberIcon />)}
         confirmColor="error"
         confirmDisabled={disabled}
         confirmDisabledReason={disabledReason}

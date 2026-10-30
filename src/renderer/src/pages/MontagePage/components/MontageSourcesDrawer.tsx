@@ -1,3 +1,4 @@
+import { montageTexts } from '@shared/texts/montage';
 import type { ComponentProps, ReactElement } from 'react';
 import { Close } from '@mui/icons-material';
 import { Box, Button, Drawer } from '@mui/material';
@@ -33,7 +34,7 @@ export function MontageSourcesDrawer({ open, onClose, disabled, ...sources }: Pr
       </Box>
       <Box sx={{ p: 2 }}>
         <Button startIcon={<Close />} onClick={onClose}>
-          Закрыть материалы сцен
+          {montageTexts.closeSources}
         </Button>
       </Box>
     </Drawer>

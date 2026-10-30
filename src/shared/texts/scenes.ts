@@ -18,7 +18,7 @@ export const scenesTexts = {
       rate: string;
       frames: string;
       duration: string;
-    }) => `${width}×${height}, ${rate} кадр/с, ${frames} кадров, ${duration} с`,
+    }) => `${width}×${height}, ${rate} FPS, кадров: ${frames}, ${duration} с`,
     stateFailed: ({ shot, reason }: { shot: string; reason: string }) => `${shot}: состояние не вычислено: ${reason}`,
     requestInput: 'вход запроса',
     outputAbsolutePathRequired: 'Укажите абсолютный путь собранного результата.',

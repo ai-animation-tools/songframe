@@ -24,12 +24,27 @@ export function routeOf(hash: string): string {
   return hash.replace(/^#/, '').split('?')[0] || '/';
 }
 
-export function ownerShowsResult(job: Pick<JobInfo, 'kind'>, route: string): boolean {
+export function isDerivedJob(job: Partial<Pick<JobInfo, 'steps'>>): boolean {
+  return !!job.steps?.some((step) => step.tool === 'derive_shot');
+}
+
+/** Общий наблюдатель переживает уход с производства; короткое задание может закончиться между двумя опросами. */
+export function newDerivedResult(job: JobInfo, previousStatus: string | undefined, observerStartedAt: number): boolean {
+  return (
+    isDerivedJob(job) &&
+    job.status !== 'running' &&
+    (previousStatus === 'running' || (previousStatus === undefined && Date.parse(job.startedAt) >= observerStartedAt))
+  );
+}
+
+export function ownerShowsResult(job: Pick<JobInfo, 'kind'> & Partial<Pick<JobInfo, 'steps'>>, route: string): boolean {
+  // Производные планы сообщает только общий наблюдатель, в том числе после повторного открытия производства.
+  if (isDerivedJob(job)) return false;
   return OWNER_ROUTES[job.kind].includes(route);
 }
 
 export function finishedNotice(job: Pick<JobInfo, 'title' | 'status' | 'error'>): { message: string; severity: 'success' | 'error' } {
-  return job.status === 'failed'
+  return job.status !== 'done'
     ? { message: notificationsTexts.backgroundJobFailed({ title: job.title, error: job.error }), severity: 'error' }
     : { message: commonTexts.job.done({ title: job.title }), severity: 'success' };
 }

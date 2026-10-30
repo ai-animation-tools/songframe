@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
+import hashlib
 import json
 import tempfile
 import unittest
@@ -147,7 +148,30 @@ class ShotStatusTests(unittest.TestCase):
     def test_derived_shot_is_stale_while_its_source_is_stale(self):
         self.registry["scenes"][3]["derived_from"] = {"shot": "M01"}
         self.write("plan/scenes.json", self.registry)
-        self.write("assets/shots/M04/manifest.json", {"schema_version": 1, "shot": "M04"})
+        digest = hashlib.sha256(b"accepted source").hexdigest()
+        self.write(
+            "assets/shots/M01/manifest.json",
+            {
+                "schema_version": 1,
+                "shot": "M01",
+                "kind": "generated_video",
+                "accepted_edit": {"video": {"path": "video.mp4", "sha256": digest}},
+            },
+        )
+        (self.root / "assets/shots/M01/video.mp4").write_bytes(b"accepted source")
+        self.write(
+            "assets/shots/M04/manifest.json",
+            {
+                "schema_version": 1,
+                "shot": "M04",
+                "kind": "derived_video",
+                "generation": {
+                    "source_shot": "M01",
+                    "source_scene_sha256": scene_fingerprints(self.registry, {})["M01"],
+                    "source_accepted_video_sha256": digest,
+                },
+            },
+        )
         self.accept_current("M01", "M04")
         _, rows = self.rows()
         self.assertEqual((rows["M01"]["status"], rows["M04"]["status"]), ("completed", "completed"))
@@ -156,7 +180,11 @@ class ShotStatusTests(unittest.TestCase):
         self.write("plan/scenes.json", self.registry)
         _, rows = self.rows()
         self.assertEqual((rows["M01"]["status"], rows["M04"]["status"]), ("stale", "stale"))
-        self.assertEqual(rows["M04"]["stage"], "постановка M01 изменена после приёмки: нужно новое производство")
+        self.assertIn("источник M01 не готов", rows["M04"]["stage"])
+        self.accept_current("M01", "M04")
+        _, rows = self.rows()
+        self.assertEqual(rows["M04"]["status"], "stale")
+        self.assertIn("материал источника M01 изменён", rows["M04"]["stage"])
 
     def test_fresh_package_without_request_dir_is_in_progress_not_a_crash(self):
         # shot_workflow init пишет request_dir: null до заморозки запроса; статус берётся из stage.

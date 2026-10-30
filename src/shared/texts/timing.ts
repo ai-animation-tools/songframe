@@ -1,3 +1,4 @@
+import { countLabel } from '../plural';
 import { commonTexts } from './common';
 
 // Предусловие одинаково при запуске разметки в main и при объяснении на странице.
@@ -35,7 +36,7 @@ export const timingTexts = {
   },
   cudaRecommendation: ({ vramGiB }: { vramGiB: string }) => `Доступно ускорение CUDA, видеопамять ${vramGiB} ГБ.`,
   cpuRecommendation: ({ threads, ramGiB, model }: { threads: number; ramGiB: string; model: 'small' | 'medium' }) =>
-    `Обработка на CPU: ${threads} потоков, ${ramGiB} ГБ RAM. ${model === 'medium' ? 'Medium подходит для обычной локальной работы.' : 'Small требует меньше ресурсов.'}`,
+    `Обработка на CPU: ${countLabel(threads, 'поток', 'потока', 'потоков')}, ${ramGiB} ГБ RAM. ${model === 'medium' ? 'Medium подходит для обычной локальной работы.' : 'Small требует меньше ресурсов.'}`,
   missingSourceLine: ({ line }: { line: number }) => `(строка ${line} отсутствует)`,
   noRoomForLine: 'На позиции плейхеда нет места для новой строки: сдвиньте плейхед в свободное место.',
   sectionsRecalculated: 'Секции пересчитаны по текущим строкам. Сохраните или отмените правки.',

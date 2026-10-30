@@ -529,7 +529,9 @@ export interface ShotProduction {
   stageLabel: string;
   /** Известная причина недоступности повтора по сохранённому запросу; проверка не запускает инструменты. */
   regenerateProblem: string | null;
-  /** План собирается из материала этого плана (derived_from реестра или комплект derived_video); иначе null. */
+  /** Причина устаревания, включая замену или отсутствие использованного источника. */
+  staleReason?: string | null;
+  /** Источник материала по актуальному derived_from сценария; иначе null. */
   derivedFrom: string | null;
   /** Пакет плана ждёт действия пользователя: вопрос, подтверждение запроса, просмотр результата, запуск доработки. */
   attention: string | null;
@@ -799,6 +801,8 @@ export interface AnimaticView {
 
 /** Дашборд сцен: всё известное о плане в одной карточке; только чтение. */
 export interface DashboardShot {
+  /** Источник материала по актуальному сценарию; история принятого комплекта не меняет выбор. */
+  derivedFrom: string | null;
   id: string;
   title: string;
   sequenceTitle: string;

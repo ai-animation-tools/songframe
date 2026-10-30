@@ -38,7 +38,7 @@ export function ProductionShotCard({
   broken?: BrokenPackage[];
   onDiscardBroken?(item: BrokenPackage): void;
 }): ReactElement {
-  const waiting = shot.packages.filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
+  const waiting = (shot.derivedFrom ? [] : shot.packages).filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
   const sending = shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''));
   // Несовместимость запроса устраняет пользователь, поэтому она важнее временной занятости.
   const regenerateReason =
@@ -68,7 +68,7 @@ export function ProductionShotCard({
       {/* Статус задаёт главный процесс по отпечатку постановки; комплект остаётся доступен для просмотра. */}
       {shot.state === 'stale' ? (
         <Alert severity="info" sx={{ mt: 1.5 }}>
-          <LinkedText text={productionTexts.productionShotCard.stale} />
+          <LinkedText text={shot.staleReason ?? productionTexts.productionShotCard.stale} />
         </Alert>
       ) : null}
       {broken.map((item) => (
@@ -136,7 +136,7 @@ export function ProductionShotCard({
       ) : null}
       {/* Действия блока внизу слева, того же вида, что ряд подготовки плана; результат — сразу под ним, причина недоступности — в подсказке кнопки. */}
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap alignItems="center" sx={{ mt: 2 }}>
-        {shot.state === 'completed' || shot.packages.length ? (
+        {!shot.derivedFrom && (shot.state === 'completed' || shot.packages.length) ? (
           <ActionButton
             startIcon={<ReplayIcon />}
             title={productionTexts.productionShotCard.retryHint}

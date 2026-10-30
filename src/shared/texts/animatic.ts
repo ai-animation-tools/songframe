@@ -1,3 +1,4 @@
+import { countLabel } from '../plural';
 import { commonTexts } from './common';
 
 /** Тексты просмотра и принятия аниматика; правила — @link ../../../docs/ui/texts.md. */
@@ -62,7 +63,7 @@ export const animaticTexts = {
     rebuildDescription: 'Текущий результат сборки будет заменён. После пересборки результат потребуется проверить заново.',
     buildHint: 'Обновить карточки и собрать видео'
   },
-  // Слот даты сохраняет компонент DateTime и прежний пробел перед ним; грамматика первого переноса остаётся прежней.
+  // Слот даты сохраняет компонент DateTime; счётчик планов согласуется, категории подписаны отдельно.
   playbackSummary: ({
     time,
     duration,
@@ -77,10 +78,11 @@ export const animaticTexts = {
     video: number;
     keyframes: number;
     cards: number;
-  }) => `${time} / ${duration} · ${shots} планов: ${video} анимация, ${keyframes} опоры, ${cards} карточки · собрано {builtAt}`,
+  }) =>
+    `${time} / ${duration} · ${countLabel(shots, 'план', 'плана', 'планов')}: анимация: ${video}, опоры: ${keyframes}, карточки: ${cards} · собрано {builtAt}`,
   shot: {
     speech: 'речь',
-    timing: ({ start, end, frames }: { start: string; end: string; frames: number }) => `${start}–${end} · ${frames} кадров`,
+    timing: ({ start, end, frames }: { start: string; end: string; frames: number }) => `${start}–${end} · ${countLabel(frames, 'кадр', 'кадра', 'кадров')}`,
     sequence: ({ title }: { title: string }) => `Часть: ${title}`,
     lastCard: ({ shot }: { shot: string }) => `${shot} последняя опора`
   }

@@ -83,6 +83,9 @@ import type { TaskNotifications } from './task-notifications';
 import type { MontageDraft } from '@shared/montage';
 import { Montage } from './montage';
 import { copyMontageVideo, montageVideoPath } from './montage-video';
+import { DerivedWorkflow } from './derived-workflow';
+import { recoverDerivedApplications } from './derived-recovery';
+import type { DerivedShotRecipe } from '@shared/derived-shot';
 import { recoverMontageApplications } from './montage-recovery';
 import { readScenarioRegistry } from './scenario-status';
 import { CoverGeneration, type CoverGenerationOptions } from './cover-generation';
@@ -311,6 +314,14 @@ export function registerIpc(getServices: () => Services, setServices: (services:
         attached.set(id, entityId);
       });
   }
+  // Только локальные инструменты: доступность агента и провайдера не участвует в этой ветке.
+  const derived = (): DerivedWorkflow => new DerivedWorkflow(getServices().jobs);
+  ipcMain.handle('derivedShots:view', (_event, project: string, shot: string) => derived().view(project, shot));
+  ipcMain.handle('derivedShots:save', (_event, project: string, shot: string, recipe: DerivedShotRecipe) => derived().save(project, shot, recipe));
+  ipcMain.handle('derivedShots:build', (_event, project: string, shot: string, recipe: DerivedShotRecipe) => derived().build(project, shot, recipe));
+  ipcMain.handle('derivedShots:accept', (_event, project: string, shot: string, id: string, token: string, replace: boolean) =>
+    derived().accept(project, shot, id, token, replace)
+  );
   const connectMedia = (): void => getServices().production.setMediaProviders(paidMedia);
   connectMedia();
   const mediaCapabilities = (provider: string, kind: MediaKind): ((project: string) => Promise<MediaCapabilities>) | undefined => {
@@ -503,6 +514,12 @@ export function registerIpc(getServices: () => Services, setServices: (services:
         .some((job) => job.status === 'running' && job.steps.some((step) => step.tool === 'apply_montage'))
     )
       recoverMontageApplications(path);
+    if (
+      !getServices()
+        .jobs.list()
+        .some((job) => job.status === 'running' && job.project === path && job.steps.some((step) => step.tool === 'derive_shot'))
+    )
+      recoverDerivedApplications(path);
     return getServices().projects.open(path);
   });
   ipcMain.handle('projects:create', (_event, input: CreateProjectInput) => getServices().projects.create(input));

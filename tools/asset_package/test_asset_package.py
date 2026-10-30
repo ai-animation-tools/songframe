@@ -77,6 +77,35 @@ class AssetPackageTests(unittest.TestCase):
     def write(self):
         self.path.write_text(json.dumps(self.package, ensure_ascii=False))
 
+    def test_derived_receipt_is_required_but_unknown_scene_allows_local_replay(self):
+        self.package["kind"] = "derived_video"
+        self.package["generation"].update(
+            source_shot="M02", source_scene_sha256=None, source_accepted_video_sha256="a" * 64
+        )
+        self.write()
+        # Источник мог исчезнуть: локальный комплект всё равно возвращает принятые байты.
+        replay(self.path, self.root / "derived-copy.mp4")
+        self.assertEqual(sha(self.root / "derived-copy.mp4"), self.package["accepted_edit"]["video"]["sha256"])
+        del self.package["generation"]["source_scene_sha256"]
+        self.write()
+        with self.assertRaisesRegex(ValueError, "source_scene_sha256"):
+            validate_package(self.path)
+
+    def test_repeat_is_integer_cycles_and_partial_tail(self):
+        self.package["accepted_edit"]["repeat"] = {"full_cycles": 2, "tail_frames": 6, "cycle_frames": 12}
+        self.write()
+        validate_package(self.path)
+        for value in (
+            {"full_cycles": 2, "tail_frames": 7, "cycle_frames": 12},
+            {"full_cycles": 1, "tail_frames": 18, "cycle_frames": 12},
+            {"count": 2},
+            {"full_cycles": True, "tail_frames": 6, "cycle_frames": 12},
+        ):
+            self.package["accepted_edit"]["repeat"] = value
+            self.write()
+            with self.assertRaises(ValueError):
+                validate_package(self.path)
+
     def test_detects_lost_or_changed_prompt(self):
         (self.asset / "prompt.txt").write_text("Другой промпт")
         with self.assertRaisesRegex(ValueError, "изменился файл"):

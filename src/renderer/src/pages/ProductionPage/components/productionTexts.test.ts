@@ -173,14 +173,10 @@ it('сохраняет целую фразу производного плана
   const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(DerivedShotNotice, { source })));
   expect(html).toContain('План собирается из материала ');
   expect(html).toContain('href="/project/production?shot=M01+%26+%3Cscript%3E"');
-  expect(html).toContain(
-    'M01 &amp; &lt;script&gt;</a>. Описание, опоры и генерация для него не нужны; сборка производного комплекта в приложении пока не поддерживается.'
-  );
+  expect(html).toContain('M01 &amp; &lt;script&gt;</a>. Соберите предпросмотр по явному рецепту и примите результат.');
   expect(html).not.toContain('<script>');
   const plain = renderToStaticMarkup(createElement(DerivedShotNotice, { source: 'M01' }));
-  expect(plain).toContain(
-    'План собирается из материала M01. Описание, опоры и генерация для него не нужны; сборка производного комплекта в приложении пока не поддерживается.'
-  );
+  expect(plain).toContain('План собирается из материала M01. Соберите предпросмотр по явному рецепту и примите результат.');
   expect(plain).not.toContain('<a ');
 });
 
@@ -208,4 +204,30 @@ it('сохраняет подписи входов, технические сл�
     'Запрос: результат агента требует исправления. Путь «A&B» отсутствует.'
   );
   expect(productionTexts.useProductionWorkflow.proposalFailed({ stage: 'Запрос', failed: false })).toBe('Запрос: задание агента прервано.');
+});
+
+// Длина промпта меняется при каждой правке, включая окончания 11–14 и 21–24.
+it.each([
+  [0, 'символов'],
+  [1, 'символ'],
+  [2, 'символа'],
+  [5, 'символов'],
+  [11, 'символов'],
+  [14, 'символов'],
+  [21, 'символ'],
+  [22, 'символа'],
+  [24, 'символа']
+] as const)('согласует длину видеопромпта %s', (characters, word) => {
+  expect(productionTexts.packageCard.promptTitle({ approved: true, characters })).toBe(`Видеопромпт · принят · ${characters} ${word}`);
+  expect(productionTexts.packageCard.promptTitle({ approved: false, characters })).toBe(`Видеопромпт · не принят · ${characters} ${word}`);
+});
+
+it.each([
+  [1, 'кадр'],
+  [2, 'кадра'],
+  [30, 'кадров']
+] as const)('согласует частоту кадров %s в ошибке границ', (fps, word) => {
+  expect(productionTexts.main.package.acceptBoundsInvalid({ fps })).toBe(
+    `Границы участка должны быть конечными неотрицательными секундами на сетке ${fps} ${word}/с.`
+  );
 });

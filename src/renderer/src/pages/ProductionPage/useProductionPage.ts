@@ -152,6 +152,7 @@ export function useProductionPage() {
   // Успешный IPC означает запуск, а не результат: уведомляем о завершении по состоянию задания.
   useEffect(() => {
     for (const [key, operation] of Object.entries(operations)) {
+      if (key.split('\0')[0] !== project) continue;
       const job = operationJob(operation, jobs);
       if (!job || job.status === 'running' || announcedJobs.current.has(job.id)) continue;
       announcedJobs.current.add(job.id);
@@ -163,11 +164,12 @@ export function useProductionPage() {
         setSelected(shotId);
         setFilter((current) => (current === 'queued' ? 'all' : current));
       }
+      const failed = job.status === 'failed' || job.status === 'interrupted';
       notify(
-        job.status === 'failed'
+        failed
           ? productionTexts.useProductionPage.jobFailed({ title: job.title, error: job.error, code: job.code })
           : productionTexts.useProductionPage.jobDone({ title: job.title }),
-        job.status === 'failed' ? 'error' : 'success'
+        failed ? 'error' : 'success'
       );
     }
   }, [jobs, operations, notify, project]);

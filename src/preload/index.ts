@@ -53,6 +53,12 @@ const api: Api = {
     attach: (id, entityId) => ipcRenderer.invoke('referenceImages:attach', id, entityId),
     close: (id) => ipcRenderer.invoke('referenceImages:close', id)
   },
+  derivedShots: {
+    view: (project, shot) => ipcRenderer.invoke('derivedShots:view', project, shot),
+    save: (project, shot, recipe) => ipcRenderer.invoke('derivedShots:save', project, shot, recipe),
+    build: (project, shot, recipe) => ipcRenderer.invoke('derivedShots:build', project, shot, recipe),
+    accept: (project, shot, id, token, replace) => ipcRenderer.invoke('derivedShots:accept', project, shot, id, token, replace)
+  },
   montageWindow: {
     open: (session) => ipcRenderer.invoke('montage-window:open', session),
     close: (session) => ipcRenderer.invoke('montage-window:close', session),

@@ -21,12 +21,12 @@ from tools.scene_registry.scene_registry import (
     project_shot_acceptance,
     scene_fingerprint,
     scene_fingerprints,
-    shot_acceptance,
-    with_accepted_fingerprints,
     scene_state,
+    shot_acceptance,
     shots,
     validate,
     validate_project,
+    with_accepted_fingerprints,
 )
 
 
@@ -363,14 +363,28 @@ class SceneRegistryTests(unittest.TestCase):
         self.assertEqual(project_shot_acceptance(ROOT), {"M01": "completed", "M02": "completed"})
         current = scene_fingerprints(data)
         accepted = {sid: current[sid] for sid in ("M01", "M02", "M05")}
-        kits = {"M01", "M02", "M05"}
-        self.assertEqual(set(shot_acceptance(data, kits, accepted).values()), {"completed"})
+        kits = {
+            "M01": {},
+            "M02": {},
+            "M05": {
+                "kind": "derived_video",
+                "generation": {
+                    "source_shot": "M02",
+                    "source_scene_sha256": current["M02"],
+                    "source_accepted_video_sha256": "a" * 64,
+                },
+            },
+        }
+        self.assertEqual(
+            set(shot_acceptance(data, kits, accepted, source_snapshot=lambda sid: "a" * 64).values()), {"completed"}
+        )
         next(s for s in data["scenes"] if s["id"] == "M02")["action"] = "Другое действие"
         self.assertEqual(
-            shot_acceptance(data, kits, accepted), {"M01": "completed", "M02": "stale", "M05": "stale"}
+            shot_acceptance(data, kits, accepted, source_snapshot=lambda sid: "a" * 64),
+            {"M01": "completed", "M02": "stale", "M05": "stale"},
         )
         # Без записи отпечатка комплект считается принятым по неизвестной постановке.
-        self.assertEqual(shot_acceptance(load(), {"M01"}, {}), {"M01": "stale"})
+        self.assertEqual(shot_acceptance(load(), {"M01": {}}, {}), {"M01": "stale"})
 
     def test_production_status_shots_are_validated_and_merged(self):
         self.assertEqual(accepted_fingerprints({"schema_version": 1}), {})

@@ -112,6 +112,9 @@ def collect(root=ROOT):
                     "hold_first_s": float(edit.get("hold_first_seconds", 0)),
                     "hold_last_s": float(edit.get("hold_last_seconds", 0)),
                     "still_time_s": float(still) if still is not None else "",
+                    "repeat_full_cycles": (edit.get("repeat") or {}).get("full_cycles", ""),
+                    "repeat_tail_frames": (edit.get("repeat") or {}).get("tail_frames", ""),
+                    "repeat_cycle_frames": (edit.get("repeat") or {}).get("cycle_frames", ""),
                     "prompt": f"assets/shots/{sid}/{generation['prompt']['path']}",
                     "request": f"assets/shots/{sid}/{generation['request']['path']}"
                     if generation.get("request")
@@ -178,16 +181,39 @@ def write_edl(bundle, target):
             )
             lines.append("")
             continue
-        number += 1
         src_in, src_out = row["source_in_s"], row["source_out_s"]
-        lines.append(
-            (
-                f"{number:03}  {reel(row['shot'])} V     C        "
-                f"{timecode(src_in)} {timecode(src_out)} {row['song_in_tc']} "
-                f"{row['song_out_tc']}"
+        # EDL не умеет задавать цикл одной строкой. Каждый полный повтор
+        # и последний короткий хвост получают своё непрерывное событие.
+        if row.get("repeat_cycle_frames", "") != "":
+            cycle = row["repeat_cycle_frames"]
+            lengths = [cycle] * row["repeat_full_cycles"]
+            if row["repeat_tail_frames"]:
+                lengths.append(row["repeat_tail_frames"])
+            cursor = frames_at(row["song_in_s"])
+            lines.append(
+                f"* REPEAT {row['shot']}: полных циклов {row['repeat_full_cycles']}, "
+                f"хвост {row['repeat_tail_frames']} кадров, цикл {cycle} кадров"
             )
-        )
-        lines.append(f"* FROM CLIP NAME: {row['rebuild_input']}")
+            for length in lengths:
+                number += 1
+                lines.append(
+                    f"{number:03}  {reel(row['shot'])} V     C        "
+                    f"{timecode(src_in)} {timecode(src_in + length / FPS)} "
+                    f"{timecode(cursor / FPS)} {timecode((cursor + length) / FPS)}"
+                )
+                lines.append(f"* FROM CLIP NAME: {row['rebuild_input']}")
+                cursor += length
+        else:
+            number += 1
+            lines.append(
+                (
+                    f"{number:03}  {reel(row['shot'])} V     C        "
+                    f"{timecode(src_in)} {timecode(src_out)} {row['song_in_tc']} "
+                    f"{row['song_out_tc']}"
+                )
+            )
+        if row.get("repeat_cycle_frames", "") == "":
+            lines.append(f"* FROM CLIP NAME: {row['rebuild_input']}")
         if row["speed"] not in (1.0, 0.0) and row["still_time_s"] == "":
             lines.append(f"M2   {reel(row['shot'])} {FPS * row['speed']:05.1f}                {timecode(src_in)}")
         if row["hold_first_s"] or row["hold_last_s"]:
@@ -310,6 +336,9 @@ CSV_COLUMNS = [
     "hold_first_s",
     "hold_last_s",
     "still_time_s",
+    "repeat_full_cycles",
+    "repeat_tail_frames",
+    "repeat_cycle_frames",
     "accepted_clip",
     "lipsync",
     "speech_wav",
@@ -427,6 +456,11 @@ def readme(bundle, copied):
             "изменения; 0 — стоп-кадр), `hold_first_s`/`hold_last_s` — "
             "удержание первого и последнего кадра участка, `still_time_s` — "
             "момент стоп-кадра во входе рецепта."
+        ),
+        (
+            "- `repeat_full_cycles`, `repeat_tail_frames`, `repeat_cycle_frames` — число полных повторов, "
+            "кадров последнего хвоста и кадров одного цикла. EDL содержит отдельное событие для каждого "
+            "повтора и хвоста; FCPXML использует точный принятый клип."
         ),
         (
             "- Планы с `source_shot`, отличным от `shot`, собраны из чужой "

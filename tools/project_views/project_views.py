@@ -23,6 +23,7 @@ from tools.scene_registry.scene_registry import (
     clock,
     shot_acceptance,
     shots,
+    source_video_snapshot,
     validate,
     validate_project,
 )
@@ -199,8 +200,37 @@ def render(sources):
         else "Сборка устарела относительно исходников; требуется пересборка."
     )
     active = in_progress(sources)
+
     # Принятие привязано к постановке: правило общее с shot_status, @link ../scene_registry/README.md#принятие-планов
-    acceptance = shot_acceptance(data, set(packages), accepted_fingerprints(work))
+    def source_snapshot(sid):
+        # Для Git-снимка берётся SHA сохранённого файла/LFS oid; рабочий проект читает фактические байты.
+        if sources.ref is None:
+            return source_video_snapshot(ROOT, sid)
+        try:
+            package = packages[sid]
+            if (
+                package.get("schema_version") != 1
+                or package.get("shot") != sid
+                or package.get("kind") == "derived_video"
+            ):
+                return None
+            video = package["accepted_edit"]["video"]
+            name = video["path"]
+            if (
+                not isinstance(name, str)
+                or not name
+                or Path(name).is_absolute()
+                or ".." in Path(name).parts
+                or video.get("root", "asset") != "asset"
+            ):
+                return None
+            path = f"assets/shots/{sid}/{name}"
+            digest = sources.digest(path) if path in sources.files else None
+            return digest if digest == video["sha256"] else None
+        except (KeyError, OSError, ValueError, TypeError, AttributeError):
+            return None
+
+    acceptance = shot_acceptance(data, packages, accepted_fingerprints(work), source_snapshot=source_snapshot)
     labels = {"completed": "Готово", "stale": "Постановка изменена"}
     states = {
         s["id"]: labels.get(acceptance.get(s["id"])) or ("В процессе" if s["id"] in active else "Запланировано")

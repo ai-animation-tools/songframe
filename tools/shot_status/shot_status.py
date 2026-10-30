@@ -143,7 +143,8 @@ def collect(root=ROOT):
     data = load(root)
     items = registry_shots(data)
     packages, reviews = work_packages(root)
-    acceptance = project_shot_acceptance(root, data)
+    reasons = {}
+    acceptance = project_shot_acceptance(root, data, reasons)
     rows = []
     for scene in items:
         sid = scene["id"]
@@ -155,13 +156,20 @@ def collect(root=ROOT):
             # альтернатива не отменяет готовность и показывается примечанием.
             status, stage = "completed", "выбранный комплект в assets"
         elif acceptance.get(sid) == "stale":
-            # Комплект сделан по прежней постановке плана или его источника: нужно новое производство.
+            # Код причины приходит из единого правила, а не вычисляется повторно по соседним статусам.
             source = (scene.get("derived_from") or {}).get("shot")
             status = "stale"
-            if acceptance.get(source) == "stale":
-                stage = f"постановка {source} изменена после приёмки: нужно новое производство"
-            else:
-                stage = "постановка изменена после приёмки: нужно новое производство"
+            stage = {
+                "source_changed": f"материал источника {source} изменён: нужно пересобрать и принять производный план",
+                "source_unavailable": (
+                    f"источник {source} не готов или его выбранный клип повреждён: "
+                    "нужно восстановить источник и пересобрать производный план"
+                ),
+                "source_receipt_missing": (
+                    f"версия источника {source} неизвестна: нужно пересобрать и принять производный план"
+                ),
+                "derived_link_changed": "связь с источником изменена: нужно новое производство плана",
+            }.get(reasons.get(sid), "постановка изменена после приёмки: нужно новое производство")
             if own:
                 stage += f"; новая работа: {own[0]['stage']}"
         elif any(p["unknown"] for p in own):

@@ -362,30 +362,123 @@ def write_accepted_fingerprints(root, updates):
     write_json_atomic(root / PRODUCTION_STATUS, with_accepted_fingerprints(read_production_status(root), updates))
 
 
-def shot_acceptance(data, kits, accepted, initial=None):
-    """Состояние планов с комплектом: completed по текущей постановке или stale после её изменения.
+_source_hashes = {}
 
-    `kits` — планы с assets/shots/Mxx/manifest.json, `accepted` — результат accepted_fingerprints.
-    Производный план устаревает и вместе со своим источником; цепочки derived_from запрещены реестром.
+
+def source_video_snapshot(root, source_shot):
+    """Фактический SHA выбранного клипа; stat-кэш исключает повторное чтение неизменённых больших видео."""
+    try:
+        directory = (Path(root) / "assets/shots" / source_shot).resolve()
+        manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+        if (
+            manifest.get("schema_version") != 1
+            or manifest.get("shot") != source_shot
+            or manifest.get("kind") == "derived_video"
+        ):
+            return None
+        video = manifest["accepted_edit"]["video"]
+        name, digest = video["path"], video["sha256"]
+        if (
+            not isinstance(name, str)
+            or not name
+            or Path(name).is_absolute()
+            or video.get("root", "asset") != "asset"
+            or not isinstance(digest, str)
+            or not SHA256.fullmatch(digest)
+        ):
+            return None
+        path = (directory / name).resolve()
+        if not path.is_relative_to(directory) or not path.is_file():
+            return None
+        info = path.stat()
+        identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+        cached = _source_hashes.get(path)
+        if cached is None or cached[0] != identity:
+            hasher = hashlib.sha256()
+            with path.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    hasher.update(chunk)
+            cached = (identity, hasher.hexdigest())
+            if len(_source_hashes) >= 512:
+                _source_hashes.clear()
+            _source_hashes[path] = cached
+        return cached[1] if cached[1] == digest else None
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+
+
+def shot_acceptance(data, kits, accepted, initial=None, source_snapshot=None, reasons=None):
+    """Свежесть по собственной постановке и сохранённому снимку источника; @link README.md.
+
+    kits содержит прочитанные манифесты. source_snapshot возвращает фактический SHA выбранного
+    видео либо None; повторная приёмка источника не переписывает снимок производного плана.
     """
     current = scene_fingerprints(data, initial)
     result = {
         sid: "completed" if accepted.get(sid) == digest else "stale" for sid, digest in current.items() if sid in kits
     }
+    reasons = {} if reasons is None else reasons
+    reasons.update({sid: "scene_changed" for sid, state in result.items() if state == "stale"})
+    scenes = {scene["id"]: scene for scene in data["scenes"]}
+    # Свои отпечатки вычислены целиком: источник вправе стоять позже производного плана.
     for scene in data["scenes"]:
+        sid = scene["id"]
+        if result.get(sid) != "completed":
+            continue
         source = (scene.get("derived_from") or {}).get("shot")
-        if result.get(scene["id"]) == "completed" and result.get(source) == "stale":
-            result[scene["id"]] = "stale"
+        manifest = kits.get(sid)
+        stored_derived = isinstance(manifest, dict) and manifest.get("kind") == "derived_video"
+        if not source and not stored_derived:
+            continue
+        generation = manifest.get("generation") if isinstance(manifest, dict) else None
+        reason = None
+        if (
+            not source
+            or not stored_derived
+            or not isinstance(generation, dict)
+            or generation.get("source_shot") != source
+        ):
+            reason = "derived_link_changed"
+        else:
+            source_scene = scenes.get(source)
+            snapshot = source_snapshot(source) if source_snapshot else None
+            if (
+                not source_scene
+                or source_scene.get("derived_from")
+                or result.get(source) != "completed"
+                or snapshot is None
+            ):
+                reason = "source_unavailable"
+            elif not isinstance(generation.get("source_scene_sha256"), str) or not isinstance(
+                generation.get("source_accepted_video_sha256"), str
+            ):
+                reason = "source_receipt_missing"
+            elif (
+                generation["source_scene_sha256"] != current[source]
+                or generation["source_accepted_video_sha256"] != snapshot
+            ):
+                reason = "source_changed"
+        if reason:
+            result[sid], reasons[sid] = "stale", reason
     return result
 
 
-def project_shot_acceptance(root=ROOT, data=None):
-    """shot_acceptance по файлам проекта: комплекты в assets/shots и отпечатки из production-status."""
+def project_shot_acceptance(root=ROOT, data=None, reasons=None):
+    """Свежесть комплектов по файлам проекта, без записи и изменения исторических снимков."""
     root = Path(root)
     data = load(root) if data is None else data
-    kits = {s["id"] for s in data["scenes"] if (root / "assets/shots" / s["id"] / "manifest.json").is_file()}
+    kits = {}
+    for scene in data["scenes"]:
+        path = root / "assets/shots" / scene["id"] / "manifest.json"
+        if path.is_file():
+            try:
+                kits[scene["id"]] = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                kits[scene["id"]] = None
     accepted = accepted_fingerprints(read_production_status(root))
-    return shot_acceptance(data, kits, accepted, initial_states_for(root))
+    return shot_acceptance(
+        data, kits, accepted, initial_states_for(root), lambda sid: source_video_snapshot(root, sid), reasons
+    )
 
 
 def load(root=ROOT):

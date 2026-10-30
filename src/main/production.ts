@@ -3,6 +3,7 @@
  * решения пользователя (через shot_workflow decide) и длинные задания (отправка, повтор, приёмка).
  */
 
+import { derivedMainTexts } from '@shared/texts/derived-shot-main';
 import { productionTexts } from '@shared/texts/production';
 import { commonTexts } from '@shared/texts/common';
 import { FPS } from '@shared/video';
@@ -411,9 +412,13 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
     // completed обозначает художественную приёмку по текущей постановке; наличие готового файла показывается отдельно.
     const accepted = manifest ? (acceptance.accepted.get(scene.id) ?? 'stale') : null;
     let state: ShotProduction['state'] = accepted ?? (mine.length ? 'progress' : 'planned');
+    const staleCode = acceptance.reasons.get(scene.id);
+    const staleReason = accepted === 'stale' && staleCode ? derivedMainTexts.staleReasons[staleCode] : null;
     let stageLabel =
       accepted === 'stale'
-        ? texts.acceptedOldScene
+        ? staleCode && staleCode !== 'scene_changed'
+          ? staleReason!
+          : texts.acceptedOldScene
         : manifest
           ? video
             ? texts.acceptedVideoSaved
@@ -437,6 +442,7 @@ export function viewProduction(project: string, launcher = new PythonLauncher({ 
       state,
       stageLabel,
       // Производный план собирается из чужого материала: повтор генерации для него не нужен.
+      staleReason,
       regenerateProblem: derivedFrom ? derivedShotReason(derivedFrom) : regenerateProblem(project, scene.id, mine, selectedProvider),
       derivedFrom,
       attention,

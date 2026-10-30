@@ -1,3 +1,4 @@
+import { countLabel } from '../plural';
 import { commonTexts } from './common';
 import { navigationTexts } from './navigation';
 
@@ -163,7 +164,8 @@ export const productionTexts = {
       acceptResultChanged: 'Результат изменился. Обновите пакет и просмотрите его перед приёмкой.',
       completeResultRequired: 'Сначала получите полный результат задания.',
       replacementConsentRequired: messages.replacementConsentRequired,
-      acceptBoundsInvalid: ({ fps }: { fps: number }) => `Границы участка должны быть конечными неотрицательными секундами на сетке ${fps} кадров/с.`,
+      acceptBoundsInvalid: ({ fps }: { fps: number }) =>
+        `Границы участка должны быть конечными неотрицательными секундами на сетке ${countLabel(fps, 'кадр', 'кадра', 'кадров')}/с.`,
       acceptEndInvalid: 'Конец участка должен быть позже начала.',
       acceptSpeechRequired: 'Речевой план: сначала подготовьте WAV речи в блоке «Речь» этого пакета.',
       acceptJob: ({ shot }: { shot: string }) => `Приёмка ${shot}`,
@@ -441,8 +443,7 @@ export const productionTexts = {
   frameRoleLabels: { first: 'первый кадр', middle: 'промежуточный', last: 'последний кадр' },
 
   derivedShotNotice: {
-    description:
-      'План собирается из материала {source}. Описание, опоры и генерация для него не нужны; сборка производного комплекта в приложении пока не поддерживается.'
+    description: 'План собирается из материала {source}. Соберите предпросмотр по явному рецепту и примите результат.'
   },
   productionPage: {
     pythonMissing: `Python не найден: просмотр работает, кнопки решений и отправки недоступны.`,
@@ -569,7 +570,7 @@ export const productionTexts = {
     queued: `Запрос сохранён в очереди, генерация не запущена. Нажмите «Отправить» ниже: приложение заново проверит стоимость и покажет подтверждение перед списанием кредитов.`,
     description: labels.description,
     promptTitle: ({ approved, characters }: { approved: boolean; characters: number }) =>
-      `Видеопромпт ${approved ? '· принят' : '· не принят'} · ${characters} символов`,
+      `Видеопромпт ${approved ? '· принят' : '· не принят'} · ${countLabel(characters, 'символ', 'символа', 'символов')}`,
     discard: 'Отказаться от попытки',
     delete: 'Удалить попытку',
     discardFolder: ({ relative, paid }: { relative: string; paid: boolean }) =>

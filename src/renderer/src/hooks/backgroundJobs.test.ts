@@ -1,15 +1,42 @@
+import type { JobInfo } from '@shared/types';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { LinkedText } from '../components/LinkedText';
 import { describe, expect, it } from 'vitest';
-import { agentFinishedNotice, agentOwnerShowsResult, finishedNotice, ownerShowsResult, routeOf } from './backgroundJobs';
+import { agentFinishedNotice, agentOwnerShowsResult, finishedNotice, newDerivedResult, ownerShowsResult, routeOf } from './backgroundJobs';
 
 describe('общий наблюдатель заданий', () => {
   it('не дублирует итог на странице, которая сообщает сама', () => {
     expect(routeOf('#/project/montage?shots=M01')).toBe('/project/montage');
     expect(ownerShowsResult({ kind: 'submit' }, '/project/production')).toBe(true);
     expect(ownerShowsResult({ kind: 'submit' }, '/project/montage')).toBe(false);
+  });
+  it('сообщает локальную сборку общим наблюдателем на любой странице, не меняя остальные tool-задания', () => {
+    const derived = { kind: 'tool' as const, steps: [{ tool: 'derive_shot' }] as JobInfo['steps'] };
+    expect(ownerShowsResult(derived, '/project/production')).toBe(false);
+    expect(ownerShowsResult(derived, '/project')).toBe(false);
+    expect(ownerShowsResult(derived, '/project/montage')).toBe(false);
+    expect(ownerShowsResult({ kind: 'tool' }, '/project/production')).toBe(false);
+    expect(ownerShowsResult({ kind: 'tool' }, '/project')).toBe(true);
+  });
+  it('узнаёт короткое новое задание, пропуская старую завершённую историю и повторный итог', () => {
+    const job = {
+      status: 'done',
+      startedAt: '2026-10-30T10:00:01Z',
+      steps: [{ tool: 'derive_shot' }]
+    } as JobInfo;
+    const started = Date.parse('2026-10-30T10:00:00Z');
+    expect(newDerivedResult(job, undefined, started)).toBe(true);
+    expect(newDerivedResult(job, 'done', started)).toBe(false);
+    expect(newDerivedResult({ ...job, startedAt: '2026-10-29T10:00:00Z' }, undefined, started)).toBe(false);
+    expect(newDerivedResult({ ...job, startedAt: '2026-10-29T10:00:00Z' }, 'running', started)).toBe(true);
+    expect(newDerivedResult({ ...job, status: 'running' }, undefined, started)).toBe(false);
+    expect(newDerivedResult({ ...job, steps: [{ tool: 'check' }] as JobInfo['steps'] }, undefined, started)).toBe(false);
+    expect(finishedNotice({ title: 'Приёмка M02', status: 'interrupted', error: 'Сеанс завершён.' })).toEqual({
+      message: 'Приёмка M02: не выполнено. Сеанс завершён. Подробности — в журнале заданий.',
+      severity: 'error'
+    });
   });
   it('называет задание и ведёт в журнал при сбое', () => {
     expect(finishedNotice({ title: 'Отправка M08', status: 'done' })).toEqual({ message: 'Отправка M08: выполнено.', severity: 'success' });

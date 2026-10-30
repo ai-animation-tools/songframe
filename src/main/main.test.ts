@@ -1227,7 +1227,7 @@ describe('дашборд сцен', () => {
     expect(m1.state).toBe('completed');
     expect(m1.asset?.video).toBe(join(asset, 'video.mp4'));
     expect(m1.asset?.original).toBe(join(asset, 'original.mp4'));
-    expect(m1.asset?.originalMedia).toBe('1920×1088, 24/1 кадр/с, 121 кадров, 5.04 с');
+    expect(m1.asset?.originalMedia).toBe('1920×1088, 24/1 FPS, кадров: 121, 5.04 с');
     expect(m1.asset?.edit).toMatchObject({ frames: 60, duration: 2, sourceInterval: [1, 3], speed: '1', holdLast: 0.5, note: 'обрезка' });
     expect(m1.asset?.prompt).toBe('Промпт принятой');
     expect(m1.asset?.request).toEqual({ provider: 'Test', model: 'test-video-v3_0', parameters: { duration: 5 } });

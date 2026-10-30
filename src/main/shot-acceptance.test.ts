@@ -1,5 +1,7 @@
 /** Принятие плана по отпечатку постановки: сверка с Python, устаревание, затронутые планы и режимы сохранения. */
 
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -10,7 +12,7 @@ import { buildBrief } from './scenario';
 import { Production, readPackage, SCENE_CHANGED, viewProduction } from './production';
 import { saveScenesWithMode, scenesSaveImpact } from './scenario-save';
 import { sceneFingerprints } from './scene-fingerprint';
-import { acceptedFingerprints, projectFingerprints } from './shot-acceptance';
+import { acceptedFingerprints, projectFingerprints, shotAcceptance } from './shot-acceptance';
 import { computeStatus } from './status';
 import { stampAcceptedShots } from './testing/accepted-shots';
 
@@ -33,7 +35,20 @@ beforeEach(() => {
   cpSync(join(REPO, 'tools/testdata/sample-project'), project, { recursive: true });
   // M05 собирается из материала M02: производный комплект устаревает вместе с источником.
   mkdirSync(join(project, 'assets/shots/M05'));
-  writeFileSync(join(project, 'assets/shots/M05/manifest.json'), JSON.stringify({ shot: 'M05', kind: 'derived_video' }));
+  const sourceManifest = JSON.parse(readFileSync(join(project, 'assets/shots/M02/manifest.json'), 'utf8'));
+  writeFileSync(
+    join(project, 'assets/shots/M05/manifest.json'),
+    JSON.stringify({
+      schema_version: 1,
+      shot: 'M05',
+      kind: 'derived_video',
+      generation: {
+        source_shot: 'M02',
+        source_scene_sha256: projectFingerprints(project, registry()).M02,
+        source_accepted_video_sha256: sourceManifest.accepted_edit.video.sha256
+      }
+    })
+  );
   stampAcceptedShots(project, ['M01', 'M02', 'M05']);
 });
 afterEach(() => {
@@ -179,7 +194,7 @@ describe('сохранение без производства', () => {
       'keep'
     );
     const fingerprints = projectFingerprints(project, registry());
-    expect(states()).toMatchObject({ M01: 'stale', M02: 'completed', M05: 'completed' });
+    expect(states()).toMatchObject({ M01: 'stale', M02: 'completed', M05: 'stale' });
     expect(acceptedFingerprints(project)).toMatchObject({ M01: stampedBefore.M01, M02: fingerprints.M02 });
     // В workflow.json пакета меняется только отпечаток, остальной текст файла сохраняется байт в байт.
     const workflowAfter = readFileSync(workflowPath, 'utf8');
@@ -203,5 +218,103 @@ describe('сохранение без производства', () => {
 
   it('отвергает неизвестный режим', () => {
     expect(() => saveScenesWithMode(project, registry(), 'other' as 'keep')).toThrow(/режим/);
+  });
+});
+
+describe('снимок источника производного плана', () => {
+  const sourcePath = (): string => join(project, 'assets/shots/M02/manifest.json');
+  const changeSource = (): void => {
+    const manifest = JSON.parse(readFileSync(sourcePath(), 'utf8'));
+    const bytes = Buffer.from('Новый выбранный клип при прежней постановке');
+    writeFileSync(join(project, 'assets/shots/M02/replacement.mp4'), bytes);
+    manifest.accepted_edit.video = { path: 'replacement.mp4', sha256: createHash('sha256').update(bytes).digest('hex') };
+    writeFileSync(sourcePath(), JSON.stringify(manifest));
+  };
+  const assertPythonParity = (): void => {
+    const output = execFileSync(
+      'python3',
+      [
+        '-B',
+        '-c',
+        'import json,sys; from tools.scene_registry.scene_registry import project_shot_acceptance; print(json.dumps(project_shot_acceptance(sys.argv[1])))',
+        project
+      ],
+      { cwd: REPO, encoding: 'utf8' }
+    );
+    expect(Object.fromEntries(shotAcceptance(project, registry()).accepted)).toEqual(JSON.parse(output));
+  };
+
+  it('замена клипа без изменения постановки навсегда устаревает до новой сборки и приёмки', () => {
+    assertPythonParity();
+    changeSource();
+    expect(shotAcceptance(project, registry()).accepted.get('M02')).toBe('completed');
+    expect(shotAcceptance(project, registry()).reasons.get('M05')).toBe('source_changed');
+    stampAcceptedShots(project, ['M02']);
+    expect(shotAcceptance(project, registry()).accepted.get('M05')).toBe('stale');
+    assertPythonParity();
+  });
+
+  it.each(['missing', 'corrupt', 'manifest'] as const)('не считает готовым производный план при %s источнике', (kind) => {
+    const manifest = JSON.parse(readFileSync(sourcePath(), 'utf8'));
+    const video = join(project, 'assets/shots/M02', manifest.accepted_edit.video.path);
+    if (kind === 'missing') rmSync(video);
+    else if (kind === 'corrupt') writeFileSync(video, 'Испорченное видео');
+    else rmSync(sourcePath());
+    expect(shotAcceptance(project, registry()).accepted.get('M05')).toBe('stale');
+    expect(shotAcceptance(project, registry()).reasons.get('M05')).toBe('source_unavailable');
+    assertPythonParity();
+  });
+
+  it('не зависит от посторонних полей манифеста источника', () => {
+    const manifest = JSON.parse(readFileSync(sourcePath(), 'utf8'));
+    manifest.note = 'Техническая пометка без изменения выбранного материала';
+    writeFileSync(sourcePath(), JSON.stringify(manifest));
+    expect(shotAcceptance(project, registry()).accepted.get('M05')).toBe('completed');
+    assertPythonParity();
+  });
+
+  it('повторная приёмка изменённой постановки источника не обновляет старый снимок', () => {
+    saveScenesWithMode(
+      project,
+      edit((scenes) => (scene(scenes, 'M02').action += ' Новое действие.')),
+      'production'
+    );
+    expect(shotAcceptance(project, registry()).accepted.get('M05')).toBe('stale');
+    stampAcceptedShots(project, ['M02']);
+    expect(shotAcceptance(project, registry()).accepted.get('M02')).toBe('completed');
+    expect(shotAcceptance(project, registry()).accepted.get('M05')).toBe('stale');
+    assertPythonParity();
+  });
+
+  it('разрешает источник позже по шкале и устаревает после удаления связи', () => {
+    const data = registry();
+    delete scene(data.scenes, 'M05').derived_from;
+    scene(data.scenes, 'M01').derived_from = { shot: 'M02' };
+    writeFileSync(join(project, 'plan/scenes.json'), JSON.stringify(data));
+    const manifest = JSON.parse(readFileSync(join(project, 'assets/shots/M01/manifest.json'), 'utf8'));
+    manifest.kind = 'derived_video';
+    manifest.generation.source_shot = 'M02';
+    manifest.generation.source_scene_sha256 = projectFingerprints(project, data).M02;
+    manifest.generation.source_accepted_video_sha256 = JSON.parse(readFileSync(sourcePath(), 'utf8')).accepted_edit.video.sha256;
+    writeFileSync(join(project, 'assets/shots/M01/manifest.json'), JSON.stringify(manifest));
+    stampAcceptedShots(project, ['M01', 'M02', 'M05']);
+    expect(shotAcceptance(project, data).accepted.get('M01')).toBe('completed');
+    assertPythonParity();
+    delete scene(data.scenes, 'M01').derived_from;
+    writeFileSync(join(project, 'plan/scenes.json'), JSON.stringify(data));
+    stampAcceptedShots(project, ['M01']);
+    expect(shotAcceptance(project, data).reasons.get('M01')).toBe('derived_link_changed');
+    assertPythonParity();
+  });
+
+  it('не приписывает историческому null сегодняшнюю постановку', () => {
+    const path = join(project, 'assets/shots/M05/manifest.json');
+    const manifest = JSON.parse(readFileSync(path, 'utf8'));
+    manifest.generation.source_scene_sha256 = null;
+    const before = JSON.stringify(manifest);
+    writeFileSync(path, before);
+    expect(shotAcceptance(project, registry()).reasons.get('M05')).toBe('source_receipt_missing');
+    expect(readFileSync(path, 'utf8')).toBe(before);
+    assertPythonParity();
   });
 });

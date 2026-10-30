@@ -6,6 +6,7 @@ import type { ProductionFrameCandidate, ProductionWorkflowStart, ProductionWorkf
 import type { MediaCapabilities, MediaKind, ProviderAuth } from './media-providers';
 import type { ScenarioWorkflowStart, ScenarioWorkflowView } from './scenario-workflow';
 import type { NotificationTarget } from './notifications';
+import type { DerivedShotApi } from './derived-shot';
 import type { MontageApi } from './montage';
 import type { MontageWindowApi } from './montage-window';
 import type { ScenarioStatus } from './scenario-status';
@@ -61,6 +62,7 @@ export interface Api {
   };
   cover: CoverGenerationApi;
   referenceImages: ReferenceImageGenerationApi;
+  derivedShots: DerivedShotApi;
   montage: MontageApi;
   montageWindow: MontageWindowApi;
   notifications: {

@@ -555,11 +555,11 @@ describe('производный план', () => {
     expect(runner.calls).toEqual([]);
   });
 
-  it('принятый комплект derived_video считается производным и без поля реестра', () => {
+  it('прошлое происхождение не блокирует обычное производство после удаления связи в сценарии', () => {
     write(join(project, 'assets/shots/M01/manifest.json'), { schema_version: 1, shot: 'M01', kind: 'derived_video', generation: { source_shot: 'M02' } });
     const shot = viewProduction(project, runner).shots[0];
-    expect(shot.derivedFrom).toBe('M02');
-    expect(shot.regenerateProblem).toBe(reason);
+    expect(shot.derivedFrom).toBeNull();
+    expect(shot.regenerateProblem).not.toBe(reason);
   });
 });
 

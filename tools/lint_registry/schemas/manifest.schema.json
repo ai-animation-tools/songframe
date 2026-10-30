@@ -11,6 +11,8 @@
       "required": ["source_shot", "original", "prompt", "request", "generation_id", "inputs", "lipsync", "audio"],
       "properties": {
         "source_shot": {"type": "string"},
+        "source_scene_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+        "source_accepted_video_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "original": {"$ref": "#/$defs/file"},
         "original_media": {"type": "object"},
         "prompt": {"$ref": "#/$defs/file"},
@@ -35,6 +37,8 @@
         "source_interval_seconds": {"type": "array", "minItems": 2, "items": {"type": "number"}},
         "speed": {"type": "object", "required": ["factor", "ratio"],
                   "properties": {"factor": {"type": "number"}, "ratio": {"type": "string"}}},
+        "repeat": {"type": "object", "required": ["full_cycles", "tail_frames", "cycle_frames"], "additionalProperties": false,
+                   "properties": {"full_cycles": {"type": "integer", "minimum": 0}, "tail_frames": {"type": "integer", "minimum": 0}, "cycle_frames": {"type": "integer", "minimum": 1}}},
         "hold_first_seconds": {"type": "number"},
         "hold_last_seconds": {"type": "number"},
         "rebuild": {"type": "object", "required": ["stages", "source"],
@@ -45,6 +49,8 @@
       }
     }
   },
+  "allOf": [{"if": {"properties": {"kind": {"const": "derived_video"}}},
+             "then": {"properties": {"generation": {"required": ["source_scene_sha256", "source_accepted_video_sha256"]}}}}],
   "$defs": {
     "file": {"type": "object", "required": ["path", "sha256"],
              "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},

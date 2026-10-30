@@ -8,7 +8,7 @@ import type { AppState, JobInfo, ProjectStatus } from '@shared/types';
 import type { AgentJob, AgentSettings } from '@shared/agents';
 import type { AiAccess } from '@shared/ai-access';
 import { offlineAccess, useOnline } from './network';
-import { agentFinishedNotice, agentOwnerShowsResult, finishedNotice, ownerShowsResult, routeOf } from './hooks/backgroundJobs';
+import { agentFinishedNotice, agentOwnerShowsResult, finishedNotice, newDerivedResult, ownerShowsResult, routeOf } from './hooks/backgroundJobs';
 
 type Severity = 'success' | 'info' | 'warning' | 'error';
 
@@ -92,6 +92,7 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
   useEffect(() => {
     let known = new Map<string, string>();
     let first = true;
+    const observerStartedAt = Date.now();
     const handle = setInterval(async () => {
       let jobs: JobInfo[];
       let agentJobs: AgentJob[];
@@ -102,13 +103,15 @@ export function AppProvider({ children }: { children: ReactNode }): ReactElement
       }
       const route = routeOf(window.location.hash);
       // Завершённое задание могло изменить файлы проекта: статус в шапке пересчитывается сразу, а не при следующем общем обновлении.
-      if (!first && [...jobs, ...agentJobs].some((job) => known.get(job.id) === 'running' && job.status !== 'running')) void refreshStatus();
+      const derivedResults = new Set(jobs.filter((job) => newDerivedResult(job, known.get(job.id), observerStartedAt)).map((job) => job.id));
+      if (derivedResults.size || (!first && [...jobs, ...agentJobs].some((job) => known.get(job.id) === 'running' && job.status !== 'running')))
+        void refreshStatus();
+      for (const job of jobs) {
+        if ((!derivedResults.has(job.id) && (first || known.get(job.id) !== 'running' || job.status === 'running')) || ownerShowsResult(job, route)) continue;
+        const notice = finishedNotice(job);
+        notify(notice.message, notice.severity);
+      }
       if (!first) {
-        for (const job of jobs) {
-          if (known.get(job.id) !== 'running' || job.status === 'running' || ownerShowsResult(job, route)) continue;
-          const notice = finishedNotice(job);
-          notify(notice.message, notice.severity);
-        }
         for (const job of agentJobs) {
           if (known.get(job.id) !== 'running' || job.status === 'running' || agentOwnerShowsResult(job, route)) continue;
           const notice = agentFinishedNotice(job);

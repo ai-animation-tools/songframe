@@ -10,18 +10,22 @@ import { join } from 'node:path';
 import type { ScenesFile } from '@shared/types';
 import { initialStates, readCast } from './cast';
 import { sceneFingerprints } from './scene-fingerprint';
+import { readSourceVideoSnapshot } from './derived-source';
 
 const texts = productionTexts.main.acceptance;
 
 export const PRODUCTION_STATUS = join('plan', 'production-status.json');
 
 export type AcceptanceState = 'completed' | 'stale';
+export type AcceptanceReason = 'scene_changed' | 'source_changed' | 'source_unavailable' | 'source_receipt_missing' | 'derived_link_changed';
 
 export interface ShotAcceptance {
   /** Отпечатки текущей постановки; null, если состояние реестра не вычисляется. */
   fingerprints: Record<string, string> | null;
   /** Только планы с принятым комплектом. */
   accepted: Map<string, AcceptanceState>;
+  /** Причина устаревания; подпись выбирает потребитель из общего словаря текстов. */
+  reasons: Map<string, AcceptanceReason>;
   problem: string | null;
 }
 
@@ -49,7 +53,7 @@ export function projectFingerprints(project: string, scenes: ScenesFile): Record
   return sceneFingerprints(scenes, initialStates(readCast(project) || null));
 }
 
-/** Комплект принят по текущей постановке; производный план устаревает вместе с планом-источником. */
+/** Сверяет собственную постановку и сохранённый снимок источника; повторная приёмка источника не обновляет производный комплект. */
 export function shotAcceptance(project: string, scenes: ScenesFile): ShotAcceptance {
   let fingerprints: Record<string, string> | null = null;
   let problem: string | null = null;
@@ -60,16 +64,42 @@ export function shotAcceptance(project: string, scenes: ScenesFile): ShotAccepta
   }
   const stored = acceptedFingerprints(project);
   const accepted = new Map<string, AcceptanceState>();
+  const reasons = new Map<string, AcceptanceReason>();
+  const manifests = new Map<string, unknown>();
+  const stale = (shot: string, reason: AcceptanceReason): void => {
+    accepted.set(shot, 'stale');
+    reasons.set(shot, reason);
+  };
   for (const scene of scenes.scenes) {
-    if (!existsSync(join(project, 'assets', 'shots', scene.id, 'manifest.json'))) continue;
-    accepted.set(scene.id, fingerprints && stored[scene.id] === fingerprints[scene.id] ? 'completed' : 'stale');
+    const path = join(project, 'assets', 'shots', scene.id, 'manifest.json');
+    if (!existsSync(path)) continue;
+    manifests.set(scene.id, readJson(path));
+    if (fingerprints && stored[scene.id] === fingerprints[scene.id]) accepted.set(scene.id, 'completed');
+    else stale(scene.id, 'scene_changed');
   }
-  // Цепочки derived_from запрещены реестром, поэтому достаточно одного прохода после своих отпечатков.
+  // Все собственные отпечатки вычислены заранее: источник может находиться позже на монтажной шкале.
   for (const scene of scenes.scenes) {
+    if (accepted.get(scene.id) !== 'completed') continue;
     const source = scene.derived_from?.shot;
-    if (source && accepted.get(scene.id) === 'completed' && accepted.get(source) === 'stale') accepted.set(scene.id, 'stale');
+    const manifest = manifests.get(scene.id);
+    const storedDerived = record(manifest) && manifest.kind === 'derived_video';
+    if (!source && !storedDerived) continue;
+    const generation = record(manifest) && record(manifest.generation) ? manifest.generation : null;
+    if (!source || !storedDerived || !generation || generation.source_shot !== source) {
+      stale(scene.id, 'derived_link_changed');
+      continue;
+    }
+    const sourceScene = scenes.scenes.find((item) => item.id === source);
+    const snapshot = readSourceVideoSnapshot(project, source);
+    if (!sourceScene || sourceScene.derived_from || accepted.get(source) !== 'completed' || !snapshot) {
+      stale(scene.id, 'source_unavailable');
+    } else if (typeof generation.source_scene_sha256 !== 'string' || typeof generation.source_accepted_video_sha256 !== 'string') {
+      stale(scene.id, 'source_receipt_missing');
+    } else if (generation.source_scene_sha256 !== fingerprints?.[source] || generation.source_accepted_video_sha256 !== snapshot.acceptedVideoSha256) {
+      stale(scene.id, 'source_changed');
+    }
   }
-  return { fingerprints, accepted, problem };
+  return { fingerprints, accepted, reasons, problem };
 }
 
 /** Содержимое файла для записи; повреждённый файл не перезаписываем: в нём и состояние принятия аниматика. */

@@ -10,15 +10,24 @@ import { ReferenceFileCard } from './components/ReferenceFileCard';
 
 vi.mock('../../state', () => ({ useApp: () => ({ notify: vi.fn(), describeError: String }) }));
 
-/** Ожидания независимы от каталога: перенос сохраняет целые фразы, прежнюю грамматику и безопасный JSX. */
+/** Ожидания независимы от каталога: проверяют целые фразы, числовые формы и безопасный JSX. */
 describe('тексты исходников', () => {
-  it.each([0, 1, 2, 5, 11, 21, -2, 1.5])('сохраняет числовые подписи для %s', (value) => {
+  it.each([
+    [0, 'строк', 'пикселей'],
+    [1, 'строка', 'пиксель'],
+    [2, 'строки', 'пикселя'],
+    [5, 'строк', 'пикселей'],
+    [11, 'строк', 'пикселей'],
+    [21, 'строка', 'пиксель'],
+    [-2, 'строки', 'пикселя'],
+    [1.5, 'строки', 'пикселя']
+  ] as const)('согласует числовые подписи для %s', (value, linesWord, pixelsWord) => {
     expect(sourcesTexts.lyricsStatistics({ lines: value, sections: value })).toBe(
-      `Сейчас: ${value} строк песни, секций: ${value}. Пустые строки между секциями необязательны. Файл — TXT или MD в UTF-8, без Markdown-заголовков и списков. Текст должен совпадать с исполнением.`
+      `Сейчас: ${value} ${linesWord} песни, секций: ${value}. Пустые строки между секциями необязательны. Файл — TXT или MD в UTF-8, без Markdown-заголовков и списков. Текст должен совпадать с исполнением.`
     );
     expect(sourcesTexts.formProblems({ count: value })).toBe(`Исправьте проблемы формы (${value}): список — в начале страницы, ошибки отмечены у полей.`);
     expect(sourcesTexts.problemCount({ count: value })).toBe(`Проблем: ${value}`);
-    expect(sourcesTexts.cropSize({ size: value })).toBe(`Размер области: ${value} × ${value} пикселей`);
+    expect(sourcesTexts.cropSize({ size: value })).toBe(`Размер области: ${value} × ${value} ${pixelsWord}`);
     expect(sourcesTexts.referenceImages({ kind: 'Герой', count: value })).toBe(`Герой · изображений: ${value}`);
   });
 
@@ -64,7 +73,7 @@ describe('тексты исходников', () => {
       })
     );
     expect(html).toContain(
-      'Сейчас: 1 строк песни, секций: 1. Пустые строки между секциями необязательны. Файл — TXT или MD в UTF-8, без Markdown-заголовков и списков. Текст должен совпадать с исполнением.'
+      'Сейчас: 1 строка песни, секций: 1. Пустые строки между секциями необязательны. Файл — TXT или MD в UTF-8, без Markdown-заголовков и списков. Текст должен совпадать с исполнением.'
     );
     expect(html).toContain('aria-label="Загрузить текст песни из файла"');
     expect(html).toContain('[Куплет 1]\nпервая строка\nвторая строка\n\n[Припев]\n…');
@@ -88,7 +97,7 @@ describe('тексты исходников', () => {
       );
       expect(cropHtml).toContain('alt="Созданная обложка"');
       expect(cropHtml).toContain('aria-label="Квадратная область обложки"');
-      expect(cropHtml).toContain('Размер области: 21 × 21 пикселей');
+      expect(cropHtml).toContain('Размер области: 21 × 21 пиксель');
       expect(cropHtml).toContain('Перетащите квадрат и выберите его размер. Стрелки сдвигают область на 1 пиксель, Shift + стрелки — на 10.');
       const refHtml = renderToStaticMarkup(
         createElement(ReferenceFileCard, {

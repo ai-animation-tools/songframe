@@ -35,15 +35,15 @@ it('показывает целую причину отсутствующего 
 });
 
 it.each([
-  [0, '?×?, ? кадр/с, 0 кадров, 0.00 с'],
-  [1, '?×?, ? кадр/с, 1 кадров, 1.00 с'],
-  [2, '?×?, ? кадр/с, 2 кадров, 2.00 с'],
-  [5, '?×?, ? кадр/с, 5 кадров, 5.00 с'],
-  [11, '?×?, ? кадр/с, 11 кадров, 11.00 с'],
-  [21, '?×?, ? кадр/с, 21 кадров, 21.00 с'],
-  [-2, '?×?, ? кадр/с, -2 кадров, -2.00 с'],
-  [1.5, '?×?, ? кадр/с, 1.5 кадров, 1.50 с']
-])('сохраняет прежний формат метаданных и грамматику кадров (%s)', (value, expected) => {
+  [0, '?×?, ? FPS, кадров: 0, 0.00 с'],
+  [1, '?×?, ? FPS, кадров: 1, 1.00 с'],
+  [2, '?×?, ? FPS, кадров: 2, 2.00 с'],
+  [5, '?×?, ? FPS, кадров: 5, 5.00 с'],
+  [11, '?×?, ? FPS, кадров: 11, 11.00 с'],
+  [21, '?×?, ? FPS, кадров: 21, 21.00 с'],
+  [-2, '?×?, ? FPS, кадров: -2, -2.00 с'],
+  [1.5, '?×?, ? FPS, кадров: 1.5, 1.50 с']
+])('показывает числовые метаданные без изменения исходных строк (%s)', (value, expected) => {
   write('plan/scenes.json', registry());
   const path = 'assets/shots/M01/manifest.json';
   write(path, { shot: 'M01', generation: { original_media: { nb_frames: String(value), duration: String(value) } } });
@@ -58,7 +58,7 @@ it('сохраняет заглушки неизвестных метаданн�
   write('assets/shots/M01/frame.png', 'изображение');
   write('assets/shots/M01/manifest.json', { shot: 'M01', generation: { original_media: {}, inputs: [{ path: 'frame.png' }] } });
   const shot = viewDashboard(project, null).shots[0];
-  expect(shot.asset?.originalMedia).toBe('?×?, ? кадр/с, ? кадров, 0.00 с');
+  expect(shot.asset?.originalMedia).toBe('?×?, ? FPS, кадров: ?, 0.00 с');
   expect(shot.keyframes).toEqual([{ imagePath: join(project, 'assets/shots/M01/frame.png'), label: 'вход запроса', approved: true }]);
 });
 

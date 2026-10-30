@@ -6,12 +6,21 @@ import { animaticTexts } from '@shared/texts/animatic';
 import { AnimaticPlayer } from './components/AnimaticPlayer';
 import { ShotCard } from './components/ShotCard';
 
-/** Первый перенос намеренно сохраняет старые «N планов» и «N кадров», включая дробные числа. */
+/** Независимые ожидания проверяют числовые формы и сохранение JSX-слота даты. */
 describe('тексты просмотра аниматика', () => {
-  it.each([0, 1, 2, 5, 11, 21, -2, 1.5])('сохраняет прежнюю грамматику для %s', (count) => {
-    expect(animaticTexts.shot.timing({ start: '0:00', end: '0:02', frames: count })).toBe(`0:00–0:02 · ${count} кадров`);
+  it.each([
+    [0, 'планов', 'кадров'],
+    [1, 'план', 'кадр'],
+    [2, 'плана', 'кадра'],
+    [5, 'планов', 'кадров'],
+    [11, 'планов', 'кадров'],
+    [21, 'план', 'кадр'],
+    [-2, 'плана', 'кадра'],
+    [1.5, 'плана', 'кадра']
+  ] as const)('согласует числовые подписи для %s', (count, shotsWord, framesWord) => {
+    expect(animaticTexts.shot.timing({ start: '0:00', end: '0:02', frames: count })).toBe(`0:00–0:02 · ${count} ${framesWord}`);
     expect(animaticTexts.playbackSummary({ time: '0:01', duration: '0:02', shots: count, video: count, keyframes: count, cards: count })).toBe(
-      `0:01 / 0:02 · ${count} планов: ${count} анимация, ${count} опоры, ${count} карточки · собрано {builtAt}`
+      `0:01 / 0:02 · ${count} ${shotsWord}: анимация: ${count}, опоры: ${count}, карточки: ${count} · собрано {builtAt}`
     );
   });
 
@@ -38,7 +47,7 @@ describe('тексты просмотра аниматика', () => {
         onOpenFolder: () => {}
       })
     );
-    expect(markup).toContain('0:01.00 / 0:02.00 · 0 планов: 1 анимация, 2 опоры, 5 карточки · собрано <time dateTime="2026-10-29T12:00:00.000Z">');
+    expect(markup).toContain('0:01.00 / 0:02.00 · 0 планов: анимация: 1, опоры: 2, карточки: 5 · собрано <time dateTime="2026-10-29T12:00:00.000Z">');
     expect(markup).not.toContain('{builtAt}');
   });
 
@@ -48,7 +57,7 @@ describe('тексты просмотра аниматика', () => {
         shot: { id: 'M01', media: 'video', start: 0, end: 2, frames: 1, camera: '', action: '<движение> {label}' } as AnimaticShot
       })
     );
-    expect(markup).toContain('0:00.00–0:02.00 · 1 кадров');
+    expect(markup).toContain('0:00.00–0:02.00 · 1 кадр');
     expect(markup).toContain('<b>Камера.</b> не задана');
     expect(markup).toContain('<b>Действие.</b> &lt;движение&gt; {label}');
     expect(markup).not.toContain('<движение>');

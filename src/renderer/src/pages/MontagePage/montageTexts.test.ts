@@ -43,29 +43,29 @@ const draft: MontageDraft = {
   base_manifest_sha256: {}
 };
 
-// Ожидания самостоятельны: проверяем прежнюю грамматику, знаки и точные целые/дробные числа.
+// Ожидания самостоятельны: проверяем числовые формы, знаки и точные целые/дробные числа.
 describe('Тексты ручного монтажа', () => {
   it.each([
-    [0, '0 кадров'],
-    [1, '1 кадр'],
-    [2, '2 кадра'],
-    [5, '5 кадров'],
-    [11, '11 кадров'],
-    [21, '21 кадр'],
-    [-2, '-2 кадра'],
-    [1.5, '1.5 кадра']
-  ])('сохраняет форматы для %s кадров', (value, expected) => {
+    [0, '0 кадров', '0 пикселей'],
+    [1, '1 кадр', '1 пиксель'],
+    [2, '2 кадра', '2 пикселя'],
+    [5, '5 кадров', '5 пикселей'],
+    [11, '11 кадров', '11 пикселей'],
+    [21, '21 кадр', '21 пиксель'],
+    [-2, '-2 кадра', '-2 пикселя'],
+    [1.5, '1.5 кадра', '1.5 пикселя']
+  ])('сохраняет форматы для %s кадров', (value, expected, pixels) => {
     expect(montageTexts.lengthsMatch(value)).toBe(`Музыкальный участок и видео совпадают: ${expected}.`);
     expect(montageTexts.sourceRange({ start: '00:03:00', end: '00:04:00', frames: value })).toBe(`В исходнике: 00:03:00 — 00:04:00 · ${expected}`);
     expect(montageTexts.cardClipLength(value)).toBe(`${value} к · опора`);
     expect(montageTexts.videoClipLength(value)).toBe(`${value} к · видео`);
     expect(montageTexts.scaleValue(value)).toBe(`${value} px/с`);
     expect(montageTexts.volumeValue(value)).toBe(`${value}%`);
-    expect(montageTexts.panelHeight(value)).toBe(`Высота верхней панели ${value} пикселей`);
+    expect(montageTexts.panelHeight(value)).toBe(`Высота верхней панели ${pixels}`);
     expect(montageTexts.materialPosition({ position: value, total: 21 })).toBe(`Материал ${value} из 21`);
-    expect(montageTexts.availableScenes({ available: value, total: 21 })).toBe(`Доступно ${value} из 21 сцен`);
+    expect(montageTexts.availableScenes({ available: value, total: 21 })).toBe(`Доступно сцен: ${value} из 21`);
     expect(montageTexts.foundScenes({ found: value, total: 21 })).toBe(`Найдено сцен: ${value} из 21`);
-    expect(montageTexts.draftStatus({ name: '«<>&»', fps: value })).toBe(`Проба ««<>&»» · ${value} кадров/с`);
+    expect(montageTexts.draftStatus({ name: '«<>&»', fps: value })).toBe(`Проба ««<>&»» · ${expected}/с`);
   });
 
   it.each([

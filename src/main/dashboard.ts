@@ -168,6 +168,7 @@ export function viewDashboard(project: string, toolsRoot: string | null): Dashbo
     });
     return {
       id: scene.id,
+      derivedFrom: scene.derived_from?.shot ?? null,
       title: scene.title ?? titles.get(scene.sequence) ?? scene.sequence,
       sequenceTitle: titles.get(scene.sequence) ?? scene.sequence,
       original: scene.original,

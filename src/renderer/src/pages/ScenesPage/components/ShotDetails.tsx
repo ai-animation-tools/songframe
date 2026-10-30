@@ -1,3 +1,5 @@
+import { derivedShotTexts } from '@shared/texts/derived-shot';
+import { shotPageRoute } from '../../../components/shotRoutes';
 import { scenesTexts } from '@shared/texts/scenes';
 import { commonTexts } from '@shared/texts/common';
 import MovieIcon from '@mui/icons-material/Movie';
@@ -40,6 +42,15 @@ export function ShotDetails({
           <Chip size="small" color={STATE_LABELS[shot.state].color} label={STATE_LABELS[shot.state].label} />
           {shot.animaticMedia ? (
             <Chip size="small" variant="outlined" label={scenesTexts.details.animaticMedia({ media: MEDIA_LABELS[shot.animaticMedia] })} />
+          ) : null}
+          {shot.derivedFrom ? (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={derivedShotTexts.derivedFrom({ source: shot.derivedFrom })}
+              title={derivedShotTexts.openBuilder({ shot: shot.id })}
+              onClick={() => onNavigate(shotPageRoute('production', shot.id))}
+            />
           ) : null}
           <Box sx={{ flex: 1 }} />
           <Typography variant="caption" color="text.secondary">

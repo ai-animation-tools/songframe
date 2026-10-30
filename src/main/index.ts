@@ -18,6 +18,7 @@ import { externalEnvironment } from './external-environment';
 import type { NotificationTarget } from '@shared/notifications';
 import { DesktopNotifications } from './desktop-notifications';
 import { TaskNotifications } from './task-notifications';
+import { recoverDerivedApplications } from './derived-recovery';
 import { recoverMontageApplications } from './montage-recovery';
 import { registerMontageWindow } from './montage-window';
 import { applicationTexts } from '@shared/texts/application';
@@ -200,7 +201,11 @@ app
       recoverInterruptedProductionApplies,
       () => {
         const state = services.projects.appState();
-        for (const project of new Set([state.current, ...state.history.map((item) => item.path)])) if (project) recoverMontageApplications(project);
+        for (const project of new Set([state.current, ...state.history.map((item) => item.path)]))
+          if (project) {
+            recoverMontageApplications(project);
+            recoverDerivedApplications(project);
+          }
       }
     ])
       try {

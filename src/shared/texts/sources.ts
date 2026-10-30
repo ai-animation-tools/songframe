@@ -1,3 +1,4 @@
+import { countLabel } from '../plural';
 import { commonTexts } from './common';
 
 /** Тексты исходников и временной обложки; правила владения — @link ../../../docs/ui/texts.md. */
@@ -217,13 +218,13 @@ export const sourcesTexts = {
   pickIdeaTitle: 'Файл с описанием идеи',
   modelPending: 'уточняется при подготовке',
 
-  // Первый перенос сохраняет прежние числовые формы даже для единицы и дробей.
+  // Число строк и размер области используют общие числовые формы, включая единицы и дроби.
   lyricsStatistics: ({ lines, sections }: { lines: number; sections: number }) =>
-    `Сейчас: ${lines} строк песни, секций: ${sections}. Пустые строки между секциями необязательны. Файл — TXT или MD в UTF-8, без Markdown-заголовков и списков. Текст должен совпадать с исполнением.`,
+    `Сейчас: ${countLabel(lines, 'строка', 'строки', 'строк')} песни, секций: ${sections}. Пустые строки между секциями необязательны. Файл — TXT или MD в UTF-8, без Markdown-заголовков и списков. Текст должен совпадать с исполнением.`,
   formProblems: ({ count }: { count: number }) => `Исправьте проблемы формы (${count}): список — в начале страницы, ошибки отмечены у полей.`,
   problemCount: ({ count }: { count: number }) => `Проблем: ${count}`,
   newTrack: ({ path }: { path: string }) => `Новый: ${path}`,
-  cropSize: ({ size }: { size: number }) => `Размер области: ${size} × ${size} пикселей`,
+  cropSize: ({ size }: { size: number }) => `Размер области: ${size} × ${countLabel(size, 'пиксель', 'пикселя', 'пикселей')}`,
   referenceImages: ({ kind, count }: { kind: string; count: number }) => `${kind} · изображений: ${count}`,
   pickReferenceImages: ({ name }: { name: string }) => `Выбрать изображения референса ${name || 'без названия'}`,
   removeReference: ({ name }: { name: string }) => `Удалить референс «${name || 'без названия'}»`,

@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import tempfile
@@ -66,6 +67,34 @@ def validate_package(path, shot_id=None, root=None):
     if shot_id is not None and package["shot"] != shot_id:
         raise ValueError("Комплект относится к другому плану.")
     generation, edit = package["generation"], package["accepted_edit"]
+    if package.get("kind") == "derived_video":
+        source_scene = generation.get("source_scene_sha256")
+        source_video = generation.get("source_accepted_video_sha256")
+        if "source_scene_sha256" not in generation or (
+            source_scene is not None
+            and (not isinstance(source_scene, str) or not re.fullmatch(r"[0-9a-f]{64}", source_scene))
+        ):
+            raise ValueError(
+                "В производном комплекте нужен source_scene_sha256: "
+                "SHA постановки источника либо null для неизвестной версии."
+            )
+        if not isinstance(source_video, str) or not re.fullmatch(r"[0-9a-f]{64}", source_video):
+            raise ValueError("В производном комплекте нужен source_accepted_video_sha256 выбранного клипа источника.")
+    repeat = edit.get("repeat")
+    if repeat is not None:
+        if (
+            not isinstance(repeat, dict)
+            or set(repeat) != {"full_cycles", "tail_frames", "cycle_frames"}
+            or any(type(repeat[key]) is not int for key in repeat)
+        ):
+            raise ValueError("Повтор задаётся целыми full_cycles, tail_frames и cycle_frames.")
+        if (
+            repeat["full_cycles"] < 0
+            or repeat["cycle_frames"] <= 0
+            or not 0 <= repeat["tail_frames"] < repeat["cycle_frames"]
+            or repeat["full_cycles"] * repeat["cycle_frames"] + repeat["tail_frames"] != edit["frames"]
+        ):
+            raise ValueError("Число циклов и хвост повтора расходятся с длиной принятого монтажа.")
     if generation["original"]["path"] == edit["video"]["path"]:
         raise ValueError("Оригинал и принятый монтаж должны быть разными файлами.")
     if not generation["inputs"] or not generation["prompt"]:

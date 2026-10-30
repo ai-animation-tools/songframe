@@ -12,7 +12,7 @@ import { agentFinishedNotice, agentOwnerShowsResult, finishedNotice, newDerivedR
 
 type Severity = 'success' | 'info' | 'warning' | 'error';
 
-interface AppContextValue {
+export interface AppContextValue {
   state: AppState | null;
   status: ProjectStatus | null;
   loading: boolean;
@@ -37,6 +37,11 @@ interface AppContextValue {
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
+
+/** Управляемое значение для изолированных компонентов: без IPC, опроса заданий и работы с проектом. */
+export function AppValueProvider({ value, children }: { value: AppContextValue; children: ReactNode }): ReactElement {
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
 
 export function describeError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);

@@ -1,7 +1,8 @@
 /** Редактор инструкций проекта: чтение доступно всегда, изменение — выбранному агенту после подтверждения. */
 import { useReducer, type ReactElement } from 'react';
-import { Box, Stack, TextField, Typography } from '@mui/material';
+import { Box, InputAdornment, Stack, TextField, Typography } from '@mui/material';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import type { AgentProvider } from '@shared/agent-providers';
 import { projectTexts } from '@shared/texts/project';
 import { ActionButton } from '../../../components/ActionButton';
@@ -20,6 +21,7 @@ interface Props {
 export function ProjectAgentInstructions({ value, agentProvider, busy, onChange }: Props): ReactElement {
   const [editor, dispatch] = useReducer(instructionEditor, 'locked');
   const editing = !!agentProvider && editor === 'editing';
+  const readOnly = !editing || busy;
   const reason = busy ? projectTexts.settings.waitSaving : !agentProvider ? projectTexts.agentInstructions.chooseAgent : null;
   return (
     <Stack spacing={1} sx={{ minWidth: 0 }}>
@@ -30,7 +32,26 @@ export function ProjectAgentInstructions({ value, agentProvider, busy, onChange 
         minRows={5}
         maxRows={18}
         fullWidth
-        slotProps={{ input: { readOnly: !editing || busy } }}
+        slotProps={{
+          input: {
+            readOnly,
+            // Чтение и копирование доступны: приглушённый фон, пунктир и замок отличают поле от редактора даже в фокусе.
+            endAdornment: readOnly ? (
+              <InputAdornment position="end">
+                <LockOutlinedIcon color="action" />
+              </InputAdornment>
+            ) : undefined,
+            sx: readOnly
+              ? {
+                  bgcolor: 'action.hover',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider', borderStyle: 'dashed' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'text.secondary' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'text.secondary', borderWidth: 2 }
+                }
+              : undefined
+          },
+          inputLabel: { sx: readOnly ? { '&.Mui-focused': { color: 'text.secondary' } } : undefined }
+        }}
         onChange={(event) => {
           if (editing && !busy) onChange(editInstructionText(value, event.target.value));
         }}
@@ -39,11 +60,13 @@ export function ProjectAgentInstructions({ value, agentProvider, busy, onChange 
       <Typography variant="caption" color="text.secondary">
         <LinkedText
           text={
-            !agentProvider
-              ? projectTexts.agentInstructions.chooseAgent
-              : editing
-                ? projectTexts.agentInstructions.editing
-                : projectTexts.agentInstructions.locked
+            busy
+              ? projectTexts.settings.waitSaving
+              : !agentProvider
+                ? projectTexts.agentInstructions.chooseAgent
+                : editing
+                  ? projectTexts.agentInstructions.editing
+                  : projectTexts.agentInstructions.locked
           }
         />
       </Typography>

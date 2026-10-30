@@ -1,5 +1,6 @@
 import { type MouseEvent, type WheelEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '@mui/material';
+import { timingTexts } from '@shared/texts/timing';
 import { resolveTimingSections } from '@shared/timing-sections';
 import type { TimingLine, TimingSection, TimingView } from '@shared/types';
 import { MIN_LENGTH, neighbours, round } from './timing';
@@ -36,6 +37,7 @@ export function useTimingPlayer({
   const theme = useTheme();
   const [peaks, setPeaks] = useState<Peaks | null>(null);
   const [peaksError, setPeaksError] = useState<string | null>(null);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [pps, setPps] = useState(48);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [time, setTime] = useState(0);
@@ -59,22 +61,25 @@ export function useTimingPlayer({
   );
 
   useEffect(() => {
-    if (!trackUrl) return;
     let cancelled = false;
+    const audio = audioRef.current;
     stopAtRef.current = null;
     setTime(0);
     setPlaying(false);
     setPeaks(null);
     setPeaksError(null);
-    decodePeaks(trackUrl)
-      .then((p) => {
-        if (!cancelled) setPeaks(p);
-      })
-      .catch((error) => {
-        if (!cancelled) setPeaksError(describeError(error));
-      });
+    setPlaybackError(null);
+    if (trackUrl)
+      decodePeaks(trackUrl)
+        .then((p) => {
+          if (!cancelled) setPeaks(p);
+        })
+        .catch((error) => {
+          if (!cancelled) setPeaksError(describeError(error));
+        });
     return () => {
       cancelled = true;
+      audio?.pause();
     };
   }, [trackUrl, describeError]);
 
@@ -206,7 +211,7 @@ export function useTimingPlayer({
     const audio = audioRef.current;
     if (!audio) return;
     stopAtRef.current = null;
-    if (audio.paused) void audio.play();
+    if (audio.paused) playAudio(audio);
     else audio.pause();
   };
 
@@ -216,8 +221,20 @@ export function useTimingPlayer({
     setSelected(line.id);
     audio.currentTime = Math.max(0, line.start - 0.15);
     stopAtRef.current = line.end + 0.1;
-    void audio.play();
+    playAudio(audio);
     scrollTo(line.start);
+  };
+
+  // Отказ декодера показывается в плеере; закрытая или заменённая дорожка не обновляет новый экран.
+  // AbortError при обычной паузе или смене src не является ошибкой прослушивания.
+  const playAudio = (audio: HTMLAudioElement): void => {
+    setPlaybackError(null);
+    void audio.play().catch((reason: unknown) => {
+      if (audioRef.current !== audio || (reason instanceof DOMException && reason.name === 'AbortError')) return;
+      stopAtRef.current = null;
+      setPlaying(false);
+      setPlaybackError(timingTexts.playbackFailed({ reason: describeError(reason) }));
+    });
   };
 
   const scrollTo = (t: number): void => {
@@ -233,7 +250,12 @@ export function useTimingPlayer({
     const handler = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
       if (busy || generating || generateOpen || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
-      if (target?.closest('input, textarea, select, button, a, [role="button"], [role="slider"], [role="dialog"], [contenteditable="true"]')) return;
+      if (
+        target?.closest(
+          'input, textarea, select, button, a, [role="button"], [role="slider"], [role="dialog"], [role="region"][tabindex], [contenteditable="true"]'
+        )
+      )
+        return;
       const current = selected === null ? null : linesRef.current.find((l) => l.id === selected);
       if (event.code === 'Space') {
         event.preventDefault();
@@ -275,6 +297,7 @@ export function useTimingPlayer({
     setPps,
     peaks,
     peaksError,
+    playbackError,
     trackUrl,
     audioRef,
     canvasRef,

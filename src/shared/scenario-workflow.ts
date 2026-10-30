@@ -22,7 +22,8 @@ export interface ScenarioProposal {
   jobId: string;
   pass: ScenarioPass;
   selectedIds: string[];
-  status: 'running' | 'ready' | 'invalid' | 'failed' | 'interrupted' | 'applied';
+  /** cancelled: пользователь остановил задание агента; interrupted: задание оборвалось без его решения. */
+  status: 'running' | 'ready' | 'invalid' | 'failed' | 'cancelled' | 'interrupted' | 'applied';
   message?: string;
   warnings: string[];
   stale: boolean;

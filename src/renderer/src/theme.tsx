@@ -1,7 +1,7 @@
 /** Светлая и тёмная темы MUI; выбор хранится в localStorage, по умолчанию следует системе. */
 
 import { type ReactElement, createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CssBaseline, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
+import { CssBaseline, ThemeProvider, createTheme, touchRippleClasses, useMediaQuery } from '@mui/material';
 import { ruRU } from '@mui/material/locale';
 import { themePalettes } from './theme-palette';
 
@@ -15,6 +15,31 @@ interface ThemeModeContextValue {
 }
 
 const ThemeModeContext = createContext<ThemeModeContextValue>({ mode: 'system', resolved: 'light', setMode: () => undefined });
+
+/** Единый источник темы приложения и браузерной витрины; не обращается к хранилищу или системе. */
+export function createAppTheme(mode: 'light' | 'dark') {
+  return createTheme(
+    {
+      palette: themePalettes[mode],
+      shape: { borderRadius: 8 },
+      typography: { fontSize: 13.5 },
+      components: {
+        // Волна фокуса с клавиатуры остаётся видимой, но не опускает контраст подписи ниже WCAG AA (4.5:1).
+        MuiButtonBase: {
+          styleOverrides: { root: { [`& .${touchRippleClasses.ripplePulsate}.${touchRippleClasses.rippleVisible}`]: { opacity: 0.12 } } }
+        },
+        MuiButton: { defaultProps: { disableElevation: true } },
+        MuiTextField: { defaultProps: { size: 'small' } }
+      }
+    },
+    ruRU
+  );
+}
+
+/** Управляемый режим без записи в localStorage; MUI ThemeProvider и CssBaseline принадлежат оболочке. */
+export function ThemeModeValueProvider({ value, children }: { value: ThemeModeContextValue; children: ReactNode }): ReactElement {
+  return <ThemeModeContext.Provider value={value}>{children}</ThemeModeContext.Provider>;
+}
 
 function readStoredMode(): ThemeMode {
   try {
@@ -36,22 +61,7 @@ export function ThemeModeProvider({ children }: { children: ReactNode }): ReactE
       /* хранилище недоступно: тема просто не запомнится */
     }
   }, [mode]);
-  const theme = useMemo(
-    () =>
-      createTheme(
-        {
-          palette: themePalettes[resolved],
-          shape: { borderRadius: 8 },
-          typography: { fontSize: 13.5 },
-          components: {
-            MuiButton: { defaultProps: { disableElevation: true } },
-            MuiTextField: { defaultProps: { size: 'small' } }
-          }
-        },
-        ruRU
-      ),
-    [resolved]
-  );
+  const theme = useMemo(() => createAppTheme(resolved), [resolved]);
   const value = useMemo(() => ({ mode, resolved, setMode }), [mode, resolved]);
   return (
     <ThemeModeContext.Provider value={value}>

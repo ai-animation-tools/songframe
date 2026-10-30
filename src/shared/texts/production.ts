@@ -238,6 +238,7 @@ export const productionTexts = {
         `Речевой план: окно плана ${seconds} с длиннее, чем ${provider} принимает звук (до ${max} с). Разделите план на странице «Сценарий».`,
       packageMissingOrWrongShot: 'Пакет отсутствует или относится к другому плану.',
       jobInterrupted: commonTexts.proposal.interrupted,
+      jobCancelled: commonTexts.proposal.cancelled,
       proposalIncomplete: 'Агент не завершил подготовку предложения.',
       agentRefused: 'Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия.',
       videoSettingsIncomplete,
@@ -408,6 +409,7 @@ export const productionTexts = {
     ready: 'Готово к просмотру',
     invalid: 'Результат требует исправления',
     failed: 'Задание завершилось с ошибкой',
+    cancelled: 'Подготовка остановлена',
     interrupted: 'Задание прервано',
     applied: commonTexts.proposal.applied
   },
@@ -508,6 +510,7 @@ export const productionTexts = {
     proposalFailed: ({ stage, failed, message }: { stage: string; failed: boolean; message?: string }) =>
       `${stage}: задание агента ${failed ? 'завершилось с ошибкой' : 'прервано'}.${message ? ` ${message}` : ''}`,
     jobFailed: ({ task, failed }: { task: string; failed: boolean }) => `${task}: задание агента ${failed ? 'завершилось с ошибкой' : 'прервано'}.`,
+    proposalCancelled: ({ stage }: { stage: string }) => `${stage}: подготовка остановлена.`,
     applied: commonTexts.proposal.appliedSentence,
     discarded: 'Предложение отклонено.'
   },

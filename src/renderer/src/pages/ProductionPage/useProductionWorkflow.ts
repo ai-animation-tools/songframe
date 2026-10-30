@@ -31,6 +31,8 @@ function announce(previous: Observed | null, view: ProductionWorkflowView, notif
     if (proposal.status === 'ready') notify(productionTexts.useProductionWorkflow.proposalReady({ stage }), 'success');
     else if (proposal.status === 'invalid' && proposal.refused) notify(productionTexts.useProductionWorkflow.proposalRefused({ stage }), 'warning');
     else if (proposal.status === 'invalid') notify(productionTexts.useProductionWorkflow.proposalInvalid({ stage, message: proposal.message }), 'warning');
+    // Пользователь сам нажал «Остановить»: это подтверждение, а не ошибка.
+    else if (proposal.status === 'cancelled') notify(productionTexts.useProductionWorkflow.proposalCancelled({ stage }), 'info');
     else if (proposal.status === 'failed' || proposal.status === 'interrupted')
       notify(productionTexts.useProductionWorkflow.proposalFailed({ stage, failed: proposal.status === 'failed', message: proposal.message }), 'error');
   } else if (!proposal && job && current.job !== previous.job && (job.status === 'failed' || job.status === 'interrupted')) {
@@ -81,7 +83,8 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
           }
         }
       } catch (reason) {
-        if (active && contextRef.current === context) setError(describeError(reason));
+        // Устаревшая ошибка чтения так же неактуальна, как его успешный ответ: новая операция уже сменила revision.
+        if (active && contextRef.current === context && version === revision.current && !mutating.current) setError(describeError(reason));
       } finally {
         if (active) timer = setTimeout(() => void read(), 1500);
       }

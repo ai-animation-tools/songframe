@@ -13,6 +13,7 @@ export function ScenarioDraftConflictDialog({
   treatmentDirty,
   scenesDirty,
   busy,
+  saveBlockedReason,
   onResolve,
   onClose
 }: {
@@ -20,6 +21,8 @@ export function ScenarioDraftConflictDialog({
   treatmentDirty: boolean;
   scenesDirty: boolean;
   busy: boolean;
+  /** Причина, по которой правки нельзя записать перед продолжением (применение предложения): остаётся их отмена. */
+  saveBlockedReason?: string;
   onResolve(action: 'save' | 'discard'): void;
   onClose(): void;
 }): ReactElement {
@@ -32,8 +35,8 @@ export function ScenarioDraftConflictDialog({
       cancelDisabled={busy}
       cancelDisabledReason={scenarioTexts.drafts.waitSaving}
       closeDisabled={busy}
-      confirmDisabled={busy}
-      confirmDisabledReason={scenarioTexts.drafts.waitSaving}
+      confirmDisabled={busy || !!saveBlockedReason}
+      confirmDisabledReason={saveBlockedReason ?? scenarioTexts.drafts.waitSaving}
       confirmLabel={scenarioTexts.drafts.saveAndContinue}
       confirmIcon={<SaveIcon />}
       onConfirm={() => onResolve('save')}
@@ -51,7 +54,7 @@ export function ScenarioDraftConflictDialog({
     >
       <Stack spacing={2}>
         <Typography>{scenarioTexts.drafts.changed({ treatment: treatmentDirty, scenes: scenesDirty })}</Typography>
-        <Alert severity="warning">{scenarioTexts.drafts.resolveBeforeAgent}</Alert>
+        <Alert severity="warning">{saveBlockedReason ?? scenarioTexts.drafts.resolveBeforeAgent}</Alert>
       </Stack>
     </ConfirmationDialog>
   );

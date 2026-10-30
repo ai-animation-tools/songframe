@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { AgentJob, AgentStartInput } from '@shared/agents';
 import type { ProductionImagesInput, ProductionStageProposal } from '@shared/production-workflow';
+import { productionTexts } from '@shared/texts/production';
 import { PythonLauncher, type LaunchOptions } from './python-launcher';
 import { registerTestAgentProvider, registerTestMediaProvider, TEST_AGENT_PROVIDER, TEST_PROVIDER, testPaidAdapter } from './testing/media-provider';
 import { ProductionWorkflow, recoverInterruptedProductionApplies } from './production-workflow';
@@ -722,7 +723,7 @@ describe('ProductionWorkflow', () => {
     expect(workflow.view(project, 'M01', pkg).canPrepare).toBe(false);
     const view = await workflow.generateFrames(project, 'M01', pkg);
     Object.assign(agents.jobs.at(-1)!, { status: 'cancelled', exitCode: 1 });
-    expect(workflow.view(project, 'M01', pkg).proposal?.status).toBe('failed');
+    expect(workflow.view(project, 'M01', pkg).proposal).toMatchObject({ status: 'cancelled', message: productionTexts.main.workflow.jobCancelled });
     await expect(workflow.apply(project, 'M01', pkg, view.proposal!.id)).rejects.toThrow('актуальное');
   });
   it('сохраняет платный пакет и создаёт retry_of после нового Apply', async () => {

@@ -107,7 +107,7 @@ function checkStoredState(value: unknown): asserts value is WorkflowState {
     typeof proposal.pass !== 'string' ||
     !['treatment', 'scenes', 'revise'].includes(proposal.pass) ||
     typeof proposal.status !== 'string' ||
-    !['running', 'ready', 'invalid', 'failed', 'interrupted', 'applied'].includes(proposal.status) ||
+    !['running', 'ready', 'invalid', 'failed', 'cancelled', 'interrupted', 'applied'].includes(proposal.status) ||
     !strings(proposal.selectedIds) ||
     !strings(proposal.warnings) ||
     !strings(proposal.changedIds) ||
@@ -312,7 +312,11 @@ export class ScenarioWorkflow {
       proposal.status = 'interrupted';
       proposal.message = scenarioTexts.main.proposalInterrupted;
     } else if (job.status === 'running') return job;
-    else if (job.status !== 'completed' || job.exitCode !== 0) {
+    // Остановка по кнопке — решение пользователя, а не сбой агента.
+    else if (job.status === 'cancelled') {
+      proposal.status = 'cancelled';
+      proposal.message = scenarioTexts.main.proposalCancelled;
+    } else if (job.status !== 'completed' || job.exitCode !== 0) {
       proposal.status = 'failed';
       proposal.message = job.message || scenarioTexts.main.proposalAgentFailed;
     } else {

@@ -71,7 +71,8 @@ export function AcceptResultDialog({
           <MenuItem value="cut">{productionTexts.acceptResultDialog.cut}</MenuItem>
         </TextField>
         {options.mode === 'cut' ? (
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 1 }}>
+          // Две колонки оставляют место полной подписи удержания кадра и её единице измерения.
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 1 }}>
             <TextField
               size="small"
               type="number"

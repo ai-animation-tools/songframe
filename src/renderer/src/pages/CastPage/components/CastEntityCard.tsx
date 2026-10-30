@@ -61,24 +61,43 @@ export function CastEntityCard({
     >
       {/* Содержимое заголовка может сжиматься внутри колонки, не выталкивая изображение за край карточки. */}
       <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ '& .MuiAccordionSummary-content': { minWidth: 0 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
-          <Avatar src={thumb} variant="rounded" sx={{ width: 40, height: 40, bgcolor: 'action.hover', color: 'text.secondary', fontSize: 14 }}>
+        {/* На узкой рабочей области сведения занимают три строки: длинное имя и код не вытесняют статус и стрелку за рамку карточки. */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '40px minmax(0, 1fr) auto',
+            gridTemplateAreas: '"avatar name kind" "avatar id state" "avatar role state"',
+            '@container workspace (min-width: 900px)': {
+              gridTemplateColumns: '40px minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr) auto',
+              gridTemplateAreas: '"avatar name kind id role state"'
+            },
+            alignItems: 'center',
+            columnGap: 1.5,
+            rowGap: 0.5,
+            flex: 1,
+            minWidth: 0
+          }}
+        >
+          <Avatar
+            src={thumb}
+            variant="rounded"
+            sx={{ gridArea: 'avatar', width: 40, height: 40, bgcolor: 'action.hover', color: 'text.secondary', fontSize: 14 }}
+          >
             {entity.kind === WORLD ? '🌍' : entity.name.slice(0, 1)}
           </Avatar>
-          {/* Имя и код не сжимаются, пока помещаются; при нехватке места обрезается роль справа. */}
-          <Typography fontWeight={600} noWrap title={entity.name || undefined} sx={{ flexShrink: 0, maxWidth: '40%' }}>
+          <Typography fontWeight={600} noWrap title={entity.name || undefined} sx={{ gridArea: 'name', minWidth: 0 }}>
             {entity.name || castTexts.unnamedEntity}
           </Typography>
           <Chip
             size="small"
             variant="outlined"
             label={kinds.find((kind) => kind.id === entity.kind)?.label ?? entity.kind}
-            sx={{ flexShrink: 0, maxWidth: 160 }}
+            sx={{ gridArea: 'kind', minWidth: 0, maxWidth: 160 }}
           />
-          <Typography variant="caption" color="text.secondary" noWrap title={entity.id} sx={{ fontFamily: 'monospace', flexShrink: 0, maxWidth: 180 }}>
+          <Typography variant="caption" color="text.secondary" noWrap title={entity.id} sx={{ gridArea: 'id', fontFamily: 'monospace', minWidth: 0 }}>
             {entity.id}
           </Typography>
-          <Typography variant="caption" color="text.secondary" noWrap title={entity.role || undefined} sx={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
+          <Typography variant="caption" color="text.secondary" noWrap title={entity.role || undefined} sx={{ gridArea: 'role', minWidth: 0 }}>
             {entity.role}
           </Typography>
           <Chip
@@ -86,7 +105,7 @@ export function CastEntityCard({
             label={stateCount ? castTexts.stateCount({ count: stateCount }) : castTexts.noState}
             color={stateCount ? 'default' : 'warning'}
             variant="outlined"
-            sx={{ flexShrink: 0 }}
+            sx={{ gridArea: 'state', minWidth: 0 }}
           />
         </Box>
       </AccordionSummary>

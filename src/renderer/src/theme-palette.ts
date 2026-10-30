@@ -30,8 +30,10 @@ export const themePalettes: Record<'light' | 'dark', PaletteOptions> = {
     primary: { main: '#1565c0', light: 'rgb(67, 131, 204)', dark: 'rgb(14, 70, 134)', contrastText: '#fff' },
     secondary: { main: '#ef6c00', light: 'rgb(242, 137, 51)', dark: 'rgb(167, 75, 0)', contrastText: '#fff' },
     error: { main: '#d32f2f', light: '#ef5350', dark: '#c62828', contrastText: '#fff' },
-    warning: { main: '#ed6c02', light: '#ff9800', dark: '#e65100', contrastText: '#fff' },
-    info: { main: '#0288d1', light: '#03a9f4', dark: '#01579b', contrastText: '#fff' },
+    // Белый текст на warning/info и эти цвета как текст на бумаге и фоне страницы дают не меньше 4.5:1.
+    // light остаётся светлым: на нём подсветка поиска выбирает тёмный текст.
+    warning: { main: '#b84a00', light: '#ff9800', dark: '#9a3f00', contrastText: '#fff' },
+    info: { main: '#0271b3', light: '#0288d1', dark: '#01579b', contrastText: '#fff' },
     success: { main: '#2e7d32', light: '#4caf50', dark: '#1b5e20', contrastText: '#fff' },
     background: { default: '#f4f6f8', paper: '#ffffff' },
     text: { primary: 'rgba(0, 0, 0, 0.87)', secondary: 'rgba(0, 0, 0, 0.6)', disabled: 'rgba(0, 0, 0, 0.38)' },
@@ -58,7 +60,8 @@ export const themePalettes: Record<'light' | 'dark', PaletteOptions> = {
     tonalOffset: 0.2,
     primary: { main: '#7cc4ff', light: 'rgb(150, 207, 255)', dark: 'rgb(86, 137, 178)', contrastText: 'rgba(0, 0, 0, 0.87)' },
     secondary: { main: '#ffb74d', light: 'rgb(255, 197, 112)', dark: 'rgb(178, 128, 53)', contrastText: 'rgba(0, 0, 0, 0.87)' },
-    error: { main: '#f44336', light: '#e57373', dark: '#d32f2f', contrastText: '#fff' },
+    // Тёмный текст держит 4.5:1 и на dark, который MUI берёт для наведения contained-кнопки.
+    error: { main: '#f44336', light: '#e57373', dark: '#e53935', contrastText: 'rgba(0, 0, 0, 0.87)' },
     warning: { main: '#ffa726', light: '#ffb74d', dark: '#f57c00', contrastText: 'rgba(0, 0, 0, 0.87)' },
     info: { main: '#29b6f6', light: '#4fc3f7', dark: '#0288d1', contrastText: 'rgba(0, 0, 0, 0.87)' },
     success: { main: '#66bb6a', light: '#81c784', dark: '#388e3c', contrastText: 'rgba(0, 0, 0, 0.87)' },

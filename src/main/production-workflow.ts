@@ -279,7 +279,7 @@ export class ProductionWorkflow {
       (value.packageDir !== null && typeof value.packageDir !== 'string') ||
       value.rules.project !== project ||
       typeof value.proposal.id !== 'string' ||
-      !['running', 'ready', 'invalid', 'failed', 'interrupted', 'applied'].includes(String(value.proposal.status))
+      !['running', 'ready', 'invalid', 'failed', 'cancelled', 'interrupted', 'applied'].includes(String(value.proposal.status))
     )
       return null;
     packagePath(project, value.target);
@@ -421,7 +421,11 @@ export class ProductionWorkflow {
       proposal.status = 'interrupted';
       proposal.message = texts.jobInterrupted;
     } else if (job.status === 'running') return job;
-    else if (job.status !== 'completed' || job.exitCode !== 0) {
+    // Остановка по кнопке — решение пользователя, а не сбой агента.
+    else if (job.status === 'cancelled') {
+      proposal.status = 'cancelled';
+      proposal.message = texts.jobCancelled;
+    } else if (job.status !== 'completed' || job.exitCode !== 0) {
       proposal.status = 'failed';
       proposal.message = job.message || texts.proposalIncomplete;
     } else {

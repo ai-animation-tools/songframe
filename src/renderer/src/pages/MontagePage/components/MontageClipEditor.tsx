@@ -1,7 +1,7 @@
 import { montageTexts } from '@shared/texts/montage';
 import { ArrowBack, ArrowForward, DeleteOutline } from '@mui/icons-material';
 import { memo, type ReactElement } from 'react';
-import { Alert, Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Paper, Stack, TextField, Typography } from '@mui/material';
 import { ActionButton } from '../../../components/ActionButton';
 import type { MontageClip, MontageDraft } from '@shared/montage';
 import { clipLength, frameLabel, rollCut, slipClip, trimClip } from '../model';
@@ -33,9 +33,13 @@ export const MontageClipEditor = memo(function MontageClipEditor({
         <Typography color="text.secondary">{montageTexts.selectClipToTrim}</Typography>
       </Paper>
     );
-  const change = (clips: MontageClip[]): void => onChange({ ...draft, clips });
+  // Блокировка родителя через pointerEvents не останавливает клавиатуру и отложенный blur.
+  // Поля и действия блокируются здесь; обработчик также сохраняет черновик при смене состояния.
+  const change = (clips: MontageClip[]): void => {
+    if (!disabled) onChange({ ...draft, clips });
+  };
   const next = draft.clips[draft.clips.findIndex((item) => item.id === clip.id) + 1];
-  const slipReason = montageTexts.cardCannotSlip;
+  const slipReason = disabled ? disabledReason : montageTexts.cardCannotSlip;
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Stack spacing={1.5}>
@@ -58,7 +62,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({
             type="number"
             label={montageTexts.sourceStart}
             sx={{ width: 240, maxWidth: '100%', flexShrink: 0 }}
-            disabled={clip.kind === 'card'}
+            disabled={disabled || clip.kind === 'card'}
             defaultValue={clip.source_start_frame}
             slotProps={{ htmlInput: { min: 0, max: clip.source_end_frame_exclusive - 1, step: 1 } }}
             onBlur={(event) => {
@@ -71,6 +75,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({
             size="small"
             type="number"
             label={montageTexts.sourceEnd}
+            disabled={disabled}
             sx={{ width: 240, maxWidth: '100%', flexShrink: 0 }}
             defaultValue={clip.source_end_frame_exclusive}
             slotProps={{
@@ -96,7 +101,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({
             type="number"
             label={montageTexts.slipFrames}
             sx={{ width: 240, maxWidth: '100%', flexShrink: 0 }}
-            disabled={clip.kind === 'card'}
+            disabled={disabled || clip.kind === 'card'}
             defaultValue={0}
             slotProps={{ htmlInput: { step: 1 } }}
             onBlur={(event) => {
@@ -115,7 +120,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({
           <ActionButton
             startIcon={<ArrowBack />}
             size="small"
-            disabled={clip.kind === 'card'}
+            disabled={disabled || clip.kind === 'card'}
             disabledReason={slipReason}
             onClick={() => change(slipClip(draft.clips, clip.id, -1))}
           >
@@ -124,7 +129,7 @@ export const MontageClipEditor = memo(function MontageClipEditor({
           <ActionButton
             startIcon={<ArrowForward />}
             size="small"
-            disabled={clip.kind === 'card'}
+            disabled={disabled || clip.kind === 'card'}
             disabledReason={slipReason}
             onClick={() => change(slipClip(draft.clips, clip.id, 1))}
           >
@@ -132,12 +137,24 @@ export const MontageClipEditor = memo(function MontageClipEditor({
           </ActionButton>
           {next ? (
             <>
-              <Button startIcon={<ArrowBack />} size="small" onClick={() => change(rollCut(draft.clips, clip.id, -1))}>
+              <ActionButton
+                startIcon={<ArrowBack />}
+                size="small"
+                disabled={disabled}
+                disabledReason={disabledReason}
+                onClick={() => change(rollCut(draft.clips, clip.id, -1))}
+              >
                 {montageTexts.cutBackward}
-              </Button>
-              <Button startIcon={<ArrowForward />} size="small" onClick={() => change(rollCut(draft.clips, clip.id, 1))}>
+              </ActionButton>
+              <ActionButton
+                startIcon={<ArrowForward />}
+                size="small"
+                disabled={disabled}
+                disabledReason={disabledReason}
+                onClick={() => change(rollCut(draft.clips, clip.id, 1))}
+              >
                 {montageTexts.cutForward}
-              </Button>
+              </ActionButton>
             </>
           ) : null}
           <ActionButton startIcon={<DeleteOutline />} color="error" size="small" disabled={disabled} disabledReason={disabledReason} onClick={onRequestRemove}>

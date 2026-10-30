@@ -87,13 +87,26 @@ export function ShotCard({
       ref={cardRef}
       variant="outlined"
       aria-current={selected ? 'true' : undefined}
+      // Карточка — кнопка выбора плана: доступна с клавиатуры (Tab, Enter или пробел).
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(shot.id)}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
+        event.preventDefault();
+        onSelect(shot.id);
+      }}
       onMouseEnter={play}
       onMouseLeave={pause}
       sx={{
         p: 1,
         minWidth: 0,
         cursor: 'pointer',
+        // Кольцо фокуса снаружи карточки отличимо от внутренней рамки выбранного плана.
+        '&:focus-visible': {
+          outline: selected ? undefined : 'none',
+          boxShadow: (theme) => `0 0 0 2px ${theme.palette.background.paper}, 0 0 0 4px ${theme.palette.primary.main}`
+        },
         borderLeft: 4,
         borderLeftColor: state.bar,
         // Выбранный план выделен цветом темы: рамка поверх карточки (без сдвига сетки) и фон выбранного элемента.

@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.web.json",
+  "compilerOptions": { "types": ["vite/client"] },
+  "include": [
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
+    "src/renderer/src/**/*.ts",
+    "src/renderer/src/**/*.tsx",
+    "src/shared/**/*.ts",
+    "src/preload/api.d.ts"
+  ],
+  "exclude": [".storybook/main.ts"]
+}

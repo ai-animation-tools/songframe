@@ -6,6 +6,8 @@ describe('proposalNotice', () => {
     expect(proposalNotice({ id: 'a', status: 'running' }, { id: 'a', status: 'ready' })?.severity).toBe('success');
     expect(proposalNotice({ id: 'a', status: 'running' }, { id: 'a', status: 'failed', message: 'Сбой' })).toEqual({ message: 'Сбой', severity: 'error' });
     expect(proposalNotice({ id: 'a', status: 'running' }, { id: 'a', status: 'interrupted' })?.severity).toBe('warning');
+    // Остановку пользователь выбрал сам: подтверждение без ошибки.
+    expect(proposalNotice({ id: 'a', status: 'running' }, { id: 'a', status: 'cancelled', message: 'Подготовка остановлена' })?.severity).toBe('info');
   });
 
   it('молчит при открытии страницы, смене предложения и продолжении работы', () => {

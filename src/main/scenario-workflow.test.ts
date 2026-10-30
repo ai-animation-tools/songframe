@@ -464,7 +464,8 @@ describe('ScenarioWorkflow', () => {
     agents.jobs[0].status = status;
     const restored = new ScenarioWorkflow(options);
     const view = restored.view(project);
-    expect(view.proposal?.status).toBe(status === 'interrupted' ? 'interrupted' : 'failed');
+    // Остановка пользователем отличается от сбоя агента и от обрыва без его решения.
+    expect(view.proposal?.status).toBe(status);
     await expect(restored.apply(project, view.proposal!.id)).rejects.toThrow();
     restored.discard(project, view.proposal!.id);
     expect(restored.view(project).proposal).toBeNull();

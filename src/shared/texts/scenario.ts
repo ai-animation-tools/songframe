@@ -126,6 +126,7 @@ export const scenarioTexts = {
     timingIncomplete: 'Разметка должна покрывать все строки песни.',
     castImageMissing: ({ name, path }: { name: string; path: string }) => `${name}: отсутствует ${path}.`,
     proposalInterrupted: commonTexts.proposal.interrupted,
+    proposalCancelled: commonTexts.proposal.cancelled,
     proposalAgentFailed: 'Агент завершил задание без успешного результата.',
     proposalImageMissing: ({ name, image }: { name: string; image: string }) => `${name}: отсутствует изображение source/${image}.`,
     proposalImageOutsideContext: ({ name }: { name: string }) =>
@@ -273,7 +274,9 @@ export const scenarioTexts = {
     discardAndContinue: 'Отменить правки и продолжить',
     changed: ({ treatment, scenes }: { treatment: boolean; scenes: boolean }) =>
       `Изменены: ${[treatment ? 'трактовка' : '', scenes ? 'реестр сцен' : ''].filter(Boolean).join(', ')}.`,
-    resolveBeforeAgent: 'Сначала сохраните правки или явно отмените их. Агент получает только сохранённые данные проекта.'
+    resolveBeforeAgent: 'Сначала сохраните правки или явно отмените их. Агент получает только сохранённые данные проекта.',
+    applyNeedsSaved:
+      'Предложение подготовлено по сохранённым документам: после записи правок оно устареет и не применится. Отмените правки, чтобы применить его, или вернитесь к редактору.'
   },
   proposal: {
     castAndTreatment: 'Кастинг и трактовка',
@@ -451,6 +454,7 @@ export const scenarioTexts = {
     shotTooShort: 'План слишком короткий для деления.',
     proposalReady: 'Предложение агента готово: просмотрите сравнение и примените результат.',
     agentInterrupted: 'Задание агента прервано.',
+    agentCancelled: 'Подготовка остановлена.',
     agentFailed: 'Агент не подготовил предложение.'
   }
 } as const;

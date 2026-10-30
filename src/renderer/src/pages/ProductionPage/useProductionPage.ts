@@ -179,8 +179,11 @@ export function useProductionPage() {
   const rememberedPackage = selectedPackages[selectionKey];
   // Непринятое предложение агента открывается сразу: выбирается его пакет или «Новая подготовка».
   const proposalSelection = shot?.proposal ? (shot.proposal.packageDir ?? '__new__') : undefined;
-  const packageSelection =
-    rememberedPackage ?? proposalSelection ?? (shot?.packages.length === 1 ? shot.packages[0].dir : shot?.packages.length ? '' : '__new__');
+  // Запомненный пакет мог исчезнуть (приёмка очищает рабочие пакеты): для выбора он считается отсутствующим.
+  // Сырое значение остаётся у эффекта автовыбора: попытка повтора, ещё не попавшая в снимок, не перезаписывается.
+  const currentPackage =
+    rememberedPackage === '' || rememberedPackage === '__new__' || shot?.packages.some((pkg) => pkg.dir === rememberedPackage) ? rememberedPackage : undefined;
+  const packageSelection = currentPackage ?? proposalSelection ?? (shot?.packages.length === 1 ? shot.packages[0].dir : shot?.packages.length ? '' : '__new__');
   const selectedPackage = shot?.packages.find((pkg) => pkg.dir === packageSelection) ?? null;
   navigationScope.update(`${project}\0${selected ?? ''}\0${packageSelection}\0${filter}`);
   useEffect(() => {

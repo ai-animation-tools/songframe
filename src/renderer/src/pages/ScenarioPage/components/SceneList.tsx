@@ -1,6 +1,6 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import { useState, type ReactElement } from 'react';
-import { Box, Chip, InputAdornment, Paper, TextField, Typography } from '@mui/material';
+import { Box, ButtonBase, Chip, InputAdornment, Paper, TextField, Typography } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { matchesWords, searchWords } from '../../../components/searchText';
 import type { ScenesFile } from '@shared/types';
@@ -63,18 +63,26 @@ export function SceneList({
           // eslint-disable-next-line no-restricted-syntax -- Маркер каркаса из данных scene_scaffold, а не подпись интерфейса.
           const filled = !s.action.startsWith('ЗАПОЛНИТЬ') && !s.camera.startsWith('ЗАПОЛНИТЬ');
           return (
-            <Box
+            // Строка — кнопка: план выбирается и с клавиатуры (Tab, Enter или пробел), выбранный отмечен aria-current.
+            <ButtonBase
               key={s.id}
+              component="div"
+              focusRipple
               data-shot-id={s.id}
+              aria-current={s.id === selected || undefined}
               onClick={() => onSelect(s.id)}
               sx={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
                 px: 1.5,
                 py: 0.75,
                 cursor: 'pointer',
                 borderLeft: 3,
                 borderColor: s.id === selected ? 'primary.main' : 'transparent',
                 bgcolor: s.id === selected ? 'action.selected' : undefined,
-                '&:hover': { bgcolor: 'action.hover' }
+                '&:hover': { bgcolor: 'action.hover' },
+                '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: -2 }
               }}
             >
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -90,7 +98,7 @@ export function SceneList({
               <Typography variant="caption" noWrap display="block" color="text.secondary">
                 {s.original}
               </Typography>
-            </Box>
+            </ButtonBase>
           );
         })}
       </Box>

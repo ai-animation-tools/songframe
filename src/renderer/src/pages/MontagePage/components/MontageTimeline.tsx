@@ -269,7 +269,7 @@ export function MontageTimeline({
               height: 22,
               textAlign: 'center',
               bgcolor: 'warning.main',
-              color: '#111',
+              color: 'warning.contrastText',
               cursor: 'ew-resize',
               zIndex: 3
             }}

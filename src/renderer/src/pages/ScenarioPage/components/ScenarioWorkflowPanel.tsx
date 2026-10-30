@@ -43,6 +43,8 @@ export function ScenarioWorkflowPanel({
   const [reviseIds, setReviseIds] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [pendingAction, setPendingAction] = useState<(() => Promise<unknown>) | null>(null);
+  // Предложение сверяется с хешами сохранённых документов: запись правок перед применением сделала бы его устаревшим.
+  const [saveBlocked, setSaveBlocked] = useState(false);
   const [resolving, setResolving] = useState(false);
   const activeProject = useRef<string | null>(project);
   useEffect(() => {
@@ -63,9 +65,13 @@ export function ScenarioWorkflowPanel({
         : null;
   // Причина для обычных кнопок панели: их блокирует только выполняемая операция.
   const operationReason = disabled ? commonTexts.operationPending : null;
-  const guard = (action: () => Promise<unknown>): void => {
-    if (treatmentDirty || scenesDirty) setPendingAction(() => action);
-    else void action();
+  const guard = (action: () => Promise<unknown>, blockSave = false): void => {
+    if (!treatmentDirty && !scenesDirty) {
+      void action();
+      return;
+    }
+    setSaveBlocked(blockSave);
+    setPendingAction(() => action);
   };
   const begin = (pass: ScenarioPass, ids?: string[]): void => {
     if (pass === 'revise') {
@@ -122,7 +128,7 @@ export function ScenarioWorkflowPanel({
             {proposal.status === 'applied' ? (
               <Alert severity="success">{proposal.message || scenarioTexts.workflow.proposalAppliedSentence}</Alert>
             ) : (
-              proposal.message && <Alert severity={proposal.status === 'ready' || proposal.status === 'running' ? 'info' : 'warning'}>{proposal.message}</Alert>
+              proposal.message && <Alert severity={['ready', 'running', 'cancelled'].includes(proposal.status) ? 'info' : 'warning'}>{proposal.message}</Alert>
             )}
             {proposal.stale && proposal.status !== 'applied' && <Alert severity="warning">{scenarioTexts.workflow.proposalStale}</Alert>}
             {proposal.status !== 'applied' && proposal.status !== 'running' && (
@@ -225,6 +231,7 @@ export function ScenarioWorkflowPanel({
           treatmentDirty={treatmentDirty}
           scenesDirty={scenesDirty}
           busy={resolving || editorBusy}
+          saveBlockedReason={saveBlocked ? scenarioTexts.drafts.applyNeedsSaved : undefined}
           onResolve={(action) => void resolve(action)}
           onClose={() => setPendingAction(null)}
         />
@@ -253,7 +260,7 @@ export function ScenarioWorkflowPanel({
             onApply={() =>
               guard(async () => {
                 if (await workflow.apply()) setPreview(false);
-              })
+              }, true)
             }
             onDiscard={() =>
               guard(async () => {

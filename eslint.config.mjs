@@ -19,10 +19,25 @@ export default tseslint.config(
     }
   },
   {
-    files: ['src/renderer/**/*.{ts,tsx}'],
+    files: ['src/renderer/**/*.{ts,tsx}', '.storybook/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     // Только классические правила хуков: проверки React Compiler к этому коду не применяются.
     rules: { 'react-hooks/rules-of-hooks': 'error', 'react-hooks/exhaustive-deps': 'error' }
+  },
+  {
+    files: ['.storybook/**/*.{ts,tsx}'],
+    ignores: ['.storybook/main.ts'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: globals.browser },
+    rules: { '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }] }
+  },
+  {
+    files: ['.storybook/main.ts'],
+    languageOptions: { globals: globals.node }
+  },
+  {
+    // Браузерный набор витрины выполняется в Node через Playwright; код внутри страницы проверяется типами DOM.
+    files: ['tests/**/*.ts'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } }
   },
   {
     files: ['scripts/**/*.{mjs,cjs}'],
@@ -38,6 +53,8 @@ export default tseslint.config(
     // Статьи справочника и служебные smoke-проверки сохраняют своих владельцев.
     ignores: [
       '**/*.test.{ts,tsx}',
+      // Истории — демонстрационные данные, их русские названия и тексты не входят в рабочий интерфейс.
+      '**/*.stories.{ts,tsx}',
       '**/testing/**',
       'src/shared/texts/**',
       'src/renderer/src/pages/HelpPage/glossary.ts',

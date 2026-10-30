@@ -31,7 +31,8 @@ export interface ProductionProposal {
   id: string;
   jobId: string;
   stage: ProductionPass;
-  status: 'running' | 'ready' | 'invalid' | 'failed' | 'interrupted' | 'applied';
+  /** cancelled: пользователь остановил задание агента; interrupted: задание оборвалось без его решения. */
+  status: 'running' | 'ready' | 'invalid' | 'failed' | 'cancelled' | 'interrupted' | 'applied';
   stale: boolean;
   message?: string;
   /** Текст ответа агента, не прошедшего проверку: показывается вместо предложения вместе с причиной. */

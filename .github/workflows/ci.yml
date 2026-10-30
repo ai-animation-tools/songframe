@@ -14,7 +14,7 @@ concurrency:
 jobs:
   app:
     name: 'Приложение: lint, format, typecheck, тесты'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     steps:
       - uses: actions/checkout@v7
       # Сначала выбираем Node из проекта: Yarn нужен уже при вычислении пути кэша.
@@ -65,12 +65,39 @@ jobs:
         run: |
           bash tools/run_tests/prepare_ci_media.sh
           python -m pip install pillow==13.0.0
-      - name: Тесты главного процесса
+      - name: Тесты приложения
         run: yarn test
+      - name: Сборка приложения
+        run: yarn build
+      # Витрина собирается из отслеживаемых фикстур без Python/runtime и рабочего проекта.
+      - name: Статическая витрина Storybook
+        run: yarn build-storybook
+      # Версия Chromium определяется @playwright/test из yarn.lock; ставится только headless shell.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock') }}
+      # В образе контейнера раннера системных библиотек браузера может не быть: apt-get только при неудачном пробном запуске.
+      - name: Chromium для браузерного набора
+        run: |
+          yarn playwright install --only-shell chromium
+          node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())" || yarn playwright install-deps chromium
+      # Истории с меткой ci: play, ошибки выполнения и загрузки, обязательные правила WCAG A/AA. @link tests/storybook/stories.spec.ts
+      - name: Браузерный набор витрины
+        id: storybook-browser
+        run: yarn test:storybook
+      - name: Отчёт браузерного набора
+        if: failure() && steps.storybook-browser.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: storybook-browser-report
+          path: build/storybook-test/
+          if-no-files-found: ignore
+          retention-days: 14
 
   tools:
     name: 'Инструменты Python: тесты'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7

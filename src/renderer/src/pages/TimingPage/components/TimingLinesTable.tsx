@@ -20,19 +20,20 @@ interface TimingLinesTableProps {
 export function TimingLinesTable({ lines, selected, duration, textOf, onSelect, onUpdate, onPlay, onRemove }: TimingLinesTableProps): ReactElement {
   const sorted = [...lines].sort((a, b) => a.start - b.start);
   return (
-    <Paper variant="outlined">
-      <Table size="small" stickyHeader>
+    // Локальная прокрутка сохраняет читаемую ширину текста и полей; таблица не превращает строку песни в узкий столбец.
+    <Paper variant="outlined" role="region" aria-label={timingTexts.linesTable} tabIndex={0} sx={{ minWidth: 0, maxHeight: '70vh', overflow: 'auto' }}>
+      <Table size="small" stickyHeader sx={{ minWidth: 1000 }}>
         <TableHead>
           <TableRow>
             <TableCell width={40}>{timingTexts.numberColumn}</TableCell>
-            <TableCell>{timingTexts.lineColumn}</TableCell>
+            <TableCell sx={{ minWidth: 260 }}>{timingTexts.lineColumn}</TableCell>
             <TableCell width={110}>{timingTexts.startColumn}</TableCell>
             <TableCell width={110}>{timingTexts.endColumn}</TableCell>
             <TableCell width={70}>{timingTexts.durationColumn}</TableCell>
             <TableCell width={60} align="center">
               {timingTexts.verifiedColumn}
             </TableCell>
-            <TableCell>{timingTexts.noteColumn}</TableCell>
+            <TableCell sx={{ minWidth: 160 }}>{timingTexts.noteColumn}</TableCell>
             <TableCell width={90} />
           </TableRow>
         </TableHead>

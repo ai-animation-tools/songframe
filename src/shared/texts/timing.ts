@@ -73,6 +73,7 @@ export const timingTexts = {
   numberColumn: '№',
   volumePercent: ({ value }: { value: number }) => `${value}%`,
   lineColumn: 'Строка',
+  linesTable: 'Строки разметки',
   startColumn: 'Начало',
   endColumn: 'Конец',
   durationColumn: 'Длит.',
@@ -85,6 +86,7 @@ export const timingTexts = {
   scale: 'масштаб',
   timelineScale: 'Масштаб шкалы',
   loadingWaveform: 'Загрузка волны…',
+  playbackFailed: ({ reason }: { reason: string }) => `Не удалось воспроизвести трек: ${reason}`,
   waveformHelp:
     'Клик по волне ставит плейхед, тянуть за край строки меняет границу, за середину двигает строку, двойной клик проигрывает строку. Клавиши: пробел пауза, Enter строка, [ и ] перенос границы к плейхеду, стрелки выбор, V подтверждение, Ctrl и колесо масштаб.',
   recognitionPending: 'Дождитесь окончания распознавания.',

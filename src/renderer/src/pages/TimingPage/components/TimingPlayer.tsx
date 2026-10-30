@@ -29,6 +29,7 @@ export function TimingPlayer({ player, lines, stickyTop }: TimingPlayerProps): R
     pps,
     peaks,
     peaksError,
+    playbackError,
     setPlaying,
     setVolume,
     setPps,
@@ -125,6 +126,11 @@ export function TimingPlayer({ player, lines, stickyTop }: TimingPlayerProps): R
         <Box sx={{ width: `${Math.max(1, duration * pps)}px`, height: '1px' }} />
         <canvas ref={canvasRef} style={{ position: 'sticky', left: 0, top: 0, display: 'block', height: CANVAS_H, width: '100%', marginTop: -1 }} />
       </Box>
+      {playbackError && (
+        <Alert severity="error" sx={{ mt: 1 }}>
+          {playbackError}
+        </Alert>
+      )}
       {peaksError ? (
         <Alert severity="error" sx={{ mt: 1 }}>
           {peaksError}

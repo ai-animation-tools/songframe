@@ -79,6 +79,7 @@ describe('загрузка исходников', () => {
         onUpdate: vi.fn(),
         onRetryFilePrompt: vi.fn(),
         onRemove: vi.fn(),
+        onGenerate: vi.fn(),
         onAddFiles: vi.fn(),
         onDropFiles: vi.fn(),
         onUpdateFile: vi.fn(),

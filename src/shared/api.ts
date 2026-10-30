@@ -9,6 +9,7 @@ import type { NotificationTarget } from './notifications';
 import type { MontageApi } from './montage';
 import type { MontageWindowApi } from './montage-window';
 import type { ScenarioStatus } from './scenario-status';
+import type { ReferenceImageGenerationApi } from './reference-image-generation';
 import type { CoverGenerationApi } from './cover-generation';
 import type { AiAccess } from './ai-access';
 import type {
@@ -59,6 +60,7 @@ export interface Api {
     access(project: string | null): Promise<AiAccess>;
   };
   cover: CoverGenerationApi;
+  referenceImages: ReferenceImageGenerationApi;
   montage: MontageApi;
   montageWindow: MontageWindowApi;
   notifications: {
@@ -116,7 +118,7 @@ export interface Api {
     rename(path: string, name: string): Promise<ProjectStatus>;
     close(): Promise<void>;
     forget(path: string): Promise<void>;
-    /** Название, имя MP4 аниматика и блок generation из plan/project.json. */
+    /** Название, имя MP4 аниматика, инструкции агенту и блок generation из plan/project.json. */
     settings(project: string): Promise<ProjectSettings>;
     saveSettings(project: string, settings: ProjectSettings): Promise<ProjectSettings>;
   };

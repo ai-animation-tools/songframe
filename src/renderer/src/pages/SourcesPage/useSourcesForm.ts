@@ -1,10 +1,13 @@
 import { sourcesTexts } from '@shared/texts/sources';
 /** Загрузка, проверка и сохранение общей формы исходников. */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_SOURCE_KINDS, type ReferenceKind, type ReferenceView, type SourceKind, type SourcesInput, type SourcesView } from '@shared/types';
+import { referenceImagePrompt } from '@shared/reference-image-generation';
+import type { ImageGenerationResult } from '../../hooks/useImageGeneration';
 import { analyzeLyrics } from '@shared/lyrics';
 import { joinPath } from '../../format';
 import { useApp } from '../../state';
+import { RequestScope } from '../../hooks/requestScope';
 import { AUDIO_FILTER, IMAGE_FILTER, TEXT_FILTER, nextKey, stripKeys } from './helpers';
 import type { FileForm, KindForm, ReferenceForm } from './types';
 
@@ -19,6 +22,11 @@ export function useSourcesForm() {
   const [coverRemove, setCoverRemove] = useState(false);
   const [coverGenerationOpen, setCoverGenerationOpen] = useState(false);
   const [generatedCover, setGeneratedCover] = useState<{ id: string; path: string } | null>(null);
+  const [referenceTarget, setReferenceTarget] = useState<{ project: string; key: number } | null>(null);
+  const generatedRefs = useRef(new Set<string>());
+  const projectScope = useRef(new RequestScope());
+  projectScope.current.update(project);
+  const projectCurrent = projectScope.current.capture(project);
   const [refs, setRefs] = useState<ReferenceForm[]>([]);
   const [kinds, setKinds] = useState<SourceKind[]>(DEFAULT_SOURCE_KINDS);
   const [kindDialog, setKindDialog] = useState<KindForm | null>(null);
@@ -35,60 +43,76 @@ export function useSourcesForm() {
     [generatedCover]
   );
 
+  const closeGeneratedRefs = useCallback(() => {
+    const sessions = [...generatedRefs.current];
+    generatedRefs.current.clear();
+    for (const id of sessions) void window.api.referenceImages.close(id).catch(() => undefined);
+  }, []);
+  useEffect(() => () => closeGeneratedRefs(), [project, closeGeneratedRefs]);
+
   const load = useCallback(async () => {
-    setLoadError(null);
-    setView(null);
-    const next = await window.api.sources.view(project);
-    // Ошибка промпта остаётся у его владельца: остальные исходники доступны в форме.
-    const loadedRefs = await Promise.all(
-      (next.manifest?.references ?? []).map(async (r): Promise<ReferenceForm> => {
-        let prompt = '';
-        let promptError: ReferenceForm['promptError'];
-        if (r.prompt) {
-          try {
-            prompt = await window.api.shell.readText(joinPath(project, 'source', r.prompt));
-          } catch (error) {
-            promptError = { path: r.prompt, message: describeError(error) };
+    const current = projectScope.current.capture(project);
+    try {
+      setLoadError(null);
+      setView(null);
+      const next = await window.api.sources.view(project);
+      // Ошибка промпта остаётся у его владельца: остальные исходники доступны в форме.
+      const loadedRefs = await Promise.all(
+        (next.manifest?.references ?? []).map(async (r): Promise<ReferenceForm> => {
+          let prompt = '';
+          let promptError: ReferenceForm['promptError'];
+          if (r.prompt) {
+            try {
+              prompt = await window.api.shell.readText(joinPath(project, 'source', r.prompt));
+            } catch (error) {
+              promptError = { path: r.prompt, message: describeError(error) };
+            }
           }
-        }
-        return {
-          key: nextKey(),
-          id: r.id,
-          kind: r.kind,
-          name: r.name,
-          short_name: r.short_name,
-          description: r.description,
-          prompt,
-          promptError,
-          files: await Promise.all(
-            r.files.map(async (f): Promise<FileForm> => {
-              let filePrompt = '';
-              let filePromptError: FileForm['promptError'];
-              if (f.prompt) {
-                try {
-                  filePrompt = await window.api.shell.readText(joinPath(project, 'source', f.prompt));
-                } catch (error) {
-                  filePromptError = { path: f.prompt, message: describeError(error) };
+          return {
+            key: nextKey(),
+            id: r.id,
+            kind: r.kind,
+            name: r.name,
+            short_name: r.short_name,
+            description: r.description,
+            prompt,
+            promptError,
+            files: await Promise.all(
+              r.files.map(async (f): Promise<FileForm> => {
+                let filePrompt = '';
+                let filePromptError: FileForm['promptError'];
+                if (f.prompt) {
+                  try {
+                    filePrompt = await window.api.shell.readText(joinPath(project, 'source', f.prompt));
+                  } catch (error) {
+                    filePromptError = { path: f.prompt, message: describeError(error) };
+                  }
                 }
-              }
-              // Старый общий промпт не назначается изображениям: у каждого хранится собственный текст.
-              return { key: nextKey(), existingPath: f.path, view: f.view, note: f.note, prompt: filePrompt, promptError: filePromptError };
-            })
-          )
-        };
-      })
-    );
-    setSavedRefs(JSON.stringify(loadedRefs.map(stripKeys)));
-    setView(next);
-    setKinds(next.manifest?.kinds?.length ? next.manifest.kinds : DEFAULT_SOURCE_KINDS.map((k) => ({ ...k })));
-    setLyrics(next.lyricsText);
-    setIdea(next.ideaText);
-    setTrackNew(null);
-    setCoverNew(null);
-    setGeneratedCover(null);
-    setCoverGenerationOpen(false);
-    setCoverRemove(false);
-    setRefs(loadedRefs);
+                // Старый общий промпт не назначается изображениям: у каждого хранится собственный текст.
+                return { key: nextKey(), existingPath: f.path, view: f.view, note: f.note, prompt: filePrompt, promptError: filePromptError };
+              })
+            )
+          };
+        })
+      );
+      // Поздний ответ прежнего проекта не должен подменять новую форму и назначение генерации.
+      if (!current()) return;
+      setReferenceTarget(null);
+      setSavedRefs(JSON.stringify(loadedRefs.map(stripKeys)));
+      setView(next);
+      setKinds(next.manifest?.kinds?.length ? next.manifest.kinds : DEFAULT_SOURCE_KINDS.map((k) => ({ ...k })));
+      setLyrics(next.lyricsText);
+      setIdea(next.ideaText);
+      setTrackNew(null);
+      setCoverNew(null);
+      setGeneratedCover(null);
+      setCoverGenerationOpen(false);
+      setCoverRemove(false);
+      setRefs(loadedRefs);
+    } catch (failure) {
+      // Ошибка прежнего проекта не должна скрывать уже открытый новый проект.
+      if (current()) throw failure;
+    }
   }, [project, describeError]);
 
   useEffect(() => {
@@ -274,7 +298,10 @@ export function useSourcesForm() {
     setBusy(true);
     try {
       await window.api.sources.save(project, input);
+      if (!projectCurrent()) return;
+      closeGeneratedRefs();
       await load().catch((error) => {
+        if (!projectCurrent()) return;
         setView(null);
         setLoadError(describeError(error));
         throw error;
@@ -297,6 +324,8 @@ export function useSourcesForm() {
     !!(input.track || input.lyrics || input.idea || input.cover) ||
     JSON.stringify(kinds) !== JSON.stringify(savedKinds) ||
     JSON.stringify(refs.map(stripKeys)) !== savedRefs;
+
+  const generationReference = referenceTarget?.project === project ? refs.find((reference) => reference.key === referenceTarget.key) : null;
 
   return {
     view,
@@ -332,6 +361,36 @@ export function useSourcesForm() {
         notify(sourcesTexts.coverSelected, 'info');
       }
     },
+    referenceGenerationProps: generationReference
+      ? {
+          project,
+          target: generationReference.name || generationReference.id,
+          initialPrompt: referenceImagePrompt({
+            name: generationReference.name,
+            description: [generationReference.description, generationReference.prompt].filter(Boolean).join('\n\n')
+          }),
+          acceptedHint: sourcesTexts.acceptedReferenceHint,
+          onClose: () => setReferenceTarget(null),
+          onAccepted: (result: ImageGenerationResult) => {
+            if (!projectCurrent()) throw new Error(sourcesTexts.referenceTargetChanged);
+            generatedRefs.current.add(result.id);
+            setRefs((current) =>
+              current.map((reference) =>
+                reference.key === generationReference.key
+                  ? {
+                      ...reference,
+                      files: [
+                        ...reference.files,
+                        { key: nextKey(), sourcePath: result.path, view: reference.files.length ? 'other' : 'full', note: '', prompt: result.prompt ?? '' }
+                      ]
+                    }
+                  : reference
+              )
+            );
+            notify(sourcesTexts.referenceImageSelected, 'info');
+          }
+        }
+      : null,
     lyricsProps: {
       lyrics,
       lyricsCheck,
@@ -353,6 +412,7 @@ export function useSourcesForm() {
       onUpdate: updateRef,
       onRetryFilePrompt: retryFilePrompt,
       onRemove: (key: number) => setRefs((current) => current.filter((ref) => ref.key !== key)),
+      onGenerate: (key: number) => setReferenceTarget({ project, key }),
       onAddFiles: addFiles,
       onDropFiles: appendFiles,
       onUpdateFile: updateFile,

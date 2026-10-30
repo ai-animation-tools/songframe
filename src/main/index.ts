@@ -246,8 +246,8 @@ app.on('before-quit', (event) => {
   if (!services?.cover || coversClosed) return;
   // Сначала останавливаем запись генератора и удаляем временные изображения, затем завершаем Electron.
   event.preventDefault();
-  coverCleanup ??= services.cover
-    .shutdown()
+  coverCleanup ??= Promise.all([services.cover.shutdown(), services.referenceImages?.shutdown()])
+    .then(() => undefined)
     // eslint-disable-next-line no-restricted-syntax -- Ошибка очистки записывается только в журнал завершения приложения.
     .catch((error: unknown) => console.error('Не удалось очистить временные обложки:', error))
     .finally(() => {

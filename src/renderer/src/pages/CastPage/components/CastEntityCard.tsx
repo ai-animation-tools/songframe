@@ -5,6 +5,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import type { CastEntity, CastProperty, SourceKind } from '@shared/types';
+import { ReferenceImageGenerateButton } from '../../../components/ReferenceImageGenerateButton';
+import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { StateEditor } from '../../../components';
 import { WORLD } from '../constants';
 import type { CastImageOption } from '../types';
@@ -23,6 +25,8 @@ interface CastEntityCardProps {
   onUpdate: (patch: Partial<CastEntity>) => void;
   onRename: (id: string) => void;
   onRemove: () => void;
+  onGenerate: () => void;
+  generationDisabledReason?: string | null;
 }
 
 /** Карточка объединяет сведения о сущности, её изображения и редактор начального состояния. */
@@ -37,7 +41,9 @@ export function CastEntityCard({
   onExpandedChange,
   onUpdate,
   onRename,
-  onRemove
+  onRemove,
+  onGenerate,
+  generationDisabledReason
 }: CastEntityCardProps): ReactElement {
   const thumb = entity.images[0] ? window.api.shell.fileUrl(imagePaths[entity.images[0]] ?? '') : undefined;
   const stateCount = Object.keys(entity.initial_state).length;
@@ -96,9 +102,11 @@ export function CastEntityCard({
             onChange={(e) => onUpdate({ appearance: e.target.value })}
             placeholder={entity.kind === WORLD ? castTexts.worldAppearancePlaceholder : castTexts.appearancePlaceholder}
           />
-          {entity.kind !== WORLD ? (
-            <CastEntityImages images={entity.images} imagePaths={imagePaths} imageOptions={imageOptions} onChange={(images) => onUpdate({ images })} />
-          ) : null}
+          <CastEntityImages images={entity.images} imagePaths={imagePaths} imageOptions={imageOptions} onChange={(images) => onUpdate({ images })} />
+          <AiProblemAlert kinds={['image']} />
+          <Box>
+            <ReferenceImageGenerateButton onClick={onGenerate} disabledReason={generationDisabledReason} />
+          </Box>
           <Box>
             <Typography variant="subtitle2" gutterBottom>
               {castTexts.initialState}

@@ -4,7 +4,8 @@ import { createElement, isValidElement, type ReactElement, type ReactNode } from
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { CoverGenerationSession } from '@shared/cover-generation';
 import { registerMediaProviderForTests } from '@shared/media-providers';
-import { CoverGenerateDialog } from './components/CoverGenerateDialog';
+import { CoverCropEditor } from '../../components/CoverCropEditor';
+import { ImageGenerateDialog } from '../../components/ImageGenerateDialog';
 import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 
 const fixture = vi.hoisted(() => ({
@@ -48,8 +49,8 @@ vi.mock('../../state', () => ({
     }
   })
 }));
-vi.mock('./useCoverGeneration', () => ({
-  useCoverGeneration: () => ({
+vi.mock('../../hooks/useImageGeneration', () => ({
+  useImageGeneration: () => ({
     session: fixture.session,
     preparedSha: fixture.session?.requestSha,
     working: false,
@@ -75,10 +76,10 @@ function text(value: ReactNode): string {
   if (Array.isArray(value)) return value.map(text).join('');
   return isValidElement(value) ? text((value.props as { children?: ReactNode }).children) : '';
 }
-function draw(): Node[] {
+function draw(props: Partial<Parameters<typeof ImageGenerateDialog>[0]> = {}): Node[] {
   fixture.stateIndex = 0;
   fixture.refIndex = 0;
-  return nodes(CoverGenerateDialog({ project: '/test/project', idea: '', onAccepted: vi.fn(), onClose: vi.fn() }));
+  return nodes(ImageGenerateDialog({ project: '/test/project', idea: '', onAccepted: vi.fn(), onClose: vi.fn(), ...props }));
 }
 function button(tree: Node[], title: string): Node {
   const found = tree.find((node) => typeof node.props.onClick === 'function' && text(node.props.children as ReactNode) === title);
@@ -102,6 +103,7 @@ describe('согласование обложки после переноса т
     fixture.stateIndex = 0;
     fixture.refIndex = 0;
     vi.clearAllMocks();
+    vi.stubGlobal('window', { api: { shell: { fileUrl: (path: string) => `file://${path}` } } });
     fixture.session = {
       id: 'cover-session',
       prompt: 'Промпт <script> & «обложка»',
@@ -223,6 +225,45 @@ describe('согласование обложки после переноса т
       tree = draw();
       expect(text(confirmation(tree).props.children as ReactNode)).toContain('Генерация через Провайдер <test> & «имя» по условиям вашего аккаунта.');
       expect(fixture.generate).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
+  });
+
+  it('референс явно показывает назначение, полный прямоугольный оригинал и принимает без обрезки', async () => {
+    const restore = provider(false);
+    try {
+      fixture.session = { ...fixture.session!, status: 'ready', image: { path: '/tmp/wide.png', width: 1536, height: 1024 } };
+      const onAccepted = vi.fn().mockResolvedValue(undefined);
+      const onClose = vi.fn();
+      const tree = draw({ mode: 'reference', target: 'Герой <&>', onAccepted, onClose });
+      expect(tree.some((node) => node.type === CoverCropEditor)).toBe(false);
+      expect(tree.some((node) => node.props.component === 'img' && node.props.alt === 'Герой <&>')).toBe(true);
+      expect(tree.map((node) => text(node.props.children as ReactNode))).toContain('Изображение для: Герой <&>');
+      expect(button(tree, 'Принять').props.disabled).toBe(false);
+      click(button(tree, 'Принять'));
+      const [crop, apply] = fixture.accept.mock.calls[0] as [null, (result: { id: string; path: string; prompt: string }) => Promise<void>];
+      expect(crop).toBeNull();
+      expect(onClose).not.toHaveBeenCalled();
+      await apply({ id: 'reference-session', path: '/tmp/wide.png', prompt: 'Герой' });
+      expect(onAccepted).toHaveBeenCalledExactlyOnceWith({ id: 'reference-session', path: '/tmp/wide.png', prompt: 'Герой' });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    } finally {
+      restore();
+    }
+  });
+
+  it('референс сохраняет отдельное подтверждение конкретного платного запроса', () => {
+    const restore = provider();
+    try {
+      let tree = draw({ mode: 'reference', target: 'Новый герой' });
+      click(button(tree, 'Сгенерировать изображение · 5 кредитов'));
+      expect(fixture.generate).not.toHaveBeenCalled();
+      tree = draw({ mode: 'reference', target: 'Новый герой' });
+      expect(confirmation(tree).props.confirmLabel).toBe('Сгенерировать изображение');
+      (confirmation(tree).props.onConfirm as () => void)();
+      (confirmation(tree).props.onConfirm as () => void)();
+      expect(fixture.generate).toHaveBeenCalledExactlyOnceWith({ approvalToken: 'approval-one', promptConfirmed: true });
     } finally {
       restore();
     }

@@ -1,3 +1,4 @@
+import { sourcesTexts } from '@shared/texts/sources';
 import { castTexts } from '@shared/texts/cast';
 import { commonTexts } from '@shared/texts/common';
 /** Кастинг: сущности клипа, их изображения из исходников, роль, внешность и начальное состояние. */
@@ -5,11 +6,14 @@ import { commonTexts } from '@shared/texts/common';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { usePageLoading } from '../../components/PageLoader';
 import AddIcon from '@mui/icons-material/Add';
-import { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Alert, Box, Button, Stack, Typography } from '@mui/material';
+import { referenceImagePrompt } from '@shared/reference-image-generation';
+import { ImageGenerateDialog } from '../../components/ImageGenerateDialog';
 import { DEFAULT_SOURCE_KINDS, type CastEntity, type CastFile, type CastView } from '@shared/types';
 import { useApp } from '../../state';
+import { RequestScope } from '../../hooks/requestScope';
 import { CastEmptyState, CastEntityCard, CastPropertiesEditor, CastToolbar } from './components';
 import { WORLD } from './constants';
 import { castImageOptions } from './helpers';
@@ -22,6 +26,10 @@ import { coveredArea, revealAnchor } from '../../hooks/useAnchorTarget';
 export function CastPage(): ReactElement {
   const { state, refresh, notify, describeError } = useApp();
   const project = state?.current ?? '';
+  const projectScope = useRef(new RequestScope());
+  projectScope.current.update(project);
+  const projectCurrent = projectScope.current.capture(project);
+  const [generationTarget, setGenerationTarget] = useState<{ project: string; entity: CastEntity } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [view, setView] = useState<CastView | null>(null);
   const [cast, setCast] = useState<CastFile | null>(null);
@@ -33,13 +41,23 @@ export function CastPage(): ReactElement {
   const [revealEntity, setRevealEntity] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setLoadError(null);
-    const next = await window.api.cast.view(project);
-    setView(next);
-    setCast(next.cast ? JSON.parse(JSON.stringify(next.cast)) : null);
+    const current = projectScope.current.capture(project);
+    try {
+      setLoadError(null);
+      const next = await window.api.cast.view(project);
+      if (!current()) return;
+      setView(next);
+      setCast(next.cast ? JSON.parse(JSON.stringify(next.cast)) : null);
+    } catch (failure) {
+      // Ошибка прежнего проекта не должна скрывать уже открытый новый проект.
+      if (current()) throw failure;
+    }
   }, [project]);
 
   useEffect(() => {
+    setView(null);
+    setCast(null);
+    setGenerationTarget(null);
     load().catch((error) => setLoadError(describeError(error)));
   }, [load, notify, describeError]);
 
@@ -195,6 +213,8 @@ export function CastPage(): ReactElement {
                 update(entity.id, { id: nextId });
                 setExpanded(nextId);
               }}
+              onGenerate={() => setGenerationTarget({ project, entity: { ...entity } })}
+              generationDisabledReason={busy ? commonTexts.operationPending : dirty ? castTexts.imageGenerationSaveFirst : null}
               onRemove={() => remove(entity.id)}
             />
           ))}
@@ -217,6 +237,31 @@ export function CastPage(): ReactElement {
           onChange={(properties) => setCast((c) => c && { ...c, properties })}
         />
       ) : null}
+      {generationTarget?.project === project && (
+        <ImageGenerateDialog
+          key={`${project}:${generationTarget.entity.id}`}
+          mode="reference"
+          project={project}
+          target={generationTarget.entity.name || generationTarget.entity.id}
+          initialPrompt={referenceImagePrompt({
+            name: generationTarget.entity.name,
+            description: generationTarget.entity.role,
+            appearance: generationTarget.entity.appearance
+          })}
+          acceptedHint={castTexts.acceptedImageHint}
+          onClose={() => setGenerationTarget(null)}
+          onAccepted={async (result) => {
+            if (!projectCurrent()) throw new Error(sourcesTexts.referenceTargetChanged);
+            // При ошибке окно остаётся открытым: повторяется привязка принятого оригинала, а не генерация.
+            await window.api.referenceImages.attach(result.id, generationTarget.entity.id);
+            if (!projectCurrent()) return;
+            await load();
+            await refresh();
+            await window.api.referenceImages.close(result.id);
+            notify(castTexts.imageAttached, 'success');
+          }}
+        />
+      )}
       <Typography variant="caption" color="text.secondary">
         {castTexts.entityCodeHint}
       </Typography>

@@ -18,6 +18,7 @@ import { useApp } from '../../../state';
 
 import { VideoGenerationSettings } from './VideoGenerationSettings';
 import { ImageGenerationSettings } from './ImageGenerationSettings';
+import { ProjectAgentInstructions } from './ProjectAgentInstructions';
 
 /** Пустой неподтверждённый черновик означает «Не выбрано»; старые настройки с именем провайдера не удаляются. */
 export function normalizeProjectSettingsForSave(settings: ProjectSettings): ProjectSettings {
@@ -31,11 +32,12 @@ export function normalizeProjectSettingsForSave(settings: ProjectSettings): Proj
 }
 
 export function ProjectSettingsCard({ project, name }: { project: string; name: string }): ReactElement {
-  const { notify, describeError, refresh, invalidateAiAccess } = useApp();
+  const { notify, describeError, refresh, invalidateAiAccess, agentProvider } = useApp();
   const [saved, setSaved] = useState<ProjectSettings | null>(null);
   const [form, setForm] = useState<ProjectSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [instructionsRevision, setInstructionsRevision] = useState(0);
   const [videoValid, setVideoValid] = useState(true);
   const [imageValid, setImageValid] = useState(true);
   const previousName = useRef(name);
@@ -84,6 +86,7 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
       const next = await window.api.projects.saveSettings(project, normalizeProjectSettingsForSave(form));
       setSaved(next);
       setForm(next);
+      setInstructionsRevision((revision) => revision + 1);
       notify(projectTexts.settings.saved, 'success');
     } catch (e) {
       notify(describeError(e), 'error');
@@ -122,6 +125,14 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
           error={animaticError}
           helperText={animaticError ? projectTexts.settings.animaticNameInvalid : projectTexts.settings.animaticNameHelp}
         />
+        {/* Ключ сбрасывает подтверждение после сохранения, смены проекта или выбранного агента. */}
+        <ProjectAgentInstructions
+          key={`instructions:${project}:${agentProvider}:${instructionsRevision}`}
+          value={form.agentInstructions ?? ''}
+          agentProvider={agentProvider}
+          busy={busy}
+          onChange={(agentInstructions) => setForm({ ...form, agentInstructions })}
+        />
         <VideoGenerationSettings
           key={`video:${project}`}
           project={project}
@@ -148,7 +159,10 @@ export function ProjectSettingsCard({ project, name }: { project: string; name: 
             description={projectTexts.settings.resetDescription}
             disabled={!dirty || busy}
             disabledReason={busyReason ?? (!dirty ? projectTexts.settings.noUnsavedChanges : null)}
-            onConfirm={() => setForm(saved)}
+            onConfirm={() => {
+              setForm(saved);
+              setInstructionsRevision((revision) => revision + 1);
+            }}
             confirmLabel={commonTexts.resetChanges}
           >
             {commonTexts.resetChanges}

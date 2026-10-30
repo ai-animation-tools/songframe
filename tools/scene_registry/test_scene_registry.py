@@ -104,6 +104,16 @@ class SceneRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "16:9"):
             generation_settings({"generation": {"video": dict(video, aspect_ratio="wide"), "image": None}})
 
+    def test_project_agent_instructions_are_optional_and_preserved_verbatim(self):
+        project = {"schema_version": 1, "name": "Тест", "animatic_video": "clip.mp4"}
+        self.assertNotIn("agent_instructions", validate_project(project))
+        for text in ("", "  Правило\r\n\nСтрока 2  "):
+            data = dict(project, agent_instructions=text)
+            self.assertEqual(validate_project(data)["agent_instructions"], text)
+        for invalid in (None, 42, False, [], {}):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "agent_instructions должен быть строкой"):
+                validate_project(dict(project, agent_instructions=invalid))
+
     def test_generation_auto_ratio_is_valid_for_both_media_but_other_invalid_values_are_rejected(self):
         from tools.scene_registry.scene_registry import generation_settings
 

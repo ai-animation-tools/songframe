@@ -16,6 +16,7 @@ interface Props {
   onUpdate: (key: number, patch: Partial<ReferenceForm>) => void;
   onRetryFilePrompt: (refKey: number, fileKey: number) => Promise<void>;
   onRemove: (key: number) => void;
+  onGenerate: (key: number) => void;
   onAddFiles: (key: number) => Promise<void>;
   onDropFiles: (key: number, paths: string[]) => void;
   onUpdateFile: (refKey: number, fileKey: number, patch: Partial<FileForm>) => void;
@@ -32,6 +33,7 @@ export function ReferencesSection({
   onUpdate,
   onRetryFilePrompt,
   onRemove,
+  onGenerate,
   onAddFiles,
   onDropFiles,
   onUpdateFile,
@@ -71,6 +73,7 @@ export function ReferencesSection({
             onUpdate={(patch) => onUpdate(reference.key, patch)}
             onRetryFilePrompt={(fileKey) => onRetryFilePrompt(reference.key, fileKey)}
             onRemove={() => onRemove(reference.key)}
+            onGenerate={() => onGenerate(reference.key)}
             onAddFiles={() => onAddFiles(reference.key)}
             onDropFiles={(paths) => onDropFiles(reference.key, paths)}
             onUpdateFile={(fileKey, patch) => onUpdateFile(reference.key, fileKey, patch)}

@@ -1,6 +1,6 @@
 /** Проверки естественных координат: масштаб интерфейса не влияет на сохраняемый квадрат. */
 import { describe, expect, it } from 'vitest';
-import { centeredCrop, clampCrop, keyboardCrop, moveCrop, resizeCrop } from './crop';
+import { centeredCrop, clampCrop, keyboardCrop, moveCrop, resizeCrop } from './imageCrop';
 
 describe('Выделение обложки', () => {
   it('выбирает наибольший квадрат по центру горизонтального и вертикального оригинала', () => {

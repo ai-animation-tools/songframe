@@ -10,6 +10,8 @@ import { DestructiveButton } from '../../../components/DestructiveButton';
 import { ID_PATTERN, suggestId } from '../helpers';
 import type { FileForm, ReferenceForm } from '../types';
 import { ReferenceFileCard } from './ReferenceFileCard';
+import { ReferenceImageGenerateButton } from '../../../components/ReferenceImageGenerateButton';
+import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { FileDropZone } from '../../../components/FileDropZone';
 
 interface Props {
@@ -20,6 +22,7 @@ interface Props {
   onUpdate: (patch: Partial<ReferenceForm>) => void;
   onRetryFilePrompt: (fileKey: number) => Promise<void>;
   onRemove: () => void;
+  onGenerate: () => void;
   onAddFiles: () => Promise<void>;
   onDropFiles: (paths: string[]) => void;
   onUpdateFile: (key: number, patch: Partial<FileForm>) => void;
@@ -34,6 +37,7 @@ export function ReferenceEditor({
   onUpdate,
   onRetryFilePrompt,
   onRemove,
+  onGenerate,
   onAddFiles,
   onDropFiles,
   onUpdateFile,
@@ -159,6 +163,10 @@ export function ReferenceEditor({
             hint={sourcesTexts.referenceFilesHint}
             message={sourcesTexts.referenceFilesMessage}
           />
+          <AiProblemAlert kinds={['image']} />
+          <Box>
+            <ReferenceImageGenerateButton onClick={onGenerate} />
+          </Box>
           <DestructiveButton
             label={sourcesTexts.removeReference({ name: reference.name })}
             description={sourcesTexts.removeReferenceDescription}

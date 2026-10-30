@@ -785,7 +785,7 @@ describe('панель проверок', () => {
     const project = join(work, 'clip');
     writeJson(join(project, 'plan/project.json'), { schema_version: 1, name: 'Клип', animatic_video: 'a.mp4', extra: { keep: true } });
     const settings = readProjectSettings(project);
-    expect(settings).toEqual({ name: 'Клип', animaticVideo: 'a.mp4', generation: null });
+    expect(settings).toEqual({ name: 'Клип', animaticVideo: 'a.mp4', generation: null, agentInstructions: '' });
     expect(validateProjectSettings(settings)).toEqual([]);
     expect(() => writeProjectSettings(project, { ...settings, animaticVideo: 'dir/a.mp4' })).toThrow(/MP4/);
     // Широкий формат проходит тот же контракт сохранения и чтения Python-инструментами.
@@ -804,7 +804,7 @@ describe('панель проверок', () => {
       'generation.video: пропорции записываются как 16:9 или auto.'
     ]);
     const written = writeProjectSettings(project, { name: ' Новый ', animaticVideo: 'clip-v2.mp4', generation });
-    expect(written).toEqual({ name: 'Новый', animaticVideo: 'clip-v2.mp4', generation });
+    expect(written).toEqual({ name: 'Новый', animaticVideo: 'clip-v2.mp4', generation, agentInstructions: '' });
     const raw = JSON.parse(readFileSync(join(project, 'plan/project.json'), 'utf-8'));
     expect(raw.extra).toEqual({ keep: true });
     expect(raw.generation.video.duration_rule).toBe('exact_window');

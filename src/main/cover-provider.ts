@@ -1,4 +1,5 @@
 /** Обложку готовит провайдер изображений проекта; выбранный текстовый агент на него не влияет. */
+import { referenceGenerationMessages } from '@shared/texts/reference-images';
 import { sourcesTexts } from '@shared/texts/sources';
 import { createHash } from 'node:crypto';
 import type { AgentSettings } from '@shared/agents';
@@ -24,8 +25,9 @@ function adapterCover(provider: MediaProviderId, config: AgentSettings): CoverCa
 }
 
 export async function prepareProjectCover(input: CoverCandidateInput, options: Options): Promise<PreparedCoverCandidate> {
+  const texts = input.purpose === 'reference' ? { ...sourcesTexts.main, ...referenceGenerationMessages } : sourcesTexts.main;
   assertAiSelection(options.settings, input.project, 'image');
-  if (input.signal.aborted) throw new Error(sourcesTexts.main.coverPreparationStopped);
+  if (input.signal.aborted) throw new Error(texts.coverPreparationStopped);
   const settings = readProjectSettings(input.project).generation?.image;
   if (!isMediaProvider(settings?.provider, 'image')) throw new Error(sourcesTexts.main.imageProviderRequired({ titles: mediaProviderTitles('image') }));
   const provider = settings.provider;

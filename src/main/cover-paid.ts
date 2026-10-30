@@ -1,4 +1,5 @@
 /** Обложка использует отдельную временную попытку; показ цены отделён от единственной платной отправки. */
+import { referenceGenerationMessages } from '@shared/texts/reference-images';
 import { sourcesTexts } from '@shared/texts/sources';
 import { join } from 'node:path';
 import type { CoverGenerationSession } from '@shared/cover-generation';
@@ -17,8 +18,9 @@ export interface PaidCoverOptions {
 }
 type Quote = NonNullable<CoverGenerationSession['quote']>;
 
-function checkAbort(signal: AbortSignal, title: string, submitted = false): void {
-  if (signal.aborted) throw new Error(submitted ? sourcesTexts.main.coverStoppedAfterSubmit({ title }) : sourcesTexts.main.coverStoppedBeforeSubmit);
+function checkSignal(signal: AbortSignal, title: string, submitted = false, reference = false): void {
+  const texts = reference ? { ...sourcesTexts.main, ...referenceGenerationMessages } : sourcesTexts.main;
+  if (signal.aborted) throw new Error(submitted ? texts.coverStoppedAfterSubmit({ title }) : texts.coverStoppedBeforeSubmit);
 }
 
 /** Объявленные синонимы раскрываются общим селектором; неподдерживаемые значения не заменяются догадкой. */
@@ -27,18 +29,23 @@ function parametersForModel(
   defaultResolution: string | undefined,
   model: MediaModel,
   options: Record<string, unknown>,
-  resolution?: string
+  resolution?: string,
+  reference = false
 ): Record<string, unknown> {
+  const texts = reference ? { ...sourcesTexts.main, ...referenceGenerationMessages } : sourcesTexts.main;
   const parameters = { ...options };
   const aliases = rules.aliases.image ?? {};
   // Пропорции и число кадров сцены не относятся к обложке: её назначение всегда одно квадратное изображение.
-  for (const key of [...(aliases.aspect_ratio ?? ['aspect_ratio']), ...rules.outputCount]) delete parameters[key];
-  parameters.aspect_ratio = '1:1';
+  for (const key of rules.outputCount) delete parameters[key];
+  if (!reference) {
+    for (const key of aliases.aspect_ratio ?? ['aspect_ratio']) delete parameters[key];
+    parameters.aspect_ratio = '1:1';
+  } else if (!(aliases.aspect_ratio ?? ['aspect_ratio']).some((key) => key in parameters)) parameters.aspect_ratio = '1:1';
   const resolutionKeys = aliases.resolution ?? ['resolution'];
   const suppliedResolutions = resolutionKeys.filter((key) => key in parameters);
   if (resolution !== undefined) {
     for (const key of suppliedResolutions) {
-      if (parameters[key] !== resolution) throw new Error(sourcesTexts.main.coverResolutionConflict);
+      if (parameters[key] !== resolution) throw new Error(texts.coverResolutionConflict);
       delete parameters[key];
     }
     parameters.resolution = resolution;
@@ -48,7 +55,7 @@ function parametersForModel(
   const series = rules.image.series;
   if (series) {
     if (series.names.some((name) => parameters[name] === true || parameters[name] === 'true'))
-      throw new Error(sourcesTexts.main.coverSeriesUnsupported({ series: series.names[0] }));
+      throw new Error(texts.coverSeriesUnsupported({ series: series.names[0] }));
     const declared = series.names.find((key) => key in model.arguments);
     if (declared && !series.names.some((name) => name in parameters)) parameters[declared] = series.off;
   }
@@ -56,12 +63,14 @@ function parametersForModel(
 }
 
 export async function preparePaidCover(input: CoverCandidateInput, options: PaidCoverOptions): Promise<PreparedCoverCandidate> {
+  const texts = input.purpose === 'reference' ? { ...sourcesTexts.main, ...referenceGenerationMessages } : sourcesTexts.main;
+  const checkAbort = (signal: AbortSignal, title: string, submitted = false): void => checkSignal(signal, title, submitted, input.purpose === 'reference');
   const adapter = options.provider.adapter;
   const info = MEDIA_PROVIDERS[adapter.id];
   const title = info.title;
   checkAbort(input.signal, title);
   const settings = readProjectSettings(input.project).generation?.image;
-  if (!settings || !sameMediaProvider(settings.provider, adapter.id)) throw new Error(sourcesTexts.main.coverProviderRequired({ title }));
+  if (!settings || !sameMediaProvider(settings.provider, adapter.id)) throw new Error(texts.coverProviderRequired({ title }));
   const capabilities = await options.provider.capabilities(input.project);
   checkAbort(input.signal, title);
   const request: PreparePaidInput = {
@@ -78,7 +87,7 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
     outputs: 1
   };
   const selected = selectPaidRequest(adapter, request, capabilities, (model) =>
-    parametersForModel(adapter.rules, info.defaults.image?.resolution, model, settings.options ?? {}, settings.resolution)
+    parametersForModel(adapter.rules, info.defaults.image?.resolution, model, settings.options ?? {}, settings.resolution, input.purpose === 'reference')
   );
   const prepared = await options.provider.prepare(selected, capabilities);
   checkAbort(input.signal, title);
@@ -106,7 +115,7 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
       checkAbort(signal, title);
       if (error instanceof Error && error.name === 'AbortError') throw error;
       // Сбой проверки цены оставляет пользователю явный выбор; сам по себе он не разрешает отправку.
-      return { credits: null, balance: null, verdict: 'cost_or_balance_unknown', message: sourcesTexts.main.coverPriceFailed({ title }) };
+      return { credits: null, balance: null, verdict: 'cost_or_balance_unknown', message: texts.coverPriceFailed({ title }) };
     }
   };
   const quote = Object.freeze(await price(input.signal));
@@ -118,21 +127,21 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
     quote,
     async generate(signal, approval) {
       checkAbort(signal, title);
-      if (used) throw new Error(sourcesTexts.main.coverAttemptUsed);
+      if (used) throw new Error(texts.coverAttemptUsed);
       used = true;
-      if (!priceAllowsGeneration(quote, approval?.allowUnknownCost === true)) throw new Error(sourcesTexts.main.coverPriceUnconfirmed);
+      if (!priceAllowsGeneration(quote, approval?.allowUnknownCost === true)) throw new Error(texts.coverPriceUnconfirmed);
       const current = await price(signal);
       // Согласие на неизвестную цену допускает появление цены перед отправкой, но не нехватку средств.
       const approvedUnknownCost = canAgreeToUnknownCost(quote) && approval?.allowUnknownCost === true;
       const currentApproved = approvedUnknownCost
         ? priceAllowsGeneration(current, true)
         : current.verdict === 'ok' && current.credits === quote.credits && current.balance === quote.balance;
-      if (!currentApproved) throw new Error(sourcesTexts.main.coverPriceChanged);
+      if (!currentApproved) throw new Error(texts.coverPriceChanged);
       checkAbort(signal, title);
       let submitted = false;
       try {
         await options.provider.submit(prepared, async (action, reference) => {
-          if (action !== 'submit') throw new Error(sourcesTexts.main.coverSubmitActionRequired);
+          if (action !== 'submit') throw new Error(texts.coverSubmitActionRequired);
           checkAbort(signal, title);
           // После старта submit исход может быть неизвестен: отмена не разрешает повторный платный запрос.
           submitted = true;
@@ -142,7 +151,7 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
               signal
             });
           checkAbort(signal, title, submitted);
-          if (result.code !== 0) throw new Error(result.stderr.trim() || sourcesTexts.main.coverSubmitFailed);
+          if (result.code !== 0) throw new Error(result.stderr.trim() || texts.coverSubmitFailed);
         });
         checkAbort(signal, title, submitted);
         const result = await options.launcher().run(input.project, 'media_request', ['watch', '--work-dir', prepared.requestDir, '--max-minutes', '15'], {
@@ -150,14 +159,14 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
           timeoutMs: 15 * 60 * 1000
         });
         checkAbort(signal, title, submitted);
-        if (result.code !== 0) throw new Error(result.stderr.trim() || sourcesTexts.main.coverWatchFailed);
+        if (result.code !== 0) throw new Error(result.stderr.trim() || texts.coverWatchFailed);
         // Фактическое списание запоминается: если сервис не сообщает цену заранее, такой же запрос в следующий раз покажет цену.
         await options
           .launcher()
           .run(input.project, 'cost_check', ['learn', '--work-dir', prepared.requestDir, ...(options.pricingArgs?.() ?? [])], { signal })
           .catch(() => undefined);
         const artifacts = options.provider.collect(prepared);
-        if (artifacts.length !== 1 || artifacts[0].kind !== 'image') throw new Error(sourcesTexts.main.coverSingleImageRequired({ title }));
+        if (artifacts.length !== 1 || artifacts[0].kind !== 'image') throw new Error(texts.coverSingleImageRequired({ title }));
         return { path: artifacts[0].path };
       } catch (error) {
         checkAbort(signal, title, submitted);

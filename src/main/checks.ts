@@ -19,6 +19,7 @@ import type {
 } from '@shared/types';
 import { DURATION_RULES } from '@shared/types';
 import { checksTexts } from '@shared/texts/checks';
+import { projectTexts } from '@shared/texts/project';
 import type { Jobs, Step } from './jobs';
 import { writeLocalJson } from './local-files';
 import { checkedBuiltOutput } from './built-output-path';
@@ -199,9 +200,22 @@ function readGeneration(data: Record<string, unknown>): GenerationSettings | nul
   };
 }
 
+/** Отсутствие необязательного поля означает пустые инструкции; неверный тип не скрываем. */
+function agentInstructions(data: Record<string, unknown>): string {
+  if (data.agent_instructions === undefined) return '';
+  if (typeof data.agent_instructions !== 'string') throw new Error(projectTexts.agentInstructions.invalid);
+  return data.agent_instructions;
+}
+
+/** Менеджер читает инструкции только из проекта самого задания, без глобального текущего проекта. */
+export function readProjectAgentInstructions(project: string): string {
+  return agentInstructions(readProjectFile(project));
+}
+
 export function readProjectSettings(project: string): ProjectSettings {
   const data = readProjectFile(project);
   return {
+    agentInstructions: agentInstructions(data),
     name: typeof data.name === 'string' ? data.name : '',
     animaticVideo: typeof data.animatic_video === 'string' ? data.animatic_video : '',
     generation: readGeneration(data)
@@ -211,6 +225,7 @@ export function readProjectSettings(project: string): ProjectSettings {
 /** Структурные правила совпадают с scene_registry; готовность провайдера проверяется отдельно для каждого медиа. */
 export function validateProjectSettings(settings: ProjectSettings): string[] {
   const problems: string[] = [];
+  if (settings.agentInstructions !== undefined && typeof settings.agentInstructions !== 'string') problems.push(projectTexts.agentInstructions.invalid);
   if (!settings.name.trim()) problems.push(checksTexts.projectNameRequired);
   if (!/^[\w.-]+\.mp4$/.test(settings.animaticVideo) || settings.animaticVideo.startsWith('.')) problems.push(checksTexts.animaticFilenameInvalid);
   const g = settings.generation;
@@ -265,6 +280,8 @@ export function writeProjectSettings(project: string, settings: ProjectSettings)
   const problems = validateProjectSettings(settings);
   if (problems.length) throw new Error(problems.join(' '));
   const data = readProjectFile(project);
+  // Если поле не меняют, проверяем сохранённое значение до записи остальных настроек.
+  if (settings.agentInstructions === undefined) agentInstructions(data);
   const previous = readGeneration(data);
   let generation: unknown = settings.generation ? mergeSettings(previous ?? {}, settings.generation) : null;
   // Повреждённый непоказанный блок не исчезает от сохранения имени/MP4; заменить его можно явным заполнением формы.
@@ -276,6 +293,8 @@ export function writeProjectSettings(project: string, settings: ProjectSettings)
     ...data,
     name: settings.name.trim(),
     animatic_video: settings.animaticVideo,
+    // Содержимое промпта сохраняем дословно: пробелы и переносы строк принадлежат пользователю.
+    ...(settings.agentInstructions !== undefined ? { agent_instructions: settings.agentInstructions } : {}),
     generation
   };
   if (typeof next.schema_version !== 'number') next.schema_version = 1;

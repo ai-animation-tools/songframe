@@ -31,6 +31,9 @@ def validate_project(data, *, validate_generation=True):
     filename = data.get("animatic_video")
     if not isinstance(filename, str) or not re.fullmatch(r"[\w.-]+\.mp4", filename) or filename.startswith("."):
         raise ValueError("animatic_video должен быть именем MP4 без пути к папке.")
+    # Инструкции текстового агента принадлежат проекту; инструменты сохраняют их без обработки.
+    if "agent_instructions" in data and not isinstance(data["agent_instructions"], str):
+        raise ValueError("plan/project.json: agent_instructions должен быть строкой.")
     generation = data.get("generation")
     if validate_generation and generation is not None:
         if not isinstance(generation, dict):

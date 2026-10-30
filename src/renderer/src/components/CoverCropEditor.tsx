@@ -3,7 +3,7 @@ import { sourcesTexts } from '@shared/texts/sources';
 import { useId, useRef, type ReactElement } from 'react';
 import { Box, Slider, Stack, Typography } from '@mui/material';
 import type { CoverCrop } from '@shared/cover-generation';
-import { keyboardCrop, moveCrop, resizeCrop } from './crop';
+import { keyboardCrop, moveCrop, resizeCrop } from './imageCrop';
 
 interface Props {
   image: { path: string; width: number; height: number };

@@ -11,6 +11,7 @@ import { ActionButton } from '../../components/ActionButton';
 import { PageActionBar } from '../../components/PageActionBar';
 import { CoverSection, IdeaSection, LyricsSection, ReferenceKindDialog, ReferencesSection, TrackSection } from './components';
 import { useSourcesForm } from './useSourcesForm';
+import { ImageGenerateDialog } from '../../components/ImageGenerateDialog';
 import { CoverGenerateDialog } from './components/CoverGenerateDialog';
 import { LinkedText } from '../../components/LinkedText';
 
@@ -146,7 +147,10 @@ export function SourcesPage(): ReactElement {
         <ReferencesSection {...form.referencesProps} />
       </Box>
       <ReferenceKindDialog {...form.kindDialogProps} />
-      {form.coverGenerationProps.open ? <CoverGenerateDialog {...form.coverGenerationProps} /> : null}
+      {form.referenceGenerationProps ? (
+        <ImageGenerateDialog key={`${form.referenceGenerationProps.project}:reference`} mode="reference" {...form.referenceGenerationProps} />
+      ) : null}
+      {form.coverGenerationProps.open ? <CoverGenerateDialog key={form.coverGenerationProps.project} {...form.coverGenerationProps} /> : null}
     </Stack>
   );
 }

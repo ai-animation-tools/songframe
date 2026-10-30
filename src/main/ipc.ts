@@ -42,7 +42,7 @@ import { saveScenesWithMode, scenesSaveImpact } from './scenario-save';
 import { runEnvironmentTask } from './environment-task';
 import { resolvePaths } from './paths';
 import { Projects, validateNewProject } from './projects';
-import { parseLyrics, saveSources, validateSources, viewSources } from './sources';
+import { parseLyrics, validateSources, viewSources } from './sources';
 import { LocalState } from './state';
 import { saveTiming, viewTiming } from './timing';
 import { runTool } from './tools';
@@ -85,7 +85,9 @@ import { Montage } from './montage';
 import { copyMontageVideo, montageVideoPath } from './montage-video';
 import { recoverMontageApplications } from './montage-recovery';
 import { readScenarioRegistry } from './scenario-status';
-import { CoverGeneration } from './cover-generation';
+import { CoverGeneration, type CoverGenerationOptions } from './cover-generation';
+import { attachReferenceImage, saveSourcesWithCastImages } from './reference-image-storage';
+import { referenceImageTexts } from '@shared/texts/reference-images';
 import { preparePaidCover } from './cover-paid';
 import { prepareProjectCover } from './cover-provider';
 import type { CoverCrop, CoverGenerationApproval } from '@shared/cover-generation';
@@ -107,6 +109,7 @@ export interface Services {
   /** Доставка итогов живёт в main и не зависит от подписки открытой страницы. */
   notifications?: TaskNotifications;
   cover?: CoverGeneration;
+  referenceImages?: CoverGeneration;
   /** Только оконный процесс: журнал сбоев и сеанс пользователя. */
   diagnostics?: AppDiagnostics;
 }
@@ -218,7 +221,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     checkProviderAuth: (provider) => requirePaid(provider).checkAuth(getServices().launcher.options)
   });
   ipcMain.handle('ai:access', (_event, project: string | null) => ai.getAccess(project));
-  const cover = new CoverGeneration({
+  const imageOptions: CoverGenerationOptions = {
     settings: getServices().settings,
     readImage: (path) => {
       const image = nativeImage.createFromPath(path);
@@ -243,53 +246,71 @@ export function registerIpc(getServices: () => Services, setServices: (services:
           return preparePaidCover(candidate, { provider, launcher: () => getServices().launcher, pricingArgs });
         }
       })
-  });
+  };
+  const cover = new CoverGeneration(imageOptions);
+  const referenceImages = new CoverGeneration({ ...imageOptions, reference: true });
   getServices().cover = cover;
+  getServices().referenceImages = referenceImages;
   // Перезагрузка или закрытие renderer не оставляет сессию с непринятыми картинками до завершения приложения.
-  const coverOwners = new Map<number, Set<string>>();
-  const coverProjects = new Map<string, string>();
-  ipcMain.handle('cover:create', async (event, project: string, prompt: string) => {
-    await ai.requireAccess(project, 'image');
-    if (event.sender.isDestroyed()) throw new Error(applicationTexts.coverWindowClosed);
-    let owned = coverOwners.get(event.sender.id);
-    if (!owned) {
-      owned = new Set<string>();
-      coverOwners.set(event.sender.id, owned);
-      const closeOwned = (): void => {
-        const ids = [...owned!];
-        owned!.clear();
-        for (const id of ids) {
-          coverProjects.delete(id);
-          // eslint-disable-next-line no-restricted-syntax -- Это сообщение журнала очистки, оно не передаётся пользователю через IPC.
-          void cover.close(id).catch((error: unknown) => console.error('Не удалось очистить временную обложку:', error));
-        }
-      };
-      event.sender.once('destroyed', closeOwned);
-      event.sender.on('render-process-gone', closeOwned);
-      event.sender.on('did-start-navigation', (_navigation, _url, inPlace, mainFrame) => {
-        if (mainFrame && !inPlace) closeOwned();
+  for (const [prefix, generator] of [
+    ['cover', cover],
+    ['referenceImages', referenceImages]
+  ] as const) {
+    const attached = new Map<string, string>();
+    const coverOwners = new Map<number, Set<string>>();
+    const coverProjects = new Map<string, string>();
+    ipcMain.handle(`${prefix}:create`, async (event, project: string, prompt: string) => {
+      await ai.requireAccess(project, 'image');
+      if (event.sender.isDestroyed()) throw new Error(applicationTexts.coverWindowClosed);
+      let owned = coverOwners.get(event.sender.id);
+      if (!owned) {
+        owned = new Set<string>();
+        coverOwners.set(event.sender.id, owned);
+        const closeOwned = (): void => {
+          const ids = [...owned!];
+          owned!.clear();
+          for (const id of ids) {
+            coverProjects.delete(id);
+            // eslint-disable-next-line no-restricted-syntax -- Это сообщение журнала очистки, оно не передаётся пользователю через IPC.
+            void generator.close(id).catch((error: unknown) => console.error('Не удалось очистить временную обложку:', error));
+          }
+        };
+        event.sender.once('destroyed', closeOwned);
+        event.sender.on('render-process-gone', closeOwned);
+        event.sender.on('did-start-navigation', (_navigation, _url, inPlace, mainFrame) => {
+          if (mainFrame && !inPlace) closeOwned();
+        });
+      }
+      const session = generator.create(project, prompt);
+      owned.add(session.id);
+      coverProjects.set(session.id, project);
+      return session;
+    });
+    ipcMain.handle(`${prefix}:prepare`, async (_event, id: string) => {
+      await ai.requireAccess(coverProjects.get(id) ?? null, 'image');
+      return generator.prepare(id);
+    });
+    ipcMain.handle(`${prefix}:generate`, async (_event, id: string, requestSha: string, approval: CoverGenerationApproval) => {
+      await ai.requireAccess(coverProjects.get(id) ?? null, 'image');
+      return generator.generate(id, requestSha, approval);
+    });
+    ipcMain.handle(`${prefix}:view`, (_event, id: string) => generator.view(id));
+    ipcMain.handle(`${prefix}:accept`, (_event, id: string, crop: CoverCrop) =>
+      prefix === 'cover' ? generator.accept(id, crop) : generator.acceptReference(id)
+    );
+    ipcMain.handle(`${prefix}:close`, async (event, id: string) => {
+      coverOwners.get(event.sender.id)?.delete(id);
+      coverProjects.delete(id);
+      await generator.close(id);
+    });
+    if (prefix === 'referenceImages')
+      ipcMain.handle('referenceImages:attach', (_event, id: string, entityId: string) => {
+        if (attached.has(id) && attached.get(id) !== entityId) throw new Error(referenceImageTexts.targetChanged);
+        const result = generator.acceptReference(id);
+        attachReferenceImage(generator.project(id), entityId, result, getServices().toolsRoot);
+        attached.set(id, entityId);
       });
-    }
-    const session = cover.create(project, prompt);
-    owned.add(session.id);
-    coverProjects.set(session.id, project);
-    return session;
-  });
-  ipcMain.handle('cover:prepare', async (_event, id: string) => {
-    await ai.requireAccess(coverProjects.get(id) ?? null, 'image');
-    return cover.prepare(id);
-  });
-  ipcMain.handle('cover:generate', async (_event, id: string, requestSha: string, approval: CoverGenerationApproval) => {
-    await ai.requireAccess(coverProjects.get(id) ?? null, 'image');
-    return cover.generate(id, requestSha, approval);
-  });
-  ipcMain.handle('cover:view', (_event, id: string) => cover.view(id));
-  ipcMain.handle('cover:accept', (_event, id: string, crop: CoverCrop) => cover.accept(id, crop));
-  ipcMain.handle('cover:close', async (event, id: string) => {
-    coverOwners.get(event.sender.id)?.delete(id);
-    coverProjects.delete(id);
-    await cover.close(id);
-  });
+  }
   const connectMedia = (): void => getServices().production.setMediaProviders(paidMedia);
   connectMedia();
   const mediaCapabilities = (provider: string, kind: MediaKind): ((project: string) => Promise<MediaCapabilities>) | undefined => {
@@ -468,7 +489,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const settings = getServices().settings;
     settings.write({ ...settings.read(), toolsRootOverride: path });
     // Смена ресурсов не создаёт второй менеджер и не объявляет живые задания прерванными.
-    const next = { ...createServices({ previousJobs: getServices().jobs }), agents, notifications, cover, diagnostics };
+    const next = { ...createServices({ previousJobs: getServices().jobs }), agents, notifications, cover, referenceImages, diagnostics };
     watchJobs(next.jobs);
     setServices(next);
     return getServices().projects.appState();
@@ -507,7 +528,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   ipcMain.handle('sources:validate', (_event, project: string, input: SourcesInput) => validateSources(project, input));
   ipcMain.handle('sources:save', (_event, project: string, input: SourcesInput) => {
     const media = mediaPaths(getServices().launcher.options);
-    return saveSources(project, input, media?.ffprobe);
+    return saveSourcesWithCastImages(project, input, getServices().toolsRoot, media?.ffprobe);
   });
 
   ipcMain.handle('timing:modelSetup', () => whisperSetup(getServices().launcher));

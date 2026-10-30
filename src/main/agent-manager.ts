@@ -10,6 +10,7 @@ import { createAgentAdapter, type AgentAdapter, type AgentUpdate } from './agent
 import { AgentHistory } from './agent-history';
 import { AgentError, JsonLines, providerDetail, providerFailure, redact } from './agent-protocol';
 import { agentEnvironment } from './agents';
+import { readProjectAgentInstructions } from './checks';
 import type { SettingsStore } from './settings';
 
 interface Running {
@@ -138,6 +139,16 @@ export class AgentManager {
       }
       if (!previous || previousProject !== project || previous.status === 'running') throw new AgentError('INVALID_INPUT', agentsTexts.retryUnavailable);
     }
+    // Снимок привязан к проекту задания до асинхронной диагностики. Повтор читает актуальный текст заново;
+    // исполнитель изображений независим от текстового агента и его постоянных инструкций.
+    let instructions = '';
+    if (!imageDirectory) {
+      try {
+        instructions = readProjectAgentInstructions(project);
+      } catch (error) {
+        throw new AgentError('INVALID_INPUT', error instanceof Error ? error.message : String(error));
+      }
+    }
     const job: AgentJob = {
       schemaVersion: 1,
       id: randomUUID(),
@@ -162,7 +173,7 @@ export class AgentManager {
     const run: Running = { job, projectKey: project, ended: false, completed: false, outputBytes: 0 };
     this.running.set(job.id, run);
     this.publish(run, 'started');
-    const completion = this.launch(run, config, input, imageDirectory).then(() => run.childClosed);
+    const completion = this.launch(run, config, input, instructions, imageDirectory).then(() => run.childClosed);
     this.completions.add(completion);
     void completion.finally(() => this.completions.delete(completion));
     return structuredClone(job);
@@ -187,7 +198,7 @@ export class AgentManager {
     await Promise.all([...this.completions]);
   }
 
-  private async launch(run: Running, config: AgentSettings, input: AgentStartInput, imageDirectory?: string): Promise<void> {
+  private async launch(run: Running, config: AgentSettings, input: AgentStartInput, instructions: string, imageDirectory?: string): Promise<void> {
     try {
       const adapter = this.options.adapter?.(config.provider) ?? createAgentAdapter(config.provider);
       const check = await adapter.check(config);
@@ -261,7 +272,8 @@ export class AgentManager {
       const prefix = imageDirectory
         ? 'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы сервисам генерации. Верни финальный JSON в запрошенном формате.'
         : 'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.';
-      const prompt = `${prefix}\n\nЗадача:\n${input.prompt}${input.context ? `\n\nДополнительный контекст:\n${input.context}` : ''}`;
+      const projectInstructions = instructions ? `\n\nПостоянные инструкции текстовому агенту этого проекта:\n${instructions}` : '';
+      const prompt = `${prefix}${projectInstructions}\n\nЗадача:\n${input.prompt}${input.context ? `\n\nДополнительный контекст:\n${input.context}` : ''}`;
       /* eslint-enable no-restricted-syntax */
       child.stdin.end(prompt);
     } catch (error) {

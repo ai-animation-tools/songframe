@@ -358,4 +358,72 @@ describe.skipIf(process.platform !== 'linux')('Жизненный цикл об�
     expect(readdirSync(join(work, 'state/jobs')).filter((name) => name.endsWith('.tmp'))).toEqual([]);
     expect(() => restored.start({ project, task: 'Повтор', prompt: '', retryOf: done.id })).toThrow(/INVALID_INPUT/);
   });
+
+  it.each(['claude', 'codex'] as const)('%s: добавляет инструкции проекта один раз при запуске, доработке и повторе', async (provider) => {
+    fake(provider, success(provider));
+    const instructions = '  Постоянное правило\r\n\n$(не исполнять)  \n';
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ agent_instructions: instructions }));
+    const value = manager();
+    const first = value.start({ project, task: 'Первый', prompt: 'Задание', context: 'Контекст' });
+    expect(await terminal(value, first.id)).toMatchObject({ status: 'completed' });
+    const stdin = readFileSync(join(work, 'stdin'), 'utf8');
+    expect(stdin).toContain(
+      `\n\nПостоянные инструкции текстовому агенту этого проекта:\n${instructions}\n\nЗадача:\nЗадание\n\nДополнительный контекст:\nКонтекст`
+    );
+    expect(stdin.split(instructions)).toHaveLength(2);
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ agent_instructions: 'Новое правило' }));
+    const retry = value.start({ project, task: 'Повтор', prompt: 'Доработай ответ', retryOf: first.id });
+    expect(await terminal(value, retry.id)).toMatchObject({ status: 'completed', retryOf: first.id });
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).toContain('Новое правило\n\nЗадача:\nДоработай ответ');
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).not.toContain(instructions);
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ agent_instructions: '' }));
+    const empty = value.start({ project, task: 'Пустое поле', prompt: 'Задание' });
+    expect(await terminal(value, empty.id)).toMatchObject({ status: 'completed' });
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).not.toContain('Постоянные инструкции текстовому агенту');
+  });
+
+  it('берёт снимок инструкций проекта задания до диагностики и не смешивает два клипа', async () => {
+    fake('codex', success('codex'));
+    const secondProject = join(work, 'Второй клип');
+    mkdirSync(join(secondProject, 'plan'), { recursive: true });
+    writeFileSync(join(secondProject, 'plan/project.json'), JSON.stringify({ agent_instructions: 'Правило второго клипа' }));
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ agent_instructions: 'Правило первого клипа' }));
+    const value = manager();
+    const first = value.start({ project, task: 'Первый', prompt: 'Задание' });
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ agent_instructions: 'Правка во время запуска' }));
+    await terminal(value, first.id);
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).toContain('Правило первого клипа');
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).not.toContain('Правка во время запуска');
+    const second = value.start({ project: secondProject, task: 'Второй', prompt: 'Задание' });
+    await terminal(value, second.id);
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).toContain('Правило второго клипа');
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).not.toContain('Правило первого клипа');
+    expect(() => value.start({ project: secondProject, task: 'Чужой повтор', prompt: 'Задание', retryOf: first.id })).toThrow(/INVALID_INPUT/);
+    const retry = value.start({ project, task: 'Снова первый', prompt: 'Задание', retryOf: first.id });
+    await terminal(value, retry.id);
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).toContain('Правка во время запуска');
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).not.toContain('Правило второго клипа');
+  });
+
+  it('инструкции не подменяют выбор текстового агента и не передаются исполнителю изображений', async () => {
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ agent_instructions: 'Только текстовому агенту' }));
+    expect(() => manager().start({ project, task: 'Без исполнителя', prompt: 'Задание' })).toThrow(/INVALID_INPUT/);
+    fake('codex', success('codex'));
+    const candidate = join(settings.localDir, 'image-jobs', 'candidate');
+    mkdirSync(candidate, { recursive: true });
+    const value = manager();
+    const image = value.startImages({ project, task: 'Изображение', prompt: 'Нарисуй' }, candidate, { provider: 'codex' });
+    expect(await terminal(value, image.id)).toMatchObject({ status: 'completed' });
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).not.toContain('Только текстовому агенту');
+    expect(readFileSync(join(work, 'stdin'), 'utf8')).not.toContain('Постоянные инструкции текстовому агенту');
+  });
+
+  it('повреждённые инструкции останавливают запуск до CLI и записи задания', () => {
+    fake('codex', success('codex'));
+    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ agent_instructions: 42 }));
+    const value = manager();
+    expect(() => start(value)).toThrow(/agent_instructions должен быть строкой/);
+    expect(value.list()).toEqual([]);
+    expect(existsSync(join(work, 'started'))).toBe(false);
+  });
 });

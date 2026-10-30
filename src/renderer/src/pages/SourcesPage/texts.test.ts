@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { analyzeLyrics } from '@shared/lyrics';
 import { sourcesTexts } from '@shared/texts/sources';
 import { LyricsSection } from './components/LyricsSection';
-import { CoverCropEditor } from './components/CoverCropEditor';
+import { CoverCropEditor } from '../../components/CoverCropEditor';
 import { ReferencePromptError } from './components/ReferencePromptError';
 import { ReferenceFileCard } from './components/ReferenceFileCard';
 

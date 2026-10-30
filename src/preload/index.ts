@@ -44,6 +44,15 @@ const api: Api = {
     accept: (id, crop) => ipcRenderer.invoke('cover:accept', id, crop),
     close: (id) => ipcRenderer.invoke('cover:close', id)
   },
+  referenceImages: {
+    create: (project, prompt) => ipcRenderer.invoke('referenceImages:create', project, prompt),
+    prepare: (id) => ipcRenderer.invoke('referenceImages:prepare', id),
+    generate: (id, requestSha, approval) => ipcRenderer.invoke('referenceImages:generate', id, requestSha, approval),
+    view: (id) => ipcRenderer.invoke('referenceImages:view', id),
+    accept: (id) => ipcRenderer.invoke('referenceImages:accept', id),
+    attach: (id, entityId) => ipcRenderer.invoke('referenceImages:attach', id, entityId),
+    close: (id) => ipcRenderer.invoke('referenceImages:close', id)
+  },
   montageWindow: {
     open: (session) => ipcRenderer.invoke('montage-window:open', session),
     close: (session) => ipcRenderer.invoke('montage-window:close', session),

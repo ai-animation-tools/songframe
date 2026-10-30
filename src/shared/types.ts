@@ -714,6 +714,8 @@ export const DEFAULT_GENERATION: GenerationSettings = {
 
 /** Редактируемая часть plan/project.json; прочие поля файла сохраняются как есть. */
 export interface ProjectSettings {
+  /** Постоянные инструкции текстовому агенту; в JSON — agent_instructions, без изменения содержимого. */
+  agentInstructions?: string;
   name: string;
   animaticVideo: string;
   /** null, если блока в файле нет: панель предлагает заполнить. */

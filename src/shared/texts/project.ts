@@ -152,6 +152,17 @@ export const projectTexts = {
     nameRequired: commonTexts.project.nameRequired,
     nameUnchanged: 'Введите новое название: оно совпадает с текущим.'
   },
+  agentInstructions: {
+    title: 'Постоянные инструкции текстовому агенту',
+    help: 'Сохраняются в проекте и добавляются к каждому заданию текстового агента, включая повтор и доработку.',
+    locked: 'Поле заблокировано. Для редактирования нажмите «Разблокировать».',
+    editing: 'Поле разблокировано до сохранения или смены проекта.',
+    chooseAgent: 'Для редактирования выберите текстового агента в настройках приложения.',
+    unlock: 'Разблокировать',
+    unlockTitle: 'Разблокировать постоянные инструкции',
+    warning: 'Изменяйте содержимое этого поля только если точно понимаете что делаете.',
+    invalid: 'plan/project.json: agent_instructions должен быть строкой.'
+  },
   settings: {
     // Порядок и названия целей сохранены для переходов LinkedText к полям с ошибками.
     fixBeforeSave: ({ animaticError, videoValid, imageValid }: { animaticError: boolean; videoValid: boolean; imageValid: boolean }) =>

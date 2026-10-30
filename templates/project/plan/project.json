@@ -2,6 +2,7 @@
   "schema_version": 1,
   "name": "{{project_name}}",
   "animatic_video": "{{animatic_video}}",
+  "agent_instructions": "",
   "generation": {
     "video": null,
     "image": null

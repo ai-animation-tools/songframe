@@ -1,0 +1,14 @@
+# Подключается в CI через OPENSSL_CONF. Node читает только раздел nodejs_conf; curl, Python и другие
+# программы с системным OpenSSL не находят здесь openssl_conf и работают с настройками по умолчанию.
+# Node 24 (OpenSSL 3.5) по умолчанию предлагает постквантовый X25519MLKEM768, и его большое приветствие TLS
+# сеть домашних раннеров обрывает на пути к Cloudflare (Yarn, реестр пакетов). Набор групп ниже совпадает с OpenSSL 3.0.
+nodejs_conf = nodejs_init
+
+[nodejs_init]
+ssl_conf = ssl_init
+
+[ssl_init]
+system_default = tls_defaults
+
+[tls_defaults]
+Groups = X25519:P-256:P-384

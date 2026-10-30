@@ -17,6 +17,9 @@ jobs:
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     steps:
       - uses: actions/checkout@v7
+      # Сеть домашних раннеров обрывает рукопожатие TLS Node 24 с Cloudflare (Yarn, реестр пакетов). @link scripts/ci/node-tls-groups.cjs
+      - name: TLS для Node
+        run: echo "NODE_OPTIONS=--require=$GITHUB_WORKSPACE/scripts/ci/node-tls-groups.cjs" >> "$GITHUB_ENV"
       # Сначала выбираем Node из проекта: Yarn нужен уже при вычислении пути кэша.
       # Повторный setup-node только подключает кэш после подготовки Corepack. @link .nvmrc
       - name: Node.js для Corepack

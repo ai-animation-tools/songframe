@@ -1,12 +1,12 @@
 ---
 name: songframe-build
-description: "Собрать и проверить Linux AppImage или Windows ZIP приложения SongFrame по запросу пользователя; не предназначен для публикации релиза."
+description: "Собрать и проверить Linux AppImage или Windows-установщик приложения SongFrame по запросу пользователя; не предназначен для публикации релиза."
 argument-hint: "[os=linux|win]"
 ---
 
 # Сборка SongFrame
 
-Работай в корне репозитория SongFrame (в рабочем пространстве AI Animation Tools это папка `songframe/`); пути ниже отсчитываются от него. Сначала прочитай актуальные `AGENTS.md`, разделы сборки и проверки в `docs/development.md` и при необходимости `scripts/runtime/README.md`. Для точного состава автоматических проверок смотри `.github/actions/linux-appimage/action.yml` и `.github/actions/windows-zip/action.yml`. Выполняй только запрошенные платформы и проверки; учитывай имеющиеся изменения в checkout и не изменяй чужие проекты.
+Работай в корне репозитория SongFrame (в рабочем пространстве AI Animation Tools это папка `songframe/`); пути ниже отсчитываются от него. Сначала прочитай актуальные `AGENTS.md`, разделы сборки и проверки в `docs/development.md` и при необходимости `scripts/runtime/README.md`. Точный состав проверок перед выпуском — в шаге сборки `scripts/release/release.mjs`. Выполняй только запрошенные платформы и проверки; учитывай имеющиеся изменения в checkout и не изменяй чужие проекты.
 
 ## Вызов
 
@@ -14,9 +14,9 @@ argument-hint: "[os=linux|win]"
 | --- | --- | --- |
 | Собрать платформы из запроса | `$songframe-build` | `/songframe-build` |
 | Только Linux AppImage | `$songframe-build os=linux` | `/songframe-build os=linux` |
-| Только Windows ZIP | `$songframe-build os=win` | `/songframe-build os=win` |
+| Только Windows-установщик | `$songframe-build os=win` | `/songframe-build os=win` |
 
-Аргумент `os` необязателен. Без него платформа берётся из запроса пользователя («AppImage» — Linux, «ZIP для Windows» — Windows); если платформа не названа, собери обе.
+Аргумент `os` необязателен. Без него платформа берётся из запроса пользователя («AppImage» — Linux, «установщик для Windows» — Windows); если платформа не названа, собери обе.
 
 Сборка использует Node из `.nvmrc`, Yarn из `package.json` и зависимости проекта. Команды ниже выполняются из корня репозитория. Готовые поставки находятся в `build/release`, вне Git. Для разовых журналов и временных файлов используй `/tmp`. Не копируй AppImage за пределы репозитория без явного поручения.
 
@@ -29,6 +29,6 @@ argument-hint: "[os=linux|win]"
 
 ## Windows
 
-На Linux выполни `yarn dist:win`. Для проверки архива возьми версию из `package.json` и запусти `python3 -B scripts/runtime/check-windows-zip.py "build/release/songframe-<версия>-win-x64.zip" --version "<версия>"`. Проверка создаёт SHA256 и `build/release/windows-archive-check.json`; она проверяет архив и ресурсы, но не исполняет Windows-код. Не делай вывод о работоспособности runtime или полной поддержке Windows по результату проверки архива. Нативные проверки Windows в VM выполняй только по явному поручению.
+На Linux выполни `yarn dist:win`, он выпускает установщик NSIS `build/release/songframe-<версия>-win-x64-setup.exe`. Для проверки возьми версию из `package.json` и запусти `python3 -B scripts/runtime/check-windows-installer.py "build/release/songframe-<версия>-win-x64-setup.exe" --version "<версия>"`; нужен системный `7z`. Проверка извлекает архив приложения из установщика, создаёт SHA256 и `build/release/windows-installer-check.json`; она проверяет содержимое и ресурсы, но не исполняет Windows-код. Не делай вывод о работоспособности установщика, runtime или полной поддержке Windows по результату этой проверки. Нативные проверки Windows в VM выполняй только по явному поручению.
 
 В ответе укажи пути полученных файлов, выполненные проверки и их результат, а также существенные невыполненные проверки. Сборка не разрешает commit, push или публикацию; выпуск релиза выполняется отдельно по явному поручению.

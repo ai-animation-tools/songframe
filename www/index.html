@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SongFrame — клип к вашей песне с помощью ИИ</title>
+    <meta
+      name="description"
+      content="Настольное приложение для музыкального клипа с ИИ: разметка песни, кастинг, сценарий, генерация кадров и видео, монтаж и аниматик. Бесплатно для Linux и Windows."
+    />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="canonical" href="https://ai-animation-tools.github.io/songframe/" />
+    <!-- Превью ссылки в мессенджерах и соцсетях: адреса только полные, иначе картинку не найдут. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:url" content="https://ai-animation-tools.github.io/songframe/" />
+    <meta property="og:title" content="SongFrame — клип к вашей песне" />
+    <meta property="og:description" content="От трека и текста до аниматика и пакета для монтажёра: ИИ генерирует, вы режиссируете." />
+    <meta property="og:image" content="https://ai-animation-tools.github.io/songframe/images/social.jpg" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta property="og:image:alt" content="SongFrame — клип к вашей песне с помощью ИИ" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/png" href="images/favicon.png" />
+    <style>
+      /* Цвета иконки: неоновый переход от синего через фиолетовый к оранжевому на ночном фоне. */
+      :root {
+        --blue: #3d7bff;
+        --violet: #9b5cff;
+        --orange: #ff8a2b;
+        --gradient: linear-gradient(100deg, var(--blue), var(--violet) 50%, var(--orange));
+        --night: #070a1a;
+        --bg: #0b0f24;
+        --paper: #121836;
+        --paper-strong: #182046;
+        --text: #eef1ff;
+        --muted: #a3abd0;
+        --divider: rgba(163, 171, 208, 0.18);
+        --shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+        --link: #8fb1ff;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f6f7fc;
+          --paper: #ffffff;
+          --paper-strong: #eef0fb;
+          --text: #11152e;
+          --muted: #565f84;
+          --divider: #dfe3f3;
+          --shadow: 0 14px 34px rgba(17, 21, 46, 0.1);
+          --link: #2f5fd6;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.6 Inter,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--link);
+      }
+      code {
+        font:
+          0.9em ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
+        background: var(--paper-strong);
+        padding: 0.1em 0.4em;
+        border-radius: 6px;
+      }
+      .wrap {
+        max-width: 1140px;
+        margin: 0 auto;
+        padding: 0 16px;
+      }
+      h2 {
+        font-size: clamp(28px, 4vw, 40px);
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        margin: 0 0 12px;
+        text-align: center;
+      }
+      .sub {
+        color: var(--muted);
+        text-align: center;
+        max-width: 640px;
+        margin: 0 auto 40px;
+        font-size: 18px;
+      }
+      section {
+        padding: 88px 0 0;
+      }
+      .gradient-text {
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      /* Первый экран всегда тёмный: это «кинозал» страницы. */
+      .hero {
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(60% 50% at 20% 10%, rgba(61, 123, 255, 0.28), transparent 70%),
+          radial-gradient(50% 45% at 85% 20%, rgba(255, 138, 43, 0.22), transparent 70%),
+          radial-gradient(60% 60% at 50% 100%, rgba(155, 92, 255, 0.25), transparent 70%), var(--night);
+        color: #eef1ff;
+        padding-bottom: 72px;
+      }
+      header {
+        padding: 18px 0;
+      }
+      header .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 18px;
+        color: inherit;
+        text-decoration: none;
+      }
+      .brand img {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+      }
+      nav a {
+        color: #b9c0e4;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+      }
+      nav a:hover {
+        color: #fff;
+      }
+      nav .github {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      nav svg {
+        width: 18px;
+        height: 18px;
+      }
+      @media (max-width: 720px) {
+        nav a:not(.github) {
+          display: none;
+        }
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        gap: 48px;
+        align-items: center;
+        padding-top: 48px;
+      }
+      /* Без min-width: 0 строки песни с nowrap растягивают колонку шире экрана телефона. */
+      .hero-grid > * {
+        min-width: 0;
+      }
+      @media (max-width: 960px) {
+        .hero-grid {
+          grid-template-columns: 1fr;
+          text-align: center;
+          padding-top: 24px;
+        }
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        font-size: 14px;
+        font-weight: 600;
+        color: #d4d9f5;
+      }
+      .eyebrow i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        box-shadow: 0 0 12px var(--orange);
+      }
+      h1 {
+        font-size: clamp(38px, 6vw, 64px);
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        margin: 22px 0 18px;
+      }
+      .lead {
+        font-size: clamp(17px, 2vw, 20px);
+        color: #b9c0e4;
+        margin: 0 0 32px;
+        max-width: 560px;
+      }
+      @media (max-width: 960px) {
+        .lead {
+          margin-inline: auto;
+        }
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px 22px;
+      }
+      @media (max-width: 960px) {
+        .actions {
+          justify-content: center;
+        }
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 28px;
+        border-radius: 14px;
+        background: var(--gradient);
+        color: #fff;
+        font-weight: 700;
+        font-size: 18px;
+        text-decoration: none;
+        box-shadow: 0 10px 30px rgba(155, 92, 255, 0.45);
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 38px rgba(155, 92, 255, 0.6);
+      }
+      .btn svg {
+        width: 22px;
+        height: 22px;
+      }
+      .alt a {
+        color: #d4d9f5;
+        font-weight: 600;
+      }
+      .meta {
+        display: block;
+        margin-top: 14px;
+        font-size: 14px;
+        color: #8d95bd;
+      }
+      .mobile-note {
+        display: none;
+        color: #d4d9f5;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin: 0 0 20px;
+      }
+      .is-mobile .mobile-note {
+        display: block;
+      }
+
+      /* Иллюстрация окна: волна песни, строки текста, план-лента и кадры. Не скриншот, а схема работы. */
+      .stage {
+        position: relative;
+        border-radius: 18px;
+        background: linear-gradient(180deg, #151b3d, #0d1230);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow:
+          0 30px 80px rgba(0, 0, 0, 0.55),
+          0 0 0 1px rgba(155, 92, 255, 0.15);
+        padding: 14px;
+        text-align: left;
+      }
+      .stage::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: 18px;
+        padding: 1px;
+        background: var(--gradient);
+        -webkit-mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.55;
+        pointer-events: none;
+      }
+      .dots {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .dots span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.18);
+      }
+      .preview {
+        position: relative;
+        aspect-ratio: 16 / 8;
+        border-radius: 10px;
+        overflow: hidden;
+        background:
+          radial-gradient(40% 60% at 70% 35%, rgba(255, 170, 90, 0.85), transparent 70%),
+          radial-gradient(70% 80% at 20% 80%, rgba(61, 123, 255, 0.75), transparent 70%), linear-gradient(160deg, #2a1d5e, #0e1433);
+      }
+      .preview .sun {
+        position: absolute;
+        right: 22%;
+        top: 22%;
+        width: 18%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: radial-gradient(circle, #ffe0b5, #ff9a3d 60%, transparent 72%);
+        filter: blur(1px);
+      }
+      .preview .hills {
+        position: absolute;
+        inset: auto 0 0;
+        height: 46%;
+        background: radial-gradient(60% 100% at 25% 100%, #1a1442 60%, transparent 61%), radial-gradient(70% 90% at 80% 100%, #120f33 60%, transparent 61%);
+      }
+      .preview .figure {
+        position: absolute;
+        left: 38%;
+        bottom: 18%;
+        width: 4.5%;
+        height: 30%;
+        border-radius: 40% 40% 10% 10%;
+        background: #080a1d;
+        box-shadow: 0 0 22px rgba(255, 160, 80, 0.5);
+      }
+      .preview .tag {
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        font:
+          600 12px/1 ui-monospace,
+          Menlo,
+          Consolas,
+          monospace;
+        background: rgba(0, 0, 0, 0.45);
+        color: #fff;
+        padding: 6px 8px;
+        border-radius: 6px;
+      }
+      .preview .tag b {
+        color: var(--orange);
+      }
+      .lyrics {
+        display: flex;
+        gap: 6px;
+        margin: 12px 0 8px;
+        overflow: hidden;
+      }
+      .lyrics span {
+        flex: none;
+        font-size: 12px;
+        color: #cfd5f5;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 4px 8px;
+        border-radius: 6px;
+        white-space: nowrap;
+      }
+      .lyrics span.on {
+        border-color: rgba(255, 138, 43, 0.7);
+        color: #fff;
+        background: rgba(255, 138, 43, 0.16);
+      }
+      .wave {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        height: 44px;
+      }
+      .wave i {
+        flex: 1;
+        border-radius: 2px;
+        background: linear-gradient(180deg, var(--blue), var(--violet));
+        opacity: 0.85;
+      }
+      .wave i.past {
+        background: linear-gradient(180deg, var(--orange), var(--violet));
+      }
+      .shots {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr 1fr 1.4fr 0.9fr 1.1fr;
+        gap: 4px;
+        margin-top: 10px;
+      }
+      .shots div {
+        height: 46px;
+        border-radius: 6px;
+        position: relative;
+        overflow: hidden;
+        font:
+          600 11px/1 ui-monospace,
+          Menlo,
+          Consolas,
+          monospace;
+        color: rgba(255, 255, 255, 0.9);
+        padding: 6px;
+      }
+      .shots .ok {
+        background: linear-gradient(135deg, #2b56c7, #6a3fd0);
+      }
+      .shots .work {
+        background: linear-gradient(135deg, #c8641b, #9b3fb0);
+      }
+      .shots .todo {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        color: #8d95bd;
+      }
+      .playhead {
+        position: absolute;
+        top: -64px;
+        bottom: -4px;
+        left: 41%;
+        width: 2px;
+        background: #fff;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        animation: play 9s linear infinite;
+      }
+      @keyframes play {
+        from {
+          left: 0%;
+        }
+        to {
+          left: 100%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .playhead {
+          animation: none;
+        }
+        .btn {
+          transition: none;
+        }
+      }
+      .floating {
+        position: absolute;
+        right: 16px;
+        bottom: -22px;
+        background: #fff;
+        color: #11152e;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .floating b {
+        color: #2e7d32;
+      }
+
+      /* Путь клипа */
+      .path {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 14px;
+        counter-reset: step;
+      }
+      @media (max-width: 1000px) {
+        .path {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      @media (max-width: 560px) {
+        .path {
+          grid-template-columns: 1fr;
+        }
+      }
+      .path li {
+        counter-increment: step;
+        background: var(--paper);
+        border: 1px solid var(--divider);
+        border-radius: 16px;
+        padding: 20px 18px;
+        position: relative;
+      }
+      .path li::before {
+        content: counter(step, decimal-leading-zero);
+        display: block;
+        font:
+          700 14px/1 ui-monospace,
+          Menlo,
+          Consolas,
+          monospace;
+        margin-bottom: 14px;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .path strong {
+        display: block;
+        font-size: 17px;
+        margin-bottom: 6px;
+      }
+      .path span {
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      /* Возможности */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 600px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: var(--paper);
+        border: 1px solid var(--divider);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+      .card .icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: var(--gradient);
+        color: #fff;
+        margin-bottom: 16px;
+      }
+      .card .icon svg {
+        width: 24px;
+        height: 24px;
+      }
+      .card h3 {
+        margin: 0 0 8px;
+        font-size: 19px;
+      }
+      .card p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      /* Контроль и расходы */
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      @media (max-width: 860px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+      }
+      .panel {
+        border-radius: 20px;
+        padding: 30px;
+        background: var(--paper);
+        border: 1px solid var(--divider);
+      }
+      .panel h3 {
+        margin: 0 0 14px;
+        font-size: 22px;
+      }
+      .panel ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .panel li {
+        padding-left: 30px;
+        position: relative;
+        margin: 12px 0;
+        color: var(--muted);
+      }
+      .panel li strong {
+        color: var(--text);
+      }
+      .panel li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--gradient);
+        -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1.4 14.2-4.2-4.2 1.4-1.4 2.8 2.8 6-6 1.4 1.4-7.4 7.4Z"/></svg>')
+          center / contain no-repeat;
+        mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1.4 14.2-4.2-4.2 1.4-1.4 2.8 2.8 6-6 1.4 1.4-7.4 7.4Z"/></svg>')
+          center / contain no-repeat;
+      }
+
+      /* Скачать */
+      .platforms {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+        max-width: 880px;
+        margin: 0 auto;
+      }
+      @media (max-width: 720px) {
+        .platforms {
+          grid-template-columns: 1fr;
+        }
+      }
+      .platform {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        background: var(--paper);
+        border: 1px solid var(--divider);
+        border-radius: 20px;
+        padding: 26px;
+      }
+      .platform.current {
+        border-color: transparent;
+        background:
+          linear-gradient(var(--paper), var(--paper)) padding-box,
+          var(--gradient) border-box;
+        border: 2px solid transparent;
+      }
+      .platform .badge {
+        display: none;
+        position: absolute;
+        top: -12px;
+        right: 20px;
+        background: var(--gradient);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 999px;
+      }
+      .platform.current .badge {
+        display: inline-block;
+      }
+      .platform h3 {
+        margin: 0;
+        font-size: 22px;
+      }
+      .platform .what {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 4px 0 14px;
+      }
+      .platform p {
+        margin: 0 0 20px;
+        color: var(--muted);
+        flex: 1;
+      }
+      .get {
+        align-self: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border-radius: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--text);
+        background: var(--paper-strong);
+        border: 1px solid var(--divider);
+      }
+      .platform.current .get {
+        background: var(--gradient);
+        color: #fff;
+        border-color: transparent;
+      }
+      .platform small {
+        display: block;
+        margin-top: 10px;
+        color: var(--muted);
+        min-height: 1.4em;
+      }
+      .notes {
+        max-width: 880px;
+        margin: 26px auto 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .notes p {
+        margin: 8px 0;
+      }
+
+      /* Финальный призыв */
+      .cta {
+        margin-top: 96px;
+        border-radius: 28px;
+        padding: 56px 24px;
+        text-align: center;
+        color: #eef1ff;
+        background:
+          radial-gradient(50% 80% at 15% 0%, rgba(61, 123, 255, 0.45), transparent 70%),
+          radial-gradient(50% 80% at 90% 100%, rgba(255, 138, 43, 0.4), transparent 70%), var(--night);
+      }
+      .cta h2 {
+        margin-bottom: 12px;
+      }
+      .cta p {
+        color: #b9c0e4;
+        margin: 0 auto 28px;
+        max-width: 560px;
+        font-size: 18px;
+      }
+      footer {
+        padding: 48px 0 40px;
+        color: var(--muted);
+        font-size: 14px;
+        text-align: center;
+      }
+      footer p {
+        margin: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hero">
+      <header>
+        <div class="wrap">
+          <a class="brand" href="#">
+            <img src="images/icon.webp" alt="" width="34" height="34" />
+            SongFrame
+          </a>
+          <nav>
+            <a href="#path">Как это работает</a>
+            <a href="#features">Возможности</a>
+            <a href="#download">Скачать</a>
+            <a class="github" href="https://github.com/ai-animation-tools/songframe">
+              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path
+                  d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+                />
+              </svg>
+              GitHub
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <div class="wrap hero-grid">
+        <div>
+          <span class="eyebrow"><i></i>Бесплатно · открытый код</span>
+          <h1>Клип к&nbsp;вашей песне — <span class="gradient-text">от&nbsp;трека до&nbsp;аниматика</span></h1>
+          <p class="lead">
+            SongFrame ведёт музыкальный клип с&nbsp;ИИ шаг за&nbsp;шагом: разметка песни, герои, сценарий, кадры и&nbsp;видео, монтаж и&nbsp;готовый пакет для
+            монтажёра. ИИ генерирует — режиссёр вы.
+          </p>
+          <p class="mobile-note">SongFrame — приложение для компьютера. Откройте эту страницу на&nbsp;Linux или Windows либо выберите систему ниже.</p>
+          <div class="actions">
+            <a class="btn" id="main-download" href="https://github.com/ai-animation-tools/songframe/releases/latest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12" />
+                <path d="m7 10 5 5 5-5" />
+                <path d="M5 21h14" />
+              </svg>
+              <span id="main-label">Скачать SongFrame</span>
+            </a>
+            <span class="alt" id="main-alt"><a href="#download">Другая система</a></span>
+          </div>
+          <span class="meta" id="main-meta">Linux · Windows</span>
+        </div>
+
+        <div class="stage" role="img" aria-label="Схема работы: кадр сцены, строки песни, волна трека и лента планов клипа">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="preview">
+            <div class="sun"></div>
+            <div class="hills"></div>
+            <div class="figure"></div>
+            <span class="tag">M03 · <b>в работе</b></span>
+          </div>
+          <div class="lyrics">
+            <span>Я снова у ворот</span>
+            <span>В окне горит огонь</span>
+            <span class="on">Скрипит знакомая калитка</span>
+            <span>И сердце бьётся в такт</span>
+          </div>
+          <div class="wave" id="wave"></div>
+          <div class="shots">
+            <div class="ok">M01</div>
+            <div class="ok">M02</div>
+            <div class="work">M03</div>
+            <div class="todo">M04</div>
+            <div class="todo">M05</div>
+            <div class="todo">M06</div>
+            <span class="playhead"></span>
+          </div>
+          <div class="floating"><b>✓</b> Опора M02 утверждена</div>
+        </div>
+      </div>
+    </div>
+
+    <main>
+      <section id="path">
+        <div class="wrap">
+          <h2>Путь клипа в одном окне</h2>
+          <p class="sub">Каждый этап — своя страница приложения. Результат предыдущего шага сразу виден в следующем.</p>
+          <ol class="path">
+            <li>
+              <strong>Исходники</strong>
+              <span>Трек, текст песни, идея, обложка и референсы — перетащите файлы в окно.</span>
+            </li>
+            <li>
+              <strong>Разметка</strong>
+              <span>Песня распознаётся локально, строки ложатся на волну — подправьте и подтвердите на слух.</span>
+            </li>
+            <li>
+              <strong>Кастинг</strong>
+              <span>Герои, мир и их состояния с изображениями: внешность не «плывёт» от сцены к сцене.</span>
+            </li>
+            <li>
+              <strong>Сценарий</strong>
+              <span>Трактовка по частям песни и планы с камерой и действием. Агент предлагает — вы решаете.</span>
+            </li>
+            <li>
+              <strong>Производство</strong>
+              <span>Опорные кадры и видео для каждого плана: просмотр, сравнение и отдельная приёмка.</span>
+            </li>
+            <li>
+              <strong>Аниматик</strong>
+              <span>Полный клип с принятыми сценами, монтаж проб и экспорт пакета для монтажёра.</span>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="features">
+        <div class="wrap">
+          <h2>Всё, чтобы клип <span class="gradient-text">собрался</span></h2>
+          <p class="sub">Не чат с нейросетью, а производственный стол: план, статусы, проверки и сборка.</p>
+          <div class="grid">
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                  <path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10M21 12h0" />
+                </svg>
+              </div>
+              <h3>Песня на временной шкале</h3>
+              <p>Локальное распознавание текста без отправки трека в облако, волна, правка границ строк и прослушивание каждой строки.</p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="9" cy="8" r="3.5" />
+                  <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+                  <path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-3-5.5" />
+                </svg>
+              </div>
+              <h3>Герои без сюрпризов</h3>
+              <p>Персонажи, транспорт и локации с референсами. Состояния наследуются по планам — стыки между сценами под контролем.</p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4z" />
+                  <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
+                </svg>
+              </div>
+              <h3>Агент-соавтор</h3>
+              <p>Claude Code или Codex готовит трактовку, сценарий и промпты. Предложение видно до записи — доработайте или отклоните.</p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="m10 9 5 3-5 3z" />
+                </svg>
+              </div>
+              <h3>Кадры и видео</h3>
+              <p>Опорные изображения и видео создаются выбранным провайдером генерации. Опоры можно и импортировать из своих PNG, JPG и WebP.</p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 7h16M4 12h10M4 17h7" />
+                  <path d="m16 15 2 2 4-4" />
+                </svg>
+              </div>
+              <h3>Проверки и пробы</h3>
+              <p>Согласованность материалов, короткие ролики для оценки сцен и стыков, ручной монтаж пробы со звуком и экспортом MP4.</p>
+            </div>
+            <div class="card">
+              <div class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 20V8l8-5 8 5v12" />
+                  <path d="M9 20v-6h6v6" />
+                </svg>
+              </div>
+              <h3>Аниматик и пакет</h3>
+              <p>Сборка всего клипа по главам: готовые сцены и карточки незавершённых планов. Пакет с медиа — прямо монтажёру.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <h2>Вы управляете — деньгами и файлами</h2>
+          <p class="sub">Генерация видео стоит денег, а клип — это месяцы работы. SongFrame бережёт и то и другое.</p>
+          <div class="split">
+            <div class="panel">
+              <h3>Ни одной случайной оплаты</h3>
+              <ul>
+                <li><strong>Подтверждение каждой отправки.</strong> Перед платной генерацией видны промпт, входные материалы, стоимость и остаток.</li>
+                <li><strong>Без автоповторов.</strong> Прерванная или неудачная отправка не повторяется сама.</li>
+                <li><strong>Результат ещё не принят.</strong> Скачанное видео ждёт вашего решения и не заменяет готовую сцену.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>Клип живёт у вас</h3>
+              <ul>
+                <li><strong>Папка проекта.</strong> Все материалы клипа — в обычной папке на диске, её можно перенести или сохранить в Git.</li>
+                <li><strong>Всё включено.</strong> Python, FFmpeg и клиенты провайдеров уже внутри — ничего не нужно доустанавливать.</li>
+                <li><strong>Исходники неприкосновенны.</strong> Трек, текст и принятые оригиналы не перезаписываются молча.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="download">
+        <div class="wrap">
+          <h2>Скачать SongFrame</h2>
+          <p class="sub" id="version-line">Последняя версия со страницы релизов на GitHub.</p>
+          <div class="platforms">
+            <div class="platform" data-target="linux">
+              <span class="badge">Ваша система</span>
+              <h3>Linux</h3>
+              <div class="what">x64 · AppImage</div>
+              <p>
+                Разрешите запуск файла: в его свойствах отметьте «Разрешить выполнение как программы» или выполните <code>chmod +x</code>. Затем откройте
+                AppImage.
+              </p>
+              <a class="get" href="https://github.com/ai-animation-tools/songframe/releases/latest">Скачать AppImage</a>
+              <small></small>
+            </div>
+            <div class="platform" data-target="windows">
+              <span class="badge">Ваша система</span>
+              <h3>Windows</h3>
+              <div class="what">Windows 10 и 11, x64 · установщик</div>
+              <p>
+                Запустите установщик — права администратора не нужны, ярлыки появятся на рабочем столе и в меню «Пуск». Если SmartScreen предупредит о
+                неизвестном издателе, нажмите «Подробнее» → «Выполнить в любом случае».
+              </p>
+              <a class="get" href="https://github.com/ai-animation-tools/songframe/releases/latest">Скачать установщик</a>
+              <small></small>
+            </div>
+          </div>
+          <div class="notes">
+            <p>
+              Модель распознавания речи скачивается один раз отдельно — кнопкой в окне разметки. Видеокарта не обязательна: подойдёт и процессор, а NVIDIA CUDA
+              ускорит работу.
+            </p>
+            <p>
+              Для генерации нужен аккаунт выбранного провайдера, для текстовых этапов — установленный Claude Code или Codex. Запуск агентов из приложения пока
+              работает только в Linux; просмотр, правка, разметка и встроенные провайдеры генерации доступны в обеих системах.
+            </p>
+            <p>Код пакетов не подписан сертификатами, поэтому система может предупредить о неизвестном издателе.</p>
+          </div>
+
+          <div class="cta">
+            <h2>У песни уже есть картинка. Осталось её снять.</h2>
+            <p>Установите SongFrame, добавьте трек — и первые планы клипа появятся уже сегодня.</p>
+            <a class="btn" id="cta-download" href="https://github.com/ai-animation-tools/songframe/releases/latest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12" />
+                <path d="m7 10 5 5 5-5" />
+                <path d="M5 21h14" />
+              </svg>
+              <span id="cta-label">Скачать SongFrame</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <p>
+          <a href="https://github.com/ai-animation-tools/songframe">Исходный код</a>
+          ·
+          <a href="https://github.com/ai-animation-tools/songframe/releases">Все релизы</a>
+          ·
+          <a href="https://github.com/ai-animation-tools/songframe/issues">Сообщить об ошибке</a>
+          ·
+          <a href="https://github.com/ai-animation-tools/songframe/blob/main/LICENSE">MIT License</a>
+        </p>
+        <p>SongFrame не связан с сервисами генерации и разработчиками агентов; их аккаунты и оплата — отдельно.</p>
+      </div>
+    </footer>
+
+    <script>
+      const repo = 'ai-animation-tools/songframe';
+      const releases = `https://github.com/${repo}/releases/latest`;
+      // Суффиксы совпадают с вложениями релиза: songframe-<версия>-<платформа>. @link ../scripts/release/release.mjs
+      const targets = {
+        linux: { name: 'Linux', suffix: '-linux-x86_64.AppImage', label: 'AppImage' },
+        windows: { name: 'Windows', suffix: '-win-x64-setup.exe', label: 'установщик' }
+      };
+      const links = Object.fromEntries(Object.keys(targets).map((key) => [key, { url: releases }]));
+
+      // Волна иллюстрации: детерминированный «трек», чтобы картинка не менялась при каждой загрузке.
+      const wave = document.getElementById('wave');
+      for (let i = 0; i < 72; i++) {
+        const bar = document.createElement('i');
+        const height = 18 + Math.abs(Math.sin(i * 0.45) * 52 + Math.sin(i * 1.7) * 22);
+        bar.style.height = `${Math.min(100, height)}%`;
+        if (i < 30) bar.className = 'past';
+        wave.append(bar);
+      }
+
+      function detect() {
+        const data = navigator.userAgentData;
+        const ua = navigator.userAgent;
+        const platform = data?.platform || navigator.platform || '';
+        // iPadOS выдаёт себя за Mac, но у него есть сенсорный экран.
+        if (data?.mobile || /Android|iPhone|iPad|iPod/i.test(ua) || (/Mac/i.test(platform) && navigator.maxTouchPoints > 1)) return 'mobile';
+        if (/Win/i.test(platform) || /Windows/.test(ua)) return 'windows';
+        if (/Mac/i.test(platform) || /Mac OS X/.test(ua)) return 'mac';
+        if (/Linux|X11|CrOS/i.test(platform + ua)) return 'linux';
+        return 'unknown';
+      }
+
+      const formatSize = (bytes) => `${Math.round(bytes / 1024 / 1024)} МБ`;
+
+      function render(current, version) {
+        document.querySelectorAll('.platform').forEach((card) => {
+          const link = links[card.dataset.target];
+          card.classList.toggle('current', card.dataset.target === current);
+          card.querySelector('a.get').href = link.url;
+          card.querySelector('small').textContent = link.size ? `${version} · ${formatSize(link.size)}` : '';
+        });
+        const target = targets[current];
+        const main = document.getElementById('main-download');
+        const cta = document.getElementById('cta-download');
+        if (!target) {
+          if (current === 'mobile') document.body.classList.add('is-mobile');
+          // На macOS сборки нет: ведём к выбору системы и честно объясняем почему.
+          if (current === 'mac') document.getElementById('main-meta').textContent = 'Сборки для macOS пока нет — доступны Linux и Windows';
+          for (const link of [main, cta]) link.href = '#download';
+          document.getElementById('main-label').textContent = 'Выбрать систему';
+          document.getElementById('cta-label').textContent = 'Выбрать систему';
+          document.getElementById('main-alt').hidden = true;
+          return;
+        }
+        const link = links[current];
+        main.href = link.url;
+        cta.href = link.url;
+        document.getElementById('main-label').textContent = `Скачать для ${target.name}`;
+        document.getElementById('cta-label').textContent = `Скачать для ${target.name}`;
+        if (version) document.getElementById('main-meta').textContent = `${version} · ${target.label}${link.size ? ` · ${formatSize(link.size)}` : ''}`;
+      }
+
+      async function init() {
+        const current = detect();
+        render(current);
+        try {
+          const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } });
+          if (!response.ok) return;
+          const release = await response.json();
+          for (const [key, target] of Object.entries(targets)) {
+            const asset = release.assets?.find((item) => item.name.endsWith(target.suffix));
+            if (asset) links[key] = { url: asset.browser_download_url, size: asset.size };
+          }
+          const version = release.tag_name;
+          document.getElementById('version-line').textContent = `Версия ${version} от ${new Date(release.published_at).toLocaleDateString('ru-RU')}.`;
+          render(current, version);
+        } catch {
+          // Без ответа GitHub ссылки ведут на страницу последнего релиза.
+        }
+      }
+      init();
+    </script>
+  </body>
+</html>

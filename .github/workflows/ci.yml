@@ -1,11 +1,29 @@
 # Проверки кода приложения и инструментов: на pull request и при слиянии в main.
-# Поставки здесь не собираются: их проверяют локально, а для релиза собирает release.yml.
+# Поставки здесь не собираются: их собирают и проверяют локально, выпуск — `yarn release`. @link ../../docs/development.md#выпуск-релиза
 name: CI
 
+# Раннер запускается только при изменении файлов, которые читают lint, format, typecheck и тесты.
+# `*.md` без папки — только корневые документы; README инструментов, шаблона и промпты скиллов остаются под CI.
 on:
   pull_request:
+    paths: &checked-paths
+      - '**'
+      - '!*.md'
+      - '!LICENSE'
+      - '!docs/**'
+      # Документы провайдеров вкладываются в промпт задания, их проверяет provider-guides.test.ts.
+      - 'docs/providers/**'
+      - '!dev-skills/**'
+      - '!.claude/**'
+      - '!.agents/**'
+      - '!.vscode/**'
+      - '!www/**'
+      - '!.github/workflows/pages.yml'
   push:
     branches: [main]
+    paths: *checked-paths
+  # Выпуск требует успешного CI своего коммита: после правок только документации его запускают вручную.
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}

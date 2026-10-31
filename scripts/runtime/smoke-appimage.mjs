@@ -11,7 +11,7 @@ const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const option = (name) => process.argv.find((arg) => arg.startsWith(`--${name}=`))?.slice(name.length + 3);
 const docker = process.argv.includes('--docker');
 const dockerfile = join(repo, 'scripts/runtime/linux-smoke.Dockerfile');
-// Тег зависит от содержимого Dockerfile: готовый образ (локальный или из кэша Release) переиспользуется, изменённый собирается заново.
+// Тег зависит от содержимого Dockerfile: готовый образ (локальный, от прошлой проверки) переиспользуется, изменённый собирается заново.
 const smokeImage = `songframe-smoke:${createHash('sha256')
   .update(await readFile(dockerfile))
   .digest('hex')

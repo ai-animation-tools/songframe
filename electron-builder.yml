@@ -1,4 +1,4 @@
-# Упаковка из Linux: AppImage и готовый Windows ZIP, результат в build/release.
+# Упаковка из Linux: AppImage и Windows-установщик NSIS, результат в build/release.
 appId: tools.songframe.app
 productName: SongFrame
 # Имена артефактов без пробелов: удобнее прикреплять к релизу и скачивать.
@@ -69,5 +69,20 @@ win:
         - '**/*'
         - '!models{,/**}'
   target:
-    - zip
+    - nsis
+# Установка в профиль пользователя (%LOCALAPPDATA%\Programs) без прав администратора:
+# check-runtime.cmd пишет отчёты в папку установки, она должна быть доступна на запись.
+nsis:
+  artifactName: songframe-${version}-win-${arch}-setup.${ext}
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
+  # Настройки, история и вход в провайдеров переживают удаление и переустановку.
+  deleteAppDataOnUninstall: false
+  # Только русские сообщения установщика; 1049 — русский LCID метаданных версии.
+  installerLanguages:
+    - ru_RU
+  language: '1049'
 npmRebuild: false

@@ -18,5 +18,7 @@ module.exports = async function beforePack(context) {
     const cmd = readFileSync(join(context.packager.projectDir, 'scripts/runtime/windows/check-runtime.cmd'));
     if (cmd.some((byte) => byte > 127) || /(?<!\r)\n/.test(cmd.toString('ascii')))
       throw new Error('check-runtime.cmd должен содержать только ASCII и переносы CRLF.');
+    // Деинсталлятор установщика NSIS извлекается без Wine.
+    require('./nsis-uninstaller.cjs').useUninstallerReader(context.packager.projectDir);
   }
 };

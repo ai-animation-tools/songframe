@@ -12,13 +12,20 @@ import { fileURLToPath } from 'node:url';
 const release = join(resolve(dirname(fileURLToPath(import.meta.url)), '../..'), 'build/release');
 const ACCEPTANCE = {
   linux: (name) => name.endsWith('.AppImage.sha256') || name === 'linux-smoke-result.json',
-  win: (name) => name.endsWith('.zip.sha256') || name === 'windows-archive-check.json'
+  win: (name) => name.endsWith('.exe.sha256') || name === 'windows-installer-check.json'
 };
 // Папку переноса оставлял прерванный smoke AppImage: она пустая или содержит перенесённый файл, который удаляется вместе с ней.
 const LEFTOVER = (name) => name === 'Перенос AppImage с пробелами';
 // Промежуточные каталоги electron-builder, включая `*-unpacked.tmp`, который остаётся после прерванной упаковки.
 const UNPACKED = (name) => /-unpacked(\.tmp)?$/.test(name);
-const BUILDER = (name) => UNPACKED(name) || name === 'builder-debug.yml' || name === 'builder-effective-config.yaml' || /^latest.*\.yml$/.test(name);
+// Служебные файлы NSIS: карта блоков для автообновления и промежуточный деинсталлятор прерванной сборки.
+const BUILDER = (name) =>
+  UNPACKED(name) ||
+  name === 'builder-debug.yml' ||
+  name === 'builder-effective-config.yaml' ||
+  /^latest.*\.yml$/.test(name) ||
+  name.endsWith('.blockmap') ||
+  name.includes('__uninstaller');
 
 async function remove(match) {
   let names;

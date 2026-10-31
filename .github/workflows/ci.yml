@@ -48,35 +48,34 @@ jobs:
           restore-keys: electron-${{ runner.os }}-
       - name: Зависимости
         run: yarn install --immutable
-      # ВРЕМЕННО: пока разбираем браузерный набор на домашних раннерах, остальные проверки выключены.
-      # - name: ESLint
-      # run: yarn lint
-      # - name: Prettier
-      # run: yarn format:check
-      # - name: Проверки сценария выпуска
-      # run: node --test scripts/release/release.test.mjs
-      # - name: Типизация
-      # run: yarn typecheck
-      # - uses: actions/setup-python@v7
-      # with:
-      # python-version: '3.12'
-      # # Общий архив проверяется по media-lock.json при каждом восстановлении, бинарники остаются в runner.temp.
-      # - uses: actions/cache@v6
-      # with:
-      # path: ${{ runner.temp }}/songframe-ci-ffmpeg/ffmpeg.tar.xz
-      # key: ci-ffmpeg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/runtime/media-lock.json') }}
-      # # Тесты создают карточки и экспортируют монтаж с настоящим FFmpeg. @link src/main/montage-integration.test.ts
-      # # Без системной libfribidi Pillow раскладывает текст без Raqm, и карточки образца расходятся по пикселям.
-      # - name: FFmpeg и Pillow для интеграционных тестов приложения
-      # run: |
-      # bash tools/run_tests/prepare_ci_media.sh
-      # python -m pip install pillow==13.0.0
-      # python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
-      # python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
-      # - name: Тесты приложения
-      # run: yarn test
-      # - name: Сборка приложения
-      # run: yarn build
+      - name: ESLint
+        run: yarn lint
+      - name: Prettier
+        run: yarn format:check
+      - name: Проверки сценария выпуска
+        run: node --test scripts/release/release.test.mjs
+      - name: Типизация
+        run: yarn typecheck
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      # Общий архив проверяется по media-lock.json при каждом восстановлении, бинарники остаются в runner.temp.
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/songframe-ci-ffmpeg/ffmpeg.tar.xz
+          key: ci-ffmpeg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/runtime/media-lock.json') }}
+      # Тесты создают карточки и экспортируют монтаж с настоящим FFmpeg. @link src/main/montage-integration.test.ts
+      # Без системной libfribidi Pillow раскладывает текст без Raqm, и карточки образца расходятся по пикселям.
+      - name: FFmpeg и Pillow для интеграционных тестов приложения
+        run: |
+          bash tools/run_tests/prepare_ci_media.sh
+          python -m pip install pillow==13.0.0
+          python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
+          python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
+      - name: Тесты приложения
+        run: yarn test
+      - name: Сборка приложения
+        run: yarn build
       # Витрина собирается из отслеживаемых фикстур без Python/runtime и рабочего проекта.
       - name: Статическая витрина Storybook
         run: yarn build-storybook
@@ -103,27 +102,31 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # tools:
-  # name: 'Инструменты Python: тесты'
-  # runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
-  # steps:
-  # - uses: actions/checkout@v7
-  # - uses: actions/setup-python@v7
-  # with:
-  # python-version: '3.12'
-  # - uses: actions/cache@v6
-  # with:
-  # path: ${{ runner.temp }}/songframe-ci-ffmpeg/ffmpeg.tar.xz
-  # key: ci-ffmpeg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/runtime/media-lock.json') }}
-  # # Raqm нужен для тех же пикселей карточек, что в образце: без libfribidi раскладка текста другая.
-  # - name: FFmpeg и Pillow для медиатестов
-  # run: |
-  # bash tools/run_tests/prepare_ci_media.sh
-  # python -m pip install pillow==13.0.0
-  # python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
-  # python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
-  # # Наборы независимы (у каждого процесса своя копия образца) и идут параллельно по числу ядер раннера.
-  # - name: Тесты
-  # run: python3 -B tools/run_tests/run_tests.py --jobs "$(nproc)"
-  # - name: Тесты скриптов поставки
-  # run: python3 -B -m unittest discover -s scripts/runtime -p 'test_*.py'
+  tools:
+    name: 'Инструменты Python: тесты'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/songframe-ci-ffmpeg/ffmpeg.tar.xz
+          key: ci-ffmpeg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/runtime/media-lock.json') }}
+      # Raqm нужен для тех же пикселей карточек, что в образце: без libfribidi раскладка текста другая.
+      - name: FFmpeg и Pillow для медиатестов
+        run: |
+          bash tools/run_tests/prepare_ci_media.sh
+          python -m pip install pillow==13.0.0
+          python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
+          python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
+      # Наборы независимы (у каждого процесса своя копия образца) и идут параллельно по числу ядер раннера.
+      # В контейнере nproc видит все ядра хоста, поэтому при квоте cgroup v2 число наборов берётся из неё.
+      - name: Тесты
+        run: |
+          read -r quota period 2> /dev/null < /sys/fs/cgroup/cpu.max || quota=max
+          if [ "$quota" = max ]; then jobs=$(nproc); else jobs=$(( quota / period > 0 ? quota / period : 1 )); fi
+          python3 -B tools/run_tests/run_tests.py --jobs "$jobs"
+      - name: Тесты скриптов поставки
+        run: python3 -B -m unittest discover -s scripts/runtime -p 'test_*.py'

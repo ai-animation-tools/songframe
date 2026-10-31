@@ -1,4 +1,5 @@
 /** Браузерный набор проверяет собранную витрину по HTTP; Node-тесты Vitest сюда не входят. */
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from '@playwright/test';
 
@@ -10,11 +11,23 @@ const basePath = '/songframe/storybook/';
 const baseURL = `http://127.0.0.1:${port}${basePath}`;
 const report = resolve(root, 'build/storybook-test');
 
+/** Половина квоты CPU контейнера (cgroup v2), как Playwright по умолчанию делит ядра; без квоты — его обычный выбор. */
+function containerWorkers(): number | undefined {
+  try {
+    const [quota, period] = readFileSync('/sys/fs/cgroup/cpu.max', 'utf8').trim().split(' ');
+    return quota === 'max' ? undefined : Math.max(1, Math.floor(Number(quota) / Number(period) / 2));
+  } catch {
+    return undefined;
+  }
+}
+
 export default defineConfig({
   testDir: __dirname,
   testMatch: 'stories.spec.ts',
   outputDir: resolve(report, 'results'),
   fullyParallel: true,
+  // Node видит все ядра хоста, а не квоту контейнера: на раннере с ограничением 36 браузеров делили несколько ядер и падали по таймауту.
+  workers: containerWorkers(),
   forbidOnly: ci,
   // Повтор отделяет нестабильную историю от сломанной в отчёте, но обе роняют job: прохождение «через раз» не принимается.
   retries: ci ? 1 : 0,

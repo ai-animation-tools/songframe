@@ -64,7 +64,8 @@ describe('загрузка исходников', () => {
     }
     expect(html).not.toContain('aria-label="Текст песни: перетащить файл в поле"');
     expect(html).not.toContain('aria-label="Идея клипа: перетащить файл в поле"');
-    expect(html).toContain('Идея клипа</label>');
+    // Обязательное поле: после подписи MUI добавляет звёздочку.
+    expect(html).toMatch(/Идея клипа<style[^>]*>[^<]*<\/style><span aria-hidden="true" class="MuiFormLabel-asterisk/);
     expect(html).not.toContain('Из файла</button>');
     expect(html).not.toContain('Выбрать MP3</button>');
   });

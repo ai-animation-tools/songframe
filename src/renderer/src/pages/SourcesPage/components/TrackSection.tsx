@@ -30,6 +30,11 @@ export function TrackSection({ track, trackNew, fileUrl, onPick, onClear, onDrop
           <audio controls preload="none" src={fileUrl(track.path)} style={{ width: '100%', marginTop: 12, marginBottom: 12 }} />
         </>
       ) : null}
+      {!track && !trackNew ? (
+        <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+          {sourcesTexts.trackRequired}
+        </Typography>
+      ) : null}
       {/* Управление воспроизведением и удалением выбора остаётся вне кликабельной области загрузки. */}
       <FileDropZone
         label={sourcesTexts.uploadTrack}

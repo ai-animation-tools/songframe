@@ -114,7 +114,14 @@ function createWindow(): void {
       autoplayPolicy: 'no-user-gesture-required'
     }
   });
-  window.once('ready-to-show', () => window.show());
+  window.once('ready-to-show', () => {
+    // Windows не отдаёт передний план процессу, запущенному установщиком: без кратковременного
+    // «поверх всех» первое окно открывается за другими окнами.
+    if (process.platform === 'win32') window.setAlwaysOnTop(true);
+    window.show();
+    window.focus();
+    if (process.platform === 'win32') window.setAlwaysOnTop(false);
+  });
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://') || url.startsWith('https://')) void shell.openExternal(url);
     return { action: 'deny' };

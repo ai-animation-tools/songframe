@@ -12,6 +12,8 @@ interface Props {
 }
 
 export function IdeaSection({ idea, onChange, onPick, onDrop }: Props): ReactElement {
+  // Пустая идея не сохраняется, поэтому поле отмечено так же, как текст песни с ошибкой.
+  const missing = !idea.trim();
   return (
     <Paper variant="outlined" sx={{ p: 2, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
       <Typography variant="subtitle1" fontWeight={600} gutterBottom>
@@ -25,6 +27,9 @@ export function IdeaSection({ idea, onChange, onPick, onDrop }: Props): ReactEle
         fullWidth
         sx={{ '& .MuiInputBase-inputMultiline': { lineHeight: 1.6 } }}
         value={idea}
+        required
+        error={missing}
+        helperText={missing ? sourcesTexts.ideaRequired : undefined}
         onChange={(e) => onChange(e.target.value)}
         placeholder={sourcesTexts.ideaPlaceholder}
       />

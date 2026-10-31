@@ -3,7 +3,9 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { analyzeLyrics } from '@shared/lyrics';
 import { sourcesTexts } from '@shared/texts/sources';
+import { IdeaSection } from './components/IdeaSection';
 import { LyricsSection } from './components/LyricsSection';
+import { TrackSection } from './components/TrackSection';
 import { CoverCropEditor } from '../../components/CoverCropEditor';
 import { ReferencePromptError } from './components/ReferencePromptError';
 import { ReferenceFileCard } from './components/ReferenceFileCard';
@@ -77,6 +79,35 @@ describe('тексты исходников', () => {
     );
     expect(html).toContain('aria-label="Загрузить текст песни из файла"');
     expect(html).toContain('[Куплет 1]\nпервая строка\nвторая строка\n\n[Припев]\n…');
+  });
+
+  it('отмечает у полей обязательные трек, текст песни и идею клипа, как и сводка проблем', () => {
+    const handlers = { onChange: vi.fn(), onPick: vi.fn(), onDrop: vi.fn() };
+    const idea = (value: string): string => renderToStaticMarkup(createElement(IdeaSection, { idea: value, ...handlers }));
+    for (const value of ['', ' \n\t']) {
+      const html = idea(value);
+      expect(html).toContain('Идея клипа обязательна.');
+      expect(html).toContain('aria-invalid="true"');
+      expect(html).toContain('required=""');
+    }
+    const filled = idea('Герой возвращается домой.');
+    expect(filled).not.toContain('Идея клипа обязательна.');
+    expect(filled).toContain('aria-invalid="false"');
+    expect(filled).toContain('required=""');
+
+    const lyrics = renderToStaticMarkup(createElement(LyricsSection, { lyrics: '', lyricsCheck: analyzeLyrics(''), ...handlers }));
+    expect(lyrics).toContain('aria-invalid="true"');
+    expect(lyrics).toContain('required=""');
+
+    const track = (props: {
+      track: null | { path: string; original_name: string; bytes: number; duration_seconds: number };
+      trackNew: string | null;
+    }): string => renderToStaticMarkup(createElement(TrackSection, { ...props, fileUrl: String, onPick: vi.fn(), onClear: vi.fn(), onDrop: vi.fn() } as never));
+    expect(track({ track: null, trackNew: null })).toContain('Трек обязателен.');
+    expect(track({ track: null, trackNew: '/музыка/песня.mp3' })).not.toContain('Трек обязателен.');
+    expect(track({ track: { path: 'source/track.mp3', original_name: 'песня.mp3', bytes: 1, duration_seconds: 1 }, trackNew: null })).not.toContain(
+      'Трек обязателен.'
+    );
   });
 
   it('экранирует путь ошибки и оставляет технические подробности рядом с повторным чтением', () => {

@@ -4,6 +4,8 @@ import { commonTexts } from './common';
 /** Тексты исходников и временной обложки; правила владения — @link ../../../docs/ui/texts.md. */
 // Имена исходников одинаковы в форме и в сообщениях проверки main.
 const labels = { track: 'Трек', lyrics: 'Текст песни', cover: 'Обложка', idea: 'Идея клипа' } as const;
+// Общие сообщения проверки главного процесса и отметки у полей формы.
+const required = { track: 'Трек обязателен.', idea: 'Идея клипа обязательна.' } as const;
 
 export const sourcesTexts = {
   // Main возвращает прежние готовые фразы через проблемы формы и Error.message; формат исходников не меняется.
@@ -39,10 +41,10 @@ export const sourcesTexts = {
     coverLabel: labels.cover,
     clipIdeaLabel: labels.idea,
     manifestInvalid: 'source/manifest.json повреждён или другой версии.',
-    trackRequired: 'Трек обязателен.',
+    trackRequired: required.track,
     trackFormatInvalid: 'Трек должен быть в формате MP3.',
     lyricsRequired: 'Текст песни обязателен.',
-    ideaRequired: 'Идея клипа обязательна.',
+    ideaRequired: required.idea,
     coverFormatInvalid: 'Обложка: допустимы PNG, JPG и WebP.',
     applicationStopping: commonTexts.runtime.applicationStopping,
     projectRequired: 'Выберите папку проекта.',
@@ -151,6 +153,7 @@ export const sourcesTexts = {
   coverFileMessage: 'Перетащите изображение или нажмите для выбора',
   generateCoverTitle: 'Создать обложку через провайдера изображений проекта',
   idea: labels.idea,
+  ideaRequired: required.idea,
   ideaPlaceholder: 'Общая история прозой: кто герои, что с ними происходит, настроение, без привязки к таймингам.',
   ideaHint: 'Сохраняется в source/description.md. Сценарий по сценам составляется позже, из этого текста, слов песни и разметки.',
   uploadIdea: 'Загрузить идею клипа из файла',
@@ -201,6 +204,7 @@ export const sourcesTexts = {
     'Персонажи, транспорт, локации, предметы и стиль. Код референса становится идентификатором сущности в сценарии и состоянии героев. Несколько изображений одной сущности задают разные виды. Если референсов пока нет, их можно добавить после сценария.',
   noReferences: 'Референсов нет.',
   track: labels.track,
+  trackRequired: required.track,
   uploadTrack: 'Загрузка трека',
   trackFileHint: 'Один файл MP3.',
   trackFileMessage: 'Перетащите MP3 или нажмите для выбора',

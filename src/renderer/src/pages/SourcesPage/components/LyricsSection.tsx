@@ -26,6 +26,7 @@ export function LyricsSection({ lyrics, lyricsCheck, onChange, onPick, onDrop }:
         fullWidth
         label={sourcesTexts.lyrics}
         value={lyrics}
+        required
         error={lyricsCheck.problems.length > 0}
         helperText={lyricsCheck.problems.length ? lyricsCheck.problems.join(' ') : LYRICS_FORMAT_HINT}
         sx={{ '& .MuiInputBase-inputMultiline': { lineHeight: 1.6 } }}

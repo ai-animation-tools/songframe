@@ -13,6 +13,7 @@ import type { ScenarioStatus } from './scenario-status';
 import type { ReferenceImageGenerationApi } from './reference-image-generation';
 import type { CoverGenerationApi } from './cover-generation';
 import type { AiAccess } from './ai-access';
+import type { UpdatesApi } from './updates';
 import type {
   KeyframeNoteScope,
   AcceptOptions,
@@ -65,6 +66,8 @@ export interface Api {
   derivedShots: DerivedShotApi;
   montage: MontageApi;
   montageWindow: MontageWindowApi;
+  /** Проверка, скачивание и установка новой версии приложения только по действию пользователя. */
+  updates: UpdatesApi;
   notifications: {
     /** Подписка на переход из уведомления; возвращает отключение без объекта события Electron. */
     onOpen(listener: (target: NotificationTarget) => void): () => void;

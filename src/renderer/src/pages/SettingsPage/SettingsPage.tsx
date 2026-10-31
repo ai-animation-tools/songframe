@@ -5,7 +5,7 @@ import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
 import { Alert, LinearProgress, Paper, Stack, Typography } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
-import { AgentDiagnostics, AgentInstructions, AgentSettingsForm } from './components';
+import { AgentDiagnostics, AgentInstructions, AgentSettingsForm, AppUpdates } from './components';
 import { useAgentSettings } from './useAgentSettings';
 import { ActionButton, AgentButton } from '../../components';
 import { PageActionBar } from '../../components/PageActionBar';
@@ -99,6 +99,7 @@ export function SettingsPage(): ReactElement {
           {form.settings && form.result && <AgentInstructions provider={form.settings.provider} result={form.result} />}
         </>
       )}
+      <AppUpdates />
     </Stack>
   );
 }

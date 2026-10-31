@@ -36,6 +36,12 @@ const relayAgentEvent = (_event: Electron.IpcRendererEvent, value: AgentEvent): 
 
 const api: Api = {
   ai: { access: (project) => ipcRenderer.invoke('ai:access', project) },
+  updates: {
+    view: () => ipcRenderer.invoke('updates:view'),
+    check: () => ipcRenderer.invoke('updates:check'),
+    download: () => ipcRenderer.invoke('updates:download'),
+    install: () => ipcRenderer.invoke('updates:install')
+  },
   cover: {
     create: (project, prompt) => ipcRenderer.invoke('cover:create', project, prompt),
     prepare: (id) => ipcRenderer.invoke('cover:prepare', id),

@@ -105,6 +105,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
   const merged: Api = {
     ...defaults,
     ai: { ...defaults.ai, ...overrides.ai },
+    updates: { ...defaults.updates, ...overrides.updates },
     cover: { ...defaults.cover, ...overrides.cover },
     referenceImages: { ...defaults.referenceImages, ...overrides.referenceImages },
     derivedShots: { ...defaults.derivedShots, ...overrides.derivedShots },
@@ -135,6 +136,12 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
   const api: Api = {
     ai: {
       access: guardedAsync(merged.ai.access)
+    },
+    updates: {
+      view: guardedAsync(merged.updates.view),
+      check: guardedAsync(merged.updates.check),
+      download: guardedAsync(merged.updates.download),
+      install: guardedAsync(merged.updates.install)
     },
     cover: {
       create: guardedAsync(merged.cover.create),

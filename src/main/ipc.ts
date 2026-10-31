@@ -1,8 +1,9 @@
 /** Регистрация обработчиков IPC: тонкий слой над модулями главного процесса. */
 
+import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { app, BrowserWindow, dialog, ipcMain, shell, nativeImage } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, net, shell, nativeImage } from 'electron';
 import type {
   AcceptOptions,
   CastFile,
@@ -29,6 +30,7 @@ import { timingTexts } from '@shared/texts/timing';
 import { jobsTexts } from '@shared/texts/jobs';
 import { productionTexts } from '@shared/texts/production';
 import { Jobs } from './jobs';
+import { AppUpdates, relaunchAppImage } from './updates';
 import { runtimeInfo, type AppDiagnostics } from './app-diagnostics';
 import { buildReport, jobText } from './diagnostics';
 import { CHECKS, Checks, listReviews, readProjectSettings, writeProjectSettings } from './checks';
@@ -224,6 +226,25 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     checkProviderAuth: (provider) => requirePaid(provider).checkAuth(getServices().launcher.options)
   });
   ipcMain.handle('ai:access', (_event, project: string | null) => ai.getAccess(project));
+  // Служба создаётся при первом обращении. net.fetch учитывает системный прокси; пакет скачивается в каталог состояния.
+  let updateService: AppUpdates | undefined;
+  const updates = (): AppUpdates =>
+    (updateService ??= new AppUpdates({
+      currentVersion: app.getVersion(),
+      platform: process.platform,
+      directory: join(getServices().settings.localDir, 'updates'),
+      fetch: (input, init) => net.fetch(input instanceof URL ? input.href : input, init),
+      appImage: app.isPackaged ? process.env.APPIMAGE : undefined,
+      launch: (file) => spawn(file, [], { detached: true, stdio: 'ignore' }).unref(),
+      relaunch: relaunchAppImage,
+      // Ответ IPC уходит раньше завершения; before-quit штатно останавливает задания.
+      quit: () => setTimeout(() => app.quit(), 300),
+      reveal: (file) => shell.showItemInFolder(file)
+    }));
+  ipcMain.handle('updates:view', () => updates().view());
+  ipcMain.handle('updates:check', () => updates().check());
+  ipcMain.handle('updates:download', () => updates().download());
+  ipcMain.handle('updates:install', () => updates().install());
   const imageOptions: CoverGenerationOptions = {
     settings: getServices().settings,
     readImage: (path) => {

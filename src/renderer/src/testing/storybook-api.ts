@@ -10,6 +10,12 @@ export function unconfiguredStoryApi(): Api {
     ai: {
       access: async () => unconfigured('ai.access')
     },
+    updates: {
+      view: async () => unconfigured('updates.view'),
+      check: async () => unconfigured('updates.check'),
+      download: async () => unconfigured('updates.download'),
+      install: async () => unconfigured('updates.install')
+    },
     cover: {
       create: async () => unconfigured('cover.create'),
       prepare: async () => unconfigured('cover.prepare'),

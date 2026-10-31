@@ -30,6 +30,8 @@ interface Props {
   cancelLabel?: string;
   cancelAutoFocus?: boolean;
   extraActions?: ReactNode;
+  /** Подпись содержимого, которое может не поместиться: область прокрутки получает фокус для клавиатуры. */
+  contentLabel?: string;
 }
 
 /** Единое оформление подтверждения; решение и ограничения операции остаются у вызывающей страницы. */
@@ -51,7 +53,8 @@ export function ConfirmationDialog({
   closeDisabled = false,
   cancelLabel = commonTexts.cancel,
   cancelAutoFocus = false,
-  extraActions
+  extraActions,
+  contentLabel
 }: Props): ReactElement {
   const id = useId();
   return (
@@ -64,7 +67,10 @@ export function ConfirmationDialog({
       fullWidth
     >
       <DialogTitle id={`${id}-title`}>{title}</DialogTitle>
-      <DialogContent>
+      <DialogContent
+        {...(contentLabel ? { role: 'region', 'aria-label': contentLabel, tabIndex: 0 } : {})}
+        sx={contentLabel ? { '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: -2 } } : undefined}
+      >
         {description ? <DialogContentText id={`${id}-description`}>{description}</DialogContentText> : null}
         {children}
       </DialogContent>

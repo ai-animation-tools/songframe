@@ -68,7 +68,7 @@ export function TimingToolbar({
       {/* Действия держатся одной группой справа: при переносе «Сохранить» остаётся последней справа. */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end', ml: 'auto' }}>
         <ActionButton
-          startIcon={generating ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+          startIcon={generating ? <CircularProgress size={16} aria-hidden /> : <AutoFixHighIcon />}
           title={generating ? undefined : timingTexts.generateHint}
           disabled={working || dirty || !canGenerate}
           disabledReason={generateReason}

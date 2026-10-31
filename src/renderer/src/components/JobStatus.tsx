@@ -32,7 +32,8 @@ export function JobStatus({ running = false, label, job, error }: { running?: bo
 
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
-      {running && <CircularProgress size={14} />}
+      {/* Состояние передаёт подпись рядом. */}
+      {running && <CircularProgress size={14} aria-hidden />}
       <Typography variant="body2" color="text.secondary">
         {label ?? commonTexts.job.running}
       </Typography>

@@ -426,6 +426,7 @@ export const scenarioTexts = {
     keepDescription: () =>
       `Подходит для опечаток и правок, не меняющих сюжет. Принятые комплекты и пакеты перечисленных планов останутся в силе, хотя их постановка в реестре изменится. ${scenarioTexts.save.animaticNote}`,
     affectedShots: ({ count }: { count: number }) => `Затронутые планы: ${count}`,
+    affectedShotsRegion: 'Последствия сохранения для планов',
     keepNothingReason: 'Изменения не затрагивают принятые планы и пакеты: используйте «Сохранить».'
   },
   treatment: {

@@ -359,6 +359,6 @@ export const Empty: Story = {
     await pageReady(context);
     await expect(screen.queryByText(texts.productionPage.chooseShot)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('link', { name: '«Сценарий»' }));
-    await expect(route(context)).toHaveTextContent(/^\/project\/scenario$/);
+    await waitFor(() => expect(route(context)).toHaveTextContent(/^\/project\/scenario$/));
   }
 };

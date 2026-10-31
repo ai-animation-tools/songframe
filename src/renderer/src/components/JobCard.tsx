@@ -52,7 +52,8 @@ export function JobCard({ job, lines = 14, expanded = false }: { job: JobInfo; l
             ))
           : null}
       </Box>
-      {job.status === 'running' ? <LinearProgress sx={{ my: 0.5 }} /> : null}
+      {/* Состояние уже называет значок у заголовка. */}
+      {job.status === 'running' ? <LinearProgress sx={{ my: 0.5 }} aria-hidden /> : null}
       {job.status === 'interrupted' ? (
         <Typography variant="body2" color="warning.main" sx={{ mt: 0.5 }}>
           {componentsTexts.job.interruptedExplanation({ message: JOB_INTERRUPTED_MESSAGE })}

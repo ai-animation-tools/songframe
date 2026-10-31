@@ -65,7 +65,8 @@ export function PageLoaderArea({ children }: { children: ReactNode }): ReactElem
               opacity: 0.85
             }}
           >
-            <CircularProgress />
+            {/* Имя несёт внешний progressbar, вложенный не дублирует его. */}
+            <CircularProgress aria-hidden />
           </Box>
         </Fade>
       </Box>

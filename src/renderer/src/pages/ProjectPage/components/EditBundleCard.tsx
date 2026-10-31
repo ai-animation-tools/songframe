@@ -127,7 +127,7 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
           disabled={busy || deletingBundle !== null || !pythonAvailable || job?.status === 'running'}
           disabledReason={buildReason}
           onClick={run}
-          startIcon={job?.status === 'running' ? <CircularProgress size={16} color="inherit" /> : <BuildIcon />}
+          startIcon={job?.status === 'running' ? <CircularProgress size={16} color="inherit" aria-hidden /> : <BuildIcon />}
         >
           {job?.status === 'running' ? projectTexts.bundle.building : projectTexts.bundle.build}
         </ActionButton>

@@ -38,7 +38,8 @@ export function MontageSceneCard({
       <ButtonBase
         disabled={!used}
         onClick={() => used && onSelectClip(used.id)}
-        aria-label={montageTexts.selectScene(scene.id)}
+        // Имя кнопки складывается из видимых кода, названия и длительности сцены (WCAG 2.5.3); действие — в подсказке.
+        title={used ? montageTexts.selectScene(scene.id) : undefined}
         sx={{
           display: 'block',
           textAlign: 'left',
@@ -111,7 +112,9 @@ export function MontageSceneCard({
                 {source.label}
               </Typography>
               {used && !selected ? (
+                // Залитая кнопка: текст error не держит 4.5:1 на цветном фоне материала, а contrastText темы держит.
                 <DestructiveButton
+                  variant="contained"
                   label={montageTexts.replaceCurrent}
                   description={montageTexts.replaceDescription({ scene: scene.id, label: source.label })}
                   confirmLabel={montageTexts.replaceOnTrack}

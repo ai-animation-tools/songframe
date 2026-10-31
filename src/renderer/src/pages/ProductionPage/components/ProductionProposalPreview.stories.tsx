@@ -280,13 +280,23 @@ export const LongDialog: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(document.body);
+    // Длинный сохранённый текст модели прокручивается локально и тоже доступен с клавиатуры.
+    await expect(canvas.getByRole('region', { name: 'Сохранённые материалы' })).toHaveAttribute('tabindex', '0');
     await userEvent.click(canvas.getByRole('button', { name: 'Просмотреть предложение и сравнение' }));
     let dialog = body.getByRole('dialog', { name: /Предложение для производства/ });
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Закрыть без применения' })).toBeVisible());
+    // Колонки прокручиваются локально и доступны с клавиатуры под своими заголовками.
+    for (const name of [productionTexts.productionProposalPreview.current, productionTexts.productionProposalPreview.proposed]) {
+      const column = within(dialog).getByRole('region', { name });
+      await expect(column).toHaveAttribute('tabindex', '0');
+      await waitFor(() => expect(column.scrollHeight).toBeGreaterThan(column.clientHeight));
+    }
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
     await userEvent.click(canvas.getByRole('button', { name: 'Просмотреть предложение и сравнение' }));
     dialog = body.getByRole('dialog', { name: /Предложение для производства/ });
+    // Повторно открытый диалог становится доступным после начала появления, как и при первом открытии.
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Применить предложение' })).toBeVisible());
     await userEvent.click(within(dialog).getByRole('button', { name: 'Применить предложение' }));
     await userEvent.click(within(body.getByRole('dialog', { name: 'Применить предложение?' })).getByRole('button', { name: 'Применить' }));
     await waitFor(() => expect(within(dialog).getByText('Не удалось сохранить изменения. Материалы и предложение сохранены для повтора.')).toBeInTheDocument());

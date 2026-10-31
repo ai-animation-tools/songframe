@@ -44,7 +44,7 @@ export function DerivedShotPanel({ project, shot, onApplied }: { project: string
         </Typography>
         {!view && !form.error ? (
           <Stack direction="row" spacing={1} alignItems="center">
-            <CircularProgress size={18} />
+            <CircularProgress size={18} aria-hidden />
             <Typography>{texts.loading}</Typography>
           </Stack>
         ) : null}

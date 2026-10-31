@@ -23,11 +23,12 @@ export function CastEntityImages({ images, imagePaths, imageOptions, onChange }:
         {castTexts.images}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* Нажатие на изображение меняет основное; удаление привязки требует отдельного подтверждения. */}
+        {/* Нажатие на изображение меняет основное; удаление привязки требует отдельного подтверждения.
+            Подпись чипа называет изображение, поэтому миниатюра декоративна. */}
         {images.map((image, index) => (
           <Box key={image} sx={{ display: 'inline-flex', alignItems: 'center' }}>
             <Chip
-              avatar={<Avatar src={window.api.shell.fileUrl(imagePaths[image] ?? '')} variant="rounded" />}
+              avatar={<Avatar src={window.api.shell.fileUrl(imagePaths[image] ?? '')} alt="" variant="rounded" />}
               label={imageLabels.get(image) ?? image}
               title={image}
               color={index === 0 ? 'primary' : 'default'}

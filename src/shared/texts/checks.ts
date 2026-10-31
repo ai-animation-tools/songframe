@@ -52,6 +52,7 @@ export const checksTexts = {
   reviewRemoved: 'Проба и её рецепт удалены',
   checkDone: 'ok',
   checkSkipped: 'пропуск',
+  checkRunning: (label: string) => `${label}: выполняется проверка`,
   strictMode: 'Предупреждения считать ошибками',
   nextShotAndQueue: 'Следующий план и очередь',
   rebuildViewsHint: 'Пересобрать монтажный список, раскадровку и карточки по реестру сцен',

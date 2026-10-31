@@ -64,7 +64,7 @@ export function WhisperModelSetup({ path, onPathChange }: Props): ReactElement {
     <Stack spacing={2}>
       {!setup && !error ? (
         <Stack direction="row" spacing={1}>
-          <CircularProgress size={18} />
+          <CircularProgress size={18} aria-hidden />
           <Typography variant="body2">{timingTexts.checkingHardware}</Typography>
         </Stack>
       ) : null}

@@ -234,7 +234,7 @@ export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target
             )}
             {(preparing || generating) && (
               <Stack direction="row" spacing={1} alignItems="center" role="status">
-                <CircularProgress size={20} />
+                <CircularProgress size={20} aria-hidden />
                 <Typography variant="body2">
                   {accepting
                     ? reference

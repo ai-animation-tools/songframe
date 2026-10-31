@@ -32,6 +32,8 @@ export function CastEntityIdentityFields({ entity, entities, kinds, onUpdate, on
         onChange={(e) => onRename(e.target.value)}
         helperText={castTexts.entityCodeKey}
         disabled={entity.kind === WORLD}
+        // Пояснение остаётся читаемым и у заблокированного кода мира: явный disabled: false не наследует серый цвет поля.
+        slotProps={{ formHelperText: { disabled: false } }}
       />
     </Box>
   );

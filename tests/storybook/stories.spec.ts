@@ -41,15 +41,25 @@ declare global {
 const CI_TAG = 'ci';
 /** Пауза после завершения истории: ошибка таймера, сработавшего сразу после play, тоже роняет проверку. */
 const SETTLE_MS = 500;
+/** Адрес, на который витрина подменяет файлы вне набора: 404 по нему — сценарий истории, а не ошибка. */
+const MISSING_FILE = '/media/missing-story-file';
 
 const indexPath = resolve(__dirname, '../../build/storybook/index.json');
 if (!existsSync(indexPath)) throw new Error('Нет build/storybook/index.json. Сначала выполните yarn build-storybook.');
 const entries = Object.values((JSON.parse(readFileSync(indexPath, 'utf8')) as { entries: Record<string, IndexEntry> }).entries);
-const stories = entries.filter((entry) => entry.type === 'story' && entry.tags?.includes(CI_TAG));
-if (!stories.length) throw new Error(`В витрине нет историй с меткой «${CI_TAG}».`);
+/** STORYBOOK_TEST_ALL=1 — полный обход всех историй при приёмке общих изменений (палитра, тема, компоновка). */
+const all = process.env.STORYBOOK_TEST_ALL === '1';
+const stories = entries.filter((entry) => entry.type === 'story' && (all || entry.tags?.includes(CI_TAG)));
+if (!stories.length) throw new Error(all ? 'В витрине нет историй.' : `В витрине нет историй с меткой «${CI_TAG}».`);
 
 /** Подписка ставится до загрузки preview: ранние события play не теряются. */
 function observeStory(): void {
+  // Переход MUI меняет цвет текста сразу, а фон плавно: axe не должен проверять промежуточный кадр.
+  document.addEventListener('DOMContentLoaded', () => {
+    const style = document.createElement('style');
+    style.textContent = '*, *::before, *::after { transition: none !important; }';
+    document.head.append(style);
+  });
   const outcome: StoryOutcome & { finished: boolean } = { finished: false, events: [], reporters: [] };
   window.__songframeStory = outcome;
   let channel: { on(name: string, listener: (payload: unknown) => void): void } | undefined;
@@ -92,7 +102,8 @@ for (const story of stories) {
       if (message.type() === 'error' && !message.text().startsWith('Failed to load resource')) problems.push(`console: ${message.text()}`);
     });
     page.on('response', (response) => {
-      if (response.status() >= 400) problems.push(`HTTP ${response.status()}: ${response.url()}`);
+      // Истории утраченного файла намеренно ссылаются на отсутствующий адрес. @link src/renderer/src/testing/storybook.ts
+      if (response.status() >= 400 && !new URL(response.url()).pathname.endsWith(MISSING_FILE)) problems.push(`HTTP ${response.status()}: ${response.url()}`);
     });
     page.on('requestfailed', (request) => {
       // Прерванное чтение медиа штатно: плеер отменяет его при перемотке и размонтировании.

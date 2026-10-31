@@ -231,7 +231,8 @@ export const montageTexts = {
   selectScene: (scene: string) => `Выбрать сцену ${scene}`,
   replaceDescription: ({ scene, label }: { scene: string; label: string }) =>
     `На дорожке сцены ${scene} текущий вариант будет заменён на «${label}». Обрезка начнётся заново с начала выбранного материала; если он короче, фрагмент на дорожке станет короче. Исходные файлы сохранятся, замену можно отменить.`,
-  openMaterial: (label: string) => `Открыть материал: ${label}`,
+  // Имя кнопки превью начинается с её видимого текста: состояния превью и подсказки действия.
+  openMaterial: ({ status, action, label }: { status?: string; action: string; label: string }) => `${status ? `${status} — ` : ''}${action}: ${label}`,
   panelHeight: (height: number) => `Высота верхней панели ${countLabel(height, 'пиксель', 'пикселя', 'пикселей')}`,
   waveFailed: (reason: string) => `Волна недоступна: ${reason}`,
   sceneTitle: ({ scene, title }: { scene: string; title: string }) => `${scene} — ${title}`,

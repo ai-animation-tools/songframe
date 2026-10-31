@@ -52,12 +52,14 @@ export function ScenesSaveDialog({
       cancelDisabled={busy}
       cancelDisabledReason={BUSY_REASON}
       closeDisabled={busy}
+      contentLabel={scenarioTexts.save.affectedShotsRegion}
     >
       {/* Список берётся только из расчёта главного процесса: формальные связи постановки, без догадок о смысле правки. */}
       <Typography variant="subtitle2" sx={{ mt: 2 }}>
         {scenarioTexts.save.affectedShots({ count: request?.shots.length ?? 0 })}
       </Typography>
-      <List dense disablePadding sx={{ maxHeight: 320, overflowY: 'auto' }}>
+      {/* Длинный список прокручивается вместе с содержимым диалога: одна область прокрутки вместо вложенной. */}
+      <List dense disablePadding>
         {(request?.shots ?? []).map((shot) => {
           const state = SHOT_STATE_LABELS[shot.state];
           return (

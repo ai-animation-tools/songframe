@@ -69,7 +69,7 @@ export function AgentJobCard({
       </Stack>
       {job.status === 'running' && (
         <>
-          <LinearProgress />
+          <LinearProgress aria-hidden />
           <Typography variant="caption">{job.phase}</Typography>
         </>
       )}

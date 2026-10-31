@@ -93,7 +93,8 @@ describe('Тексты ручного монтажа', () => {
     expect(montageTexts.waveWarning('Волна недоступна: <>&')).toBe('Волна недоступна: <>& Выделение и прослушивание остаются доступны.');
     expect(montageTexts.sceneTitle({ scene: 'M<&>', title: '«Опора»' })).toBe('M<&> — «Опора»');
     expect(montageTexts.sourceLabel({ title: 'M<&> — «Опора»', label: '<>&' })).toBe('M<&> — «Опора»: <>&');
-    expect(montageTexts.openMaterial('<>&')).toBe('Открыть материал: <>&');
+    expect(montageTexts.openMaterial({ action: 'Смотреть', label: '<>&' })).toBe('Смотреть: <>&');
+    expect(montageTexts.openMaterial({ status: 'Превью недоступно', action: 'Смотреть', label: '<>&' })).toBe('Превью недоступно — Смотреть: <>&');
     expect(montageTexts.lyricTitle({ time: '00:03:00', text: '<>&' })).toBe('00:03:00 — <>&');
     expect(montageTexts.selectedScene('M<&>')).toBe('Выбранная сцена · M<&>');
     expect(montageTexts.selectScene('M<&>')).toBe('Выбрать сцену M<&>');

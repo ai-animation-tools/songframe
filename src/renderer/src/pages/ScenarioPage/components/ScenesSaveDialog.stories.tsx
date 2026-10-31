@@ -134,8 +134,14 @@ export const LongList: Story = {
     const dialog = await screen.findByRole('dialog');
     const list = within(dialog).getByRole('list');
     await expect(within(list).getAllByRole('listitem')).toHaveLength(28);
-    await waitFor(() => expect(list.scrollHeight).toBeGreaterThan(list.clientHeight));
-    list.scrollTop = list.scrollHeight;
+    // Прокручивается одно содержимое диалога; список внутри него собственной прокрутки не имеет.
+    const region = within(dialog).getByRole('region', { name: scenarioTexts.save.affectedShotsRegion });
+    await waitFor(() => expect(region.scrollHeight).toBeGreaterThan(region.clientHeight));
+    await expect(list.scrollHeight).toBe(list.clientHeight);
+    // Первый Tab приводит в область прокрутки: в фокусе её прокручивают клавишами браузера.
+    await userEvent.tab();
+    await expect(region).toHaveFocus();
+    region.scrollTop = region.scrollHeight;
     await waitFor(() => expect(within(list).getByText('M28')).toBeVisible());
     await userEvent.tab();
     await expect(dialog.contains(canvasElement.ownerDocument.activeElement)).toBe(true);

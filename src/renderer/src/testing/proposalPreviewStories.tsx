@@ -1,5 +1,5 @@
 /** Управляемая витрина предложений: запись материалов и их художественное согласование остаются разными шагами. */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Alert, Paper, Stack, Typography } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type { ProductionProposal, ProductionStageProposal } from '@shared/production-workflow';
@@ -38,6 +38,7 @@ export function ProposalPreviewStory({ initialProposal, busy = false, failFirst 
   const [notice, setNotice] = useState<{ error: boolean; text: string } | null>(null);
   const pending = useRef<{ timer: ReturnType<typeof setTimeout>; resolve(value: boolean): void } | null>(null);
   const failed = useRef(false);
+  const savedTitleId = useId();
   useEffect(
     () => () => {
       if (!pending.current) return;
@@ -114,8 +115,24 @@ export function ProposalPreviewStory({ initialProposal, busy = false, failFirst 
       )}
       {notice && dialog && !notice.error && <Alert severity="success">{notice.text}</Alert>}
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle2">Сохранённые материалы</Typography>
-        <Typography data-testid="saved-materials" variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', maxHeight: 120, overflowY: 'auto' }}>
+        <Typography id={savedTitleId} variant="subtitle2">
+          Сохранённые материалы
+        </Typography>
+        {/* Длинный сохранённый текст прокручивается локально, поэтому область доступна с клавиатуры. */}
+        <Typography
+          data-testid="saved-materials"
+          role="region"
+          aria-labelledby={savedTitleId}
+          tabIndex={0}
+          variant="body2"
+          sx={{
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'anywhere',
+            maxHeight: 120,
+            overflowY: 'auto',
+            '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: -2 }
+          }}
+        >
           {savedText(saved)}
         </Typography>
         <Typography variant="caption" color="text.secondary">

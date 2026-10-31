@@ -1,6 +1,6 @@
 import { productionTexts } from '@shared/texts/production';
 /** Предложение показывается отдельно от сохранённых материалов: завершение задания не означает согласование. */
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useId, useState, type ReactElement, type ReactNode } from 'react';
 import { Alert, Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
 import type { AgentSettings } from '@shared/agents';
 import type { ProductionFramePrompt, ProductionProposal, ProductionRequestDraft } from '@shared/production-workflow';
@@ -22,10 +22,11 @@ function fileName(path: string): string {
 
 /** Колонка сравнения: заголовок отделён от содержимого фоном и линией, содержимое прокручивается внутри. */
 function Column({ title, hint, children }: { title: string; hint?: string; children: ReactNode }): ReactElement {
+  const titleId = useId();
   return (
     <Paper variant="outlined" sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
       <Box sx={{ px: 2, py: 1, bgcolor: 'action.hover', borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="subtitle1" fontWeight={700}>
+        <Typography id={titleId} variant="subtitle1" fontWeight={700}>
           {title}
         </Typography>
         {hint ? (
@@ -34,7 +35,21 @@ function Column({ title, hint, children }: { title: string; hint?: string; child
           </Typography>
         ) : null}
       </Box>
-      <Box sx={{ p: 2, overflowY: 'auto', minHeight: 0, flex: 1 }}>{children}</Box>
+      {/* Прокручиваемое содержимое доступно с клавиатуры; рамка фокуса внутри, иначе её обрезает Paper. */}
+      <Box
+        role="region"
+        aria-labelledby={titleId}
+        tabIndex={0}
+        sx={{
+          p: 2,
+          overflowY: 'auto',
+          minHeight: 0,
+          flex: 1,
+          '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: -2 }
+        }}
+      >
+        {children}
+      </Box>
     </Paper>
   );
 }

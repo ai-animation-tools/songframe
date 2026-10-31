@@ -15,6 +15,9 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// Кнопка превью называется видимой подсказкой действия и подписью материала.
+const OPEN_MATERIAL = new RegExp(`(?:${commonTexts.watch}|${montageTexts.enlarge}): `);
+
 export const SearchAndAdd: Story = {
   name: 'Поиск, пустая выдача и добавление одной сцены',
   args: { initiallyEmpty: true },
@@ -87,7 +90,7 @@ export const BrowseMaterials: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const screen = within(canvasElement.ownerDocument.body);
-    await userEvent.click(canvas.getAllByRole('button', { name: /Открыть материал:/ })[0]);
+    await userEvent.click(canvas.getAllByRole('button', { name: OPEN_MATERIAL })[0]);
     let element = await screen.findByRole('dialog');
     await waitFor(() => expect(element).toBeVisible());
     let dialog = within(element);
@@ -117,7 +120,7 @@ export const BrowseMaterials: Story = {
         .getAllByRole('cell')
         .map((cell) => cell.textContent)
     ).toEqual(['M01', '15', '60', '45']);
-    await userEvent.click(canvas.getAllByRole('button', { name: /Открыть материал:/ })[2]);
+    await userEvent.click(canvas.getAllByRole('button', { name: OPEN_MATERIAL })[2]);
     element = await screen.findByRole('dialog');
     await waitFor(() => expect(element).toBeVisible());
     dialog = within(element);
@@ -146,7 +149,7 @@ export const MissingOriginal: Story = {
     const canvas = within(canvasElement);
     const screen = within(canvasElement.ownerDocument.body);
     await waitFor(() => expect(canvas.getByText(montageTexts.previewUnavailable)).toBeInTheDocument(), { timeout: 10000 });
-    await userEvent.click(canvas.getAllByRole('button', { name: /Открыть материал:/ })[0]);
+    await userEvent.click(canvas.getAllByRole('button', { name: OPEN_MATERIAL })[0]);
     const element = await screen.findByRole('dialog');
     await waitFor(() => expect(element).toBeVisible());
     await waitFor(() => expect(within(element).getByRole('alert')).toHaveTextContent(montageTexts.materialVideoFailed), { timeout: 10000 });

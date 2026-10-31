@@ -92,7 +92,8 @@ export function SceneList({
                 <Typography variant="caption" color="text.secondary">
                   {scenarioTexts.timeline.range({ start: formatClock(s.start_frame / FPS), end: formatClock(s.end_frame_exclusive / FPS) })}
                 </Typography>
-                {!filled ? <Chip size="small" label={scenarioTexts.brief.empty} color="warning" variant="outlined" sx={{ height: 18 }} /> : null}
+                {/* Заливка: контурный warning на фоне выбранной строки (action.selected) не держит 4.5:1. */}
+                {!filled ? <Chip size="small" label={scenarioTexts.brief.empty} color="warning" sx={{ height: 18 }} /> : null}
                 {s.lipsync ? <Chip size="small" label={scenarioTexts.list.speech} sx={{ height: 18 }} /> : null}
               </Box>
               <Typography variant="caption" noWrap display="block" color="text.secondary">

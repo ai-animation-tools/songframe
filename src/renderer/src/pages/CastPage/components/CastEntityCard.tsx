@@ -78,8 +78,10 @@ export function CastEntityCard({
             minWidth: 0
           }}
         >
+          {/* Имя сущности видно рядом, поэтому миниатюра декоративна и не дублирует его для чтения с экрана. */}
           <Avatar
             src={thumb}
+            alt=""
             variant="rounded"
             sx={{ gridArea: 'avatar', width: 40, height: 40, bgcolor: 'action.hover', color: 'text.secondary', fontSize: 14 }}
           >

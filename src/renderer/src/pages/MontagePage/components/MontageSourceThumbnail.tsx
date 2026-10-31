@@ -29,6 +29,9 @@ export function MontageSourceThumbnail({
   const imageUrl = source.kind === 'card' ? url : poster?.url === url ? poster.image : undefined;
   const failed = failedUrl === url;
   const alt = montageTexts.sourceLabel({ title: sceneLabel, label: source.label });
+  const showImage = Boolean(imageUrl) && !failed;
+  const status = showImage ? undefined : failed ? montageTexts.previewUnavailable : montageTexts.previewLoading;
+  const action = source.kind === 'video' ? commonTexts.watch : montageTexts.enlarge;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -87,7 +90,7 @@ export function MontageSourceThumbnail({
     <ButtonBase
       ref={containerRef}
       onClick={onOpen}
-      aria-label={montageTexts.openMaterial(alt)}
+      aria-label={montageTexts.openMaterial({ status, action, label: alt })}
       sx={{
         aspectRatio: '16 / 9',
         width: '100%',
@@ -101,7 +104,7 @@ export function MontageSourceThumbnail({
         '&:hover .material-open-hint': { bgcolor: 'rgba(0,0,0,0.85)' }
       }}
     >
-      {imageUrl && !failed ? (
+      {showImage ? (
         <Box
           component="img"
           src={imageUrl}
@@ -112,13 +115,15 @@ export function MontageSourceThumbnail({
           sx={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }}
         />
       ) : (
-        <Stack role="img" aria-label={alt} alignItems="center" justifyContent="center" spacing={0.5} sx={{ height: '100%', color: 'grey.400', p: 1 }}>
+        // Без role="img": его имя считалось бы видимым текстом кнопки и расходилось с её именем, которое уже называет материал.
+        <Stack alignItems="center" justifyContent="center" spacing={0.5} sx={{ height: '100%', color: 'grey.400', p: 1 }}>
           {source.kind === 'card' ? <ImageOutlinedIcon /> : <MovieOutlinedIcon />}
           <Typography variant="caption" textAlign="center">
-            {failed ? montageTexts.previewUnavailable : montageTexts.previewLoading}
+            {status}
           </Typography>
         </Stack>
       )}
+      {/* Пробел разделяет блоки в видимом тексте кнопки: без него axe склеивает состояние с подсказкой и не находит их в имени. */}{' '}
       {/* Просмотр отделён от добавления: кнопка открывает сам файл, не меняя дорожку. */}
       <Stack
         className="material-open-hint"
@@ -140,7 +145,7 @@ export function MontageSourceThumbnail({
       >
         {source.kind === 'video' ? <PlayCircleOutlineIcon fontSize="small" /> : <ZoomInIcon fontSize="small" />}
         <Typography component="span" variant="caption">
-          {source.kind === 'video' ? commonTexts.watch : montageTexts.enlarge}
+          {action}
         </Typography>
       </Stack>
     </ButtonBase>

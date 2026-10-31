@@ -29,7 +29,7 @@ export function CheckRow({ check, result, disabled, disabledReason, strict, next
       <Box sx={{ width: 24, pt: 0.25, display: 'flex', justifyContent: 'center' }}>
         {result ? (
           result.status === 'running' ? (
-            <CircularProgress size={16} />
+            <CircularProgress size={16} aria-label={checksTexts.checkRunning(check.label)} />
           ) : (
             <Chip
               size="small"

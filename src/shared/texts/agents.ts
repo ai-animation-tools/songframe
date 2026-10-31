@@ -14,7 +14,6 @@ export const agentsTexts = {
   restartInterrupted: 'Приложение завершилось до получения результата. Автоматический повтор не выполнялся; для нового запуска подготовьте запрос заново.',
   invalidCandidateDirectory: 'Папка кандидатов не принадлежит заданиям изображений.',
   applicationStopping: commonTexts.runtime.applicationStopping,
-  linuxRequired: 'Запуск агента сейчас поддерживается только на Linux.',
   projectNotFound: commonTexts.project.notFound,
   projectManifestMissing: commonTexts.project.manifestMissing,
   projectBusy: 'Для этого проекта уже выполняется задание агента.',
@@ -33,8 +32,8 @@ export const agentsTexts = {
   lineTooLarge: 'Строка ответа агента слишком велика.',
   invalidJsonLines: 'Агент вернул некорректный JSONL.',
   eventObjectRequired: 'Ожидался объект события агента.',
-  notFound: ({ provider }: { provider: string }) =>
-    `${provider} не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку.`,
+  notFound: ({ provider, windows = false }: { provider: string; windows?: boolean }) =>
+    `${provider} не найден в ${windows ? 'PATH, %USERPROFILE%\\.local\\bin и %APPDATA%\\npm' : 'PATH, ~/.local/bin, /usr/local/bin и /usr/bin'}. Установите его по официальной инструкции и повторите проверку.`,
   versionCheckFailed: ({ provider }: { provider: string }) => `Команда версии завершилась с ошибкой. Проверьте ${provider} и его зависимости в терминале.`,
   checkVersionUnknown: ({ provider }: { provider: string }) => `${provider} запускается, но его версия не распознана. Обновите его до поддерживаемой версии.`,
   versionUnknown: ({ provider }: { provider: string }) => `Версия ${provider} не распознана. Обновите его до поддерживаемой версии.`,

@@ -1,11 +1,13 @@
 /** Короткая сессия диагностики CLI: ограниченный вывод и обязательное завершение дочернего процесса. */
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { settingsTexts } from '@shared/texts/settings';
+import { agentCommand, killProcessTree } from './agent-command';
 
 export interface AccountProcessOptions {
   env: NodeJS.ProcessEnv;
   home: string;
   timeoutMs?: number;
+  platform?: NodeJS.Platform;
 }
 
 const OUTPUT_LIMIT = 128 * 1024;
@@ -16,7 +18,9 @@ export async function withAccountProcess<T>(
   options: AccountProcessOptions,
   operation: (child: ChildProcessWithoutNullStreams, closed: Promise<number | null>, fail: () => void) => Promise<T>
 ): Promise<T> {
-  const child = spawn(executable, args, { env: options.env, cwd: options.home, stdio: 'pipe', windowsHide: true });
+  const platform = options.platform ?? process.platform;
+  const command = await agentCommand(executable, args, options.env, platform);
+  const child = spawn(command.file, command.args, { env: options.env, cwd: options.home, stdio: 'pipe', windowsHide: true });
   let rejectFailure!: (reason: Error) => void;
   const failure = new Promise<never>((_, reject) => {
     rejectFailure = reject;
@@ -39,7 +43,11 @@ export async function withAccountProcess<T>(
     clearTimeout(timer);
     child.stdin.end();
     // Даже старый CLI, который игнорирует EOF или SIGTERM, не остаётся фоновым сервером диагностики.
-    if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
+    // В Windows обёртка npm запускает программу дочерним процессом: SIGTERM завершил бы только node.
+    if (child.exitCode === null && child.signalCode === null) {
+      if (platform === 'win32') killProcessTree(child, options.env, platform);
+      else child.kill('SIGTERM');
+    }
     let killTimer: ReturnType<typeof setTimeout> | undefined;
     let endTimer: ReturnType<typeof setTimeout> | undefined;
     await Promise.race([

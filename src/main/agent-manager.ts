@@ -1,4 +1,4 @@
-/** Один менеджер владеет запуском, историей и завершением процессных групп Linux. @link ../../README.md */
+/** Один менеджер владеет запуском, историей и завершением дерева процессов CLI. @link ../../README.md */
 import { agentsTexts } from '@shared/texts/agents';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
@@ -9,6 +9,7 @@ import { agentTitle, type AgentProvider } from '@shared/agent-providers';
 import { createAgentAdapter, type AgentAdapter, type AgentUpdate } from './agent-adapters';
 import { AgentHistory } from './agent-history';
 import { AgentError, JsonLines, providerDetail, providerFailure, redact } from './agent-protocol';
+import { agentCommand, killProcessTree } from './agent-command';
 import { agentEnvironment } from './agents';
 import { readProjectAgentInstructions } from './checks';
 import type { SettingsStore } from './settings';
@@ -114,7 +115,6 @@ export class AgentManager {
 
   private begin(value: unknown, imageDirectory?: string, imageConfig?: AgentSettings): AgentJob {
     if (this.stopping) throw new AgentError('INTERRUPTED', agentsTexts.applicationStopping);
-    if (process.platform !== 'linux') throw new AgentError('CLI_UNAVAILABLE', agentsTexts.linuxRequired);
     const input = validate(value);
     let project: string;
     try {
@@ -215,11 +215,16 @@ export class AgentManager {
       const parser = new JsonLines((event) => {
         for (const update of adapter.parse(event)) this.update(run, update);
       });
-      const child = spawn(check.executablePath, args, {
+      const env = agentEnvironment();
+      const command = await agentCommand(check.executablePath, args, env);
+      if (run.ended) return;
+      // В Linux отдельная группа позволяет завершить потомков CLI; в Windows дерево завершает taskkill.
+      const child = spawn(command.file, command.args, {
         cwd: imageDirectory ?? run.job.project,
-        env: agentEnvironment(),
+        env,
         shell: false,
-        detached: true,
+        detached: process.platform !== 'win32',
+        windowsHide: true,
         stdio: 'pipe'
       });
       run.child = child;
@@ -366,14 +371,8 @@ export class AgentManager {
     run.ended = true;
     clearTimeout(run.timer);
     clearTimeout(run.flush);
-    // Уничтожается вся группа, включая дочерние процессы CLI; чужие процессы не ищем по имени.
-    if (run.child?.pid) {
-      try {
-        process.kill(-run.child.pid, 'SIGKILL');
-      } catch {
-        /* Процесс мог уже завершиться. */
-      }
-    }
+    // Уничтожается всё дерево, включая дочерние процессы CLI; чужие процессы не ищем по имени.
+    if (run.child) killProcessTree(run.child);
     run.child?.stdin.destroy();
     run.child?.stdout.destroy();
     run.child?.stderr.destroy();

@@ -8,7 +8,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
-import hashlib
 import json
 import os
 import subprocess
@@ -205,24 +204,6 @@ class UpdateSceneViewsTests(unittest.TestCase):
         self.assertIn("plan/storyboard.md", drift)
         self.assertIn("plan/animatic/cards/manifest.json", drift)
         self.assertFalse("Мира встаёт." in (self.root / "plan/storyboard.md").read_text())
-
-    def test_card_with_same_pixels_keeps_bytes_from_other_png_encoder(self):
-        update()
-        card = self.root / "plan/animatic/cards/M01.png"
-        # Другое сжатие имитирует иную сборку zlib: пиксели те же, байты другие.
-        with Image.open(card) as image:
-            image.load()
-        image.save(card, compress_level=1)
-        reencoded = card.read_bytes()
-        receipt = self.root / "plan/animatic/cards/manifest.json"
-        recorded = json.loads(receipt.read_text())["cards"]["M01"]["sha256"]
-        receipt.write_text(receipt.read_text().replace(recorded, hashlib.sha256(reencoded).hexdigest()))
-        self.assertEqual(update(check=True), [])
-        update()
-        self.assertEqual(card.read_bytes(), reencoded)
-        # Изменённые пиксели по-прежнему требуют новой карточки.
-        Image.new("RGB", (320, 200), "blue").save(self.root / "source/heroes/mira.png")
-        self.assertIn("plan/animatic/cards/M01.png", update(check=True))
 
     def test_only_project_name_changes_cards_and_working_documents(self):
         # Две реальные карточки сохраняют зависимость от названия и референса,

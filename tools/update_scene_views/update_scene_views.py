@@ -93,33 +93,6 @@ def expected_cards(sources, directory, root=None):
     return result
 
 
-def same_pixels(left, right):
-    """Байты PNG зависят от сборки zlib в Pillow и процессора; одинаковую карточку определяют её пиксели."""
-    from PIL import Image
-
-    try:
-        with Image.open(left) as saved, Image.open(right) as rendered:
-            return saved.mode == rendered.mode and saved.size == rendered.size and saved.tobytes() == rendered.tobytes()
-    except (OSError, ValueError):
-        return False
-
-
-def keep_equivalent_cards(cards, directory):
-    """Карточка с теми же пикселями остаётся прежним файлом с прежним хешем.
-
-    Иначе другая сборка Pillow переписала бы её и сделала устаревшим аниматик, собранный из прежних байтов.
-    """
-    for sid, item in cards.items():
-        pairs = ((item, directory / (sid + ".png")), (item.get("last"), directory / (sid + ".last.png")))
-        for entry, rendered in pairs:
-            if not entry:
-                continue
-            target = ROOT / entry["path"]
-            if target.is_file() and sha(target) != entry["sha256"] and same_pixels(target, rendered):
-                rendered.write_bytes(target.read_bytes())
-                entry["sha256"] = sha(target)
-
-
 def update(check=False):
     sources = Sources()
     require_inputs(sources)
@@ -130,7 +103,6 @@ def update(check=False):
     with tempfile.TemporaryDirectory(prefix="scene-cards-") as temporary:
         directory = Path(temporary)
         cards = expected_cards(sources, directory)
-        keep_equivalent_cards(cards, directory)
         output["plan/animatic/cards/manifest.json"] = (
             json.dumps(
                 {

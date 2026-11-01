@@ -206,6 +206,7 @@ export function CastPage(): ReactElement {
               entities={cast.entities}
               kinds={kinds}
               properties={cast.properties[entity.kind] ?? []}
+              stateResetKey={view.cast}
               imagePaths={view.imagePaths}
               imageOptions={imageOptions}
               hasSharedDescription={view.manifest?.references.some((reference) => reference.id === entity.id) ?? false}

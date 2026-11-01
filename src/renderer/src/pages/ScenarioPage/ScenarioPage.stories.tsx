@@ -1,10 +1,17 @@
 /** Целая страница «Сценарий» на локальной модели: переходы к планам, вкладки, закреплённые панели и сохранность черновиков. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { componentsTexts } from '@shared/texts/components';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
 import { scenarioTexts } from '@shared/texts/scenario';
-import { SCENARIO_PAGE_READ_ERROR, ScenarioPageStory, scenarioPageActionProblem, scenarioPageOptions } from '../../testing/scenarioPageStories';
+import {
+  SCENARIO_PAGE_READ_ERROR,
+  ScenarioPageStory,
+  scenarioPageActionProblem,
+  scenarioPageOptions,
+  scenarioStateInspection
+} from '../../testing/scenarioPageStories';
 
 const meta = {
   title: 'Страницы/Сценарий',
@@ -434,5 +441,54 @@ export const NoRegistry: Story = {
     await expect(screen.getByTestId('page-model-shots')).toHaveTextContent('Сохранённых планов: 6.');
     await expect(screen.getByTestId('page-model-logline')).toHaveTextContent('Черновик.');
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
+  }
+};
+
+export const StateFieldInheritance: Story = {
+  name: 'Состояние · отмена изменения, явное снятие и сохранность других планов',
+  tags: ['ci', '!autodocs'],
+  parameters: { songframe: scenarioPageOptions({ failScenesSaveOnce: true }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const texts = componentsTexts.stateEditor;
+    const before = scenarioStateInspection();
+    const entity = documentOf(context).querySelector<HTMLElement>('[data-state-entity="after:hero"]')!;
+    const scope = within(entity);
+    await userEvent.click(scope.getAllByRole('button')[0]);
+    // Врезка вычисляется с задержкой после загрузки: наследование проверяется по готовому снимку.
+    await scope.findByText(texts.inherited({ value: 'спокоен' }), {}, { timeout: 3000 });
+    await expect(scope.getByRole('combobox', { name: 'Куртка' })).toHaveValue('мокрая');
+    await userEvent.click(scope.getByRole('button', { name: texts.undoProperty({ label: 'Куртка' }) }));
+    let dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: texts.undo }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(scope.getByRole('combobox', { name: 'Куртка' })).toHaveAttribute('placeholder', 'сухая'));
+    await expect(scenarioStateInspection()).toEqual(before);
+    await userEvent.click(scope.getByRole('button', { name: texts.removeProperty({ label: 'Куртка' }) }));
+    dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: texts.remove }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(scope.getByRole('combobox', { name: 'Куртка' })).toBeDisabled();
+    await userEvent.click(saveButton(screen));
+    await screen.findByText('Не удалось сохранить сценарий. Изменения состояния остались в форме.');
+    await expect(scenarioStateInspection()).toEqual(before);
+    await expect(scope.getByRole('combobox', { name: 'Куртка' })).toBeDisabled();
+    await userEvent.click(saveButton(screen));
+    await waitFor(() => expect(scenarioStateInspection().saves).toEqual(['production']));
+    const saved = scenarioStateInspection().saved.scenes!;
+    await expect(saved.scenes[0].state_changes.after?.hero).toEqual({ coat: null });
+    await expect(saved.scenes.slice(1)).toEqual(before.saved.scenes!.scenes.slice(1));
+    await expect(scenarioStateInspection().saved.cast).toEqual(before.saved.cast);
+    await selectByKeyboard(context, 'M02');
+    await selectByKeyboard(context, 'M01');
+    const reopened = within(documentOf(context).querySelector<HTMLElement>('[data-state-entity="after:hero"]')!);
+    await userEvent.click(reopened.getAllByRole('button')[0]);
+    await expect(reopened.getByRole('combobox', { name: 'Куртка' })).toBeDisabled();
+    await userEvent.click(reopened.getByRole('button', { name: texts.restoreProperty({ label: 'Куртка' }) }));
+    await waitFor(() => expect(reopened.getByRole('combobox', { name: 'Куртка' })).toHaveAttribute('placeholder', 'сухая'));
+    await expect(scenarioStateInspection().saved.scenes!.scenes[0].state_changes.after?.hero).toEqual({ coat: null });
+    // После проверки блока возвращаемся к панели страницы: соседняя кнопка не остаётся наполовину под sticky-шапкой.
+    documentOf(context).defaultView!.scrollTo({ top: 0, behavior: 'instant' });
+    await waitFor(() => expect(documentOf(context).defaultView!.scrollY).toBe(0));
   }
 };

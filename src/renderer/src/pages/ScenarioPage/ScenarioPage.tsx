@@ -127,6 +127,7 @@ export function ScenarioPage(): ReactElement {
           <TreatmentEditor treatment={treatment} setTreatment={setTreatment} entityOptions={entityOptions} duration={duration} updatePart={updatePart} />
         ) : scenes ? (
           <SceneRegistry
+            resetKey={view.scenes}
             stickyTop={stickyTop}
             scenes={scenes}
             setScenes={setScenes}

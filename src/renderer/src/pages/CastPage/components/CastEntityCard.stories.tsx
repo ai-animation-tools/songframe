@@ -120,3 +120,30 @@ export const PrimaryReference: Story = {
     await expect(canvas.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
   }
 };
+
+export const LocalStateRemoval: Story = {
+  name: 'Убрать поле одного персонажа · словарь и сосед сохраняются',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Убрать поле «Одежда»' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Убрать поле' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(canvas.queryByRole('combobox', { name: 'Одежда' })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: /Дядя Паша.*pasha/ }));
+    await expect(await canvas.findByRole('combobox', { name: 'Одежда' })).toHaveValue('Светлая рубашка');
+    await userEvent.click(canvas.getByRole('button', { name: /Олег.*oleg/ }));
+    const hero = within(canvasElement.querySelector<HTMLElement>('[data-cast-entity="oleg"]')!);
+    await userEvent.click(await hero.findByRole('combobox', { name: 'Поле из словаря' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Одежда' }));
+    await userEvent.click(hero.getByRole('button', { name: 'Добавить поле из словаря' }));
+    await expect(hero.getByRole('combobox', { name: 'Одежда' })).toHaveFocus();
+    await userEvent.type(hero.getByRole('combobox', { name: 'Одежда' }), 'Синяя куртка');
+    await userEvent.click(canvas.getByRole('button', { name: 'Сохранить' }));
+    await canvas.findByText('Кастинг сохранён в локальную модель.');
+    await expect(hero.getByRole('combobox', { name: 'Одежда' })).toHaveValue('Синяя куртка');
+    await expect(canvas.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+  }
+};

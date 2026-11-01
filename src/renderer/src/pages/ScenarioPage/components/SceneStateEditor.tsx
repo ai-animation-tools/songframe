@@ -7,6 +7,7 @@ import { DeltaEditor } from './DeltaEditor';
 
 /** Редактирует наследование состояния и изменения до и после плана. */
 export function SceneStateEditor({
+  resetKey,
   reveal,
   shot,
   scenes,
@@ -16,6 +17,7 @@ export function SceneStateEditor({
   updateShot,
   setDelta
 }: {
+  resetKey?: object | null;
   /** Сущность и блок, которые нужно раскрыть после перехода из врезки. */
   reveal: { entity: string; phase: 'before' | 'after' } | null;
   shot: SceneShot;
@@ -70,12 +72,13 @@ export function SceneStateEditor({
               {phase === 'before' ? scenarioTexts.state.beforeBlock : scenarioTexts.state.afterBlock}
             </Typography>
             <DeltaEditor
+              resetKey={resetKey}
               key={`${shot.id}:${phase}`}
               phase={phase}
               reveal={reveal?.phase === phase ? reveal.entity : null}
               delta={shot.state_changes[phase] ?? {}}
               // Сравнение идёт с состоянием до правок этого блока: так видно, что план действительно меняет.
-              baseline={(phase === 'before' ? brief?.before.inherited : brief?.after.inherited) ?? {}}
+              baseline={(brief?.[phase].shot === shot.id ? brief[phase].inherited : undefined) ?? {}}
               entities={entityOptions}
               propertiesOf={propertiesOf}
               onChange={(entity, value) => setDelta(phase, entity, value)}

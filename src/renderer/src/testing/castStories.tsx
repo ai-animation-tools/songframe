@@ -236,6 +236,7 @@ export function CastStory({ variant = 'regular', mode = 'entities', collapsed = 
               entities={draft.entities}
               kinds={kinds}
               properties={draft.properties[entity.kind] ?? []}
+              stateResetKey={saved}
               imagePaths={imagePaths}
               imageOptions={imageOptions}
               expanded={expanded === entity.id}

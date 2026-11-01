@@ -42,6 +42,7 @@ export type ScenarioPageVariant = 'regular' | 'long' | 'produced' | 'proposal' |
 
 export interface ScenarioPageOptions {
   variant?: ScenarioPageVariant;
+  failScenesSaveOnce?: boolean;
   /** Начальный маршрут демонстрационного роутера, например с ?shot=M03. */
   route?: string;
   /** Планы, для которых под страницей есть демонстрационные ссылки ?shot= (переход на уже открытой странице). */
@@ -377,7 +378,12 @@ interface PageModel {
 const models = new WeakMap<Api, PageModel>();
 
 /** Параметры истории целой страницы: оболочка page, стабильные состояние приложения и демонстрационный исполнитель. */
-export function scenarioPageOptions({ variant = 'regular', route = '/project/scenario', links = ['M02', 'M05'] }: ScenarioPageOptions = {}): StoryOptions {
+export function scenarioPageOptions({
+  variant = 'regular',
+  route = '/project/scenario',
+  links = ['M02', 'M05'],
+  failScenesSaveOnce = false
+}: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
     problems: [],
@@ -439,6 +445,7 @@ export function scenarioPageOptions({ variant = 'regular', route = '/project/sce
           listeners.forEach((listener) => listener());
         }
       };
+      let failedSceneSave = false;
       const validate = (project: string): void => {
         if (project !== SCENARIO_PAGE_PROJECT) throw new Error('Неизвестный демонстрационный проект.');
       };
@@ -500,6 +507,10 @@ export function scenarioPageOptions({ variant = 'regular', route = '/project/sce
           },
           saveScenes: async (project, scenes, mode) => {
             validate(project);
+            if (failScenesSaveOnce && !failedSceneSave) {
+              failedSceneSave = true;
+              throw new Error('Не удалось сохранить сценарий. Изменения состояния остались в форме.');
+            }
             model.scenesSaves.push(mode);
             model.saved.scenes = structuredClone(scenes);
             documentsWritten(false);
@@ -635,6 +646,13 @@ export function scenarioPageOptions({ variant = 'regular', route = '/project/sce
       return session;
     }
   };
+}
+
+/** Снимок сохранённых документов позволяет проверить, что выбор пустого поля ничего не записал. */
+export function scenarioStateInspection(): { saved: ScenarioView; saves: ScenesSaveMode[] } {
+  const model = models.get(window.api);
+  if (!model) throw new Error('Модель сценария не открыта.');
+  return structuredClone({ saved: model.saved, saves: model.scenesSaves });
 }
 
 function useModel(): PageModel {

@@ -180,3 +180,26 @@ describe('контракт текста сценария', () => {
     expect(result.text.split('\n').slice(2)).toEqual(['Герой «А»: положение: у двери.', '', 'Проверить по кадру:', '- [ ] Герой «А»: Положение — у двери']);
   });
 });
+
+// UI различает отмену override и явное снятие: это должно сохраняться во врезках и цепочке следующих планов.
+it('различает отсутствие изменения, null и новое значение, не удаляя состояние соседней сущности', () => {
+  const data = registry();
+  const actors = cast();
+  actors.entities.push({ ...actors.entities[0], id: 'neighbor', name: 'Сосед', initial_state: { position: 'у окна' } });
+  data.scenes.push({ ...structuredClone(data.scenes[0]), id: 'M02', start_frame: 30, end_frame_exclusive: 60, state_from: 'M01' });
+  const inherited = buildBrief(data, actors, 'M02', 'before', null);
+  expect(inherited.state.hero.position).toBe('у двери');
+  expect(inherited.checklist).toContain('Герой «А»: Положение — у двери');
+  data.scenes[0].state_changes = { after: { hero: { position: null } } };
+  const removed = buildBrief(data, actors, 'M02', 'before', null);
+  expect(removed.state.hero?.position).toBeUndefined();
+  expect(removed.state.neighbor.position).toBe('у окна');
+  expect(removed.checklist.some((question) => question.startsWith('Герой'))).toBe(false);
+  data.scenes[0].state_changes = { after: { hero: { position: 'у ворот' } } };
+  expect(buildBrief(data, actors, 'M02', 'before', null).state.hero.position).toBe('у ворот');
+  actors.properties.hero = [];
+  const withoutDictionary = buildBrief(data, actors, 'M02', 'before', null);
+  expect(withoutDictionary.state.hero.position).toBe('у ворот');
+  expect(withoutDictionary.paragraph).toContain('у ворот');
+  expect(withoutDictionary.checklist).toEqual([]);
+});

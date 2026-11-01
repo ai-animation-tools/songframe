@@ -84,6 +84,7 @@ export function referencePageInspection(): ImageModelInspection {
 
 export interface ReferencePageModelOptions {
   originalPrompt?: boolean;
+  stateFields?: boolean;
   generating?: boolean;
   missingReferenceImageInspection?: boolean;
   multipleImages?: boolean;
@@ -124,6 +125,24 @@ export function referencePageOptions(page: 'sources' | 'cast', options: Referenc
       inspection = images.inspect;
       let savedManifest = structuredClone(manifest);
       let savedCast = structuredClone(cast);
+      if (options.stateFields) {
+        savedCast.properties.character = [
+          { key: 'coat', label: 'Куртка' },
+          { key: 'pose', label: 'Поза' }
+        ];
+        savedCast.entities[0].initial_state = { coat: 'синяя', scar: 'на щеке' };
+        savedCast.entities.push({
+          id: 'neighbor',
+          kind: 'character',
+          name: 'Сосед',
+          short_name: 'Сосед',
+          role: '',
+          appearance: '',
+          images: [],
+          initial_state: { coat: 'белая' }
+        });
+      }
+
       let lyricsText = IMAGE_STORY_LYRICS;
       let ideaText = IMAGE_STORY_IDEA;
       let sourceSaves = 0;

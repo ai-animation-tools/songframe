@@ -20,6 +20,7 @@ import {
   referencePageOptions
 } from '../../testing/referencePageStories';
 import { CastPage } from './CastPage';
+import { componentsTexts } from '@shared/texts/components';
 import { expectImplicitCloseBlocked } from '../../testing/dialogStories';
 
 const meta = { title: 'Страницы/Состав', component: CastPage, tags: ['!autodocs'], parameters: { songframe: referencePageOptions('cast') } } satisfies Meta<
@@ -185,5 +186,55 @@ export const ReferenceSupportNotes: Story = {
       { path: `${IMAGE_STORY_PROJECT}/source/${REFERENCE_PAGE_PROFILE}`, label: 'Сбоку' }
     ]);
     await expect(referencePageInspection().generations).toBe(0);
+  }
+};
+
+export const LocalStateFields: Story = {
+  name: 'Состояние объекта · локальное удаление, возврат и ошибка сохранения',
+  tags: ['ci'],
+  parameters: { songframe: referencePageOptions('cast', { stateFields: true, failCastSaveOnce: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    const texts = componentsTexts.stateEditor;
+    await canvas.findByRole('combobox', { name: 'Куртка' });
+    const before = referencePageSnapshot();
+    await expect(canvas.queryByRole('combobox', { name: 'Поза' })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: texts.removeLocalProperty({ label: 'Куртка' }) }));
+    let dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(canvas.getByRole('combobox', { name: 'Куртка' })).toHaveValue('синяя');
+    await userEvent.click(canvas.getByRole('button', { name: texts.removeLocalProperty({ label: 'Куртка' }) }));
+    dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: texts.removeLocal }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(canvas.queryByRole('combobox', { name: 'Куртка' })).not.toBeInTheDocument();
+    await expect(referencePageSnapshot()).toEqual(before);
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.save }));
+    await screen.findByText(REFERENCE_PAGE_SAVE_ERROR);
+    await expect(referencePageSnapshot().cast).toEqual(before.cast);
+    await expect(canvas.queryByRole('combobox', { name: 'Куртка' })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.save }));
+    await screen.findByText(castTexts.saved);
+    await expect(referencePageSnapshot().cast.entities[0].initial_state).toEqual({ scar: 'на щеке' });
+    await expect(referencePageSnapshot().cast.entities.find((entity) => entity.id === 'neighbor')?.initial_state).toEqual({ coat: 'белая' });
+    await expect(referencePageSnapshot().cast.properties).toEqual(before.cast.properties);
+    await userEvent.click(canvas.getByRole('combobox', { name: texts.dictionaryProperty }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Куртка' }));
+    await userEvent.click(canvas.getByRole('button', { name: texts.addDictionaryProperty }));
+    const coat = canvas.getByRole('combobox', { name: 'Куртка' });
+    await expect(coat).toHaveFocus();
+    await userEvent.click(canvas.getByRole('combobox', { name: texts.dictionaryProperty }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Поза' }));
+    await userEvent.click(canvas.getByRole('button', { name: texts.addDictionaryProperty }));
+    await expect(canvas.getByRole('combobox', { name: 'Поза' })).toHaveValue('');
+    await userEvent.type(coat, 'красная');
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(referencePageSnapshot().cast.entities[0].initial_state.coat).toBe('красная'));
+    await expect(canvas.getByRole('combobox', { name: 'Куртка' })).toHaveValue('красная');
+    await expect(canvas.queryByRole('combobox', { name: 'Поза' })).not.toBeInTheDocument();
+    await expect(referencePageSnapshot().cast.entities.find((entity) => entity.id === 'neighbor')?.initial_state).toEqual({ coat: 'белая' });
+    await userEvent.click(canvas.getByRole('textbox', { name: castTexts.appearance }));
   }
 };

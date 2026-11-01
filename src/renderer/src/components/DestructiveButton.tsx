@@ -1,6 +1,6 @@
 import { commonTexts } from '@shared/texts/common';
 import { useState, type ReactElement, type ReactNode } from 'react';
-import { Box, type SxProps, type Theme } from '@mui/material';
+import { Alert, Box, type SxProps, type Theme } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { ActionButton } from './ActionButton';
@@ -10,6 +10,8 @@ import { ConfirmationDialog } from './ConfirmationDialog';
 interface Props {
   label: string;
   description: string;
+  /** Существенные последствия показываются отдельным Alert, без вложения блока в текстовый абзац. */
+  descriptionSeverity?: 'info' | 'warning';
   onConfirm(): void;
   children?: ReactNode;
   icon?: boolean;
@@ -27,6 +29,7 @@ interface Props {
 export function DestructiveButton({
   label,
   description,
+  descriptionSeverity,
   onConfirm,
   children,
   icon = false,
@@ -64,7 +67,7 @@ export function DestructiveButton({
       <ConfirmationDialog
         open={open}
         title={`${label}?`}
-        description={description}
+        description={descriptionSeverity ? undefined : description}
         onClose={() => setOpen(false)}
         onConfirm={() => {
           setOpen(false);
@@ -76,7 +79,9 @@ export function DestructiveButton({
         confirmDisabled={disabled}
         confirmDisabledReason={disabledReason}
         cancelAutoFocus
-      />
+      >
+        {descriptionSeverity && <Alert severity={descriptionSeverity}>{description}</Alert>}
+      </ConfirmationDialog>
     </>
   );
 }

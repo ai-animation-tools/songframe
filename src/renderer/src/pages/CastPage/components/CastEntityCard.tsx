@@ -19,6 +19,7 @@ interface CastEntityCardProps {
   entities: CastEntity[];
   kinds: SourceKind[];
   properties: CastProperty[];
+  stateResetKey?: object | null;
   imagePaths: Record<string, string>;
   imageOptions: CastImageOption[];
   expanded: boolean;
@@ -38,6 +39,7 @@ export function CastEntityCard({
   entities,
   kinds,
   properties,
+  stateResetKey,
   imagePaths,
   imageOptions,
   expanded,
@@ -138,6 +140,7 @@ export function CastEntityCard({
               {castTexts.initialState}
             </Typography>
             <StateEditor
+              resetKey={stateResetKey}
               properties={properties}
               value={entity.initial_state}
               onChange={(next) => onUpdate({ initial_state: Object.fromEntries(Object.entries(next).filter(([, v]) => v !== null)) as Record<string, string> })}

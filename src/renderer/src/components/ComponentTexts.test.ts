@@ -32,7 +32,7 @@ const job: JobInfo = {
 describe('Форматированные фразы общих компонентов', () => {
   it('сохраняет кавычки, пути, знаки и целую подпись', () => {
     expect(componentsTexts.stateEditor.removeProperty({ label: 'шлем «новый» & <visor>' })).toBe('Снять свойство «шлем «новый» & <visor>»');
-    expect(componentsTexts.stateEditor.restoreProperty({ label: 'шлем' })).toBe('Вернуть унаследованное свойство шлем');
+    expect(componentsTexts.stateEditor.restoreProperty({ label: 'шлем' })).toBe('Отменить снятие свойства «шлем»');
     expect(componentsTexts.stateEditor.inherited({ value: 'source/герои & шлем.png' })).toBe('унаследовано: source/герои & шлем.png');
     expect(componentsTexts.gallery.openLarge({ label: 'source/Олег & <1>.png' })).toBe('Открыть крупно: source/Олег & <1>.png');
     expect(componentsTexts.gallery.position({ kind: 'Опора «Олег»', position: 2, total: 5 })).toBe('Опора «Олег» · 2 / 5');
@@ -73,7 +73,7 @@ describe('Форматированные фразы общих компонен�
         onChange: vi.fn()
       })
     );
-    expect(html).toContain('aria-label="Вернуть унаследованное свойство Шлем &amp; визор"');
+    expect(html).toContain('aria-label="Отменить снятие свойства «Шлем &amp; визор»"');
     expect(visibleText(html)).toContain('свойство будет снято');
     expect(visibleText(html)).toContain('унаследовано: по колено');
     expect(html).toContain('aria-label="Снять свойство «Грязь»"');

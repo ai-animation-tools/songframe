@@ -101,7 +101,7 @@ export function CastPropertyRow({
           >
             {expanded ? <ExpandLessIcon fontSize="small" /> : <EditOutlinedIcon fontSize="small" />}
           </ActionIconButton>
-          <DestructiveButton icon label={castTexts.removeProperty({ name })} description={removeDescription} onConfirm={onRemove}>
+          <DestructiveButton descriptionSeverity="warning" icon label={castTexts.removeProperty({ name })} description={removeDescription} onConfirm={onRemove}>
             <DeleteOutlineIcon fontSize="small" />
           </DestructiveButton>
         </Box>

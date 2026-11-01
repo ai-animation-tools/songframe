@@ -15,6 +15,7 @@ import { coveredArea, revealAnchor } from '../../../hooks/useAnchorTarget';
 
 /** Собирает реестр из списка, шкалы и редакторов выбранного плана. */
 export function SceneRegistry({
+  resetKey,
   scenes,
   setScenes,
   stickyTop,
@@ -34,6 +35,7 @@ export function SceneRegistry({
   propertiesOf,
   notify
 }: {
+  resetKey?: object | null;
   scenes: ScenesFile;
   setScenes: Dispatch<SetStateAction<ScenesFile | null>>;
   /** Отступ закреплённого списка под шапкой и панелью действий страницы. */
@@ -110,6 +112,7 @@ export function SceneRegistry({
             </Box>
             <Box ref={stateRef} sx={{ minWidth: 0 }}>
               <SceneStateEditor
+                resetKey={resetKey}
                 reveal={
                   revealShot?.target === 'state' && revealShot.shot === shot.id && revealShot.entity && revealShot.phase
                     ? { entity: revealShot.entity, phase: revealShot.phase }

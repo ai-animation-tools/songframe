@@ -10,6 +10,7 @@ import { DestructiveButton } from '../../../components/DestructiveButton';
 
 /** Редактирует изменения выбранных сущностей поверх вычисленного состояния; каждая сущность — сворачиваемая панель. */
 export function DeltaEditor({
+  resetKey,
   phase,
   reveal,
   delta,
@@ -18,6 +19,7 @@ export function DeltaEditor({
   propertiesOf,
   onChange
 }: {
+  resetKey?: object | null;
   phase: 'before' | 'after';
   /** Сущность, которую раскрыть по переходу из врезки. */
   reveal: string | null;
@@ -28,6 +30,16 @@ export function DeltaEditor({
   onChange(entity: string, value: Record<string, string | null>): void;
 }): ReactElement {
   const [adding, setAdding] = useState('');
+  // Добавленная без значений сущность остаётся только в интерфейсе, без пробела в state_changes.
+  const [draftEntities, setDraftEntities] = useState<string[]>([]);
+  const [savedSnapshot, setSavedSnapshot] = useState(resetKey);
+  // После успешного сохранения пустые блоки не выдаются за данные документа; ошибка записи снимок не меняет.
+  if (savedSnapshot !== resetKey) {
+    setSavedSnapshot(resetKey);
+    setDraftEntities([]);
+    setAdding('');
+  }
+
   // Свёрнуты все, кроме только что добавленных: в заголовке видно, какие свойства меняются.
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const toggle = (entity: string, open: boolean): void =>
@@ -46,7 +58,7 @@ export function DeltaEditor({
     const changing = entries.filter(([key, value]) => (value === null ? Object.hasOwn(inherited, key) : inherited[key] !== value));
     return { set: entries.map(([key]) => labelOfKey(entity, key)), changing: changing.map(([key]) => labelOfKey(entity, key)) };
   };
-  const listed = Object.keys(delta);
+  const listed = [...new Set([...Object.keys(delta), ...draftEntities.filter((id) => entities.some((entity) => entity.id === id))])];
   const available = entities.filter((entity) => !listed.includes(entity.id));
   const selectedEntity = available.find((entity) => entity.id === adding)?.id ?? '';
 
@@ -103,12 +115,16 @@ export function DeltaEditor({
               </AccordionSummary>
               <AccordionDetails sx={{ minWidth: 0 }}>
                 <StateEditor
+                  resetKey={resetKey}
                   compact
                   allowRemove
                   properties={propertiesOf(entity)}
-                  value={delta[entity]}
+                  value={delta[entity] ?? {}}
                   baseline={baseline[entity] ?? {}}
-                  onChange={(value) => onChange(entity, value)}
+                  onChange={(value) => {
+                    setDraftEntities((current) => [...new Set([...current, entity])]);
+                    onChange(entity, value);
+                  }}
                 />
                 <Box sx={{ mt: 1 }}>
                   <DestructiveButton
@@ -116,7 +132,11 @@ export function DeltaEditor({
                     description={scenarioTexts.delta.removeDescription}
                     size="small"
                     startIcon={<DeleteOutlineIcon />}
-                    onConfirm={() => onChange(entity, {})}
+                    onConfirm={() => {
+                      setDraftEntities((current) => current.filter((id) => id !== entity));
+                      toggle(entity, false);
+                      onChange(entity, {});
+                    }}
                   >
                     {scenarioTexts.delta.removeChanges}
                   </DestructiveButton>
@@ -155,7 +175,7 @@ export function DeltaEditor({
           sx={{ mt: 0.5, flexShrink: 0 }}
           onClick={() => {
             if (!selectedEntity) return;
-            onChange(selectedEntity, { [propertiesOf(selectedEntity)[0]?.key ?? 'note']: ' ' });
+            setDraftEntities((current) => [...new Set([...current, selectedEntity])]);
             toggle(selectedEntity, true);
             setAdding('');
           }}

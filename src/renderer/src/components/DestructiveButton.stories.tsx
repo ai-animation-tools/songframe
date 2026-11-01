@@ -2,7 +2,7 @@
 import { useState, type ComponentProps } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Alert, Stack } from '@mui/material';
-import { fn } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { DestructiveButton } from './DestructiveButton';
 function DeletePreview(args: ComponentProps<typeof DestructiveButton>) {
   const [removed, setRemoved] = useState(false);
@@ -28,3 +28,15 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Confirmation: Story = { name: 'Отмена и подтверждение' };
 export const Blocked: Story = { name: 'Удаление недоступно', args: { disabled: true, disabledReason: 'Дождитесь завершения текущей операции.' } };
+
+export const VisibleConsequences: Story = {
+  name: 'Последствия изменения состояния · отдельный Alert',
+  tags: ['ci'],
+  args: { descriptionSeverity: 'warning' },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Удалить попытку' }));
+    const dialog = await screen.findByRole('dialog');
+    await expect(within(dialog).getByRole('alert')).toHaveTextContent('Удаляется только демонстрационный объект. Отмена сохранит его.');
+  }
+};

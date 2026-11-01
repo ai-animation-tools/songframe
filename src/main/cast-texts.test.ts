@@ -144,3 +144,16 @@ describe('дословные сообщения главного процесс�
     expect(JSON.parse(readFileSync(join(root, 'plan', 'cast.json'), 'utf-8'))).toEqual(saved);
   });
 });
+
+it('пустой словарь остаётся пустым после записи, чтения и дополнения, начальные состояния не вычищаются', () => {
+  const root = project();
+  const input = { ...cast([entity({ initial_state: { clothes: 'синяя куртка' } })]), properties: { character: [] } };
+  writeFileSync(join(root, 'source/manifest.json'), JSON.stringify(manifest()));
+  const saved = writeCast(root, input, null);
+  expect(saved.properties.character).toEqual([]);
+  expect(viewCast(root, null).cast?.properties.character).toEqual([]);
+  const supplemented = initCast(root, null);
+  expect(supplemented.properties.character).toEqual([]);
+  expect(supplemented.entities.find((item) => item.id === 'hero')?.initial_state).toEqual({ clothes: 'синяя куртка' });
+  expect(JSON.parse(readFileSync(join(root, 'plan/cast.json'), 'utf8')).properties.character).toEqual([]);
+});

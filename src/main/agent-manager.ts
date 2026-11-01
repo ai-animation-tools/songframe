@@ -2,11 +2,11 @@
 import { agentsTexts } from '@shared/texts/agents';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, realpathSync } from 'node:fs';
-import { isAbsolute, join, resolve, sep } from 'node:path';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { extname, isAbsolute, join, resolve, sep } from 'node:path';
 import type { AgentEvent, AgentJob, AgentSettings, AgentStartInput } from '@shared/agents';
 import { agentTitle, type AgentProvider } from '@shared/agent-providers';
-import { createAgentAdapter, type AgentAdapter, type AgentUpdate } from './agent-adapters';
+import { createAgentAdapter, type AgentAdapter, type AgentImageAttachment, type AgentUpdate } from './agent-adapters';
 import { AgentHistory } from './agent-history';
 import { AgentError, JsonLines, providerDetail, providerFailure, redact } from './agent-protocol';
 import { agentCommand, killProcessTree } from './agent-command';
@@ -36,7 +36,7 @@ interface Options {
 
 const TEXT_LIMIT = 256 * 1024;
 const LOG_LIMIT = 12000;
-function hash(text: string): string {
+function hash(text: string | Buffer): string {
   return createHash('sha256').update(text).digest('hex');
 }
 
@@ -54,7 +54,37 @@ function validate(value: unknown): AgentStartInput {
     (input.retryOf !== undefined && typeof input.retryOf !== 'string')
   )
     throw new AgentError('INVALID_INPUT', agentsTexts.invalidInputSize);
-  return input as unknown as AgentStartInput;
+  return { ...(input as unknown as AgentStartInput), ...(Array.isArray(input.images) ? { images: [...input.images] } : {}) };
+}
+
+/** Ограничения учитывают base64 в stdin Claude; проверяем файлы до диагностики CLI и создания истории. */
+function readImages(value: unknown): AgentImageAttachment[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new AgentError('INVALID_INPUT', agentsTexts.imageAttachmentsInvalid);
+  if (value.length > 64) throw new AgentError('INVALID_INPUT', agentsTexts.imageAttachmentsTooLarge);
+  let totalBytes = 0;
+  return value.map((path: unknown) => {
+    if (typeof path !== 'string' || !path.trim() || path.includes('\0') || !isAbsolute(path) || !/\.(png|jpe?g)$/i.test(path))
+      throw new AgentError('INVALID_INPUT', agentsTexts.imageAttachmentsInvalid);
+    try {
+      const stat = statSync(path);
+      if (!stat.isFile() || !stat.size) throw new AgentError('INVALID_INPUT', agentsTexts.imageAttachmentsInvalid);
+      totalBytes += stat.size;
+      if (stat.size > 5 * 1024 * 1024 || totalBytes > 20 * 1024 * 1024) throw new AgentError('INVALID_INPUT', agentsTexts.imageAttachmentsTooLarge);
+      const data = readFileSync(path);
+      // MIME определяется по сигнатуре вместе с расширением, чтобы CLI не получил произвольный файл под видом картинки.
+      const png = extname(path).toLowerCase() === '.png';
+      if (
+        data.length !== stat.size ||
+        (png ? !data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) : !data.subarray(0, 3).equals(Buffer.from([255, 216, 255])))
+      )
+        throw new AgentError('INVALID_INPUT', agentsTexts.imageAttachmentsInvalid);
+      return { path, data, mediaType: png ? 'image/png' : 'image/jpeg' };
+    } catch (error) {
+      if (error instanceof AgentError) throw error;
+      throw new AgentError('INVALID_INPUT', agentsTexts.imageAttachmentsInvalid);
+    }
+  });
 }
 
 export class AgentManager {
@@ -116,6 +146,8 @@ export class AgentManager {
   private begin(value: unknown, imageDirectory?: string, imageConfig?: AgentSettings): AgentJob {
     if (this.stopping) throw new AgentError('INTERRUPTED', agentsTexts.applicationStopping);
     const input = validate(value);
+    const images = readImages(input.images);
+    if (imageDirectory && images.length) throw new AgentError('INVALID_INPUT', agentsTexts.imageAttachmentsReadOnly);
     let project: string;
     try {
       project = realpathSync(input.project);
@@ -159,7 +191,11 @@ export class AgentManager {
       ...(config.model ? { model: config.model } : {}),
       ...(input.retryOf ? { retryOf: input.retryOf } : {}),
       permissions: imageDirectory ? 'workspace-write' : 'read-only',
-      inputHashes: { prompt: hash(input.prompt), context: hash(input.context ?? '') },
+      inputHashes: {
+        prompt: hash(input.prompt),
+        // Текстовые задания сохраняют прежний хеш; для вложений значимы содержимое и порядок, а не имя временного файла.
+        context: hash(images.length ? JSON.stringify({ context: input.context ?? '', images: images.map((image) => hash(image.data)) }) : (input.context ?? ''))
+      },
       status: 'running',
       phase: agentsTexts.phase.checking,
       startedAt: new Date().toISOString(),
@@ -173,7 +209,7 @@ export class AgentManager {
     const run: Running = { job, projectKey: project, ended: false, completed: false, outputBytes: 0 };
     this.running.set(job.id, run);
     this.publish(run, 'started');
-    const completion = this.launch(run, config, input, instructions, imageDirectory).then(() => run.childClosed);
+    const completion = this.launch(run, config, input, instructions, images, imageDirectory).then(() => run.childClosed);
     this.completions.add(completion);
     void completion.finally(() => this.completions.delete(completion));
     return structuredClone(job);
@@ -198,7 +234,14 @@ export class AgentManager {
     await Promise.all([...this.completions]);
   }
 
-  private async launch(run: Running, config: AgentSettings, input: AgentStartInput, instructions: string, imageDirectory?: string): Promise<void> {
+  private async launch(
+    run: Running,
+    config: AgentSettings,
+    input: AgentStartInput,
+    instructions: string,
+    images: readonly AgentImageAttachment[],
+    imageDirectory?: string
+  ): Promise<void> {
     try {
       const adapter = this.options.adapter?.(config.provider) ?? createAgentAdapter(config.provider);
       const check = await adapter.check(config);
@@ -207,7 +250,8 @@ export class AgentManager {
         throw new AgentError(check.availability === 'not_found' ? 'CLI_NOT_FOUND' : 'CLI_UNAVAILABLE', check.message);
       if (!check.version) throw new AgentError('UNSUPPORTED_VERSION', agentsTexts.versionUnknown({ provider: agentTitle(config.provider) }));
       run.job.cliVersion = check.version;
-      const args = adapter.args(config, check.version, imageDirectory ? 'write' : 'read');
+      const args = adapter.args(config, check.version, imageDirectory ? 'write' : 'read', images);
+      if (images.length && !adapter.input) throw new AgentError('UNSUPPORTED_VERSION', agentsTexts.unsupportedVersion);
       if (check.authorization !== 'authenticated')
         throw new AgentError(check.authorization === 'unauthenticated' ? 'AUTH_REQUIRED' : 'AUTH_UNKNOWN', check.message);
       run.job.phase = agentsTexts.phase.working;
@@ -215,6 +259,14 @@ export class AgentManager {
       const parser = new JsonLines((event) => {
         for (const update of adapter.parse(event)) this.update(run, update);
       });
+      /* eslint-disable no-restricted-syntax -- Инструкции запуска и заголовки ввода являются промптом агента, а не текстами интерфейса. */
+      const prefix = imageDirectory
+        ? 'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы сервисам генерации. Верни финальный JSON в запрошенном формате.'
+        : 'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.';
+      const projectInstructions = instructions ? `\n\nПостоянные инструкции текстовому агенту этого проекта:\n${instructions}` : '';
+      const prompt = `${prefix}${projectInstructions}\n\nЗадача:\n${input.prompt}${input.context ? `\n\nДополнительный контекст:\n${input.context}` : ''}`;
+      /* eslint-enable no-restricted-syntax */
+      const stdin = adapter.input ? adapter.input(prompt, images) : prompt;
       const env = agentEnvironment();
       const command = await agentCommand(check.executablePath, args, env);
       if (run.ended) return;
@@ -273,14 +325,7 @@ export class AgentManager {
           this.fail(run, error);
         }
       });
-      /* eslint-disable no-restricted-syntax -- Инструкции запуска и заголовки ввода являются промптом агента, а не текстами интерфейса. */
-      const prefix = imageDirectory
-        ? 'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы сервисам генерации. Верни финальный JSON в запрошенном формате.'
-        : 'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.';
-      const projectInstructions = instructions ? `\n\nПостоянные инструкции текстовому агенту этого проекта:\n${instructions}` : '';
-      const prompt = `${prefix}${projectInstructions}\n\nЗадача:\n${input.prompt}${input.context ? `\n\nДополнительный контекст:\n${input.context}` : ''}`;
-      /* eslint-enable no-restricted-syntax */
-      child.stdin.end(prompt);
+      child.stdin.end(stdin);
     } catch (error) {
       if (!run.ended) this.fail(run, error);
     }

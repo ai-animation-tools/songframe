@@ -60,6 +60,8 @@ export interface AgentStartInput {
   task: string;
   prompt: string;
   context?: string;
+  /** Локальные PNG/JPEG передаются модели как вложения только в заданиях без записи. */
+  images?: string[];
   retryOf?: string;
 }
 

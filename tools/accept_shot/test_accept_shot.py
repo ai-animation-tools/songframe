@@ -190,6 +190,47 @@ class AcceptShotTests(unittest.TestCase):
         options.update(kwargs)
         return tool.accept("M02", **options)
 
+    def test_invalid_frozen_request_files_stop_before_staging_or_media_work(self):
+        request_path = self.work / "request.json"
+        original = json.loads(request_path.read_text())
+        status = self.root / "plan/production-status.json"
+        status.write_text(json.dumps({"shots": {}, "current_animatic_status": "review"}))
+        cases = [
+            ({"prompt": "prompt.txt"}, "поле prompt должно быть объектом"),
+            ({"prompt": {"path": "prompt.txt"}}, "поле prompt должно быть объектом"),
+            ({"prompt": {"path": "missing.txt", "sha256": "y"}}, "prompt.path не найден: missing.txt"),
+            ({"prompt": {"path": "../private.txt", "sha256": "y"}}, "путь внутри папки попытки"),
+            ({"prompt": {"path": str(self.root / "private.txt"), "sha256": "y"}}, "путь внутри папки попытки"),
+            ({"inputs": {}}, "поле inputs должно быть списком"),
+            ({"inputs": ["inputs/01.png"]}, "должен быть объектом с path"),
+            ({"inputs": [{}]}, "непустой относительный путь"),
+            ({"inputs": [{"path": "inputs/missing.png"}]}, "не найден: inputs/missing.png"),
+        ]
+        for changes, message in cases:
+            with self.subTest(changes=changes):
+                request_path.write_text(json.dumps(original | changes))
+                before = {
+                    path.relative_to(self.root): path.read_bytes()
+                    for path in self.root.rglob("*") if path.is_file()
+                }
+                with (
+                    unittest.mock.patch.object(tool, "probe", side_effect=AssertionError("Ранний probe")),
+                    unittest.mock.patch.object(
+                        tool.shutil, "copyfile", side_effect=AssertionError("Раннее копирование")
+                    ),
+                ):
+                    with self.assertRaises(ValueError) as failure:
+                        self.accept(cut=(12, 72), clean=True)
+                self.assertIn(message, str(failure.exception))
+                self.assertNotIn(str(self.root), str(failure.exception))
+                self.assertFalse((self.root / "assets/shots/.accept-M02").exists())
+                self.assertFalse((self.root / "assets/shots/M02").exists())
+                after = {
+                    path.relative_to(self.root): path.read_bytes()
+                    for path in self.root.rglob("*") if path.is_file()
+                }
+                self.assertEqual(after, before)
+
     def test_cut_builds_valid_package_with_deduplicated_inputs(self):
         result = self.accept(cut=(12, 72))
         target = self.root / "assets/shots/M02"
@@ -232,7 +273,8 @@ class AcceptShotTests(unittest.TestCase):
                     "schema_version": 1,
                     "current_animatic": "plan/animatic/latest/manifest.json",
                     "current_animatic_status": "review",
-                    "shots": {"M01": {"scene_sha256": other}},
+                    "shots": {"M01": {"scene_sha256": other, "source_review": {}},
+                              "M02": {"scene_sha256": other, "source_review": {}}},
                 }
             )
         )
@@ -240,7 +282,9 @@ class AcceptShotTests(unittest.TestCase):
         current = scene_fingerprint(self.registry, "M02", {})
         saved = json.loads(status.read_text(encoding="utf-8"))
         self.assertEqual(result["scene_sha256"], current)
-        self.assertEqual(saved["shots"], {"M01": {"scene_sha256": other}, "M02": {"scene_sha256": current}})
+        self.assertEqual(saved["shots"], {
+            "M01": {"scene_sha256": other, "source_review": {}}, "M02": {"scene_sha256": current}
+        })
         self.assertEqual(
             (saved["current_animatic"], saved["current_animatic_status"]),
             ("plan/animatic/latest/manifest.json", "review"),

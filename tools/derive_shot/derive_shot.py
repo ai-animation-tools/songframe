@@ -459,7 +459,9 @@ def accept(work_dir, confirm, replace=False, root=ROOT, update_views=True):
     if target.exists() and not replace:
         raise ValueError("У плана уже есть комплект; для замены требуется --replace.")
     status_sha = digest_or_none(root / PRODUCTION_STATUS)
-    status = with_accepted_fingerprints(read_production_status(root), {shot: preview["target_scene_sha256"]})
+    status = with_accepted_fingerprints(
+        read_production_status(root), {shot: preview["target_scene_sha256"]}, clear_source_reviews=True
+    )
     transaction = uuid4().hex
     history = root / HISTORY / transaction
     history.mkdir(parents=True)

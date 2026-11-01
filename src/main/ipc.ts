@@ -85,6 +85,8 @@ import type { TaskNotifications } from './task-notifications';
 import type { MontageDraft } from '@shared/montage';
 import { Montage } from './montage';
 import { copyMontageVideo, montageVideoPath } from './montage-video';
+import { VideoReview } from './video-review';
+import { AGENT_PROVIDERS } from '@shared/agent-providers';
 import { DerivedWorkflow } from './derived-workflow';
 import { recoverDerivedApplications } from './derived-recovery';
 import type { DerivedShotRecipe } from '@shared/derived-shot';
@@ -115,6 +117,7 @@ export interface Services {
   notifications?: TaskNotifications;
   cover?: CoverGeneration;
   referenceImages?: CoverGeneration;
+  videoReview?: VideoReview;
   /** Только оконный процесс: журнал сбоев и сеанс пользователя. */
   diagnostics?: AppDiagnostics;
 }
@@ -364,6 +367,20 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       generationVerified: false
     };
   });
+  const videoReview = new VideoReview({
+    agents,
+    imageBudgetBytes: () => AGENT_PROVIDERS[getServices().settings.getAgent()?.provider ?? 'codex'].reviewImageBudgetBytes,
+    launcher: () => getServices().launcher,
+    toolsRoot: () => getServices().toolsRoot,
+    isPackageBusy: (project, packageDir) => getServices().production.isBusy(project, packageDir)
+  });
+  getServices().videoReview = videoReview;
+  ipcMain.handle('videoReview:view', (_event, project: string, packageDir: string) => videoReview.view(project, packageDir));
+  ipcMain.handle('videoReview:start', async (_event, project: string, packageDir: string) => {
+    await ai.requireAccess(project, 'agent');
+    return videoReview.start(project, packageDir);
+  });
+  ipcMain.handle('videoReview:cancel', (_event, project: string, packageDir: string) => videoReview.cancel(project, packageDir));
   const productionFlow = new ProductionWorkflow({
     agents,
     localDir: getServices().settings.localDir,
@@ -521,7 +538,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const settings = getServices().settings;
     settings.write({ ...settings.read(), toolsRootOverride: path });
     // Смена ресурсов не создаёт второй менеджер и не объявляет живые задания прерванными.
-    const next = { ...createServices({ previousJobs: getServices().jobs }), agents, notifications, cover, referenceImages, diagnostics };
+    const next = { ...createServices({ previousJobs: getServices().jobs }), agents, notifications, cover, referenceImages, videoReview, diagnostics };
     watchJobs(next.jobs);
     setServices(next);
     return getServices().projects.appState();

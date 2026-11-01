@@ -23,6 +23,7 @@ from tools.scene_registry.scene_registry import (
     accepted_fingerprints,
     initial_states_for,
     load,
+    project_shot_acceptance,
     read_production_status,
     scene_fingerprints,
     validate,
@@ -290,7 +291,7 @@ def publish_file(source, target):
         target.unlink(missing_ok=True)
 
 
-def carried_acceptance(root, candidate, shots):
+def carried_acceptance(root, candidate, shots, ready):
     """Новый статус производства, если перенос границ меняет отпечатки актуальных планов, иначе None.
 
     Граница плана входит в его постановку. Монтаж переносит принятие только тем планам, что были приняты
@@ -300,8 +301,16 @@ def carried_acceptance(root, candidate, shots):
     accepted = accepted_fingerprints(status)
     initial = initial_states_for(root)
     before, after = scene_fingerprints(load(root), initial), scene_fingerprints(candidate, initial)
-    updates = {sid: after[sid] for sid in shots if accepted.get(sid) == before[sid] != after[sid]}
-    return with_accepted_fingerprints(status, updates) if updates else None
+    updates = {
+        sid: after[sid]
+        for sid in shots
+        if ready.get(sid) == "completed" and accepted.get(sid) == before[sid] != after[sid]
+    }
+    reviewed = any(
+        ready.get(sid) == "completed" and "source_review" in (status or {}).get("shots", {}).get(sid, {})
+        for sid in shots
+    )
+    return with_accepted_fingerprints(status, updates) if updates or reviewed else None
 
 
 def apply(draft, root=ROOT, update_views=True):
@@ -309,7 +318,8 @@ def apply(draft, root=ROOT, update_views=True):
     recover(root)
     candidate, packages, plan = prepare_draft(draft, root)
     status_sha = digest_or_none(root / PRODUCTION_STATUS)
-    status = carried_acceptance(root, candidate, packages)
+    ready = project_shot_acceptance(root)
+    status = carried_acceptance(root, candidate, packages, ready)
     transaction = uuid4().hex
     directory = root / HISTORY / transaction
     directory.mkdir(parents=True)
@@ -323,9 +333,6 @@ def apply(draft, root=ROOT, update_views=True):
         # При неизменных границах сохраняются даже форматирование и SHA реестра.
         if candidate != load(root):
             replace_bytes(stage / "plan/scenes.json", json_bytes(candidate))
-        # Статус пишется до обновления представлений: ROADMAP показывает принятие по новым границам.
-        if status is not None:
-            replace_bytes(stage / PRODUCTION_STATUS, json_bytes(status))
         version = run(["ffmpeg", "-version"]).decode().splitlines()[0]
         for clip, item in zip(draft["clips"], plan["shots"]):
             sid = clip["scene"]
@@ -341,6 +348,17 @@ def apply(draft, root=ROOT, update_views=True):
             validate_package(asset / "manifest.json", sid, stage)
             if any(stream["codec_type"] == "audio" for stream in probe(asset / video_name)["streams"]):
                 raise ValueError("В монтажном клипе появилась лишняя звуковая дорожка.")
+            if (
+                status is not None
+                and ready.get(sid) == "completed"
+                and "source_review" in status.get("shots", {}).get(sid, {})
+            ):
+                # Apply подтверждает новый монтаж, но не меняет уже сверенную постановку и материал источника.
+                review = status["shots"][sid]["source_review"]
+                review["accepted_video_sha256"] = manifest["accepted_edit"]["video"]["sha256"]
+        # Статус публикуется вместе с монтажом до обновления представлений.
+        if status is not None:
+            replace_bytes(stage / PRODUCTION_STATUS, json_bytes(status))
         if update_views:
             subprocess.run(
                 [

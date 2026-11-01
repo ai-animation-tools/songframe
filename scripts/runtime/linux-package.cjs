@@ -61,6 +61,7 @@ async function inspectResources(root) {
     'resources/templates/project/README.md',
     'resources/templates/project/plan/project.json',
     'resources/skills/ai-clip-scenario/SKILL.md',
+    'resources/skills/ai-clip-video-review/SKILL.md',
     'resources/skills/ai-clip-scene/SKILL.md',
     'resources/skills/ai-clip-scene/references/app-proposal.md',
     'resources/skills/ai-clip-scene/references/prompt-template.md',

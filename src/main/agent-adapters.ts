@@ -22,6 +22,13 @@ export type AgentUpdate =
 /** read — только чтение проекта; write — запись кандидатов во временную рабочую папку задания. */
 export type AgentRunMode = 'read' | 'write';
 
+/** Байты уже проверены менеджером; адаптер определяет только штатный транспорт вложения CLI. */
+export interface AgentImageAttachment {
+  path: string;
+  data: Buffer;
+  mediaType: 'image/png' | 'image/jpeg';
+}
+
 export interface AgentAdapter {
   readonly provider: AgentProvider;
   check(config: AgentSettings): Promise<AgentCheckResult>;
@@ -29,7 +36,9 @@ export interface AgentAdapter {
   /** Каталог моделей найденного CLI служебным вызовом, без хода модели. */
   models(executable: string, options: AccountProcessOptions): Promise<AgentModel[]>;
   /** Неподдерживаемый режим или версия завершаются AgentError до запуска процесса. */
-  args(config: AgentSettings, version: string, mode: AgentRunMode): string[];
+  args(config: AgentSettings, version: string, mode: AgentRunMode, images?: readonly AgentImageAttachment[]): string[];
+  /** Вложения требуют явного кодировщика; отсутствие метода не должно молча превращать их в текстовые пути. */
+  input?(prompt: string, images: readonly AgentImageAttachment[]): string;
   parse(value: Record<string, unknown>): AgentUpdate[];
 }
 
@@ -68,13 +77,13 @@ export class ClaudeAdapter implements AgentAdapter {
   models(executable: string, options: AccountProcessOptions): Promise<AgentModel[]> {
     return readClaudeModels(executable, options);
   }
-  args(config: AgentSettings, version: string, mode: AgentRunMode): string[] {
+  args(config: AgentSettings, version: string, mode: AgentRunMode, images: readonly AgentImageAttachment[] = []): string[] {
     supported(version, 2, 1, 0);
     if (mode !== 'read') throw unsupportedMode();
     return [
       '-p',
       '--input-format',
-      'text',
+      images.length ? 'stream-json' : 'text',
       '--output-format',
       'stream-json',
       '--verbose',
@@ -87,6 +96,26 @@ export class ClaudeAdapter implements AgentAdapter {
       'Read,Glob,Grep',
       ...(config.model ? ['--model', config.model] : [])
     ];
+  }
+  input(prompt: string, images: readonly AgentImageAttachment[]): string {
+    // CLI принимает тот же user-конверт, что и потоковый SDK: байты изображений идут в content, а не в текст путей.
+    const input = images.length
+      ? JSON.stringify({
+          type: 'user',
+          message: {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              ...images.map((image) => ({ type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.data.toString('base64') } }))
+            ]
+          },
+          parent_tool_use_id: null
+        }) + '\n'
+      : prompt;
+    // Проверяем целиком перед spawn: 10 MB опубликованы для piped stdin, отдельный предел stream-json не подтверждён.
+    // @link https://code.claude.com/docs/en/headless#pipe-data-through-claude
+    if (Buffer.byteLength(input, 'utf8') > 10_000_000) throw new AgentError('INVALID_INPUT', agentsTexts.claudeInputTooLarge);
+    return input;
   }
   parse(value: Record<string, unknown>): AgentUpdate[] {
     if (value.type === 'system' && value.subtype === 'init') return session(value.session_id);
@@ -149,8 +178,9 @@ export class CodexAdapter implements AgentAdapter {
   models(executable: string, options: AccountProcessOptions): Promise<AgentModel[]> {
     return readCodexAgentModels(executable, options);
   }
-  args(config: AgentSettings, version: string, mode: AgentRunMode): string[] {
+  args(config: AgentSettings, version: string, mode: AgentRunMode, images: readonly AgentImageAttachment[] = []): string[] {
     supported(version, 0, 159, 0);
+    if (images.length && mode !== 'read') throw new AgentError('INVALID_INPUT', agentsTexts.imageAttachmentsReadOnly);
     return [
       '-a',
       'never',
@@ -162,8 +192,13 @@ export class CodexAdapter implements AgentAdapter {
       '--color',
       'never',
       ...(config.model ? ['--model', config.model] : []),
+      ...images.flatMap((image) => ['--image', image.path]),
       '-'
     ];
+  }
+  input(prompt: string, _images: readonly AgentImageAttachment[]): string {
+    // codex exec загружает изображения через --image, а исходный промпт по-прежнему читает из stdin.
+    return prompt;
   }
   parse(value: Record<string, unknown>): AgentUpdate[] {
     if (value.type === 'thread.started') return session(value.thread_id);

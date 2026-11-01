@@ -113,6 +113,7 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     montageWindow: { ...defaults.montageWindow, onMessage: message.subscribe, onClosed: closed.subscribe, ...overrides.montageWindow },
     notifications: { ...defaults.notifications, onOpen: notification.subscribe, ...overrides.notifications },
     media: { ...defaults.media, ...overrides.media },
+    videoReview: { ...defaults.videoReview, ...overrides.videoReview },
     productionWorkflow: { ...defaults.productionWorkflow, ...overrides.productionWorkflow },
     scenarioWorkflow: { ...defaults.scenarioWorkflow, ...overrides.scenarioWorkflow },
     agents: { ...defaults.agents, onEvent: agent.subscribe, ...overrides.agents },
@@ -186,6 +187,11 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
     },
     media: {
       capabilities: guardedAsync(merged.media.capabilities)
+    },
+    videoReview: {
+      view: guardedAsync(merged.videoReview.view),
+      start: guardedAsync(merged.videoReview.start),
+      cancel: guardedAsync(merged.videoReview.cancel)
     },
     productionWorkflow: {
       view: guardedAsync(merged.productionWorkflow.view),

@@ -1,0 +1,62 @@
+name: Предложить улучшение
+description: Новая возможность или улучшение существующей функции SongFrame.
+title: '[Предложение] '
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую задачу хочется решить
+      description: Опишите, чего вам не хватает или что сейчас неудобно.
+      placeholder: >-
+        Например, при проверке соседних планов приходится
+        переключаться между несколькими окнами.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Предлагаемое улучшение
+      description: Как это должно работать и чем поможет в вашей задаче?
+      placeholder: >-
+        Например, хочу сравнивать соседние планы и их опоры
+        в одном окне перед приёмкой.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Для каких ОС актуально
+      description: >-
+        Если предложение связано с конкретной ОС, выберите её.
+        Можно отметить несколько. Для общей идеи оставьте поле пустым.
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - Другая
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Версия приложения
+      description: >-
+        Если предлагаете изменить существующую функцию, укажите версию
+        из «Настройки» → «Обновления приложения».
+      placeholder: 'Например: 0.1.0'
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Как решаете задачу сейчас
+      description: Опишите текущий способ или другие варианты решения, если они есть.
+      placeholder: Что приходится делать вручную или в другой программе?
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Примеры, скриншоты и ссылки
+      description: >-
+        Можно приложить набросок интерфейса, пример из другой программы
+        или ссылку. Изображения и файлы перетащите в это поле.

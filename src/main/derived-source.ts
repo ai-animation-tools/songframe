@@ -12,8 +12,18 @@ export interface SourceVideoSnapshot {
   videoPath: string;
 }
 
-/** Проверяет фактический выбранный файл, повторно читая большие клипы только после изменения stat. */
+/** Выбранный принятый ролик может быть производным: проверка подтверждения не меняет происхождение генерации. */
+export function readAcceptedVideoSnapshot(project: string, shot: string): SourceVideoSnapshot | null {
+  return readVideoSnapshot(project, shot, true);
+}
+
+/** Источник нового производного плана по-прежнему не может сам быть производным. */
 export function readSourceVideoSnapshot(project: string, sourceShot: string): SourceVideoSnapshot | null {
+  return readVideoSnapshot(project, sourceShot, false);
+}
+
+/** Проверяет фактический выбранный файл, повторно читая большие клипы только после изменения stat. */
+function readVideoSnapshot(project: string, sourceShot: string, allowDerived: boolean): SourceVideoSnapshot | null {
   try {
     const directory = realpathSync(join(project, 'assets', 'shots', sourceShot));
     const manifest: unknown = JSON.parse(readFileSync(join(directory, 'manifest.json'), 'utf8'));
@@ -21,7 +31,7 @@ export function readSourceVideoSnapshot(project: string, sourceShot: string): So
       !record(manifest) ||
       manifest.schema_version !== 1 ||
       manifest.shot !== sourceShot ||
-      manifest.kind === 'derived_video' ||
+      (!allowDerived && manifest.kind === 'derived_video') ||
       !record(manifest.accepted_edit)
     )
       return null;

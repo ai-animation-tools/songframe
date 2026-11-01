@@ -342,7 +342,7 @@ def accepted_fingerprints(status):
     return result
 
 
-def with_accepted_fingerprints(status, updates):
+def with_accepted_fingerprints(status, updates, clear_source_reviews=False):
     """Копия статуса с новыми отпечатками принятых планов; прочие поля и записи других планов сохраняются."""
     result = deepcopy(status) if status is not None else deepcopy(EMPTY_PRODUCTION_STATUS)
     accepted_fingerprints(result)
@@ -351,21 +351,27 @@ def with_accepted_fingerprints(status, updates):
         if not SHOT_ID.fullmatch(sid) or not isinstance(digest, str) or not SHA256.fullmatch(digest):
             raise ValueError(f"{sid}: неверный отпечаток постановки {digest!r}.")
         shots_field[sid] = {**shots_field.get(sid, {}), "scene_sha256": digest}
+        if clear_source_reviews:
+            # Новая приёмка приносит свой generation receipt; прежняя сверка относилась к другим выбранным байтам.
+            shots_field[sid].pop("source_review", None)
     # Порядок по монтажному номеру, как у записи главного процесса: файл не перестраивается от записи к записи.
     result["shots"] = dict(sorted(shots_field.items(), key=lambda item: float(item[0][1:])))
     return result
 
 
-def write_accepted_fingerprints(root, updates):
+def write_accepted_fingerprints(root, updates, clear_source_reviews=False):
     """Атомарно записывает отпечатки принятых планов в plan/production-status.json."""
     root = Path(root)
-    write_json_atomic(root / PRODUCTION_STATUS, with_accepted_fingerprints(read_production_status(root), updates))
+    write_json_atomic(
+        root / PRODUCTION_STATUS,
+        with_accepted_fingerprints(read_production_status(root), updates, clear_source_reviews=clear_source_reviews),
+    )
 
 
 _source_hashes = {}
 
 
-def source_video_snapshot(root, source_shot):
+def source_video_snapshot(root, source_shot, allow_derived=False):
     """Фактический SHA выбранного клипа; stat-кэш исключает повторное чтение неизменённых больших видео."""
     try:
         directory = (Path(root) / "assets/shots" / source_shot).resolve()
@@ -373,7 +379,7 @@ def source_video_snapshot(root, source_shot):
         if (
             manifest.get("schema_version") != 1
             or manifest.get("shot") != source_shot
-            or manifest.get("kind") == "derived_video"
+            or (manifest.get("kind") == "derived_video" and not allow_derived)
         ):
             return None
         video = manifest["accepted_edit"]["video"]
@@ -407,12 +413,15 @@ def source_video_snapshot(root, source_shot):
         return None
 
 
-def shot_acceptance(data, kits, accepted, initial=None, source_snapshot=None, reasons=None):
+def shot_acceptance(
+    data, kits, accepted, initial=None, source_snapshot=None, reasons=None, source_reviews=None, accepted_snapshot=None
+):
     """Свежесть по собственной постановке и сохранённому снимку источника; @link README.md.
 
     kits содержит прочитанные манифесты. source_snapshot возвращает фактический SHA выбранного
     видео либо None; повторная приёмка источника не переписывает снимок производного плана.
     """
+    source_reviews = {} if source_reviews is None else source_reviews
     current = scene_fingerprints(data, initial)
     result = {
         sid: "completed" if accepted.get(sid) == digest else "stale" for sid, digest in current.items() if sid in kits
@@ -449,6 +458,32 @@ def shot_acceptance(data, kits, accepted, initial=None, source_snapshot=None, re
                 or snapshot is None
             ):
                 reason = "source_unavailable"
+            elif sid in source_reviews:
+                # Явная повторная сверка текущего монтажа не переписывает историческое происхождение generation.
+                # Подтверждение действительно только для этих байтов и этой постановки источника; @link README.md.
+                review = source_reviews[sid]
+                fields = {"source_shot", "source_scene_sha256", "source_accepted_video_sha256", "accepted_video_sha256"}
+                valid = (
+                    isinstance(review, dict)
+                    and set(review) == fields
+                    and isinstance(review.get("source_shot"), str)
+                    and bool(SHOT_ID.fullmatch(review["source_shot"]))
+                    and all(
+                        isinstance(review.get(key), str) and SHA256.fullmatch(review[key])
+                        for key in fields - {"source_shot"}
+                    )
+                )
+                if not valid:
+                    reason = "source_receipt_missing"
+                elif review["source_shot"] != source:
+                    reason = "derived_link_changed"
+                elif not accepted_snapshot or accepted_snapshot(sid) != review["accepted_video_sha256"]:
+                    reason = "source_receipt_missing"
+                elif (
+                    review["source_scene_sha256"] != current[source]
+                    or review["source_accepted_video_sha256"] != snapshot
+                ):
+                    reason = "source_changed"
             elif not isinstance(generation.get("source_scene_sha256"), str) or not isinstance(
                 generation.get("source_accepted_video_sha256"), str
             ):
@@ -475,9 +510,17 @@ def project_shot_acceptance(root=ROOT, data=None, reasons=None):
                 kits[scene["id"]] = json.loads(path.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 kits[scene["id"]] = None
-    accepted = accepted_fingerprints(read_production_status(root))
+    status = read_production_status(root)
+    accepted = accepted_fingerprints(status)
+    reviews = {
+        sid: entry["source_review"]
+        for sid, entry in (status or {}).get("shots", {}).items()
+        if "source_review" in entry
+    }
     return shot_acceptance(
-        data, kits, accepted, initial_states_for(root), lambda sid: source_video_snapshot(root, sid), reasons
+        data, kits, accepted, initial_states_for(root), lambda sid: source_video_snapshot(root, sid), reasons,
+        source_reviews=reviews,
+        accepted_snapshot=lambda sid: source_video_snapshot(root, sid, allow_derived=True),
     )
 
 

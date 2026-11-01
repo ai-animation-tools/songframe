@@ -1,0 +1,134 @@
+name: Сообщить об ошибке
+description: Ошибка в SongFrame, производстве клипа или обновлении.
+title: '[Ошибка] '
+body:
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Операционная система
+      options:
+        - Windows
+        - Linux
+        - Другая
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: Версия ОС
+      description: Для Linux укажите название и версию дистрибутива.
+      placeholder: 'Например: Windows 11 24H2, Ubuntu 24.04'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: Архитектура системы
+      options:
+        - x64 (Intel / AMD)
+        - arm64 (ARM)
+        - Другая
+        - Не знаю
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Версия приложения
+      description: >-
+        Откройте «Настройки» → «Обновления приложения». Если окно не открывается,
+        укажите версию из имени скачанного пакета. Для запуска из исходников
+        укажите commit или тег.
+      placeholder: 'Например: 0.1.0 или commit исходников'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: launch-method
+    attributes:
+      label: Как запущено приложение
+      options:
+        - AppImage из GitHub Releases (Linux)
+        - Через установщик Windows из GitHub Releases
+        - Собственная сборка из исходников
+        - Режим разработки (dev)
+        - Инструмент Python из исходников
+        - Другое
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      description: Опишите действия по порядку, начиная с запуска приложения.
+      placeholder: |
+        1. Запускаю приложение и открываю…
+        2. Нажимаю…
+        3. Получаю ошибку…
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемый результат
+      placeholder: Что должно было произойти?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Фактический результат
+      description: Если появилось сообщение об ошибке, приведите его точный текст.
+      placeholder: Что произошло вместо ожидаемого результата?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Как часто повторяется ошибка
+      options:
+        - При каждом повторении этих действий
+        - Иногда
+        - Случилось один раз, повторить не удалось
+        - Пока не проверял повторно
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Дополнительные условия
+      description: Заполните только то, что относится к вашей ошибке.
+      placeholder: |
+        Этап: исходники трека, тайминги, сценарий, генерация, монтаж или аниматик; код плана Mxx, если есть.
+        Агент или медиа: провайдер и модель, если относятся к ошибке.
+        Разметка: модель Whisper, CPU или CUDA, если относятся к ошибке.
+        Linux: рабочий стол и Wayland / X11, если известны.
+        Собственная сборка или Python-инструмент: команда запуска и версии зависимостей.
+        Другие настройки, влияющие на ошибку. Не добавляйте токены и данные входа.
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Диагностика и логи
+      description: >-
+        Укажите ошибки на странице «Среда». В «Журнале заданий» нажмите
+        «Сохранить отчёт для разработчика» и приложите файл ниже.
+        Можно добавить точный текст ошибки или фрагмент журнала без токенов,
+        данных входа и личных путей. Если окно не открывается, поле можно пропустить.
+      placeholder: Результаты диагностики, код ошибки или фрагмент журнала.
+      render: text
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Скриншоты и файлы
+      description: >-
+        Перетащите сюда скриншоты, короткую запись экрана или файл журнала,
+        если они помогают показать ошибку. Можно приложить минимальный пример
+        исходников проекта без секретов. Скройте данные аккаунта и личные пути.

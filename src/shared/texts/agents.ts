@@ -11,6 +11,11 @@ export const agentsTexts = {
   invalidInput: 'Неверные параметры задания.',
   inputRequired: 'Укажите проект, задачу и промпт.',
   invalidInputSize: 'Неверный путь или слишком большой текст задания.',
+  imageAttachmentsInvalid: 'Вложения должны быть существующими непустыми файлами PNG или JPEG с абсолютными путями.',
+  imageAttachmentsTooLarge: 'Допускается до 64 изображений, до 5 МиБ каждое и до 20 МиБ суммарно.',
+  claudeInputTooLarge:
+    'Ввод Claude Code превышает выбранный SongFrame предел 10 000 000 байт с учётом JSON и base64. Он основан на документированном ограничении piped stdin и не утверждает подтверждённый предел stream-json. Уменьшите подготовленные вложения или текст задания.',
+  imageAttachmentsReadOnly: 'Вложения изображений доступны только в заданиях агента без записи файлов.',
   restartInterrupted: 'Приложение завершилось до получения результата. Автоматический повтор не выполнялся; для нового запуска подготовьте запрос заново.',
   invalidCandidateDirectory: 'Папка кандидатов не принадлежит заданиям изображений.',
   applicationStopping: commonTexts.runtime.applicationStopping,

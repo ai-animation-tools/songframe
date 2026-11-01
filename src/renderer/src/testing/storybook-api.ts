@@ -1,5 +1,6 @@
 /** Полный контракт API: новый метод главного процесса требует явного решения для витрины. */
 import type { Api } from '@shared/api';
+import { videoReviewTexts } from '@shared/texts/video-review';
 
 function unconfigured(method: string): never {
   throw new Error(`Storybook: метод ${method} не настроен для этой истории.`);
@@ -59,6 +60,21 @@ export function unconfiguredStoryApi(): Api {
     },
     media: {
       capabilities: async () => unconfigured('media.capabilities')
+    },
+    videoReview: {
+      view: async () => ({
+        status: 'idle',
+        job: null,
+        report: null,
+        frames: [],
+        stale: false,
+        canStart: false,
+        reason: videoReviewTexts.main.toolsMissing,
+        error: null,
+        durationSeconds: null
+      }),
+      start: async () => unconfigured('videoReview.start'),
+      cancel: async () => unconfigured('videoReview.cancel')
     },
     productionWorkflow: {
       view: async () => unconfigured('productionWorkflow.view'),

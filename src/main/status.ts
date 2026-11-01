@@ -118,7 +118,11 @@ export function computeStatus(path: string): ProjectStatus {
       if (acceptance.problem) problems.push(acceptance.problem);
       const stale = sceneIds.filter((id) => acceptance.accepted.get(id) === 'stale');
       checks.shotsDone = sceneIds.filter((id) => acceptance.accepted.get(id) === 'completed').length;
-      if (stale.length) problems.push(projectsTexts.main.status.staleShots({ ids: stale }));
+      // Причина может относиться к версии источника: не выдаём её за изменение постановки самого плана.
+      const changedScenes = stale.filter((id) => acceptance.reasons.get(id) === 'scene_changed');
+      const sourceProblems = stale.filter((id) => acceptance.reasons.get(id) !== 'scene_changed');
+      if (changedScenes.length) problems.push(projectsTexts.main.status.staleShots({ ids: changedScenes }));
+      if (sourceProblems.length) problems.push(projectsTexts.main.status.derivedShotsNeedReview({ ids: sourceProblems }));
     } else checks.shotsDone = done.size;
     const orphans = [...done].filter((id) => sceneIds.length && !sceneIds.includes(id));
     if (orphans.length) problems.push(projectsTexts.main.status.orphanKits({ ids: orphans }));

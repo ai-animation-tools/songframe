@@ -27,6 +27,8 @@ export const projectsTexts = {
       damagedTreatment: 'plan/treatment.json повреждён или пуст.',
       damagedScenes: 'plan/scenes.json повреждён или не содержит сцен.',
       staleShots: ({ ids }: { ids: readonly string[] }) => `Постановка изменена после приёмки: ${ids.join(', ')}. Нужно новое производство этих планов.`,
+      derivedShotsNeedReview: ({ ids }: { ids: readonly string[] }) =>
+        `Не подтверждена актуальность производных планов: ${ids.join(', ')}. Проверьте версию источника и приёмку этих планов.`,
       orphanKits: ({ ids }: { ids: readonly string[] }) => `Комплекты без сцены в реестре: ${ids.join(', ')}.`,
       animaticNotBuilt: 'Все сцены приняты, но полный аниматик ещё не собран.',
       staleAnimatic: 'Аниматик собран по устаревшему реестру или входам: нужна пересборка.',

@@ -1,5 +1,6 @@
 /** Настоящие процессы подставных CLI проверяют общий контракт без расхода лимитов провайдеров. */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, truncateSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -94,6 +95,139 @@ async function terminal(manager: AgentManager, id: string): Promise<AgentJob> {
   return manager.get(id)!;
 }
 const start = (value: AgentManager) => value.start({ project, task: 'Черновик', prompt: 'ТЕКСТ ЗАПРОСА; $(touch injected) "кириллица"', context: 'КОНТЕКСТ' });
+
+/** Маленькие локальные изображения позволяют проверить байты транспорта без запроса настоящей модели. */
+function attachment(name = 'Кадр с пробелами.png', jpeg = false): string {
+  const file = join(work, name);
+  const data = jpeg
+    ? Buffer.from([255, 216, 255, 224, 0, 2, 255, 217])
+    : Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII=', 'base64');
+  writeFileSync(file, data);
+  return file;
+}
+
+describe('Вложения изображений текстового агента', () => {
+  it('Claude отклоняет слишком большой сериализованный ввод до рабочего spawn', async () => {
+    fake('claude', success('claude'));
+    const images = [attachment('Большой кадр.png'), attachment('Большая опора.png')];
+    for (const path of images) truncateSync(path, 4 * 1024 * 1024);
+    const value = manager();
+    const job = value.start({ project, task: 'Проверка', prompt: 'Проверь вложения', images });
+    expect(await terminal(value, job.id)).toMatchObject({
+      status: 'failed',
+      diagnostic: 'INVALID_INPUT',
+      exitCode: null,
+      message: expect.stringContaining('10 000 000 байт')
+    });
+    expect(existsSync(join(work, 'started'))).toBe(false);
+    expect(existsSync(join(work, 'stdin'))).toBe(false);
+  });
+
+  it.each(['claude', 'codex'] as const)('%s: отправляет изображения штатным транспортом и сохраняет запрет записи', async (provider) => {
+    fake(provider, success(provider));
+    const png = attachment('Кадр $(не выполнять).png');
+    const jpeg = attachment('Опора с пробелами.JPEG', true);
+    const value = manager();
+    const job = value.start({ project, task: 'Проверка кадров', prompt: 'Проверь эти кадры', context: 'Контекст', images: [png, jpeg] });
+    const done = await terminal(value, job.id);
+    expect(done).toMatchObject({ status: 'completed', permissions: 'read-only' });
+    const args = JSON.parse(readFileSync(join(work, 'started'), 'utf8')).args as string[];
+    const stdin = readFileSync(join(work, 'stdin'), 'utf8');
+    if (provider === 'codex') {
+      expect(args.slice(-5)).toEqual(['--image', png, '--image', jpeg, '-']);
+      expect(args[args.indexOf('--sandbox') + 1]).toBe('read-only');
+      expect(stdin).toContain('Задача:\nПроверь эти кадры');
+      expect(stdin).not.toContain(png);
+    } else {
+      expect(args[args.indexOf('--input-format') + 1]).toBe('stream-json');
+      expect(args[args.indexOf('--permission-mode') + 1]).toBe('dontAsk');
+      expect(args[args.indexOf('--tools') + 1]).toBe('Read,Glob,Grep');
+      const input = JSON.parse(stdin);
+      expect(input).toMatchObject({ type: 'user', parent_tool_use_id: null, message: { role: 'user' } });
+      expect(input.message.content[0]).toEqual({ type: 'text', text: expect.stringContaining('Задача:\nПроверь эти кадры') });
+      expect(input.message.content.slice(1)).toEqual([
+        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: readFileSync(png).toString('base64') } },
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: readFileSync(jpeg).toString('base64') } }
+      ]);
+      expect(stdin.endsWith('\n')).toBe(true);
+    }
+    const persisted = readFileSync(join(work, 'state/jobs', `agent-${job.id}.json`), 'utf8');
+    expect(persisted).not.toContain(png);
+    expect(persisted).not.toContain(readFileSync(png).toString('base64'));
+  });
+
+  it('хеш контекста зависит от байтов и порядка, но не пути, а пустой список сохраняет текстовый контракт', async () => {
+    fake('codex', 'send({type:"turn.completed"});');
+    const first = attachment();
+    const second = attachment('другая опора.jpeg', true);
+    const copy = join(work, 'копия.png');
+    writeFileSync(copy, readFileSync(first));
+    const value = manager();
+    const run = async (images?: string[]): Promise<AgentJob> => {
+      const job = value.start({ project, task: 'Проверка', prompt: 'Промпт', context: 'Контекст', ...(images ? { images } : {}) });
+      return terminal(value, job.id);
+    };
+    const original = await run([first, second]);
+    expect((await run([copy, second])).inputHashes).toEqual(original.inputHashes);
+    expect((await run([second, first])).inputHashes.context).not.toBe(original.inputHashes.context);
+    writeFileSync(first, Buffer.concat([readFileSync(first), Buffer.from('изменённый кадр')]));
+    expect((await run([first, second])).inputHashes.context).not.toBe(original.inputHashes.context);
+    expect((await run([])).inputHashes.context).toBe(createHash('sha256').update('Контекст').digest('hex'));
+    expect((await run()).inputHashes.context).toBe(createHash('sha256').update('Контекст').digest('hex'));
+  });
+
+  it('отклоняет неверные пути, типы и пустые или замаскированные файлы до диагностики CLI и истории', () => {
+    const value = manager();
+    const png = attachment();
+    const empty = join(work, 'пустой.png');
+    writeFileSync(empty, '');
+    const text = join(work, 'текст.png');
+    writeFileSync(text, 'это не картинка');
+    const directory = join(work, 'каталог.png');
+    mkdirSync(directory);
+    for (const images of [
+      null,
+      'image.png',
+      [42],
+      [''],
+      [' '],
+      ['relative.png'],
+      [png + '\0'],
+      [join(work, 'нет.png')],
+      [empty],
+      [text],
+      [directory],
+      [attachment('неверный.gif')]
+    ]) {
+      expect(() => value.start({ project, task: 'Проверка', prompt: 'Промпт', images })).toThrow(/INVALID_INPUT/);
+    }
+    expect(value.list()).toEqual([]);
+    expect(existsSync(join(work, 'started'))).toBe(false);
+  });
+
+  it('ограничивает число и суммарный размер файлов, в том числе до чтения большого файла', () => {
+    const png = attachment();
+    const value = manager();
+    const input = { project, task: 'Проверка', prompt: 'Промпт' };
+    expect(() => value.start({ ...input, images: Array(65).fill(png) })).toThrow(/до 64 изображений/);
+    truncateSync(png, 5 * 1024 * 1024 + 1);
+    expect(() => value.start({ ...input, images: [png] })).toThrow(/до 5 МиБ/);
+    truncateSync(png, 5 * 1024 * 1024);
+    expect(() => value.start({ ...input, images: Array(5).fill(png) })).toThrow(/до 20 МиБ суммарно/);
+    expect(value.list()).toEqual([]);
+  });
+
+  it('передача вложений не открывает маршрут создания изображений с записью', () => {
+    const png = attachment();
+    const candidate = join(settings.localDir, 'image-jobs', 'candidate');
+    mkdirSync(candidate, { recursive: true });
+    const value = manager();
+    expect(() => value.startImages({ project, task: 'Проверка', prompt: 'Промпт', images: [png] }, candidate, { provider: 'codex' })).toThrow(
+      /только в заданиях агента без записи/
+    );
+    expect(value.list()).toEqual([]);
+  });
+});
 
 describe('Разбор JSONL', () => {
   it('сохраняет UTF-8 при разрыве каждого байта и принимает последнюю строку без переноса', () => {

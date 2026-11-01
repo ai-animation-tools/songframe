@@ -16,7 +16,7 @@ from tools.apply_montage import apply_montage as tool
 from tools.asset_package.asset_package import replay, validate_package
 from tools.build_review.build_review import prepare, probe, run
 from tools.common import sha
-from tools.scene_registry.scene_registry import project_shot_acceptance
+from tools.scene_registry.scene_registry import project_shot_acceptance, scene_fingerprints
 
 
 class ApplyMontageTests(unittest.TestCase):
@@ -67,6 +67,42 @@ class ApplyMontageTests(unittest.TestCase):
             for path in self.root.rglob("*")
             if path.is_file() and "montage-history" not in path.parts and "revisions" not in path.parts
         }
+
+    def test_montage_updates_only_target_digest_of_current_source_review(self):
+        registry_path = self.root / "plan/scenes.json"
+        registry = json.loads(registry_path.read_text())
+        next(scene for scene in registry["scenes"] if scene["id"] == "M02")["derived_from"] = {"shot": "M01"}
+        next(scene for scene in registry["scenes"] if scene["id"] == "M05")["derived_from"] = {"shot": "M01"}
+        registry_path.write_text(json.dumps(registry))
+        path = self.root / "assets/shots/M02/manifest.json"
+        manifest = json.loads(path.read_text())
+        manifest["kind"] = "derived_video"
+        # Валидный MP4 free-box отличает прежние выбранные байты от нового кодирования однотонного образца.
+        selected = path.parent / manifest["accepted_edit"]["video"]["path"]
+        selected.write_bytes(selected.read_bytes() + (12).to_bytes(4, "big") + b"freeTEST")
+        for descriptor in (manifest["accepted_edit"]["video"], manifest["accepted_edit"]["montage_source"]):
+            descriptor.update({"sha256": sha(selected), "bytes": selected.stat().st_size})
+        manifest["generation"].update({"source_shot": "M01", "source_scene_sha256": None,
+                                       "source_accepted_video_sha256": "a" * 64})
+        path.write_text(json.dumps(manifest))
+        source = json.loads((self.root / "assets/shots/M01/manifest.json").read_text())
+        status_path = self.root / "plan/production-status.json"
+        status = json.loads(status_path.read_text())
+        current = scene_fingerprints(registry)
+        status["shots"]["M02"]["scene_sha256"] = current["M02"]
+        review = {"source_shot": "M01", "source_scene_sha256": current["M01"],
+                  "source_accepted_video_sha256": source["accepted_edit"]["video"]["sha256"],
+                  "accepted_video_sha256": manifest["accepted_edit"]["video"]["sha256"]}
+        status["shots"]["M02"]["source_review"] = review
+        status_path.write_text(json.dumps(status))
+        self.assertEqual(project_shot_acceptance(self.root)["M02"], "completed")
+        tool.apply(self.draft(), self.root, update_views=False)
+        saved = json.loads(status_path.read_text())["shots"]["M02"]["source_review"]
+        updated = json.loads(path.read_text())
+        self.assertEqual(saved, {**review, "accepted_video_sha256": updated["accepted_edit"]["video"]["sha256"]})
+        self.assertNotEqual(saved["accepted_video_sha256"], review["accepted_video_sha256"])
+        self.assertIsNone(updated["generation"]["source_scene_sha256"])
+        self.assertEqual(project_shot_acceptance(self.root)["M02"], "completed")
 
     def test_same_duration_cut_preserves_every_old_asset_and_updates_views(self):
         before = self.snapshot()

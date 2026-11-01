@@ -13,6 +13,8 @@ export interface AgentProviderInfo {
   loginUrl: string;
   /** Личный кабинет подписки: использование, лимиты и тариф. */
   accountUrl: string;
+  /** Бюджет копий изображений проверки в SongFrame; не объявляет внешний лимит CLI или API. */
+  reviewImageBudgetBytes: number;
 }
 
 export const AGENT_PROVIDERS = {
@@ -23,7 +25,8 @@ export const AGENT_PROVIDERS = {
     statusCommand: 'claude auth status',
     installUrl: 'https://code.claude.com/docs/en/setup',
     loginUrl: 'https://code.claude.com/docs/en/cli-reference',
-    accountUrl: 'https://claude.ai/settings/usage'
+    accountUrl: 'https://claude.ai/settings/usage',
+    reviewImageBudgetBytes: 6 * 1024 * 1024
   },
   codex: {
     title: 'Codex',
@@ -32,7 +35,8 @@ export const AGENT_PROVIDERS = {
     statusCommand: 'codex login status',
     installUrl: 'https://learn.chatgpt.com/docs/codex/cli',
     loginUrl: 'https://learn.chatgpt.com/docs/developer-commands?surface=cli#codex-login',
-    accountUrl: 'https://chatgpt.com/codex/settings/usage'
+    accountUrl: 'https://chatgpt.com/codex/settings/usage',
+    reviewImageBudgetBytes: 16 * 1024 * 1024
   }
 } as const satisfies Record<string, AgentProviderInfo>;
 

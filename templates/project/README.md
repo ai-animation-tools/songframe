@@ -34,7 +34,7 @@
 | Общие изображения персонажей, транспорта, локаций и их исходные промпты | Только [source](source/README.md); в assets ссылки с `root: "source"` и SHA-256 |
 | Оригинал, принятый монтаж, кадры, промпт, WAV и рецепт обработки сцены | `assets/shots/Mxx/manifest.json` по [контракту assets](assets/README.md#локальный-манифест-и-воспроизведение) |
 | Незавершённая работа над планом | `workflow.json` его пакета в `plan/batches` или [plan/awaiting/Mxx](plan/awaiting/README.md) |
-| Состояние просмотра и принятия полной сборки; отпечаток постановки, по которой принят каждый комплект (`shots`) | [plan/production-status.json](plan/production-status.json) |
+| Состояние просмотра и принятия полной сборки; отпечаток постановки, по которой принят каждый комплект (`shots`), и явное подтверждение существующего производного ролика (`shots.Mxx.source_review`) | [plan/production-status.json](plan/production-status.json) |
 | Речевые и музыкальные оценки | `plan/audio/timing.json`; монтажные окна они не задают |
 | Отложенные запросы и рабочие пакеты | [plan/awaiting/Mxx](plan/awaiting/README.md) и `plan/batches` |
 | Последняя полная сборка | [plan/animatic/latest](plan/animatic/latest/README.md); её манифест снимок сборки, не источник постановки |

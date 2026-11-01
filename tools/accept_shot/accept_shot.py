@@ -1,7 +1,7 @@
 """Перенос принятой генерации в комплект assets по контракту; @link README.md"""
 
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 # После переноса точка запуска находится на два уровня ниже корня проекта.
 # Полные импорты tools.* работают и при прямом запуске файла из любой папки.
@@ -65,6 +65,46 @@ def resolve_package(package=None, work_dir=None, root=ROOT):
     if attempt.get("status") != "downloaded" or not attempt.get("downloads"):
         raise ValueError("Попытка не в состоянии downloaded: принимать нечего.")
     return package, work_dir, request, attempt, workflow
+
+
+def frozen_request_files(request, work_dir):
+    """Проверяет нужные приёмке файлы до staging: строковый prompt не является текущим контрактом; @link README.md."""
+    if not isinstance(request, dict):
+        raise ValueError("request.json должен быть объектом.")
+    prompt = request.get("prompt")
+    if (
+        not isinstance(prompt, dict)
+        or not isinstance(prompt.get("path"), str)
+        or not prompt["path"].strip()
+        or not isinstance(prompt.get("sha256"), str)
+        or not prompt["sha256"].strip()
+    ):
+        raise ValueError("request.json: поле prompt должно быть объектом с path и sha256.")
+    inputs = request.get("inputs")
+    if not isinstance(inputs, list):
+        raise ValueError("request.json: поле inputs должно быть списком объектов с path.")
+
+    def local_file(name, field):
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"request.json: поле {field} должно содержать непустой относительный путь.")
+        relative = Path(name)
+        windows = PureWindowsPath(name)
+        if relative.is_absolute() or windows.drive or windows.root or ".." in windows.parts:
+            raise ValueError(f"request.json: поле {field} должно задавать путь внутри папки попытки.")
+        path = (work_dir / relative).resolve()
+        if not path.is_relative_to(work_dir.resolve()):
+            raise ValueError(f"request.json: поле {field} должно задавать путь внутри папки попытки.")
+        if not path.is_file():
+            raise ValueError(f"request.json: файл для {field} не найден: {relative.as_posix()}.")
+        return path
+
+    prompt_file = local_file(prompt["path"], "prompt.path")
+    input_files = []
+    for index, item in enumerate(inputs):
+        if not isinstance(item, dict):
+            raise ValueError(f"request.json: inputs[{index}] должен быть объектом с path.")
+        input_files.append(local_file(item.get("path"), f"inputs[{index}].path"))
+    return prompt_file, input_files
 
 
 def render_edit(original, filter_text, frames, target):
@@ -163,6 +203,7 @@ def accept(
         raise ValueError(f"{shot}: план отсутствует в реестре сцен.")
     frames = scene["end_frame_exclusive"] - scene["start_frame"]
     package, work_dir, request, attempt, workflow = resolve_package(package, work_dir, root)
+    prompt_file, input_files = frozen_request_files(request, work_dir)
     if not isinstance(request.get("provider"), str) or not request["provider"].strip():
         raise ValueError("В сохранённом запросе не указан провайдер.")
     if request.get("shot") not in (None, shot) or request.get("kind") != "video":
@@ -192,8 +233,7 @@ def accept(
         }
         # Одинаковые байты входов хранятся одним файлом с несколькими ролями по контракту assets.
         inputs, names = [], {}
-        for number, item in enumerate(request["inputs"], 1):
-            source = work_dir / item["path"]
+        for item, source in zip(request["inputs"], input_files):
             digest = sha(source)
             if digest not in names:
                 names[digest] = f"generation-input-{len(names) + 1}{source.suffix.lower()}"
@@ -204,7 +244,7 @@ def accept(
                 role=ROLE_LABELS.get(item.get("role"), item.get("role") or "Вход генерации"),
             )
             inputs.append(entry)
-        shutil.copyfile(work_dir / request["prompt"]["path"], staging / "generation-prompt.txt")
+        shutil.copyfile(prompt_file, staging / "generation-prompt.txt")
         audio_entry = None
         if audio is not None:
             shutil.copyfile(Path(audio), staging / "speech.wav")
@@ -374,7 +414,7 @@ def accept(
         shutil.rmtree(staging, ignore_errors=True)
         raise
     # Сразу после переноса: комплект без отпечатка считается принятым по прежней постановке (stale).
-    write_accepted_fingerprints(root, {shot: scene_digest})
+    write_accepted_fingerprints(root, {shot: scene_digest}, clear_source_reviews=True)
     validate_package(target / "manifest.json", shot, root)
     result = {
         "shot": shot,

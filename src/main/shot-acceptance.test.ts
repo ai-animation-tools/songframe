@@ -14,6 +14,7 @@ import { saveScenesWithMode, scenesSaveImpact } from './scenario-save';
 import { sceneFingerprints } from './scene-fingerprint';
 import { acceptedFingerprints, projectFingerprints, shotAcceptance } from './shot-acceptance';
 import { computeStatus } from './status';
+import { readAcceptedVideoSnapshot, readSourceVideoSnapshot } from './derived-source';
 import { stampAcceptedShots } from './testing/accepted-shots';
 
 const REPO = resolve(__dirname, '../..');
@@ -77,7 +78,8 @@ describe('принятие плана', () => {
     expect(m02.stageLabel).toBe('принят по прежней постановке: нужно новое производство');
     const status = computeStatus(project);
     expect(status.checks.shotsDone).toBe(1);
-    expect(status.problems).toContain('Постановка изменена после приёмки: M02, M05. Нужно новое производство этих планов.');
+    expect(status.problems).toContain('Постановка изменена после приёмки: M02. Нужно новое производство этих планов.');
+    expect(status.problems).toContain('Не подтверждена актуальность производных планов: M05. Проверьте версию источника и приёмку этих планов.');
   });
 
   it('пакет после правки постановки требует пересогласования', () => {
@@ -243,6 +245,123 @@ describe('снимок источника производного плана', 
     );
     expect(Object.fromEntries(shotAcceptance(project, registry()).accepted)).toEqual(JSON.parse(output));
   };
+
+  const targetPath = (): string => join(project, 'assets/shots/M05/manifest.json');
+  const reviewPath = (): string => join(project, 'plan/production-status.json');
+  const writeReview = (review: unknown): void => {
+    const status = JSON.parse(readFileSync(reviewPath(), 'utf8'));
+    status.shots.M05.source_review = review;
+    writeFileSync(reviewPath(), JSON.stringify(status));
+  };
+  const explicitReview = (): Record<string, string> => {
+    const manifest = JSON.parse(readFileSync(targetPath(), 'utf8'));
+    const bytes = Buffer.from('Уже принятый производный клип, подтверждённый пользователем.');
+    const hash = createHash('sha256').update(bytes).digest('hex');
+    writeFileSync(join(project, 'assets/shots/M05/video.mp4'), bytes);
+    manifest.accepted_edit = { video: { path: 'video.mp4', sha256: hash } };
+    manifest.generation.source_scene_sha256 = null;
+    manifest.generation.source_accepted_video_sha256 = 'b'.repeat(64);
+    writeFileSync(targetPath(), JSON.stringify(manifest));
+    const source = JSON.parse(readFileSync(sourcePath(), 'utf8'));
+    const review = {
+      source_shot: 'M02',
+      source_scene_sha256: projectFingerprints(project, registry()).M02,
+      source_accepted_video_sha256: source.accepted_edit.video.sha256,
+      accepted_video_sha256: hash
+    };
+    writeReview(review);
+    return review;
+  };
+
+  it('явное подтверждение существующего клипа учитывается отдельно от неизвестного исторического generation', () => {
+    const review = explicitReview();
+    const before = readFileSync(targetPath(), 'utf8');
+    expect(shotAcceptance(project, registry()).accepted.get('M05')).toBe('completed');
+    assertPythonParity();
+    expect(readFileSync(targetPath(), 'utf8')).toBe(before);
+    expect(JSON.parse(before).generation).toMatchObject({ source_scene_sha256: null, source_accepted_video_sha256: 'b'.repeat(64) });
+    expect(readAcceptedVideoSnapshot(project, 'M05')?.acceptedVideoSha256).toBe(review.accepted_video_sha256);
+    expect(readSourceVideoSnapshot(project, 'M05')).toBeNull();
+    // Переподтверждение неизменных байтов и постановки сохраняет явное решение пользователя.
+    stampAcceptedShots(project, ['M05']);
+    expect(shotAcceptance(project, registry()).accepted.get('M05')).toBe('completed');
+    assertPythonParity();
+    expect(JSON.parse(readFileSync(reviewPath(), 'utf8')).shots.M05.source_review).toEqual(review);
+  });
+
+  it('изменение принятого клипа источника не подменяет сохранённое подтверждение', () => {
+    explicitReview();
+    changeSource();
+    expect(shotAcceptance(project, registry()).reasons.get('M05')).toBe('source_changed');
+    assertPythonParity();
+    stampAcceptedShots(project, ['M02']);
+    expect(shotAcceptance(project, registry()).reasons.get('M05')).toBe('source_changed');
+    assertPythonParity();
+  });
+
+  it('новая постановка источника после её приёмки требует нового явного подтверждения', () => {
+    const review = explicitReview();
+    const data = registry();
+    scene(data.scenes, 'M02').action += ' Другое действие.';
+    writeFileSync(join(project, 'plan/scenes.json'), JSON.stringify(data));
+    stampAcceptedShots(project, ['M02', 'M05']);
+    expect(shotAcceptance(project, data).reasons.get('M05')).toBe('source_changed');
+    assertPythonParity();
+    expect(JSON.parse(readFileSync(reviewPath(), 'utf8')).shots.M05.source_review).toEqual(review);
+  });
+
+  it.each(['bytes', 'descriptor', 'missing', 'outside'] as const)('подтверждение не скрывает замену или поломку собственного клипа: %s', (change) => {
+    explicitReview();
+    const manifest = JSON.parse(readFileSync(targetPath(), 'utf8'));
+    const path = join(project, 'assets/shots/M05/video.mp4');
+    if (change === 'bytes') writeFileSync(path, 'Подменённые байты');
+    else if (change === 'descriptor') {
+      const bytes = Buffer.from('Другой корректно описанный принятый клип');
+      writeFileSync(join(project, 'assets/shots/M05/new.mp4'), bytes);
+      manifest.accepted_edit.video = { path: 'new.mp4', sha256: createHash('sha256').update(bytes).digest('hex') };
+    } else if (change === 'missing') manifest.accepted_edit.video.path = 'нет-файла.mp4';
+    else manifest.accepted_edit.video.path = '../M02/video.mp4';
+    writeFileSync(targetPath(), JSON.stringify(manifest));
+    expect(shotAcceptance(project, registry()).reasons.get('M05')).toBe('source_receipt_missing');
+    assertPythonParity();
+  });
+
+  it('подтверждение не отменяет изменение собственной постановки или связи derived_from', () => {
+    const review = explicitReview();
+    const data = registry();
+    scene(data.scenes, 'M05').action += ' Новое действие.';
+    expect(shotAcceptance(project, data).reasons.get('M05')).toBe('scene_changed');
+    const original = registry();
+    delete scene(original.scenes, 'M05').derived_from;
+    writeFileSync(join(project, 'plan/scenes.json'), JSON.stringify(original));
+    stampAcceptedShots(project, ['M05']);
+    expect(shotAcceptance(project, original).reasons.get('M05')).toBe('derived_link_changed');
+    assertPythonParity();
+    writeReview({ ...review, source_shot: 'M01' });
+    // Связь восстанавливаем без изменения квитанции: подтверждён другой источник.
+    scene(original.scenes, 'M05').derived_from = { shot: 'M02' };
+    writeFileSync(join(project, 'plan/scenes.json'), JSON.stringify(original));
+    stampAcceptedShots(project, ['M05']);
+    expect(shotAcceptance(project, original).reasons.get('M05')).toBe('derived_link_changed');
+    assertPythonParity();
+  });
+
+  it.each(['null', 'incomplete', 'extra', 'hash'] as const)('некорректное явное подтверждение не заменяется поколенческим снимком: %s', (kind) => {
+    const review = explicitReview();
+    // Даже пригодный снимок generation не является fallback для повреждённого явно сохранённого решения.
+    const manifest = JSON.parse(readFileSync(targetPath(), 'utf8'));
+    manifest.generation.source_scene_sha256 = review.source_scene_sha256;
+    manifest.generation.source_accepted_video_sha256 = review.source_accepted_video_sha256;
+    writeFileSync(targetPath(), JSON.stringify(manifest));
+    if (kind === 'null') writeReview(null);
+    else if (kind === 'incomplete') {
+      const { accepted_video_sha256: _ignored, ...partial } = review;
+      writeReview(partial);
+    } else if (kind === 'extra') writeReview({ ...review, approved: true });
+    else writeReview({ ...review, accepted_video_sha256: 'не SHA-256' });
+    expect(shotAcceptance(project, registry()).reasons.get('M05')).toBe('source_receipt_missing');
+    assertPythonParity();
+  });
 
   it('замена клипа без изменения постановки навсегда устаревает до новой сборки и приёмки', () => {
     assertPythonParity();

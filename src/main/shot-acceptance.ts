@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import type { ScenesFile } from '@shared/types';
 import { initialStates, readCast } from './cast';
 import { sceneFingerprints } from './scene-fingerprint';
-import { readSourceVideoSnapshot } from './derived-source';
+import { readAcceptedVideoSnapshot, readSourceVideoSnapshot } from './derived-source';
 
 const texts = productionTexts.main.acceptance;
 
@@ -39,10 +39,17 @@ function readJson(path: string): unknown {
 
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 
+function acceptedEntries(project: string): Record<string, unknown> {
+  const status = readJson(join(project, PRODUCTION_STATUS));
+  return record(status) && record(status.shots) ? status.shots : {};
+}
+
 /** Отпечатки, по которым приняты комплекты; отсутствующее поле shots означает, что принятых отпечатков нет. */
 export function acceptedFingerprints(project: string): Record<string, string> {
-  const status = readJson(join(project, PRODUCTION_STATUS));
-  const shots = record(status) && record(status.shots) ? status.shots : {};
+  return entryFingerprints(acceptedEntries(project));
+}
+
+function entryFingerprints(shots: Record<string, unknown>): Record<string, string> {
   const result: Record<string, string> = {};
   for (const [id, entry] of Object.entries(shots)) if (record(entry) && typeof entry.scene_sha256 === 'string') result[id] = entry.scene_sha256;
   return result;
@@ -62,7 +69,8 @@ export function shotAcceptance(project: string, scenes: ScenesFile): ShotAccepta
   } catch (error) {
     problem = texts.sceneComparisonFailed({ error: error instanceof Error ? error.message : String(error) });
   }
-  const stored = acceptedFingerprints(project);
+  const entries = acceptedEntries(project);
+  const stored = entryFingerprints(entries);
   const accepted = new Map<string, AcceptanceState>();
   const reasons = new Map<string, AcceptanceReason>();
   const manifests = new Map<string, unknown>();
@@ -80,6 +88,7 @@ export function shotAcceptance(project: string, scenes: ScenesFile): ShotAccepta
   // Все собственные отпечатки вычислены заранее: источник может находиться позже на монтажной шкале.
   for (const scene of scenes.scenes) {
     if (accepted.get(scene.id) !== 'completed') continue;
+    const entry = entries[scene.id];
     const source = scene.derived_from?.shot;
     const manifest = manifests.get(scene.id);
     const storedDerived = record(manifest) && manifest.kind === 'derived_video';
@@ -93,6 +102,25 @@ export function shotAcceptance(project: string, scenes: ScenesFile): ShotAccepta
     const snapshot = readSourceVideoSnapshot(project, source);
     if (!sourceScene || sourceScene.derived_from || accepted.get(source) !== 'completed' || !snapshot) {
       stale(scene.id, 'source_unavailable');
+    } else if (record(entry) && Object.hasOwn(entry, 'source_review')) {
+      const review = entry.source_review;
+      const fields = ['source_shot', 'source_scene_sha256', 'source_accepted_video_sha256', 'accepted_video_sha256'];
+      const valid =
+        record(review) &&
+        Object.keys(review).length === fields.length &&
+        Object.keys(review).every((key) => fields.includes(key)) &&
+        typeof review.source_shot === 'string' &&
+        !!review.source_shot.trim() &&
+        fields.slice(1).every((key) => typeof review[key] === 'string' && /^[a-f0-9]{64}$/.test(review[key]));
+      const ownSnapshot = valid ? readAcceptedVideoSnapshot(project, scene.id) : null;
+      // Подтверждение привязано к сегодняшним принятым байтам; исторический generation остаётся неизменным.
+      if (valid && review.source_shot !== source) {
+        stale(scene.id, 'derived_link_changed');
+      } else if (!valid || !ownSnapshot || ownSnapshot.acceptedVideoSha256 !== review.accepted_video_sha256) {
+        stale(scene.id, 'source_receipt_missing');
+      } else if (review.source_scene_sha256 !== fingerprints?.[source] || review.source_accepted_video_sha256 !== snapshot.acceptedVideoSha256) {
+        stale(scene.id, 'source_changed');
+      }
     } else if (typeof generation.source_scene_sha256 !== 'string' || typeof generation.source_accepted_video_sha256 !== 'string') {
       stale(scene.id, 'source_receipt_missing');
     } else if (generation.source_scene_sha256 !== fingerprints?.[source] || generation.source_accepted_video_sha256 !== snapshot.acceptedVideoSha256) {

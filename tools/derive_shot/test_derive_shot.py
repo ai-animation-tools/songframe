@@ -207,10 +207,18 @@ class DerivedShotTests(unittest.TestCase):
         target = self.root / "assets/shots/M05"
         (target / "user-note.txt").write_text("Сохранить", encoding="utf-8")
         before = tool.tree_files(target)
+        status_path = self.root / "plan/production-status.json"
+        status = tool.read_json(status_path)
+        status["shots"]["M05"]["source_review"] = {}
+        status["shots"]["M02"]["source_review"] = {}
+        status_path.write_bytes(tool.json_bytes(status))
         second = self.build({"mode": "still", "frame": 7})
         with self.assertRaisesRegex(ValueError, "--replace"):
             self.accept(second, update_views=False)
         self.accept(second, replace=True, update_views=False)
+        saved = tool.read_json(status_path)
+        self.assertNotIn("source_review", saved["shots"]["M05"])
+        self.assertEqual(saved["shots"]["M02"]["source_review"], {})
         archives = list((self.root / "assets/replaced/M05").iterdir())
         self.assertEqual(len(archives), 1)
         self.assertEqual(tool.tree_files(archives[0]), before)

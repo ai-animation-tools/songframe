@@ -194,24 +194,29 @@ def render(sources):
         and bool(hashes)
         and all(name in sources.files and sources.digest(name) == digest for name, digest in hashes.items())
     )
+    approved = (
+        fresh
+        and work.get("current_animatic_status") == "approved"
+        and bool(manifest.get("video_sha256"))
+        and (work.get("approved_animatic") or {}).get("video_sha256") == manifest.get("video_sha256")
+    )
     build_state = (
-        "Полная сборка ожидает просмотра."
-        if fresh
-        else "Сборка устарела относительно исходников; требуется пересборка."
+        ("Полная сборка принята." if approved else "Полная сборка ожидает просмотра.")
+        if fresh else "Сборка устарела относительно исходников; требуется пересборка."
     )
     active = in_progress(sources)
 
     # Принятие привязано к постановке: правило общее с shot_status, @link ../scene_registry/README.md#принятие-планов
-    def source_snapshot(sid):
+    def source_snapshot(sid, allow_derived=False):
         # Для Git-снимка берётся SHA сохранённого файла/LFS oid; рабочий проект читает фактические байты.
         if sources.ref is None:
-            return source_video_snapshot(ROOT, sid)
+            return source_video_snapshot(ROOT, sid, allow_derived=allow_derived)
         try:
             package = packages[sid]
             if (
                 package.get("schema_version") != 1
                 or package.get("shot") != sid
-                or package.get("kind") == "derived_video"
+                or (package.get("kind") == "derived_video" and not allow_derived)
             ):
                 return None
             video = package["accepted_edit"]["video"]
@@ -230,7 +235,13 @@ def render(sources):
         except (KeyError, OSError, ValueError, TypeError, AttributeError):
             return None
 
-    acceptance = shot_acceptance(data, packages, accepted_fingerprints(work), source_snapshot=source_snapshot)
+    acceptance = shot_acceptance(
+        data, packages, accepted_fingerprints(work), source_snapshot=source_snapshot,
+        source_reviews={
+            sid: entry["source_review"] for sid, entry in work.get("shots", {}).items() if "source_review" in entry
+        },
+        accepted_snapshot=lambda sid: source_snapshot(sid, allow_derived=True),
+    )
     labels = {"completed": "Готово", "stale": "Постановка изменена"}
     states = {
         s["id"]: labels.get(acceptance.get(s["id"])) or ("В процессе" if s["id"] in active else "Запланировано")

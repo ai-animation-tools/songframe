@@ -1,7 +1,7 @@
 import { productionTexts } from '@shared/texts/production';
 import GridViewIcon from '@mui/icons-material/GridView';
 /** Скачанные оригиналы, техническая сводка и действие приёмки результата; изображения открываются в общей галерее. */
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { Box, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -10,6 +10,7 @@ import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
+import { VideoReviewPanel } from './VideoReviewPanel';
 
 export function PackageResult({
   pkg,
@@ -30,6 +31,7 @@ export function PackageResult({
   /** Снова задать вопрос о результате, когда прежний ответ уже записан. */
   onReopenQuestion?(): void;
 }): ReactElement {
+  const originalVideo = useRef<HTMLVideoElement>(null);
   const pending = pkg.pendingDecision;
   const image = pkg.request?.kind === 'image';
   const canSelectImage = !pending && pkg.stage === 'image_downloaded' && !!pkg.resultToken;
@@ -89,6 +91,7 @@ export function PackageResult({
               ) : (
                 <video
                   key={path}
+                  ref={index === 0 ? originalVideo : undefined}
                   controls
                   preload="metadata"
                   src={window.api.shell.fileUrl(path)}
@@ -120,6 +123,17 @@ export function PackageResult({
               {productionTexts.packageResult.createSummary}
             </ActionButton>
           )}
+          {!image && ['downloaded', 'edit_review', 'accepted'].includes(pkg.stage) ? (
+            <VideoReviewPanel
+              key={pkg.dir}
+              packageDir={pkg.dir}
+              onSeek={(timeSeconds) => {
+                // Таймкод отчёта относится к оригиналу; монтажный срез и приёмка не меняются.
+                const video = originalVideo.current;
+                if (video) video.currentTime = Math.max(0, Math.min(timeSeconds, Number.isFinite(video.duration) ? video.duration : timeSeconds));
+              }}
+            />
+          ) : null}
           {!image && !pending && ['downloaded', 'edit_review'].includes(pkg.stage) ? (
             <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
               <ActionButton variant="contained" color="error" startIcon={<CheckCircleIcon />} disabled={busy} disabledReason={busyReason} onClick={onAccept}>

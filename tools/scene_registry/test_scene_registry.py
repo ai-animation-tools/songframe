@@ -7,6 +7,7 @@ from pathlib import Path
 # Полные импорты tools.* работают и при прямом запуске файла из любой папки.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+import hashlib
 import json
 import tempfile
 import unittest
@@ -24,6 +25,7 @@ from tools.scene_registry.scene_registry import (
     scene_state,
     shot_acceptance,
     shots,
+    source_video_snapshot,
     validate,
     validate_project,
     with_accepted_fingerprints,
@@ -356,6 +358,80 @@ class SceneRegistryTests(unittest.TestCase):
         data = load()
         self.assertEqual({sid: scene_fingerprint(data, sid) for sid in expected}, expected)
         self.assertEqual(scene_fingerprints(data), expected)
+
+    def test_explicit_source_review_binds_current_source_and_actual_accepted_video(self):
+        data = load()
+        current = scene_fingerprints(data)
+        accepted = {sid: current[sid] for sid in ("M02", "M05")}
+        generation = {"source_shot": "M02", "source_scene_sha256": None, "source_accepted_video_sha256": "a" * 64}
+        kits = {"M02": {}, "M05": {"kind": "derived_video", "generation": generation}}
+        review = {
+            "source_shot": "M02", "source_scene_sha256": current["M02"],
+            "source_accepted_video_sha256": "b" * 64, "accepted_video_sha256": "c" * 64,
+        }
+
+        def check(value, source_digest="b" * 64, own_digest="c" * 64):
+            reasons = {}
+            states = shot_acceptance(
+                data, kits, accepted, source_snapshot=lambda sid: source_digest, reasons=reasons,
+                source_reviews=value, accepted_snapshot=lambda sid: own_digest,
+            )
+            return states["M05"], reasons.get("M05")
+
+        self.assertEqual(check({"M05": review}), ("completed", None))
+        self.assertIsNone(generation["source_scene_sha256"])
+        self.assertEqual(check({}), ("stale", "source_receipt_missing"))
+        self.assertEqual(check({"M05": review}, own_digest="d" * 64), ("stale", "source_receipt_missing"))
+        self.assertEqual(check({"M05": review}, own_digest=None), ("stale", "source_receipt_missing"))
+        self.assertEqual(check({"M05": review}, source_digest="d" * 64), ("stale", "source_changed"))
+        self.assertEqual(check({"M05": {**review, "source_shot": "M01"}}), ("stale", "derived_link_changed"))
+        self.assertEqual(check({"M05": {**review, "source_scene_sha256": "d" * 64}}), ("stale", "source_changed"))
+        for invalid in [None, {}, {**review, "accepted_video_sha256": None}, {**review, "extra": True},
+                        {key: value for key, value in review.items() if key != "source_scene_sha256"}]:
+            with self.subTest(review=invalid):
+                self.assertEqual(check({"M05": invalid}), ("stale", "source_receipt_missing"))
+        # Собственная постановка и связь остаются обязательными даже при корректном подтверждении источника.
+        next(scene for scene in data["scenes"] if scene["id"] == "M05")["camera"] = "Другая камера"
+        self.assertEqual(check({"M05": review}), ("stale", "scene_changed"))
+        accepted.update(scene_fingerprints(data))
+        next(scene for scene in data["scenes"] if scene["id"] == "M05")["derived_from"] = {"shot": "M01"}
+        accepted.update(scene_fingerprints(data))
+        self.assertEqual(check({"M05": review}), ("stale", "derived_link_changed"))
+
+    def test_source_review_reads_actual_derived_video_without_rewriting_generation(self):
+        data = load()
+        with tempfile.TemporaryDirectory(prefix="source-review-", dir="/tmp") as temporary:
+            root = Path(temporary)
+            (root / "plan").mkdir()
+            current = scene_fingerprints(data, {})
+            hashes = {}
+            for sid, kind in [("M02", "generated_video"), ("M05", "derived_video")]:
+                directory = root / "assets/shots" / sid
+                directory.mkdir(parents=True)
+                payload = sid.encode()
+                (directory / "video.mp4").write_bytes(payload)
+                hashes[sid] = hashlib.sha256(payload).hexdigest()
+                manifest = {"schema_version": 1, "shot": sid, "kind": kind,
+                            "accepted_edit": {"video": {"path": "video.mp4", "sha256": hashes[sid]}}}
+                if sid == "M05":
+                    manifest["generation"] = {"source_shot": "M02", "source_scene_sha256": None,
+                                              "source_accepted_video_sha256": "a" * 64}
+                (directory / "manifest.json").write_text(json.dumps(manifest))
+            status = {"shots": {sid: {"scene_sha256": current[sid]} for sid in hashes}}
+            status["shots"]["M05"]["source_review"] = {
+                "source_shot": "M02", "source_scene_sha256": current["M02"],
+                "source_accepted_video_sha256": hashes["M02"], "accepted_video_sha256": hashes["M05"],
+            }
+            (root / "plan/production-status.json").write_text(json.dumps(status))
+            original = (root / "assets/shots/M05/manifest.json").read_bytes()
+            self.assertEqual(project_shot_acceptance(root, data)["M05"], "completed")
+            self.assertIsNone(source_video_snapshot(root, "M05"))
+            self.assertEqual(source_video_snapshot(root, "M05", allow_derived=True), hashes["M05"])
+            self.assertEqual((root / "assets/shots/M05/manifest.json").read_bytes(), original)
+            (root / "assets/shots/M05/video.mp4").write_bytes("Другой выбранный ролик".encode())
+            reasons = {}
+            self.assertEqual(project_shot_acceptance(root, data, reasons)["M05"], "stale")
+            self.assertEqual(reasons["M05"], "source_receipt_missing")
 
     def test_acceptance_follows_scene_fingerprint_and_derived_source(self):
         data = load()

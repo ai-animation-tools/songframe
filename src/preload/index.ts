@@ -101,6 +101,11 @@ const api: Api = {
   media: {
     capabilities: (project: string, kind: MediaKind, provider: string) => ipcRenderer.invoke('media:capabilities', project, kind, provider)
   },
+  videoReview: {
+    view: (project, packageDir) => ipcRenderer.invoke('videoReview:view', project, packageDir),
+    start: (project, packageDir) => ipcRenderer.invoke('videoReview:start', project, packageDir),
+    cancel: (project, packageDir) => ipcRenderer.invoke('videoReview:cancel', project, packageDir)
+  },
   productionWorkflow: {
     view: (project: string, shot: string, packageDir?: string) => ipcRenderer.invoke('productionWorkflow:view', project, shot, packageDir),
     start: (input: ProductionWorkflowStart) => ipcRenderer.invoke('productionWorkflow:start', input),

@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 import tools.testing.sample_project  # noqa: E402,F401  Проект-образец должен быть выбран до импорта инструментов.
 from tools.project_views.project_views import Sources, documents, progress, render
+from tools.scene_registry.scene_registry import scene_fingerprints, source_video_snapshot
 
 
 class RoadmapTests(unittest.TestCase):
@@ -30,6 +31,44 @@ class RoadmapTests(unittest.TestCase):
             with self.subTest(row=line[:80]):
                 self.assertEqual(len(re.split(r"(?<!\\)\|", line[1:-1])), len(columns))
         self.assertEqual(len(rows), len(Sources().json("plan/scenes.json")["scenes"]))
+
+    def test_source_review_preserves_ready_status_in_worktree_and_git_views(self):
+        # Один и тот же receipt должен работать и с фактическим файлом, и с SHA файла Git-снимка.
+        for ref in [None, ":", "HEAD"]:
+            with self.subTest(ref=ref):
+                disk, sources = Sources(), Sources()
+                data = disk.json("plan/scenes.json")
+                current = scene_fingerprints(data)
+                status = disk.json("plan/production-status.json")
+                digest = disk.json("assets/shots/M02/manifest.json")["accepted_edit"]["video"]["sha256"]
+                status["shots"]["M05"] = {"scene_sha256": current["M05"], "source_review": {
+                    "source_shot": "M02", "source_scene_sha256": current["M02"],
+                    "source_accepted_video_sha256": digest, "accepted_video_sha256": "b" * 64,
+                }}
+                own_manifest = "assets/shots/M05/manifest.json"
+                own_video = "assets/shots/M05/video.mp4"
+                package = {"schema_version": 1, "shot": "M05", "kind": "derived_video",
+                           "generation": {"source_shot": "M02", "source_scene_sha256": None,
+                                          "source_accepted_video_sha256": "a" * 64},
+                           "accepted_edit": {"video": {"path": "video.mp4", "sha256": "b" * 64}}}
+                replacements = {"plan/production-status.json": status, own_manifest: package}
+                sources.files.update([own_manifest, own_video])
+                sources.ref = ref
+                sources.json = lambda name: replacements[name] if name in replacements else disk.json(name)
+                sources.text = disk.text
+                sources.digest = lambda name: "b" * 64 if name == own_video else disk.digest(name)
+
+                def snapshot(root, sid, allow_derived=False):
+                    if sid == "M05":
+                        return "b" * 64 if allow_derived else None
+                    return source_video_snapshot(root, sid, allow_derived=allow_derived)
+
+                with patch("tools.project_views.project_views.source_video_snapshot", side_effect=snapshot):
+                    row = next(line for line in render(sources).splitlines() if line.startswith("| **M05**"))
+                    self.assertIn("**Готово**", row)
+                    status["shots"]["M05"]["source_review"]["accepted_video_sha256"] = "c" * 64
+                    row = next(line for line in render(sources).splitlines() if line.startswith("| **M05**"))
+                    self.assertIn("**Постановка изменена**", row)
 
     def test_derived_shot_is_marked_with_source_and_ordinary_shots_are_unchanged(self):
         def views(derived):
@@ -126,6 +165,27 @@ class RoadmapTests(unittest.TestCase):
             self.assertIn("plan/storyboard.md#" + shot_id.lower(), row)
         row = next(line for line in roadmap.splitlines() if "**M02**" in line)
         self.assertIn("plan/storyboard.md#m02", row)
+
+    def test_build_approval_requires_current_inputs_and_the_same_video(self):
+        sources = Sources()
+        read_json = sources.json
+        status = read_json("plan/production-status.json")
+        latest_path = status["current_animatic"]
+        manifest = read_json(latest_path)
+        current = hashlib.sha256(sources.text("plan/scenes.json").encode()).hexdigest()
+        manifest.update({"scene_registry_sha256": current, "video_sha256": "a" * 64,
+                         "project_inputs": {
+                             key: read_json("plan/project.json")[key] for key in ("name", "animatic_video")
+                         }})
+        status.update({"current_animatic_status": "approved", "approved_animatic": {"video_sha256": "a" * 64}})
+        replacements = {"plan/production-status.json": status, latest_path: manifest}
+        sources.json = lambda name: replacements[name] if name in replacements else read_json(name)
+        self.assertIn("Полная сборка принята.", render(sources))
+        status["approved_animatic"]["video_sha256"] = "b" * 64
+        self.assertIn("Полная сборка ожидает просмотра.", render(sources))
+        status["approved_animatic"]["video_sha256"] = "a" * 64
+        manifest["scene_registry_sha256"] = "0" * 64
+        self.assertIn("Сборка устарела относительно исходников; требуется пересборка.", render(sources))
 
     def test_build_status_distinguishes_current_and_changed_registry(self):
         # Локальная правка постановки не требует пересборки настоящего видео

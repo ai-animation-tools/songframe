@@ -81,6 +81,61 @@ beforeEach(() => {
 });
 
 describe('генерация для сохранённой сущности кастинга', () => {
+  it('объясняет общее описание только при совпадении кода с референсом исходников', () => {
+    const manifest: NonNullable<CastView['manifest']> = {
+      schema_version: 1,
+      track: null,
+      lyrics: null,
+      idea: null,
+      cover: null,
+      references: [{ id: 'hero', kind: 'character', name: 'Герой', short_name: '', description: 'Красная куртка', files: [], prompt: null }],
+      updated_at: '2026-11-01T12:00:00Z'
+    };
+    fixture.states[2] = { ...view, manifest };
+    expect(cards().map((node) => node.props.hasSharedDescription)).toEqual([true, false]);
+    fixture.states[2] = view;
+    expect(cards().map((node) => node.props.hasSharedDescription)).toEqual([false, false]);
+  });
+
+  it('прикладывает только сохранённые изображения выбранной сущности, включая основной вид', () => {
+    const saved = structuredClone(cast);
+    saved.entities[0].images = ['characters/hero.png', 'characters/hero-profile.jpg'];
+    saved.entities[1].images = ['references/world.png'];
+    fixture.states[2] = { ...view, cast: saved };
+    fixture.states[3] = structuredClone(saved);
+    (cards()[0].props.onGenerate as () => void)();
+    expect(generation().referenceInput).toEqual({
+      images: [
+        { path: '/project-a/source/characters/hero.png', label: 'Другое' },
+        { path: '/project-a/source/characters/hero-profile.jpg', label: 'Другое' }
+      ]
+    });
+  });
+
+  it('находит примечания по пути, сохраняя выбранное подмножество, порядок и нейтральные подписи', () => {
+    const saved = structuredClone(cast);
+    saved.entities[0].images = ['characters/hero-profile.jpg', 'characters/hero.png', 'external/image.png'];
+    const files = [
+      { path: 'characters/hero.png', view: 'front' as const, note: 'Сохранить лицо', sha256: 'a'.repeat(64), bytes: 10 },
+      { path: 'characters/hero-profile.jpg', view: 'side' as const, note: '  Сохранить силуэт  ', sha256: 'b'.repeat(64), bytes: 20 },
+      { path: 'characters/unused.png', view: 'back' as const, note: 'Не выбирать', sha256: 'c'.repeat(64), bytes: 30 }
+    ];
+    fixture.states[2] = {
+      ...view,
+      cast: saved,
+      manifest: { references: [{ id: 'hero', name: 'Герой', files }] }
+    };
+    fixture.states[3] = structuredClone(saved);
+    (cards()[0].props.onGenerate as () => void)();
+    expect(generation().referenceInput).toEqual({
+      images: [
+        { path: '/project-a/source/characters/hero-profile.jpg', label: 'Сбоку', note: 'Сохранить силуэт' },
+        { path: '/project-a/source/characters/hero.png', label: 'Спереди', note: 'Сохранить лицо' },
+        { path: '/project-a/source/external/image.png', label: 'Другое' }
+      ]
+    });
+  });
+
   it('пустые изображения не мешают генерации сохранённой сущности, включая мир; правки требуют Save', () => {
     expect(cards().map((node) => node.props.generationDisabledReason)).toEqual([null, null]);
     const edited = JSON.parse(JSON.stringify(cast)) as CastFile;
@@ -92,11 +147,14 @@ describe('генерация для сохранённой сущности ка
     ]);
   });
 
-  it('передаёт имя, роль и внешность в промпт и прикрепляет результат только выбранной сущности', async () => {
+  it('передаёт имя и внешность без сюжетной роли и прикрепляет результат только выбранной сущности', async () => {
     (cards()[0].props.onGenerate as () => void)();
     const props = generation();
     expect(props.target).toBe('Герой');
-    expect(props.initialPrompt).toBe('Создай изображение референса для музыкального клипа. Объект: Герой.\n\nВодитель\n\nКрасная куртка');
+    expect(props.initialPrompt).toBe('Создай изображение референса для музыкального клипа. Объект: Герой.');
+    expect(props.referenceDescription).toBe('Красная куртка');
+    expect(props.referenceDescription).not.toContain('Водитель');
+    expect((cards()[0].props.entity as CastFile['entities'][number]).role).toBe('Водитель');
     await (props.onAccepted as (result: { id: string; path: string; prompt: string }) => Promise<void>)({
       id: 'accepted',
       path: '/tmp/full.png',

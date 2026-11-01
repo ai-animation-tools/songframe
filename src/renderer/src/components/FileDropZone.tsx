@@ -121,6 +121,7 @@ export function FileDropZone({ label, kind, multiple = false, hint, message, onF
           {message}
         </Typography>
       </Box>
+      {/* Семантический пробел разделяет основной текст и подсказку: перенос CSS не разделяет слова для axe и чтения DOM. */}{' '}
       <Typography variant="caption" color={active ? 'primary' : 'text.secondary'} sx={{ display: 'block', mt: 1 }}>
         {hint ??
           (image ? (

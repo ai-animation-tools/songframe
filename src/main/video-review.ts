@@ -1,3 +1,4 @@
+import { readCast } from './cast';
 /** Проверка оригинала по неподвижным кадрам: решение о приёмке остаётся в Production.accept.
  * @link ../../skills/ai-clip-video-review/SKILL.md */
 import { createHash, randomUUID } from 'node:crypto';
@@ -140,7 +141,8 @@ export class VideoReview {
     const files = [video, ...references].map((path) => ({ path: relative(project, path).split(sep).join('/'), sha256: cachedFileDigest(path) }));
     const fingerprint = currentShotFingerprint(project, scene.id);
     if (!fingerprint || files.some((file) => !file.sha256)) throw new Error(texts.sourceChanged);
-    const cast = JSON.parse(readFileSync(join(project, 'plan/cast.json'), 'utf-8')) as unknown;
+    const cast = readCast(project);
+    if (!cast) throw new Error(texts.sourceChanged);
     const staging = {
       scene,
       sequence: registry!.sequences.find((sequence) => sequence.id === scene.sequence),

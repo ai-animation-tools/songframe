@@ -3,11 +3,18 @@
  * Словарь свойств по умолчанию общий с инструментами: tools/cast_registry/default_properties.json.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CastEntity, CastFile, CastProperty, CastView, SourceManifest } from '@shared/types';
 import { castTexts } from '@shared/texts/cast';
 import { readManifest } from './sources';
+import {
+  castDescriptionDrifts,
+  descriptionManifest,
+  planCastDescriptions,
+  projectCastDescriptions,
+  publishCastDescriptionPlan
+} from './cast-description-owner';
 
 const SLUG = /^[a-z][a-z0-9_]*$/;
 export const WORLD_ID = 'world';
@@ -91,7 +98,7 @@ export function readCast(project: string): CastFile | null | false {
   const path = join(project, 'plan', 'cast.json');
   if (!existsSync(path)) return null;
   try {
-    return JSON.parse(readFileSync(path, 'utf-8')) as CastFile;
+    return projectCastDescriptions(JSON.parse(readFileSync(path, 'utf-8')) as CastFile, descriptionManifest(project));
   } catch {
     return false;
   }
@@ -116,8 +123,8 @@ export function castFromSources(manifest: SourceManifest, existing: CastFile | n
     const images = ref.files.map((f) => f.path);
     const entity = byId.get(ref.id);
     if (entity) {
-      entity.images = images.length ? images : entity.images;
-      if (!entity.appearance && ref.description) entity.appearance = ref.description;
+      // Список source — доступные виды, а images — сохранённый выбор; порядок и пустой выбор не сбрасываем.
+      entity.appearance = ref.description ?? '';
       continue;
     }
     const kind = SLUG.test(ref.kind) && ref.kind !== WORLD_ID ? ref.kind : 'prop';
@@ -148,6 +155,9 @@ export function viewCast(project: string, toolsRoot: string | null): CastView {
   }
   if (cast) {
     problems.push(...validateCast(cast));
+    const stored = JSON.parse(readFileSync(join(project, 'plan/cast.json'), 'utf8')) as CastFile;
+    const drift = castDescriptionDrifts(stored, manifest);
+    if (drift.length) problems.push(castTexts.main.descriptionFromSources({ ids: drift.join(', ') }));
     const current = ensureProperties(cast, loadDefaults(toolsRoot));
     cast = current;
     const known = new Set(manifest?.references.map((r) => r.id) ?? []);
@@ -216,7 +226,8 @@ export function normalizeCast(value: unknown, toolsRoot: string | null): CastFil
         name: e.name.trim(),
         short_name: e.short_name.trim() || e.name.trim(),
         role: e.role.trim(),
-        appearance: e.appearance.trim(),
+        // Общее описание переносится дословно: правка другого поля не должна менять canonical source.
+        appearance: e.appearance,
         images: e.images,
         initial_state: Object.fromEntries(
           Object.entries(e.initial_state)
@@ -238,9 +249,9 @@ export function writeCast(project: string, cast: CastFile, toolsRoot: string | n
   for (const entity of normalized.entities)
     for (const image of entity.images)
       if (!existsSync(join(project, 'source', image))) throw new Error(castTexts.main.imageMissing({ name: entity.name, image }));
-  mkdirSync(join(project, 'plan'), { recursive: true });
-  writeFileSync(join(project, 'plan', 'cast.json'), JSON.stringify(normalized, null, 2) + '\n', 'utf-8');
-  return normalized;
+  const plan = planCastDescriptions(normalized, descriptionManifest(project), 'cast');
+  publishCastDescriptionPlan(project, plan);
+  return plan.cast;
 }
 
 /** Карта references реестра сцен: сущности с изображениями, как в cast_registry.references. */

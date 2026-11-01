@@ -9,11 +9,13 @@ import AddIcon from '@mui/icons-material/Add';
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Alert, Box, Button, Stack, Typography } from '@mui/material';
+import { joinPath } from '../../format';
 import { referenceImagePrompt } from '@shared/reference-image-generation';
 import { ImageGenerateDialog } from '../../components/ImageGenerateDialog';
 import { DEFAULT_SOURCE_KINDS, type CastEntity, type CastFile, type CastView } from '@shared/types';
 import { useApp } from '../../state';
 import { RequestScope } from '../../hooks/requestScope';
+import { referenceImageOption } from '../../hooks/referenceImageOptions';
 import { CastEmptyState, CastEntityCard, CastPropertiesEditor, CastToolbar } from './components';
 import { WORLD } from './constants';
 import { castImageOptions } from './helpers';
@@ -169,6 +171,11 @@ export function CastPage(): ReactElement {
         onInit={init}
         onSave={save}
       />
+      {cast && view.manifest ? (
+        <Typography variant="body2" color="text.secondary">
+          {castTexts.supplementHint}
+        </Typography>
+      ) : null}
       {view.problems.length ? (
         <Alert severity="warning">
           <LinkedText text={view.problems.join(' ')} />
@@ -201,6 +208,7 @@ export function CastPage(): ReactElement {
               properties={cast.properties[entity.kind] ?? []}
               imagePaths={view.imagePaths}
               imageOptions={imageOptions}
+              hasSharedDescription={view.manifest?.references.some((reference) => reference.id === entity.id) ?? false}
               expanded={expanded === entity.id}
               onExpandedChange={(open) => setExpanded(open ? entity.id : null)}
               onUpdate={(patch) => update(entity.id, patch)}
@@ -243,11 +251,17 @@ export function CastPage(): ReactElement {
           mode="reference"
           project={project}
           target={generationTarget.entity.name || generationTarget.entity.id}
-          initialPrompt={referenceImagePrompt({
-            name: generationTarget.entity.name,
-            description: generationTarget.entity.role,
-            appearance: generationTarget.entity.appearance
-          })}
+          initialPrompt={referenceImagePrompt({ name: generationTarget.entity.name })}
+          // Описание общее с исходниками; сюжетная роль остаётся отдельным полем кастинга.
+          referenceDescription={generationTarget.entity.appearance}
+          referenceInput={{
+            // Кастинг запускается после сохранения; привязки соседних сущностей не добавляются.
+            images: generationTarget.entity.images.map((path) => {
+              // Метаданные ищем по пути: выбранное подмножество и порядок кастинга остаются прежними.
+              const file = view?.manifest?.references.flatMap((reference) => reference.files).find((file) => file.path === path);
+              return referenceImageOption({ path: joinPath(project, 'source', path), view: file?.view, note: file?.note });
+            })
+          }}
           acceptedHint={castTexts.acceptedImageHint}
           onClose={() => setGenerationTarget(null)}
           onAccepted={async (result) => {

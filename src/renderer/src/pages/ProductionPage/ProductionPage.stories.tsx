@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { commonTexts } from '@shared/texts/common';
+import { videoReviewTexts } from '@shared/texts/video-review';
 import { productionTexts } from '@shared/texts/production';
 import type { ShotProduction } from '@shared/types';
 import { ANCHORS } from '../../components/linkTargets';
@@ -12,6 +13,8 @@ import {
   longPageShots,
   PAGE_ACTION_ERROR,
   PAGE_READ_ERROR,
+  PAGE_REVIEW_ERROR,
+  packageForShot,
   pageShot,
   ProductionPageStory,
   productionPageOptions,
@@ -286,6 +289,14 @@ export const AcceptResult: Story = {
   play: async (context) => {
     const screen = screenOf(context);
     await expect(await screen.findByText(texts.productionToolbar.accepted({ completed: 1, total: 2 }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const review = within(await screen.findByRole('region', { name: videoReviewTexts.heading }));
+    await waitFor(() => expect(review.getByRole('button', { name: videoReviewTexts.start })).toBeEnabled());
+    await userEvent.click(review.getByRole('button', { name: videoReviewTexts.start }));
+    await review.findByText(videoReviewTexts.status.preparing);
+    await expect(screen.getByRole('button', { name: texts.packageResult.accept })).toBeEnabled();
+    await review.findByText(videoReviewTexts.status.completed, {}, POLL_TIMEOUT);
+    await expect(counts(context)).toHaveTextContent('Приёмок комплекта: 0. Отправок генерации: 0.');
+    await expect(screen.getByText(texts.productionToolbar.accepted({ completed: 1, total: 2 }))).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: texts.packageResult.accept }));
     const dialog = within(await screen.findByRole('dialog', { name: texts.acceptResultDialog.title({ shot: 'M02' }) }));
     const confirm = dialog.getByRole('button', { name: texts.acceptResultDialog.replace });
@@ -360,5 +371,130 @@ export const Empty: Story = {
     await expect(screen.queryByText(texts.productionPage.chooseShot)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('link', { name: '«Сценарий»' }));
     await waitFor(() => expect(route(context)).toHaveTextContent(/^\/project\/scenario$/));
+  }
+};
+
+/** У двух планов и двух попыток M02 разные ключи отчётов, хотя все медиа принадлежат витрине. */
+const reviewShots = () => {
+  const first = receivedPackage('video', { previews: true });
+  const second = JSON.parse(JSON.stringify(first).replaceAll(first.dir, `${first.dir}-second`)) as typeof first;
+  second.relative = `${first.relative}-second`;
+  return [
+    pageShot('M01', { state: 'progress', stageLabel: 'Результат получен', asset: null, attention: null, packages: [packageForShot(first, 'M01')] }),
+    pageShot('M02', { state: 'progress', stageLabel: 'Результат получен', asset: null, attention: null, packages: [first, second] })
+  ];
+};
+const reviewPanel = async (context: Context) => within(await screenOf(context).findByRole('region', { name: videoReviewTexts.heading }, POLL_TIMEOUT));
+const reviewCounts = (context: Context) => screenOf(context).getByTestId('production-review-model');
+/** У карточек есть собственные видео-превью; в этой фикстуре единственный плеер с controls принадлежит оригиналу пакета. */
+async function originalVideo(context: Context): Promise<HTMLVideoElement> {
+  const videos = context.canvasElement.querySelectorAll<HTMLVideoElement>('video[controls]');
+  await expect(videos).toHaveLength(1);
+  return videos[0];
+}
+async function chooseReviewPackage(context: Context, second = false) {
+  const screen = screenOf(context);
+  const pkg = receivedPackage('video');
+  const name = texts.productionPage.queuedPrefix({ queued: false, relative: `${pkg.relative}${second ? '-second' : ''}`, stage: pkg.stageLabel });
+  await userEvent.click(screen.getByRole('combobox', { name: new RegExp(texts.productionPage.packageLabel) }));
+  await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', { name }));
+  return reviewPanel(context);
+}
+const reviewOptions = (videoReview: ProductionPageModelOptions['videoReview'] = {}, python = true) =>
+  productionPageOptions({ shots: reviewShots, videoReview, python }, '/project/production?shot=M02');
+
+export const VideoReviewPersists: Story = {
+  name: 'Проверка видео · отчёт сохраняется при смене пакета и плана',
+  tags: ['ci'],
+  parameters: { songframe: reviewOptions() },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await shotHeading(context, 'M02');
+    let panel = await chooseReviewPackage(context);
+    await waitFor(() => expect(panel.getByRole('button', { name: videoReviewTexts.start })).toBeEnabled());
+    await userEvent.click(panel.getByRole('button', { name: videoReviewTexts.start }));
+    await panel.findByText(videoReviewTexts.status.preparing);
+    await panel.findByText(videoReviewTexts.status.running, {}, POLL_TIMEOUT);
+    await panel.findByText(videoReviewTexts.status.completed, {}, POLL_TIMEOUT);
+    const summary = panel.getByText(/^M02: Персонаж и автомобиль/).textContent;
+    const video = await originalVideo(context);
+    await waitFor(() => expect(video?.duration).toBe(8));
+    await userEvent.click(panel.getByRole('button', { name: 'Перейти к 0:02.50 в исходном видео' }));
+    await waitFor(() => expect(video?.currentTime).toBeCloseTo(2.5));
+    panel = await chooseReviewPackage(context, true);
+    await panel.findByText(videoReviewTexts.status.idle);
+    await expect(panel.queryByText(summary!)).not.toBeInTheDocument();
+    panel = await chooseReviewPackage(context);
+    await panel.findByText(summary!);
+    await userEvent.click(screen.getByText('M01', { selector: 'p' }));
+    await shotHeading(context, 'M01');
+    panel = await reviewPanel(context);
+    await panel.findByText(videoReviewTexts.status.idle);
+    await expect(panel.queryByText(summary!)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText('M02', { selector: 'p' }));
+    await shotHeading(context, 'M02');
+    panel = await chooseReviewPackage(context);
+    await panel.findByText(summary!);
+    await expect(panel.getByRole('button', { name: videoReviewTexts.repeat })).toBeEnabled();
+    await expect(reviewCounts(context)).toHaveTextContent('Проверок видео: 1. Отмен проверок: 0.');
+    await expect(counts(context)).toHaveTextContent('Приёмок комплекта: 0. Отправок генерации: 0.');
+  }
+};
+
+export const VideoReviewCancelAndRetry: Story = {
+  name: 'Проверка видео · отмена и отдельный повтор',
+  tags: ['ci'],
+  parameters: { songframe: reviewOptions() },
+  play: async (context) => {
+    await shotHeading(context, 'M02');
+    const panel = await chooseReviewPackage(context);
+    const video = (await originalVideo(context)).getAttribute('src');
+    await waitFor(() => expect(panel.getByRole('button', { name: videoReviewTexts.start })).toBeEnabled());
+    await userEvent.click(panel.getByRole('button', { name: videoReviewTexts.start }));
+    await userEvent.click(await panel.findByRole('button', { name: videoReviewTexts.cancel }));
+    await panel.findByText(videoReviewTexts.status.cancelled);
+    await expect(reviewCounts(context)).toHaveTextContent('Проверок видео: 1. Отмен проверок: 1.');
+    await userEvent.click(panel.getByRole('button', { name: videoReviewTexts.repeat }));
+    await panel.findByText(videoReviewTexts.status.completed, {}, POLL_TIMEOUT);
+    await expect(await originalVideo(context)).toHaveAttribute('src', video);
+    await expect(reviewCounts(context)).toHaveTextContent('Проверок видео: 2. Отмен проверок: 1.');
+    await expect(counts(context)).toHaveTextContent('Приёмок комплекта: 0. Отправок генерации: 0.');
+  }
+};
+
+export const VideoReviewFailureAndRetry: Story = {
+  name: 'Проверка видео · ошибка агента и успешный повтор',
+  tags: ['ci'],
+  parameters: { songframe: reviewOptions({ failFirstRun: true }) },
+  play: async (context) => {
+    await shotHeading(context, 'M02');
+    const panel = await chooseReviewPackage(context);
+    await waitFor(() => expect(panel.getByRole('button', { name: videoReviewTexts.start })).toBeEnabled());
+    await userEvent.click(panel.getByRole('button', { name: videoReviewTexts.start }));
+    await panel.findByText(videoReviewTexts.status.failed, {}, POLL_TIMEOUT);
+    await panel.findByText(PAGE_REVIEW_ERROR);
+    await expect(counts(context)).toHaveTextContent('Приёмок комплекта: 0. Отправок генерации: 0.');
+    await userEvent.click(panel.getByRole('button', { name: videoReviewTexts.repeat }));
+    await panel.findByText(videoReviewTexts.status.completed, {}, POLL_TIMEOUT);
+    await expect(panel.queryByText(PAGE_REVIEW_ERROR)).not.toBeInTheDocument();
+    await expect(reviewCounts(context)).toHaveTextContent('Проверок видео: 2. Отмен проверок: 0.');
+    await expect(counts(context)).toHaveTextContent('Приёмок комплекта: 0. Отправок генерации: 0.');
+  }
+};
+
+export const VideoReviewNoPython: Story = {
+  name: 'Проверка видео · без Python просмотр доступен, анализ заблокирован',
+  tags: ['ci'],
+  parameters: { songframe: reviewOptions({}, false) },
+  play: async (context) => {
+    await shotHeading(context, 'M02');
+    const panel = await chooseReviewPackage(context);
+    const start = await panel.findByRole('button', { name: videoReviewTexts.start });
+    await expect(start).toBeDisabled();
+    await expect(start).toHaveAttribute('title', expect.stringContaining('Для подготовки кадров нужны FFmpeg и ffprobe'));
+    await expect(await originalVideo(context)).toHaveAttribute('src', expect.stringContaining('story-video.mp4'));
+    await expect(panel.getByRole('button', { name: videoReviewTexts.refresh })).toBeEnabled();
+    await expect(reviewCounts(context)).toHaveTextContent('Проверок видео: 0. Отмен проверок: 0.');
+    await expect(counts(context)).toHaveTextContent('Приёмок комплекта: 0. Отправок генерации: 0.');
   }
 };

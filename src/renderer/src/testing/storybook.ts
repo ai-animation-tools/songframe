@@ -75,7 +75,7 @@ export interface StoryApiSession {
 }
 
 /** Каждый вызов создаёт отдельные методы и подписки; полный Api проверяется компилятором. */
-export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
+export function createStoryApi(overrides: ApiOverrides = {}, faults: { missingReferenceImageInspection?: boolean } = {}): StoryApiSession {
   const agent = eventChannel<EventPayload<'agents', 'onEvent'>>();
   const notification = eventChannel<EventPayload<'notifications', 'onOpen'>>();
   const login = eventChannel<EventPayload<'environment', 'onLoginUrl'>>();
@@ -153,6 +153,8 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       close: guardedAsync(merged.cover.close)
     },
     referenceImages: {
+      inspect: guardedAsync(merged.referenceImages.inspect),
+      context: guardedAsync(merged.referenceImages.context),
       create: guardedAsync(merged.referenceImages.create),
       prepare: guardedAsync(merged.referenceImages.prepare),
       generate: guardedAsync(merged.referenceImages.generate),
@@ -336,6 +338,8 @@ export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
       pathForFile: guardedSync(merged.shell.pathForFile)
     }
   };
+  // Моделируем старый preload после обёрток: отсутствующий метод должен дать undefined, а не отклонённый Promise.
+  if (faults.missingReferenceImageInspection) Reflect.deleteProperty(api.referenceImages, 'inspect');
   return {
     api,
     emit: {

@@ -10,6 +10,7 @@ import { ConfirmationDialog } from '../../components/ConfirmationDialog';
 
 const fixture = vi.hoisted(() => ({
   session: null as CoverGenerationSession | null,
+  contextReady: true,
   values: [] as unknown[],
   refs: [] as { current: unknown }[],
   stateIndex: 0,
@@ -48,6 +49,10 @@ vi.mock('../../state', () => ({
       video: { provider: null, selected: false, available: false, message: '' }
     }
   })
+}));
+// Этот стенд проверяет согласование уже подготовленного запроса; чтение/сборка контекста покрыты тестами конструктора.
+vi.mock('../../hooks/useReferenceImageComposer', () => ({
+  useReferenceImageComposer: () => ({ prompt: fixture.session?.prompt ?? '', ready: fixture.contextReady, loading: !fixture.contextReady })
 }));
 vi.mock('../../hooks/useImageGeneration', () => ({
   useImageGeneration: () => ({
@@ -98,6 +103,7 @@ function click(node: Node): void {
 /** Изменение подписей не должно объединять согласие с ценой и окончательное подтверждение промпта. */
 describe('согласование обложки после переноса текстов', () => {
   beforeEach(() => {
+    fixture.contextReady = true;
     fixture.values = [];
     fixture.refs = [];
     fixture.stateIndex = 0;
@@ -253,14 +259,35 @@ describe('согласование обложки после переноса т
     }
   });
 
+  it('не открывает подтверждение референса до готовности конструктора контекста', () => {
+    const restore = provider();
+    try {
+      fixture.contextReady = false;
+      const tree = draw({ mode: 'reference', target: 'Новый герой' });
+      expect(button(tree, 'Сгенерировать изображение · 5 кредитов').props.disabled).toBe(true);
+      click(button(tree, 'Сгенерировать изображение · 5 кредитов'));
+      expect(confirmation(draw({ mode: 'reference', target: 'Новый герой' })).props.open).toBe(false);
+      expect(fixture.generate).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
+  });
+
   it('референс сохраняет отдельное подтверждение конкретного платного запроса', () => {
     const restore = provider();
     try {
       let tree = draw({ mode: 'reference', target: 'Новый герой' });
+      expect(button(tree, 'Сгенерировать изображение · 5 кредитов').props.disabled).toBe(false);
+      expect(tree.map((node) => text(node.props.children as ReactNode))).toContain('SHA запроса: sha-one');
       click(button(tree, 'Сгенерировать изображение · 5 кредитов'));
       expect(fixture.generate).not.toHaveBeenCalled();
       tree = draw({ mode: 'reference', target: 'Новый герой' });
+      expect(confirmation(tree).props.open).toBe(true);
+      expect(confirmation(tree).props.confirmDisabled).toBe(false);
       expect(confirmation(tree).props.confirmLabel).toBe('Сгенерировать изображение');
+      expect(nodes(confirmation(tree).props.children as ReactNode).find((node) => node.props.label === 'Подтверждаемый промпт')?.props.value).toBe(
+        fixture.session!.prompt
+      );
       (confirmation(tree).props.onConfirm as () => void)();
       (confirmation(tree).props.onConfirm as () => void)();
       expect(fixture.generate).toHaveBeenCalledExactlyOnceWith({ approvalToken: 'approval-one', promptConfirmed: true });

@@ -1,5 +1,6 @@
 import type * as React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReferenceImageGenerationInput } from '@shared/reference-image-generation';
 import type { CoverGenerationSession } from '@shared/cover-generation';
 import { useImageGeneration } from './useImageGeneration';
 
@@ -84,9 +85,9 @@ const api = {
   attach: vi.fn(),
   close: vi.fn()
 };
-function RenderHook() {
+function RenderHook(mode: 'cover' | 'reference' = 'reference', input?: ReferenceImageGenerationInput) {
   fixture.stateIndex = fixture.refIndex = fixture.callbackIndex = fixture.effectIndex = 0;
-  const value = useImageGeneration('/project', 'reference');
+  const value = useImageGeneration('/project', mode, input);
   for (const effect of fixture.pending.splice(0)) effect();
   return value;
 }
@@ -111,14 +112,84 @@ beforeEach(() => {
   api.generate.mockResolvedValue(ready);
   api.accept.mockResolvedValue(result);
   api.close.mockResolvedValue(undefined);
-  vi.stubGlobal('window', { api: { referenceImages: api } });
+  vi.stubGlobal('window', { api: { referenceImages: api, cover: api } });
 });
 
 describe('жизненный цикл генерации референса', () => {
+  it('инвалидация удаляет цену, токен и готовый кандидат; старые callbacks не отправляют и не принимают результат', async () => {
+    const previous = await prepareReady();
+    expect(previous.session?.image).toEqual(ready.image);
+    expect(previous.invalidate()).toBe(true);
+    expect(RenderHook().session).toBeNull();
+    expect(RenderHook().preparedSha).toBeNull();
+    expect(api.close).toHaveBeenCalledExactlyOnceWith('reference-session');
+    const accepted = vi.fn();
+    await previous.accept(null, accepted);
+    await previous.generate({ approvalToken: 'token', promptConfirmed: true });
+    await previous.next();
+    expect(accepted).not.toHaveBeenCalled();
+    expect(api.accept).not.toHaveBeenCalled();
+    expect(api.generate).toHaveBeenCalledTimes(1);
+    expect(api.prepare).toHaveBeenCalledTimes(1);
+
+    const next = { ...prepared, id: 'edited-session', prompt: '  Только мой текст\n', requestSha: 'new-sha', approvalToken: 'new-token' };
+    api.create.mockResolvedValue({ ...next, requestSha: null, approvalToken: null });
+    api.prepare.mockResolvedValue(next);
+    await RenderHook('reference', { images: [] }).start(next.prompt);
+    expect(api.create).toHaveBeenLastCalledWith('/project', next.prompt, { images: [] });
+    await RenderHook().generate({ approvalToken: 'token', promptConfirmed: true });
+    expect(api.generate).toHaveBeenCalledTimes(1);
+    await RenderHook().generate({ approvalToken: 'new-token', promptConfirmed: true });
+    expect(api.generate).toHaveBeenLastCalledWith('edited-session', 'new-sha', { approvalToken: 'new-token', promptConfirmed: true });
+  });
+
+  it('не разрешает инвалидацию во время отправки или незавершённой привязки оплаченного оригинала', async () => {
+    await RenderHook().start('Герой');
+    let finish!: (value: CoverGenerationSession) => void;
+    api.generate.mockReturnValueOnce(
+      new Promise<CoverGenerationSession>((resolve) => {
+        finish = resolve;
+      })
+    );
+    const submitting = RenderHook().generate({ approvalToken: 'token', promptConfirmed: true });
+    expect(RenderHook().invalidate()).toBe(false);
+    finish(ready);
+    await submitting;
+    await RenderHook().accept(null, async () => {
+      throw new Error('Привязка не сохранена');
+    });
+    expect(RenderHook().attachmentPending).toBe(true);
+    expect(RenderHook().invalidate()).toBe(false);
+    expect(api.close).not.toHaveBeenCalled();
+  });
+
+  it('передаёт текущий текст и опоры один раз; повтор готовит прежнюю сессию без новой отправки', async () => {
+    const input = { images: [{ path: '/uploads/hero.png', label: 'Анфас' }] };
+    const snapshot = {
+      ...prepared,
+      prompt: 'Герой. Контекст и стиль клипа.',
+      referenceImages: [{ path: '/snapshot/hero.png', label: 'Анфас', sha256: 'a'.repeat(64), bytes: 100 }]
+    };
+    api.create.mockResolvedValue({ ...snapshot, requestSha: null, approvalToken: null });
+    api.prepare.mockResolvedValue(snapshot);
+    await RenderHook('reference', input).start('  Герой  ');
+    expect(api.create).toHaveBeenCalledExactlyOnceWith('/project', '  Герой  ', input);
+    await RenderHook('reference', { images: [] }).next();
+    expect(api.create).toHaveBeenCalledTimes(1);
+    expect(api.prepare.mock.calls).toEqual([['reference-session'], ['reference-session']]);
+    expect(RenderHook('reference').session).toEqual(snapshot);
+    expect(api.generate).not.toHaveBeenCalled();
+  });
+
+  it('обложка сохраняет вызов create с двумя аргументами и не получает контекст референса', async () => {
+    await RenderHook('cover', { images: [{ path: '/uploads/hero.png', label: 'Герой' }] }).start('Обложка');
+    expect(api.create).toHaveBeenCalledExactlyOnceWith('/project', 'Обложка');
+  });
+
   it('подготовка не отправляет генерацию, двойной клик отправляет ровно один согласованный запрос', async () => {
     const initial = RenderHook();
     await Promise.all([initial.start('Герой <&>'), initial.start('Герой <&>')]);
-    expect(api.create).toHaveBeenCalledExactlyOnceWith('/project', 'Герой <&>');
+    expect(api.create).toHaveBeenCalledExactlyOnceWith('/project', 'Герой <&>', { images: [] });
     expect(api.generate).not.toHaveBeenCalled();
     const current = RenderHook();
     await Promise.all([

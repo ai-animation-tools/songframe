@@ -10,6 +10,7 @@ import type { CoverCandidateInput, PreparedCoverCandidate } from './cover-genera
 import { selectPaidRequest, type PaidMediaProvider, type PreparePaidInput } from './media-providers';
 import type { PaidRequestRules } from './providers/types';
 import type { PythonLauncher } from './python-launcher';
+import { checkedCoverReferences } from './cover-reference-inputs';
 
 export interface PaidCoverOptions {
   provider: Pick<PaidMediaProvider, 'adapter' | 'capabilities' | 'prepare' | 'submit' | 'collect'>;
@@ -73,17 +74,18 @@ export async function preparePaidCover(input: CoverCandidateInput, options: Paid
   if (!settings || !sameMediaProvider(settings.provider, adapter.id)) throw new Error(texts.coverProviderRequired({ title }));
   const capabilities = await options.provider.capabilities(input.project);
   checkAbort(input.signal, title);
+  const references = checkedCoverReferences(input.references);
   const request: PreparePaidInput = {
     project: input.project,
     workDir: join(input.workDir, 'request'),
     shot: 'M00',
     kind: 'image',
-    command: adapter.rules.image.command(0),
+    command: adapter.rules.image.command(references.length),
     model: settings.model?.trim() ?? '',
     preferredModel: settings.model?.trim() || null,
     prompt: input.prompt,
     parameters: {},
-    inputs: [],
+    inputs: references.map((image, index) => ({ flag: 'input', slot: adapter.rules.image.referenceSlot(index), role: image.label, path: image.path })),
     outputs: 1
   };
   const selected = selectPaidRequest(adapter, request, capabilities, (model) =>

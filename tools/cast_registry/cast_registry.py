@@ -6,6 +6,7 @@
 """
 
 import argparse
+import copy
 import json
 import re
 import sys
@@ -81,9 +82,45 @@ def validate_cast(data):
     return problems
 
 
+def source_descriptions(manifest):
+    """Единственное общее описание связанного объекта хранится в source, включая явно пустую строку."""
+    references = manifest.get("references", [])
+    if not isinstance(references, list):
+        raise ValueError(f"{SOURCE_MANIFEST}: references должен быть списком.")
+    descriptions = {}
+    for ref in references:
+        if not isinstance(ref, dict) or not isinstance(ref.get("id"), str):
+            raise ValueError(f"{SOURCE_MANIFEST}: у референса нет строкового id.")
+        description = ref.get("description", "")
+        if not isinstance(description, str):
+            raise ValueError(f"{SOURCE_MANIFEST}: description референса {ref['id']} должен быть строкой.")
+        descriptions[ref["id"]] = description
+    return descriptions
+
+
+def project_descriptions(cast, manifest):
+    """appearance остаётся проекцией текущего формата; чтение не исправляет файлы на диске."""
+    descriptions = source_descriptions(manifest)
+    for entity in cast["entities"]:
+        if entity["id"] in descriptions:
+            entity["appearance"] = descriptions[entity["id"]]
+    return cast
+
+
+def project_saved_descriptions(root, cast):
+    path = Path(root) / SOURCE_MANIFEST
+    manifest = read_json(path)
+    if manifest is None and not path.exists():
+        return cast
+    if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
+        raise ValueError(f"{SOURCE_MANIFEST} повреждён.")
+    return project_descriptions(cast, manifest)
+
+
 def load_cast(root=None):
     """Кастинг проекта или None, если файла нет; повреждённый файл это ValueError."""
-    path = Path(root or ROOT) / CAST_PATH
+    root = Path(root or ROOT)
+    path = root / CAST_PATH
     data = read_json(path)
     if data is None:
         return None
@@ -92,7 +129,7 @@ def load_cast(root=None):
     problems = validate_cast(data)
     if problems:
         raise ValueError(" ".join(problems))
-    return data
+    return project_saved_descriptions(root, data)
 
 
 def initial_states(cast):
@@ -139,6 +176,7 @@ def ensure_properties(cast):
 def from_sources(manifest, existing=None):
     """Кастинг из source/manifest.json: референсы становятся сущностями, прежние правки сохраняются."""
     cast = existing or default_cast()
+    descriptions = source_descriptions(manifest)
     by_id = {e["id"]: e for e in cast["entities"]}
     for ref in manifest.get("references", []):
         kind = (
@@ -149,10 +187,9 @@ def from_sources(manifest, existing=None):
         entity = by_id.get(ref["id"])
         images = [f["path"] for f in ref.get("files", [])]
         if entity:
-            entity["images"] = images or entity.get("images", [])
-            entity.setdefault("appearance", "")
-            if not entity["appearance"] and ref.get("description"):
-                entity["appearance"] = ref["description"]
+            # Выбор, порядок и основной вид принадлежат кастингу; пустой список тоже явный выбор.
+            # Дополнение исходников не должно возвращать снятые изображения или менять первый файл.
+            entity["appearance"] = descriptions[ref["id"]]
             continue
         entity = {
             "id": ref["id"],
@@ -160,7 +197,7 @@ def from_sources(manifest, existing=None):
             "name": ref["name"],
             "short_name": ref.get("short_name") or ref["name"],
             "role": "",
-            "appearance": ref.get("description", ""),
+            "appearance": descriptions[ref["id"]],
             "images": images,
             "initial_state": {},
         }
@@ -192,6 +229,8 @@ def write_cast(root, cast):
     problems = validate_cast(cast)
     if problems:
         raise ValueError(" ".join(problems))
+    # Python не редактирует защищённый source: при записи сохраняет его описание в проекции кастинга.
+    cast = project_saved_descriptions(root, copy.deepcopy(cast))
     path = Path(root) / CAST_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(cast, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

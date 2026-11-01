@@ -40,7 +40,7 @@ export function LyricsSection({ lyrics, lyricsCheck, onChange, onPick, onDrop }:
       {/* Выбор файла не перехватывает нажатия и перетаскивание текста в редакторе. */}
       <Box sx={{ mt: 'auto', pt: 1 }}>
         <FileDropZone
-          label={sourcesTexts.uploadLyrics}
+          label={`${sourcesTexts.uploadLyrics}. ${sourcesTexts.lyricsFileMessage} ${sourcesTexts.textFileHint}`}
           kind="text"
           onFiles={onDrop}
           onPick={onPick}

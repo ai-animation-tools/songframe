@@ -250,6 +250,32 @@ class KlingAdapterTests(unittest.TestCase):
         self.assertEqual(self.tool_calls("query_tasks"), [{"generationId": "job-123", "taskTraceId": trace}])
         self.assertNotIn("SECRET", (self.work / "attempt.json").read_text())
 
+    def test_финальный_промпт_референса_передаётся_дословно_без_скрытых_описаний(self):
+        # Проверяется фактический конверт MCP: подписи опор не становятся дополнительным промптом.
+        self.spec.update(kind="image", command="image_to_image", parameters={"imgResolution": "1k"})
+        self.spec["inputs"][0]["role"] = "Опора 1"
+        self.write_spec()
+        prompts = [
+            "  Сохрани внешность Олега.\r\nСтиль: объёмная анимация.  ",
+            "  Сохрани внешность Олега.\r\n\r\nОписания выбранных опор:\r\n1. Шрам над левой бровью.  ",
+            "  Пользователь заменил весь промпт.\r\nТолько силуэт, без куртки.\n  ",
+        ]
+        for index, prompt in enumerate(prompts):
+            with self.subTest(prompt=prompt):
+                self.work = self.root / f"reference-attempt-{index}"
+                (self.root / "prompt.txt").write_bytes(prompt.encode("utf-8"))
+                state = self.submit()
+                self.assertEqual(self.tool_calls("image_to_image")[-1], {
+                    "model": "test-model",
+                    "arguments": [
+                        {"name": "prompt", "value": prompt},
+                        {"name": "imgResolution", "value": "1k"},
+                    ],
+                    "inputs": [{"name": "image_1", "inputType": "URL", "url": "https://cdn.test/01.png"}],
+                    "rationale": "",
+                    "taskTraceId": state["task_trace_id"],
+                })
+
     def test_text_command_sends_no_inputs(self):
         self.spec.update(kind="image", command="text_to_image", inputs=[])
         self.write_spec()

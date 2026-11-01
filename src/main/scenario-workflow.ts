@@ -8,6 +8,7 @@ import type { ScenarioDocuments, ScenarioProposal, ScenarioPublication, Scenario
 import type { ScenesFile, SourceManifest, TimingFile } from '@shared/types';
 import type { AgentManager } from './agent-manager';
 import { castFromSources, loadDefaults, normalizeCast } from './cast';
+import { projectCastDescriptions } from './cast-description-owner';
 import { normalizeTreatment, validateScenes } from './scenario';
 import { scenarioOutputPaths } from './scenario-apply';
 import { STAGING_FIELDS, changedSceneIds, checkReadyScenes, checkScenesShape, checkTreatmentCast, isRecord, proposalDocuments } from './scenario-proposal';
@@ -245,7 +246,7 @@ export class ScenarioWorkflow {
       try {
         const raw = json(project, `plan/${key}.json`);
         if (raw === null) continue;
-        if (key === 'cast') documents.cast = normalizeCast(raw, this.options.toolsRoot());
+        if (key === 'cast') documents.cast = projectCastDescriptions(normalizeCast(raw, this.options.toolsRoot()), manifest);
         else if (key === 'treatment') documents.treatment = normalizeTreatment(raw, duration);
         else {
           checkScenesShape(raw);

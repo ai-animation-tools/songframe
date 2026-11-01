@@ -4,6 +4,14 @@ import type { MediaProviderId } from './media-providers';
 /** Без выбранного агента недоступны текстовые этапы; генерация медиа от агента не зависит. */
 export const COVER_AGENT_REQUIRED = aiAccessTexts.agentRequired;
 
+/** Копия опоры, зафиксированная для согласованного запроса изображения. */
+export interface GenerationReferenceImage {
+  path: string;
+  label: string;
+  sha256: string;
+  bytes: number;
+}
+
 /** Временная сессия обложки не меняет исходники до сохранения общей формы. */
 export interface CoverCrop {
   x: number;
@@ -14,6 +22,8 @@ export interface CoverCrop {
 export interface CoverGenerationSession {
   id: string;
   prompt: string;
+  /** Референсы объекта в сессии референса; обложка не получает их автоматически. */
+  referenceImages?: GenerationReferenceImage[];
   status: 'idle' | 'generating' | 'ready' | 'failed' | 'accepted';
   image: { path: string; width: number; height: number } | null;
   error: string | null;

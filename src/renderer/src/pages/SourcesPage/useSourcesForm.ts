@@ -8,6 +8,7 @@ import { analyzeLyrics } from '@shared/lyrics';
 import { joinPath } from '../../format';
 import { useApp } from '../../state';
 import { RequestScope } from '../../hooks/requestScope';
+import { referenceImageOption } from '../../hooks/referenceImageOptions';
 import { AUDIO_FILTER, IMAGE_FILTER, TEXT_FILTER, nextKey, stripKeys } from './helpers';
 import type { FileForm, KindForm, ReferenceForm } from './types';
 
@@ -365,10 +366,15 @@ export function useSourcesForm() {
       ? {
           project,
           target: generationReference.name || generationReference.id,
-          initialPrompt: referenceImagePrompt({
-            name: generationReference.name,
-            description: [generationReference.description, generationReference.prompt].filter(Boolean).join('\n\n')
-          }),
+          initialPrompt: referenceImagePrompt({ name: generationReference.name }),
+          referenceDescription: generationReference.description,
+          referenceContextDrafts: { idea, lyrics },
+          // Берём текущий черновик и только изображения выбранного объекта, включая ещё не сохранённые загрузки.
+          referenceInput: {
+            images: generationReference.files.map((file) =>
+              referenceImageOption({ path: file.sourcePath ?? joinPath(project, 'source', file.existingPath!), view: file.view, note: file.note })
+            )
+          },
           acceptedHint: sourcesTexts.acceptedReferenceHint,
           onClose: () => setReferenceTarget(null),
           onAccepted: (result: ImageGenerationResult) => {

@@ -1,4 +1,5 @@
 /** Платный lifecycle обложки проверяется на подставном провайдере без сети и расхода кредитов. */
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -297,5 +298,48 @@ it('согласие на неизвестную цену не снимает н
     const candidate = await prepare();
     await expect(candidate.generate(controller.signal, { allowUnknownCost: true })).rejects.toThrow('не подтверждены');
   }
+  expect(options.provider.submit).not.toHaveBeenCalled();
+});
+
+it('передаёт опоры референса в image_to_image по объявленным слотам вместо текстового запроса', async () => {
+  const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII=', 'base64');
+  const path = join(workDir, 'reference.png');
+  writeFileSync(path, bytes);
+  caps.models.push({ ...caps.models[0], command: 'image_to_image', slots: { image_1: { required: true } } });
+  await preparePaidCover(
+    {
+      workDir,
+      project,
+      prompt: 'Сохрани того же персонажа и стиль клипа.',
+      purpose: 'reference',
+      references: [{ path, label: 'Олег: лицо', sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length }],
+      signal: controller.signal
+    },
+    options
+  );
+  expect(selected.command).toBe('image_to_image');
+  expect(selected.inputs).toEqual([{ flag: 'input', slot: 'image_1', role: 'Олег: лицо', path }]);
+  expect(selected.prompt).toBe('Сохрани того же персонажа и стиль клипа.');
+  expect(options.provider.submit).not.toHaveBeenCalled();
+});
+
+// Описания входят только в показанный пользователю текст; платный адаптер не пересобирает его по опорам.
+it.each([
+  ['без описаний', '  Сохрани внешность Олега.\r\nСтиль: объёмная анимация.  '],
+  ['с описаниями', '  Сохрани внешность Олега.\r\n\r\nОписания выбранных опор:\r\n1. Шрам над левой бровью.\r\n2. Синяя куртка.  '],
+  ['после ручной правки', '  Пользователь заменил весь промпт.\r\nТолько силуэт, без куртки.\n  ']
+])('передаёт финальный промпт референса платному провайдеру дословно: %s', async (_mode, prompt) => {
+  const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII=', 'base64');
+  const references = ['Опора 1', 'Опора 2'].map((label, index) => {
+    const path = join(workDir, `reference-${index + 1}.png`);
+    writeFileSync(path, bytes);
+    return { path, label, sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length };
+  });
+  caps.models.push({ ...caps.models[0], command: 'image_to_image', slots: { image_1: { required: true }, image_2: {} } });
+  await preparePaidCover({ workDir, project, prompt, purpose: 'reference', references, signal: controller.signal }, options);
+  expect(selected.prompt).toBe(prompt);
+  expect(selected.command).toBe('image_to_image');
+  expect(selected.inputs).toEqual(references.map((image, index) => ({ flag: 'input', slot: `image_${index + 1}`, role: image.label, path: image.path })));
+  expect(selected.parameters).toEqual({ imgResolution: '2k', aspectRatio: '1:1', imageCount: 1, story_mode: false });
   expect(options.provider.submit).not.toHaveBeenCalled();
 });

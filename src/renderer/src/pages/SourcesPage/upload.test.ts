@@ -59,7 +59,13 @@ describe('загрузка исходников', () => {
     ]
       .map((element) => routed(element))
       .join('');
-    for (const label of ['Загрузка трека', 'Загрузка обложки', 'Загрузить текст песни из файла', 'Загрузить идею клипа из файла']) {
+    // Доступное имя повторяет весь видимый текст области, чтобы её находили по видимой подписи.
+    for (const label of [
+      'Загрузка трека. Перетащите MP3 или нажмите для выбора Один файл MP3.',
+      'Загрузка обложки. Перетащите изображение или нажмите для выбора Одно изображение PNG, JPG или WebP.',
+      'Загрузить текст песни из файла. Перетащите файл с текстом песни или нажмите для выбора Один файл TXT или MD в UTF-8.',
+      'Загрузить идею клипа из файла. Перетащите файл с идеей или нажмите для выбора Один файл TXT или MD в UTF-8.'
+    ]) {
       expect(html).toContain(`role="button" aria-label="${label}" tabindex="0"`);
     }
     expect(html).not.toContain('aria-label="Текст песни: перетащить файл в поле"');
@@ -99,6 +105,6 @@ describe('загрузка исходников', () => {
     const html = routed(createElement(CoverSection, { coverSrc: 'cover.png', onPick: vi.fn(), onRemove: vi.fn(), onDrop: vi.fn(), onGenerate: vi.fn() }));
     expect(html).toContain('aria-label="Убрать обложку"');
     expect(html).toContain('data-testid="CloseIcon"');
-    expect(html).toContain('aria-label="Загрузка обложки"');
+    expect(html).toContain('aria-label="Загрузка обложки. Перетащите изображение или нажмите для выбора Одно изображение PNG, JPG или WebP."');
   });
 });

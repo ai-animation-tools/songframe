@@ -39,7 +39,7 @@ export function IdeaSection({ idea, onChange, onPick, onDrop }: Props): ReactEle
       {/* Выбор файла не перехватывает нажатия и перетаскивание текста в редакторе. */}
       <Box sx={{ mt: 'auto', pt: 1 }}>
         <FileDropZone
-          label={sourcesTexts.uploadIdea}
+          label={`${sourcesTexts.uploadIdea}. ${sourcesTexts.ideaFileMessage} ${sourcesTexts.textFileHint}`}
           kind="text"
           onFiles={onDrop}
           onPick={onPick}

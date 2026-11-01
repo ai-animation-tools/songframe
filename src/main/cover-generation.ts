@@ -2,15 +2,18 @@
 import { referenceGenerationMessages, referenceImageTexts } from '@shared/texts/reference-images';
 import { sourcesTexts } from '@shared/texts/sources';
 import { randomUUID } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { isAbsolute, join, relative, resolve } from 'node:path';
-import type { CoverCrop, CoverGenerationApproval, CoverGenerationSession } from '@shared/cover-generation';
+import { extname, isAbsolute, join, relative, resolve } from 'node:path';
+import type { CoverCrop, CoverGenerationApproval, CoverGenerationSession, GenerationReferenceImage } from '@shared/cover-generation';
+import type { ReferenceImageGenerationInput } from '@shared/reference-image-generation';
 import { isMediaProvider, MEDIA_PROVIDERS, mediaProviderTitles } from '@shared/media-providers';
 import { priceAllowsGeneration } from '@shared/generation-consent';
 import type { AgentManager } from './agent-manager';
 import { readProjectSettings } from './checks';
 import { imageExtensionMatches, isImageFile } from './keyframe-images';
+import { checkedCoverReferences } from './cover-reference-inputs';
+import { referenceInputs } from './reference-image-inputs';
 import type { SettingsStore } from './settings';
 import { assertAiSelection } from './ai-access';
 import { writeLocalJson } from './local-files';
@@ -24,6 +27,8 @@ export interface CoverCandidateInput {
   signal: AbortSignal;
   /** Референс сохраняется целиком, без требований к квадратной обложке. */
   purpose?: 'reference';
+  /** Зафиксированные копии опор; исполнитель передаёт их генератору, сохраняя исходные файлы. */
+  references?: NonNullable<CoverGenerationSession['referenceImages']>;
 }
 export type PreparedCoverCandidateInput = CoverCandidateInput;
 export interface PreparedCoverCandidate {
@@ -33,7 +38,10 @@ export interface PreparedCoverCandidate {
   quote: CoverGenerationSession['quote'];
   generate(signal: AbortSignal, approval?: { allowUnknownCost?: boolean }): Promise<{ path: string }>;
 }
-export type CoverCandidateRunner = (input: CoverCandidateInput) => Promise<{ path: string }>;
+export type CoverCandidateRunner = ((input: CoverCandidateInput) => Promise<{ path: string }>) & {
+  /** Исполнитель проверяет собственный транспорт до выдачи SHA и токена согласования. */
+  validateInput?(input: CoverCandidateInput): void;
+};
 export interface CoverGenerationOptions {
   settings: SettingsStore;
   /** Попытки референсов хранят оригиналы и запросы в проекте даже после закрытия. */
@@ -50,7 +58,18 @@ interface Record {
   closed: boolean;
   controller?: AbortController;
   task?: Promise<void>;
-  prepared?: { candidate: PreparedCoverCandidate; workDir: string };
+  prepared?: { candidate: PreparedCoverCandidate; workDir: string; references?: GenerationReferenceImage[] };
+}
+
+function copyReferences(images: GenerationReferenceImage[], directory: string): GenerationReferenceImage[] {
+  if (!images.length) return [];
+  mkdirSync(directory, { recursive: true });
+  const copies = checkedCoverReferences(images).map((image, index) => {
+    const path = join(directory, `R${String(index + 1).padStart(3, '0')}${extname(image.path).toLowerCase()}`);
+    copyFileSync(image.path, path);
+    return { ...image, path };
+  });
+  return checkedCoverReferences(copies);
 }
 
 export class CoverGeneration {
@@ -61,7 +80,7 @@ export class CoverGeneration {
   }
   constructor(private readonly options: CoverGenerationOptions) {}
 
-  create(project: string, prompt: string): CoverGenerationSession {
+  create(project: string, prompt: string, input?: ReferenceImageGenerationInput): CoverGenerationSession {
     if (this.stopping) throw new Error(this.texts.applicationStopping);
     if (typeof project !== 'string' || !isAbsolute(project) || project.includes('\0')) throw new Error(this.texts.projectRequired);
     let canonical: string;
@@ -76,6 +95,7 @@ export class CoverGeneration {
     assertAiSelection(this.options.settings, canonical, 'image');
     if (typeof prompt !== 'string' || !prompt.trim() || prompt.includes('\0') || Buffer.byteLength(prompt) > 32 * 1024)
       throw new Error(this.texts.coverPromptInvalid);
+    const inputs = this.options.reference ? referenceInputs(input) : [];
     const id = randomUUID();
     const archive = join(canonical, 'plan/reference-images', id);
     if (this.options.reference) mkdirSync(archive, { recursive: true });
@@ -83,6 +103,7 @@ export class CoverGeneration {
     const session: CoverGenerationSession = {
       id,
       prompt,
+      ...(this.options.reference ? { referenceImages: [] } : {}),
       status: 'idle',
       image: null,
       error: null,
@@ -93,6 +114,12 @@ export class CoverGeneration {
       approvalToken: null,
       quote: null
     };
+    try {
+      if (this.options.reference) session.referenceImages = checkedCoverReferences(copyReferences(inputs, join(root, 'references')));
+    } catch (error) {
+      rmSync(root, { recursive: true, force: true });
+      throw error;
+    }
     this.sessions.set(id, { session, project: canonical, root, closed: false });
     return structuredClone(session);
   }
@@ -114,16 +141,17 @@ export class CoverGeneration {
     record.task = (async () => {
       try {
         mkdirSync(workDir, { recursive: true });
+        const references = this.options.reference ? copyReferences(record.session.referenceImages ?? [], join(workDir, 'references')) : [];
         const candidate = await this.options.prepareCandidate({
           workDir,
           project: record.project,
           prompt: record.session.prompt,
           signal: record.controller!.signal,
-          ...(this.options.reference ? { purpose: 'reference' as const } : {})
+          ...(this.options.reference ? { purpose: 'reference' as const, references } : {})
         });
         if (record.closed) return;
         if (!candidate.requestSha || !isMediaProvider(candidate.provider, 'image')) throw new Error(this.texts.coverRequestPrepareFailed);
-        record.prepared = { candidate, workDir };
+        record.prepared = { candidate, workDir, ...(this.options.reference ? { references } : {}) };
         record.session.provider = candidate.provider;
         record.session.model = candidate.model;
         record.session.requestSha = candidate.requestSha;
@@ -156,6 +184,10 @@ export class CoverGeneration {
     const provider = MEDIA_PROVIDERS[prepared.candidate.provider];
     if (provider.paid && !priceAllowsGeneration(prepared.candidate.quote, approval.allowUnknownCost === true))
       throw new Error(this.texts.coverCostBlocked({ title: provider.title }));
+    if (this.options.reference) {
+      checkedCoverReferences(record.session.referenceImages);
+      checkedCoverReferences(prepared.references);
+    }
     record.prepared = undefined;
     record.session.approvalToken = null;
     // Согласованный запрос расходуется один раз; старый кандидат удаляется только после явного запуска.
@@ -252,6 +284,10 @@ export class CoverGeneration {
     // В квитанции только относительный путь: архив переносится вместе с проектом.
     writeLocalJson(join(record.root, 'session.json'), {
       ...session,
+      referenceImages: session.referenceImages?.map((image) => ({
+        ...image,
+        path: relative(record.root, image.path).split('\\').join('/')
+      })),
       image: session.image ? { ...session.image, path: relative(record.root, session.image.path).split('\\').join('/') } : null
     });
   }
@@ -280,13 +316,21 @@ export class CoverGeneration {
   private clear(record: Record, keep?: string): void {
     for (const name of readdirSync(record.root)) if (name !== keep) rmSync(join(record.root, name), { recursive: true, force: true });
   }
-  private async run(record: Record, prepared: { candidate: PreparedCoverCandidate; workDir: string }, approval: { allowUnknownCost: boolean }): Promise<void> {
+  private async run(
+    record: Record,
+    prepared: { candidate: PreparedCoverCandidate; workDir: string; references?: GenerationReferenceImage[] },
+    approval: { allowUnknownCost: boolean }
+  ): Promise<void> {
     if (record.closed) return;
     const workDir = prepared.workDir;
     try {
       // Настройки могли измениться между подтверждением и отложенным запуском исполнителя.
       assertAiSelection(this.options.settings, record.project, 'image');
       if (readProjectSettings(record.project).generation?.image?.provider !== prepared.candidate.provider) throw new Error(this.texts.coverProviderChanged);
+      if (this.options.reference) {
+        checkedCoverReferences(record.session.referenceImages);
+        checkedCoverReferences(prepared.references);
+      }
       const output = await prepared.candidate.generate(record.controller!.signal, approval);
       if (record.closed) return;
       const path = resolve(workDir, output.path);

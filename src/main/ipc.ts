@@ -23,6 +23,8 @@ import type {
   TimingGenerateOptions,
   TreatmentFile
 } from '@shared/types';
+import type { ReferenceImageContextDrafts, ReferenceImageGenerationInput } from '@shared/reference-image-generation';
+import { readReferenceImageContext } from './reference-image-context';
 import { applicationTexts } from '@shared/texts/application';
 import { commonTexts } from '@shared/texts/common';
 import { settingsTexts } from '@shared/texts/settings';
@@ -95,6 +97,7 @@ import { readScenarioRegistry } from './scenario-status';
 import { CoverGeneration, type CoverGenerationOptions } from './cover-generation';
 import { attachReferenceImage, saveSourcesWithCastImages } from './reference-image-storage';
 import { referenceImageTexts } from '@shared/texts/reference-images';
+import { inspectReferenceImageInputs } from './reference-image-inputs';
 import { preparePaidCover } from './cover-paid';
 import { prepareProjectCover } from './cover-provider';
 import type { CoverCrop, CoverGenerationApproval } from '@shared/cover-generation';
@@ -278,6 +281,10 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   const referenceImages = new CoverGeneration({ ...imageOptions, reference: true });
   getServices().cover = cover;
   getServices().referenceImages = referenceImages;
+  // Проверка выбранных файлов доступна до выбора провайдера и не создаёт сессию.
+  ipcMain.handle('referenceImages:inspect', (_event, input: ReferenceImageGenerationInput) => inspectReferenceImageInputs(input));
+  ipcMain.handle('referenceImages:context', (_event, project: string, drafts?: ReferenceImageContextDrafts) => readReferenceImageContext(project, drafts));
+
   // Перезагрузка или закрытие renderer не оставляет сессию с непринятыми картинками до завершения приложения.
   for (const [prefix, generator] of [
     ['cover', cover],
@@ -286,7 +293,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const attached = new Map<string, string>();
     const coverOwners = new Map<number, Set<string>>();
     const coverProjects = new Map<string, string>();
-    ipcMain.handle(`${prefix}:create`, async (event, project: string, prompt: string) => {
+    ipcMain.handle(`${prefix}:create`, async (event, project: string, prompt: string, input?: ReferenceImageGenerationInput) => {
       await ai.requireAccess(project, 'image');
       if (event.sender.isDestroyed()) throw new Error(applicationTexts.coverWindowClosed);
       let owned = coverOwners.get(event.sender.id);
@@ -308,7 +315,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
           if (mainFrame && !inPlace) closeOwned();
         });
       }
-      const session = generator.create(project, prompt);
+      const session = generator.create(project, prompt, prefix === 'referenceImages' ? input : undefined);
       owned.add(session.id);
       coverProjects.set(session.id, project);
       return session;

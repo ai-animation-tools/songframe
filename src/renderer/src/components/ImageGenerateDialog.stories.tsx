@@ -6,19 +6,36 @@ import { Alert, Box, Stack, Typography } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { sourcesTexts } from '@shared/texts/sources';
 import { commonTexts } from '@shared/texts/common';
+import { referenceImagePrompt } from '@shared/reference-image-generation';
 import type { ImageGenerationResult } from '../hooks/useImageGeneration';
 import {
+  completeImageStoryCreate,
   IMAGE_ATTACHMENT_ERROR,
+  IMAGE_STORY_INPUT,
+  IMAGE_STORY_IDEA,
+  IMAGE_STORY_LYRICS,
+  IMAGE_STORY_STYLE,
   IMAGE_STORY_PATH,
   IMAGE_STORY_PROJECT,
   IMAGE_STORY_PROMPT,
   IMAGE_STORY_TARGET,
+  imageStoryInspection,
   imageStoryOptions
 } from '../testing/imageStories';
 import { ImageGenerateDialog } from './ImageGenerateDialog';
 import { ActionButton } from './ActionButton';
 
-function ImageStory({ mode = 'cover' }: { mode?: 'cover' | 'reference' }) {
+function ImageStory({
+  mode = 'cover',
+  withReferences = true,
+  duplicateReference = false,
+  notesFixture = false
+}: {
+  mode?: 'cover' | 'reference';
+  withReferences?: boolean;
+  duplicateReference?: boolean;
+  notesFixture?: boolean;
+}) {
   const [open, setOpen] = useState(true);
   const [accepted, setAccepted] = useState(false);
   const onAccepted = useCallback(
@@ -54,7 +71,27 @@ function ImageStory({ mode = 'cover' }: { mode?: 'cover' | 'reference' }) {
           project={IMAGE_STORY_PROJECT}
           mode={mode}
           target={IMAGE_STORY_TARGET}
-          initialPrompt={IMAGE_STORY_PROMPT}
+          initialPrompt={mode === 'reference' ? referenceImagePrompt({ name: IMAGE_STORY_TARGET }) : IMAGE_STORY_PROMPT}
+          referenceDescription={mode === 'reference' ? 'Красная куртка, тёмные волосы.' : undefined}
+          referenceInput={
+            mode === 'reference'
+              ? {
+                  ...IMAGE_STORY_INPUT,
+                  images: !withReferences
+                    ? []
+                    : notesFixture
+                      ? [
+                          { ...IMAGE_STORY_INPUT.images[0], note: 'Сохранить лицо' },
+                          { ...IMAGE_STORY_INPUT.images[0], label: 'В полный рост', note: 'Сохранить силуэт' },
+                          { path: '/mock/second-story-image.png', label: 'Сбоку', note: 'Сохранить куртку' },
+                          { path: '/mock/empty-note-story-image.png', label: 'Сзади', note: '  ' }
+                        ]
+                      : duplicateReference
+                        ? [...IMAGE_STORY_INPUT.images, { ...IMAGE_STORY_INPUT.images[0], label: 'Тот же герой — дополнительная подпись' }]
+                        : IMAGE_STORY_INPUT.images
+                }
+              : undefined
+          }
           acceptedHint={mode === 'reference' ? 'Принимается весь оригинал; изображение добавится к персонажу без замены прежних референсов.' : undefined}
           onAccepted={onAccepted}
           onClose={() => setOpen(false)}
@@ -79,11 +116,22 @@ type Story = StoryObj<typeof meta>;
 type PlayContext = Parameters<NonNullable<Story['play']>>[0];
 const screenOf = ({ canvasElement }: PlayContext) => within(canvasElement.ownerDocument.body);
 
+/** Раскрытие блоков меняет только компоновку; подготовка запроса остаётся отдельным действием. */
+async function expandReferenceSection(screen: ReturnType<typeof screenOf>, label: string): Promise<void> {
+  const summary = screen.getByRole('button', { name: (name) => name.startsWith(label) });
+  if (summary.getAttribute('aria-expanded') !== 'true') await userEvent.click(summary);
+}
+
 async function prepare(context: PlayContext): Promise<void> {
   const screen = screenOf(context);
   const label = context.args.mode === 'reference' ? sourcesTexts.generateReferenceImage : sourcesTexts.generateCover;
-  const button = screen.getByRole('button', { name: label });
-  await userEvent.click(button);
+  // После подготовки цена становится частью доступного имени той же кнопки генерации.
+  const button = () => screen.getByRole<HTMLButtonElement>('button', { name: (name) => name === label || name.startsWith(`${label} · `) });
+  // При завершении чтения Tooltip меняет обёртку недоступной кнопки: перечитываем актуальный узел.
+  await waitFor(() => {
+    if (button().disabled) throw new Error('Подготовка ещё недоступна.');
+  });
+  await userEvent.click(button());
 }
 
 async function generate(context: PlayContext): Promise<void> {
@@ -107,7 +155,339 @@ async function candidate(context: PlayContext): Promise<void> {
   await expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled();
 }
 
-export const CoverPrompt: Story = { name: 'Обложка — редактируемый промпт' };
+export const CoverPrompt: Story = {
+  tags: ['ci'],
+  name: 'Обложка — редактируемый промпт без опор референса',
+  play: async (context) => {
+    await prepare(context);
+    const confirmation = await screenOf(context).findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(IMAGE_STORY_PROMPT);
+    await expect(within(confirmation).queryByRole('region', { name: sourcesTexts.referenceSupports })).not.toBeInTheDocument();
+    await expect(imageStoryInspection()).toMatchObject({ creates: [{ mode: 'cover', prompt: IMAGE_STORY_PROMPT }], generations: 0 });
+    await expect(imageStoryInspection().creates[0].input).toBeUndefined();
+  }
+};
+export const ReferenceComposer: Story = {
+  tags: ['ci'],
+  name: 'Референс — свёрнутые блоки, опоры и описание по умолчанию',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    for (const label of [sourcesTexts.referenceSupports, sourcesTexts.referenceConstructor])
+      await expect(screen.getByRole('button', { name: (name) => name.startsWith(label) })).toHaveAttribute('aria-expanded', 'false');
+    const prompt = screen.getByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await waitFor(() => expect(prompt).toBeVisible());
+    await expect(prompt.value).toContain('Красная куртка, тёмные волосы.');
+    await expect(prompt.value).not.toContain(IMAGE_STORY_STYLE);
+    const before = prompt.value;
+    const summary = screen.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.referenceConstructor) });
+    summary.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(summary).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() => {
+      if (screen.getByRole<HTMLInputElement>('checkbox', { name: sourcesTexts.referenceVisualStyle }).disabled) throw new Error('Контекст ещё читается.');
+    });
+    for (const label of [sourcesTexts.referenceClipName, sourcesTexts.referenceLyrics, sourcesTexts.referenceIdea, sourcesTexts.referenceVisualStyle])
+      await expect(screen.getByRole('checkbox', { name: label })).not.toBeChecked();
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referenceDescription })).toBeChecked();
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referenceSupportNotes })).not.toBeChecked();
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referenceVisualStyle })).toHaveAccessibleName('Общие визуальные правила');
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: IMAGE_STORY_INPUT.images[0].label }) })).toBeChecked();
+    await expect(prompt).toHaveValue(before);
+    await expect(imageStoryInspection().creates).toHaveLength(0);
+    const dialog = screen.getByRole('dialog', { name: sourcesTexts.createReferenceImage });
+    await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.cancel }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Открыть генерацию' }));
+    for (const label of [sourcesTexts.referenceSupports, sourcesTexts.referenceConstructor])
+      await expect(screen.getByRole('button', { name: (name) => name.startsWith(label) })).toHaveAttribute('aria-expanded', 'false');
+  }
+};
+export const ReferenceContextAndSupports: Story = {
+  tags: ['ci'],
+  name: 'Референс — выбор контекста и точный ручной промпт',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expandReferenceSection(screen, sourcesTexts.referenceConstructor);
+    const prompt = screen.getByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await waitFor(() => {
+      if (screen.getByRole<HTMLInputElement>('checkbox', { name: sourcesTexts.referenceVisualStyle }).disabled) throw new Error('Контекст ещё читается.');
+    });
+    for (const label of [sourcesTexts.referenceClipName, sourcesTexts.referenceIdea, sourcesTexts.referenceLyrics])
+      await expect(screen.getByRole('checkbox', { name: label })).not.toBeChecked();
+    await expect(prompt.value).not.toContain(IMAGE_STORY_IDEA);
+    await expect(prompt.value).not.toContain(IMAGE_STORY_LYRICS);
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referenceDescription })).toBeChecked();
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referenceVisualStyle })).not.toBeChecked();
+    await expect(prompt.value).not.toContain(IMAGE_STORY_STYLE);
+    for (const label of [sourcesTexts.referenceClipName, sourcesTexts.referenceIdea, sourcesTexts.referenceLyrics, sourcesTexts.referenceVisualStyle])
+      await userEvent.click(screen.getByRole('checkbox', { name: label }));
+    await expect(prompt.value).toContain('У старых ворот');
+    await expect(prompt.value).toContain(IMAGE_STORY_IDEA);
+    await expect(prompt.value).toContain(IMAGE_STORY_LYRICS);
+    const edited = '  Только профиль героя.\nБез нового окружения.  ';
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, edited);
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referenceVisualStyle })).toBeDisabled();
+    await expect(screen.getByText(sourcesTexts.referenceCharacterCount({ count: edited.length }))).toBeInTheDocument();
+    await prepare(context);
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(edited);
+    const inspection = imageStoryInspection();
+    await expect(inspection.creates[0]).toMatchObject({ prompt: edited, input: IMAGE_STORY_INPUT });
+    await expect(inspection.creates[0].input?.images[0]).not.toHaveProperty('note');
+    await expect(inspection.generations).toBe(0);
+    await expect(inspection.sessions[0].referenceImages?.[0].path).toContain('/private-session/');
+    await expect(within(confirmation).getByRole('img', { name: IMAGE_STORY_INPUT.images[0].label })).toBeInTheDocument();
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    const field = await screen.findByRole('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await expect(field).not.toHaveAttribute('readonly');
+    // Сворачивание и раскрытие после подготовки не меняет снимок запроса и его согласование.
+    await userEvent.click(screen.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.referenceConstructor) }));
+    await expandReferenceSection(screen, sourcesTexts.referenceConstructor);
+    await expect(field).toHaveValue(edited);
+    await expect(imageStoryInspection().closes).toHaveLength(0);
+    await prepare(context);
+    await expect(imageStoryInspection().creates).toHaveLength(1);
+    await expect(imageStoryInspection().generations).toBe(0);
+  }
+};
+/** Копии одного изображения имеют единый номер; текст выключенных и исключённых примечаний не уходит скрыто. */
+export const ReferenceSupportNotes: Story = {
+  tags: ['ci'],
+  name: 'Примечания опор — явный выбор, копии и окончательный ручной текст',
+  args: { mode: 'reference', notesFixture: true },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expandReferenceSection(screen, sourcesTexts.referenceConstructor);
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    const prompt = screen.getByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    const toggle = () => screen.getByRole('checkbox', { name: sourcesTexts.referenceSupportNotes });
+    await waitFor(() => expect(toggle()).toBeEnabled());
+    await expect(toggle()).not.toBeChecked();
+    await expect(prompt.value).not.toContain('Сохранить лицо');
+    await expect(prompt.value).not.toContain('Сохранить куртку');
+    await userEvent.click(toggle());
+    await expect(prompt.value).toContain('Опора 1 (Спереди · В полный рост):\nСохранить лицо\nСохранить силуэт');
+    await expect(prompt.value).toContain('Опора 2 (Сбоку):\nСохранить куртку');
+    await expect(prompt.value).not.toContain('Опора 3');
+    await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: 'В полный рост' }) }));
+    await waitFor(() => expect(prompt.value).not.toContain('Сохранить силуэт'));
+    await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: 'Спереди' }) }));
+    await waitFor(() => expect(prompt.value).toContain('Опора 1 (Сбоку):\nСохранить куртку'));
+    await expect(prompt.value).not.toContain('Сохранить лицо');
+    const visible = prompt.value;
+    await prepare(context);
+    let confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(visible);
+    await expect(imageStoryInspection().sessions[0].referenceImages).toHaveLength(2);
+    for (const input of imageStoryInspection().creates[0].input?.images ?? []) {
+      await expect(input).not.toHaveProperty('note');
+      await expect(input.sha256).toMatch(/^[a-f0-9]{64}$/);
+      await expect(input.label).not.toContain('Сохранить');
+    }
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    const manual = '  Только мой текст.\nСохранить лицо по выбранной картинке.  ';
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, manual);
+    await expect(toggle()).toBeDisabled();
+    await prepare(context);
+    confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(manual);
+    await expect(imageStoryInspection().creates.at(-1)?.prompt).toBe(manual);
+    await expect(imageStoryInspection().generations).toBe(0);
+  }
+};
+
+export const ReferenceSupportReadFailure: Story = {
+  tags: ['ci'],
+  name: 'Примечания опор — ошибка чтения и явный повтор',
+  args: { mode: 'reference', notesFixture: true },
+  parameters: { songframe: imageStoryOptions({ failInspectOnce: true }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText('Не удалось прочитать опорные изображения. Проверьте файлы объекта.')).toBeVisible();
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    await expect(screen.queryByText(sourcesTexts.referenceNoSelectedImages)).not.toBeInTheDocument();
+    await expandReferenceSection(screen, sourcesTexts.referenceConstructor);
+    const prompt = screen.getByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, 'Мой ручной промпт не обходит проверку опор.');
+    await expect(screen.getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeDisabled();
+    await expect(imageStoryInspection().creates).toHaveLength(0);
+    const error = screen.getAllByRole('alert').find((alert) => alert.textContent?.includes('Не удалось прочитать опорные изображения.'));
+    if (!error) throw new Error('Нет сообщения об ошибке чтения опор.');
+    await userEvent.click(within(error).getByRole('button', { name: sourcesTexts.referenceSupportsRetry }));
+    await prepare(context);
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue('Мой ручной промпт не обходит проверку опор.');
+    await expect(imageStoryInspection().generations).toBe(0);
+  }
+};
+
+export const ReferenceEditedAfterPreparation: Story = {
+  tags: ['ci'],
+  name: 'Референс — правка сбрасывает подготовку, цену и выбранные опоры',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await prepare(context);
+    let confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    const oldSession = imageStoryInspection().sessions[0];
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    const prompt = await screen.findByRole('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, 'Герой без опор, общий план.');
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: IMAGE_STORY_INPUT.images[0].label }) }));
+    await expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeDisabled();
+    await expect(imageStoryInspection().closes).toContain(oldSession.id);
+    await expect(imageStoryInspection().sessions).toHaveLength(0);
+    await prepare(context);
+    confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    const inspection = imageStoryInspection();
+    await expect(inspection.creates).toHaveLength(2);
+    await expect(inspection.creates[1]).toMatchObject({ prompt: 'Герой без опор, общий план.', input: { images: [] } });
+    await expect(inspection.sessions[0].approvalToken).not.toBe(oldSession.approvalToken);
+    await expect(inspection.sessions[0].requestSha).not.toBe(oldSession.requestSha);
+    await expect(within(confirmation).queryAllByRole('img')).toHaveLength(0);
+    await expect(inspection.generations).toBe(0);
+  }
+};
+export const ReferenceUnknownPriceEdit: Story = {
+  tags: ['ci'],
+  name: 'Референс — прежнее согласие с неизвестной ценой не переносится на правку',
+  args: { mode: 'reference' },
+  parameters: { songframe: imageStoryOptions({ quote: 'unknown' }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await prepare(context);
+    await userEvent.click(await screen.findByRole('button', { name: sourcesTexts.agree }));
+    await prepare(context);
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    const prompt = await screen.findByRole('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, 'Новая короткая постановка.');
+    await prepare(context);
+    await expect(screen.queryByRole('dialog', { name: sourcesTexts.confirmPromptTitle })).not.toBeInTheDocument();
+    await expect(screen.getByRole('button', { name: sourcesTexts.agree })).toBeEnabled();
+    await expect(screen.getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeDisabled();
+    await expect(imageStoryInspection().creates).toHaveLength(2);
+    await expect(imageStoryInspection().generations).toBe(0);
+  }
+};
+export const ReferenceRebuildPrompt: Story = {
+  tags: ['ci'],
+  name: 'Референс — ручной текст сохраняется до явной пересборки',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expandReferenceSection(screen, sourcesTexts.referenceConstructor);
+    const prompt = screen.getByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await waitFor(() => {
+      if (screen.getByRole<HTMLInputElement>('checkbox', { name: sourcesTexts.referenceVisualStyle }).disabled) throw new Error('Контекст ещё читается.');
+    });
+    await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceVisualStyle }));
+    await expect(prompt.value).toContain('Общие визуальные правила:');
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, 'Мой короткий промпт.');
+    await userEvent.click(screen.getByRole('button', { name: sourcesTexts.referenceRebuild }));
+    let confirmation = await screen.findByRole('dialog', { name: sourcesTexts.referenceRebuildTitle });
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    await expect(await screen.findByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).toHaveValue('Мой короткий промпт.');
+    await userEvent.click(screen.getByRole('button', { name: sourcesTexts.referenceRebuild }));
+    confirmation = await screen.findByRole('dialog', { name: sourcesTexts.referenceRebuildTitle });
+    await userEvent.click(within(confirmation).getByRole('button', { name: sourcesTexts.referenceRebuild }));
+    const rebuilt = await screen.findByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await expect(rebuilt.value).toContain(IMAGE_STORY_STYLE);
+    await expect(screen.getByRole('checkbox', { name: sourcesTexts.referenceVisualStyle })).toBeEnabled();
+    await expect(imageStoryInspection().creates).toHaveLength(0);
+  }
+};
+export const ReferenceContextReadFailure: Story = {
+  tags: ['ci'],
+  name: 'Референс — ошибка контекста допускает ручной запрос',
+  args: { mode: 'reference' },
+  parameters: { songframe: imageStoryOptions({ failContextOnce: true }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText(/Не удалось прочитать контекст клипа\./)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: sourcesTexts.referenceWithoutContext }));
+    const prompt = screen.getByRole('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, 'Короткое описание без контекста.');
+    await prepare(context);
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue('Короткое описание без контекста.');
+    await expect(imageStoryInspection().generations).toBe(0);
+  }
+};
+export const ReferenceLongStyle: Story = {
+  tags: ['ci'],
+  name: 'Референс — общие визуальные правила добавляются только по выбору',
+  args: { mode: 'reference' },
+  parameters: { songframe: imageStoryOptions({ longContext: true }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expandReferenceSection(screen, sourcesTexts.referenceConstructor);
+    const prompt = screen.getByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await waitFor(() => {
+      if (screen.getByRole<HTMLInputElement>('checkbox', { name: sourcesTexts.referenceVisualStyle }).disabled) throw new Error('Контекст ещё читается.');
+    });
+    await expect(prompt.value).not.toContain(IMAGE_STORY_STYLE);
+    await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceVisualStyle }));
+    await expect(prompt.value).toContain(`80. ${IMAGE_STORY_STYLE}`);
+    await expect(prompt.value).toContain('Общие визуальные правила:');
+    await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceVisualStyle }));
+    await expect(prompt.value).not.toContain(`80. ${IMAGE_STORY_STYLE}`);
+    await expect(prompt.value.length).toBeLessThan(400);
+  }
+};
+export const ReferenceGalleryDuringSnapshot: Story = {
+  tags: ['ci'],
+  name: 'Референс — открытая вторая опора при дедупликации снимка',
+  args: { mode: 'reference', duplicateReference: true },
+  parameters: { songframe: imageStoryOptions({ delayCreate: true }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    await prepare(context);
+    await expect(screen.getByRole('status')).toBeInTheDocument();
+    const supports = within(screen.getByRole('dialog', { name: sourcesTexts.createReferenceImage }));
+    await expect(supports.getAllByRole('img')).toHaveLength(2);
+    await userEvent.click(supports.getAllByRole('img')[1].closest('button')!);
+    const gallery = await screen.findByRole('dialog', { name: /Тот же герой — дополнительная подпись/ });
+    await expect(within(gallery).getByRole('img', { name: 'Тот же герой — дополнительная подпись' })).toBeInTheDocument();
+    completeImageStoryCreate();
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(screen.queryByRole('dialog', { name: /Тот же герой — дополнительная подпись/ })).not.toBeInTheDocument();
+    const images = within(confirmation).getAllByRole('img');
+    await expect(images).toHaveLength(1);
+    await expect(images[0]).toHaveAttribute('alt', `${IMAGE_STORY_INPUT.images[0].label} · Тот же герой — дополнительная подпись`);
+    await expect(imageStoryInspection().sessions[0].referenceImages).toHaveLength(1);
+    await expect(imageStoryInspection().generations).toBe(0);
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    const dialog = await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
+    await userEvent.click(within(dialog).getAllByRole('img')[0].closest('button')!);
+    await expect(await screen.findByRole('dialog', { name: new RegExp(IMAGE_STORY_INPUT.images[0].label) })).toBeInTheDocument();
+  }
+};
+export const ReferenceWithoutSupports: Story = {
+  tags: ['ci'],
+  name: 'Референс — описание без опор и общих правил',
+  args: { mode: 'reference', withReferences: false },
+  play: async (context) => {
+    await expandReferenceSection(screenOf(context), sourcesTexts.referenceSupports);
+    await expect(screenOf(context).getByText(sourcesTexts.referenceSupportsEmpty)).toBeInTheDocument();
+    await prepare(context);
+    const confirmation = await screenOf(context).findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.confirmedPrompt }).value).not.toContain(IMAGE_STORY_STYLE);
+    await expect(within(confirmation).queryByRole('region', { name: sourcesTexts.referenceSupports })?.querySelectorAll('img')).toHaveLength(0);
+    await expect(imageStoryInspection().creates[0].input?.images).toEqual([]);
+  }
+};
 export const ProviderRequired: Story = {
   name: 'Провайдер не выбран',
   parameters: { songframe: imageStoryOptions({}, false) }
@@ -121,11 +501,20 @@ export const Preparation: Story = {
   }
 };
 export const PreparationFailure: Story = {
+  tags: ['ci'],
+  args: { mode: 'reference' },
   name: 'Ошибка подготовки — доступен повтор',
   parameters: { songframe: imageStoryOptions({ failPreparationOnce: true }) },
   play: async (context) => {
     await prepare(context);
-    await expect(await screenOf(context).findByText('Не удалось подготовить запрос. Повторите подготовку.')).toBeInTheDocument();
+    const screen = screenOf(context);
+    await expect(await screen.findByText('Не удалось подготовить запрос. Повторите подготовку.')).toBeInTheDocument();
+    await expect(await screen.findByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).not.toHaveAttribute('readonly');
+    await expect(imageStoryInspection().generations).toBe(0);
+    await prepare(context);
+    await expect(await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle })).toBeInTheDocument();
+    await expect(imageStoryInspection().creates).toHaveLength(1);
+    await expect(imageStoryInspection().generations).toBe(0);
   }
 };
 export const KnownPrice: Story = {
@@ -168,6 +557,26 @@ export const ReferenceCandidate: Story = {
     await expect(screenOf(context).queryByRole('group', { name: sourcesTexts.cropArea })).not.toBeInTheDocument();
   }
 };
+export const ReferenceCandidateEdit: Story = {
+  tags: ['ci'],
+  name: 'Референс — прежний кандидат нельзя принять после правки запроса',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    await candidate(context);
+    const screen = screenOf(context);
+    const oldSession = imageStoryInspection().sessions[0];
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: IMAGE_STORY_INPUT.images[0].label }) }));
+    await expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeDisabled();
+    await expect(screen.queryByRole('img', { name: IMAGE_STORY_TARGET })).not.toBeInTheDocument();
+    await expect(imageStoryInspection().closes).toContain(oldSession.id);
+    await prepare(context);
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(oldSession.prompt);
+    await expect(imageStoryInspection().creates[1].input?.images).toEqual([]);
+    await expect(imageStoryInspection().generations).toBe(1);
+  }
+};
 export const GenerationFailure: Story = {
   name: 'Сбой генерации — новая попытка по действию',
   parameters: { songframe: imageStoryOptions({ failGenerationOnce: true }) },
@@ -188,5 +597,32 @@ export const AttachmentRetry: Story = {
     await expect(await screen.findByText(IMAGE_ATTACHMENT_ERROR)).toBeInTheDocument();
     await expect(screen.getByRole('button', { name: sourcesTexts.more })).toBeDisabled();
     await expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled();
+  }
+};
+
+export const MissingReferenceImageInspection: Story = {
+  tags: ['ci'],
+  name: 'Прежний API опор — отсутствие метода не скрывает диалог',
+  args: { mode: 'reference' },
+  parameters: { songframe: imageStoryOptions({ missingReferenceImageInspection: true }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(typeof window.api.referenceImages.inspect).toBe('undefined');
+    let dialog = await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
+    await expect(await within(dialog).findByText(sourcesTexts.referenceSupportsRestartRequired)).toBeVisible();
+    await expect(within(dialog).getByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).toBeVisible();
+    await expect(within(dialog).getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeDisabled();
+    await expect(within(dialog).queryByRole('button', { name: sourcesTexts.referenceSupportsRetry })).not.toBeInTheDocument();
+    await expandReferenceSection(within(dialog), sourcesTexts.referenceSupports);
+    await expect(within(dialog).getByRole('button', { name: sourcesTexts.referenceSupportsRetry })).toBeDisabled();
+    await expect(imageStoryInspection()).toMatchObject({ creates: [], generations: 0, sessions: [] });
+    await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.cancel }));
+    await expect(screen.queryByRole('dialog', { name: sourcesTexts.createReferenceImage })).not.toBeInTheDocument();
+    await expect(screen.getByRole('img', { name: 'Сохранённое изображение' })).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Открыть генерацию' }));
+    dialog = await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
+    await expect(await within(dialog).findByText(sourcesTexts.referenceSupportsRestartRequired)).toBeVisible();
+    await expect(within(dialog).getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeDisabled();
+    await expect(imageStoryInspection()).toMatchObject({ creates: [], generations: 0, sessions: [] });
   }
 };

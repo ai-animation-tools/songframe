@@ -78,6 +78,35 @@ beforeEach(() => {
 });
 
 describe('принятие изображения в форме исходников', () => {
+  it('передаёт черновик идеи/песни и только существующие и загруженные изображения выбранного объекта', async () => {
+    let form = await loaded();
+    const key = form.referencesProps.refs[0].key;
+    form.referencesProps.onUpdate(key, {
+      prompt: 'Общий промпт',
+      files: [
+        { key: 100, existingPath: 'characters/hero.png', view: 'full', note: 'Красная куртка', prompt: 'Не добавлять промпт отдельного файла' },
+        { key: 101, sourcePath: '/uploads/profile.jpg', view: 'other', note: 'Профиль', prompt: '' }
+      ]
+    });
+    form.ideaProps.onChange('Несохранённая идея');
+    form.lyricsProps.onChange('[Куплет 1]\nНесохранённая строка');
+    form.referencesProps.onAdd();
+    form = RenderHook();
+    const props = openGeneration(form);
+    expect(props.referenceInput).toEqual({
+      images: [
+        { path: '/project-a/source/characters/hero.png', label: 'В полный рост', note: 'Красная куртка' },
+        { path: '/uploads/profile.jpg', label: 'Другое', note: 'Профиль' }
+      ]
+    });
+    expect(props.referenceContextDrafts).toEqual({ idea: 'Несохранённая идея', lyrics: '[Куплет 1]\nНесохранённая строка' });
+    expect(props.referenceDescription).toBe('Красная куртка');
+    expect(props.initialPrompt).toBe('Создай изображение референса для музыкального клипа. Объект: Герой.');
+    expect(props.initialPrompt).not.toContain('Общий промпт');
+    expect(props.initialPrompt).not.toContain('Не добавлять промпт отдельного файла');
+    expect(api.save).not.toHaveBeenCalled();
+  });
+
   it('добавляет несколько кандидатов с их промптами, сохраняет вместе с формой и закрывает все сессии после Save', async () => {
     let form = await loaded();
     openGeneration(form).onAccepted({ id: 'first', path: '/tmp/first.png', prompt: 'Красная куртка' });

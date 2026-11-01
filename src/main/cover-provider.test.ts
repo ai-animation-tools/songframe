@@ -1,9 +1,11 @@
+import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { SettingsStore } from './settings';
 import { prepareProjectCover } from './cover-provider';
+import { createCodexCoverRunner } from './providers/codex/codex-cover-runner';
 import { registerTestAgentProvider, registerTestMediaProvider, TEST_AGENT_PROVIDER, TEST_PROVIDER, testAgentProviderInfo } from './testing/media-provider';
 
 const adapterRunner = vi.fn();
@@ -117,4 +119,33 @@ describe('выбор провайдера обложки', () => {
     expect(agent).not.toHaveBeenCalled();
     expect(paid).not.toHaveBeenCalled();
   });
+});
+
+it('включает опоры в SHA запроса и повторно проверяет их перед запуском агента', async () => {
+  const { input, settings } = fixture({ provider: TEST_AGENT_PROVIDER });
+  const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII=', 'base64');
+  const path = join(input.project, 'reference.png');
+  writeFileSync(path, bytes);
+  const references = [{ path, label: 'Олег', sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length }];
+  const run = vi.fn(async () => ({ path: 'reference.png' }));
+  const options = { settings, paid: vi.fn(), agent: vi.fn(() => run) };
+  const empty = await prepareProjectCover(input, options);
+  const prepared = await prepareProjectCover({ ...input, purpose: 'reference', references }, options);
+  expect(prepared.requestSha).not.toBe(empty.requestSha);
+  writeFileSync(path, Buffer.concat([bytes, Buffer.from([0])]));
+  await expect(prepared.generate(input.signal)).rejects.toThrow('Опорные изображения изменились');
+  expect(run).not.toHaveBeenCalled();
+});
+
+it('отклоняет слишком большой сериализованный контекст до выдачи подготовленного запроса', async () => {
+  const { input, settings } = fixture({ provider: TEST_AGENT_PROVIDER });
+  const createManager = vi.fn(() => {
+    throw new Error('Менеджер не должен запускаться до подтверждения.');
+  });
+  const agent = () => createCodexCoverRunner({ config: { provider: 'codex' }, createManager });
+  // Сам текст меньше 256 КиБ, но экранирование переносов делает JSON больше лимита транспорта.
+  await expect(prepareProjectCover({ ...input, prompt: '\n'.repeat(140 * 1024), purpose: 'reference' }, { settings, paid: vi.fn(), agent })).rejects.toThrow(
+    'Контекст изображения превышает'
+  );
+  expect(createManager).not.toHaveBeenCalled();
 });

@@ -1,6 +1,7 @@
 import { sourcesTexts } from '@shared/texts/sources';
 /** Общий цикл изображений: подготовка и согласование всегда предшествуют единственной отправке. */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReferenceImageGenerationInput } from '@shared/reference-image-generation';
 import type { CoverCrop, CoverGenerationApproval, CoverGenerationSession } from '@shared/cover-generation';
 import { MEDIA_PROVIDERS } from '@shared/media-providers';
 import { priceAllowsGeneration } from '@shared/generation-consent';
@@ -13,7 +14,7 @@ export interface ImageGenerationResult {
   prompt?: string;
 }
 
-export function useImageGeneration(project: string, mode: 'cover' | 'reference' = 'cover') {
+export function useImageGeneration(project: string, mode: 'cover' | 'reference' = 'cover', referenceInput?: ReferenceImageGenerationInput) {
   const api = mode === 'reference' ? window.api.referenceImages : window.api.cover;
   const { describeError, notify, aiAccess } = useApp();
   // Обложку готовит провайдер изображений проекта; выбранный агент на неё не влияет.
@@ -97,7 +98,10 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
     perform(async () => {
       if (id.current || !prompt.trim()) return null;
       if (currentBlock.current) throw new Error(currentBlock.current);
-      const created = await api.create(project, prompt.trim());
+      // Референс получает точный текст редактора и выбранные опоры; контракт обложки остаётся двухаргументным.
+      const created = await (mode === 'reference'
+        ? window.api.referenceImages.create(project, prompt, referenceInput ?? { images: [] })
+        : api.create(project, prompt.trim()));
       id.current = created.id;
       // Закрытие диалога может опередить create: полученный позднее каталог всё равно удаляется.
       if (!update(created)) {
@@ -107,15 +111,30 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
       return prepare(created.id);
     });
 
+  /** Новый текст или набор опор снимает согласование и кандидат до следующего render. */
+  const invalidate = (): boolean => {
+    if (mode !== 'reference' || locked.current || session?.status === 'generating' || accepting || referenceResult.current) return false;
+    const previous = id.current;
+    id.current = null;
+    accepted.current = false;
+    setSession(null);
+    setPreparedSha(null);
+    setError(null);
+    setAttachmentPending(false);
+    if (previous) void release(previous).catch((failure) => notify(describeError(failure), 'error'));
+    return true;
+  };
+
   // Подготовка никогда не отправляет запрос: каждый провайдер ждёт отдельного подтверждения промпта.
-  const next = (): Promise<CoverGenerationSession | null | undefined> => perform(async () => (session ? prepare(session.id) : null));
+  const next = (): Promise<CoverGenerationSession | null | undefined> =>
+    perform(async () => (session && id.current === session.id ? prepare(session.id) : null));
 
   const refreshQuote = next;
 
   const generate = (approval: CoverGenerationApproval): Promise<void | undefined> =>
     perform(async () => {
       if (referenceResult.current) return;
-      if (!session?.requestSha || preparedSha !== session.requestSha || approval.approvalToken !== session.approvalToken) return;
+      if (!session?.requestSha || id.current !== session.id || preparedSha !== session.requestSha || approval.approvalToken !== session.approvalToken) return;
       if (currentBlock.current) throw new Error(currentBlock.current);
       if (MEDIA_PROVIDERS[session.provider].paid && !priceAllowsGeneration(session.quote, approval.allowUnknownCost)) return;
       setPreparedSha(null);
@@ -131,7 +150,7 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
 
   const accept = (crop: CoverCrop | null, onAccepted: (result: ImageGenerationResult) => void | Promise<void>): Promise<void | undefined> =>
     perform(async () => {
-      if (!session?.image || session.status !== 'ready' || session.preparing) return;
+      if (!session?.image || id.current !== session.id || session.status !== 'ready' || session.preparing) return;
       setAccepting(true);
       try {
         const result =
@@ -180,5 +199,5 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
     };
   }, [api, sessionId, generating, update, describeError]);
 
-  return { session, working, accepting, attachmentPending, error, preparedSha, start, next, refreshQuote, generate, accept };
+  return { session, working, accepting, attachmentPending, error, preparedSha, start, next, refreshQuote, generate, accept, invalidate };
 }

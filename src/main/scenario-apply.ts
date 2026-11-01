@@ -12,6 +12,7 @@ import type { PythonLauncher } from './python-launcher';
 import { resolveStates, validateScenes, validateTreatment } from './scenario';
 import { readProjectMarker } from './status';
 import { sourceInputDigest } from './source-input-hash';
+import { descriptionManifest, planCastDescriptions } from './cast-description-owner';
 
 const FIXED_VIEWS = [
   'ROADMAP.md',
@@ -22,7 +23,7 @@ const FIXED_VIEWS = [
   'assets/shots/manifest.json',
   'plan/animatic/cards/manifest.json'
 ];
-const CANONICAL = ['plan/cast.json', 'plan/treatment.json', 'plan/scenes.json'];
+const CANONICAL = ['plan/cast.json', 'plan/treatment.json', 'plan/scenes.json', 'source/manifest.json'];
 const COPY_EXTENSIONS = new Set(['.json', '.md', '.txt', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.tif', '.tiff', '.avif', '.svg']);
 const SKIP_DIRECTORIES = new Set(['.git', '.local', '__pycache__', 'node_modules', 'cache']);
 interface BackupEntry {
@@ -261,11 +262,18 @@ export async function publishScenario(input: ScenarioPublication, options: { loc
     const duration = timing ? Number((JSON.parse(timing.toString('utf8')) as { duration_decoded?: number }).duration_decoded) : null;
     const problems = [...validateCast(input.after.cast), ...validateTreatment(input.after.treatment, duration)];
     if (problems.length) throw new Error(problems.join(' '));
+    const originalManifest = bytes(project, 'source/manifest.json');
+    const manifest = descriptionManifest(project);
+    const plan = planCastDescriptions(input.after.cast, manifest, 'cast');
     const candidates = new Map([
-      ['plan/cast.json', jsonBytes(input.after.cast)],
+      ['plan/cast.json', jsonBytes(plan.cast)],
       ['plan/treatment.json', jsonBytes(input.after.treatment)]
     ]);
+    if (plan.manifest && JSON.stringify(plan.manifest) !== JSON.stringify(manifest)) candidates.set('source/manifest.json', jsonBytes(plan.manifest));
     await verifyHashes(project, input.expectedHashes);
+    const currentManifest = bytes(project, 'source/manifest.json');
+    if (originalManifest === null ? currentManifest !== null : !currentManifest?.equals(originalManifest))
+      throw new Error(scenarioTexts.main.staleProjectFiles);
     publishChanges(project, options.localDir, changesFrom(project, candidates));
     return;
   }

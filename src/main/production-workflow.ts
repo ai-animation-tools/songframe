@@ -1,3 +1,4 @@
+import { readCast } from './cast';
 /** Один план и один пакет проходят подготовку предложений; проект меняется только отдельным Apply. */
 import { productionTexts } from '@shared/texts/production';
 import { createHash, randomUUID } from 'node:crypto';
@@ -335,7 +336,7 @@ export class ProductionWorkflow {
     // Тот же отпечаток, что пишет shot_workflow init: пакет, подготовленный по прежней постановке, дальше не продолжается молча.
     const currentScene = workflow && workflow.stage !== 'accepted' ? currentShotFingerprint(project, shot) : null;
     const sceneChanged = !!currentScene && workflow!.scene_sha256 !== currentScene;
-    const cast = json(join(project, 'plan/cast.json'));
+    const cast = readCast(project);
     const references: Record<string, unknown> = {};
     const allowed = new Set<string>();
     const addSource = (path: unknown): void => {

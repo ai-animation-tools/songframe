@@ -318,11 +318,39 @@ describe('Синхронизация новых изображений форм�
     expect(writeCast).not.toHaveBeenCalled();
   });
 
+  it('чистая правка описания из исходников обновляет проекцию без изменения выбранных видов и промптов', async () => {
+    await restoreCastWriter();
+    const next = input();
+    next.references[0].description = 'Единое новое описание';
+    const selected = cast().entities.find((item) => item.id === 'oleg')!.images;
+    const protectedFiles = ['heroes/oleg.png', 'heroes/oleg-face.png', 'heroes/oleg.prompt.txt', 'heroes/oleg-face.png.prompt.txt'];
+    const before = protectedFiles.map((name) => bytes(`source/${name}`));
+    saveSourcesWithCastImages(project, next, null);
+    expect(readManifest(project)!.references[0].description).toBe('Единое новое описание');
+    const raw = JSON.parse(bytes('plan/cast.json').toString()) as CastFile;
+    expect(raw.entities.find((item) => item.id === 'oleg')).toMatchObject({ appearance: 'Единое новое описание', images: selected });
+    expect(protectedFiles.map((name) => bytes(`source/${name}`))).toEqual(before);
+  });
+
+  it('сбой записи проекции откатывает также чистую правку описания без добавления файлов', async () => {
+    const actual = await vi.importActual<typeof CastModule>('./cast');
+    vi.mocked(writeCast).mockImplementation((...args) => {
+      actual.writeCast(...args);
+      throw new Error('Сбой после обновления описания');
+    });
+    const next = input();
+    next.references[0].description = 'Описание, которое нужно откатить';
+    const before = [bytes('source/manifest.json'), bytes('plan/cast.json'), bytes('source/heroes/oleg-face.png.prompt.txt')];
+    expect(() => saveSourcesWithCastImages(project, next, null)).toThrow('Сбой после обновления описания');
+    expect([bytes('source/manifest.json'), bytes('plan/cast.json'), bytes('source/heroes/oleg-face.png.prompt.txt')]).toEqual(before);
+  });
+
   it('обычное сохранение исходников не сбрасывает вручную выбранные изображения кастинга', async () => {
     await restoreCastWriter();
-    const savedCast = bytes('plan/cast.json');
+    const selected = cast().entities.map((entity) => ({ id: entity.id, images: [...entity.images] }));
     saveSourcesWithCastImages(project, input(), null);
-    expect(bytes('plan/cast.json')).toEqual(savedCast);
-    expect(writeCast).not.toHaveBeenCalled();
+    expect(cast().entities.map((entity) => ({ id: entity.id, images: entity.images }))).toEqual(selected);
+    expect(cast().entities.find((entity) => entity.id === 'oleg')!.appearance).toBe(readManifest(project)!.references[0].description);
+    expect(writeCast).toHaveBeenCalledTimes(1);
   });
 });

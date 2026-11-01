@@ -1,5 +1,5 @@
 /** Архивные попытки референсов проверяются без сети, оплаты и записи рабочих исходников. */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,7 @@ import { preparePaidCover, type PaidCoverOptions } from './cover-paid';
 import type { CoverGenerationApproval } from '@shared/cover-generation';
 import { CoverGeneration, type CoverGenerationOptions, type PreparedCoverCandidateInput } from './cover-generation';
 import { imageDimensions } from './keyframe-images';
+import { inspectReferenceImageInputs } from './reference-image-inputs';
 import { prepareProjectCover } from './cover-provider';
 import { SettingsStore } from './settings';
 import { registerTestAgentProvider, registerTestMediaProvider, TEST_AGENT_PROVIDER, TEST_PROVIDER, testPaidAdapter } from './testing/media-provider';
@@ -39,8 +40,11 @@ beforeEach(() => {
   project = join(root, 'project');
   mkdirSync(join(project, 'plan'), { recursive: true });
   mkdirSync(join(project, 'source/heroes'), { recursive: true });
-  writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: TEST_AGENT_PROVIDER, provider_selected: true } } }));
-  writeFileSync(join(project, 'source/manifest.json'), 'Сохранённый манифест');
+  writeFileSync(
+    join(project, 'plan/project.json'),
+    JSON.stringify({ name: 'Клип', generation: { image: { provider: TEST_AGENT_PROVIDER, provider_selected: true } } })
+  );
+  writeFileSync(join(project, 'source/manifest.json'), JSON.stringify({ schema_version: 1, idea: null, lyrics: null, references: [] }));
   writeFileSync(join(project, 'source/heroes/oleg.png'), 'Сохранённый референс');
   settings = new SettingsStore(join(root, 'local'));
   sessions = [];
@@ -98,7 +102,10 @@ it('сбой записи архива не оставляет генераци�
 });
 
 it('после сбоя архива принимает готовый оплаченный оригинал без повторной генерации', async () => {
-  writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: TEST_PROVIDER, provider_selected: true } } }));
+  writeFileSync(
+    join(project, 'plan/project.json'),
+    JSON.stringify({ name: 'Клип', generation: { image: { provider: TEST_PROVIDER, provider_selected: true } } })
+  );
   let receipt = '';
   const generate = vi.fn(async (input: PreparedCoverCandidateInput) => {
     png(join(input.workDir, 'original.png'));
@@ -130,9 +137,167 @@ it('после сбоя архива принимает готовый опла�
     rmSync(receipt, { recursive: true, force: true });
   }
   // После восстановления диска повторяется только сохранение выбора того же изображения.
-  expect(value.acceptReference(id)).toEqual({ id, path: image.path, prompt: 'Оплаченный референс' });
+  expect(value.acceptReference(id)).toEqual({ id, path: image.path, prompt: value.view(id).prompt });
   expect(readFileSync(image.path)).toEqual(original);
   expect(generate).toHaveBeenCalledTimes(1);
+});
+
+describe('Видимый промпт и опоры архивного референса', () => {
+  it('проверяет каждую выбранную опору без дедупликации, сохраняя порядок и исходные пути', () => {
+    const first = join(root, 'first.png');
+    const second = join(root, 'second.png');
+    const duplicate = join(root, 'duplicate.png');
+    png(first);
+    png(second, 900, 700);
+    cpSync(first, duplicate);
+    const input = {
+      images: [
+        { path: first, label: 'Первый вид' },
+        { path: second, label: 'Второй вид' },
+        { path: duplicate, label: 'Ещё первый вид' },
+        { path: first, label: 'Повтор выбора' }
+      ]
+    };
+    const images = inspectReferenceImageInputs(input);
+    expect(images.map(({ path, label }) => ({ path, label }))).toEqual(input.images);
+    expect(images.map(({ bytes }) => bytes)).toEqual([32, 32, 32, 32]);
+    expect(images[0].sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(images[0].sha256).not.toBe(images[1].sha256);
+    expect(images[0].sha256).toBe(images[2].sha256);
+    expect(images[0].sha256).toBe(images[3].sha256);
+    expect(existsSync(join(project, 'plan/reference-images'))).toBe(false);
+  });
+
+  it('связывает дедупликацию с проверенными SHA и передаёт точный промпт без скрытых описаний', async () => {
+    const first = join(root, 'first.png');
+    const duplicate = join(root, 'duplicate.png');
+    const second = join(root, 'second.png');
+    png(first);
+    cpSync(first, duplicate);
+    png(second, 900, 700);
+    const images = inspectReferenceImageInputs({
+      images: [
+        { path: first, label: 'Вид 1' },
+        { path: duplicate, label: 'Вид 2' },
+        { path: second, label: 'Вид 3' }
+      ]
+    });
+    const prompt = '  Ручной текст\nОписание изображения 2 уже включено пользователем.\n';
+    const prepare = vi.fn(offline());
+    const value = create(prepare);
+    const session = value.create(project, prompt, { images });
+    expect(session.prompt).toBe(prompt);
+    expect(session.referenceImages?.map(({ sha256, label }) => ({ sha256, label }))).toEqual([
+      { sha256: images[0].sha256, label: 'Вид 1 · Вид 2' },
+      { sha256: images[2].sha256, label: 'Вид 3' }
+    ]);
+    await value.prepare(session.id);
+    expect(prepare.mock.calls[0][0].prompt).toBe(prompt);
+    expect(prepare.mock.calls[0][0].references?.map(({ sha256 }) => sha256)).toEqual([images[0].sha256, images[2].sha256]);
+  });
+
+  it.each(['image', 'invalid'] as const)('при изменении прочитанного файла (%s) отказывает до архива и подготовки провайдера', (content) => {
+    const source = join(root, 'hero.png');
+    png(source);
+    const images = inspectReferenceImageInputs({ images: [{ path: source, label: 'Герой' }] });
+    if (content === 'image') png(source, 900, 700);
+    else writeFileSync(source, 'Файл заменён повреждённым изображением');
+    const prepare = vi.fn(offline());
+    const value = create(prepare);
+    expect(() => inspectReferenceImageInputs({ images })).toThrow(/изменились/);
+    expect(() => value.create(project, 'Номера опор из прочитанных байтов', { images })).toThrow(/изменились/);
+    expect(prepare).not.toHaveBeenCalled();
+    expect(existsSync(join(project, 'plan/reference-images'))).toBe(false);
+  });
+
+  it('фиксирует полные копии, объединяет одинаковые байты с подписями и использует снимок после изменения исходника', async () => {
+    const source = join(root, 'hero.png');
+    png(source);
+    const before = readFileSync(source);
+    const prepare = vi.fn(offline());
+    const value = create(prepare);
+    const visiblePrompt = '  Вид сбоку\nТолько этот отредактированный текст.\n';
+    writeFileSync(join(project, 'source/manifest.json'), 'Контекст не должен читаться при create');
+    writeFileSync(join(project, 'plan/scenes.json'), 'Повреждённый сценарий не нужен готовому промпту');
+    const session = value.create(project, visiblePrompt, {
+      images: [
+        { path: source, label: 'Герой спереди' },
+        { path: source, label: 'Утверждённая внешность' }
+      ]
+    });
+    expect(session.prompt).toBe(visiblePrompt);
+    expect(session.referenceImages).toHaveLength(1);
+    const snapshot = session.referenceImages![0];
+    expect(snapshot.label).toContain('Герой спереди');
+    expect(snapshot.label).toContain('Утверждённая внешность');
+    expect(snapshot).toMatchObject({ sha256: expect.stringMatching(/^[a-f0-9]{64}$/), bytes: before.length });
+    expect(readFileSync(snapshot.path)).toEqual(before);
+    writeFileSync(source, 'Пользователь изменил исходник после создания сессии');
+    await value.prepare(session.id);
+    expect(prepare.mock.calls[0][0].prompt).toBe(visiblePrompt);
+    const prepared = prepare.mock.calls[0][0].references!;
+    expect(prepared).toHaveLength(1);
+    expect(readFileSync(prepared[0].path)).toEqual(before);
+    expect(prepared[0].sha256).toBe(snapshot.sha256);
+    expect(prepared[0].path).toContain(join('references', 'R001.png'));
+  });
+
+  it.each(['archive', 'prepared'] as const)('отказывает до вызова генератора после изменения согласованной копии %s', async (changed) => {
+    const source = join(root, 'hero.png');
+    png(source);
+    const generate = vi.fn(async () => ({ path: 'unused.png' }));
+    let preparedInput: PreparedCoverCandidateInput | undefined;
+    const value = create(async (input) => {
+      preparedInput = input;
+      return { provider: TEST_AGENT_PROVIDER, model: null, quote: null, requestSha: 'sha', generate };
+    });
+    const session = value.create(project, 'Герой', { images: [{ path: source, label: 'Герой' }] });
+    const ready = await value.prepare(session.id);
+    const path = changed === 'archive' ? session.referenceImages![0].path : preparedInput!.references![0].path;
+    writeFileSync(path, Buffer.concat([readFileSync(path), Buffer.from('Изменение согласованной копии')]));
+    expect(() => value.generate(session.id, ready.requestSha!, approval(value, session.id))).toThrow(/изменились/);
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it('отказывает при отсутствующей или повреждённой опоре без создания архива', () => {
+    const source = join(root, 'bad.png');
+    const value = create(offline());
+    expect(() => value.create(project, 'Герой', { images: [{ path: source, label: 'Герой' }] })).toThrow(/опорные изображения/);
+    writeFileSync(source, 'Это не PNG');
+    expect(() => value.create(project, 'Герой', { images: [{ path: source, label: 'Герой' }] })).toThrow(/опорные изображения/);
+    expect(existsSync(join(project, 'plan/reference-images'))).toBe(false);
+    expect(readFileSync(source, 'utf8')).toBe('Это не PNG');
+  });
+
+  it('хранит пути опор относительно архива и сохраняет их после переноса', async () => {
+    const source = join(root, 'hero.png');
+    png(source);
+    const before = readFileSync(source);
+    const value = create(offline());
+    const session = value.create(project, 'Герой', { images: [{ path: source, label: 'Герой' }] });
+    await launch(value, session.id);
+    value.acceptReference(session.id);
+    await value.close(session.id);
+    const archive = join(project, 'plan/reference-images', session.id);
+    const receipt = JSON.parse(readFileSync(join(archive, 'session.json'), 'utf8'));
+    expect(receipt.referenceImages).toHaveLength(1);
+    expect(receipt.referenceImages[0].path).toBe('references/R001.png');
+    expect(JSON.stringify(receipt)).not.toContain(project);
+    const moved = join(root, 'moved-reference');
+    cpSync(archive, moved, { recursive: true });
+    expect(readFileSync(join(moved, receipt.referenceImages[0].path))).toEqual(before);
+    expect(readFileSync(source)).toEqual(before);
+  });
+
+  it('допускает создание без опор и не подмешивает остальные картинки проекта', async () => {
+    const prepare = vi.fn(offline());
+    const value = create(prepare);
+    const session = value.create(project, 'Герой');
+    expect(session.referenceImages).toEqual([]);
+    await value.prepare(session.id);
+    expect(prepare.mock.calls[0][0].references).toEqual([]);
+    expect(existsSync(join(prepare.mock.calls[0][0].workDir, 'references'))).toBe(false);
+  });
 });
 
 describe('Генерация архивного референса', () => {
@@ -148,7 +313,7 @@ describe('Генерация архивного референса', () => {
     expect(image).toMatchObject({ width: 1200, height: 800 });
     const original = readFileSync(image.path);
     const accepted = value.acceptReference(id);
-    expect(accepted).toEqual({ id, path: image.path, prompt: 'Полный вид героя «&»\nСохранить детали' });
+    expect(accepted).toEqual({ id, path: image.path, prompt: value.view(id).prompt });
     expect(value.acceptReference(id)).toEqual(accepted);
     expect(crop).not.toHaveBeenCalled();
     expect(readFileSync(accepted.path)).toEqual(original);
@@ -258,7 +423,10 @@ describe('Генерация архивного референса', () => {
   });
 
   it('ошибка платной отправки расходует согласие, новый prepare не наследует разрешение неизвестной цены', async () => {
-    writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ generation: { image: { provider: TEST_PROVIDER, provider_selected: true } } }));
+    writeFileSync(
+      join(project, 'plan/project.json'),
+      JSON.stringify({ name: 'Клип', generation: { image: { provider: TEST_PROVIDER, provider_selected: true } } })
+    );
     const generate = vi.fn(async () => {
       throw new Error('Ошибка отправки');
     });

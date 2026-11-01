@@ -9,6 +9,7 @@ import type { CoverCandidateInput, CoverCandidateRunner, PreparedCoverCandidate 
 import { agentAdapter } from './providers';
 import type { SettingsStore } from './settings';
 import { assertAiSelection } from './ai-access';
+import { checkedCoverReferences } from './cover-reference-inputs';
 
 interface Options {
   settings: SettingsStore;
@@ -31,17 +32,20 @@ export async function prepareProjectCover(input: CoverCandidateInput, options: O
   const settings = readProjectSettings(input.project).generation?.image;
   if (!isMediaProvider(settings?.provider, 'image')) throw new Error(sourcesTexts.main.imageProviderRequired({ titles: mediaProviderTitles('image') }));
   const provider = settings.provider;
-  if (!MEDIA_PROVIDERS[provider].executor) return options.paid(input, provider);
+  const references = checkedCoverReferences(input.references);
+  const frozen = { ...input, ...(references.length ? { references } : {}) };
+  if (!MEDIA_PROVIDERS[provider].executor) return options.paid(frozen, provider);
   // Провайдер-агент: пустая проектная модель означает настройки самой программы, как и при генерации опор.
   const config = options.settings.getImageAgent(provider, settings.model);
   const runner = (options.agent ?? adapterCover)(provider, config);
+  runner.validateInput?.(frozen);
   return {
     provider,
     model: config.model ?? null,
     requestSha: createHash('sha256')
-      .update(JSON.stringify({ prompt: input.prompt, config, workDir: input.workDir }))
+      .update(JSON.stringify({ prompt: input.prompt, config, workDir: input.workDir, ...(references.length ? { references } : {}) }))
       .digest('hex'),
     quote: null,
-    generate: (signal) => runner({ ...input, signal })
+    generate: async (signal) => runner({ ...frozen, ...(references.length ? { references: checkedCoverReferences(references) } : {}), signal })
   };
 }

@@ -5,6 +5,8 @@
 import { useSyncExternalStore, type ReactElement } from 'react';
 import { Button, Paper, Stack, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import type { VideoReviewView } from '@shared/video-review';
+import { videoReviewTexts } from '@shared/texts/video-review';
 import type { Api } from '@shared/api';
 import type { AppState, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
 import { registerMediaProviderForTests } from '@shared/media-providers';
@@ -17,6 +19,7 @@ import { createDerivedScenario } from './derivedStories';
 import { keyframePackage, keyframeQuestion } from './keyframeStories';
 import { productionShot } from './productionQueueStories';
 import { workflowView } from './productionWorkflowStories';
+import { reviewView } from './videoReviewStories';
 import { createStoryApi, STORY_VIDEO_PATH, type StoryOptions } from './storybook';
 
 export const PAGE_PROJECT = DELIVERY_PROJECT;
@@ -24,6 +27,7 @@ export const PAGE_READ_ERROR = 'Не удалось прочитать сост�
 export const PAGE_ACTION_ERROR = 'Не удалось записать ответ: workflow.json пакета занят. Вопрос и материалы сохранены; повторите ответ.';
 /** Задание приёмки завершается через этот интервал: страница узнаёт итог только следующим опросом. */
 export const PAGE_ACCEPT_MS = 2500;
+export const PAGE_REVIEW_ERROR = 'Проверка видео не завершилась. Оригинал и опоры сохранены; повторите анализ.';
 const DATE = '2026-10-30T09:00:00.000Z';
 
 const appState: AppState = {
@@ -61,6 +65,8 @@ export interface ProductionPageModelOptions {
   firstRead?: 'ready' | 'delayed' | 'failed';
   /** Первая запись ответа завершается ошибкой без изменения снимка. */
   failFirstAction?: boolean;
+  /** Ошибка относится к первому завершению анализа каждого пакета, а не к чтению всей страницы. */
+  videoReview?: { failFirstRun?: boolean; runMs?: number };
 }
 
 interface PageModel {
@@ -70,6 +76,9 @@ interface PageModel {
   decisions: number;
   selections: number;
   accepts: number;
+  submissions: number;
+  reviewStarts: number;
+  reviewCancels: number;
   subscribe(listener: () => void): () => void;
   revision(): number;
 }
@@ -92,12 +101,13 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         version++;
         listeners.forEach((listener) => listener());
       };
-      const later = (ms: number, action: () => void, cancel = (): void => {}): void => {
+      const later = (ms: number, action: () => void, cancel = (): void => {}): ReturnType<typeof setTimeout> => {
         const timer = setTimeout(() => {
           timers.delete(timer);
           if (!disposed) action();
         }, ms);
         timers.set(timer, cancel);
+        return timer;
       };
       const wait = (ms: number): Promise<void> => new Promise((resolve) => later(ms, resolve, resolve));
       const model: PageModel = {
@@ -112,6 +122,9 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         decisions: 0,
         selections: 0,
         accepts: 0,
+        submissions: 0,
+        reviewStarts: 0,
+        reviewCancels: 0,
         subscribe(listener) {
           listeners.add(listener);
           return () => {
@@ -143,9 +156,48 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         touch(pkg);
         shot.attention = shot.packages.find((item) => item.pendingDecision)?.pendingDecision?.question ?? null;
       };
+      // Отчёт принадлежит пакету, поэтому выбор другого плана или повторное открытие не сбрасывают его.
+      const reviews = new Map<string, { view: VideoReviewView; runs: number; timer: ReturnType<typeof setTimeout> | null }>();
+      const reviewEntry = (pkg: PackageView) => {
+        let entry = reviews.get(pkg.dir);
+        if (!entry) {
+          entry = { view: { ...reviewView('idle'), frames: [], durationSeconds: null }, runs: 0, timer: null };
+          reviews.set(pkg.dir, entry);
+        }
+        return entry;
+      };
+      const reviewRunning = (view: VideoReviewView): boolean => view.status === 'preparing' || view.status === 'running';
+      const reviewSnapshot = (pkg: PackageView): VideoReviewView => {
+        const entry = reviewEntry(pkg);
+        const reason = !model.view.tools.python
+          ? videoReviewTexts.main.toolsMissing
+          : pkg.request?.kind !== 'video' ||
+              !['downloaded', 'edit_review', 'accepted'].includes(pkg.stage) ||
+              pkg.request.downloads.length !== 1 ||
+              !pkg.resultToken
+            ? videoReviewTexts.main.videoRequired
+            : !pkg.keyframes.some((frame) => frame.approved && frame.imagePath)
+              ? videoReviewTexts.main.referencesRequired
+              : [...reviews.values()].some(({ view }) => reviewRunning(view)) || model.jobs.some((job) => job.status === 'running')
+                ? videoReviewTexts.main.busy
+                : null;
+        return structuredClone({ ...entry.view, canStart: !reason, reason });
+      };
+      const cancelReviewTimer = (entry: ReturnType<typeof reviewEntry>): void => {
+        if (entry.timer !== null) {
+          clearTimeout(entry.timer);
+          timers.delete(entry.timer);
+          entry.timer = null;
+        }
+      };
       const derived = createDerivedScenario({ view: { project: PAGE_PROJECT } });
       const session = createStoryApi({
         production: {
+          submit: async () => {
+            model.submissions++;
+            publish();
+            throw new Error('Платная отправка не входит в сценарий проверки видео.');
+          },
           view: async (project) => {
             checked(project);
             model.reads++;
@@ -224,6 +276,43 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             return structuredClone(job);
           }
         },
+        videoReview: {
+          view: async (project, dir) => reviewSnapshot(find(project, dir).pkg),
+          start: async (project, dir) => {
+            const { pkg } = find(project, dir);
+            const snapshot = reviewSnapshot(pkg);
+            if (!snapshot.canStart) throw new Error(snapshot.reason ?? videoReviewTexts.main.busy);
+            const entry = reviewEntry(pkg);
+            entry.runs++;
+            model.reviewStarts++;
+            entry.view = { ...reviewView('preparing'), report: null, frames: [], durationSeconds: null, canStart: false };
+            publish();
+            // Таймеры принадлежат сессии истории и отменяются вместе с анализом; настоящий IPC не используется.
+            entry.timer = later(200, () => {
+              entry.view = { ...entry.view, status: 'running' };
+              entry.timer = later(options.videoReview?.runMs ?? 1800, () => {
+                entry.timer = null;
+                entry.view = reviewView(options.videoReview?.failFirstRun && entry.runs === 1 ? 'failed' : 'completed');
+                if (entry.view.status === 'failed') entry.view.error = PAGE_REVIEW_ERROR;
+                if (entry.view.report) entry.view.report.summary = `${pkg.shot}: ${entry.view.report.summary}`;
+                publish();
+              });
+              publish();
+            });
+            return reviewSnapshot(pkg);
+          },
+          cancel: async (project, dir) => {
+            const { pkg } = find(project, dir);
+            const entry = reviewEntry(pkg);
+            if (reviewRunning(entry.view)) {
+              cancelReviewTimer(entry);
+              entry.view = { ...entry.view, status: 'cancelled', error: videoReviewTexts.main.cancelled };
+              model.reviewCancels++;
+              publish();
+            }
+            return reviewSnapshot(pkg);
+          }
+        },
         jobs: { list: async () => structuredClone(model.jobs) },
         productionWorkflow: {
           // Подготовка агентом показана отдельной группой историй; здесь панель только читает состояние пакета.
@@ -252,6 +341,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           cancel();
         }
         timers.clear();
+        reviews.clear();
         listeners.clear();
       });
       return session;
@@ -285,7 +375,10 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
           ))}
           <Typography variant="caption" color="text.secondary" data-testid="production-model">
             Чтений: {model.reads}. Ответов: {model.decisions}. Выборов оригинала: {model.selections}. Утверждено опор: {approved.join(', ') || 'нет'}. Приёмок
-            комплекта: {model.accepts}. Отправок генерации: 0.
+            комплекта: {model.accepts}. Отправок генерации: {model.submissions}.
+          </Typography>
+          <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
+            Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.
           </Typography>
         </Stack>
       </Paper>

@@ -1,6 +1,7 @@
 /** Исполнитель обложки Codex: фиксированный промпт, явная модель и временный проект без запуска настоящего агента. */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { AgentEvent, AgentJob, AgentSettings, AgentStartInput } from '@shared/agents';
@@ -76,4 +77,72 @@ describe('обложка Codex', () => {
     await expect(runner({ workDir, project: root, prompt: 'Обложка', signal: AbortSignal.abort() })).rejects.toThrow('Генерация обложки остановлена.');
     expect(calls).toEqual([]);
   });
+});
+
+it('передаёт Codex опоры того же объекта приватными копиями и требует использовать их в image_gen', async () => {
+  const source = join(root, 'original.png');
+  const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII=', 'base64');
+  writeFileSync(source, bytes);
+  const references = [{ path: source, label: 'Олег: лицо', sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length }];
+  const calls: Call[] = [];
+  const runner = createCodexCoverRunner({ config: { provider: 'codex' }, createManager: fakeManager('{"path":"reference.png"}', calls) });
+  await runner({
+    workDir,
+    project: root,
+    prompt: 'Тот же Олег. Стиль: объёмная анимация.',
+    purpose: 'reference',
+    references,
+    signal: new AbortController().signal
+  });
+  const context = JSON.parse(calls[0].input.context!);
+  expect(context.userPrompt).toBe('Тот же Олег. Стиль: объёмная анимация.');
+  expect(context.referenceImages).toEqual([{ ...references[0], path: 'references/01.png' }]);
+  expect(readFileSync(join(workDir, context.referenceImages[0].path))).toEqual(bytes);
+  expect(readFileSync(source)).toEqual(bytes);
+  expect(calls[0].input.prompt).toContain('передай их встроенному image_gen как изображения-референсы');
+  expect(calls[0].input.prompt).toContain('Сохрани внешность');
+  expect(calls[0].input.prompt).not.toContain('квадратную обложку');
+});
+
+it('отклоняет изменённые байты согласованной опоры до запуска Codex', async () => {
+  const source = join(root, 'changed.png');
+  const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII=', 'base64');
+  writeFileSync(source, bytes);
+  const calls: Call[] = [];
+  const runner = createCodexCoverRunner({ config: { provider: 'codex' }, createManager: fakeManager('{"path":"reference.png"}', calls) });
+  await expect(
+    runner({
+      workDir,
+      project: root,
+      prompt: 'Олег',
+      purpose: 'reference',
+      references: [{ path: source, label: 'Лицо', sha256: 'a'.repeat(64), bytes: bytes.length }],
+      signal: new AbortController().signal
+    })
+  ).rejects.toThrow('Опорные изображения изменились');
+  expect(calls).toEqual([]);
+});
+
+// Финальный редактор владеет описаниями опор: адаптер сохраняет его байты и не переносит текст в метаданные.
+it.each([
+  ['без описаний', '  Сохрани внешность Олега.\r\nСтиль: объёмная анимация.  '],
+  ['с описаниями', '  Сохрани внешность Олега.\r\n\r\nОписания выбранных опор:\r\n1. Шрам над левой бровью.\r\n2. Синяя куртка.  '],
+  ['после ручной правки', '  Пользователь заменил весь промпт.\r\nТолько силуэт, без куртки.\n  ']
+])('передаёт финальный промпт референса Codex дословно: %s', async (_mode, prompt) => {
+  const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII=', 'base64');
+  const references = ['Опора 1', 'Опора 2'].map((label, index) => {
+    const path = join(root, `original-${index + 1}.png`);
+    writeFileSync(path, bytes);
+    return { path, label, sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length };
+  });
+  const calls: Call[] = [];
+  const runner = createCodexCoverRunner({ config: { provider: 'codex' }, createManager: fakeManager('{"path":"reference.png"}', calls) });
+  await runner({ workDir, project: root, prompt, purpose: 'reference', references, signal: new AbortController().signal });
+  expect(calls).toHaveLength(1);
+  expect(JSON.parse(calls[0].input.context!)).toEqual({
+    userPrompt: prompt,
+    referenceImages: references.map((image, index) => ({ ...image, path: `references/0${index + 1}.png` }))
+  });
+  expect(calls[0].input.prompt).not.toContain('Шрам над левой бровью');
+  expect(calls[0].input.prompt).not.toContain('Синяя куртка');
 });

@@ -17,6 +17,8 @@ export const castTexts = {
     fileDamaged: commonTexts.project.castDamaged,
     referencesMissing: ({ ids }: { ids: string[] }) =>
       `В исходниках есть референсы без сущности в кастинге: ${ids.join(', ')}. Нажмите «Дополнить из исходников».`,
+    descriptionFromSources: ({ ids }: { ids: string }) =>
+      `Для объектов ${ids} показано общее описание из исходников. Сохранённая копия в кастинге обновится при сохранении.`,
     manifestMissing: 'Нет source/manifest.json: сначала загрузите исходники.',
     entityStructureInvalid: 'cast.json: неверная структура сущности.',
     propertiesInvalid: 'cast.json: неверный словарь свойств.',
@@ -40,6 +42,8 @@ export const castTexts = {
   role: 'Роль в сюжете',
   rolePlaceholder: 'главный герой и рассказчик; самоуверенный водитель',
   appearance: 'Внешность и неизменные правила',
+  sharedDescriptionHint: 'Общее описание с референсом с тем же кодом на странице «Исходники». Изменения передаются при сохранении.',
+  localDescriptionHint: 'Собственное описание объекта: референса с таким кодом в исходниках нет.',
   worldAppearancePlaceholder: 'Общие условия клипа, которые не меняются',
   appearancePlaceholder: 'Только то, что видно на референсах и следует из идеи',
   initialState: 'Начальное состояние (до первого события сюжета)',
@@ -102,6 +106,7 @@ export const castTexts = {
   sourcesRequired: 'Сначала загрузите исходники.',
   saveFirst: 'Сначала сохраните правки.',
   supplement: 'Дополнить из исходников',
+  supplementHint: '«Дополнить из исходников» обновляет данные объектов, сохраняя выбранные изображения и основной вид.',
   create: 'Создать из исходников',
   propertyCodeRequired: commonTexts.stateProperty.codeRequired,
   propertyCodeInvalid: commonTexts.stateProperty.codeInvalid,

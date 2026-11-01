@@ -51,7 +51,9 @@ const api: Api = {
     close: (id) => ipcRenderer.invoke('cover:close', id)
   },
   referenceImages: {
-    create: (project, prompt) => ipcRenderer.invoke('referenceImages:create', project, prompt),
+    inspect: (input) => ipcRenderer.invoke('referenceImages:inspect', input),
+    context: (project, drafts) => ipcRenderer.invoke('referenceImages:context', project, drafts),
+    create: (project, prompt, input) => ipcRenderer.invoke('referenceImages:create', project, prompt, input),
     prepare: (id) => ipcRenderer.invoke('referenceImages:prepare', id),
     generate: (id, requestSha, approval) => ipcRenderer.invoke('referenceImages:generate', id, requestSha, approval),
     view: (id) => ipcRenderer.invoke('referenceImages:view', id),

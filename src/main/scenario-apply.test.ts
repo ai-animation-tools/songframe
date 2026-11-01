@@ -113,6 +113,56 @@ describe('публикация сценария', () => {
     await expect(publishScenario(input, { localDir, launcher: fakeLauncher() })).rejects.toThrow('source/manifest.json');
   });
 
+  it('принятая правка treatment публикует общее описание вместе с cast, сохраняя прочие исходники', async () => {
+    const manifest = {
+      schema_version: 1,
+      references: [
+        {
+          id: 'hero',
+          description: 'Прежнее описание',
+          prompt: 'heroes/prompt.txt',
+          files: [{ path: 'heroes/hero.png', sha256: 'file', bytes: 5, view: 'front', note: 'Оставить' }]
+        }
+      ],
+      cover: { path: 'cover.png' },
+      updated_at: 'прежде'
+    };
+    write('source/manifest.json', json(manifest));
+    write('source/heroes/prompt.txt', 'Исходный промпт');
+    const input = publication('treatment');
+    input.expectedHashes['source/manifest.json'] = sourceInputDigest(project);
+    input.after.cast = { ...cast, entities: cast.entities.map((entity) => ({ ...entity, appearance: 'Общая утверждённая внешность' })) };
+    const media = [read('source/heroes/hero.png'), read('source/heroes/prompt.txt')];
+    const launcher = fakeLauncher();
+    await publishScenario(input, { localDir, launcher });
+    const current = JSON.parse(read('source/manifest.json').toString());
+    expect(current.references[0]).toEqual({ ...manifest.references[0], description: 'Общая утверждённая внешность' });
+    expect(current.cover).toEqual(manifest.cover);
+    expect(JSON.parse(read('plan/cast.json').toString()).entities[0].appearance).toBe('Общая утверждённая внешность');
+    expect([read('source/heroes/hero.png'), read('source/heroes/prompt.txt')]).toEqual(media);
+    expect(launcher.run).not.toHaveBeenCalled();
+  });
+
+  it('ошибка публикации treatment откатывает canonical описание, cast и treatment одним набором', async () => {
+    write('source/manifest.json', json({ schema_version: 1, references: [{ id: 'hero', description: 'До Apply' }] }));
+    const input = publication('treatment');
+    input.expectedHashes['source/manifest.json'] = sourceInputDigest(project);
+    input.after.cast = { ...cast, entities: cast.entities.map((entity) => ({ ...entity, appearance: 'После Apply' })) };
+    const before = [read('source/manifest.json'), read('plan/cast.json'), read('plan/treatment.json')];
+    const actual = localFiles.writeAtomicBytes;
+    let fail = true;
+    vi.spyOn(localFiles, 'writeAtomicBytes').mockImplementation((path, data, mode) => {
+      actual(path, data, mode);
+      if (fail && path === join(project, 'source/manifest.json')) {
+        fail = false;
+        throw new Error('Сбой публикации общего описания');
+      }
+    });
+    await expect(publishScenario(input, { localDir, launcher: fakeLauncher() })).rejects.toThrow('Сбой публикации общего описания');
+    expect([read('source/manifest.json'), read('plan/cast.json'), read('plan/treatment.json')]).toEqual(before);
+    expect(existsSync(pendingPath())).toBe(false);
+  });
+
   it('первый проход публикует только пару и не обращается к Python', async () => {
     const input = publication('treatment');
     input.after.cast = { ...cast, entities: cast.entities.map((entity) => ({ ...entity, role: 'Главный герой' })) };

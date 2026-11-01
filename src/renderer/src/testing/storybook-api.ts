@@ -26,6 +26,8 @@ export function unconfiguredStoryApi(): Api {
       close: async () => unconfigured('cover.close')
     },
     referenceImages: {
+      inspect: async () => unconfigured('referenceImages.inspect'),
+      context: async () => unconfigured('referenceImages.context'),
       create: async () => unconfigured('referenceImages.create'),
       prepare: async () => unconfigured('referenceImages.prepare'),
       generate: async () => unconfigured('referenceImages.generate'),

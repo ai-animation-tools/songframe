@@ -100,6 +100,7 @@ export interface SourceReference {
   kind: ReferenceKind;
   name: string;
   short_name: string;
+  /** Общее описание внешности; связанный по ID кастинг использует этот текст как источник appearance. */
   description: string;
   files: ReferenceFile[];
   /** Общий промпт референса; не относится автоматически к отдельным изображениям. */
@@ -272,6 +273,7 @@ export interface CastEntity {
   name: string;
   short_name: string;
   role: string;
+  /** Для связанного референса — управляемая проекция его description; без референса описание принадлежит сущности. */
   appearance: string;
   /** Пути изображений внутри source; первый основной для карточек. */
   images: string[];

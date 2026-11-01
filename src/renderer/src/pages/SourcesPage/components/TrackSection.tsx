@@ -35,9 +35,9 @@ export function TrackSection({ track, trackNew, fileUrl, onPick, onClear, onDrop
           {sourcesTexts.trackRequired}
         </Typography>
       ) : null}
-      {/* Управление воспроизведением и удалением выбора остаётся вне кликабельной области загрузки. */}
+      {/* Управление воспроизведением остаётся вне области загрузки. Её доступное имя включает весь видимый текст для голосового управления. */}
       <FileDropZone
-        label={sourcesTexts.uploadTrack}
+        label={`${sourcesTexts.uploadTrack}. ${sourcesTexts.trackFileMessage} ${sourcesTexts.trackFileHint}`}
         kind="audio"
         onFiles={onDrop}
         onPick={onPick}

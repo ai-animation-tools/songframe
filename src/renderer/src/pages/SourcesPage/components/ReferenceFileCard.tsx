@@ -79,6 +79,7 @@ export function ReferenceFileCard({ file, referenceName, fileUrl, onUpdate, onRe
           value={file.note}
           onChange={(e) => onUpdate({ note: e.target.value })}
           placeholder={sourcesTexts.imageDescriptionPlaceholder}
+          helperText={sourcesTexts.imageNoteHint}
         />
         <Stack spacing={1}>
           {file.promptError ? <ReferencePromptError error={file.promptError} onRetry={onRetryPrompt} /> : null}
@@ -91,6 +92,7 @@ export function ReferenceFileCard({ file, referenceName, fileUrl, onUpdate, onRe
             value={file.prompt}
             onChange={(e) => onUpdate({ prompt: e.target.value })}
             placeholder={sourcesTexts.imagePromptPlaceholder}
+            helperText={sourcesTexts.imagePromptHint}
           />
         </Stack>
       </Box>

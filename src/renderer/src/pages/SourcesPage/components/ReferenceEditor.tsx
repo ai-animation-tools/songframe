@@ -13,6 +13,7 @@ import { ReferenceFileCard } from './ReferenceFileCard';
 import { ReferenceImageGenerateButton } from '../../../components/ReferenceImageGenerateButton';
 import { AiProblemAlert } from '../../../components/AiProblemAlert';
 import { FileDropZone } from '../../../components/FileDropZone';
+import { LinkedText } from '../../../components/LinkedText';
 
 interface Props {
   reference: ReferenceForm;
@@ -137,6 +138,7 @@ export function ReferenceEditor({
             value={reference.description}
             onChange={(e) => onUpdate({ description: e.target.value })}
             placeholder={sourcesTexts.entityDescriptionPlaceholder}
+            helperText={<LinkedText text={sourcesTexts.entityDescriptionHint} />}
           />
           {reference.files.map((file) => (
             <ReferenceFileCard
@@ -155,7 +157,7 @@ export function ReferenceEditor({
             </Typography>
           ) : null}
           <FileDropZone
-            label={sourcesTexts.pickReferenceImages({ name: reference.name })}
+            label={`${sourcesTexts.pickReferenceImages({ name: reference.name })}. ${sourcesTexts.referenceFilesMessage} ${sourcesTexts.referenceFilesHint}`}
             kind="image"
             multiple
             onFiles={onDropFiles}

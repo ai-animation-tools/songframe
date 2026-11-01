@@ -2,11 +2,29 @@ import { commonTexts } from '@shared/texts/common';
 import { sourcesTexts } from '@shared/texts/sources';
 /** Общий диалог сохраняет согласования обложки и принимает референс целиком, без квадратного кадрирования. */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Box, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
+  Box,
+  Checkbox,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  Stack,
+  TextField,
+  Typography
+} from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import type { ReferenceImageContextDrafts, ReferenceImageOption } from '@shared/reference-image-generation';
 import type { CoverCrop, CoverGenerationSession } from '@shared/cover-generation';
 import { MEDIA_PROVIDERS, mediaProviderInfo } from '@shared/media-providers';
 import { canAgreeToUnknownCost, formatCredits, priceAllowsGeneration, priceNotice } from '@shared/generation-consent';
@@ -17,6 +35,11 @@ import { ActionButton } from './ActionButton';
 import { AgentButton } from './AgentButton';
 import { AiProblemAlert } from './AiProblemAlert';
 import { useImageGeneration, type ImageGenerationResult } from '../hooks/useImageGeneration';
+import { useReferenceImageSupports } from '../hooks/useReferenceImageSupports';
+import { useReferenceImageComposer } from '../hooks/useReferenceImageComposer';
+import { ReferenceImageComposer } from './ReferenceImageComposer';
+import { ImageThumbnail } from './ImageThumbnail';
+import { ImageGallery } from './ImageGallery';
 import { CoverCropEditor } from './CoverCropEditor';
 import { centeredCrop } from './imageCrop';
 
@@ -26,17 +49,32 @@ interface Props {
   mode?: 'cover' | 'reference';
   target?: string;
   initialPrompt?: string;
+  referenceInput?: { images: ReferenceImageOption[] };
+  referenceContextDrafts?: ReferenceImageContextDrafts;
+  referenceDescription?: string;
   acceptedHint?: string;
   onAccepted: (result: ImageGenerationResult) => void | Promise<void>;
   onClose: () => void;
 }
 
-export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target, initialPrompt, acceptedHint, onAccepted, onClose }: Props): ReactElement {
+export function ImageGenerateDialog({
+  project,
+  idea = '',
+  mode = 'cover',
+  target,
+  initialPrompt,
+  referenceInput,
+  referenceContextDrafts,
+  referenceDescription = '',
+  acceptedHint,
+  onAccepted,
+  onClose
+}: Props): ReactElement {
   const reference = mode === 'reference';
   const { aiAccess } = useApp();
   // Обложку готовит провайдер изображений проекта; выбранный агент на неё не влияет.
   const blockedReason = aiActionProblem(aiAccess, 'image');
-  const [prompt, setPrompt] = useState(
+  const [coverPrompt, setCoverPrompt] = useState(
     () =>
       initialPrompt ??
       (idea.trim()
@@ -44,8 +82,30 @@ export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target
           `Создай выразительную квадратную обложку музыкального клипа.\n\nИдея клипа:\n${idea.trim()}`
         : '')
   );
+  // Исходный список сохраняется целиком: дедупликация сессии не должна убирать доступные флажки.
+  const [referenceOptions] = useState(() => referenceInput?.images ?? []);
+  const [selectedImages, setSelectedImages] = useState(() => referenceOptions.map((_image, index) => index));
+  const selectedOptions = referenceOptions.filter((_image, index) => selectedImages.includes(index));
+  const supports = useReferenceImageSupports(reference, selectedOptions);
+  const composer = useReferenceImageComposer({
+    enabled: reference,
+    project,
+    basePrompt: initialPrompt ?? '',
+    description: referenceDescription,
+    supportNotes: supports.notes,
+    drafts: referenceContextDrafts
+  });
+  const prompt = reference ? composer.prompt : coverPrompt;
+  const selectedInput = supports.input;
   const [crop, setCrop] = useState<CoverCrop | null>(null);
-  const { session, working, accepting, attachmentPending, error, preparedSha, start, next, refreshQuote, generate, accept } = useImageGeneration(project, mode);
+  const { session, working, accepting, attachmentPending, error, preparedSha, start, next, refreshQuote, generate, accept, invalidate } = useImageGeneration(
+    project,
+    mode,
+    reference ? selectedInput : undefined
+  );
+  const [gallery, setGallery] = useState<{ key: string; index: number; images: { imagePath: string; label: string }[] } | null>(null);
+  // При ответе create галерея старого набора закрывается до обновления внутреннего индекса.
+  const galleryKey = JSON.stringify({ session: session?.id ?? null, images: referenceOptions });
   const [agreedToken, setAgreedToken] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<CoverGenerationSession | null>(null);
   const alive = useRef(true);
@@ -66,6 +126,64 @@ export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target
   }, [reference, imagePath, width, height]);
 
   const generating = session?.status === 'generating';
+  const editingBlocked = working || generating || accepting || attachmentPending;
+  const changeReference = (action: () => void): void => {
+    if (editingBlocked || !invalidate()) return;
+    setConfirmation(null);
+    setAgreedToken(null);
+    setGallery(null);
+    action();
+  };
+  const supportImages = (images: { path: string; label: string }[], selectable: boolean): ReactElement | null =>
+    reference ? (
+      <Stack component="section" aria-label={sourcesTexts.referenceSupports} spacing={1}>
+        {!selectable && <Typography variant="subtitle2">{sourcesTexts.referenceSupports}</Typography>}
+        <Typography variant="body2" color="text.secondary">
+          {selectable
+            ? images.length
+              ? sourcesTexts.referenceSelectImages
+              : sourcesTexts.referenceSupportsEmpty
+            : images.length
+              ? sourcesTexts.referenceSupportsFixed
+              : sourcesTexts.referenceNoSelectedImages}
+        </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 1, minWidth: 0 }}>
+          {images.map((image, index) => (
+            <Stack key={`${image.path}:${index}`} spacing={0.5} sx={{ minWidth: 0 }}>
+              <ImageThumbnail
+                path={image.path}
+                label={image.label}
+                onOpen={() => setGallery({ key: galleryKey, index, images: images.map((item) => ({ imagePath: item.path, label: item.label })) })}
+              />
+              {selectable ? (
+                <FormControlLabel
+                  sx={{ m: 0, alignItems: 'flex-start', '& .MuiFormControlLabel-label': { overflowWrap: 'anywhere', minWidth: 0 } }}
+                  label={sourcesTexts.referenceUseImage({ label: image.label })}
+                  control={
+                    <Checkbox
+                      checked={selectedImages.includes(index)}
+                      disabled={editingBlocked}
+                      onChange={(_event, checked) =>
+                        changeReference(() => setSelectedImages((current) => (checked ? [...current, index] : current.filter((value) => value !== index))))
+                      }
+                    />
+                  }
+                />
+              ) : (
+                <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>
+                  {image.label}
+                </Typography>
+              )}
+            </Stack>
+          ))}
+        </Box>
+        {selectable && images.length > 0 && selectedOptions.length === 0 && (
+          <Typography variant="body2" color="text.secondary">
+            {sourcesTexts.referenceNoSelectedImages}
+          </Typography>
+        )}
+      </Stack>
+    ) : null;
   const preparing = working || !!session?.preparing;
   // Платный провайдер показывает цену и требует её подтверждения; агент-исполнитель обозначается своим знаком.
   const info = session ? MEDIA_PROVIDERS[session.provider] : null;
@@ -91,7 +209,14 @@ export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target
     paid && prepared && quote?.verdict === 'ok'
       ? sourcesTexts.generationCostLabel({ action: actionLabel, credits: formatCredits(quote.credits) })
       : actionLabel;
-  const generationDisabled = attachmentPending || Boolean(blockedReason) || preparing || generating || !!blockedQuote || (!session && !prompt.trim());
+  const generationDisabled =
+    attachmentPending ||
+    Boolean(blockedReason) ||
+    preparing ||
+    generating ||
+    !!blockedQuote ||
+    (!session && !prompt.trim()) ||
+    (reference && (!composer.ready || !supports.ready));
   // Причины блокировки для подсказок; недоступность исполнителя AgentButton показывает сам, обычной кнопке её передаём явно.
   const waitReason = preparing
     ? sourcesTexts.waitRequestPreparation
@@ -111,6 +236,8 @@ export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target
     (attachmentPending ? sourcesTexts.referenceAttachPending : null) ??
     waitReason ??
     quoteReason ??
+    (reference && !supports.ready ? (supports.error ?? sourcesTexts.referenceSupportsLoading) : null) ??
+    (reference && !composer.ready ? (composer.loading ? sourcesTexts.referenceContextLoading : sourcesTexts.referenceContextUnavailable) : null) ??
     (!session && !prompt.trim() ? (reference ? sourcesTexts.enterReferencePrompt : sourcesTexts.enterCoverPrompt) : null);
   const acceptReason = preparing
     ? sourcesTexts.waitPreparation
@@ -154,7 +281,7 @@ export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target
       <Dialog
         open
         fullWidth
-        maxWidth="md"
+        maxWidth={reference ? 'lg' : 'md'}
         onClose={accepting ? undefined : onClose}
         aria-labelledby="cover-generation-title"
         PaperProps={{ sx: { maxHeight: 'calc(100% - 32px)' } }}
@@ -170,24 +297,116 @@ export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target
             )}
             <Typography variant="body2" color="text.secondary">
               {session
-                ? sourcesTexts.promptSessionFixed
+                ? reference
+                  ? sourcesTexts.referenceContextFixed
+                  : sourcesTexts.promptSessionFixed
                 : reference
                   ? sourcesTexts.referencePromptHint
                   : idea.trim()
                     ? sourcesTexts.ideaAddedToPrompt
                     : sourcesTexts.ideaMissingForPrompt}
             </Typography>
+            {reference && supports.loading && (
+              <Typography role="status" variant="body2">
+                {sourcesTexts.referenceSupportsLoading}
+              </Typography>
+            )}
+            {reference && supports.error && (
+              <Alert severity="error">
+                <Stack spacing={1} alignItems="flex-start">
+                  <Typography variant="body2">{supports.error}</Typography>
+                  {!supports.restartRequired && (
+                    <ActionButton
+                      startIcon={<RefreshIcon />}
+                      onClick={supports.retry}
+                      disabled={editingBlocked}
+                      disabledReason={sourcesTexts.referenceConstructorBusy}
+                    >
+                      {sourcesTexts.referenceSupportsRetry}
+                    </ActionButton>
+                  )}
+                </Stack>
+              </Alert>
+            )}
+            {reference && (
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 2fr)' },
+                  gap: 2,
+                  alignItems: 'start',
+                  '& > *': { minWidth: 0 }
+                }}
+              >
+                <Accordion
+                  disableGutters
+                  variant="outlined"
+                  defaultExpanded={false}
+                  slotProps={{ transition: { unmountOnExit: true } }}
+                  sx={{ '&:before': { display: 'none' } }}
+                >
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Box sx={{ minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography variant="subtitle2">{sourcesTexts.referenceSupports}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {sourcesTexts.referenceSelectedSupportCount({ selected: selectedOptions.length, total: referenceOptions.length })}
+                      </Typography>
+                    </Box>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Stack spacing={1}>
+                      {supportImages(referenceOptions, true)}
+                      <Box>
+                        <ActionButton
+                          startIcon={<RefreshIcon />}
+                          onClick={() => changeReference(supports.retry)}
+                          disabled={editingBlocked || supports.loading || supports.restartRequired || selectedOptions.length === 0}
+                          disabledReason={
+                            supports.restartRequired
+                              ? sourcesTexts.referenceSupportsRestartRequired
+                              : editingBlocked
+                                ? sourcesTexts.referenceConstructorBusy
+                                : selectedOptions.length === 0
+                                  ? sourcesTexts.referenceNoSelectedImages
+                                  : sourcesTexts.referenceSupportsLoading
+                          }
+                        >
+                          {sourcesTexts.referenceSupportsRetry}
+                        </ActionButton>
+                      </Box>
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+                <ReferenceImageComposer
+                  composer={composer}
+                  description={referenceDescription}
+                  disabled={editingBlocked || supports.loading}
+                  onChange={changeReference}
+                />
+              </Box>
+            )}
             <TextField
               label={reference ? sourcesTexts.referenceImagePrompt : sourcesTexts.coverPrompt}
-              value={session?.prompt ?? prompt}
-              onChange={(event) => setPrompt(event.target.value)}
+              value={reference ? prompt : (session?.prompt ?? prompt)}
+              onChange={(event) => (reference ? changeReference(() => composer.edit(event.target.value)) : setCoverPrompt(event.target.value))}
               multiline
-              minRows={3}
-              maxRows={7}
+              minRows={reference ? 10 : 3}
+              maxRows={reference ? 24 : 7}
               fullWidth
-              slotProps={{ input: { readOnly: !!session || preparing } }}
-              helperText={session ? sourcesTexts.promptRetryFixed : sourcesTexts.promptEditable}
+              slotProps={{ input: { readOnly: reference ? editingBlocked : !!session || preparing } }}
+              helperText={
+                reference
+                  ? sourcesTexts.referenceCharacterCount({ count: Array.from(prompt).length })
+                  : session
+                    ? sourcesTexts.promptRetryFixed
+                    : sourcesTexts.promptEditable
+              }
             />
+            {reference && (
+              <Typography variant="caption" color="text.secondary">
+                {sourcesTexts.referenceRequestInvalidated}
+              </Typography>
+            )}
             {session && (
               <Stack spacing={0.5}>
                 <Typography variant="body2">
@@ -344,6 +563,7 @@ export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target
               maxRows={10}
               slotProps={{ input: { readOnly: true } }}
             />
+            {supportImages(confirmation.referenceImages ?? [], false)}
             <Typography variant="body2">
               {sourcesTexts.executorModel({ provider: confirmationInfo?.title, model: confirmation.model ?? confirmationInfo?.defaultModelLabel })}
             </Typography>
@@ -355,6 +575,9 @@ export function ImageGenerateDialog({ project, idea = '', mode = 'cover', target
           </Stack>
         )}
       </ConfirmationDialog>
+      {gallery !== null && gallery.key === galleryKey && gallery.index < gallery.images.length && (
+        <ImageGallery images={gallery.images} initialIndex={gallery.index} kind={sourcesTexts.referenceSupports} onClose={() => setGallery(null)} />
+      )}
     </>
   );
 }

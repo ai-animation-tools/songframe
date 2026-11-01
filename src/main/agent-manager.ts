@@ -34,7 +34,7 @@ interface Options {
   adapter?: (provider: AgentProvider) => AgentAdapter;
 }
 
-const TEXT_LIMIT = 256 * 1024;
+export const TEXT_LIMIT = 256 * 1024;
 const LOG_LIMIT = 12000;
 function hash(text: string | Buffer): string {
   return createHash('sha256').update(text).digest('hex');

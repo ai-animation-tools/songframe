@@ -12,6 +12,7 @@ import { WORLD } from '../constants';
 import type { CastImageOption } from '../types';
 import { CastEntityIdentityFields } from './CastEntityIdentityFields';
 import { CastEntityImages } from './CastEntityImages';
+import { LinkedText } from '../../../components/LinkedText';
 
 interface CastEntityCardProps {
   entity: CastEntity;
@@ -27,6 +28,8 @@ interface CastEntityCardProps {
   onRemove: () => void;
   onGenerate: () => void;
   generationDisabledReason?: string | null;
+  /** Общее описание есть только при совпадении кода сущности с референсом исходников. */
+  hasSharedDescription?: boolean;
 }
 
 /** Карточка объединяет сведения о сущности, её изображения и редактор начального состояния. */
@@ -43,7 +46,8 @@ export function CastEntityCard({
   onRename,
   onRemove,
   onGenerate,
-  generationDisabledReason
+  generationDisabledReason,
+  hasSharedDescription = false
 }: CastEntityCardProps): ReactElement {
   const thumb = entity.images[0] ? window.api.shell.fileUrl(imagePaths[entity.images[0]] ?? '') : undefined;
   const stateCount = Object.keys(entity.initial_state).length;
@@ -122,6 +126,7 @@ export function CastEntityCard({
             value={entity.appearance}
             onChange={(e) => onUpdate({ appearance: e.target.value })}
             placeholder={entity.kind === WORLD ? castTexts.worldAppearancePlaceholder : castTexts.appearancePlaceholder}
+            helperText={hasSharedDescription ? <LinkedText text={castTexts.sharedDescriptionHint} /> : castTexts.localDescriptionHint}
           />
           <CastEntityImages images={entity.images} imagePaths={imagePaths} imageOptions={imageOptions} onChange={(images) => onUpdate({ images })} />
           <AiProblemAlert kinds={['image']} />

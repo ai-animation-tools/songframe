@@ -44,7 +44,7 @@ export function CoverSection({ coverSrc, onPick, onRemove, onDrop, onGenerate }:
       ) : null}
       {/* Отдельная область не перехватывает действие удаления и подтверждение. */}
       <FileDropZone
-        label={sourcesTexts.uploadCover}
+        label={`${sourcesTexts.uploadCover}. ${sourcesTexts.coverFileMessage} ${sourcesTexts.coverFileHint}`}
         kind="image"
         onFiles={onDrop}
         onPick={onPick}

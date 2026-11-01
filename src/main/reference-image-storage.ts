@@ -7,6 +7,7 @@ import type { SourceManifest, SourcesInput } from '@shared/types';
 import { DEFAULT_SOURCE_KINDS } from '@shared/types';
 import { referenceImageTexts as texts } from '@shared/texts/reference-images';
 import { normalizeCast, readCast, writeCast } from './cast';
+import { projectCastDescriptions } from './cast-description-owner';
 import { imageExtensionMatches } from './keyframe-images';
 import { writeAtomicBytes, writeLocalJson } from './local-files';
 import { readManifest, saveSources, sha256File, validateKinds } from './sources';
@@ -23,24 +24,25 @@ export function saveSourcesWithCastImages(project: string, input: SourcesInput, 
     // Сначала снимают использование в кастинге: сохранение исходников не должно оставлять битые ссылки.
     if (cast.entities.some((entity) => entity.images.some((path) => known.has(path) && !kept.has(path)))) throw new Error(texts.imageInUse);
   }
-  // Резерв нужен только при совместной публикации нового вида в source и cast.
+  // Любая запись описания может менять проекцию cast, даже без новых изображений.
   // Reflink по возможности сохраняет большой трек без полного физического копирования.
-  const synchronizing = !!cast?.entities.some((entity) => input.references.some((ref) => ref.id === entity.id && ref.files.some((file) => file.sourcePath)));
+  const synchronizing = !!cast;
   const backup = synchronizing ? mkdtempSync(join(tmpdir(), 'songframe-source-save-')) : null;
   const source = join(project, 'source');
+  const sourceExisted = existsSync(source);
   const castPath = join(project, 'plan/cast.json');
   const oldCast = backup ? readFileSync(castPath) : null;
   let copied = false;
   let keepBackup = false;
   try {
     if (backup) {
-      cpSync(source, join(backup, 'source'), { recursive: true, mode: constants.COPYFILE_FICLONE });
+      if (sourceExisted) cpSync(source, join(backup, 'source'), { recursive: true, mode: constants.COPYFILE_FICLONE });
       copied = true;
     }
     const manifest = saveSources(project, input, ffprobe);
     if (!cast) return manifest;
-    let changed = false;
-    for (const entity of cast.entities) {
+    const projected = projectCastDescriptions(cast, manifest);
+    for (const entity of projected.entities) {
       const old = new Set(previous?.references.find((ref) => ref.id === entity.id)?.files.map((file) => file.path) ?? []);
       const incoming = input.references.find((ref) => ref.id === entity.id);
       // Новый вид может занять имя удалённого невыбранного файла; его определяет ввод, а не только путь результата.
@@ -50,16 +52,15 @@ export function saveSourcesWithCastImages(project: string, input: SourcesInput, 
       for (const file of added)
         if (!entity.images.includes(file.path)) {
           entity.images.push(file.path);
-          changed = true;
         }
     }
-    if (changed) writeCast(project, cast, toolsRoot);
+    writeCast(project, projected, toolsRoot);
     return manifest;
   } catch (error) {
     if (backup && copied && oldCast) {
       try {
         rmSync(source, { recursive: true, force: true });
-        cpSync(join(backup, 'source'), source, { recursive: true, mode: constants.COPYFILE_FICLONE });
+        if (sourceExisted) cpSync(join(backup, 'source'), source, { recursive: true, mode: constants.COPYFILE_FICLONE });
         writeAtomicBytes(castPath, oldCast);
       } catch (restoreError) {
         keepBackup = true;

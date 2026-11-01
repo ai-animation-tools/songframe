@@ -96,6 +96,7 @@ export function SendRequestDialog({
   return (
     <ConfirmationDialog
       open={!!pkg}
+      explicitCancelOnly
       onClose={onClose}
       title={productionTexts.sendRequestDialog.title}
       cancelDisabled={sending}
@@ -136,7 +137,7 @@ export function SendRequestDialog({
               {productionInputLabel(input)}: {input.path}
             </Typography>
           ))}
-          <Typography variant="body2">{productionTexts.sendRequestDialog.paymentDescription({ providerTitle })}</Typography>
+          <Alert severity="warning">{productionTexts.sendRequestDialog.paymentDescription({ providerTitle })}</Alert>
           <Stack spacing={1}>
             {loading ? <Alert severity="info">{productionTexts.sendRequestDialog.checking({ providerTitle })}</Alert> : null}
             {error ? <Alert severity="error">{error}</Alert> : null}

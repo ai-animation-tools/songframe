@@ -41,6 +41,7 @@ export interface ImageModelOptions {
   generating?: boolean;
   failGenerationOnce?: boolean;
   failAttachmentOnce?: boolean;
+  delayAttachment?: boolean;
 }
 
 export interface ImageModelInspection {
@@ -56,6 +57,11 @@ let activeCreateRelease: (() => void) | null = null;
 export function completeImageStoryCreate(): void {
   activeCreateRelease?.();
 }
+let activeAttachmentRelease: (() => void) | null = null;
+/** Завершение привязки отделено от генерации, чтобы проверить защиту окна во время принятия. */
+export function completeImageStoryAttachment(): void {
+  activeAttachmentRelease?.();
+}
 let activeInspection: (() => ImageModelInspection) | null = null;
 export function imageStoryInspection(): ImageModelInspection {
   if (!activeInspection) throw new Error('Модель изображений не открыта.');
@@ -67,6 +73,7 @@ export function createImageModel(options: ImageModelOptions = {}): {
   api: ApiOverrides;
   inspect(): ImageModelInspection;
   completeCreate(): void;
+  completeAttachment(): void;
   dispose(): void;
 } {
   const inspection: ImageModelInspection = { contexts: [], closes: [], creates: [], generations: 0, attachments: [], sessions: [] };
@@ -76,6 +83,8 @@ export function createImageModel(options: ImageModelOptions = {}): {
   const pending = new Set<() => void>();
   let releaseCreate: (() => void) | null = null;
   const completeCreate = (): void => releaseCreate?.();
+  let releaseAttachment: (() => void) | null = null;
+  const completeAttachment = (): void => releaseAttachment?.();
   let disposed = false;
   let sequence = 0;
   let preparation = 0;
@@ -255,12 +264,24 @@ export function createImageModel(options: ImageModelOptions = {}): {
       ready(id);
       if (!accepted.has(id)) throw new Error('Сначала примите полный оригинал.');
       if (options.failAttachmentOnce && ++attachment === 1) throw new Error(IMAGE_ATTACHMENT_ERROR);
+      if (options.delayAttachment) {
+        await new Promise<void>((resolve) => {
+          pending.add(resolve);
+          releaseAttachment = () => {
+            pending.delete(resolve);
+            releaseAttachment = null;
+            resolve();
+          };
+        });
+        if (disposed) return;
+      }
       inspection.attachments.push(entityId);
     }
   };
   return {
     api: { cover, referenceImages },
     completeCreate,
+    completeAttachment,
     inspect: () => structuredClone({ ...inspection, sessions: [...sessions.values()] }),
     dispose() {
       disposed = true;
@@ -280,6 +301,7 @@ export function imageStoryOptions(options: ImageModelOptions = {}, selected = tr
       const model = createImageModel(options);
       activeInspection = model.inspect;
       activeCreateRelease = model.completeCreate;
+      activeAttachmentRelease = model.completeAttachment;
       const session = createStoryApi(model.api, { missingReferenceImageInspection: options.missingReferenceImageInspection });
       session.onCleanup(registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo));
       session.onCleanup(registerMediaProviderForTests(TEST_AGENT_PROVIDER, testAgentProviderInfo));
@@ -287,6 +309,7 @@ export function imageStoryOptions(options: ImageModelOptions = {}, selected = tr
       session.onCleanup(() => {
         if (activeInspection === model.inspect) activeInspection = null;
         if (activeCreateRelease === model.completeCreate) activeCreateRelease = null;
+        if (activeAttachmentRelease === model.completeAttachment) activeAttachmentRelease = null;
       });
       return session;
     }

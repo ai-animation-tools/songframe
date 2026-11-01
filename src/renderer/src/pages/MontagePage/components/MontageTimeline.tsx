@@ -230,7 +230,8 @@ export function MontageTimeline({
           top: 0,
           height: 74,
           bgcolor: selected === clip.id ? 'primary.main' : 'primary.dark',
-          color: '#fff',
+          // У primary разные фон и контрастный текст в светлой и тёмной темах, включая невыбранный оттенок dark.
+          color: 'primary.contrastText',
           border: '1px solid',
           borderColor: 'background.paper',
           borderRadius: 1,
@@ -359,8 +360,8 @@ export function MontageTimeline({
               pointerEvents: 'none'
             }}
           />
-          {/* Строки размещены на общей оси песни; длинный текст доступен в подсказке. */}
-          <Box aria-label={montageTexts.lyricLines} sx={{ position: 'relative', height: 32, width: timelineWidth, bgcolor: 'background.paper' }}>
+          {/* Строки размещены на общей оси песни; роль группы разрешает имя дорожки для экранного диктора. */}
+          <Box role="group" aria-label={montageTexts.lyricLines} sx={{ position: 'relative', height: 32, width: timelineWidth, bgcolor: 'background.paper' }}>
             {lyricLines.map((line) => (
               <Box
                 key={line.id}

@@ -17,8 +17,9 @@ interface Props {
 
 export function ReferenceKindDialog({ value, onChange, onClose, onAdd }: Props): ReactElement {
   return (
-    <Dialog open={!!value} onClose={() => onClose()} maxWidth="xs" fullWidth>
-      <DialogTitle>{sourcesTexts.newKind}</DialogTitle>
+    // Черновик типа живёт только до закрытия: отказаться от него можно явной «Отменой».
+    <Dialog open={!!value} disableEscapeKeyDown maxWidth="xs" fullWidth aria-labelledby="reference-kind-title">
+      <DialogTitle id="reference-kind-title">{sourcesTexts.newKind}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField

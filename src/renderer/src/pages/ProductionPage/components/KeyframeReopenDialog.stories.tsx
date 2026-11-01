@@ -5,6 +5,7 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { Alert, Stack, Typography } from '@mui/material';
 import ReplayIcon from '@mui/icons-material/Replay';
 import type { KeyframeNoteScope } from '@shared/types';
+import { expectImplicitCloseBlocked } from '../../../testing/dialogStories';
 import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
 import { ActionButton } from '../../../components/ActionButton';
@@ -158,7 +159,8 @@ export const SingleFrameConfirmed: Story = {
 };
 
 export const CancelAndEscape: Story = {
-  name: 'Отмена и Escape — без сохранения замечания',
+  name: 'Escape и фон сохраняют замечание · отказ только кнопкой',
+  tags: ['ci'],
   play: async (context) => {
     let dialog = await dialogOf(context);
     await userEvent.type(dialog.getByRole('textbox', { name: productionTexts.keyframeReopenDialog.note }), NOTE);
@@ -170,7 +172,9 @@ export const CancelAndEscape: Story = {
     await reopen(context);
     dialog = await dialogOf(context);
     await userEvent.type(dialog.getByRole('textbox', { name: productionTexts.keyframeReopenDialog.note }), NOTE);
-    await userEvent.keyboard('{Escape}');
+    await expectImplicitCloseBlocked(screenOf(context).getByRole('dialog'));
+    await expect(dialog.getByRole('textbox', { name: productionTexts.keyframeReopenDialog.note })).toHaveValue(NOTE);
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
     await expect(await canvas.findByText(CANCELLED)).toBeInTheDocument();
     await expect(canvas.getByRole('status')).toHaveTextContent(EMPTY_RESULT);
     await expect(screenOf(context).queryByRole('dialog')).not.toBeInTheDocument();

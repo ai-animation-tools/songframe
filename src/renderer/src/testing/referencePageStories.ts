@@ -84,6 +84,7 @@ export function referencePageInspection(): ImageModelInspection {
 
 export interface ReferencePageModelOptions {
   originalPrompt?: boolean;
+  generating?: boolean;
   missingReferenceImageInspection?: boolean;
   multipleImages?: boolean;
   emptySelection?: boolean;
@@ -119,7 +120,7 @@ export function referencePageOptions(page: 'sources' | 'cast', options: Referenc
     route: page === 'cast' ? '/project/cast?entity=hero' : '/project/sources',
     app: { state, online: true, aiAccess: imageStoryAccess(), agentProvider: 'codex' },
     createApi: () => {
-      const images = createImageModel();
+      const images = createImageModel({ generating: options.generating });
       inspection = images.inspect;
       let savedManifest = structuredClone(manifest);
       let savedCast = structuredClone(cast);

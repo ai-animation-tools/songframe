@@ -34,7 +34,8 @@ export function ProjectRenameDialog({ project, name, onClose }: Props): ReactEle
     }
   };
   return (
-    <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">
+    // Новое название хранится локально и теряется при размонтировании; отказ остаётся отдельной кнопкой.
+    <Dialog open onClose={busy || value !== name ? undefined : onClose} disableEscapeKeyDown={busy || value !== name} fullWidth maxWidth="sm">
       <Box
         component="form"
         onSubmit={(event) => {

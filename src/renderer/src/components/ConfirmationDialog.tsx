@@ -27,6 +27,8 @@ interface Props {
   /** Почему нельзя закрыть диалог сейчас, например во время операции. */
   cancelDisabledReason?: string | null;
   closeDisabled?: boolean;
+  /** Отказ от черновика или подготовленного запроса допускается только кнопкой отмены. */
+  explicitCancelOnly?: boolean;
   cancelLabel?: string;
   cancelAutoFocus?: boolean;
   extraActions?: ReactNode;
@@ -51,6 +53,7 @@ export function ConfirmationDialog({
   cancelDisabled = false,
   cancelDisabledReason,
   closeDisabled = false,
+  explicitCancelOnly = false,
   cancelLabel = commonTexts.cancel,
   cancelAutoFocus = false,
   extraActions,
@@ -60,7 +63,8 @@ export function ConfirmationDialog({
   return (
     <Dialog
       open={open}
-      onClose={closeDisabled ? undefined : onClose}
+      onClose={closeDisabled || explicitCancelOnly ? undefined : onClose}
+      disableEscapeKeyDown={closeDisabled || explicitCancelOnly}
       aria-labelledby={`${id}-title`}
       aria-describedby={description ? `${id}-description` : undefined}
       maxWidth="sm"

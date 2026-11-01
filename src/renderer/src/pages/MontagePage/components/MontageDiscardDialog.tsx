@@ -1,7 +1,7 @@
 import { montageTexts } from '@shared/texts/montage';
 import { SwapHoriz } from '@mui/icons-material';
 import type { ReactElement } from 'react';
-import { Typography } from '@mui/material';
+import { Alert } from '@mui/material';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 
 /** Открытие другого черновика не теряет несохранённый монтаж без отдельного решения. */
@@ -17,7 +17,7 @@ export function MontageDiscardDialog({ open, onClose, onContinue }: { open: bool
       confirmColor="error"
       cancelLabel={montageTexts.returnAndSave}
     >
-      <Typography>{montageTexts.replaceWarning}</Typography>
+      <Alert severity="warning">{montageTexts.replaceWarning}</Alert>
     </ConfirmationDialog>
   );
 }

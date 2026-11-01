@@ -3,7 +3,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 /** Параметры переноса результата в assets с сохранением выбранного монтажного участка. */
 import { FPS } from '@shared/video';
 import type { ReactElement } from 'react';
-import { Alert, Box, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Checkbox, FormControlLabel, MenuItem, Stack, TextField } from '@mui/material';
 import type { AcceptOptions } from '@shared/types';
 import type { AcceptTarget } from '../decisions';
 import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
@@ -26,6 +26,7 @@ export function AcceptResultDialog({
   return (
     <ConfirmationDialog
       open={!!target}
+      explicitCancelOnly
       onClose={onClose}
       title={productionTexts.acceptResultDialog.title({ shot: target?.shot ?? '' })}
       onConfirm={onConfirm}
@@ -106,9 +107,7 @@ export function AcceptResultDialog({
             />
           </Box>
         ) : null}
-        <Typography variant="caption" color="text.secondary">
-          {productionTexts.acceptResultDialog.consequences}
-        </Typography>
+        <Alert severity="info">{productionTexts.acceptResultDialog.consequences}</Alert>
       </Stack>
     </ConfirmationDialog>
   );

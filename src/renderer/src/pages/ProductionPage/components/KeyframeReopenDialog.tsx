@@ -21,6 +21,7 @@ export function KeyframeReopenDialog({
   return (
     <ConfirmationDialog
       open
+      explicitCancelOnly={!!note || scope !== 'following'}
       title={productionTexts.keyframeReopenDialog.title({ frame })}
       description={productionTexts.keyframeReopenDialog.description({ frame })}
       confirmLabel={productionTexts.keyframeReopenDialog.confirm}

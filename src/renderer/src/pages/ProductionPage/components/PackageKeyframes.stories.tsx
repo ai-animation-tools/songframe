@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { KeyframeReviewStory, keyframePackage } from '../../../testing/keyframeStories';
 import { STORY_IMAGE_PATH } from '../../../testing/storybook';
+import { expectImplicitCloseBlocked } from '../../../testing/dialogStories';
 import { PYTHON_REASON } from '../constants';
 import type { PackageView } from '@shared/types';
 
@@ -162,6 +163,8 @@ export const Reopen: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Вернуть на доработку' }));
     dialog = await screen.findByRole('dialog');
     await userEvent.type(within(dialog).getByRole('textbox'), 'Сохранить форму ворот.');
+    await expectImplicitCloseBlocked(dialog);
+    await expect(within(dialog).getByRole('textbox')).toHaveValue('Сохранить форму ворот.');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Вернуть на доработку' }));
     await canvas.findByText('Утверждение K01 снято; замечание сохранено. Остальные опоры сохранены.');
     await expect(canvas.getByText(/Опоры · утверждено 0 из 4/)).toBeInTheDocument();

@@ -282,7 +282,8 @@ export function ImageGenerateDialog({
         open
         fullWidth
         maxWidth={reference ? 'lg' : 'md'}
-        onClose={accepting ? undefined : onClose}
+        // Промпт, опоры и кандидат теряются при закрытии: отказ возможен только явной кнопкой «Отмена».
+        disableEscapeKeyDown
         aria-labelledby="cover-generation-title"
         PaperProps={{ sx: { maxHeight: 'calc(100% - 32px)' } }}
       >
@@ -402,11 +403,7 @@ export function ImageGenerateDialog({
                     : sourcesTexts.promptEditable
               }
             />
-            {reference && (
-              <Typography variant="caption" color="text.secondary">
-                {sourcesTexts.referenceRequestInvalidated}
-              </Typography>
-            )}
+            {reference && <Alert severity="info">{sourcesTexts.referenceRequestInvalidated}</Alert>}
             {session && (
               <Stack spacing={0.5}>
                 <Typography variant="body2">
@@ -482,9 +479,11 @@ export function ImageGenerateDialog({
                 {sourcesTexts.retryCoverHint}
               </Typography>
             )}
-            <Typography variant="body2" color="text.secondary">
-              {acceptedHint ?? sourcesTexts.acceptedCoverHint}
-            </Typography>
+            <Alert severity="info">{acceptedHint ?? sourcesTexts.acceptedCoverHint}</Alert>
+            <Alert severity="warning">
+              {reference ? sourcesTexts.cancelReferenceGenerationHint : sourcesTexts.cancelCoverGenerationHint}
+              {session && ` ${sourcesTexts.cancelExternalGenerationHint}`}
+            </Alert>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1, flexWrap: 'wrap' }}>
@@ -567,11 +566,11 @@ export function ImageGenerateDialog({
             <Typography variant="body2">
               {sourcesTexts.executorModel({ provider: confirmationInfo?.title, model: confirmation.model ?? confirmationInfo?.defaultModelLabel })}
             </Typography>
-            <Typography variant="body2">
+            <Alert severity={confirmationInfo?.paid ? 'warning' : 'info'}>
               {confirmationInfo?.paid
                 ? sourcesTexts.confirmPaidRequest({ credits: formatCredits(confirmation.quote?.credits) })
                 : sourcesTexts.confirmAccountGeneration({ provider: confirmationInfo?.title })}
-            </Typography>
+            </Alert>
           </Stack>
         )}
       </ConfirmationDialog>

@@ -2,6 +2,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { productionTexts } from '@shared/texts/production';
+import { commonTexts } from '@shared/texts/common';
+import { expectImplicitCloseBlocked } from '../../../testing/dialogStories';
 import { AcceptResultStory } from '../../../testing/acceptResultStories';
 
 const meta = {
@@ -89,7 +91,7 @@ export const ReplacementCancel: Story = {
     dialog = await open(canvasElement);
     await expect(dialog.getByRole('checkbox', { name: texts.replaceCheckbox })).not.toBeChecked();
     await expect(dialog.getByRole('button', { name: texts.replace })).toBeDisabled();
-    await userEvent.keyboard('{Escape}');
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
     await closed(canvasElement);
     await expect(within(canvasElement).getByText('Вызовы production.accept: 0.')).toBeInTheDocument();
   }
@@ -116,7 +118,7 @@ export const MissingToken: Story = {
     const confirm = dialog.getByRole('button', { name: texts.accept });
     await expect(confirm).toBeDisabled();
     await expect(confirm).toHaveAttribute('title', texts.resultUnconfirmed);
-    await userEvent.keyboard('{Escape}');
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
     await closed(canvasElement);
     await expect(within(canvasElement).getByText('Вызовы production.accept: 0.')).toBeInTheDocument();
   }
@@ -135,14 +137,17 @@ export const SpeechMissing: Story = {
   }
 };
 export const CancelEscape: Story = {
-  name: 'Escape · границы и скорость чистые при повторном открытии',
+  name: 'Escape сохраняет границы и скорость · явная отмена сбрасывает их',
   play: async ({ canvasElement }) => {
     let dialog = await open(canvasElement);
     await userEvent.clear(dialog.getByRole('spinbutton', { name: texts.cutStart }));
     await userEvent.type(dialog.getByRole('spinbutton', { name: texts.cutStart }), '1');
     await userEvent.clear(dialog.getByRole('textbox', { name: texts.speed }));
     await userEvent.type(dialog.getByRole('textbox', { name: texts.speed }), '0.8');
-    await userEvent.keyboard('{Escape}');
+    await expectImplicitCloseBlocked(within(canvasElement.ownerDocument.body).getByRole('dialog'));
+    await expect(dialog.getByRole('spinbutton', { name: texts.cutStart })).toHaveValue(1);
+    await expect(dialog.getByRole('textbox', { name: texts.speed })).toHaveValue('0.8');
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
     await closed(canvasElement);
     dialog = await open(canvasElement);
     await expect(dialog.getByRole('spinbutton', { name: texts.cutStart })).toHaveValue(0);
@@ -237,5 +242,27 @@ export const Running: Story = {
     await new Promise((resolve) => setTimeout(resolve, 1700));
     await expect(canvas.getByText('Принятый комплект: прежний результат.')).toBeInTheDocument();
     await expect(canvas.getByText('Вызовы production.accept: 0.')).toBeInTheDocument();
+  }
+};
+
+export const PreserveCutDraft: Story = {
+  name: 'Срез и согласие · Escape и фон сохраняют параметры',
+  tags: ['ci'],
+  args: { hasAsset: true },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    const dialog = await open(canvasElement);
+    await userEvent.clear(dialog.getByRole('spinbutton', { name: texts.cutStart }));
+    await userEvent.type(dialog.getByRole('spinbutton', { name: texts.cutStart }), '1');
+    await userEvent.click(dialog.getByRole('checkbox', { name: texts.replaceCheckbox }));
+    await expectImplicitCloseBlocked(screen.getByRole('dialog'));
+    await expect(dialog.getByRole('spinbutton', { name: texts.cutStart })).toHaveValue(1);
+    await expect(dialog.getByRole('checkbox', { name: texts.replaceCheckbox })).toBeChecked();
+    await expect(within(canvasElement).getByText('Принятый комплект: прежний результат.')).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
+    await closed(canvasElement);
+    const reopened = await open(canvasElement);
+    await expect(reopened.getByRole('spinbutton', { name: texts.cutStart })).toHaveValue(0);
+    await expect(reopened.getByRole('checkbox', { name: texts.replaceCheckbox })).not.toBeChecked();
   }
 };

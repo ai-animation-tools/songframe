@@ -32,7 +32,8 @@ export function AgentRetryDialog({ job, onClose }: { job: AgentJob; onClose(): v
     }
   };
   return (
-    <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">
+    // Несохранённый запрос живёт только в этом окне: случайное закрытие не должно его стирать.
+    <Dialog open onClose={busy || !!prompt || !!context ? undefined : onClose} disableEscapeKeyDown={busy || !!prompt || !!context} fullWidth maxWidth="sm">
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {agentProvider ? <AgentIcon provider={agentProvider} /> : null}
         {componentsTexts.agentRetry.title}

@@ -111,9 +111,9 @@ export function PackageResume({
             }}
           >
             <Typography variant="body2">{productionTexts.packageResume.notCreatedDescription({ title })}</Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
+            <Alert severity="warning" sx={{ mt: 1 }}>
               {productionTexts.packageResume.duplicateWarning}
-            </Typography>
+            </Alert>
           </ConfirmationDialog>
         </>
       ) : (

@@ -10,6 +10,7 @@ import { referenceImagePrompt } from '@shared/reference-image-generation';
 import type { ImageGenerationResult } from '../hooks/useImageGeneration';
 import {
   completeImageStoryCreate,
+  completeImageStoryAttachment,
   IMAGE_ATTACHMENT_ERROR,
   IMAGE_STORY_INPUT,
   IMAGE_STORY_IDEA,
@@ -24,6 +25,7 @@ import {
 } from '../testing/imageStories';
 import { ImageGenerateDialog } from './ImageGenerateDialog';
 import { ActionButton } from './ActionButton';
+import { expectImplicitCloseBlocked } from '../testing/dialogStories';
 
 function ImageStory({
   mode = 'cover',
@@ -141,6 +143,7 @@ async function generate(context: PlayContext): Promise<void> {
   await userEvent.click(
     within(confirmation).getByRole('button', { name: context.args.mode === 'reference' ? sourcesTexts.generateReferenceImage : sourcesTexts.generateCover })
   );
+  await screen.findByRole('dialog', { name: context.args.mode === 'reference' ? sourcesTexts.createReferenceImage : sourcesTexts.createCover });
 }
 
 async function candidate(context: PlayContext): Promise<void> {
@@ -288,6 +291,7 @@ export const ReferenceSupportNotes: Story = {
       await expect(input.label).not.toContain('Сохранить');
     }
     await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
     const manual = '  Только мой текст.\nСохранить лицо по выбранной картинке.  ';
     await userEvent.clear(prompt);
     await userEvent.type(prompt, manual);
@@ -509,6 +513,10 @@ export const PreparationFailure: Story = {
     await prepare(context);
     const screen = screenOf(context);
     await expect(await screen.findByText('Не удалось подготовить запрос. Повторите подготовку.')).toBeInTheDocument();
+    await preserveOnImplicitDismiss(context, async () => {
+      await expect(screen.getByText('Не удалось подготовить запрос. Повторите подготовку.')).toBeVisible();
+      await expect(imageStoryInspection()).toMatchObject({ closes: [], generations: 0 });
+    });
     await expect(await screen.findByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).not.toHaveAttribute('readonly');
     await expect(imageStoryInspection().generations).toBe(0);
     await prepare(context);
@@ -597,6 +605,13 @@ export const AttachmentRetry: Story = {
     await expect(await screen.findByText(IMAGE_ATTACHMENT_ERROR)).toBeInTheDocument();
     await expect(screen.getByRole('button', { name: sourcesTexts.more })).toBeDisabled();
     await expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled();
+    await preserveOnImplicitDismiss(context, async () => {
+      await expect(screen.getByText(IMAGE_ATTACHMENT_ERROR)).toBeVisible();
+      await expect(imageStoryInspection()).toMatchObject({ closes: [], generations: 1, attachments: [] });
+    });
+    await userEvent.click(screen.getByRole('button', { name: sourcesTexts.accept }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(imageStoryInspection()).toMatchObject({ generations: 1, attachments: ['character-oleg'] });
   }
 };
 
@@ -624,5 +639,164 @@ export const MissingReferenceImageInspection: Story = {
     await expect(await within(dialog).findByText(sourcesTexts.referenceSupportsRestartRequired)).toBeVisible();
     await expect(within(dialog).getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeDisabled();
     await expect(imageStoryInspection()).toMatchObject({ creates: [], generations: 0, sessions: [] });
+  }
+};
+
+/** Проверяем оба способа случайного закрытия отдельно: каждый обязан сохранить текущее состояние окна. */
+async function preserveOnImplicitDismiss(context: PlayContext, verify: () => Promise<void>): Promise<void> {
+  const screen = screenOf(context);
+  const title = context.args.mode === 'reference' ? sourcesTexts.createReferenceImage : sourcesTexts.createCover;
+  // Закрывающееся подтверждение держит основное окно aria-hidden до завершения Fade.
+  const dialog = await screen.findByRole('dialog', { name: title });
+  await expectImplicitCloseBlocked(dialog, verify);
+}
+
+export const ReferenceDraftExplicitCancellation: Story = {
+  tags: ['ci'],
+  name: 'Референс — Esc и фон сохраняют промпт и опоры до явной отмены',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    const supportName = sourcesTexts.referenceUseImage({ label: IMAGE_STORY_INPUT.images[0].label });
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: supportName })).toBeEnabled());
+    await userEvent.click(screen.getByRole('checkbox', { name: supportName }));
+    const prompt = screen.getByRole('textbox', { name: sourcesTexts.referenceImagePrompt });
+    await userEvent.clear(prompt);
+    await userEvent.type(prompt, 'Мой несохранённый промпт без опор.');
+    await preserveOnImplicitDismiss(context, async () => {
+      await expect(screen.getByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).toHaveValue('Мой несохранённый промпт без опор.');
+      await expect(screen.getByRole('checkbox', { name: supportName })).not.toBeChecked();
+      await expect(imageStoryInspection()).toMatchObject({ creates: [], generations: 0, closes: [] });
+    });
+    await expect(screen.getByText(sourcesTexts.cancelReferenceGenerationHint)).toBeVisible();
+    await expect(screen.getByText(sourcesTexts.referenceRequestInvalidated).closest('[role="alert"]')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: commonTexts.cancel }));
+    await expect(screen.queryByRole('dialog', { name: sourcesTexts.createReferenceImage })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Открыть генерацию' }));
+    await expect(screen.getByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).not.toHaveValue('Мой несохранённый промпт без опор.');
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    await expect(screen.getByRole('checkbox', { name: supportName })).toBeChecked();
+  }
+};
+
+async function waitingExplicitCancellation(context: PlayContext): Promise<void> {
+  await generate(context);
+  const screen = screenOf(context);
+  await waitFor(() => expect(imageStoryInspection().sessions[0]?.status).toBe('generating'));
+  const id = imageStoryInspection().sessions[0].id;
+  await preserveOnImplicitDismiss(context, async () => {
+    await expect(imageStoryInspection().sessions[0]).toMatchObject({ id, status: 'generating', prompt: imageStoryInspection().creates[0].prompt });
+    await expect(imageStoryInspection().closes).toEqual([]);
+    await expect(imageStoryInspection().generations).toBe(1);
+  });
+  await expect(screen.getByText(sourcesTexts.cancelExternalGenerationHint, { exact: false })).toBeVisible();
+  await userEvent.click(screen.getByRole('button', { name: commonTexts.cancel }));
+  await waitFor(() => expect(imageStoryInspection().closes).toEqual([id]));
+  await expect(imageStoryInspection().sessions).toHaveLength(0);
+  await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  await expect(screen.getByRole('img', { name: 'Сохранённое изображение' })).toBeVisible();
+}
+
+export const CoverWaitingExplicitCancellation: Story = {
+  tags: ['ci'],
+  name: 'Обложка — ожидание сохраняется при Esc и фоне, отменяется кнопкой',
+  parameters: { songframe: imageStoryOptions({ generating: true }) },
+  play: waitingExplicitCancellation
+};
+
+export const ReferenceWaitingExplicitCancellation: Story = {
+  ...CoverWaitingExplicitCancellation,
+  name: 'Референс — ожидание сохраняется при Esc и фоне, отменяется кнопкой',
+  args: { mode: 'reference' }
+};
+
+export const ReferenceCandidateExplicitAcceptance: Story = {
+  tags: ['ci'],
+  name: 'Референс — Esc и фон сохраняют кандидата, принятие закрывает окно',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    await candidate(context);
+    const screen = screenOf(context);
+    const id = imageStoryInspection().sessions[0].id;
+    await preserveOnImplicitDismiss(context, async () => {
+      await expect(screen.getByRole('img', { name: IMAGE_STORY_TARGET })).toBeVisible();
+      await expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled();
+      await expect(imageStoryInspection().sessions[0]).toMatchObject({ id, status: 'ready' });
+      await expect(imageStoryInspection()).toMatchObject({ closes: [], generations: 1, attachments: [] });
+    });
+    await userEvent.click(screen.getByRole('button', { name: sourcesTexts.accept }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(screen.getByText('Полный оригинал принят и добавлен к персонажу.')).toBeVisible();
+    await expect(imageStoryInspection()).toMatchObject({ generations: 1, attachments: ['character-oleg'] });
+  }
+};
+
+export const CoverCandidateExplicitCancellation: Story = {
+  tags: ['ci'],
+  name: 'Обложка — Esc и фон сохраняют кандидата до явной отмены',
+  play: async (context) => {
+    await candidate(context);
+    const screen = screenOf(context);
+    const id = imageStoryInspection().sessions[0].id;
+    await preserveOnImplicitDismiss(context, async () => {
+      await expect(screen.getByRole('img', { name: sourcesTexts.createdCoverAlt })).toBeVisible();
+      await expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled();
+      await expect(imageStoryInspection().closes).toEqual([]);
+    });
+    await userEvent.click(screen.getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(imageStoryInspection().closes).toEqual([id]));
+    await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await expect(screen.getByRole('img', { name: 'Сохранённое изображение' })).toBeVisible();
+  }
+};
+
+export const PreparedRequestExplicitCancellation: Story = {
+  tags: ['ci'],
+  name: 'Референс — Esc и фон сохраняют подготовку и согласование цены',
+  args: { mode: 'reference' },
+  play: async (context) => {
+    await prepare(context);
+    const screen = screenOf(context);
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    const prepared = imageStoryInspection().sessions[0];
+    await preserveOnImplicitDismiss(context, async () => {
+      await expect(imageStoryInspection().sessions[0]).toEqual(prepared);
+      await expect(imageStoryInspection()).toMatchObject({ closes: [], generations: 0 });
+      await expect(screen.getByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).toHaveValue(prepared.prompt);
+    });
+    await prepare(context);
+    const returned = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(returned).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(prepared.prompt);
+    await expect(imageStoryInspection().creates).toHaveLength(1);
+    await expect(imageStoryInspection().sessions[0].approvalToken).toBe(prepared.approvalToken);
+    await userEvent.click(within(returned).getByRole('button', { name: commonTexts.cancel }));
+    const mainDialog = await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
+    await userEvent.click(within(mainDialog).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(imageStoryInspection().closes).toEqual([prepared.id]));
+  }
+};
+
+export const AcceptingPreservesCandidate: Story = {
+  tags: ['ci'],
+  name: 'Референс — во время принятия недоступна отмена, Esc и фон сохраняют окно',
+  args: { mode: 'reference' },
+  parameters: { songframe: imageStoryOptions({ delayAttachment: true }) },
+  play: async (context) => {
+    await candidate(context);
+    const screen = screenOf(context);
+    await userEvent.click(screen.getByRole('button', { name: sourcesTexts.accept }));
+    await waitFor(() => expect(screen.getByRole('button', { name: commonTexts.cancel })).toBeDisabled());
+    await preserveOnImplicitDismiss(context, async () => {
+      await expect(screen.getByRole('button', { name: commonTexts.cancel })).toBeDisabled();
+      await expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeDisabled();
+      await expect(screen.getByRole('img', { name: IMAGE_STORY_TARGET })).toBeVisible();
+      await expect(imageStoryInspection()).toMatchObject({ closes: [], generations: 1, attachments: [] });
+    });
+    completeImageStoryAttachment();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(screen.getByText('Полный оригинал принят и добавлен к персонажу.')).toBeVisible();
+    await expect(imageStoryInspection()).toMatchObject({ generations: 1, attachments: ['character-oleg'] });
   }
 };

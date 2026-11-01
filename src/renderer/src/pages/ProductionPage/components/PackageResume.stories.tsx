@@ -1,6 +1,7 @@
 /** Продолжение существующей попытки и ручное выяснение исхода никогда не выполняют новую платную отправку. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { productionTexts } from '@shared/texts/production';
 import { RECEIVE_ERROR, receivingPackage, resultStoryOptions, ResumeStory } from '../../../testing/resultStories';
 
 const meta = {
@@ -117,6 +118,7 @@ export const NotCreated: Story = {
     const screen = within(canvasElement.ownerDocument.body);
     await userEvent.click(canvas.getByRole('button', { name: 'Задание не создано' }));
     let dialog = await screen.findByRole('dialog');
+    await expect(within(dialog).getByRole('alert')).toHaveTextContent(productionTexts.packageResume.duplicateWarning);
     await waitFor(() => expect(dialog).toBeVisible());
     await expect(within(dialog).getByText(/повторная отправка спишет кредиты ещё раз/)).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');

@@ -20,6 +20,7 @@ import {
   referencePageOptions
 } from '../../testing/referencePageStories';
 import { CastPage } from './CastPage';
+import { expectImplicitCloseBlocked } from '../../testing/dialogStories';
 
 const meta = { title: 'Страницы/Состав', component: CastPage, tags: ['!autodocs'], parameters: { songframe: referencePageOptions('cast') } } satisfies Meta<
   typeof CastPage
@@ -54,6 +55,15 @@ export const ReferenceIdentity: Story = {
     await expect(within(dialog).getByRole('checkbox', { name: sourcesTexts.referenceIdea })).not.toBeChecked();
     await expect(within(dialog).getByRole('checkbox', { name: sourcesTexts.referenceLyrics })).not.toBeChecked();
     await waitFor(() => expect(within(dialog).getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeEnabled());
+    // Общий генератор защищает подготовленный на странице кастинга текст и выбор той же сущности.
+    const promptBeforeDismiss = draft.value;
+    const castBeforeDismiss = referencePageSnapshot().cast;
+    await expectImplicitCloseBlocked(dialog, async () => {
+      await expect(draft).toHaveValue(promptBeforeDismiss);
+      await expect(within(dialog).getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: 'Спереди' }) })).toBeChecked();
+      await expect(referencePageInspection()).toMatchObject({ closes: [], generations: 0 });
+      await expect(referencePageSnapshot().cast).toEqual(castBeforeDismiss);
+    });
     await userEvent.click(within(dialog).getByRole('button', { name: sourcesTexts.generateReferenceImage }));
     const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
     const text = within(confirmation).getByRole<HTMLTextAreaElement>('textbox', { name: sourcesTexts.confirmedPrompt }).value;
@@ -66,6 +76,11 @@ export const ReferenceIdentity: Story = {
       images: [{ path: `${IMAGE_STORY_PROJECT}/source/${REFERENCE_PAGE_SAVED}`, label: 'Спереди' }]
     });
     await expect(referencePageInspection().generations).toBe(0);
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    await userEvent.click(await within(dialog).findByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(referencePageSnapshot().cast).toEqual(castBeforeDismiss);
+    await expect(canvas.getByRole('textbox', { name: castTexts.appearance })).toHaveValue(castBeforeDismiss.entities[0].appearance);
   }
 };
 

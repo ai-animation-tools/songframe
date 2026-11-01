@@ -2,7 +2,8 @@
 import { useState, type ComponentProps } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Alert, Stack } from '@mui/material';
-import { fn } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
+import { expectImplicitCloseBlocked } from '../testing/dialogStories';
 import { commonTexts } from '@shared/texts/common';
 import { storyAccess } from '../testing/commonStories';
 import type { StoryOptions } from '../testing/storybook';
@@ -64,5 +65,33 @@ export const Pending: Story = {
     cancelDisabledReason: commonTexts.waitForSaving,
     closeDisabled: true,
     description: 'Демонстрация блокировки во время записи. Для выхода переключите историю.'
+  }
+};
+
+export const ExplicitCancellation: Story = {
+  name: 'Подготовленный запрос · закрытие только явной отменой',
+  tags: ['ci'],
+  args: { explicitCancelOnly: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Открыть подтверждение' }));
+    const dialog = await screen.findByRole('dialog');
+    await expectImplicitCloseBlocked(dialog);
+    await expect(canvas.getByText('Решение ещё не принято.')).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(canvas.getByText('Отменено.')).toBeInTheDocument();
+  }
+};
+export const HarmlessEscape: Story = {
+  name: 'Обычное подтверждение · Escape отменяет без потерь',
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Открыть подтверждение' }));
+    const dialog = await screen.findByRole('dialog');
+    dialog.focus();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   }
 };

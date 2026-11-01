@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { productionTexts } from '@shared/texts/production';
+import { expectImplicitCloseBlocked } from '../../../testing/dialogStories';
 import { commonTexts } from '@shared/texts/common';
 import { SendRequestStory, sendRequestOptions } from '../../../testing/sendRequestStories';
 
@@ -74,7 +75,7 @@ export const InsufficientBalance: Story = {
     const dialog = await ready(context);
     await expect(dialog.getByRole('button', { name: labels.confirm })).toBeDisabled();
     await expect(dialog.queryByRole('button', { name: labels.agree })).not.toBeInTheDocument();
-    await expect(dialog.getByRole('alert')).toHaveTextContent(/Кредитов недостаточно/);
+    await expect(dialog.getByText(/Кредитов недостаточно/)).toBeInTheDocument();
     await counts(context, 1, 0);
   }
 };
@@ -196,21 +197,22 @@ export const SubmitPending: Story = {
     await expect(dialog.getByRole('button', { name: labels.confirm })).toBeDisabled();
     await expect(dialog.getByRole('button', { name: labels.refresh })).toBeDisabled();
     await expect(dialog.getByRole('button', { name: commonTexts.cancel })).toBeDisabled();
-    screenOf(context).getByRole('dialog').focus();
-    await userEvent.keyboard('{Escape}');
-    await expect(screenOf(context).getByRole('dialog')).toBeInTheDocument();
+    await expectImplicitCloseBlocked(screenOf(context).getByRole('dialog'));
     await counts(context, 1, 1);
   }
 };
 export const CancelAndReopen: Story = {
-  name: 'Escape и повторное открытие · согласие не сохраняется',
+  name: 'Escape и фон сохраняют согласие · явная отмена сбрасывает его',
+  tags: ['ci'],
   parameters: { songframe: sendRequestOptions({ quote: 'unknown' }) },
   play: async (context) => {
     let dialog = await ready(context);
     await userEvent.click(dialog.getByRole('button', { name: labels.agree }));
     // После согласия кнопка выключается и браузер снимает с неё фокус; проверяем Escape внутри модального окна.
-    screenOf(context).getByRole('dialog').focus();
-    await userEvent.keyboard('{Escape}');
+    await expectImplicitCloseBlocked(screenOf(context).getByRole('dialog'));
+    await expect(dialog.getByText(labels.agreed)).toBeInTheDocument();
+    await counts(context, 1, 0);
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
     await closed(context);
     await counts(context, 1, 0);
     await userEvent.click(screenOf(context).getByRole('button', { name: 'Открыть подтверждение' }));

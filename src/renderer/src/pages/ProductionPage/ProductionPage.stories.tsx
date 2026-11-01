@@ -1,6 +1,7 @@
 /** Целая страница «Производство»: настоящий опрос, выбор плана и пакета, якоря и переходы ответов на локальной модели API. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expectImplicitCloseBlocked } from '../../testing/dialogStories';
 import { commonTexts } from '@shared/texts/common';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import { productionTexts } from '@shared/texts/production';
@@ -8,7 +9,7 @@ import type { ShotProduction } from '@shared/types';
 import { ANCHORS } from '../../components/linkTargets';
 import { keyframePackage } from '../../testing/keyframeStories';
 import { preparedPackage, queuedPackage } from '../../testing/productionQueueStories';
-import { receivedPackage } from '../../testing/resultStories';
+import { receivingPackage, receivedPackage } from '../../testing/resultStories';
 import {
   longPageShots,
   PAGE_ACTION_ERROR,
@@ -302,6 +303,9 @@ export const AcceptResult: Story = {
     const confirm = dialog.getByRole('button', { name: texts.acceptResultDialog.replace });
     await expect(confirm).toBeDisabled();
     await userEvent.click(dialog.getByRole('checkbox', { name: texts.acceptResultDialog.replaceCheckbox }));
+    await expectImplicitCloseBlocked(screen.getByRole('dialog'));
+    await expect(dialog.getByRole('checkbox', { name: texts.acceptResultDialog.replaceCheckbox })).toBeChecked();
+    await expect(counts(context)).toHaveTextContent('Приёмок комплекта: 0.');
     // Выключенная кнопка обёрнута подсказкой причины: после отметки ищем заново включённую кнопку.
     await waitFor(() => expect(dialog.getByRole('button', { name: texts.acceptResultDialog.replace })).toBeEnabled());
     await userEvent.click(dialog.getByRole('button', { name: texts.acceptResultDialog.replace }));
@@ -496,5 +500,27 @@ export const VideoReviewNoPython: Story = {
     await expect(panel.getByRole('button', { name: videoReviewTexts.refresh })).toBeEnabled();
     await expect(reviewCounts(context)).toHaveTextContent('Проверок видео: 0. Отмен проверок: 0.');
     await expect(counts(context)).toHaveTextContent('Приёмок комплекта: 0. Отправок генерации: 0.');
+  }
+};
+
+export const UnknownSubmissionWarning: Story = {
+  name: 'Неизвестный исход отправки · заметное предупреждение о повторном списании',
+  tags: ['ci'],
+  parameters: {
+    songframe: options({
+      shots: () =>
+        baseShots({ stageLabel: 'Исход отправки неизвестен', attention: null, packages: [receivingPackage('submission_unknown', { unknown: true })] })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await userEvent.click(await screen.findByRole('button', { name: texts.packageResume.notCreated }, POLL_TIMEOUT));
+    const dialog = await screen.findByRole('dialog', { name: texts.packageResume.notCreatedTitle });
+    await expect(within(dialog).getByRole('alert')).toHaveTextContent(texts.packageResume.duplicateWarning);
+    dialog.focus();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
+    await expect(screen.getByRole('button', { name: texts.packageResume.notCreated })).toBeEnabled();
   }
 };

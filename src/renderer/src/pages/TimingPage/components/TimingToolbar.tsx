@@ -2,7 +2,7 @@ import { timingTexts } from '@shared/texts/timing';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
-import { Box, Chip, CircularProgress, Typography } from '@mui/material';
+import { Box, Chip, CircularProgress, FormControlLabel, Switch, Typography } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SaveIcon from '@mui/icons-material/Save';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
@@ -17,6 +17,8 @@ interface TimingToolbarProps {
   dirty: boolean;
   busy: boolean;
   generating: boolean;
+  manualMode?: boolean;
+  onManualModeChange?(manual: boolean): void;
   invalidBindings: boolean;
   canGenerate: boolean;
   /** Почему автоматическая разметка недоступна без правок (нет трека, текста или инструментов). */
@@ -35,6 +37,8 @@ export function TimingToolbar({
   dirty,
   busy,
   generating,
+  manualMode = false,
+  onManualModeChange,
   invalidBindings,
   canGenerate,
   generateBlockedReason,
@@ -65,6 +69,21 @@ export function TimingToolbar({
         )}
         {dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
       </Box>
+      {onManualModeChange && (
+        <FormControlLabel
+          sx={{ m: 0 }}
+          label={timingTexts.manualMode}
+          title={working ? timingTexts.manualModePending : undefined}
+          control={
+            <Switch
+              checked={manualMode}
+              disabled={working}
+              onChange={(_event, checked) => onManualModeChange(checked)}
+              slotProps={{ input: { role: 'switch' } }}
+            />
+          }
+        />
+      )}
       {/* Действия держатся одной группой справа: при переносе «Сохранить» остаётся последней справа. */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end', ml: 'auto' }}>
         <ActionButton

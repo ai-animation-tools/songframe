@@ -1,10 +1,10 @@
 import type { TimingLine, TimingSection } from '@shared/types';
 import { formatClock } from '../../format';
+import { timingWaveLayout, WAVE_TOP, WAVE_H, type TimingWaveLayout } from './timingWaveGeometry';
+export { WAVE_TOP, WAVE_H } from './timingWaveGeometry';
 
 const BINS_PER_SECOND = 100;
 const SECTION_H = 18;
-export const WAVE_TOP = 24;
-export const WAVE_H = 110;
 // Подписи времени занимают собственную полосу и не заходят на волну и нижний край канвы.
 const TIME_SCALE_H = 20;
 export const CANVAS_H = WAVE_TOP + WAVE_H + TIME_SCALE_H;
@@ -79,30 +79,44 @@ interface WaveformOptions {
   pps: number;
   time: number;
   mode: 'light' | 'dark';
+  layout?: TimingWaveLayout;
 }
 
 /** Рисуем только видимое окно: длинный трек не увеличивает размер канвы. */
-export function drawWaveform({ canvas, container, lines, sections, peaks, selected, pps, time, mode }: WaveformOptions): void {
+export function drawWaveform({
+  canvas,
+  container,
+  lines,
+  sections,
+  peaks,
+  selected,
+  pps,
+  time,
+  mode,
+  layout = timingWaveLayout(lines, pps)
+}: WaveformOptions): void {
   const width = container.clientWidth;
+  const { waveHeight, canvasHeight } = layout;
   const dpr = window.devicePixelRatio || 1;
-  if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(CANVAS_H * dpr)) {
+  if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(canvasHeight * dpr)) {
     canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(CANVAS_H * dpr);
+    canvas.height = Math.floor(canvasHeight * dpr);
   }
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const dark = mode === 'dark';
   ctx.fillStyle = dark ? '#15181d' : '#fafbfc';
-  ctx.fillRect(0, 0, width, CANVAS_H);
+  ctx.fillRect(0, 0, width, canvasHeight);
   const t0 = container.scrollLeft / pps;
   const toX = (t: number): number => (t - t0) * pps;
 
   // Части песни: полоса сверху.
   sections.forEach((section, index) => {
+    if (!Number.isFinite(section.start) || !Number.isFinite(section.end) || section.end <= section.start) return;
     const x1 = Math.max(0, toX(section.start));
     const x2 = Math.min(width, toX(section.end));
-    if (x2 <= 0 || x1 >= width) return;
+    if (x2 <= x1 || x2 <= 0 || x1 >= width) return;
     ctx.fillStyle = index % 2 ? (dark ? '#2a3140' : '#e3ebf5') : dark ? '#222834' : '#eef2f7';
     ctx.fillRect(x1, 0, x2 - x1, SECTION_H);
     ctx.fillStyle = dark ? '#c8d0dc' : '#3b4754';
@@ -116,7 +130,7 @@ export function drawWaveform({ canvas, container, lines, sections, peaks, select
   });
 
   // Волна по min/max бинам.
-  const mid = WAVE_TOP + WAVE_H / 2;
+  const mid = WAVE_TOP + waveHeight / 2;
   ctx.strokeStyle = dark ? '#3a4552' : '#d5dbe3';
   ctx.beginPath();
   ctx.moveTo(0, mid);
@@ -135,32 +149,52 @@ export function drawWaveform({ canvas, container, lines, sections, peaks, select
         if (peaks.min[b] < lo) lo = peaks.min[b];
         if (peaks.max[b] > hi) hi = peaks.max[b];
       }
-      ctx.fillRect(x, mid - hi * (WAVE_H / 2), 1, Math.max(1, (hi - lo) * (WAVE_H / 2)));
+      ctx.fillRect(x, mid - hi * (waveHeight / 2), 1, Math.max(1, (hi - lo) * (waveHeight / 2)));
     }
   }
 
-  // Строки песни: полупрозрачные области с границами и номером.
-  for (const line of lines) {
-    const x1 = toX(line.start);
-    const x2 = toX(line.end);
+  // Цвет закреплён за ID, как цвет части сценария; подтверждение обозначается знаком, а выбор — отдельной рамкой.
+  const colors = dark
+    ? ['124,196,255', '255,183,77', '129,199,132', '206,147,216', '77,208,225']
+    : ['21,101,192', '184,74,0', '46,125,50', '123,31,162', '0,121,135'];
+  for (const block of layout.blocks) {
+    const { line, top, height } = block;
+    const x1 = block.left - t0 * pps;
+    const x2 = block.right - t0 * pps;
     if (x2 < 0 || x1 > width) continue;
     const isSelected = line.id === selected;
-    const base = line.verified ? (dark ? '76,175,80' : '46,125,50') : dark ? '255,183,77' : '239,108,0';
-    ctx.fillStyle = `rgba(${base},${isSelected ? 0.38 : 0.2})`;
-    ctx.fillRect(x1, WAVE_TOP, x2 - x1, WAVE_H);
-    ctx.fillStyle = `rgba(${base},${isSelected ? 1 : 0.8})`;
-    ctx.fillRect(x1 - 1, WAVE_TOP, 2, WAVE_H);
-    ctx.fillRect(x2 - 1, WAVE_TOP, 2, WAVE_H);
+    const base = colors[(((Math.trunc(line.id) - 1) % colors.length) + colors.length) % colors.length];
+    const startX = block.startX - t0 * pps;
+    const endX = block.endX - t0 * pps;
+    ctx.fillStyle = `rgba(${base},${isSelected ? 0.34 : 0.18})`;
+    ctx.fillRect(x1, top, x2 - x1, height);
+    ctx.strokeStyle = isSelected ? (dark ? '#ffffff' : '#101820') : `rgb(${base})`;
+    ctx.lineWidth = isSelected ? 3 : 1;
+    ctx.setLineDash(line.end <= line.start ? [4, 3] : []);
+    ctx.strokeRect(x1 + 1, top + 1, Math.max(1, x2 - x1 - 2), height - 2);
+    ctx.setLineDash([]);
+    // Ручки совпадают с hit-test даже у обратного и нулевого интервала.
+    ctx.fillStyle = `rgb(${base})`;
+    ctx.fillRect(startX - 2, top, 4, height);
+    ctx.fillRect(endX - 2, top, 4, height);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(Math.max(0, x1 + 4), top + 3, Math.max(0, Math.min(width, x2) - Math.max(0, x1) - 8), height - 6);
+    ctx.clip();
     ctx.font = isSelected ? 'bold 11px sans-serif' : '11px sans-serif';
-    ctx.fillStyle = dark ? '#f1f3f5' : '#1f2933';
-    ctx.fillText(String(line.id), x1 + 4, WAVE_TOP + 12);
+    ctx.fillStyle = dark ? '#ffffff' : '#101820';
+    const label = `${line.id}${line.verified ? ' ✓' : ''}`;
+    ctx.fillText(label, Math.max(0, x1) + 5, top + 13);
+    const boundaryLabel = `${formatClock(line.start)} → ${formatClock(line.end)}`;
+    if (x2 - x1 > ctx.measureText(boundaryLabel).width + 12) ctx.fillText(boundaryLabel, x1 + 5, top + 28);
+    ctx.restore();
   }
 
   // Плейхед.
   const px = toX(time);
   if (px >= 0 && px <= width) {
     ctx.fillStyle = '#e53935';
-    ctx.fillRect(px - 0.5, 0, 1.5, CANVAS_H);
+    ctx.fillRect(px - 0.5, 0, 1.5, canvasHeight);
   }
   // Сетка времени.
   ctx.fillStyle = dark ? '#8a94a0' : '#6b7684';
@@ -168,7 +202,7 @@ export function drawWaveform({ canvas, container, lines, sections, peaks, select
   const stepSeconds = pps >= 160 ? 1 : pps >= 60 ? 5 : pps >= 25 ? 10 : 30;
   for (let t = Math.ceil(t0 / stepSeconds) * stepSeconds; t < t0 + width / pps; t += stepSeconds) {
     const x = toX(t);
-    ctx.fillRect(x, WAVE_TOP + WAVE_H + 2, 1, 5);
-    ctx.fillText(formatClock(t).replace(/\.\d+$/, ''), x + 2, CANVAS_H - 5);
+    ctx.fillRect(x, WAVE_TOP + waveHeight + 2, 1, 5);
+    ctx.fillText(formatClock(t).replace(/\.\d+$/, ''), x + 2, canvasHeight - 5);
   }
 }

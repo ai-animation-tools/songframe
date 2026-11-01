@@ -1,5 +1,6 @@
 /** Реальный MP3 и hook проверяют загрузку волны, ограниченное прослушивание и остановку без Electron. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { timingTexts } from '@shared/texts/timing';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { TimingStory, timingStoryOptions } from '../../../testing/timingStories';
 
@@ -92,4 +93,74 @@ export const BrokenMedia: Story = {
 export const NarrowPlayer: Story = {
   name: 'Плеер · перенос управления в узкой области',
   parameters: { songframe: { ...timingStoryOptions(), workspaceWidth: 724 } }
+};
+
+export const ManualDragAcrossNeighbours: Story = {
+  name: 'Ручной режим · пересечения · перенос мышью · прокрутка · скобки · сохранение',
+  tags: ['ci'],
+  args: { variant: 'manual-overlap', manualMode: true },
+  parameters: { songframe: { ...timingStoryOptions({ variant: 'manual-overlap', manualMode: true }), workspaceWidth: 724 } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const audio = await readyAudio(canvasElement);
+    const wave = canvasElement.querySelector('canvas');
+    const scroller = wave?.parentElement;
+    if (!wave || !scroller) throw new Error('История не создала волну и её прокрутку.');
+    const point = (time: number, lane = 0): { clientX: number; clientY: number } => {
+      const rect = wave.getBoundingClientRect();
+      return { clientX: rect.left + time * 48 - scroller.scrollLeft, clientY: rect.top + 43 + lane * 42 };
+    };
+    const start = (): HTMLInputElement => canvas.getByRole('textbox', { name: 'Начало строки 1' }) as HTMLInputElement;
+    const end = (): HTMLInputElement => canvas.getByRole('textbox', { name: 'Конец строки 1' }) as HTMLInputElement;
+
+    // Даже при выбранной первой строке перекрытый сосед доступен на собственной дорожке.
+    await userEvent.pointer([{ target: wave, coords: point(2), keys: '[MouseLeft]' }]);
+    await expect(canvas.getByRole('status')).toHaveTextContent('Выбрана строка 1');
+    await userEvent.pointer([{ target: wave, coords: point(4, 1), keys: '[MouseLeft]' }]);
+    await expect(canvas.getByRole('status')).toHaveTextContent('Выбрана строка 2');
+
+    // Тащим исходные 1..5 через оба соседних блока; прокрутка происходит с зажатой кнопкой.
+    await userEvent.pointer([
+      { target: wave, coords: point(2), keys: '[MouseLeft>]' },
+      { target: wave, coords: point(10) }
+    ]);
+    scroller.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 300, ...point(10) }));
+    await waitFor(() => expect(scroller.scrollLeft).toBeGreaterThan(0));
+    await userEvent.pointer([
+      { target: wave, coords: point(13) },
+      { target: wave, coords: point(13), keys: '[/MouseLeft]' }
+    ]);
+    await waitFor(() => expect(start()).toHaveValue('12'));
+    await expect(end()).toHaveValue('16');
+
+    // Обратный интервал сохраняет обе ручки; исправление не требует отмены всей ручной сессии.
+    await userEvent.pointer([
+      { target: wave, coords: point(16), keys: '[MouseLeft>]' },
+      { target: wave, coords: point(10) },
+      { target: wave, coords: point(10), keys: '[/MouseLeft]' }
+    ]);
+    await waitFor(() => expect(end()).toHaveValue('10'));
+    await expect(start()).toHaveValue('12');
+    await expect(canvas.getAllByRole('alert')).toHaveLength(1);
+    await expect(canvas.getByRole('alert')).toHaveTextContent(timingTexts.manualModeHint);
+    (canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur();
+    audio.pause();
+    audio.currentTime = 4;
+    await userEvent.keyboard('[[');
+    await waitFor(() => expect(start()).toHaveValue('4'));
+    audio.currentTime = 16;
+    await userEvent.keyboard(']');
+    await waitFor(() => expect(end()).toHaveValue('16'));
+    audio.currentTime = 12;
+    await userEvent.keyboard('[[');
+    await waitFor(() => expect(start()).toHaveValue('12'));
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Сохранить' }));
+    await canvas.findByText('Разметка сохранена');
+    await userEvent.click(canvas.getByRole('button', { name: 'Открыть сохранённую разметку заново' }));
+    await readyAudio(canvasElement);
+    // После записи номера нормализованы по времени: перенесённая первая строка стала третьей.
+    await expect(canvas.getByRole('textbox', { name: 'Начало строки 3' })).toHaveValue('12');
+    await expect(canvas.getByRole('textbox', { name: 'Конец строки 3' })).toHaveValue('16');
+  }
 };

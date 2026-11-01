@@ -8,10 +8,14 @@ import type { TimingLine } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { TimingBoundaryField } from './TimingBoundaryField';
 import { MIN_LENGTH } from '../timing';
+import type { TimingBoundaryDrafts } from '../manualTiming';
 
 interface TimingLineRowProps {
   line: TimingLine;
   selected: boolean;
+  manualMode?: boolean;
+  boundaryDrafts?: TimingBoundaryDrafts[number];
+  onBoundaryInput?: (id: number, field: 'start' | 'end', value: string) => void;
   text: string;
   prevEnd: number;
   nextStart: number;
@@ -21,8 +25,21 @@ interface TimingLineRowProps {
   onRemove: (id: number) => void;
 }
 
-/** Поля границ проверяют соседей; действия строки не меняют выбор побочным кликом. */
-export function TimingLineRow({ line, selected, text, prevEnd, nextStart, onSelect, onUpdate, onPlay, onRemove }: TimingLineRowProps): ReactElement {
+/** Обычные границы проверяют соседей, ручной ввод остаётся черновиком строки до сохранения. */
+export function TimingLineRow({
+  line,
+  selected,
+  manualMode = false,
+  boundaryDrafts,
+  onBoundaryInput,
+  text,
+  prevEnd,
+  nextStart,
+  onSelect,
+  onUpdate,
+  onPlay,
+  onRemove
+}: TimingLineRowProps): ReactElement {
   return (
     <TableRow
       hover
@@ -36,7 +53,10 @@ export function TimingLineRow({ line, selected, text, prevEnd, nextStart, onSele
       <TableCell sx={{ fontWeight: selected ? 600 : 400 }}>{text}</TableCell>
       <TableCell>
         <TimingBoundaryField
-          key={line.start}
+          key={manualMode || onBoundaryInput || boundaryDrafts?.start !== undefined ? 'draft' : line.start}
+          manualMode={manualMode}
+          draft={boundaryDrafts?.start}
+          onDraftChange={onBoundaryInput ? (value) => onBoundaryInput(line.id, 'start', value) : undefined}
           value={line.start}
           min={prevEnd}
           max={line.end - MIN_LENGTH}
@@ -46,7 +66,10 @@ export function TimingLineRow({ line, selected, text, prevEnd, nextStart, onSele
       </TableCell>
       <TableCell>
         <TimingBoundaryField
-          key={line.end}
+          key={manualMode || onBoundaryInput || boundaryDrafts?.end !== undefined ? 'draft' : line.end}
+          manualMode={manualMode}
+          draft={boundaryDrafts?.end}
+          onDraftChange={onBoundaryInput ? (value) => onBoundaryInput(line.id, 'end', value) : undefined}
           value={line.end}
           min={line.start + MIN_LENGTH}
           max={nextStart}
@@ -54,7 +77,7 @@ export function TimingLineRow({ line, selected, text, prevEnd, nextStart, onSele
           onCommit={(value) => onUpdate(line.id, { end: value })}
         />
       </TableCell>
-      <TableCell sx={{ fontFamily: 'monospace' }}>{(line.end - line.start).toFixed(2)}</TableCell>
+      <TableCell sx={{ fontFamily: 'monospace' }}>{Number.isFinite(line.end - line.start) ? (line.end - line.start).toFixed(2) : '—'}</TableCell>
       <TableCell align="center" onClick={(e) => e.stopPropagation()}>
         <Checkbox
           size="small"

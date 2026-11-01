@@ -7,7 +7,6 @@ import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import type { TimingLine } from '@shared/types';
 import { formatClock } from '../../../format';
 import type { TimingPlayerController } from '../useTimingPlayer';
-import { CANVAS_H } from '../waveform';
 
 interface TimingPlayerProps {
   player: TimingPlayerController;
@@ -16,7 +15,7 @@ interface TimingPlayerProps {
 }
 
 /** Прослушивание и волновая форма связаны со строками разметки. */
-export function TimingPlayer({ player, lines, stickyTop }: TimingPlayerProps): ReactElement {
+export function TimingPlayer({ player, stickyTop }: TimingPlayerProps): ReactElement {
   const {
     trackUrl,
     audioRef,
@@ -35,7 +34,8 @@ export function TimingPlayer({ player, lines, stickyTop }: TimingPlayerProps): R
     setPps,
     setScrollLeft,
     togglePlay,
-    timeAt,
+    hitLine,
+    canvasHeight,
     playLine,
     onMouseDown,
     onMouseMove,
@@ -106,9 +106,8 @@ export function TimingPlayer({ player, lines, stickyTop }: TimingPlayerProps): R
         onMouseLeave={onMouseUp}
         onWheel={onWheel}
         onDoubleClick={(e) => {
-          const t = timeAt(e.clientX);
-          const line = lines.find((l) => t >= l.start && t <= l.end);
-          if (line) playLine(line);
+          const hit = hitLine(e.clientX, e.clientY);
+          if (hit) playLine(hit.line);
         }}
         sx={{
           position: 'relative',
@@ -124,7 +123,7 @@ export function TimingPlayer({ player, lines, stickyTop }: TimingPlayerProps): R
         }}
       >
         <Box sx={{ width: `${Math.max(1, duration * pps)}px`, height: '1px' }} />
-        <canvas ref={canvasRef} style={{ position: 'sticky', left: 0, top: 0, display: 'block', height: CANVAS_H, width: '100%', marginTop: -1 }} />
+        <canvas ref={canvasRef} style={{ position: 'sticky', left: 0, top: 0, display: 'block', height: canvasHeight, width: '100%', marginTop: -1 }} />
       </Box>
       {playbackError && (
         <Alert severity="error" sx={{ mt: 1 }}>

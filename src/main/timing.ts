@@ -3,17 +3,19 @@
  * Сохраняет музыкальные части независимо от вокальных строк; без частей строит их по заголовкам текста.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { analyzeLyrics, selectLyricTimings } from '@shared/lyrics';
 import { timingTexts } from '@shared/texts/timing';
 import type { LyricsLine, TimingFile, TimingLine, TimingView } from '@shared/types';
 import { readManifest } from './sources';
+import { writeLocalJson } from './local-files';
 import { resolveTimingSections } from '@shared/timing-sections';
 import { withTimingVerification } from '@shared/timing-verification';
 export { buildSections } from '@shared/timing-sections';
 
-const MIN_LENGTH = 0.3;
+import { validateTiming } from '@shared/timing-validation';
+export { validateTiming } from '@shared/timing-validation';
 
 export function parseLyricsLines(text: string): LyricsLine[] {
   return analyzeLyrics(text).rows;
@@ -55,30 +57,6 @@ export function viewTiming(project: string): TimingView {
     duration: manifest?.track?.duration_seconds ?? null,
     problems
   };
-}
-
-export function validateTiming(timing: TimingFile, lyrics: LyricsLine[], duration: number | null): string[] {
-  const problems: string[] = [];
-  const byNumber = new Map(lyrics.map((l) => [l.number, l]));
-  const ids = new Set<number>();
-  const numbers = new Set<number>();
-  for (const line of timing.lines) {
-    if (ids.has(line.id)) problems.push(timingTexts.main.duplicateId({ id: line.id }));
-    ids.add(line.id);
-    if (numbers.has(line.source_line)) problems.push(timingTexts.main.duplicateSourceLine({ id: line.id, sourceLine: line.source_line }));
-    numbers.add(line.source_line);
-    const lyric = byNumber.get(line.source_line);
-    if (!lyric || lyric.header || !lyric.text) problems.push(timingTexts.main.missingSourceLine({ id: line.id, sourceLine: line.source_line }));
-    if (!Number.isFinite(line.start) || !Number.isFinite(line.end)) problems.push(timingTexts.main.invalidBoundaries({ id: line.id }));
-    else if (line.end - line.start < MIN_LENGTH) problems.push(timingTexts.main.lineTooShort({ id: line.id, minLength: MIN_LENGTH }));
-    else if (line.start < 0) problems.push(timingTexts.main.negativeStart({ id: line.id }));
-    else if (duration && line.end > duration + 0.5) problems.push(timingTexts.main.endOutsideTrack({ id: line.id }));
-  }
-  const ordered = [...timing.lines].sort((a, b) => a.start - b.start);
-  for (let i = 1; i < ordered.length; i += 1) {
-    if (ordered[i].start < ordered[i - 1].end - 0.001) problems.push(timingTexts.main.overlappingLines({ first: ordered[i - 1].id, second: ordered[i].id }));
-  }
-  return problems;
 }
 
 function round(value: number): number {
@@ -127,7 +105,7 @@ export function saveTiming(project: string, timing: TimingFile): TimingFile {
     sections: resolveTimingSections(timing.sections, view.lyrics, lines, duration)
   };
   const target = join(project, 'plan', 'audio', 'timing.json');
-  mkdirSync(join(project, 'plan', 'audio'), { recursive: true });
-  writeFileSync(target, JSON.stringify(result, null, 2) + '\n', 'utf-8');
+  // Публикуем целый JSON через временный файл: отказ записи не обнуляет прежнюю разметку.
+  writeLocalJson(target, result);
   return result;
 }

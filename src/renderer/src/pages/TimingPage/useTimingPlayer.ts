@@ -3,12 +3,13 @@ import { useTheme } from '@mui/material';
 import { timingTexts } from '@shared/texts/timing';
 import { resolveTimingSections } from '@shared/timing-sections';
 import type { TimingLine, TimingSection, TimingView } from '@shared/types';
-import { MIN_LENGTH, neighbours, round } from './timing';
-import { decodePeaks, drawWaveform, type Peaks, WAVE_TOP, WAVE_H } from './waveform';
+import { hitTimingBlock, timingDragPatch, timingWaveLayout, type TimingDragMode } from './timingWaveGeometry';
+import { decodePeaks, drawWaveform, type Peaks } from './waveform';
 
-type Drag = { id: number; mode: 'start' | 'end' | 'move'; offset: number; original: TimingLine } | null;
+type Drag = { id: number; mode: TimingDragMode; offset: number; original: TimingLine } | null;
 
-interface TimingPlayerOptions {
+export interface TimingPlayerOptions {
+  manualMode?: boolean;
   view: TimingView | null;
   lines: TimingLine[];
   sections: TimingSection[];
@@ -32,7 +33,8 @@ export function useTimingPlayer({
   busy,
   generating,
   generateOpen,
-  describeError
+  describeError,
+  manualMode = false
 }: TimingPlayerOptions) {
   const theme = useTheme();
   const [peaks, setPeaks] = useState<Peaks | null>(null);
@@ -52,11 +54,19 @@ export function useTimingPlayer({
   const linesRef = useRef<TimingLine[]>([]);
   linesRef.current = lines;
 
-  const duration = peaks?.duration ?? view?.duration ?? 0;
+  const rawDuration = peaks?.duration ?? view?.duration ?? 0;
+  const duration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+  const layout = useMemo(() => timingWaveLayout(lines, pps, manualMode), [lines, pps, manualMode]);
   // URL меняется вместе с содержимым: плеер и волна не используют кэш прежнего track.mp3.
   const trackUrl = view?.trackPath ? `${window.api.shell.fileUrl(view.trackPath)}?v=${view.trackSha256 ?? ''}` : null;
   const sections = useMemo(
-    () => resolveTimingSections(savedSections, view?.lyrics ?? [], lines, duration || null),
+    () =>
+      resolveTimingSections(
+        savedSections.filter((section) => Number.isFinite(section.start) && Number.isFinite(section.end) && section.end > section.start),
+        view?.lyrics ?? [],
+        lines.filter((line) => Number.isFinite(line.start) && Number.isFinite(line.end) && line.end > line.start),
+        duration || null
+      ),
     [savedSections, view?.lyrics, lines, duration]
   );
 
@@ -116,8 +126,8 @@ export function useTimingPlayer({
     const canvas = canvasRef.current;
     const container = scrollRef.current;
     if (!canvas || !container) return;
-    drawWaveform({ canvas, container, lines, sections, peaks, selected, pps, time, mode: theme.palette.mode });
-  }, [lines, peaks, pps, selected, theme.palette.mode, time, sections]);
+    drawWaveform({ canvas, container, lines, sections, peaks, selected, pps, time, mode: theme.palette.mode, layout });
+  }, [lines, peaks, pps, selected, theme.palette.mode, time, sections, layout]);
 
   useEffect(() => {
     draw();
@@ -129,55 +139,42 @@ export function useTimingPlayer({
     return () => observer.disconnect();
   }, [draw]);
 
-  const timeAt = (clientX: number): number => {
+  const timeAt = (clientX: number, clampToTrack = true): number => {
     // Рисование и мышь отсчитывают координату от самой канвы, без рамки контейнера.
     const rect = canvasRef.current!.getBoundingClientRect();
-    return Math.max(0, Math.min(duration || Infinity, (clientX - rect.left + scrollRef.current!.scrollLeft) / pps));
+    const position = (clientX - rect.left + scrollRef.current!.scrollLeft) / pps;
+    return clampToTrack ? Math.max(0, Math.min(duration || Infinity, position)) : position;
+  };
+
+  const hitLine = (clientX: number, clientY: number): ReturnType<typeof hitTimingBlock> => {
+    const canvas = canvasRef.current;
+    const container = scrollRef.current;
+    if (!canvas || !container) return null;
+    const rect = canvas.getBoundingClientRect();
+    return hitTimingBlock(layout, clientX - rect.left + container.scrollLeft, clientY - rect.top);
   };
 
   const onMouseDown = (event: MouseEvent): void => {
-    if (!view || busy || generating || generateOpen) return;
-    const t = timeAt(event.clientX);
-    const tolerance = 6 / pps;
-    const y = event.clientY - canvasRef.current!.getBoundingClientRect().top;
-    if (y >= WAVE_TOP && y <= WAVE_TOP + WAVE_H) {
-      for (const line of lines) {
-        if (Math.abs(t - line.start) <= tolerance) return startDrag(line, 'start', t);
-        if (Math.abs(t - line.end) <= tolerance) return startDrag(line, 'end', t);
-      }
-      const inside = lines.find((l) => t >= l.start && t <= l.end);
-      if (inside) {
-        setSelected(inside.id);
-        return startDrag(inside, 'move', t - inside.start);
-      }
-    }
-    seek(t);
-  };
-
-  const startDrag = (line: TimingLine, mode: Drag extends null ? never : NonNullable<Drag>['mode'], offset: number): void => {
-    dragRef.current = { id: line.id, mode, offset, original: line };
-    setSelected(line.id);
+    if (!view || busy || generating || generateOpen || event.button !== 0) return;
+    const t = timeAt(event.clientX, false);
+    const hit = hitLine(event.clientX, event.clientY);
+    if (hit) {
+      const boundary = hit.mode === 'end' ? hit.line.end : hit.line.start;
+      dragRef.current = { id: hit.line.id, mode: hit.mode, offset: t - boundary, original: { ...hit.line } };
+      setSelected(hit.line.id);
+    } else seek(t);
   };
 
   const onMouseMove = (event: MouseEvent): void => {
     const drag = dragRef.current;
-    const t = timeAt(event.clientX);
     if (!drag) {
-      const tolerance = 6 / pps;
-      const nearEdge = lines.some((l) => Math.abs(t - l.start) <= tolerance || Math.abs(t - l.end) <= tolerance);
-      scrollRef.current!.style.cursor = nearEdge ? 'ew-resize' : lines.some((l) => t >= l.start && t <= l.end) ? 'grab' : 'text';
+      const hit = hitLine(event.clientX, event.clientY);
+      if (scrollRef.current) scrollRef.current.style.cursor = hit ? (hit.mode === 'move' ? 'grab' : 'ew-resize') : 'text';
       return;
     }
-    const { prevEnd, nextStart } = neighbours(drag.id, linesRef.current, duration);
-    const line = linesRef.current.find((l) => l.id === drag.id);
-    if (!line) return;
-    if (drag.mode === 'start') updateLine(drag.id, { start: round(Math.max(prevEnd, Math.min(line.end - MIN_LENGTH, t))) });
-    else if (drag.mode === 'end') updateLine(drag.id, { end: round(Math.min(nextStart, Math.max(line.start + MIN_LENGTH, t))) });
-    else {
-      const length = line.end - line.start;
-      const start = Math.max(prevEnd, Math.min(nextStart - length, t - drag.offset));
-      updateLine(drag.id, { start: round(start), end: round(start + length) });
-    }
+    if (busy || generating || generateOpen) return;
+    const patch = timingDragPatch(drag.original, drag.mode, timeAt(event.clientX, false), drag.offset, linesRef.current, duration, manualMode);
+    if (patch) updateLine(drag.id, patch);
   };
 
   const onMouseUp = (): void => {
@@ -201,10 +198,11 @@ export function useTimingPlayer({
 
   const seek = (t: number): void => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !Number.isFinite(t)) return;
     stopAtRef.current = null;
-    audio.currentTime = t;
-    setTime(t);
+    const bounded = Math.max(0, Math.min(duration || Infinity, t));
+    audio.currentTime = bounded;
+    setTime(bounded);
   };
 
   const togglePlay = (): void => {
@@ -219,6 +217,11 @@ export function useTimingPlayer({
     const audio = audioRef.current;
     if (!audio) return;
     setSelected(line.id);
+    // Невалидный ручной черновик не передаём браузерному audio; проверка нужна только по явному прослушиванию.
+    if (!Number.isFinite(line.start) || !Number.isFinite(line.end) || line.start < 0 || line.end <= line.start || (duration > 0 && line.start >= duration)) {
+      setPlaybackError(timingTexts.invalidPlaybackRange);
+      return;
+    }
     audio.currentTime = Math.max(0, line.start - 0.15);
     stopAtRef.current = line.end + 0.1;
     playAudio(audio);
@@ -239,8 +242,9 @@ export function useTimingPlayer({
 
   const scrollTo = (t: number): void => {
     const container = scrollRef.current;
-    if (!container) return;
+    if (!container || !Number.isFinite(t)) return;
     const x = t * pps;
+    if (!Number.isFinite(x)) return;
     if (x < container.scrollLeft + 40 || x > container.scrollLeft + container.clientWidth - 40)
       container.scrollLeft = Math.max(0, x - container.clientWidth * 0.3);
   };
@@ -263,11 +267,11 @@ export function useTimingPlayer({
       } else if (event.key === 'Enter' && current) {
         playLine(current);
       } else if (event.key === '[' && current) {
-        const { prevEnd } = neighbours(current.id, linesRef.current, duration);
-        updateLine(current.id, { start: round(Math.max(prevEnd, Math.min(current.end - MIN_LENGTH, audioRef.current?.currentTime ?? 0))) });
+        const patch = timingDragPatch(current, 'start', audioRef.current?.currentTime ?? 0, 0, linesRef.current, duration, manualMode);
+        if (patch) updateLine(current.id, patch);
       } else if (event.key === ']' && current) {
-        const { nextStart } = neighbours(current.id, linesRef.current, duration);
-        updateLine(current.id, { end: round(Math.min(nextStart, Math.max(current.start + MIN_LENGTH, audioRef.current?.currentTime ?? 0))) });
+        const patch = timingDragPatch(current, 'end', audioRef.current?.currentTime ?? 0, 0, linesRef.current, duration, manualMode);
+        if (patch) updateLine(current.id, patch);
         // eslint-disable-next-line no-restricted-syntax -- Физическая горячая клавиша в русской раскладке, а не текст интерфейса.
       } else if ((event.key === 'v' || event.key === 'м') && current) {
         updateLine(current.id, { verified: !current.verified });
@@ -284,10 +288,12 @@ export function useTimingPlayer({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, duration, pps, busy, generating, generateOpen]);
+  }, [selected, duration, pps, busy, generating, generateOpen, manualMode]);
 
   return {
     sections,
+    canvasHeight: layout.canvasHeight,
+    hitLine,
     duration,
     time,
     playing,

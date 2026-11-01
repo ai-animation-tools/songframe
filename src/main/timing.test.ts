@@ -1,11 +1,18 @@
 /** Исправление служебных примечаний остаётся черновиком до явного сохранения разметки. */
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import type * as NodeFs from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { SourceManifest, TimingFile } from '@shared/types';
 import { withTimingVerification } from '@shared/timing-verification';
 import { buildSections, saveTiming, timingStatus, validateTiming, viewTiming } from './timing';
+
+// Инъекция отказов проверяет именно границу публикации файла, а не только предварительную валидацию.
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof NodeFs>('node:fs');
+  return { ...actual, writeFileSync: vi.fn(actual.writeFileSync), renameSync: vi.fn(actual.renameSync) };
+});
 
 let project: string;
 beforeEach(() => {
@@ -211,4 +218,55 @@ it('сохраняет прежние status, clock и ручные заметк
     expect(timing.clock).toBe('Секунды от начала декодированного звука, не SMPTE');
     expect(timing.lines.map(({ note }) => note)).toEqual(['Первый вокальный вход', 'Вторая строка']);
   }
+});
+
+// Отказ сохранения свободного черновика обязан происходить до любой записи рабочего файла.
+it.each([
+  { start: Number.NaN, end: 16 },
+  { start: 12, end: 2.9 },
+  { start: -1, end: 2.9 },
+  { start: 3, end: 5 },
+  { start: 12, end: 100 }
+])('не изменяет сохранённые байты при ошибочных ручных границах %j', (boundaries) => {
+  const original = writeMusicalTiming();
+  const target = join(project, 'plan/audio/timing.json');
+  const bytes = readFileSync(target);
+  const draft = { ...original, lines: original.lines.map((line, index) => (index ? line : { ...line, ...boundaries })) };
+  expect(() => saveTiming(project, draft)).toThrow();
+  expect(readFileSync(target)).toEqual(bytes);
+  expect(draft.lines[0]).toMatchObject(boundaries);
+});
+
+it('записывает исправленные 12–16 с после отказа и восстанавливает их при чтении', () => {
+  const original = writeMusicalTiming();
+  const inverted = { ...original, lines: original.lines.map((line, index) => (index ? line : { ...line, start: 12, end: 2.9 })) };
+  expect(() => saveTiming(project, inverted)).toThrow();
+  const corrected = { ...inverted, lines: inverted.lines.map((line, index) => (index ? line : { ...line, end: 16 })) };
+  saveTiming(project, corrected);
+  const restored = viewTiming(project).timing!;
+  expect(restored.lines.find((line) => line.source_line === 2)).toMatchObject({ start: 12, end: 16 });
+  expect(restored.lines.find((line) => line.source_line === 3)).toMatchObject({ start: 4, end: 6 });
+  expect(restored.sections).toEqual(original.sections);
+});
+
+it.each(['write', 'rename'] as const)('сохраняет прежний файл и убирает временный после отказа %s', async (phase) => {
+  const actual = await vi.importActual<typeof NodeFs>('node:fs');
+  const original = writeMusicalTiming();
+  const target = join(project, 'plan/audio/timing.json');
+  const before = readFileSync(target);
+  if (phase === 'write') {
+    vi.mocked(writeFileSync).mockImplementationOnce((path) => {
+      actual.writeFileSync(path, 'частично записанный временный файл');
+      throw Object.assign(new Error('Нет свободного места'), { code: 'ENOSPC' });
+    });
+  } else {
+    vi.mocked(renameSync).mockImplementationOnce(() => {
+      throw Object.assign(new Error('Файл занят'), { code: 'EBUSY' });
+    });
+  }
+  const draft = { ...original, lines: original.lines.map((line, index) => (index ? line : { ...line, start: 12, end: 16 })) };
+  expect(() => saveTiming(project, draft)).toThrow(/Не удалось сохранить/);
+  expect(readFileSync(target)).toEqual(before);
+  expect(readdirSync(join(project, 'plan/audio'))).toEqual(['timing.json']);
+  expect(saveTiming(project, draft).lines.find((line) => line.source_line === 2)).toMatchObject({ start: 12, end: 16 });
 });

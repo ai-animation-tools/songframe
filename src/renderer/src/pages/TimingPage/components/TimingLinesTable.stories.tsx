@@ -158,3 +158,38 @@ export const SaveFailure: Story = {
     await expect(canvas.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
   }
 };
+
+/** Временные неверные границы не мешают вводу; сохранение остаётся отдельной проверкой страницы. */
+export const ManualDraftBoundaries: Story = {
+  name: 'Ручной режим · свободный ввод · стабильные строки',
+  tags: ['ci'],
+  args: { manualMode: true },
+  parameters: { songframe: timingStoryOptions({ manualMode: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const start = canvas.getByRole('textbox', { name: 'Начало строки 1' });
+    const end = canvas.getByRole('textbox', { name: 'Конец строки 1' });
+    await userEvent.clear(end);
+    await userEvent.type(end, '2.9{Enter}');
+    await userEvent.clear(start);
+    await userEvent.type(start, '12');
+    // Выход начала за соседние строки не теряет фокус и не перемонтирует поле по числовой границе.
+    await expect(start).toHaveFocus();
+    await expect(start).toHaveValue('12');
+    await userEvent.clear(start);
+    await userEvent.type(start, '16{Enter}');
+    await expect(start).toHaveValue('16');
+    await expect(end).toHaveValue('2.9');
+    await expect(start).not.toHaveAttribute('aria-invalid', 'true');
+    await userEvent.clear(start);
+    await userEvent.tab();
+    await expect(start).toHaveValue('');
+    await userEvent.type(start, 'не время{Enter}');
+    await expect(start).toHaveValue('не время');
+    await expect(start).not.toHaveAttribute('aria-invalid', 'true');
+    await userEvent.clear(start);
+    await userEvent.type(start, '-5{Enter}');
+    await expect(start).toHaveValue('-5');
+    await expect(start).not.toHaveAttribute('aria-invalid', 'true');
+  }
+};

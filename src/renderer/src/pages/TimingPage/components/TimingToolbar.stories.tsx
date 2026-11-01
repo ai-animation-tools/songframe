@@ -1,4 +1,5 @@
 /** Панель показывает настоящие причины недоступности, а массовое подтверждение остаётся черновиком до сохранения. */
+import { timingTexts } from '@shared/texts/timing';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { TimingStory, timingStoryOptions } from '../../../testing/timingStories';
@@ -62,5 +63,28 @@ export const VerifyAllAndDiscard: Story = {
     await expect(canvas.getByRole('checkbox', { name: 'Подтвердить на слух строку 1' })).not.toBeChecked();
     await expect(canvas.getByRole('checkbox', { name: 'Подтвердить на слух строку 2' })).toBeChecked();
     await expect(canvas.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+  }
+};
+
+export const ManualModeToggle: Story = {
+  tags: ['ci'],
+  name: 'Ручной режим · переключение без правок и сохранения',
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const toggle = canvas.getByRole('switch', { name: timingTexts.manualMode });
+    await expect(toggle).not.toBeChecked();
+    await expect(canvas.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+    const before = await window.api.timing.view('storybook-timing');
+    await userEvent.click(toggle);
+    await expect(toggle).toBeChecked();
+    await expect(canvas.getByText(timingTexts.manualModeHint)).toBeVisible();
+    await expect(canvas.getByRole('textbox', { name: 'Начало строки 1' })).toHaveValue('0.3');
+    await expect(canvas.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+    await userEvent.click(toggle);
+    await expect(toggle).not.toBeChecked();
+    await expect(canvas.queryByText(timingTexts.manualModeHint)).not.toBeInTheDocument();
+    await expect(canvas.getByRole('spinbutton', { name: 'Начало строки 1' })).toHaveValue(0.3);
+    await expect(canvas.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+    await expect(await window.api.timing.view('storybook-timing')).toEqual(before);
   }
 };

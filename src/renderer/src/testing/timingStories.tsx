@@ -2,6 +2,8 @@
 import { useCallback, useRef, useState, type ReactElement } from 'react';
 import { Alert, Box, Stack, Typography } from '@mui/material';
 import { timingTexts } from '@shared/texts/timing';
+import { validateTiming } from '@shared/timing-validation';
+import { applyTimingBoundaryDrafts, parseTimingBoundary, type TimingBoundaryDrafts } from '../pages/TimingPage/manualTiming';
 import { withTimingVerification } from '@shared/timing-verification';
 import { buildSections, resolveTimingSections } from '@shared/timing-sections';
 import type { TimingFile, TimingLine, TimingView } from '@shared/types';
@@ -17,12 +19,13 @@ import { createStoryApi, storyFileUrl, STORY_TRACK_PATH, type StoryOptions } fro
 const STORY_TIMING_DURATION = 30;
 const STORY_TRACK_CONTAINER_DURATION = 30.040816;
 
-export type TimingStoryVariant = 'regular' | 'long' | 'long-list' | 'empty' | 'media-error' | 'missing-track' | 'invalid-bindings';
+export type TimingStoryVariant = 'regular' | 'long' | 'long-list' | 'empty' | 'media-error' | 'missing-track' | 'invalid-bindings' | 'manual-overlap';
 export interface TimingStoryProps {
   variant?: TimingStoryVariant;
   showPlayer?: boolean;
   delayedMedia?: boolean;
   failSaveOnce?: boolean;
+  manualMode?: boolean;
 }
 
 /** Пересчёт секций и сохранение используют последовательные номера в хронологическом порядке, как TimingPage. */
@@ -31,7 +34,7 @@ function orderedTimingStoryLines(lines: TimingLine[]): TimingLine[] {
 }
 
 /** Повторяет нормализацию ответа main, а общие правила заметок и секций берёт из рабочих чистых функций. @link src/main/timing.ts */
-function normalizeTimingStoryFile(timing: TimingFile, view: TimingView): TimingFile {
+export function normalizeTimingStoryFile(timing: TimingFile, view: TimingView): TimingFile {
   const lines = orderedTimingStoryLines(timing.lines).map((line) =>
     withTimingVerification({ ...line, start: round(line.start), end: round(line.end), note: (line.note ?? '').trim() })
   );
@@ -61,6 +64,18 @@ export function makeTimingStoryView(variant: TimingStoryVariant = 'regular', del
     { id: 2, source_line: 3, start: 1.2, end: 2.2, verified: true, note: 'сверка на слух выполнена' },
     { id: 3, source_line: 4, start: 2.6, end: 3.6, verified: false, note: '' }
   ];
+  if (variant === 'manual-overlap') {
+    lines.forEach((line, index) =>
+      Object.assign(
+        line,
+        [
+          { start: 1, end: 5 },
+          { start: 3, end: 7 },
+          { start: 8, end: 10 }
+        ][index]
+      )
+    );
+  }
   if (variant === 'long-list') {
     lines.splice(
       0,
@@ -120,6 +135,8 @@ export function timingStoryOptions({ variant = 'regular', delayedMedia = false, 
               failed = true;
               throw new Error('Не удалось сохранить разметку. Правки остались в форме; повторите сохранение.');
             }
+            const problems = validateTiming(timing, view.lyrics, view.duration);
+            if (problems.length) throw new Error(problems.join(' '));
             const normalized = normalizeTimingStoryFile(timing, view);
             view = { ...view, timing: structuredClone(normalized) };
             return structuredClone(normalized);
@@ -157,7 +174,12 @@ export function timingStoryOptions({ variant = 'regular', delayedMedia = false, 
 }
 
 /** Черновик и сохранённый снимок разделены, как на странице; сброс перемонтирует поля и очищает выбор/аудио. */
-export function TimingStory({ variant = 'regular', showPlayer = false, delayedMedia = false }: TimingStoryProps): ReactElement {
+export function TimingStory({
+  variant = 'regular',
+  showPlayer = false,
+  delayedMedia = false,
+  manualMode: initialManualMode = false
+}: TimingStoryProps): ReactElement {
   const initial = useRef(makeTimingStoryView(variant, delayedMedia));
   const [saved, setSaved] = useState<TimingFile>(() => structuredClone(initial.current.timing!));
   const [draft, setDraft] = useState<TimingFile>(() => structuredClone(initial.current.timing!));
@@ -166,8 +188,22 @@ export function TimingStory({ variant = 'regular', showPlayer = false, delayedMe
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ error: boolean; text: string } | null>(null);
   const [epoch, setEpoch] = useState(0);
-  const dirty = JSON.stringify(saved) !== JSON.stringify(draft);
+  const [manualMode, setManualMode] = useState(initialManualMode);
+  const [boundaryDrafts, setBoundaryDrafts] = useState<TimingBoundaryDrafts>({});
+  const dirty = Object.keys(boundaryDrafts).length > 0 || JSON.stringify(saved) !== JSON.stringify(draft);
   const updateLine = useCallback((id: number, patch: Partial<TimingLine>): void => {
+    // Мышь и обычное применение поля заменяют только соответствующие сырые границы.
+    if (patch.start !== undefined || patch.end !== undefined) {
+      setBoundaryDrafts((current) => {
+        const next = { ...current };
+        const boundaries = { ...next[id] };
+        if (patch.start !== undefined) delete boundaries.start;
+        if (patch.end !== undefined) delete boundaries.end;
+        if (Object.keys(boundaries).length) next[id] = boundaries;
+        else delete next[id];
+        return next;
+      });
+    }
     setDraft((current) => ({
       ...current,
       lines: current.lines.map((line) => {
@@ -178,6 +214,23 @@ export function TimingStory({ variant = 'regular', showPlayer = false, delayedMe
     }));
     setNotice(null);
   }, []);
+  const onBoundaryInput = (id: number, boundary: 'start' | 'end', text: string): void => {
+    const line = draft.lines.find((entry) => entry.id === id);
+    setBoundaryDrafts((current) => {
+      const next = { ...current };
+      const boundaries = { ...next[id] };
+      if (!manualMode && line && text === String(line[boundary])) delete boundaries[boundary];
+      else boundaries[boundary] = text;
+      if (Object.keys(boundaries).length) next[id] = boundaries;
+      else delete next[id];
+      return next;
+    });
+    const value = parseTimingBoundary(text);
+    if (manualMode || boundaryDrafts[id]?.[boundary] !== undefined) {
+      setDraft((current) => ({ ...current, lines: current.lines.map((line) => (line.id === id ? { ...line, [boundary]: value } : line)) }));
+    }
+    setNotice(null);
+  };
   const describeMediaError = useCallback(
     () => 'Не удалось загрузить волну: демонстрационный трек недоступен. Восстановите трек и повторите прослушивание.',
     []
@@ -185,6 +238,8 @@ export function TimingStory({ variant = 'regular', showPlayer = false, delayedMe
   return (
     <Stack spacing={2} sx={{ minWidth: 0 }}>
       <TimingToolbar
+        manualMode={manualMode}
+        onManualModeChange={setManualMode}
         lineCount={draft.lines.length}
         verifiedCount={draft.lines.filter((line) => line.verified).length}
         dirty={dirty}
@@ -202,29 +257,41 @@ export function TimingStory({ variant = 'regular', showPlayer = false, delayedMe
           }))
         }
         onDiscard={() => {
+          setBoundaryDrafts({});
           setDraft(structuredClone(saved));
           setSelected(null);
           setNotice(null);
           setEpoch((current) => current + 1);
         }}
         onSave={() => {
+          const candidate = { ...draft, lines: applyTimingBoundaryDrafts(draft.lines, boundaryDrafts) };
+          const problems = validateTiming(candidate, initial.current.lyrics, initial.current.duration);
+          if (problems.length) {
+            setNotice({ error: true, text: problems.join(' ') });
+            return;
+          }
           setBusy(true);
           void window.api.timing
-            .save('storybook-timing', draft)
+            .save('storybook-timing', candidate)
             .then((result) => {
               setSaved(structuredClone(result));
               setDraft(result);
+              setBoundaryDrafts({});
               setNotice({ error: false, text: timingTexts.saved });
             })
             .catch((error: unknown) => setNotice({ error: true, text: error instanceof Error ? error.message : String(error) }))
             .finally(() => setBusy(false));
         }}
       />
+      {manualMode && <Alert severity="info">{timingTexts.manualModeHint}</Alert>}
       {notice && <Alert severity={notice.error ? 'error' : 'success'}>{notice.text}</Alert>}
       <TimingEditor
         key={epoch}
         view={{ ...initial.current, timing: draft, trackPath: showPlayer ? trackPath : null }}
         draft={draft}
+        manualMode={manualMode}
+        boundaryDrafts={boundaryDrafts}
+        onBoundaryInput={manualMode || Object.keys(boundaryDrafts).length ? onBoundaryInput : undefined}
         selected={selected}
         setSelected={setSelected}
         updateLine={updateLine}
@@ -244,6 +311,7 @@ export function TimingStory({ variant = 'regular', showPlayer = false, delayedMe
         )}
         <ActionButton
           onClick={() => {
+            setBoundaryDrafts({});
             setDraft(structuredClone(saved));
             setSelected(null);
             setNotice(null);
@@ -261,6 +329,9 @@ export function TimingStory({ variant = 'regular', showPlayer = false, delayedMe
 }
 
 interface TimingEditorProps {
+  manualMode: boolean;
+  boundaryDrafts: TimingBoundaryDrafts;
+  onBoundaryInput?: (id: number, boundary: 'start' | 'end', text: string) => void;
   view: TimingView;
   draft: TimingFile;
   selected: number | null;
@@ -273,9 +344,23 @@ interface TimingEditorProps {
 }
 
 /** Hook остаётся настоящим: декодирование, остановка строки и клавиатура работают на локальном MP3 витрины. */
-function TimingEditor({ view, draft, selected, setSelected, updateLine, onRemove, showPlayer, busy, describeError }: TimingEditorProps): ReactElement {
+function TimingEditor({
+  view,
+  draft,
+  manualMode,
+  boundaryDrafts,
+  onBoundaryInput,
+  selected,
+  setSelected,
+  updateLine,
+  onRemove,
+  showPlayer,
+  busy,
+  describeError
+}: TimingEditorProps): ReactElement {
   const player = useTimingPlayer({
     view,
+    manualMode,
     lines: draft.lines,
     sections: draft.sections,
     selected,
@@ -291,6 +376,9 @@ function TimingEditor({ view, draft, selected, setSelected, updateLine, onRemove
       {showPlayer && <TimingPlayer player={player} lines={draft.lines} stickyTop={0} />}
       <Box sx={{ minWidth: 0 }}>
         <TimingLinesTable
+          manualMode={manualMode}
+          boundaryDrafts={boundaryDrafts}
+          onBoundaryInput={onBoundaryInput}
           lines={draft.lines}
           selected={selected}
           duration={player.duration}

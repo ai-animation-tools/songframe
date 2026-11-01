@@ -4,10 +4,14 @@ import { Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography } f
 import type { TimingLine } from '@shared/types';
 import { neighbours } from '../timing';
 import { TimingLineRow } from './TimingLineRow';
+import type { TimingBoundaryDrafts } from '../manualTiming';
 
 interface TimingLinesTableProps {
   lines: TimingLine[];
   selected: number | null;
+  manualMode?: boolean;
+  boundaryDrafts?: TimingBoundaryDrafts;
+  onBoundaryInput?: (id: number, field: 'start' | 'end', value: string) => void;
   duration: number;
   textOf: (line: TimingLine) => string;
   onSelect: (line: TimingLine) => void;
@@ -16,9 +20,22 @@ interface TimingLinesTableProps {
   onRemove: (id: number) => void;
 }
 
-/** Таблица показывает строки по времени и передаёт каждой ограничения соседей. */
-export function TimingLinesTable({ lines, selected, duration, textOf, onSelect, onUpdate, onPlay, onRemove }: TimingLinesTableProps): ReactElement {
-  const sorted = [...lines].sort((a, b) => a.start - b.start);
+/** Черновики привязаны к ID, поэтому перестановка строк по времени не теряет незаконченный ввод. */
+export function TimingLinesTable({
+  lines,
+  selected,
+  duration,
+  textOf,
+  onSelect,
+  onUpdate,
+  onPlay,
+  onRemove,
+  manualMode = false,
+  boundaryDrafts,
+  onBoundaryInput
+}: TimingLinesTableProps): ReactElement {
+  // Ручной ввод не переставляет активную строку после каждого символа; сохранение упорядочит документ.
+  const sorted = manualMode || (boundaryDrafts && Object.keys(boundaryDrafts).length) ? lines : [...lines].sort((a, b) => a.start - b.start);
   return (
     // Локальная прокрутка сохраняет читаемую ширину текста и полей; таблица не превращает строку песни в узкий столбец.
     <Paper variant="outlined" role="region" aria-label={timingTexts.linesTable} tabIndex={0} sx={{ minWidth: 0, maxHeight: '70vh', overflow: 'auto' }}>
@@ -42,6 +59,9 @@ export function TimingLinesTable({ lines, selected, duration, textOf, onSelect, 
             <TimingLineRow
               key={line.id}
               line={line}
+              manualMode={manualMode}
+              boundaryDrafts={boundaryDrafts?.[line.id]}
+              onBoundaryInput={onBoundaryInput}
               selected={line.id === selected}
               text={textOf(line)}
               {...neighbours(line.id, lines, duration)}

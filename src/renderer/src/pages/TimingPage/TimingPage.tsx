@@ -18,6 +18,8 @@ import { emptyTiming, MIN_LENGTH, round } from './timing';
 import { useTimingPlayer } from './useTimingPlayer';
 import { useHeaderHeight } from '../../components/headerHeight';
 import { LinkedText } from '../../components/LinkedText';
+import { validateTiming } from '@shared/timing-validation';
+import { applyTimingBoundaryDrafts, parseTimingBoundary, type TimingBoundaryDrafts } from './manualTiming';
 
 const MODEL_KEY = 'songframe.whisperModel';
 
@@ -32,6 +34,9 @@ export function TimingPage(): ReactElement {
   const [selected, setSelected] = useState<number | null>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+  const [boundaryDrafts, setBoundaryDrafts] = useState<TimingBoundaryDrafts>({});
+  const [saveProblems, setSaveProblems] = useState<string[]>([]);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [model, setModel] = useState(() => {
@@ -59,6 +64,16 @@ export function TimingPage(): ReactElement {
 
   const updateLine = (id: number, patch: Partial<TimingLine>): void => {
     if (busy || generating) return;
+    setSaveProblems([]);
+    // Изменение на шкале заменяет только затронутые сырые поля, не стирая соседний ввод.
+    if (patch.start !== undefined || patch.end !== undefined)
+      setBoundaryDrafts((current) => {
+        const next = { ...current, [id]: { ...current[id] } };
+        if (patch.start !== undefined) delete next[id].start;
+        if (patch.end !== undefined) delete next[id].end;
+        if (!Object.keys(next[id]).length) delete next[id];
+        return next;
+      });
     // Ручной текст не нормализуем посреди ввода: служебная фраза меняется вместе с флажком.
     setLines((current) =>
       current.map((line) => {
@@ -70,7 +85,16 @@ export function TimingPage(): ReactElement {
     setDirty(true);
   };
 
-  const player = useTimingPlayer({ view, lines, sections, selected, setSelected, updateLine, busy, generating, generateOpen, describeError });
+  const onBoundaryInput = (id: number, field: 'start' | 'end', text: string): void => {
+    if (busy || generating) return;
+    // Нечисловая геометрия остаётся только в черновике. Ни blur, ни Enter не запускают проверку ручного режима.
+    if (manualMode || boundaryDrafts[id]?.[field] !== undefined) updateLine(id, { [field]: parseTimingBoundary(text) });
+    setBoundaryDrafts((current) => ({ ...current, [id]: { ...current[id], [field]: text } }));
+    setSaveProblems([]);
+    setDirty(true);
+  };
+
+  const player = useTimingPlayer({ view, lines, sections, selected, setSelected, updateLine, busy, generating, generateOpen, manualMode, describeError });
   const { duration, time, playLine, scrollTo } = player;
 
   const lyricsByNumber = useMemo(() => new Map((view?.lyrics ?? []).map((l) => [l.number, l])), [view]);
@@ -105,6 +129,8 @@ export function TimingPage(): ReactElement {
     // Нормализация отображения не является ручной правкой и не блокирует повторную разметку.
     // Файл остаётся прежним до явного сохранения; отмена правок всегда возвращает чистое состояние.
     setDirty(false);
+    setBoundaryDrafts({});
+    setSaveProblems([]);
     setSelected(null);
   }, [project]);
 
@@ -116,9 +142,9 @@ export function TimingPage(): ReactElement {
     const sorted = [...lines].sort((a, b) => a.start - b.start);
     const after = sorted.filter((l) => l.start < time).pop();
     const before = sorted.find((l) => l.start >= time);
-    const start = Math.max(after?.end ?? 0, time);
-    const end = Math.min((before?.start ?? duration) || start + 2, start + 2);
-    if (end - start < MIN_LENGTH) {
+    const start = manualMode ? time : Math.max(after?.end ?? 0, time);
+    const end = manualMode ? Math.min(duration || start + 2, start + 2) : Math.min((before?.start ?? duration) || start + 2, start + 2);
+    if (!manualMode && end - start < MIN_LENGTH) {
       notify(timingTexts.noRoomForLine, 'warning');
       return;
     }
@@ -136,12 +162,19 @@ export function TimingPage(): ReactElement {
       }
     ]);
     setSelected(id);
+    setSaveProblems([]);
     setDirty(true);
   };
 
   const removeLine = (id: number): void => {
     setLines((current) => current.filter((l) => l.id !== id));
     if (selected === id) setSelected(null);
+    setBoundaryDrafts((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    setSaveProblems([]);
     setDirty(true);
   };
 
@@ -149,7 +182,11 @@ export function TimingPage(): ReactElement {
   const recalculateSections = (): void => {
     if (busy || generating || invalidBindings || !lines.length || !view) return;
     // Примечания новых секций должны ссылаться на те же номера строк, которые запишет saveTiming.
-    const ordered = [...lines].sort((a, b) => a.start - b.start).map((line, index) => ({ ...line, id: index + 1 }));
+    // Незаконченные поля не должны создавать NaN в музыкальной карте; сам черновик строк сохраняется.
+    const ordered = applyTimingBoundaryDrafts(lines, boundaryDrafts)
+      .filter((line) => Number.isFinite(line.start) && Number.isFinite(line.end) && line.end >= line.start)
+      .sort((a, b) => a.start - b.start)
+      .map((line, index) => ({ ...line, id: index + 1 }));
     setSections(buildSections(view.lyrics, ordered, duration || null));
     setDirty(true);
     notify(timingTexts.sectionsRecalculated, 'info');
@@ -161,18 +198,30 @@ export function TimingPage(): ReactElement {
       notify(timingTexts.lyricsChanged, 'warning');
       return;
     }
+    const base = view?.timing ?? emptyTiming(duration || null);
+    const payload = { ...base, lines: applyTimingBoundaryDrafts(lines, boundaryDrafts), sections };
+    // Проверка запускается только явным сохранением и совпадает с обязательной проверкой main перед записью.
+    const problems = validateTiming(payload, view?.lyrics ?? [], duration || null);
+    setSaveProblems(problems);
+    if (problems.length) {
+      notify(timingTexts.saveValidationFailed, 'error');
+      return;
+    }
     setBusy(true);
     try {
-      const base = view?.timing ?? emptyTiming(duration || null);
-      const saved = await window.api.timing.save(project, { ...base, lines, sections });
+      const saved = await window.api.timing.save(project, payload);
       setView((current) => (current ? { ...current, timing: saved } : current));
       setLines(saved.lines);
       setSections(saved.sections);
+      setBoundaryDrafts({});
+      setSaveProblems([]);
       setDirty(false);
       await refresh();
       notify(timingTexts.saved, 'success');
     } catch (error) {
-      notify(describeError(error), 'error');
+      const message = describeError(error);
+      setSaveProblems([message]);
+      notify(message, 'error');
     } finally {
       setBusy(false);
     }
@@ -239,6 +288,8 @@ export function TimingPage(): ReactElement {
           generating={generating}
           invalidBindings={invalidBindings}
           canGenerate={canGenerate}
+          manualMode={manualMode}
+          onManualModeChange={setManualMode}
           generateBlockedReason={generateBlockedReason}
           onGenerate={() => setGenerateOpen(true)}
           onConfirmAll={confirmAll}
@@ -261,6 +312,19 @@ export function TimingPage(): ReactElement {
           <LinkedText text={timingTexts.sourceProblems({ trackMissing: !view.trackPath, problems: view.problems })} />
         </Alert>
       ) : null}
+      {manualMode && <Alert severity="info">{timingTexts.manualModeHint}</Alert>}
+      {!!saveProblems.length && (
+        <Alert severity="error" aria-label={timingTexts.saveProblemsTitle}>
+          <Stack spacing={0.5}>
+            <Typography>{timingTexts.saveProblemsTitle}</Typography>
+            {saveProblems.map((problem, index) => (
+              <Typography key={`${index}:${problem}`} variant="body2">
+                <LinkedText text={problem} />
+              </Typography>
+            ))}
+          </Stack>
+        </Alert>
+      )}
       {lines.length ? (
         <Typography variant="body2" color="text.secondary">
           {timingTexts.sectionsHelp({ count: player.sections.length })}
@@ -278,6 +342,9 @@ export function TimingPage(): ReactElement {
         lines={lines}
         selected={selected}
         duration={duration}
+        manualMode={manualMode}
+        boundaryDrafts={boundaryDrafts}
+        onBoundaryInput={manualMode || Object.keys(boundaryDrafts).length ? onBoundaryInput : undefined}
         textOf={textOf}
         onUpdate={updateLine}
         onPlay={playLine}

@@ -92,6 +92,7 @@ describe('Форматированные фразы общих компонен�
     const html = renderToStaticMarkup(
       createElement(FileDropZone, { kind, multiple, label: 'Загрузка', message: 'Файл', onFiles: vi.fn(), onPick: canPick ? vi.fn() : undefined })
     );
-    expect(visibleText(html)).toBe(`Файл${expected}`);
+    // Явный пробел FileDropZone разделяет сообщение и подсказку в DOM и при доступном чтении; CSS-переноса для этого недостаточно.
+    expect(visibleText(html)).toBe(`Файл ${expected}`);
   });
 });

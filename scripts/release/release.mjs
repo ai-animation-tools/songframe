@@ -141,7 +141,7 @@ function verifyRemoteAsset(remote, asset, tag) {
 /** Сборка и приёмка обеих поставок, те же шаги, что описаны для ручной проверки в docs/development.md. */
 async function buildDeliveries({ version, run, cwd, reports }) {
   const { image, installer } = assetNames(version);
-  // Версия попадает только в собранные пакеты (extraMetadata electron-builder), package.json не меняется.
+  // prepare уже сверил версию с package.json; явное значение исключает чужой SONGFRAME_VERSION из окружения.
   const env = { SONGFRAME_VERSION: version, CSC_IDENTITY_AUTO_DISCOVERY: 'false' };
   const step = (command, args) => run(command, args, { cwd, inherit: true, env });
   await step('yarn', ['dist:linux']);
@@ -187,8 +187,12 @@ export function createRelease(options = {}) {
     const published = releases.filter((item) => !item.draft && !item.prerelease && stableTag.test(item.tag_name));
     published.sort((a, b) => compareVersions(b.tag_name, a.tag_name));
     const newest = published[0];
-    const base = JSON.parse(await readFile(join(cwd, 'package.json'), 'utf8')).version;
-    const selected = version ?? (newest ? newest.tag_name.slice(1).replace(/\d+$/, (patch) => String(BigInt(patch) + 1n)) : base);
+    const packageVersion = JSON.parse(await readFile(join(cwd, 'package.json'), 'utf8')).version;
+    requireState(
+      typeof packageVersion === 'string' && stableTag.test(`v${packageVersion}`),
+      'Версия в package.json должна иметь формат X.Y.Z без префикса v. Исправьте её и зафиксируйте изменение отдельным коммитом.'
+    );
+    const selected = version ?? (newest ? newest.tag_name.slice(1).replace(/\d+$/, (patch) => String(BigInt(patch) + 1n)) : packageVersion);
     const tag = `v${selected}`;
     const previous = published.find((item) => item.tag_name !== tag && compareVersions(item.tag_name, tag) < 0);
     const previousRevision = previous ? tagRevision(previous.tag_name) : null;
@@ -205,6 +209,7 @@ export function createRelease(options = {}) {
       newest,
       previous,
       previousRevision,
+      packageVersion,
       version: selected,
       tag,
       existing: releases.find((item) => item.tag_name === tag),
@@ -237,6 +242,7 @@ export function createRelease(options = {}) {
     for (let i = 0; i + 2 < log.length; i += 3) commits.push({ revision: log[i].trim(), subject: log[i + 1], body: log[i + 2].trim() });
     return {
       version: current.version,
+      packageVersion: current.packageVersion,
       tag: current.tag,
       revision: current.revision,
       previousTag: current.previous?.tag_name ?? null,
@@ -258,6 +264,11 @@ export function createRelease(options = {}) {
     requireState(version && notesFile, 'prepare требует --version и --notes.');
     const current = await state(version);
     requireState(current.clean, 'Подготовка требует чистого дерева. Зафиксируйте изменения отдельным действием.');
+    // Тег должен закреплять сам номер выпуска, чтобы обычная сборка того же коммита имела ту же версию.
+    requireState(
+      current.packageVersion === version,
+      `Версия выпуска ${version} не совпадает с package.json (${current.packageVersion}). Обновите version в package.json до ${version} и зафиксируйте изменение отдельным коммитом перед prepare.`
+    );
     requireState(!current.existing || current.existing.draft, 'Эта версия уже опубликована; для изменений выберите новую.');
     requireState(
       !current.newest || compareVersions(current.tag, current.newest.tag_name) > 0,

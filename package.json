@@ -1,7 +1,7 @@
 {
   "name": "songframe",
   "desktopName": "tools.songframe.app",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Инструменты для создания музыкального клипа с помощью AI агента",
   "private": true,
   "main": "build/app/main/index.js",

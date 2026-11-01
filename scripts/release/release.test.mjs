@@ -12,7 +12,7 @@ const tag = `v${version}`;
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 /** Настоящий Git работает во временной копии с локальным origin; GitHub и сборка поставок подменены. */
-async function fixture(context) {
+async function fixture(context, { packageVersion = version } = {}) {
   const temporary = await mkdtemp(join(tmpdir(), 'songframe-release-test-'));
   context.after(() => rm(temporary, { recursive: true, force: true }));
   const cwd = join(temporary, 'songframe');
@@ -23,7 +23,7 @@ async function fixture(context) {
   await git('config', 'user.name', 'Проверка релизов');
   await git('config', 'user.email', 'release-test@example.invalid');
   await writeFile(join(cwd, '.gitignore'), 'build/\n');
-  await writeFile(join(cwd, 'package.json'), JSON.stringify({ name: 'songframe', version: '0.1.0' }));
+  await writeFile(join(cwd, 'package.json'), JSON.stringify({ name: 'songframe', version: packageVersion }));
   await git('add', '.');
   await git('commit', '-m', 'Начальное состояние');
   await runCommand('git', ['init', '--bare', origin], { cwd });
@@ -141,10 +141,11 @@ test('состояние CI берёт последнюю попытку workflo
 });
 
 test('план первого выпуска берёт версию package.json и не требует чистого дерева', async (context) => {
-  const { cwd, release, head } = await fixture(context);
+  const { cwd, release, head } = await fixture(context, { packageVersion: '0.1.0' });
   await writeFile(join(cwd, 'черновик.txt'), 'не закоммичено');
   const plan = await release.plan();
   assert.equal(plan.version, '0.1.0');
+  assert.equal(plan.packageVersion, '0.1.0');
   assert.equal(plan.revision, await head());
   assert.equal(plan.firstRelease, true);
   assert.equal(plan.workingTreeClean, false);
@@ -155,7 +156,41 @@ test('план первого выпуска берёт версию package.jso
   assert.match(plan.changes, /package\.json/);
 });
 
-test('prepare ставит только локальный тег, собирает комплект и повторно его не пересобирает', async (context) => {
+test('план явной версии показывает package.json и ничего не меняет при расхождении', async (context) => {
+  const { cwd, git, release, builds } = await fixture(context);
+  const original = await readFile(join(cwd, 'package.json'), 'utf8');
+  const tags = await git('tag', '--list');
+  const status = await git('status', '--porcelain');
+  const plan = await release.plan('0.3.0');
+  assert.equal(plan.version, '0.3.0');
+  assert.equal(plan.packageVersion, version);
+  assert.equal(await readFile(join(cwd, 'package.json'), 'utf8'), original);
+  assert.equal(await git('tag', '--list'), tags);
+  assert.equal(await git('status', '--porcelain'), status);
+  assert(!existsSync(join(cwd, 'build/releases/v0.3.0')));
+  assert.equal(builds(), 0);
+});
+
+test('prepare отклоняет расхождение с package.json до тега, каталога и сборки', async (context) => {
+  const { cwd, git, notes, release, builds } = await fixture(context);
+  const original = await readFile(join(cwd, 'package.json'), 'utf8');
+  await assert.rejects(release.prepare('0.3.0', notes), /не совпадает с package\.json.*Обновите version.*зафиксируйте/);
+  assert.equal(await readFile(join(cwd, 'package.json'), 'utf8'), original);
+  assert.equal(await git('tag', '--list'), '');
+  assert.equal(await git('status', '--porcelain'), '');
+  assert(!existsSync(join(cwd, 'build/releases/v0.3.0')));
+  assert.equal(builds(), 0);
+});
+
+test('prepare отклоняет некорректную версию package.json до тега и сборки', async (context) => {
+  const { cwd, git, notes, release, builds } = await fixture(context, { packageVersion: 'v0.2.0' });
+  await assert.rejects(release.prepare(version, notes), /Версия в package\.json.*X\.Y\.Z/);
+  assert.equal(await git('tag', '--list'), '');
+  assert(!existsSync(join(cwd, 'build/releases', tag)));
+  assert.equal(builds(), 0);
+});
+
+test('prepare с версией package.json ставит только локальный тег, собирает комплект и повторно его не пересобирает', async (context) => {
   const { cwd, git, notes, calls, release, head, builds } = await fixture(context);
   const result = await release.prepare(version, notes);
   assert.deepEqual(result, { tag, revision: await head(), directory: `build/releases/${tag}`, prepared: true, reused: false });
@@ -163,7 +198,7 @@ test('prepare ставит только локальный тег, собира�
   assert(!calls.some(([command, sub]) => command === 'git' && sub === 'push'));
   const metadata = JSON.parse(await readFile(join(cwd, 'build/releases', tag, 'release.json'), 'utf8'));
   assert.equal(metadata.assets.length, 8);
-  assert.equal(JSON.parse(await readFile(join(cwd, 'package.json'), 'utf8')).version, '0.1.0');
+  assert.equal(JSON.parse(await readFile(join(cwd, 'package.json'), 'utf8')).version, version);
   assert.equal((await release.prepare(version, notes)).reused, true);
   assert.equal(builds(), 1);
   await writeFile(notes, 'Другое описание.\n');
@@ -233,6 +268,7 @@ test('publish допускает более новый HEAD, если исход
   const source = await head();
   await passCi(source);
   await writeFile(join(cwd, 'инструмент.txt'), 'правка сценария публикации');
+  await writeFile(join(cwd, 'package.json'), JSON.stringify({ name: 'songframe', version: '0.3.0' }));
   await git('add', '.');
   await git('commit', '-m', 'Правка инструмента публикации');
   await assert.rejects(release.publish(version), /отправьте текущий коммит в main/);
@@ -259,11 +295,15 @@ test('следующая версия по умолчанию — patch посл
   await git('commit', '-m', 'Новая возможность');
   const plan = await release.plan();
   assert.equal(plan.version, '0.2.1');
+  assert.equal(plan.packageVersion, version);
   assert.equal(plan.previousTag, tag);
   assert.deepEqual(
     plan.commits.map((commit) => commit.subject),
     ['Новая возможность']
   );
   await git('push', 'origin', 'main');
+  await writeFile(join(cwd, 'package.json'), JSON.stringify({ name: 'songframe', version: '0.1.5' }));
+  await git('add', 'package.json');
+  await git('commit', '-m', 'Версия ниже опубликованной');
   await assert.rejects(release.prepare('0.1.5', notes), /выше последнего опубликованного/);
 });

@@ -181,9 +181,11 @@ describe('жизненный цикл генерации референса', ()
     expect(api.generate).not.toHaveBeenCalled();
   });
 
-  it('обложка сохраняет вызов create с двумя аргументами и не получает контекст референса', async () => {
+  it('обложка передаёт выбранные опоры и снимает подготовку при изменении выбора', async () => {
     await RenderHook('cover', { images: [{ path: '/uploads/hero.png', label: 'Герой' }] }).start('Обложка');
-    expect(api.create).toHaveBeenCalledExactlyOnceWith('/project', 'Обложка');
+    expect(api.create).toHaveBeenCalledExactlyOnceWith('/project', 'Обложка', { images: [{ path: '/uploads/hero.png', label: 'Герой' }] });
+    expect(RenderHook('cover').invalidate()).toBe(true);
+    expect(RenderHook('cover').session).toBeNull();
   });
 
   it('подготовка не отправляет генерацию, двойной клик отправляет ровно один согласованный запрос', async () => {

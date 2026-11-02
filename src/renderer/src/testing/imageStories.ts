@@ -8,6 +8,7 @@ import { TEST_AGENT_PROVIDER, TEST_PROVIDER, testAgentProviderInfo, testProvider
 import { createStoryApi, type ApiOverrides, type StoryApiSession, type StoryOptions } from './storybook';
 
 export const IMAGE_STORY_PROJECT = '/mock/Клип с длинным названием';
+export const IMAGE_STORY_UPLOAD = '/mock/uploads/extra-story-image.png';
 export const IMAGE_STORY_PATH = '/mock/story-image.png';
 export const IMAGE_STORY_TARGET = 'Олег у старых дачных ворот — основной образ персонажа';
 export const IMAGE_STORY_PROMPT =
@@ -34,6 +35,7 @@ export interface ImageModelOptions {
   failContextOnce?: boolean;
   failInspectOnce?: boolean;
   missingReferenceImageInspection?: boolean;
+  missingCoverImageInspection?: boolean;
   longContext?: boolean;
   preparePending?: boolean;
   delayCreate?: boolean;
@@ -109,8 +111,9 @@ export function createImageModel(options: ImageModelOptions = {}): {
     if (options.quote === 'insufficient' && preparation === 1) return { credits: 18, balance: 3, verdict: 'insufficient_balance' };
     return { credits: 18, balance: 120, verdict: 'ok' };
   };
-  const create: CoverGenerationApi['create'] = async (project, prompt) => {
-    inspection.creates.push({ mode: 'cover', project, prompt });
+  const create: CoverGenerationApi['create'] = async (project, prompt, input) => {
+    const inspected = await inspectInputs(input ?? { images: [] });
+    inspection.creates.push({ mode: 'cover', project, prompt, input: input ? structuredClone(input) : undefined });
     if (disposed) throw new Error('История уже закрыта.');
     const id = `story-image-${++sequence}`;
     const session: CoverGenerationSession = {
@@ -126,6 +129,14 @@ export function createImageModel(options: ImageModelOptions = {}): {
       approvalToken: null,
       quote: null
     };
+    const unique = new Map<string, GenerationReferenceImage>();
+    for (const image of inspected) {
+      const previous = unique.get(image.sha256);
+      if (previous) {
+        if (!previous.label.split(' · ').includes(image.label)) previous.label += ` · ${image.label}`;
+      } else unique.set(image.sha256, { ...image });
+    }
+    session.referenceImages = [...unique.values()].map((image, index) => ({ ...image, path: `/mock/private-session/${id}/${index}/story-image.png` }));
     sessions.set(id, session);
     return snapshot(session);
   };
@@ -180,6 +191,7 @@ export function createImageModel(options: ImageModelOptions = {}): {
     polls.delete(id);
   };
   const cover: CoverGenerationApi = {
+    inspect: async (input) => inspectInputs(input),
     create,
     prepare,
     generate,
@@ -221,25 +233,10 @@ export function createImageModel(options: ImageModelOptions = {}): {
       };
     },
     create: async (project, prompt, input) => {
-      const inspected = await inspectInputs(input ?? { images: [] });
-      const session = await create(project, prompt);
+      const session = await create(project, prompt, input);
       inspection.creates.pop();
       inspection.creates.push({ mode: 'reference', project, prompt, input: input ? structuredClone(input) : undefined });
       const stored = sessionOf(session.id);
-      // Сессия сохраняет ровно отредактированный текст, без скрытой композиции контекста.
-      stored.prompt = prompt;
-      // Как и backend, объединяем совпавшие байты без скрытых описаний в транспортных метаданных.
-      const unique = new Map<string, GenerationReferenceImage>();
-      for (const image of inspected) {
-        const previous = unique.get(image.sha256);
-        if (previous) {
-          if (!previous.label.split(' · ').includes(image.label)) previous.label += ` · ${image.label}`;
-        } else unique.set(image.sha256, { ...image });
-      }
-      stored.referenceImages = [...unique.values()].map((image, index) => ({
-        ...image,
-        path: `/mock/private-session/${session.id}/${index}/story-image.png`
-      }));
       if (options.delayCreate)
         await new Promise<void>((resolve) => {
           releaseCreate = () => {
@@ -279,7 +276,7 @@ export function createImageModel(options: ImageModelOptions = {}): {
     }
   };
   return {
-    api: { cover, referenceImages },
+    api: { cover, referenceImages, dialog: { pickFiles: async () => [IMAGE_STORY_UPLOAD] } },
     completeCreate,
     completeAttachment,
     inspect: () => structuredClone({ ...inspection, sessions: [...sessions.values()] }),
@@ -302,7 +299,10 @@ export function imageStoryOptions(options: ImageModelOptions = {}, selected = tr
       activeInspection = model.inspect;
       activeCreateRelease = model.completeCreate;
       activeAttachmentRelease = model.completeAttachment;
-      const session = createStoryApi(model.api, { missingReferenceImageInspection: options.missingReferenceImageInspection });
+      const session = createStoryApi(model.api, {
+        missingReferenceImageInspection: options.missingReferenceImageInspection,
+        missingCoverImageInspection: options.missingCoverImageInspection
+      });
       session.onCleanup(registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo));
       session.onCleanup(registerMediaProviderForTests(TEST_AGENT_PROVIDER, testAgentProviderInfo));
       session.onCleanup(model.dispose);

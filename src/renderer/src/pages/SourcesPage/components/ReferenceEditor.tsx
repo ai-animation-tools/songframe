@@ -2,13 +2,15 @@ import { commonTexts } from '@shared/texts/common';
 import { sourcesTexts } from '@shared/texts/sources';
 /** Сворачиваемая сущность объединяет общие правила и отдельные строки её изображений. */
 import { useState, type ReactElement } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Box, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { ReferenceKind, SourceKind } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { ID_PATTERN, suggestId } from '../helpers';
 import type { FileForm, ReferenceForm } from '../types';
+import { ImageGallery } from '../../../components/ImageGallery';
+import { REFERENCE_VIEW_LABELS } from '@shared/types';
 import { ReferenceFileCard } from './ReferenceFileCard';
 import { ReferenceImageGenerateButton } from '../../../components/ReferenceImageGenerateButton';
 import { AiProblemAlert } from '../../../components/AiProblemAlert';
@@ -19,6 +21,9 @@ interface Props {
   reference: ReferenceForm;
   kinds: SourceKind[];
   duplicateId: boolean;
+  filePath: (path: string, absolute?: boolean) => string;
+  removalProblem?: string;
+  removalPending?: boolean;
   fileUrl: (path: string, absolute?: boolean) => string;
   onUpdate: (patch: Partial<ReferenceForm>) => void;
   onRetryFilePrompt: (fileKey: number) => Promise<void>;
@@ -35,6 +40,9 @@ export function ReferenceEditor({
   kinds,
   duplicateId,
   fileUrl,
+  filePath,
+  removalProblem,
+  removalPending,
   onUpdate,
   onRetryFilePrompt,
   onRemove,
@@ -44,6 +52,8 @@ export function ReferenceEditor({
   onUpdateFile,
   onRemoveFile
 }: Props): ReactElement {
+  const [previewKey, setPreviewKey] = useState<number | null>(null);
+  const previewIndex = reference.files.findIndex((file) => file.key === previewKey);
   const [expanded, setExpanded] = useState(!reference.files.length);
   const kind = kinds.find((item) => item.id === reference.kind)?.label ?? reference.kind;
   // Те же правила, что у проверки сохранения: ошибка видна у поля, а не только в общем списке в начале страницы.
@@ -140,17 +150,34 @@ export function ReferenceEditor({
             placeholder={sourcesTexts.entityDescriptionPlaceholder}
             helperText={<LinkedText text={sourcesTexts.entityDescriptionHint} />}
           />
+          {removalPending && <Typography role="status">{sourcesTexts.referenceRemovalChecking}</Typography>}
+          {removalProblem && <Alert severity="warning">{removalProblem}</Alert>}
           {reference.files.map((file) => (
             <ReferenceFileCard
               key={file.key}
               file={file}
               referenceName={reference.name}
               fileUrl={fileUrl}
+              removalPending={removalPending}
+              onPreview={() => setPreviewKey(file.key)}
               onUpdate={(patch) => onUpdateFile(file.key, patch)}
               onRemove={() => onRemoveFile(file.key)}
               onRetryPrompt={() => onRetryFilePrompt(file.key)}
             />
           ))}
+          {previewIndex >= 0 && (
+            // Поздний ответ удаления может изменить набор: новая галерея не наследует индекс прежнего списка.
+            <ImageGallery
+              key={reference.files.map((file) => file.key).join(':')}
+              images={reference.files.map((file) => ({
+                imagePath: filePath(file.sourcePath ?? file.existingPath!, !!file.sourcePath),
+                label: sourcesTexts.referenceImageAlt({ name: reference.name, view: REFERENCE_VIEW_LABELS[file.view] })
+              }))}
+              initialIndex={previewIndex}
+              kind={sourcesTexts.references}
+              onClose={() => setPreviewKey(null)}
+            />
+          )}
           {filesError ? (
             <Typography variant="body2" color="warning.main">
               {filesError}
@@ -173,6 +200,8 @@ export function ReferenceEditor({
             label={sourcesTexts.removeReference({ name: reference.name })}
             description={sourcesTexts.removeReferenceDescription}
             onConfirm={onRemove}
+            disabled={removalPending}
+            disabledReason={sourcesTexts.referenceRemovalChecking}
             startIcon={<DeleteOutlineIcon />}
             sx={{ alignSelf: 'flex-start' }}
           />

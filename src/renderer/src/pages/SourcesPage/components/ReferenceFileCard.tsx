@@ -1,7 +1,8 @@
+import { componentsTexts } from '@shared/texts/components';
 import { sourcesTexts } from '@shared/texts/sources';
 /** Изображение, описание и его собственный промпт образуют одну строку, чтобы виды не смешивались. */
 import type { ReactElement } from 'react';
-import { Box, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Box, ButtonBase, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { REFERENCE_VIEW_LABELS, type ReferenceView } from '@shared/types';
 import type { FileForm } from '../types';
@@ -12,12 +13,14 @@ interface Props {
   file: FileForm;
   referenceName: string;
   fileUrl: (path: string, absolute?: boolean) => string;
+  onPreview: () => void;
+  removalPending?: boolean;
   onUpdate: (patch: Partial<FileForm>) => void;
   onRemove: () => void;
   onRetryPrompt: () => Promise<void>;
 }
 
-export function ReferenceFileCard({ file, referenceName, fileUrl, onUpdate, onRemove, onRetryPrompt }: Props): ReactElement {
+export function ReferenceFileCard({ file, referenceName, fileUrl, onPreview, removalPending, onUpdate, onRemove, onRetryPrompt }: Props): ReactElement {
   const src = file.sourcePath ? fileUrl(file.sourcePath, true) : fileUrl(file.existingPath!);
   return (
     <Paper variant="outlined" sx={{ p: 1.5, containerType: 'inline-size', containerName: 'reference-file' }}>
@@ -32,16 +35,31 @@ export function ReferenceFileCard({ file, referenceName, fileUrl, onUpdate, onRe
         }}
       >
         <Box sx={{ position: 'relative' }}>
-          <img
-            src={src}
-            alt={sourcesTexts.referenceImageAlt({ name: referenceName, view: REFERENCE_VIEW_LABELS[file.view] })}
-            style={{ width: '100%', height: 150, objectFit: 'contain', borderRadius: 6, display: 'block' }}
-          />
+          <ButtonBase
+            onClick={onPreview}
+            aria-label={componentsTexts.gallery.openLarge({
+              label: sourcesTexts.referenceImageAlt({ name: referenceName, view: REFERENCE_VIEW_LABELS[file.view] })
+            })}
+            sx={{
+              display: 'block',
+              width: '100%',
+              borderRadius: 1,
+              '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2 }
+            }}
+          >
+            <img
+              src={src}
+              alt={sourcesTexts.referenceImageAlt({ name: referenceName, view: REFERENCE_VIEW_LABELS[file.view] })}
+              style={{ width: '100%', height: 150, objectFit: 'contain', borderRadius: 6, display: 'block', cursor: 'zoom-in' }}
+            />
+          </ButtonBase>
           <DestructiveButton
             icon
             label={sourcesTexts.removeReferenceImage({ view: REFERENCE_VIEW_LABELS[file.view] })}
             description={file.sourcePath ? sourcesTexts.removeNewReferenceImage : sourcesTexts.removeSavedReferenceImage}
             onConfirm={onRemove}
+            disabled={removalPending}
+            disabledReason={sourcesTexts.referenceRemovalChecking}
             sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'background.paper' }}
           >
             <CloseIcon fontSize="inherit" />

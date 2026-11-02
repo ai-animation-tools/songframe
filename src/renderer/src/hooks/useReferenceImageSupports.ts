@@ -23,14 +23,14 @@ export function referenceSupportNotes(options: readonly ReferenceImageOption[], 
     .join('\n\n');
 }
 
-export function useReferenceImageSupports(enabled: boolean, options: ReferenceImageOption[]) {
+export function useReferenceImageSupports(enabled: boolean, options: ReferenceImageOption[], mode: 'reference' | 'cover' = 'reference') {
   const { describeError } = useApp();
   // Ключ не включает note: правка примечания не требует повторно читать те же байты.
   const key = JSON.stringify(options.map(({ path, label }) => ({ path, label })));
   const [snapshot, setSnapshot] = useState<{ key: string; images: GenerationReferenceImage[] } | null>(null);
   const [failure, setFailure] = useState<{ key: string; message: string; restartRequired: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const requestKey = `${key}:${attempt}`;
+  const requestKey = `${mode}:${key}:${attempt}`;
   useEffect(() => {
     if (!enabled || key === '[]') return;
     let cancelled = false;
@@ -41,9 +41,10 @@ export function useReferenceImageSupports(enabled: boolean, options: ReferenceIm
     void (async () => {
       let restartRequired = false;
       try {
-        restartRequired = typeof window.api.referenceImages.inspect !== 'function';
+        const api = mode === 'cover' ? window.api.cover : window.api.referenceImages;
+        restartRequired = typeof api.inspect !== 'function';
         if (restartRequired) throw new Error(sourcesTexts.referenceSupportsRestartRequired);
-        const images = await window.api.referenceImages.inspect({ images: JSON.parse(key) as { path: string; label: string }[] });
+        const images = await api.inspect({ images: JSON.parse(key) as { path: string; label: string }[] });
         if (!cancelled) setSnapshot({ key: requestKey, images });
       } catch (error) {
         if (!cancelled) setFailure({ key: requestKey, message: describeError(error), restartRequired });
@@ -52,7 +53,7 @@ export function useReferenceImageSupports(enabled: boolean, options: ReferenceIm
     return () => {
       cancelled = true;
     };
-  }, [enabled, key, requestKey, describeError]);
+  }, [enabled, key, requestKey, describeError, mode]);
   const images = !enabled || options.length === 0 ? [] : snapshot?.key === requestKey ? snapshot.images : null;
   const error = failure?.key === requestKey ? failure.message : null;
   return {

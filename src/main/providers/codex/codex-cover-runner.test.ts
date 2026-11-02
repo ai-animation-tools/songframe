@@ -79,7 +79,7 @@ describe('обложка Codex', () => {
   });
 });
 
-it('передаёт Codex опоры того же объекта приватными копиями и требует использовать их в image_gen', async () => {
+it.each(['reference', undefined] as const)('передаёт Codex опоры приватными копиями и требует image_gen: %s', async (purpose) => {
   const source = join(root, 'original.png');
   const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII=', 'base64');
   writeFileSync(source, bytes);
@@ -90,7 +90,7 @@ it('передаёт Codex опоры того же объекта приват�
     workDir,
     project: root,
     prompt: 'Тот же Олег. Стиль: объёмная анимация.',
-    purpose: 'reference',
+    purpose,
     references,
     signal: new AbortController().signal
   });
@@ -100,8 +100,8 @@ it('передаёт Codex опоры того же объекта приват�
   expect(readFileSync(join(workDir, context.referenceImages[0].path))).toEqual(bytes);
   expect(readFileSync(source)).toEqual(bytes);
   expect(calls[0].input.prompt).toContain('передай их встроенному image_gen как изображения-референсы');
-  expect(calls[0].input.prompt).toContain('Сохрани внешность');
-  expect(calls[0].input.prompt).not.toContain('квадратную обложку');
+  expect(calls[0].input.prompt).toContain(purpose === 'reference' ? 'Сохрани внешность' : 'Сохрани узнаваемую внешность');
+  expect(calls[0].input.prompt.includes('квадратную обложку')).toBe(purpose !== 'reference');
 });
 
 it('отклоняет изменённые байты согласованной опоры до запуска Codex', async () => {

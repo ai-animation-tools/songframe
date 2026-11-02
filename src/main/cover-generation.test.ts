@@ -428,3 +428,49 @@ describe('Временная генерация обложки', () => {
     expect(() => create().create(project, 'Обложка')).toThrow(/провайдера изображений/);
   });
 });
+
+// Обложка закрепляет выбранные байты так же, как референс, и сохраняет их между попытками.
+it('фиксирует опоры обложки, передаёт копии исполнителю и сохраняет их при повторе', async () => {
+  const source = join(root, 'support.png');
+  png(source, 123, 456);
+  const received: PreparedCoverCandidateInput[] = [];
+  const value = create(
+    prepared(async (input) => {
+      received.push(input);
+      expect(input.purpose).toBeUndefined();
+      expect(imageDimensions(input.references![0].path)).toEqual({ width: 123, height: 456 });
+      png(join(input.workDir, 'out.png'));
+      return { path: 'out.png' };
+    })
+  );
+  const { id } = value.create(project, 'Обложка', { images: [{ path: source, label: 'Герой' }] });
+  png(source, 999, 999);
+  const frozen = value.view(id).referenceImages![0];
+  expect(frozen.path).not.toBe(source);
+  await launch(value, id);
+  expect(value.view(id).status).toBe('ready');
+  expect(existsSync(frozen.path)).toBe(true);
+  await launch(value, id);
+  expect(received).toHaveLength(2);
+  const accepted = value.accept(id, { x: 0, y: 0, size: 40 });
+  expect(imageDimensions(accepted.path)).toEqual({ width: 40, height: 40 });
+  expect(imageDimensions(source)).toEqual({ width: 999, height: 999 });
+});
+
+it('не запускает обложку после подмены закреплённой опоры и сохраняет опоры после отказа генератора', async () => {
+  const source = join(root, 'support.png');
+  png(source);
+  const run = vi.fn(async () => {
+    throw new Error('Отказ генератора');
+  });
+  const value = create(prepared(run));
+  const { id } = value.create(project, 'Обложка', { images: [{ path: source, label: 'Герой' }] });
+  await launch(value, id);
+  expect(value.view(id).status).toBe('failed');
+  const frozen = value.view(id).referenceImages![0];
+  expect(existsSync(frozen.path)).toBe(true);
+  const request = await value.prepare(id);
+  png(frozen.path, 1, 1);
+  expect(() => value.generate(id, request.requestSha!, approval(value, id))).toThrow('изменились');
+  expect(run).toHaveBeenCalledTimes(1);
+});

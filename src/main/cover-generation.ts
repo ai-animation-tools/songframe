@@ -95,7 +95,7 @@ export class CoverGeneration {
     assertAiSelection(this.options.settings, canonical, 'image');
     if (typeof prompt !== 'string' || !prompt.trim() || prompt.includes('\0') || Buffer.byteLength(prompt) > 32 * 1024)
       throw new Error(this.texts.coverPromptInvalid);
-    const inputs = this.options.reference ? referenceInputs(input) : [];
+    const inputs = referenceInputs(input);
     const id = randomUUID();
     const archive = join(canonical, 'plan/reference-images', id);
     if (this.options.reference) mkdirSync(archive, { recursive: true });
@@ -103,7 +103,7 @@ export class CoverGeneration {
     const session: CoverGenerationSession = {
       id,
       prompt,
-      ...(this.options.reference ? { referenceImages: [] } : {}),
+      referenceImages: [],
       status: 'idle',
       image: null,
       error: null,
@@ -115,7 +115,7 @@ export class CoverGeneration {
       quote: null
     };
     try {
-      if (this.options.reference) session.referenceImages = checkedCoverReferences(copyReferences(inputs, join(root, 'references')));
+      session.referenceImages = checkedCoverReferences(copyReferences(inputs, join(root, 'references')));
     } catch (error) {
       rmSync(root, { recursive: true, force: true });
       throw error;
@@ -141,17 +141,18 @@ export class CoverGeneration {
     record.task = (async () => {
       try {
         mkdirSync(workDir, { recursive: true });
-        const references = this.options.reference ? copyReferences(record.session.referenceImages ?? [], join(workDir, 'references')) : [];
+        const references = copyReferences(record.session.referenceImages ?? [], join(workDir, 'references'));
         const candidate = await this.options.prepareCandidate({
           workDir,
           project: record.project,
           prompt: record.session.prompt,
           signal: record.controller!.signal,
-          ...(this.options.reference ? { purpose: 'reference' as const, references } : {})
+          ...(this.options.reference ? { purpose: 'reference' as const } : {}),
+          references
         });
         if (record.closed) return;
         if (!candidate.requestSha || !isMediaProvider(candidate.provider, 'image')) throw new Error(this.texts.coverRequestPrepareFailed);
-        record.prepared = { candidate, workDir, ...(this.options.reference ? { references } : {}) };
+        record.prepared = { candidate, workDir, references };
         record.session.provider = candidate.provider;
         record.session.model = candidate.model;
         record.session.requestSha = candidate.requestSha;
@@ -184,15 +185,14 @@ export class CoverGeneration {
     const provider = MEDIA_PROVIDERS[prepared.candidate.provider];
     if (provider.paid && !priceAllowsGeneration(prepared.candidate.quote, approval.allowUnknownCost === true))
       throw new Error(this.texts.coverCostBlocked({ title: provider.title }));
-    if (this.options.reference) {
-      checkedCoverReferences(record.session.referenceImages);
-      checkedCoverReferences(prepared.references);
-    }
+    checkedCoverReferences(record.session.referenceImages);
+    checkedCoverReferences(prepared.references);
     record.prepared = undefined;
     record.session.approvalToken = null;
     // Согласованный запрос расходуется один раз; старый кандидат удаляется только после явного запуска.
     if (!this.options.reference)
-      for (const name of readdirSync(record.root)) if (name !== 'image-jobs') rmSync(join(record.root, name), { recursive: true, force: true });
+      for (const name of readdirSync(record.root))
+        if (name !== 'image-jobs' && name !== 'references') rmSync(join(record.root, name), { recursive: true, force: true });
     if (!this.options.reference)
       for (const name of readdirSync(join(record.root, 'image-jobs'))) {
         const path = join(record.root, 'image-jobs', name);
@@ -327,10 +327,8 @@ export class CoverGeneration {
       // Настройки могли измениться между подтверждением и отложенным запуском исполнителя.
       assertAiSelection(this.options.settings, record.project, 'image');
       if (readProjectSettings(record.project).generation?.image?.provider !== prepared.candidate.provider) throw new Error(this.texts.coverProviderChanged);
-      if (this.options.reference) {
-        checkedCoverReferences(record.session.referenceImages);
-        checkedCoverReferences(prepared.references);
-      }
+      checkedCoverReferences(record.session.referenceImages);
+      checkedCoverReferences(prepared.references);
       const output = await prepared.candidate.generate(record.controller!.signal, approval);
       if (record.closed) return;
       const path = resolve(workDir, output.path);
@@ -354,7 +352,7 @@ export class CoverGeneration {
       record.session.status = 'ready';
     } catch (error) {
       if (record.closed) return;
-      if (!this.options.reference) this.clear(record);
+      if (!this.options.reference) this.clear(record, 'references');
       record.session.image = null;
       record.session.status = 'failed';
       record.session.error = error instanceof Error && !('code' in error) ? error.message : this.texts.coverFileReadFailed;

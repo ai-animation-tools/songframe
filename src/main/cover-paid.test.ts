@@ -301,7 +301,7 @@ it('согласие на неизвестную цену не снимает н
   expect(options.provider.submit).not.toHaveBeenCalled();
 });
 
-it('передаёт опоры референса в image_to_image по объявленным слотам вместо текстового запроса', async () => {
+it.each(['reference', undefined] as const)('передаёт выбранные опоры в image_to_image по объявленным слотам: %s', async (purpose) => {
   const bytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aM6sAAAAASUVORK5CYII=', 'base64');
   const path = join(workDir, 'reference.png');
   writeFileSync(path, bytes);
@@ -311,7 +311,7 @@ it('передаёт опоры референса в image_to_image по объ
       workDir,
       project,
       prompt: 'Сохрани того же персонажа и стиль клипа.',
-      purpose: 'reference',
+      purpose,
       references: [{ path, label: 'Олег: лицо', sha256: createHash('sha256').update(bytes).digest('hex'), bytes: bytes.length }],
       signal: controller.signal
     },

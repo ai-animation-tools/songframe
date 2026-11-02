@@ -14,7 +14,9 @@ import type { AgentCoverDeps } from '../types';
 /* eslint-disable no-restricted-syntax -- Инструкция встроенному image_gen относится к протоколу конкретного адаптера, а не к UI. */
 const REFERENCE_PROMPT = 'Создай одно изображение референса по пользовательскому описанию из дополнительного контекста. ';
 const REFERENCE_GUIDANCE =
-  'referenceImages — опорные изображения этого же объекта. Сначала просмотри все эти файлы и передай их встроенному image_gen как изображения-референсы. Сохрани внешность, узнаваемые черты, одежду и конструкцию объекта, учитывай обозначенные ракурсы. Следуй общему визуальному стилю клипа из userPrompt; меняй только то, что явно попросил пользователь. Не заменяй опоры посторонними персонажами и не создавай новый дизайн без просьбы. ';
+  'referenceImages — явно выбранные пользователем опоры запроса. Сначала просмотри все эти файлы и передай их встроенному image_gen как изображения-референсы. Сохрани внешность, узнаваемые черты и конструкцию целевого объекта; назначение дополнительных опор и нужные изменения бери из userPrompt. Следуй общему визуальному стилю клипа из userPrompt; меняй только то, что явно попросил пользователь. Не заменяй опоры посторонними персонажами и не создавай новый дизайн без просьбы. ';
+const COVER_REFERENCE_GUIDANCE =
+  'referenceImages — явно выбранные пользователем опоры обложки. Сначала просмотри все файлы и передай их встроенному image_gen как изображения-референсы. Сохрани узнаваемую внешность персонажей и особенности объектов; композицию обложки строй по userPrompt. ';
 const COVER_PROMPT = 'Создай одну квадратную обложку по пользовательскому описанию из дополнительного контекста. ';
 const IMAGE_PROMPT =
   'Обязательно используй встроенный инструмент image_gen, создай настоящее изображение и сохрани один результат в текущей рабочей папке. ' +
@@ -68,7 +70,10 @@ export function createCodexCoverRunner({ config, createManager = (value) => new 
         {
           project: root,
           task: texts.coverTaskTitle,
-          prompt: (purpose === 'reference' ? REFERENCE_PROMPT + (referenceImages.length ? REFERENCE_GUIDANCE : '') : COVER_PROMPT) + IMAGE_PROMPT,
+          prompt:
+            (purpose === 'reference'
+              ? REFERENCE_PROMPT + (referenceImages.length ? REFERENCE_GUIDANCE : '')
+              : COVER_PROMPT + (referenceImages.length ? COVER_REFERENCE_GUIDANCE : '')) + IMAGE_PROMPT,
           context: encodeContext(prompt, referenceImages)
         },
         workDir,

@@ -282,6 +282,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   getServices().cover = cover;
   getServices().referenceImages = referenceImages;
   // Проверка выбранных файлов доступна до выбора провайдера и не создаёт сессию.
+  ipcMain.handle('cover:inspect', (_event, input: ReferenceImageGenerationInput) => inspectReferenceImageInputs(input));
   ipcMain.handle('referenceImages:inspect', (_event, input: ReferenceImageGenerationInput) => inspectReferenceImageInputs(input));
   ipcMain.handle('referenceImages:context', (_event, project: string, drafts?: ReferenceImageContextDrafts) => readReferenceImageContext(project, drafts));
 
@@ -315,7 +316,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
           if (mainFrame && !inPlace) closeOwned();
         });
       }
-      const session = generator.create(project, prompt, prefix === 'referenceImages' ? input : undefined);
+      const session = generator.create(project, prompt, input);
       owned.add(session.id);
       coverProjects.set(session.id, project);
       return session;

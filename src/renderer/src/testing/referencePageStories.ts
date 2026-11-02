@@ -91,6 +91,7 @@ export interface ReferencePageModelOptions {
   emptySelection?: boolean;
   failSourceSaveOnce?: boolean;
   failCastSaveOnce?: boolean;
+  failCastRead?: boolean;
 }
 interface ReferencePageSnapshot {
   manifest: SourceManifest;
@@ -215,7 +216,10 @@ export function referencePageOptions(page: 'sources' | 'cast', options: Referenc
             }
           },
           cast: {
-            view: async (): Promise<CastView> => ({ cast: projectDescriptions(), manifest: structuredClone(savedManifest), imagePaths: paths(), problems: [] }),
+            view: async (): Promise<CastView> => {
+              if (options.failCastRead) throw new Error('Не удалось прочитать кастинг для проверки удаления.');
+              return { cast: projectDescriptions(), manifest: structuredClone(savedManifest), imagePaths: paths(), problems: [] };
+            },
             save: async (_project, input) => {
               castSaves++;
               if (options.failCastSaveOnce && castSaves === 1) throw new Error(REFERENCE_PAGE_SAVE_ERROR);

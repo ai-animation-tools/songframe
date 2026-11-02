@@ -13,6 +13,7 @@ import {
   completeImageStoryAttachment,
   IMAGE_ATTACHMENT_ERROR,
   IMAGE_STORY_INPUT,
+  IMAGE_STORY_UPLOAD,
   IMAGE_STORY_IDEA,
   IMAGE_STORY_LYRICS,
   IMAGE_STORY_STYLE,
@@ -92,7 +93,7 @@ function ImageStory({
                         ? [...IMAGE_STORY_INPUT.images, { ...IMAGE_STORY_INPUT.images[0], label: 'Тот же герой — дополнительная подпись' }]
                         : IMAGE_STORY_INPUT.images
                 }
-              : undefined
+              : { images: withReferences ? IMAGE_STORY_INPUT.images : [] }
           }
           acceptedHint={mode === 'reference' ? 'Принимается весь оригинал; изображение добавится к персонажу без замены прежних референсов.' : undefined}
           onAccepted={onAccepted}
@@ -167,7 +168,7 @@ export const CoverPrompt: Story = {
     await expect(within(confirmation).getByRole('textbox', { name: sourcesTexts.confirmedPrompt })).toHaveValue(IMAGE_STORY_PROMPT);
     await expect(within(confirmation).queryByRole('region', { name: sourcesTexts.referenceSupports })).not.toBeInTheDocument();
     await expect(imageStoryInspection()).toMatchObject({ creates: [{ mode: 'cover', prompt: IMAGE_STORY_PROMPT }], generations: 0 });
-    await expect(imageStoryInspection().creates[0].input).toBeUndefined();
+    await expect(imageStoryInspection().creates[0].input).toEqual({ images: [] });
   }
 };
 export const ReferenceComposer: Story = {
@@ -798,5 +799,76 @@ export const AcceptingPreservesCandidate: Story = {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(screen.getByText('Полный оригинал принят и добавлен к персонажу.')).toBeVisible();
     await expect(imageStoryInspection()).toMatchObject({ generations: 1, attachments: ['character-oleg'] });
+  }
+};
+
+export const UploadedSupports: Story = {
+  name: 'Референс — свои файлы, выбор и подтверждение опор',
+  tags: ['ci'],
+  args: { mode: 'reference' },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expandReferenceSection(screen, sourcesTexts.referenceSupports);
+    await userEvent.click(screen.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.additionalSupports) }));
+    const label = sourcesTexts.additionalSupportLabel({ name: 'extra-story-image.png' });
+    await expect(await screen.findByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label }) })).toBeChecked();
+    await userEvent.click(screen.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.additionalSupports) }));
+    await expect(screen.getAllByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label }) })).toHaveLength(1);
+    await userEvent.click(screen.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: 'Спереди' }) }));
+    await prepare(context);
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByText(label)).toBeInTheDocument();
+    await expect(imageStoryInspection().creates[0].input?.images).toEqual([{ path: IMAGE_STORY_UPLOAD, label, sha256: expect.any(String) }]);
+    await expect(imageStoryInspection().generations).toBe(0);
+    await userEvent.click(within(confirmation).getByRole('button', { name: sourcesTexts.generateReferenceImage }));
+    await waitFor(() => expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: sourcesTexts.accept }));
+    await expect(await screen.findByText('Полный оригинал принят и добавлен к персонажу.')).toBeInTheDocument();
+  }
+};
+export const OptionalCoverSupports: Story = {
+  name: 'Обложка — необязательные опоры и сброс подготовки при смене выбора',
+  tags: ['ci'],
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expandReferenceSection(screen, sourcesTexts.coverSupports);
+    const checkbox = () => screen.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: 'Спереди' }) });
+    await expect(checkbox()).not.toBeChecked();
+    await userEvent.click(checkbox());
+    await prepare(context);
+    let confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(within(confirmation).getByRole('region', { name: sourcesTexts.coverSupports })).toHaveTextContent('Спереди');
+    const previous = imageStoryInspection().creates[0];
+    await expect(previous.input?.images[0]).toMatchObject({ path: IMAGE_STORY_PATH, sha256: expect.any(String) });
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: sourcesTexts.confirmPromptTitle })).not.toBeInTheDocument());
+    await userEvent.click(checkbox());
+    await waitFor(() => expect(imageStoryInspection().closes).toHaveLength(1));
+    await expect(imageStoryInspection().generations).toBe(0);
+    await prepare(context);
+    confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(imageStoryInspection().creates[1].input?.images).toEqual([]);
+    await userEvent.click(within(confirmation).getByRole('button', { name: sourcesTexts.generateCover }));
+    await waitFor(() => expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled());
+    await userEvent.click(screen.getByRole('button', { name: sourcesTexts.accept }));
+    await expect(await screen.findByText('Выбранная квадратная область принята в локальную форму.')).toBeInTheDocument();
+  }
+};
+
+export const CoverPreloadRestart: Story = {
+  name: 'Обложка — старый preload не отправляет запрос без выбранных опор',
+  tags: ['ci'],
+  parameters: { songframe: imageStoryOptions({ missingCoverImageInspection: true }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expandReferenceSection(screen, sourcesTexts.coverSupports);
+    const checkbox = screen.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: 'Спереди' }) });
+    await userEvent.click(checkbox);
+    await screen.findByText(sourcesTexts.referenceSupportsRestartRequired);
+    await expect(screen.getByRole('button', { name: sourcesTexts.generateCover })).toBeDisabled();
+    await expect(imageStoryInspection().creates).toHaveLength(0);
+    await userEvent.click(checkbox);
+    await waitFor(() => expect(screen.getByRole('button', { name: sourcesTexts.generateCover })).toBeEnabled());
+    await expect(imageStoryInspection().generations).toBe(0);
   }
 };

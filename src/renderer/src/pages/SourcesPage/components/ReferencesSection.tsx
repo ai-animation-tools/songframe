@@ -11,6 +11,9 @@ import { ReferenceKinds } from './ReferenceKinds';
 interface Props {
   refs: ReferenceForm[];
   kinds: SourceKind[];
+  filePath: (path: string, absolute?: boolean) => string;
+  removalProblems: Record<number, string>;
+  removalPending: number[];
   fileUrl: (path: string, absolute?: boolean) => string;
   onAdd: () => void;
   onUpdate: (key: number, patch: Partial<ReferenceForm>) => void;
@@ -29,6 +32,9 @@ export function ReferencesSection({
   refs,
   kinds,
   fileUrl,
+  filePath,
+  removalProblems,
+  removalPending,
   onAdd,
   onUpdate,
   onRetryFilePrompt,
@@ -70,6 +76,9 @@ export function ReferencesSection({
             kinds={kinds}
             duplicateId={(idCounts.get(reference.id) ?? 0) > 1}
             fileUrl={fileUrl}
+            filePath={filePath}
+            removalPending={removalPending.includes(reference.key)}
+            removalProblem={removalProblems[reference.key]}
             onUpdate={(patch) => onUpdate(reference.key, patch)}
             onRetryFilePrompt={(fileKey) => onRetryFilePrompt(reference.key, fileKey)}
             onRemove={() => onRemove(reference.key)}

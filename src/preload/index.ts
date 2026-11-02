@@ -43,7 +43,8 @@ const api: Api = {
     install: () => ipcRenderer.invoke('updates:install')
   },
   cover: {
-    create: (project, prompt) => ipcRenderer.invoke('cover:create', project, prompt),
+    inspect: (input) => ipcRenderer.invoke('cover:inspect', input),
+    create: (project, prompt, input) => ipcRenderer.invoke('cover:create', project, prompt, input),
     prepare: (id) => ipcRenderer.invoke('cover:prepare', id),
     generate: (id, requestSha, approval) => ipcRenderer.invoke('cover:generate', id, requestSha, approval),
     view: (id) => ipcRenderer.invoke('cover:view', id),

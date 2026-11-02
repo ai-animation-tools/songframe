@@ -82,6 +82,7 @@ describe('загрузка исходников', () => {
         reference: { key: 1, id: 'hero', kind: 'character', name: 'Герой', short_name: '', description: '', prompt: '', files: [] },
         kinds: [],
         duplicateId: false,
+        filePath: (path: string) => path,
         fileUrl: String,
         onUpdate: vi.fn(),
         onRetryFilePrompt: vi.fn(),

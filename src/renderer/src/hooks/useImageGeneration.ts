@@ -98,10 +98,10 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
     perform(async () => {
       if (id.current || !prompt.trim()) return null;
       if (currentBlock.current) throw new Error(currentBlock.current);
-      // Референс получает точный текст редактора и выбранные опоры; контракт обложки остаётся двухаргументным.
+      // Оба вида запроса получают только явно выбранные опоры; референс сохраняет точный текст редактора.
       const created = await (mode === 'reference'
         ? window.api.referenceImages.create(project, prompt, referenceInput ?? { images: [] })
-        : api.create(project, prompt.trim()));
+        : window.api.cover.create(project, prompt.trim(), referenceInput ?? { images: [] }));
       id.current = created.id;
       // Закрытие диалога может опередить create: полученный позднее каталог всё равно удаляется.
       if (!update(created)) {
@@ -113,7 +113,7 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
 
   /** Новый текст или набор опор снимает согласование и кандидат до следующего render. */
   const invalidate = (): boolean => {
-    if (mode !== 'reference' || locked.current || session?.status === 'generating' || accepting || referenceResult.current) return false;
+    if (locked.current || session?.status === 'generating' || accepting || referenceResult.current) return false;
     const previous = id.current;
     id.current = null;
     accepted.current = false;

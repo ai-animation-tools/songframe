@@ -50,6 +50,7 @@ const sourceView: SourcesView = {
   referenceFilePaths: {},
   problems: []
 };
+const castView = vi.fn();
 const api = { view: vi.fn(), save: vi.fn(), close: vi.fn() };
 function RenderHook() {
   fixture.stateIndex = fixture.refIndex = 0;
@@ -71,10 +72,11 @@ beforeEach(() => {
   fixture.states = [];
   fixture.refs = [];
   vi.clearAllMocks();
+  castView.mockResolvedValue({ cast: null, problems: [] });
   api.view.mockResolvedValue(sourceView);
   api.save.mockResolvedValue(undefined);
   api.close.mockResolvedValue(undefined);
-  vi.stubGlobal('window', { api: { sources: { view: api.view, save: api.save }, referenceImages: { close: api.close } } });
+  vi.stubGlobal('window', { api: { sources: { view: api.view, save: api.save }, cast: { view: castView }, referenceImages: { close: api.close } } });
 });
 
 describe('принятие изображения в форме исходников', () => {
@@ -170,5 +172,65 @@ describe('принятие изображения в форме исходник
     await savingA;
     expect(api.close).not.toHaveBeenCalled();
     expect(RenderHook().referencesProps.refs[0].files[0].sourcePath).toBe('/tmp/b.png');
+  });
+});
+
+describe('проверка удаления до изменения формы', () => {
+  async function withFiles() {
+    const form = await loaded();
+    const key = form.referencesProps.refs[0].key;
+    form.referencesProps.onUpdate(key, {
+      files: [
+        { key: 501, existingPath: 'characters/hero.png', view: 'front', note: '', prompt: '' },
+        { key: 502, sourcePath: '/uploads/new.png', view: 'side', note: '', prompt: '' }
+      ]
+    });
+    form.ideaProps.onChange('Несохранённая идея');
+    return { key, form: RenderHook() };
+  }
+  it('не удаляет используемое изображение и весь референс, сохраняя все черновики', async () => {
+    const { key, form } = await withFiles();
+    castView.mockResolvedValue({ cast: { entities: [{ name: 'Олег', images: ['characters/hero.png'] }] }, problems: [] });
+    const before = form.referencesProps.refs;
+    await form.referencesProps.onRemoveFile(key, 501);
+    expect(RenderHook().referencesProps.refs).toEqual(before);
+    expect(RenderHook().referencesProps.removalProblems[key]).toContain('Используют: Олег');
+    await RenderHook().referencesProps.onRemove(key);
+    expect(RenderHook().referencesProps.refs).toEqual(before);
+    expect(RenderHook().ideaProps.idea).toBe('Несохранённая идея');
+    expect(api.save).not.toHaveBeenCalled();
+  });
+  it('при ошибке или повреждении кастинга оставляет файл; новый файл можно убрать без чтения кастинга', async () => {
+    const { key, form } = await withFiles();
+    castView.mockRejectedValueOnce(new Error('Нет доступа'));
+    await form.referencesProps.onRemoveFile(key, 501);
+    expect(RenderHook().referencesProps.refs[0].files).toHaveLength(2);
+    castView.mockResolvedValue({ cast: null, problems: ['Файл повреждён'] });
+    await RenderHook().referencesProps.onRemoveFile(key, 501);
+    expect(RenderHook().referencesProps.refs[0].files).toHaveLength(2);
+    await RenderHook().referencesProps.onRemoveFile(key, 502);
+    expect(RenderHook().referencesProps.refs[0].files.map((file) => file.key)).toEqual([501]);
+    expect(castView).toHaveBeenCalledTimes(2);
+  });
+  it('проверяет свежее использование при повторе и сохраняет соседнюю правку во время чтения', async () => {
+    const { key, form } = await withFiles();
+    let finish!: (value: unknown) => void;
+    castView.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+    );
+    const removing = form.referencesProps.onRemoveFile(key, 501);
+    form.ideaProps.onChange('Идея изменена во время проверки');
+    RenderHook();
+    finish({ cast: { entities: [] }, problems: [] });
+    await removing;
+    expect(RenderHook().referencesProps.refs[0].files.map((file) => file.key)).toEqual([502]);
+    expect(RenderHook().ideaProps.idea).toBe('Идея изменена во время проверки');
+  });
+  it('обложка предлагает новые и сохранённые изображения всех референсов без изменения формы', async () => {
+    const { form } = await withFiles();
+    expect(form.coverGenerationProps.referenceInput.images.map((image) => image.path)).toEqual(['/project-a/source/characters/hero.png', '/uploads/new.png']);
+    expect(api.save).not.toHaveBeenCalled();
   });
 });

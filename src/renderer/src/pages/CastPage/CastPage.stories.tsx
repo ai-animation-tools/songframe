@@ -238,3 +238,30 @@ export const LocalStateFields: Story = {
     await userEvent.click(canvas.getByRole('textbox', { name: castTexts.appearance }));
   }
 };
+
+export const ExternalImageSupport: Story = {
+  name: 'Референс — своя опора из кастинга и отмена без изменения сущности',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement),
+      screen = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await canvas.findByRole('button', { name: sourcesTexts.generateReferenceImage }));
+    const before = referencePageSnapshot();
+    const dialog = await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
+    const local = within(dialog);
+    await userEvent.click(local.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.referenceSupports) }));
+    await userEvent.click(local.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.additionalSupports) }));
+    const label = sourcesTexts.additionalSupportLabel({ name: 'story-image.png' });
+    await expect(await local.findByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label }) })).toBeChecked();
+    await waitFor(() => expect(local.getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeEnabled());
+    await userEvent.click(local.getByRole('button', { name: sourcesTexts.generateReferenceImage }));
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(referencePageInspection().creates[0].input?.images).toHaveLength(2);
+    await expect(referencePageInspection().creates[0].input?.images[1].path).toBe('/mock/uploads/profile/story-image.png');
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: sourcesTexts.confirmPromptTitle })).not.toBeInTheDocument());
+    await userEvent.click(local.getByRole('button', { name: commonTexts.cancel }));
+    await expect(referencePageSnapshot()).toEqual(before);
+    await expect(referencePageInspection().generations).toBe(0);
+  }
+};

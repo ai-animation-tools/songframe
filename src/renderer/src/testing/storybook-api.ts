@@ -18,6 +18,7 @@ export function unconfiguredStoryApi(): Api {
       install: async () => unconfigured('updates.install')
     },
     cover: {
+      inspect: async () => unconfigured('cover.inspect'),
       create: async () => unconfigured('cover.create'),
       prepare: async () => unconfigured('cover.prepare'),
       generate: async () => unconfigured('cover.generate'),

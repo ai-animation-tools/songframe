@@ -413,3 +413,122 @@ export const NewKindExplicitCancellation: Story = {
       await expect(within(reopened).getByRole('textbox', { name })).toHaveValue('');
   }
 };
+
+export const PreviewAndProtectedRemoval: Story = {
+  name: 'Изображения — просмотр и запрет удаления используемого без потери формы',
+  tags: ['ci'],
+  parameters: { songframe: referencePageOptions('sources', { multipleImages: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement),
+      screen = within(canvasElement.ownerDocument.body);
+    await canvas.findByRole('textbox', { name: sourcesTexts.idea });
+    await userEvent.click(canvas.getByRole('button', { name: new RegExp(REFERENCE_PAGE_NAME) }));
+    const description = canvas.getByRole('textbox', { name: sourcesTexts.entityDescription });
+    await userEvent.clear(description);
+    await userEvent.type(description, 'Несохранённая внешность');
+    await userEvent.click(canvas.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.pickReferenceImages({ name: REFERENCE_PAGE_NAME })) }));
+    const previews = canvas.getAllByRole('button', { name: /^Открыть крупно/ });
+    await userEvent.click(previews[0]);
+    let gallery = await screen.findByRole('dialog');
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}');
+    await expect(within(gallery).getByRole('img')).toHaveAttribute('src', window.api.shell.fileUrl(REFERENCE_PAGE_UPLOAD));
+    await userEvent.click(within(gallery).getByRole('button', { name: commonTexts.close }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(previews[0]).toHaveFocus();
+    await userEvent.click(canvas.getByRole('button', { name: sourcesTexts.removeReferenceImage({ view: 'Спереди' }) }));
+    gallery = await screen.findByRole('dialog');
+    await userEvent.click(within(gallery).getByRole('button', { name: commonTexts.delete }));
+    await within(description.closest<HTMLElement>('[id$="-details"]')!).findByText(/Используют: Механик/);
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /^Открыть крупно/ })).toHaveLength(4));
+    await expect(description).toHaveValue('Несохранённая внешность');
+    await expect(referencePageSnapshot().sourceSaves).toBe(0);
+    // Неиспользуемый вид удаляется отдельно; выбранные кастингом остаются на месте.
+    await userEvent.click(canvas.getByRole('button', { name: sourcesTexts.removeReferenceImage({ view: 'Сзади' }) }));
+    gallery = await screen.findByRole('dialog');
+    await userEvent.click(within(gallery).getByRole('button', { name: commonTexts.delete }));
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /^Открыть крупно/ })).toHaveLength(3));
+    await expect(description).toHaveValue('Несохранённая внешность');
+    description.focus();
+  }
+};
+export const RemovalReadFailure: Story = {
+  name: 'Удаление — ошибка чтения кастинга сохраняет референс и черновик',
+  tags: ['ci'],
+  parameters: { songframe: referencePageOptions('sources', { failCastRead: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement),
+      screen = within(canvasElement.ownerDocument.body);
+    await canvas.findByRole('textbox', { name: sourcesTexts.idea });
+    await userEvent.click(canvas.getByRole('button', { name: new RegExp(REFERENCE_PAGE_NAME) }));
+    const description = canvas.getByRole('textbox', { name: sourcesTexts.entityDescription });
+    await userEvent.type(description, ' Черновик');
+    await userEvent.click(canvas.getByRole('button', { name: sourcesTexts.removeReference({ name: REFERENCE_PAGE_NAME }) }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.delete }));
+    await within(description.closest<HTMLElement>('[id$="-details"]')!).findByText(/Не удалось проверить использование изображений/);
+    await expect((description as HTMLTextAreaElement).value).toContain('Черновик');
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Открыть крупно/ })).toBeInTheDocument());
+    await expect(referencePageSnapshot().sourceSaves).toBe(0);
+    description.focus();
+  }
+};
+export const ExternalGenerationSupport: Story = {
+  name: 'Референс — прикреплённая опора не добавляется в исходники',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement),
+      screen = within(canvasElement.ownerDocument.body);
+    await canvas.findByRole('textbox', { name: sourcesTexts.idea });
+    await userEvent.click(canvas.getByRole('button', { name: new RegExp(REFERENCE_PAGE_NAME) }));
+    await userEvent.click(canvas.getByRole('button', { name: sourcesTexts.generateReferenceImage }));
+    const dialog = await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
+    const local = within(dialog);
+    await userEvent.click(local.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.referenceSupports) }));
+    await userEvent.click(local.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.additionalSupports) }));
+    await expect(
+      await local.findByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: sourcesTexts.additionalSupportLabel({ name: 'story-image.png' }) }) })
+    ).toBeChecked();
+    await waitFor(() => expect(local.getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeEnabled());
+    await userEvent.click(local.getByRole('button', { name: sourcesTexts.generateReferenceImage }));
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(referencePageInspection().creates[0].input?.images.map((image) => image.path)).toEqual([
+      `${IMAGE_STORY_PROJECT}/source/${REFERENCE_PAGE_SAVED}`,
+      REFERENCE_PAGE_UPLOAD
+    ]);
+    await userEvent.click(within(confirmation).getByRole('button', { name: sourcesTexts.generateReferenceImage }));
+    await waitFor(() => expect(local.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled());
+    await userEvent.click(local.getByRole('button', { name: sourcesTexts.accept }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(canvas.getAllByRole('button', { name: /^Открыть крупно/ })).toHaveLength(2);
+    await expect(referencePageSnapshot().manifest.references[0].files).toHaveLength(1);
+    await expect(referencePageSnapshot().sourceSaves).toBe(0);
+    canvas.getByRole('textbox', { name: sourcesTexts.entityDescription }).focus();
+  }
+};
+export const CoverReferenceSelection: Story = {
+  name: 'Обложка — выбор референса из формы без автоматических опор',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement),
+      screen = within(canvasElement.ownerDocument.body);
+    await canvas.findByRole('textbox', { name: sourcesTexts.idea });
+    await userEvent.click(canvas.getByRole('button', { name: sourcesTexts.generateCover }));
+    const dialog = await screen.findByRole('dialog', { name: sourcesTexts.createCover });
+    const local = within(dialog);
+    await userEvent.click(local.getByRole('button', { name: (name) => name.startsWith(sourcesTexts.coverSupports) }));
+    for (const checkbox of local.getAllByRole('checkbox')) await expect(checkbox).not.toBeChecked();
+    await userEvent.click(local.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: 'Чужая локация · В полный рост' }) }));
+    await waitFor(() => expect(local.getByRole('button', { name: sourcesTexts.generateCover })).toBeEnabled());
+    await userEvent.click(local.getByRole('button', { name: sourcesTexts.generateCover }));
+    const confirmation = await screen.findByRole('dialog', { name: sourcesTexts.confirmPromptTitle });
+    await expect(referencePageInspection().creates[0]).toMatchObject({
+      mode: 'cover',
+      input: { images: [{ path: `${IMAGE_STORY_PROJECT}/source/locations/garden/story-image.png`, label: 'Чужая локация · В полный рост' }] }
+    });
+    await expect(within(confirmation).getByText('Чужая локация · В полный рост')).toBeInTheDocument();
+    await userEvent.click(within(confirmation).getByRole('button', { name: commonTexts.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: sourcesTexts.confirmPromptTitle })).not.toBeInTheDocument());
+    await userEvent.click(local.getByRole('button', { name: commonTexts.cancel }));
+    await expect(referencePageSnapshot().sourceSaves).toBe(0);
+  }
+};

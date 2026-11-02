@@ -134,6 +134,7 @@ describe('тексты исходников', () => {
         createElement(ReferenceFileCard, {
           file: { key: 1, sourcePath: 'image.png', view: 'full', note: '', prompt: '' },
           referenceName: '<Герой> & «имя»',
+          onPreview: vi.fn(),
           fileUrl: String,
           onUpdate: vi.fn(),
           onRemove: vi.fn(),

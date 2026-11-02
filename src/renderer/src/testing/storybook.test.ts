@@ -100,3 +100,16 @@ describe('окружение историй', () => {
     expect(storyFileUrl('/чужой/проект/private.png', base)).toContain('/media/missing-story-file');
   });
 });
+
+it('отсутствующий inspect обложки изолирован и не отключает проверку опор референса', () => {
+  const broken = createStoryApi({}, { missingCoverImageInspection: true });
+  const normal = createStoryApi();
+  try {
+    expect(typeof broken.api.cover.inspect).toBe('undefined');
+    expect(typeof broken.api.referenceImages.inspect).toBe('function');
+    expect(typeof normal.api.cover.inspect).toBe('function');
+  } finally {
+    broken.dispose();
+    normal.dispose();
+  }
+});

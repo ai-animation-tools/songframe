@@ -50,9 +50,9 @@ const image = (option: ReferenceImageOption, sha256 = 'a'.repeat(64)): Generatio
 const inspect = vi.fn<(input: ReferenceImageGenerationInput) => Promise<GenerationReferenceImage[]>>();
 const referenceApi: { inspect?: typeof inspect } = {};
 
-function RenderHook(options: ReferenceImageOption[], enabled = true) {
+function RenderHook(options: ReferenceImageOption[], enabled = true, mode: 'cover' | 'reference' = 'reference') {
   fixture.stateIndex = fixture.effectIndex = 0;
-  const value = useReferenceImageSupports(enabled, options);
+  const value = useReferenceImageSupports(enabled, options, mode);
   for (const effect of fixture.pending.splice(0)) effect();
   return value;
 }
@@ -78,7 +78,7 @@ beforeEach(() => {
   inspect.mockReset();
   inspect.mockResolvedValue([image(first)]);
   referenceApi.inspect = inspect;
-  vi.stubGlobal('window', { api: { referenceImages: referenceApi } });
+  vi.stubGlobal('window', { api: { referenceImages: referenceApi, cover: referenceApi } });
 });
 afterEach(() => {
   for (const effect of fixture.effects) effect.cleanup?.();
@@ -271,4 +271,13 @@ describe('жизненный цикл проверки выбранных опо
     expect(after.notes).not.toContain(first.note);
     expect(inspect).toHaveBeenCalledTimes(1);
   });
+});
+
+it('старый preload обложки блокирует выбранные опоры до подготовки, но позволяет убрать выбор', async () => {
+  delete referenceApi.inspect;
+  RenderHook([first], true, 'cover');
+  await settle();
+  expect(RenderHook([first], true, 'cover')).toMatchObject({ ready: false, restartRequired: true, error: sourcesTexts.referenceSupportsRestartRequired });
+  expect(inspect).not.toHaveBeenCalled();
+  expect(RenderHook([], true, 'cover')).toMatchObject({ ready: true, error: null, input: { images: [] } });
 });

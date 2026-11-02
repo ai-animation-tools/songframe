@@ -41,6 +41,8 @@ import { ReferenceImageComposer } from './ReferenceImageComposer';
 import { ImageThumbnail } from './ImageThumbnail';
 import { ImageGallery } from './ImageGallery';
 import { CoverCropEditor } from './CoverCropEditor';
+import { FileDropZone } from './FileDropZone';
+import { IMAGE_FILTER } from '../file-filters';
 import { centeredCrop } from './imageCrop';
 
 interface Props {
@@ -83,10 +85,10 @@ export function ImageGenerateDialog({
         : '')
   );
   // Исходный список сохраняется целиком: дедупликация сессии не должна убирать доступные флажки.
-  const [referenceOptions] = useState(() => referenceInput?.images ?? []);
-  const [selectedImages, setSelectedImages] = useState(() => referenceOptions.map((_image, index) => index));
+  const [referenceOptions, setReferenceOptions] = useState(() => referenceInput?.images ?? []);
+  const [selectedImages, setSelectedImages] = useState(() => (reference ? referenceOptions.map((_image, index) => index) : []));
   const selectedOptions = referenceOptions.filter((_image, index) => selectedImages.includes(index));
-  const supports = useReferenceImageSupports(reference, selectedOptions);
+  const supports = useReferenceImageSupports(true, selectedOptions, mode);
   const composer = useReferenceImageComposer({
     enabled: reference,
     project,
@@ -101,7 +103,7 @@ export function ImageGenerateDialog({
   const { session, working, accepting, attachmentPending, error, preparedSha, start, next, refreshQuote, generate, accept, invalidate } = useImageGeneration(
     project,
     mode,
-    reference ? selectedInput : undefined
+    selectedInput
   );
   const [gallery, setGallery] = useState<{ key: string; index: number; images: { imagePath: string; label: string }[] } | null>(null);
   // При ответе create галерея старого набора закрывается до обновления внутреннего индекса.
@@ -134,56 +136,69 @@ export function ImageGenerateDialog({
     setGallery(null);
     action();
   };
-  const supportImages = (images: { path: string; label: string }[], selectable: boolean): ReactElement | null =>
-    reference ? (
-      <Stack component="section" aria-label={sourcesTexts.referenceSupports} spacing={1}>
-        {!selectable && <Typography variant="subtitle2">{sourcesTexts.referenceSupports}</Typography>}
-        <Typography variant="body2" color="text.secondary">
-          {selectable
-            ? images.length
-              ? sourcesTexts.referenceSelectImages
-              : sourcesTexts.referenceSupportsEmpty
-            : images.length
-              ? sourcesTexts.referenceSupportsFixed
-              : sourcesTexts.referenceNoSelectedImages}
-        </Typography>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 1, minWidth: 0 }}>
-          {images.map((image, index) => (
-            <Stack key={`${image.path}:${index}`} spacing={0.5} sx={{ minWidth: 0 }}>
-              <ImageThumbnail
-                path={image.path}
-                label={image.label}
-                onOpen={() => setGallery({ key: galleryKey, index, images: images.map((item) => ({ imagePath: item.path, label: item.label })) })}
+  const supportsTitle = reference ? sourcesTexts.referenceSupports : sourcesTexts.coverSupports;
+  const appendSupports = (paths: string[]): void => {
+    const added = [...new Set(paths)].filter((path) => !referenceOptions.some((image) => image.path === path));
+    if (!added.length) return;
+    changeReference(() => {
+      setReferenceOptions((current) => [
+        ...current,
+        ...added.map((path) => ({ path, label: sourcesTexts.additionalSupportLabel({ name: path.split(/[\\/]/).pop()! }) }))
+      ]);
+      setSelectedImages((current) => [...current, ...added.map((_path, index) => referenceOptions.length + index)]);
+    });
+  };
+  const supportImages = (images: { path: string; label: string }[], selectable: boolean): ReactElement => (
+    <Stack component="section" aria-label={supportsTitle} spacing={1}>
+      {!selectable && <Typography variant="subtitle2">{supportsTitle}</Typography>}
+      <Typography variant="body2" color="text.secondary">
+        {selectable
+          ? images.length
+            ? sourcesTexts.referenceSelectImages
+            : reference
+              ? sourcesTexts.referenceSupportsEmpty
+              : sourcesTexts.referenceNoSelectedImages
+          : images.length
+            ? sourcesTexts.referenceSupportsFixed
+            : sourcesTexts.referenceNoSelectedImages}
+      </Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 140px), 1fr))', gap: 1, minWidth: 0 }}>
+        {images.map((image, index) => (
+          <Stack key={`${image.path}:${index}`} spacing={0.5} sx={{ minWidth: 0 }}>
+            <ImageThumbnail
+              path={image.path}
+              label={image.label}
+              onOpen={() => setGallery({ key: galleryKey, index, images: images.map((item) => ({ imagePath: item.path, label: item.label })) })}
+            />
+            {selectable ? (
+              <FormControlLabel
+                sx={{ m: 0, alignItems: 'flex-start', '& .MuiFormControlLabel-label': { overflowWrap: 'anywhere', minWidth: 0 } }}
+                label={sourcesTexts.referenceUseImage({ label: image.label })}
+                control={
+                  <Checkbox
+                    checked={selectedImages.includes(index)}
+                    disabled={editingBlocked}
+                    onChange={(_event, checked) =>
+                      changeReference(() => setSelectedImages((current) => (checked ? [...current, index] : current.filter((value) => value !== index))))
+                    }
+                  />
+                }
               />
-              {selectable ? (
-                <FormControlLabel
-                  sx={{ m: 0, alignItems: 'flex-start', '& .MuiFormControlLabel-label': { overflowWrap: 'anywhere', minWidth: 0 } }}
-                  label={sourcesTexts.referenceUseImage({ label: image.label })}
-                  control={
-                    <Checkbox
-                      checked={selectedImages.includes(index)}
-                      disabled={editingBlocked}
-                      onChange={(_event, checked) =>
-                        changeReference(() => setSelectedImages((current) => (checked ? [...current, index] : current.filter((value) => value !== index))))
-                      }
-                    />
-                  }
-                />
-              ) : (
-                <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>
-                  {image.label}
-                </Typography>
-              )}
-            </Stack>
-          ))}
-        </Box>
-        {selectable && images.length > 0 && selectedOptions.length === 0 && (
-          <Typography variant="body2" color="text.secondary">
-            {sourcesTexts.referenceNoSelectedImages}
-          </Typography>
-        )}
-      </Stack>
-    ) : null;
+            ) : (
+              <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>
+                {image.label}
+              </Typography>
+            )}
+          </Stack>
+        ))}
+      </Box>
+      {selectable && images.length > 0 && selectedOptions.length === 0 && (
+        <Typography variant="body2" color="text.secondary">
+          {sourcesTexts.referenceNoSelectedImages}
+        </Typography>
+      )}
+    </Stack>
+  );
   const preparing = working || !!session?.preparing;
   // Платный провайдер показывает цену и требует её подтверждения; агент-исполнитель обозначается своим знаком.
   const info = session ? MEDIA_PROVIDERS[session.provider] : null;
@@ -216,7 +231,8 @@ export function ImageGenerateDialog({
     generating ||
     !!blockedQuote ||
     (!session && !prompt.trim()) ||
-    (reference && (!composer.ready || !supports.ready));
+    !supports.ready ||
+    (reference && !composer.ready);
   // Причины блокировки для подсказок; недоступность исполнителя AgentButton показывает сам, обычной кнопке её передаём явно.
   const waitReason = preparing
     ? sourcesTexts.waitRequestPreparation
@@ -236,7 +252,7 @@ export function ImageGenerateDialog({
     (attachmentPending ? sourcesTexts.referenceAttachPending : null) ??
     waitReason ??
     quoteReason ??
-    (reference && !supports.ready ? (supports.error ?? sourcesTexts.referenceSupportsLoading) : null) ??
+    (!supports.ready ? (supports.error ?? sourcesTexts.referenceSupportsLoading) : null) ??
     (reference && !composer.ready ? (composer.loading ? sourcesTexts.referenceContextLoading : sourcesTexts.referenceContextUnavailable) : null) ??
     (!session && !prompt.trim() ? (reference ? sourcesTexts.enterReferencePrompt : sourcesTexts.enterCoverPrompt) : null);
   const acceptReason = preparing
@@ -307,12 +323,12 @@ export function ImageGenerateDialog({
                     ? sourcesTexts.ideaAddedToPrompt
                     : sourcesTexts.ideaMissingForPrompt}
             </Typography>
-            {reference && supports.loading && (
+            {supports.loading && (
               <Typography role="status" variant="body2">
                 {sourcesTexts.referenceSupportsLoading}
               </Typography>
             )}
-            {reference && supports.error && (
+            {supports.error && (
               <Alert severity="error">
                 <Stack spacing={1} alignItems="flex-start">
                   <Typography variant="body2">{supports.error}</Typography>
@@ -329,11 +345,11 @@ export function ImageGenerateDialog({
                 </Stack>
               </Alert>
             )}
-            {reference && (
+            {
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 2fr)' },
+                  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: reference ? 'minmax(0, 1fr) minmax(0, 2fr)' : 'minmax(0, 1fr)' },
                   gap: 2,
                   alignItems: 'start',
                   '& > *': { minWidth: 0 }
@@ -348,7 +364,7 @@ export function ImageGenerateDialog({
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Box sx={{ minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
-                      <Typography variant="subtitle2">{sourcesTexts.referenceSupports}</Typography>
+                      <Typography variant="subtitle2">{supportsTitle}</Typography>
                       <Typography variant="caption" color="text.secondary">
                         {sourcesTexts.referenceSelectedSupportCount({ selected: selectedOptions.length, total: referenceOptions.length })}
                       </Typography>
@@ -356,7 +372,21 @@ export function ImageGenerateDialog({
                   </AccordionSummary>
                   <AccordionDetails>
                     <Stack spacing={1}>
+                      {!reference && <Alert severity="info">{sourcesTexts.coverSupportsHint}</Alert>}
                       {supportImages(referenceOptions, true)}
+                      {reference && !editingBlocked && (
+                        <FileDropZone
+                          kind="image"
+                          multiple
+                          label={`${sourcesTexts.additionalSupports}. ${sourcesTexts.additionalSupportsHint}`}
+                          message={sourcesTexts.additionalSupports}
+                          hint={sourcesTexts.additionalSupportsHint}
+                          onFiles={appendSupports}
+                          onPick={async () =>
+                            appendSupports(await window.api.dialog.pickFiles({ title: sourcesTexts.additionalSupports, filters: IMAGE_FILTER, multiple: true }))
+                          }
+                        />
+                      )}
                       <Box>
                         <ActionButton
                           startIcon={<RefreshIcon />}
@@ -378,14 +408,16 @@ export function ImageGenerateDialog({
                     </Stack>
                   </AccordionDetails>
                 </Accordion>
-                <ReferenceImageComposer
-                  composer={composer}
-                  description={referenceDescription}
-                  disabled={editingBlocked || supports.loading}
-                  onChange={changeReference}
-                />
+                {reference && (
+                  <ReferenceImageComposer
+                    composer={composer}
+                    description={referenceDescription}
+                    disabled={editingBlocked || supports.loading}
+                    onChange={changeReference}
+                  />
+                )}
               </Box>
-            )}
+            }
             <TextField
               label={reference ? sourcesTexts.referenceImagePrompt : sourcesTexts.coverPrompt}
               value={reference ? prompt : (session?.prompt ?? prompt)}
@@ -403,7 +435,7 @@ export function ImageGenerateDialog({
                     : sourcesTexts.promptEditable
               }
             />
-            {reference && <Alert severity="info">{sourcesTexts.referenceRequestInvalidated}</Alert>}
+            <Alert severity="info">{sourcesTexts.referenceRequestInvalidated}</Alert>
             {session && (
               <Stack spacing={0.5}>
                 <Typography variant="body2">

@@ -1,3 +1,4 @@
+import type { ReferenceImageGenerationInput } from './reference-image-generation';
 import { aiAccessTexts } from './texts/ai-access';
 import type { MediaProviderId } from './media-providers';
 
@@ -22,7 +23,7 @@ export interface CoverCrop {
 export interface CoverGenerationSession {
   id: string;
   prompt: string;
-  /** Референсы объекта в сессии референса; обложка не получает их автоматически. */
+  /** Явно выбранные опоры запроса; для обложки набор по умолчанию пуст. */
   referenceImages?: GenerationReferenceImage[];
   status: 'idle' | 'generating' | 'ready' | 'failed' | 'accepted';
   image: { path: string; width: number; height: number } | null;
@@ -48,7 +49,9 @@ export interface CoverGenerationApproval {
 }
 
 export interface CoverGenerationApi {
-  create(project: string, prompt: string): Promise<CoverGenerationSession>;
+  /** Чтение выбранных опор также подтверждает поддержку их передачи текущим preload. */
+  inspect(input: ReferenceImageGenerationInput): Promise<GenerationReferenceImage[]>;
+  create(project: string, prompt: string, input?: ReferenceImageGenerationInput): Promise<CoverGenerationSession>;
   /** Подготовка следующей попытки и цены не отправляет запрос генерации. */
   prepare(id: string): Promise<CoverGenerationSession>;
   generate(id: string, requestSha: string, approval: CoverGenerationApproval): Promise<CoverGenerationSession>;

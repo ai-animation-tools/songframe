@@ -1,3 +1,4 @@
+import { referenceImageTexts } from '@shared/texts/reference-images';
 import { sourcesTexts } from '@shared/texts/sources';
 /** Загрузка, проверка и сохранение общей формы исходников. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,6 +30,11 @@ export function useSourcesForm() {
   projectScope.current.update(project);
   const projectCurrent = projectScope.current.capture(project);
   const [refs, setRefs] = useState<ReferenceForm[]>([]);
+  const latestRefs = useRef(refs);
+  latestRefs.current = refs;
+  const removing = useRef(new Set<number>());
+  const [removalPending, setRemovalPending] = useState<number[]>([]);
+  const [removalProblems, setRemovalProblems] = useState<Record<number, string>>({});
   const [kinds, setKinds] = useState<SourceKind[]>(DEFAULT_SOURCE_KINDS);
   const [kindDialog, setKindDialog] = useState<KindForm | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
@@ -110,6 +116,8 @@ export function useSourcesForm() {
       setCoverGenerationOpen(false);
       setCoverRemove(false);
       setRefs(loadedRefs);
+      setRemovalProblems({});
+      setRemovalPending([]);
     } catch (failure) {
       // Ошибка прежнего проекта не должна скрывать уже открытый новый проект.
       if (current()) throw failure;
@@ -285,8 +293,55 @@ export function useSourcesForm() {
           : r
       )
     );
-  const removeFile = (refKey: number, fileKey: number): void =>
-    setRefs((current) => current.map((r) => (r.key === refKey ? { ...r, files: r.files.filter((f) => f.key !== fileKey) } : r)));
+  // Проверка идёт до изменения формы: отказ не требует перезагрузки и не теряет соседние правки.
+  const removeReferenceFiles = async (refKey: number, fileKey?: number): Promise<void> => {
+    const reference = refs.find((item) => item.key === refKey);
+    if (!reference || removing.current.has(refKey)) return;
+    const files = fileKey === undefined ? reference.files : reference.files.filter((file) => file.key === fileKey);
+    const paths = new Set(files.flatMap((file) => (file.existingPath ? [file.existingPath] : [])));
+    const warn = (message: string): void => {
+      setRemovalProblems((current) => ({ ...current, [refKey]: message }));
+      notify(message, 'warning');
+    };
+    removing.current.add(refKey);
+    setRemovalPending((current) => [...current, refKey]);
+    try {
+      if (paths.size) {
+        const checked = await window.api.cast.view(project);
+        if (!projectCurrent()) return;
+        if (!checked.cast && checked.problems.length) throw new Error(checked.problems.join(' '));
+        const users = checked.cast?.entities.filter((entity) => entity.images.some((path) => paths.has(path))) ?? [];
+        if (users.length) {
+          warn(
+            `${referenceImageTexts.imageInUse} ${sourcesTexts.referenceRemovalUsedBy({ names: users.map((entity) => entity.name || entity.id).join(', ') })}`
+          );
+          return;
+        }
+      }
+      if (!projectCurrent()) return;
+      const current = latestRefs.current.find((item) => item.key === refKey);
+      // Пока читался кастинг, пользователь мог изменить именно удаляемую строку или весь объект.
+      if (!current || (fileKey === undefined ? current !== reference : current.files.find((file) => file.key === fileKey) !== files[0])) {
+        warn(sourcesTexts.referenceRemovalChanged);
+        return;
+      }
+      setRemovalProblems((problems) => {
+        const next = { ...problems };
+        delete next[refKey];
+        return next;
+      });
+      setRefs((items) =>
+        fileKey === undefined
+          ? items.filter((item) => item.key !== refKey)
+          : items.map((item) => (item.key === refKey ? { ...item, files: item.files.filter((file) => file.key !== fileKey) } : item))
+      );
+    } catch (error) {
+      if (projectCurrent()) warn(`${sourcesTexts.referenceRemovalCheckFailed} ${describeError(error)}`);
+    } finally {
+      removing.current.delete(refKey);
+      if (projectCurrent()) setRemovalPending((current) => current.filter((key) => key !== refKey));
+    }
+  };
 
   const hasPromptErrors = refs.some((r) => !!r.promptError || r.files.some((f) => !!f.promptError));
 
@@ -354,6 +409,14 @@ export function useSourcesForm() {
       open: coverGenerationOpen,
       project,
       idea,
+      referenceInput: {
+        images: refs.flatMap((reference) =>
+          reference.files.map((file) => {
+            const option = referenceImageOption({ path: file.sourcePath ?? joinPath(project, 'source', file.existingPath!), view: file.view });
+            return { ...option, label: `${reference.name || reference.id} · ${option.label}` };
+          })
+        )
+      },
       onClose: () => setCoverGenerationOpen(false),
       onAccepted: (result: { id: string; path: string }) => {
         setCoverNew(result.path);
@@ -414,15 +477,18 @@ export function useSourcesForm() {
       refs,
       kinds,
       fileUrl,
+      filePath: (path: string, absolute = false) => (absolute ? path : joinPath(project, 'source', path)),
+      removalProblems,
+      removalPending,
       onAdd: addReference,
       onUpdate: updateRef,
       onRetryFilePrompt: retryFilePrompt,
-      onRemove: (key: number) => setRefs((current) => current.filter((ref) => ref.key !== key)),
+      onRemove: (key: number) => removeReferenceFiles(key),
       onGenerate: (key: number) => setReferenceTarget({ project, key }),
       onAddFiles: addFiles,
       onDropFiles: appendFiles,
       onUpdateFile: updateFile,
-      onRemoveFile: removeFile,
+      onRemoveFile: removeReferenceFiles,
       onRemoveKind: removeKind,
       onAddKind: () => setKindDialog({ label: '', id: '', dir: '' })
     },

@@ -11,10 +11,11 @@ import { WhisperModelDownload } from './WhisperModelDownload';
 
 interface Props {
   path: string;
+  showDownload?: boolean;
   onPathChange(path: string): void;
 }
 
-export function WhisperModelSetup({ path, onPathChange }: Props): ReactElement {
+export function WhisperModelSetup({ path, onPathChange, showDownload = true }: Props): ReactElement {
   const { state } = useApp();
   const [setup, setSetup] = useState<WhisperSetup | null>(null);
   const [selected, setSelected] = useState<WhisperModelId>('medium');
@@ -142,9 +143,9 @@ export function WhisperModelSetup({ path, onPathChange }: Props): ReactElement {
           {/* Диагностика уже проверила файлы: установленной модели повторная загрузка не нужна. */}
           {installed ? (
             <Alert severity="success">{timingTexts.modelInstalled({ model: selected, selected: usingDirectory })}</Alert>
-          ) : (
+          ) : showDownload ? (
             <WhisperModelDownload key={selected} model={selected} onDownloaded={downloaded} />
-          )}
+          ) : null}
           <Stack direction="row" spacing={2} flexWrap="wrap">
             {installed && !usingDirectory ? (
               <Button size="small" startIcon={<CheckCircle />} onClick={() => onPathChange(directory)}>

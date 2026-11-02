@@ -19,8 +19,8 @@ export type AgentUpdate =
   | { type: 'notice'; message: string }
   | { type: 'failed'; error: AgentError };
 
-/** read — чтение проекта; write — кандидаты изображений; audio — ASR над копией MP3 в папке задания. */
-export type AgentRunMode = 'read' | 'write' | 'audio';
+/** read — чтение проекта; write — кандидаты изображений в отдельной рабочей папке. */
+export type AgentRunMode = 'read' | 'write';
 
 /** Байты уже проверены менеджером; адаптер определяет только штатный транспорт вложения CLI. */
 export interface AgentImageAttachment {
@@ -91,9 +91,9 @@ export class ClaudeAdapter implements AgentAdapter {
       '--permission-mode',
       'dontAsk',
       '--tools',
-      mode === 'audio' ? 'Read,Glob,Grep,Bash' : 'Read,Glob,Grep',
+      'Read,Glob,Grep',
       '--allowedTools',
-      mode === 'audio' ? 'Read,Glob,Grep,Bash' : 'Read,Glob,Grep',
+      'Read,Glob,Grep',
       ...(config.model ? ['--model', config.model] : [])
     ];
   }

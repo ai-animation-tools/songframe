@@ -10,7 +10,7 @@ import { mediaPaths, missingModelFiles } from './media-runtime';
 import { PythonLauncher } from './python-launcher';
 import { runtimeSmoke } from './runtime-smoke';
 import { saveSources, sha256File } from './sources';
-import type { TimingFile } from '@shared/types';
+import type { SourcesInput, TimingFile } from '@shared/types';
 
 const TEXT = '[Куплет]\nУтром солнце светит ярко.\nМы гуляем у реки.\n';
 
@@ -90,39 +90,57 @@ Image.new('RGB',(64,64),(30,90,160)).save(sys.argv[3])`,
       reference
     ]);
     assert.equal(fixture.code, 0, fixture.stderr);
-    const source = saveSources(
-      project,
-      {
-        track: { path: audio },
-        lyrics: { text: TEXT },
-        idea: { text: 'Технический проект проверки поставки.' },
-        cover: null,
-        references: [
-          {
-            id: 'hero',
-            kind: 'character',
-            name: 'Герой',
-            short_name: 'Герой',
-            description: '',
-            prompt: '',
-            files: [{ sourcePath: reference, view: 'full', note: '' }]
-          }
-        ]
-      },
-      join(media.binDir, 'ffprobe')
-    );
+    const sourceInput: SourcesInput = {
+      track: { path: audio },
+      lyrics: { text: TEXT },
+      idea: { text: 'Технический проект проверки поставки.' },
+      cover: null,
+      references: [
+        {
+          id: 'hero',
+          kind: 'character',
+          name: 'Герой',
+          short_name: 'Герой',
+          description: '',
+          prompt: '',
+          files: [{ sourcePath: reference, view: 'full', note: '' }]
+        }
+      ]
+    };
+    const source = saveSources(project, sourceInput, join(media.binDir, 'ffprobe'));
     assert(source.track?.duration_seconds && source.track.duration_seconds > 0, 'Встроенный ffprobe должен определять длительность при загрузке.');
     const sourceHash = sha256File(join(project, 'source/track.mp3'));
+    const sourceText = readFileSync(join(project, 'source/text.md'), 'utf8');
     const recognition = join(root, 'recognition.json');
-    await tool('align_lyrics', ['--json', '--model', model, '--device', 'cpu', '--keep-recognition', recognition], project);
+    const first = await isolated.run(project, 'align_lyrics', ['--json', '--model', model, '--device', 'cpu', '--keep-recognition', recognition], {
+      timeoutMs: 10 * 60 * 1000,
+      onOutput: (text) => process.stdout.write(text)
+    });
     const timingPath = join(project, 'plan/audio/timing.json');
-    const timing = JSON.parse(readFileSync(timingPath, 'utf8')) as TimingFile;
     const recognized = JSON.parse(readFileSync(recognition, 'utf8'));
-    assert.equal(timing.lines.length, 2);
     assert(recognized.segments.length > 0, 'Распознавание не должно быть пустым.');
+    assert.equal(recognized.sha256, sourceHash);
     assert.equal(resolve(recognized.model_path), resolve(model));
     assert(recognized.network.includes('local_files_only') && recognized.network.includes('HF_HUB_OFFLINE'));
-    record('MP3 → timing.json внешней моделью на CPU', { model: recognized.model, lines: timing.lines.length, segments: recognized.segments.length });
+    record('Реальный ASR внешней моделью на CPU', { model: recognized.model, segments: recognized.segments.length });
+    if (first.code !== 0) {
+      // Tiny ошибается на синтетической речи: отсутствие совпадений теперь штатный отказ без выдуманных времён.
+      // Проверяем его сохранность, а последующие файловые операции — на тексте настоящего ответа ASR, без новых таймкодов.
+      assert.equal(first.code, 1, first.stderr);
+      assert(first.stderr.includes('Не удалось сопоставить ни одной строки с аудио.'), first.stderr);
+      assert(!existsSync(timingPath), 'Ненайденный текст не должен получать timing.json.');
+      assert.equal(sha256File(join(project, 'source/track.mp3')), sourceHash);
+      assert.equal(readFileSync(join(project, 'source/text.md'), 'utf8'), sourceText);
+      record('Несовпавший текст не получает выдуманную разметку', { timingWritten: false, sourcesPreserved: true });
+      const transcript = recognized.segments.map((segment: { text: string }) => segment.text.trim()).filter(Boolean);
+      assert(transcript.length > 0);
+      saveSources(project, { ...sourceInput, lyrics: { text: '[Куплет]\n' + transcript.join('\n') + '\n' } }, join(media.binDir, 'ffprobe'));
+      await tool('align_lyrics', ['--json', '--recognition', recognition], project);
+      record('Техническая разметка по собственному тексту ASR', { source: 'recognized.segments', qualityEvaluated: false });
+    }
+    const timing = JSON.parse(readFileSync(timingPath, 'utf8')) as TimingFile;
+    assert(timing.lines.length > 0, 'Совпавшие слова должны давать разметку.');
+    record('MP3 → timing.json без интерполяции', { lines: timing.lines.length, originalTextMatched: first.code === 0 });
     timing.lines[0].verified = true;
     writeFileSync(timingPath, JSON.stringify(timing));
     await tool('align_lyrics', ['--json', '--recognition', recognition], project);

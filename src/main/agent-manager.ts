@@ -143,15 +143,7 @@ export class AgentManager {
     return this.begin(value, directory, config);
   }
 
-  /** ASR запускается выбранным текстовым агентом в папке копии MP3, не в исходном проекте. */
-  startAudio(value: AgentStartInput, workDir: string): AgentJob {
-    const directory = realpathSync(workDir);
-    const base = realpathSync(join(this.settings.localDir, 'audio-jobs'));
-    if (!directory.startsWith(base + sep)) throw new AgentError('INVALID_INPUT', agentsTexts.invalidCandidateDirectory);
-    return this.begin(value, directory, undefined, 'audio');
-  }
-
-  private begin(value: unknown, workDirectory?: string, imageConfig?: AgentSettings, workMode: 'write' | 'audio' = 'write'): AgentJob {
+  private begin(value: unknown, workDirectory?: string, imageConfig?: AgentSettings): AgentJob {
     if (this.stopping) throw new AgentError('INTERRUPTED', agentsTexts.applicationStopping);
     const input = validate(value);
     const images = readImages(input.images);
@@ -217,7 +209,7 @@ export class AgentManager {
     const run: Running = { job, projectKey: project, ended: false, completed: false, outputBytes: 0 };
     this.running.set(job.id, run);
     this.publish(run, 'started');
-    const completion = this.launch(run, config, input, instructions, images, workDirectory, workMode).then(() => run.childClosed);
+    const completion = this.launch(run, config, input, instructions, images, workDirectory).then(() => run.childClosed);
     this.completions.add(completion);
     void completion.finally(() => this.completions.delete(completion));
     return structuredClone(job);
@@ -248,8 +240,7 @@ export class AgentManager {
     input: AgentStartInput,
     instructions: string,
     images: readonly AgentImageAttachment[],
-    workDirectory?: string,
-    workMode: 'write' | 'audio' = 'write'
+    workDirectory?: string
   ): Promise<void> {
     try {
       const adapter = this.options.adapter?.(config.provider) ?? createAgentAdapter(config.provider);
@@ -259,7 +250,7 @@ export class AgentManager {
         throw new AgentError(check.availability === 'not_found' ? 'CLI_NOT_FOUND' : 'CLI_UNAVAILABLE', check.message);
       if (!check.version) throw new AgentError('UNSUPPORTED_VERSION', agentsTexts.versionUnknown({ provider: agentTitle(config.provider) }));
       run.job.cliVersion = check.version;
-      const args = adapter.args(config, check.version, workDirectory ? workMode : 'read', images);
+      const args = adapter.args(config, check.version, workDirectory ? 'write' : 'read', images);
       if (images.length && !adapter.input) throw new AgentError('UNSUPPORTED_VERSION', agentsTexts.unsupportedVersion);
       if (check.authorization !== 'authenticated')
         throw new AgentError(check.authorization === 'unauthenticated' ? 'AUTH_REQUIRED' : 'AUTH_UNKNOWN', check.message);
@@ -269,12 +260,9 @@ export class AgentManager {
         for (const update of adapter.parse(event)) this.update(run, update);
       });
       /* eslint-disable no-restricted-syntax -- Инструкции запуска и заголовки ввода являются промптом агента, а не текстами интерфейса. */
-      const prefix =
-        workDirectory && workMode === 'audio'
-          ? 'Обработай только копию аудио в текущей рабочей папке с помощью уже доступных ASR-инструментов. Временные файлы создавай здесь. Не меняй исходный проект и настройки, не устанавливай программы, не скачивай модели, не выполняй commit/push и не отправляй платные запросы. Если разрешённого ASR нет, верни предусмотренный JSON unsupported. Финальный ответ — только запрошенный JSON.'
-          : workDirectory
-            ? 'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы сервисам генерации. Верни финальный JSON в запрошенном формате.'
-            : 'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.';
+      const prefix = workDirectory
+        ? 'Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы сервисам генерации. Верни финальный JSON в запрошенном формате.'
+        : 'Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.';
       const projectInstructions = instructions ? `\n\nПостоянные инструкции текстовому агенту этого проекта:\n${instructions}` : '';
       const prompt = `${prefix}${projectInstructions}\n\nЗадача:\n${input.prompt}${input.context ? `\n\nДополнительный контекст:\n${input.context}` : ''}`;
       /* eslint-enable no-restricted-syntax */

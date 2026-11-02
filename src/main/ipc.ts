@@ -1,3 +1,4 @@
+import type { VocalModelId } from '@shared/vocals';
 /** Регистрация обработчиков IPC: тонкий слой над модулями главного процесса. */
 
 import { spawn } from 'node:child_process';
@@ -28,7 +29,6 @@ import { readReferenceImageContext } from './reference-image-context';
 import { applicationTexts } from '@shared/texts/application';
 import { commonTexts } from '@shared/texts/common';
 import { settingsTexts } from '@shared/texts/settings';
-import { timingTexts } from '@shared/texts/timing';
 import { jobsTexts } from '@shared/texts/jobs';
 import { productionTexts } from '@shared/texts/production';
 import { Jobs } from './jobs';
@@ -46,7 +46,7 @@ import { saveScenesWithMode, scenesSaveImpact } from './scenario-save';
 import { runEnvironmentTask } from './environment-task';
 import { resolvePaths } from './paths';
 import { Projects, validateNewProject } from './projects';
-import { parseLyrics, validateSources, viewSources } from './sources';
+import { validateSources, viewSources } from './sources';
 import { LocalState } from './state';
 import { saveTiming, viewTiming } from './timing';
 import { runTool } from './tools';
@@ -55,7 +55,7 @@ import { whisperSetup } from './whisper-setup';
 import { startWhisperDownload } from './whisper-download';
 import { initializeLocalStorage } from './local-storage';
 import { normalizeAgentSettings, SettingsStore } from './settings';
-import { mediaPaths } from './media-runtime';
+import { mediaPaths, missingModelFiles } from './media-runtime';
 import { checkAgent } from './agents';
 import { createAgentAdapter } from './agent-adapters';
 import type { AgentJob, AgentSettings } from '@shared/agents';
@@ -87,7 +87,7 @@ import type { TaskNotifications } from './task-notifications';
 import type { MontageDraft } from '@shared/montage';
 import { Montage } from './montage';
 import { copyMontageVideo, montageVideoPath } from './montage-video';
-import { TimingAgent } from './timing-agent';
+import { TimingLocal } from './timing-local';
 import { VideoReview } from './video-review';
 import { AGENT_PROVIDERS } from '@shared/agent-providers';
 import { DerivedWorkflow } from './derived-workflow';
@@ -122,7 +122,7 @@ export interface Services {
   cover?: CoverGeneration;
   referenceImages?: CoverGeneration;
   videoReview?: VideoReview;
-  timingAgent?: TimingAgent;
+  timingLocal?: TimingLocal;
   /** Только оконный процесс: журнал сбоев и сеанс пользователя. */
   diagnostics?: AppDiagnostics;
 }
@@ -377,15 +377,6 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       generationVerified: false
     };
   });
-  const timingAgent = new TimingAgent({ localDir: getServices().settings.localDir, agents });
-  getServices().timingAgent = timingAgent;
-  ipcMain.handle('timingAgent:view', (_event, project: string) => timingAgent.view(project));
-  ipcMain.handle('timingAgent:start', async (_event, project: string) => {
-    await ai.requireAccess(project, 'agent');
-    return timingAgent.start(project);
-  });
-  ipcMain.handle('timingAgent:cancel', (_event, project: string) => timingAgent.cancel(project));
-  ipcMain.handle('timingAgent:proposal', (_event, project: string, jobId: string) => timingAgent.proposal(project, jobId));
   const videoReview = new VideoReview({
     agents,
     imageBudgetBytes: () => AGENT_PROVIDERS[getServices().settings.getAgent()?.provider ?? 'codex'].reviewImageBudgetBytes,
@@ -564,7 +555,7 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       cover,
       referenceImages,
       videoReview,
-      timingAgent,
+      timingLocal: getServices().timingLocal,
       diagnostics
     };
     watchJobs(next.jobs);
@@ -615,38 +606,24 @@ export function registerIpc(getServices: () => Services, setServices: (services:
   });
 
   ipcMain.handle('timing:modelSetup', () => whisperSetup(getServices().launcher));
+  ipcMain.handle('timing:inspectModel', (_event, path: string) => {
+    const missing = missingModelFiles(path);
+    return { installed: missing.length === 0, missing };
+  });
+  const timingLocal = new TimingLocal(() => getServices().jobs);
+  getServices().timingLocal = timingLocal;
+  ipcMain.handle('timing:vocalsView', (_event, project: string) => timingLocal.vocals.view(project));
+  ipcMain.handle('timing:downloadVocalModel', (_event, model: VocalModelId) => timingLocal.vocals.download(model));
+  ipcMain.handle('timing:separateVocals', (_event, project: string, model: VocalModelId) => timingLocal.vocals.separate(project, model));
+  ipcMain.handle('timing:selectVocal', (_event, project: string, id: string) => timingLocal.vocals.select(project, id));
+  ipcMain.handle('timing:deleteVocal', (_event, project: string, id: string) => timingLocal.vocals.delete(project, id, (path) => shell.trashItem(path)));
+  ipcMain.handle('timing:songModelSetup', () => timingLocal.setup());
+  ipcMain.handle('timing:downloadSongModels', () => timingLocal.download());
+  ipcMain.handle('timing:start', (_event, project: string, options: TimingGenerateOptions) => timingLocal.start(project, options));
+  ipcMain.handle('timing:cancel', (_event, id: string) => timingLocal.cancel(id));
   ipcMain.handle('timing:downloadModel', (_event, model: string) => startWhisperDownload(getServices().jobs, model));
   ipcMain.handle('timing:view', (_event, project: string) => viewTiming(project));
   ipcMain.handle('timing:save', (_event, project: string, timing: TimingFile) => saveTiming(project, timing));
-  ipcMain.handle('timing:generate', async (_event, project: string, options: TimingGenerateOptions) => {
-    try {
-      // Предусловие проверяется и в IPC: файл мог исчезнуть после открытия диалога.
-      const textPath = join(project, 'source/text.md');
-      if (!existsSync(textPath)) throw new Error(timingTexts.addLyrics);
-      const formatProblems = parseLyrics(readFileSync(textPath, 'utf8')).problems;
-      if (formatProblems.length) throw new Error(applicationTexts.lyricsInvalid({ problems: formatProblems }));
-      const args = ['--json'];
-      // Пустое поле использует рекомендацию, а не отсутствующие веса внутри AppImage.
-      if (!options.recognition) {
-        let modelPath = options.model?.trim();
-        if (!modelPath) {
-          const setup = await whisperSetup(getServices().launcher);
-          modelPath = setup.directories[setup.recommended];
-        }
-        args.push('--model', modelPath);
-      }
-      args.push('--device', options.device === 'cpu' ? 'cpu' : 'auto');
-      if (options.recognition) args.push('--recognition', options.recognition);
-      if (options.reset) args.push('--reset');
-      // Разметка не проходит через Jobs: сообщаем только итог единственного вызова launcher.
-      const result = await runTool(getServices().toolsRoot, project, 'align_lyrics', args, 30 * 60 * 1000, getServices().launcher);
-      notifications?.timingFinished(project, result.code === 0);
-      return result;
-    } catch (error) {
-      notifications?.timingFinished(project, false);
-      throw error;
-    }
-  });
 
   ipcMain.handle('cast:view', (_event, project: string) => viewCast(project, getServices().toolsRoot));
   ipcMain.handle('cast:init', (_event, project: string) => initCast(project, getServices().toolsRoot));

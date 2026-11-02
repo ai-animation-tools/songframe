@@ -1,11 +1,8 @@
 import { timingTexts } from '@shared/texts/timing';
 import type { ReactElement } from 'react';
-import { Alert, Box, Button, Paper, Slider, Stack, Typography } from '@mui/material';
-import PauseIcon from '@mui/icons-material/Pause';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { Alert, Box, Paper, Typography } from '@mui/material';
 import type { TimingLine } from '@shared/types';
-import { formatClock } from '../../../format';
+import { TimingSelectionControls } from './TimingSelectionControls';
 import type { TimingPlayerController } from '../useTimingPlayer';
 
 interface TimingPlayerProps {
@@ -21,19 +18,13 @@ export function TimingPlayer({ player, stickyTop }: TimingPlayerProps): ReactEle
     audioRef,
     canvasRef,
     scrollRef,
-    playing,
-    time,
     duration,
-    volume,
     pps,
     peaks,
     peaksError,
     playbackError,
     setPlaying,
-    setVolume,
-    setPps,
     setScrollLeft,
-    togglePlay,
     hitLine,
     canvasHeight,
     playLine,
@@ -54,49 +45,6 @@ export function TimingPlayer({ player, stickyTop }: TimingPlayerProps): ReactEle
       }}
     >
       <audio key={trackUrl} ref={audioRef} src={trackUrl ?? undefined} preload="auto" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
-      <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 1 }}>
-        <Button onClick={togglePlay} color="primary" startIcon={playing ? <PauseIcon /> : <PlayArrowIcon />}>
-          {playing ? timingTexts.pause : timingTexts.play}
-        </Button>
-        <Typography sx={{ fontFamily: 'monospace', minWidth: 72 }}>{formatClock(time)}</Typography>
-        <Typography variant="caption" color="text.secondary">
-          {timingTexts.totalDuration({ duration: formatClock(duration) })}
-        </Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <VolumeUpIcon fontSize="small" color="action" />
-          <Typography variant="caption" color="text.secondary">
-            {timingTexts.volume}
-          </Typography>
-          <Slider
-            aria-label={timingTexts.volume}
-            size="small"
-            min={0}
-            max={100}
-            value={Math.round(volume * 100)}
-            onChange={(_event, value) => setVolume((value as number) / 100)}
-            valueLabelDisplay="auto"
-            valueLabelFormat={(value) => timingTexts.volumePercent({ value })}
-            getAriaValueText={(value) => timingTexts.volumePercent({ value })}
-            sx={{ width: 110 }}
-          />
-          <Typography variant="caption" sx={{ minWidth: 32 }}>
-            {timingTexts.volumePercent({ value: Math.round(volume * 100) })}
-          </Typography>
-        </Stack>
-        <Box sx={{ flex: 1 }} />
-        <Typography variant="caption" color="text.secondary">
-          {timingTexts.scale}
-        </Typography>
-        <Slider
-          aria-label={timingTexts.timelineScale}
-          size="small"
-          min={8}
-          max={400}
-          value={pps}
-          onChange={(_e, v) => setPps(v as number)}
-          sx={{ width: 160 }}
-        />
-      </Box>
       <Box
         ref={scrollRef}
         onScroll={(e) => setScrollLeft((e.target as HTMLDivElement).scrollLeft)}
@@ -125,10 +73,11 @@ export function TimingPlayer({ player, stickyTop }: TimingPlayerProps): ReactEle
         <Box sx={{ width: `${Math.max(1, duration * pps)}px`, height: '1px' }} />
         <canvas ref={canvasRef} style={{ position: 'sticky', left: 0, top: 0, display: 'block', height: canvasHeight, width: '100%', marginTop: -1 }} />
       </Box>
-      {player.loopingLineId !== null && (
-        <Typography role="status" variant="body2" sx={{ mt: 1 }}>
-          {timingTexts.loopStatus({ id: player.loopingLineId })}
-        </Typography>
+      <TimingSelectionControls player={player} />
+      {player.lockedLineId !== null && !player.pair && (
+        <Alert severity="info" sx={{ mt: 1 }}>
+          {timingTexts.lockedLine({ id: player.lockedLineId })}
+        </Alert>
       )}
       {playbackError && (
         <Alert severity="error" sx={{ mt: 1 }}>

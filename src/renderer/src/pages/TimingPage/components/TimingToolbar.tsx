@@ -1,11 +1,13 @@
-import { timingAgentTexts } from '@shared/texts/timing-agent';
-import { AgentButton } from '../../../components/AgentButton';
 import { timingTexts } from '@shared/texts/timing';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
-import type { ReactElement } from 'react';
-import { Box, Chip, CircularProgress, FormControlLabel, Switch, Typography } from '@mui/material';
+import { useState, type ReactElement } from 'react';
+import { Box, Chip, CircularProgress, ListItemIcon, Menu, MenuItem, Typography } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import { timingEditorTexts } from '@shared/texts/timing-editor';
 import SaveIcon from '@mui/icons-material/Save';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -26,8 +28,6 @@ interface TimingToolbarProps {
   /** Почему автоматическая разметка недоступна без правок (нет трека, текста или инструментов). */
   generateBlockedReason: string | null;
   onGenerate: () => void;
-  onAgentGenerate?: () => void;
-  agentBlockedReason?: string | null;
   onConfirmAll: () => void;
   onRecalculateSections: () => void;
   onSave: () => void;
@@ -47,13 +47,13 @@ export function TimingToolbar({
   canGenerate,
   generateBlockedReason,
   onGenerate,
-  onAgentGenerate,
-  agentBlockedReason,
   onConfirmAll,
   onRecalculateSections,
   onSave,
   onDiscard
 }: TimingToolbarProps): ReactElement {
+  const [recognizeAnchor, setRecognizeAnchor] = useState<HTMLElement | null>(null);
+  const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
   const working = busy || generating;
   // Причина видна в подсказке: предупреждения на странице могут быть далеко от панели.
   const waitReason = generating ? timingTexts.recognitionPending : busy ? timingTexts.operationPending : null;
@@ -75,55 +75,84 @@ export function TimingToolbar({
         )}
         {dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
       </Box>
-      {onManualModeChange && (
-        <FormControlLabel
-          sx={{ m: 0 }}
-          label={timingTexts.manualMode}
-          title={working ? timingTexts.manualModePending : undefined}
-          control={
-            <Switch
-              checked={manualMode}
-              disabled={working}
-              onChange={(_event, checked) => onManualModeChange(checked)}
-              slotProps={{ input: { role: 'switch' } }}
-            />
-          }
-        />
-      )}
+      {manualMode && <Chip size="small" variant="outlined" icon={<EditOutlinedIcon />} label={timingEditorTexts.mode} />}
       {/* Действия держатся одной группой справа: при переносе «Сохранить» остаётся последней справа. */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end', ml: 'auto' }}>
         <ActionButton
           startIcon={generating ? <CircularProgress size={16} aria-hidden /> : <AutoFixHighIcon />}
-          title={generating ? undefined : timingTexts.generateHint}
-          disabled={working || dirty || !canGenerate}
-          disabledReason={generateReason}
-          onClick={onGenerate}
+          endIcon={<ExpandMoreIcon />}
+          disabled={working}
+          disabledReason={waitReason}
+          aria-haspopup="menu"
+          aria-expanded={!!recognizeAnchor}
+          onClick={(event) => setRecognizeAnchor(event.currentTarget)}
         >
-          {generating ? timingTexts.recognizing : timingTexts.generate}
+          {generating ? timingTexts.recognizing : timingEditorTexts.recognize}
         </ActionButton>
-        {onAgentGenerate && (
-          <AgentButton onClick={onAgentGenerate} disabled={!!agentBlockedReason || working} disabledReason={waitReason ?? agentBlockedReason}>
-            {timingAgentTexts.title}
-          </AgentButton>
-        )}
+        <Menu anchorEl={recognizeAnchor} open={!!recognizeAnchor} onClose={() => setRecognizeAnchor(null)}>
+          <MenuItem
+            disabled={working || dirty || !canGenerate}
+            title={generateReason ?? undefined}
+            onClick={() => {
+              setRecognizeAnchor(null);
+              onGenerate();
+            }}
+          >
+            <ListItemIcon>
+              <AutoFixHighIcon fontSize="small" />
+            </ListItemIcon>
+            {timingEditorTexts.automatic}
+          </MenuItem>
+          <MenuItem
+            disabled={working || !onManualModeChange}
+            onClick={() => {
+              setRecognizeAnchor(null);
+              onManualModeChange?.(true);
+            }}
+          >
+            <ListItemIcon>
+              <EditOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            {timingEditorTexts.manual}
+          </MenuItem>
+        </Menu>
         <ActionButton
-          startIcon={<DoneAllIcon />}
-          disabled={working || verifiedCount === lineCount}
-          disabledReason={waitReason ?? (lineCount ? timingTexts.allVerified : timingTexts.noLines)}
-          onClick={onConfirmAll}
+          startIcon={<MoreHorizIcon />}
+          onClick={(event) => setMoreAnchor(event.currentTarget)}
+          disabled={working}
+          disabledReason={waitReason}
+          aria-haspopup="menu"
         >
-          {timingTexts.verifyAll}
+          {timingEditorTexts.more}
         </ActionButton>
-        <DestructiveButton
-          label={timingTexts.recalculateSections}
-          description={timingTexts.recalculateDescription}
-          confirmLabel={timingTexts.recalculate}
-          startIcon={<RestartAltIcon />}
-          size="medium"
-          disabled={working || !lineCount || invalidBindings}
-          disabledReason={waitReason ?? (!lineCount ? timingTexts.noLines : invalidBindingsReason)}
-          onConfirm={onRecalculateSections}
-        />
+        <Menu anchorEl={moreAnchor} open={!!moreAnchor} onClose={() => setMoreAnchor(null)}>
+          <MenuItem
+            disabled={working || !lineCount || verifiedCount === lineCount}
+            onClick={() => {
+              setMoreAnchor(null);
+              onConfirmAll();
+            }}
+          >
+            <ListItemIcon>
+              <DoneAllIcon fontSize="small" />
+            </ListItemIcon>
+            {timingTexts.verifyAll}
+          </MenuItem>
+          <Box sx={{ px: 1 }}>
+            <DestructiveButton
+              label={timingTexts.recalculateSections}
+              description={timingTexts.recalculateDescription}
+              confirmLabel={timingTexts.recalculate}
+              startIcon={<RestartAltIcon />}
+              disabled={working || !lineCount || invalidBindings}
+              disabledReason={waitReason ?? (!lineCount ? timingTexts.noLines : invalidBindingsReason)}
+              onConfirm={() => {
+                setMoreAnchor(null);
+                onRecalculateSections();
+              }}
+            />
+          </Box>
+        </Menu>
         {dirty ? (
           <DestructiveButton
             icon

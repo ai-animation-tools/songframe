@@ -87,7 +87,7 @@ jobs:
       - name: FFmpeg и Pillow для интеграционных тестов приложения
         run: |
           bash tools/run_tests/prepare_ci_media.sh
-          python -m pip install pillow==13.0.0
+          python -m pip install pillow==13.0.0 numpy==2.5.4
           python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
           python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
       - name: Тесты приложения
@@ -136,7 +136,7 @@ jobs:
       - name: FFmpeg и Pillow для медиатестов
         run: |
           bash tools/run_tests/prepare_ci_media.sh
-          python -m pip install pillow==13.0.0
+          python -m pip install pillow==13.0.0 numpy==2.5.4
           python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
           python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
       # Наборы независимы (у каждого процесса своя копия образца) и идут параллельно по числу ядер раннера.

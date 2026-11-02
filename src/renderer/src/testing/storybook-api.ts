@@ -8,12 +8,6 @@ function unconfigured(method: string): never {
 
 export function unconfiguredStoryApi(): Api {
   return {
-    timingAgent: {
-      view: async () => unconfigured('timingAgent.view'),
-      start: async () => unconfigured('timingAgent.start'),
-      cancel: async () => unconfigured('timingAgent.cancel'),
-      proposal: async () => unconfigured('timingAgent.proposal')
-    },
     ai: {
       access: async () => unconfigured('ai.access')
     },
@@ -136,11 +130,20 @@ export function unconfiguredStoryApi(): Api {
       save: async () => unconfigured('sources.save')
     },
     timing: {
+      vocalsView: async () => unconfigured('timing.vocalsView'),
+      downloadVocalModel: async () => unconfigured('timing.downloadVocalModel'),
+      separateVocals: async () => unconfigured('timing.separateVocals'),
+      selectVocal: async () => unconfigured('timing.selectVocal'),
+      deleteVocal: async () => unconfigured('timing.deleteVocal'),
+      songModelSetup: async () => unconfigured('timing.songModelSetup'),
+      downloadSongModels: async () => unconfigured('timing.downloadSongModels'),
+      start: async () => unconfigured('timing.start'),
+      cancel: async () => unconfigured('timing.cancel'),
       modelSetup: async () => unconfigured('timing.modelSetup'),
+      inspectModel: async () => unconfigured('timing.inspectModel'),
       downloadModel: async () => unconfigured('timing.downloadModel'),
       view: async () => unconfigured('timing.view'),
-      save: async () => unconfigured('timing.save'),
-      generate: async () => unconfigured('timing.generate')
+      save: async () => unconfigured('timing.save')
     },
     cast: {
       view: async () => unconfigured('cast.view'),

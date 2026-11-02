@@ -5,19 +5,25 @@ import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Alert, Stack, Typography } from '@mui/material';
 import type { JobInfo } from '@shared/types';
 import type { WhisperModelId } from '@shared/whisper-models';
-import { ActionButton, JobStatus } from '../../../components';
+import { ActionButton } from '../../../components';
 import { useApp } from '../../../state';
 import { OFFLINE_MESSAGE } from '../../../network';
+import { TimingJobProgress } from './TimingJobProgress';
+import { songTimingTexts as texts } from '@shared/texts/song-timing';
 
 interface Props {
   model: WhisperModelId;
+  disabled?: boolean;
+  managedProgress?: boolean;
+  onJob?(job: JobInfo | null): void;
+  onBusy?(busy: boolean): void;
   onDownloaded(directory: string): void;
 }
 
 // Завершённое задание выбирает папку один раз за сессию, чтобы повторное открытие не отменяло ручной выбор модели.
 const appliedJobs = new Set<string>();
 
-export function WhisperModelDownload({ model, onDownloaded }: Props): ReactElement {
+export function WhisperModelDownload({ model, onDownloaded, disabled = false, managedProgress = false, onJob, onBusy }: Props): ReactElement {
   const { describeError, online } = useApp();
   const [job, setJob] = useState<JobInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +32,19 @@ export function WhisperModelDownload({ model, onDownloaded }: Props): ReactEleme
   const mounted = useRef(true);
   const jobId = job?.id;
   const running = job?.status === 'running';
+  useEffect(() => {
+    onJob?.(job);
+  }, [job, onJob]);
+  useEffect(() => {
+    onBusy?.(starting);
+  }, [starting, onBusy]);
+  useEffect(
+    () => () => {
+      onJob?.(null);
+      onBusy?.(false);
+    },
+    [onJob, onBusy]
+  );
 
   useEffect(() => {
     let active = true;
@@ -102,7 +121,7 @@ export function WhisperModelDownload({ model, onDownloaded }: Props): ReactEleme
         variant="contained"
         startIcon={<Download />}
         onClick={download}
-        disabled={!online || loading || starting || running}
+        disabled={disabled || !online || loading || starting || running}
         disabledReason={starting || running ? timingTexts.downloadPending : !online ? OFFLINE_MESSAGE : timingTexts.downloadCheckPending}
         sx={{ alignSelf: 'flex-start' }}
       >
@@ -113,8 +132,8 @@ export function WhisperModelDownload({ model, onDownloaded }: Props): ReactEleme
       </Typography>
       {error && <Alert severity="error">{error}</Alert>}
       {job?.status === 'failed' && <Alert severity="error">{timingTexts.downloadFailed}</Alert>}
-      {job?.status === 'done' && <Alert severity="success">{timingTexts.downloadReady}</Alert>}
-      {job && <JobStatus running={running} />}
+      {job?.status === 'done' && !managedProgress && <Alert severity="success">{timingTexts.downloadReady}</Alert>}
+      {job && !managedProgress && <TimingJobProgress key={job.id} job={job} label={timingTexts.downloading({ model })} name={texts.download} />}
     </Stack>
   );
 }

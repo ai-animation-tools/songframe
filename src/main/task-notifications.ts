@@ -1,7 +1,8 @@
+import { vocalTexts } from '@shared/texts/vocals';
+import { songTimingTexts } from '@shared/texts/song-timing';
 import type { AgentEvent } from '@shared/agents';
 import { agentTitle } from '@shared/agent-providers';
 import type { NotificationTarget } from '@shared/notifications';
-import { timingAgentTexts } from '@shared/texts/timing-agent';
 import { checksTexts } from '@shared/texts/checks';
 import { notificationsTexts } from '@shared/texts/notifications';
 import type { JobInfo } from '@shared/types';
@@ -20,6 +21,23 @@ export class TaskNotifications {
   constructor(private readonly deliver: (notice: TaskNotice) => void) {}
 
   jobFinished(job: JobInfo, project: string | null): void {
+    if (project && job.steps.some((step) => step.tool === 'separate_vocals') && (job.status === 'done' || job.status === 'failed')) {
+      if (this.deliveredJobs.has(job.id)) return;
+      this.deliveredJobs.add(job.id);
+      if (job.error !== vocalTexts.cancelled)
+        this.send({
+          title: job.status === 'done' ? job.title : notificationsTexts.jobFailed(job.title),
+          body: job.title,
+          target: { project, route: '/project/timing' }
+        });
+      return;
+    }
+    if (project && job.steps.some((step) => step.tool === 'align_lyrics') && (job.status === 'done' || job.status === 'failed')) {
+      if (this.deliveredJobs.has(job.id)) return;
+      this.deliveredJobs.add(job.id);
+      if (job.error !== songTimingTexts.cancelled) this.timingFinished(project, job.status === 'done');
+      return;
+    }
     if (!project || (job.kind !== 'review' && job.kind !== 'animatic') || (job.status !== 'done' && job.status !== 'failed')) return;
     if (this.deliveredJobs.has(job.id)) return;
     this.deliveredJobs.add(job.id);
@@ -57,7 +75,7 @@ export class TaskNotifications {
       body: job.task,
       target: {
         project: job.project,
-        route: job.task === timingAgentTexts.task ? '/project/timing' : job.task.startsWith('ai-clip-scenario:') ? '/project/scenario' : '/project/production'
+        route: job.task.startsWith('ai-clip-scenario:') ? '/project/scenario' : '/project/production'
       }
     });
   }

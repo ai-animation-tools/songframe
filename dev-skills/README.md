@@ -5,7 +5,7 @@
 | Скилл | Назначение |
 | --- | --- |
 | [songframe-build](songframe-build/SKILL.md) | Локальная сборка и проверка Linux AppImage или Windows-установщика |
-| [songframe-release](songframe-release/SKILL.md) | Подготовка и выпуск релиза через GitHub Actions |
+| [songframe-release](songframe-release/SKILL.md) | Локальная подготовка обеих поставок и публикация релиза после CI |
 | [songframe-ui](songframe-ui/SKILL.md) | Изменение и проверка интерфейса по правилам UI |
 | [songframe-project-contract](songframe-project-contract/SKILL.md) | Изменение форматов и схем проектов и шаблона |
 

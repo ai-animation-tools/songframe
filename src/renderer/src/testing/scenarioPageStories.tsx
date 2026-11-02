@@ -38,7 +38,7 @@ export const scenarioPageActionProblem = (shot: string): string => `${shot}: о�
  * принятые материалы; proposal — готовое предложение прохода сценария; noRegistry — трактовка без реестра;
  * loading и loadError — отложенное и ошибочное первое чтение.
  */
-export type ScenarioPageVariant = 'regular' | 'long' | 'produced' | 'proposal' | 'noRegistry' | 'loading' | 'loadError';
+export type ScenarioPageVariant = 'regular' | 'long' | 'produced' | 'proposal' | 'noRegistry' | 'noTreatment' | 'loading' | 'loadError';
 
 export interface ScenarioPageOptions {
   variant?: ScenarioPageVariant;
@@ -257,8 +257,8 @@ function pageView(variant: ScenarioPageVariant): ScenarioView {
   const treatment = pageTreatment(long);
   const duration = scenes.scenes.at(-1)!.end_frame_exclusive / FPS;
   return {
-    scenes: variant === 'noRegistry' ? null : scenes,
-    treatment,
+    scenes: variant === 'noRegistry' || variant === 'noTreatment' ? null : scenes,
+    treatment: variant === 'noTreatment' ? null : treatment,
     cast: pageCast(long),
     timing: pageTiming(duration, variant === 'noRegistry' ? null : scenes, treatment),
     lyrics: scenes.scenes.map((shot, index) => ({ number: index + 1, text: shot.original, header: false })),
@@ -403,7 +403,7 @@ export function scenarioPageOptions({
       let failedReads = variant === 'loadError' ? 1 : 0;
       const produced = new Set(variant === 'produced' ? ['M01', 'M02'] : []);
       const saved = pageView(variant);
-      const approved = variant !== 'noRegistry';
+      const approved = variant !== 'noRegistry' && variant !== 'noTreatment';
       const workflow: ScenarioWorkflowView = {
         project: SCENARIO_PAGE_PROJECT,
         busy: false,

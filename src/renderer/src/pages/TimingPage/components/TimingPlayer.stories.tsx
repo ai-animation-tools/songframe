@@ -1,6 +1,7 @@
 /** Реальный MP3 и hook проверяют загрузку волны, ограниченное прослушивание и остановку без Electron. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { timingTexts } from '@shared/texts/timing';
+import { timingSelectionTexts as selectionTexts } from '@shared/texts/timing-selection';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { TimingStory, timingStoryOptions } from '../../../testing/timingStories';
 
@@ -93,6 +94,79 @@ export const BrokenMedia: Story = {
 export const NarrowPlayer: Story = {
   name: 'Плеер · перенос управления в узкой области',
   parameters: { songframe: { ...timingStoryOptions(), workspaceWidth: 724 } }
+};
+
+export const VerifiedTimingLock: Story = {
+  name: 'Подтверждённая строка · блокировка мыши и скобок · V разрешает перенос',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const audio = await readyAudio(canvasElement);
+    const wave = canvasElement.querySelector('canvas')!;
+    const scroller = wave.parentElement!;
+    const point = (time: number) => ({
+      clientX: wave.getBoundingClientRect().left + time * 48 - scroller.scrollLeft,
+      clientY: wave.getBoundingClientRect().top + 43
+    });
+    const start = () => canvas.getByLabelText(timingTexts.lineStart({ id: 2 })) as HTMLInputElement;
+    const end = () => canvas.getByLabelText(timingTexts.lineEnd({ id: 2 })) as HTMLInputElement;
+    const verified = () => canvas.getByRole('checkbox', { name: timingTexts.verifyLine({ id: 2 }) });
+    const drag = async (from: number, to: number) => {
+      await userEvent.pointer([
+        { target: wave, coords: point(from), keys: '[MouseLeft>]' },
+        { target: wave, coords: point(to) },
+        { target: wave, coords: point(to), keys: '[/MouseLeft]' }
+      ]);
+    };
+    const expectLocked = async () => {
+      await expect(start().value).toBe('1.2');
+      await expect(end().value).toBe('2.2');
+      await expect(verified()).toBeChecked();
+      await expect(canvas.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+    };
+
+    // Настоящие события мыши проверяют тело и обе границы: подтверждение нельзя случайно снять переносом.
+    await drag(1.7, 2);
+    await expect(canvas.getByRole('status')).toHaveTextContent('Выбрана строка 2');
+    await expect(canvas.getByText(timingTexts.lockedLine({ id: 2 }))).toBeVisible();
+    await expectLocked();
+    await drag(1.2, 1);
+    await expectLocked();
+    await drag(2.2, 2.4);
+    await expectLocked();
+    (canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur();
+    audio.currentTime = 1;
+    await userEvent.keyboard('[[');
+    await expectLocked();
+    audio.currentTime = 2.4;
+    await userEvent.keyboard(']');
+    await expectLocked();
+
+    // Блокировка границ сохраняет обычное прослушивание с клавиатуры и явный цикл строки.
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(audio.paused).toBe(false));
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(audio.paused).toBe(true));
+    await userEvent.click(canvas.getByRole('button', { name: timingTexts.loopLine({ id: 2 }) }));
+    await waitFor(() => expect(audio.paused).toBe(false));
+    await userEvent.click(canvas.getByRole('button', { name: timingTexts.stopLoop({ id: 2 }) }));
+    await expectLocked();
+    (canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur();
+    await userEvent.keyboard('v');
+    await expect(verified()).not.toBeChecked();
+    await expect(canvas.queryByText(timingTexts.lockedLine({ id: 2 }))).not.toBeInTheDocument();
+    await drag(1.7, 1.5);
+    await expect(start().value).toBe('1');
+    await expect(end().value).toBe('2');
+    await expect(verified()).not.toBeChecked();
+  }
+};
+
+export const ManualVerifiedTimingLock: Story = {
+  ...VerifiedTimingLock,
+  name: 'Ручной режим · подтверждение блокирует перенос и обе границы до V',
+  args: { manualMode: true },
+  parameters: { songframe: timingStoryOptions({ manualMode: true }) }
 };
 
 export const ManualDragAcrossNeighbours: Story = {
@@ -230,6 +304,8 @@ export const LoopDragAndRemove: Story = {
     const canvas = within(canvasElement);
     const screen = within(canvasElement.ownerDocument.body);
     const audio = await readyAudio(canvasElement);
+    // Перенос разрешён только после явного снятия подтверждения уже проверенной строки.
+    await userEvent.click(canvas.getByRole('checkbox', { name: timingTexts.verifyLine({ id: 2 }) }));
     await userEvent.click(canvas.getByRole('button', { name: timingTexts.loopLine({ id: 2 }) }));
     await waitFor(() => expect(audio.paused).toBe(false));
     const wave = canvasElement.querySelector('canvas')!;
@@ -276,5 +352,38 @@ export const LoopAtTrackEnd: Story = {
     await expect(audio.paused).toBe(false);
     await userEvent.click(canvas.getByRole('button', { name: timingTexts.stopLoop({ id: 3 }) }));
     await expect(audio.paused).toBe(true);
+  }
+};
+
+export const EmptySelectionControls: Story = {
+  name: 'Пустая разметка · полный трек доступен · нет ложной ошибки выделения',
+  tags: ['ci'],
+  args: { variant: 'empty' },
+  parameters: { songframe: timingStoryOptions({ variant: 'empty' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await readyAudio(canvasElement);
+    const controls = within(canvas.getByRole('group', { name: selectionTexts.controls }));
+    await expect(controls.getByRole('button', { name: selectionTexts.play })).toBeEnabled();
+    await expect(controls.getByRole('button', { name: selectionTexts.loopSelection })).toBeDisabled();
+    await expect(controls.getByRole('button', { name: selectionTexts.zoomSelection })).toBeDisabled();
+    await expect(controls.getByText(selectionTexts.noSelection)).toBeVisible();
+    await expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
+  }
+};
+
+export const BusySelectionControls: Story = {
+  name: 'Текущая операция · прослушивание недоступно без ошибки',
+  tags: ['ci'],
+  args: { pendingOperation: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const audio = await readyAudio(canvasElement);
+    const controls = within(canvas.getByRole('group', { name: selectionTexts.controls }));
+    const play = controls.getByRole('button', { name: selectionTexts.play });
+    await expect(play).toBeDisabled();
+    await expect(controls.getByRole('button', { name: selectionTexts.loopSelection })).toBeDisabled();
+    await expect(audio.paused).toBe(true);
+    await expect(canvas.queryByRole('alert')).not.toBeInTheDocument();
   }
 };

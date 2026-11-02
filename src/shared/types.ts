@@ -1,3 +1,4 @@
+import type { VocalModelId } from './vocals';
 /** Общие типы главного процесса и рендерера: состояние приложения, проект, исходники, среда. */
 import type { MediaModelSelection } from './media-providers';
 import type { ProductionProposalSummary } from './production-workflow';
@@ -212,7 +213,20 @@ export interface TimingLine {
   note?: string;
 }
 
+/** Слабое акустическое предложение хранится отдельно от принятых интервалов и может пересекаться с ними. */
+export interface TimingCandidate {
+  source_line: number;
+  start: number;
+  end: number;
+  reason: string;
+  acoustic_score?: number;
+  /** Заметка пользователя не означает принятие предложенных границ. */
+  note?: string;
+}
+
 export interface TimingSection {
+  /** Автоматическая карта пересчитывается; явно ручные части сохраняют границы пользователя. */
+  origin?: 'auto' | 'manual';
   name: string;
   start: number;
   end: number;
@@ -230,6 +244,10 @@ export interface TimingFile {
   clock: string;
   lines: TimingLine[];
   sections: TimingSection[];
+  /** Непринятые предложения не участвуют в проверке пересечений сохранённых lines. */
+  candidates?: TimingCandidate[];
+  /** Порядок редактора по физическим номерам текста; времена и исходная песня не переставляются. */
+  line_order?: number[];
 }
 
 export interface LyricsLine {
@@ -252,9 +270,9 @@ export interface TimingView {
 }
 
 export interface TimingGenerateOptions {
+  vocals?: boolean;
   device?: 'auto' | 'cpu';
   model?: string;
-  recognition?: string;
   reset?: boolean;
 }
 
@@ -598,7 +616,7 @@ export interface JobInfo {
   error?: string;
   steps: JobStepInfo[];
   /** Загрузка весов относится к приложению, а не к данным текущего клипа. */
-  modelDownload?: { model: WhisperModelId; directory: string };
+  modelDownload?: { model: WhisperModelId | 'song-timing-v1' | VocalModelId; directory: string };
   /** Сведения загружены из localDir/jobs/<id>.json, задание запускалось в прошлом сеансе программы. */
   previousSession?: boolean;
 }

@@ -84,8 +84,14 @@ describe('сохранение фоновых уведомлений', () => {
   });
 });
 
-it('результат ASR ведёт к таймингам, даже если диалог уже закрыт', () => {
-  const task = 'Распознавание трека для таймингов';
-  expect(agentOwnerShowsResult({ task }, '/project/timing')).toBe(false);
-  expect(agentFinishedNotice({ task, status: 'completed' }).message).toContain('«Тайминги»');
+it('итог локальной разметки принадлежит странице таймингов, а не общему tool-маршруту', () => {
+  const job = { kind: 'tool' as const, steps: [{ tool: 'align_lyrics' }] as JobInfo['steps'] };
+  expect(ownerShowsResult(job, '/project/timing')).toBe(true);
+  expect(ownerShowsResult(job, '/project')).toBe(false);
+});
+
+it('подготовка вокала сообщает итог на странице таймингов, без маршрута производства', () => {
+  const job = { kind: 'tool' as const, steps: [{ tool: 'separate_vocals' }] as JobInfo['steps'] };
+  expect(ownerShowsResult(job, '/project/timing')).toBe(true);
+  expect(ownerShowsResult(job, '/project')).toBe(false);
 });

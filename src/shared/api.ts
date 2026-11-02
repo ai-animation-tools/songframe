@@ -1,5 +1,7 @@
+import type { VocalModelId, VocalPreparationView } from './vocals';
 /** Контракт между рендерером и главным процессом: имена каналов и сигнатуры window.api. */
 
+import type { SongModelSetup } from './song-models';
 import type { WhisperSetup, WhisperModelId } from './whisper-models';
 import type { AgentAccountResult, AgentCheckResult, AgentEvent, AgentJob, AgentModelsResult, AgentSettings, AgentStartInput } from './agents';
 import type { ProductionFrameCandidate, ProductionWorkflowStart, ProductionWorkflowView } from './production-workflow';
@@ -13,7 +15,6 @@ import type { ScenarioStatus } from './scenario-status';
 import type { ReferenceImageGenerationApi } from './reference-image-generation';
 import type { CoverGenerationApi } from './cover-generation';
 import type { AiAccess } from './ai-access';
-import type { TimingAgentApi } from './timing-agent';
 import type { VideoReviewApi } from './video-review';
 import type { UpdatesApi } from './updates';
 import type {
@@ -71,7 +72,6 @@ export interface Api {
   /** Проверка, скачивание и установка новой версии приложения только по действию пользователя. */
   updates: UpdatesApi;
   videoReview: VideoReviewApi;
-  timingAgent: TimingAgentApi;
   notifications: {
     /** Подписка на переход из уведомления; возвращает отключение без объекта события Electron. */
     onOpen(listener: (target: NotificationTarget) => void): () => void;
@@ -137,14 +137,22 @@ export interface Api {
     save(project: string, input: SourcesInput): Promise<SourceManifest>;
   };
   timing: {
+    vocalsView(project: string): Promise<VocalPreparationView>;
+    downloadVocalModel(model: VocalModelId): Promise<JobInfo>;
+    separateVocals(project: string, model: VocalModelId): Promise<JobInfo>;
+    selectVocal(project: string, id: string): Promise<VocalPreparationView>;
+    deleteVocal(project: string, id: string): Promise<VocalPreparationView>;
+    songModelSetup(): Promise<SongModelSetup>;
+    downloadSongModels(): Promise<JobInfo>;
+    start(project: string, options: TimingGenerateOptions): Promise<JobInfo>;
+    cancel(jobId: string): Promise<JobInfo>;
     /** Ресурсы компьютера, рекомендуемая модель и локальные каталоги установки. */
     modelSetup(): Promise<WhisperSetup>;
+    inspectModel(path: string): Promise<{ installed: boolean; missing: string[] }>;
     /** Запускает встроенный загрузчик; состояние и журнал доступны через jobs. */
     downloadModel(model: WhisperModelId): Promise<JobInfo>;
     view(project: string): Promise<TimingView>;
     save(project: string, timing: TimingFile): Promise<TimingFile>;
-    /** Запускает align_lyrics; распознавание длится минуты, ответ приходит по завершении. */
-    generate(project: string, options: TimingGenerateOptions): Promise<ToolResult>;
   };
   cast: {
     view(project: string): Promise<CastView>;

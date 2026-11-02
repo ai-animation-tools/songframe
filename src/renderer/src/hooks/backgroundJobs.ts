@@ -1,5 +1,4 @@
 /** Какая страница сама сообщает об итоге задания: на других страницах итог показывает общий наблюдатель. */
-import { timingAgentTexts } from '@shared/texts/timing-agent';
 import { commonTexts } from '@shared/texts/common';
 import { notificationsTexts } from '@shared/texts/notifications';
 import { navigationTexts } from '@shared/texts/navigation';
@@ -39,6 +38,7 @@ export function newDerivedResult(job: JobInfo, previousStatus: string | undefine
 }
 
 export function ownerShowsResult(job: Pick<JobInfo, 'kind'> & Partial<Pick<JobInfo, 'steps'>>, route: string): boolean {
+  if (job.steps?.some((step) => ['align_lyrics', 'separate_vocals'].includes(step.tool))) return route === '/project/timing';
   // Производные планы сообщает только общий наблюдатель, в том числе после повторного открытия производства.
   if (isDerivedJob(job)) return false;
   return OWNER_ROUTES[job.kind].includes(route);
@@ -52,15 +52,12 @@ export function finishedNotice(job: Pick<JobInfo, 'title' | 'status' | 'error'>)
 
 /** Задания агента ведут страницы «Сценарий» и «Производство» (опоры провайдера-агента тоже); правило совпадает с системными уведомлениями. */
 function agentPage(task: string): { route: string; page: string } {
-  if (task === timingAgentTexts.task) return { route: '/project/timing', page: navigationTexts.pages.timing };
   return task.startsWith('ai-clip-scenario:') || task === 'ai-clip-scenario'
     ? { route: '/project/scenario', page: navigationTexts.pages.scenario }
     : { route: '/project/production', page: navigationTexts.pages.production };
 }
 
 export function agentOwnerShowsResult(job: Pick<AgentJob, 'task'>, route: string): boolean {
-  // Диалог распознавания может быть закрыт на той же странице: итог всё равно сообщает наблюдатель.
-  if (job.task === timingAgentTexts.task) return false;
   return agentPage(job.task).route === route;
 }
 

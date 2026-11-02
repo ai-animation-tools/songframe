@@ -8,7 +8,7 @@ export const settingsTexts = {
   // Main возвращает готовые фразы через прежние ошибки и поля диагностики без изменения их контракта.
   main: {
     invalidAgentSettings: 'Неверный формат настроек агента.',
-    selectAgent: (name: string) => `Выберите ${name}.`,
+    selectAgent: 'Выберите агента.',
     invalidModel: 'Модель должна быть текстом без нулевых символов.',
     invalidProfiles: 'Неверный формат профилей агентов.',
     unknownAgent: 'Неизвестный агент.',

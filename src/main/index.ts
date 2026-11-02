@@ -255,6 +255,7 @@ let coverCleanup: Promise<void> | null = null;
 let coversClosed = false;
 app.on('before-quit', (event) => {
   services?.agents?.shutdown();
+  services?.timingLocal?.shutdown();
   if (!services?.cover || coversClosed) return;
   // Сначала останавливаем запись генератора и удаляем временные изображения, затем завершаем Electron.
   event.preventDefault();

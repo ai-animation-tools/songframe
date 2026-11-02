@@ -19,13 +19,25 @@ import { createStoryApi, storyFileUrl, STORY_TRACK_PATH, type StoryOptions } fro
 const STORY_TIMING_DURATION = 30;
 const STORY_TRACK_CONTAINER_DURATION = 30.040816;
 
-export type TimingStoryVariant = 'regular' | 'long' | 'long-list' | 'empty' | 'media-error' | 'missing-track' | 'invalid-bindings' | 'manual-overlap';
+export type TimingStoryVariant =
+  | 'regular'
+  | 'long'
+  | 'long-list'
+  | 'empty'
+  | 'media-error'
+  | 'missing-track'
+  | 'invalid-bindings'
+  | 'manual-overlap'
+  | 'joined-pair'
+  | 'gapped-pair'
+  | 'locked-pair';
 export interface TimingStoryProps {
   variant?: TimingStoryVariant;
   showPlayer?: boolean;
   delayedMedia?: boolean;
   failSaveOnce?: boolean;
   manualMode?: boolean;
+  pendingOperation?: boolean;
 }
 
 /** Пересчёт секций и сохранение используют последовательные номера в хронологическом порядке, как TimingPage. */
@@ -64,6 +76,11 @@ export function makeTimingStoryView(variant: TimingStoryVariant = 'regular', del
     { id: 2, source_line: 3, start: 1.2, end: 2.2, verified: true, note: 'сверка на слух выполнена' },
     { id: 3, source_line: 4, start: 2.6, end: 3.6, verified: false, note: '' }
   ];
+  // У пары последовательные id и source_line: общий стык, промежуток и блокировка проверяются независимо.
+  if (variant === 'joined-pair' || variant === 'gapped-pair' || variant === 'locked-pair') {
+    lines[0] = { ...lines[0], start: 0.3, end: variant === 'gapped-pair' ? 0.8 : 1.2 };
+    lines[1] = { ...lines[1], verified: variant === 'locked-pair', note: variant === 'locked-pair' ? 'сверка на слух выполнена' : '' };
+  }
   if (variant === 'manual-overlap') {
     lines.forEach((line, index) =>
       Object.assign(
@@ -178,14 +195,15 @@ export function TimingStory({
   variant = 'regular',
   showPlayer = false,
   delayedMedia = false,
-  manualMode: initialManualMode = false
+  manualMode: initialManualMode = false,
+  pendingOperation = false
 }: TimingStoryProps): ReactElement {
   const initial = useRef(makeTimingStoryView(variant, delayedMedia));
   const [saved, setSaved] = useState<TimingFile>(() => structuredClone(initial.current.timing!));
   const [draft, setDraft] = useState<TimingFile>(() => structuredClone(initial.current.timing!));
   const [trackPath, setTrackPath] = useState(initial.current.trackPath);
   const [selected, setSelected] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(pendingOperation);
   const [notice, setNotice] = useState<{ error: boolean; text: string } | null>(null);
   const [epoch, setEpoch] = useState(0);
   const [manualMode, setManualMode] = useState(initialManualMode);

@@ -169,8 +169,30 @@ describe('TaskNotifications', () => {
   });
 });
 
-it('уведомление о распознавании агентом открывает тайминги', () => {
+it('разметка через Jobs уведомляет о результате один раз и не объявляет отмену ошибкой', () => {
   const deliver = vi.fn();
-  new TaskNotifications(deliver).agentEvent(agentEvent({ task: 'Распознавание трека для таймингов' }));
-  expect(deliver).toHaveBeenCalledWith(expect.objectContaining({ target: { project, route: '/project/timing' } }));
+  const notices = new TaskNotifications(deliver);
+  const value = job({ kind: 'tool', title: 'Разметка трека', steps: [{ tool: 'align_lyrics', label: 'Разметка', status: 'done', code: 0 }] });
+  notices.jobFinished(value, project);
+  notices.jobFinished(value, project);
+  expect(deliver).toHaveBeenCalledTimes(1);
+  expect(deliver.mock.calls[0][0].target.route).toBe('/project/timing');
+  notices.jobFinished({ ...value, id: 'cancel', status: 'failed', error: 'Разметка остановлена пользователем.' }, project);
+  expect(deliver).toHaveBeenCalledTimes(1);
+});
+
+it('выделение вокала ведёт к таймингам, а явная отмена не создаёт уведомления об ошибке', () => {
+  const deliver = vi.fn();
+  const notices = new TaskNotifications(deliver);
+  const prepared = job({
+    kind: 'tool',
+    status: 'done',
+    title: 'Выделение вокала · Voc FT',
+    steps: [{ tool: 'separate_vocals', label: 'Voc FT', status: 'done', code: 0 }]
+  });
+  notices.jobFinished(prepared, project);
+  notices.jobFinished(prepared, project);
+  expect(deliver).toHaveBeenCalledExactlyOnceWith({ title: prepared.title, body: prepared.title, target: { project, route: '/project/timing' } });
+  notices.jobFinished({ ...prepared, id: 'cancelled-vocal', status: 'failed', error: 'Выделение вокала остановлено пользователем.' }, project);
+  expect(deliver).toHaveBeenCalledTimes(1);
 });

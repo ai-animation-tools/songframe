@@ -83,6 +83,9 @@ export function timingDragPatch(
   duration: number,
   manualMode = false
 ): Partial<TimingLine> | null {
+  // Подтверждение закрепляет границы на шкале, включая перенос горячими клавишами.
+  // Проверяем и актуальную строку: её могли подтвердить уже после захвата мышью.
+  if (original.verified || lines.some((line) => line.id === original.id && line.verified)) return null;
   if (!Number.isFinite(time) || !Number.isFinite(offset)) return null;
   const limit = Number.isFinite(duration) && duration > 0 ? duration : Infinity;
   // Смещение захвата компенсирует расширенную экранную ручку: resize двигает исходную границу на дельту мыши.

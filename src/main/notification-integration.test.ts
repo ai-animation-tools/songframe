@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import type { ipcMain } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentEvent, AgentJob } from '@shared/agents';
+import type { JobInfo } from '@shared/types';
 import type { AgentManager } from './agent-manager';
 import { createServices, registerIpc, type Services } from './ipc';
 import { PythonLauncher } from './python-launcher';
@@ -45,6 +46,7 @@ beforeEach(() => {
   writeFileSync(join(work, 'tools/common.py'), '');
   project = join(work, 'clip');
   mkdirSync(join(project, 'source'), { recursive: true });
+  writeFileSync(join(project, 'source/track.mp3'), 'test MP3');
   writeFileSync(join(project, 'source/text.md'), '[Куплет]\nПервая строка\nВторая строка\n');
   vi.spyOn(PythonLauncher.prototype, 'runtime').mockReturnValue({
     source: 'system-dev',
@@ -82,9 +84,7 @@ describe('доставка уведомлений из IPC', () => {
   it('объясняет отсутствие текста до запуска распознавания', async () => {
     // Файл может исчезнуть уже после открытия диалога; IPC не должен отдавать ENOENT или запускать инструмент.
     rmSync(join(project, 'source/text.md'));
-    await expect(invoke('timing:generate', project, { recognition: 'recognition.json' })).rejects.toThrow(
-      'Сначала добавьте текст песни на странице «Исходники».'
-    );
+    await expect(invoke('timing:start', project, { model: '/test/model' })).rejects.toThrow('Сначала сохраните MP3 и текст песни на странице «Исходники».');
     expect(PythonLauncher.prototype.run).not.toHaveBeenCalled();
   });
 
@@ -117,30 +117,34 @@ describe('доставка уведомлений из IPC', () => {
     ]);
   });
 
-  it('сообщает ровно один итог разметки по code и возвращает исходный результат', async () => {
+  it('сообщает ровно один итог фоновой разметки по коду задания', async () => {
     for (const code of [0, 2, null]) {
       deliver.mockClear();
-      const result = { code, stdout: 'результат', stderr: '', command: 'test' };
-      vi.mocked(PythonLauncher.prototype.run).mockResolvedValueOnce(result);
-      await expect(invoke('timing:generate', project, { recognition: 'recognition.json' })).resolves.toBe(result);
+      vi.mocked(PythonLauncher.prototype.run).mockResolvedValueOnce({ code, stdout: 'результат', stderr: '', command: 'test' });
+      const job = (await invoke('timing:start', project, { model: '/test/model' })) as JobInfo;
+      await vi.waitFor(() => expect(job.status).toBe(code === 0 ? 'done' : 'failed'));
       expect(deliver).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({
-          title: code === 0 ? 'Черновик разметки готов' : 'Ошибка разметки',
-          target: { project, route: '/project/timing' }
-        })
+        expect.objectContaining({ title: code === 0 ? 'Черновик разметки готов' : 'Ошибка разметки', target: { project, route: '/project/timing' } })
       );
     }
   });
 
-  it('сохраняет исходное исключение разметки даже при ошибке доставки уведомления', async () => {
-    const failure = new Error('Распознавание недоступно');
-    vi.mocked(PythonLauncher.prototype.run).mockRejectedValueOnce(failure);
+  it('сохраняет причину ошибки в задании даже при сбое доставки уведомления', async () => {
+    vi.mocked(PythonLauncher.prototype.run).mockRejectedValueOnce(new Error('Распознавание недоступно'));
     deliver.mockImplementation(() => {
       throw new Error('Служба уведомлений недоступна');
     });
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    await expect(invoke('timing:generate', project, { recognition: 'recognition.json' })).rejects.toBe(failure);
+    const job = (await invoke('timing:start', project, { model: '/test/model' })) as JobInfo;
+    await vi.waitFor(() => expect(job.status).toBe('failed'));
+    expect(job.error).toBe('Распознавание недоступно');
     expect(deliver).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ title: 'Ошибка разметки' }));
+  });
+
+  it('не оставляет прежний обходной IPC запуска без выбранного вокала', async () => {
+    expect(electron.handlers.has('timing:generate')).toBe(false);
+    await expect(invoke('timing:start', project, { model: '/test/model', vocals: true })).rejects.toThrow();
+    expect(PythonLauncher.prototype.run).not.toHaveBeenCalled();
   });
 
   it('сохраняет службу уведомлений и завершения старых Jobs после смены корня, подключая новые Jobs', async () => {

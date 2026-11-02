@@ -2,7 +2,7 @@
 import { join } from 'node:path';
 import { settingsTexts } from '@shared/texts/settings';
 import type { AgentSettings } from '@shared/agents';
-import { agentTitle, isAgentProvider, type AgentProvider } from '@shared/agent-providers';
+import { isAgentProvider, type AgentProvider } from '@shared/agent-providers';
 import { mediaProviderInfo, type MediaProviderId } from '@shared/media-providers';
 import { readLocalJson, writeLocalJson } from './local-files';
 
@@ -16,7 +16,7 @@ export function normalizeAgentSettings(value: unknown): AgentSettings | null {
   if (value === undefined || value === null) return null;
   if (typeof value !== 'object' || Array.isArray(value)) throw new Error(settingsTexts.main.invalidAgentSettings);
   const input = value as Record<string, unknown>;
-  if (!isAgentProvider(input.provider)) throw new Error(settingsTexts.main.selectAgent(agentTitle(null)));
+  if (!isAgentProvider(input.provider)) throw new Error(settingsTexts.main.selectAgent);
   if (input.model !== undefined && (typeof input.model !== 'string' || input.model.includes('\0'))) throw new Error(settingsTexts.main.invalidModel);
   const model = input.model?.trim();
   return { provider: input.provider, ...(model ? { model } : {}) };

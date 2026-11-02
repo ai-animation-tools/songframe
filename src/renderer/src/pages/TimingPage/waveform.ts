@@ -1,3 +1,4 @@
+import type { TimingBounds } from './timingSelection';
 import type { TimingLine, TimingSection } from '@shared/types';
 import { formatClock } from '../../format';
 import { timingWaveLayout, WAVE_TOP, WAVE_H, type TimingWaveLayout } from './timingWaveGeometry';
@@ -76,6 +77,9 @@ interface WaveformOptions {
   sections: TimingSection[];
   peaks: Peaks | null;
   selected: number | null;
+  selectedIds?: number[];
+  selectionBounds?: TimingBounds | null;
+  join?: { time: number; locked: boolean } | null;
   pps: number;
   time: number;
   mode: 'light' | 'dark';
@@ -90,6 +94,9 @@ export function drawWaveform({
   sections,
   peaks,
   selected,
+  selectedIds = [],
+  selectionBounds = null,
+  join = null,
   pps,
   time,
   mode,
@@ -153,6 +160,14 @@ export function drawWaveform({
     }
   }
 
+  // Выделение служит окном прослушивания, а не новой строкой документа.
+  if (selectionBounds) {
+    const left = Math.max(0, toX(selectionBounds.start));
+    const right = Math.min(width, toX(selectionBounds.end));
+    ctx.fillStyle = dark ? 'rgba(124,196,255,0.10)' : 'rgba(21,101,192,0.08)';
+    if (right > left) ctx.fillRect(left, WAVE_TOP, right - left, waveHeight);
+  }
+
   // Цвет закреплён за ID, как цвет части сценария; подтверждение обозначается знаком, а выбор — отдельной рамкой.
   const colors = dark
     ? ['124,196,255', '255,183,77', '129,199,132', '206,147,216', '77,208,225']
@@ -162,7 +177,7 @@ export function drawWaveform({
     const x1 = block.left - t0 * pps;
     const x2 = block.right - t0 * pps;
     if (x2 < 0 || x1 > width) continue;
-    const isSelected = line.id === selected;
+    const isSelected = selectedIds.includes(line.id) || line.id === selected;
     const base = colors[(((Math.trunc(line.id) - 1) % colors.length) + colors.length) % colors.length];
     const startX = block.startX - t0 * pps;
     const endX = block.endX - t0 * pps;
@@ -173,10 +188,12 @@ export function drawWaveform({
     ctx.setLineDash(line.end <= line.start ? [4, 3] : []);
     ctx.strokeRect(x1 + 1, top + 1, Math.max(1, x2 - x1 - 2), height - 2);
     ctx.setLineDash([]);
-    // Ручки совпадают с hit-test даже у обратного и нулевого интервала.
-    ctx.fillStyle = `rgb(${base})`;
-    ctx.fillRect(startX - 2, top, 4, height);
-    ctx.fillRect(endX - 2, top, 4, height);
+    // У закреплённой строки нет ручек изменения границ; выбор и прослушивание остаются доступны.
+    if (!line.verified) {
+      ctx.fillStyle = `rgb(${base})`;
+      ctx.fillRect(startX - 2, top, 4, height);
+      ctx.fillRect(endX - 2, top, 4, height);
+    }
     ctx.save();
     ctx.beginPath();
     ctx.rect(Math.max(0, x1 + 4), top + 3, Math.max(0, Math.min(width, x2) - Math.max(0, x1) - 8), height - 6);
@@ -185,9 +202,42 @@ export function drawWaveform({
     ctx.fillStyle = dark ? '#ffffff' : '#101820';
     const label = `${line.id}${line.verified ? ' ✓' : ''}`;
     ctx.fillText(label, Math.max(0, x1) + 5, top + 13);
+    if (line.verified && x2 - Math.max(0, x1) >= 48) {
+      // Векторный замок не зависит от наличия emoji-шрифта в Linux или Windows.
+      const lockX = Math.min(width, x2) - 16;
+      ctx.strokeStyle = dark ? '#ffffff' : '#101820';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(lockX, top + 9, 8, 7);
+      ctx.beginPath();
+      ctx.arc(lockX + 4, top + 9, 3, Math.PI, 0);
+      ctx.stroke();
+    }
     const boundaryLabel = `${formatClock(line.start)} → ${formatClock(line.end)}`;
     if (x2 - x1 > ctx.measureText(boundaryLabel).width + 12) ctx.fillText(boundaryLabel, x1 + 5, top + 28);
     ctx.restore();
+  }
+
+  // Общий стык соединяет дорожки пары; закреплённая половина блокирует всю ручку.
+  if (join) {
+    const x = toX(join.time);
+    const blocks = layout.blocks.filter((block) => selectedIds.includes(block.line.id));
+    const bottom = Math.max(WAVE_TOP, ...blocks.map((block) => block.top + block.height));
+    ctx.strokeStyle = dark ? '#ffffff' : '#101820';
+    ctx.fillStyle = dark ? '#ffffff' : '#101820';
+    ctx.lineWidth = 3;
+    ctx.setLineDash(join.locked ? [3, 3] : []);
+    ctx.beginPath();
+    ctx.moveTo(x, WAVE_TOP);
+    ctx.lineTo(x, bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(x, WAVE_TOP - 5);
+    ctx.lineTo(x + 6, WAVE_TOP + 2);
+    ctx.lineTo(x, WAVE_TOP + 9);
+    ctx.lineTo(x - 6, WAVE_TOP + 2);
+    ctx.closePath();
+    ctx.fill();
   }
 
   // Плейхед.

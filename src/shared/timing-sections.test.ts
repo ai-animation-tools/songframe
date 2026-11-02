@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeLyrics } from './lyrics';
 import { buildSections, resolveTimingSections } from './timing-sections';
+import type { TimingSection } from './types';
 
 const lyrics = analyzeLyrics('[Куплет]\nПервая\nВторая\n[Припев]\nТретья').rows;
 const lines = [
@@ -43,7 +44,52 @@ describe('секции шкалы времени', () => {
       30
     );
     expect(sections.find((section) => section.name === 'Куплет')).toMatchObject({ start: 8, end: 12 });
-    expect(sections.find((section) => section.name.startsWith('Проигрыш'))).toMatchObject({ start: 12, end: 20 });
-    expect(sections.at(-1)).toMatchObject({ name: 'Финал без вокала', start: 24, end: 30 });
+    expect(sections.find((section) => section.start === 12)).toMatchObject({ name: 'Не размечено', start: 12, end: 20 });
+    expect(sections.at(-1)).toMatchObject({ name: 'Не размечено', start: 24, end: 30 });
+  });
+
+  it('пересчитывает старые автоматические границы по полной системной подписи', () => {
+    const old = buildSections(
+      lyrics,
+      lines.map((line) => ({ ...line, start: line.start + 3, end: line.end + 3 })),
+      30
+    ).map(({ origin: _origin, ...section }) => section);
+    expect(resolveTimingSections(old, lyrics, lines, 30)).toEqual(buildSections(lyrics, lines, 30));
+    expect(resolveTimingSections(old, lyrics, lines, 30)[0]).toMatchObject({ end: 8, origin: 'auto' });
+  });
+
+  it('сохраняет явно ручную секцию и её приоритет над автоматически построенной частью', () => {
+    const manual: TimingSection = { name: 'Куплет', start: 7.25, end: 17.75, note: 'строки 1–2', origin: 'manual' };
+    const mixed = [...buildSections(lyrics, lines, 30), manual];
+    const result = resolveTimingSections(mixed, lyrics, lines, 30);
+    expect(result.filter((section) => section.name === 'Куплет')).toEqual([manual]);
+    expect(result.every((section, index) => index === 0 || section.start >= result[index - 1].start)).toBe(true);
+    expect(resolveTimingSections([manual], lyrics, lines, 30)).toEqual([manual]);
+  });
+
+  it('не считает произвольные ручные названия и заметки старой автоматикой', () => {
+    const custom = [
+      { name: 'Особая часть', start: 0, end: 1, note: 'строки 1–2' },
+      { name: 'Вступление', start: 1, end: 3, note: 'Моя заметка' },
+      { name: 'Мой финал', start: 25, end: 30, note: 'до конца трека' },
+      { name: 'Куплет', start: 8, end: 16, note: 'строки 1–2\n' }
+    ];
+    expect(resolveTimingSections(custom, lyrics, lines, 30)).toEqual(custom);
+  });
+
+  it('учитывает пересекающийся кандидат в вокальной части и не называет неизвестные области инструменталом', () => {
+    const candidates = [{ source_line: 3, start: 11.98, end: 18, reason: 'Слабое сходство', acoustic_score: 0.7 }];
+    const accepted = lines.filter((line) => line.source_line !== 3);
+    const result = buildSections(lyrics, accepted, 30, candidates);
+    expect(result.find((section) => section.name === 'Куплет')).toMatchObject({ start: 8, end: 18, origin: 'auto' });
+    expect(result.find((section) => section.start === 18)).toMatchObject({ name: 'Не размечено', end: 20 });
+    expect(result.filter((section) => section.name === 'Не размечено').every((section) => section.note === 'границы вокала не подтверждены')).toBe(true);
+    expect(result.some((section) => section.note === 'без вокала' || section.note === 'до конца трека')).toBe(false);
+    expect(resolveTimingSections(buildSections(lyrics, lines, 30), lyrics, accepted, 30, candidates)).toEqual(result);
+  });
+
+  it('принятая строка имеет приоритет над кандидатом с тем же физическим номером', () => {
+    const candidates = [{ source_line: 3, start: 1, end: 29, reason: 'Слабое сходство' }];
+    expect(buildSections(lyrics, lines, 30, candidates).find((section) => section.name === 'Куплет')).toMatchObject({ start: 8, end: 16 });
   });
 });

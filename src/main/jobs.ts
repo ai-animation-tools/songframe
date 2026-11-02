@@ -173,7 +173,7 @@ export class Jobs {
   }
 
   /** Запускает шаги по очереди; падение обязательного шага завершает задание как неудачное. */
-  start(kind: JobKind, title: string, project: string | null, steps: Step[]): JobInfo {
+  start(kind: JobKind, title: string, project: string | null, steps: Step[], signal?: AbortSignal): JobInfo {
     if (!this.toolsRoot) throw new Error(jobsTexts.main.toolsUnavailable);
     this.launcher.runtime();
     this.counter += 1;
@@ -204,10 +204,12 @@ export class Jobs {
       write(`\n$ ${step.label ?? step.tool} ${step.args.join(' ')}\n`);
       try {
         await step.before?.();
-        const result = await this.launcher.run(project, step.tool, step.args, { onOutput: write, timeoutMs: step.timeoutMs ?? 2 * 60 * 60 * 1000 });
+        const result = await this.launcher.run(project, step.tool, step.args, { onOutput: write, signal, timeoutMs: step.timeoutMs ?? 2 * 60 * 60 * 1000 });
         const code = result.code ?? -1;
         // Причина берётся из вывода именно этого шага: последующие шаги могут затереть хвост журнала.
-        const error = result.stderr.trim() || result.stdout.trim() || jobsTexts.main.stepFailed({ label: step.label ?? step.tool, code });
+        const error = signal?.aborted
+          ? String(signal.reason)
+          : result.stderr.trim() || result.stdout.trim() || jobsTexts.main.stepFailed({ label: step.label ?? step.tool, code });
         return { code, ...(code !== 0 ? { error: error.slice(-ERROR_LIMIT) } : {}) };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

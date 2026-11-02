@@ -17,7 +17,7 @@ afterEach(() => rmSync(directory, { recursive: true, force: true }));
 describe('Полные сообщения настроек и аккаунта', () => {
   it.each([
     [[], 'Неверный формат настроек агента.'],
-    [{ provider: 'missing' }, 'Выберите Claude Code или Codex.'],
+    [{ provider: 'missing' }, 'Выберите агента.'],
     [{ provider: 'claude', model: null }, 'Модель должна быть текстом без нулевых символов.'],
     [{ provider: 'codex', model: 'до\0после' }, 'Модель должна быть текстом без нулевых символов.']
   ])('сохраняет исходный файл после отказа в профиле %j', (input, expected) => {

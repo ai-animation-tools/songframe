@@ -48,6 +48,16 @@ describe('перетаскивание ручного черновика', () =>
   const first = line(1, 1, 5);
   const lines = [first, line(2, 6, 9), line(3, 10, 11)];
 
+  it('не меняет подтверждённую строку ни за середину, ни за края в обоих режимах', () => {
+    const locked = { ...first, verified: true };
+    for (const manual of [false, true])
+      for (const mode of ['move', 'start', 'end'] as const) {
+        expect(timingDragPatch(locked, mode, 3, 0, [locked], 30, manual)).toBeNull();
+        expect(timingDragPatch(first, mode, 3, 0, [locked], 30, manual)).toBeNull();
+      }
+    expect(timingDragPatch(first, 'move', 3, 0, [first], 30, true)).toEqual({ start: 3, end: 7 });
+  });
+
   it('переносит строку через несколько соседей с сохранением длины', () => {
     expect(timingDragPatch(first, 'move', 13, 1, lines, 30, true)).toEqual({ start: 12, end: 16 });
     expect(timingDragPatch(first, 'move', 29, 1, lines, 30, true)).toEqual({ start: 26, end: 30 });

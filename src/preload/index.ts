@@ -24,7 +24,6 @@ import type {
   KeyframeNoteScope,
   SourcesInput,
   TimingFile,
-  TimingGenerateOptions,
   TreatmentFile
 } from '@shared/types';
 
@@ -35,12 +34,6 @@ const relayAgentEvent = (_event: Electron.IpcRendererEvent, value: AgentEvent): 
 };
 
 const api: Api = {
-  timingAgent: {
-    view: (project) => ipcRenderer.invoke('timingAgent:view', project),
-    start: (project) => ipcRenderer.invoke('timingAgent:start', project),
-    cancel: (project) => ipcRenderer.invoke('timingAgent:cancel', project),
-    proposal: (project, jobId) => ipcRenderer.invoke('timingAgent:proposal', project, jobId)
-  },
   ai: { access: (project) => ipcRenderer.invoke('ai:access', project) },
   updates: {
     view: () => ipcRenderer.invoke('updates:view'),
@@ -182,11 +175,20 @@ const api: Api = {
     save: (project: string, input: SourcesInput) => ipcRenderer.invoke('sources:save', project, input)
   },
   timing: {
+    vocalsView: (project) => ipcRenderer.invoke('timing:vocalsView', project),
+    downloadVocalModel: (model) => ipcRenderer.invoke('timing:downloadVocalModel', model),
+    separateVocals: (project, model) => ipcRenderer.invoke('timing:separateVocals', project, model),
+    selectVocal: (project, id) => ipcRenderer.invoke('timing:selectVocal', project, id),
+    deleteVocal: (project, id) => ipcRenderer.invoke('timing:deleteVocal', project, id),
+    songModelSetup: () => ipcRenderer.invoke('timing:songModelSetup'),
+    downloadSongModels: () => ipcRenderer.invoke('timing:downloadSongModels'),
+    start: (project, options) => ipcRenderer.invoke('timing:start', project, options),
+    cancel: (jobId) => ipcRenderer.invoke('timing:cancel', jobId),
     modelSetup: () => ipcRenderer.invoke('timing:modelSetup'),
+    inspectModel: (path) => ipcRenderer.invoke('timing:inspectModel', path),
     downloadModel: (model) => ipcRenderer.invoke('timing:downloadModel', model),
     view: (project: string) => ipcRenderer.invoke('timing:view', project),
-    save: (project: string, timing: TimingFile) => ipcRenderer.invoke('timing:save', project, timing),
-    generate: (project: string, options: TimingGenerateOptions) => ipcRenderer.invoke('timing:generate', project, options)
+    save: (project: string, timing: TimingFile) => ipcRenderer.invoke('timing:save', project, timing)
   },
   cast: {
     view: (project: string) => ipcRenderer.invoke('cast:view', project),

@@ -1,4 +1,4 @@
-import { providerTexts } from './texts/providers';
+import { commonTexts } from './texts/common';
 /** Реестр текстовых CLI-агентов: всё, что главному процессу и интерфейсу нужно знать о провайдере помимо его адаптера. */
 export interface AgentProviderInfo {
   /** Название в интерфейсе и уведомлениях. */
@@ -49,7 +49,7 @@ export function isAgentProvider(value: unknown): value is AgentProvider {
   return typeof value === 'string' && Object.hasOwn(AGENT_PROVIDERS, value);
 }
 
-/** Без выбранного провайдера перечисляются все подключённые агенты. */
+/** Имя конкретного исполнителя принадлежит реестру; без выбора UI говорит об общей сущности. */
 export function agentTitle(provider: AgentProvider | null | undefined): string {
-  return provider ? AGENT_PROVIDERS[provider].title : AGENT_PROVIDER_IDS.map((id) => AGENT_PROVIDERS[id].title).join(providerTexts.alternativeSeparator);
+  return provider ? AGENT_PROVIDERS[provider].title : commonTexts.agent.label;
 }

@@ -492,3 +492,19 @@ export const StateFieldInheritance: Story = {
     await waitFor(() => expect(documentOf(context).defaultView!.scrollY).toBe(0));
   }
 };
+
+/** Пустая трактовка объясняет действие через сущность агента, независимо от текущего каталога исполнителей. */
+export const NeutralAgentTreatment: Story = {
+  name: 'Нейтральная подсказка агента · пустая трактовка · ручное создание',
+  tags: ['ci', '!autodocs'],
+  parameters: { songframe: scenarioPageOptions({ variant: 'noTreatment' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const hint = await screen.findByText(scenarioTexts.treatment.emptyHint);
+    await expect(hint).toBeVisible();
+    await expect(hint).toHaveTextContent('поручите первый проход агенту кнопкой «Создать трактовку»');
+    await expect(hint).not.toHaveTextContent(/Claude|Codex/);
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.treatment.createManually }));
+    await expect(await screen.findByRole('textbox', { name: scenarioTexts.fields.logline })).toBeVisible();
+  }
+};

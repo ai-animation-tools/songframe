@@ -109,8 +109,8 @@ it.each([undefined, []])('строит части прежним алгорит�
   const saved = saveTiming(project, viewTiming(project).timing!);
 
   expect(saved.sections).toEqual([
-    { name: 'Куплет', start: 1, end: 6, note: 'строки 1–2' },
-    { name: 'Финал без вокала', start: 6, end: 91.123, note: 'до конца трека' }
+    { name: 'Куплет', start: 1, end: 6, note: 'строки 1–2', origin: 'auto' },
+    { name: 'Финал без вокала', start: 6, end: 91.123, note: 'до конца трека', origin: 'auto' }
   ]);
 });
 
@@ -122,7 +122,7 @@ it('принимает части, явно пересчитанные вызы�
   const saved = saveTiming(project, { ...view.timing!, lines, sections: recalculated });
 
   expect(recalculated).not.toEqual(original.sections);
-  expect(recalculated[0]).toEqual({ name: 'Вступление', start: 0, end: 2, note: 'без вокала' });
+  expect(recalculated[0]).toEqual({ name: 'Вступление', start: 0, end: 2, note: 'без вокала', origin: 'auto' });
   expect(saved.sections).toEqual(recalculated);
   expect(viewTiming(project).timing?.sections).toEqual(recalculated);
 });
@@ -269,4 +269,75 @@ it.each(['write', 'rename'] as const)('сохраняет прежний фай�
   expect(readFileSync(target)).toEqual(before);
   expect(readdirSync(join(project, 'plan/audio'))).toEqual(['timing.json']);
   expect(saveTiming(project, draft).lines.find((line) => line.source_line === 2)).toMatchObject({ start: 12, end: 16 });
+});
+
+it('подтверждение найденной части не объявляет завершённым весь текст с пропущенными строками', () => {
+  const original = writeMusicalTiming();
+  const saved = saveTiming(project, { ...original, lines: [{ ...original.lines[0], verified: true }] });
+  expect(saved.status).not.toBe('Разметка подтверждена на слух.');
+  expect(saved.lines).toHaveLength(1);
+});
+
+// Частичный результат не наследует заявление о полном подтверждении из предыдущего документа.
+it('считает неподтверждённые и ненайденные строки по всему тексту', () => {
+  const original = writeMusicalTiming();
+  const previous = { ...original, status: 'Разметка подтверждена на слух.' };
+  const partial = saveTiming(project, { ...previous, lines: [{ ...original.lines[0], verified: true }] });
+  expect(partial.status).toBe('Разметка; подтверждено на слух 1 из 2 строк.');
+  const unverified = saveTiming(project, previous);
+  expect(unverified.status).toBe('Разметка; подтверждено на слух 0 из 2 строк.');
+});
+
+it('сохраняет пересекающиеся предложения отдельно от принятых строк и порядок исходного текста', () => {
+  const original = writeMusicalTiming();
+  writeFileSync(join(project, 'source/text.md'), '[Куплет]\nПервая строка\nВторая строка\nТретья строка\n');
+  const saved = saveTiming(project, {
+    ...original,
+    candidates: [{ source_line: 4, start: 2, end: 5, reason: 'Нужна проверка на слух', acoustic_score: 0.7 }],
+    line_order: [4, 2, 3]
+  });
+  expect(saved.lines).toEqual(original.lines.map((line) => withTimingVerification(line)));
+  expect(saved.candidates).toHaveLength(1);
+  expect(saved.line_order).toEqual([4, 2, 3]);
+  expect(viewTiming(project).timing?.candidates).toEqual(saved.candidates);
+  expect(viewTiming(project).timing?.line_order).toEqual([4, 2, 3]);
+});
+
+it('после подтверждения строки убирает её прежнее сомнительное предложение', () => {
+  const original = writeMusicalTiming();
+  const saved = saveTiming(project, {
+    ...original,
+    lines: original.lines.map((line) => ({ ...line, verified: true })),
+    candidates: [{ source_line: 2, start: 1.2, end: 2.9, reason: 'Старое предложение' }]
+  });
+  expect(saved.candidates).toEqual([]);
+  expect(saved.lines.every((line) => line.verified)).toBe(true);
+});
+
+it.each([
+  { candidates: [{ source_line: 2, start: -1, end: 5, reason: 'Ошибка' }] },
+  { candidates: [{ source_line: 20, start: 1, end: 5, reason: 'Нет такой строки' }] },
+  { candidates: [{ source_line: 2, start: 1, end: 5, reason: '' }] },
+  {
+    candidates: [
+      { source_line: 2, start: 1, end: 5, reason: 'Пример' },
+      { source_line: 2, start: 5, end: 6, reason: 'Дубль' }
+    ]
+  },
+  { line_order: [2, 2] },
+  { line_order: [1, 2] }
+])('не записывает некорректные предложения/порядок: %j', (patch) => {
+  const original = writeMusicalTiming();
+  const target = join(project, 'plan/audio/timing.json');
+  const before = readFileSync(target);
+  expect(() => saveTiming(project, { ...original, ...patch })).toThrow();
+  expect(readFileSync(target)).toEqual(before);
+});
+
+it('повреждённые предложения из файла показываются ошибкой чтения без исключения', () => {
+  const original = writeMusicalTiming();
+  writeFileSync(join(project, 'plan/audio/timing.json'), JSON.stringify({ ...original, candidates: [null] }));
+  const view = viewTiming(project);
+  expect(view.timing).toBeNull();
+  expect(view.problems.length).toBeGreaterThan(0);
 });

@@ -107,7 +107,6 @@ export function createStoryApi(
     };
   const merged: Api = {
     ...defaults,
-    timingAgent: { ...defaults.timingAgent, ...overrides.timingAgent },
     ai: { ...defaults.ai, ...overrides.ai },
     updates: { ...defaults.updates, ...overrides.updates },
     cover: { ...defaults.cover, ...overrides.cover },
@@ -139,12 +138,6 @@ export function createStoryApi(
     shell: { ...defaults.shell, fileUrl: storyFileUrl, ...overrides.shell }
   };
   const api: Api = {
-    timingAgent: {
-      view: guardedAsync(merged.timingAgent.view),
-      start: guardedAsync(merged.timingAgent.start),
-      cancel: guardedAsync(merged.timingAgent.cancel),
-      proposal: guardedAsync(merged.timingAgent.proposal)
-    },
     ai: {
       access: guardedAsync(merged.ai.access)
     },
@@ -257,11 +250,20 @@ export function createStoryApi(
       save: guardedAsync(merged.sources.save)
     },
     timing: {
+      vocalsView: guardedAsync(merged.timing.vocalsView),
+      downloadVocalModel: guardedAsync(merged.timing.downloadVocalModel),
+      separateVocals: guardedAsync(merged.timing.separateVocals),
+      selectVocal: guardedAsync(merged.timing.selectVocal),
+      deleteVocal: guardedAsync(merged.timing.deleteVocal),
+      songModelSetup: guardedAsync(merged.timing.songModelSetup),
+      downloadSongModels: guardedAsync(merged.timing.downloadSongModels),
+      start: guardedAsync(merged.timing.start),
+      cancel: guardedAsync(merged.timing.cancel),
       modelSetup: guardedAsync(merged.timing.modelSetup),
+      inspectModel: guardedAsync(merged.timing.inspectModel),
       downloadModel: guardedAsync(merged.timing.downloadModel),
       view: guardedAsync(merged.timing.view),
-      save: guardedAsync(merged.timing.save),
-      generate: guardedAsync(merged.timing.generate)
+      save: guardedAsync(merged.timing.save)
     },
     cast: {
       view: guardedAsync(merged.cast.view),

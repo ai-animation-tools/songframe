@@ -310,3 +310,16 @@ describe('Журнал заданий между запусками', () => {
     expect(jobs([]).get('good-3')?.log).toBe('');
   });
 });
+
+it('передаёт предметную отмену в launcher и сохраняет её причину вместо stderr', async () => {
+  const value = jobs([]);
+  const controller = new AbortController();
+  vi.mocked(value.launcher.run).mockImplementation(async (_project, _tool, _args, options) => {
+    await new Promise<void>((resolve) => options?.signal?.addEventListener('abort', () => resolve(), { once: true }));
+    return { code: null, stdout: '', stderr: 'Процесс прерван', command: '' };
+  });
+  const job = value.start('tool', 'Разметка', null, [{ tool: 'align_lyrics', args: [] }], controller.signal);
+  await vi.waitFor(() => expect(value.launcher.run).toHaveBeenCalled());
+  controller.abort('Разметка остановлена пользователем.');
+  expect(await finished(value, job.id)).toMatchObject({ status: 'failed', error: 'Разметка остановлена пользователем.' });
+});

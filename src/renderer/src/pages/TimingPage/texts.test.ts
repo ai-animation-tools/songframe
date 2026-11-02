@@ -36,7 +36,7 @@ describe('целые фразы разметки', () => {
     expect(timingTexts.invalidBoundary({ min: value, max: Infinity })).toBe(`От ${fixed} с. Граница не изменена.`);
     expect(timingTexts.invalidBoundary({ min: 0, max: value })).toBe(`От 0.00 до ${fixed} с. Граница не изменена.`);
     expect(timingTexts.sectionsHelp({ count: value })).toBe(
-      `Секций: ${written}. Секции песни сохраняются отдельно от границ строк; «Пересчитать секции» заменяет их границы, названия и заметки по текущей разметке.`
+      `Секций: ${written}. Автоматические секции следуют текущим границам и предложениям, ручные сохраняются. «Пересчитать секции» явно заменяет карту в черновике.`
     );
   });
 

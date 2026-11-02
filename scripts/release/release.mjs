@@ -353,8 +353,9 @@ export function createRelease(options = {}) {
     );
     for (const asset of assets) {
       let remote = remoteAssets.find((item) => item.name === asset.name);
-      // После обрыва загрузки GitHub оставляет пустой starter: в черновике удаляется только этот след.
-      if (release.draft && remote?.state === 'starter' && remote.size === 0) {
+      // После обрыва GitHub может оставить starter с нулём либо полным Content-Length, но без digest.
+      // Восстанавливаем только ожидаемое вложение черновика; частичные размеры и готовые файлы не трогаем.
+      if (release.draft && remote?.state === 'starter' && remote.digest == null && (remote.size === 0 || remote.size === asset.size)) {
         await github.removeIncomplete(remote);
         remote = undefined;
       }

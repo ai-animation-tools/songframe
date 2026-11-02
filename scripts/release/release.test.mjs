@@ -276,6 +276,67 @@ test('publish допускает более новый HEAD, если исход
   assert.equal((await release.publish(version)).revision, source);
 });
 
+test('повтор publish восстанавливает starter полного размера без digest только в черновике', async (context) => {
+  const { cwd, notes, calls, releases, failures, release, passCi, builds } = await fixture(context);
+  await release.prepare(version, notes);
+  await passCi();
+  failures.upload = true;
+  await assert.rejects(release.publish(version), /Сбой тестовой сети/);
+  const incomplete = releases[0].assets.find((asset) => asset.state === 'starter');
+  incomplete.size = (await readFile(join(cwd, 'build/releases', tag, incomplete.name))).length;
+  incomplete.digest = null;
+  const retained = structuredClone(releases[0].assets.filter((asset) => asset.id !== incomplete.id));
+  assert.equal((await release.publish(version)).assetsVerified, true);
+  assert.deepEqual(
+    calls.filter(([call]) => call === 'removeIncomplete'),
+    [['removeIncomplete', incomplete.name]]
+  );
+  assert.equal(calls.filter(([call]) => call === 'upload').length, 8);
+  assert.equal(builds(), 1);
+  assert(!releases[0].assets.some((asset) => asset.id === incomplete.id));
+  for (const asset of retained) {
+    const remote = releases[0].assets.find((entry) => entry.id === asset.id);
+    assert.equal(remote.digest, asset.digest);
+    assert.equal(remote.size, asset.size);
+  }
+});
+
+for (const scenario of [
+  'частичный размер',
+  'нулевой starter с digest',
+  'полный starter с digest',
+  'uploaded другого размера',
+  'uploaded без digest',
+  'опубликованный starter'
+]) {
+  test(`publish не удаляет и не заменяет вложение: ${scenario}`, async (context) => {
+    const { cwd, notes, calls, releases, failures, release, passCi } = await fixture(context);
+    await release.prepare(version, notes);
+    await passCi();
+    failures.upload = true;
+    await assert.rejects(release.publish(version), /Сбой тестовой сети/);
+    const current = releases[0];
+    const incomplete = current.assets.find((asset) => asset.state === 'starter');
+    const size = (await readFile(join(cwd, 'build/releases', tag, incomplete.name))).length;
+    incomplete.size = size;
+    incomplete.digest = null;
+    if (scenario === 'частичный размер') incomplete.size = size - 1;
+    if (scenario === 'нулевой starter с digest') incomplete.size = 0;
+    if (scenario.endsWith('starter с digest')) incomplete.digest = `sha256:${'0'.repeat(64)}`;
+    if (scenario.startsWith('uploaded')) incomplete.state = 'uploaded';
+    if (scenario === 'uploaded другого размера') incomplete.size = size - 1;
+    if (scenario === 'опубликованный starter') current.draft = false;
+    const before = structuredClone(current);
+    const mutations = calls.filter(([call]) => ['upload', 'removeIncomplete', 'publish'].includes(call));
+    await assert.rejects(release.publish(version), /Размер или состояние вложения|SHA-256 вложения/);
+    assert.deepEqual(current, before);
+    assert.deepEqual(
+      calls.filter(([call]) => ['upload', 'removeIncomplete', 'publish'].includes(call)),
+      mutations
+    );
+  });
+}
+
 test('отсутствующий digest после публикации останавливает проверку без квитанции', async (context) => {
   const { cwd, notes, failures, release, passCi } = await fixture(context);
   await release.prepare(version, notes);

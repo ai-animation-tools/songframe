@@ -72,7 +72,7 @@ jobs:
           cache: yarn
       - name: Зависимости
         # Lint и тесты выпуска используют JavaScript/Node; postinstall Electron здесь не нужен.
-        run: yarn install --immutable --mode=skip-builds
+        run: yarn install --immutable --mode=skip-build
       - name: ESLint
         run: yarn eslint scripts/release/*.mjs scripts/ci/*.mjs --max-warnings 0
       - name: Prettier

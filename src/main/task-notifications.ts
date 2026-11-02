@@ -1,6 +1,7 @@
 import type { AgentEvent } from '@shared/agents';
 import { agentTitle } from '@shared/agent-providers';
 import type { NotificationTarget } from '@shared/notifications';
+import { timingAgentTexts } from '@shared/texts/timing-agent';
 import { checksTexts } from '@shared/texts/checks';
 import { notificationsTexts } from '@shared/texts/notifications';
 import type { JobInfo } from '@shared/types';
@@ -54,7 +55,10 @@ export class TaskNotifications {
     this.send({
       title: job.status === 'completed' ? notificationsTexts.agentCompleted(provider) : notificationsTexts.agentFailed(provider),
       body: job.task,
-      target: { project: job.project, route: job.task.startsWith('ai-clip-scenario:') ? '/project/scenario' : '/project/production' }
+      target: {
+        project: job.project,
+        route: job.task === timingAgentTexts.task ? '/project/timing' : job.task.startsWith('ai-clip-scenario:') ? '/project/scenario' : '/project/production'
+      }
     });
   }
 

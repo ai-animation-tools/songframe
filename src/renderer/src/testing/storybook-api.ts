@@ -8,6 +8,12 @@ function unconfigured(method: string): never {
 
 export function unconfiguredStoryApi(): Api {
   return {
+    timingAgent: {
+      view: async () => unconfigured('timingAgent.view'),
+      start: async () => unconfigured('timingAgent.start'),
+      cancel: async () => unconfigured('timingAgent.cancel'),
+      proposal: async () => unconfigured('timingAgent.proposal')
+    },
     ai: {
       access: async () => unconfigured('ai.access')
     },

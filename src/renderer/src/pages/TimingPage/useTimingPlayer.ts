@@ -3,6 +3,7 @@ import { useTheme } from '@mui/material';
 import { timingTexts } from '@shared/texts/timing';
 import { resolveTimingSections } from '@shared/timing-sections';
 import type { TimingLine, TimingSection, TimingView } from '@shared/types';
+import { timingPlaybackBounds } from './timingPlayback';
 import { hitTimingBlock, timingDragPatch, timingWaveLayout, type TimingDragMode } from './timingWaveGeometry';
 import { decodePeaks, drawWaveform, type Peaks } from './waveform';
 
@@ -50,7 +51,10 @@ export function useTimingPlayer({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<Drag>(null);
-  const stopAtRef = useRef<number | null>(null);
+  const rangeRef = useRef<{ id: number; loop: boolean } | null>(null);
+  const [activeRange, setActiveRange] = useState<{ id: number; loop: boolean } | null>(null);
+  const rangeKey = useRef('');
+  const playPending = useRef(false);
   const linesRef = useRef<TimingLine[]>([]);
   linesRef.current = lines;
 
@@ -73,7 +77,9 @@ export function useTimingPlayer({
   useEffect(() => {
     let cancelled = false;
     const audio = audioRef.current;
-    stopAtRef.current = null;
+    rangeRef.current = null;
+    setActiveRange(null);
+    rangeKey.current = '';
     setTime(0);
     setPlaying(false);
     setPeaks(null);
@@ -98,16 +104,69 @@ export function useTimingPlayer({
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume, trackUrl]);
 
-  // Плейхед и остановка в конце строки: кадр за кадром, пока идёт воспроизведение.
+  const stopLine = useCallback((): void => {
+    rangeRef.current = null;
+    setActiveRange(null);
+    rangeKey.current = '';
+    audioRef.current?.pause();
+    setPlaying(false);
+  }, []);
+
+  const playAudio = useCallback(
+    (audio: HTMLAudioElement): void => {
+      if (playPending.current) return;
+      playPending.current = true;
+      setPlaybackError(null);
+      void audio
+        .play()
+        .catch((reason: unknown) => {
+          if (audioRef.current !== audio || (reason instanceof DOMException && reason.name === 'AbortError')) return;
+          stopLine();
+          setPlaybackError(timingTexts.playbackFailed({ reason: describeError(reason) }));
+        })
+        .finally(() => {
+          playPending.current = false;
+        });
+    },
+    [describeError, stopLine]
+  );
+
+  // Цикл хранит ID, а не прежние секунды: ввод и drag сразу меняют слышимый интервал.
+  // Незаконченная граница временно приостанавливает цикл; исправление возобновляет его без нового клика.
   useEffect(() => {
     let frame = 0;
     const tick = (): void => {
       const audio = audioRef.current;
       if (audio) {
         setTime(audio.currentTime);
-        if (stopAtRef.current !== null && audio.currentTime >= stopAtRef.current) {
-          audio.pause();
-          stopAtRef.current = null;
+        const range = rangeRef.current;
+        if (range) {
+          const bounds = timingPlaybackBounds(
+            linesRef.current.find((line) => line.id === range.id),
+            duration
+          );
+          if (!bounds) {
+            audio.pause();
+            if (!linesRef.current.some((line) => line.id === range.id)) stopLine();
+            else if (range.loop) setPlaybackError(timingTexts.loopInvalidRange);
+            else {
+              stopLine();
+              setPlaybackError(timingTexts.invalidPlaybackRange);
+            }
+          } else {
+            const key = `${range.id}:${bounds.start}:${bounds.end}`;
+            if (rangeKey.current !== key) {
+              audio.currentTime = range.loop ? bounds.start : Math.max(0, bounds.start - 0.15);
+              rangeKey.current = key;
+              setPlaybackError(null);
+            }
+            const stopAt = range.loop ? bounds.end : Math.min(duration || Infinity, bounds.end + 0.1);
+            if (audio.currentTime >= stopAt) {
+              if (range.loop) audio.currentTime = bounds.start;
+              else stopLine();
+            }
+            if (rangeRef.current?.loop && audio.paused && !playPending.current) playAudio(audio);
+          }
         }
         const container = scrollRef.current;
         if (!audio.paused && container) {
@@ -120,7 +179,7 @@ export function useTimingPlayer({
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [pps]);
+  }, [pps, duration, playAudio, stopLine]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -199,7 +258,9 @@ export function useTimingPlayer({
   const seek = (t: number): void => {
     const audio = audioRef.current;
     if (!audio || !Number.isFinite(t)) return;
-    stopAtRef.current = null;
+    rangeRef.current = null;
+    setActiveRange(null);
+    rangeKey.current = '';
     const bounded = Math.max(0, Math.min(duration || Infinity, t));
     audio.currentTime = bounded;
     setTime(bounded);
@@ -208,37 +269,45 @@ export function useTimingPlayer({
   const togglePlay = (): void => {
     const audio = audioRef.current;
     if (!audio) return;
-    stopAtRef.current = null;
+    rangeRef.current = null;
+    setActiveRange(null);
+    rangeKey.current = '';
     if (audio.paused) playAudio(audio);
     else audio.pause();
   };
 
-  const playLine = (line: TimingLine): void => {
+  const startLine = (line: TimingLine, loop: boolean): void => {
     const audio = audioRef.current;
     if (!audio) return;
-    setSelected(line.id);
-    // Невалидный ручной черновик не передаём браузерному audio; проверка нужна только по явному прослушиванию.
-    if (!Number.isFinite(line.start) || !Number.isFinite(line.end) || line.start < 0 || line.end <= line.start || (duration > 0 && line.start >= duration)) {
+    const bounds = timingPlaybackBounds(line, duration);
+    if (!bounds) {
       setPlaybackError(timingTexts.invalidPlaybackRange);
       return;
     }
-    audio.currentTime = Math.max(0, line.start - 0.15);
-    stopAtRef.current = line.end + 0.1;
+    setSelected(line.id);
+    const next = { id: line.id, loop };
+    rangeRef.current = next;
+    setActiveRange(next);
+    rangeKey.current = `${line.id}:${bounds.start}:${bounds.end}`;
+    audio.currentTime = loop ? bounds.start : Math.max(0, bounds.start - 0.15);
     playAudio(audio);
-    scrollTo(line.start);
+    scrollTo(bounds.start);
   };
+  const playLine = (line: TimingLine): void => {
+    if (rangeRef.current?.id === line.id && !audioRef.current?.paused) stopLine();
+    else startLine(line, false);
+  };
+  const toggleLoop = (line: TimingLine): void => {
+    if (rangeRef.current?.id === line.id && rangeRef.current.loop) stopLine();
+    else startLine(line, true);
+  };
+
+  useEffect(() => {
+    if (busy || generating || generateOpen) stopLine();
+  }, [busy, generating, generateOpen, stopLine]);
 
   // Отказ декодера показывается в плеере; закрытая или заменённая дорожка не обновляет новый экран.
   // AbortError при обычной паузе или смене src не является ошибкой прослушивания.
-  const playAudio = (audio: HTMLAudioElement): void => {
-    setPlaybackError(null);
-    void audio.play().catch((reason: unknown) => {
-      if (audioRef.current !== audio || (reason instanceof DOMException && reason.name === 'AbortError')) return;
-      stopAtRef.current = null;
-      setPlaying(false);
-      setPlaybackError(timingTexts.playbackFailed({ reason: describeError(reason) }));
-    });
-  };
 
   const scrollTo = (t: number): void => {
     const container = scrollRef.current;
@@ -312,6 +381,10 @@ export function useTimingPlayer({
     setScrollLeft,
     togglePlay,
     playLine,
+    toggleLoop,
+    stopLine,
+    playingLineId: playing ? (activeRange?.id ?? null) : null,
+    loopingLineId: activeRange?.loop ? activeRange.id : null,
     scrollTo,
     timeAt,
     onMouseDown,

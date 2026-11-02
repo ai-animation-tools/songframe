@@ -164,3 +164,117 @@ export const ManualDragAcrossNeighbours: Story = {
     await expect(canvas.getByRole('textbox', { name: 'Конец строки 3' })).toHaveValue('16');
   }
 };
+
+export const LoopEditedBounds: Story = {
+  name: 'Цикл строки · живые границы · нечисловая пауза · исправление · остановка',
+  tags: ['ci'],
+  args: { showPlayer: true, manualMode: true },
+  parameters: { songframe: timingStoryOptions({ manualMode: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const audio = await readyAudio(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: timingTexts.loopLine({ id: 1 }) }));
+    await waitFor(() => expect(audio.paused).toBe(false));
+    const stop = () => canvas.getByRole('button', { name: timingTexts.stopLoop({ id: 1 }) });
+    await expect(stop()).toHaveAttribute('aria-pressed', 'true');
+    audio.currentTime = 0.85;
+    await waitFor(() => expect(audio.currentTime).toBeLessThan(0.7));
+    await expect(audio.paused).toBe(false);
+    const end = canvas.getByRole('textbox', { name: timingTexts.lineEnd({ id: 1 }) });
+    await userEvent.clear(end);
+    await userEvent.type(end, '1.8');
+    const start = canvas.getByRole('textbox', { name: timingTexts.lineStart({ id: 1 }) });
+    await userEvent.clear(start);
+    await userEvent.type(start, '1.1');
+    await waitFor(() => expect(audio.currentTime).toBeGreaterThanOrEqual(1.1));
+    audio.currentTime = 1.85;
+    await waitFor(() => expect(audio.currentTime).toBeLessThan(1.65));
+    await expect(audio.currentTime).toBeGreaterThanOrEqual(1.1);
+    await userEvent.clear(start);
+    await userEvent.type(start, 'не готово');
+    await waitFor(() => expect(audio.paused).toBe(true));
+    await expect(canvas.getByText(timingTexts.loopInvalidRange)).toBeVisible();
+    await expect(stop()).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.clear(start);
+    await userEvent.type(start, '1.1');
+    await waitFor(() => expect(audio.paused).toBe(false));
+    await expect(canvas.queryByText(timingTexts.loopInvalidRange)).not.toBeInTheDocument();
+    await userEvent.click(stop());
+    await expect(audio.paused).toBe(true);
+    const position = audio.currentTime;
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    await expect(audio.currentTime).toBe(position);
+    await expect(canvas.getByRole('button', { name: timingTexts.loopLine({ id: 1 }) })).toHaveAttribute('aria-pressed', 'false');
+  }
+};
+export const StopOneLine: Story = {
+  name: 'Одна строка · явная остановка той же кнопкой',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const audio = await readyAudio(canvasElement);
+    const group = within(canvas.getByRole('group', { name: timingTexts.lineActions({ id: 2 }) }));
+    await userEvent.click(group.getByRole('button', { name: timingTexts.playLine }));
+    await waitFor(() => expect(audio.paused).toBe(false));
+    await userEvent.click(group.getByRole('button', { name: timingTexts.stopLine({ id: 2 }) }));
+    await expect(audio.paused).toBe(true);
+  }
+};
+
+export const LoopDragAndRemove: Story = {
+  name: 'Цикл · перенос блока на шкале · удаление останавливает звук',
+  tags: ['ci'],
+  args: { showPlayer: true, manualMode: true },
+  parameters: { songframe: timingStoryOptions({ manualMode: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    const audio = await readyAudio(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: timingTexts.loopLine({ id: 2 }) }));
+    await waitFor(() => expect(audio.paused).toBe(false));
+    const wave = canvasElement.querySelector('canvas')!;
+    const scroller = wave.parentElement!;
+    const point = (time: number) => ({
+      clientX: wave.getBoundingClientRect().left + time * 48 - scroller.scrollLeft,
+      clientY: wave.getBoundingClientRect().top + 43
+    });
+    await userEvent.pointer([
+      { target: wave, coords: point(1.7), keys: '[MouseLeft>]' },
+      { target: wave, coords: point(6.7) },
+      { target: wave, coords: point(6.7), keys: '[/MouseLeft]' }
+    ]);
+    await expect(canvas.getByRole('textbox', { name: timingTexts.lineStart({ id: 2 }) })).toHaveValue('6.2');
+    await waitFor(() => expect(audio.currentTime).toBeGreaterThanOrEqual(6.2));
+    await expect(audio.paused).toBe(false);
+    await userEvent.click(canvas.getByRole('button', { name: timingTexts.removeLine({ id: 2 }) }));
+    const dialog = within(await screen.findByRole('dialog'));
+    await userEvent.click(dialog.getByRole('button', { name: 'Убрать' }));
+    await waitFor(() => expect(audio.paused).toBe(true));
+    await expect(canvas.queryByRole('button', { name: timingTexts.stopLoop({ id: 2 }) })).not.toBeInTheDocument();
+  }
+};
+
+export const LoopAtTrackEnd: Story = {
+  name: 'Цикл последней строки · конец трека не останавливает повтор',
+  tags: ['ci'],
+  args: { showPlayer: true, manualMode: true },
+  parameters: { songframe: timingStoryOptions({ manualMode: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const audio = await readyAudio(canvasElement);
+    const start = canvas.getByRole('textbox', { name: timingTexts.lineStart({ id: 3 }) });
+    const end = canvas.getByRole('textbox', { name: timingTexts.lineEnd({ id: 3 }) });
+    await userEvent.clear(start);
+    await userEvent.type(start, '28.8');
+    await userEvent.clear(end);
+    await userEvent.type(end, '30');
+    await userEvent.click(canvas.getByRole('button', { name: timingTexts.loopLine({ id: 3 }) }));
+    await waitFor(() => expect(audio.paused).toBe(false));
+    audio.currentTime = 30;
+    await waitFor(() => expect(audio.currentTime).toBeLessThan(29.8));
+    await expect(audio.currentTime).toBeGreaterThanOrEqual(28.8);
+    await expect(audio.paused).toBe(false);
+    await userEvent.click(canvas.getByRole('button', { name: timingTexts.stopLoop({ id: 3 }) }));
+    await expect(audio.paused).toBe(true);
+  }
+};

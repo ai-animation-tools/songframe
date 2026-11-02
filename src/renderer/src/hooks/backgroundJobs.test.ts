@@ -83,3 +83,9 @@ describe('сохранение фоновых уведомлений', () => {
     );
   });
 });
+
+it('результат ASR ведёт к таймингам, даже если диалог уже закрыт', () => {
+  const task = 'Распознавание трека для таймингов';
+  expect(agentOwnerShowsResult({ task }, '/project/timing')).toBe(false);
+  expect(agentFinishedNotice({ task, status: 'completed' }).message).toContain('«Тайминги»');
+});

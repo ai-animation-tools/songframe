@@ -125,6 +125,11 @@ export function TimingPlayer({ player, stickyTop }: TimingPlayerProps): ReactEle
         <Box sx={{ width: `${Math.max(1, duration * pps)}px`, height: '1px' }} />
         <canvas ref={canvasRef} style={{ position: 'sticky', left: 0, top: 0, display: 'block', height: canvasHeight, width: '100%', marginTop: -1 }} />
       </Box>
+      {player.loopingLineId !== null && (
+        <Typography role="status" variant="body2" sx={{ mt: 1 }}>
+          {timingTexts.loopStatus({ id: player.loopingLineId })}
+        </Typography>
+      )}
       {playbackError && (
         <Alert severity="error" sx={{ mt: 1 }}>
           {playbackError}

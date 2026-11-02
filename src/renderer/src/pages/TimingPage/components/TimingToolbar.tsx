@@ -1,3 +1,5 @@
+import { timingAgentTexts } from '@shared/texts/timing-agent';
+import { AgentButton } from '../../../components/AgentButton';
 import { timingTexts } from '@shared/texts/timing';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
@@ -24,6 +26,8 @@ interface TimingToolbarProps {
   /** Почему автоматическая разметка недоступна без правок (нет трека, текста или инструментов). */
   generateBlockedReason: string | null;
   onGenerate: () => void;
+  onAgentGenerate?: () => void;
+  agentBlockedReason?: string | null;
   onConfirmAll: () => void;
   onRecalculateSections: () => void;
   onSave: () => void;
@@ -43,6 +47,8 @@ export function TimingToolbar({
   canGenerate,
   generateBlockedReason,
   onGenerate,
+  onAgentGenerate,
+  agentBlockedReason,
   onConfirmAll,
   onRecalculateSections,
   onSave,
@@ -95,6 +101,11 @@ export function TimingToolbar({
         >
           {generating ? timingTexts.recognizing : timingTexts.generate}
         </ActionButton>
+        {onAgentGenerate && (
+          <AgentButton onClick={onAgentGenerate} disabled={!!agentBlockedReason || working} disabledReason={waitReason ?? agentBlockedReason}>
+            {timingAgentTexts.title}
+          </AgentButton>
+        )}
         <ActionButton
           startIcon={<DoneAllIcon />}
           disabled={working || verifiedCount === lineCount}

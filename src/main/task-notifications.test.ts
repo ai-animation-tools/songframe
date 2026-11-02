@@ -168,3 +168,9 @@ describe('TaskNotifications', () => {
     }
   });
 });
+
+it('уведомление о распознавании агентом открывает тайминги', () => {
+  const deliver = vi.fn();
+  new TaskNotifications(deliver).agentEvent(agentEvent({ task: 'Распознавание трека для таймингов' }));
+  expect(deliver).toHaveBeenCalledWith(expect.objectContaining({ target: { project, route: '/project/timing' } }));
+});

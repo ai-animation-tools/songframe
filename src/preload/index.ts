@@ -35,6 +35,12 @@ const relayAgentEvent = (_event: Electron.IpcRendererEvent, value: AgentEvent): 
 };
 
 const api: Api = {
+  timingAgent: {
+    view: (project) => ipcRenderer.invoke('timingAgent:view', project),
+    start: (project) => ipcRenderer.invoke('timingAgent:start', project),
+    cancel: (project) => ipcRenderer.invoke('timingAgent:cancel', project),
+    proposal: (project, jobId) => ipcRenderer.invoke('timingAgent:proposal', project, jobId)
+  },
   ai: { access: (project) => ipcRenderer.invoke('ai:access', project) },
   updates: {
     view: () => ipcRenderer.invoke('updates:view'),

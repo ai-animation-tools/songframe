@@ -152,3 +152,61 @@ export const ManualSaveFailure: Story = {
     await expect(canvas.getByRole('button', { name: commonTexts.save })).toBeDisabled();
   }
 };
+
+export const VerificationFilter: Story = {
+  name: 'Фильтр · флажок · подтвердить все · сохранены также скрытые строки',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole('button', { name: timingTexts.filterUnverified }));
+    await expect(canvas.queryByRole('checkbox', { name: timingTexts.verifyLine({ id: 2 }) })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('checkbox', { name: timingTexts.verifyLine({ id: 1 }) }));
+    await expect(canvas.queryByRole('checkbox', { name: timingTexts.verifyLine({ id: 1 }) })).not.toBeInTheDocument();
+    await expect(canvas.getByRole('checkbox', { name: timingTexts.verifyLine({ id: 3 }) })).not.toBeChecked();
+    await userEvent.click(canvas.getByRole('button', { name: timingTexts.verifyAll }));
+    await expect(canvas.getByText(timingTexts.filteredEmpty)).toBeVisible();
+    await expect(timingPageInspection().requests).toHaveLength(0);
+    await userEvent.click(canvas.getByRole('button', { name: timingTexts.filterVerified }));
+    await expect(canvas.getAllByRole('checkbox')).toHaveLength(3);
+    for (const checkbox of canvas.getAllByRole('checkbox')) await expect(checkbox).toBeChecked();
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(timingPageInspection().saved.timing!.lines.every((line) => line.verified)).toBe(true));
+    await expect(timingPageInspection().requests[0].lines).toHaveLength(3);
+  }
+};
+
+export const AgentDraftRoundTrip: Story = {
+  name: 'Агент · ручные заметки и подтверждения · перенос в черновик · явное сохранение',
+  tags: ['ci'],
+  parameters: { songframe: timingPageOptions({ agent: 'regular' }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const screen = within(canvasElement.ownerDocument.body);
+    await canvas.findByRole('switch', { name: timingTexts.manualMode });
+    const before = timingPageInspection().saved;
+    const note = canvas.getByRole('textbox', { name: timingTexts.lineNote({ id: 1 }) });
+    await userEvent.clear(note);
+    await userEvent.type(note, 'Моя ручная заметка');
+    await userEvent.click(canvas.getByRole('button', { name: 'Распознать трек агентом' }));
+    const dialog = within(await screen.findByRole('dialog'));
+    await waitFor(() => expect(dialog.getByRole('button', { name: commonTexts.run })).toBeEnabled());
+    await userEvent.click(dialog.getByRole('button', { name: commonTexts.run }));
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Перенести в черновик' })).toBeEnabled(), { timeout: 5000 });
+    await expect(timingPageInspection().saved).toEqual(before);
+    await userEvent.click(dialog.getByRole('button', { name: 'Перенести в черновик' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expect(canvas.getByRole('spinbutton', { name: 'Начало строки 1' })).toHaveValue(12);
+    await expect(canvas.getByRole('spinbutton', { name: 'Конец строки 1' })).toHaveValue(16);
+    await expect(canvas.getByRole('spinbutton', { name: 'Начало строки 2' })).toHaveValue(17);
+    await expect(canvas.getByRole('checkbox', { name: timingTexts.verifyLine({ id: 2 }) })).toBeChecked();
+    await expect(canvas.getByRole('textbox', { name: timingTexts.lineNote({ id: 1 }) })).toHaveValue('Моя ручная заметка');
+    await expect(canvas.getByRole('checkbox', { name: timingTexts.verifyLine({ id: 1 }) })).not.toBeChecked();
+    await expect(timingPageInspection().requests).toHaveLength(0);
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.save }));
+    await waitFor(() => expect(timingPageInspection().requests).toHaveLength(1));
+    await expect(timingPageInspection().requests[0].sections).toEqual(before.timing!.sections);
+    await userEvent.click(canvas.getByRole('button', { name: 'Открыть сохранённую страницу заново' }));
+    await expect(await canvas.findByRole('spinbutton', { name: 'Начало строки 1' })).toHaveValue(12);
+    await expect(canvas.getByRole('button', { name: commonTexts.save })).toBeDisabled();
+  }
+};

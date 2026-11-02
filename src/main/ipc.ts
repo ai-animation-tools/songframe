@@ -87,6 +87,7 @@ import type { TaskNotifications } from './task-notifications';
 import type { MontageDraft } from '@shared/montage';
 import { Montage } from './montage';
 import { copyMontageVideo, montageVideoPath } from './montage-video';
+import { TimingAgent } from './timing-agent';
 import { VideoReview } from './video-review';
 import { AGENT_PROVIDERS } from '@shared/agent-providers';
 import { DerivedWorkflow } from './derived-workflow';
@@ -121,6 +122,7 @@ export interface Services {
   cover?: CoverGeneration;
   referenceImages?: CoverGeneration;
   videoReview?: VideoReview;
+  timingAgent?: TimingAgent;
   /** Только оконный процесс: журнал сбоев и сеанс пользователя. */
   diagnostics?: AppDiagnostics;
 }
@@ -375,6 +377,15 @@ export function registerIpc(getServices: () => Services, setServices: (services:
       generationVerified: false
     };
   });
+  const timingAgent = new TimingAgent({ localDir: getServices().settings.localDir, agents });
+  getServices().timingAgent = timingAgent;
+  ipcMain.handle('timingAgent:view', (_event, project: string) => timingAgent.view(project));
+  ipcMain.handle('timingAgent:start', async (_event, project: string) => {
+    await ai.requireAccess(project, 'agent');
+    return timingAgent.start(project);
+  });
+  ipcMain.handle('timingAgent:cancel', (_event, project: string) => timingAgent.cancel(project));
+  ipcMain.handle('timingAgent:proposal', (_event, project: string, jobId: string) => timingAgent.proposal(project, jobId));
   const videoReview = new VideoReview({
     agents,
     imageBudgetBytes: () => AGENT_PROVIDERS[getServices().settings.getAgent()?.provider ?? 'codex'].reviewImageBudgetBytes,
@@ -546,7 +557,16 @@ export function registerIpc(getServices: () => Services, setServices: (services:
     const settings = getServices().settings;
     settings.write({ ...settings.read(), toolsRootOverride: path });
     // Смена ресурсов не создаёт второй менеджер и не объявляет живые задания прерванными.
-    const next = { ...createServices({ previousJobs: getServices().jobs }), agents, notifications, cover, referenceImages, videoReview, diagnostics };
+    const next = {
+      ...createServices({ previousJobs: getServices().jobs }),
+      agents,
+      notifications,
+      cover,
+      referenceImages,
+      videoReview,
+      timingAgent,
+      diagnostics
+    };
     watchJobs(next.jobs);
     setServices(next);
     return getServices().projects.appState();

@@ -387,6 +387,9 @@ function TimingEditor({
           onUpdate={updateLine}
           onRemove={onRemove}
           onPlay={player.playLine}
+          onLoop={player.toggleLoop}
+          playingLineId={player.playingLineId}
+          loopingLineId={player.loopingLineId}
         />
       </Box>
       <Typography role="status" variant="body2" color="text.secondary">

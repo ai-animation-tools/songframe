@@ -561,3 +561,24 @@ describe.skipIf(process.platform !== 'linux')('Жизненный цикл об�
     expect(existsSync(join(work, 'started'))).toBe(false);
   });
 });
+
+/** Подставной CLI проверяет маршрут ASR, не вызывая реальный сервис или модель. */
+it.each(['claude', 'codex'] as const)('%s: ASR использует выбранного текстового агента и копию MP3', async (provider) => {
+  fake(provider, success(provider));
+  const directory = join(settings.localDir, 'audio-jobs', 'request');
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(join(directory, 'track.mp3'), 'Копия аудио');
+  writeFileSync(join(project, 'plan/project.json'), JSON.stringify({ agent_instructions: 'Приватные указания исходного клипа' }));
+  const value = manager();
+  expect(() => value.startAudio({ project, task: 'ASR', prompt: 'Распознай' }, project)).toThrow(/INVALID_INPUT/);
+  const job = value.startAudio({ project, task: 'ASR', prompt: 'Распознай', context: 'track.mp3' }, directory);
+  expect(() => start(value)).toThrow(/PROJECT_BUSY/);
+  expect(await terminal(value, job.id)).toMatchObject({ status: 'completed', provider, permissions: 'workspace-write', project });
+  const launched = JSON.parse(readFileSync(join(work, 'started'), 'utf8'));
+  expect(launched.cwd).toBe(directory);
+  const stdin = readFileSync(join(work, 'stdin'), 'utf8');
+  expect(stdin).toContain('unsupported');
+  expect(stdin).not.toContain('Приватные указания исходного клипа');
+  expect(launched.args).toContain('модель с пробелами;$(touch injected)');
+  expect(readFileSync(join(directory, 'track.mp3'), 'utf8')).toBe('Копия аудио');
+});

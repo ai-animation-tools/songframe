@@ -19,8 +19,8 @@ export type AgentUpdate =
   | { type: 'notice'; message: string }
   | { type: 'failed'; error: AgentError };
 
-/** read — только чтение проекта; write — запись кандидатов во временную рабочую папку задания. */
-export type AgentRunMode = 'read' | 'write';
+/** read — чтение проекта; write — кандидаты изображений; audio — ASR над копией MP3 в папке задания. */
+export type AgentRunMode = 'read' | 'write' | 'audio';
 
 /** Байты уже проверены менеджером; адаптер определяет только штатный транспорт вложения CLI. */
 export interface AgentImageAttachment {
@@ -79,7 +79,7 @@ export class ClaudeAdapter implements AgentAdapter {
   }
   args(config: AgentSettings, version: string, mode: AgentRunMode, images: readonly AgentImageAttachment[] = []): string[] {
     supported(version, 2, 1, 0);
-    if (mode !== 'read') throw unsupportedMode();
+    if (mode === 'write') throw unsupportedMode();
     return [
       '-p',
       '--input-format',
@@ -91,9 +91,9 @@ export class ClaudeAdapter implements AgentAdapter {
       '--permission-mode',
       'dontAsk',
       '--tools',
-      'Read,Glob,Grep',
+      mode === 'audio' ? 'Read,Glob,Grep,Bash' : 'Read,Glob,Grep',
       '--allowedTools',
-      'Read,Glob,Grep',
+      mode === 'audio' ? 'Read,Glob,Grep,Bash' : 'Read,Glob,Grep',
       ...(config.model ? ['--model', config.model] : [])
     ];
   }
@@ -187,7 +187,7 @@ export class CodexAdapter implements AgentAdapter {
       'exec',
       '--json',
       '--sandbox',
-      mode === 'write' ? 'workspace-write' : 'read-only',
+      mode === 'read' ? 'read-only' : 'workspace-write',
       '--skip-git-repo-check',
       '--color',
       'never',

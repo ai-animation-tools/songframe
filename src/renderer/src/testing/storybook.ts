@@ -107,6 +107,7 @@ export function createStoryApi(
     };
   const merged: Api = {
     ...defaults,
+    timingAgent: { ...defaults.timingAgent, ...overrides.timingAgent },
     ai: { ...defaults.ai, ...overrides.ai },
     updates: { ...defaults.updates, ...overrides.updates },
     cover: { ...defaults.cover, ...overrides.cover },
@@ -138,6 +139,12 @@ export function createStoryApi(
     shell: { ...defaults.shell, fileUrl: storyFileUrl, ...overrides.shell }
   };
   const api: Api = {
+    timingAgent: {
+      view: guardedAsync(merged.timingAgent.view),
+      start: guardedAsync(merged.timingAgent.start),
+      cancel: guardedAsync(merged.timingAgent.cancel),
+      proposal: guardedAsync(merged.timingAgent.proposal)
+    },
     ai: {
       access: guardedAsync(merged.ai.access)
     },

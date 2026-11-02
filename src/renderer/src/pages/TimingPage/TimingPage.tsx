@@ -14,6 +14,9 @@ import type { LyricsLine, TimingLine, TimingSection, TimingView } from '@shared/
 import { useApp } from '../../state';
 import { Link as RouterLink } from 'react-router-dom';
 import { TimingGenerateDialog, TimingLinesTable, TimingPlayer, TimingToolbar, UnassignedLyrics } from './components';
+import { mergeTimingAgentReport, type TimingAgentReport, type TimingAgentSource } from '@shared/timing-agent';
+import { timingAgentTexts } from '@shared/texts/timing-agent';
+import { TimingAgentDialog } from './components/TimingAgentDialog';
 import { emptyTiming, MIN_LENGTH, round } from './timing';
 import { useTimingPlayer } from './useTimingPlayer';
 import { useHeaderHeight } from '../../components/headerHeight';
@@ -38,6 +41,7 @@ export function TimingPage(): ReactElement {
   const [boundaryDrafts, setBoundaryDrafts] = useState<TimingBoundaryDrafts>({});
   const [saveProblems, setSaveProblems] = useState<string[]>([]);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [model, setModel] = useState(() => {
     try {
@@ -94,7 +98,19 @@ export function TimingPage(): ReactElement {
     setDirty(true);
   };
 
-  const player = useTimingPlayer({ view, lines, sections, selected, setSelected, updateLine, busy, generating, generateOpen, manualMode, describeError });
+  const player = useTimingPlayer({
+    view,
+    lines,
+    sections,
+    selected,
+    setSelected,
+    updateLine,
+    busy,
+    generating,
+    generateOpen: generateOpen || agentOpen,
+    manualMode,
+    describeError
+  });
   const { duration, time, playLine, scrollTo } = player;
 
   const lyricsByNumber = useMemo(() => new Map((view?.lyrics ?? []).map((l) => [l.number, l])), [view]);
@@ -110,6 +126,16 @@ export function TimingPage(): ReactElement {
   const invalidBindings = selectLyricTimings(view?.timing?.lines ?? [], view?.lyrics ?? []).invalidIds.length > 0;
   const hasLyrics = !!view?.lyrics.some((line) => line.text && !line.header);
   const canGenerate = !!view?.trackPath && hasLyrics && !!state?.toolsRoot;
+
+  // Предложение не перезагружает страницу: незатронутые сырые поля, заметки и секции остаются в форме.
+  const applyAgent = (report: TimingAgentReport, source: TimingAgentSource): void => {
+    const result = mergeTimingAgentReport(lines, report, source);
+    setLines(result.lines);
+    setBoundaryDrafts((current) => Object.fromEntries(Object.entries(current).filter(([id]) => !result.appliedIds.includes(Number(id)))));
+    setSaveProblems([]);
+    setDirty(true);
+    notify(timingAgentTexts.applied({ count: result.appliedIds.length }), 'success');
+  };
 
   const confirmAll = (): void => {
     if (busy || generating || verifiedCount === lines.length) return;
@@ -292,6 +318,16 @@ export function TimingPage(): ReactElement {
           onManualModeChange={setManualMode}
           generateBlockedReason={generateBlockedReason}
           onGenerate={() => setGenerateOpen(true)}
+          onAgentGenerate={() => setAgentOpen(true)}
+          agentBlockedReason={
+            busy || generating
+              ? timingTexts.operationPending
+              : invalidBindings
+                ? timingTexts.invalidBindings
+                : !view.trackPath || !hasLyrics || !view.duration
+                  ? timingAgentTexts.sourceRequired
+                  : null
+          }
           onConfirmAll={confirmAll}
           onRecalculateSections={recalculateSections}
           onSave={save}
@@ -348,6 +384,9 @@ export function TimingPage(): ReactElement {
         textOf={textOf}
         onUpdate={updateLine}
         onPlay={playLine}
+        onLoop={player.toggleLoop}
+        playingLineId={player.playingLineId}
+        loopingLineId={player.loopingLineId}
         onRemove={removeLine}
         onSelect={(line) => {
           setSelected(line.id);
@@ -355,6 +394,7 @@ export function TimingPage(): ReactElement {
         }}
       />
       {unassigned.length ? <UnassignedLyrics lyrics={unassigned} onAdd={addLine} /> : null}
+      {agentOpen && <TimingAgentDialog key={project} project={project} lines={lines} onClose={() => setAgentOpen(false)} onApply={applyAgent} />}
       <TimingGenerateDialog
         open={generateOpen}
         model={model}

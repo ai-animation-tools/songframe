@@ -1,7 +1,12 @@
 import { timingTexts } from '@shared/texts/timing';
 import { commonTexts } from '@shared/texts/common';
 import type { ReactElement } from 'react';
-import { Checkbox, IconButton, TableCell, TableRow, TextField, Tooltip } from '@mui/material';
+import { Box, Checkbox, TableCell, TableRow, TextField, Tooltip } from '@mui/material';
+import StopIcon from '@mui/icons-material/Stop';
+import RepeatIcon from '@mui/icons-material/Repeat';
+import { lighten } from '@mui/material/styles';
+import { visuallyHidden } from '@mui/utils';
+import { ActionButton } from '../../../components/ActionButton';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { TimingLine } from '@shared/types';
@@ -13,6 +18,9 @@ import type { TimingBoundaryDrafts } from '../manualTiming';
 interface TimingLineRowProps {
   line: TimingLine;
   selected: boolean;
+  playing?: boolean;
+  looping?: boolean;
+  onLoop?: (line: TimingLine) => void;
   manualMode?: boolean;
   boundaryDrafts?: TimingBoundaryDrafts[number];
   onBoundaryInput?: (id: number, field: 'start' | 'end', value: string) => void;
@@ -29,6 +37,9 @@ interface TimingLineRowProps {
 export function TimingLineRow({
   line,
   selected,
+  playing = false,
+  looping = false,
+  onLoop,
   manualMode = false,
   boundaryDrafts,
   onBoundaryInput,
@@ -40,6 +51,8 @@ export function TimingLineRow({
   onPlay,
   onRemove
 }: TimingLineRowProps): ReactElement {
+  const labelSx = { display: 'none', '@container workspace (min-width: 1000px)': { display: 'inline' } };
+  const buttonSx = { minWidth: 32, px: 0.75, whiteSpace: 'nowrap', '& .MuiButton-startIcon': { m: 0 }, gap: 0.5 };
   return (
     <TableRow
       hover
@@ -97,21 +110,55 @@ export function TimingLineRow({
         />
       </TableCell>
       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-        {/* Подсказкой управляет Tooltip: собственный title кнопки вызывает конфликт в MUI. */}
-        <Tooltip title={timingTexts.listenLine}>
-          <IconButton size="small" aria-label={timingTexts.playLine} onClick={() => onPlay(line)}>
-            <PlayArrowIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <DestructiveButton
-          icon
-          label={timingTexts.removeLine({ id: line.id })}
-          description={timingTexts.removeLineDescription({ text })}
-          onConfirm={() => onRemove(line.id)}
-          confirmLabel={commonTexts.remove}
+        <Box
+          role="group"
+          aria-label={timingTexts.lineActions({ id: line.id })}
+          sx={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}
         >
-          <DeleteOutlineIcon fontSize="small" />
-        </DestructiveButton>
+          <Tooltip title={playing ? timingTexts.stopLine({ id: line.id }) : timingTexts.listenLine}>
+            <ActionButton
+              size="small"
+              sx={buttonSx}
+              aria-label={playing ? timingTexts.stopLine({ id: line.id }) : timingTexts.playLine}
+              startIcon={playing ? <StopIcon /> : <PlayArrowIcon />}
+              onClick={() => onPlay(line)}
+            >
+              <Box component="span" sx={labelSx}>
+                {playing ? timingTexts.rowStop : timingTexts.rowPlay}
+              </Box>
+            </ActionButton>
+          </Tooltip>
+          {onLoop && (
+            <ActionButton
+              size="small"
+              sx={buttonSx}
+              aria-pressed={looping}
+              aria-label={looping ? timingTexts.stopLoop({ id: line.id }) : timingTexts.loopLine({ id: line.id })}
+              startIcon={looping ? <StopIcon /> : <RepeatIcon />}
+              onClick={() => onLoop(line)}
+            >
+              <Box component="span" sx={labelSx}>
+                {looping ? timingTexts.rowStop : timingTexts.rowLoop}
+              </Box>
+            </ActionButton>
+          )}
+          <DestructiveButton
+            label={timingTexts.removeLine({ id: line.id })}
+            description={timingTexts.removeLineDescription({ text })}
+            onConfirm={() => onRemove(line.id)}
+            confirmLabel={commonTexts.remove}
+            startIcon={<DeleteOutlineIcon />}
+            // Текст удаления должен сохранять контраст и на голубом фоне выбранной строки.
+            sx={[buttonSx, (theme) => ({ color: theme.palette.mode === 'light' ? theme.palette.error.dark : lighten(theme.palette.error.light, 0.2) })]}
+          >
+            <Box component="span" sx={visuallyHidden}>
+              {timingTexts.removeLine({ id: line.id })}
+            </Box>
+            <Box component="span" aria-hidden sx={labelSx}>
+              {timingTexts.rowRemove}
+            </Box>
+          </DestructiveButton>
+        </Box>
       </TableCell>
     </TableRow>
   );

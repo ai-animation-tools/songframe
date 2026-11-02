@@ -193,3 +193,22 @@ export const ManualDraftBoundaries: Story = {
     await expect(start).not.toHaveAttribute('aria-invalid', 'true');
   }
 };
+
+export const ResponsiveRowActions: Story = {
+  name: 'Действия в одну строку · иконки и адаптивные подписи',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const group = canvas.getByRole('group', { name: 'Действия строки 1' });
+    const buttons = within(group).getAllByRole('button');
+    // Подписи действий не должны сдавливать поля времени даже при локальной прокрутке.
+    await expect(canvas.getByRole('columnheader', { name: 'Начало' }).getBoundingClientRect().width).toBeGreaterThanOrEqual(110);
+    await expect(canvas.getByRole('columnheader', { name: 'Конец' }).getBoundingClientRect().width).toBeGreaterThanOrEqual(110);
+    const tops = buttons.map((button) => button.getBoundingClientRect().top);
+    await expect(Math.max(...tops) - Math.min(...tops)).toBeLessThan(2);
+    const label = within(group).getByText('Воспроизвести');
+    const width = canvasElement.getBoundingClientRect().width;
+    if (width >= 1000) await expect(label).toBeVisible();
+    else await expect(label).not.toBeVisible();
+  }
+};

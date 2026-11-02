@@ -95,3 +95,14 @@ describe('бюджет изображений и сериализованног�
     expect(() => adapter.input(oversized, [])).toThrow(/INVALID_INPUT/);
   });
 });
+
+/** ASR получает доступ к локальным инструментам только в отдельном режиме копии аудио. */
+it('ASR: Codex работает в scratch, Claude получает Bash без обхода разрешений MCP', () => {
+  const codex = createAgentAdapter('codex').args({ provider: 'codex' }, '0.159.0', 'audio');
+  expect(codex[codex.indexOf('--sandbox') + 1]).toBe('workspace-write');
+  const claude = createAgentAdapter('claude').args({ provider: 'claude' }, '2.1.0', 'audio');
+  expect(claude[claude.indexOf('--tools') + 1]).toBe('Read,Glob,Grep,Bash');
+  expect(claude[claude.indexOf('--allowedTools') + 1]).toBe('Read,Glob,Grep,Bash');
+  expect(claude).not.toContain('--dangerously-skip-permissions');
+  expect(claude.join(' ')).not.toContain('mcp__*');
+});

@@ -2,6 +2,8 @@
 import type { TimingFile, TimingView } from '@shared/types';
 import { validateTiming } from '@shared/timing-validation';
 import { makeTimingStoryView, normalizeTimingStoryFile } from './timingStories';
+import { storyAccess } from './commonStories';
+import { createTimingAgentModel, type TimingAgentVariant } from './timingAgentStories';
 import { createStoryApi, type StoryOptions } from './storybook';
 
 export const TIMING_PAGE_PROJECT = '/mock/timing-project';
@@ -19,16 +21,18 @@ export function timingPageInspection(): TimingPageInspection {
 }
 
 /** Отсутствие audio в сценариях ввода сохраняет длительность и исключает ожидание декодера. */
-export function timingPageOptions({ failSaveOnce = false }: { failSaveOnce?: boolean } = {}): StoryOptions {
+export function timingPageOptions({ failSaveOnce = false, agent }: { failSaveOnce?: boolean; agent?: TimingAgentVariant } = {}): StoryOptions {
   return {
     shell: 'page',
     route: '/project/timing',
     app: {
+      agentProvider: agent ? 'codex' : null,
+      aiAccess: agent ? storyAccess : null,
       state: { packaged: false, problems: [], toolsRoot: null, localDir: '/mock/state', current: TIMING_PAGE_PROJECT, history: [], platform: 'linux' }
     },
     createApi: () => {
       let saved = makeTimingStoryView();
-      saved.trackPath = null;
+      if (!agent) saved.trackPath = null;
       saved.timing!.lines = saved.timing!.lines.map((line, index) => ({
         ...line,
         ...[
@@ -37,10 +41,13 @@ export function timingPageOptions({ failSaveOnce = false }: { failSaveOnce?: boo
           { start: 14, end: 18 }
         ][index]
       }));
+      if (agent) saved.timing!.lines[1] = { ...saved.timing!.lines[1], start: 17, end: 19 };
+      const agentModel = agent ? createTimingAgentModel(agent) : null;
       const requests: TimingFile[] = [];
       const inspect = (): TimingPageInspection => structuredClone({ requests, saved });
       activeInspection = inspect;
       const session = createStoryApi({
+        timingAgent: agentModel?.api,
         timing: {
           view: async () => structuredClone(saved),
           save: async (project, timing) => {
@@ -56,6 +63,7 @@ export function timingPageOptions({ failSaveOnce = false }: { failSaveOnce?: boo
         }
       });
       session.onCleanup(() => {
+        agentModel?.cleanup();
         if (activeInspection === inspect) activeInspection = null;
       });
       return session;

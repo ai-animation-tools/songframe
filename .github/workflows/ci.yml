@@ -30,8 +30,60 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  scope:
+    name: 'Выбор проверок'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    outputs:
+      release_only: ${{ steps.scope.outputs.release_only }}
+      browser: ${{ steps.scope.outputs.browser }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # PR требует merge-base, push может содержать несколько коммитов.
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Проверки выбора набора
+        run: node --test scripts/ci/classify-changes.test.mjs
+      - name: Изменённые области
+        id: scope
+        run: node scripts/ci/classify-changes.mjs
+
+  release:
+    name: 'Инструмент выпуска: lint, format, тесты'
+    needs: scope
+    if: needs.scope.outputs.release_only == 'true'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: TLS для Node
+        run: echo "OPENSSL_CONF=$GITHUB_WORKSPACE/scripts/ci/node-openssl.cnf" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Yarn 4 через corepack
+        run: corepack enable
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - name: Зависимости
+        # Lint и тесты выпуска используют JavaScript/Node; postinstall Electron здесь не нужен.
+        run: yarn install --immutable --mode=skip-builds
+      - name: ESLint
+        run: yarn eslint scripts/release/*.mjs scripts/ci/*.mjs --max-warnings 0
+      - name: Prettier
+        run: yarn prettier --check .github/workflows/ci.yml scripts/release/*.mjs scripts/ci/*.mjs
+      - name: Проверки сценария выпуска
+        run: yarn test:release
+
   app:
     name: 'Приложение: lint, format, typecheck, тесты'
+    needs: scope
+    if: needs.scope.outputs.release_only != 'true'
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     steps:
       - uses: actions/checkout@v7
@@ -96,23 +148,27 @@ jobs:
         run: yarn build
       # Витрина собирается из отслеживаемых фикстур без Python/runtime и рабочего проекта.
       - name: Статическая витрина Storybook
+        if: needs.scope.outputs.browser == 'true'
         run: yarn build-storybook
       # Версия Chromium определяется @playwright/test из yarn.lock; ставится только headless shell.
       - uses: actions/cache@v6
+        if: needs.scope.outputs.browser == 'true'
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock') }}
       # В образе контейнера раннера системных библиотек браузера может не быть: apt-get только при неудачном пробном запуске.
       - name: Chromium для браузерного набора
+        if: needs.scope.outputs.browser == 'true'
         run: |
           yarn playwright install --only-shell chromium
           node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())" || yarn playwright install-deps chromium
       # Истории с меткой ci: play, ошибки выполнения и загрузки, обязательные правила WCAG A/AA. @link tests/storybook/stories.spec.ts
       - name: Браузерный набор витрины
+        if: needs.scope.outputs.browser == 'true'
         id: storybook-browser
         run: yarn test:storybook
       - name: Отчёт браузерного набора
-        if: failure() && steps.storybook-browser.outcome == 'failure'
+        if: failure() && needs.scope.outputs.browser == 'true' && steps.storybook-browser.outcome == 'failure'
         uses: actions/upload-artifact@v7
         with:
           name: storybook-browser-report
@@ -122,6 +178,8 @@ jobs:
 
   tools:
     name: 'Инструменты Python: тесты'
+    needs: scope
+    if: needs.scope.outputs.release_only != 'true'
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     steps:
       - uses: actions/checkout@v7

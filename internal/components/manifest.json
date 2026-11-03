@@ -6,7 +6,7 @@
       "os": "linux",
       "arch": "amd64",
       "status": "pending_native",
-      "reason": "FFmpeg recipes проверены на Linux; standalone ORT и ранняя поставка ещё не приняты."
+      "reason": "FFmpeg и standalone ORT CPU probes проверены на Linux; installed smoke ранней поставки ещё не принят."
     },
     {
       "os": "windows",
@@ -578,7 +578,7 @@
         "https://api.github.com/repos/microsoft/onnxruntime/releases/tags/v1.31.0"
       ],
       "verified": "archive_sha256_ELF_PE_and_required_files",
-      "native_status": "pending_session_and_inference",
+      "native_status": "linux_cpu_probe_passed_package_pending",
       "entrypoints": {
         "ort-library": "lib/libonnxruntime.so.1.31.0"
       }
@@ -724,7 +724,7 @@
         "https://github.com/Anjok07/ultimatevocalremovergui/blob/a5f88453bfb2b38b05a965bcf67727243e0cbf19/README.md#license"
       ],
       "verified": "accepted_lock_sha256_and_metadata",
-      "native_status": "accepted_experiment_only_new_app_pending",
+      "native_status": "linux_cpu_probe_passed_windows_pending",
       "model": {
         "inputs": [
           {
@@ -813,7 +813,7 @@
         "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/blob/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/README.md"
       ],
       "verified": "accepted_lock_sha256_and_metadata",
-      "native_status": "accepted_experiment_only_new_app_pending",
+      "native_status": "linux_cpu_probe_passed_windows_pending",
       "model": {
         "inputs": [
           {
@@ -896,7 +896,7 @@
         "https://huggingface.co/onnx-community/wav2vec2-large-xlsr-53-russian-ONNX/blob/df5ba1d9e0f9a34c44eec437b441f4ae43c842eb/README.md"
       ],
       "verified": "accepted_lock_sha256_and_metadata",
-      "native_status": "accepted_experiment_only_new_app_pending",
+      "native_status": "linux_cpu_probe_passed_windows_pending",
       "model": {
         "vocab": {
           "classes": 39,

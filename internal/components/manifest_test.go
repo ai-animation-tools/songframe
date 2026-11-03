@@ -42,7 +42,7 @@ func TestManifestContract(t *testing.T) {
 				t.Fatal(a.ID)
 			}
 		}
-		if a.Component == "ort-cpu" && (a.ABI.RequiredAPI != 27 || a.ABI.HeaderAPI != 31 || a.NativeStatus != "pending_session_and_inference") {
+		if a.Component == "ort-cpu" && (a.ABI.RequiredAPI != 27 || a.ABI.HeaderAPI != 31 || ((a.OS == "linux" && a.NativeStatus != "linux_cpu_probe_passed_package_pending") || (a.OS == "windows" && a.NativeStatus != "pending_session_and_inference"))) {
 			t.Fatal("смешаны API binding и runtime либо выдана непроверенная готовность")
 		}
 	}

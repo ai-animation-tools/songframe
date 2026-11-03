@@ -13,6 +13,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	shell "songframe-go/internal/app"
+	"songframe-go/internal/components"
 	"songframe-go/internal/media"
 	"songframe-go/internal/project"
 	"songframe-go/internal/store"
@@ -70,6 +71,12 @@ func run() error {
 	}
 	defer native.Close()
 	projects := shell.NewProjectService(mediaServer)
+	componentManager, err := components.NewManager(profilePath)
+	if err != nil {
+		return err
+	}
+	defer componentManager.Cancel()
+	componentService := shell.NewComponentsService(componentManager)
 	var desktop *application.App
 	var result *shell.SmokeResult
 	var ready func(shell.AppState) error
@@ -83,7 +90,7 @@ func run() error {
 		}
 	}
 	service := shell.NewShellService(profile, true, ready)
-	services := []application.Service{application.NewService(service), application.NewService(projects), application.NewService(native)}
+	services := []application.Service{application.NewService(service), application.NewService(projects), application.NewService(native), application.NewService(componentService)}
 	var nativeCheck *shell.NativeCheckService
 	windowURL := "/"
 	if *checkDir != "" {

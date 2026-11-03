@@ -6,6 +6,7 @@ import { App } from './App';
 import { RenderBoundary } from './components/RenderBoundary';
 import { ReadyContent } from './components/ReadyContent';
 import { createWorkspaceModel, projectFixture } from './testing/workspaceModel';
+import { AppLifecycleHarness, lifecycleTexts } from './testing/AppLifecycleHarness';
 import { workspaceTexts as text } from '@shared/texts/workspace';
 
 /** Независимый снимок Go-контракта: история не использует чужой профиль и не запускает настоящий мост. */
@@ -167,6 +168,72 @@ export const NotificationTarget: Story = {
     await expect(notificationModel.counts().notifications).toBe(1);
   }
 };
+
+/** Каждая тема получает отдельный транспорт; spy считает реальные обращения страницы к openProject. */
+function lifecycleStory(dark: boolean): Story {
+  const snapshot = projectFixture();
+  const openProject = fn(async () => structuredClone(snapshot));
+  const model = createWorkspaceModel(snapshot, { openProject });
+  return {
+    parameters: { dark },
+    args: { bridge: model.bridge },
+    render: (args) => <AppLifecycleHarness {...args} />,
+    play: async ({ canvasElement }) => {
+      const canvas = within(canvasElement);
+      let previousSession: string | undefined;
+      for (let cycle = 0; cycle < 3; cycle++) {
+        await expect(await canvas.findByRole('heading', { name: shellTexts.projectsTitle })).toBeVisible();
+        await waitFor(() => expect(model.counts()).toEqual({ drops: 1, notifications: 1, closed: 0 }));
+        const callsBefore = openProject.mock.calls.length;
+        if (cycle % 2 === 0) model.emitDrop({ windowID: 1, paths: [snapshot.path], targetID: 'project-drop' });
+        else model.emitNotification({ project: snapshot.path, route: '/project/timing' });
+        await expect(await canvas.findByRole('heading', { name: snapshot.name })).toBeVisible();
+        await expect(openProject).toHaveBeenCalledTimes(callsBefore + 1);
+        await waitFor(() => expect(model.counts()).toEqual({ drops: 1, notifications: 1, closed: 1 }));
+
+        const preview = canvas.getByRole('button', { name: text.preview });
+        await userEvent.click(preview);
+        await waitFor(() => expect(model.previews.size).toBe(1));
+        await expect(preview).toHaveAttribute('aria-pressed', 'true');
+        const session = [...model.previews.keys()][0];
+        await expect(session).not.toBe(previousSession);
+        previousSession = session;
+        // Закрытие отдельного окна приходит через подписку; повторное открытие сохраняет работающий плеер.
+        await model.bridge.closePreview(session);
+        await waitFor(() => expect(preview).toHaveAttribute('aria-pressed', 'false'));
+        await userEvent.click(preview);
+        await waitFor(() => expect(model.previews.size).toBe(1));
+        await expect(preview).toHaveAttribute('aria-pressed', 'true');
+
+        await userEvent.click(canvas.getByRole('button', { name: lifecycleTexts.unmount }));
+        await waitFor(() => expect(model.counts()).toEqual({ drops: 0, notifications: 0, closed: 0 }));
+        await waitFor(() => expect(model.previews.size).toBe(0));
+        await expect(canvas.queryByLabelText(text.player)).not.toBeInTheDocument();
+        await expect(canvas.queryByRole('heading', { name: snapshot.name })).not.toBeInTheDocument();
+        // События после удаления дерева не должны читать проект или оживлять прежнее окно.
+        model.emitDrop({ windowID: 1, paths: [snapshot.path], targetID: 'project-drop' });
+        model.emitNotification({ project: snapshot.path, route: '/project/timing' });
+        await expect(openProject).toHaveBeenCalledTimes(callsBefore + 1);
+        await userEvent.click(canvas.getByRole('button', { name: lifecycleTexts.mount }));
+      }
+
+      // Уход только со страницы снимает её preview-подписку, оставляя подписки живого Workspace.
+      await userEvent.click(await canvas.findByRole('button', { name: shellTexts.openProject }));
+      await userEvent.click(await canvas.findByRole('button', { name: text.preview }));
+      await waitFor(() => expect(model.previews.size).toBe(1));
+      await userEvent.click(canvas.getByRole('button', { name: text.closeProject }));
+      await expect(await canvas.findByRole('heading', { name: shellTexts.projectsTitle })).toBeVisible();
+      await waitFor(() => expect(model.counts()).toEqual({ drops: 1, notifications: 1, closed: 0 }));
+      await waitFor(() => expect(model.previews.size).toBe(0));
+      await userEvent.click(canvas.getByRole('button', { name: lifecycleTexts.unmount }));
+      await waitFor(() => expect(model.counts()).toEqual({ drops: 0, notifications: 0, closed: 0 }));
+    }
+  };
+}
+
+export const RepeatedMount: Story = lifecycleStory(false);
+export const RepeatedMountDark: Story = lifecycleStory(true);
+
 let finishOld: ((value: ReturnType<typeof projectFixture>) => void) | undefined;
 const staleModel = createWorkspaceModel(undefined, {
   openProject: async (path) =>

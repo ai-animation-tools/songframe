@@ -22,14 +22,33 @@ tasks:
       - task: bindings
       - task: frontend
       - mkdir -p build/bin
-      - go build -tags production -trimpath -ldflags '-s -w' -o build/bin/songframe-go .
+      # Исходный архив не обязан содержать .git; версия поставки появится в своём этапе.
+      - go build -buildvcs=false -tags production -trimpath -ldflags '-s -w' -o build/bin/songframe-go .
   check:
     desc: Проверить Go, TypeScript и контракты оболочки
+    cmds:
+      - task: check:go
+      - task: check:frontend
+  check:go:
+    desc: Проверить Go-сервисы и сборочную точку входа с актуальными bindings
     cmds:
       - task: bindings
       - go test ./...
       - go vet ./...
-      - task: check:frontend
+  check:race:
+    desc: Проверить конкурентный доступ сервисов детектором гонок
+    cmds:
+      - go test -race ./internal/...
+  check:contracts:
+    desc: Сверить общие fixtures на границах Go и TypeScript
+    cmds:
+      - go test ./internal/... -run Contract -count=1
+      - task: check:contracts:frontend
+  check:contracts:frontend:
+    internal: true
+    dir: frontend
+    cmds:
+      - yarn test src/platform/contracts.test.ts
   check:frontend:
     desc: Проверить TypeScript и контрактные тесты frontend
     dir: frontend
@@ -46,6 +65,29 @@ tasks:
     dir: frontend
     cmds:
       - yarn test:storybook
+  check:ui:
+    desc: Собрать актуальную витрину и проверить её в браузере
+    cmds:
+      - task: storybook
+      - task: check:storybook
+  check:format:
+    desc: Проверить форматирование исходников Go и frontend
+    cmds:
+      - sh scripts/check-format.sh
+      - task: check:format:frontend
+  check:format:frontend:
+    internal: true
+    dir: frontend
+    cmds:
+      - yarn format:check
+  check:all:
+    desc: Выполнить контракты, типы, race, форматирование и браузерную приёмку
+    # Последовательность исключает проверку старой витрины или bindings от предыдущей сборки.
+    cmds:
+      - task: check
+      - task: check:race
+      - task: check:format
+      - task: check:ui
   run:
     desc: Открыть собранную оболочку
     cmds:

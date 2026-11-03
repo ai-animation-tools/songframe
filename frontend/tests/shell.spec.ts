@@ -78,6 +78,25 @@ test('ошибка начального чтения объясняет сбой
   await expect(page.getByRole('button', { name: 'Попробовать снова' })).toBeVisible();
 });
 
+for (const name of ['repeated-mount', 'repeated-mount-dark']) {
+  test(`жизненный цикл App и TimingPage: ${name}, 1320×860`, async ({ page }) => {
+    await page.goto(story(name));
+    // Play проверяет число активных подписок и закрытие preview после настоящих React unmount.
+    await page.waitForFunction(() => window.__shellStoryOutcome?.finished === true);
+    await expect(page.getByRole('button', { name: 'Смонтировать приложение' })).toBeVisible();
+    await expect(page.getByRole('main')).toHaveCount(0);
+    await expect(page.getByLabel('Проигрыватель', { exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Смонтировать приложение' }).click();
+    await page.getByRole('button', { name: 'Открыть папку проекта' }).click();
+    await expect(page.getByRole('cell', { name: 'Ручная граница' })).toBeVisible();
+    await page.getByRole('button', { name: 'Открыть в отдельном окне' }).click();
+    await expect(page.getByRole('button', { name: 'Открыть в отдельном окне' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.getByRole('button', { name: 'Размонтировать приложение' }).click();
+    await expect(page.getByRole('main')).toHaveCount(0);
+  });
+}
+
 for (const name of [
   'read-only-timings',
   'read-only-dark',

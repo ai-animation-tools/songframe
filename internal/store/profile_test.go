@@ -6,7 +6,8 @@ import (
 	"testing"
 )
 
-func TestProfileUsesSeparateApplicationDirectory(t *testing.T) {
+// TestContractProfileUsesSeparateApplicationDirectory закрепляет изоляцию от прежнего профиля.
+func TestContractProfileUsesSeparateApplicationDirectory(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", base)
 	t.Setenv("APPDATA", base)
@@ -29,7 +30,8 @@ func TestProfileUsesSeparateApplicationDirectory(t *testing.T) {
 	}
 }
 
-func TestProfileOverrideAndFailure(t *testing.T) {
+// TestContractProfileOverrideAndFailure сохраняет занявший путь файл при отказе подготовки профиля.
+func TestContractProfileOverrideAndFailure(t *testing.T) {
 	dir := t.TempDir()
 	chosen := filepath.Join(dir, "Профиль с пробелами")
 	got, err := NewProfile(chosen).Directory()

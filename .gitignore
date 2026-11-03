@@ -1,0 +1,14 @@
+# Сборки, зависимости и локальные результаты не входят в исходники.
+/bin/
+/dist/
+/output/
+/reports/
+/models/
+/runtime/
+/tmp/
+node_modules/
+frontend/dist/
+frontend/storybook-static/
+.env
+.env.*
+*.log

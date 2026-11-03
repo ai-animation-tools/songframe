@@ -1,15 +1,15 @@
 ---
 name: songframe-go-release
-description: "Планировать выпуск Go/Wails-версии SongFrame и проверять готовность её реального release pipeline. Локальные Linux AppImage и Windows NSIS собирает songframe-go-build; публикация и автообновления пока не реализованы."
+description: "Планировать выпуск Go/Wails-версии SongFrame и проверять готовность её реального release pipeline. Локальные поставки собирает songframe-go-build; публикация и автообновления пока не реализованы."
 ---
 
 # Выпуск SongFrame Go
 
-Работай в приватном `songframe-go/`; прочитай `AGENTS.md`, `packaging/README.md` и фактические `Taskfile.yml`/`scripts/`. Это адаптация полезных правил `songframe-release`, а не перенос его механических команд. `songframe/` доступен только для чтения. **Не выполняй Electron-команды `yarn release plan/prepare/publish`, не используй его GitHub releases, CI, updater, имена файлов и учёт комплектов для Go-версии.**
+Работай в приватном `songframe-go/`; прочитай `AGENTS.md`, `packaging/README.md` и фактические `Taskfile.yml`/`scripts/`. Это адаптация полезных правил `songframe-release`, а не перенос его механических команд. `songframe/` доступен только для чтения. **Не выполняй Electron-команды `yarn release plan/prepare/publish` и не применяй его механику комплектов к Go-версии.** Итоговый канал: при переключении история songframe-go переносится в публичный `ai-animation-tools/songframe`, первый Go-выпуск — 1.0.0 (Linux AppImage и deb, Windows NSIS), после чего songframe-go архивируется. До переключения Go-версия в songframe не публикуется. Совместимость с Electron-updater не требуется: пользователи ставят 1.0.0 с нуля; проверяется лишь, что Electron, увидев этот выпуск, не повреждает свою установку и данные.
 
 ## Текущая реализация и объём поручения
 
-Сейчас реализованы локальные Linux x86_64 AppImage и Windows amd64 NSIS (`wails3 task package:windows`): `wails3 task package:linux`, `packaging/VERSION`, `build/release/*.AppImage` с `*.build.json` и `*.sha256`. Для сборки и проверок применяй соседний [songframe-go-build](../songframe-go-build/SKILL.md). Полноценные version plan/prepare/publish, тегирование, публикация и автообновление пока не реализованы. Linux build/CPU smoke не подтверждают Windows или готовность обновлений.
+Сейчас реализованы локальные Linux x86_64 AppImage и Windows amd64 NSIS (`wails3 task package:windows`); deb-пакет ещё не реализован. Linux: `wails3 task package:linux`, `packaging/VERSION`, `build/release/*.AppImage` с `*.build.json` и `*.sha256`. Для сборки и проверок применяй соседний [songframe-go-build](../songframe-go-build/SKILL.md). Полноценные version plan/prepare/publish, тегирование, публикация и автообновление пока не реализованы. Linux build/CPU smoke не подтверждают Windows или готовность обновлений.
 
 Сначала проверь, не появилась ли новая реализация в актуальных исходниках, и установи её реальные гарантии. Не объявляй pipeline готовым по одному номеру версии, наличию `origin`, локальному артефакту или совпадению названия задачи. Если его всё ещё нет, выполни доступную часть поручения: анализ diff, план версии, описание, выявление недостающих шагов; остановись перед отсутствующим действием и объясни конкретный остаток. Полное поручение выпустить версию допускает необходимую работу в согласованных границах, но не разрешает выдавать ручную загрузку вместо несуществующего pipeline или изменять прежний продукт. Существенное проектирование нового выпуска согласуй по правилам миграции.
 

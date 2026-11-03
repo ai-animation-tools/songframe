@@ -1,0 +1,52 @@
+version: '3'
+
+# Wails включает исполнитель Task; отдельная установка Task для этих команд не нужна.
+tasks:
+  deps:
+    desc: Установить закреплённые зависимости разработки frontend
+    dir: frontend
+    cmds:
+      - yarn install --immutable
+  bindings:
+    desc: Сгенерировать TypeScript из реального Go-сервиса
+    cmds:
+      - sh scripts/bindings.sh
+  frontend:
+    desc: Проверить TypeScript и собрать frontend
+    dir: frontend
+    cmds:
+      - yarn build
+  build:
+    desc: Собрать нативную оболочку со встроенным frontend
+    cmds:
+      - task: bindings
+      - task: frontend
+      - mkdir -p build/bin
+      - go build -tags production -trimpath -ldflags '-s -w' -o build/bin/songframe-go .
+  check:
+    desc: Проверить Go, TypeScript и контракты оболочки
+    cmds:
+      - task: bindings
+      - go test ./...
+      - go vet ./...
+      - task: check:frontend
+  check:frontend:
+    desc: Проверить TypeScript и контрактные тесты frontend
+    dir: frontend
+    cmds:
+      - yarn typecheck
+      - yarn test
+  storybook:
+    desc: Собрать автономную статическую витрину
+    dir: frontend
+    cmds:
+      - yarn build-storybook
+  check:storybook:
+    desc: Проверить состояния статической витрины в браузере
+    dir: frontend
+    cmds:
+      - yarn test:storybook
+  run:
+    desc: Открыть собранную оболочку
+    cmds:
+      - ./build/bin/songframe-go

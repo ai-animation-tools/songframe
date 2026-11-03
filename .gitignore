@@ -12,3 +12,10 @@ frontend/storybook-static/
 .env
 .env.*
 *.log
+
+# Поставка новой оболочки и локальная проверка UI не относятся к исходникам.
+/build/
+/frontend/node_modules/
+/frontend/.yarn/install-state.gz
+/frontend/test-results/
+/frontend/playwright-report/

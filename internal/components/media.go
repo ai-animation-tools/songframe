@@ -93,6 +93,7 @@ func (r *mediaRunner) run(program string, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(r.ctx, r.timeout)
 	defer cancel()
 	command := exec.CommandContext(ctx, program, args...)
+	configureMediaProcess(command)
 	command.WaitDelay = 250 * time.Millisecond
 	stdout := &mediaBuffer{limit: mediaOutputLimit}
 	stderr := &mediaBuffer{limit: 16 * 1024}

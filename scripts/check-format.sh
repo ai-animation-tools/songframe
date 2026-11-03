@@ -3,7 +3,7 @@
 # Список ограничен исходниками приложения; кэш и временные копии не обходятся.
 set -eu
 cd "$(dirname "$0")/.."
-unformatted=$(gofmt -l main.go internal)
+unformatted=$(gofmt -l ./*.go internal scripts/appimage-bootstrap)
 if [ -n "$unformatted" ]; then
   printf 'Требуется gofmt:\n%s\n' "$unformatted"
   exit 1

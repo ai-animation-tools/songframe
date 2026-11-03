@@ -19,3 +19,6 @@ frontend/storybook-static/
 /frontend/.yarn/install-state.gz
 /frontend/test-results/
 /frontend/playwright-report/
+
+# Временный PE-ресурс создаётся только на время Windows CGO-сборки.
+/songframe_windows_amd64.syso

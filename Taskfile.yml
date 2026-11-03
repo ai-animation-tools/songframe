@@ -22,8 +22,28 @@ tasks:
       - task: bindings
       - task: frontend
       - mkdir -p build/bin
-      # Исходный архив не обязан содержать .git; версия поставки появится в своём этапе.
+      # Исходный архив не обязан содержать .git; версия раннего пакета задаётся в packaging/VERSION.
       - go build -buildvcs=false -tags production -trimpath -ldflags '-s -w' -o build/bin/songframe-go .
+  package:linux:
+    desc: Собрать ранний Linux AppImage с GTK/WebKit, bootstrap и метаданными
+    cmds:
+      - bash scripts/package-linux.sh
+  package:windows:
+    desc: Собрать Windows amd64 CGO-приложение и установщик NSIS с WebView2
+    cmds:
+      - bash scripts/package-windows.sh
+  smoke:host:
+    desc: Проверить AppImage в настоящем окне на хосте с отдельным чистым профилем
+    requires:
+      vars: [APPIMAGE, OUTPUT]
+    cmds:
+      - bash scripts/smoke-host.sh "{{.APPIMAGE}}" "{{.OUTPUT}}"
+  smoke:appimage:
+    desc: Проверить конечный AppImage без компонентов в чистой Ubuntu 24.04
+    requires:
+      vars: [APPIMAGE, OUTPUT]
+    cmds:
+      - bash scripts/smoke-appimage.sh "{{.APPIMAGE}}" "{{.OUTPUT}}"
   check:
     desc: Проверить Go, TypeScript и контракты оболочки
     cmds:

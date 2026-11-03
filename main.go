@@ -42,7 +42,19 @@ func run() error {
 	checkDir := flag.String("native-check-dir", "", "Каталог синтетических WAV/MP3/MP4/WebM для проверки WebView")
 	checkProject := flag.String("native-check-project", "", "Копия проекта для нативной проверки чтения")
 	checkReport := flag.String("native-check-report", "", "JSON-отчёт нативной проверки медиа и bridge")
+	componentInput := flag.String("component-smoke-input", "", "JSON с новым профилем и четырьмя офлайн-компонентами")
+	componentReport := flag.String("component-smoke-report", "", "JSON-отчёт установки и короткого CPU inference")
 	flag.Parse()
+	// Проверка поставки использует тот же менеджер, но не создаёт WebView и не читает профиль GUI.
+	// Это позволяет проверить CGO/ORT именно из AppImage, без Go, Node и Python на целевой машине.
+	if *componentInput != "" || *componentReport != "" {
+		if *componentInput == "" || *componentReport == "" || *timeout <= 0 || *smoke || *checkDir != "" || *checkProject != "" || *checkReport != "" || *report != "" {
+			return fmt.Errorf("component-smoke требует input, report, положительный timeout и отдельный запуск без GUI smoke")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+		defer cancel()
+		return runComponentSmoke(ctx, *componentInput, *componentReport)
+	}
 	if *checkDir != "" && (*smoke || *checkReport == "" || *timeout <= 0) {
 		return fmt.Errorf("native-check требует отдельный отчёт, положительный timeout и не совмещается с --smoke")
 	}

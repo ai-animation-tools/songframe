@@ -1,0 +1,11 @@
+{
+  "description": "Мини-проект: все планы приняты, аниматик свежий и принят.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "state=complete",
+    "derived ok через generation",
+    "animaticFresh=true"
+  ],
+  "stubbedMedia": []
+}

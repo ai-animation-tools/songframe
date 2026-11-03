@@ -1,6 +1,17 @@
-import type { ComponentsApi, InstallPackage, InstallSnapshot, Selection, Snapshot } from '@platform/components';
+import type {
+  ComponentsApi,
+  ComponentInstallation as InstallSnapshot,
+  ComponentPackage as InstallPackage,
+  ComponentsSelection as Selection,
+  ComponentsSnapshot as Snapshot
+} from '@shared/components';
+import type { AppState } from '@shared/types';
+import type { StoryOptions } from './storybook';
 
-/** Модель задаёт только синтетические размеры и пути, не читая настоящий профиль или manifest. */
+/**
+ * Модель группы window.api.components для историй ComponentsPage: синтетические размеры и пути,
+ * без настоящего профиля, manifest и Wails. Подключается к витрине через componentsStoryOptions.
+ */
 const ids = ['ffmpeg', 'ort-cpu', 'voc-ft', 'ctc-ru', 'ctc-vocab'];
 export const componentSelection = (): Selection => ({
   ffmpegDirectory: '',
@@ -269,5 +280,31 @@ export function createComponentsModel(
     installCalls: () => installs,
     lastRequest: () => [...lastRequest],
     counters: () => ({ checks, reads, manualChecks, installs, connections, legacyInstalls })
+  };
+}
+
+type ComponentsModel = ReturnType<typeof createComponentsModel>;
+
+/** Снимок приложения витрины: от localDir страница строит папку компонентов по умолчанию. */
+const storyAppState: AppState = {
+  packaged: false,
+  problems: [],
+  toolsRoot: null,
+  localDir: '/test/Профиль приложения',
+  current: null,
+  history: [],
+  platform: 'linux'
+};
+
+/**
+ * Параметры songframe для истории страницы компонентов. Модель создаётся до mount страницы, как
+ * сервис при запуске приложения; переданная готовая модель переживает remount истории.
+ */
+export function componentsStoryOptions(source: ComponentsModel | Parameters<typeof createComponentsModel>[0] = {}, route = '/components'): StoryOptions {
+  return {
+    shell: 'page',
+    route,
+    app: { state: storyAppState },
+    createApi: () => ({ components: ('api' in source ? source : createComponentsModel(source)).api })
   };
 }

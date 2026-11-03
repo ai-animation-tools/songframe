@@ -10,7 +10,7 @@ export interface ComponentState {
     "status": string;
     "reason": string;
     "source": string;
-    "paths": { [_ in string]?: string } | null;
+    "paths": { [_ in string]: string };
     "version": string;
 }
 
@@ -44,8 +44,8 @@ export interface InstallPackage {
  * Ключ LocalFiles — component; внешние файлы только читаются и никогда не перемещаются.
  */
 export interface InstallRequest {
-    "components": string[] | null;
-    "localFiles": { [_ in string]?: string } | null;
+    "components": string[];
+    "localFiles": { [_ in string]: string };
 }
 
 /**
@@ -58,7 +58,7 @@ export interface InstallSnapshot {
     "completedBytes": number;
     "totalBytes": number;
     "message": string;
-    "log": InstallLog[] | null;
+    "log": InstallLog[];
 }
 
 /**
@@ -68,7 +68,7 @@ export interface OperationState {
     "id": string;
     "status": string;
     "reason": string;
-    "requires": string[] | null;
+    "requires": string[];
 }
 
 /**
@@ -92,8 +92,8 @@ export interface Selection {
  */
 export interface Snapshot {
     "selection": Selection;
-    "components": ComponentState[] | null;
-    "operations": OperationState[] | null;
+    "components": ComponentState[];
+    "operations": OperationState[];
     "checking": boolean;
     "problem": string;
 }

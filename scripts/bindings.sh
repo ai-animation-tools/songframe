@@ -11,6 +11,9 @@ wails3 generate bindings -ts -i -d frontend/bindings
 
 # Wails оставляет пустую строку в конце модуля без событий. Убираем только хвост,
 # чтобы повторная генерация сохраняла чистый diff без ручной правки generated-файлов.
+# Go-сервисы отдают срезы и словари через wire.Fill, поэтому `T[] | null` и
+# `{ [_ in string]?: T } | null` сужаются до контракта window.api (D-027): typecheck
+# сверяет bindings с shared/types без ручных валидаторов. Nullable-указатели не меняются.
 node --input-type=module <<'JS'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,7 +23,12 @@ function trimGenerated(directory) {
     if (entry.isDirectory()) trimGenerated(file);
     else if (entry.name.endsWith('.ts')) {
       const source = readFileSync(file, 'utf8');
-      const result = source.trimEnd() + '\n';
+      let result = source.trimEnd() + '\n';
+      result = result.replace(/\[\] \| null/g, '[]');
+      for (let previous = ''; previous !== result; ) {
+        previous = result;
+        result = result.replace(/\{ \[_ in string\]\?: ([^{}]+?) \} \| null/g, '{ [_ in string]: $1 }');
+      }
       if (source !== result) writeFileSync(file, result);
     }
   }

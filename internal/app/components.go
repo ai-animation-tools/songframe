@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
-	"songframe-go/internal/components"
 	"sync"
+
+	"songframe-go/internal/components"
+	"songframe-go/internal/wire"
 )
 
 // componentProbe оставляет единственный синхронный проверяющий механизм в Manager.
@@ -46,7 +48,7 @@ func (s *ComponentsService) State() components.Snapshot {
 	s.mu.Lock()
 	state.Checking = state.Checking || s.running
 	s.mu.Unlock()
-	return state
+	return wire.Fill(state)
 }
 
 // requestCheck запускается только при старте и после изменения подключения или установки.
@@ -106,14 +108,14 @@ func (s *ComponentsService) refreshLoop(ctx context.Context, cancel context.Canc
 func (s *ComponentsService) Configure(selection components.Selection) (components.Snapshot, error) {
 	state, err := s.manager.Configure(selection)
 	if err != nil {
-		return state, err
+		return wire.Fill(state), err
 	}
-	return s.requestCheck(), nil
+	return wire.Fill(s.requestCheck()), nil
 }
 
 // Check оставлен для диагностики разработчика; обычный UI только читает состояние.
 func (s *ComponentsService) Check(ctx context.Context, operations []string, force bool) (components.Snapshot, error) {
-	return s.manager.Check(ctx, operations, force)
+	return wire.Done(s.manager.Check(ctx, operations, force))
 }
 
 // Cancel останавливает текущую волну и отложенное расширение; poll State их не возобновляет.
@@ -130,11 +132,13 @@ func (s *ComponentsService) Cancel() {
 }
 
 // Catalog показывает закреплённые варианты загрузки; готовая карточка не предлагает их скачивать.
-func (s *ComponentsService) Catalog() []components.InstallPackage { return s.manager.Catalog() }
+func (s *ComponentsService) Catalog() []components.InstallPackage {
+	return wire.Fill(s.manager.Catalog())
+}
 
 // Installation возвращает прогресс и журнал без ожидания длительного Install.
 func (s *ComponentsService) Installation() components.InstallSnapshot {
-	return s.manager.Installation()
+	return wire.Fill(s.manager.Installation())
 }
 
 // Install скачивает или импортирует явный набор и автоматически проверяет успешно опубликованные файлы.
@@ -144,7 +148,7 @@ func (s *ComponentsService) Install(ctx context.Context, request components.Inst
 	if err == nil {
 		s.requestCheck()
 	}
-	return state, err
+	return wire.Fill(state), err
 }
 
 // CancelInstall останавливает только установку, сохраняя предыдущий набор компонентов.

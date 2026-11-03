@@ -1,0 +1,17 @@
+{
+  "description": "Образец «Пробный клип» как в Git: M01, M02 приняты, M03–M05 без комплектов, MP4 аниматика нет.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "state=in_production (shotsDone<shotsTotal)",
+    "animaticBuilt без видео"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M02/video.mp4",
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png",
+    "source/track.mp3"
+  ]
+}

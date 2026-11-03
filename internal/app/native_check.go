@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"songframe-go/internal/project"
+	"songframe-go/internal/wire"
 )
 
 // NativeCheckConfig задаётся только явными CLI-флагами разработчика. Медиа уже
@@ -51,7 +52,7 @@ func NewNativeCheckService(config NativeCheckConfig, report string, finish func(
 }
 
 // Config отдаёт явные входы проверки вместо поиска файлов на машине пользователя.
-func (s *NativeCheckService) Config() NativeCheckConfig { return s.config }
+func (s *NativeCheckService) Config() NativeCheckConfig { return wire.Fill(s.config) }
 
 // Complete сохраняет проверяемый отчёт. Ошибка диска не считается успехом проверки.
 func (s *NativeCheckService) Complete(result NativeCheckResult) error {

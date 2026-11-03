@@ -1,25 +1,16 @@
-import { useState } from 'react';
+/** Менеджер компонентов (этап 41.3) на модели window.api.components; витрина не стартует Wails. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { componentTexts as text } from '@shared/texts/components';
+import { componentTexts as text } from '@shared/texts/component-manager';
 import { ComponentsPage } from './ComponentsPage';
-import { ShellLayout } from '../../components/ShellLayout';
-import { createComponentsModel } from '../../testing/componentsModel';
+import { componentsStoryOptions, createComponentsModel } from '../../testing/componentsModel';
 
-type Model = ReturnType<typeof createComponentsModel>;
-type Options = Parameters<typeof createComponentsModel>[0];
-/** Модель создаётся до mount страницы, как сервис при запуске приложения. Remount использует тот же сервис. */
-function ComponentsStory(options: Options & { model?: Model }) {
-  const [model] = useState(() => options.model ?? createComponentsModel(options));
-  return (
-    <ShellLayout>
-      <ComponentsPage api={model.api} defaultDirectory="/test/Профиль приложения/components" />
-    </ShellLayout>
-  );
-}
-const meta = { title: 'Компоненты/Менеджер', component: ComponentsStory, tags: ['ci'], parameters: { route: '/components' } } satisfies Meta<
-  typeof ComponentsStory
->;
+const meta = {
+  title: 'Компоненты/Менеджер',
+  component: ComponentsPage,
+  tags: ['ci'],
+  parameters: { songframe: componentsStoryOptions() }
+} satisfies Meta<typeof ComponentsPage>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 const noMaintenance = async (canvasElement: HTMLElement) => {
@@ -53,12 +44,12 @@ export const AutomaticReady: Story = {
     await expect(canvas.getByText(text.storageHint)).not.toBeVisible();
   }
 };
-export const Dark: Story = { ...AutomaticReady, parameters: { dark: true } };
+export const Dark: Story = { ...AutomaticReady, globals: { theme: 'dark' } };
 // Backend сообщает расчётные entrypoints и при отсутствии файлов. Воспроизводим эту
 // реальную форму ответа, чтобы закрытая витрина не прятала противоречивое «Расположение».
 const missingPathsModel = createComponentsModel({ foundFFmpeg: false });
 export const Missing: Story = {
-  args: { model: missingPathsModel },
+  parameters: { songframe: componentsStoryOptions(missingPathsModel) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const card = within(await canvas.findByRole('region', { name: text.names.ffmpeg }));
@@ -77,7 +68,7 @@ export const Missing: Story = {
   }
 };
 export const Ready: Story = {
-  args: { status: 'ready' },
+  parameters: { songframe: componentsStoryOptions({ status: 'ready' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(await within(await canvas.findByRole('region', { name: text.names['ort-cpu'] })).findByText(text.statuses.ready)).toBeVisible();
@@ -87,7 +78,7 @@ export const Ready: Story = {
   }
 };
 export const Downloading: Story = {
-  args: { installation: 'downloading' },
+  parameters: { songframe: componentsStoryOptions({ installation: 'downloading' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(await canvas.findByRole('progressbar', { name: text.statuses.downloading })).toBeVisible();
@@ -96,13 +87,13 @@ export const Downloading: Story = {
   }
 };
 export const Verifying: Story = {
-  args: { installation: 'verifying' },
+  parameters: { songframe: componentsStoryOptions({ installation: 'verifying' }) },
   play: async ({ canvasElement }) => {
     await expect(await within(canvasElement).findByRole('progressbar', { name: text.statuses.verifying })).toBeVisible();
   }
 };
 export const ErrorRecovery: Story = {
-  args: { foundFFmpeg: false, failInstallOnce: true },
+  parameters: { songframe: componentsStoryOptions({ foundFFmpeg: false, failInstallOnce: true }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       card = within(await canvas.findByRole('region', { name: text.names.ffmpeg }));
@@ -117,7 +108,7 @@ export const ErrorRecovery: Story = {
 };
 const connectionModel = createComponentsModel();
 export const ConnectOnComputer: Story = {
-  args: { model: connectionModel },
+  parameters: { songframe: componentsStoryOptions(connectionModel) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       ort = within(await canvas.findByRole('region', { name: text.names['ort-cpu'] }));
@@ -136,7 +127,7 @@ export const ConnectOnComputer: Story = {
   }
 };
 export const ConnectArchive: Story = {
-  args: { connectionType: 'archive' },
+  parameters: { songframe: componentsStoryOptions({ connectionType: 'archive' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       card = within(await canvas.findByRole('region', { name: text.names['ort-cpu'] }));
@@ -147,7 +138,7 @@ export const ConnectArchive: Story = {
   }
 };
 export const ConnectBadThenValid: Story = {
-  args: { failConnectOnce: true },
+  parameters: { songframe: componentsStoryOptions({ failConnectOnce: true }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       card = within(await canvas.findByRole('region', { name: text.names['ort-cpu'] }));
@@ -163,7 +154,7 @@ export const ConnectBadThenValid: Story = {
   }
 };
 export const CancelledConnect: Story = {
-  args: { cancelConnect: true },
+  parameters: { songframe: componentsStoryOptions({ cancelConnect: true }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       card = within(await canvas.findByRole('region', { name: text.names['ort-cpu'] }));
@@ -176,8 +167,7 @@ export const CancelledConnect: Story = {
 };
 const dependencyModel = createComponentsModel({ fault: 'blocked' });
 export const ModelWaitsForRuntime: Story = {
-  parameters: { route: '/components?operation=known-text-ctc&returnTo=/project/timing' },
-  args: { model: dependencyModel },
+  parameters: { songframe: componentsStoryOptions(dependencyModel, '/components?operation=known-text-ctc&returnTo=/project/timing') },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       model = within(await canvas.findByRole('region', { name: text.names['ctc-ru'] }));
@@ -194,7 +184,7 @@ export const ModelWaitsForRuntime: Story = {
   }
 };
 export const ComponentError: Story = {
-  args: { fault: 'ort-error' },
+  parameters: { songframe: componentsStoryOptions({ fault: 'ort-error' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       card = within(await canvas.findByRole('region', { name: text.names['ort-cpu'] }));
@@ -206,9 +196,13 @@ export const ComponentError: Story = {
     await expect(canvasElement.querySelector('.MuiSnackbar-root')).toBeNull();
   }
 };
-export const LongPathDark: Story = { args: { longPath: true }, parameters: { dark: true }, play: AutomaticReady.play };
+export const LongPathDark: Story = {
+  parameters: { songframe: componentsStoryOptions({ longPath: true }) },
+  globals: { theme: 'dark' },
+  play: AutomaticReady.play
+};
 export const CatalogRecovery: Story = {
-  args: { failCatalogOnce: true },
+  parameters: { songframe: componentsStoryOptions({ failCatalogOnce: true }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(await canvas.findByText(text.readFailed)).toBeVisible();
@@ -219,7 +213,7 @@ export const CatalogRecovery: Story = {
 const observed = createComponentsModel();
 /** Повторное открытие и polling читают уже известную готовность без новых probes и скачиваний. */
 export const PollingIsReadOnly: Story = {
-  args: { model: observed },
+  parameters: { songframe: componentsStoryOptions(observed) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(await within(await canvas.findByRole('region', { name: text.names.ffmpeg })).findByText(text.statuses.ready)).toBeVisible();

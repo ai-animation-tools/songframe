@@ -11,11 +11,11 @@ import * as project$0 from "../project/models.js";
  */
 export interface AppState {
     "packaged": boolean;
-    "problems": string[] | null;
+    "problems": string[];
     "toolsRoot": string | null;
     "localDir": string;
     "current": string | null;
-    "history": ProjectHistoryEntry[] | null;
+    "history": ProjectHistoryEntry[];
     "platform": string;
 }
 
@@ -24,7 +24,7 @@ export interface AppState {
  * зарегистрированы сервером; WebView не получает произвольный доступ к каталогу.
  */
 export interface NativeCheckConfig {
-    "files": project$0.MediaFile[] | null;
+    "files": project$0.MediaFile[];
     "project": string;
 }
 
@@ -43,7 +43,7 @@ export interface NativeCheckItem {
  */
 export interface NativeCheckResult {
     "passed": boolean;
-    "checks": NativeCheckItem[] | null;
+    "checks": NativeCheckItem[];
     "userAgent": string;
     "error": string;
 }
@@ -61,7 +61,7 @@ export interface NotificationTarget {
  */
 export interface PickFilter {
     "name": string;
-    "extensions": string[] | null;
+    "extensions": string[];
 }
 
 /**
@@ -69,7 +69,7 @@ export interface PickFilter {
  */
 export interface PickOptions {
     "title"?: string;
-    "filters"?: PickFilter[] | null;
+    "filters"?: PickFilter[];
     "multiple"?: boolean;
 }
 
@@ -85,7 +85,7 @@ export interface PreviewInput {
 
 /**
  * ProjectHistoryEntry сохраняет JSON-контракт истории проектов renderer.
- * На этапе оболочки история пуста: чтение и открытие проектов ещё недоступны.
+ * Поля совпадают с store.HistoryEntry: каталог состояния владеет историей.
  */
 export interface ProjectHistoryEntry {
     "path": string;

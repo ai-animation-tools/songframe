@@ -32,14 +32,14 @@ export function CancelInstall(): $CancellablePromise<void> {
 /**
  * Catalog показывает закреплённые варианты загрузки; готовая карточка не предлагает их скачивать.
  */
-export function Catalog(): $CancellablePromise<components$0.InstallPackage[] | null> {
+export function Catalog(): $CancellablePromise<components$0.InstallPackage[]> {
     return $Call.ByID(74154574);
 }
 
 /**
  * Check оставлен для диагностики разработчика; обычный UI только читает состояние.
  */
-export function Check(operations: string[] | null, force: boolean): $CancellablePromise<components$0.Snapshot> {
+export function Check(operations: string[], force: boolean): $CancellablePromise<components$0.Snapshot> {
     return $Call.ByID(1880077253, operations, force);
 }
 
@@ -63,7 +63,7 @@ export function Connect(componentID: string, path: string): $CancellablePromise<
  * Download явно получает закреплённый пакет и подключает его вместо неисправного внешнего пути.
  * При частичном успешном publish проверяются уже доступные компоненты; отмена не возобновляет остановленную работу.
  */
-export function Download(componentIDs: string[] | null): $CancellablePromise<components$0.InstallSnapshot> {
+export function Download(componentIDs: string[]): $CancellablePromise<components$0.InstallSnapshot> {
     return $Call.ByID(953546583, componentIDs);
 }
 

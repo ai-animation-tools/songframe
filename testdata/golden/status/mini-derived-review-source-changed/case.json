@@ -1,0 +1,9 @@
+{
+  "description": "source_review подтверждал другой ролик источника.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "source_changed через source_review"
+  ],
+  "stubbedMedia": []
+}

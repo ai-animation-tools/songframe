@@ -7,38 +7,84 @@ import (
 	"strings"
 
 	"songframe-go/internal/project"
+	"songframe-go/internal/status"
+	"songframe-go/internal/store"
+	"songframe-go/internal/wire"
 )
 
 // MediaRegistry отдаёт URL только выбранного приложением файла; сервер владеет потоковой выдачей.
 // В тестах подменяется без HTTP listener, а регистрация не меняет содержимое файла.
 type MediaRegistry interface {
 	Register(path string) (string, error)
+	AllowRoot(directory string) error
 }
 
-// ProjectService связывает чтение копии проекта с медиасервером и Wails bindings.
-// Сервис не сохраняет JSON, не запускает recovery и не выдаёт неполный производственный статус.
-type ProjectService struct{ media MediaRegistry }
+// ProjectService реализует группу window.api.projects (Projects оригинала, src/main/projects.ts):
+// открытие делает папку текущим проектом и поднимает её в истории каталога состояния,
+// статус вычисляется заново из файлов проекта (status.Compute) и нигде не хранится.
+// Файлы проекта сервис не пишет. Recovery прерванных публикаций монтажа и производных планов,
+// которое оригинал запускает при открытии, перенесётся вместе с этими областями (этапы 44–45).
+type ProjectService struct {
+	media MediaRegistry
+	state *store.LocalState
+}
 
-// NewProjectService принимает уже запущенный медиасервер; жизненным циклом владеет main.
-func NewProjectService(media MediaRegistry) *ProjectService { return &ProjectService{media: media} }
+// NewProjectService принимает уже запущенный медиасервер и каталог состояния приложения.
+func NewProjectService(media MediaRegistry, localDir string) *ProjectService {
+	return &ProjectService{media: media, state: store.NewLocalState(localDir)}
+}
 
-// Open возвращает свежий read-only snapshot; URL трека добавляется только после проверки журналов.
-// Недоступность медиа становится проблемой страницы, сохраняя возможность прочитать текст.
-func (s *ProjectService) Open(path string) (project.Snapshot, error) {
-	snapshot, err := (project.Reader{}).Read(path)
+// Open — projects.open: только папка с plan/project.json и названием становится текущей.
+// Ошибка повторяет текст оригинала с абсолютным путём после resolve.
+func (s *ProjectService) Open(path string) (status.ProjectStatus, error) {
+	target, err := filepath.Abs(path)
 	if err != nil {
-		return snapshot, err
+		return status.ProjectStatus{}, err
 	}
-	if snapshot.Track != nil {
-		media, err := s.Media(snapshot.Track.Path)
-		if err != nil {
-			snapshot.Problems = append(snapshot.Problems, err.Error())
-			snapshot.Track = nil
-		} else {
-			snapshot.Track = &media
+	marker := status.ReadMarker(target)
+	if marker == nil {
+		return status.ProjectStatus{}, fmt.Errorf("В папке нет plan/project.json с названием проекта: %s", target)
+	}
+	if _, err := s.state.History(); err != nil {
+		return status.ProjectStatus{}, err
+	}
+	if err := s.state.WriteCurrent(target); err != nil {
+		return status.ProjectStatus{}, err
+	}
+	if err := s.state.Touch(target, marker.Name); err != nil {
+		return status.ProjectStatus{}, err
+	}
+	// Файлы открытого проекта показываются по shell.fileUrl без регистрации каждого кадра.
+	if s.media != nil {
+		if err := s.media.AllowRoot(target); err != nil {
+			return status.ProjectStatus{}, err
 		}
 	}
-	return snapshot, nil
+	return wire.Done(status.Compute(target))
+}
+
+// Status — projects.status: полный read-only статус, включая проверку согласования сценария.
+// Ошибка соответствует исключению оригинала на повреждённых данных (например, план без id).
+func (s *ProjectService) Status(path string) (status.ProjectStatus, error) {
+	return wire.Done(status.Compute(path))
+}
+
+// Close снимает текущий проект; история не меняется.
+func (s *ProjectService) Close() error { return s.state.ClearCurrent() }
+
+// Forget убирает проект из истории и, если он текущий, снимает выбор.
+func (s *ProjectService) Forget(path string) error {
+	if err := s.state.Remove(path); err != nil {
+		return err
+	}
+	current, err := s.state.Current()
+	if err != nil {
+		return err
+	}
+	if current == path {
+		return s.state.ClearCurrent()
+	}
+	return nil
 }
 
 // Media регистрирует выбранный локальный WAV/MP3/MP4/WebM для основного и второго окна.

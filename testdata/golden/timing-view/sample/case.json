@@ -1,0 +1,13 @@
+{
+  "description": "Разметка образца.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "timing как в файле",
+    "trackPath",
+    "duration из манифеста"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "description": "Изменена постановка M01 и добавлен комплект M99 вне реестра; каталог без manifest.json не считается.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "staleShots (scene_changed)",
+    "orphanKits",
+    "каталог без manifest.json не комплект"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M02/video.mp4",
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png",
+    "source/track.mp3"
+  ]
+}

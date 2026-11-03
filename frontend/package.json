@@ -13,7 +13,8 @@
     "storybook": "storybook dev -p 6106 --no-open",
     "build-storybook": "storybook build -o storybook-static",
     "test:storybook": "playwright test",
-    "format:check": "prettier --check src .storybook tests *.json *.ts"
+    "format:check": "prettier --check src .storybook tests scripts *.json *.ts",
+    "format": "prettier --write src .storybook tests scripts *.json *.ts"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",

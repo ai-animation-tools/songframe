@@ -2,6 +2,7 @@ import { Events } from '@wailsio/runtime';
 import * as checkService from '../../bindings/songframe-go/internal/app/nativecheckservice';
 import * as native from '../../bindings/songframe-go/internal/app/nativeservice';
 import * as projects from '../../bindings/songframe-go/internal/app/projectservice';
+import * as timingService from '../../bindings/songframe-go/internal/app/timingservice';
 
 /** Результат одного независимого наблюдения WebView, без вывода о физическом звуке. */
 export interface NativeObservation {
@@ -223,26 +224,31 @@ export async function runNativeCheck(host: HTMLElement, changed: (checks: Native
     }
     if (config.project)
       await check('Копия проекта: чтение Unicode-пути и таймингов через Go', async () => {
-        const snapshot = await timed(projects.Open(config.project));
-        if (snapshot.blocked || !snapshot.name || !snapshot.track?.url) throw new Error(snapshot.problems?.join(' ') || 'Нет трека или названия');
+        // Только чтение: статус и разметка не делают копию текущим проектом и не пишут её файлы;
+        // URL трека регистрирует ProjectService.Media, как для плеера страницы.
+        const status = await timed(projects.Status(config.project));
+        const view = await timed(timingService.View(config.project));
+        if (!status.name || !view.trackPath) throw new Error([...status.problems, ...view.problems].join(' ') || 'Нет трека или названия');
+        const track = await timed(projects.Media(view.trackPath));
+        if (!track.url) throw new Error('Трек не зарегистрирован медиасервером');
         // Явный --native-check-project ожидает копию с готовой разметкой: имя проверки должно доказывать её чтение.
-        const timing: unknown = snapshot.timing;
+        const timing: unknown = view.timing;
         if (!timing || typeof timing !== 'object' || Array.isArray(timing) || !('lines' in timing) || !Array.isArray(timing.lines) || !timing.lines.length)
           throw new Error('Для нативной проверки проекта нужна существующая разметка с непустым массивом lines');
         if (!timing.lines.every((line: unknown) => !!line && typeof line === 'object' && !Array.isArray(line)))
           throw new Error('Разметка содержит повреждённые строки');
         const verifiedCount = timing.lines.filter((line: unknown) => !!line && typeof line === 'object' && 'verified' in line && line.verified === true).length;
         return JSON.stringify({
-          path: snapshot.path,
-          name: snapshot.name,
-          textLength: snapshot.lyricsText.length,
+          path: status.path,
+          name: status.name,
+          lyricsLines: view.lyrics.length,
           lineCount: timing.lines.length,
           verifiedCount,
-          trackSha256: snapshot.trackSha256,
-          duration: snapshot.duration,
+          trackSha256: view.trackSha256,
+          duration: view.duration,
           timingSha256: 'sha256' in timing ? timing.sha256 : null,
           timingDuration: 'duration_decoded' in timing ? timing.duration_decoded : null,
-          problems: snapshot.problems
+          problems: [...status.problems, ...view.problems]
         });
       });
     await check('Второе нативное окно: loadedmetadata и закрытие', async () => {
@@ -282,8 +288,8 @@ export async function runNativeCheck(host: HTMLElement, changed: (checks: Native
           while (!actual && performance.now() < until) await delay(30);
           if (removed || received !== 1 || actual?.project !== target.project || actual?.route !== target.route)
             throw new Error(`Неверная доставка: removed=${removed}, received=${received}`);
-          const snapshot = await timed(projects.Open(actual.project));
-          if (snapshot.blocked || !snapshot.name) throw new Error('Целевой проект не открылся');
+          const snapshot = await timed(projects.Status(actual.project));
+          if (!snapshot.name) throw new Error('Целевой проект не прочитан');
           second();
           await timed(native.RouteNotification(target));
           await delay(150);

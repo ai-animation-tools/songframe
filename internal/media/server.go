@@ -1,4 +1,4 @@
-// Package media отдаёт выбранные приложением файлы системному WebView через loopback.
+// Package media отдаёт разрешённые приложением файлы системному WebView через loopback.
 // HTTP Range позволяет перематывать большие записи без чтения файла целиком в память Go.
 package media
 
@@ -12,24 +12,29 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 )
 
 // Server принадлежит приложению и обслуживает все его окна одним listener.
-// Реестр содержит только явно зарегистрированные файлы; URL не преобразуется обратно
-// в произвольный путь диска. Close вызывается при завершении приложения.
+// Отдаются только файлы, которые приложение разрешило: под зарегистрированными корнями
+// (открытый проект, профиль) или выбранные пользователем по одному. URL имеет вид
+// /file/<путь диска>, поэтому renderer строит его синхронно (shell.fileUrl), как
+// local-file:// в Electron. Порт временный: такие URL не сохраняются в проект.
 type Server struct {
 	mu      sync.RWMutex
-	files   map[string]string
-	urls    map[string]string
+	roots   map[string]struct{}
+	files   map[string]struct{}
 	baseURL string
 	closed  bool
 	http    *http.Server
 	errors  chan error
 }
+
+// filePrefix — маршрут файлов; TS-адаптер строит тот же вид в frontend/src/platform/file-url.ts.
+const filePrefix = "/file/"
 
 // Start занимает свободный порт только IPv4 loopback и сразу начинает HTTP-обслуживание.
 // Системные WebView используют полученный URL для audio/video и AudioContext; отдельный
@@ -40,8 +45,8 @@ func Start() (*Server, error) {
 		return nil, fmt.Errorf("не удалось открыть локальный медиасервер: %w", err)
 	}
 	s := &Server{
-		files:   make(map[string]string),
-		urls:    make(map[string]string),
+		roots:   make(map[string]struct{}),
+		files:   make(map[string]struct{}),
 		baseURL: "http://" + listener.Addr().String(),
 		errors:  make(chan error, 1),
 	}
@@ -57,17 +62,87 @@ func Start() (*Server, error) {
 	return s, nil
 }
 
-// Register проверяет абсолютный путь к обычному файлу и возвращает его стабильный URL
-// в рамках этого запуска. Разрешённая символическая ссылка закрепляется за текущим
-// целевым файлом; имена с кириллицей, пробелами и служебными знаками кодирует net/url.
+// BaseURL — адрес listener этого запуска; renderer получает его один раз при старте.
+func (s *Server) BaseURL() string { return s.baseURL }
+
+// FileURL кодирует абсолютный путь по сегментам: пробелы, кириллица, '#', '?' и диск
+// Windows не ломают адрес. Разрешение файла проверяется при запросе, а не здесь.
+func FileURL(baseURL, absolutePath string) string {
+	slashed := strings.TrimPrefix(filepath.ToSlash(absolutePath), "/")
+	segments := strings.Split(slashed, "/")
+	for i, segment := range segments {
+		segments[i] = url.PathEscape(segment)
+	}
+	return baseURL + filePrefix + strings.Join(segments, "/")
+}
+
+// filePath восстанавливает путь диска из уже декодированного net/http пути запроса.
+// Результат очищен и абсолютен; '..' не выводит за пределы разрешённого корня,
+// потому что проверка allowed выполняется по очищенному пути.
+func filePath(requestPath string) (string, bool) {
+	rest, ok := strings.CutPrefix(requestPath, filePrefix)
+	if !ok || rest == "" {
+		return "", false
+	}
+	path := filepath.FromSlash(rest)
+	if runtime.GOOS != "windows" {
+		path = string(filepath.Separator) + path
+	}
+	path = filepath.Clean(path)
+	return path, filepath.IsAbs(path)
+}
+
+// sameKey приводит путь к ключу сравнения: в Windows регистр имён не различается.
+func sameKey(path string) string {
+	if runtime.GOOS == "windows" {
+		return strings.ToLower(path)
+	}
+	return path
+}
+
+// AllowRoot разрешает файлы каталога и его подкаталогов, например открытого проекта.
+// Корень не снимается при смене проекта: прежние URL этого запуска остаются рабочими,
+// а повторная регистрация того же каталога ничего не меняет.
+func (s *Server) AllowRoot(directory string) error {
+	if !filepath.IsAbs(directory) {
+		return fmt.Errorf("для медиа нужен абсолютный путь: %q", directory)
+	}
+	info, err := os.Stat(directory)
+	if err != nil {
+		return fmt.Errorf("каталог медиа недоступен: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("путь не является каталогом: %s", directory)
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return fmt.Errorf("локальный медиасервер уже закрыт")
+	}
+	s.roots[sameKey(filepath.Clean(directory))] = struct{}{}
+	return nil
+}
+
+// AllowFile разрешает отдельный файл вне корней (выбранный в диалоге или перетащенный).
+// Существование не проверяется: страница может показать файл после его появления.
+func (s *Server) AllowFile(path string) {
+	if !filepath.IsAbs(path) {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.closed {
+		s.files[sameKey(filepath.Clean(path))] = struct{}{}
+	}
+}
+
+// Register проверяет абсолютный путь к обычному файлу, разрешает его и возвращает URL.
+// Имена с кириллицей, пробелами и служебными знаками кодируются FileURL.
 func (s *Server) Register(absolutePath string) (string, error) {
 	if !filepath.IsAbs(absolutePath) {
 		return "", fmt.Errorf("для медиа нужен абсолютный путь: %q", absolutePath)
 	}
-	path, err := filepath.EvalSymlinks(filepath.Clean(absolutePath))
-	if err != nil {
-		return "", fmt.Errorf("медиафайл недоступен: %w", err)
-	}
+	path := filepath.Clean(absolutePath)
 	info, err := os.Stat(path)
 	if err != nil {
 		return "", fmt.Errorf("медиафайл недоступен: %w", err)
@@ -80,28 +155,42 @@ func (s *Server) Register(absolutePath string) (string, error) {
 	if s.closed {
 		return "", fmt.Errorf("локальный медиасервер уже закрыт")
 	}
-	if existing, ok := s.urls[path]; ok {
-		return existing, nil
-	}
-	resource := "/media/" + strconv.Itoa(len(s.files)+1) + "/" + filepath.Base(path)
-	address := s.baseURL + (&url.URL{Path: resource}).EscapedPath()
-	s.files[resource] = path
-	s.urls[path] = address
-	return address, nil
+	s.files[sameKey(path)] = struct{}{}
+	return FileURL(s.baseURL, path), nil
 }
 
-// ContainsURL проверяет, что второе окно открывает адрес из этого реестра, а не
-// произвольную страницу. Сравнение точное: иной host, query, fragment или кодирование
-// не подменяют зарегистрированный URL; после Close новых просмотров уже нет.
+// allowed сообщает, разрешён ли очищенный путь отдельным выбором или корнем.
+func (s *Server) allowed(path string) bool {
+	key := sameKey(path)
+	if _, ok := s.files[key]; ok {
+		return true
+	}
+	for directory := key; ; {
+		parent := filepath.Dir(directory)
+		if parent == directory {
+			return false
+		}
+		if _, ok := s.roots[parent]; ok {
+			return true
+		}
+		directory = parent
+	}
+}
+
+// ContainsURL проверяет, что второе окно открывает разрешённый файл этого сервера, а не
+// произвольную страницу: иной host, query или fragment адрес не принимают.
 func (s *Server) ContainsURL(address string) bool {
 	parsed, err := url.Parse(address)
-	if err != nil || s.baseURL+(&url.URL{Path: parsed.Path}).EscapedPath() != address {
+	if err != nil || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.Scheme+"://"+parsed.Host != s.baseURL {
+		return false
+	}
+	path, ok := filePath(parsed.Path)
+	if !ok {
 		return false
 	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	_, exists := s.files[parsed.Path]
-	return exists && !s.closed
+	return !s.closed && s.allowed(path)
 }
 
 // Errors сообщает единственную неожиданную ошибку HTTP-цикла для диагностики приложения.
@@ -142,8 +231,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "поддерживаются только GET и HEAD", http.StatusMethodNotAllowed)
 		return
 	}
+	path, exists := filePath(r.URL.Path)
 	s.mu.RLock()
-	path, exists := s.files[r.URL.Path]
+	exists = exists && s.allowed(path)
 	closed := s.closed
 	s.mu.RUnlock()
 	if closed {

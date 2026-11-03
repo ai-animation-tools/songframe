@@ -20,13 +20,6 @@ import * as diagnostics$0 from "../diagnostics/models.js";
 import * as $models from "./models.js";
 
 /**
- * Close фиксирует штатное завершение диагностики; окна освобождает сам Wails при завершении приложения.
- */
-export function Close(): $CancellablePromise<void> {
-    return $Call.ByID(1696355884);
-}
-
-/**
  * ClosePreview безопасен при повторном закрытии и гонке с первым созданием окна.
  */
 export function ClosePreview(session: string): $CancellablePromise<void> {
@@ -59,7 +52,7 @@ export function PickComponentFile(component: string): $CancellablePromise<string
 /**
  * PickFiles сохраняет порядок выбранных файлов и возвращает [] при отмене, никогда null.
  */
-export function PickFiles(input: $models.PickOptions | null): $CancellablePromise<string[] | null> {
+export function PickFiles(input: $models.PickOptions | null): $CancellablePromise<string[]> {
     return $Call.ByID(3540854700, input);
 }
 

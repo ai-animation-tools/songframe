@@ -36,7 +36,7 @@ describe('палитры приложения', () => {
       for (const fill of [color.main, color.dark]) expect(contrast(color.contrastText, fill)).toBeGreaterThanOrEqual(4.5);
       for (const page of [palette.background.paper, palette.background.default]) expect(contrast(color.main, page)).toBeGreaterThanOrEqual(4.5);
     }
-    // Контраст светлого warning нужен для текстовых выделений будущих страниц.
+    // Подсветка найденного текста в справке. @link src/renderer/src/pages/HelpPage/components/HighlightedText.tsx
     expect(contrast(palette.getContrastText(palette.warning.light), palette.warning.light)).toBeGreaterThanOrEqual(4.5);
   });
 });

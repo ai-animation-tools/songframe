@@ -1,0 +1,23 @@
+{
+  "path": "<project>",
+  "state": "timed",
+  "name": "Пробный клип",
+  "animaticVideo": "sample-animatic.mp4",
+  "checks": {
+    "marker": true,
+    "sources": true,
+    "timing": true,
+    "cast": false,
+    "treatment": false,
+    "scenes": false,
+    "shotsTotal": 0,
+    "shotsDone": 2,
+    "animaticBuilt": true,
+    "animaticFresh": false,
+    "animaticApproved": false
+  },
+  "problems": [
+    "plan/cast.json повреждён.",
+    "plan/treatment.json повреждён или пуст."
+  ]
+}

@@ -11,6 +11,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"songframe-go/internal/diagnostics"
+	"songframe-go/internal/wire"
 )
 
 // PickFilter сохраняет фильтры существующего диалога; расширения передаются без точки.
@@ -73,6 +74,7 @@ type NativeService struct {
 	previews         map[string]*previewSession
 	emit             func(string, any)
 	validMediaURL    func(string) bool
+	allowFile        func(string)
 	openWindow       func(PreviewInput, func()) (func(), func(), error)
 }
 
@@ -121,8 +123,20 @@ func ConfigureNativeDesktop(s *NativeService, desktop *application.App) {
 
 // ConfigureNativeMedia принимает проверку регистрации URL от владельца HTTP listener.
 // Проверка запрещает подменить окно просмотра произвольным сетевым или локальным адресом.
-func ConfigureNativeMedia(s *NativeService, containsURL func(string) bool) {
+// allowFile разрешает выбранные в диалоге и перетащенные файлы для shell.fileUrl.
+func ConfigureNativeMedia(s *NativeService, containsURL func(string) bool, allowFile func(string)) {
 	s.validMediaURL = containsURL
+	s.allowFile = allowFile
+}
+
+// allow отдаёт выбранные пользователем пути медиасерверу; без него (тесты) ничего не делает.
+func (s *NativeService) allow(paths ...string) {
+	if s.allowFile == nil {
+		return
+	}
+	for _, path := range paths {
+		s.allowFile(path)
+	}
 }
 
 // AttachNativeWindow подключает drop к основному окну. Пути берутся из Wails, не из синтетического File.name.
@@ -138,6 +152,7 @@ func AttachNativeWindow(s *NativeService, window *application.WebviewWindow) fun
 		if len(paths) == 0 {
 			return
 		}
+		s.allow(paths...)
 		payload := FilesDropped{WindowID: window.ID(), Paths: append([]string{}, paths...)}
 		if target := ctx.DropTargetDetails(); target != nil {
 			payload.TargetID = target.ElementID
@@ -204,10 +219,8 @@ func (s *NativeService) PickFiles(input *PickOptions) ([]string, error) {
 	dialog := s.desktop.Dialog.OpenFileWithOptions(options)
 	if options.AllowsMultipleSelection {
 		paths, err := dialog.PromptForMultipleSelection()
-		if paths == nil {
-			paths = []string{}
-		}
-		return paths, err
+		s.allow(paths...)
+		return wire.Fill(paths), err
 	}
 	path, err := dialog.PromptForSingleSelection()
 	if err != nil {
@@ -216,6 +229,7 @@ func (s *NativeService) PickFiles(input *PickOptions) ([]string, error) {
 	if path == "" {
 		return []string{}, nil
 	}
+	s.allow(path)
 	return []string{path}, nil
 }
 
@@ -402,8 +416,8 @@ func (s *NativeService) RouteNotification(target NotificationTarget) error {
 	return nil
 }
 
-// Close фиксирует штатное завершение диагностики; окна освобождает сам Wails при завершении приложения.
-func (s *NativeService) Close() error {
+// close фиксирует штатное завершение диагностики; окна освобождает сам Wails при завершении приложения.
+func (s *NativeService) close() error {
 	s.diagnosticMu.Lock()
 	defer s.diagnosticMu.Unlock()
 	if s.diagnosticClosed {
@@ -419,4 +433,4 @@ func (s *NativeService) Close() error {
 }
 
 // ServiceShutdown обеспечивает чистый маркер и при завершении через системное меню Wails.
-func (s *NativeService) ServiceShutdown() error { return s.Close() }
+func (s *NativeService) ServiceShutdown() error { return s.close() }

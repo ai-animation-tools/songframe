@@ -1,0 +1,10 @@
+{
+  "description": "state_changes плана — строка: отпечатки не вычисляются.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "sceneComparisonFailed",
+    "все комплекты stale (scene_changed)"
+  ],
+  "stubbedMedia": []
+}

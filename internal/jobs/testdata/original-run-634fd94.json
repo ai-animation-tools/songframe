@@ -1,0 +1,108 @@
+{
+  "job": {
+    "project": "/p",
+    "kind": "tool",
+    "title": "Проверка",
+    "status": "failed",
+    "log": "\n$ ok --json a b\nвывод\n\n$ Сопутствующий \nнеобязательный сбой\n\n$ Тихий x\n\nШаг «Тихий» завершился с кодом 4.\n\n$ stdoutOnly \n только stdout \n\nШаг «stdoutOnly» завершился с кодом 6.\n\n$ Главный --y\nчастично\n  причина  \n\nШаг «Главный» завершился с кодом 5; задание остановлено.\n",
+    "code": 4,
+    "steps": [
+      {
+        "label": "ok",
+        "tool": "ok",
+        "status": "done",
+        "code": 0
+      },
+      {
+        "label": "Сопутствующий",
+        "tool": "optional",
+        "status": "failed",
+        "code": 3
+      },
+      {
+        "label": "Тихий",
+        "tool": "silent",
+        "status": "failed",
+        "code": 4
+      },
+      {
+        "label": "stdoutOnly",
+        "tool": "stdoutOnly",
+        "status": "failed",
+        "code": 6
+      },
+      {
+        "label": "Главный",
+        "tool": "fatal",
+        "status": "failed",
+        "code": 5
+      },
+      {
+        "label": "never",
+        "tool": "never",
+        "status": "pending",
+        "code": null
+      }
+    ],
+    "error": "Шаг «Тихий» завершился с кодом 4."
+  },
+  "file": {
+    "project": "/p",
+    "kind": "tool",
+    "title": "Проверка",
+    "status": "failed",
+    "code": 4,
+    "steps": [
+      {
+        "label": "ok",
+        "tool": "ok",
+        "status": "done",
+        "code": 0
+      },
+      {
+        "label": "Сопутствующий",
+        "tool": "optional",
+        "status": "failed",
+        "code": 3
+      },
+      {
+        "label": "Тихий",
+        "tool": "silent",
+        "status": "failed",
+        "code": 4
+      },
+      {
+        "label": "stdoutOnly",
+        "tool": "stdoutOnly",
+        "status": "failed",
+        "code": 6
+      },
+      {
+        "label": "Главный",
+        "tool": "fatal",
+        "status": "failed",
+        "code": 5
+      },
+      {
+        "label": "never",
+        "tool": "never",
+        "status": "pending",
+        "code": null
+      }
+    ],
+    "error": "Шаг «Тихий» завершился с кодом 4."
+  },
+  "keys": [
+    "id",
+    "project",
+    "kind",
+    "title",
+    "status",
+    "startedAt",
+    "finishedAt",
+    "code",
+    "steps",
+    "error"
+  ],
+  "log": "\n$ ok --json a b\nвывод\n\n$ Сопутствующий \nнеобязательный сбой\n\n$ Тихий x\n\nШаг «Тихий» завершился с кодом 4.\n\n$ stdoutOnly \n только stdout \n\nШаг «stdoutOnly» завершился с кодом 6.\n\n$ Главный --y\nчастично\n  причина  \n\nШаг «Главный» завершился с кодом 5; задание остановлено.\n"
+}

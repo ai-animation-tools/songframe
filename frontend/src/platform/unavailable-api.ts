@@ -3,6 +3,9 @@ import type { Api } from '@shared/api';
 
 export type ApiMethod = { [Group in keyof Api]: `${Group}.${Extract<keyof Api[Group], string>}` }[keyof Api];
 
+/** Подписка на событие ещё не перенесённой области: событие не наступит, отписка ничего не делает. */
+const unsubscribed = () => () => undefined;
+
 /** Фабрика создаёт формы всех методов без удачных пустых результатов и обращения к неготовым сервисам. */
 export function unavailableApi(asyncFailure: (method: ApiMethod) => Promise<never>, syncFailure: (method: ApiMethod) => never): Api {
   return {
@@ -47,8 +50,8 @@ export function unavailableApi(asyncFailure: (method: ApiMethod) => Promise<neve
       open: () => asyncFailure('montageWindow.open'),
       close: () => asyncFailure('montageWindow.close'),
       send: () => syncFailure('montageWindow.send'),
-      onMessage: () => syncFailure('montageWindow.onMessage'),
-      onClosed: () => syncFailure('montageWindow.onClosed')
+      onMessage: unsubscribed,
+      onClosed: unsubscribed
     },
     updates: {
       view: () => asyncFailure('updates.view'),
@@ -62,7 +65,7 @@ export function unavailableApi(asyncFailure: (method: ApiMethod) => Promise<neve
       cancel: () => asyncFailure('videoReview.cancel')
     },
     notifications: {
-      onOpen: () => syncFailure('notifications.onOpen')
+      onOpen: unsubscribed
     },
     media: {
       capabilities: () => asyncFailure('media.capabilities')
@@ -95,7 +98,7 @@ export function unavailableApi(asyncFailure: (method: ApiMethod) => Promise<neve
       cancel: () => asyncFailure('agents.cancel'),
       get: () => asyncFailure('agents.get'),
       list: () => asyncFailure('agents.list'),
-      onEvent: () => syncFailure('agents.onEvent')
+      onEvent: unsubscribed
     },
     app: {
       state: () => asyncFailure('app.state'),
@@ -199,7 +202,7 @@ export function unavailableApi(asyncFailure: (method: ApiMethod) => Promise<neve
       check: () => asyncFailure('environment.check'),
       loginProvider: () => asyncFailure('environment.loginProvider'),
       cancelLogin: () => asyncFailure('environment.cancelLogin'),
-      onLoginUrl: () => syncFailure('environment.onLoginUrl'),
+      onLoginUrl: unsubscribed,
       providerAuth: () => asyncFailure('environment.providerAuth')
     },
     tools: {
@@ -213,7 +216,21 @@ export function unavailableApi(asyncFailure: (method: ApiMethod) => Promise<neve
       openPath: () => asyncFailure('shell.openPath'),
       readText: () => asyncFailure('shell.readText'),
       fileUrl: () => syncFailure('shell.fileUrl'),
-      pathForFile: () => syncFailure('shell.pathForFile')
+      onFilesDropped: unsubscribed
+    },
+    components: {
+      state: () => asyncFailure('components.state'),
+      connect: () => asyncFailure('components.connect'),
+      download: () => asyncFailure('components.download'),
+      configure: () => asyncFailure('components.configure'),
+      check: () => asyncFailure('components.check'),
+      cancel: () => asyncFailure('components.cancel'),
+      catalog: () => asyncFailure('components.catalog'),
+      installation: () => asyncFailure('components.installation'),
+      install: () => asyncFailure('components.install'),
+      cancelInstall: () => asyncFailure('components.cancelInstall'),
+      chooseDirectory: () => asyncFailure('components.chooseDirectory'),
+      chooseFile: () => asyncFailure('components.chooseFile')
     }
   };
 }

@@ -1,17 +1,42 @@
-import { Paper, Stack, Typography, type SxProps, type Theme } from '@mui/material';
-import type { ReactNode } from 'react';
-import { SHELL_HEADER_HEIGHT } from './ShellLayout';
+import type { ReactElement, ReactNode, Ref } from 'react';
+import { Paper, type SxProps, type Theme } from '@mui/material';
+import { useHeaderHeight } from './headerHeight';
 
-/** Панель остаётся под общей шапкой при прокрутке и принадлежит всей странице. */
-export function PageActionBar({ title, children, sx }: { title: string; children?: ReactNode; sx?: SxProps<Theme> }) {
+/** Действия страницы остаются доступны при прокрутке под общей шапкой приложения. */
+export function PageActionBar({
+  children,
+  position = 'top',
+  sx,
+  barRef
+}: {
+  children: ReactNode;
+  position?: 'top' | 'bottom';
+  sx?: SxProps<Theme>;
+  barRef?: Ref<HTMLDivElement>;
+}): ReactElement {
+  const headerHeight = useHeaderHeight();
   return (
-    <Paper elevation={0} sx={{ position: 'sticky', top: SHELL_HEADER_HEIGHT, zIndex: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', ...sx }}>
-      <Stack direction="row" alignItems="center" gap={1} useFlexGap flexWrap="wrap">
-        <Typography variant="h5" component="h1" sx={{ flex: 1 }}>
-          {title}
-        </Typography>
-        {children}
-      </Stack>
+    <Paper
+      ref={barRef}
+      variant="outlined"
+      // По метке прокрутка к цели ссылки учитывает закреплённую панель (PAGE_ACTION_BAR_ATTR в useAnchorTarget).
+      data-page-action-bar={position}
+      sx={[
+        {
+          position: 'sticky',
+          ...(position === 'top' ? { top: headerHeight } : { bottom: 0 }),
+          zIndex: (theme) => theme.zIndex.appBar - 1,
+          p: 1,
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 1,
+          bgcolor: 'background.paper'
+        },
+        ...(sx ? (Array.isArray(sx) ? sx : [sx]) : [])
+      ]}
+    >
+      {children}
     </Paper>
   );
 }

@@ -126,7 +126,7 @@ func TestSelectedFilesOnlyAndMissingMedia(t *testing.T) {
 	if got, err := s.Register(path); err != nil || got != address {
 		t.Fatalf("повторная регистрация: %q %v", got, err)
 	}
-	for _, route := range []string{"/", "/media/999/song.mp3", "/media/1/other.mp3", "/media/1/../../etc/passwd"} {
+	for _, route := range []string{"/", "/media/1/song.mp3", "/file/etc/passwd", "/file/../../etc/passwd"} {
 		r := request(t, "GET", s.baseURL+route, "")
 		if r.StatusCode != 404 {
 			t.Errorf("произвольный путь %s: %d", route, r.StatusCode)
@@ -268,5 +268,61 @@ func TestContainsURLAllowsOnlyRegisteredAddress(t *testing.T) {
 	}
 	if s.ContainsURL(address) {
 		t.Fatal("URL закрытого сервера разрешён")
+	}
+}
+
+func TestRootServesProjectFilesOnly(t *testing.T) {
+	s := testServer(t)
+	root := t.TempDir()
+	inside := filepath.Join(root, "assets", "кадр 1#a.png")
+	if err := os.MkdirAll(filepath.Dir(inside), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(inside, []byte("png"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	outside := testFile(t, "secret.txt", "secret")
+	address := FileURL(s.BaseURL(), inside)
+	if r := request(t, "GET", address, ""); r.StatusCode != 404 {
+		t.Fatalf("файл до регистрации корня: %d", r.StatusCode)
+	}
+	if err := s.AllowRoot(root); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.AllowRoot(inside); err == nil {
+		t.Fatal("файл принят как корень")
+	}
+	r := request(t, "GET", address, "")
+	body, _ := io.ReadAll(r.Body)
+	if r.StatusCode != 200 || string(body) != "png" || r.Header.Get("Content-Type") != "image/png" {
+		t.Fatalf("файл проекта: %d %q %v", r.StatusCode, body, r.Header)
+	}
+	if !s.ContainsURL(address) {
+		t.Fatal("URL файла под корнем не принят")
+	}
+	escape := s.BaseURL() + "/file" + filepath.ToSlash(root) + "/../" + filepath.Base(filepath.Dir(outside)) + "/secret.txt"
+	for _, candidate := range []string{FileURL(s.BaseURL(), outside), escape, s.BaseURL() + "/file/", s.BaseURL() + "/file"} {
+		if r := request(t, "GET", candidate, ""); r.StatusCode != 404 {
+			t.Errorf("путь вне корня %s: %d", candidate, r.StatusCode)
+		}
+	}
+	s.AllowFile(outside)
+	if r := request(t, "GET", FileURL(s.BaseURL(), outside), ""); r.StatusCode != 200 {
+		t.Fatalf("выбранный файл: %d", r.StatusCode)
+	}
+}
+
+func TestFileURLEncodesSegments(t *testing.T) {
+	got := FileURL("http://127.0.0.1:1", "/srv/test/Клип ?#%/a.mp3")
+	want := "http://127.0.0.1:1/file/srv/test/%D0%9A%D0%BB%D0%B8%D0%BF%20%3F%23%25/a.mp3"
+	if got != want {
+		t.Fatalf("%s != %s", got, want)
+	}
+	parsed, err := url.Parse(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if path, ok := filePath(parsed.Path); !ok || path != "/srv/test/Клип ?#%/a.mp3" {
+		t.Fatalf("обратное преобразование: %q %v", path, ok)
 	}
 }

@@ -1,0 +1,11 @@
+{
+  "description": "Кандидат без reason.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "unreadableTiming (candidates)"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

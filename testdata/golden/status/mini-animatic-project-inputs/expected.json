@@ -1,0 +1,22 @@
+{
+  "path": "<project>",
+  "state": "in_production",
+  "name": "Мини-клип 2",
+  "animaticVideo": "mini-animatic.mp4",
+  "checks": {
+    "marker": true,
+    "sources": true,
+    "timing": true,
+    "cast": true,
+    "treatment": true,
+    "scenes": true,
+    "shotsTotal": 3,
+    "shotsDone": 3,
+    "animaticBuilt": true,
+    "animaticFresh": false,
+    "animaticApproved": false
+  },
+  "problems": [
+    "Аниматик собран по устаревшему реестру или входам: нужна пересборка."
+  ]
+}

@@ -3,9 +3,10 @@ package app
 import (
 	"os"
 	"path/filepath"
-	"songframe-go/internal/diagnostics"
 	"strings"
 	"testing"
+
+	"songframe-go/internal/diagnostics"
 )
 
 // TestNativePreviewLifecycle проверяет реальные переходы сервиса без зависимости от оконного менеджера.
@@ -14,7 +15,7 @@ func TestNativePreviewLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer service.Close()
+	defer service.ServiceShutdown()
 	service.validMediaURL = func(value string) bool { return value == "http://127.0.0.1:1234/media/1/трек.mp3" }
 	var events []string
 	service.emit = func(name string, _ any) { events = append(events, name) }
@@ -82,7 +83,7 @@ func TestNativePreviewRejectsUnregisteredURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer service.Close()
+	defer service.ServiceShutdown()
 	service.validMediaURL = func(string) bool { return false }
 	if err := service.OpenPreview(PreviewInput{Session: "1", MediaURL: "https://example.com/video"}); err == nil {
 		t.Fatal("неподтверждённый URL принят")
@@ -95,7 +96,7 @@ func TestNativePreviewCloseDuringCreate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer service.Close()
+	defer service.ServiceShutdown()
 	service.validMediaURL = func(string) bool { return true }
 	closed := 0
 	service.openWindow = func(input PreviewInput, callback func()) (func(), func(), error) {
@@ -141,7 +142,7 @@ func TestNotificationTarget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer service.Close()
+	defer service.ServiceShutdown()
 	var received NotificationTarget
 	service.emit = func(name string, data any) {
 		if name != "notifications:open" {
@@ -173,7 +174,7 @@ func TestNativeDiagnosticsRecoversAfterUnavailableProfile(t *testing.T) {
 	if err != nil || service == nil {
 		t.Fatalf("ошибка диагностики остановила приложение: %v", err)
 	}
-	defer service.Close()
+	defer service.ServiceShutdown()
 	if _, err := service.CrashNotice(); err == nil {
 		t.Fatal("ошибка профиля скрыта от интерфейса")
 	}

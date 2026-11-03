@@ -1,0 +1,9 @@
+{
+  "description": "Нет MP4 аниматика.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "animaticBuilt=true, fresh=false без видео"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Нет plan/animatic/latest/manifest.json.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "animaticNotBuilt"
+  ],
+  "stubbedMedia": []
+}

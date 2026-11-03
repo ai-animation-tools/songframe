@@ -21,7 +21,8 @@ export const NAV_PAGES: readonly NavPage[] = [
   { to: '/project/animatic', label: navigationTexts.pages.animatic, needsProject: true },
   { to: '/jobs', label: navigationTexts.pages.jobs },
   { to: '/environment', label: navigationTexts.pages.environment },
-  { to: '/settings', label: navigationTexts.pages.settings },
+  // Отличие от 634fd94: менеджер компонентов Go-версии (этап 41.3) заменяет Python/Whisper-часть среды.
   { to: '/components', label: navigationTexts.pages.components },
+  { to: '/settings', label: navigationTexts.pages.settings },
   { to: '/help', label: navigationTexts.pages.help }
 ];

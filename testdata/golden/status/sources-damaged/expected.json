@@ -1,0 +1,23 @@
+{
+  "path": "<project>",
+  "state": "empty",
+  "name": "Пробный клип",
+  "animaticVideo": "sample-animatic.mp4",
+  "checks": {
+    "marker": true,
+    "sources": false,
+    "timing": true,
+    "cast": true,
+    "treatment": true,
+    "scenes": true,
+    "shotsTotal": 5,
+    "shotsDone": 0,
+    "animaticBuilt": true,
+    "animaticFresh": false,
+    "animaticApproved": false
+  },
+  "problems": [
+    "source/manifest.json повреждён.",
+    "Постановка изменена после приёмки: M01, M02. Нужно новое производство этих планов."
+  ]
+}

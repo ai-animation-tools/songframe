@@ -1,0 +1,11 @@
+{
+  "description": "Секция с origin вне списка.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "unreadableTiming (sections)"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

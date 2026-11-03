@@ -1,0 +1,10 @@
+{
+  "description": "Изменена постановка источника M01: M01 устарел, M03 — источник недоступен.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "staleShots и derivedShotsNeedReview вместе",
+    "staleAnimatic не сообщается при shotsDone<total"
+  ],
+  "stubbedMedia": []
+}

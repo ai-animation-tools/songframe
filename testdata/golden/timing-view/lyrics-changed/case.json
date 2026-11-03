@@ -1,0 +1,11 @@
+{
+  "description": "Строка разметки указывает на заголовок.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "lyricsChanged"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

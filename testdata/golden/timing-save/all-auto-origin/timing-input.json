@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "status": "Разметка образца.",
+  "source": "source/track.mp3",
+  "sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+  "duration_decoded": 30,
+  "duration_container": 30.040816,
+  "clock": "Секунды от начала декодированного звука, не SMPTE",
+  "lines": [
+    {
+      "id": 1,
+      "source_line": 2,
+      "start": 1,
+      "end": 4,
+      "verified": true
+    },
+    {
+      "id": 2,
+      "source_line": 3,
+      "start": 4,
+      "end": 7,
+      "verified": false
+    },
+    {
+      "id": 3,
+      "source_line": 5,
+      "start": 15,
+      "end": 18,
+      "verified": true
+    }
+  ],
+  "sections": [
+    {
+      "name": "Куплет",
+      "start": 0,
+      "end": 1,
+      "origin": "auto"
+    }
+  ],
+  "line_order": [
+    5,
+    2,
+    3
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Текст без строк песни.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "noLines"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

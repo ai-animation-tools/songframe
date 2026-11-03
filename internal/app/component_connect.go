@@ -3,7 +3,9 @@ package app
 import (
 	"context"
 	"errors"
+
 	"songframe-go/internal/components"
+	"songframe-go/internal/wire"
 )
 
 // Connect подключает выбранный файл или устанавливает распознанный архив одним пользовательским действием.
@@ -11,9 +13,9 @@ import (
 func (s *ComponentsService) Connect(ctx context.Context, componentID, path string) (components.Snapshot, error) {
 	state, err := s.manager.Connect(ctx, componentID, path)
 	if err != nil {
-		return state, err
+		return wire.Fill(state), err
 	}
-	return s.requestCheck(), nil
+	return wire.Fill(s.requestCheck()), nil
 }
 
 // Download явно получает закреплённый пакет и подключает его вместо неисправного внешнего пути.
@@ -23,5 +25,5 @@ func (s *ComponentsService) Download(ctx context.Context, componentIDs []string)
 	if ctx.Err() == nil && !errors.Is(err, context.Canceled) {
 		s.requestCheck()
 	}
-	return state, err
+	return wire.Fill(state), err
 }

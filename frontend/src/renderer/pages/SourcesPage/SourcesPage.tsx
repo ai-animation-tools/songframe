@@ -1,0 +1,156 @@
+import { navigationTexts } from '@shared/texts/navigation';
+import { commonTexts } from '@shared/texts/common';
+import { sourcesTexts } from '@shared/texts/sources';
+/** Исходники проекта: трек, текст песни, идея, обложка и референсы. */
+import { useEffect, useRef, type ReactElement } from 'react';
+import { usePageLoading } from '../../components/PageLoader';
+import { Alert, Box, Button, Chip, Stack, Typography } from '@mui/material';
+import SaveIcon from '@mui/icons-material/Save';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { ActionButton } from '../../components/ActionButton';
+import { PageActionBar } from '../../components/PageActionBar';
+import { CoverSection, IdeaSection, LyricsSection, ReferenceKindDialog, ReferencesSection, TrackSection } from './components';
+import { useSourcesForm } from './useSourcesForm';
+import { ImageGenerateDialog } from '../../components/ImageGenerateDialog';
+import { CoverGenerateDialog } from './components/CoverGenerateDialog';
+import { LinkedText } from '../../components/LinkedText';
+
+export function SourcesPage(): ReactElement {
+  const form = useSourcesForm();
+  const problemsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // Файл, брошенный мимо области загрузки, не должен открыться вместо приложения.
+    const preventNavigation = (event: DragEvent): void => {
+      if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
+    };
+    window.addEventListener('dragover', preventNavigation);
+    window.addEventListener('drop', preventNavigation);
+    return () => {
+      window.removeEventListener('dragover', preventNavigation);
+      window.removeEventListener('drop', preventNavigation);
+    };
+  }, []);
+
+  // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
+  usePageLoading(!form.view && !form.loadError);
+  if (form.loadError)
+    return (
+      <Alert
+        severity="error"
+        action={
+          <Button startIcon={<RefreshIcon />} onClick={form.retry}>
+            {commonTexts.retry}
+          </Button>
+        }
+      >
+        <LinkedText text={form.loadError} />
+      </Alert>
+    );
+
+  if (!form.view) return <></>;
+
+  // Проверка сервера включает разбор текста песни с задержкой; локальный разбор показывает его ошибки сразу.
+  const problems = [...new Set([...form.problems, ...form.lyricsCheck.problems])];
+  const problemCount = problems.length + (form.hasPromptErrors ? 1 : 0);
+  const saveBlockedReason = form.busy
+    ? null
+    : form.hasPromptErrors
+      ? sourcesTexts.promptReadBlocked
+      : problems.length
+        ? sourcesTexts.formProblems({ count: problems.length })
+        : !form.dirty
+          ? sourcesTexts.noUnsavedChanges
+          : null;
+
+  return (
+    <Stack spacing={2} inert={form.busy || undefined} aria-busy={form.busy} sx={{ width: '100%', minWidth: 0, pb: 10 }}>
+      <PageActionBar>
+        <Typography variant="h5">{navigationTexts.pages.sources}</Typography>
+        {form.dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
+        {problemCount ? (
+          <Chip
+            size="small"
+            color="warning"
+            label={sourcesTexts.problemCount({ count: problemCount })}
+            // Список проблем стоит в начале страницы, а правка обычно идёт в карточке ниже.
+            onClick={() => problemsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          />
+        ) : null}
+        <Box sx={{ flex: 1 }} />
+        <ActionButton
+          variant="contained"
+          startIcon={<SaveIcon />}
+          disabled={form.busy || !!saveBlockedReason}
+          disabledReason={form.busy ? sourcesTexts.operationPending : saveBlockedReason}
+          onClick={form.save}
+        >
+          {commonTexts.save}
+        </ActionButton>
+      </PageActionBar>
+      {form.view.problems.length ? (
+        <Alert severity="error">
+          <LinkedText text={form.view.problems.join(' ')} />
+        </Alert>
+      ) : null}
+      {problemCount ? (
+        <Stack ref={problemsRef} spacing={1}>
+          {form.hasPromptErrors ? <Alert severity="warning">{sourcesTexts.promptReadWarning}</Alert> : null}
+          {problems.length ? (
+            <Alert severity="warning">
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {problems.map((problem) => (
+                  <li key={problem}>
+                    <LinkedText text={problem} />
+                  </li>
+                ))}
+              </ul>
+            </Alert>
+          ) : null}
+        </Stack>
+      ) : null}
+      {/* Референсы занимают отдельную колонку только при достаточной ширине рабочей области. */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          alignItems: 'start',
+          gap: 2,
+          '@container workspace (min-width: 1600px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+          '& > *': { minWidth: 0 }
+        }}
+      >
+        <Stack spacing={2} sx={{ minWidth: 0 }}>
+          {/* Внутренние карточки ориентируются на свою колонку, а не на ширину всего окна. */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
+              gap: 2,
+              '& > *': { minWidth: 0 }
+            }}
+          >
+            <TrackSection {...form.trackProps} />
+            <CoverSection {...form.coverProps} />
+          </Box>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
+              gap: 2,
+              '& > *': { minWidth: 0 }
+            }}
+          >
+            <LyricsSection {...form.lyricsProps} />
+            <IdeaSection {...form.ideaProps} />
+          </Box>
+        </Stack>
+        <ReferencesSection {...form.referencesProps} />
+      </Box>
+      <ReferenceKindDialog {...form.kindDialogProps} />
+      {form.referenceGenerationProps ? (
+        <ImageGenerateDialog key={`${form.referenceGenerationProps.project}:reference`} mode="reference" {...form.referenceGenerationProps} />
+      ) : null}
+      {form.coverGenerationProps.open ? <CoverGenerateDialog key={form.coverGenerationProps.project} {...form.coverGenerationProps} /> : null}
+    </Stack>
+  );
+}

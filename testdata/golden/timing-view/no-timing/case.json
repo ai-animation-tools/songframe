@@ -1,0 +1,11 @@
+{
+  "description": "Нет timing.json.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "timing=null без проблемы"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "fingerprints": {
+    "M01": "596afbde44e93fadc44aa62fe81c7e4a3fb4b4047b058b258f5c3d02539605d0",
+    "M02": "30a8f243f244202da8ac2949e1dbde155a75fd41779fa02667eecd1182ab1bd0",
+    "M03": "7ee23395cd189956fc9b7b6158648013d13cc4969963088cf24cf5db957babd6"
+  },
+  "accepted": {
+    "M01": "stale",
+    "M02": "completed",
+    "M03": "stale"
+  },
+  "reasons": {
+    "M01": "scene_changed",
+    "M03": "source_unavailable"
+  },
+  "problem": null
+}

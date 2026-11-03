@@ -1,0 +1,9 @@
+{
+  "description": "source_review подтверждает другой источник (M02).",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "derived_link_changed через source_review"
+  ],
+  "stubbedMedia": []
+}

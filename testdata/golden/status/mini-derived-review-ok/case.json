@@ -1,0 +1,10 @@
+{
+  "description": "Действующее подтверждение source_review перекрывает устаревшую квитанцию generation.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "source_review приоритетнее generation",
+    "state=complete"
+  ],
+  "stubbedMedia": []
+}

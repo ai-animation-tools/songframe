@@ -1,0 +1,13 @@
+{
+  "description": "Сохранение разметки образца без правок.",
+  "call": "saveTiming",
+  "project": "project",
+  "covers": [
+    "ручные секции сохраняются",
+    "status полного подтверждения",
+    "line_order из текста"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

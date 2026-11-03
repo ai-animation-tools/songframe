@@ -3,24 +3,11 @@ package components
 import (
 	"context"
 	"os"
-	"os/exec"
-	"syscall"
 	"testing"
 	"time"
 
 	"golang.org/x/sys/windows"
 )
-
-// TestMediaProcessPreservesFlags защищает прочие настройки процесса при обязательном скрытии консоли.
-// CREATE_NEW_CONSOLE несовместим с этой границей и снимается, остальные флаги не теряются.
-func TestMediaProcessPreservesFlags(t *testing.T) {
-	command := exec.Command("ffmpeg.exe", "-version")
-	command.SysProcAttr = &syscall.SysProcAttr{CreationFlags: windows.CREATE_NEW_PROCESS_GROUP | windows.CREATE_NEW_CONSOLE}
-	configureMediaProcess(command)
-	if !command.SysProcAttr.HideWindow || command.SysProcAttr.CreationFlags&windows.CREATE_NO_WINDOW == 0 || command.SysProcAttr.CreationFlags&windows.CREATE_NEW_CONSOLE != 0 || command.SysProcAttr.CreationFlags&windows.CREATE_NEW_PROCESS_GROUP == 0 {
-		t.Fatalf("неверные настройки фонового процесса: %+v", command.SysProcAttr)
-	}
-}
 
 // TestMediaProcessNoConsole запускает настоящий console-subsystem тестовый exe через production mediaRunner.
 // Проверка не требует FFmpeg; дочерний процесс должен сохранить stdout и не иметь окна даже при console-родителе.

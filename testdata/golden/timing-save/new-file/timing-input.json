@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "status": "",
+  "source": "source/track.mp3",
+  "sha256": null,
+  "duration_decoded": null,
+  "duration_container": null,
+  "clock": "x",
+  "lines": [
+    {
+      "id": 1,
+      "source_line": 3,
+      "start": 10,
+      "end": 10.3
+    }
+  ],
+  "sections": []
+}

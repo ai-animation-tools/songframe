@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "sequences": [
+    {
+      "id": "verse",
+      "title": "Куплет",
+      "summary": "Мира у воды."
+    }
+  ]
+}

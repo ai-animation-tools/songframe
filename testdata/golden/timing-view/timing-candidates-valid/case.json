@@ -1,0 +1,11 @@
+{
+  "description": "Допустимые кандидаты сохраняются в timing.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "candidates проходят проверку"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

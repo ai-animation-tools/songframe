@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "shot": "M01",
+  "kind": "generated_video",
+  "accepted_edit": {
+    "fps": 30,
+    "frames": 90,
+    "video": {
+      "path": "video.mp4",
+      "sha256": "6917a795297bd9db02e5cdad2ad9b32c87a24aedf86b9047d9fc95fa9f79dfe7"
+    }
+  }
+}

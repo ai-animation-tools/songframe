@@ -1,0 +1,11 @@
+{
+  "description": "Нет lines.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "unreadableTiming (нет lines)"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

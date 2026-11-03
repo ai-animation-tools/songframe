@@ -1,0 +1,16 @@
+{
+  "fingerprints": {
+    "M01": "63a34827981b7b198f1fc1aa2dd1a34f420553b13a05b080a4b925c76a35ac60",
+    "M02": "30a8f243f244202da8ac2949e1dbde155a75fd41779fa02667eecd1182ab1bd0",
+    "M03": "7ee23395cd189956fc9b7b6158648013d13cc4969963088cf24cf5db957babd6"
+  },
+  "accepted": {
+    "M01": "completed",
+    "M02": "completed",
+    "M03": "stale"
+  },
+  "reasons": {
+    "M03": "source_changed"
+  },
+  "problem": null
+}

@@ -1,0 +1,236 @@
+import type * as React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SourcesView } from '@shared/types';
+import { useSourcesForm } from './useSourcesForm';
+
+const fixture = vi.hoisted(() => ({
+  project: '/project-a',
+  states: [] as unknown[],
+  refs: [] as { current: unknown }[],
+  stateIndex: 0,
+  refIndex: 0,
+  notify: vi.fn(),
+  refresh: vi.fn(),
+  describeError: (error: unknown) => (error instanceof Error ? error.message : String(error))
+}));
+vi.mock('react', async (original) => ({
+  ...(await original<typeof React>()),
+  useState: (initial: unknown) => {
+    const index = fixture.stateIndex++;
+    if (!(index in fixture.states)) fixture.states[index] = typeof initial === 'function' ? initial() : initial;
+    return [
+      fixture.states[index],
+      (value: unknown) => {
+        fixture.states[index] = typeof value === 'function' ? value(fixture.states[index]) : value;
+      }
+    ];
+  },
+  useRef: (initial: unknown) => fixture.refs[fixture.refIndex++] ?? (fixture.refs[fixture.refIndex - 1] = { current: initial }),
+  useEffect: vi.fn(),
+  useCallback: (value: unknown) => value,
+  useMemo: (calculate: () => unknown) => calculate()
+}));
+vi.mock('../../state', () => ({
+  useApp: () => ({ state: { current: fixture.project }, refresh: fixture.refresh, notify: fixture.notify, describeError: fixture.describeError })
+}));
+
+const sourceView: SourcesView = {
+  manifest: {
+    schema_version: 1,
+    track: null,
+    lyrics: null,
+    idea: null,
+    cover: null,
+    updated_at: '2026-10-30',
+    references: [{ id: 'hero', kind: 'character', name: 'Герой', short_name: '', description: 'Красная куртка', prompt: '', files: [] }]
+  },
+  lyricsText: '',
+  ideaText: '',
+  coverPath: null,
+  referenceFilePaths: {},
+  problems: []
+};
+const castView = vi.fn();
+const api = { view: vi.fn(), save: vi.fn(), close: vi.fn() };
+function RenderHook() {
+  fixture.stateIndex = fixture.refIndex = 0;
+  return useSourcesForm();
+}
+async function loaded() {
+  await RenderHook().retry();
+  return RenderHook();
+}
+function openGeneration(form: ReturnType<typeof RenderHook>) {
+  form.referencesProps.onGenerate(form.referencesProps.refs[0].key);
+  const props = RenderHook().referenceGenerationProps;
+  if (!props) throw new Error('Не открылся диалог референса');
+  return props;
+}
+
+beforeEach(() => {
+  fixture.project = '/project-a';
+  fixture.states = [];
+  fixture.refs = [];
+  vi.clearAllMocks();
+  castView.mockResolvedValue({ cast: null, problems: [] });
+  api.view.mockResolvedValue(sourceView);
+  api.save.mockResolvedValue(undefined);
+  api.close.mockResolvedValue(undefined);
+  vi.stubGlobal('window', { api: { sources: { view: api.view, save: api.save }, cast: { view: castView }, referenceImages: { close: api.close } } });
+});
+
+describe('принятие изображения в форме исходников', () => {
+  it('передаёт черновик идеи/песни и только существующие и загруженные изображения выбранного объекта', async () => {
+    let form = await loaded();
+    const key = form.referencesProps.refs[0].key;
+    form.referencesProps.onUpdate(key, {
+      prompt: 'Общий промпт',
+      files: [
+        { key: 100, existingPath: 'characters/hero.png', view: 'full', note: 'Красная куртка', prompt: 'Не добавлять промпт отдельного файла' },
+        { key: 101, sourcePath: '/uploads/profile.jpg', view: 'other', note: 'Профиль', prompt: '' }
+      ]
+    });
+    form.ideaProps.onChange('Несохранённая идея');
+    form.lyricsProps.onChange('[Куплет 1]\nНесохранённая строка');
+    form.referencesProps.onAdd();
+    form = RenderHook();
+    const props = openGeneration(form);
+    expect(props.referenceInput).toEqual({
+      images: [
+        { path: '/project-a/source/characters/hero.png', label: 'В полный рост', note: 'Красная куртка' },
+        { path: '/uploads/profile.jpg', label: 'Другое', note: 'Профиль' }
+      ]
+    });
+    expect(props.referenceContextDrafts).toEqual({ idea: 'Несохранённая идея', lyrics: '[Куплет 1]\nНесохранённая строка' });
+    expect(props.referenceDescription).toBe('Красная куртка');
+    expect(props.initialPrompt).toBe('Создай изображение референса для музыкального клипа. Объект: Герой.');
+    expect(props.initialPrompt).not.toContain('Общий промпт');
+    expect(props.initialPrompt).not.toContain('Не добавлять промпт отдельного файла');
+    expect(api.save).not.toHaveBeenCalled();
+  });
+
+  it('добавляет несколько кандидатов с их промптами, сохраняет вместе с формой и закрывает все сессии после Save', async () => {
+    let form = await loaded();
+    openGeneration(form).onAccepted({ id: 'first', path: '/tmp/first.png', prompt: 'Красная куртка' });
+    form = RenderHook();
+    openGeneration(form).onAccepted({ id: 'second', path: '/tmp/second.png', prompt: 'Вид сбоку' });
+    form = RenderHook();
+    expect(api.save).not.toHaveBeenCalled();
+    expect(api.close).not.toHaveBeenCalled();
+    expect(form.referencesProps.refs[0].files.map(({ sourcePath, view, prompt }) => ({ sourcePath, view, prompt }))).toEqual([
+      { sourcePath: '/tmp/first.png', view: 'full', prompt: 'Красная куртка' },
+      { sourcePath: '/tmp/second.png', view: 'other', prompt: 'Вид сбоку' }
+    ]);
+    await form.save();
+    expect(api.save.mock.calls[0][0]).toBe('/project-a');
+    expect(api.save.mock.calls[0][1].references[0].files).toEqual([
+      { sourcePath: '/tmp/first.png', existingPath: undefined, view: 'full', note: '', prompt: 'Красная куртка' },
+      { sourcePath: '/tmp/second.png', existingPath: undefined, view: 'other', note: '', prompt: 'Вид сбоку' }
+    ]);
+    expect(api.close.mock.calls).toEqual([['first'], ['second']]);
+  });
+
+  it('не прикладывает принятый результат A к B и не возвращает старый диалог после A→B→A', async () => {
+    const old = openGeneration(await loaded());
+    fixture.project = '/project-b';
+    expect(RenderHook().referenceGenerationProps).toBeNull();
+    expect(() => old.onAccepted({ id: 'old', path: '/tmp/old.png', prompt: 'A' })).toThrow('Проект или референс изменился');
+    fixture.project = '/project-a';
+    RenderHook();
+    expect(() => old.onAccepted({ id: 'old', path: '/tmp/old.png', prompt: 'A' })).toThrow('Проект или референс изменился');
+    expect(RenderHook().referencesProps.refs[0].files).toEqual([]);
+  });
+
+  it('поздняя ошибка загрузки A не скрывает уже открытый проект B', async () => {
+    let reject!: (reason: Error) => void;
+    api.view.mockImplementationOnce(
+      () =>
+        new Promise<SourcesView>((_resolve, fail) => {
+          reject = fail;
+        })
+    );
+    const loadingA = RenderHook().retry();
+    fixture.project = '/project-b';
+    await RenderHook().retry();
+    reject(new Error('Ошибка проекта A'));
+    await loadingA;
+    expect(RenderHook().loadError).toBeNull();
+    expect(RenderHook().view).toEqual(sourceView);
+  });
+
+  it('сохранение A после переключения не закрывает сессии нового проекта B', async () => {
+    let finish!: () => void;
+    api.save.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      })
+    );
+    const savingA = (await loaded()).save();
+    fixture.project = '/project-b';
+    openGeneration(await loaded()).onAccepted({ id: 'session-b', path: '/tmp/b.png', prompt: 'B' });
+    finish();
+    await savingA;
+    expect(api.close).not.toHaveBeenCalled();
+    expect(RenderHook().referencesProps.refs[0].files[0].sourcePath).toBe('/tmp/b.png');
+  });
+});
+
+describe('проверка удаления до изменения формы', () => {
+  async function withFiles() {
+    const form = await loaded();
+    const key = form.referencesProps.refs[0].key;
+    form.referencesProps.onUpdate(key, {
+      files: [
+        { key: 501, existingPath: 'characters/hero.png', view: 'front', note: '', prompt: '' },
+        { key: 502, sourcePath: '/uploads/new.png', view: 'side', note: '', prompt: '' }
+      ]
+    });
+    form.ideaProps.onChange('Несохранённая идея');
+    return { key, form: RenderHook() };
+  }
+  it('не удаляет используемое изображение и весь референс, сохраняя все черновики', async () => {
+    const { key, form } = await withFiles();
+    castView.mockResolvedValue({ cast: { entities: [{ name: 'Олег', images: ['characters/hero.png'] }] }, problems: [] });
+    const before = form.referencesProps.refs;
+    await form.referencesProps.onRemoveFile(key, 501);
+    expect(RenderHook().referencesProps.refs).toEqual(before);
+    expect(RenderHook().referencesProps.removalProblems[key]).toContain('Используют: Олег');
+    await RenderHook().referencesProps.onRemove(key);
+    expect(RenderHook().referencesProps.refs).toEqual(before);
+    expect(RenderHook().ideaProps.idea).toBe('Несохранённая идея');
+    expect(api.save).not.toHaveBeenCalled();
+  });
+  it('при ошибке или повреждении кастинга оставляет файл; новый файл можно убрать без чтения кастинга', async () => {
+    const { key, form } = await withFiles();
+    castView.mockRejectedValueOnce(new Error('Нет доступа'));
+    await form.referencesProps.onRemoveFile(key, 501);
+    expect(RenderHook().referencesProps.refs[0].files).toHaveLength(2);
+    castView.mockResolvedValue({ cast: null, problems: ['Файл повреждён'] });
+    await RenderHook().referencesProps.onRemoveFile(key, 501);
+    expect(RenderHook().referencesProps.refs[0].files).toHaveLength(2);
+    await RenderHook().referencesProps.onRemoveFile(key, 502);
+    expect(RenderHook().referencesProps.refs[0].files.map((file) => file.key)).toEqual([501]);
+    expect(castView).toHaveBeenCalledTimes(2);
+  });
+  it('проверяет свежее использование при повторе и сохраняет соседнюю правку во время чтения', async () => {
+    const { key, form } = await withFiles();
+    let finish!: (value: unknown) => void;
+    castView.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+    );
+    const removing = form.referencesProps.onRemoveFile(key, 501);
+    form.ideaProps.onChange('Идея изменена во время проверки');
+    RenderHook();
+    finish({ cast: { entities: [] }, problems: [] });
+    await removing;
+    expect(RenderHook().referencesProps.refs[0].files.map((file) => file.key)).toEqual([502]);
+    expect(RenderHook().ideaProps.idea).toBe('Идея изменена во время проверки');
+  });
+  it('обложка предлагает новые и сохранённые изображения всех референсов без изменения формы', async () => {
+    const { form } = await withFiles();
+    expect(form.coverGenerationProps.referenceInput.images.map((image) => image.path)).toEqual(['/project-a/source/characters/hero.png', '/uploads/new.png']);
+    expect(api.save).not.toHaveBeenCalled();
+  });
+});

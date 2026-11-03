@@ -1,0 +1,9 @@
+{
+  "description": "source_review с лишним полем.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "source_receipt_missing при неверном source_review"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,1 @@
+export { MontagePlayerPage } from './MontagePlayerPage';

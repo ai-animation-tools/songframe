@@ -7,8 +7,14 @@ import UndoIcon from '@mui/icons-material/Undo';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { ComponentsApi, InstallPackage, InstallSnapshot, Selection, Snapshot } from '@platform/components';
-import { componentTexts as text } from '@shared/texts/components';
+import type {
+  ComponentInstallation as InstallSnapshot,
+  ComponentPackage as InstallPackage,
+  ComponentsSelection as Selection,
+  ComponentsSnapshot as Snapshot
+} from '@shared/components';
+import { componentTexts as text } from '@shared/texts/component-manager';
+import { useApp } from '../../state';
 import { ActionButton } from '../../components/ActionButton';
 import { PageActionBar } from '../../components/PageActionBar';
 import { ComponentCard, componentNeedsDownload, formatBytes } from './components';
@@ -25,8 +31,12 @@ interface ComponentProblem {
 
 /** Страница только читает состояние автоматического менеджера: mount и polling не запускают probes.
  * Проверками при старте и после изменения компонентов владеет Go; уход со страницы их не отменяет.
+ * Работает через window.api.components (D-027); папка по умолчанию — components в каталоге состояния.
  */
-export function ComponentsPage({ api, defaultDirectory }: { api: ComponentsApi; defaultDirectory: string }) {
+export function ComponentsPage() {
+  const api = window.api.components;
+  const { state: app } = useApp();
+  const defaultDirectory = app ? `${app.localDir}/components` : '';
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [packages, setPackages] = useState<InstallPackage[]>([]);
   const [installation, setInstallation] = useState<InstallSnapshot | null>(null);
@@ -133,7 +143,10 @@ export function ComponentsPage({ api, defaultDirectory }: { api: ComponentsApi; 
   const displayedProblem = problem ?? (snapshot?.problem ? { message: text.profileProblem, details: snapshot.problem } : null);
   return (
     <Stack spacing={2}>
-      <PageActionBar title={text.title}>
+      <PageActionBar>
+        <Typography variant="h5" sx={{ flex: 1 }}>
+          {text.title}
+        </Typography>
         {safeReturn && (
           <ActionButton startIcon={<ArrowBackIcon />} onClick={() => navigate(safeReturn)}>
             {text.return}

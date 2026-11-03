@@ -1,0 +1,66 @@
+{
+  "error": null,
+  "result": {
+    "version": 2,
+    "status": "Разметка подтверждена на слух.",
+    "source": "source/track.mp3",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "duration_decoded": null,
+    "duration_container": null,
+    "clock": "Секунды от начала декодированного звука, не SMPTE",
+    "lines": [
+      {
+        "id": 1,
+        "source_line": 2,
+        "start": 8,
+        "end": 12,
+        "verified": true,
+        "note": ""
+      },
+      {
+        "id": 2,
+        "source_line": 3,
+        "start": 12,
+        "end": 16,
+        "verified": true,
+        "note": ""
+      },
+      {
+        "id": 3,
+        "source_line": 4,
+        "start": 16,
+        "end": 20,
+        "verified": true,
+        "note": ""
+      }
+    ],
+    "sections": [
+      {
+        "name": "Вступление",
+        "start": 0,
+        "end": 8
+      },
+      {
+        "name": "Куплет",
+        "start": 8,
+        "end": 20
+      },
+      {
+        "name": "Проигрыш",
+        "start": 20,
+        "end": 30
+      }
+    ],
+    "candidates": [],
+    "line_order": [
+      2,
+      3,
+      4
+    ]
+  },
+  "resave": {
+    "error": null,
+    "sameResult": true,
+    "sameBytes": true
+  }
+}

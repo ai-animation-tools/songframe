@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -15,11 +14,6 @@ type apiContractFixtures struct {
 		ID       string          `json:"id"`
 		Expected json.RawMessage `json:"expected"`
 	} `json:"appStates"`
-	Snapshots []struct {
-		ID       string            `json:"id"`
-		Files    map[string]string `json:"files"`
-		Expected json.RawMessage   `json:"expected"`
-	} `json:"snapshots"`
 }
 
 // readAPIContracts загружает единственный эталон wire-контракта из самого checkout.
@@ -59,7 +53,7 @@ func assertContractJSON(t *testing.T, actual any, expected json.RawMessage) {
 // TestContractAppStateMarshal закрепляет и реальный пустой State, и заполненную форму DTO.
 // Второй вариант проверяет wire-формат истории, не объявляя хранение истории реализованным.
 func TestContractAppStateMarshal(t *testing.T) {
-	service := NewShellService(fakeProfile{path: "Профиль теста 🌿"}, false, nil)
+	service := NewAppService(fakeProfile{path: "Профиль теста 🌿"}, false, nil)
 	service.platform = "linux"
 	empty, err := service.State()
 	if err != nil {
@@ -81,44 +75,6 @@ func TestContractAppStateMarshal(t *testing.T) {
 				t.Fatal("нет производителя DTO для fixture")
 			}
 			assertContractJSON(t, state, fixture.Expected)
-		})
-	}
-}
-
-// TestContractSnapshotMarshal проходит настоящий Reader и ProjectService до JSON-маршалинга.
-// Подменён только адрес медиасервера; временные пути нормализуются к явному маркеру fixture.
-func TestContractSnapshotMarshal(t *testing.T) {
-	for _, fixture := range readAPIContracts(t).Snapshots {
-		t.Run(fixture.ID, func(t *testing.T) {
-			root := filepath.Join(t.TempDir(), "Проект с пробелами 🌿")
-			for path, content := range fixture.Files {
-				target := filepath.Join(root, filepath.FromSlash(path))
-				if err := os.MkdirAll(filepath.Dir(target), 0700); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(target, []byte(content), 0600); err != nil {
-					t.Fatal(err)
-				}
-			}
-			registry := &registrySpy{}
-			snapshot, err := NewProjectService(registry).Open(root)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if snapshot.Path != root {
-				t.Fatalf("путь проекта: %s", snapshot.Path)
-			}
-			snapshot.Path = "<PROJECT>"
-			if snapshot.Track != nil {
-				if snapshot.Track.Path != filepath.Join(root, "source", "track.mp3") {
-					t.Fatalf("путь трека: %s", snapshot.Track.Path)
-				}
-				snapshot.Track.Path = "<PROJECT>/source/track.mp3"
-			}
-			if snapshot.Blocked && len(registry.paths) != 0 {
-				t.Fatal("частично опубликованный трек зарегистрирован")
-			}
-			assertContractJSON(t, snapshot, fixture.Expected)
 		})
 	}
 }

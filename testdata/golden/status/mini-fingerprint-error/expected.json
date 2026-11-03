@@ -1,0 +1,23 @@
+{
+  "path": "<project>",
+  "state": "in_production",
+  "name": "Мини-клип",
+  "animaticVideo": "mini-animatic.mp4",
+  "checks": {
+    "marker": true,
+    "sources": true,
+    "timing": true,
+    "cast": true,
+    "treatment": true,
+    "scenes": true,
+    "shotsTotal": 3,
+    "shotsDone": 0,
+    "animaticBuilt": true,
+    "animaticFresh": false,
+    "animaticApproved": false
+  },
+  "problems": [
+    "Постановку планов не удалось сверить с принятыми комплектами: M02: изменения состояния должны быть объектом.",
+    "Постановка изменена после приёмки: M01, M02, M03. Нужно новое производство этих планов."
+  ]
+}

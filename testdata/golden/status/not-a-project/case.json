@@ -1,0 +1,9 @@
+{
+  "description": "Папка без plan/project.json.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "state=invalid"
+  ],
+  "stubbedMedia": []
+}

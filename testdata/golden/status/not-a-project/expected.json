@@ -1,0 +1,22 @@
+{
+  "path": "<project>",
+  "state": "invalid",
+  "name": "project",
+  "animaticVideo": null,
+  "checks": {
+    "marker": false,
+    "sources": false,
+    "timing": false,
+    "cast": false,
+    "treatment": false,
+    "scenes": false,
+    "shotsTotal": 0,
+    "shotsDone": 0,
+    "animaticBuilt": false,
+    "animaticFresh": false,
+    "animaticApproved": false
+  },
+  "problems": [
+    "Нет plan/project.json с названием проекта."
+  ]
+}

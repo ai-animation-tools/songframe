@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "shot": "M03",
+  "kind": "derived_video",
+  "accepted_edit": {
+    "fps": 30,
+    "frames": 90,
+    "video": {
+      "path": "video.mp4",
+      "sha256": "1f04e8682c754a1ee1b2c249a3833e724c2add898f30fe37a970376f78d998c1"
+    }
+  },
+  "generation": {
+    "source_shot": "M01",
+    "source_scene_sha256": "63a34827981b7b198f1fc1aa2dd1a34f420553b13a05b080a4b925c76a35ac60",
+    "source_accepted_video_sha256": "747a885c9b229c5f4e631940de5f9065ddaf83deb145e7aa62e2992497558d1a"
+  }
+}

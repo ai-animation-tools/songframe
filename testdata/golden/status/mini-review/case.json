@@ -1,0 +1,9 @@
+{
+  "description": "Как mini-complete, но аниматик на просмотре.",
+  "call": "computeStatus",
+  "project": "project",
+  "covers": [
+    "animaticNotApproved"
+  ],
+  "stubbedMedia": []
+}

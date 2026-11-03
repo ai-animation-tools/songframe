@@ -13,12 +13,13 @@ import (
 	"image/png"
 	"math"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"songframe-go/internal/process"
 )
 
 // FFmpegPair содержит только явно выбранные абсолютные пути. Проверка не ищет
@@ -57,25 +58,6 @@ type mediaFailure struct{ status, reason string }
 
 func (e *mediaFailure) Error() string { return e.reason }
 
-// mediaBuffer принимает весь поток процесса, но сохраняет только ограниченный префикс.
-// Превышение лимита обнаруживается после Run и никогда не выдаётся как успешный JSON/PCM.
-type mediaBuffer struct {
-	data     []byte
-	limit    int
-	overflow bool
-}
-
-func (b *mediaBuffer) Write(p []byte) (int, error) {
-	n := len(p)
-	remaining := b.limit - len(b.data)
-	if len(p) > remaining {
-		b.overflow = true
-		p = p[:remaining]
-	}
-	b.data = append(b.data, p...)
-	return n, nil
-}
-
 // mediaRunner владеет временными файлами одного вызова и кэшем списков возможностей.
 // Он не разделяется между горутинами; все дочерние процессы наследуют отмену caller.
 type mediaRunner struct {
@@ -87,41 +69,41 @@ type mediaRunner struct {
 	listErrors map[string]error
 }
 
-// run запускает только указанный бинарник без shell, ограничивая время и оба потока.
+// run запускает только указанный бинарник без shell через общий process.Run, ограничивая
+// время и оба потока. Превышение лимита вывода никогда не выдаётся как успешный JSON/PCM:
+// хвост потока бесполезен, поэтому overflow — ошибка. Отмена caller убивает и потомков.
 // WaitDelay не позволяет оставленному потомком открытому pipe удерживать отменённый probe.
 func (r *mediaRunner) run(program string, args ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(r.ctx, r.timeout)
-	defer cancel()
-	command := exec.CommandContext(ctx, program, args...)
-	configureMediaProcess(command)
-	command.WaitDelay = 250 * time.Millisecond
-	stdout := &mediaBuffer{limit: mediaOutputLimit}
-	stderr := &mediaBuffer{limit: 16 * 1024}
-	command.Stdout = stdout
-	command.Stderr = stderr
-	err := command.Run()
+	result, err := process.Run(r.ctx, process.Command{
+		Path:        program,
+		Args:        args,
+		Timeout:     r.timeout,
+		StdoutLimit: mediaOutputLimit,
+		StderrLimit: 16 * 1024,
+		WaitDelay:   250 * time.Millisecond,
+	})
 	if r.ctx.Err() != nil {
 		return nil, &mediaFailure{"cancelled", "Проверка отменена: " + r.ctx.Err().Error()}
 	}
-	if ctx.Err() != nil {
+	if errors.Is(err, process.ErrTimeout) {
 		return nil, &mediaFailure{"error", "Превышено время ожидания медиакоманды."}
 	}
-	if stdout.overflow || stderr.overflow {
+	if result.StdoutTruncated || result.StderrTruncated {
 		return nil, &mediaFailure{"error", "Медиакоманда превысила допустимый объём вывода."}
 	}
 	if err != nil {
 		status := "error"
-		var exit *exec.ExitError
+		var exit *process.ExitError
 		if errors.As(err, &exit) {
 			status = "incompatible"
 		}
-		detail := strings.TrimSpace(string(stderr.data))
+		detail := strings.TrimSpace(string(result.Stderr))
 		if detail == "" {
 			detail = err.Error()
 		}
 		return nil, &mediaFailure{status, "Ошибка медиакоманды: " + detail}
 	}
-	return stdout.data, nil
+	return result.Stdout, nil
 }
 
 // ff добавляет общий неинтерактивный режим; существующие файлы probe не перезаписываются.

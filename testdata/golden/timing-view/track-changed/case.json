@@ -1,0 +1,11 @@
+{
+  "description": "sha256 разметки не совпадает с треком манифеста.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "trackChanged"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

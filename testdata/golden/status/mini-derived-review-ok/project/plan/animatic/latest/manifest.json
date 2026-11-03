@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "version": "latest",
+  "path_base": "project_root",
+  "fps": 30,
+  "total_frames": 270,
+  "video_duration": 9,
+  "source_audio": "source/track.mp3",
+  "source_audio_sha256": "fb0797e290b774181fa7fdbeadc0bd9849889152fca5dc3555a766bb33dfae2b",
+  "scene_registry_sha256": "643853843ee7df4c41b9d071732d5d25308bf1a9482d40d2d3ee288b50f692d6",
+  "project_inputs": {
+    "name": "Мини-клип",
+    "animatic_video": "mini-animatic.mp4"
+  },
+  "source_hashes": {
+    "source/track.mp3": "fb0797e290b774181fa7fdbeadc0bd9849889152fca5dc3555a766bb33dfae2b",
+    "assets/shots/M01/video.mp4": "6917a795297bd9db02e5cdad2ad9b32c87a24aedf86b9047d9fc95fa9f79dfe7",
+    "assets/shots/M02/video.mp4": "cd5d3b966472e4af81040b011c75adadae5398980a1a12114820f14af93c2eb3",
+    "assets/shots/M03/video.mp4": "1f04e8682c754a1ee1b2c249a3833e724c2add898f30fe37a970376f78d998c1"
+  },
+  "video_file": "mini-animatic.mp4",
+  "video_sha256": "a1addddfbcd6d9f50843931e0fa5d3853c43397d6d80272a62cc55ff318ed38f",
+  "shots": [
+    {
+      "id": "M01",
+      "title": "План M01",
+      "sequence": "verse",
+      "start": "0",
+      "end": "3",
+      "frames": 90,
+      "media": "video",
+      "path": "assets/shots/M01/video.mp4",
+      "sha256": "6917a795297bd9db02e5cdad2ad9b32c87a24aedf86b9047d9fc95fa9f79dfe7"
+    },
+    {
+      "id": "M02",
+      "title": "План M02",
+      "sequence": "verse",
+      "start": "3",
+      "end": "6",
+      "frames": 90,
+      "media": "video",
+      "path": "assets/shots/M02/video.mp4",
+      "sha256": "cd5d3b966472e4af81040b011c75adadae5398980a1a12114820f14af93c2eb3"
+    },
+    {
+      "id": "M03",
+      "title": "План M03",
+      "sequence": "verse",
+      "start": "6",
+      "end": "9",
+      "frames": 90,
+      "media": "video",
+      "path": "assets/shots/M03/video.mp4",
+      "sha256": "1f04e8682c754a1ee1b2c249a3833e724c2add898f30fe37a970376f78d998c1"
+    }
+  ]
+}

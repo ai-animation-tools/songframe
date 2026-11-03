@@ -14,6 +14,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	shell "songframe-go/internal/app"
 	"songframe-go/internal/components"
+	"songframe-go/internal/jobs"
 	"songframe-go/internal/media"
 	"songframe-go/internal/project"
 	"songframe-go/internal/store"
@@ -81,13 +82,25 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer native.Close()
-	projects := shell.NewProjectService(mediaServer)
+	defer native.ServiceShutdown()
+	// Профиль содержит временные изображения и компоненты, которые страницы показывают по URL.
+	if err := mediaServer.AllowRoot(profilePath); err != nil {
+		return err
+	}
+	projects := shell.NewProjectService(mediaServer, profilePath)
 	componentManager, err := components.NewManager(profilePath)
 	if err != nil {
 		return err
 	}
 	defer componentManager.Cancel()
+	// Менеджер заданий восстанавливает прошлые сеансы (выполнявшиеся — interrupted) и при закрытии
+	// останавливает свои процессы вместе с потомками.
+	jobManager := jobs.New(profilePath, jobs.Options{})
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = jobManager.Shutdown(ctx, "")
+	}()
 	componentService := shell.NewComponentsService(componentManager)
 	defer componentService.ServiceShutdown()
 	var desktop *application.App
@@ -102,8 +115,13 @@ func run() error {
 			return err
 		}
 	}
-	service := shell.NewShellService(profile, true, ready)
-	services := []application.Service{application.NewService(service), application.NewService(projects), application.NewService(native), application.NewService(componentService)}
+	service := shell.NewAppService(profile, true, ready)
+	files := shell.NewShellService(mediaServer, func(path string) error { return desktop.Browser.OpenFile(path) })
+	services := []application.Service{
+		application.NewService(service), application.NewService(files), application.NewService(projects),
+		application.NewService(native), application.NewService(componentService), application.NewService(shell.NewJobsService(jobManager)),
+		application.NewService(shell.NewTimingService()),
+	}
 	var nativeCheck *shell.NativeCheckService
 	windowURL := "/"
 	if *checkDir != "" {
@@ -130,7 +148,7 @@ func run() error {
 		Assets:      application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
 	})
 	shell.ConfigureNativeDesktop(native, desktop)
-	shell.ConfigureNativeMedia(native, mediaServer.ContainsURL)
+	shell.ConfigureNativeMedia(native, mediaServer.ContainsURL, mediaServer.AllowFile)
 	window := desktop.Window.NewWithOptions(application.WebviewWindowOptions{
 		// Плотный рабочий интерфейс рассчитан на окно не меньше 1320×860; старт совпадает с нижней границей.
 		Title: "SongFrame — Go", Width: 1320, Height: 860, MinWidth: 1320, MinHeight: 860,

@@ -1,16 +1,27 @@
 package app
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"songframe-go/internal/golden"
+	"songframe-go/internal/store"
 )
 
 // registrySpy проверяет, что сервис регистрирует только выбранный файл и передаёт ошибку пользователю.
 type registrySpy struct {
 	paths []string
+	roots []string
 	err   error
+}
+
+func (r *registrySpy) AllowRoot(path string) error {
+	r.roots = append(r.roots, path)
+	return nil
 }
 
 func (r *registrySpy) Register(path string) (string, error) {
@@ -21,7 +32,7 @@ func (r *registrySpy) Register(path string) (string, error) {
 func TestProjectServiceMediaValidation(t *testing.T) {
 	root := t.TempDir()
 	registry := &registrySpy{}
-	service := NewProjectService(registry)
+	service := NewProjectService(registry, t.TempDir())
 	for _, extension := range []string{".wav", ".MP3", ".mp4", ".webm"} {
 		path := filepath.Join(root, "Файл с пробелами"+extension)
 		if err := os.WriteFile(path, []byte("fixture"), 0600); err != nil {
@@ -51,36 +62,80 @@ func TestProjectServiceMediaValidation(t *testing.T) {
 }
 
 // Незавершённый проект не регистрирует трек; исправный snapshot получает URL только в памяти.
-func TestProjectServiceOpenRegistersOnlyReadableProject(t *testing.T) {
-	root := t.TempDir()
-	for path, content := range map[string]string{
-		"plan/project.json": `{"name":"Копия"}`,
-		"source/text.md":    "Текст\n",
-		"source/track.mp3":  "fixture",
-	} {
-		target := filepath.Join(root, filepath.FromSlash(path))
-		if err := os.MkdirAll(filepath.Dir(target), 0700); err != nil {
-			t.Fatal(err)
+// TestProjectServiceOpenMatchesGolden проходит все эталоны status: open либо отклоняет папку
+// текстом оригинала, либо возвращает тот же статус, что status, и делает проект текущим.
+func TestProjectServiceOpenMatchesGolden(t *testing.T) {
+	for _, item := range golden.Load(t, "status") {
+		if !item.HasProject() {
+			continue
 		}
-		if err := os.WriteFile(target, []byte(content), 0600); err != nil {
-			t.Fatal(err)
+		t.Run(item.Name, func(t *testing.T) {
+			root := item.CopyProject(t)
+			var open struct {
+				Error        *string `json:"error"`
+				SameAsStatus *bool   `json:"sameAsStatus"`
+				Throws       any     `json:"throws"`
+			}
+			if err := json.Unmarshal(item.Read(t, "expected-open.json"), &open); err != nil {
+				t.Fatal(err)
+			}
+			local := t.TempDir()
+			roots := &registrySpy{}
+			service := NewProjectService(roots, local)
+			value, err := service.Open(root)
+			if open.Error != nil || open.Throws != nil {
+				if err == nil {
+					t.Fatal("открыт проект, который оригинал отклоняет")
+				}
+				if open.Error != nil && strings.ReplaceAll(err.Error(), root, "<project>") != *open.Error {
+					t.Fatalf("текст ошибки: %q", err.Error())
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			golden.AssertValue(t, item.Expected(t), value, root)
+			if current, _ := store.NewLocalState(local).Current(); current != root || len(roots.roots) != 1 {
+				t.Fatalf("текущий проект %q, корни %v", current, roots.roots)
+			}
+		})
+	}
+}
+
+func TestProjectServiceHistoryAndClose(t *testing.T) {
+	item := golden.Load(t, "status")[0]
+	for _, candidate := range golden.Load(t, "status") {
+		if candidate.Name == "sample" {
+			item = candidate
 		}
 	}
-	registry := &registrySpy{}
-	service := NewProjectService(registry)
-	value, err := service.Open(root)
-	if err != nil || value.Track == nil || value.Track.URL == "" || len(registry.paths) != 1 {
-		t.Fatalf("читаемый проект: %+v %v", value, err)
-	}
-	journal := filepath.Join(root, "plan", "derived-history", "pending", "journal.json")
-	if err := os.MkdirAll(filepath.Dir(journal), 0700); err != nil {
+	root := item.CopyProject(t)
+	local := t.TempDir()
+	service := NewProjectService(&registrySpy{}, local)
+	if _, err := service.Open(root); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(journal, []byte(`{"state":"publishing"}`), 0600); err != nil {
+	state := store.NewLocalState(local)
+	if history, _ := state.History(); len(history) != 1 || history[0].Path != root {
+		t.Fatalf("история: %+v", history)
+	}
+	if err := service.Close(); err != nil {
 		t.Fatal(err)
 	}
-	value, err = service.Open(root)
-	if err != nil || !value.Blocked || value.Track != nil || len(registry.paths) != 1 {
-		t.Fatalf("заблокированный проект зарегистрировал медиа: %+v %v", value, err)
+	if current, _ := state.Current(); current != "" {
+		t.Fatalf("после close текущий %q", current)
+	}
+	if _, err := service.Open(root); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.Forget(root); err != nil {
+		t.Fatal(err)
+	}
+	if history, _ := state.History(); len(history) != 0 {
+		t.Fatalf("после forget: %+v", history)
+	}
+	if current, _ := state.Current(); current != "" {
+		t.Fatalf("forget не снял текущий %q", current)
 	}
 }

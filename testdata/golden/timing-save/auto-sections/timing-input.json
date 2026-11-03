@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "status": "Разметка; подтверждено на слух 1 из 3 строк.",
+  "source": "source/track.mp3",
+  "sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+  "duration_decoded": 30,
+  "duration_container": 30.040816,
+  "clock": "Секунды от начала декодированного звука, не SMPTE",
+  "lines": [
+    {
+      "id": 1,
+      "source_line": 2,
+      "start": 3,
+      "end": 6,
+      "verified": true
+    },
+    {
+      "id": 2,
+      "source_line": 3,
+      "start": 6.5,
+      "end": 9,
+      "verified": true
+    },
+    {
+      "id": 3,
+      "source_line": 4,
+      "start": 9,
+      "end": 12.3,
+      "verified": true
+    }
+  ],
+  "sections": [
+    {
+      "name": "Вступление",
+      "start": 0,
+      "end": 3,
+      "note": "без вокала"
+    },
+    {
+      "name": "Куплет",
+      "start": 3,
+      "end": 12.3,
+      "note": "строки 1–3"
+    },
+    {
+      "name": "Кода",
+      "start": 25,
+      "end": 30,
+      "origin": "manual"
+    }
+  ]
+}

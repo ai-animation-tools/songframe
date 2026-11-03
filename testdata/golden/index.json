@@ -1,0 +1,568 @@
+[
+  {
+    "domain": "status",
+    "name": "sample",
+    "description": "Образец «Пробный клип» как в Git: M01, M02 приняты, M03–M05 без комплектов, MP4 аниматика нет.",
+    "covers": [
+      "state=in_production (shotsDone<shotsTotal)",
+      "animaticBuilt без видео"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "missing-path",
+    "description": "Путь не существует.",
+    "covers": [
+      "state=invalid",
+      "name=basename(path)",
+      "open: ошибка"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "not-a-project",
+    "description": "Папка без plan/project.json.",
+    "covers": [
+      "state=invalid"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "marker-without-name",
+    "description": "plan/project.json без name.",
+    "covers": [
+      "state=invalid (пустое имя)"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "marker-broken-json",
+    "description": "plan/project.json — битый JSON.",
+    "covers": [
+      "state=invalid (битый маркер)"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "marker-only",
+    "description": "Только маркер с именем и animatic_video числом.",
+    "covers": [
+      "state=empty",
+      "animaticVideo=null при нестроковом значении",
+      "проблема аниматика без сценария не попадает в status"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "sources-damaged",
+    "description": "Образец с битым source/manifest.json: кастинг не читается, отпечатки без начального состояния.",
+    "covers": [
+      "damagedSources",
+      "state=empty при готовых планах",
+      "readCast=false → отпечатки без initial_state → staleShots"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "sources-incomplete",
+    "description": "Образец без idea в манифесте.",
+    "covers": [
+      "incompleteSources",
+      "state=empty"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "no-timing",
+    "description": "Образец без plan/audio/timing.json.",
+    "covers": [
+      "state=sourced"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "timing-empty-lines",
+    "description": "timing.json с пустым lines.",
+    "covers": [
+      "timingLinesMissing",
+      "state=sourced"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "timing-broken-json",
+    "description": "timing.json — битый JSON.",
+    "covers": [
+      "timingLinesMissing для битого JSON",
+      "state=sourced"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "no-scenes-damaged-cast-treatment",
+    "description": "Без scenes.json, cast.json и treatment.json битые, комплекты остались.",
+    "covers": [
+      "damagedCast",
+      "damagedTreatment (пустой sequences)",
+      "state=timed",
+      "shotsDone=число комплектов без реестра",
+      "проблема аниматика не попадает в status"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "scenes-damaged",
+    "description": "scenes.json — битый JSON, комплекты есть.",
+    "covers": [
+      "damagedScenes",
+      "state=timed",
+      "shotsDone=done.size без реестра"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "scenes-empty",
+    "description": "scenes.json с пустым scenes.",
+    "covers": [
+      "damagedScenes для пустого списка"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "no-kits",
+    "description": "Образец без assets/shots/M01, M02.",
+    "covers": [
+      "state=scripted (kits=0)"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "no-production-status",
+    "description": "Без plan/production-status.json: комплекты не приняты.",
+    "covers": [
+      "staleShots при отсутствии отпечатков",
+      "shotsDone=0 при kits>0"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "orphan-and-scene-changed",
+    "description": "Изменена постановка M01 и добавлен комплект M99 вне реестра; каталог без manifest.json не считается.",
+    "covers": [
+      "staleShots (scene_changed)",
+      "orphanKits",
+      "каталог без manifest.json не комплект"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-complete",
+    "description": "Мини-проект: все планы приняты, аниматик свежий и принят.",
+    "covers": [
+      "state=complete",
+      "derived ok через generation",
+      "animaticFresh=true"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-review",
+    "description": "Как mini-complete, но аниматик на просмотре.",
+    "covers": [
+      "animaticNotApproved"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-animatic-stale",
+    "description": "Трек заменён после сборки аниматика.",
+    "covers": [
+      "staleAnimatic (входной хеш)",
+      "animaticApproved=false у несвежей сборки"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-animatic-project-inputs",
+    "description": "Изменено имя проекта после сборки: project_inputs не совпадает.",
+    "covers": [
+      "staleAnimatic (project_inputs)"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-animatic-video-missing",
+    "description": "Нет MP4 аниматика.",
+    "covers": [
+      "animaticBuilt=true, fresh=false без видео"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-animatic-not-built",
+    "description": "Нет plan/animatic/latest/manifest.json.",
+    "covers": [
+      "animaticNotBuilt"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-animatic-manifest-corrupt",
+    "description": "Манифест аниматика — битый JSON.",
+    "covers": [
+      "animaticNotBuilt при битом манифесте"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-registry-changed",
+    "description": "scenes.json переписан с иным форматированием: реестр аниматика не совпадает, отпечатки те же.",
+    "covers": [
+      "staleAnimatic по SHA байтов scenes.json",
+      "отпечаток плана не зависит от форматирования"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-source-changed",
+    "description": "Квитанция generation производного M03 ссылается на прежний ролик M01.",
+    "covers": [
+      "derivedShotsNeedReview (source_changed)"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-link-changed",
+    "description": "M03 в реестре производный, а комплект — обычный.",
+    "covers": [
+      "derivedShotsNeedReview (derived_link_changed)"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-receipt-missing",
+    "description": "В generation M03 нет source_accepted_video_sha256.",
+    "covers": [
+      "derivedShotsNeedReview (source_receipt_missing)"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-review-ok",
+    "description": "Действующее подтверждение source_review перекрывает устаревшую квитанцию generation.",
+    "covers": [
+      "source_review приоритетнее generation",
+      "state=complete"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-review-source-changed",
+    "description": "source_review подтверждал другой ролик источника.",
+    "covers": [
+      "source_changed через source_review"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-review-invalid",
+    "description": "source_review с лишним полем.",
+    "covers": [
+      "source_receipt_missing при неверном source_review"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-unlinked",
+    "description": "Комплект M03 производный, а в реестре derived_from нет.",
+    "covers": [
+      "derived_link_changed без derived_from в реестре"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-review-link-changed",
+    "description": "source_review подтверждает другой источник (M02).",
+    "covers": [
+      "derived_link_changed через source_review"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-review-own-changed",
+    "description": "source_review подтверждал другие байты собственного ролика M03.",
+    "covers": [
+      "source_receipt_missing при смене собственного ролика"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-derived-source-unavailable",
+    "description": "Комплект источника M01 удалён.",
+    "covers": [
+      "source_unavailable",
+      "kits<total"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-scene-changed-source",
+    "description": "Изменена постановка источника M01: M01 устарел, M03 — источник недоступен.",
+    "covers": [
+      "staleShots и derivedShotsNeedReview вместе",
+      "staleAnimatic не сообщается при shotsDone<total"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-fingerprint-error",
+    "description": "state_changes плана — строка: отпечатки не вычисляются.",
+    "covers": [
+      "sceneComparisonFailed",
+      "все комплекты stale (scene_changed)"
+    ]
+  },
+  {
+    "domain": "status",
+    "name": "mini-scene-ids-non-string",
+    "description": "Реестр содержит не-объект среди планов: оригинал бросает исключение.",
+    "covers": [
+      "computeStatus бросает TypeError на не-объекте в scenes (projects.open тоже)"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "sample",
+    "description": "Разметка образца.",
+    "covers": [
+      "timing как в файле",
+      "trackPath",
+      "duration из манифеста"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "not-a-project",
+    "description": "Пустая папка.",
+    "covers": [
+      "lyricsRequired",
+      "все поля null"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "no-text",
+    "description": "Нет source/text.md.",
+    "covers": [
+      "lyricsRequired",
+      "lyrics=[]",
+      "lyricsChanged при пустом тексте"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "text-problems",
+    "description": "Текст с markdown, ошибочным заголовком, неразмеченной частью и CRLF.",
+    "covers": [
+      "invalidHeader",
+      "markdown",
+      "unmarkedSections",
+      "разделители CRLF/CR",
+      "lyricsChanged"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "only-headers",
+    "description": "Текст без строк песни.",
+    "covers": [
+      "noLines"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "no-timing",
+    "description": "Нет timing.json.",
+    "covers": [
+      "timing=null без проблемы"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "timing-broken-json",
+    "description": "timing.json — битый JSON.",
+    "covers": [
+      "unreadableTiming"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "timing-lines-invalid",
+    "description": "lines содержит null.",
+    "covers": [
+      "unreadableTiming (lines)"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "timing-lines-missing",
+    "description": "Нет lines.",
+    "covers": [
+      "unreadableTiming (нет lines)"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "timing-candidates-invalid",
+    "description": "Кандидат без reason.",
+    "covers": [
+      "unreadableTiming (candidates)"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "timing-candidates-valid",
+    "description": "Допустимые кандидаты сохраняются в timing.",
+    "covers": [
+      "candidates проходят проверку"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "timing-line-order-invalid",
+    "description": "line_order с дробным числом.",
+    "covers": [
+      "unreadableTiming (line_order)"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "timing-sections-invalid",
+    "description": "Секция с origin вне списка.",
+    "covers": [
+      "unreadableTiming (sections)"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "timing-sections-not-number",
+    "description": "Секция со строковой границей.",
+    "covers": [
+      "unreadableTiming (Number.isFinite строки)"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "track-changed",
+    "description": "sha256 разметки не совпадает с треком манифеста.",
+    "covers": [
+      "trackChanged"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "lyrics-changed",
+    "description": "Строка разметки указывает на заголовок.",
+    "covers": [
+      "lyricsChanged"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "no-track-no-manifest",
+    "description": "Нет track.mp3 и manifest.json.",
+    "covers": [
+      "trackPath=null",
+      "trackSha256=null",
+      "duration=null",
+      "trackChanged не проверяется без манифеста"
+    ]
+  },
+  {
+    "domain": "timing-view",
+    "name": "manifest-wrong-schema",
+    "description": "Манифест schema_version 2.",
+    "covers": [
+      "readManifest=null при чужой версии"
+    ]
+  },
+  {
+    "domain": "timing-save",
+    "name": "sample-resave",
+    "description": "Сохранение разметки образца без правок.",
+    "covers": [
+      "ручные секции сохраняются",
+      "status полного подтверждения",
+      "line_order из текста"
+    ]
+  },
+  {
+    "domain": "timing-save",
+    "name": "edited",
+    "description": "Строки не по порядку, дроби, заметки, частичное подтверждение, без секций, кандидаты.",
+    "covers": [
+      "сортировка и перенумерация",
+      "округление до мс",
+      "trim note",
+      "withTimingVerification",
+      "status «подтверждено N из M»",
+      "duration_container из манифеста",
+      "sha256 из манифеста",
+      "кандидат подтверждённой строки удалён",
+      "секции с кандидатами «Не размечено»",
+      "line_order дополнен"
+    ]
+  },
+  {
+    "domain": "timing-save",
+    "name": "auto-sections",
+    "description": "Все строки подтверждены, секции старой автоматики пересчитываются, ручная сохраняется.",
+    "covers": [
+      "isAutoSection по подписи",
+      "смешанная карта",
+      "Финал без вокала",
+      "status полного подтверждения из частичного"
+    ]
+  },
+  {
+    "domain": "timing-save",
+    "name": "all-auto-origin",
+    "description": "Секции с origin auto полностью пересчитываются; разрыв между строками > 2 с.",
+    "covers": [
+      "Проигрыш после «…»",
+      "status «…; подтверждено на слух 2 из 3 строк.»",
+      "line_order сохраняет порядок редактора"
+    ]
+  },
+  {
+    "domain": "timing-save",
+    "name": "no-manifest",
+    "description": "Без source/manifest.json: sha256 и длительность из входа.",
+    "covers": [
+      "sha256 из timing",
+      "duration=null",
+      "проверка конца без длительности"
+    ]
+  },
+  {
+    "domain": "timing-save",
+    "name": "new-file",
+    "description": "timing.json ещё нет: файл создаётся.",
+    "covers": [
+      "создание файла",
+      "пустой status → «Разметка; …»",
+      "граница 0.3 с",
+      "duration_container=null → view.duration",
+      "clock перезаписывается"
+    ]
+  },
+  {
+    "domain": "timing-save",
+    "name": "validation-error",
+    "description": "Пересечение и слишком короткая строка: сохранение отклоняется, файл не меняется.",
+    "covers": [
+      "ошибка: проблемы через пробел",
+      "fileUnchanged"
+    ]
+  }
+]

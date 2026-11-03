@@ -1,0 +1,11 @@
+{
+  "description": "Манифест schema_version 2.",
+  "call": "viewTiming",
+  "project": "project",
+  "covers": [
+    "readManifest=null при чужой версии"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

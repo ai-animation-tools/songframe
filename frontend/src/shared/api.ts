@@ -16,6 +16,7 @@ import type { CoverGenerationApi } from './cover-generation';
 import type { AiAccess } from './ai-access';
 import type { VideoReviewApi } from './video-review';
 import type { UpdatesApi } from './updates';
+import type { ComponentsApi } from './components';
 import type {
   KeyframeNoteScope,
   AcceptOptions,
@@ -273,9 +274,19 @@ export interface Api {
     openPath(path: string): Promise<void>;
     /** Текст небольшого файла (текст песни, идея) для подстановки в форму. */
     readText(path: string): Promise<string>;
-    /** Абсолютный путь в URL локального протокола для <img> и <audio>. */
+    /** Абсолютный путь в URL локального медиасервера Go для <img>, <audio> и <video>; синхронно. */
     fileUrl(path: string): string;
-    /** Путь файла, перетащенного пользователем с диска; синтетический File возвращает пустую строку. */
-    pathForFile(file: File): string;
+    /**
+     * Файлы, перетащенные с диска на элемент с data-file-drop-target и этим id. Пути приходят
+     * событием нативного drop Wails уже после DOM drop; синтетический File пути не даёт.
+     */
+    onFilesDropped(listener: (drop: FilesDrop) => void): () => void;
   };
+  components: ComponentsApi;
+}
+
+/** Нативный drop: id целевого элемента и абсолютные пути файлов в порядке ОС. */
+export interface FilesDrop {
+  targetId: string;
+  paths: string[];
 }

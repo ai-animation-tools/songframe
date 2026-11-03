@@ -12,4 +12,4 @@ yarn test:release
 
 Job тестов сценария использует Node и Git, без установки Yarn-зависимостей. Для отдельно выбранных ESLint/Prettier команда `yarn install --immutable --mode=skip-build` устанавливает JavaScript-пакеты без postinstall Electron. Сборка поставок использует обычную установку зависимостей.
 
-Для подтверждения исходников инструмент принимает автоматический CI и полный ручной запуск с marker `CI · manual/all`. Частичные `manual/auto` и `manual/selected` не заменяют его: запускайте `gh workflow run CI --ref main -f "mode=Полный набор"`, когда перед выпуском требуется ручная полная проверка.
+Для подтверждения исходников инструмент принимает автоматический CI и полный ручной запуск с marker `CI · manual/all`. Частичные `manual/changes` и `manual/selected` не заменяют его: запускайте `gh workflow run CI --ref main -f "mode=Полный набор"`, когда перед выпуском требуется ручная полная проверка.

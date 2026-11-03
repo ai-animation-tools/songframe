@@ -142,7 +142,7 @@ test('состояние CI берёт последнюю попытку workflo
 
 test('состояние CI не заменяет автоматический результат частичным ручным успехом', () => {
   const automatic = { id: 1, name: 'CI', event: 'push', status: 'completed', conclusion: 'failure' };
-  for (const display_title of ['CI · manual/auto', 'CI · manual/selected', 'CI · manual/unknown', undefined]) {
+  for (const display_title of ['CI · manual/changes', 'CI · manual/selected', 'CI · manual/unknown', undefined]) {
     // Большие id и номер попытки не должны дать исключённому запуску преимущество при сортировке.
     const partial = { id: 100, name: 'CI', event: 'workflow_dispatch', display_title, run_attempt: 10, status: 'completed', conclusion: 'success' };
     for (const event of ['push', 'pull_request', undefined]) {

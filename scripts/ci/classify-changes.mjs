@@ -178,7 +178,7 @@ export class ManualInputError extends Error {}
 async function classifyManual(inputs, cwd) {
   if (inputs == null) inputs = {};
   if (typeof inputs !== 'object' || Array.isArray(inputs)) throw new ManualInputError('Параметры ручного CI должны быть объектом.');
-  const mode = inputs.mode === undefined ? 'Автоматически (последний коммит)' : inputs.mode;
+  const mode = inputs.mode === undefined ? 'Выбранные группы' : inputs.mode;
   if (mode === 'Полный набор') return full('manual-full');
   if (mode === 'Выбранные группы') {
     const flags = CI_FLAGS.filter((flag) => {
@@ -190,16 +190,16 @@ async function classifyManual(inputs, cwd) {
     if (!flags.length) throw new ManualInputError('В режиме «Выбранные группы» отметьте хотя бы одну группу проверок.');
     return withPreparation(scope(flags, flags.includes('node') ? null : [], flags.includes('python') ? null : [], 'manual-selected'));
   }
-  if (mode !== 'Автоматически (последний коммит)')
-    throw new ManualInputError('Неизвестный режим ручного CI. Выберите автоматический режим, выбранные группы или полный набор.');
+  if (mode !== 'По последнему коммиту')
+    throw new ManualInputError('Неизвестный режим ручного CI. Выберите группы, проверку по последнему коммиту или полный набор.');
   try {
     // HEAD^ — первый родитель merge-коммита; выбранный ref берётся из checkout, а не из payload push/PR.
     const { stdout } = await execute('git', ['rev-parse', 'HEAD', 'HEAD^'], { cwd });
     const [head, base] = stdout.trim().split(/\s+/);
     const result = await classifyRange([base, head], cwd);
-    return { ...result, reason: `manual-auto-${result.reason}` };
+    return { ...result, reason: `manual-changes-${result.reason}` };
   } catch {
-    return full('manual-auto-unavailable-range');
+    return full('manual-changes-unavailable-range');
   }
 }
 

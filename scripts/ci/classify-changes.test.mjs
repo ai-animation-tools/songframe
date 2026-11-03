@@ -330,41 +330,51 @@ test('пустой выбор, неизвестный режим и неправ
     { mode: 'Выбранные группы', python: 1 },
     { mode: 'Выбранные группы', workflow: null },
     { mode: 'Нет такого режима' },
+    { mode: 'Автоматически (последний коммит)' },
     { mode: null }
   ]) {
     await assert.rejects(classifyEvent('workflow_dispatch', { inputs }), ManualInputError);
   }
 });
 
-test('ручной auto без mode берёт только последний коммит выбранного checkout', async (context) => {
+test('без mode ручной запуск выбирает переданные группы, а отсутствие флагов даёт ошибку', async () => {
+  const result = await classifyEvent('workflow_dispatch', { inputs: { workflow: true, release: 'true' } });
+  assert.deepEqual(CI_FLAGS.filter((flag) => result[flag]).sort(), ['release', 'workflow']);
+  assert.equal(result.reason, 'manual-selected');
+  assert.equal(result.node_media, false);
+  await assert.rejects(classifyEvent('workflow_dispatch', {}), /отметьте хотя бы одну группу/);
+  await assert.rejects(classifyEvent('workflow_dispatch', { inputs: { node: false, python: 'false' } }), /отметьте хотя бы одну группу/);
+});
+
+test('режим «По последнему коммиту» явно читает последний коммит выбранного checkout', async (context) => {
   const { cwd, commit } = await fixture(context);
   await commit('src/renderer/src/App.tsx');
   await commit('scripts/release/release.mjs');
-  const result = await classifyEvent('workflow_dispatch', { before: 'не диапазон', after: 'не диапазон' }, cwd);
+  const result = await classifyEvent('workflow_dispatch', { inputs: { mode: 'По последнему коммиту' }, before: 'не диапазон', after: 'не диапазон' }, cwd);
   assert.deepEqual(CI_FLAGS.filter((flag) => result[flag]).sort(), ['quality', 'release']);
   assert.equal(result.node_media, false);
-  assert.equal(result.reason, 'manual-auto-paths');
+  assert.equal(result.reason, 'manual-changes-paths');
 });
 
-test('ручной auto merge-коммита сравнивает HEAD с первым родителем', async (context) => {
+test('режим «По последнему коммиту» сравнивает merge с первым родителем', async (context) => {
   const { cwd, git, commit } = await fixture(context);
   await git('switch', '-c', 'release-fix');
   await commit('scripts/release/release.mjs');
   await git('switch', 'main');
   await commit('src/renderer/src/App.tsx');
   await git('merge', '--no-ff', 'release-fix', '-m', 'Слияние для проверки');
-  const result = await classifyEvent('workflow_dispatch', { inputs: { mode: 'Автоматически (последний коммит)', browser: true } }, cwd);
+  const result = await classifyEvent('workflow_dispatch', { inputs: { mode: 'По последнему коммиту', browser: true } }, cwd);
   assert.deepEqual(CI_FLAGS.filter((flag) => result[flag]).sort(), ['quality', 'release']);
-  assert.equal(result.reason, 'manual-auto-paths');
+  assert.equal(result.reason, 'manual-changes-paths');
 });
 
-test('ручной auto первого коммита и недоступного checkout консервативно включает всё', async (context) => {
+test('проверка последнего коммита без родителя или checkout консервативно включает всё', async (context) => {
   const { cwd } = await fixture(context);
   for (const directory of [cwd, join(cwd, 'missing-directory')]) {
-    const result = await classifyEvent('workflow_dispatch', {}, directory);
+    const result = await classifyEvent('workflow_dispatch', { inputs: { mode: 'По последнему коммиту' } }, directory);
     assert(CI_FLAGS.every((flag) => result[flag]));
     assert.equal(result.node_media, true);
-    assert.equal(result.reason, 'manual-auto-unavailable-range');
+    assert.equal(result.reason, 'manual-changes-unavailable-range');
   }
 });
 

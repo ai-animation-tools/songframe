@@ -8,3 +8,22 @@ if [ ! -f frontend/dist/index.html ]; then
   printf '%s\n' '<!doctype html><html lang="ru"><body>Фронтенд ещё не собран.</body></html>' > frontend/dist/index.html
 fi
 wails3 generate bindings -ts -i -d frontend/bindings
+
+# Wails оставляет пустую строку в конце модуля без событий. Убираем только хвост,
+# чтобы повторная генерация сохраняла чистый diff без ручной правки generated-файлов.
+node --input-type=module <<'JS'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+function trimGenerated(directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const file = join(directory, entry.name);
+    if (entry.isDirectory()) trimGenerated(file);
+    else if (entry.name.endsWith('.ts')) {
+      const source = readFileSync(file, 'utf8');
+      const result = source.trimEnd() + '\n';
+      if (source !== result) writeFileSync(file, result);
+    }
+  }
+}
+trimGenerated('frontend/bindings');
+JS

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"flag"
 	"fmt"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	shell "songframe-go/internal/app"
+	"songframe-go/internal/media"
+	"songframe-go/internal/project"
 	"songframe-go/internal/store"
 )
 
@@ -35,7 +38,13 @@ func run() error {
 	smoke := flag.Bool("smoke", false, "Проверить запуск интерфейса и завершить приложение")
 	report := flag.String("smoke-report", "", "Файл JSON-отчёта запуска оболочки")
 	timeout := flag.Duration("smoke-timeout", 30*time.Second, "Предельное ожидание готовности интерфейса")
+	checkDir := flag.String("native-check-dir", "", "Каталог синтетических WAV/MP3/MP4/WebM для проверки WebView")
+	checkProject := flag.String("native-check-project", "", "Копия проекта для нативной проверки чтения")
+	checkReport := flag.String("native-check-report", "", "JSON-отчёт нативной проверки медиа и bridge")
 	flag.Parse()
+	if *checkDir != "" && (*smoke || *checkReport == "" || *timeout <= 0) {
+		return fmt.Errorf("native-check требует отдельный отчёт, положительный timeout и не совмещается с --smoke")
+	}
 	if *smoke && (*report == "" || *timeout <= 0) {
 		return fmt.Errorf("для --smoke нужны --smoke-report и положительный --smoke-timeout")
 	}
@@ -44,6 +53,23 @@ func run() error {
 	if pathErr != nil {
 		return pathErr
 	}
+	// Сервер и диагностика принадлежат всему приложению, включая второе окно.
+	// Закрытие GUI останавливает listener; проектные файлы сервисы только читают.
+	mediaServer, err := media.Start()
+	if err != nil {
+		return fmt.Errorf("локальный медиасервер: %w", err)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = mediaServer.Close(ctx)
+	}()
+	native, err := shell.NewNativeService(profilePath)
+	if err != nil {
+		return err
+	}
+	defer native.Close()
+	projects := shell.NewProjectService(mediaServer)
 	var desktop *application.App
 	var result *shell.SmokeResult
 	var ready func(shell.AppState) error
@@ -57,20 +83,46 @@ func run() error {
 		}
 	}
 	service := shell.NewShellService(profile, true, ready)
+	services := []application.Service{application.NewService(service), application.NewService(projects), application.NewService(native)}
+	var nativeCheck *shell.NativeCheckService
+	windowURL := "/"
+	if *checkDir != "" {
+		// Никаких поисков настоящих клипов: набор явных тестовых файлов задаётся флагом.
+		config := shell.NativeCheckConfig{Files: []project.MediaFile{}, Project: *checkProject}
+		for _, name := range []string{"Тон с пробелом.wav", "Тон с пробелом.mp3", "Цвета и тон.mp4", "Цвета и тон.webm"} {
+			file, err := projects.Media(filepath.Join(*checkDir, name))
+			if err != nil {
+				return err
+			}
+			config.Files = append(config.Files, file)
+		}
+		nativeCheck = shell.NewNativeCheckService(config, *checkReport, func() { time.AfterFunc(150*time.Millisecond, desktop.Quit) })
+		services = append(services, application.NewService(nativeCheck))
+		windowURL = "/#/native-check"
+	}
 	desktop = application.New(application.Options{
 		Name:        "songframe-go-dev",
 		Description: "SongFrame — разработка новой настольной версии",
 		Linux:       application.LinuxOptions{ApplicationID: shell.AppID, ProgramName: shell.AppID},
 		Windows:     application.WindowsOptions{WebviewUserDataPath: filepath.Join(profilePath, "webview")},
 		Mac:         application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
-		Services:    []application.Service{application.NewService(service)},
+		Services:    services,
 		Assets:      application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
 	})
-	desktop.Window.NewWithOptions(application.WebviewWindowOptions{
+	shell.ConfigureNativeDesktop(native, desktop)
+	shell.ConfigureNativeMedia(native, mediaServer.ContainsURL)
+	window := desktop.Window.NewWithOptions(application.WebviewWindowOptions{
 		// Плотный рабочий интерфейс рассчитан на окно не меньше 1320×860; старт совпадает с нижней границей.
 		Title: "SongFrame — Go", Width: 1320, Height: 860, MinWidth: 1320, MinHeight: 860,
-		BackgroundColour: application.NewRGB(244, 246, 248), URL: "/",
+		BackgroundColour: application.NewRGB(244, 246, 248), URL: windowURL, EnableFileDrop: true,
 	})
+	defer shell.AttachNativeWindow(native, window)()
+	if nativeCheck != nil {
+		timer := time.AfterFunc(*timeout, func() {
+			_ = nativeCheck.Complete(shell.NativeCheckResult{Error: "истёк срок нативной проверки", Checks: []shell.NativeCheckItem{}})
+		})
+		defer timer.Stop()
+	}
 	if result != nil {
 		timer := time.AfterFunc(*timeout, func() {
 			if err := result.Complete(nil, "интерфейс не подтвердил готовность за отведённое время"); err != nil {
@@ -82,6 +134,10 @@ func run() error {
 	}
 	if err := desktop.Run(); err != nil {
 		return err
+	}
+	if nativeCheck != nil && !nativeCheck.Passed() {
+		_ = nativeCheck.Complete(shell.NativeCheckResult{Error: "окно закрыто до завершения нативной проверки", Checks: []shell.NativeCheckItem{}})
+		return fmt.Errorf("нативная проверка медиа/bridge не пройдена")
 	}
 	if result != nil && !result.Passed() {
 		if err := result.Complete(nil, "окно закрыто до готовности интерфейса"); err != nil {

@@ -23,7 +23,7 @@ import { NAV_PAGES } from '../navigation';
 import { useThemeMode } from '../theme';
 
 const WIDTH = 236;
-const HEADER_HEIGHT = 48;
+export const SHELL_HEADER_HEIGHT = 48;
 const ICONS: Record<string, ReactElement> = {
   '/projects': <FolderOpenIcon />,
   '/project': <LibraryMusicIcon />,
@@ -45,7 +45,7 @@ const ICONS: Record<string, ReactElement> = {
 /** Сохраняет компоновку SongFrame: общую шапку, меню 236 px и самостоятельную рабочую область.
  * Не запускает доменные API при навигации: до переноса соответствующего сервиса действия объяснимо недоступны.
  */
-export function ShellLayout({ children }: { children: ReactNode }) {
+export function ShellLayout({ children, projectName }: { children: ReactNode; projectName?: string }) {
   const { resolved, setMode } = useThemeMode();
   const location = useLocation();
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
             {shellTexts.title}
           </Button>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Chip size="small" variant="outlined" label={shellTexts.noProject} />
+            <Chip size="small" variant="outlined" label={projectName ?? shellTexts.noProject} sx={{ maxWidth: '100%' }} />
           </Box>
           <Button
             size="small"
@@ -69,10 +69,10 @@ export function ShellLayout({ children }: { children: ReactNode }) {
         </Toolbar>
       </AppBar>
       <Drawer variant="permanent" sx={{ width: WIDTH, flexShrink: 0, '& .MuiDrawer-paper': { width: WIDTH, boxSizing: 'border-box' } }}>
-        <Box sx={{ height: HEADER_HEIGHT, flexShrink: 0 }} />
+        <Box sx={{ height: SHELL_HEADER_HEIGHT, flexShrink: 0 }} />
         <List dense aria-label={shellTexts.navigation} sx={{ pt: 1 }}>
           {NAV_PAGES.map((item) =>
-            item.to === '/projects' ? (
+            item.to === '/projects' || (item.to === '/project/timing' && projectName) ? (
               <ListItemButton key={item.to} component={NavLink} to={item.to} selected={location.pathname === item.to || location.pathname === '/'}>
                 <ListItemIcon sx={{ minWidth: 34 }}>{ICONS[item.to]}</ListItemIcon>
                 <ListItemText primary={item.label} />
@@ -90,7 +90,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
           )}
         </List>
       </Drawer>
-      <Box component="main" sx={{ flex: 1, minWidth: 0, pt: `${HEADER_HEIGHT}px`, containerType: 'inline-size', containerName: 'workspace' }}>
+      <Box component="main" sx={{ flex: 1, minWidth: 0, pt: `${SHELL_HEADER_HEIGHT}px`, containerType: 'inline-size', containerName: 'workspace' }}>
         <Box sx={{ p: 3 }}>{children}</Box>
       </Box>
     </Box>

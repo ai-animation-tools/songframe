@@ -46,7 +46,7 @@ for (const theme of ['ready', 'dark']) {
   test(`оболочка ${theme}, 1320×860`, async ({ page }) => {
     await page.goto(story(theme));
     await expect(page.getByRole('heading', { name: 'Проекты', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Открыть папку проекта' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Открыть папку проекта' })).toBeEnabled();
     await expect(page.getByRole('link', { name: 'Тайминги', exact: true })).toHaveAttribute('aria-disabled', 'true');
     await page.getByRole('link', { name: 'Тайминги', exact: true }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Эта функция пока недоступна');
@@ -77,3 +77,25 @@ test('ошибка начального чтения объясняет сбой
   await expect(page.getByText('Не удалось подготовить локальное состояние приложения.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Попробовать снова' })).toBeVisible();
 });
+
+for (const name of [
+  'read-only-timings',
+  'read-only-dark',
+  'blocked-project',
+  'missing-media',
+  'project-read-error',
+  'notification-target',
+  'stale-project-response',
+  'project-loading',
+  'waveform-error',
+  'long-project-path',
+  'changed-media-stops-old-seek',
+  'changed-track-version'
+]) {
+  test(`просмотр проекта: ${name}`, async ({ page }) => {
+    await page.goto(story(name));
+    await page.waitForFunction(() => window.__shellStoryOutcome?.finished === true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    if (name === 'read-only-timings' || name === 'read-only-dark') await page.screenshot({ path: `/tmp/songframe-step3-${name}.png`, fullPage: true });
+  });
+}

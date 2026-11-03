@@ -152,17 +152,7 @@ test('смешанный diff объединяет списки, полный н
 });
 
 test('известные документы выключают проверки, неизвестные пути и глобальные зависимости включают всё', () => {
-  assertScope(
-    [
-      'README.md',
-      'docs/development.md',
-      'dev-skills/songframe-release/SKILL.md',
-      '.github/ISSUE_TEMPLATE/bug-report.yml',
-      '.github/workflows/pages.yml',
-      'www/index.html'
-    ],
-    []
-  );
+  assertScope(['README.md', 'docs/development.md', 'dev-skills/songframe-release/SKILL.md', '.github/ISSUE_TEMPLATE/bug-report.yml', 'www/index.html'], []);
   for (const path of ['new-area/data.bin', 'package.json', 'yarn.lock', '.yarnrc.yml', '.nvmrc']) assertScope([path], CI_FLAGS, null, null);
   assertScope([], CI_FLAGS, null, null);
   assertScope(['.gitignore'], []);
@@ -184,16 +174,21 @@ test('обычные Markdown не запускают наборы, а Markdown-
   assert.equal(classifyChanges(['skills/ai-clip-scene/SKILL.md']).node, true);
 });
 
-test('изменение routing проверяет остальные команды CI, но не повторяет браузер', () => {
-  for (const path of ['scripts/ci/classify-changes.mjs', 'scripts/ci/classify-changes.test.mjs', '.github/workflows/ci.yml']) {
-    assertScope(
-      [path],
-      CI_FLAGS.filter((flag) => flag !== 'browser'),
-      null,
-      null
-    );
+test('изменения workflow и routing проверяют только workflow, смешанные области объединяются', () => {
+  for (const path of [
+    'scripts/ci/classify-changes.mjs',
+    'scripts/ci/classify-changes.test.mjs',
+    'scripts/ci/node-openssl.cnf',
+    '.github/workflows/ci.yml',
+    '.github/workflows/pages.yml',
+    '.github/workflows/another.yml'
+  ]) {
+    const result = assertScope([path], ['workflow']);
+    assert.equal(result.node_media, false, path);
   }
-  assertScope(['scripts/ci/classify-changes.mjs', 'src/shared/types.ts'], CI_FLAGS, null, null);
+  assertScope(['scripts/ci/classify-changes.mjs', 'src/shared/types.ts'], ['quality', 'types', 'node', 'build', 'browser', 'workflow'], null);
+  assertScope(['.github/workflows/ci.yml', 'tools/transcribe_local/test_quality.py'], ['workflow', 'python'], [], ['test_quality']);
+  assertScope(['scripts/ci/node-openssl.cnf', 'scripts/release/release.mjs'], ['workflow', 'quality', 'release']);
 });
 
 test('все явно выбранные наборы существуют в текущем репозитории', async () => {

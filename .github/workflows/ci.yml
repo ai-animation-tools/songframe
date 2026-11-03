@@ -18,7 +18,6 @@ on:
       - '!.agents/**'
       - '!.vscode/**'
       - '!www/**'
-      - '!.github/workflows/pages.yml'
   push:
     branches: [main]
     paths: *checked-paths
@@ -34,6 +33,7 @@ jobs:
     name: 'Выбор проверок'
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     outputs:
+      workflow: ${{ steps.scope.outputs.workflow }}
       quality: ${{ steps.scope.outputs.quality }}
       types: ${{ steps.scope.outputs.types }}
       node: ${{ steps.scope.outputs.node }}
@@ -59,6 +59,40 @@ jobs:
       - name: Изменённые области
         id: scope
         run: node scripts/ci/classify-changes.mjs
+
+  workflow:
+    name: 'Workflow и маршрутизация: статические проверки'
+    needs: scope
+    if: needs.scope.outputs.workflow == 'true'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Проверка GitHub Actions через actionlint
+        run: |
+          # Версия и SHA-256 закреплены по официальному релизу rhysd/actionlint.
+          archive="$RUNNER_TEMP/actionlint_1.7.12_linux_amd64.tar.gz"
+          curl --fail --location --retry 3 --output "$archive" https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          printf '%s  %s\n' '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8' "$archive" | sha256sum --check
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -color
+      - name: TLS для Node
+        run: echo "OPENSSL_CONF=$GITHUB_WORKSPACE/scripts/ci/node-openssl.cnf" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Yarn 4 через corepack
+        run: corepack enable
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - name: Зависимости линтеров без postinstall
+        run: yarn install --immutable --mode=skip-build
+      - name: ESLint скриптов CI
+        run: yarn eslint scripts/ci/*.mjs --max-warnings 0
+      - name: Формат workflow и скриптов CI
+        run: yarn prettier --check '.github/workflows/*.{yml,yaml}' scripts/ci/*.mjs
 
   app:
     name: 'Node: выбранные проверки'

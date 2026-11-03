@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 const execute = promisify(execFile);
-export const CI_FLAGS = ['quality', 'types', 'node', 'build', 'browser', 'python', 'runtime', 'release'];
+export const CI_FLAGS = ['quality', 'types', 'node', 'build', 'browser', 'python', 'runtime', 'release', 'workflow'];
 export const ASR_TESTS = [
   'test_align_lyrics',
   'test_transcribe_local',
@@ -85,19 +85,11 @@ function classifyPath(path) {
   }
   // Промпты и шаблоны выше являются входом приложения; обычные руководства дальше не требуют CI.
   if (path.endsWith('.md')) return scope();
-  if (path === '.github/workflows/ci.yml' || path.startsWith('scripts/ci/')) {
-    return scope(
-      CI_FLAGS.filter((flag) => flag !== 'browser'),
-      null,
-      null,
-      'ci-routing'
-    );
-  }
+  if (path.startsWith('.github/workflows/') || path.startsWith('scripts/ci/')) return scope(['workflow'], [], [], 'ci-routing');
   if (['package.json', 'yarn.lock', '.yarnrc.yml', '.nvmrc'].includes(path)) return full('global-config');
   if (
     path === 'LICENSE' ||
     path === '.gitignore' ||
-    path === '.github/workflows/pages.yml' ||
     ['docs/', 'dev-skills/', '.agents/', '.claude/', '.vscode/', 'www/', '.github/ISSUE_TEMPLATE/'].some((prefix) => path.startsWith(prefix)) ||
     path === '.github/pull_request_template.md'
   )

@@ -35,6 +35,10 @@ tasks:
       - task: bindings
       - go test ./...
       - go vet ./...
+  check:components:
+    desc: Проверить закреплённый manifest компонентов без загрузки и ML
+    cmds:
+      - go test ./internal/components -count=1
   check:race:
     desc: Проверить конкурентный доступ сервисов детектором гонок
     cmds:

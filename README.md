@@ -32,6 +32,7 @@ wails3 task run
 | `wails3 task check:go` | Генерация bindings, Go tests/vet, включая точку входа приложения |
 | `wails3 task check:frontend` | TypeScript и все Vitest-тесты границы API |
 | `wails3 task check:contracts` | Общие JSON-fixtures: Go-сериализация/чтение и настоящий TS-адаптер с подменой generated-вызовов |
+| `wails3 task check:components` | Связность manifest, границы платформенной готовности, сохранение принятого CTC-рецепта |
 | `wails3 task check:race` | Конкурентный доступ Go-сервисов; нужен C-компилятор для race detector |
 | `wails3 task check:format` | Форматирование Go и frontend без изменения файлов |
 | `wails3 task check:ui` | Свежая статическая сборка Storybook и браузерные сценарии |
@@ -87,6 +88,10 @@ Smoke проходит только после успешного вызова `
 Устройство Wails services и Taskfile сверено с Forktopus `d49de381e55e40a66c5d95968f8cb7d655b44198`; продуктовые Git-функции не переносились. Применяется [официальный механизм services и generated bindings](https://v3.wails.io/features/bindings/services/). Лицензии фактических сторонних зависимостей сохраняют силу; полный комплект уведомлений для пользовательской поставки будет собран вместе с её составом.
 
 Модели, реальные проекты, медиа, локальные отчёты, dependencies и build-артефакты в Git не входят.
+
+## Компоненты производства
+
+Закреплены пакеты FFmpeg/ffprobe и ORT CPU для Linux/Windows amd64, Voc FT и пара CTC/vocab с неизменными SHA принятого эксперимента. [Реестр компонентов](internal/components/README.md) содержит состав, размеры, лицензии, ABI, зависимости и воспроизводимые проверки. Это описание точных артефактов; обнаружение, установка и ML в приложении пока не реализованы. Windows/macOS не объявлены принятыми.
 
 ## Чтение проектов и медиа
 

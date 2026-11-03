@@ -9,11 +9,12 @@ name: CI
 # Имя ручного запуска — часть контракта scripts/release/release.mjs.
 # Только manual/all может подтвердить исходники перед релизом; manual/auto и
 # manual/selected могут проверить лишь часть проекта. Не переименовывать marker
-# без изменения ciState и его тестов. Автоматические запуски сохраняют название события.
+# без изменения ciState и его тестов. Пустой run-name для push/PR оставляет
+# стандартное название GitHub, чтобы не выводить весь текст commit message.
 run-name: >-
   ${{ github.event_name == 'workflow_dispatch' &&
       format('CI · manual/{0}', inputs.mode == 'Полный набор' && 'all' || inputs.mode == 'Автоматически (последний коммит)' && 'auto' || 'selected') ||
-      github.event.pull_request.title || github.event.head_commit.message || 'CI' }}
+      '' }}
 
 # Раннер запускается только при изменении файлов, которые читают lint, format, typecheck и тесты.
 # `*.md` без папки — только корневые документы; README инструментов, шаблона и промпты скиллов остаются под CI.

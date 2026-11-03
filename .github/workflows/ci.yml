@@ -34,8 +34,17 @@ jobs:
     name: 'Выбор проверок'
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     outputs:
-      release_only: ${{ steps.scope.outputs.release_only }}
+      quality: ${{ steps.scope.outputs.quality }}
+      types: ${{ steps.scope.outputs.types }}
+      node: ${{ steps.scope.outputs.node }}
+      build: ${{ steps.scope.outputs.build }}
       browser: ${{ steps.scope.outputs.browser }}
+      python: ${{ steps.scope.outputs.python }}
+      runtime: ${{ steps.scope.outputs.runtime }}
+      release: ${{ steps.scope.outputs.release }}
+      node_media: ${{ steps.scope.outputs.node_media }}
+      node_tests: ${{ steps.scope.outputs.node_tests }}
+      python_tests: ${{ steps.scope.outputs.python_tests }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,118 +60,100 @@ jobs:
         id: scope
         run: node scripts/ci/classify-changes.mjs
 
-  release:
-    name: 'Инструмент выпуска: lint, format, тесты'
-    needs: scope
-    if: needs.scope.outputs.release_only == 'true'
-    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
-    steps:
-      - uses: actions/checkout@v7
-      - name: TLS для Node
-        run: echo "OPENSSL_CONF=$GITHUB_WORKSPACE/scripts/ci/node-openssl.cnf" >> "$GITHUB_ENV"
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          package-manager-cache: false
-      - name: Yarn 4 через corepack
-        run: corepack enable
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: yarn
-      - name: Зависимости
-        # Lint и тесты выпуска используют JavaScript/Node; postinstall Electron здесь не нужен.
-        run: yarn install --immutable --mode=skip-build
-      - name: ESLint
-        run: yarn eslint scripts/release/*.mjs scripts/ci/*.mjs --max-warnings 0
-      - name: Prettier
-        run: yarn prettier --check .github/workflows/ci.yml scripts/release/*.mjs scripts/ci/*.mjs
-      - name: Проверки сценария выпуска
-        run: yarn test:release
-
   app:
-    name: 'Приложение: lint, format, typecheck, тесты'
+    name: 'Node: выбранные проверки'
     needs: scope
-    if: needs.scope.outputs.release_only != 'true'
+    if: >-
+      needs.scope.outputs.quality == 'true' || needs.scope.outputs.types == 'true' ||
+      needs.scope.outputs.node == 'true' || needs.scope.outputs.build == 'true' ||
+      needs.scope.outputs.browser == 'true'
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     steps:
       - uses: actions/checkout@v7
-      # Сеть домашних раннеров обрывает большое приветствие TLS Node 24 к Cloudflare (Yarn, реестр пакетов).
-      # NODE_OPTIONS через GITHUB_ENV runner запрещает, поэтому группы задаёт конфиг OpenSSL. @link scripts/ci/node-openssl.cnf
       - name: TLS для Node
         run: echo "OPENSSL_CONF=$GITHUB_WORKSPACE/scripts/ci/node-openssl.cnf" >> "$GITHUB_ENV"
-      # Сначала выбираем Node из проекта: Yarn нужен уже при вычислении пути кэша.
-      # Повторный setup-node только подключает кэш после подготовки Corepack. @link .nvmrc
       - name: Node.js для Corepack
         uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           package-manager-cache: false
       - name: Yarn 4 через corepack
-        run: |
-          corepack enable
-          node --version
-          corepack --version
-          yarn --version
+        run: corepack enable
       - name: Кэш Yarn
         uses: actions/setup-node@v7
         with:
-          # Версия совпадает с окружением разработчика. @link .nvmrc
           node-version-file: .nvmrc
           cache: yarn
-      # postinstall скачивает Electron (~100 МБ); кэш по yarn.lock избавляет от повторной загрузки.
       - uses: actions/cache@v6
+        if: needs.scope.outputs.node_media == 'true' || needs.scope.outputs.build == 'true' || needs.scope.outputs.browser == 'true'
         with:
           path: ~/.cache/electron
           key: electron-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: electron-${{ runner.os }}-
       - name: Зависимости
-        run: yarn install --immutable
+        env:
+          NEED_BUILD_SCRIPTS: ${{ needs.scope.outputs.node_media == 'true' || needs.scope.outputs.build == 'true' || needs.scope.outputs.browser == 'true' }}
+        run: |
+          if [ "$NEED_BUILD_SCRIPTS" = true ]; then
+            yarn install --immutable
+          else
+            yarn install --immutable --mode=skip-build
+          fi
       - name: ESLint
+        if: needs.scope.outputs.quality == 'true'
         run: yarn lint
       - name: Prettier
+        if: needs.scope.outputs.quality == 'true'
         run: yarn format:check
-      - name: Проверки сценария выпуска
-        run: node --test scripts/release/release.test.mjs
       - name: Типизация
+        if: needs.scope.outputs.types == 'true'
         run: yarn typecheck
       - uses: actions/setup-python@v7
+        if: needs.scope.outputs.node_media == 'true'
         with:
           python-version: '3.12'
-      # Общий архив проверяется по media-lock.json при каждом восстановлении, бинарники остаются в runner.temp.
       - uses: actions/cache@v6
+        if: needs.scope.outputs.node_media == 'true'
         with:
           path: ${{ runner.temp }}/songframe-ci-ffmpeg/ffmpeg.tar.xz
           key: ci-ffmpeg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/runtime/media-lock.json') }}
-      # Тесты создают карточки и экспортируют монтаж с настоящим FFmpeg. @link src/main/montage-integration.test.ts
-      # Без системной libfribidi Pillow раскладывает текст без Raqm, и карточки образца расходятся по пикселям.
-      - name: FFmpeg и Pillow для интеграционных тестов приложения
+      # Python/FFmpeg нужны только реальным межъязыковым тестам; чистые Node-тесты читают файлы без этой подготовки.
+      - name: FFmpeg и Pillow для интеграционных тестов
+        if: needs.scope.outputs.node_media == 'true'
         run: |
           bash tools/run_tests/prepare_ci_media.sh
           python -m pip install pillow==13.0.0 numpy==2.5.4
           python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
           python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
-      - name: Тесты приложения
-        run: yarn test
+      - name: Выбранные тесты Node
+        if: needs.scope.outputs.node == 'true'
+        env:
+          CI_NODE_TESTS: ${{ needs.scope.outputs.node_tests }}
+        run: |
+          node --input-type=module <<'JS'
+          import { spawnSync } from 'node:child_process';
+          const selected = JSON.parse(process.env.CI_NODE_TESTS);
+          if (selected !== null && (!Array.isArray(selected) || selected.length === 0)) throw new Error('Пустой набор Node не является проверкой.');
+          const result = spawnSync('yarn', ['test', ...(selected ?? [])], { stdio: 'inherit' });
+          if (result.error) throw result.error;
+          process.exit(result.status ?? 1);
+          JS
       - name: Сборка приложения
+        if: needs.scope.outputs.build == 'true'
         run: yarn build
-      # Витрина собирается из отслеживаемых фикстур без Python/runtime и рабочего проекта.
       - name: Статическая витрина Storybook
         if: needs.scope.outputs.browser == 'true'
         run: yarn build-storybook
-      # Версия Chromium определяется @playwright/test из yarn.lock; ставится только headless shell.
       - uses: actions/cache@v6
         if: needs.scope.outputs.browser == 'true'
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('yarn.lock') }}
-      # В образе контейнера раннера системных библиотек браузера может не быть: apt-get только при неудачном пробном запуске.
       - name: Chromium для браузерного набора
         if: needs.scope.outputs.browser == 'true'
         run: |
           yarn playwright install --only-shell chromium
           node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())" || yarn playwright install-deps chromium
-      # Истории с меткой ci: play, ошибки выполнения и загрузки, обязательные правила WCAG A/AA. @link tests/storybook/stories.spec.ts
       - name: Браузерный набор витрины
         if: needs.scope.outputs.browser == 'true'
         id: storybook-browser
@@ -177,9 +168,9 @@ jobs:
           retention-days: 14
 
   tools:
-    name: 'Инструменты Python: тесты'
+    name: 'Python: выбранные наборы'
     needs: scope
-    if: needs.scope.outputs.release_only != 'true'
+    if: needs.scope.outputs.python == 'true'
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     steps:
       - uses: actions/checkout@v7
@@ -190,19 +181,70 @@ jobs:
         with:
           path: ${{ runner.temp }}/songframe-ci-ffmpeg/ffmpeg.tar.xz
           key: ci-ffmpeg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/runtime/media-lock.json') }}
-      # Raqm нужен для тех же пикселей карточек, что в образце: без libfribidi раскладка текста другая.
       - name: FFmpeg и Pillow для медиатестов
         run: |
           bash tools/run_tests/prepare_ci_media.sh
           python -m pip install pillow==13.0.0 numpy==2.5.4
           python -c "from PIL import features; raise SystemExit(not features.check('raqm'))" || { sudo apt-get update && sudo apt-get install -y --no-install-recommends libfribidi0; }
           python -c "from PIL import features; assert features.check('raqm'), 'Pillow без Raqm: нет libfribidi'"
-      # Наборы независимы (у каждого процесса своя копия образца) и идут параллельно по числу ядер раннера.
-      # В контейнере nproc видит все ядра хоста, поэтому при квоте cgroup v2 число наборов берётся из неё.
-      - name: Тесты
+      - name: Выбранные тесты Python
+        env:
+          CI_PYTHON_TESTS: ${{ needs.scope.outputs.python_tests }}
         run: |
-          read -r quota period 2> /dev/null < /sys/fs/cgroup/cpu.max || quota=max
-          if [ "$quota" = max ]; then jobs=$(nproc); else jobs=$(( quota / period > 0 ? quota / period : 1 )); fi
-          python3 -B tools/run_tests/run_tests.py --jobs "$jobs"
-      - name: Тесты скриптов поставки
+          python3 -B - <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          selected = json.loads(os.environ['CI_PYTHON_TESTS'])
+          if selected is not None and (not isinstance(selected, list) or not selected):
+              raise ValueError('Пустой набор Python не является проверкой.')
+          jobs = os.cpu_count() or 1
+          try:
+              quota, period = Path('/sys/fs/cgroup/cpu.max').read_text().split()
+              if quota != 'max':
+                  jobs = max(1, int(quota) // int(period))
+          except (OSError, ValueError):
+              pass
+          args = [] if selected is None else ['--only', *selected]
+          raise SystemExit(subprocess.call([sys.executable, '-B', 'tools/run_tests/run_tests.py', *args, '--jobs', str(jobs)]))
+          PY
+
+  runtime:
+    name: 'Скрипты поставки: Node и Python'
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Тесты Node-скриптов поставки
+        run: node --test scripts/runtime/*.test.mjs
+      - name: Синтаксис Python-скриптов поставки
+        run: |
+          python3 -B - <<'PY'
+          import ast
+          from pathlib import Path
+          for path in Path('scripts/runtime').glob('*.py'):
+              ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+          PY
+      - name: Тесты проверки установщика
         run: python3 -B -m unittest discover -s scripts/runtime -p 'test_*.py'
+
+  release:
+    name: 'Инструмент выпуска: тесты'
+    needs: scope
+    if: needs.scope.outputs.release == 'true'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Проверки сценария выпуска
+        run: node --test scripts/release/release.test.mjs

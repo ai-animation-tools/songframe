@@ -1,20 +1,56 @@
 # Выбор проверок CI
 
-`classify-changes.mjs` выбирает наборы по путям, изменённым событием GitHub. Он не строит граф зависимостей и не запускает проверки самостоятельно. Настройка заданий принадлежит [ci.yml](../../.github/workflows/ci.yml).
+`classify-changes.mjs` объединяет независимые наборы по изменённым путям. Настройка заданий и команд принадлежит [ci.yml](../../.github/workflows/ci.yml). Классификатор не строит граф импортов и не запускает проверки самостоятельно.
 
-- `release_only=true`: изменены файлы `scripts/release/` и, возможно, сопровождающие корневые Markdown, `docs/`, `dev-skills/`, `.agents/`, `.claude/`. Должен присутствовать хотя бы один файл сценария выпуска. `docs/providers/` является входом приложения и исключён из сопровождающей документации. Для этого случая достаточно адресных проверок сценария выпуска.
-- `release_only=false`: сохраняются обычные проверки приложения и Python-инструментов.
-- `browser=true`: затронуты renderer, shared, preload, `.storybook/`, `tests/storybook/`, `scripts/storybook/`, `resources/`, образец `tools/testdata/sample-project/` либо общие зависимости и конфигурация. Точный короткий перечень находится в `classifyChanges`; изменения main, инструментов, сценария выпуска и самого CI отдельно браузерный набор не запускают.
+| Флаг | Проверки |
+| --- | --- |
+| `quality` | ESLint и Prettier без установки Electron |
+| `types` | Типизация приложения и историй |
+| `node` | Тесты приложения: все или явный список `node_tests` |
+| `build` | Сборка приложения |
+| `browser` | Сборка Storybook и браузерные истории |
+| `python` | Наборы инструментов: все или явный список `python_tests` |
+| `runtime` | Существующие Node/Python unit-тесты сценариев поставки; без сборки установщиков |
+| `release` | Unit-тесты сценария выпуска; без GitHub и настоящей публикации |
 
-Push сравнивается целиком от `before` до `after`, PR — от общей базы `base...head`, включая все коммиты ветки. Rename рассматривается как удаление и добавление: старый путь также влияет на выбор проверок. Ручной запуск, нулевой `before`, пустой diff, неизвестное событие и недоступные данные включают полный набор, включая браузер.
+`node_tests` содержит пути `src/**/*.test.ts`, `python_tests` — имена модулей вида `test_align_lyrics`, принимаемые `tools/run_tests/run_tests.py --only`. Для выключенного флага список пуст. `null` означает весь соответствующий набор. Смешанный diff объединяет флаги и уникальные имена; `null` поглощает адресные списки. Поле `reason` объясняет выбор в журнале.
 
-Workflow передаёт стандартные `GITHUB_EVENT_NAME`, `GITHUB_EVENT_PATH`, `GITHUB_OUTPUT` и полную историю Git через `actions/checkout` с `fetch-depth: 0`. Команда:
+`node_media` — дополнительный вычисляемый признак подготовки, а не девятый набор проверок. Он включён для полного Node-набора и выбранных интеграционных потребителей Python/FFmpeg. Чистые `provider-guides`, `timing-local`, `vocal-preparation`, `checks-instructions` этой подготовки не требуют. Признак вычисляется после объединения путей и повторно после проверки существования выбранных тестов: переход к полному Node-набору также включает `node_media`. Установка Electron и медиазависимостей нужна при `node_media || build || browser`, а не при любом `node=true`.
+
+## Гранулярность
+
+- `src/main/` включает quality, types, полный Node и build. `src/renderer/`, `src/shared/`, `src/preload/` дополнительно включают browser.
+- `.storybook/`, `scripts/storybook/`, `tests/storybook/` включают quality, types и browser, без Node и сборки приложения.
+- `scripts/release/` включает quality и release; `scripts/runtime/` — runtime, дополнительно quality для JavaScript, JSON и YAML. Python поставки не запускает тесты инструментов.
+- Только `test_*.py` инструмента включает изменённый Python-модуль. Два явных исключения учитывают импорт тестовых фикстур: `test_shot_workflow_decisions` дополнительно включает `test_shot_workflow_images`, `test_export_edit_bundle` — `test_check_workspace`. Изменение реализации ASR включает предметную группу: `align_lyrics`, `transcribe_local` с quality/hardware, `song_timing`, `separate_vocals`, `download_song_models`. Это одна согласованная группа, а не вычисляемые зависимости каждого файла. Загрузчик Whisper имеет отдельный Python-набор. Приложение для этих Python-правок не запускается.
+- Остальные инструменты и общие данные проверяются всеми Python-наборами и коротким явным списком Node integration-потребителей, включая `derived-workflow`, который читает реальный sample-project. Автономные `current_project` и `video_review` включают только собственные Python-наборы `test_current_project` / `test_video_review` и своих явных Node-потребителей (`main` + `portability` / `video-review`); правка только их теста по-прежнему запускает только этот Python-модуль. `fake_media_request` проверяется тремя производственными Node-наборами; `sample_project.py` требует только Python.
+- `tools/song_timing/models.json` одновременно служит входом Python и приложения: ASR-группа, types/build и адресные Node-тесты разметки/вокала. Quality не включается: `tools/` исключён из ESLint/Prettier. Схемы `tools/lint_registry/schemas/` дополнительно проверяются `src/shared/video.test.ts`; `scene-fingerprints.json` читает только Node-набор `shot-acceptance.test.ts`, поэтому Python не требуется.
+- Шаблоны проверяются Node-потребителями создания проекта, инструкций и переносимости (`main`, `checks-instructions`, `portability`); производственные `skills/` — workflow-потребителями. `docs/providers/` проверяется `provider-guides.test.ts`, поэтому не считается обычной документацией.
+- Из sample-project браузер получает только три файла, перечисленные в `scripts/storybook/prepare-assets.mjs`: `assets/shots/M01/video.mp4`, `source/heroes/mira.png`, `source/track.mp3`. Остальной образец включает Python и Node integration, без browser. Весь `tools/testdata/sample-project/` обрабатывается до общего исключения Markdown: `source/text.md` — тестовая фикстура, а не обычное руководство.
+
+## Консервативные исключения
+
+Общие зависимости `package.json`, `yarn.lock`, `.yarnrc.yml`, `.nvmrc` включают все наборы. TypeScript-конфигурация включает quality/types/build/browser; Vitest — quality и полный Node; ESLint/Prettier/`.editorconfig` — только quality. `electron.vite.config.ts` входит в TypeScript-проект Node и включает quality/types/build без browser; `electron-builder.yml` включает quality/build/runtime.
+
+`scripts/runtime/media-lock.json` служит также входом подготовки FFmpeg в CI: кроме quality/runtime включаются Python-набор `test_prepare_ci_ffmpeg` и явные Node integration-потребители настоящего FFmpeg. Types/build/browser этому lock-файлу не требуются.
+
+`resources/` содержит иконки Electron, которых Storybook не читает: изменения включают только runtime. Это проверка существующих unit-тестов сценариев поставки; она не собирает установщик и не подтверждает фактический вид иконок установленного приложения. Такая приёмка относится к отдельной сборке поставки.
+
+Изменения самого routing (`scripts/ci/`, `.github/workflows/ci.yml`) проверяют все остальные команды CI, но не повторяют браузерный набор. Если тот же diff затронул входы браузера, он тоже включается.
+
+Обычные Markdown, включая README инструментов и сценариев, не включают проверки. Исключение — входы приложения `docs/providers/`, `skills/`, `templates/` и тестовый образец `tools/testdata/sample-project/`: их потребители выбираются до общего правила Markdown. `tools/testdata/README.md` остаётся обычным руководством. Остальные `docs/`, `dev-skills/`, `.agents/`, `.claude/`, `.vscode/`, `www/`, шаблоны GitHub issues/PR, workflow сайта и корневой `.gitignore` также не включают проверки. Неизвестный путь включает всё: новый вид файлов сначала получает консервативное покрытие, а явное правило добавляется после определения потребителей.
+
+Push сравнивается целиком от `before` до `after`, PR — от общей базы `base...head`, включая все коммиты ветки. Rename рассматривается как удаление и добавление: старый путь также влияет на выбор. Если выбранный тест удалён или переименован и прежнего имени больше нет в checkout, соответствующий список заменяется на `null`; старое имя не передаётся runner. Ручной запуск, нулевой `before`, пустой diff, неизвестное событие и недоступные данные включают всё.
+
+## Запуск
+
+Workflow передаёт стандартные `GITHUB_EVENT_NAME`, `GITHUB_EVENT_PATH`, `GITHUB_OUTPUT` и полную историю Git через `actions/checkout` с `fetch-depth: 0`:
 
 ```sh
 node scripts/ci/classify-changes.mjs
 ```
 
-В `GITHUB_OUTPUT` добавляются строки `release_only=true|false` и `browser=true|false`, в stdout выводится JSON с теми же флагами и причиной выбора. Локальные проверки классификатора используют только временные Git-репозитории:
+В `GITHUB_OUTPUT` записываются восемь boolean-флагов проверок, boolean `node_media` и JSON-значения `node_tests`/`python_tests`, по одному ключу на строку. В stdout выводится полный JSON с причиной. Локальные проверки используют временные Git-репозитории и проверяют существование явно перечисленных тестов:
 
 ```sh
 node --test scripts/ci/classify-changes.test.mjs

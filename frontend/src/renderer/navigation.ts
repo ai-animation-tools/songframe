@@ -22,5 +22,6 @@ export const NAV_PAGES: readonly NavPage[] = [
   { to: '/jobs', label: navigationTexts.pages.jobs },
   { to: '/environment', label: navigationTexts.pages.environment },
   { to: '/settings', label: navigationTexts.pages.settings },
+  { to: '/components', label: navigationTexts.pages.components },
   { to: '/help', label: navigationTexts.pages.help }
 ];

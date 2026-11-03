@@ -3,6 +3,8 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import type { AppState } from '@shared/types';
 import { shellTexts } from '@shared/texts/shell';
 import { App } from './App';
+import { createComponentsModel } from './testing/componentsModel';
+import { componentTexts } from '@shared/texts/components';
 import { RenderBoundary } from './components/RenderBoundary';
 import { ReadyContent } from './components/ReadyContent';
 import { createWorkspaceModel, projectFixture } from './testing/workspaceModel';
@@ -14,7 +16,12 @@ const state: AppState = { packaged: true, problems: [], toolsRoot: null, localDi
 const meta = {
   title: 'Оболочка/SongFrame',
   component: App,
-  args: { loadState: async (): Promise<AppState> => ({ ...state, history: [] }), onReady: async () => undefined, bridge: createWorkspaceModel().bridge },
+  args: {
+    loadState: async (): Promise<AppState> => ({ ...state, history: [] }),
+    onReady: async () => undefined,
+    bridge: createWorkspaceModel().bridge,
+    componentsApi: createComponentsModel().api
+  },
   tags: ['ci']
 } satisfies Meta<typeof App>;
 export default meta;
@@ -348,5 +355,53 @@ export const ChangedTrackVersion: Story = {
     await waitFor(() => expect(replaced.readyState).toBeGreaterThanOrEqual(1));
     await expect(replaced.paused).toBe(true);
     await expect(replaced.currentTime).toBe(0);
+  }
+};
+
+/** Полная оболочка сохраняет проект и возвращает к таймингам без запуска обработки. */
+export const ComponentsContext: Story = {
+  args: { bridge: createWorkspaceModel().bridge, componentsApi: createComponentsModel().api },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole('button', { name: shellTexts.openProject }));
+    await userEvent.click(await canvas.findByRole('button', { name: componentTexts.open }));
+    await expect(await canvas.findByRole('heading', { name: componentTexts.title })).toBeVisible();
+    await expect(canvas.getByText(componentTexts.returnHint)).toBeVisible();
+    await expect(canvas.queryByRole('button', { name: /Проверить компоненты|Перепроверить файлы|Обновить/ })).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: componentTexts.return }));
+    await expect(await canvas.findByRole('cell', { name: 'Ручная граница' })).toBeVisible();
+    await userEvent.click(canvas.getByRole('link', { name: componentTexts.title }));
+    await expect(await canvas.findByRole('heading', { name: componentTexts.title })).toBeVisible();
+  }
+};
+export const ComponentsDark: Story = {
+  ...ComponentsContext,
+  parameters: { dark: true },
+  args: { bridge: createWorkspaceModel().bridge, componentsApi: createComponentsModel().api }
+};
+export const ComponentsSettings: Story = {
+  parameters: { route: '/settings' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole('button', { name: componentTexts.open }));
+    await expect(await canvas.findByRole('heading', { name: componentTexts.title })).toBeVisible();
+  }
+};
+
+/** Фоновая проверка не удерживает навигацию; повторный mount не запускает её заново. */
+const checkingModel = createComponentsModel({ startupDelay: 60000 });
+export const ComponentsCheckingNavigation: Story = {
+  parameters: { route: '/components' },
+  args: { componentsApi: checkingModel.api },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText(componentTexts.checking)).toBeVisible();
+    const count = checkingModel.counters().checks;
+    await userEvent.click(canvas.getByRole('link', { name: 'Настройки' }));
+    await expect(await canvas.findByRole('heading', { name: 'Настройки' })).toBeVisible();
+    await userEvent.click(canvas.getByRole('link', { name: componentTexts.title }));
+    await expect(await canvas.findByText(componentTexts.checking)).toBeVisible();
+    await expect(checkingModel.counters().checks).toBe(count);
+    await expect(checkingModel.counters().manualChecks).toBe(0);
   }
 };

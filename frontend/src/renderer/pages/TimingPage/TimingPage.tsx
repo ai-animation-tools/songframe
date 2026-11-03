@@ -7,6 +7,8 @@ import type { MediaFile, ProjectSnapshot } from '@shared/workspace';
 import { analyzeLyrics, selectLyricTimings } from '@shared/lyrics';
 import { workspaceTexts as text } from '@shared/texts/workspace';
 import type { WorkspaceBridge } from '@platform/workspace';
+import type { ComponentsApi } from '@platform/components';
+import { ComponentsNotice } from './components/ComponentsNotice';
 import { ActionButton } from '../../components/ActionButton';
 import { MediaPlayer, type SeekRequest } from '../../components/MediaPlayer';
 import { NativeDropZone } from '../../components/NativeDropZone';
@@ -19,6 +21,7 @@ export function TimingPage({
   snapshot,
   media,
   bridge,
+  componentsApi,
   busy,
   onRefresh,
   onClose,
@@ -27,6 +30,7 @@ export function TimingPage({
   snapshot: ProjectSnapshot;
   media: MediaFile | null;
   bridge: WorkspaceBridge;
+  componentsApi: ComponentsApi;
   busy: boolean;
   onRefresh: () => void;
   onClose: () => void;
@@ -56,6 +60,7 @@ export function TimingPage({
         {snapshot.name}
       </Typography>
       <Alert severity="info">{text.readOnlyHint}</Alert>
+      <ComponentsNotice api={componentsApi} />
       {snapshot.blocked && <Alert severity="error">{text.blocked}</Alert>}
       {snapshot.problems.map((problem, index) => (
         <Alert severity="warning" key={index}>

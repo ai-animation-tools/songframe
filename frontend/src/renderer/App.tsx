@@ -3,6 +3,7 @@ import { Alert, AlertTitle, Box, Snackbar, Stack, Typography } from '@mui/materi
 import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import BuildIcon from '@mui/icons-material/Build';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { AppState } from '@shared/types';
 import type { MediaFile, ProjectSnapshot } from '@shared/workspace';
@@ -10,12 +11,15 @@ import { shellTexts } from '@shared/texts/shell';
 import { workspaceTexts as text } from '@shared/texts/workspace';
 import { signalFrontendReady } from '@platform/api';
 import { workspaceBridge, type WorkspaceBridge } from '@platform/workspace';
+import { nativeComponentsApi, type ComponentsApi } from '@platform/components';
+import { componentTexts } from '@shared/texts/components';
 import { ActionButton } from './components/ActionButton';
 import { ShellLayout } from './components/ShellLayout';
 import { RenderBoundary } from './components/RenderBoundary';
 import { ReadyContent } from './components/ReadyContent';
 import { StartupProgress } from './components/StartupProgress';
 import { ProjectsPage } from './pages';
+import { ComponentsPage } from './pages/ComponentsPage';
 import { TimingPage } from './pages/TimingPage';
 import { PreviewPage } from './pages/PreviewPage';
 import { NAV_PAGES } from './navigation';
@@ -28,6 +32,8 @@ export interface AppProps {
   onReady?: () => Promise<void>;
   /** Подменяется целиком в Storybook: реальный профиль, диалоги и Wails не запускаются. */
   bridge?: WorkspaceBridge;
+  /** Компоненты используют отдельную типизированную модель без настоящего Wails в витрине. */
+  componentsApi?: ComponentsApi;
 }
 const readState = () => window.api.app.state();
 type Startup = { phase: 'loading' } | { phase: 'error'; error: string } | { phase: 'ready'; state: AppState };
@@ -83,7 +89,7 @@ export function App(props: AppProps) {
 /** Владелец открытого read-only снимка. Номер запроса защищает от позднего ответа при смене проекта,
  * закрытии и unmount; переход из уведомления происходит только после успешного чтения его проекта.
  */
-function Workspace({ loadState = readState, onReady = signalFrontendReady, bridge = workspaceBridge }: AppProps) {
+function Workspace({ loadState = readState, onReady = signalFrontendReady, bridge = workspaceBridge, componentsApi = nativeComponentsApi }: AppProps) {
   const [startup, setStartup] = useState<Startup>({ phase: 'loading' });
   const [project, setProject] = useState<ProjectSnapshot | null>(null);
   const [media, setMedia] = useState<MediaFile | null>(null);
@@ -251,12 +257,27 @@ function Workspace({ loadState = readState, onReady = signalFrontendReady, bridg
           <ReadyContent onReady={onReady} onError={readinessFailed}>
             {projects ? (
               <ProjectsPage state={startup.state} busy={busy} recent={recent} onPick={() => void pickProject()} onOpen={(path) => void openProject(path)} />
+            ) : location.pathname === '/components' ? (
+              <ComponentsPage api={componentsApi} defaultDirectory={`${startup.state.localDir}/components`} />
+            ) : location.pathname === '/settings' ? (
+              <Stack spacing={2}>
+                <Typography variant="h5" component="h1">
+                  {page?.label}
+                </Typography>
+                <Typography>{componentTexts.settingsHint}</Typography>
+                <Box>
+                  <ActionButton startIcon={<BuildIcon />} onClick={() => navigate('/components')}>
+                    {componentTexts.open}
+                  </ActionButton>
+                </Box>
+              </Stack>
             ) : location.pathname === '/project/timing' && project ? (
               <TimingPage
                 key={project.path}
                 snapshot={project}
                 media={media}
                 bridge={bridge}
+                componentsApi={componentsApi}
                 busy={busy}
                 onRefresh={() => void openProject(project.path)}
                 onClose={closeProject}

@@ -33,7 +33,7 @@ func main() {
 	}
 }
 
-// run собирает профиль, сервис и окно; здесь нет ML runtime и внешних производственных процессов.
+// run собирает профиль, сервисы и окно; найденные компоненты проверяются сервисом в фоне.
 // Smoke подтверждает настоящий путь React → Wails binding → State и имеет ограниченный срок.
 func run() error {
 	smoke := flag.Bool("smoke", false, "Проверить запуск интерфейса и завершить приложение")
@@ -77,6 +77,7 @@ func run() error {
 	}
 	defer componentManager.Cancel()
 	componentService := shell.NewComponentsService(componentManager)
+	defer componentService.ServiceShutdown()
 	var desktop *application.App
 	var result *shell.SmokeResult
 	var ready func(shell.AppState) error

@@ -118,3 +118,54 @@ for (const name of [
     if (name === 'read-only-timings' || name === 'read-only-dark') await page.screenshot({ path: `/tmp/songframe-step3-${name}.png`, fullPage: true });
   });
 }
+
+for (const name of ['components-context', 'components-dark', 'components-settings', 'components-checking-navigation']) {
+  test(`компоненты в оболочке: ${name}`, async ({ page }) => {
+    await page.goto(story(name));
+    await page.waitForFunction(() => window.__shellStoryOutcome?.finished === true);
+    await expect(page.getByRole('heading', { name: 'Компоненты', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+}
+for (const name of [
+  'automatic-ready',
+  'dark',
+  'missing',
+  'ready',
+  'downloading',
+  'verifying',
+  'error-recovery',
+  'connect-on-computer',
+  'connect-archive',
+  'connect-bad-then-valid',
+  'cancelled-connect',
+  'model-waits-for-runtime',
+  'component-error',
+  'long-path-dark',
+  'catalog-recovery',
+  'polling-is-read-only'
+]) {
+  test(`менеджер компонентов: ${name}`, async ({ page }) => {
+    await page.goto(`/iframe.html?id=компоненты-менеджер--${name}&viewMode=story`);
+    await page.waitForFunction(() => window.__shellStoryOutcome?.finished === true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expect(page.getByRole('button', { name: /Проверить компоненты|Перепроверить файлы|Обновить/ })).toHaveCount(0);
+    if (name === 'automatic-ready' || name === 'dark') {
+      for (const title of ['FFmpeg и ffprobe', 'ONNX Runtime']) {
+        const logo = page.getByRole('region', { name: title, exact: true }).locator('img');
+        await expect.poll(() => logo.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+        const badge = await logo.evaluate((element) => {
+          const bounds = element.parentElement!.getBoundingClientRect();
+          return { width: bounds.width, height: bounds.height, fit: getComputedStyle(element).objectFit };
+        });
+        expect(badge).toEqual({ width: 56, height: 56, fit: 'contain' });
+      }
+      const left = await page.getByRole('region', { name: 'FFmpeg и ffprobe' }).boundingBox();
+      const right = await page.getByRole('region', { name: 'ONNX Runtime', exact: true }).boundingBox();
+      expect(right!.x).toBeGreaterThan(left!.x);
+      expect(right!.y).toBe(left!.y);
+      await page.getByRole('heading', { name: 'Компоненты', exact: true }).click();
+      await page.screenshot({ path: `/tmp/songframe-41-3-state-${name}.png` });
+    }
+  });
+}

@@ -140,6 +140,25 @@ func TestManagerMissingDoesNotBlockReading(t *testing.T) {
 	}
 }
 
+// TestManagerMissingSnapshotIsStable повторяет опрос пустой установки, как экран компонентов.
+// Неизменные файлы должны давать одинаковое объяснение, без случайной смены отсутствующего пути.
+func TestManagerMissingSnapshotIsStable(t *testing.T) {
+	m, _, _ := testManager(t)
+	before, err := json.Marshal(m.State())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 128 {
+		after, err := json.Marshal(m.State())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(after) != string(before) {
+			t.Fatalf("статус неизменной установки меняется при повторном опросе\nдо: %s\nпосле: %s", before, after)
+		}
+	}
+}
+
 // TestManagerExplicitPathNeverFallsBack сохраняет намерение пользователя при исчезнувшей папке.
 func TestManagerExplicitPathNeverFallsBack(t *testing.T) {
 	m, _, _ := testManager(t)

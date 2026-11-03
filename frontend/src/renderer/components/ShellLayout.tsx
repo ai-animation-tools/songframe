@@ -39,6 +39,7 @@ const ICONS: Record<string, ReactElement> = {
   '/jobs': <HistoryIcon />,
   '/environment': <SettingsSuggestIcon />,
   '/settings': <SettingsIcon />,
+  '/components': <BuildIcon />,
   '/help': <HelpOutlineIcon />
 };
 
@@ -72,7 +73,7 @@ export function ShellLayout({ children, projectName }: { children: ReactNode; pr
         <Box sx={{ height: SHELL_HEADER_HEIGHT, flexShrink: 0 }} />
         <List dense aria-label={shellTexts.navigation} sx={{ pt: 1 }}>
           {NAV_PAGES.map((item) =>
-            item.to === '/projects' || (item.to === '/project/timing' && projectName) ? (
+            item.to === '/projects' || item.to === '/settings' || item.to === '/components' || (item.to === '/project/timing' && projectName) ? (
               <ListItemButton key={item.to} component={NavLink} to={item.to} selected={location.pathname === item.to || location.pathname === '/'}>
                 <ListItemIcon sx={{ minWidth: 34 }}>{ICONS[item.to]}</ListItemIcon>
                 <ListItemText primary={item.label} />

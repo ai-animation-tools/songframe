@@ -16,6 +16,7 @@ export const navigationTexts = {
     jobs: 'Журнал заданий',
     environment: 'Среда',
     settings: 'Настройки',
+    components: 'Компоненты',
     help: 'Справка'
   },
   blocks: {

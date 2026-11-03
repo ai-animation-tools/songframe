@@ -49,6 +49,14 @@ export function OpenPreview(input: $models.PreviewInput): $CancellablePromise<vo
 }
 
 /**
+ * PickComponentFile — один пользовательский вход для готового компонента и его архива.
+ * Отмена возвращает null и не меняет подключение; сам диалог не запускает проверку или установку.
+ */
+export function PickComponentFile(component: string): $CancellablePromise<string | null> {
+    return $Call.ByID(2721921690, component);
+}
+
+/**
  * PickFiles сохраняет порядок выбранных файлов и возвращает [] при отмене, никогда null.
  */
 export function PickFiles(input: $models.PickOptions | null): $CancellablePromise<string[] | null> {

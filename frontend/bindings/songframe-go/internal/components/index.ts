@@ -3,6 +3,10 @@
 
 export type {
     ComponentState,
+    InstallLog,
+    InstallPackage,
+    InstallRequest,
+    InstallSnapshot,
     OperationState,
     Selection,
     Snapshot

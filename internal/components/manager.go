@@ -12,17 +12,22 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 )
 
 // Selection хранит только явно выбранные пути нового профиля; пустое поле разрешает обнаружение.
-// FFmpegDirectory содержит пару программ, ORTDirectory — содержимое корня закреплённого архива.
+// FFmpegDirectory содержит пару программ, ORTDirectory — корень внешнего runtime с библиотекой в lib/.
+// ORTLibraryFile и отдельные CTC-файлы имеют приоритет над общими папками; выбор одного файла не меняет соседа.
 type Selection struct {
 	FFmpegDirectory  string `json:"ffmpegDirectory"`
 	ORTDirectory     string `json:"ortDirectory"`
+	ORTLibraryFile   string `json:"ortLibraryFile"`
 	VocalsFile       string `json:"vocalsFile"`
 	CTCDirectory     string `json:"ctcDirectory"`
+	CTCModelFile     string `json:"ctcModelFile"`
+	CTCVocabFile     string `json:"ctcVocabFile"`
 	ManagedDirectory string `json:"managedDirectory"`
 }
 
@@ -82,7 +87,7 @@ type managerOptions struct {
 }
 
 // Manager владеет настройками компонентов нового профиля и проверками по запросу.
-// Создание/State не загружают ORT и не скачивают пакеты; единственная запись — Configure.
+// Создание/State не загружают ORT и не скачивают пакеты; установка имеет отдельное состояние и отмену.
 type Manager struct {
 	mu              sync.Mutex
 	work            sync.Mutex
@@ -97,6 +102,9 @@ type Manager struct {
 	mediaSignature  string
 	mediaOperations map[string]ProbeOutcome
 	cancel          context.CancelFunc
+	installation    InstallSnapshot
+	installCancel   context.CancelFunc
+	installOptions  installOptions
 }
 
 // NewManager читает только настройки компонентов из отдельного профиля оболочки.
@@ -112,6 +120,7 @@ func NewManager(profile string) (*Manager, error) {
 // newManager подменяет платформенные границы в тестах, сохраняя тот же порядок обнаружения.
 func newManager(profile string, manifest Manifest, options managerOptions) *Manager {
 	m := &Manager{profile: profile, manifest: manifest, options: options, checked: map[string]checkedState{}, hashes: map[string]string{}, mediaOperations: map[string]ProbeOutcome{}}
+	m.initializeInstallation()
 	data, err := os.ReadFile(filepath.Join(profile, "components.json"))
 	if errors.Is(err, os.ErrNotExist) {
 		return m
@@ -127,14 +136,20 @@ func newManager(profile string, manifest Manifest, options managerOptions) *Mana
 	return m
 }
 
-// Configure атомарно сохраняет выбор и сбрасывает подтверждения прежних путей.
-// Во время проверки выбор отклоняется; Cancel позволяет сначала остановить её.
+// Configure атомарно сохраняет выбор, сохраняя проверки неизменившихся файлов по fingerprint.
+// Во время проверки или установки выбор отклоняется; соответствующая отмена остаётся доступной.
 func (m *Manager) Configure(selection Selection) (Snapshot, error) {
 	if !m.work.TryLock() {
-		return m.State(), fmt.Errorf("сначала остановите проверку компонентов")
+		return m.State(), fmt.Errorf("сначала остановите проверку или установку компонентов")
 	}
 	defer m.work.Unlock()
-	for _, p := range []*string{&selection.FFmpegDirectory, &selection.ORTDirectory, &selection.VocalsFile, &selection.CTCDirectory, &selection.ManagedDirectory} {
+	return m.configureLocked(selection)
+}
+
+// configureLocked сохраняет выбор под уже захваченным work, в том числе после успешной установки.
+// Подтверждения неизменных реальных файлов сохраняются и при автоматическом переключении на managed.
+func (m *Manager) configureLocked(selection Selection) (Snapshot, error) {
+	for _, p := range []*string{&selection.FFmpegDirectory, &selection.ORTDirectory, &selection.ORTLibraryFile, &selection.VocalsFile, &selection.CTCDirectory, &selection.CTCModelFile, &selection.CTCVocabFile, &selection.ManagedDirectory} {
 		if *p != "" {
 			value, err := filepath.Abs(*p)
 			if err != nil {
@@ -173,11 +188,8 @@ func (m *Manager) Configure(selection Selection) (Snapshot, error) {
 	m.mu.Lock()
 	m.selection = selection
 	m.problem = ""
-	m.checked = map[string]checkedState{}
-	m.hashes = map[string]string{}
-	m.mediaOperations = map[string]ProbeOutcome{}
-	m.mediaSignature = ""
-	m.rejectedManaged = ""
+	// Все подтверждения привязаны к реальным paths/size/mtime: чужое поле настройки
+	// не повод заново читать веса или создавать sessions, новые файлы теряют ready сами.
 	m.mu.Unlock()
 	return m.State(), nil
 }
@@ -254,25 +266,27 @@ func (m *Manager) discover() []candidate {
 			result = append(result, c)
 			continue
 		}
-		explicit := ""
+		explicit, explicitFile := "", ""
 		switch id {
 		case "ffmpeg":
 			explicit = m.selection.FFmpegDirectory
 		case "ort-cpu":
-			explicit = m.selection.ORTDirectory
+			explicit, explicitFile = m.selection.ORTDirectory, m.selection.ORTLibraryFile
 		case "voc-ft":
-			explicit = m.selection.VocalsFile
-		default:
-			explicit = m.selection.CTCDirectory
+			explicitFile = m.selection.VocalsFile
+		case "ctc-ru":
+			explicit, explicitFile = m.selection.CTCDirectory, m.selection.CTCModelFile
+		case "ctc-vocab":
+			explicit, explicitFile = m.selection.CTCDirectory, m.selection.CTCVocabFile
 		}
 		managed := m.selection.ManagedDirectory
 		if managed == "" {
 			managed = filepath.Join(m.profile, "components")
 		}
-		managed = filepath.Join(managed, a.ID, a.Version)
+		managed = managedArtifactDirectory(managed, a)
 		base := managed
 		c.state.Source = "managed"
-		if explicit != "" {
+		if explicit != "" || explicitFile != "" {
 			base = explicit
 			c.state.Source = "explicit"
 		}
@@ -286,13 +300,19 @@ func (m *Manager) discover() []candidate {
 		} else {
 			for _, f := range a.Files {
 				name := filepath.Join(base, filepath.FromSlash(f.Path))
-				if id == "voc-ft" && explicit != "" {
-					name = explicit
+				if explicitFile != "" && (id != "ort-cpu" || f.Path == a.Entrypoints["ort-library"]) {
+					name = explicitFile
 				}
 				c.files[f.Path] = name
 			}
 			for role, name := range a.Entrypoints {
 				c.state.Paths[role] = c.files[name]
+			}
+			if id == "ort-cpu" && c.state.Source == "explicit" {
+				// У внешней установки проверяется открываемая библиотека и native ABI,
+				// а notices и aliases принадлежат целостности нашего управляемого пакета.
+				entrypoint := a.Entrypoints["ort-library"]
+				c.files = map[string]string{entrypoint: c.state.Paths["ort-library"]}
 			}
 		}
 		// Непригодная управляемая версия не затеняет подходящую системную пару.
@@ -326,7 +346,7 @@ func (m *Manager) discover() []candidate {
 
 		c.signature = signature(c.files)
 		c.state.Status = "unchecked"
-		c.state.Reason = "Найденные файлы требуют проверки."
+		c.state.Reason = "Готовность найденных файлов ещё не подтверждена."
 		if len(c.files) == 0 {
 			c.state.Status = "missing"
 			c.state.Reason = "FFmpeg и ffprobe не найдены в PATH."
@@ -335,17 +355,55 @@ func (m *Manager) discover() []candidate {
 			c.state.Status = "missing"
 			c.state.Reason = "Не найдена полная пара FFmpeg/ffprobe."
 		}
-		for _, name := range c.files {
+		// Сначала проверяются рабочие entrypoints: отсутствие runtime не должно
+		// объясняться отсутствием LICENSE. Остальной состав имеет стабильный порядок.
+		for _, key := range candidateFileOrder(c) {
+			name := c.files[key]
 			info, err := os.Stat(name)
 			if err != nil || !info.Mode().IsRegular() {
 				c.state.Status = "missing"
 				c.state.Reason = "Не найден обязательный файл: " + name
+				if id == "ort-cpu" && name == c.state.Paths["ort-library"] {
+					c.state.Reason = "Не найдена библиотека ONNX Runtime: " + name
+				}
 				break
 			}
 		}
 		result = append(result, c)
 	}
 	return result
+}
+
+// candidateFileOrder ставит operational entrypoints перед лицензионными материалами.
+// Явный порядок ролей и сортировка остальных файлов стабилизируют причины при опросе UI.
+func candidateFileOrder(c candidate) []string {
+	keys := make([]string, 0, len(c.files))
+	all := make([]string, 0, len(c.files))
+	for key := range c.files {
+		all = append(all, key)
+	}
+	sort.Strings(all)
+	seen := map[string]bool{}
+	for _, role := range []string{"ffmpeg", "ffprobe", "ort-library", "model", "vocab"} {
+		entrypoint := c.state.Paths[role]
+		if entrypoint == "" {
+			continue
+		}
+		for _, key := range all {
+			if c.files[key] == entrypoint && !seen[key] {
+				keys = append(keys, key)
+				seen[key] = true
+				break
+			}
+		}
+	}
+	rest := make([]string, 0, len(c.files))
+	for _, key := range all {
+		if !seen[key] {
+			rest = append(rest, key)
+		}
+	}
+	return append(keys, rest...)
 }
 
 // artifact выбирает только закреплённые OS/arch; модели общие для платформ.
@@ -359,15 +417,20 @@ func (m *Manager) artifact(component string) (Artifact, bool) {
 }
 
 // signature фиксирует stat всех файлов без чтения больших весов; порядок задаётся сортировкой JSON.
-func signature(files map[string]string) string {
+func signature(files map[string]string) string { return signatureAt(files, files) }
+
+// signatureAt читает metadata фактических файлов, подставляя известные прежние пути в fingerprint.
+// Установщик так подтверждает неизменность проверенного staging после атомарного rename без повторного SHA.
+func signatureAt(files, labels map[string]string) string {
 	records := map[string]string{}
 	for key, name := range files {
+		label := labels[key]
 		info, err := os.Stat(name)
 		if err != nil {
-			records[key] = name + "|" + err.Error()
+			records[key] = label + "|" + err.Error()
 			continue
 		}
-		records[key] = fmt.Sprintf("%s|%d|%d|%s", name, info.Size(), info.ModTime().UnixNano(), info.Mode())
+		records[key] = fmt.Sprintf("%s|%d|%d|%s", label, info.Size(), info.ModTime().UnixNano(), info.Mode())
 	}
 	data, _ := json.Marshal(records)
 	return string(data)
@@ -386,7 +449,7 @@ func (m *Manager) Cancel() {
 // Force заново хеширует набор; обычный повтор использует подтверждение неизменных метаданных.
 func (m *Manager) Check(ctx context.Context, operationIDs []string, force bool) (result Snapshot, resultErr error) {
 	if !m.work.TryLock() {
-		return m.State(), fmt.Errorf("проверка компонентов уже выполняется")
+		return m.State(), fmt.Errorf("проверка или установка компонентов уже выполняется")
 	}
 	defer m.work.Unlock()
 	needed := map[string]bool{}
@@ -481,9 +544,13 @@ func (m *Manager) Check(ctx context.Context, operationIDs []string, force bool) 
 					status = "restart_required"
 				}
 				m.save(ort, status, err.Error(), report.Version)
-				for _, c := range candidates {
-					if needed[c.state.ID] && (c.state.ID == "voc-ft" || c.state.ID == "ctc-ru") {
-						m.save(c, status, err.Error(), "")
+				if ctx.Err() != nil {
+					for _, c := range candidates {
+						for _, model := range models {
+							if c.state.ID == model.Artifact.Component {
+								m.save(c, "cancelled", err.Error(), "")
+							}
+						}
 					}
 				}
 				failures = append(failures, err.Error())
@@ -496,6 +563,9 @@ func (m *Manager) Check(ctx context.Context, operationIDs []string, force bool) 
 				}
 			}
 		}
+		if ctx.Err() == nil {
+			m.waitForRuntime(candidates, models)
+		}
 	}
 	if ctx.Err() != nil {
 		return m.State(), ctx.Err()
@@ -504,6 +574,38 @@ func (m *Manager) Check(ctx context.Context, operationIDs []string, force bool) 
 		return m.State(), fmt.Errorf("компоненты: %s", strings.Join(failures, "; "))
 	}
 	return m.State(), nil
+}
+
+// waitForRuntime даёт проверенной по SHA модели конечное состояние ожидания зависимости.
+// Собственные ошибки SHA/графа не заменяются ожиданием ORT; следующий Check использует прежний SHA и запускает native session после появления runtime.
+func (m *Manager) waitForRuntime(candidates []candidate, models []ModelFile) {
+	var runtime ComponentState
+	for _, state := range m.State().Components {
+		if state.ID == "ort-cpu" {
+			runtime = state
+			break
+		}
+	}
+	if runtime.Status == "ready" {
+		return
+	}
+	verified := map[string]bool{}
+	for _, model := range models {
+		verified[model.Artifact.Component] = true
+	}
+	for _, c := range candidates {
+		if !verified[c.state.ID] {
+			continue
+		}
+		m.mu.Lock()
+		saved := m.checked[c.state.ID]
+		m.mu.Unlock()
+		if saved.signature == c.signature && (saved.status == "incompatible" || saved.status == "error") {
+			continue
+		}
+		reason := "Файл модели проверен. Для проверки и работы модели нужен ONNX Runtime CPU: " + runtime.Reason
+		m.save(c, "blocked", reason, c.artifact.Version)
+	}
 }
 
 // save публикует подтверждение только если файлы не изменились во время проверки.
@@ -525,7 +627,7 @@ func errorStatus(ctx context.Context) string {
 	return "incompatible"
 }
 
-// verifyFiles хеширует управляемый пакет и все ML-файлы; внешний FFmpeg проверяется по функциям.
+// verifyFiles хеширует управляемый пакет и все модели; внешние программы проверяются по функциям.
 // Кэш хранится только в памяти и сбрасывается по изменённым stat/путям или Force.
 func (m *Manager) verifyFiles(ctx context.Context, c candidate, force bool) error {
 	if c.state.ID == "ffmpeg" && c.state.Source != "managed" {
@@ -540,6 +642,15 @@ func (m *Manager) verifyFiles(ctx context.Context, c candidate, force bool) erro
 	m.mu.Lock()
 	delete(m.hashes, c.signature)
 	m.mu.Unlock()
+	if c.state.ID == "ort-cpu" && c.state.Source == "explicit" {
+		if err := verifyExternalORTFile(ctx, c); err != nil {
+			return err
+		}
+		m.mu.Lock()
+		m.hashes[c.signature] = "verified"
+		m.mu.Unlock()
+		return nil
+	}
 	for _, file := range c.artifact.Files {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -555,6 +666,17 @@ func (m *Manager) verifyFiles(ctx context.Context, c candidate, force bool) erro
 		f, err := os.Open(name)
 		if err != nil {
 			return err
+		}
+		// Неверный размер сразу исключает закреплённый файл: случайно выбранное
+		// большое медиа не нужно целиком читать ради заранее невозможного SHA.
+		info, statErr := f.Stat()
+		if statErr != nil {
+			f.Close()
+			return statErr
+		}
+		if info.Size() != file.Bytes {
+			f.Close()
+			return fmt.Errorf("файл не совпадает с закреплённым SHA/размером: %s", name)
 		}
 		hash := sha256.New()
 		buffer := make([]byte, 256*1024)
@@ -592,6 +714,34 @@ func (m *Manager) verifyFiles(ctx context.Context, c candidate, force bool) erro
 	m.hashes[c.signature] = "verified"
 	m.mu.Unlock()
 	return nil
+}
+
+// verifyExternalORTFile проверяет открытие выбранной библиотеки без требований к упаковке поставщика.
+// Допустимость ABI, CPU provider и зависимостей подтверждает CheckORT; models сохраняют SHA из lock.
+func verifyExternalORTFile(ctx context.Context, c candidate) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	library := c.state.Paths["ort-library"]
+	f, err := os.Open(library)
+	if err != nil {
+		return fmt.Errorf("не удалось открыть библиотеку ONNX Runtime: %w", err)
+	}
+	info, statErr := f.Stat()
+	closeErr := f.Close()
+	if statErr != nil {
+		return statErr
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("библиотека ONNX Runtime должна быть обычным файлом: %s", library)
+	}
+	if signature(c.files) != c.signature {
+		return fmt.Errorf("библиотека ONNX Runtime изменилась во время проверки")
+	}
+	return ctx.Err()
 }
 
 // verifyVocab проверяет соглашение о blank/separator и непрерывных ID, не загружая модель.

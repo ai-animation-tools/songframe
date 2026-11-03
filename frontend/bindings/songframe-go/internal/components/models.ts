@@ -15,6 +15,53 @@ export interface ComponentState {
 }
 
 /**
+ * InstallLog — ограниченный журнал установки; пути и ошибки остаются в отдельном профиле.
+ */
+export interface InstallLog {
+    "time": string;
+    "message": string;
+}
+
+/**
+ * InstallPackage — предложение закреплённого пакета для текущей платформы.
+ * TemporaryBytes учитывает файл загрузки и staging без удаления прежней версии.
+ */
+export interface InstallPackage {
+    "component": string;
+    "id": string;
+    "version": string;
+    "bytes": number;
+    "installBytes": number;
+    "temporaryBytes": number;
+    "license": string;
+    "url": string;
+    "supported": boolean;
+    "reason": string;
+}
+
+/**
+ * InstallRequest перечисляет выбранные компоненты, а LocalFiles заменяет сеть офлайн-файлом.
+ * Ключ LocalFiles — component; внешние файлы только читаются и никогда не перемещаются.
+ */
+export interface InstallRequest {
+    "components": string[] | null;
+    "localFiles": { [_ in string]?: string } | null;
+}
+
+/**
+ * InstallSnapshot отделяет прогресс установки от функциональной готовности Manager.State.
+ * Installed подтверждает опубликованные байты, а не успешный native probe.
+ */
+export interface InstallSnapshot {
+    "status": string;
+    "component": string;
+    "completedBytes": number;
+    "totalBytes": number;
+    "message": string;
+    "log": InstallLog[] | null;
+}
+
+/**
  * OperationState объясняет недоступность конкретной функции без блокировки чтения проекта.
  */
 export interface OperationState {
@@ -26,13 +73,17 @@ export interface OperationState {
 
 /**
  * Selection хранит только явно выбранные пути нового профиля; пустое поле разрешает обнаружение.
- * FFmpegDirectory содержит пару программ, ORTDirectory — содержимое корня закреплённого архива.
+ * FFmpegDirectory содержит пару программ, ORTDirectory — корень внешнего runtime с библиотекой в lib/.
+ * ORTLibraryFile и отдельные CTC-файлы имеют приоритет над общими папками; выбор одного файла не меняет соседа.
  */
 export interface Selection {
     "ffmpegDirectory": string;
     "ortDirectory": string;
+    "ortLibraryFile": string;
     "vocalsFile": string;
     "ctcDirectory": string;
+    "ctcModelFile": string;
+    "ctcVocabFile": string;
     "managedDirectory": string;
 }
 

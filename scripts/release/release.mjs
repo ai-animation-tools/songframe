@@ -120,9 +120,12 @@ export function githubClient(run) {
   };
 }
 
-/** Состояние CI коммита: success, failure, pending или absent. Учитывается последний запуск workflow CI. */
+/** Состояние CI коммита: ручная проверка квалифицирует выпуск только с явной отметкой полного набора. */
 export function ciState(runs) {
-  const latest = runs.filter((item) => item.name === 'CI').sort((a, b) => (b.run_attempt ?? 1) - (a.run_attempt ?? 1) || b.id - a.id)[0];
+  // Фильтруем до выбора последней попытки: частичный ручной успех не скрывает обычный pending или failure.
+  const latest = runs
+    .filter((item) => item.name === 'CI' && (item.event !== 'workflow_dispatch' || item.display_title === 'CI · manual/all'))
+    .sort((a, b) => (b.run_attempt ?? 1) - (a.run_attempt ?? 1) || b.id - a.id)[0];
   if (!latest) return 'absent';
   if (latest.status !== 'completed') return 'pending';
   return latest.conclusion === 'success' ? 'success' : 'failure';
@@ -330,9 +333,13 @@ export function createRelease(options = {}) {
       throw new ReleaseError('Исходный коммит комплекта отсутствует в main на GitHub.');
     });
     const ci = ciState(await github.ci(revision));
-    // CI не запускается на правки только документации; тогда его запускают вручную для того же коммита.
+    // Частичный ручной CI не квалифицирует исходники: для документационного коммита нужен явный полный режим.
     const hint =
-      ci === 'absent' ? ' Запустите его: gh workflow run CI --ref main.' : ci === 'failure' ? ' Отменённый запуск перезапускают: gh run rerun <id>.' : '';
+      ci === 'absent'
+        ? ' Запустите полный CI: gh workflow run CI --ref main -f "mode=Полный набор".'
+        : ci === 'failure'
+          ? ' Отменённый запуск перезапускают: gh run rerun <id>.'
+          : '';
     requireState(ci === 'success', `CI исходного коммита ${revision.slice(0, 12)}: ${ci}. Публикация требует успешного CI этого коммита.${hint}`);
     requireState(!current.remoteTag || current.remoteTag === revision, 'Тег на GitHub не соответствует подготовленному комплекту.');
     if (!current.remoteTag) await git('push', 'origin', `refs/tags/${current.tag}`);

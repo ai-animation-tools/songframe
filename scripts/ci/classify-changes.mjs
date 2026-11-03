@@ -166,9 +166,49 @@ async function validateSelectedTests(result, cwd) {
   return withPreparation(result);
 }
 
-/** PR проверяет всю ветку от общей базы, push — диапазон всех отправленных коммитов, ручной запуск — всё. */
+async function classifyRange(range, cwd) {
+  // Без распознавания rename Git показывает старый и новый путь; NUL сохраняет пробелы и переводы строк в именах.
+  const { stdout } = await execute('git', ['diff', '--name-only', '--no-renames', '-z', ...range, '--'], { cwd, maxBuffer: 10 * 1024 * 1024 });
+  return validateSelectedTests(classifyChanges(stdout.split('\0').filter(Boolean)), cwd);
+}
+
+export class ManualInputError extends Error {}
+
+/** Ручной выбор не превращается в полный набор из-за опечатки: ошибки параметров останавливают scope. */
+async function classifyManual(inputs, cwd) {
+  if (inputs == null) inputs = {};
+  if (typeof inputs !== 'object' || Array.isArray(inputs)) throw new ManualInputError('Параметры ручного CI должны быть объектом.');
+  const mode = inputs.mode === undefined ? 'Автоматически (последний коммит)' : inputs.mode;
+  if (mode === 'Полный набор') return full('manual-full');
+  if (mode === 'Выбранные группы') {
+    const flags = CI_FLAGS.filter((flag) => {
+      const value = inputs[flag];
+      if (value === true || value === 'true') return true;
+      if (value === undefined || value === false || value === 'false') return false;
+      throw new ManualInputError(`Параметр ${flag} ручного CI должен иметь значение true или false.`);
+    });
+    if (!flags.length) throw new ManualInputError('В режиме «Выбранные группы» отметьте хотя бы одну группу проверок.');
+    return withPreparation(scope(flags, flags.includes('node') ? null : [], flags.includes('python') ? null : [], 'manual-selected'));
+  }
+  if (mode !== 'Автоматически (последний коммит)')
+    throw new ManualInputError('Неизвестный режим ручного CI. Выберите автоматический режим, выбранные группы или полный набор.');
+  try {
+    // HEAD^ — первый родитель merge-коммита; выбранный ref берётся из checkout, а не из payload push/PR.
+    const { stdout } = await execute('git', ['rev-parse', 'HEAD', 'HEAD^'], { cwd });
+    const [head, base] = stdout.trim().split(/\s+/);
+    const result = await classifyRange([base, head], cwd);
+    return { ...result, reason: `manual-auto-${result.reason}` };
+  } catch {
+    return full('manual-auto-unavailable-range');
+  }
+}
+
+/** PR проверяет всю ветку от общей базы, push — диапазон всех отправленных коммитов. */
 export async function classifyEvent(eventName, event, cwd = process.cwd()) {
-  if (eventName === 'workflow_dispatch') return full('manual');
+  if (eventName === 'workflow_dispatch') {
+    if (!event || typeof event !== 'object' || Array.isArray(event)) throw new ManualInputError('Не удалось прочитать событие ручного CI.');
+    return classifyManual(event.inputs, cwd);
+  }
   let base;
   let head;
   if (eventName === 'push') {
@@ -182,9 +222,7 @@ export async function classifyEvent(eventName, event, cwd = process.cwd()) {
   if (!commit(base) || !commit(head)) return full('missing-range');
   try {
     const range = eventName === 'pull_request' ? [`${base}...${head}`] : [base, head];
-    // Без распознавания rename Git показывает старый и новый путь; NUL сохраняет пробелы и переводы строк в именах.
-    const { stdout } = await execute('git', ['diff', '--name-only', '--no-renames', '-z', ...range, '--'], { cwd, maxBuffer: 10 * 1024 * 1024 });
-    return await validateSelectedTests(classifyChanges(stdout.split('\0').filter(Boolean)), cwd);
+    return await classifyRange(range, cwd);
   } catch {
     return full('unavailable-diff');
   }
@@ -195,12 +233,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   try {
     const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'));
     result = await classifyEvent(process.env.GITHUB_EVENT_NAME, event);
-  } catch {
-    result = full('unavailable-event');
+  } catch (error) {
+    if (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch') {
+      console.error(error instanceof ManualInputError ? error.message : `Не удалось прочитать параметры ручного CI: ${error.message}`);
+      process.exitCode = 1;
+    } else result = full('unavailable-event');
   }
-  if (process.env.GITHUB_OUTPUT) {
+  if (result && process.env.GITHUB_OUTPUT) {
     const outputs = [...CI_FLAGS, 'node_media', 'node_tests', 'python_tests'].map((key) => `${key}=${JSON.stringify(result[key])}\n`).join('');
     await appendFile(process.env.GITHUB_OUTPUT, outputs);
   }
-  console.log(JSON.stringify(result));
+  if (result) console.log(JSON.stringify(result));
 }

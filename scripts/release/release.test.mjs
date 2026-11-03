@@ -140,6 +140,43 @@ test('состояние CI берёт последнюю попытку workflo
   assert.equal(ciState([cancelled, { ...cancelled, run_attempt: 2, conclusion: 'success' }]), 'success');
 });
 
+test('состояние CI не заменяет автоматический результат частичным ручным успехом', () => {
+  const automatic = { id: 1, name: 'CI', event: 'push', status: 'completed', conclusion: 'failure' };
+  for (const display_title of ['CI · manual/auto', 'CI · manual/selected', 'CI · manual/unknown', undefined]) {
+    // Большие id и номер попытки не должны дать исключённому запуску преимущество при сортировке.
+    const partial = { id: 100, name: 'CI', event: 'workflow_dispatch', display_title, run_attempt: 10, status: 'completed', conclusion: 'success' };
+    for (const event of ['push', 'pull_request', undefined]) {
+      assert.equal(ciState([{ ...automatic, event }, partial]), 'failure');
+      assert.equal(ciState([{ ...automatic, event, status: 'in_progress', conclusion: null }, partial]), 'pending');
+      assert.equal(ciState([{ ...automatic, event, conclusion: 'success' }, partial]), 'success');
+    }
+    assert.equal(ciState([partial]), 'absent');
+  }
+});
+
+test('состояние CI принимает полный ручной набор по его обычному статусу', () => {
+  const full = { id: 1, name: 'CI', event: 'workflow_dispatch', display_title: 'CI · manual/all', status: 'completed', conclusion: 'success' };
+  assert.equal(ciState([full]), 'success');
+  assert.equal(ciState([{ ...full, status: 'queued', conclusion: null }]), 'pending');
+  for (const conclusion of ['failure', 'cancelled', 'timed_out', 'skipped']) {
+    assert.equal(ciState([{ ...full, conclusion }]), 'failure');
+  }
+  for (const display_title of ['', 'CI', 'CI · manual/all ', 'CI · manual/selected']) {
+    assert.equal(ciState([{ ...full, display_title }]), 'absent');
+  }
+});
+
+test('состояние CI сортирует только квалифицируемые попытки полного и автоматического запуска', () => {
+  const automatic = { id: 1, name: 'CI', event: 'push', status: 'completed', conclusion: 'failure' };
+  const full = { ...automatic, id: 2, event: 'workflow_dispatch', display_title: 'CI · manual/all', conclusion: 'success' };
+  const partial = { ...automatic, id: 100, event: 'workflow_dispatch', display_title: 'CI · manual/selected', run_attempt: 10, conclusion: 'success' };
+  assert.equal(ciState([partial, automatic, full]), 'success');
+  assert.equal(ciState([full, partial, { ...automatic, id: 3, status: 'in_progress', conclusion: null }]), 'pending');
+  assert.equal(ciState([partial, full, { ...automatic, id: 3 }]), 'failure');
+  assert.equal(ciState([partial, { ...full, run_attempt: 2 }, { ...automatic, id: 3 }]), 'success');
+  assert.equal(ciState([{ ...full, name: 'Другой workflow' }, partial]), 'absent');
+});
+
 test('план первого выпуска берёт версию package.json и не требует чистого дерева', async (context) => {
   const { cwd, release, head } = await fixture(context, { packageVersion: '0.1.0' });
   await writeFile(join(cwd, 'черновик.txt'), 'не закоммичено');
@@ -229,7 +266,7 @@ test('изменённая после подготовки поставка ос
 test('publish требует успешного CI исходного коммита', async (context) => {
   const { notes, calls, release } = await fixture(context);
   await release.prepare(version, notes);
-  await assert.rejects(release.publish(version), /CI исходного коммита [a-f0-9]{12}: absent/);
+  await assert.rejects(release.publish(version), /CI исходного коммита [a-f0-9]{12}: absent.*gh workflow run CI --ref main -f "mode=Полный набор"/);
   assert(!calls.some(([command, sub]) => command === 'git' && sub === 'push'));
 });
 

@@ -8,7 +8,7 @@ import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { ASR_TESTS, CI_FLAGS, CROSS_LANGUAGE_TESTS, classifyChanges, classifyEvent, needsNodeMedia } from './classify-changes.mjs';
+import { ASR_TESTS, CI_FLAGS, CROSS_LANGUAGE_TESTS, ManualInputError, classifyChanges, classifyEvent, needsNodeMedia } from './classify-changes.mjs';
 
 const execute = promisify(execFile);
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -278,10 +278,9 @@ test('отсутствующий выбранный Node-потребитель 
   assert.equal(result.node_media, true);
 });
 
-test('ручной запуск, нулевой before, неизвестное событие и недоступный diff включают всё', async (context) => {
+test('нулевой before, неизвестное событие и недоступный diff включают всё', async (context) => {
   const { cwd, base } = await fixture(context);
   for (const [name, event] of [
-    ['workflow_dispatch', {}],
     ['push', { before: '0'.repeat(40), after: base }],
     ['push', { before: 'a'.repeat(40), after: base }],
     ['pull_request', {}],
@@ -296,6 +295,105 @@ test('ручной запуск, нулевой before, неизвестное �
     assert.equal(result.node_tests, null);
     assert.equal(result.python_tests, null);
     assert.equal(result.node_media, true);
+  }
+});
+
+test('ручной выбор принимает boolean и строки GitHub и включает ровно отмеченные группы', async () => {
+  for (const [inputs, flags] of [
+    [{ python: true }, ['python']],
+    [{ python: 'true', quality: 'false', node: false }, ['python']],
+    [{ workflow: 'true', release: true, build: 'false' }, ['workflow', 'release']],
+    [{ node: 'true', python: true, browser: 'true', types: false }, ['node', 'python', 'browser']]
+  ]) {
+    const result = await classifyEvent('workflow_dispatch', { inputs: { mode: 'Выбранные группы', ...inputs } });
+    assert.deepEqual(CI_FLAGS.filter((flag) => result[flag]).sort(), flags.sort());
+    assert.deepEqual(result.node_tests, result.node ? null : []);
+    assert.deepEqual(result.python_tests, result.python ? null : []);
+    assert.equal(result.node_media, result.node);
+    assert.equal(result.reason, 'manual-selected');
+  }
+});
+
+test('полный ручной набор включает все девять флагов и игнорирует checkbox inputs', async () => {
+  const result = await classifyEvent('workflow_dispatch', { inputs: { mode: 'Полный набор', node: 'не checkbox', python: 17 } });
+  assert(CI_FLAGS.every((flag) => result[flag]));
+  assert.equal(result.node_tests, null);
+  assert.equal(result.python_tests, null);
+  assert.equal(result.node_media, true);
+  assert.equal(result.reason, 'manual-full');
+});
+
+test('пустой выбор, неизвестный режим и неправильный boolean останавливают ручной запуск', async () => {
+  for (const inputs of [
+    { mode: 'Выбранные группы' },
+    { mode: 'Выбранные группы', node: 'TRUE' },
+    { mode: 'Выбранные группы', python: 1 },
+    { mode: 'Выбранные группы', workflow: null },
+    { mode: 'Нет такого режима' },
+    { mode: null }
+  ]) {
+    await assert.rejects(classifyEvent('workflow_dispatch', { inputs }), ManualInputError);
+  }
+});
+
+test('ручной auto без mode берёт только последний коммит выбранного checkout', async (context) => {
+  const { cwd, commit } = await fixture(context);
+  await commit('src/renderer/src/App.tsx');
+  await commit('scripts/release/release.mjs');
+  const result = await classifyEvent('workflow_dispatch', { before: 'не диапазон', after: 'не диапазон' }, cwd);
+  assert.deepEqual(CI_FLAGS.filter((flag) => result[flag]).sort(), ['quality', 'release']);
+  assert.equal(result.node_media, false);
+  assert.equal(result.reason, 'manual-auto-paths');
+});
+
+test('ручной auto merge-коммита сравнивает HEAD с первым родителем', async (context) => {
+  const { cwd, git, commit } = await fixture(context);
+  await git('switch', '-c', 'release-fix');
+  await commit('scripts/release/release.mjs');
+  await git('switch', 'main');
+  await commit('src/renderer/src/App.tsx');
+  await git('merge', '--no-ff', 'release-fix', '-m', 'Слияние для проверки');
+  const result = await classifyEvent('workflow_dispatch', { inputs: { mode: 'Автоматически (последний коммит)', browser: true } }, cwd);
+  assert.deepEqual(CI_FLAGS.filter((flag) => result[flag]).sort(), ['quality', 'release']);
+  assert.equal(result.reason, 'manual-auto-paths');
+});
+
+test('ручной auto первого коммита и недоступного checkout консервативно включает всё', async (context) => {
+  const { cwd } = await fixture(context);
+  for (const directory of [cwd, join(cwd, 'missing-directory')]) {
+    const result = await classifyEvent('workflow_dispatch', {}, directory);
+    assert(CI_FLAGS.every((flag) => result[flag]));
+    assert.equal(result.node_media, true);
+    assert.equal(result.reason, 'manual-auto-unavailable-range');
+  }
+});
+
+test('CLI отклоняет ошибки ручных inputs и чтения события, не записывая полный fallback', async (context) => {
+  const { cwd } = await fixture(context);
+  const event = join(cwd, 'manual-event.json');
+  const output = join(cwd, 'manual-output');
+  for (const value of [
+    JSON.stringify({ inputs: { mode: 'Выбранные группы' } }),
+    JSON.stringify({ inputs: { mode: 'Выбранные группы', node: 'invalid' } }),
+    JSON.stringify({ inputs: { mode: 'Неверный режим' } }),
+    '{не JSON}',
+    null
+  ]) {
+    if (value === null) await rm(event);
+    else await writeFile(event, value);
+    await assert.rejects(
+      execute(process.execPath, [resolve(root, 'scripts/ci/classify-changes.mjs')], {
+        cwd,
+        env: { ...process.env, GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_EVENT_PATH: event, GITHUB_OUTPUT: output }
+      }),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.equal(error.stdout, '');
+        assert.match(error.stderr, /отметьте хотя бы одну|должен иметь значение true или false|Неизвестный режим|Не удалось прочитать параметры/);
+        return true;
+      }
+    );
+    assert.equal(existsSync(output), false);
   }
 });
 

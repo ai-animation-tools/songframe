@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Оставить в AppDir один GTK4/WebKitGTK 6 backend, не меняя relocation Wails."""
+"""Оставить в AppDir один GTK4/WebKitGTK 6 backend и системный GStreamer, не меняя relocation Wails."""
 
 import argparse
 from dataclasses import dataclass
@@ -21,6 +21,10 @@ LEGACY_DIRECTORY = re.compile(r"(?:gtk-[23]\.0|gdk-3\.0|webkit2?gtk-4\.[0-9]+)\Z
 LEGACY_TYPELIB = re.compile(
     r"(?:(?:Gtk|Gdk|GdkX11|GdkWayland)-[23]\.0|(?:WebKit2|WebKit2WebExtension|JavaScriptCore)-4\.[0-9]+)\.typelib\Z"
 )
+# Ядро GStreamer и библиотеки plugins-base берутся из системы вместе с плагинами. Вложенная
+# libgstreamer ищет плагины относительно себя (usr/lib/gstreamer-1.0 внутри образа), системные
+# не видит, и WebKitWebProcess падает при создании <audio>: нет appsink/autoaudiosink.
+SYSTEM_GSTREAMER = re.compile(r"libgst[a-z0-9_]*-1\.0\.so(?:\.[0-9]+)*\Z")
 REQUIRED_LIBRARIES = ("libgtk-4.so.1", "libwebkitgtk-6.0.so.4", "libjavascriptcoregtk-6.0.so.1")
 REQUIRED_HELPERS = ("WebKitWebProcess", "WebKitNetworkProcess")
 DYNAMIC_TAG = re.compile(r"\((NEEDED|SONAME)\).*?\[([^\]]+)\]")
@@ -50,6 +54,16 @@ class ElfInfo:
 def legacy_name(name):
     """Распознать только явно старую ABI, typelib или каталог её runtime/helpers."""
     return bool(LEGACY_LIBRARY.fullmatch(name) or LEGACY_DIRECTORY.fullmatch(name) or LEGACY_TYPELIB.fullmatch(name))
+
+
+def system_name(name):
+    """Распознать библиотеку GStreamer, которая должна разрешаться из системы, а не из AppDir."""
+    return bool(SYSTEM_GSTREAMER.fullmatch(name))
+
+
+def removed_name(name):
+    """Путь удаляется политикой: старый backend или вложенная копия системного GStreamer."""
+    return legacy_name(name) or system_name(name)
 
 
 def walk_error(error):
@@ -127,9 +141,9 @@ def inspect_elfs(root, entries):
 
 
 def removal_paths(root, entries, elfs):
-    """Найти legacy по пути и SONAME, затем включить содержимое каталогов и все их aliases."""
-    removed = {relative for relative in entries if legacy_name(PurePosixPath(relative).name)}
-    removed.update(relative for relative, info in elfs.items() if legacy_name(PurePosixPath(info.soname).name))
+    """Найти legacy и вложенный GStreamer по пути и SONAME, затем включить содержимое каталогов и все их aliases."""
+    removed = {relative for relative in entries if removed_name(PurePosixPath(relative).name)}
+    removed.update(relative for relative, info in elfs.items() if removed_name(PurePosixPath(info.soname).name))
     changed = True
     while changed:
         before = len(removed)
@@ -147,7 +161,10 @@ def removal_paths(root, entries, elfs):
 
 
 def verify_dependencies(elfs, removed):
-    """До удаления отвергнуть любой остающийся ELF, которому ещё нужна старая ABI или её alias."""
+    """До удаления отвергнуть любой остающийся ELF, которому ещё нужна старая ABI или её alias.
+
+    Зависимость от GStreamer допустима: после удаления копии она разрешается системной библиотекой.
+    """
     removed_names = {PurePosixPath(relative).name for relative in removed}
     removed_names.update(info.soname for relative, info in elfs.items() if relative in removed and info.soname)
     for relative, info in sorted(elfs.items()):
@@ -155,6 +172,8 @@ def verify_dependencies(elfs, removed):
             continue
         for dependency in info.needed:
             name = PurePosixPath(dependency).name
+            if system_name(name):
+                continue
             if legacy_name(name) or name in removed_names:
                 raise PolicyError(f"ELF {relative} всё ещё требует удаляемую legacy-зависимость {dependency}; файлы не удалены")
 
@@ -209,7 +228,7 @@ def execute(action, appdir):
         report["checkedELF"] = len(elfs)
         removed = removal_paths(root, entries, elfs)
         if action == "check" and removed:
-            raise PolicyError(f"В AppDir остался legacy GTK/WebKit: {', '.join(sorted(removed))}")
+            raise PolicyError(f"В AppDir остался legacy GTK/WebKit или вложенный GStreamer: {', '.join(sorted(removed))}")
         verify_dependencies(elfs, removed)
         report.update(verify_current(root, entries, elfs, removed))
         if action == "prune":
@@ -232,7 +251,7 @@ def execute(action, appdir):
             report["checkedELF"] = len(elfs)
             remaining = removal_paths(root, entries, elfs)
             if remaining:
-                raise PolicyError(f"После prune остался legacy: {', '.join(sorted(remaining))}")
+                raise PolicyError(f"После prune остался legacy или вложенный GStreamer: {', '.join(sorted(remaining))}")
             verify_dependencies(elfs, set())
             report.update(verify_current(root, entries, elfs, set()))
         report["status"] = "ready"
@@ -243,7 +262,7 @@ def execute(action, appdir):
 
 def main():
     """CLI выдаёт один JSON-документ; ненулевой exit code делает нарушение политики build-fatal."""
-    parser = argparse.ArgumentParser(description="Проверить единственный GTK4/WebKitGTK 6 runtime в AppDir")
+    parser = argparse.ArgumentParser(description="Проверить единственный GTK4/WebKitGTK 6 runtime и системный GStreamer в AppDir")
     parser.add_argument("action", choices=("prune", "check"))
     parser.add_argument("appdir")
     arguments = parser.parse_args()

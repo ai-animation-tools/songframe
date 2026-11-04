@@ -96,6 +96,26 @@ class LinuxRuntimePolicyTests(unittest.TestCase):
         self.assertEqual(alias.read_bytes(), before_core)
         self.assertEqual(policy.execute("check", self.root)["status"], "ready")
 
+    def test_prune_removes_bundled_gstreamer_used_by_webkit(self):
+        """Копия GStreamer удаляется, хотя WebKit её требует: зависимость разрешится системной библиотекой."""
+        core = self.compile_elf("usr/lib/libgstreamer-1.0.so.0", soname="libgstreamer-1.0.so.0")
+        app = self.compile_elf("usr/lib/libgstapp-1.0.so.0", soname="libgstapp-1.0.so.0", needed=(core,))
+        self.compile_elf("usr/lib/gtk-4.0/4.0.0/media/libmedia-gstreamer.so", needed=(core, app))
+        webkit = self.root / "usr/lib/libwebkitgtk-6.0.so.4"
+        webkit.unlink()
+        self.compile_elf("usr/lib/libwebkitgtk-6.0.so.4", soname="libwebkitgtk-6.0.so.4", needed=(core, app))
+        self.compile_elf("usr/lib/libgstreamer-like.so", soname="libgstreamer-like.so")
+        bundled = policy.execute("check", self.root)
+        self.assertEqual(bundled["status"], "error", bundled)
+        self.assertIn("GStreamer", bundled["error"])
+        result = policy.execute("prune", self.root)
+        self.assertEqual(result["status"], "ready", result)
+        self.assertEqual(sorted(result["removedPaths"]), ["usr/lib/libgstapp-1.0.so.0", "usr/lib/libgstreamer-1.0.so.0"])
+        self.assertTrue(webkit.exists())
+        self.assertTrue((self.root / "usr/lib/gtk-4.0/4.0.0/media/libmedia-gstreamer.so").exists())
+        self.assertTrue((self.root / "usr/lib/libgstreamer-like.so").exists())
+        self.assertEqual(policy.execute("check", self.root)["status"], "ready")
+
     def test_masked_legacy_soname_is_rejected(self):
         """Переименование файла не скрывает библиотеку со старым DT_SONAME."""
         self.compile_elf("usr/lib/unrelated-name.so", soname="libwebkit2gtk-4.1.so.0")

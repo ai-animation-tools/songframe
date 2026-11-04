@@ -10,14 +10,14 @@ Linux AppImage описан ниже; для Windows amd64 NSIS использо
 
 Первая база — **Ubuntu 24.04 amd64, glibc 2.39**. Сборочная и доступная настольная машина — Ubuntu 24.04; изолированная проверка использует Ubuntu 24.04 Docker. Более старые glibc и другие дистрибутивы пока не приняты. Для Windows и macOS рецепт этого пакета не применяется.
 
-AppImage содержит production Go-бинарник со встроенным frontend, GTK4, WebKitGTK 6.0 с helper processes, их библиотеки/ресурсы, bootstrap AppArmor и лицензионные материалы. Собственных Electron, Node, Python и Git нет. FFmpeg/ffprobe, ORT и модели находятся вне AppImage и устанавливаются пользователем через «Компоненты». Приложение использует отдельный прежний dev app ID `tools.songframe.go.dev` и профиль `songframe-go-dev`; smoke использует новые временные профили.
+AppImage содержит production Go-бинарник со встроенным frontend, GTK4, WebKitGTK 6.0 с helper processes, их библиотеки/ресурсы, bootstrap AppArmor и лицензионные материалы. GStreamer не вкладывается: ядро, plugins-base и плагины берутся из одной системной установки. Вложенная `libgstreamer` искала бы плагины рядом с собой внутри образа, не нашла бы `appsink`/`autoaudiosink`, и процесс страницы WebKit падал бы при первом `<audio>`. Собственных Electron, Node, Python и Git нет. FFmpeg/ffprobe, ORT и модели находятся вне AppImage и устанавливаются пользователем через «Компоненты». Приложение использует отдельный прежний dev app ID `tools.songframe.go.dev` и профиль `songframe-go-dev`; smoke использует новые временные профили.
 
-Системе нужны графическая сессия X11/Wayland, драйверы Mesa/GL/EGL/GBM, ALSA/PulseAudio, D-Bus, fonts/fontconfig, CA certificates, `bubblewrap`, `xdg-dbus-proxy` и GStreamer plugins. На Ubuntu базовый runtime устанавливается средствами ОС:
+Системе нужны графическая сессия X11/Wayland, драйверы Mesa/GL/EGL/GBM, ALSA/PulseAudio, D-Bus, fonts/fontconfig, CA certificates, `bubblewrap`, `xdg-dbus-proxy`, GStreamer с GL-библиотекой и plugins. На Ubuntu базовый runtime устанавливается средствами ОС:
 
 ```sh
 sudo apt install ca-certificates bubblewrap xdg-dbus-proxy \
   libgl1 libegl1 libgles2 libgl1-mesa-dri libgbm1 libasound2t64 fonts-dejavu-core \
-  gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav
+  libgstreamer-gl1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-libav
 ```
 
 AppImage не обещает встроить драйверы GPU и все кодеки внешнего медиа. Отсутствие библиотек старта исправляется до открытия приложения, а не экраном компонентов. Проверка WebView-медиа выполняется отдельно от FFmpeg/ORT.
@@ -105,9 +105,9 @@ wails3 task smoke:appimage \
 
 Применяется только при явно запрошенной Linux-сборке. Правка рецепта сама по себе не запускает сборку, распаковку или очистку существующего AppImage.
 
-Wails 3.0.0 может захватить helpers обеих установленных WebKit ABI. Сразу после generator рецепт вызывает `linux_runtime_policy.py prune APPDIR`: старые GTK2/3, WebKitGTK4.x/JavaScriptCore4.x, helpers и typelibs удаляются только если остающиеся ELF их не требуют. Анализ DT_NEEDED/SONAME выполняет readelf без запуска файлов. Внешние directory symlinks не обходятся. Общие GdkPixbuf/Pango/Cairo/libsoup сохраняются.
+Wails 3.0.0 может захватить helpers обеих установленных WebKit ABI. Сразу после generator рецепт вызывает `linux_runtime_policy.py prune APPDIR`: старые GTK2/3, WebKitGTK4.x/JavaScriptCore4.x, helpers и typelibs удаляются только если остающиеся ELF их не требуют. Анализ DT_NEEDED/SONAME выполняет readelf без запуска файлов. Внешние directory symlinks не обходятся. Общие GdkPixbuf/Pango/Cairo/libsoup сохраняются. Тем же шагом удаляются вложенные `libgst*-1.0.so*`: зависимость WebKit и GTK media от них разрешается системными библиотеками и не считается нарушением.
 
-Перед финализацией отдельный `check` блокирует попадание старого стека в образ, в том числе при замаскированных именах файлов/SONAME. Он требует GTK4/WebKit6 и единственный current backend/helpers. Metadata повторно проверяет policy; предыдущий готовый AppImage заменяется только после успешной финализации нового файла. Go module cache и системные библиотеки не изменяются.
+Перед финализацией отдельный `check` блокирует попадание старого стека или копии GStreamer в образ, в том числе при замаскированных именах файлов/SONAME. Он требует GTK4/WebKit6 и единственный current backend/helpers. Metadata повторно проверяет policy; предыдущий готовый AppImage заменяется только после успешной финализации нового файла. Go module cache и системные библиотеки не изменяются.
 
 Адресная проверка рецепта без пересборки приложения:
 

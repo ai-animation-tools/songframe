@@ -1,0 +1,4416 @@
+{
+  "description": "Задание завершилось ошибкой агента с сообщением и без него.",
+  "call": "ScenarioWorkflow",
+  "project": "project",
+  "base": "checks-base",
+  "steps": [
+    {
+      "op": "start",
+      "pass": "treatment",
+      "view": {
+        "project": "<project>",
+        "busy": true,
+        "canStartTreatment": false,
+        "canStartScenes": false,
+        "canRevise": false,
+        "canApproveScenes": false,
+        "canApproveCurrent": false,
+        "treatmentApproved": false,
+        "scenesNeedReview": false,
+        "problems": [],
+        "proposal": {
+          "id": "<proposal-1>",
+          "jobId": "job-0",
+          "pass": "treatment",
+          "selectedIds": [],
+          "status": "running",
+          "warnings": [],
+          "stale": false,
+          "before": {
+            "cast": {
+              "schema_version": 1,
+              "entities": [
+                {
+                  "id": "world",
+                  "kind": "world",
+                  "name": "Мир сцены",
+                  "short_name": "Мир",
+                  "role": "Общие условия: время, погода и окружение",
+                  "appearance": "",
+                  "images": [],
+                  "initial_state": {
+                    "time_of_day": "вечер",
+                    "weather": "ясно"
+                  }
+                },
+                {
+                  "id": "mira",
+                  "kind": "character",
+                  "name": "Мира",
+                  "short_name": "Мира",
+                  "role": "Музыкант, держит фонарик",
+                  "appearance": "Музыкант, держит фонарик",
+                  "images": [
+                    "heroes/mira.png"
+                  ],
+                  "initial_state": {
+                    "clothes_condition": "светлая куртка",
+                    "position": "у края причала"
+                  }
+                },
+                {
+                  "id": "lev",
+                  "kind": "character",
+                  "name": "Лев",
+                  "short_name": "Лев",
+                  "role": "Друг, развешивает фонарики",
+                  "appearance": "Друг, развешивает фонарики",
+                  "images": [
+                    "heroes/lev.png"
+                  ],
+                  "initial_state": {
+                    "position": "рядом с фонарями"
+                  }
+                },
+                {
+                  "id": "boat",
+                  "kind": "vehicle",
+                  "name": "Лодка",
+                  "short_name": "Лодка",
+                  "role": "Небольшая лодка у причала",
+                  "appearance": "Небольшая лодка у причала",
+                  "images": [
+                    "vehicles/boat.png"
+                  ],
+                  "initial_state": {
+                    "dirt": "чистая",
+                    "sink": "у причала"
+                  }
+                },
+                {
+                  "id": "pier",
+                  "kind": "location",
+                  "name": "Причал",
+                  "short_name": "Причал",
+                  "role": "Деревянный причал у спокойной воды",
+                  "appearance": "Деревянный причал у спокойной воды",
+                  "images": [
+                    "locations/pier.png"
+                  ],
+                  "initial_state": {}
+                }
+              ],
+              "properties": {
+                "character": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+                    "checklist": "Персонаж стоит там, где записано: {value}?"
+                  },
+                  {
+                    "key": "contact",
+                    "label": "Опора",
+                    "hint": "На чём стоит или сидит персонаж",
+                    "values": [
+                      "стоит на полу",
+                      "сидит на стуле",
+                      "стоит у стола"
+                    ],
+                    "checklist": "Опора: {value}?"
+                  },
+                  {
+                    "key": "posture",
+                    "label": "Поза",
+                    "hint": "Стоит, наклонился, сидит боком, бежит"
+                  },
+                  {
+                    "key": "facing",
+                    "label": "Взгляд и разворот",
+                    "hint": "Куда повёрнут корпус и куда смотрит"
+                  },
+                  {
+                    "key": "clothes_condition",
+                    "label": "Одежда",
+                    "hint": "Цвет, состояние и заметные детали одежды",
+                    "checklist": "Одежда: {value}?"
+                  },
+                  {
+                    "key": "face_condition",
+                    "label": "Лицо",
+                    "hint": "Видимые детали лица и выражение",
+                    "checklist": "Лицо: {value}?"
+                  },
+                  {
+                    "key": "marks",
+                    "label": "Сквозные метки",
+                    "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+                    "checklist": "Сквозные метки на месте: {value}?"
+                  },
+                  {
+                    "key": "holding",
+                    "label": "В руках",
+                    "hint": "Предмет и в какой руке",
+                    "checklist": "В руках: {value}?"
+                  },
+                  {
+                    "key": "emotion",
+                    "label": "Состояние и эмоция",
+                    "hint": "Эмоция и её развитие в сюжете"
+                  },
+                  {
+                    "key": "fatigue",
+                    "label": "Усталость",
+                    "hint": "Накапливается по сюжету"
+                  }
+                ],
+                "vehicle": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где относительно окружения и других объектов",
+                    "checklist": "Положение транспорта: {value}?"
+                  },
+                  {
+                    "key": "orientation",
+                    "label": "Ориентация",
+                    "hint": "Как стоит относительно оси дороги",
+                    "values": [
+                      "вдоль дороги носом вперёд",
+                      "вдоль дороги носом назад",
+                      "под небольшим углом к дороге",
+                      "поперёк дороги"
+                    ],
+                    "checklist": "Ориентация транспорта: {value}?"
+                  },
+                  {
+                    "key": "sink",
+                    "label": "Погружение",
+                    "hint": "Положение относительно поверхности",
+                    "values": [
+                      "на поверхности",
+                      "частично погружён"
+                    ],
+                    "checklist": "Погружение: {value}?"
+                  },
+                  {
+                    "key": "dirt",
+                    "label": "Загрязнение",
+                    "hint": "Загрязнение или другие видимые изменения",
+                    "checklist": "Загрязнение кузова: {value}?"
+                  },
+                  {
+                    "key": "mobility",
+                    "label": "Движение",
+                    "hint": "Движется или неподвижен"
+                  },
+                  {
+                    "key": "doors",
+                    "label": "Двери и проёмы",
+                    "hint": "Какие двери открыты"
+                  },
+                  {
+                    "key": "cargo",
+                    "label": "Груз",
+                    "hint": "Что и где закреплено",
+                    "checklist": "Груз на месте: {value}?"
+                  },
+                  {
+                    "key": "occupants",
+                    "label": "Кто внутри",
+                    "hint": "Кто на каком месте",
+                    "checklist": "Внутри: {value}?"
+                  }
+                ],
+                "location": [
+                  {
+                    "key": "ground",
+                    "label": "Покрытие",
+                    "hint": "Материал и состояние поверхности"
+                  },
+                  {
+                    "key": "layout",
+                    "label": "Что где",
+                    "hint": "Что слева и справа по ходу движения, что впереди",
+                    "checklist": "Расположение сторон: {value}?"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Следы, ямы, разбросанные предметы"
+                  }
+                ],
+                "prop": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где лежит или у кого в руках",
+                    "checklist": "Предмет: {value}?"
+                  },
+                  {
+                    "key": "owner",
+                    "label": "У кого",
+                    "hint": "Персонаж, у которого предмет"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Целый, сломан, грязный"
+                  }
+                ],
+                "world": [
+                  {
+                    "key": "time_of_day",
+                    "label": "Время суток",
+                    "values": [
+                      "утро",
+                      "день",
+                      "вечер",
+                      "ночь"
+                    ],
+                    "checklist": "Освещение соответствует: {value}?"
+                  },
+                  {
+                    "key": "weather",
+                    "label": "Погода",
+                    "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+                    "checklist": "Погода: {value}?"
+                  },
+                  {
+                    "key": "season",
+                    "label": "Сезон",
+                    "hint": "Влияет на одежду и листву"
+                  },
+                  {
+                    "key": "road_axis",
+                    "label": "Ось дороги",
+                    "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+                    "checklist": "Ось дороги и направление движения: {value}?"
+                  },
+                  {
+                    "key": "left_side",
+                    "label": "Слева по ходу",
+                    "hint": "Что находится слева по направлению движения",
+                    "checklist": "Слева по ходу: {value}?"
+                  },
+                  {
+                    "key": "right_side",
+                    "label": "Справа по ходу",
+                    "hint": "Что находится справа по направлению движения",
+                    "checklist": "Справа по ходу: {value}?"
+                  },
+                  {
+                    "key": "ahead",
+                    "label": "Впереди",
+                    "hint": "Куда ведёт дорога, что её заканчивает"
+                  }
+                ],
+                "style": [
+                  {
+                    "key": "note",
+                    "label": "Заметка",
+                    "hint": "Стилевые ограничения, действующие с этого момента"
+                  }
+                ]
+              }
+            },
+            "treatment": {
+              "schema_version": 1,
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
+                }
+              ]
+            },
+            "scenes": {
+              "schema_version": 1,
+              "fps": 30,
+              "audio": {
+                "path": "source/track.mp3",
+                "end_seconds": "30"
+              },
+              "references": {
+                "mira": {
+                  "name": "Мира",
+                  "path": "source/heroes/mira.png"
+                },
+                "lev": {
+                  "name": "Лев",
+                  "path": "source/heroes/lev.png"
+                },
+                "boat": {
+                  "name": "Лодка",
+                  "path": "source/vehicles/boat.png"
+                },
+                "pier": {
+                  "name": "Причал",
+                  "path": "source/locations/pier.png"
+                }
+              },
+              "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп."
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики."
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка."
+                }
+              ],
+              "scenes": [
+                {
+                  "id": "M01",
+                  "original": "Вступление",
+                  "sequence": "intro",
+                  "title": "Вечер у воды",
+                  "start_frame": 0,
+                  "end_frame_exclusive": 240,
+                  "camera": "Общий план с воздуха, медленный наезд",
+                  "action": "Лодка покачивается у причала.",
+                  "continuity": "Начало клипа; лодка у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": null,
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "с каплями воды"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M02",
+                  "original": "Вечер зажёг фонари у воды",
+                  "sequence": "verse",
+                  "start_frame": 240,
+                  "end_frame_exclusive": 360,
+                  "camera": "Средний план на причале",
+                  "action": "Мира держит фонарик, Лев смотрит на воду.",
+                  "continuity": "Продолжение вечера из M01.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": "M01",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M03",
+                  "original": "Ветер качает бумажные огни",
+                  "sequence": "verse",
+                  "start_frame": 360,
+                  "end_frame_exclusive": 480,
+                  "camera": "Общий план сбоку",
+                  "action": "Фонарики качаются на ветру.",
+                  "continuity": "Лодка остаётся у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "pier"
+                  },
+                  "state_from": "M02",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "покрыта каплями",
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M04",
+                  "original": "Мы отпускаем огни в небеса",
+                  "sequence": "verse",
+                  "start_frame": 480,
+                  "end_frame_exclusive": 600,
+                  "camera": "Крупный план Миры",
+                  "action": "Мира поднимает фонарик, Лев улыбается.",
+                  "continuity": "Мира стоит у воды.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "card": {
+                    "primary_reference": "mira"
+                  },
+                  "state_from": "M03",
+                  "state_changes": {
+                    "before": {
+                      "mira": {
+                        "position": "стоит у края причала"
+                      }
+                    },
+                    "after": {
+                      "mira": {
+                        "clothes_condition": "яркая куртка"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M05",
+                  "original": "Проигрыш: повтор общего плана",
+                  "sequence": "outro",
+                  "title": "Финальный повтор",
+                  "start_frame": 600,
+                  "end_frame_exclusive": 900,
+                  "camera": "Как в M02, статика",
+                  "action": "Повтор кадра у воды как финальная точка.",
+                  "continuity": "Состояние как в M02: повтор, не продолжение.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": {
+                    "scene": "M02",
+                    "phase": "same"
+                  },
+                  "state_changes": {},
+                  "derived_from": {
+                    "shot": "M02"
+                  }
+                }
+              ]
+            }
+          },
+          "after": {
+            "cast": {
+              "schema_version": 1,
+              "entities": [
+                {
+                  "id": "world",
+                  "kind": "world",
+                  "name": "Мир сцены",
+                  "short_name": "Мир",
+                  "role": "Общие условия: время, погода и окружение",
+                  "appearance": "",
+                  "images": [],
+                  "initial_state": {
+                    "time_of_day": "вечер",
+                    "weather": "ясно"
+                  }
+                },
+                {
+                  "id": "mira",
+                  "kind": "character",
+                  "name": "Мира",
+                  "short_name": "Мира",
+                  "role": "Музыкант, держит фонарик",
+                  "appearance": "Музыкант, держит фонарик",
+                  "images": [
+                    "heroes/mira.png"
+                  ],
+                  "initial_state": {
+                    "clothes_condition": "светлая куртка",
+                    "position": "у края причала"
+                  }
+                },
+                {
+                  "id": "lev",
+                  "kind": "character",
+                  "name": "Лев",
+                  "short_name": "Лев",
+                  "role": "Друг, развешивает фонарики",
+                  "appearance": "Друг, развешивает фонарики",
+                  "images": [
+                    "heroes/lev.png"
+                  ],
+                  "initial_state": {
+                    "position": "рядом с фонарями"
+                  }
+                },
+                {
+                  "id": "boat",
+                  "kind": "vehicle",
+                  "name": "Лодка",
+                  "short_name": "Лодка",
+                  "role": "Небольшая лодка у причала",
+                  "appearance": "Небольшая лодка у причала",
+                  "images": [
+                    "vehicles/boat.png"
+                  ],
+                  "initial_state": {
+                    "dirt": "чистая",
+                    "sink": "у причала"
+                  }
+                },
+                {
+                  "id": "pier",
+                  "kind": "location",
+                  "name": "Причал",
+                  "short_name": "Причал",
+                  "role": "Деревянный причал у спокойной воды",
+                  "appearance": "Деревянный причал у спокойной воды",
+                  "images": [
+                    "locations/pier.png"
+                  ],
+                  "initial_state": {}
+                }
+              ],
+              "properties": {
+                "character": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+                    "checklist": "Персонаж стоит там, где записано: {value}?"
+                  },
+                  {
+                    "key": "contact",
+                    "label": "Опора",
+                    "hint": "На чём стоит или сидит персонаж",
+                    "values": [
+                      "стоит на полу",
+                      "сидит на стуле",
+                      "стоит у стола"
+                    ],
+                    "checklist": "Опора: {value}?"
+                  },
+                  {
+                    "key": "posture",
+                    "label": "Поза",
+                    "hint": "Стоит, наклонился, сидит боком, бежит"
+                  },
+                  {
+                    "key": "facing",
+                    "label": "Взгляд и разворот",
+                    "hint": "Куда повёрнут корпус и куда смотрит"
+                  },
+                  {
+                    "key": "clothes_condition",
+                    "label": "Одежда",
+                    "hint": "Цвет, состояние и заметные детали одежды",
+                    "checklist": "Одежда: {value}?"
+                  },
+                  {
+                    "key": "face_condition",
+                    "label": "Лицо",
+                    "hint": "Видимые детали лица и выражение",
+                    "checklist": "Лицо: {value}?"
+                  },
+                  {
+                    "key": "marks",
+                    "label": "Сквозные метки",
+                    "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+                    "checklist": "Сквозные метки на месте: {value}?"
+                  },
+                  {
+                    "key": "holding",
+                    "label": "В руках",
+                    "hint": "Предмет и в какой руке",
+                    "checklist": "В руках: {value}?"
+                  },
+                  {
+                    "key": "emotion",
+                    "label": "Состояние и эмоция",
+                    "hint": "Эмоция и её развитие в сюжете"
+                  },
+                  {
+                    "key": "fatigue",
+                    "label": "Усталость",
+                    "hint": "Накапливается по сюжету"
+                  }
+                ],
+                "vehicle": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где относительно окружения и других объектов",
+                    "checklist": "Положение транспорта: {value}?"
+                  },
+                  {
+                    "key": "orientation",
+                    "label": "Ориентация",
+                    "hint": "Как стоит относительно оси дороги",
+                    "values": [
+                      "вдоль дороги носом вперёд",
+                      "вдоль дороги носом назад",
+                      "под небольшим углом к дороге",
+                      "поперёк дороги"
+                    ],
+                    "checklist": "Ориентация транспорта: {value}?"
+                  },
+                  {
+                    "key": "sink",
+                    "label": "Погружение",
+                    "hint": "Положение относительно поверхности",
+                    "values": [
+                      "на поверхности",
+                      "частично погружён"
+                    ],
+                    "checklist": "Погружение: {value}?"
+                  },
+                  {
+                    "key": "dirt",
+                    "label": "Загрязнение",
+                    "hint": "Загрязнение или другие видимые изменения",
+                    "checklist": "Загрязнение кузова: {value}?"
+                  },
+                  {
+                    "key": "mobility",
+                    "label": "Движение",
+                    "hint": "Движется или неподвижен"
+                  },
+                  {
+                    "key": "doors",
+                    "label": "Двери и проёмы",
+                    "hint": "Какие двери открыты"
+                  },
+                  {
+                    "key": "cargo",
+                    "label": "Груз",
+                    "hint": "Что и где закреплено",
+                    "checklist": "Груз на месте: {value}?"
+                  },
+                  {
+                    "key": "occupants",
+                    "label": "Кто внутри",
+                    "hint": "Кто на каком месте",
+                    "checklist": "Внутри: {value}?"
+                  }
+                ],
+                "location": [
+                  {
+                    "key": "ground",
+                    "label": "Покрытие",
+                    "hint": "Материал и состояние поверхности"
+                  },
+                  {
+                    "key": "layout",
+                    "label": "Что где",
+                    "hint": "Что слева и справа по ходу движения, что впереди",
+                    "checklist": "Расположение сторон: {value}?"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Следы, ямы, разбросанные предметы"
+                  }
+                ],
+                "prop": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где лежит или у кого в руках",
+                    "checklist": "Предмет: {value}?"
+                  },
+                  {
+                    "key": "owner",
+                    "label": "У кого",
+                    "hint": "Персонаж, у которого предмет"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Целый, сломан, грязный"
+                  }
+                ],
+                "world": [
+                  {
+                    "key": "time_of_day",
+                    "label": "Время суток",
+                    "values": [
+                      "утро",
+                      "день",
+                      "вечер",
+                      "ночь"
+                    ],
+                    "checklist": "Освещение соответствует: {value}?"
+                  },
+                  {
+                    "key": "weather",
+                    "label": "Погода",
+                    "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+                    "checklist": "Погода: {value}?"
+                  },
+                  {
+                    "key": "season",
+                    "label": "Сезон",
+                    "hint": "Влияет на одежду и листву"
+                  },
+                  {
+                    "key": "road_axis",
+                    "label": "Ось дороги",
+                    "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+                    "checklist": "Ось дороги и направление движения: {value}?"
+                  },
+                  {
+                    "key": "left_side",
+                    "label": "Слева по ходу",
+                    "hint": "Что находится слева по направлению движения",
+                    "checklist": "Слева по ходу: {value}?"
+                  },
+                  {
+                    "key": "right_side",
+                    "label": "Справа по ходу",
+                    "hint": "Что находится справа по направлению движения",
+                    "checklist": "Справа по ходу: {value}?"
+                  },
+                  {
+                    "key": "ahead",
+                    "label": "Впереди",
+                    "hint": "Куда ведёт дорога, что её заканчивает"
+                  }
+                ],
+                "style": [
+                  {
+                    "key": "note",
+                    "label": "Заметка",
+                    "hint": "Стилевые ограничения, действующие с этого момента"
+                  }
+                ]
+              }
+            },
+            "treatment": {
+              "schema_version": 1,
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
+                }
+              ]
+            },
+            "scenes": {
+              "schema_version": 1,
+              "fps": 30,
+              "audio": {
+                "path": "source/track.mp3",
+                "end_seconds": "30"
+              },
+              "references": {
+                "mira": {
+                  "name": "Мира",
+                  "path": "source/heroes/mira.png"
+                },
+                "lev": {
+                  "name": "Лев",
+                  "path": "source/heroes/lev.png"
+                },
+                "boat": {
+                  "name": "Лодка",
+                  "path": "source/vehicles/boat.png"
+                },
+                "pier": {
+                  "name": "Причал",
+                  "path": "source/locations/pier.png"
+                }
+              },
+              "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп."
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики."
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка."
+                }
+              ],
+              "scenes": [
+                {
+                  "id": "M01",
+                  "original": "Вступление",
+                  "sequence": "intro",
+                  "title": "Вечер у воды",
+                  "start_frame": 0,
+                  "end_frame_exclusive": 240,
+                  "camera": "Общий план с воздуха, медленный наезд",
+                  "action": "Лодка покачивается у причала.",
+                  "continuity": "Начало клипа; лодка у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": null,
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "с каплями воды"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M02",
+                  "original": "Вечер зажёг фонари у воды",
+                  "sequence": "verse",
+                  "start_frame": 240,
+                  "end_frame_exclusive": 360,
+                  "camera": "Средний план на причале",
+                  "action": "Мира держит фонарик, Лев смотрит на воду.",
+                  "continuity": "Продолжение вечера из M01.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": "M01",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M03",
+                  "original": "Ветер качает бумажные огни",
+                  "sequence": "verse",
+                  "start_frame": 360,
+                  "end_frame_exclusive": 480,
+                  "camera": "Общий план сбоку",
+                  "action": "Фонарики качаются на ветру.",
+                  "continuity": "Лодка остаётся у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "pier"
+                  },
+                  "state_from": "M02",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "покрыта каплями",
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M04",
+                  "original": "Мы отпускаем огни в небеса",
+                  "sequence": "verse",
+                  "start_frame": 480,
+                  "end_frame_exclusive": 600,
+                  "camera": "Крупный план Миры",
+                  "action": "Мира поднимает фонарик, Лев улыбается.",
+                  "continuity": "Мира стоит у воды.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "card": {
+                    "primary_reference": "mira"
+                  },
+                  "state_from": "M03",
+                  "state_changes": {
+                    "before": {
+                      "mira": {
+                        "position": "стоит у края причала"
+                      }
+                    },
+                    "after": {
+                      "mira": {
+                        "clothes_condition": "яркая куртка"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M05",
+                  "original": "Проигрыш: повтор общего плана",
+                  "sequence": "outro",
+                  "title": "Финальный повтор",
+                  "start_frame": 600,
+                  "end_frame_exclusive": 900,
+                  "camera": "Как в M02, статика",
+                  "action": "Повтор кадра у воды как финальная точка.",
+                  "continuity": "Состояние как в M02: повтор, не продолжение.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": {
+                    "scene": "M02",
+                    "phase": "same"
+                  },
+                  "state_changes": {},
+                  "derived_from": {
+                    "shot": "M02"
+                  }
+                }
+              ]
+            }
+          },
+          "changedIds": []
+        },
+        "job": {
+          "schemaVersion": 1,
+          "id": "job-0",
+          "sequence": 1,
+          "project": "<project>",
+          "provider": "codex",
+          "task": "ai-clip-scenario:treatment",
+          "permissions": "read-only",
+          "inputHashes": {
+            "prompt": "e4fa2c1b8e48dc176a600e9af7245a31240a55c49020acb5a8e9acfdb880eae1",
+            "context": "0dffd4a89d7a26b97f2c3c245369f282d9aa81380eb1b8106cd3396462ab2ed3"
+          },
+          "status": "running",
+          "phase": "работает",
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "finishedAt": null,
+          "exitCode": null,
+          "result": "",
+          "log": ""
+        }
+      },
+      "agent": {
+        "project": "<project>",
+        "task": "ai-clip-scenario:treatment",
+        "prompt": "prompt-treatment.txt",
+        "context": "context-1.txt",
+        "images": null,
+        "retryOf": null
+      }
+    },
+    {
+      "op": "fail",
+      "message": "Агент завершился с ошибкой входа."
+    },
+    {
+      "op": "view",
+      "view": {
+        "project": "<project>",
+        "busy": false,
+        "canStartTreatment": true,
+        "canStartScenes": false,
+        "canRevise": false,
+        "canApproveScenes": false,
+        "canApproveCurrent": true,
+        "treatmentApproved": false,
+        "scenesNeedReview": false,
+        "problems": [],
+        "proposal": {
+          "id": "<proposal-1>",
+          "jobId": "job-0",
+          "pass": "treatment",
+          "selectedIds": [],
+          "status": "failed",
+          "warnings": [],
+          "stale": false,
+          "before": {
+            "cast": {
+              "schema_version": 1,
+              "entities": [
+                {
+                  "id": "world",
+                  "kind": "world",
+                  "name": "Мир сцены",
+                  "short_name": "Мир",
+                  "role": "Общие условия: время, погода и окружение",
+                  "appearance": "",
+                  "images": [],
+                  "initial_state": {
+                    "time_of_day": "вечер",
+                    "weather": "ясно"
+                  }
+                },
+                {
+                  "id": "mira",
+                  "kind": "character",
+                  "name": "Мира",
+                  "short_name": "Мира",
+                  "role": "Музыкант, держит фонарик",
+                  "appearance": "Музыкант, держит фонарик",
+                  "images": [
+                    "heroes/mira.png"
+                  ],
+                  "initial_state": {
+                    "clothes_condition": "светлая куртка",
+                    "position": "у края причала"
+                  }
+                },
+                {
+                  "id": "lev",
+                  "kind": "character",
+                  "name": "Лев",
+                  "short_name": "Лев",
+                  "role": "Друг, развешивает фонарики",
+                  "appearance": "Друг, развешивает фонарики",
+                  "images": [
+                    "heroes/lev.png"
+                  ],
+                  "initial_state": {
+                    "position": "рядом с фонарями"
+                  }
+                },
+                {
+                  "id": "boat",
+                  "kind": "vehicle",
+                  "name": "Лодка",
+                  "short_name": "Лодка",
+                  "role": "Небольшая лодка у причала",
+                  "appearance": "Небольшая лодка у причала",
+                  "images": [
+                    "vehicles/boat.png"
+                  ],
+                  "initial_state": {
+                    "dirt": "чистая",
+                    "sink": "у причала"
+                  }
+                },
+                {
+                  "id": "pier",
+                  "kind": "location",
+                  "name": "Причал",
+                  "short_name": "Причал",
+                  "role": "Деревянный причал у спокойной воды",
+                  "appearance": "Деревянный причал у спокойной воды",
+                  "images": [
+                    "locations/pier.png"
+                  ],
+                  "initial_state": {}
+                }
+              ],
+              "properties": {
+                "character": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+                    "checklist": "Персонаж стоит там, где записано: {value}?"
+                  },
+                  {
+                    "key": "contact",
+                    "label": "Опора",
+                    "hint": "На чём стоит или сидит персонаж",
+                    "values": [
+                      "стоит на полу",
+                      "сидит на стуле",
+                      "стоит у стола"
+                    ],
+                    "checklist": "Опора: {value}?"
+                  },
+                  {
+                    "key": "posture",
+                    "label": "Поза",
+                    "hint": "Стоит, наклонился, сидит боком, бежит"
+                  },
+                  {
+                    "key": "facing",
+                    "label": "Взгляд и разворот",
+                    "hint": "Куда повёрнут корпус и куда смотрит"
+                  },
+                  {
+                    "key": "clothes_condition",
+                    "label": "Одежда",
+                    "hint": "Цвет, состояние и заметные детали одежды",
+                    "checklist": "Одежда: {value}?"
+                  },
+                  {
+                    "key": "face_condition",
+                    "label": "Лицо",
+                    "hint": "Видимые детали лица и выражение",
+                    "checklist": "Лицо: {value}?"
+                  },
+                  {
+                    "key": "marks",
+                    "label": "Сквозные метки",
+                    "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+                    "checklist": "Сквозные метки на месте: {value}?"
+                  },
+                  {
+                    "key": "holding",
+                    "label": "В руках",
+                    "hint": "Предмет и в какой руке",
+                    "checklist": "В руках: {value}?"
+                  },
+                  {
+                    "key": "emotion",
+                    "label": "Состояние и эмоция",
+                    "hint": "Эмоция и её развитие в сюжете"
+                  },
+                  {
+                    "key": "fatigue",
+                    "label": "Усталость",
+                    "hint": "Накапливается по сюжету"
+                  }
+                ],
+                "vehicle": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где относительно окружения и других объектов",
+                    "checklist": "Положение транспорта: {value}?"
+                  },
+                  {
+                    "key": "orientation",
+                    "label": "Ориентация",
+                    "hint": "Как стоит относительно оси дороги",
+                    "values": [
+                      "вдоль дороги носом вперёд",
+                      "вдоль дороги носом назад",
+                      "под небольшим углом к дороге",
+                      "поперёк дороги"
+                    ],
+                    "checklist": "Ориентация транспорта: {value}?"
+                  },
+                  {
+                    "key": "sink",
+                    "label": "Погружение",
+                    "hint": "Положение относительно поверхности",
+                    "values": [
+                      "на поверхности",
+                      "частично погружён"
+                    ],
+                    "checklist": "Погружение: {value}?"
+                  },
+                  {
+                    "key": "dirt",
+                    "label": "Загрязнение",
+                    "hint": "Загрязнение или другие видимые изменения",
+                    "checklist": "Загрязнение кузова: {value}?"
+                  },
+                  {
+                    "key": "mobility",
+                    "label": "Движение",
+                    "hint": "Движется или неподвижен"
+                  },
+                  {
+                    "key": "doors",
+                    "label": "Двери и проёмы",
+                    "hint": "Какие двери открыты"
+                  },
+                  {
+                    "key": "cargo",
+                    "label": "Груз",
+                    "hint": "Что и где закреплено",
+                    "checklist": "Груз на месте: {value}?"
+                  },
+                  {
+                    "key": "occupants",
+                    "label": "Кто внутри",
+                    "hint": "Кто на каком месте",
+                    "checklist": "Внутри: {value}?"
+                  }
+                ],
+                "location": [
+                  {
+                    "key": "ground",
+                    "label": "Покрытие",
+                    "hint": "Материал и состояние поверхности"
+                  },
+                  {
+                    "key": "layout",
+                    "label": "Что где",
+                    "hint": "Что слева и справа по ходу движения, что впереди",
+                    "checklist": "Расположение сторон: {value}?"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Следы, ямы, разбросанные предметы"
+                  }
+                ],
+                "prop": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где лежит или у кого в руках",
+                    "checklist": "Предмет: {value}?"
+                  },
+                  {
+                    "key": "owner",
+                    "label": "У кого",
+                    "hint": "Персонаж, у которого предмет"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Целый, сломан, грязный"
+                  }
+                ],
+                "world": [
+                  {
+                    "key": "time_of_day",
+                    "label": "Время суток",
+                    "values": [
+                      "утро",
+                      "день",
+                      "вечер",
+                      "ночь"
+                    ],
+                    "checklist": "Освещение соответствует: {value}?"
+                  },
+                  {
+                    "key": "weather",
+                    "label": "Погода",
+                    "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+                    "checklist": "Погода: {value}?"
+                  },
+                  {
+                    "key": "season",
+                    "label": "Сезон",
+                    "hint": "Влияет на одежду и листву"
+                  },
+                  {
+                    "key": "road_axis",
+                    "label": "Ось дороги",
+                    "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+                    "checklist": "Ось дороги и направление движения: {value}?"
+                  },
+                  {
+                    "key": "left_side",
+                    "label": "Слева по ходу",
+                    "hint": "Что находится слева по направлению движения",
+                    "checklist": "Слева по ходу: {value}?"
+                  },
+                  {
+                    "key": "right_side",
+                    "label": "Справа по ходу",
+                    "hint": "Что находится справа по направлению движения",
+                    "checklist": "Справа по ходу: {value}?"
+                  },
+                  {
+                    "key": "ahead",
+                    "label": "Впереди",
+                    "hint": "Куда ведёт дорога, что её заканчивает"
+                  }
+                ],
+                "style": [
+                  {
+                    "key": "note",
+                    "label": "Заметка",
+                    "hint": "Стилевые ограничения, действующие с этого момента"
+                  }
+                ]
+              }
+            },
+            "treatment": {
+              "schema_version": 1,
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
+                }
+              ]
+            },
+            "scenes": {
+              "schema_version": 1,
+              "fps": 30,
+              "audio": {
+                "path": "source/track.mp3",
+                "end_seconds": "30"
+              },
+              "references": {
+                "mira": {
+                  "name": "Мира",
+                  "path": "source/heroes/mira.png"
+                },
+                "lev": {
+                  "name": "Лев",
+                  "path": "source/heroes/lev.png"
+                },
+                "boat": {
+                  "name": "Лодка",
+                  "path": "source/vehicles/boat.png"
+                },
+                "pier": {
+                  "name": "Причал",
+                  "path": "source/locations/pier.png"
+                }
+              },
+              "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп."
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики."
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка."
+                }
+              ],
+              "scenes": [
+                {
+                  "id": "M01",
+                  "original": "Вступление",
+                  "sequence": "intro",
+                  "title": "Вечер у воды",
+                  "start_frame": 0,
+                  "end_frame_exclusive": 240,
+                  "camera": "Общий план с воздуха, медленный наезд",
+                  "action": "Лодка покачивается у причала.",
+                  "continuity": "Начало клипа; лодка у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": null,
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "с каплями воды"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M02",
+                  "original": "Вечер зажёг фонари у воды",
+                  "sequence": "verse",
+                  "start_frame": 240,
+                  "end_frame_exclusive": 360,
+                  "camera": "Средний план на причале",
+                  "action": "Мира держит фонарик, Лев смотрит на воду.",
+                  "continuity": "Продолжение вечера из M01.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": "M01",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M03",
+                  "original": "Ветер качает бумажные огни",
+                  "sequence": "verse",
+                  "start_frame": 360,
+                  "end_frame_exclusive": 480,
+                  "camera": "Общий план сбоку",
+                  "action": "Фонарики качаются на ветру.",
+                  "continuity": "Лодка остаётся у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "pier"
+                  },
+                  "state_from": "M02",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "покрыта каплями",
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M04",
+                  "original": "Мы отпускаем огни в небеса",
+                  "sequence": "verse",
+                  "start_frame": 480,
+                  "end_frame_exclusive": 600,
+                  "camera": "Крупный план Миры",
+                  "action": "Мира поднимает фонарик, Лев улыбается.",
+                  "continuity": "Мира стоит у воды.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "card": {
+                    "primary_reference": "mira"
+                  },
+                  "state_from": "M03",
+                  "state_changes": {
+                    "before": {
+                      "mira": {
+                        "position": "стоит у края причала"
+                      }
+                    },
+                    "after": {
+                      "mira": {
+                        "clothes_condition": "яркая куртка"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M05",
+                  "original": "Проигрыш: повтор общего плана",
+                  "sequence": "outro",
+                  "title": "Финальный повтор",
+                  "start_frame": 600,
+                  "end_frame_exclusive": 900,
+                  "camera": "Как в M02, статика",
+                  "action": "Повтор кадра у воды как финальная точка.",
+                  "continuity": "Состояние как в M02: повтор, не продолжение.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": {
+                    "scene": "M02",
+                    "phase": "same"
+                  },
+                  "state_changes": {},
+                  "derived_from": {
+                    "shot": "M02"
+                  }
+                }
+              ]
+            }
+          },
+          "after": {
+            "cast": {
+              "schema_version": 1,
+              "entities": [
+                {
+                  "id": "world",
+                  "kind": "world",
+                  "name": "Мир сцены",
+                  "short_name": "Мир",
+                  "role": "Общие условия: время, погода и окружение",
+                  "appearance": "",
+                  "images": [],
+                  "initial_state": {
+                    "time_of_day": "вечер",
+                    "weather": "ясно"
+                  }
+                },
+                {
+                  "id": "mira",
+                  "kind": "character",
+                  "name": "Мира",
+                  "short_name": "Мира",
+                  "role": "Музыкант, держит фонарик",
+                  "appearance": "Музыкант, держит фонарик",
+                  "images": [
+                    "heroes/mira.png"
+                  ],
+                  "initial_state": {
+                    "clothes_condition": "светлая куртка",
+                    "position": "у края причала"
+                  }
+                },
+                {
+                  "id": "lev",
+                  "kind": "character",
+                  "name": "Лев",
+                  "short_name": "Лев",
+                  "role": "Друг, развешивает фонарики",
+                  "appearance": "Друг, развешивает фонарики",
+                  "images": [
+                    "heroes/lev.png"
+                  ],
+                  "initial_state": {
+                    "position": "рядом с фонарями"
+                  }
+                },
+                {
+                  "id": "boat",
+                  "kind": "vehicle",
+                  "name": "Лодка",
+                  "short_name": "Лодка",
+                  "role": "Небольшая лодка у причала",
+                  "appearance": "Небольшая лодка у причала",
+                  "images": [
+                    "vehicles/boat.png"
+                  ],
+                  "initial_state": {
+                    "dirt": "чистая",
+                    "sink": "у причала"
+                  }
+                },
+                {
+                  "id": "pier",
+                  "kind": "location",
+                  "name": "Причал",
+                  "short_name": "Причал",
+                  "role": "Деревянный причал у спокойной воды",
+                  "appearance": "Деревянный причал у спокойной воды",
+                  "images": [
+                    "locations/pier.png"
+                  ],
+                  "initial_state": {}
+                }
+              ],
+              "properties": {
+                "character": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+                    "checklist": "Персонаж стоит там, где записано: {value}?"
+                  },
+                  {
+                    "key": "contact",
+                    "label": "Опора",
+                    "hint": "На чём стоит или сидит персонаж",
+                    "values": [
+                      "стоит на полу",
+                      "сидит на стуле",
+                      "стоит у стола"
+                    ],
+                    "checklist": "Опора: {value}?"
+                  },
+                  {
+                    "key": "posture",
+                    "label": "Поза",
+                    "hint": "Стоит, наклонился, сидит боком, бежит"
+                  },
+                  {
+                    "key": "facing",
+                    "label": "Взгляд и разворот",
+                    "hint": "Куда повёрнут корпус и куда смотрит"
+                  },
+                  {
+                    "key": "clothes_condition",
+                    "label": "Одежда",
+                    "hint": "Цвет, состояние и заметные детали одежды",
+                    "checklist": "Одежда: {value}?"
+                  },
+                  {
+                    "key": "face_condition",
+                    "label": "Лицо",
+                    "hint": "Видимые детали лица и выражение",
+                    "checklist": "Лицо: {value}?"
+                  },
+                  {
+                    "key": "marks",
+                    "label": "Сквозные метки",
+                    "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+                    "checklist": "Сквозные метки на месте: {value}?"
+                  },
+                  {
+                    "key": "holding",
+                    "label": "В руках",
+                    "hint": "Предмет и в какой руке",
+                    "checklist": "В руках: {value}?"
+                  },
+                  {
+                    "key": "emotion",
+                    "label": "Состояние и эмоция",
+                    "hint": "Эмоция и её развитие в сюжете"
+                  },
+                  {
+                    "key": "fatigue",
+                    "label": "Усталость",
+                    "hint": "Накапливается по сюжету"
+                  }
+                ],
+                "vehicle": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где относительно окружения и других объектов",
+                    "checklist": "Положение транспорта: {value}?"
+                  },
+                  {
+                    "key": "orientation",
+                    "label": "Ориентация",
+                    "hint": "Как стоит относительно оси дороги",
+                    "values": [
+                      "вдоль дороги носом вперёд",
+                      "вдоль дороги носом назад",
+                      "под небольшим углом к дороге",
+                      "поперёк дороги"
+                    ],
+                    "checklist": "Ориентация транспорта: {value}?"
+                  },
+                  {
+                    "key": "sink",
+                    "label": "Погружение",
+                    "hint": "Положение относительно поверхности",
+                    "values": [
+                      "на поверхности",
+                      "частично погружён"
+                    ],
+                    "checklist": "Погружение: {value}?"
+                  },
+                  {
+                    "key": "dirt",
+                    "label": "Загрязнение",
+                    "hint": "Загрязнение или другие видимые изменения",
+                    "checklist": "Загрязнение кузова: {value}?"
+                  },
+                  {
+                    "key": "mobility",
+                    "label": "Движение",
+                    "hint": "Движется или неподвижен"
+                  },
+                  {
+                    "key": "doors",
+                    "label": "Двери и проёмы",
+                    "hint": "Какие двери открыты"
+                  },
+                  {
+                    "key": "cargo",
+                    "label": "Груз",
+                    "hint": "Что и где закреплено",
+                    "checklist": "Груз на месте: {value}?"
+                  },
+                  {
+                    "key": "occupants",
+                    "label": "Кто внутри",
+                    "hint": "Кто на каком месте",
+                    "checklist": "Внутри: {value}?"
+                  }
+                ],
+                "location": [
+                  {
+                    "key": "ground",
+                    "label": "Покрытие",
+                    "hint": "Материал и состояние поверхности"
+                  },
+                  {
+                    "key": "layout",
+                    "label": "Что где",
+                    "hint": "Что слева и справа по ходу движения, что впереди",
+                    "checklist": "Расположение сторон: {value}?"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Следы, ямы, разбросанные предметы"
+                  }
+                ],
+                "prop": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где лежит или у кого в руках",
+                    "checklist": "Предмет: {value}?"
+                  },
+                  {
+                    "key": "owner",
+                    "label": "У кого",
+                    "hint": "Персонаж, у которого предмет"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Целый, сломан, грязный"
+                  }
+                ],
+                "world": [
+                  {
+                    "key": "time_of_day",
+                    "label": "Время суток",
+                    "values": [
+                      "утро",
+                      "день",
+                      "вечер",
+                      "ночь"
+                    ],
+                    "checklist": "Освещение соответствует: {value}?"
+                  },
+                  {
+                    "key": "weather",
+                    "label": "Погода",
+                    "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+                    "checklist": "Погода: {value}?"
+                  },
+                  {
+                    "key": "season",
+                    "label": "Сезон",
+                    "hint": "Влияет на одежду и листву"
+                  },
+                  {
+                    "key": "road_axis",
+                    "label": "Ось дороги",
+                    "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+                    "checklist": "Ось дороги и направление движения: {value}?"
+                  },
+                  {
+                    "key": "left_side",
+                    "label": "Слева по ходу",
+                    "hint": "Что находится слева по направлению движения",
+                    "checklist": "Слева по ходу: {value}?"
+                  },
+                  {
+                    "key": "right_side",
+                    "label": "Справа по ходу",
+                    "hint": "Что находится справа по направлению движения",
+                    "checklist": "Справа по ходу: {value}?"
+                  },
+                  {
+                    "key": "ahead",
+                    "label": "Впереди",
+                    "hint": "Куда ведёт дорога, что её заканчивает"
+                  }
+                ],
+                "style": [
+                  {
+                    "key": "note",
+                    "label": "Заметка",
+                    "hint": "Стилевые ограничения, действующие с этого момента"
+                  }
+                ]
+              }
+            },
+            "treatment": {
+              "schema_version": 1,
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
+                }
+              ]
+            },
+            "scenes": {
+              "schema_version": 1,
+              "fps": 30,
+              "audio": {
+                "path": "source/track.mp3",
+                "end_seconds": "30"
+              },
+              "references": {
+                "mira": {
+                  "name": "Мира",
+                  "path": "source/heroes/mira.png"
+                },
+                "lev": {
+                  "name": "Лев",
+                  "path": "source/heroes/lev.png"
+                },
+                "boat": {
+                  "name": "Лодка",
+                  "path": "source/vehicles/boat.png"
+                },
+                "pier": {
+                  "name": "Причал",
+                  "path": "source/locations/pier.png"
+                }
+              },
+              "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп."
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики."
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка."
+                }
+              ],
+              "scenes": [
+                {
+                  "id": "M01",
+                  "original": "Вступление",
+                  "sequence": "intro",
+                  "title": "Вечер у воды",
+                  "start_frame": 0,
+                  "end_frame_exclusive": 240,
+                  "camera": "Общий план с воздуха, медленный наезд",
+                  "action": "Лодка покачивается у причала.",
+                  "continuity": "Начало клипа; лодка у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": null,
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "с каплями воды"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M02",
+                  "original": "Вечер зажёг фонари у воды",
+                  "sequence": "verse",
+                  "start_frame": 240,
+                  "end_frame_exclusive": 360,
+                  "camera": "Средний план на причале",
+                  "action": "Мира держит фонарик, Лев смотрит на воду.",
+                  "continuity": "Продолжение вечера из M01.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": "M01",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M03",
+                  "original": "Ветер качает бумажные огни",
+                  "sequence": "verse",
+                  "start_frame": 360,
+                  "end_frame_exclusive": 480,
+                  "camera": "Общий план сбоку",
+                  "action": "Фонарики качаются на ветру.",
+                  "continuity": "Лодка остаётся у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "pier"
+                  },
+                  "state_from": "M02",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "покрыта каплями",
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M04",
+                  "original": "Мы отпускаем огни в небеса",
+                  "sequence": "verse",
+                  "start_frame": 480,
+                  "end_frame_exclusive": 600,
+                  "camera": "Крупный план Миры",
+                  "action": "Мира поднимает фонарик, Лев улыбается.",
+                  "continuity": "Мира стоит у воды.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "card": {
+                    "primary_reference": "mira"
+                  },
+                  "state_from": "M03",
+                  "state_changes": {
+                    "before": {
+                      "mira": {
+                        "position": "стоит у края причала"
+                      }
+                    },
+                    "after": {
+                      "mira": {
+                        "clothes_condition": "яркая куртка"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M05",
+                  "original": "Проигрыш: повтор общего плана",
+                  "sequence": "outro",
+                  "title": "Финальный повтор",
+                  "start_frame": 600,
+                  "end_frame_exclusive": 900,
+                  "camera": "Как в M02, статика",
+                  "action": "Повтор кадра у воды как финальная точка.",
+                  "continuity": "Состояние как в M02: повтор, не продолжение.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": {
+                    "scene": "M02",
+                    "phase": "same"
+                  },
+                  "state_changes": {},
+                  "derived_from": {
+                    "shot": "M02"
+                  }
+                }
+              ]
+            }
+          },
+          "changedIds": [],
+          "message": "Агент завершился с ошибкой входа."
+        },
+        "job": {
+          "schemaVersion": 1,
+          "id": "job-0",
+          "sequence": 1,
+          "project": "<project>",
+          "provider": "codex",
+          "task": "ai-clip-scenario:treatment",
+          "permissions": "read-only",
+          "inputHashes": {
+            "prompt": "e4fa2c1b8e48dc176a600e9af7245a31240a55c49020acb5a8e9acfdb880eae1",
+            "context": "0dffd4a89d7a26b97f2c3c245369f282d9aa81380eb1b8106cd3396462ab2ed3"
+          },
+          "status": "failed",
+          "phase": "работает",
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "finishedAt": null,
+          "exitCode": 1,
+          "result": "",
+          "log": "",
+          "message": "Агент завершился с ошибкой входа."
+        }
+      }
+    },
+    {
+      "op": "start",
+      "pass": "treatment",
+      "view": {
+        "project": "<project>",
+        "busy": true,
+        "canStartTreatment": false,
+        "canStartScenes": false,
+        "canRevise": false,
+        "canApproveScenes": false,
+        "canApproveCurrent": false,
+        "treatmentApproved": false,
+        "scenesNeedReview": false,
+        "problems": [],
+        "proposal": {
+          "id": "<proposal-2>",
+          "jobId": "job-1",
+          "pass": "treatment",
+          "selectedIds": [],
+          "status": "running",
+          "warnings": [],
+          "stale": false,
+          "before": {
+            "cast": {
+              "schema_version": 1,
+              "entities": [
+                {
+                  "id": "world",
+                  "kind": "world",
+                  "name": "Мир сцены",
+                  "short_name": "Мир",
+                  "role": "Общие условия: время, погода и окружение",
+                  "appearance": "",
+                  "images": [],
+                  "initial_state": {
+                    "time_of_day": "вечер",
+                    "weather": "ясно"
+                  }
+                },
+                {
+                  "id": "mira",
+                  "kind": "character",
+                  "name": "Мира",
+                  "short_name": "Мира",
+                  "role": "Музыкант, держит фонарик",
+                  "appearance": "Музыкант, держит фонарик",
+                  "images": [
+                    "heroes/mira.png"
+                  ],
+                  "initial_state": {
+                    "clothes_condition": "светлая куртка",
+                    "position": "у края причала"
+                  }
+                },
+                {
+                  "id": "lev",
+                  "kind": "character",
+                  "name": "Лев",
+                  "short_name": "Лев",
+                  "role": "Друг, развешивает фонарики",
+                  "appearance": "Друг, развешивает фонарики",
+                  "images": [
+                    "heroes/lev.png"
+                  ],
+                  "initial_state": {
+                    "position": "рядом с фонарями"
+                  }
+                },
+                {
+                  "id": "boat",
+                  "kind": "vehicle",
+                  "name": "Лодка",
+                  "short_name": "Лодка",
+                  "role": "Небольшая лодка у причала",
+                  "appearance": "Небольшая лодка у причала",
+                  "images": [
+                    "vehicles/boat.png"
+                  ],
+                  "initial_state": {
+                    "dirt": "чистая",
+                    "sink": "у причала"
+                  }
+                },
+                {
+                  "id": "pier",
+                  "kind": "location",
+                  "name": "Причал",
+                  "short_name": "Причал",
+                  "role": "Деревянный причал у спокойной воды",
+                  "appearance": "Деревянный причал у спокойной воды",
+                  "images": [
+                    "locations/pier.png"
+                  ],
+                  "initial_state": {}
+                }
+              ],
+              "properties": {
+                "character": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+                    "checklist": "Персонаж стоит там, где записано: {value}?"
+                  },
+                  {
+                    "key": "contact",
+                    "label": "Опора",
+                    "hint": "На чём стоит или сидит персонаж",
+                    "values": [
+                      "стоит на полу",
+                      "сидит на стуле",
+                      "стоит у стола"
+                    ],
+                    "checklist": "Опора: {value}?"
+                  },
+                  {
+                    "key": "posture",
+                    "label": "Поза",
+                    "hint": "Стоит, наклонился, сидит боком, бежит"
+                  },
+                  {
+                    "key": "facing",
+                    "label": "Взгляд и разворот",
+                    "hint": "Куда повёрнут корпус и куда смотрит"
+                  },
+                  {
+                    "key": "clothes_condition",
+                    "label": "Одежда",
+                    "hint": "Цвет, состояние и заметные детали одежды",
+                    "checklist": "Одежда: {value}?"
+                  },
+                  {
+                    "key": "face_condition",
+                    "label": "Лицо",
+                    "hint": "Видимые детали лица и выражение",
+                    "checklist": "Лицо: {value}?"
+                  },
+                  {
+                    "key": "marks",
+                    "label": "Сквозные метки",
+                    "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+                    "checklist": "Сквозные метки на месте: {value}?"
+                  },
+                  {
+                    "key": "holding",
+                    "label": "В руках",
+                    "hint": "Предмет и в какой руке",
+                    "checklist": "В руках: {value}?"
+                  },
+                  {
+                    "key": "emotion",
+                    "label": "Состояние и эмоция",
+                    "hint": "Эмоция и её развитие в сюжете"
+                  },
+                  {
+                    "key": "fatigue",
+                    "label": "Усталость",
+                    "hint": "Накапливается по сюжету"
+                  }
+                ],
+                "vehicle": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где относительно окружения и других объектов",
+                    "checklist": "Положение транспорта: {value}?"
+                  },
+                  {
+                    "key": "orientation",
+                    "label": "Ориентация",
+                    "hint": "Как стоит относительно оси дороги",
+                    "values": [
+                      "вдоль дороги носом вперёд",
+                      "вдоль дороги носом назад",
+                      "под небольшим углом к дороге",
+                      "поперёк дороги"
+                    ],
+                    "checklist": "Ориентация транспорта: {value}?"
+                  },
+                  {
+                    "key": "sink",
+                    "label": "Погружение",
+                    "hint": "Положение относительно поверхности",
+                    "values": [
+                      "на поверхности",
+                      "частично погружён"
+                    ],
+                    "checklist": "Погружение: {value}?"
+                  },
+                  {
+                    "key": "dirt",
+                    "label": "Загрязнение",
+                    "hint": "Загрязнение или другие видимые изменения",
+                    "checklist": "Загрязнение кузова: {value}?"
+                  },
+                  {
+                    "key": "mobility",
+                    "label": "Движение",
+                    "hint": "Движется или неподвижен"
+                  },
+                  {
+                    "key": "doors",
+                    "label": "Двери и проёмы",
+                    "hint": "Какие двери открыты"
+                  },
+                  {
+                    "key": "cargo",
+                    "label": "Груз",
+                    "hint": "Что и где закреплено",
+                    "checklist": "Груз на месте: {value}?"
+                  },
+                  {
+                    "key": "occupants",
+                    "label": "Кто внутри",
+                    "hint": "Кто на каком месте",
+                    "checklist": "Внутри: {value}?"
+                  }
+                ],
+                "location": [
+                  {
+                    "key": "ground",
+                    "label": "Покрытие",
+                    "hint": "Материал и состояние поверхности"
+                  },
+                  {
+                    "key": "layout",
+                    "label": "Что где",
+                    "hint": "Что слева и справа по ходу движения, что впереди",
+                    "checklist": "Расположение сторон: {value}?"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Следы, ямы, разбросанные предметы"
+                  }
+                ],
+                "prop": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где лежит или у кого в руках",
+                    "checklist": "Предмет: {value}?"
+                  },
+                  {
+                    "key": "owner",
+                    "label": "У кого",
+                    "hint": "Персонаж, у которого предмет"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Целый, сломан, грязный"
+                  }
+                ],
+                "world": [
+                  {
+                    "key": "time_of_day",
+                    "label": "Время суток",
+                    "values": [
+                      "утро",
+                      "день",
+                      "вечер",
+                      "ночь"
+                    ],
+                    "checklist": "Освещение соответствует: {value}?"
+                  },
+                  {
+                    "key": "weather",
+                    "label": "Погода",
+                    "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+                    "checklist": "Погода: {value}?"
+                  },
+                  {
+                    "key": "season",
+                    "label": "Сезон",
+                    "hint": "Влияет на одежду и листву"
+                  },
+                  {
+                    "key": "road_axis",
+                    "label": "Ось дороги",
+                    "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+                    "checklist": "Ось дороги и направление движения: {value}?"
+                  },
+                  {
+                    "key": "left_side",
+                    "label": "Слева по ходу",
+                    "hint": "Что находится слева по направлению движения",
+                    "checklist": "Слева по ходу: {value}?"
+                  },
+                  {
+                    "key": "right_side",
+                    "label": "Справа по ходу",
+                    "hint": "Что находится справа по направлению движения",
+                    "checklist": "Справа по ходу: {value}?"
+                  },
+                  {
+                    "key": "ahead",
+                    "label": "Впереди",
+                    "hint": "Куда ведёт дорога, что её заканчивает"
+                  }
+                ],
+                "style": [
+                  {
+                    "key": "note",
+                    "label": "Заметка",
+                    "hint": "Стилевые ограничения, действующие с этого момента"
+                  }
+                ]
+              }
+            },
+            "treatment": {
+              "schema_version": 1,
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
+                }
+              ]
+            },
+            "scenes": {
+              "schema_version": 1,
+              "fps": 30,
+              "audio": {
+                "path": "source/track.mp3",
+                "end_seconds": "30"
+              },
+              "references": {
+                "mira": {
+                  "name": "Мира",
+                  "path": "source/heroes/mira.png"
+                },
+                "lev": {
+                  "name": "Лев",
+                  "path": "source/heroes/lev.png"
+                },
+                "boat": {
+                  "name": "Лодка",
+                  "path": "source/vehicles/boat.png"
+                },
+                "pier": {
+                  "name": "Причал",
+                  "path": "source/locations/pier.png"
+                }
+              },
+              "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп."
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики."
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка."
+                }
+              ],
+              "scenes": [
+                {
+                  "id": "M01",
+                  "original": "Вступление",
+                  "sequence": "intro",
+                  "title": "Вечер у воды",
+                  "start_frame": 0,
+                  "end_frame_exclusive": 240,
+                  "camera": "Общий план с воздуха, медленный наезд",
+                  "action": "Лодка покачивается у причала.",
+                  "continuity": "Начало клипа; лодка у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": null,
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "с каплями воды"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M02",
+                  "original": "Вечер зажёг фонари у воды",
+                  "sequence": "verse",
+                  "start_frame": 240,
+                  "end_frame_exclusive": 360,
+                  "camera": "Средний план на причале",
+                  "action": "Мира держит фонарик, Лев смотрит на воду.",
+                  "continuity": "Продолжение вечера из M01.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": "M01",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M03",
+                  "original": "Ветер качает бумажные огни",
+                  "sequence": "verse",
+                  "start_frame": 360,
+                  "end_frame_exclusive": 480,
+                  "camera": "Общий план сбоку",
+                  "action": "Фонарики качаются на ветру.",
+                  "continuity": "Лодка остаётся у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "pier"
+                  },
+                  "state_from": "M02",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "покрыта каплями",
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M04",
+                  "original": "Мы отпускаем огни в небеса",
+                  "sequence": "verse",
+                  "start_frame": 480,
+                  "end_frame_exclusive": 600,
+                  "camera": "Крупный план Миры",
+                  "action": "Мира поднимает фонарик, Лев улыбается.",
+                  "continuity": "Мира стоит у воды.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "card": {
+                    "primary_reference": "mira"
+                  },
+                  "state_from": "M03",
+                  "state_changes": {
+                    "before": {
+                      "mira": {
+                        "position": "стоит у края причала"
+                      }
+                    },
+                    "after": {
+                      "mira": {
+                        "clothes_condition": "яркая куртка"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M05",
+                  "original": "Проигрыш: повтор общего плана",
+                  "sequence": "outro",
+                  "title": "Финальный повтор",
+                  "start_frame": 600,
+                  "end_frame_exclusive": 900,
+                  "camera": "Как в M02, статика",
+                  "action": "Повтор кадра у воды как финальная точка.",
+                  "continuity": "Состояние как в M02: повтор, не продолжение.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": {
+                    "scene": "M02",
+                    "phase": "same"
+                  },
+                  "state_changes": {},
+                  "derived_from": {
+                    "shot": "M02"
+                  }
+                }
+              ]
+            }
+          },
+          "after": {
+            "cast": {
+              "schema_version": 1,
+              "entities": [
+                {
+                  "id": "world",
+                  "kind": "world",
+                  "name": "Мир сцены",
+                  "short_name": "Мир",
+                  "role": "Общие условия: время, погода и окружение",
+                  "appearance": "",
+                  "images": [],
+                  "initial_state": {
+                    "time_of_day": "вечер",
+                    "weather": "ясно"
+                  }
+                },
+                {
+                  "id": "mira",
+                  "kind": "character",
+                  "name": "Мира",
+                  "short_name": "Мира",
+                  "role": "Музыкант, держит фонарик",
+                  "appearance": "Музыкант, держит фонарик",
+                  "images": [
+                    "heroes/mira.png"
+                  ],
+                  "initial_state": {
+                    "clothes_condition": "светлая куртка",
+                    "position": "у края причала"
+                  }
+                },
+                {
+                  "id": "lev",
+                  "kind": "character",
+                  "name": "Лев",
+                  "short_name": "Лев",
+                  "role": "Друг, развешивает фонарики",
+                  "appearance": "Друг, развешивает фонарики",
+                  "images": [
+                    "heroes/lev.png"
+                  ],
+                  "initial_state": {
+                    "position": "рядом с фонарями"
+                  }
+                },
+                {
+                  "id": "boat",
+                  "kind": "vehicle",
+                  "name": "Лодка",
+                  "short_name": "Лодка",
+                  "role": "Небольшая лодка у причала",
+                  "appearance": "Небольшая лодка у причала",
+                  "images": [
+                    "vehicles/boat.png"
+                  ],
+                  "initial_state": {
+                    "dirt": "чистая",
+                    "sink": "у причала"
+                  }
+                },
+                {
+                  "id": "pier",
+                  "kind": "location",
+                  "name": "Причал",
+                  "short_name": "Причал",
+                  "role": "Деревянный причал у спокойной воды",
+                  "appearance": "Деревянный причал у спокойной воды",
+                  "images": [
+                    "locations/pier.png"
+                  ],
+                  "initial_state": {}
+                }
+              ],
+              "properties": {
+                "character": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+                    "checklist": "Персонаж стоит там, где записано: {value}?"
+                  },
+                  {
+                    "key": "contact",
+                    "label": "Опора",
+                    "hint": "На чём стоит или сидит персонаж",
+                    "values": [
+                      "стоит на полу",
+                      "сидит на стуле",
+                      "стоит у стола"
+                    ],
+                    "checklist": "Опора: {value}?"
+                  },
+                  {
+                    "key": "posture",
+                    "label": "Поза",
+                    "hint": "Стоит, наклонился, сидит боком, бежит"
+                  },
+                  {
+                    "key": "facing",
+                    "label": "Взгляд и разворот",
+                    "hint": "Куда повёрнут корпус и куда смотрит"
+                  },
+                  {
+                    "key": "clothes_condition",
+                    "label": "Одежда",
+                    "hint": "Цвет, состояние и заметные детали одежды",
+                    "checklist": "Одежда: {value}?"
+                  },
+                  {
+                    "key": "face_condition",
+                    "label": "Лицо",
+                    "hint": "Видимые детали лица и выражение",
+                    "checklist": "Лицо: {value}?"
+                  },
+                  {
+                    "key": "marks",
+                    "label": "Сквозные метки",
+                    "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+                    "checklist": "Сквозные метки на месте: {value}?"
+                  },
+                  {
+                    "key": "holding",
+                    "label": "В руках",
+                    "hint": "Предмет и в какой руке",
+                    "checklist": "В руках: {value}?"
+                  },
+                  {
+                    "key": "emotion",
+                    "label": "Состояние и эмоция",
+                    "hint": "Эмоция и её развитие в сюжете"
+                  },
+                  {
+                    "key": "fatigue",
+                    "label": "Усталость",
+                    "hint": "Накапливается по сюжету"
+                  }
+                ],
+                "vehicle": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где относительно окружения и других объектов",
+                    "checklist": "Положение транспорта: {value}?"
+                  },
+                  {
+                    "key": "orientation",
+                    "label": "Ориентация",
+                    "hint": "Как стоит относительно оси дороги",
+                    "values": [
+                      "вдоль дороги носом вперёд",
+                      "вдоль дороги носом назад",
+                      "под небольшим углом к дороге",
+                      "поперёк дороги"
+                    ],
+                    "checklist": "Ориентация транспорта: {value}?"
+                  },
+                  {
+                    "key": "sink",
+                    "label": "Погружение",
+                    "hint": "Положение относительно поверхности",
+                    "values": [
+                      "на поверхности",
+                      "частично погружён"
+                    ],
+                    "checklist": "Погружение: {value}?"
+                  },
+                  {
+                    "key": "dirt",
+                    "label": "Загрязнение",
+                    "hint": "Загрязнение или другие видимые изменения",
+                    "checklist": "Загрязнение кузова: {value}?"
+                  },
+                  {
+                    "key": "mobility",
+                    "label": "Движение",
+                    "hint": "Движется или неподвижен"
+                  },
+                  {
+                    "key": "doors",
+                    "label": "Двери и проёмы",
+                    "hint": "Какие двери открыты"
+                  },
+                  {
+                    "key": "cargo",
+                    "label": "Груз",
+                    "hint": "Что и где закреплено",
+                    "checklist": "Груз на месте: {value}?"
+                  },
+                  {
+                    "key": "occupants",
+                    "label": "Кто внутри",
+                    "hint": "Кто на каком месте",
+                    "checklist": "Внутри: {value}?"
+                  }
+                ],
+                "location": [
+                  {
+                    "key": "ground",
+                    "label": "Покрытие",
+                    "hint": "Материал и состояние поверхности"
+                  },
+                  {
+                    "key": "layout",
+                    "label": "Что где",
+                    "hint": "Что слева и справа по ходу движения, что впереди",
+                    "checklist": "Расположение сторон: {value}?"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Следы, ямы, разбросанные предметы"
+                  }
+                ],
+                "prop": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где лежит или у кого в руках",
+                    "checklist": "Предмет: {value}?"
+                  },
+                  {
+                    "key": "owner",
+                    "label": "У кого",
+                    "hint": "Персонаж, у которого предмет"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Целый, сломан, грязный"
+                  }
+                ],
+                "world": [
+                  {
+                    "key": "time_of_day",
+                    "label": "Время суток",
+                    "values": [
+                      "утро",
+                      "день",
+                      "вечер",
+                      "ночь"
+                    ],
+                    "checklist": "Освещение соответствует: {value}?"
+                  },
+                  {
+                    "key": "weather",
+                    "label": "Погода",
+                    "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+                    "checklist": "Погода: {value}?"
+                  },
+                  {
+                    "key": "season",
+                    "label": "Сезон",
+                    "hint": "Влияет на одежду и листву"
+                  },
+                  {
+                    "key": "road_axis",
+                    "label": "Ось дороги",
+                    "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+                    "checklist": "Ось дороги и направление движения: {value}?"
+                  },
+                  {
+                    "key": "left_side",
+                    "label": "Слева по ходу",
+                    "hint": "Что находится слева по направлению движения",
+                    "checklist": "Слева по ходу: {value}?"
+                  },
+                  {
+                    "key": "right_side",
+                    "label": "Справа по ходу",
+                    "hint": "Что находится справа по направлению движения",
+                    "checklist": "Справа по ходу: {value}?"
+                  },
+                  {
+                    "key": "ahead",
+                    "label": "Впереди",
+                    "hint": "Куда ведёт дорога, что её заканчивает"
+                  }
+                ],
+                "style": [
+                  {
+                    "key": "note",
+                    "label": "Заметка",
+                    "hint": "Стилевые ограничения, действующие с этого момента"
+                  }
+                ]
+              }
+            },
+            "treatment": {
+              "schema_version": 1,
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
+                }
+              ]
+            },
+            "scenes": {
+              "schema_version": 1,
+              "fps": 30,
+              "audio": {
+                "path": "source/track.mp3",
+                "end_seconds": "30"
+              },
+              "references": {
+                "mira": {
+                  "name": "Мира",
+                  "path": "source/heroes/mira.png"
+                },
+                "lev": {
+                  "name": "Лев",
+                  "path": "source/heroes/lev.png"
+                },
+                "boat": {
+                  "name": "Лодка",
+                  "path": "source/vehicles/boat.png"
+                },
+                "pier": {
+                  "name": "Причал",
+                  "path": "source/locations/pier.png"
+                }
+              },
+              "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп."
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики."
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка."
+                }
+              ],
+              "scenes": [
+                {
+                  "id": "M01",
+                  "original": "Вступление",
+                  "sequence": "intro",
+                  "title": "Вечер у воды",
+                  "start_frame": 0,
+                  "end_frame_exclusive": 240,
+                  "camera": "Общий план с воздуха, медленный наезд",
+                  "action": "Лодка покачивается у причала.",
+                  "continuity": "Начало клипа; лодка у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": null,
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "с каплями воды"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M02",
+                  "original": "Вечер зажёг фонари у воды",
+                  "sequence": "verse",
+                  "start_frame": 240,
+                  "end_frame_exclusive": 360,
+                  "camera": "Средний план на причале",
+                  "action": "Мира держит фонарик, Лев смотрит на воду.",
+                  "continuity": "Продолжение вечера из M01.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": "M01",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M03",
+                  "original": "Ветер качает бумажные огни",
+                  "sequence": "verse",
+                  "start_frame": 360,
+                  "end_frame_exclusive": 480,
+                  "camera": "Общий план сбоку",
+                  "action": "Фонарики качаются на ветру.",
+                  "continuity": "Лодка остаётся у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "pier"
+                  },
+                  "state_from": "M02",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "покрыта каплями",
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M04",
+                  "original": "Мы отпускаем огни в небеса",
+                  "sequence": "verse",
+                  "start_frame": 480,
+                  "end_frame_exclusive": 600,
+                  "camera": "Крупный план Миры",
+                  "action": "Мира поднимает фонарик, Лев улыбается.",
+                  "continuity": "Мира стоит у воды.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "card": {
+                    "primary_reference": "mira"
+                  },
+                  "state_from": "M03",
+                  "state_changes": {
+                    "before": {
+                      "mira": {
+                        "position": "стоит у края причала"
+                      }
+                    },
+                    "after": {
+                      "mira": {
+                        "clothes_condition": "яркая куртка"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M05",
+                  "original": "Проигрыш: повтор общего плана",
+                  "sequence": "outro",
+                  "title": "Финальный повтор",
+                  "start_frame": 600,
+                  "end_frame_exclusive": 900,
+                  "camera": "Как в M02, статика",
+                  "action": "Повтор кадра у воды как финальная точка.",
+                  "continuity": "Состояние как в M02: повтор, не продолжение.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": {
+                    "scene": "M02",
+                    "phase": "same"
+                  },
+                  "state_changes": {},
+                  "derived_from": {
+                    "shot": "M02"
+                  }
+                }
+              ]
+            }
+          },
+          "changedIds": []
+        },
+        "job": {
+          "schemaVersion": 1,
+          "id": "job-1",
+          "sequence": 2,
+          "project": "<project>",
+          "provider": "codex",
+          "task": "ai-clip-scenario:treatment",
+          "permissions": "read-only",
+          "inputHashes": {
+            "prompt": "e4fa2c1b8e48dc176a600e9af7245a31240a55c49020acb5a8e9acfdb880eae1",
+            "context": "0dffd4a89d7a26b97f2c3c245369f282d9aa81380eb1b8106cd3396462ab2ed3"
+          },
+          "status": "running",
+          "phase": "работает",
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "finishedAt": null,
+          "exitCode": null,
+          "result": "",
+          "log": ""
+        }
+      },
+      "agent": {
+        "project": "<project>",
+        "task": "ai-clip-scenario:treatment",
+        "prompt": "prompt-treatment.txt",
+        "context": "context-2.txt",
+        "images": null,
+        "retryOf": null
+      }
+    },
+    {
+      "op": "fail"
+    },
+    {
+      "op": "view",
+      "view": {
+        "project": "<project>",
+        "busy": false,
+        "canStartTreatment": true,
+        "canStartScenes": false,
+        "canRevise": false,
+        "canApproveScenes": false,
+        "canApproveCurrent": true,
+        "treatmentApproved": false,
+        "scenesNeedReview": false,
+        "problems": [],
+        "proposal": {
+          "id": "<proposal-2>",
+          "jobId": "job-1",
+          "pass": "treatment",
+          "selectedIds": [],
+          "status": "failed",
+          "warnings": [],
+          "stale": false,
+          "before": {
+            "cast": {
+              "schema_version": 1,
+              "entities": [
+                {
+                  "id": "world",
+                  "kind": "world",
+                  "name": "Мир сцены",
+                  "short_name": "Мир",
+                  "role": "Общие условия: время, погода и окружение",
+                  "appearance": "",
+                  "images": [],
+                  "initial_state": {
+                    "time_of_day": "вечер",
+                    "weather": "ясно"
+                  }
+                },
+                {
+                  "id": "mira",
+                  "kind": "character",
+                  "name": "Мира",
+                  "short_name": "Мира",
+                  "role": "Музыкант, держит фонарик",
+                  "appearance": "Музыкант, держит фонарик",
+                  "images": [
+                    "heroes/mira.png"
+                  ],
+                  "initial_state": {
+                    "clothes_condition": "светлая куртка",
+                    "position": "у края причала"
+                  }
+                },
+                {
+                  "id": "lev",
+                  "kind": "character",
+                  "name": "Лев",
+                  "short_name": "Лев",
+                  "role": "Друг, развешивает фонарики",
+                  "appearance": "Друг, развешивает фонарики",
+                  "images": [
+                    "heroes/lev.png"
+                  ],
+                  "initial_state": {
+                    "position": "рядом с фонарями"
+                  }
+                },
+                {
+                  "id": "boat",
+                  "kind": "vehicle",
+                  "name": "Лодка",
+                  "short_name": "Лодка",
+                  "role": "Небольшая лодка у причала",
+                  "appearance": "Небольшая лодка у причала",
+                  "images": [
+                    "vehicles/boat.png"
+                  ],
+                  "initial_state": {
+                    "dirt": "чистая",
+                    "sink": "у причала"
+                  }
+                },
+                {
+                  "id": "pier",
+                  "kind": "location",
+                  "name": "Причал",
+                  "short_name": "Причал",
+                  "role": "Деревянный причал у спокойной воды",
+                  "appearance": "Деревянный причал у спокойной воды",
+                  "images": [
+                    "locations/pier.png"
+                  ],
+                  "initial_state": {}
+                }
+              ],
+              "properties": {
+                "character": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+                    "checklist": "Персонаж стоит там, где записано: {value}?"
+                  },
+                  {
+                    "key": "contact",
+                    "label": "Опора",
+                    "hint": "На чём стоит или сидит персонаж",
+                    "values": [
+                      "стоит на полу",
+                      "сидит на стуле",
+                      "стоит у стола"
+                    ],
+                    "checklist": "Опора: {value}?"
+                  },
+                  {
+                    "key": "posture",
+                    "label": "Поза",
+                    "hint": "Стоит, наклонился, сидит боком, бежит"
+                  },
+                  {
+                    "key": "facing",
+                    "label": "Взгляд и разворот",
+                    "hint": "Куда повёрнут корпус и куда смотрит"
+                  },
+                  {
+                    "key": "clothes_condition",
+                    "label": "Одежда",
+                    "hint": "Цвет, состояние и заметные детали одежды",
+                    "checklist": "Одежда: {value}?"
+                  },
+                  {
+                    "key": "face_condition",
+                    "label": "Лицо",
+                    "hint": "Видимые детали лица и выражение",
+                    "checklist": "Лицо: {value}?"
+                  },
+                  {
+                    "key": "marks",
+                    "label": "Сквозные метки",
+                    "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+                    "checklist": "Сквозные метки на месте: {value}?"
+                  },
+                  {
+                    "key": "holding",
+                    "label": "В руках",
+                    "hint": "Предмет и в какой руке",
+                    "checklist": "В руках: {value}?"
+                  },
+                  {
+                    "key": "emotion",
+                    "label": "Состояние и эмоция",
+                    "hint": "Эмоция и её развитие в сюжете"
+                  },
+                  {
+                    "key": "fatigue",
+                    "label": "Усталость",
+                    "hint": "Накапливается по сюжету"
+                  }
+                ],
+                "vehicle": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где относительно окружения и других объектов",
+                    "checklist": "Положение транспорта: {value}?"
+                  },
+                  {
+                    "key": "orientation",
+                    "label": "Ориентация",
+                    "hint": "Как стоит относительно оси дороги",
+                    "values": [
+                      "вдоль дороги носом вперёд",
+                      "вдоль дороги носом назад",
+                      "под небольшим углом к дороге",
+                      "поперёк дороги"
+                    ],
+                    "checklist": "Ориентация транспорта: {value}?"
+                  },
+                  {
+                    "key": "sink",
+                    "label": "Погружение",
+                    "hint": "Положение относительно поверхности",
+                    "values": [
+                      "на поверхности",
+                      "частично погружён"
+                    ],
+                    "checklist": "Погружение: {value}?"
+                  },
+                  {
+                    "key": "dirt",
+                    "label": "Загрязнение",
+                    "hint": "Загрязнение или другие видимые изменения",
+                    "checklist": "Загрязнение кузова: {value}?"
+                  },
+                  {
+                    "key": "mobility",
+                    "label": "Движение",
+                    "hint": "Движется или неподвижен"
+                  },
+                  {
+                    "key": "doors",
+                    "label": "Двери и проёмы",
+                    "hint": "Какие двери открыты"
+                  },
+                  {
+                    "key": "cargo",
+                    "label": "Груз",
+                    "hint": "Что и где закреплено",
+                    "checklist": "Груз на месте: {value}?"
+                  },
+                  {
+                    "key": "occupants",
+                    "label": "Кто внутри",
+                    "hint": "Кто на каком месте",
+                    "checklist": "Внутри: {value}?"
+                  }
+                ],
+                "location": [
+                  {
+                    "key": "ground",
+                    "label": "Покрытие",
+                    "hint": "Материал и состояние поверхности"
+                  },
+                  {
+                    "key": "layout",
+                    "label": "Что где",
+                    "hint": "Что слева и справа по ходу движения, что впереди",
+                    "checklist": "Расположение сторон: {value}?"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Следы, ямы, разбросанные предметы"
+                  }
+                ],
+                "prop": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где лежит или у кого в руках",
+                    "checklist": "Предмет: {value}?"
+                  },
+                  {
+                    "key": "owner",
+                    "label": "У кого",
+                    "hint": "Персонаж, у которого предмет"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Целый, сломан, грязный"
+                  }
+                ],
+                "world": [
+                  {
+                    "key": "time_of_day",
+                    "label": "Время суток",
+                    "values": [
+                      "утро",
+                      "день",
+                      "вечер",
+                      "ночь"
+                    ],
+                    "checklist": "Освещение соответствует: {value}?"
+                  },
+                  {
+                    "key": "weather",
+                    "label": "Погода",
+                    "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+                    "checklist": "Погода: {value}?"
+                  },
+                  {
+                    "key": "season",
+                    "label": "Сезон",
+                    "hint": "Влияет на одежду и листву"
+                  },
+                  {
+                    "key": "road_axis",
+                    "label": "Ось дороги",
+                    "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+                    "checklist": "Ось дороги и направление движения: {value}?"
+                  },
+                  {
+                    "key": "left_side",
+                    "label": "Слева по ходу",
+                    "hint": "Что находится слева по направлению движения",
+                    "checklist": "Слева по ходу: {value}?"
+                  },
+                  {
+                    "key": "right_side",
+                    "label": "Справа по ходу",
+                    "hint": "Что находится справа по направлению движения",
+                    "checklist": "Справа по ходу: {value}?"
+                  },
+                  {
+                    "key": "ahead",
+                    "label": "Впереди",
+                    "hint": "Куда ведёт дорога, что её заканчивает"
+                  }
+                ],
+                "style": [
+                  {
+                    "key": "note",
+                    "label": "Заметка",
+                    "hint": "Стилевые ограничения, действующие с этого момента"
+                  }
+                ]
+              }
+            },
+            "treatment": {
+              "schema_version": 1,
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
+                }
+              ]
+            },
+            "scenes": {
+              "schema_version": 1,
+              "fps": 30,
+              "audio": {
+                "path": "source/track.mp3",
+                "end_seconds": "30"
+              },
+              "references": {
+                "mira": {
+                  "name": "Мира",
+                  "path": "source/heroes/mira.png"
+                },
+                "lev": {
+                  "name": "Лев",
+                  "path": "source/heroes/lev.png"
+                },
+                "boat": {
+                  "name": "Лодка",
+                  "path": "source/vehicles/boat.png"
+                },
+                "pier": {
+                  "name": "Причал",
+                  "path": "source/locations/pier.png"
+                }
+              },
+              "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп."
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики."
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка."
+                }
+              ],
+              "scenes": [
+                {
+                  "id": "M01",
+                  "original": "Вступление",
+                  "sequence": "intro",
+                  "title": "Вечер у воды",
+                  "start_frame": 0,
+                  "end_frame_exclusive": 240,
+                  "camera": "Общий план с воздуха, медленный наезд",
+                  "action": "Лодка покачивается у причала.",
+                  "continuity": "Начало клипа; лодка у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": null,
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "с каплями воды"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M02",
+                  "original": "Вечер зажёг фонари у воды",
+                  "sequence": "verse",
+                  "start_frame": 240,
+                  "end_frame_exclusive": 360,
+                  "camera": "Средний план на причале",
+                  "action": "Мира держит фонарик, Лев смотрит на воду.",
+                  "continuity": "Продолжение вечера из M01.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": "M01",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M03",
+                  "original": "Ветер качает бумажные огни",
+                  "sequence": "verse",
+                  "start_frame": 360,
+                  "end_frame_exclusive": 480,
+                  "camera": "Общий план сбоку",
+                  "action": "Фонарики качаются на ветру.",
+                  "continuity": "Лодка остаётся у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "pier"
+                  },
+                  "state_from": "M02",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "покрыта каплями",
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M04",
+                  "original": "Мы отпускаем огни в небеса",
+                  "sequence": "verse",
+                  "start_frame": 480,
+                  "end_frame_exclusive": 600,
+                  "camera": "Крупный план Миры",
+                  "action": "Мира поднимает фонарик, Лев улыбается.",
+                  "continuity": "Мира стоит у воды.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "card": {
+                    "primary_reference": "mira"
+                  },
+                  "state_from": "M03",
+                  "state_changes": {
+                    "before": {
+                      "mira": {
+                        "position": "стоит у края причала"
+                      }
+                    },
+                    "after": {
+                      "mira": {
+                        "clothes_condition": "яркая куртка"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M05",
+                  "original": "Проигрыш: повтор общего плана",
+                  "sequence": "outro",
+                  "title": "Финальный повтор",
+                  "start_frame": 600,
+                  "end_frame_exclusive": 900,
+                  "camera": "Как в M02, статика",
+                  "action": "Повтор кадра у воды как финальная точка.",
+                  "continuity": "Состояние как в M02: повтор, не продолжение.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": {
+                    "scene": "M02",
+                    "phase": "same"
+                  },
+                  "state_changes": {},
+                  "derived_from": {
+                    "shot": "M02"
+                  }
+                }
+              ]
+            }
+          },
+          "after": {
+            "cast": {
+              "schema_version": 1,
+              "entities": [
+                {
+                  "id": "world",
+                  "kind": "world",
+                  "name": "Мир сцены",
+                  "short_name": "Мир",
+                  "role": "Общие условия: время, погода и окружение",
+                  "appearance": "",
+                  "images": [],
+                  "initial_state": {
+                    "time_of_day": "вечер",
+                    "weather": "ясно"
+                  }
+                },
+                {
+                  "id": "mira",
+                  "kind": "character",
+                  "name": "Мира",
+                  "short_name": "Мира",
+                  "role": "Музыкант, держит фонарик",
+                  "appearance": "Музыкант, держит фонарик",
+                  "images": [
+                    "heroes/mira.png"
+                  ],
+                  "initial_state": {
+                    "clothes_condition": "светлая куртка",
+                    "position": "у края причала"
+                  }
+                },
+                {
+                  "id": "lev",
+                  "kind": "character",
+                  "name": "Лев",
+                  "short_name": "Лев",
+                  "role": "Друг, развешивает фонарики",
+                  "appearance": "Друг, развешивает фонарики",
+                  "images": [
+                    "heroes/lev.png"
+                  ],
+                  "initial_state": {
+                    "position": "рядом с фонарями"
+                  }
+                },
+                {
+                  "id": "boat",
+                  "kind": "vehicle",
+                  "name": "Лодка",
+                  "short_name": "Лодка",
+                  "role": "Небольшая лодка у причала",
+                  "appearance": "Небольшая лодка у причала",
+                  "images": [
+                    "vehicles/boat.png"
+                  ],
+                  "initial_state": {
+                    "dirt": "чистая",
+                    "sink": "у причала"
+                  }
+                },
+                {
+                  "id": "pier",
+                  "kind": "location",
+                  "name": "Причал",
+                  "short_name": "Причал",
+                  "role": "Деревянный причал у спокойной воды",
+                  "appearance": "Деревянный причал у спокойной воды",
+                  "images": [
+                    "locations/pier.png"
+                  ],
+                  "initial_state": {}
+                }
+              ],
+              "properties": {
+                "character": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+                    "checklist": "Персонаж стоит там, где записано: {value}?"
+                  },
+                  {
+                    "key": "contact",
+                    "label": "Опора",
+                    "hint": "На чём стоит или сидит персонаж",
+                    "values": [
+                      "стоит на полу",
+                      "сидит на стуле",
+                      "стоит у стола"
+                    ],
+                    "checklist": "Опора: {value}?"
+                  },
+                  {
+                    "key": "posture",
+                    "label": "Поза",
+                    "hint": "Стоит, наклонился, сидит боком, бежит"
+                  },
+                  {
+                    "key": "facing",
+                    "label": "Взгляд и разворот",
+                    "hint": "Куда повёрнут корпус и куда смотрит"
+                  },
+                  {
+                    "key": "clothes_condition",
+                    "label": "Одежда",
+                    "hint": "Цвет, состояние и заметные детали одежды",
+                    "checklist": "Одежда: {value}?"
+                  },
+                  {
+                    "key": "face_condition",
+                    "label": "Лицо",
+                    "hint": "Видимые детали лица и выражение",
+                    "checklist": "Лицо: {value}?"
+                  },
+                  {
+                    "key": "marks",
+                    "label": "Сквозные метки",
+                    "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+                    "checklist": "Сквозные метки на месте: {value}?"
+                  },
+                  {
+                    "key": "holding",
+                    "label": "В руках",
+                    "hint": "Предмет и в какой руке",
+                    "checklist": "В руках: {value}?"
+                  },
+                  {
+                    "key": "emotion",
+                    "label": "Состояние и эмоция",
+                    "hint": "Эмоция и её развитие в сюжете"
+                  },
+                  {
+                    "key": "fatigue",
+                    "label": "Усталость",
+                    "hint": "Накапливается по сюжету"
+                  }
+                ],
+                "vehicle": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где относительно окружения и других объектов",
+                    "checklist": "Положение транспорта: {value}?"
+                  },
+                  {
+                    "key": "orientation",
+                    "label": "Ориентация",
+                    "hint": "Как стоит относительно оси дороги",
+                    "values": [
+                      "вдоль дороги носом вперёд",
+                      "вдоль дороги носом назад",
+                      "под небольшим углом к дороге",
+                      "поперёк дороги"
+                    ],
+                    "checklist": "Ориентация транспорта: {value}?"
+                  },
+                  {
+                    "key": "sink",
+                    "label": "Погружение",
+                    "hint": "Положение относительно поверхности",
+                    "values": [
+                      "на поверхности",
+                      "частично погружён"
+                    ],
+                    "checklist": "Погружение: {value}?"
+                  },
+                  {
+                    "key": "dirt",
+                    "label": "Загрязнение",
+                    "hint": "Загрязнение или другие видимые изменения",
+                    "checklist": "Загрязнение кузова: {value}?"
+                  },
+                  {
+                    "key": "mobility",
+                    "label": "Движение",
+                    "hint": "Движется или неподвижен"
+                  },
+                  {
+                    "key": "doors",
+                    "label": "Двери и проёмы",
+                    "hint": "Какие двери открыты"
+                  },
+                  {
+                    "key": "cargo",
+                    "label": "Груз",
+                    "hint": "Что и где закреплено",
+                    "checklist": "Груз на месте: {value}?"
+                  },
+                  {
+                    "key": "occupants",
+                    "label": "Кто внутри",
+                    "hint": "Кто на каком месте",
+                    "checklist": "Внутри: {value}?"
+                  }
+                ],
+                "location": [
+                  {
+                    "key": "ground",
+                    "label": "Покрытие",
+                    "hint": "Материал и состояние поверхности"
+                  },
+                  {
+                    "key": "layout",
+                    "label": "Что где",
+                    "hint": "Что слева и справа по ходу движения, что впереди",
+                    "checklist": "Расположение сторон: {value}?"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Следы, ямы, разбросанные предметы"
+                  }
+                ],
+                "prop": [
+                  {
+                    "key": "position",
+                    "label": "Положение",
+                    "hint": "Где лежит или у кого в руках",
+                    "checklist": "Предмет: {value}?"
+                  },
+                  {
+                    "key": "owner",
+                    "label": "У кого",
+                    "hint": "Персонаж, у которого предмет"
+                  },
+                  {
+                    "key": "condition",
+                    "label": "Состояние",
+                    "hint": "Целый, сломан, грязный"
+                  }
+                ],
+                "world": [
+                  {
+                    "key": "time_of_day",
+                    "label": "Время суток",
+                    "values": [
+                      "утро",
+                      "день",
+                      "вечер",
+                      "ночь"
+                    ],
+                    "checklist": "Освещение соответствует: {value}?"
+                  },
+                  {
+                    "key": "weather",
+                    "label": "Погода",
+                    "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+                    "checklist": "Погода: {value}?"
+                  },
+                  {
+                    "key": "season",
+                    "label": "Сезон",
+                    "hint": "Влияет на одежду и листву"
+                  },
+                  {
+                    "key": "road_axis",
+                    "label": "Ось дороги",
+                    "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+                    "checklist": "Ось дороги и направление движения: {value}?"
+                  },
+                  {
+                    "key": "left_side",
+                    "label": "Слева по ходу",
+                    "hint": "Что находится слева по направлению движения",
+                    "checklist": "Слева по ходу: {value}?"
+                  },
+                  {
+                    "key": "right_side",
+                    "label": "Справа по ходу",
+                    "hint": "Что находится справа по направлению движения",
+                    "checklist": "Справа по ходу: {value}?"
+                  },
+                  {
+                    "key": "ahead",
+                    "label": "Впереди",
+                    "hint": "Куда ведёт дорога, что её заканчивает"
+                  }
+                ],
+                "style": [
+                  {
+                    "key": "note",
+                    "label": "Заметка",
+                    "hint": "Стилевые ограничения, действующие с этого момента"
+                  }
+                ]
+              }
+            },
+            "treatment": {
+              "schema_version": 1,
+              "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп.",
+                  "start": 0,
+                  "end": 8,
+                  "entities": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 8
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики.",
+                  "start": 8,
+                  "end": 20,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "max_shot_seconds": 6
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка.",
+                  "start": 20,
+                  "end": 30,
+                  "entities": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "max_shot_seconds": 10
+                }
+              ]
+            },
+            "scenes": {
+              "schema_version": 1,
+              "fps": 30,
+              "audio": {
+                "path": "source/track.mp3",
+                "end_seconds": "30"
+              },
+              "references": {
+                "mira": {
+                  "name": "Мира",
+                  "path": "source/heroes/mira.png"
+                },
+                "lev": {
+                  "name": "Лев",
+                  "path": "source/heroes/lev.png"
+                },
+                "boat": {
+                  "name": "Лодка",
+                  "path": "source/vehicles/boat.png"
+                },
+                "pier": {
+                  "name": "Причал",
+                  "path": "source/locations/pier.png"
+                }
+              },
+              "visual_direction": "Причал у воды, мягкий вечерний свет; камера спокойная, без резких движений.",
+              "sequences": [
+                {
+                  "id": "intro",
+                  "title": "Вечер у воды",
+                  "direction": "Общий план причала, спокойный темп."
+                },
+                {
+                  "id": "verse",
+                  "title": "Фонарики",
+                  "direction": "Друзья развешивают фонарики."
+                },
+                {
+                  "id": "outro",
+                  "title": "Проигрыш",
+                  "direction": "Повтор общего плана как финальная точка."
+                }
+              ],
+              "scenes": [
+                {
+                  "id": "M01",
+                  "original": "Вступление",
+                  "sequence": "intro",
+                  "title": "Вечер у воды",
+                  "start_frame": 0,
+                  "end_frame_exclusive": 240,
+                  "camera": "Общий план с воздуха, медленный наезд",
+                  "action": "Лодка покачивается у причала.",
+                  "continuity": "Начало клипа; лодка у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": null,
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "с каплями воды"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M02",
+                  "original": "Вечер зажёг фонари у воды",
+                  "sequence": "verse",
+                  "start_frame": 240,
+                  "end_frame_exclusive": 360,
+                  "camera": "Средний план на причале",
+                  "action": "Мира держит фонарик, Лев смотрит на воду.",
+                  "continuity": "Продолжение вечера из M01.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": "M01",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M03",
+                  "original": "Ветер качает бумажные огни",
+                  "sequence": "verse",
+                  "start_frame": 360,
+                  "end_frame_exclusive": 480,
+                  "camera": "Общий план сбоку",
+                  "action": "Фонарики качаются на ветру.",
+                  "continuity": "Лодка остаётся у причала.",
+                  "references": [
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "pier"
+                  },
+                  "state_from": "M02",
+                  "state_changes": {
+                    "after": {
+                      "boat": {
+                        "dirt": "покрыта каплями",
+                        "sink": "у края причала"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M04",
+                  "original": "Мы отпускаем огни в небеса",
+                  "sequence": "verse",
+                  "start_frame": 480,
+                  "end_frame_exclusive": 600,
+                  "camera": "Крупный план Миры",
+                  "action": "Мира поднимает фонарик, Лев улыбается.",
+                  "continuity": "Мира стоит у воды.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat",
+                    "pier"
+                  ],
+                  "lipsync": true,
+                  "card": {
+                    "primary_reference": "mira"
+                  },
+                  "state_from": "M03",
+                  "state_changes": {
+                    "before": {
+                      "mira": {
+                        "position": "стоит у края причала"
+                      }
+                    },
+                    "after": {
+                      "mira": {
+                        "clothes_condition": "яркая куртка"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "M05",
+                  "original": "Проигрыш: повтор общего плана",
+                  "sequence": "outro",
+                  "title": "Финальный повтор",
+                  "start_frame": 600,
+                  "end_frame_exclusive": 900,
+                  "camera": "Как в M02, статика",
+                  "action": "Повтор кадра у воды как финальная точка.",
+                  "continuity": "Состояние как в M02: повтор, не продолжение.",
+                  "references": [
+                    "mira",
+                    "lev",
+                    "boat"
+                  ],
+                  "lipsync": false,
+                  "card": {
+                    "primary_reference": "boat"
+                  },
+                  "state_from": {
+                    "scene": "M02",
+                    "phase": "same"
+                  },
+                  "state_changes": {},
+                  "derived_from": {
+                    "shot": "M02"
+                  }
+                }
+              ]
+            }
+          },
+          "changedIds": [],
+          "message": "Агент завершил задание без успешного результата."
+        },
+        "job": {
+          "schemaVersion": 1,
+          "id": "job-1",
+          "sequence": 2,
+          "project": "<project>",
+          "provider": "codex",
+          "task": "ai-clip-scenario:treatment",
+          "permissions": "read-only",
+          "inputHashes": {
+            "prompt": "e4fa2c1b8e48dc176a600e9af7245a31240a55c49020acb5a8e9acfdb880eae1",
+            "context": "0dffd4a89d7a26b97f2c3c245369f282d9aa81380eb1b8106cd3396462ab2ed3"
+          },
+          "status": "failed",
+          "phase": "работает",
+          "startedAt": "2026-11-04T12:00:00.000Z",
+          "finishedAt": null,
+          "exitCode": 1,
+          "result": "",
+          "log": ""
+        }
+      }
+    }
+  ]
+}

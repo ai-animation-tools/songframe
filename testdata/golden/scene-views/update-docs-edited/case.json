@@ -1,0 +1,13 @@
+{
+  "description": "Ручная правка документов перезаписывается.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "write_text"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

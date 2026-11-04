@@ -1,0 +1,13 @@
+{
+  "description": "Нет текущей сборки: «Устаревшая сборка».",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "current_animatic None"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

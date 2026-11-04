@@ -1,0 +1,21 @@
+{
+  "code": 0,
+  "stdout": "Обновлено представлений: 3.\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "assets/shots/manifest.json": "changed",
+    "plan/context/characters.md": "changed",
+    "plan/storyboard.md": "changed"
+  },
+  "recheck": {
+    "code": 0,
+    "stdout": "Представления актуальны.\n",
+    "stderr": ""
+  },
+  "cards": [
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png"
+  ]
+}

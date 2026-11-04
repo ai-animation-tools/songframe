@@ -1,0 +1,15 @@
+{
+  "description": "Действие числом: TypeError — трассировка.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "TypeError subscriptable"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M02"
+  ],
+  "remove": [],
+  "mkdir": []
+}

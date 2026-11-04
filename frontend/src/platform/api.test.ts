@@ -37,6 +37,10 @@ function bindings(
     scenario: missing,
     tools: missing,
     checks: missing,
+    agents: missing,
+    ai: missing,
+    scenarioWorkflow: missing,
+    videoReview: missing,
     events: async () => ({ on: overrides.on ?? (() => () => undefined) })
   } as Bindings;
   return b;

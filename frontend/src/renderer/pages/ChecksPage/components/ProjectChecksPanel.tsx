@@ -15,8 +15,6 @@ interface ProjectChecksPanelProps {
   disabled: boolean;
   /** Почему проверки сейчас нельзя запустить. */
   disabledReason: string | null;
-  /** Почему проверка «Карточки и списки» ещё недоступна (не перенесена); null — доступна. */
-  viewsUnavailableReason: string | null;
   strict: boolean;
   next: boolean;
   setStrict: (value: boolean) => void;
@@ -32,7 +30,6 @@ export function ProjectChecksPanel({
   checks,
   disabled,
   disabledReason,
-  viewsUnavailableReason,
   strict,
   next,
   setStrict,
@@ -56,8 +53,8 @@ export function ProjectChecksPanel({
             key={check.id}
             check={check}
             result={outcome(check)}
-            disabled={disabled || (check.id === 'views' && viewsUnavailableReason !== null)}
-            disabledReason={check.id === 'views' ? (viewsUnavailableReason ?? disabledReason) : disabledReason}
+            disabled={disabled}
+            disabledReason={disabledReason}
             strict={strict}
             next={next}
             setStrict={setStrict}
@@ -78,11 +75,6 @@ export function ProjectChecksPanel({
       >
         {checksTexts.runAll}
       </ActionButton>
-      {viewsUnavailableReason !== null ? (
-        <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.5 }}>
-          {checksTexts.runAllExcludes(checks.find((check) => check.id === 'views')?.label ?? checksTexts.viewsLabel)}
-        </Typography>
-      ) : null}
     </Paper>
   );
 }

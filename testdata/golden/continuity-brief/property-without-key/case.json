@@ -1,0 +1,15 @@
+{
+  "description": "Свойство словаря без key: KeyError — код 1.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "KeyError key"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M02"
+  ],
+  "remove": [],
+  "mkdir": []
+}

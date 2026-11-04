@@ -16,6 +16,8 @@ import (
 var boundServices = []any{
 	&AppService{}, &ShellService{}, &ProjectService{}, &NativeService{}, &ComponentsService{}, &NativeCheckService{}, &JobsService{}, &TimingService{}, &SourcesService{},
 	&CastService{}, &ScenarioService{}, &ToolsService{}, &ChecksService{},
+	&AgentsService{}, &AIService{}, &VideoReviewService{},
+	&ScenarioWorkflowService{},
 }
 
 // hasCollection сообщает, может ли значение типа сериализоваться с null вместо [] или {}.

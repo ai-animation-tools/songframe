@@ -20,10 +20,12 @@ import (
 
 	"songframe-go/internal/checkassets"
 	"songframe-go/internal/checkworkspace"
+	"songframe-go/internal/continuitybrief"
 	"songframe-go/internal/lintregistry"
 	"songframe-go/internal/pycompat"
 	"songframe-go/internal/pytool"
 	"songframe-go/internal/scenescaffold"
+	"songframe-go/internal/sceneviews"
 	"songframe-go/internal/shotstatus"
 )
 
@@ -62,11 +64,13 @@ type tool func(root string, args []string) pytool.Output
 
 // registry — инструменты, перенесённые на Go. Остальные имена оригинала — ошибка «не перенесён».
 var registry = map[string]tool{
-	"scene_scaffold":  scenescaffold.Run,
-	"lint_registry":   lintregistry.Run,
-	"check_assets":    checkassets.Run,
-	"check_workspace": checkworkspace.Run,
-	"shot_status":     shotstatus.Run,
+	"scene_scaffold":     scenescaffold.Run,
+	"lint_registry":      lintregistry.Run,
+	"check_assets":       checkassets.Run,
+	"check_workspace":    checkworkspace.Run,
+	"shot_status":        shotstatus.Run,
+	"continuity_brief":   continuitybrief.Run,
+	"update_scene_views": sceneviews.Run,
 }
 
 // Available — перенесён ли инструмент с таким именем.

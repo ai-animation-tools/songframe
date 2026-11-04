@@ -16,6 +16,7 @@ const (
 	textStatusLabel          = "Статусы планов"
 	textStatusDescription    = "Показать готовые планы, текущие попытки и очередь согласования. Помогает выбрать следующий план для работы."
 	textAllChecksJobTitle    = "Все проверки"
+	textUpdateViewsJobTitle  = "Обновление карточек и списков"
 )
 
 // textUnknownCheck — checksTexts.unknownCheck.
@@ -23,8 +24,3 @@ func textUnknownCheck(id string) string { return "Неизвестная про�
 
 // textCheckJobTitle — checksTexts.checkJobTitle.
 func textCheckJobTitle(label string) string { return "Проверка: " + label }
-
-// textCheckNotMigrated — отказ запуска проверки, инструмент которой ещё не перенесён в Go.
-func textCheckNotMigrated(label string) string {
-	return "Проверка «" + label + "» ещё не перенесена в Go-версию SongFrame."
-}

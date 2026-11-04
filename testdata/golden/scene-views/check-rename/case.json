@@ -1,0 +1,15 @@
+{
+  "description": "Смена названия проекта: все карточки и заголовки.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "project_inputs"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

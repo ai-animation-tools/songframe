@@ -12,13 +12,16 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"songframe-go/internal/agents"
 	shell "songframe-go/internal/app"
 	"songframe-go/internal/components"
 	"songframe-go/internal/jobs"
 	"songframe-go/internal/media"
 	"songframe-go/internal/project"
 	"songframe-go/internal/scenarioapply"
+	"songframe-go/internal/scenarioworkflow"
 	"songframe-go/internal/store"
+	"songframe-go/internal/videoreview"
 )
 
 // Собранный frontend входит в бинарник: Node/Yarn нужны только разработчику.
@@ -115,6 +118,15 @@ func run() error {
 	}()
 	componentService := shell.NewComponentsService(componentManager)
 	defer componentService.ServiceShutdown()
+	// Задания агента: история в каталоге состояния, при закрытии CLI останавливаются вместе с потомками.
+	agentSettings := agents.NewSettingsStore(profilePath)
+	agentManager := agents.NewManager(agentSettings, agents.Options{})
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = agentManager.ShutdownAndWait(ctx)
+	}()
+	aiAccess := &agents.AccessChecker{Settings: agentSettings}
 	var desktop *application.App
 	var result *shell.SmokeResult
 	var ready func(shell.AppState) error
@@ -136,6 +148,20 @@ func run() error {
 		application.NewService(shell.NewSourcesService(ffprobePath(componentManager))),
 		application.NewService(shell.NewCastService()), application.NewService(shell.NewScenarioService()),
 		application.NewService(shell.NewToolsService()), application.NewService(shell.NewChecksService(jobManager)),
+		application.NewService(shell.NewAgentsService(agentSettings, agentManager, aiAccess)), application.NewService(shell.NewAIService(aiAccess)),
+		// Сценарный проход агента: журнал публикаций тот же каталог состояния, что у scenarioJournal;
+		// перед запуском — ai.requireAccess(project, 'agent') оригинала.
+		application.NewService(shell.NewScenarioWorkflowService(scenarioworkflow.New(scenarioworkflow.Options{
+			LocalDir: profilePath, Agents: agentManager,
+			RequireAgentAccess: func(project string) error {
+				return aiAccess.RequireAccess(context.Background(), &project, agents.KindAgent)
+			},
+		}))),
+		// Проверка видео агентом; занятость пакета производственной операцией подключит этап 45.
+		application.NewService(shell.NewVideoReviewService(videoreview.New(videoreview.Options{
+			Agents: agentManager, Tools: shell.VideoReviewTools(componentManager), Brief: shell.ContinuityBrief,
+			ImageBudgetBytes: shell.VideoReviewBudget(agentSettings),
+		}), aiAccess)),
 	}
 	var nativeCheck *shell.NativeCheckService
 	windowURL := "/"
@@ -164,6 +190,7 @@ func run() error {
 	})
 	shell.ConfigureNativeDesktop(native, desktop)
 	shell.ConfigureNativeMedia(native, mediaServer.ContainsURL, mediaServer.AllowFile)
+	defer shell.ConfigureAgentEvents(agentManager, desktop)()
 	window := desktop.Window.NewWithOptions(application.WebviewWindowOptions{
 		// Плотный рабочий интерфейс рассчитан на окно не меньше 1320×860; старт совпадает с нижней границей.
 		Title: "SongFrame — Go", Width: 1320, Height: 860, MinWidth: 1320, MinHeight: 860,

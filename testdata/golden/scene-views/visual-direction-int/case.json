@@ -1,0 +1,15 @@
+{
+  "description": "visual_direction числом: AttributeError — трассировка.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "AttributeError strip"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

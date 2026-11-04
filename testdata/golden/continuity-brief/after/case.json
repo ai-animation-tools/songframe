@@ -1,0 +1,17 @@
+{
+  "description": "--phase after M04.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--phase after"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M04",
+    "--phase",
+    "after"
+  ],
+  "remove": [],
+  "mkdir": []
+}

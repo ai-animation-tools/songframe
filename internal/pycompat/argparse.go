@@ -6,9 +6,10 @@ import (
 	"unicode/utf8"
 )
 
-// Разбор аргументов повторяет argparse CPython 3.12 (снято на 3.12.3) для инструментов без
-// позиционных аргументов: флаги store_true, опции с одним значением (store, необязательный список
-// choices) и nargs="+", плюс -h/--help. Сохраняются классификация строк (опция/значение/«--»),
+// Разбор аргументов повторяет argparse CPython 3.12 (снято на 3.12.3): флаги store_true, опции с
+// одним значением (store, необязательный список choices) и nargs="+", плюс -h/--help; обязательные
+// позиционные аргументы с одним значением (nargs=None) и одна взаимоисключающая группа опций
+// (add_mutually_exclusive_group без required). Сохраняются классификация строк (опция/значение/«--»),
 // уникальные префиксы длинных опций (allow_abbrev) и их «=значение», склейка коротких флагов
 // (-hx), отрицательные числа и строки с пробелом как значения, порядок ошибок (неоднозначная опция
 // — при классификации, «expected one argument», «invalid choice», «ignored explicit argument» —
@@ -31,11 +32,24 @@ type Flag struct {
 	Metavar string
 }
 
-// ArgParser — argparse.ArgumentParser(prog, description) с опциями.
+// Positional — обязательный позиционный аргумент с одним значением (nargs=None, без choices).
+// Значение попадает в Args.Values[Name].
+type Positional struct {
+	// Name — dest и metavar аргумента.
+	Name string
+	// Help — строка справки; пустая — без описания.
+	Help string
+}
+
+// ArgParser — argparse.ArgumentParser(prog, description) с опциями, позиционными аргументами
+// (разбираются после опций в порядке объявления) и одной необязательной взаимоисключающей
+// группой: Exclusive — имена опций группы, идущих в Flags подряд.
 type ArgParser struct {
 	Prog        string
 	Description string
 	Flags       []Flag
+	Positionals []Positional
+	Exclusive   []string
 }
 
 // ArgExit — завершение разбора: справка (код 0, stdout) или ошибка аргументов (код 2, stderr).
@@ -141,24 +155,45 @@ func fill(text string, width int) []string {
 	return lines
 }
 
-// Usage — format_usage(): «usage: prog [-h] [--flag] …» и перевод строки. Длинная строка
-// переносится, как HelpFormatter._format_usage: части опций выравниваются под первой после prog.
-func (p ArgParser) Usage() string {
+// inGroup — опция входит во взаимоисключающую группу.
+func (p ArgParser) inGroup(name string) bool {
+	for _, member := range p.Exclusive {
+		if member == name {
+			return true
+		}
+	}
+	return false
+}
+
+// optionParts — части usage опций: [-h], [--flag ARGS] и группа «[--a | --b B]» одним элементом
+// (так её видит регулярное выражение разбиения _format_usage).
+func (p ArgParser) optionParts() []string {
 	parts := []string{"[-h]"}
-	for _, flag := range p.Flags {
-		parts = append(parts, flag.usagePart())
+	group := []string{}
+	for index, flag := range p.Flags {
+		if !p.inGroup(flag.Name) {
+			parts = append(parts, flag.usagePart())
+			continue
+		}
+		group = append(group, strings.TrimSuffix(strings.TrimPrefix(flag.usagePart(), "["), "]"))
+		if index+1 == len(p.Flags) || !p.inGroup(p.Flags[index+1].Name) {
+			parts = append(parts, "["+strings.Join(group, " | ")+"]")
+			group = nil
+		}
 	}
-	const prefix = "usage: "
-	line := p.Prog + " " + strings.Join(parts, " ")
-	if runeLen(prefix)+runeLen(line) <= helpWidth {
-		return prefix + line + "\n"
-	}
-	// get_lines([prog] + opt_parts, indent, prefix): prog короткий (не длиннее 0.75 ширины).
-	indent := strings.Repeat(" ", runeLen(prefix)+runeLen(p.Prog)+1)
+	return parts
+}
+
+// getLines — get_lines из HelpFormatter._format_usage: жадная укладка частей по ширине; с
+// префиксом первая строка начинается сразу после «usage: ».
+func getLines(parts []string, indent string, prefix string, withPrefix bool) []string {
 	lines := []string{}
 	current := []string{}
-	length := runeLen(prefix) - 1
-	for _, part := range append([]string{p.Prog}, parts...) {
+	length := runeLen(indent) - 1
+	if withPrefix {
+		length = runeLen(prefix) - 1
+	}
+	for _, part := range parts {
 		if length+1+runeLen(part) > helpWidth && len(current) > 0 {
 			lines = append(lines, indent+strings.Join(current, " "))
 			current = nil
@@ -170,21 +205,50 @@ func (p ArgParser) Usage() string {
 	if len(current) > 0 {
 		lines = append(lines, indent+strings.Join(current, " "))
 	}
-	lines[0] = lines[0][len(indent):]
+	if withPrefix {
+		lines[0] = lines[0][len(indent):]
+	}
+	return lines
+}
+
+// Usage — format_usage(): «usage: prog [-h] [--flag] … позиционные» и перевод строки. Длинная
+// строка переносится, как HelpFormatter._format_usage: части опций выравниваются под первой после
+// prog, позиционные аргументы начинаются с новой строки.
+func (p ArgParser) Usage() string {
+	parts := p.optionParts()
+	positionals := []string{}
+	for _, positional := range p.Positionals {
+		positionals = append(positionals, positional.Name)
+	}
+	const prefix = "usage: "
+	line := p.Prog + " " + strings.Join(append(append([]string{}, parts...), positionals...), " ")
+	if runeLen(prefix)+runeLen(line) <= helpWidth {
+		return prefix + line + "\n"
+	}
+	// Ветка короткого prog (не длиннее 0.75 ширины): опции всегда есть ([-h]).
+	indent := strings.Repeat(" ", runeLen(prefix)+runeLen(p.Prog)+1)
+	lines := getLines(append([]string{p.Prog}, parts...), indent, prefix, true)
+	if len(positionals) > 0 {
+		lines = append(lines, getLines(positionals, indent, "", false)...)
+	}
 	return prefix + strings.Join(lines, "\n") + "\n"
 }
 
-// Help — print_help(): использование, описание и раздел options с выравниванием HelpFormatter
-// (колонка справки — длина самого длинного вызова + 4, не дальше 24; текст справки переносится
-// по ширине 78 − колонка).
+// Help — print_help(): использование, описание, разделы positional arguments и options с
+// выравниванием HelpFormatter (колонка справки — длина самого длинного вызова по всем разделам + 4,
+// не дальше 24; текст справки переносится по ширине 78 − колонка).
 func (p ArgParser) Help() string {
 	type row struct{ invocation, help string }
+	positionals := []row{}
+	for _, positional := range p.Positionals {
+		positionals = append(positionals, row{positional.Name, positional.Help})
+	}
 	rows := []row{{"-h, --help", "show this help message and exit"}}
 	for _, flag := range p.Flags {
 		rows = append(rows, row{flag.invocation(), flag.Help})
 	}
 	longest := 0
-	for _, item := range rows {
+	for _, item := range append(append([]row{}, positionals...), rows...) {
 		longest = max(longest, runeLen(item.invocation)+2)
 	}
 	position := min(longest+2, min(24, max(helpWidth-20, 4)))
@@ -195,23 +259,29 @@ func (p ArgParser) Help() string {
 	if p.Description != "" {
 		builder.WriteString("\n" + strings.Join(fill(p.Description, helpWidth), "\n") + "\n")
 	}
-	builder.WriteString("\noptions:\n")
-	for _, item := range rows {
-		length := runeLen(item.invocation)
-		if item.help == "" {
-			builder.WriteString("  " + item.invocation + "\n")
-			continue
-		}
-		lines := fill(item.help, helpText)
-		if length <= width {
-			builder.WriteString("  " + item.invocation + strings.Repeat(" ", width-length) + "  " + lines[0] + "\n")
-		} else {
-			builder.WriteString("  " + item.invocation + "\n" + strings.Repeat(" ", position) + lines[0] + "\n")
-		}
-		for _, line := range lines[1:] {
-			builder.WriteString(strings.Repeat(" ", position) + line + "\n")
+	section := func(title string, items []row) {
+		builder.WriteString("\n" + title + ":\n")
+		for _, item := range items {
+			length := runeLen(item.invocation)
+			if item.help == "" {
+				builder.WriteString("  " + item.invocation + "\n")
+				continue
+			}
+			lines := fill(item.help, helpText)
+			if length <= width {
+				builder.WriteString("  " + item.invocation + strings.Repeat(" ", width-length) + "  " + lines[0] + "\n")
+			} else {
+				builder.WriteString("  " + item.invocation + "\n" + strings.Repeat(" ", position) + lines[0] + "\n")
+			}
+			for _, line := range lines[1:] {
+				builder.WriteString(strings.Repeat(" ", position) + line + "\n")
+			}
 		}
 	}
+	if len(positionals) > 0 {
+		section("positional arguments", positionals)
+	}
+	section("options", rows)
 	return builder.String()
 }
 
@@ -359,6 +429,23 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 		options[index] = parsed
 	}
 	extras := []string{}
+	// seen — seen_non_default_actions: опции группы, уже получившие значение (у store_true это
+	// пустой список значений, а не default False, поэтому повтор тоже «не по умолчанию»).
+	seen := map[string]bool{}
+	// conflict — проверка взаимоисключающей группы take_action: первая уже встреченная опция
+	// группы в порядке объявления, кроме самой опции.
+	conflict := func(name string) *ArgExit {
+		if !p.inGroup(name) {
+			return nil
+		}
+		seen[name] = true
+		for _, other := range p.Exclusive {
+			if other != name && seen[other] {
+				return p.fail("argument " + name + ": not allowed with argument " + other)
+			}
+		}
+		return nil
+	}
 	// take — take_action: проверка choices и запись значения; -h печатает справку.
 	take := func(index int, values []string) *ArgExit {
 		if index == -1 {
@@ -366,6 +453,9 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 		}
 		flag := p.Flags[index]
 		if !flag.takesValue() {
+			if exit := conflict(flag.Name); exit != nil {
+				return exit
+			}
 			result.Bools[flag.Name] = true
 			return nil
 		}
@@ -384,8 +474,43 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 				}
 			}
 		}
+		if exit := conflict(flag.Name); exit != nil {
+			return exit
+		}
 		result.Values[flag.Name] = append([]string(nil), values...)
 		return nil
+	}
+	// consumePositionals — consume_positionals: оставшиеся позиционные аргументы по шаблону
+	// '(-*A-*)' каждый (match_partial берёт наибольшее число подряд), из значений убирается
+	// первое «--» (_get_values).
+	remaining := p.Positionals
+	consumePositionals := func(start int) int {
+		for len(remaining) > 0 {
+			position := start
+			for position < len(args) && pattern[position] == '-' {
+				position++
+			}
+			if position >= len(args) || pattern[position] != 'A' {
+				break
+			}
+			position++
+			for position < len(args) && pattern[position] == '-' {
+				position++
+			}
+			values := []string{}
+			removed := false
+			for _, value := range args[start:position] {
+				if value == "--" && !removed {
+					removed = true
+					continue
+				}
+				values = append(values, value)
+			}
+			result.Values[remaining[0].Name] = values
+			remaining = remaining[1:]
+			start = position
+		}
+		return start
 	}
 	// consume — consume_optional: опция (возможно, склейка коротких флагов) и её значения.
 	consume := func(start int) (int, *ArgExit) {
@@ -474,6 +599,12 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 		if next < 0 {
 			break
 		}
+		if index != next {
+			if end := consumePositionals(index); end > index {
+				index = end
+				continue
+			}
+		}
 		extras = append(extras, args[index:next]...)
 		stop, exit := consume(next)
 		if exit != nil {
@@ -481,7 +612,15 @@ func (p ArgParser) ParseArgs(args []string) (Args, *ArgExit) {
 		}
 		index = stop
 	}
+	index = consumePositionals(min(index, len(args)))
 	extras = append(extras, args[min(index, len(args)):]...)
+	if len(remaining) > 0 {
+		names := make([]string, len(remaining))
+		for position, positional := range remaining {
+			names[position] = positional.Name
+		}
+		return Args{}, p.fail("the following arguments are required: " + strings.Join(names, ", "))
+	}
 	if len(extras) > 0 {
 		return Args{}, p.fail("unrecognized arguments: " + strings.Join(extras, " "))
 	}

@@ -1,0 +1,13 @@
+{
+  "description": "Принятая свежая сборка: «Полная сборка принята.».",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "approved"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

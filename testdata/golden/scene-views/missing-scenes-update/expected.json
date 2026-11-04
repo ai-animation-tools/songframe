@@ -1,0 +1,13 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Нет обязательного файла: plan/scenes.json. Сначала создайте сценарий.\n",
+  "traceback": false,
+  "files": {},
+  "recheck": {
+    "code": 1,
+    "stdout": "",
+    "stderr": "Нет обязательного файла: plan/scenes.json. Сначала создайте сценарий.\n"
+  },
+  "cards": null
+}

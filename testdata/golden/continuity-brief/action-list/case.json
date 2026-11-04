@@ -1,0 +1,15 @@
+{
+  "description": "Действие списком: срез и repr.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "list[:80]"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M02"
+  ],
+  "remove": [],
+  "mkdir": []
+}

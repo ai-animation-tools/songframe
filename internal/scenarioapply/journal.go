@@ -70,6 +70,9 @@ func relativePath(path string) bool {
 	return true
 }
 
+// RelativePath — relativePath оригинала для других пакетов сценария.
+func RelativePath(path string) bool { return relativePath(path) }
+
 // AllowedTarget — может ли публикация сценария менять этот файл проекта.
 func AllowedTarget(path string) bool {
 	return relativePath(path) && (slices.Contains(canonical, path) || slices.Contains(fixedViews, path) ||
@@ -108,6 +111,13 @@ func checkedPath(project, relative string) (string, error) {
 	}
 	return filepath.Join(project, filepath.FromSlash(relative)), nil
 }
+
+// CheckedPath — путь файла проекта для применения сценария без перехода по ссылкам (checkedPath
+// оригинала); его использует и проверка в копии internal/scenarioworkflow.
+func CheckedPath(project, relative string) (string, error) { return checkedPath(project, relative) }
+
+// ReadFile — bytes оригинала: байты файла проекта по CheckedPath или nil, если файла нет.
+func ReadFile(project, relative string) ([]byte, error) { return readCurrent(project, relative) }
 
 // readCurrent — байты файла проекта или nil, если его нет.
 func readCurrent(project, relative string) ([]byte, error) {

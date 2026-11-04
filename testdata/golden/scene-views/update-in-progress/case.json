@@ -1,0 +1,13 @@
+{
+  "description": "Пакет M04 в plan/awaiting: «В процессе»; workflow без shot и битый — пропуск.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "in_progress"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

@@ -218,16 +218,16 @@ export const SaveProducedShots: Story = {
   }
 };
 
-export const WorkflowNotMigrated: Story = {
-  name: 'Процесс с агентом не перенесён · ручная правка и сохранение работают',
+export const WorkflowWithManualEditing: Story = {
+  name: 'Процесс с агентом · панель рядом с ручной правкой и сохранением',
   tags: ['!autodocs', 'ci'],
-  parameters: { songframe: scenarioPageOptions({ unavailable: ['scenarioWorkflow.view'] }) },
   play: async (context) => {
     const screen = await ready(context);
     await editorHeading(screen, 'M01');
+    // Процесс с агентом перенесён в Go: вместо заметки о переносе страница показывает рабочую панель.
     await expect(screen.getByText(scenarioTexts.workflow.title)).toBeVisible();
-    await expect(screen.getByText(migrationTexts.notMigratedTitle)).toBeVisible();
-    await expect(screen.queryByRole('button', { name: scenarioTexts.workflow.createScenes })).not.toBeInTheDocument();
+    await expect(await screen.findByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeVisible();
+    await expect(screen.queryByText(migrationTexts.notMigratedTitle)).not.toBeInTheDocument();
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Ручная правка.');
     await userEvent.click(saveButton(screen));
     await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));

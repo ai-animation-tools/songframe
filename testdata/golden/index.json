@@ -3834,5 +3834,1138 @@
       "unassigned_packages",
       "stale"
     ]
+  },
+  {
+    "domain": "agents-protocol",
+    "name": "cases.json",
+    "description": "Чистые функции адаптеров Codex/Claude: аргументы CLI, состав stdin, разбор потока, JSONL, маскировка, диагностика.",
+    "covers": [
+      "buildArgs read/write/images",
+      "composeInput",
+      "parseEvents",
+      "JSONL по частям",
+      "redact",
+      "detail/failure",
+      "version",
+      "authorization",
+      "normalizeSettings"
+    ]
+  },
+  {
+    "domain": "agents-settings",
+    "name": "cases.json",
+    "description": "Последовательности операций с агентом в settings.json и точные байты файла после них.",
+    "covers": [
+      "getAgent",
+      "getProviderAgent",
+      "saveAgent",
+      "saveProviderAgent",
+      "повреждённый JSON",
+      "чужие поля settings.json"
+    ]
+  },
+  {
+    "domain": "agents-cli",
+    "name": "cases.json",
+    "description": "Проверка, аккаунт, каталог моделей и задания менеджера на поддельных CLI: события, итог, байты истории.",
+    "covers": [
+      "check",
+      "account app-server/control",
+      "models",
+      "manager start/cancel/timeout/limits",
+      "history",
+      "image jobs"
+    ]
+  },
+  {
+    "domain": "animatic-cards",
+    "name": "cases.json",
+    "description": "43 вызовов render_card/render_keyframe_card с трассировкой text_box и paste.",
+    "covers": [
+      "render_card",
+      "кегль по умолчанию",
+      "перебор кегля",
+      "shortened",
+      "лигатуры",
+      "кернинг",
+      "прогоны письменностей",
+      "парные скобки",
+      "derived_from",
+      "lipsync",
+      "others пусто",
+      "cell_width=106",
+      "short_name",
+      "cell_width < 106",
+      "AssertionError подписи",
+      "contain по высоте",
+      "contain по ширине",
+      "resize того же размера",
+      "convert RGB",
+      "JPEG",
+      "GIF",
+      "WebP",
+      "заголовок",
+      "shortened заголовка",
+      "пустой текст",
+      "upper SpecialCasing",
+      "str.split",
+      "AssertionError",
+      "FileNotFoundError",
+      "UnidentifiedImageError",
+      "IsADirectoryError",
+      "TypeError Path",
+      "KeyError",
+      "AttributeError",
+      "TypeError",
+      "KeyError name",
+      "render_keyframe_card",
+      "fit_canvas",
+      "полоска опор",
+      "last",
+      "has_last=False",
+      "ширина полоски",
+      ":g",
+      "ValueError",
+      "TypeError :g",
+      "ValueError :g",
+      "KeyError path"
+    ]
+  },
+  {
+    "domain": "animatic-cards",
+    "name": "textlength.json",
+    "description": "1416 строк draw.textlength DejaVu Sans/Bold кеглей 16–32.",
+    "covers": [
+      "ширина строки Raqm/HarfBuzz",
+      "кернинг GPOS",
+      "лигатуры GSUB",
+      "прогоны письменностей"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "before",
+    "description": "Текст врезки M02 на первый кадр: мир первым, порядок кастинга, чек-лист.",
+    "covers": [
+      "text",
+      "entity_order",
+      "checklist"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "after",
+    "description": "--phase after M04.",
+    "covers": [
+      "--phase after"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "json",
+    "description": "--json M03.",
+    "covers": [
+      "--json"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "paragraph",
+    "description": "--paragraph M01.",
+    "covers": [
+      "--paragraph"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "json-paragraph",
+    "description": "--json и --paragraph: печатается JSON.",
+    "covers": [
+      "--json приоритетнее"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "phase-same",
+    "description": "M05 со state_from фазы same, --phase after --json.",
+    "covers": [
+      "same"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "unknown-shot",
+    "description": "Плана нет в реестре: код 1.",
+    "covers": [
+      "сцена отсутствует"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "no-state",
+    "description": "Кастинг без начального состояния и сцены без изменений.",
+    "covers": [
+      "состояние не задано"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "no-state-text",
+    "description": "Нет состояния: текст.",
+    "covers": [
+      "Состояние не задано: в кастинге"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "no-cast",
+    "description": "Нет plan/cast.json: словарь по умолчанию, имена — коды сущностей.",
+    "covers": [
+      "DEFAULT_PROPERTIES",
+      "load_cast None"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "outside-cast",
+    "description": "Сущности вне кастинга: после кастинга по алфавиту, подпись из ключа.",
+    "covers": [
+      "entity_order sorted",
+      "key.replace"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "generic-kind",
+    "description": "Тип без словаря: общий набор свойств и подписи.",
+    "covers": [
+      "GENERIC_PROPERTIES"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "checklist-templates",
+    "description": "Шаблоны чек-листа: !r, выравнивание, скобки, точность, ноль; label с регистром.",
+    "covers": [
+      "str.format",
+      "label.lower"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "checklist-key-error",
+    "description": "Шаблон с неизвестным полем: KeyError — код 1.",
+    "covers": [
+      "KeyError"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "checklist-index-error",
+    "description": "Позиционное поле шаблона: IndexError — трассировка.",
+    "covers": [
+      "IndexError"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "checklist-value-error",
+    "description": "Одиночная скобка шаблона: ValueError — код 1.",
+    "covers": [
+      "ValueError"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "checklist-not-string",
+    "description": "checklist числом: AttributeError — трассировка.",
+    "covers": [
+      "AttributeError format"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "label-not-string",
+    "description": "label числом: AttributeError — трассировка.",
+    "covers": [
+      "AttributeError lower"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "property-without-key",
+    "description": "Свойство словаря без key: KeyError — код 1.",
+    "covers": [
+      "KeyError key"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "long-action",
+    "description": "Действие длиннее 80 символов: обрезка и многоточие.",
+    "covers": [
+      "[:80]",
+      "…"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "action-80",
+    "description": "Действие ровно 80 символов: без многоточия.",
+    "covers": [
+      "len == 80"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "action-list",
+    "description": "Действие списком: срез и repr.",
+    "covers": [
+      "list[:80]"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "action-dict",
+    "description": "Действие объектом: KeyError slice — код 1.",
+    "covers": [
+      "KeyError slice"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "action-int",
+    "description": "Действие числом: TypeError — трассировка.",
+    "covers": [
+      "TypeError subscriptable"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "action-missing",
+    "description": "Нет поля action: KeyError — код 1.",
+    "covers": [
+      "KeyError action"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "surrogate",
+    "description": "Одиночный суррогат в состоянии: печать — UnicodeEncodeError, трассировка.",
+    "covers": [
+      "UnicodeEncodeError print"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "scenes-missing",
+    "description": "Нет plan/scenes.json: OSError — код 1.",
+    "covers": [
+      "FileNotFoundError"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "scenes-corrupt",
+    "description": "Битый plan/scenes.json: JSONDecodeError — код 1.",
+    "covers": [
+      "JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "scenes-invalid",
+    "description": "Неверный реестр: ValueError validate — код 1.",
+    "covers": [
+      "validate"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "cast-corrupt",
+    "description": "Битый plan/cast.json: реестр без начального состояния, затем ValueError load_cast.",
+    "covers": [
+      "load_cast ValueError"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "cast-invalid",
+    "description": "Кастинг с ошибкой структуры: ValueError.",
+    "covers": [
+      "validate_cast"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "args-help",
+    "description": "-h: справка с позиционным аргументом.",
+    "covers": [
+      "help",
+      "positional arguments"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "args-missing",
+    "description": "Нет кода плана.",
+    "covers": [
+      "required: shot"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "args-extra",
+    "description": "Лишний позиционный аргумент.",
+    "covers": [
+      "unrecognized"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "args-phase",
+    "description": "Неверная фаза.",
+    "covers": [
+      "invalid choice"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "args-prefix",
+    "description": "Сокращение --ph и --js.",
+    "covers": [
+      "allow_abbrev"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "args-dashdash",
+    "description": "-- перед кодом плана.",
+    "covers": [
+      "--"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "args-dashdash-option",
+    "description": "Опция после --: unrecognized.",
+    "covers": [
+      "-- A"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "args-explicit",
+    "description": "--json=1 M01: ignored explicit argument.",
+    "covers": [
+      "explicit argument"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "args-phase-only",
+    "description": "Фаза без плана: required.",
+    "covers": [
+      "required"
+    ]
+  },
+  {
+    "domain": "continuity-brief",
+    "name": "project-missing",
+    "description": "Папки проекта нет: код 2.",
+    "covers": [
+      "Папка проекта не найдена"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "check-actual",
+    "description": "Образец: --check — представления актуальны.",
+    "covers": [
+      "--check",
+      "Представления актуальны."
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-actual",
+    "description": "Образец: обновление — 0 представлений.",
+    "covers": [
+      "Обновлено представлений: 0."
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "check-action",
+    "description": "Правка действия M04: устарели карточка M04, списки и ROADMAP.",
+    "covers": [
+      "документы",
+      "карточки"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-action",
+    "description": "Правка действия M04: запись карточек, документов и квитанции.",
+    "covers": [
+      "write_text",
+      "write_bytes"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "check-camera-package",
+    "description": "Правка камеры принятого M01: постановка изменена в ROADMAP.",
+    "covers": [
+      "Постановка изменена"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-camera-package",
+    "description": "Правка камеры принятого M01: запись.",
+    "covers": [
+      "Постановка изменена",
+      "README комплекта"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "check-rename",
+    "description": "Смена названия проекта: все карточки и заголовки.",
+    "covers": [
+      "project_inputs"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-rename",
+    "description": "Смена названия проекта: запись.",
+    "covers": [
+      "project_inputs"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-keyframes",
+    "description": "Принятые опоры K01, K02 пакета M03: карточка опор и .last.png.",
+    "covers": [
+      "approved_keyframes",
+      ".last.png"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "check-keyframes",
+    "description": "Принятые опоры M03: --check.",
+    "covers": [
+      "approved_keyframes"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-keyframe-single",
+    "description": "Одна принятая опора: без .last.png, лишний .last.png удаляется.",
+    "covers": [
+      "len(keyframes) < 2",
+      "stale .last.png"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-keyframes-accepted-stage",
+    "description": "Пакет stage accepted: опоры не считаются, текстовая карточка.",
+    "covers": [
+      "stage accepted"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-keyframes-awaiting",
+    "description": "Опоры в plan/awaiting приоритетнее plan/batches; битый workflow пропускается.",
+    "covers": [
+      "awaiting",
+      "ValueError continue"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-keyframes-missing-file",
+    "description": "Опора без файла: текстовая карточка.",
+    "covers": [
+      "is_file"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-stale-png",
+    "description": "Лишние PNG в папке карточек удаляются.",
+    "covers": [
+      "stale png"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "check-stale-png",
+    "description": "Лишние PNG: --check.",
+    "covers": [
+      "stale png"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-card-changed",
+    "description": "Карточка на диске подменена: перерисовывается.",
+    "covers": [
+      "sha differs"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-card-missing",
+    "description": "Карточки нет на диске: создаётся.",
+    "covers": [
+      "created"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-cards-folder-missing",
+    "description": "Нет папки карточек: создаются все.",
+    "covers": [
+      "mkdir parents"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "check-receipt-corrupt",
+    "description": "Битая квитанция карточек: --check.",
+    "covers": [
+      "receipt"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-receipt-corrupt",
+    "description": "Битая квитанция карточек: запись.",
+    "covers": [
+      "receipt"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-receipt-list",
+    "description": "Квитанция-список: перерисовка и запись.",
+    "covers": [
+      "receipt"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-docs-missing",
+    "description": "Нет документов: создаются.",
+    "covers": [
+      "path.exists"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-docs-crlf",
+    "description": "Документ с CRLF равен ожидаемому (универсальные переводы строк).",
+    "covers": [
+      "read_text newline"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-docs-edited",
+    "description": "Ручная правка документов перезаписывается.",
+    "covers": [
+      "write_text"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-animatic-approved",
+    "description": "Принятая свежая сборка: «Полная сборка принята.».",
+    "covers": [
+      "approved"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-animatic-none",
+    "description": "Нет текущей сборки: «Устаревшая сборка».",
+    "covers": [
+      "current_animatic None"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-in-progress",
+    "description": "Пакет M04 в plan/awaiting: «В процессе»; workflow без shot и битый — пропуск.",
+    "covers": [
+      "in_progress"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-timing-values",
+    "description": "Разметка: float, 1e-07, примечания с | и пробелами, нет source_line.",
+    "covers": [
+      "clock(str())",
+      "cell"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-no-speech",
+    "description": "Нет речевых планов: «Речевые планы не назначены.».",
+    "covers": [
+      "speech none"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-derived-state",
+    "description": "Производный план, state_from объектом и изменения с null в раскадровке.",
+    "covers": [
+      "derived_label",
+      "state_from dict",
+      "не задано"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "update-visual-direction",
+    "description": "Пробелы и пустые строки на концах visual_direction и строк.",
+    "covers": [
+      "strip",
+      "rstrip"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "missing-scenes",
+    "description": "Нет plan/scenes.json: MissingInputError — код 1.",
+    "covers": [
+      "MissingInputError"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "missing-project",
+    "description": "Нет plan/project.json: MissingInputError — код 1.",
+    "covers": [
+      "MissingInputError"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "missing-production-status",
+    "description": "Нет plan/production-status.json: MissingInputError — код 1.",
+    "covers": [
+      "MissingInputError"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "missing-timing",
+    "description": "Нет plan/audio/timing.json: MissingInputError — код 1.",
+    "covers": [
+      "MissingInputError"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "missing-scenes-update",
+    "description": "Нет plan/scenes.json в обычном режиме.",
+    "covers": [
+      "MissingInputError"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "scenes-corrupt",
+    "description": "Битый plan/scenes.json: трассировка JSONDecodeError.",
+    "covers": [
+      "traceback"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "scenes-invalid",
+    "description": "Неверный реестр: трассировка ValueError.",
+    "covers": [
+      "validate"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "project-invalid",
+    "description": "plan/project.json без названия: трассировка ValueError.",
+    "covers": [
+      "validate_project"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "timing-no-sections",
+    "description": "timing.json без sections: KeyError — трассировка.",
+    "covers": [
+      "KeyError"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "timing-bad-start",
+    "description": "Граница части строкой не числа: InvalidOperation — трассировка.",
+    "covers": [
+      "InvalidOperation"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "package-no-generation",
+    "description": "Манифест комплекта без generation: KeyError — трассировка.",
+    "covers": [
+      "KeyError generation"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "package-video-missing",
+    "description": "Нет видео комплекта: ValueError «Нет материала» — трассировка.",
+    "covers": [
+      "require"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "package-corrupt",
+    "description": "Битый манифест комплекта: трассировка.",
+    "covers": [
+      "JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "visual-direction-int",
+    "description": "visual_direction числом: AttributeError — трассировка.",
+    "covers": [
+      "AttributeError strip"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "original-missing",
+    "description": "План без original: KeyError — трассировка.",
+    "covers": [
+      "KeyError original"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "references-int",
+    "description": "Референс числом: ValueError validate — трассировка.",
+    "covers": [
+      "validate неизвестный референс"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "reference-image-missing",
+    "description": "Нет изображения референса: трассировка.",
+    "covers": [
+      "FileNotFoundError"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "production-status-list",
+    "description": "plan/production-status.json списком: TypeError — трассировка.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "args-help",
+    "description": "-h: справка с группой --staged | --ref.",
+    "covers": [
+      "help",
+      "mutually exclusive usage"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "args-unknown",
+    "description": "Неизвестный аргумент.",
+    "covers": [
+      "unrecognized"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "args-staged",
+    "description": "--staged без --check: parser.error.",
+    "covers": [
+      "Снимок Git доступен только для проверки."
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "args-ref",
+    "description": "--ref без --check: parser.error.",
+    "covers": [
+      "Снимок Git доступен только для проверки."
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "args-conflict",
+    "description": "--staged и --ref вместе.",
+    "covers": [
+      "not allowed with argument"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "args-conflict-reverse",
+    "description": "--ref и --staged вместе, с --check.",
+    "covers": [
+      "not allowed with argument"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "args-ref-missing",
+    "description": "--ref без значения.",
+    "covers": [
+      "expected one argument"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "args-ref-empty",
+    "description": "--ref с пустым значением: обычная проверка рабочего дерева.",
+    "covers": [
+      "ref falsy"
+    ]
+  },
+  {
+    "domain": "scene-views",
+    "name": "project-missing",
+    "description": "Папки проекта нет: код 2.",
+    "covers": [
+      "Папка проекта не найдена"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "view-sample",
+    "description": "Вид образца без локальной записи.",
+    "covers": [
+      "view"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "treatment-apply",
+    "description": "Проход трактовки: запуск, ответ агента, применение пары и описания в описи.",
+    "covers": [
+      "view",
+      "start",
+      "finish",
+      "apply"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "treatment-invalid-json",
+    "description": "Ответ не JSON: предложение invalid, проект не меняется, применение отклонено.",
+    "covers": [
+      "start",
+      "finish",
+      "view",
+      "apply"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "treatment-invalid-shape",
+    "description": "Ответ с лишним полем и с чужим pass.",
+    "covers": [
+      "start",
+      "finish",
+      "view",
+      "discard"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "treatment-cancel",
+    "description": "Остановка задания пользователем, затем отклонение предложения.",
+    "covers": [
+      "start",
+      "cancel",
+      "view",
+      "discard"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "treatment-failed",
+    "description": "Задание завершилось ошибкой агента с сообщением и без него.",
+    "covers": [
+      "start",
+      "fail",
+      "view"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "treatment-interrupted",
+    "description": "Задания больше нет (перезапуск приложения).",
+    "covers": [
+      "start",
+      "drop",
+      "view"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "treatment-stale",
+    "description": "Идея изменилась после запуска: предложение устарело, применение отклонено.",
+    "covers": [
+      "start",
+      "finish",
+      "write",
+      "view",
+      "apply"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "start-busy",
+    "description": "Повторный запуск при работающем задании и запуск сцен без утверждения.",
+    "covers": [
+      "start",
+      "view"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "apply-wrong-id",
+    "description": "Применение и отклонение чужого ID предложения.",
+    "covers": [
+      "start",
+      "finish",
+      "apply",
+      "discard",
+      "view"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "scenes-apply",
+    "description": "Утверждение пары, проход сцен по каркасу и применение реестра с производными видами из staging.",
+    "covers": [
+      "approveCurrent",
+      "view",
+      "start",
+      "finish",
+      "apply"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "scenes-window-changed",
+    "description": "Ответ сцен изменил кадровое окно каркаса.",
+    "covers": [
+      "approveCurrent",
+      "start",
+      "finish",
+      "view"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "revise-apply",
+    "description": "Доработка M03 по замечанию и применение.",
+    "covers": [
+      "approveCurrent",
+      "start",
+      "finish",
+      "view",
+      "apply"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "revise-invalid",
+    "description": "Доработка без замечания, с неизвестным планом и с запрещённым полем патча.",
+    "covers": [
+      "approveCurrent",
+      "start",
+      "finish",
+      "view"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "approve-scenes",
+    "description": "Изменение кастинга после утверждения требует повторного утверждения пары и сцен.",
+    "covers": [
+      "approveCurrent",
+      "approveScenes",
+      "editCast",
+      "view"
+    ]
+  },
+  {
+    "domain": "scenario-workflow",
+    "name": "invalid-pass",
+    "description": "Неизвестный проход.",
+    "covers": [
+      "start"
+    ]
+  },
+  {
+    "domain": "video-review-frames",
+    "name": "cases.json",
+    "description": "Подготовка кадров tools/video_review (Python + Pillow) на синтетических клипах FFmpeg: выборка кадров, опоры, бюджет изображений, отказы.",
+    "covers": [
+      "probe/PTS",
+      "VFR",
+      "один кадр",
+      "предел числа кадров",
+      "опоры и EXIF",
+      "бюджет Codex/Claude/малый/нулевой/превышен",
+      "битое видео",
+      "нет видеопотока",
+      "непустая папка результата",
+      "относительный путь",
+      "нет видео",
+      "лишние опоры",
+      "нет опоры"
+    ]
+  },
+  {
+    "domain": "video-review",
+    "name": "cases.json",
+    "description": "Разбор отчёта агента и сценарии videoReview view/start/cancel оригинала на поддельных агенте, подготовке кадров и continuity_brief.",
+    "covers": [
+      "parseVideoReviewReport",
+      "latest.json",
+      "stale по оригиналу/опорам/сценарию/кастингу/кадрам",
+      "занятость",
+      "отмена подготовки и задания",
+      "ошибки инструмента и агента",
+      "неверный ответ без отчёта",
+      "прерывание",
+      "причины недоступности",
+      "бюджет изображений агента"
+    ]
   }
 ]

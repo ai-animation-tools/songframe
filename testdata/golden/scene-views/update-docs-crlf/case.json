@@ -1,0 +1,13 @@
+{
+  "description": "Документ с CRLF равен ожидаемому (универсальные переводы строк).",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "read_text newline"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

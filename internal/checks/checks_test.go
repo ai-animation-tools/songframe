@@ -61,12 +61,9 @@ func TestListMatchesOriginal(t *testing.T) {
 			t.Errorf("%d: %+v", index, got)
 		}
 	}
-	if checks.Migrated(checks.Views) || !checks.Migrated(checks.Lint) || !checks.Migrated(checks.Status) {
-		t.Error("перенесены lint, assets, workspace и status; views — нет")
-	}
 }
 
-// TestRunAllJournal — «Все проверки» на образце: перенесённые шаги по порядку, журнал
+// TestRunAllJournal — «Все проверки» на образце: все пять шагов по порядку, журнал
 // «$ подпись аргументы» + вывод инструмента, как в оригинале; strict делает lint неудачным, но
 // остальные шаги выполняются, а причина задания — вывод первого неудачного шага.
 func TestRunAllJournal(t *testing.T) {
@@ -74,6 +71,7 @@ func TestRunAllJournal(t *testing.T) {
 	_, assets, _ := sample(t, "check-assets", "sample")
 	_, workspace, _ := sample(t, "check-workspace", "sample")
 	_, status, _ := sample(t, "shot-status", "sample")
+	_, views, _ := sample(t, "scene-views", "check-actual")
 	_, next, _ := sample(t, "shot-status", "next")
 	project := lintCase.BuildProject(t)
 	manager := jobs.New(t.TempDir(), jobs.Options{SkipRestore: true})
@@ -81,11 +79,11 @@ func TestRunAllJournal(t *testing.T) {
 
 	finish := waiter(t, manager)
 	done := finish(service.RunAll(project, checks.Options{}))
-	wantLog := "\n$ Данные сцен \n" + lint + "\n$ Комплекты сцен \n" + assets + "\n$ Порядок в папке проекта \n" + workspace + "\n$ Статусы планов \n" + status
+	wantLog := "\n$ Данные сцен \n" + lint + "\n$ Карточки и списки --check\n" + views + "\n$ Комплекты сцен \n" + assets + "\n$ Порядок в папке проекта \n" + workspace + "\n$ Статусы планов \n" + status
 	if done.Status != jobs.StatusDone || done.Title != "Все проверки" || done.Kind != jobs.KindCheck || done.Log != wantLog {
 		t.Fatalf("задание %+v\n--- журнал\n%s", done, done.Log)
 	}
-	if len(done.Steps) != 4 || done.Steps[0].Tool != "lint_registry" || done.Steps[3].Label != "Статусы планов" {
+	if len(done.Steps) != 5 || done.Steps[0].Tool != "lint_registry" || done.Steps[1].Tool != "update_scene_views" || done.Steps[4].Label != "Статусы планов" {
 		t.Fatalf("шаги %+v", done.Steps)
 	}
 
@@ -117,17 +115,34 @@ func TestRunFailure(t *testing.T) {
 	}
 }
 
-// TestRunRejects — неизвестная и ещё не перенесённая проверки отклоняются без задания.
+// TestRunRejects — неизвестная проверка отклоняется без задания.
 func TestRunRejects(t *testing.T) {
 	manager := jobs.New(t.TempDir(), jobs.Options{SkipRestore: true})
 	service := checks.New(manager)
 	if _, err := service.Run(t.TempDir(), "bogus", checks.Options{}); err == nil || err.Error() != "Неизвестная проверка: bogus" {
 		t.Errorf("неизвестная: %v", err)
 	}
-	if _, err := service.Run(t.TempDir(), checks.Views, checks.Options{}); err == nil || err.Error() != "Проверка «Карточки и списки» ещё не перенесена в Go-версию SongFrame." {
-		t.Errorf("views: %v", err)
-	}
 	if len(manager.List()) != 0 {
 		t.Error("отказ не должен создавать задание")
+	}
+}
+
+// TestUpdateViews — checks.updateViews: задание вида tool «Обновление карточек и списков» с одним
+// шагом update_scene_views без --check; на актуальном образце ничего не перезаписывается.
+func TestUpdateViews(t *testing.T) {
+	c, _, _ := sample(t, "lint-registry", "sample")
+	project := c.BuildProject(t)
+	before, err := golden.TreeDigest(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager := jobs.New(t.TempDir(), jobs.Options{SkipRestore: true})
+	done := waiter(t, manager)(checks.New(manager).UpdateViews(project))
+	if done.Kind != jobs.KindTool || done.Title != "Обновление карточек и списков" || done.Status != jobs.StatusDone ||
+		len(done.Steps) != 1 || done.Steps[0].Tool != "update_scene_views" || done.Log != "\n$ Обновление карточек и списков \nОбновлено представлений: 0.\n" {
+		t.Fatalf("задание %+v\n%q", done, done.Log)
+	}
+	if after, err := golden.TreeDigest(project); err != nil || after != before {
+		t.Fatalf("актуальный образец изменён: %v", err)
 	}
 }

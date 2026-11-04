@@ -1,0 +1,18 @@
+{
+  "description": "--ref и --staged вместе, с --check.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "not allowed with argument"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check",
+    "--ref",
+    "x",
+    "--staged"
+  ],
+  "remove": [],
+  "mkdir": []
+}

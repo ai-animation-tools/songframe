@@ -1,0 +1,25 @@
+{
+  "code": 0,
+  "stdout": "Обновлено представлений: 7.\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "ROADMAP.md": "changed",
+    "plan/animatic/cards/M03.png": "changed",
+    "plan/animatic/cards/M04.png": "changed",
+    "plan/animatic/cards/M05.png": "changed",
+    "plan/animatic/cards/manifest.json": "changed",
+    "plan/edit-list.md": "changed",
+    "plan/storyboard.md": "changed"
+  },
+  "recheck": {
+    "code": 0,
+    "stdout": "Представления актуальны.\n",
+    "stderr": ""
+  },
+  "cards": [
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png"
+  ]
+}

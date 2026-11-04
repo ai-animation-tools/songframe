@@ -58,8 +58,6 @@ export const checksTexts = {
   rebuildViewsHint: 'Пересобрать монтажный список, раскадровку и карточки по реестру сцен',
   rebuildViews: 'Пересобрать карточки',
   runAll: 'Запустить все',
-  /** Отличие от 634fd94 на время миграции: проверка без Go-инструмента не входит в общий запуск. */
-  runAllExcludes: (label: string) => `Общий запуск пока не включает проверку «${label}»: она ещё не перенесена в Go-версию.`,
   reviewDuration: (seconds: number) => `${seconds.toFixed(1)} с`,
   reviewDeleting: 'Проба удаляется.',
   deleteReview: 'Удалить пробу',

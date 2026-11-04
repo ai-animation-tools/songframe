@@ -4,12 +4,8 @@ import type { ScenarioPass, ScenarioWorkflowView } from '@shared/scenario-workfl
 import { useApp } from '../../state';
 import { proposalNotice } from './workflowNotice';
 
-/**
- * Опрос восстанавливает предложение после перезапуска и не затрагивает черновики редакторов.
- * enabled=false (процесс агента ещё не перенесён) отключает опрос: страница показывает причину
- * вместо панели, а редакторы работают как обычно.
- */
-export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioPass) => Promise<void>, enabled = true) {
+/** Опрос восстанавливает предложение после перезапуска и не затрагивает черновики редакторов. */
+export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioPass) => Promise<void>) {
   const { describeError, notify } = useApp();
   const [view, setView] = useState<ScenarioWorkflowView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +31,6 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
   }, [view, notify]);
 
   useEffect(() => {
-    if (!enabled) return;
     let active = true;
     let reading = false;
     const revision = ++generation.current;
@@ -61,7 +56,7 @@ export function useScenarioWorkflow(project: string, onApplied: (pass: ScenarioP
       active = false;
       clearInterval(timer);
     };
-  }, [project, describeError, pollingRevision, enabled]);
+  }, [project, describeError, pollingRevision]);
 
   const execute = useCallback(
     async (operation: () => Promise<ScenarioWorkflowView>, pass?: ScenarioPass, success?: string): Promise<boolean> => {

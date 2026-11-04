@@ -1,0 +1,15 @@
+{
+  "description": "Действие объектом: KeyError slice — код 1.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "KeyError slice"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M02"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Образец: --check — представления актуальны.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--check",
+    "Представления актуальны."
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

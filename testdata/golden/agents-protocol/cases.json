@@ -1,0 +1,3769 @@
+{
+  "args": [
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.0",
+      "mode": "read",
+      "images": [],
+      "expected": [
+        "-p",
+        "--input-format",
+        "text",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages",
+        "--permission-mode",
+        "dontAsk",
+        "--tools",
+        "Read,Glob,Grep",
+        "--allowedTools",
+        "Read,Glob,Grep"
+      ]
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.0",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": [
+        "-p",
+        "--input-format",
+        "stream-json",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages",
+        "--permission-mode",
+        "dontAsk",
+        "--tools",
+        "Read,Glob,Grep",
+        "--allowedTools",
+        "Read,Glob,Grep"
+      ]
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "2.1.0",
+      "mode": "read",
+      "images": [],
+      "expected": [
+        "-p",
+        "--input-format",
+        "text",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages",
+        "--permission-mode",
+        "dontAsk",
+        "--tools",
+        "Read,Glob,Grep",
+        "--allowedTools",
+        "Read,Glob,Grep",
+        "--model",
+        "m-1"
+      ]
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Выбранный агент не поддерживает штатный режим создания кандидатов."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.0",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Выбранный агент не поддерживает штатный режим создания кандидатов."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "2.1.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Выбранный агент не поддерживает штатный режим создания кандидатов."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.5",
+      "mode": "read",
+      "images": [],
+      "expected": [
+        "-p",
+        "--input-format",
+        "text",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages",
+        "--permission-mode",
+        "dontAsk",
+        "--tools",
+        "Read,Glob,Grep",
+        "--allowedTools",
+        "Read,Glob,Grep"
+      ]
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.5",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": [
+        "-p",
+        "--input-format",
+        "stream-json",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages",
+        "--permission-mode",
+        "dontAsk",
+        "--tools",
+        "Read,Glob,Grep",
+        "--allowedTools",
+        "Read,Glob,Grep"
+      ]
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "2.1.5",
+      "mode": "read",
+      "images": [],
+      "expected": [
+        "-p",
+        "--input-format",
+        "text",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages",
+        "--permission-mode",
+        "dontAsk",
+        "--tools",
+        "Read,Glob,Grep",
+        "--allowedTools",
+        "Read,Glob,Grep",
+        "--model",
+        "m-1"
+      ]
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.5",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Выбранный агент не поддерживает штатный режим создания кандидатов."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.5",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Выбранный агент не поддерживает штатный режим создания кандидатов."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "2.1.5",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Выбранный агент не поддерживает штатный режим создания кандидатов."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.0.9",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.0.9",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "2.0.9",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.0.9",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.0.9",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "2.0.9",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "3.0.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "3.0.0",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "3.0.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "3.0.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "3.0.0",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "3.0.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.159.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.159.0",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "0.159.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.159.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.159.0",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "0.159.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.160.3",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.160.3",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "0.160.3",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.160.3",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.160.3",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "0.160.3",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.158.9",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.158.9",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "0.158.9",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.158.9",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "0.158.9",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "0.158.9",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "1.0.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "1.0.0",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "1.0.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "1.0.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "1.0.0",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "1.0.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.5-beta",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.5-beta",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "2.1.5-beta",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.5-beta",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "2.1.5-beta",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "2.1.5-beta",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "x",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "x",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "x",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "x",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude"
+      },
+      "version": "x",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "config": {
+        "provider": "claude",
+        "model": "m-1"
+      },
+      "version": "x",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.0",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "2.1.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.0",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "2.1.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.5",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.5",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "2.1.5",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.5",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.5",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "2.1.5",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.0.9",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.0.9",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "2.0.9",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.0.9",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.0.9",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "2.0.9",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "3.0.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "3.0.0",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "3.0.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "3.0.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "3.0.0",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "3.0.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.159.0",
+      "mode": "read",
+      "images": [],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "read-only",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.159.0",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "read-only",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "--image",
+        "/img/a.png",
+        "--image",
+        "/img/b.jpg",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "0.159.0",
+      "mode": "read",
+      "images": [],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "read-only",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "--model",
+        "m-1",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.159.0",
+      "mode": "write",
+      "images": [],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "workspace-write",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.159.0",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Вложения изображений доступны только в заданиях агента без записи файлов."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "0.159.0",
+      "mode": "write",
+      "images": [],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "workspace-write",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "--model",
+        "m-1",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.160.3",
+      "mode": "read",
+      "images": [],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "read-only",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.160.3",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "read-only",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "--image",
+        "/img/a.png",
+        "--image",
+        "/img/b.jpg",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "0.160.3",
+      "mode": "read",
+      "images": [],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "read-only",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "--model",
+        "m-1",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.160.3",
+      "mode": "write",
+      "images": [],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "workspace-write",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.160.3",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Вложения изображений доступны только в заданиях агента без записи файлов."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "0.160.3",
+      "mode": "write",
+      "images": [],
+      "expected": [
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--sandbox",
+        "workspace-write",
+        "--skip-git-repo-check",
+        "--color",
+        "never",
+        "--model",
+        "m-1",
+        "-"
+      ]
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.158.9",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.158.9",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "0.158.9",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.158.9",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "0.158.9",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "0.158.9",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "1.0.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "1.0.0",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "1.0.0",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "1.0.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "1.0.0",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "1.0.0",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.5-beta",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.5-beta",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "2.1.5-beta",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.5-beta",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "2.1.5-beta",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "2.1.5-beta",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "x",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "x",
+      "mode": "read",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "x",
+      "mode": "read",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "x",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex"
+      },
+      "version": "x",
+      "mode": "write",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    },
+    {
+      "provider": "codex",
+      "config": {
+        "provider": "codex",
+        "model": "m-1"
+      },
+      "version": "x",
+      "mode": "write",
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "UNSUPPORTED_VERSION",
+          "detail": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+        }
+      }
+    }
+  ],
+  "input": [
+    {
+      "provider": "claude",
+      "prompt": "Задача «x»\n <b>&",
+      "images": [],
+      "expected": "Задача «x»\n <b>&"
+    },
+    {
+      "provider": "claude",
+      "prompt": "Опиши",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Опиши\"},{\"type\":\"image\",\"source\":{\"type\":\"base64\",\"media_type\":\"image/png\",\"data\":\"AQEBAQ==\"}},{\"type\":\"image\",\"source\":{\"type\":\"base64\",\"media_type\":\"image/jpeg\",\"data\":\"AgIC\"}}]},\"parent_tool_use_id\":null}\n"
+    },
+    {
+      "provider": "claude",
+      "prompt": "big",
+      "images": [
+        {
+          "path": "/img/big.png",
+          "mediaType": "image/png",
+          "size": 7600000,
+          "fill": 7
+        }
+      ],
+      "expected": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Ввод агента превышает выбранный SongFrame предел 10 000 000 байт с учётом JSON и base64. Он основан на документированном ограничении piped stdin и не утверждает подтверждённый предел stream-json. Уменьшите подготовленные вложения или текст задания."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "prompt": {
+        "repeat": "x",
+        "length": 10000001
+      },
+      "images": [],
+      "expected": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Ввод агента превышает выбранный SongFrame предел 10 000 000 байт с учётом JSON и base64. Он основан на документированном ограничении piped stdin и не утверждает подтверждённый предел stream-json. Уменьшите подготовленные вложения или текст задания."
+        }
+      }
+    },
+    {
+      "provider": "claude",
+      "prompt": {
+        "repeat": "x",
+        "length": 9999000
+      },
+      "images": [],
+      "expected": {
+        "length": 9999000,
+        "sha256": "f137d6bad2e540b33464c19a48c8e3f0cc44692b32eb2a6dd4af6e362a0340f6"
+      }
+    },
+    {
+      "provider": "codex",
+      "prompt": "Задача «x»\n <b>&",
+      "images": [],
+      "expected": "Задача «x»\n <b>&"
+    },
+    {
+      "provider": "codex",
+      "prompt": "Опиши",
+      "images": [
+        {
+          "path": "/img/a.png",
+          "mediaType": "image/png",
+          "size": 4,
+          "fill": 1
+        },
+        {
+          "path": "/img/b.jpg",
+          "mediaType": "image/jpeg",
+          "size": 3,
+          "fill": 2
+        }
+      ],
+      "expected": "Опиши"
+    },
+    {
+      "provider": "codex",
+      "prompt": "big",
+      "images": [
+        {
+          "path": "/img/big.png",
+          "mediaType": "image/png",
+          "size": 7600000,
+          "fill": 7
+        }
+      ],
+      "expected": {
+        "length": 3,
+        "sha256": "2a21fe6d592a19b7de898b50eb53c429608de1a66f3e9f62da19714a770553d1"
+      }
+    },
+    {
+      "provider": "codex",
+      "prompt": {
+        "repeat": "x",
+        "length": 10000001
+      },
+      "images": [],
+      "expected": {
+        "length": 10000001,
+        "sha256": "2e8e5f67e2a2730993c520c05afa628c42faa861cfe912d30967d62bdc7c357f"
+      }
+    },
+    {
+      "provider": "codex",
+      "prompt": {
+        "repeat": "x",
+        "length": 9999000
+      },
+      "images": [],
+      "expected": {
+        "length": 9999000,
+        "sha256": "f137d6bad2e540b33464c19a48c8e3f0cc44692b32eb2a6dd4af6e362a0340f6"
+      }
+    }
+  ],
+  "parse": [
+    {
+      "name": "claude-partial-and-tools",
+      "provider": "claude",
+      "events": [
+        {
+          "type": "system",
+          "subtype": "init",
+          "session_id": "sess-1"
+        },
+        {
+          "type": "stream_event",
+          "event": {
+            "delta": {
+              "type": "text_delta",
+              "text": "При"
+            }
+          }
+        },
+        {
+          "type": "stream_event",
+          "event": {
+            "delta": {
+              "type": "input_json_delta",
+              "partial_json": "{"
+            }
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Привет"
+              },
+              {
+                "type": "tool_use",
+                "id": "t1",
+                "name": "Read"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "t1",
+                "name": "Read"
+              },
+              {
+                "type": "tool_use",
+                "id": "t2",
+                "name": "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+              }
+            ]
+          }
+        },
+        {
+          "type": "user",
+          "message": {
+            "content": [
+              {
+                "type": "tool_result"
+              },
+              {
+                "type": "text"
+              },
+              {
+                "type": "tool_result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Готово"
+              }
+            ]
+          }
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "result": "Итог",
+          "session_id": "sess-2"
+        }
+      ],
+      "expected": [
+        [
+          {
+            "type": "session",
+            "id": "sess-1"
+          }
+        ],
+        [
+          {
+            "type": "text_delta",
+            "text": "При"
+          }
+        ],
+        [],
+        [
+          {
+            "type": "tool_started",
+            "tool": "Read"
+          }
+        ],
+        [
+          {
+            "type": "tool_started",
+            "tool": "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+          }
+        ],
+        [
+          {
+            "type": "tool_finished",
+            "tool": "Чтение проекта"
+          },
+          {
+            "type": "tool_finished",
+            "tool": "Чтение проекта"
+          }
+        ],
+        [
+          {
+            "type": "text_delta",
+            "text": "Готово"
+          }
+        ],
+        [
+          {
+            "type": "session",
+            "id": "sess-2"
+          },
+          {
+            "type": "completed",
+            "result": "Итог"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "claude-invalid-session",
+      "provider": "claude",
+      "events": [
+        {
+          "type": "system",
+          "subtype": "init",
+          "session_id": "bad id with spaces"
+        },
+        {
+          "type": "system",
+          "subtype": "init",
+          "session_id": 5
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "result": 7
+        },
+        {
+          "type": "unknown"
+        },
+        {
+          "type": "assistant",
+          "message": "нет"
+        },
+        {
+          "type": "assistant",
+          "message": {
+            "content": "строка"
+          }
+        }
+      ],
+      "expected": [
+        [],
+        [],
+        [
+          {
+            "type": "completed",
+            "result": ""
+          }
+        ],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "name": "claude-errors",
+      "provider": "claude",
+      "events": [
+        {
+          "type": "result",
+          "subtype": "error_max_turns",
+          "is_error": true,
+          "result": "stop",
+          "errors": [
+            "a",
+            5,
+            "rate limit"
+          ]
+        },
+        {
+          "type": "result",
+          "subtype": "success",
+          "is_error": true,
+          "result": "Invalid API key"
+        },
+        {
+          "type": "result",
+          "subtype": "error",
+          "result": null
+        }
+      ],
+      "expected": [
+        [
+          {
+            "type": "failed",
+            "error": {
+              "code": "RATE_LIMIT",
+              "detail": "Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «error_max_turns stop a rate limit»"
+            }
+          }
+        ],
+        [
+          {
+            "type": "failed",
+            "error": {
+              "code": "AUTH_REQUIRED",
+              "detail": "Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «success Invalid API key»"
+            }
+          }
+        ],
+        [
+          {
+            "type": "failed",
+            "error": {
+              "code": "CLI_ERROR",
+              "detail": "Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели. Сообщение агента: «error»"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "codex-messages",
+      "provider": "codex",
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "th-1"
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "m1",
+            "type": "agent_message",
+            "text": ""
+          }
+        },
+        {
+          "type": "item.updated",
+          "item": {
+            "id": "m1",
+            "type": "agent_message",
+            "text": "Пла"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "m1",
+            "type": "agent_message",
+            "text": "План"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "c1",
+            "type": "command_execution"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "c1",
+            "type": "command_execution"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "x",
+            "type": "reasoning"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "w",
+            "type": "web_search"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "e",
+            "type": "error",
+            "message": "warn   text\nline"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "e2",
+            "type": "error",
+            "message": "ignored"
+          }
+        },
+        {
+          "type": "error",
+          "message": "Reconnecting... 1/5"
+        },
+        {
+          "type": "error",
+          "error": {
+            "message": "stream lost"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "m2",
+            "type": "agent_message",
+            "text": "Ответ"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {}
+        }
+      ],
+      "expected": [
+        [
+          {
+            "type": "session",
+            "id": "th-1"
+          }
+        ],
+        [],
+        [
+          {
+            "type": "text_delta",
+            "text": "Пла"
+          }
+        ],
+        [
+          {
+            "type": "text_delta",
+            "text": "н"
+          }
+        ],
+        [
+          {
+            "type": "tool_started",
+            "tool": "command_execution"
+          }
+        ],
+        [
+          {
+            "type": "tool_finished",
+            "tool": "command_execution"
+          }
+        ],
+        [],
+        [
+          {
+            "type": "tool_finished",
+            "tool": "web_search"
+          }
+        ],
+        [
+          {
+            "type": "notice",
+            "message": "warn   text\nline"
+          }
+        ],
+        [],
+        [
+          {
+            "type": "notice",
+            "message": "Reconnecting... 1/5"
+          }
+        ],
+        [
+          {
+            "type": "notice",
+            "message": "stream lost"
+          }
+        ],
+        [
+          {
+            "type": "text_delta",
+            "text": "\nОтвет"
+          }
+        ],
+        [
+          {
+            "type": "completed",
+            "result": "Ответ"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "codex-failures",
+      "provider": "codex",
+      "events": [
+        {
+          "type": "turn.failed",
+          "error": {
+            "message": "You exceeded your current quota"
+          }
+        },
+        {
+          "type": "turn.failed",
+          "message": "unauthorized 401"
+        },
+        {
+          "type": "turn.failed",
+          "error": {}
+        },
+        {
+          "type": "thread.started",
+          "thread_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      ],
+      "expected": [
+        [
+          {
+            "type": "failed",
+            "error": {
+              "code": "RATE_LIMIT",
+              "detail": "Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «You exceeded your current quota»"
+            }
+          }
+        ],
+        [
+          {
+            "type": "failed",
+            "error": {
+              "code": "AUTH_REQUIRED",
+              "detail": "Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «unauthorized 401»"
+            }
+          }
+        ],
+        [
+          {
+            "type": "failed",
+            "error": {
+              "code": "CLI_ERROR",
+              "detail": "Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели."
+            }
+          }
+        ],
+        []
+      ]
+    },
+    {
+      "name": "codex-rewrite",
+      "provider": "codex",
+      "events": [
+        {
+          "type": "item.updated",
+          "item": {
+            "id": "m1",
+            "type": "agent_message",
+            "text": "abc"
+          }
+        },
+        {
+          "type": "item.updated",
+          "item": {
+            "id": "m1",
+            "type": "agent_message",
+            "text": "xyz"
+          }
+        }
+      ],
+      "expected": [
+        [
+          {
+            "type": "text_delta",
+            "text": "abc"
+          }
+        ],
+        {
+          "throws": {
+            "code": "PROTOCOL_ERROR",
+            "detail": "Codex изменил уже полученный текст сообщения."
+          }
+        }
+      ]
+    },
+    {
+      "name": "codex-empty-turn",
+      "provider": "codex",
+      "events": [
+        {
+          "type": "turn.completed"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": 1,
+            "type": "agent_message",
+            "text": 5
+          }
+        },
+        {
+          "type": "turn.completed"
+        }
+      ],
+      "expected": [
+        [
+          {
+            "type": "completed",
+            "result": ""
+          }
+        ],
+        [],
+        [
+          {
+            "type": "completed",
+            "result": ""
+          }
+        ]
+      ]
+    }
+  ],
+  "jsonl": [
+    {
+      "name": "split-utf8",
+      "chunks": [
+        "eyJhIjoi0J/RgA==",
+        "0A==",
+        "uNCy0LXRgiJ9CgogIAp7ImIiOjF9"
+      ],
+      "expected": {
+        "values": [
+          {
+            "a": "Привет"
+          },
+          {
+            "b": 1
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "crlf-and-tail",
+      "chunks": [
+        "eyJhIjoxfQ0KeyJiIjoyfQ=="
+      ],
+      "expected": {
+        "values": [
+          {
+            "a": 1
+          },
+          {
+            "b": 2
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "invalid",
+      "chunks": [
+        "eyJhIjoxfQpub3QganNvbgp7ImMiOjN9Cg=="
+      ],
+      "expected": {
+        "values": [
+          {
+            "a": 1
+          }
+        ],
+        "error": {
+          "code": "PROTOCOL_ERROR",
+          "detail": "Агент вернул некорректный JSONL."
+        }
+      }
+    },
+    {
+      "name": "array",
+      "chunks": [
+        "WzEsMl0K"
+      ],
+      "expected": {
+        "values": [],
+        "error": {
+          "code": "PROTOCOL_ERROR",
+          "detail": "Ожидался объект события агента."
+        }
+      }
+    },
+    {
+      "name": "null",
+      "chunks": [
+        "bnVsbAo="
+      ],
+      "expected": {
+        "values": [],
+        "error": {
+          "code": "PROTOCOL_ERROR",
+          "detail": "Ожидался объект события агента."
+        }
+      }
+    },
+    {
+      "name": "too-long-pending",
+      "lineBytes": 8,
+      "chunks": [
+        "eyJhIjoiMTIzNDU2Ig=="
+      ],
+      "expected": {
+        "values": [],
+        "error": {
+          "code": "OUTPUT_LIMIT",
+          "detail": "Строка ответа агента слишком велика."
+        }
+      }
+    },
+    {
+      "name": "too-long-line",
+      "lineBytes": 8,
+      "chunks": [
+        "eyJhIjoiMTIzNCJ9Cg=="
+      ],
+      "expected": {
+        "values": [],
+        "error": {
+          "code": "OUTPUT_LIMIT",
+          "detail": "Строка ответа агента слишком велика."
+        }
+      }
+    },
+    {
+      "name": "exact-limit",
+      "lineBytes": 8,
+      "chunks": [
+        "eyJhIjoxMn0K"
+      ],
+      "expected": {
+        "values": [
+          {
+            "a": 12
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "tail-invalid-utf8",
+      "chunks": [
+        "eyJhIjoi0CJ9"
+      ],
+      "expected": {
+        "values": [
+          {
+            "a": "�"
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "name": "bom",
+      "chunks": [
+        "77u/eyJhIjoxfQo="
+      ],
+      "expected": {
+        "values": [],
+        "error": {
+          "code": "PROTOCOL_ERROR",
+          "detail": "Агент вернул некорректный JSONL."
+        }
+      }
+    }
+  ],
+  "redact": [
+    {
+      "input": "ключ sk-abcdefgh12345 и sk-short",
+      "expected": "ключ [скрыто] и sk-short"
+    },
+    {
+      "input": "Authorization: Bearer abc.DEF-123~x и bearer   tok",
+      "expected": "Authorization: [скрыто] и [скрыто]"
+    },
+    {
+      "input": "api_key=SECRET1, access-token: \"tok2\" refresh_token='r3' AUTHORIZATION = x}y",
+      "expected": "api_key=[скрыто], access-token: \"[скрыто]\" refresh_token='[скрыто]' AUTHORIZATION = [скрыто]}y"
+    },
+    {
+      "input": "apikey:zzz apiKey = \"q\" accessToken=w",
+      "expected": "apikey:[скрыто] apiKey = \"[скрыто]\" accessToken=[скрыто]"
+    },
+    {
+      "input": "обычный текст",
+      "expected": "обычный текст"
+    },
+    {
+      "input": "Sk-AAAAAAAA1 xsk-abcdefghi",
+      "expected": "[скрыто] xsk-abcdefghi"
+    },
+    {
+      "input": "key= value api_key= v",
+      "expected": "key= value api_key= [скрыто]"
+    }
+  ],
+  "detail": [
+    {
+      "input": "  a \n\t b  ",
+      "expected": "a b"
+    },
+    {
+      "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expected": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+    },
+    {
+      "input": "яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя",
+      "expected": "яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя"
+    },
+    {
+      "input": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "expected": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀…"
+    },
+    {
+      "input": 5,
+      "expected": ""
+    },
+    {
+      "input": null,
+      "expected": ""
+    },
+    {
+      "input": "token sk-12345678901 конец",
+      "expected": "token [скрыто] конец"
+    },
+    {
+      "input": " x y",
+      "expected": "x y"
+    }
+  ],
+  "failure": [
+    {
+      "value": "Not logged in",
+      "detail": "Not logged in",
+      "expected": {
+        "code": "AUTH_REQUIRED",
+        "detail": "Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «Not logged in»"
+      }
+    },
+    {
+      "value": "HTTP 401",
+      "detail": null,
+      "expected": {
+        "code": "AUTH_REQUIRED",
+        "detail": "Агент сообщил об ошибке входа. Проверьте авторизацию в настройках."
+      }
+    },
+    {
+      "value": "invalid_api_key",
+      "detail": "bad key",
+      "expected": {
+        "code": "AUTH_REQUIRED",
+        "detail": "Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «bad key»"
+      }
+    },
+    {
+      "value": "rate-limit hit",
+      "detail": "Лимит",
+      "expected": {
+        "code": "RATE_LIMIT",
+        "detail": "Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «Лимит»"
+      }
+    },
+    {
+      "value": "usage limit reached",
+      "detail": null,
+      "expected": {
+        "code": "RATE_LIMIT",
+        "detail": "Агент сообщил об ограничении использования. Проверьте лимиты аккаунта."
+      }
+    },
+    {
+      "value": "quota exceeded",
+      "detail": "q",
+      "expected": {
+        "code": "RATE_LIMIT",
+        "detail": "Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «q»"
+      }
+    },
+    {
+      "value": "HTTP 429",
+      "detail": "",
+      "expected": {
+        "code": "RATE_LIMIT",
+        "detail": "Агент сообщил об ограничении использования. Проверьте лимиты аккаунта."
+      }
+    },
+    {
+      "value": "budget",
+      "detail": "b",
+      "expected": {
+        "code": "RATE_LIMIT",
+        "detail": "Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «b»"
+      }
+    },
+    {
+      "value": "something else",
+      "detail": "Причина",
+      "expected": {
+        "code": "CLI_ERROR",
+        "detail": "Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели. Сообщение агента: «Причина»"
+      }
+    },
+    {
+      "value": 5,
+      "detail": "x",
+      "expected": {
+        "code": "CLI_ERROR",
+        "detail": "Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели. Сообщение агента: «x»"
+      }
+    },
+    {
+      "value": "4011 and x429",
+      "detail": null,
+      "expected": {
+        "code": "CLI_ERROR",
+        "detail": "Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели."
+      }
+    },
+    {
+      "value": "Authentication",
+      "detail": null,
+      "expected": {
+        "code": "AUTH_REQUIRED",
+        "detail": "Агент сообщил об ошибке входа. Проверьте авторизацию в настройках."
+      }
+    }
+  ],
+  "version": [
+    {
+      "provider": "claude",
+      "output": "2.1.5 (Claude Code)\n",
+      "expected": "2.1.5"
+    },
+    {
+      "provider": "claude",
+      "output": "warn\n2.1.300 (Claude Code)  \n",
+      "expected": "2.1.300"
+    },
+    {
+      "provider": "claude",
+      "output": "2.1.5-beta.1 (Claude Code)",
+      "expected": "2.1.5-beta.1"
+    },
+    {
+      "provider": "claude",
+      "output": "2.1.5 (Claude)",
+      "expected": null
+    },
+    {
+      "provider": "claude",
+      "output": "v2.1.5 (Claude Code)",
+      "expected": null
+    },
+    {
+      "provider": "codex",
+      "output": "codex-cli 0.160.0\n",
+      "expected": "0.160.0"
+    },
+    {
+      "provider": "codex",
+      "output": "codex-cli 0.160.0+abc\r\n",
+      "expected": "0.160.0+abc"
+    },
+    {
+      "provider": "codex",
+      "output": "codex 0.160.0",
+      "expected": null
+    },
+    {
+      "provider": "codex",
+      "output": "x\ncodex-cli 1.2.3\n\n",
+      "expected": "1.2.3"
+    },
+    {
+      "provider": "codex",
+      "output": "codex-cli 1.2",
+      "expected": null
+    }
+  ],
+  "authorization": [
+    {
+      "provider": "claude",
+      "result": {
+        "code": 0,
+        "stdout": "{\"loggedIn\":true}",
+        "output": ""
+      },
+      "expected": {
+        "authorization": "authenticated",
+        "message": "Claude Code сообщает, что вход выполнен."
+      }
+    },
+    {
+      "provider": "claude",
+      "result": {
+        "code": 1,
+        "stdout": " {\"loggedIn\":false} ",
+        "output": ""
+      },
+      "expected": {
+        "authorization": "unauthenticated",
+        "message": "Выполните claude auth login в терминале."
+      }
+    },
+    {
+      "provider": "claude",
+      "result": {
+        "code": 0,
+        "stdout": "{\"loggedIn\":false}",
+        "output": ""
+      },
+      "expected": null
+    },
+    {
+      "provider": "claude",
+      "result": {
+        "code": 1,
+        "stdout": "Not logged in",
+        "output": ""
+      },
+      "expected": null
+    },
+    {
+      "provider": "claude",
+      "result": {
+        "code": 0,
+        "stdout": "null",
+        "output": ""
+      },
+      "expected": null
+    },
+    {
+      "provider": "claude",
+      "result": {
+        "code": null,
+        "stdout": "{\"loggedIn\":true}",
+        "output": ""
+      },
+      "expected": null
+    },
+    {
+      "provider": "codex",
+      "result": {
+        "code": 0,
+        "stdout": "",
+        "output": "\nLogged in using ChatGPT"
+      },
+      "expected": {
+        "authorization": "authenticated",
+        "message": "Codex сообщает, что учётные данные для входа найдены."
+      }
+    },
+    {
+      "provider": "codex",
+      "result": {
+        "code": 0,
+        "stdout": "",
+        "output": "Logged in using an API key - sk-***\n"
+      },
+      "expected": {
+        "authorization": "authenticated",
+        "message": "Codex сообщает, что учётные данные для входа найдены."
+      }
+    },
+    {
+      "provider": "codex",
+      "result": {
+        "code": 1,
+        "stdout": "",
+        "output": "\nNot logged in  "
+      },
+      "expected": {
+        "authorization": "unauthenticated",
+        "message": "Выполните codex login в терминале."
+      }
+    },
+    {
+      "provider": "codex",
+      "result": {
+        "code": 1,
+        "stdout": "",
+        "output": "Not logged in\r\n"
+      },
+      "expected": {
+        "authorization": "unauthenticated",
+        "message": "Выполните codex login в терминале."
+      }
+    },
+    {
+      "provider": "codex",
+      "result": {
+        "code": 0,
+        "stdout": "",
+        "output": "Logged in using \n"
+      },
+      "expected": null
+    },
+    {
+      "provider": "codex",
+      "result": {
+        "code": 2,
+        "stdout": "",
+        "output": "Not logged in"
+      },
+      "expected": null
+    }
+  ],
+  "normalize": [
+    {
+      "input": null,
+      "expected": null
+    },
+    {
+      "input": {
+        "provider": "claude"
+      },
+      "expected": {
+        "provider": "claude"
+      }
+    },
+    {
+      "input": {
+        "provider": "codex",
+        "model": "  gpt-5  "
+      },
+      "expected": {
+        "provider": "codex",
+        "model": "gpt-5"
+      }
+    },
+    {
+      "input": {
+        "provider": "codex",
+        "model": "   "
+      },
+      "expected": {
+        "provider": "codex"
+      }
+    },
+    {
+      "input": {
+        "provider": "codex",
+        "model": 5
+      },
+      "expected": {
+        "throws": {
+          "message": "Модель должна быть текстом без нулевых символов."
+        }
+      }
+    },
+    {
+      "input": {
+        "provider": "codex",
+        "model": "a\u0000b"
+      },
+      "expected": {
+        "throws": {
+          "message": "Модель должна быть текстом без нулевых символов."
+        }
+      }
+    },
+    {
+      "input": {
+        "provider": "gemini"
+      },
+      "expected": {
+        "throws": {
+          "message": "Выберите агента."
+        }
+      }
+    },
+    {
+      "input": [],
+      "expected": {
+        "throws": {
+          "message": "Неверный формат настроек агента."
+        }
+      }
+    },
+    {
+      "input": "codex",
+      "expected": {
+        "throws": {
+          "message": "Неверный формат настроек агента."
+        }
+      }
+    },
+    {
+      "input": {
+        "provider": "claude",
+        "model": " m ",
+        "extra": 1
+      },
+      "expected": {
+        "provider": "claude",
+        "model": "m"
+      }
+    }
+  ]
+}

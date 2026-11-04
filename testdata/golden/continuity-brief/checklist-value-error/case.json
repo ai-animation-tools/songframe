@@ -1,0 +1,15 @@
+{
+  "description": "Одиночная скобка шаблона: ValueError — код 1.",
+  "call": "continuity_brief",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "ValueError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "M02"
+  ],
+  "remove": [],
+  "mkdir": []
+}

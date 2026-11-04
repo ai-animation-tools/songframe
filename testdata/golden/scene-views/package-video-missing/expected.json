@@ -1,0 +1,7 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 214, in <module>\n    main()\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 204, in main\n    changed = update(args.check)\n              ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 99, in update\n    output = documents(sources)\n             ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/project_views/project_views.py\", line 427, in documents\n    \"ROADMAP.md\": render(sources),\n                  ^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/project_views/project_views.py\", line 276, in render\n    sources.require(video)\n  File \"<songframe>/tools/project_views/project_views.py\", line 71, in require\n    raise ValueError(f\"Нет материала: {path}\")\nValueError: Нет материала: assets/shots/M02/video.mp4\n",
+  "traceback": true,
+  "cards": null
+}

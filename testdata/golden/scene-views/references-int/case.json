@@ -1,0 +1,15 @@
+{
+  "description": "Референс числом: ValueError validate — трассировка.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "validate неизвестный референс"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

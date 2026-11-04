@@ -1,0 +1,13 @@
+{
+  "description": "Карточка на диске подменена: перерисовывается.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sha differs"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

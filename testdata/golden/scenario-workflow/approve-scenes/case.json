@@ -1,0 +1,91 @@
+{
+  "description": "Изменение кастинга после утверждения требует повторного утверждения пары и сцен.",
+  "call": "ScenarioWorkflow",
+  "project": "project",
+  "base": "checks-base",
+  "steps": [
+    {
+      "op": "approveCurrent",
+      "view": {
+        "project": "<project>",
+        "busy": false,
+        "canStartTreatment": true,
+        "canStartScenes": true,
+        "canRevise": true,
+        "canApproveScenes": false,
+        "canApproveCurrent": false,
+        "treatmentApproved": true,
+        "scenesNeedReview": false,
+        "problems": [],
+        "proposal": null,
+        "job": null
+      }
+    },
+    {
+      "op": "approveScenes",
+      "error": "Сначала утвердите актуальную пару и заполните весь сценарий."
+    },
+    {
+      "op": "editCast"
+    },
+    {
+      "op": "view",
+      "view": {
+        "project": "<project>",
+        "busy": false,
+        "canStartTreatment": true,
+        "canStartScenes": false,
+        "canRevise": false,
+        "canApproveScenes": false,
+        "canApproveCurrent": true,
+        "treatmentApproved": false,
+        "scenesNeedReview": true,
+        "problems": [],
+        "proposal": null,
+        "job": null
+      }
+    },
+    {
+      "op": "approveCurrent",
+      "view": {
+        "project": "<project>",
+        "busy": false,
+        "canStartTreatment": true,
+        "canStartScenes": true,
+        "canRevise": true,
+        "canApproveScenes": true,
+        "canApproveCurrent": false,
+        "treatmentApproved": true,
+        "scenesNeedReview": true,
+        "problems": [],
+        "proposal": null,
+        "job": null
+      }
+    },
+    {
+      "op": "approveCurrent",
+      "error": "Нет корректной неутверждённой пары кастинга и трактовки."
+    },
+    {
+      "op": "approveScenes",
+      "view": {
+        "project": "<project>",
+        "busy": false,
+        "canStartTreatment": true,
+        "canStartScenes": true,
+        "canRevise": true,
+        "canApproveScenes": false,
+        "canApproveCurrent": false,
+        "treatmentApproved": true,
+        "scenesNeedReview": false,
+        "problems": [],
+        "proposal": null,
+        "job": null
+      }
+    },
+    {
+      "op": "approveScenes",
+      "error": "Сначала утвердите актуальную пару и заполните весь сценарий."
+    }
+  ]
+}

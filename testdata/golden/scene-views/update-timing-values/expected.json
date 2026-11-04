@@ -1,0 +1,19 @@
+{
+  "code": 0,
+  "stdout": "Обновлено представлений: 1.\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/audio/timing.md": "changed"
+  },
+  "recheck": {
+    "code": 0,
+    "stdout": "Представления актуальны.\n",
+    "stderr": ""
+  },
+  "cards": [
+    "plan/animatic/cards/M03.png",
+    "plan/animatic/cards/M04.png",
+    "plan/animatic/cards/M05.png"
+  ]
+}

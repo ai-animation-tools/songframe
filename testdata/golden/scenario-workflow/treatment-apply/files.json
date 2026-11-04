@@ -1,0 +1,14 @@
+{
+  "plan/cast.json": {
+    "before": "efbaf4c0b64ed7149577eea0ee06d03adeea24a25af0c9a79da530acf962c8bf",
+    "after": "869c23ce34869f6848c2418776d4561f26fae796bb6a83799f61d94ecac07b34"
+  },
+  "plan/treatment.json": {
+    "before": "ddaedab2b4a066b09b12a4cce29e8003e2367b673569efbec8ad821400b01c1c",
+    "after": "0ced4e56e421902a2fafd91079f9364424fd57dbefe8b76a3cd88551e2ffc403"
+  },
+  "source/manifest.json": {
+    "before": "72f40eae5345319118b0214ad92238a07ab5ad6d551a6378e908bcf48c981279",
+    "after": "6a1ec8e7572beff38888658291a1e95906f656be6b82d5093ebb5695009e2afb"
+  }
+}

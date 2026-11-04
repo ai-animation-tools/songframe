@@ -5,7 +5,6 @@ import { checksTexts } from '@shared/texts/checks';
 import { commonTexts } from '@shared/texts/common';
 import { migrationTexts } from '@shared/texts/migration';
 import { navigationTexts } from '@shared/texts/navigation';
-import { platformTexts } from '@shared/texts/platform';
 import { checksPageInspection, checksPageOptions } from '../../testing/checksPageStories';
 import { ChecksPage } from './ChecksPage';
 
@@ -26,18 +25,16 @@ function row(canvasElement: HTMLElement, label: string): HTMLElement {
   return element;
 }
 
-export const RunAllMigrated: Story = {
-  name: 'Все проверки · без неперенесённой «Карточки и списки»',
+export const RunAllChecks: Story = {
+  name: 'Все проверки · пять шагов',
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await canvas.findByText(checksTexts.sceneDataLabel);
-    // Неперенесённая проверка видна, но её кнопки выключены с причиной, а общий запуск это поясняет.
+    // «Карточки и списки» перенесена: её кнопки доступны, как у остальных проверок.
     const views = row(canvasElement, checksTexts.viewsLabel);
-    await expect(within(views).getByRole('button', { name: commonTexts.run })).toBeDisabled();
-    await expect(within(views).getByRole('button', { name: checksTexts.rebuildViews })).toBeDisabled();
-    await expect(within(views).getAllByTitle((title) => title.includes(platformTexts.unavailable.replace(/[.]$/, ''))).length).toBeGreaterThan(0);
-    await expect(canvas.getByText(checksTexts.runAllExcludes(checksTexts.viewsLabel))).toBeVisible();
+    await expect(within(views).getByRole('button', { name: commonTexts.run })).toBeEnabled();
+    await expect(within(views).getByRole('button', { name: checksTexts.rebuildViews })).toBeEnabled();
     // Проба стыков ещё не перенесена: блок показывает общий отказ вместо формы.
     await expect(canvas.getByText(navigationTexts.blocks.checksReview)).toBeVisible();
     await expect(canvas.getByText(migrationTexts.notMigratedTitle)).toBeVisible();
@@ -47,11 +44,27 @@ export const RunAllMigrated: Story = {
     await expect(checksPageInspection().runAll).toEqual([{ strict: true, next: false }]);
     const screen = within(canvasElement.ownerDocument.body);
     await screen.findByText(checksTexts.jobsDone([checksTexts.allChecksJobTitle]), undefined, { timeout: 5000 });
-    for (const label of [checksTexts.sceneDataLabel, checksTexts.assetsLabel, checksTexts.workspaceLabel, checksTexts.statusLabel]) {
+    for (const label of [checksTexts.sceneDataLabel, checksTexts.viewsLabel, checksTexts.assetsLabel, checksTexts.workspaceLabel, checksTexts.statusLabel]) {
       await waitFor(() => expect(within(row(canvasElement, label)).getByText(checksTexts.checkDone)).toBeVisible());
     }
-    // Шага views в задании нет: строка не получает чужой итог.
-    await expect(within(views).queryByText(checksTexts.checkDone)).toBeNull();
+  }
+};
+
+export const RebuildViews: Story = {
+  name: 'Карточки и списки · пересборка',
+  tags: ['ci'],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(checksTexts.viewsLabel);
+    const views = row(canvasElement, checksTexts.viewsLabel);
+    await userEvent.click(within(views).getByRole('button', { name: checksTexts.rebuildViews }));
+    await expect(checksPageInspection().updateViews).toBe(1);
+    await expect(checksPageInspection().runs).toEqual([]);
+    const screen = within(canvasElement.ownerDocument.body);
+    await screen.findByText(checksTexts.jobsDone([checksTexts.updateViewsJobTitle]), undefined, { timeout: 5000 });
+    await waitFor(() => expect(within(views).getByText(checksTexts.checkDone)).toBeVisible());
+    // Другие строки не получают итог пересборки.
+    await expect(within(row(canvasElement, checksTexts.sceneDataLabel)).queryByText(checksTexts.checkDone)).toBeNull();
   }
 };
 

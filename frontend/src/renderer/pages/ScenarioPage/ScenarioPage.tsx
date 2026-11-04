@@ -12,15 +12,11 @@ import { useStickyTop } from '../../hooks/useStickyTop';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { LinkedText } from '../../components/LinkedText';
 import { unsavedDraftsReason } from './shotNavigation';
-import { useMethodAvailability } from '../../availability';
-import { NotMigratedNotice } from '../../components/NotMigratedNotice';
 
 /** Сценарий связывает независимые черновики трактовки и реестра с их редакторами. */
 export function ScenarioPage(): ReactElement {
   const scenario = useScenario();
-  // Процесс сценария с агентом переносится отдельно: без него остаются ручные редакторы и сохранение.
-  const workflowAvailability = useMethodAvailability('scenarioWorkflow.view');
-  const workflow = useScenarioWorkflow(scenario.project, scenario.acceptWorkflowUpdate, workflowAvailability.available);
+  const workflow = useScenarioWorkflow(scenario.project, scenario.acceptWorkflowUpdate);
   const [showGlobal, setShowGlobal] = useState(false);
   const {
     view,
@@ -111,21 +107,17 @@ export function ScenarioPage(): ReactElement {
         </Alert>
       ) : null}
       {!cast ? <Alert severity="info">{scenarioTexts.page.castMissing}</Alert> : null}
-      {workflowAvailability.available ? (
-        <ScenarioWorkflowPanel
-          key={scenario.project}
-          project={scenario.project}
-          workflow={workflow}
-          selected={selected}
-          treatmentDirty={treatmentDirty}
-          scenesDirty={scenesDirty}
-          editorBusy={busy}
-          scenesInputProblem={scenario.scenesInputProblem}
-          onResolveDrafts={scenario.resolveWorkflowDrafts}
-        />
-      ) : (
-        <NotMigratedNotice level="section" title={scenarioTexts.workflow.title} reason={workflowAvailability.reason ?? ''} method="scenarioWorkflow.view" />
-      )}
+      <ScenarioWorkflowPanel
+        key={scenario.project}
+        project={scenario.project}
+        workflow={workflow}
+        selected={selected}
+        treatmentDirty={treatmentDirty}
+        scenesDirty={scenesDirty}
+        editorBusy={busy}
+        scenesInputProblem={scenario.scenesInputProblem}
+        onResolveDrafts={scenario.resolveWorkflowDrafts}
+      />
       {workflow.busy && (
         <Alert severity="warning">
           {/* Блокировка держится и пока готовое предложение ждёт решения, а не только во время работы агента. */}

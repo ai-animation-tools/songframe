@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "approval": {
+    "source/manifest.json": "9003b4e856f2fd18ee7449c3a04a7c28253c7bc722162ec55d1eca4b91af29dc",
+    "source/track.mp3": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+    "source/text.md": "bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0",
+    "source/description.md": "73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037",
+    "plan/audio/timing.json": "ab47662d81b27a6d6bd2f40d34a85b81a3f2454b3b586473a26ec72f9e492f7d",
+    "plan/cast.json": "ba309dba10d9f96c074977f389e63bf4690c82a5c5e503ad2852287af856e8e1",
+    "plan/treatment.json": "ddaedab2b4a066b09b12a4cce29e8003e2367b673569efbec8ad821400b01c1c",
+    "source/heroes/mira.png": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818",
+    "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
+    "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
+    "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e"
+  },
+  "needsScenesReview": false,
+  "scenesApproval": {
+    "hashes": {
+      "source/manifest.json": "9003b4e856f2fd18ee7449c3a04a7c28253c7bc722162ec55d1eca4b91af29dc",
+      "source/track.mp3": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+      "source/text.md": "bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0",
+      "source/description.md": "73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037",
+      "plan/audio/timing.json": "ab47662d81b27a6d6bd2f40d34a85b81a3f2454b3b586473a26ec72f9e492f7d",
+      "plan/cast.json": "ba309dba10d9f96c074977f389e63bf4690c82a5c5e503ad2852287af856e8e1",
+      "plan/treatment.json": "ddaedab2b4a066b09b12a4cce29e8003e2367b673569efbec8ad821400b01c1c",
+      "source/heroes/mira.png": "0b0835fb8ff731d9ba611e1c9a46bda1788a0f10d2b02bb5d09358039fc02818",
+      "source/heroes/lev.png": "04c771634b3f498bfa467560d1e8d22de453226051cf90325b21820399a014d6",
+      "source/vehicles/boat.png": "4c346189be0799d9a9c1ba5aac37eec8b8ea544e216412b0d5ff1242fe73bafe",
+      "source/locations/pier.png": "d226dce6924121c33e7c79a6a65da395c0d2398e0486033d46484a528c7f900e"
+    },
+    "sceneHash": "7a80da73a0f083fc3a9b31862b7b0ea2fe87c6536af966a50c3b1b579417401f"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Карточки нет на диске: создаётся.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "created"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "plan/animatic/cards/M05.png"
+  ],
+  "mkdir": []
+}

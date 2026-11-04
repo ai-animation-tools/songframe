@@ -1,6 +1,6 @@
 /**
- * Адаптер группы checks: list/run/runAll перенесены в Go (задания общего менеджера), остальные
- * методы группы (views через updateViews, пробы) недоступны с причиной «не перенесено».
+ * Адаптер группы checks: list/run/runAll/updateViews перенесены в Go (задания общего менеджера),
+ * пробы стыков недоступны с причиной «не перенесено».
  * Bindings подменяются целиком: Wails runtime и Go не запускаются.
  */
 import { describe, expect, it, vi } from 'vitest';
@@ -24,6 +24,10 @@ function bindings(checks: Record<string, unknown>): Bindings {
     scenario: missing,
     tools: missing,
     checks: async () => checks as never,
+    agents: missing,
+    ai: missing,
+    scenarioWorkflow: missing,
+    videoReview: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }
@@ -42,11 +46,11 @@ const job = {
 };
 
 describe('window.api.checks', () => {
-  it('list, run и runAll перенесены; пересборка представлений и пробы — нет', () => {
-    for (const method of ['checks.list', 'checks.run', 'checks.runAll'] as const) {
+  it('list, run, runAll и updateViews перенесены; пробы — нет', () => {
+    for (const method of ['checks.list', 'checks.run', 'checks.runAll', 'checks.updateViews'] as const) {
       expect(methodAvailability(method)).toEqual({ available: true, reason: null });
     }
-    for (const method of ['checks.updateViews', 'checks.buildReview', 'checks.listReviews', 'checks.removeReview'] as const) {
+    for (const method of ['checks.buildReview', 'checks.listReviews', 'checks.removeReview'] as const) {
       expect(methodAvailability(method).available).toBe(false);
     }
   });
@@ -69,9 +73,16 @@ describe('window.api.checks', () => {
     expect(RunAll).toHaveBeenCalledWith('/клип', {});
   });
 
+  it('updateViews передаёт проект и возвращает задание вида tool', async () => {
+    const UpdateViews = vi.fn(async () => ({ ...job, kind: 'tool', title: 'Обновление карточек и списков' }));
+    const api = createApi(bindings({ UpdateViews }));
+    await expect(api.checks.updateViews('/клип')).resolves.toMatchObject({ kind: 'tool', title: 'Обновление карточек и списков' });
+    expect(UpdateViews).toHaveBeenCalledWith('/клип');
+  });
+
   it('показывает отказ Go-сервиса его текстом', async () => {
-    const error = Object.assign(new Error('Проверка «Карточки и списки» ещё не перенесена в Go-версию SongFrame.'), { name: 'RuntimeError' });
+    const error = Object.assign(new Error('Неизвестная проверка: bogus'), { name: 'RuntimeError' });
     const api = createApi(bindings({ Run: async () => Promise.reject(error) }));
-    await expect(api.checks.run('/клип', 'views')).rejects.toMatchObject({ code: 'SERVICE_FAILED', message: error.message });
+    await expect(api.checks.run('/клип', 'bogus' as never)).rejects.toMatchObject({ code: 'SERVICE_FAILED', message: error.message });
   });
 });

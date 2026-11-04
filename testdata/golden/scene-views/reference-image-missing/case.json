@@ -1,0 +1,15 @@
+{
+  "description": "Нет изображения референса: трассировка.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "FileNotFoundError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "source/heroes/lev.png"
+  ],
+  "mkdir": []
+}

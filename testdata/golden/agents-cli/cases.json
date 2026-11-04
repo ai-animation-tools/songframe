@@ -1,0 +1,5439 @@
+[
+  {
+    "name": "claude-ready",
+    "call": "check",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/claude",
+      "authorization": "authenticated",
+      "availability": "available",
+      "version": "2.1.5",
+      "message": "Claude Code сообщает, что вход выполнен."
+    }
+  },
+  {
+    "name": "codex-ready",
+    "call": "check",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/codex",
+      "authorization": "authenticated",
+      "availability": "available",
+      "version": "0.160.0",
+      "message": "Codex сообщает, что учётные данные для входа найдены."
+    }
+  },
+  {
+    "name": "not-found",
+    "call": "check",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {},
+    "expected": {
+      "availability": "not_found",
+      "authorization": "unknown",
+      "message": "Codex не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку."
+    }
+  },
+  {
+    "name": "version-fails",
+    "call": "check",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "code": 3,
+            "stderr": "boom"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/claude",
+      "authorization": "unknown",
+      "availability": "error",
+      "message": "Команда версии завершилась с ошибкой. Проверьте Claude Code и его зависимости в терминале."
+    }
+  },
+  {
+    "name": "version-unknown",
+    "call": "check",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex 1.0\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/codex",
+      "authorization": "unknown",
+      "availability": "available",
+      "message": "Codex запускается, но его версия не распознана. Обновите его до поддерживаемой версии."
+    }
+  },
+  {
+    "name": "claude-logged-out",
+    "call": "check",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":false}",
+            "code": 1
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/claude",
+      "authorization": "unauthenticated",
+      "availability": "available",
+      "version": "2.1.5",
+      "message": "Выполните claude auth login в терминале."
+    }
+  },
+  {
+    "name": "codex-logged-out",
+    "call": "check",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Not logged in\n",
+            "code": 1
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/codex",
+      "authorization": "unauthenticated",
+      "availability": "available",
+      "version": "0.160.0",
+      "message": "Выполните codex login в терминале."
+    }
+  },
+  {
+    "name": "codex-network",
+    "call": "check",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "error: connection refused\n",
+            "code": 1
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/codex",
+      "authorization": "unknown",
+      "availability": "available",
+      "version": "0.160.0",
+      "message": "Агент сообщил об ошибке соединения. Проверьте сеть и повторите проверку."
+    }
+  },
+  {
+    "name": "codex-status-unknown",
+    "call": "check",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stdout": "Logged in somehow",
+            "code": 0
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/codex",
+      "authorization": "unknown",
+      "availability": "available",
+      "version": "0.160.0",
+      "message": "Не удалось определить вход по ответу агента. Проверьте статус в терминале; может потребоваться обновление агента."
+    }
+  },
+  {
+    "name": "claude-status-garbage",
+    "call": "check",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "oops",
+            "code": 0
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/claude",
+      "authorization": "unknown",
+      "availability": "available",
+      "version": "2.1.5",
+      "message": "Не удалось определить вход по ответу агента. Проверьте статус в терминале; может потребоваться обновление агента."
+    }
+  },
+  {
+    "name": "version-output-limit",
+    "call": "check",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "bytes": 40000
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/codex",
+      "authorization": "unknown",
+      "availability": "error",
+      "message": "Агент превысил допустимый объём ответа. Проверьте его запуск в терминале."
+    }
+  },
+  {
+    "name": "codex-model-ignored",
+    "call": "check",
+    "config": {
+      "provider": "codex",
+      "model": "gpt"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "executablePath": "<fake>/codex",
+      "authorization": "authenticated",
+      "availability": "available",
+      "version": "0.160.0",
+      "message": "Codex сообщает, что учётные данные для входа найдены."
+    }
+  },
+  {
+    "name": "claude-limits-list",
+    "call": "account",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.300 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\" user@example.com \",\"orgName\":\"Org\\u0007 Name\",\"authMethod\":\"claude.ai\",\"apiProvider\":\"firstParty\",\"subscriptionType\":\"max\"}",
+            "code": 0
+          },
+          {
+            "prefix": [
+              "--output-format"
+            ],
+            "control": {
+              "initialize": {
+                "models": []
+              },
+              "get_usage": {
+                "subscription_type": "max",
+                "rate_limits_available": true,
+                "rate_limits": {
+                  "five_hour": {
+                    "utilization": 10,
+                    "resets_at": "2026-11-04T10:00:00Z"
+                  },
+                  "limits": [
+                    {
+                      "kind": "five_hour",
+                      "group": "all",
+                      "percent": 12.5,
+                      "severity": "low",
+                      "resets_at": "2026-11-04T10:00:00.500Z",
+                      "is_active": true
+                    },
+                    {
+                      "kind": "seven_day_opus",
+                      "group": "opus",
+                      "percent": null,
+                      "resets_at": null
+                    },
+                    {
+                      "kind": "seven_day",
+                      "group": "sonnet",
+                      "percent": 50,
+                      "resets_at": "bad"
+                    },
+                    {
+                      "kind": "other_window",
+                      "group": "x",
+                      "percent": 100,
+                      "resets_at": "2026-11-05T00:00:00+03:00"
+                    },
+                    {
+                      "kind": "Bad",
+                      "group": "x",
+                      "percent": 1
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "claude",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/claude",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "2.1.300",
+        "message": "Claude Code сообщает, что вход выполнен."
+      },
+      "email": "user@example.com",
+      "organization": "Org Name",
+      "authenticationMethod": "claude.ai",
+      "plan": "max",
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": [
+        {
+          "label": "all · five_hour",
+          "usedPercent": 12.5,
+          "windowMinutes": 300,
+          "resetsAt": 1793786400
+        },
+        {
+          "label": "sonnet · seven_day",
+          "usedPercent": 50,
+          "windowMinutes": 10080,
+          "resetsAt": null
+        },
+        {
+          "label": "x · other_window",
+          "usedPercent": 100,
+          "windowMinutes": null,
+          "resetsAt": 1793826000
+        }
+      ],
+      "usageAllowed": null,
+      "credits": null
+    }
+  },
+  {
+    "name": "claude-limits-windows",
+    "call": "account",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.300 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\" user@example.com \",\"authMethod\":\"oauth_token\",\"apiProvider\":\"firstParty\",\"subscriptionType\":\"max\",\"orgId\":\"org-1\",\"apiKeySource\":\"none\"}",
+            "code": 0
+          },
+          {
+            "prefix": [
+              "--output-format"
+            ],
+            "control": {
+              "initialize": {},
+              "get_usage": {
+                "rate_limits": {
+                  "five_hour": {
+                    "utilization": 0,
+                    "resets_at": "2026-11-04T10:00:00Z"
+                  },
+                  "seven_day": {
+                    "utilization": 101,
+                    "resets_at": null
+                  },
+                  "seven_day_sonnet": {
+                    "utilization": 99.5,
+                    "resets_at": "2026-11-10T01:02:03Z"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "claude",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/claude",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "2.1.300",
+        "message": "Claude Code сообщает, что вход выполнен."
+      },
+      "email": "user@example.com",
+      "organization": "org-1",
+      "authenticationMethod": "oauth_token",
+      "plan": "max",
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": [
+        {
+          "label": "five_hour · 300 мин",
+          "usedPercent": 0,
+          "windowMinutes": 300,
+          "resetsAt": 1793786400
+        },
+        {
+          "label": "seven_day_sonnet · 10080 мин",
+          "usedPercent": 99.5,
+          "windowMinutes": 10080,
+          "resetsAt": 1794272523
+        }
+      ],
+      "usageAllowed": null,
+      "credits": null
+    }
+  },
+  {
+    "name": "claude-api-key",
+    "call": "account",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.300 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"authMethod\":\"api_key\",\"apiProvider\":\"firstParty\",\"email\":null}",
+            "code": 0
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "claude",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/claude",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "2.1.300",
+        "message": "Claude Code сообщает, что вход выполнен."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": "api_key",
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null
+    }
+  },
+  {
+    "name": "claude-old-usage",
+    "call": "account",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.100 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\" user@example.com \",\"orgName\":\"Org\\u0007 Name\",\"authMethod\":\"claude.ai\",\"apiProvider\":\"firstParty\",\"subscriptionType\":\"max\"}",
+            "code": 0
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "claude",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/claude",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "2.1.100",
+        "message": "Claude Code сообщает, что вход выполнен."
+      },
+      "email": "user@example.com",
+      "organization": "Org Name",
+      "authenticationMethod": "claude.ai",
+      "plan": "max",
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null
+    }
+  },
+  {
+    "name": "claude-old-version",
+    "call": "account",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.0.0 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\" user@example.com \",\"orgName\":\"Org\\u0007 Name\",\"authMethod\":\"claude.ai\",\"apiProvider\":\"firstParty\",\"subscriptionType\":\"max\"}",
+            "code": 0
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "claude",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/claude",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "2.0.0",
+        "message": "Claude Code сообщает, что вход выполнен."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": null,
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null,
+      "message": "Данные аккаунта недоступны для этой версии Claude Code."
+    }
+  },
+  {
+    "name": "claude-logged-out",
+    "call": "account",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.300 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":false}",
+            "code": 1
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "claude",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/claude",
+        "authorization": "unauthenticated",
+        "availability": "available",
+        "version": "2.1.300",
+        "message": "Выполните claude auth login в терминале."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": null,
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null
+    }
+  },
+  {
+    "name": "claude-usage-unavailable",
+    "call": "account",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.300 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\" user@example.com \",\"orgName\":\"Org\\u0007 Name\",\"authMethod\":\"claude.ai\",\"apiProvider\":\"firstParty\",\"subscriptionType\":\"max\"}",
+            "code": 0
+          },
+          {
+            "prefix": [
+              "--output-format"
+            ],
+            "control": {
+              "initialize": {},
+              "get_usage": {
+                "rate_limits_available": false
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "claude",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/claude",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "2.1.300",
+        "message": "Claude Code сообщает, что вход выполнен."
+      },
+      "email": "user@example.com",
+      "organization": "Org Name",
+      "authenticationMethod": "claude.ai",
+      "plan": "max",
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null
+    }
+  },
+  {
+    "name": "claude-usage-missing",
+    "call": "account",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.300 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\" user@example.com \",\"orgName\":\"Org\\u0007 Name\",\"authMethod\":\"claude.ai\",\"apiProvider\":\"firstParty\",\"subscriptionType\":\"max\"}",
+            "code": 0
+          },
+          {
+            "prefix": [
+              "--output-format"
+            ],
+            "control": {
+              "initialize": {}
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "claude",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/claude",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "2.1.300",
+        "message": "Claude Code сообщает, что вход выполнен."
+      },
+      "email": "user@example.com",
+      "organization": "Org Name",
+      "authenticationMethod": "claude.ai",
+      "plan": "max",
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null,
+      "message": "Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии."
+    }
+  },
+  {
+    "name": "claude-status-odd",
+    "call": "account",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.300 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":\"yes\"}",
+            "code": 0
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "claude",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/claude",
+        "authorization": "unknown",
+        "availability": "available",
+        "version": "2.1.300",
+        "message": "Не удалось определить вход по ответу агента. Проверьте статус в терминале; может потребоваться обновление агента."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": null,
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null,
+      "message": "Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии."
+    }
+  },
+  {
+    "name": "codex-chatgpt",
+    "call": "account",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {
+              "initialize": {},
+              "account/read": {
+                "account": {
+                  "type": "chatgpt",
+                  "email": "me@example.com",
+                  "planType": "plus"
+                },
+                "requiresOpenaiAuth": true
+              },
+              "account/rateLimits/read": {
+                "ordinaryUsageAllowed": true,
+                "rateLimits": {
+                  "limitId": "old",
+                  "primary": {
+                    "usedPercent": 1
+                  }
+                },
+                "rateLimitsByLimitId": {
+                  "codex": {
+                    "limitName": "Codex",
+                    "primary": {
+                      "usedPercent": 25,
+                      "windowDurationMins": 300,
+                      "resetsAt": 1790000000
+                    },
+                    "secondary": {
+                      "usedPercent": 101
+                    },
+                    "credits": {
+                      "hasCredits": true
+                    }
+                  },
+                  "other": {
+                    "primary": {
+                      "usedPercent": 3.5,
+                      "windowDurationMins": 10080
+                    },
+                    "credits": {
+                      "balance": "12.50"
+                    }
+                  },
+                  "third": {
+                    "secondary": {
+                      "usedPercent": 0,
+                      "windowDurationMins": 60
+                    },
+                    "credits": {
+                      "unlimited": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "codex",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/codex",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "0.160.0",
+        "message": "Codex сообщает, что учётные данные для входа найдены."
+      },
+      "email": "me@example.com",
+      "organization": null,
+      "authenticationMethod": "ChatGPT",
+      "plan": "plus",
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": [
+        {
+          "label": "Codex · primary · 300 мин",
+          "usedPercent": 25,
+          "windowMinutes": 300,
+          "resetsAt": 1790000000
+        },
+        {
+          "label": "other · primary · 10080 мин",
+          "usedPercent": 3.5,
+          "windowMinutes": 10080,
+          "resetsAt": null
+        },
+        {
+          "label": "third · secondary · 60 мин",
+          "usedPercent": 0,
+          "windowMinutes": 60,
+          "resetsAt": null
+        }
+      ],
+      "usageAllowed": true,
+      "credits": "Есть кредиты; 12.50; Без ограничений"
+    }
+  },
+  {
+    "name": "codex-legacy-limits",
+    "call": "account",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {
+              "initialize": {},
+              "account/read": {
+                "account": {
+                  "type": "apiKey"
+                }
+              },
+              "account/rateLimits/read": {
+                "ordinaryUsageAllowed": false,
+                "rateLimits": {
+                  "primary": {
+                    "usedPercent": 80,
+                    "windowDurationMins": 300
+                  },
+                  "credits": {
+                    "hasCredits": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "codex",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/codex",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "0.160.0",
+        "message": "Codex сообщает, что учётные данные для входа найдены."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": "API key",
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": [
+        {
+          "label": "codex · primary · 300 мин",
+          "usedPercent": 80,
+          "windowMinutes": 300,
+          "resetsAt": null
+        }
+      ],
+      "usageAllowed": false,
+      "credits": "Нет кредитов",
+      "message": "Codex сообщает об ограничении использования."
+    }
+  },
+  {
+    "name": "codex-unauthenticated",
+    "call": "account",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {
+              "initialize": {},
+              "account/read": {
+                "account": null,
+                "requiresOpenaiAuth": true
+              },
+              "account/rateLimits/read": {}
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "codex",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/codex",
+        "authorization": "unauthenticated",
+        "availability": "available",
+        "version": "0.160.0",
+        "message": "Codex сообщает, что вход не выполнен. Выполните codex login в терминале."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": null,
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null,
+      "message": "Codex сообщает, что вход не выполнен. Выполните codex login в терминале."
+    }
+  },
+  {
+    "name": "codex-unknown-method",
+    "call": "account",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {
+              "initialize": {},
+              "account/read": {
+                "account": {
+                  "type": "other"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "codex",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/codex",
+        "authorization": "unknown",
+        "availability": "available",
+        "version": "0.160.0",
+        "message": "Не удалось подтвердить вход по ответу Codex."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": null,
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null,
+      "message": "Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии."
+    }
+  },
+  {
+    "name": "codex-bedrock-empty",
+    "call": "account",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {
+              "initialize": {},
+              "account/read": {
+                "account": {
+                  "type": "amazonBedrock"
+                }
+              },
+              "account/rateLimits/read": {
+                "rateLimitsByLimitId": {}
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "codex",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/codex",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "0.160.0",
+        "message": "Codex сообщает, что учётные данные для входа найдены."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": "Amazon Bedrock",
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null
+    }
+  },
+  {
+    "name": "codex-plan-unknown",
+    "call": "account",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {
+              "initialize": {},
+              "account/read": {
+                "account": {
+                  "type": "chatgpt",
+                  "planType": "unknown"
+                }
+              },
+              "account/rateLimits/read": {
+                "$error": {
+                  "code": 1,
+                  "message": "no"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "codex",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/codex",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "0.160.0",
+        "message": "Codex сообщает, что учётные данные для входа найдены."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": "ChatGPT",
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null,
+      "message": "Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии."
+    }
+  },
+  {
+    "name": "codex-no-initialize",
+    "call": "account",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {}
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "codex",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/codex",
+        "authorization": "unknown",
+        "availability": "available",
+        "version": "0.160.0",
+        "message": "Не удалось подтвердить вход по ответу Codex."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": null,
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null,
+      "message": "Часть данных аккаунта недоступна в ответе агента. Проверьте подключение и актуальность его версии."
+    }
+  },
+  {
+    "name": "codex-old-version",
+    "call": "account",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.150.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {}
+          }
+        ]
+      }
+    },
+    "expected": {
+      "provider": "codex",
+      "checkedAt": "<time>",
+      "diagnostic": {
+        "executablePath": "<fake>/codex",
+        "authorization": "authenticated",
+        "availability": "available",
+        "version": "0.150.0",
+        "message": "Codex сообщает, что учётные данные для входа найдены."
+      },
+      "email": null,
+      "organization": null,
+      "authenticationMethod": null,
+      "plan": null,
+      "subscriptionStatus": null,
+      "subscriptionExpiresAt": null,
+      "limits": null,
+      "usageAllowed": null,
+      "credits": null,
+      "message": "Данные аккаунта недоступны для этой версии Codex."
+    }
+  },
+  {
+    "name": "claude-models",
+    "call": "models",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          },
+          {
+            "prefix": [
+              "--output-format"
+            ],
+            "control": {
+              "initialize": {
+                "models": [
+                  {
+                    "value": "default",
+                    "displayName": "Default"
+                  },
+                  {
+                    "value": " opus ",
+                    "displayName": " Opus 4 ",
+                    "description": " Самая умная "
+                  },
+                  {
+                    "value": "with space"
+                  },
+                  {
+                    "value": "sonnet"
+                  },
+                  {
+                    "value": 5
+                  },
+                  "строка",
+                  {
+                    "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  },
+                  {
+                    "value": "haiku",
+                    "displayName": "",
+                    "description": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "models": [
+        {
+          "id": "opus",
+          "label": "Opus 4",
+          "description": "Самая умная"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet"
+        },
+        {
+          "id": "haiku",
+          "label": "haiku",
+          "description": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        }
+      ]
+    }
+  },
+  {
+    "name": "claude-models-missing",
+    "call": "models",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          },
+          {
+            "prefix": [
+              "--output-format"
+            ],
+            "control": {
+              "initialize": {}
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "models": [],
+      "message": "Каталог моделей Claude Code сейчас недоступен. Модель можно ввести вручную."
+    }
+  },
+  {
+    "name": "claude-models-empty",
+    "call": "models",
+    "config": {
+      "provider": "claude"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          },
+          {
+            "prefix": [
+              "--output-format"
+            ],
+            "control": {
+              "initialize": {
+                "models": [
+                  {
+                    "value": "default"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "models": [],
+      "message": "Claude Code не вернул доступные модели. Модель можно ввести вручную."
+    }
+  },
+  {
+    "name": "codex-models",
+    "call": "models",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {
+              "initialize": {},
+              "model/list": {
+                "data": [
+                  {
+                    "model": "gpt-5",
+                    "displayName": "GPT-5",
+                    "isDefault": true
+                  },
+                  {
+                    "model": "hidden-1",
+                    "hidden": true
+                  },
+                  {
+                    "model": "gpt-5-mini",
+                    "displayName": "  "
+                  }
+                ],
+                "nextCursor": null
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "models": [
+        {
+          "id": "gpt-5",
+          "label": "GPT-5",
+          "isDefault": true
+        },
+        {
+          "id": "gpt-5-mini",
+          "label": "gpt-5-mini"
+        }
+      ]
+    }
+  },
+  {
+    "name": "codex-models-bad",
+    "call": "models",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {
+              "initialize": {},
+              "model/list": {
+                "data": [
+                  {
+                    "displayName": "x"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "models": [],
+      "message": "Каталог моделей Codex сейчас недоступен. Модель можно ввести вручную."
+    }
+  },
+  {
+    "name": "codex-models-unauthenticated",
+    "call": "models",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Not logged in",
+            "code": 1
+          },
+          {
+            "prefix": [
+              "app-server"
+            ],
+            "rpc": {
+              "initialize": {},
+              "model/list": {
+                "data": [
+                  {
+                    "model": "m"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "expected": {
+      "models": [
+        {
+          "id": "m",
+          "label": "m"
+        }
+      ]
+    }
+  },
+  {
+    "name": "models-not-found",
+    "call": "models",
+    "config": {
+      "provider": "codex"
+    },
+    "scenarios": {},
+    "expected": {
+      "models": [],
+      "message": "Codex не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку."
+    }
+  },
+  {
+    "name": "claude-success",
+    "call": "manager",
+    "agent": {
+      "provider": "claude",
+      "model": "opus"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "  Предложить сценарий sk-abcdefgh1234  ",
+      "prompt": "Сделай план.",
+      "context": "Контекст"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          },
+          {
+            "prefix": [
+              "-p"
+            ],
+            "record": "run.json",
+            "lines": [
+              "{\"type\":\"system\",\"subtype\":\"init\",\"session_id\":\"sess-1\"}",
+              "{\"type\":\"stream_event\",\"event\":{\"delta\":{\"type\":\"text_delta\",\"text\":\"Пр\"}}}",
+              "{\"type\":\"stream_event\",\"event\":{\"delta\":{\"type\":\"text_delta\",\"text\":\"ивет api_key=SECRET\"}}}",
+              "{\"type\":\"assistant\",\"message\":{\"content\":[{\"type\":\"text\",\"text\":\"Привет\"},{\"type\":\"tool_use\",\"id\":\"t1\",\"name\":\"Read\"}]}}",
+              "{\"type\":\"user\",\"message\":{\"content\":[{\"type\":\"tool_result\"}]}}",
+              "{\"type\":\"result\",\"subtype\":\"success\",\"result\":\"Итог Bearer abc\",\"session_id\":\"sess-2\"}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "Предложить сценарий [скрыто]",
+        "model": "opus",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "4987aa2a901726d4b1a8241dc190dc6b85dcc6ecaf167375525599c424221856",
+          "context": "ec399d99497b0f9e2c2c9112c8210dffc6d78d2e0674224b22646c88c447cf5e"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "Предложить сценарий [скрыто]",
+            "model": "opus",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "4987aa2a901726d4b1a8241dc190dc6b85dcc6ecaf167375525599c424221856",
+              "context": "ec399d99497b0f9e2c2c9112c8210dffc6d78d2e0674224b22646c88c447cf5e"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Получение ответа",
+          "type": "text_delta",
+          "text": "Пр"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 3,
+          "phase": "Получение ответа",
+          "type": "text_delta",
+          "text": "ивет api_key=[скрыто]"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 4,
+          "phase": "Чтение проекта",
+          "type": "tool_started",
+          "tool": "Read"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 5,
+          "phase": "Агент выполняет задачу",
+          "type": "tool_finished",
+          "tool": "Чтение проекта"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 6,
+          "phase": "Завершено",
+          "type": "completed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 6,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "Предложить сценарий [скрыто]",
+            "model": "opus",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "4987aa2a901726d4b1a8241dc190dc6b85dcc6ecaf167375525599c424221856",
+              "context": "ec399d99497b0f9e2c2c9112c8210dffc6d78d2e0674224b22646c88c447cf5e"
+            },
+            "status": "completed",
+            "phase": "Завершено",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": 0,
+            "result": "Итог [скрыто]",
+            "log": "Агент начал работу инструмента.\nАгент завершил работу инструмента.\nЗадание завершено.\n",
+            "cliVersion": "2.1.5",
+            "sessionId": "sess-2"
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 6,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "Предложить сценарий [скрыто]",
+        "model": "opus",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "4987aa2a901726d4b1a8241dc190dc6b85dcc6ecaf167375525599c424221856",
+          "context": "ec399d99497b0f9e2c2c9112c8210dffc6d78d2e0674224b22646c88c447cf5e"
+        },
+        "status": "completed",
+        "phase": "Завершено",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": 0,
+        "result": "Итог [скрыто]",
+        "log": "Агент начал работу инструмента.\nАгент завершил работу инструмента.\nЗадание завершено.\n",
+        "cliVersion": "2.1.5",
+        "sessionId": "sess-2"
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 6,\n  \"project\": \"<project>\",\n  \"provider\": \"claude\",\n  \"task\": \"Предложить сценарий [скрыто]\",\n  \"model\": \"opus\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"4987aa2a901726d4b1a8241dc190dc6b85dcc6ecaf167375525599c424221856\",\n    \"context\": \"ec399d99497b0f9e2c2c9112c8210dffc6d78d2e0674224b22646c88c447cf5e\"\n  },\n  \"status\": \"completed\",\n  \"phase\": \"Завершено\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": 0,\n  \"result\": \"Итог [скрыто]\",\n  \"log\": \"Агент начал работу инструмента.\\nАгент завершил работу инструмента.\\nЗадание завершено.\\n\",\n  \"cliVersion\": \"2.1.5\",\n  \"sessionId\": \"sess-2\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-p",
+          "--input-format",
+          "text",
+          "--output-format",
+          "stream-json",
+          "--verbose",
+          "--include-partial-messages",
+          "--permission-mode",
+          "dontAsk",
+          "--tools",
+          "Read,Glob,Grep",
+          "--allowedTools",
+          "Read,Glob,Grep",
+          "--model",
+          "opus"
+        ],
+        "cwd": "<project>",
+        "stdin": "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nПостоянные инструкции текстовому агенту этого проекта:\nПиши кратко.\nБез эмодзи.\n\nЗадача:\nСделай план.\n\nДополнительный контекст:\nКонтекст"
+      }
+    }
+  },
+  {
+    "name": "codex-success",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\"name\":\"x\"}"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "Задача",
+      "prompt": "Промпт"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "-a"
+            ],
+            "record": "run.json",
+            "stderr": "warning: noise\n",
+            "lines": [
+              "{\"type\":\"thread.started\",\"thread_id\":\"th-1\"}",
+              "{\"type\":\"item.completed\",\"item\":{\"id\":\"m1\",\"type\":\"agent_message\",\"text\":\"Сначала\"}}",
+              "{\"type\":\"item.started\",\"item\":{\"id\":\"c1\",\"type\":\"command_execution\"}}",
+              "{\"type\":\"item.completed\",\"item\":{\"id\":\"c1\",\"type\":\"command_execution\"}}",
+              "{\"type\":\"error\",\"message\":\"Reconnecting 1/5\"}",
+              "{\"type\":\"item.completed\",\"item\":{\"id\":\"m2\",\"type\":\"agent_message\",\"text\":\"Ответ\"}}",
+              "{\"type\":\"turn.completed\"}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "Задача",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "bd9b1d1d4a18d562b5b99b43a7b360547b492bc577ac5f7acbbf7d7594e1d319",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "Задача",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "bd9b1d1d4a18d562b5b99b43a7b360547b492bc577ac5f7acbbf7d7594e1d319",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Получение ответа",
+          "type": "text_delta",
+          "text": "Сначала"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 3,
+          "phase": "Чтение проекта",
+          "type": "tool_started",
+          "tool": "command_execution"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 4,
+          "phase": "Агент выполняет задачу",
+          "type": "tool_finished",
+          "tool": "command_execution"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 5,
+          "phase": "Получение ответа",
+          "type": "text_delta",
+          "text": "\nОтвет"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 6,
+          "phase": "Завершено",
+          "type": "completed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 6,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "Задача",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "bd9b1d1d4a18d562b5b99b43a7b360547b492bc577ac5f7acbbf7d7594e1d319",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "completed",
+            "phase": "Завершено",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": 0,
+            "result": "Ответ",
+            "log": "Агент начал работу инструмента.\nАгент завершил работу инструмента.\nАгент сообщил: Reconnecting 1/5\nЗадание завершено.\n",
+            "cliVersion": "0.160.0",
+            "sessionId": "th-1"
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 6,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "Задача",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "bd9b1d1d4a18d562b5b99b43a7b360547b492bc577ac5f7acbbf7d7594e1d319",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "completed",
+        "phase": "Завершено",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": 0,
+        "result": "Ответ",
+        "log": "Агент начал работу инструмента.\nАгент завершил работу инструмента.\nАгент сообщил: Reconnecting 1/5\nЗадание завершено.\n",
+        "cliVersion": "0.160.0",
+        "sessionId": "th-1"
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 6,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"Задача\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"bd9b1d1d4a18d562b5b99b43a7b360547b492bc577ac5f7acbbf7d7594e1d319\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"completed\",\n  \"phase\": \"Завершено\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": 0,\n  \"result\": \"Ответ\",\n  \"log\": \"Агент начал работу инструмента.\\nАгент завершил работу инструмента.\\nАгент сообщил: Reconnecting 1/5\\nЗадание завершено.\\n\",\n  \"cliVersion\": \"0.160.0\",\n  \"sessionId\": \"th-1\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-a",
+          "never",
+          "exec",
+          "--json",
+          "--sandbox",
+          "read-only",
+          "--skip-git-repo-check",
+          "--color",
+          "never",
+          "-"
+        ],
+        "cwd": "<project>",
+        "stdin": "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nЗадача:\nПромпт"
+      }
+    }
+  },
+  {
+    "name": "codex-images",
+    "call": "manager",
+    "agent": {
+      "provider": "codex",
+      "model": "gpt-5"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "b.JPEG",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "Разбор",
+      "prompt": "Посмотри",
+      "images": [
+        "<images>/a.png",
+        "<images>/b.JPEG"
+      ]
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "-a"
+            ],
+            "record": "run.json",
+            "lines": [
+              "{\"type\":\"item.completed\",\"item\":{\"id\":\"m\",\"type\":\"agent_message\",\"text\":\"ok\"}}",
+              "{\"type\":\"turn.completed\"}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "Разбор",
+        "model": "gpt-5",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984",
+          "context": "5a2d20fb75d3acaf47284e6cb22cc9c0325c18bb9c2cd39b10a4371103947d51"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "Разбор",
+            "model": "gpt-5",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984",
+              "context": "5a2d20fb75d3acaf47284e6cb22cc9c0325c18bb9c2cd39b10a4371103947d51"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Получение ответа",
+          "type": "text_delta",
+          "text": "ok"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 3,
+          "phase": "Завершено",
+          "type": "completed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 3,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "Разбор",
+            "model": "gpt-5",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984",
+              "context": "5a2d20fb75d3acaf47284e6cb22cc9c0325c18bb9c2cd39b10a4371103947d51"
+            },
+            "status": "completed",
+            "phase": "Завершено",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": 0,
+            "result": "ok",
+            "log": "Задание завершено.\n",
+            "cliVersion": "0.160.0"
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 3,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "Разбор",
+        "model": "gpt-5",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984",
+          "context": "5a2d20fb75d3acaf47284e6cb22cc9c0325c18bb9c2cd39b10a4371103947d51"
+        },
+        "status": "completed",
+        "phase": "Завершено",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": 0,
+        "result": "ok",
+        "log": "Задание завершено.\n",
+        "cliVersion": "0.160.0"
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 3,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"Разбор\",\n  \"model\": \"gpt-5\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984\",\n    \"context\": \"5a2d20fb75d3acaf47284e6cb22cc9c0325c18bb9c2cd39b10a4371103947d51\"\n  },\n  \"status\": \"completed\",\n  \"phase\": \"Завершено\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": 0,\n  \"result\": \"ok\",\n  \"log\": \"Задание завершено.\\n\",\n  \"cliVersion\": \"0.160.0\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-a",
+          "never",
+          "exec",
+          "--json",
+          "--sandbox",
+          "read-only",
+          "--skip-git-repo-check",
+          "--color",
+          "never",
+          "--model",
+          "gpt-5",
+          "--image",
+          "<images>/a.png",
+          "--image",
+          "<images>/b.JPEG",
+          "-"
+        ],
+        "cwd": "<project>",
+        "stdin": "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nПостоянные инструкции текстовому агенту этого проекта:\nПиши кратко.\nБез эмодзи.\n\nЗадача:\nПосмотри"
+      }
+    }
+  },
+  {
+    "name": "claude-images",
+    "call": "manager",
+    "agent": {
+      "provider": "claude"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "Разбор",
+      "prompt": "Посмотри",
+      "context": "C",
+      "images": [
+        "<images>/a.png"
+      ]
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          },
+          {
+            "prefix": [
+              "-p"
+            ],
+            "record": "run.json",
+            "lines": [
+              "{\"type\":\"result\",\"subtype\":\"success\",\"result\":\"ok\"}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "Разбор",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984",
+          "context": "52203c6d576d6fd328e08537ec62dce873a7be30b804ca4a5b23273fca8afc17"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "Разбор",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984",
+              "context": "52203c6d576d6fd328e08537ec62dce873a7be30b804ca4a5b23273fca8afc17"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Завершено",
+          "type": "completed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "Разбор",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984",
+              "context": "52203c6d576d6fd328e08537ec62dce873a7be30b804ca4a5b23273fca8afc17"
+            },
+            "status": "completed",
+            "phase": "Завершено",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": 0,
+            "result": "ok",
+            "log": "Задание завершено.\n",
+            "cliVersion": "2.1.5"
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "Разбор",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984",
+          "context": "52203c6d576d6fd328e08537ec62dce873a7be30b804ca4a5b23273fca8afc17"
+        },
+        "status": "completed",
+        "phase": "Завершено",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": 0,
+        "result": "ok",
+        "log": "Задание завершено.\n",
+        "cliVersion": "2.1.5"
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"claude\",\n  \"task\": \"Разбор\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"036de1b00a7165fa6b6a25a292b88aead399edbee6abd7af41b0ef61eeb82984\",\n    \"context\": \"52203c6d576d6fd328e08537ec62dce873a7be30b804ca4a5b23273fca8afc17\"\n  },\n  \"status\": \"completed\",\n  \"phase\": \"Завершено\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": 0,\n  \"result\": \"ok\",\n  \"log\": \"Задание завершено.\\n\",\n  \"cliVersion\": \"2.1.5\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-p",
+          "--input-format",
+          "stream-json",
+          "--output-format",
+          "stream-json",
+          "--verbose",
+          "--include-partial-messages",
+          "--permission-mode",
+          "dontAsk",
+          "--tools",
+          "Read,Glob,Grep",
+          "--allowedTools",
+          "Read,Glob,Grep"
+        ],
+        "cwd": "<project>",
+        "stdin": "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\\n\\nПостоянные инструкции текстовому агенту этого проекта:\\nПиши кратко.\\nБез эмодзи.\\n\\nЗадача:\\nПосмотри\\n\\nДополнительный контекст:\\nC\"},{\"type\":\"image\",\"source\":{\"type\":\"base64\",\"media_type\":\"image/png\",\"data\":\"iVBORw0KGgpwbmctZGF0YQ==\"}}]},\"parent_tool_use_id\":null}\n"
+      }
+    }
+  },
+  {
+    "name": "rate-limit-exit",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "-a"
+            ],
+            "record": "run.json",
+            "stderr": "Error: rate limit exceeded",
+            "code": 1,
+            "lines": [
+              "{\"type\":\"error\",\"message\":\"Повтор   через минуту\"}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": 1,
+            "result": "",
+            "log": "Агент сообщил: Повтор через минуту\n[RATE_LIMIT] Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «Повтор через минуту»\n",
+            "cliVersion": "0.160.0",
+            "diagnostic": "RATE_LIMIT",
+            "message": "Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «Повтор через минуту»"
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": 1,
+        "result": "",
+        "log": "Агент сообщил: Повтор через минуту\n[RATE_LIMIT] Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «Повтор через минуту»\n",
+        "cliVersion": "0.160.0",
+        "diagnostic": "RATE_LIMIT",
+        "message": "Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «Повтор через минуту»"
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": 1,\n  \"result\": \"\",\n  \"log\": \"Агент сообщил: Повтор через минуту\\n[RATE_LIMIT] Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «Повтор через минуту»\\n\",\n  \"cliVersion\": \"0.160.0\",\n  \"diagnostic\": \"RATE_LIMIT\",\n  \"message\": \"Агент сообщил об ограничении использования. Проверьте лимиты аккаунта. Сообщение агента: «Повтор через минуту»\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-a",
+          "never",
+          "exec",
+          "--json",
+          "--sandbox",
+          "read-only",
+          "--skip-git-repo-check",
+          "--color",
+          "never",
+          "-"
+        ],
+        "cwd": "<project>",
+        "stdin": "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nПостоянные инструкции текстовому агенту этого проекта:\nПиши кратко.\nБез эмодзи.\n\nЗадача:\nP"
+      }
+    }
+  },
+  {
+    "name": "completion-missing",
+    "call": "manager",
+    "agent": {
+      "provider": "claude"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          },
+          {
+            "prefix": [
+              "-p"
+            ],
+            "record": "run.json",
+            "lines": [
+              "{\"type\":\"assistant\",\"message\":{\"content\":[{\"type\":\"text\",\"text\":\"частично\"}]}}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Получение ответа",
+          "type": "text_delta",
+          "text": "частично"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 3,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 3,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": 0,
+            "result": "частично",
+            "log": "[PROTOCOL_ERROR] Агент завершился без подтверждения результата.\n",
+            "cliVersion": "2.1.5",
+            "diagnostic": "PROTOCOL_ERROR",
+            "message": "Агент завершился без подтверждения результата."
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 3,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": 0,
+        "result": "частично",
+        "log": "[PROTOCOL_ERROR] Агент завершился без подтверждения результата.\n",
+        "cliVersion": "2.1.5",
+        "diagnostic": "PROTOCOL_ERROR",
+        "message": "Агент завершился без подтверждения результата."
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 3,\n  \"project\": \"<project>\",\n  \"provider\": \"claude\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": 0,\n  \"result\": \"частично\",\n  \"log\": \"[PROTOCOL_ERROR] Агент завершился без подтверждения результата.\\n\",\n  \"cliVersion\": \"2.1.5\",\n  \"diagnostic\": \"PROTOCOL_ERROR\",\n  \"message\": \"Агент завершился без подтверждения результата.\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-p",
+          "--input-format",
+          "text",
+          "--output-format",
+          "stream-json",
+          "--verbose",
+          "--include-partial-messages",
+          "--permission-mode",
+          "dontAsk",
+          "--tools",
+          "Read,Glob,Grep",
+          "--allowedTools",
+          "Read,Glob,Grep"
+        ],
+        "cwd": "<project>",
+        "stdin": "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nПостоянные инструкции текстовому агенту этого проекта:\nПиши кратко.\nБез эмодзи.\n\nЗадача:\nP"
+      }
+    }
+  },
+  {
+    "name": "notice-without-result",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "-a"
+            ],
+            "record": "run.json",
+            "lines": [
+              "{\"type\":\"item.completed\",\"item\":{\"id\":\"e\",\"type\":\"error\",\"message\":\"model not found\"}}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": 0,
+            "result": "",
+            "log": "Агент сообщил: model not found\n[CLI_ERROR] Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели. Сообщение агента: «model not found»\n",
+            "cliVersion": "0.160.0",
+            "diagnostic": "CLI_ERROR",
+            "message": "Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели. Сообщение агента: «model not found»"
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": 0,
+        "result": "",
+        "log": "Агент сообщил: model not found\n[CLI_ERROR] Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели. Сообщение агента: «model not found»\n",
+        "cliVersion": "0.160.0",
+        "diagnostic": "CLI_ERROR",
+        "message": "Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели. Сообщение агента: «model not found»"
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": 0,\n  \"result\": \"\",\n  \"log\": \"Агент сообщил: model not found\\n[CLI_ERROR] Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели. Сообщение агента: «model not found»\\n\",\n  \"cliVersion\": \"0.160.0\",\n  \"diagnostic\": \"CLI_ERROR\",\n  \"message\": \"Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели. Сообщение агента: «model not found»\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-a",
+          "never",
+          "exec",
+          "--json",
+          "--sandbox",
+          "read-only",
+          "--skip-git-repo-check",
+          "--color",
+          "never",
+          "-"
+        ],
+        "cwd": "<project>",
+        "stdin": "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nПостоянные инструкции текстовому агенту этого проекта:\nПиши кратко.\nБез эмодзи.\n\nЗадача:\nP"
+      }
+    }
+  },
+  {
+    "name": "turn-failed",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "-a"
+            ],
+            "record": "run.json",
+            "lines": [
+              "{\"type\":\"turn.failed\",\"error\":{\"message\":\"401 Unauthorized\"}}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": null,
+            "result": "",
+            "log": "[AUTH_REQUIRED] Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «401 Unauthorized»\n",
+            "cliVersion": "0.160.0",
+            "diagnostic": "AUTH_REQUIRED",
+            "message": "Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «401 Unauthorized»"
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": null,
+        "result": "",
+        "log": "[AUTH_REQUIRED] Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «401 Unauthorized»\n",
+        "cliVersion": "0.160.0",
+        "diagnostic": "AUTH_REQUIRED",
+        "message": "Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «401 Unauthorized»"
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": null,\n  \"result\": \"\",\n  \"log\": \"[AUTH_REQUIRED] Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «401 Unauthorized»\\n\",\n  \"cliVersion\": \"0.160.0\",\n  \"diagnostic\": \"AUTH_REQUIRED\",\n  \"message\": \"Агент сообщил об ошибке входа. Проверьте авторизацию в настройках. Сообщение агента: «401 Unauthorized»\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-a",
+          "never",
+          "exec",
+          "--json",
+          "--sandbox",
+          "read-only",
+          "--skip-git-repo-check",
+          "--color",
+          "never",
+          "-"
+        ],
+        "cwd": "<project>",
+        "stdin": "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nПостоянные инструкции текстовому агенту этого проекта:\nПиши кратко.\nБез эмодзи.\n\nЗадача:\nP"
+      }
+    }
+  },
+  {
+    "name": "invalid-jsonl",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "-a"
+            ],
+            "record": "run.json",
+            "lines": [
+              "not json"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": null,
+            "result": "",
+            "log": "[PROTOCOL_ERROR] Агент вернул некорректный JSONL.\n",
+            "cliVersion": "0.160.0",
+            "diagnostic": "PROTOCOL_ERROR",
+            "message": "Агент вернул некорректный JSONL."
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": null,
+        "result": "",
+        "log": "[PROTOCOL_ERROR] Агент вернул некорректный JSONL.\n",
+        "cliVersion": "0.160.0",
+        "diagnostic": "PROTOCOL_ERROR",
+        "message": "Агент вернул некорректный JSONL."
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": null,\n  \"result\": \"\",\n  \"log\": \"[PROTOCOL_ERROR] Агент вернул некорректный JSONL.\\n\",\n  \"cliVersion\": \"0.160.0\",\n  \"diagnostic\": \"PROTOCOL_ERROR\",\n  \"message\": \"Агент вернул некорректный JSONL.\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-a",
+          "never",
+          "exec",
+          "--json",
+          "--sandbox",
+          "read-only",
+          "--skip-git-repo-check",
+          "--color",
+          "never",
+          "-"
+        ],
+        "cwd": "<project>",
+        "stdin": "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nПостоянные инструкции текстовому агенту этого проекта:\nПиши кратко.\nБез эмодзи.\n\nЗадача:\nP"
+      }
+    }
+  },
+  {
+    "name": "auth-required",
+    "call": "manager",
+    "agent": {
+      "provider": "claude"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":false}",
+            "code": 1
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": null,
+            "result": "",
+            "log": "[AUTH_REQUIRED] Выполните claude auth login в терминале.\n",
+            "cliVersion": "2.1.5",
+            "diagnostic": "AUTH_REQUIRED",
+            "message": "Выполните claude auth login в терминале."
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": null,
+        "result": "",
+        "log": "[AUTH_REQUIRED] Выполните claude auth login в терминале.\n",
+        "cliVersion": "2.1.5",
+        "diagnostic": "AUTH_REQUIRED",
+        "message": "Выполните claude auth login в терминале."
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"claude\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": null,\n  \"result\": \"\",\n  \"log\": \"[AUTH_REQUIRED] Выполните claude auth login в терминале.\\n\",\n  \"cliVersion\": \"2.1.5\",\n  \"diagnostic\": \"AUTH_REQUIRED\",\n  \"message\": \"Выполните claude auth login в терминале.\"\n}\n"
+      ],
+      "record": null
+    }
+  },
+  {
+    "name": "cli-not-found",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {},
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": null,
+            "result": "",
+            "log": "[CLI_NOT_FOUND] Codex не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку.\n",
+            "diagnostic": "CLI_NOT_FOUND",
+            "message": "Codex не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку."
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": null,
+        "result": "",
+        "log": "[CLI_NOT_FOUND] Codex не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку.\n",
+        "diagnostic": "CLI_NOT_FOUND",
+        "message": "Codex не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку."
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": null,\n  \"result\": \"\",\n  \"log\": \"[CLI_NOT_FOUND] Codex не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку.\\n\",\n  \"diagnostic\": \"CLI_NOT_FOUND\",\n  \"message\": \"Codex не найден в PATH, ~/.local/bin, /usr/local/bin и /usr/bin. Установите его по официальной инструкции и повторите проверку.\"\n}\n"
+      ],
+      "record": null
+    }
+  },
+  {
+    "name": "unsupported-version",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.150.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": null,
+            "result": "",
+            "log": "[UNSUPPORTED_VERSION] Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию.\n",
+            "cliVersion": "0.150.0",
+            "diagnostic": "UNSUPPORTED_VERSION",
+            "message": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": null,
+        "result": "",
+        "log": "[UNSUPPORTED_VERSION] Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию.\n",
+        "cliVersion": "0.150.0",
+        "diagnostic": "UNSUPPORTED_VERSION",
+        "message": "Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию."
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": null,\n  \"result\": \"\",\n  \"log\": \"[UNSUPPORTED_VERSION] Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию.\\n\",\n  \"cliVersion\": \"0.150.0\",\n  \"diagnostic\": \"UNSUPPORTED_VERSION\",\n  \"message\": \"Эта версия агента не поддерживает подтверждённый контракт запуска. Обновите агента или выберите совместимую версию.\"\n}\n"
+      ],
+      "record": null
+    }
+  },
+  {
+    "name": "version-unknown",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex 1\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": null,
+            "result": "",
+            "log": "[UNSUPPORTED_VERSION] Версия Codex не распознана. Обновите его до поддерживаемой версии.\n",
+            "diagnostic": "UNSUPPORTED_VERSION",
+            "message": "Версия Codex не распознана. Обновите его до поддерживаемой версии."
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": null,
+        "result": "",
+        "log": "[UNSUPPORTED_VERSION] Версия Codex не распознана. Обновите его до поддерживаемой версии.\n",
+        "diagnostic": "UNSUPPORTED_VERSION",
+        "message": "Версия Codex не распознана. Обновите его до поддерживаемой версии."
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": null,\n  \"result\": \"\",\n  \"log\": \"[UNSUPPORTED_VERSION] Версия Codex не распознана. Обновите его до поддерживаемой версии.\\n\",\n  \"diagnostic\": \"UNSUPPORTED_VERSION\",\n  \"message\": \"Версия Codex не распознана. Обновите его до поддерживаемой версии.\"\n}\n"
+      ],
+      "record": null
+    }
+  },
+  {
+    "name": "claude-write-mode",
+    "call": "manager",
+    "agent": {
+      "provider": "claude"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": {
+      "executor": "claude"
+    },
+    "input": {
+      "project": "<project>",
+      "task": "Кандидаты",
+      "prompt": "Нарисуй"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "Кандидаты",
+        "permissions": "workspace-write",
+        "inputHashes": {
+          "prompt": "b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "Кандидаты",
+            "permissions": "workspace-write",
+            "inputHashes": {
+              "prompt": "b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "Кандидаты",
+            "permissions": "workspace-write",
+            "inputHashes": {
+              "prompt": "b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": null,
+            "result": "",
+            "log": "[UNSUPPORTED_VERSION] Выбранный агент не поддерживает штатный режим создания кандидатов.\n",
+            "cliVersion": "2.1.5",
+            "diagnostic": "UNSUPPORTED_VERSION",
+            "message": "Выбранный агент не поддерживает штатный режим создания кандидатов."
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "Кандидаты",
+        "permissions": "workspace-write",
+        "inputHashes": {
+          "prompt": "b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": null,
+        "result": "",
+        "log": "[UNSUPPORTED_VERSION] Выбранный агент не поддерживает штатный режим создания кандидатов.\n",
+        "cliVersion": "2.1.5",
+        "diagnostic": "UNSUPPORTED_VERSION",
+        "message": "Выбранный агент не поддерживает штатный режим создания кандидатов."
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"claude\",\n  \"task\": \"Кандидаты\",\n  \"permissions\": \"workspace-write\",\n  \"inputHashes\": {\n    \"prompt\": \"b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": null,\n  \"result\": \"\",\n  \"log\": \"[UNSUPPORTED_VERSION] Выбранный агент не поддерживает штатный режим создания кандидатов.\\n\",\n  \"cliVersion\": \"2.1.5\",\n  \"diagnostic\": \"UNSUPPORTED_VERSION\",\n  \"message\": \"Выбранный агент не поддерживает штатный режим создания кандидатов.\"\n}\n"
+      ],
+      "record": null
+    }
+  },
+  {
+    "name": "codex-write-mode",
+    "call": "manager",
+    "agent": null,
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": {
+      "executor": "codex",
+      "model": "  img-model "
+    },
+    "input": {
+      "project": "<project>",
+      "task": "Кандидаты",
+      "prompt": "Нарисуй",
+      "context": "Ctx"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          },
+          {
+            "prefix": [
+              "-a"
+            ],
+            "record": "run.json",
+            "lines": [
+              "{\"type\":\"item.completed\",\"item\":{\"id\":\"m\",\"type\":\"agent_message\",\"text\":\"{}\"}}",
+              "{\"type\":\"turn.completed\"}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "Кандидаты",
+        "model": "img-model",
+        "permissions": "workspace-write",
+        "inputHashes": {
+          "prompt": "b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921",
+          "context": "10bc96af1f29106e8eea3479a03b5d48b58813ee3aa795db6b8b3ee736203b12"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "Кандидаты",
+            "model": "img-model",
+            "permissions": "workspace-write",
+            "inputHashes": {
+              "prompt": "b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921",
+              "context": "10bc96af1f29106e8eea3479a03b5d48b58813ee3aa795db6b8b3ee736203b12"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Получение ответа",
+          "type": "text_delta",
+          "text": "{}"
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 3,
+          "phase": "Завершено",
+          "type": "completed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 3,
+            "project": "<project>",
+            "provider": "codex",
+            "task": "Кандидаты",
+            "model": "img-model",
+            "permissions": "workspace-write",
+            "inputHashes": {
+              "prompt": "b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921",
+              "context": "10bc96af1f29106e8eea3479a03b5d48b58813ee3aa795db6b8b3ee736203b12"
+            },
+            "status": "completed",
+            "phase": "Завершено",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": 0,
+            "result": "{}",
+            "log": "Задание завершено.\n",
+            "cliVersion": "0.160.0"
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 3,
+        "project": "<project>",
+        "provider": "codex",
+        "task": "Кандидаты",
+        "model": "img-model",
+        "permissions": "workspace-write",
+        "inputHashes": {
+          "prompt": "b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921",
+          "context": "10bc96af1f29106e8eea3479a03b5d48b58813ee3aa795db6b8b3ee736203b12"
+        },
+        "status": "completed",
+        "phase": "Завершено",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": 0,
+        "result": "{}",
+        "log": "Задание завершено.\n",
+        "cliVersion": "0.160.0"
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 3,\n  \"project\": \"<project>\",\n  \"provider\": \"codex\",\n  \"task\": \"Кандидаты\",\n  \"model\": \"img-model\",\n  \"permissions\": \"workspace-write\",\n  \"inputHashes\": {\n    \"prompt\": \"b9ab8173fc71ff6603759ad6a0008b6ace7cd94747d58c6b99d4baa7a331f921\",\n    \"context\": \"10bc96af1f29106e8eea3479a03b5d48b58813ee3aa795db6b8b3ee736203b12\"\n  },\n  \"status\": \"completed\",\n  \"phase\": \"Завершено\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": 0,\n  \"result\": \"{}\",\n  \"log\": \"Задание завершено.\\n\",\n  \"cliVersion\": \"0.160.0\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-a",
+          "never",
+          "exec",
+          "--json",
+          "--sandbox",
+          "workspace-write",
+          "--skip-git-repo-check",
+          "--color",
+          "never",
+          "--model",
+          "img-model",
+          "-"
+        ],
+        "cwd": "<workdir>",
+        "stdin": "Создай только запрошенные изображения в текущей рабочей папке кандидатов. Не изменяй материалы исходного проекта, не выполняй commit/push и не отправляй запросы сервисам генерации. Верни финальный JSON в запрошенном формате.\n\nЗадача:\nНарисуй\n\nДополнительный контекст:\nCtx"
+      }
+    }
+  },
+  {
+    "name": "nonzero-exit-after-result",
+    "call": "manager",
+    "agent": {
+      "provider": "claude"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          },
+          {
+            "prefix": [
+              "-p"
+            ],
+            "record": "run.json",
+            "code": 2,
+            "stderr": "crash",
+            "lines": [
+              "{\"type\":\"result\",\"subtype\":\"success\",\"result\":\"ok\"}"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 1,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "running",
+        "phase": "Проверка агента",
+        "startedAt": "<time>",
+        "finishedAt": null,
+        "exitCode": null,
+        "result": "",
+        "log": ""
+      },
+      "events": [
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 1,
+          "phase": "Проверка агента",
+          "type": "started",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 1,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "running",
+            "phase": "Проверка агента",
+            "startedAt": "<time>",
+            "finishedAt": null,
+            "exitCode": null,
+            "result": "",
+            "log": ""
+          }
+        },
+        {
+          "jobId": "<id1>",
+          "project": "<project>",
+          "sequence": 2,
+          "phase": "Ошибка",
+          "type": "failed",
+          "job": {
+            "schemaVersion": 1,
+            "id": "<id1>",
+            "sequence": 2,
+            "project": "<project>",
+            "provider": "claude",
+            "task": "T",
+            "permissions": "read-only",
+            "inputHashes": {
+              "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+              "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            "status": "failed",
+            "phase": "Ошибка",
+            "startedAt": "<time>",
+            "finishedAt": "<time>",
+            "exitCode": 2,
+            "result": "ok",
+            "log": "[CLI_ERROR] Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели.\n",
+            "cliVersion": "2.1.5",
+            "diagnostic": "CLI_ERROR",
+            "message": "Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели."
+          }
+        }
+      ],
+      "final": {
+        "schemaVersion": 1,
+        "id": "<id1>",
+        "sequence": 2,
+        "project": "<project>",
+        "provider": "claude",
+        "task": "T",
+        "permissions": "read-only",
+        "inputHashes": {
+          "prompt": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2",
+          "context": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "status": "failed",
+        "phase": "Ошибка",
+        "startedAt": "<time>",
+        "finishedAt": "<time>",
+        "exitCode": 2,
+        "result": "ok",
+        "log": "[CLI_ERROR] Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели.\n",
+        "cliVersion": "2.1.5",
+        "diagnostic": "CLI_ERROR",
+        "message": "Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели."
+      },
+      "history": [
+        "{\n  \"schemaVersion\": 1,\n  \"id\": \"<id1>\",\n  \"sequence\": 2,\n  \"project\": \"<project>\",\n  \"provider\": \"claude\",\n  \"task\": \"T\",\n  \"permissions\": \"read-only\",\n  \"inputHashes\": {\n    \"prompt\": \"5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2\",\n    \"context\": \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"\n  },\n  \"status\": \"failed\",\n  \"phase\": \"Ошибка\",\n  \"startedAt\": \"<time>\",\n  \"finishedAt\": \"<time>\",\n  \"exitCode\": 2,\n  \"result\": \"ok\",\n  \"log\": \"[CLI_ERROR] Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели.\\n\",\n  \"cliVersion\": \"2.1.5\",\n  \"diagnostic\": \"CLI_ERROR\",\n  \"message\": \"Агент сообщил об ошибке задания. Проверьте его настройки и доступность выбранной модели.\"\n}\n"
+      ],
+      "record": {
+        "args": [
+          "-p",
+          "--input-format",
+          "text",
+          "--output-format",
+          "stream-json",
+          "--verbose",
+          "--include-partial-messages",
+          "--permission-mode",
+          "dontAsk",
+          "--tools",
+          "Read,Glob,Grep",
+          "--allowedTools",
+          "Read,Glob,Grep"
+        ],
+        "cwd": "<project>",
+        "stdin": "Подготовь предложение для пользователя. Не изменяй файлы проекта, не выполняй commit/push, не удаляй исходники или assets и не отправляй платные запросы сервисам генерации. Правила хранения проекта описаны в его README.md.\n\nПостоянные инструкции текстовому агенту этого проекта:\nПиши кратко.\nБез эмодзи.\n\nЗадача:\nP"
+      }
+    }
+  },
+  {
+    "name": "bad-instructions",
+    "call": "manager",
+    "agent": {
+      "provider": "claude"
+    },
+    "project": {
+      "plan/project.json": "{\"agent_instructions\": 5}"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "claude": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "2.1.5 (Claude Code)\n"
+          },
+          {
+            "args": [
+              "auth",
+              "status",
+              "--json"
+            ],
+            "stdout": "{\"loggedIn\":true,\"email\":\"user@example.com\"}"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "plan/project.json: agent_instructions должен быть строкой."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "no-agent",
+    "call": "manager",
+    "agent": null,
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Сначала выберите агента в настройках."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "empty-prompt",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "  "
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Укажите проект, задачу и промпт."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "nul-task",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "a\u0000",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Укажите проект, задачу и промпт."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "relative-project",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "rel/dir",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Неверный путь или слишком большой текст задания."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "long-task",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Неверный путь или слишком большой текст задания."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "task-120-emoji",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Неверный путь или слишком большой текст задания."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "missing-project",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>/missing",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Папка проекта не найдена. Выберите её заново."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "bad-image-ext",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P",
+      "images": [
+        "<images>/a.gif"
+      ]
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Вложения должны быть существующими непустыми файлами PNG или JPEG с абсолютными путями."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "bad-image-relative",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P",
+      "images": [
+        "a.png"
+      ]
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Вложения должны быть существующими непустыми файлами PNG или JPEG с абсолютными путями."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "missing-image",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P",
+      "images": [
+        "<images>/none.png"
+      ]
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Вложения должны быть существующими непустыми файлами PNG или JPEG с абсолютными путями."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "image-wrong-signature",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P",
+      "images": [
+        "<images>/fake.png"
+      ]
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Вложения должны быть существующими непустыми файлами PNG или JPEG с абсолютными путями."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "too-many-images",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P",
+      "images": [
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png",
+        "<images>/a.png"
+      ]
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Допускается до 64 изображений, до 5 МиБ каждое и до 20 МиБ суммарно."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "retry-unknown",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "plan/project.json": "{\n  \"name\": \"Клип\",\n  \"agent_instructions\": \"Пиши кратко.\\nБез эмодзи.\"\n}\n"
+    },
+    "images": [
+      [
+        "a.png",
+        "iVBORw0KGgpwbmctZGF0YQ=="
+      ],
+      [
+        "fake.png",
+        "/9j/anBlZw=="
+      ]
+    ],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P",
+      "retryOf": "nope"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "Исходное задание для повтора недоступно."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  },
+  {
+    "name": "no-manifest",
+    "call": "manager",
+    "agent": {
+      "provider": "codex"
+    },
+    "project": {
+      "README.md": "x"
+    },
+    "images": [],
+    "imageJob": null,
+    "input": {
+      "project": "<project>",
+      "task": "T",
+      "prompt": "P"
+    },
+    "scenarios": {
+      "codex": {
+        "rules": [
+          {
+            "args": [
+              "--version"
+            ],
+            "stdout": "codex-cli 0.160.0\n"
+          },
+          {
+            "args": [
+              "login",
+              "status"
+            ],
+            "stderr": "Logged in using ChatGPT\n"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "start": {
+        "throws": {
+          "code": "INVALID_INPUT",
+          "detail": "В папке нет plan/project.json."
+        }
+      },
+      "events": [],
+      "final": null,
+      "history": [],
+      "record": null
+    }
+  }
+]

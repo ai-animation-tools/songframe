@@ -1,0 +1,14 @@
+{
+  "description": "Опоры в plan/awaiting приоритетнее plan/batches; битый workflow пропускается.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "awaiting",
+    "ValueError continue"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

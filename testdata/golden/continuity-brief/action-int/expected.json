@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 108, in <module>\n    main()\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 96, in main\n    result = brief(data, cast, args.shot, args.phase)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 70, in brief\n    text = [f\"{PHASE_TITLES[phase]} {sid} ({scene['action'][:80]}{'…' if len(scene['action']) > 80 else ''})\", \"\"]\n                                            ~~~~~~~~~~~~~~~^^^^^\nTypeError: 'int' object is not subscriptable\n",
+  "traceback": true
+}

@@ -51,7 +51,6 @@ export function ChecksPage(): ReactElement {
           checks={page.checks}
           disabled={checksReason !== null}
           disabledReason={checksReason}
-          viewsUnavailableReason={page.viewsUnavailableReason}
           strict={page.strict}
           next={page.next}
           setStrict={page.setStrict}

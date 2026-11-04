@@ -1,0 +1,13 @@
+{
+  "description": "Пакет stage accepted: опоры не считаются, текстовая карточка.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "stage accepted"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

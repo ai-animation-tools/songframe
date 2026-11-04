@@ -4,9 +4,15 @@ go 1.26.0
 
 require github.com/wailsapp/wails/v3 v3.0.0
 
-require github.com/ulikunitz/xz v0.5.17
+require (
+	github.com/ulikunitz/xz v0.5.17
+	golang.org/x/image v0.45.0
+)
 
-require gonum.org/v1/gonum v0.17.0 // indirect
+require (
+	golang.org/x/text v0.42.0 // indirect
+	gonum.org/v1/gonum v0.17.0 // indirect
+)
 
 require (
 	github.com/adrg/xdg v0.5.3 // indirect

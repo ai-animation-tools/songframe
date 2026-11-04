@@ -6,8 +6,8 @@
 //
 // Журнал повторяет оригинал: строка «$ <подпись> <аргументы>» (пишет менеджер), затем stdout и
 // stderr инструмента; причина сбоя шага — stderr, иначе stdout (после trim), иначе «Шаг … завершился
-// с кодом N.». Проверка «Карточки и списки» (update_scene_views --check) ещё не перенесена: список её
-// показывает, запуск отдельно отклоняется, а «Все проверки» выполняют только перенесённые.
+// с кодом N.». Пересборка карточек и списков (checks.updateViews) — задание вида tool с одним шагом
+// update_scene_views без --check, как в оригинале.
 package checks
 
 import (
@@ -56,19 +56,8 @@ var all = []Info{
 	{ID: Status, Label: textStatusLabel, Description: textStatusDescription, Tool: "shot_status", NeedsScenes: true},
 }
 
-// List — CHECKS: все проверки контракта, включая ещё не перенесённую; доступность запуска
-// renderer узнаёт из адаптера (frontend/src/platform/api.ts), а не из этого списка.
+// List — CHECKS: все проверки контракта в порядке оригинала.
 func List() []Info { return append([]Info(nil), all...) }
-
-// Migrated — перенесена ли проверка (её инструмент выполняется в Go).
-func Migrated(id ID) bool {
-	for _, info := range all {
-		if info.ID == id {
-			return tools.Available(info.Tool)
-		}
-	}
-	return false
-}
 
 // find — проверка по ID; неизвестный ID — ошибка вызова с текстом оригинала.
 func find(id ID) (Info, error) {
@@ -127,31 +116,32 @@ type Service struct{ jobs *jobs.Manager }
 func New(manager *jobs.Manager) *Service { return &Service{jobs: manager} }
 
 // Run — checks.run(project, id, options): одна проверка заданием «Проверка: <подпись>».
-// Неизвестная или ещё не перенесённая проверка — ошибка вызова без задания.
+// Неизвестная проверка — ошибка вызова без задания.
 func (s *Service) Run(project string, id ID, options Options) (jobs.Info, error) {
 	info, err := find(id)
 	if err != nil {
 		return jobs.Info{}, err
 	}
-	if !Migrated(id) {
-		return jobs.Info{}, errors.New(textCheckNotMigrated(info.Label))
-	}
 	return s.jobs.Start(jobs.Spec{Kind: jobs.KindCheck, Title: textCheckJobTitle(info.Label), Project: project,
 		Steps: []jobs.Step{step(project, info, options, false)}})
 }
 
-// RunAll — checks.runAll(project, options): все перенесённые проверки одним заданием «Все
-// проверки»; неудача одной не отменяет остальные, но делает задание неудачным. Отличие от
-// оригинала на время миграции: шаг «Карточки и списки» не входит, пока update_scene_views не
-// перенесён (renderer сообщает об этом под кнопкой), иначе задание всегда завершалось бы ошибкой.
+// RunAll — checks.runAll(project, options): все пять проверок одним заданием «Все проверки»;
+// неудача одной не отменяет остальные, но делает задание неудачным.
 func (s *Service) RunAll(project string, options Options) (jobs.Info, error) {
 	steps := []jobs.Step{}
 	for _, info := range all {
-		if Migrated(info.ID) {
-			steps = append(steps, step(project, info, options, true))
-		}
+		steps = append(steps, step(project, info, options, true))
 	}
 	return s.jobs.Start(jobs.Spec{Kind: jobs.KindCheck, Title: textAllChecksJobTitle, Project: project, Steps: steps})
+}
+
+// UpdateViews — checks.updateViews(project): задание «Обновление карточек и списков» вида tool с
+// одним шагом update_scene_views без аргументов (запись представлений, карточек и квитанции).
+func (s *Service) UpdateViews(project string) (jobs.Info, error) {
+	info := Info{Label: textUpdateViewsJobTitle, Tool: "update_scene_views"}
+	return s.jobs.Start(jobs.Spec{Kind: jobs.KindTool, Title: textUpdateViewsJobTitle, Project: project,
+		Steps: []jobs.Step{step(project, info, Options{}, false)}})
 }
 
 // jsTrim — String.prototype.trim причины сбоя, как в PythonLauncher оригинала: пробельные

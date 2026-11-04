@@ -1,0 +1,15 @@
+{
+  "description": "Неизвестный аргумент.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "unrecognized"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--bogus"
+  ],
+  "remove": [],
+  "mkdir": []
+}

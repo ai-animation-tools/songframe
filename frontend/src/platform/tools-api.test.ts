@@ -24,6 +24,10 @@ function bindings(tools: Record<string, unknown>): Bindings {
     scenario: missing,
     tools: async () => tools as never,
     checks: missing,
+    agents: missing,
+    ai: missing,
+    scenarioWorkflow: missing,
+    videoReview: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }

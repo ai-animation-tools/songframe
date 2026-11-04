@@ -1,0 +1,14 @@
+{
+  "description": "Одна принятая опора: без .last.png, лишний .last.png удаляется.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "len(keyframes) < 2",
+    "stale .last.png"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

@@ -24,6 +24,13 @@ import type * as status from '../../bindings/songframe-go/internal/status/models
 import type * as jobs from '../../bindings/songframe-go/internal/jobs/models';
 import type * as checks from '../../bindings/songframe-go/internal/checks/models';
 import type * as songtiming from '../../bindings/songframe-go/internal/songtiming/models';
+import type * as agentModels from '../../bindings/songframe-go/internal/agents/models';
+import type { AgentCheckResult, AgentDiagnosticCode, AgentEvent, AgentJob, AgentSettings } from '@shared/agents';
+import type * as videoReviewModels from '../../bindings/songframe-go/internal/videoreview/models';
+import type { VideoReviewFinding, VideoReviewView } from '@shared/video-review';
+import type { AiAccess } from '@shared/ai-access';
+import type * as scenarioworkflow from '../../bindings/songframe-go/internal/scenarioworkflow/models';
+import type { ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
 import { componentTexts } from '@shared/texts/component-manager';
@@ -115,6 +122,10 @@ export interface Bindings {
   scenario: () => Promise<typeof import('../../bindings/songframe-go/internal/app/scenarioservice')>;
   tools: () => Promise<typeof import('../../bindings/songframe-go/internal/app/toolsservice')>;
   checks: () => Promise<typeof import('../../bindings/songframe-go/internal/app/checksservice')>;
+  agents: () => Promise<typeof import('../../bindings/songframe-go/internal/app/agentsservice')>;
+  ai: () => Promise<typeof import('../../bindings/songframe-go/internal/app/aiservice')>;
+  scenarioWorkflow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/scenarioworkflowservice')>;
+  videoReview: () => Promise<typeof import('../../bindings/songframe-go/internal/app/videoreviewservice')>;
   events: EventSource;
 }
 
@@ -131,6 +142,10 @@ export const nativeBindings: Bindings = {
   scenario: () => import('../../bindings/songframe-go/internal/app/scenarioservice'),
   tools: () => import('../../bindings/songframe-go/internal/app/toolsservice'),
   checks: () => import('../../bindings/songframe-go/internal/app/checksservice'),
+  agents: () => import('../../bindings/songframe-go/internal/app/agentsservice'),
+  ai: () => import('../../bindings/songframe-go/internal/app/aiservice'),
+  scenarioWorkflow: () => import('../../bindings/songframe-go/internal/app/scenarioworkflowservice'),
+  videoReview: () => import('../../bindings/songframe-go/internal/app/videoreviewservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
     return { on: Events.On };
@@ -178,6 +193,13 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'checks.list',
   'checks.run',
   'checks.runAll',
+  'checks.updateViews',
+  'scenarioWorkflow.view',
+  'scenarioWorkflow.start',
+  'scenarioWorkflow.apply',
+  'scenarioWorkflow.approveCurrent',
+  'scenarioWorkflow.approveScenes',
+  'scenarioWorkflow.discard',
   'timing.save',
   'timing.vocalsView',
   'timing.downloadVocalModel',
@@ -202,7 +224,23 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'components.install',
   'components.cancelInstall',
   'components.chooseDirectory',
-  'components.chooseFile'
+  'components.chooseFile',
+  'ai.access',
+  'agents.getSettings',
+  'agents.getProviderSettings',
+  'agents.saveProviderSettings',
+  'agents.saveSettings',
+  'agents.check',
+  'agents.account',
+  'agents.models',
+  'agents.start',
+  'agents.cancel',
+  'agents.get',
+  'agents.list',
+  'agents.onEvent',
+  'videoReview.view',
+  'videoReview.start',
+  'videoReview.cancel'
 ]);
 
 /** Доступность принадлежит адаптеру, поэтому UI не повторяет собственный список готовых Go-операций. */
@@ -228,6 +266,27 @@ function toJob({ modelDownload, error, ...info }: jobs.Info): JobInfo {
   return job;
 }
 
+/**
+ * Вид сценарного прохода: проход, статус предложения и задания агента Go хранит строками,
+ * документы предложения — JSON { cast, treatment, scenes } оригинала. Необязательное message
+ * Go опускает (omitempty), поэтому оно копируется только при наличии.
+ */
+function toWorkflowView({ proposal, job, ...view }: scenarioworkflow.View): ScenarioWorkflowView {
+  let next: ScenarioProposal | null = null;
+  if (proposal) {
+    const { message, ...rest } = proposal;
+    next = {
+      ...rest,
+      pass: proposal.pass as ScenarioProposal['pass'],
+      status: proposal.status as ScenarioProposal['status'],
+      before: proposal.before as ScenarioDocuments,
+      after: proposal.after as ScenarioDocuments
+    };
+    if (message) next.message = message;
+  }
+  return { ...view, proposal: next, job: job ? (job as unknown as AgentJob) : null };
+}
+
 /** ID моделей вокала — закрытый набор KNOWN_VOCAL_MODELS; Go хранит их строкой. */
 const toVocals = (view: songtiming.VocalPreparationView): VocalPreparationView => ({
   ...view,
@@ -251,6 +310,46 @@ export function undefinedPaths(value: unknown, prefix: string[] = []): string[][
 const toSettings = (value: { agentInstructions: string; name: string; animaticVideo: string; generation: unknown }): ProjectSettings => ({
   ...value,
   generation: value.generation as GenerationSettings | null
+});
+
+/**
+ * Агент, состояние задания, права и код диагностики — закрытые наборы строк реестра и контракта;
+ * Go хранит их строкой, поэтому сужается только тип. Необязательный diagnostic Go опускает.
+ */
+const toAgentSettings = (value: agentModels.Settings): AgentSettings => ({ ...value, provider: value.provider as AgentSettings['provider'] });
+const toAgentSettingsOrNull = (value: agentModels.Settings | null): AgentSettings | null => (value === null ? null : toAgentSettings(value));
+const toAgentCheck = (value: agentModels.CheckResult): AgentCheckResult => ({
+  ...value,
+  availability: value.availability as AgentCheckResult['availability'],
+  authorization: value.authorization as AgentCheckResult['authorization']
+});
+function toAgentJob({ diagnostic, ...job }: agentModels.Job): AgentJob {
+  return {
+    ...job,
+    schemaVersion: job.schemaVersion as AgentJob['schemaVersion'],
+    provider: job.provider as AgentJob['provider'],
+    permissions: job.permissions as AgentJob['permissions'],
+    status: job.status as AgentJob['status'],
+    ...(diagnostic ? { diagnostic: diagnostic as AgentDiagnosticCode } : {})
+  };
+}
+
+/**
+ * Состояние проверки, вердикт и версия отчёта — закрытые наборы строк контракта VideoReviewView;
+ * Go хранит их строкой и числом, поэтому сужается только тип. Задание агента — общий toAgentJob.
+ */
+const toVideoReview = (view: videoReviewModels.View): VideoReviewView => ({
+  ...view,
+  status: view.status as VideoReviewView['status'],
+  job: view.job === null ? null : toAgentJob(view.job),
+  report:
+    view.report === null
+      ? null
+      : {
+          ...view.report,
+          schemaVersion: view.report.schemaVersion as 1,
+          findings: view.report.findings.map((finding) => ({ ...finding, verdict: finding.verdict as VideoReviewFinding['verdict'] }))
+        }
 });
 
 const pickOptions = (options?: PickOptions) => ({ title: options?.title ?? '', filters: options?.filters ?? [], multiple: options?.multiple ?? false });
@@ -370,14 +469,28 @@ export function createApi(b: Bindings): Api {
 
   // Перенесённые инструменты Go выполняет в процессе приложения; ToolResult повторяет код, stdout
   // и stderr процесса Python оригинала. Неперенесённое имя — ошибка Go-сервиса своим текстом.
-  api.tools.run = (project, name, args) => call('tools.run', async () => (await b.tools()).Run(project, name, args));
+  api.tools.run = (project, name, args) => call('tools.run', async () => (await b.tools()).Run(project, name, args), false);
 
   // Проверки — задания общего менеджера. CheckId Go генерирует TS enum с теми же строками, поэтому
-  // сужается только тип. Проверка «Карточки и списки», пересборка представлений и пробы ещё не
-  // перенесены: checks.run('views') Go отклоняет своим текстом, остальные методы группы недоступны.
+  // сужается только тип. Пробы стыков (buildReview, listReviews, removeReview) ещё не перенесены.
   api.checks.list = () => call('checks.list', async () => (await (await b.checks()).List()).map((info) => ({ ...info, id: info.id as CheckId })));
   api.checks.run = (project, id, options) => call('checks.run', async () => toJob(await (await b.checks()).Run(project, id as checks.ID, options ?? {})));
   api.checks.runAll = (project, options) => call('checks.runAll', async () => toJob(await (await b.checks()).RunAll(project, options ?? {})));
+  api.checks.updateViews = (project) => call('checks.updateViews', async () => toJob(await (await b.checks()).UpdateViews(project)));
+
+  // Сценарный проход агента. Go отдаёт статусы, проход и документы предложения строками и JSON
+  // оригинала; адаптер только сужает типы. Записывающие действия ждут Go без срока оболочки:
+  // start проверяет вход CLI, а apply гоняет проверки staging-копии и на клипе в 40 планов идёт
+  // около минуты — 10 с срока показывали ошибку, хотя Go успешно публиковал сценарий.
+  const workflow = async (view: Promise<scenarioworkflow.View>): Promise<ScenarioWorkflowView> => toWorkflowView(await view);
+  api.scenarioWorkflow = {
+    view: (project) => call('scenarioWorkflow.view', async () => workflow((await b.scenarioWorkflow()).View(project))),
+    start: (input) => call('scenarioWorkflow.start', async () => workflow((await b.scenarioWorkflow()).Start(input)), false),
+    apply: (project, id) => call('scenarioWorkflow.apply', async () => workflow((await b.scenarioWorkflow()).Apply(project, id)), false),
+    approveCurrent: (project) => call('scenarioWorkflow.approveCurrent', async () => workflow((await b.scenarioWorkflow()).ApproveCurrent(project)), false),
+    approveScenes: (project) => call('scenarioWorkflow.approveScenes', async () => workflow((await b.scenarioWorkflow()).ApproveScenes(project)), false),
+    discard: (project, id) => call('scenarioWorkflow.discard', async () => workflow((await b.scenarioWorkflow()).Discard(project, id)), false)
+  };
 
   api.jobs.list = () => call('jobs.list', async () => (await (await b.jobs()).List()).map(toJob));
   api.jobs.get = (id) =>
@@ -386,6 +499,54 @@ export function createApi(b: Bindings): Api {
       return info === null ? null : toJob(info);
     });
   api.jobs.copyText = (id) => call('jobs.copyText', async () => (await b.jobs()).CopyText(id));
+
+  // Диагностика, аккаунт, модели и запуск вызывают CLI (до 10 с на команду): срок ожидания оболочки
+  // не ставится, чтобы медленный CLI не показал ложную ошибку связи. Отказ Go приходит текстом
+  // «[КОД] причина», как у agents:start в Electron.
+  api.ai.access = (project) =>
+    call(
+      'ai.access',
+      async () => {
+        const access = await (await b.ai()).Access(project);
+        return { ...access, agent: { ...access.agent, provider: access.agent.provider as AiAccess['agent']['provider'] } } satisfies AiAccess;
+      },
+      false
+    );
+  api.agents.getSettings = () => call('agents.getSettings', async () => toAgentSettingsOrNull(await (await b.agents()).GetSettings()));
+  api.agents.getProviderSettings = (provider) =>
+    call('agents.getProviderSettings', async () => toAgentSettingsOrNull(await (await b.agents()).GetProviderSettings(provider)));
+  api.agents.saveProviderSettings = (settings) =>
+    call('agents.saveProviderSettings', async () => toAgentSettings(await (await b.agents()).SaveProviderSettings(settings)));
+  api.agents.saveSettings = (settings) => call('agents.saveSettings', async () => toAgentSettingsOrNull(await (await b.agents()).SaveSettings(settings)));
+  api.agents.check = (settings) => call('agents.check', async () => toAgentCheck(await (await b.agents()).Check(settings)), false);
+  api.agents.account = (settings) =>
+    call(
+      'agents.account',
+      async () => {
+        const account = await (await b.agents()).Account(settings);
+        return { ...account, provider: account.provider as AgentSettings['provider'], diagnostic: toAgentCheck(account.diagnostic) };
+      },
+      false
+    );
+  api.agents.models = (settings) => call('agents.models', async () => (await b.agents()).Models(settings), false);
+  api.agents.start = (input) => call('agents.start', async () => toAgentJob(await (await b.agents()).Start(input)), false);
+  api.agents.cancel = (id) => call('agents.cancel', async () => toAgentJob(await (await b.agents()).Cancel(id)));
+  api.agents.get = (id) =>
+    call('agents.get', async () => {
+      const job = await (await b.agents()).Get(id);
+      return job === null ? null : toAgentJob(job);
+    });
+  api.agents.list = (project) => call('agents.list', async () => (await (await b.agents()).List(project ?? null)).map(toAgentJob));
+  // Событие несёт AgentEvent контракта как есть (agents.Event в Go).
+  api.agents.onEvent = (listener) => subscribe<AgentEvent>(b.events, 'agents:event', listener);
+
+  // Запуск сначала проверяет доступ к агенту (вызов CLI до 10 с), поэтому без срока ожидания
+  // оболочки; подготовка кадров и задание агента идут в Go в фоне, состояние читается через view.
+  api.videoReview.view = (project, packageDir) => call('videoReview.view', async () => toVideoReview(await (await b.videoReview()).View(project, packageDir)));
+  api.videoReview.start = (project, packageDir) =>
+    call('videoReview.start', async () => toVideoReview(await (await b.videoReview()).Start(project, packageDir)), false);
+  api.videoReview.cancel = (project, packageDir) =>
+    call('videoReview.cancel', async () => toVideoReview(await (await b.videoReview()).Cancel(project, packageDir)));
 
   api.notifications.onOpen = (listener) => subscribe<NotificationTarget>(b.events, 'notifications:open', listener);
 

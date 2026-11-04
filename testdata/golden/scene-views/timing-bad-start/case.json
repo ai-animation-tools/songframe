@@ -1,0 +1,15 @@
+{
+  "description": "Граница части строкой не числа: InvalidOperation — трассировка.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "InvalidOperation"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--check"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Неизвестный проход.",
+  "call": "ScenarioWorkflow",
+  "project": "project",
+  "base": "checks-base",
+  "steps": [
+    {
+      "op": "start",
+      "pass": "other",
+      "error": "Неверные параметры сценарного прохода."
+    }
+  ]
+}

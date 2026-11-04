@@ -1,0 +1,7 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 214, in <module>\n    main()\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 204, in main\n    changed = update(args.check)\n              ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 99, in update\n    output = documents(sources)\n             ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/project_views/project_views.py\", line 442, in documents\n    banner.format(registry=\"../scenes.json\") + \"\\n\" + data[\"visual_direction\"].strip() + speech_view\n                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'int' object has no attribute 'strip'\n",
+  "traceback": true,
+  "cards": null
+}

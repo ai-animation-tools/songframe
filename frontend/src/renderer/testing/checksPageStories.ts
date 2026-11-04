@@ -1,7 +1,7 @@
 /**
- * Локальная модель страницы «Проверки» в состоянии Go-версии: list/run/runAll перенесены, проверка
- * «Карточки и списки», пробы стыков, среда и производство — ещё нет. Задания создаются выполняющимися
- * и завершаются при следующем опросе jobs.list, как задания общего менеджера.
+ * Локальная модель страницы «Проверки» в состоянии Go-версии: list/run/runAll и пересборка карточек
+ * (updateViews) перенесены, пробы стыков, среда и производство — ещё нет. Задания создаются
+ * выполняющимися и завершаются при следующем опросе jobs.list, как задания общего менеджера.
  */
 import type { CheckId, CheckInfo, CheckOptions, JobInfo } from '@shared/types';
 import { checksTexts } from '@shared/texts/checks';
@@ -21,7 +21,6 @@ export const CHECKS_PAGE_LIST: CheckInfo[] = [
 
 /** Методы группы, которые адаптер Go-версии пока отмечает недоступными. */
 export const CHECKS_PAGE_UNAVAILABLE: readonly ApiMethod[] = [
-  'checks.updateViews',
   'checks.buildReview',
   'checks.listReviews',
   'checks.removeReview',
@@ -32,6 +31,7 @@ export const CHECKS_PAGE_UNAVAILABLE: readonly ApiMethod[] = [
 interface ChecksPageInspection {
   runs: { id: CheckId; options: CheckOptions | undefined }[];
   runAll: (CheckOptions | undefined)[];
+  updateViews: number;
 }
 let activeInspection: (() => ChecksPageInspection) | null = null;
 
@@ -50,17 +50,17 @@ export function checksPageOptions({ failing = [] }: { failing?: readonly CheckId
       state: { packaged: false, problems: [], toolsRoot: null, localDir: '/mock/state', current: CHECKS_PAGE_PROJECT, history: [], platform: 'linux' }
     },
     createApi: () => {
-      const inspection: ChecksPageInspection = { runs: [], runAll: [] };
+      const inspection: ChecksPageInspection = { runs: [], runAll: [], updateViews: 0 };
       activeInspection = () => inspection;
       const jobs: JobInfo[] = [];
       const pending = new Set<string>();
       let counter = 0;
-      const start = (title: string, checks: CheckInfo[]): JobInfo => {
+      const start = (title: string, checks: CheckInfo[], kind: JobInfo['kind'] = 'check'): JobInfo => {
         counter += 1;
         const job: JobInfo = {
           id: `check-${counter}`,
           project: CHECKS_PAGE_PROJECT,
-          kind: 'check',
+          kind,
           title,
           status: 'running',
           startedAt: '2026-11-04T12:00:00.000Z',
@@ -99,10 +99,15 @@ export function checksPageOptions({ failing = [] }: { failing?: readonly CheckId
           },
           runAll: async (_project, options) => {
             inspection.runAll.push(options);
-            // Go выполняет только перенесённые проверки: шага «Карточки и списки» в задании нет.
+            return start(checksTexts.allChecksJobTitle, CHECKS_PAGE_LIST);
+          },
+          // Пересборка — задание вида tool с одним шагом update_scene_views без --check, как у Go-сервиса.
+          updateViews: async () => {
+            inspection.updateViews += 1;
             return start(
-              checksTexts.allChecksJobTitle,
-              CHECKS_PAGE_LIST.filter((check) => check.id !== 'views')
+              checksTexts.updateViewsJobTitle,
+              [{ ...CHECKS_PAGE_LIST.find((check) => check.id === 'views')!, label: checksTexts.updateViewsJobTitle }],
+              'tool'
             );
           }
         },

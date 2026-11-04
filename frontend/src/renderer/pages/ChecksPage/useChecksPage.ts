@@ -33,7 +33,6 @@ export function useChecksPage() {
   const reviewsAvailable = useMethodAvailability('checks.listReviews').available;
   const environmentAvailable = useMethodAvailability('environment.check').available;
   const productionAvailable = useMethodAvailability('production.view').available;
-  const viewsAvailability = useMethodAvailability('checks.updateViews');
   const loadReviews = useCallback(async () => {
     if (reviewsAvailable) setReviews(await window.api.checks.listReviews(project));
   }, [project, reviewsAvailable]);
@@ -167,8 +166,6 @@ export function useChecksPage() {
     deletingReview,
     running,
     scenesReady,
-    /** Причина, по которой проверка «Карточки и списки» и пересборка карточек пока недоступны. */
-    viewsUnavailableReason: viewsAvailability.available ? null : (viewsAvailability.reason ?? ''),
     setStrict,
     setNext,
     setPlanOnly,

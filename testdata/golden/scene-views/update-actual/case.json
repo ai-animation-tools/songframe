@@ -1,0 +1,13 @@
+{
+  "description": "Образец: обновление — 0 представлений.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Обновлено представлений: 0."
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,6 @@
+{
+  "code": 0,
+  "stdout": "usage: continuity_brief.py [-h] [--phase {before,after}] [--json]\n                           [--paragraph]\n                           shot\n\nВрезка непрерывности и чек-лист для плана.\n\npositional arguments:\n  shot                  Код плана, например M37\n\noptions:\n  -h, --help            show this help message and exit\n  --phase {before,after}\n  --json\n  --paragraph           Только абзац для вставки в промпт\n",
+  "stderr": "",
+  "traceback": false
+}

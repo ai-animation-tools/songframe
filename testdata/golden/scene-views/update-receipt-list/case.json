@@ -1,0 +1,13 @@
+{
+  "description": "Квитанция-список: перерисовка и запись.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "receipt"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

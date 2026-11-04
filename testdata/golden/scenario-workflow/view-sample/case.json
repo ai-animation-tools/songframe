@@ -1,0 +1,25 @@
+{
+  "description": "Вид образца без локальной записи.",
+  "call": "ScenarioWorkflow",
+  "project": "project",
+  "base": "checks-base",
+  "steps": [
+    {
+      "op": "view",
+      "view": {
+        "project": "<project>",
+        "busy": false,
+        "canStartTreatment": true,
+        "canStartScenes": false,
+        "canRevise": false,
+        "canApproveScenes": false,
+        "canApproveCurrent": true,
+        "treatmentApproved": false,
+        "scenesNeedReview": false,
+        "problems": [],
+        "proposal": null,
+        "job": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "description": "Разметка: float, 1e-07, примечания с | и пробелами, нет source_line.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "clock(str())",
+    "cell"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

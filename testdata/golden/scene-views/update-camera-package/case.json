@@ -1,0 +1,14 @@
+{
+  "description": "Правка камеры принятого M01: запись.",
+  "call": "update_scene_views",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Постановка изменена",
+    "README комплекта"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "shot": "M01",
+  "kind": "generated_video",
+  "accepted_edit": {
+    "video": {
+      "path": "video.mp4",
+      "sha256": "9e81541c4931ca4aa5ce5100f383f95539e83fe63b4de62ca5f1c2c384483f27",
+      "bytes": 21542
+    },
+    "fps": 30,
+    "frames": 240,
+    "duration_seconds": 8.0,
+    "source_interval_seconds": [
+      0.0,
+      8.0
+    ],
+    "source_interval_end_exclusive": true,
+    "source_frame_grid_fps": 30,
+    "still_source_time_seconds": null,
+    "speed": {
+      "factor": 1.0,
+      "ratio": "1",
+      "selected_source_seconds": 8.0,
+      "motion_output_seconds": 8.0,
+      "duration_change_seconds": 0.0
+    },
+    "hold_first_seconds": 0.0,
+    "hold_last_seconds": 0.0,
+    "audio_policy": "Звук генератора сохранён в оригинале; в монтаже используется непрерывная исходная песня.",
+    "montage_source": {
+      "path": "video.mp4",
+      "sha256": "9e81541c4931ca4aa5ce5100f383f95539e83fe63b4de62ca5f1c2c384483f27",
+      "bytes": 21542
+    },
+    "rebuild": {
+      "stages": [
+        {
+          "input": "original.mp4",
+          "filter": "fps=30,trim=start_frame=0:end_frame=240,setpts=(PTS-STARTPTS)/1,fps=30,tpad=stop_mode=clone:stop=1,trim=end_frame=240,setpts=N/(30*TB),scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p,tpad=start_mode=clone:start=0:stop_mode=clone:stop=0,settb=1/30",
+          "frames": 240
+        }
+      ],
+      "source": {
+        "path": "original.mp4",
+        "sha256": "1df54312d91d70a9fe53c5a20652310599de24c20403ffbf6ce40942224bf608",
+        "bytes": 18704
+      },
+      "ffmpeg_version": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
+      "note": "Принятые байты восстанавливаются копированием video; повтор фильтров сохраняет монтаж, но не обещает побайтово одинаковое перекодирование."
+    },
+    "source_frame_interval_exclusive": [
+      0,
+      240
+    ],
+    "source_fps": "24/1",
+    "fps_conversion": "Выбор кадров без интерполяции движения."
+  }
+}

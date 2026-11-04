@@ -12,16 +12,16 @@ import (
 // PythonLauncher оригинала (renderer получает отказ вызова, а не ToolResult).
 func TestRunRejectsName(t *testing.T) {
 	for name, want := range map[string]string{
-		"../scene_scaffold":  "Недопустимое имя инструмента: ../scene_scaffold",
-		"SceneScaffold":      "Недопустимое имя инструмента: SceneScaffold",
-		"":                   "Недопустимое имя инструмента: ",
-		"update_scene_views": "Инструмент update_scene_views ещё не перенесён в Go-версию SongFrame.",
+		"../scene_scaffold": "Недопустимое имя инструмента: ../scene_scaffold",
+		"SceneScaffold":     "Недопустимое имя инструмента: SceneScaffold",
+		"":                  "Недопустимое имя инструмента: ",
+		"build_animatic":    "Инструмент build_animatic ещё не перенесён в Go-версию SongFrame.",
 	} {
 		if _, err := tools.Run(t.TempDir(), name, nil); err == nil || err.Error() != want {
 			t.Errorf("%q: ожидалось %q, получено %v", name, want, err)
 		}
 	}
-	if !tools.Available("scene_scaffold") || !tools.Available("shot_status") || tools.Available("update_scene_views") {
+	if !tools.Available("scene_scaffold") || !tools.Available("shot_status") || tools.Available("build_animatic") {
 		t.Error("Available не соответствует реестру перенесённых инструментов")
 	}
 }

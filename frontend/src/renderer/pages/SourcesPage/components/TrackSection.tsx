@@ -1,9 +1,10 @@
 import { sourcesTexts } from '@shared/texts/sources';
 /** Текущий MP3 и выбор его замены. */
 import type { ReactElement } from 'react';
-import { Chip, Paper, Typography } from '@mui/material';
+import { Box, Chip, Paper, Typography } from '@mui/material';
 import type { SourceManifest } from '@shared/types';
 import { formatBytes, formatDuration } from '../../../format';
+import { AudioPlayer } from '../../../components/AudioPlayer';
 import { FileDropZone } from '../../../components/FileDropZone';
 
 interface Props {
@@ -27,7 +28,9 @@ export function TrackSection({ track, trackNew, fileUrl, onPick, onClear, onDrop
           <Typography variant="body2" color="text.secondary">
             {track.original_name} · {formatBytes(track.bytes)} · {formatDuration(track.duration_seconds)}
           </Typography>
-          <audio controls preload="none" src={fileUrl(track.path)} style={{ width: '100%', marginTop: 12, marginBottom: 12 }} />
+          <Box sx={{ my: 1.5 }}>
+            <AudioPlayer src={fileUrl(track.path)} duration={track.duration_seconds ?? undefined} />
+          </Box>
         </>
       ) : null}
       {!track && !trackNew ? (

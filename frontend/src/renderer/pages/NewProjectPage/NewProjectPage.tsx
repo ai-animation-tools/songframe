@@ -1,11 +1,14 @@
-/** Создание проекта: название, полный путь новой папки, имя MP4; папка создаётся из шаблона, Git используется при наличии. */
+/**
+ * Создание проекта: название, полный путь новой папки, имя MP4; папка создаётся из шаблона, Git используется при наличии.
+ * Отличие от 634fd94: шаблон встроен в Go-приложение (50.1), поэтому создание не зависит от корня комплекса (toolsRoot).
+ */
 
 import { projectsTexts } from '@shared/texts/projects';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Stack, Typography } from '@mui/material';
+import { Button, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import { ActionButton } from '../../components/ActionButton';
@@ -13,10 +16,9 @@ import { PageActionBar } from '../../components/PageActionBar';
 import { useApp } from '../../state';
 import { NewProjectForm } from './components';
 import { useNewProjectForm } from './useNewProjectForm';
-import { LinkedText } from '../../components/LinkedText';
 
 export function NewProjectPage(): ReactElement {
-  const { refresh, notify, describeError, state } = useApp();
+  const { refresh, notify, describeError } = useApp();
   const navigate = useNavigate();
   const form = useNewProjectForm(describeError);
   const [busy, setBusy] = useState(false);
@@ -41,15 +43,13 @@ export function NewProjectPage(): ReactElement {
   const { name, path } = form.values;
   const createReason = busy
     ? projectsTexts.creating
-    : !state?.toolsRoot
-      ? projectsTexts.resourcesMissing
-      : !name.trim()
-        ? projectsTexts.nameRequired
-        : !path.trim()
-          ? projectsTexts.folderRequired
-          : form.problems.length
-            ? projectsTexts.formProblems
-            : projectsTexts.validating;
+    : !name.trim()
+      ? projectsTexts.nameRequired
+      : !path.trim()
+        ? projectsTexts.folderRequired
+        : form.problems.length
+          ? projectsTexts.formProblems
+          : projectsTexts.validating;
 
   return (
     <Stack spacing={2} inert={busy || undefined} aria-busy={busy} sx={{ width: '100%', minWidth: 0 }}>
@@ -60,22 +60,10 @@ export function NewProjectPage(): ReactElement {
         <Button startIcon={<CloseIcon />} onClick={() => navigate('/projects')}>
           {commonTexts.cancel}
         </Button>
-        <ActionButton
-          variant="contained"
-          color="success"
-          startIcon={<AddIcon />}
-          disabled={!form.ready || busy || !state?.toolsRoot}
-          disabledReason={createReason}
-          onClick={create}
-        >
+        <ActionButton variant="contained" color="success" startIcon={<AddIcon />} disabled={!form.ready || busy} disabledReason={createReason} onClick={create}>
           {commonTexts.create}
         </ActionButton>
       </PageActionBar>
-      {!state?.toolsRoot ? (
-        <Alert severity="error">
-          <LinkedText text={projectsTexts.templateUnavailable} />
-        </Alert>
-      ) : null}
       <NewProjectForm {...form} />
       <Typography variant="body2" color="text.secondary">
         {projectsTexts.afterCreation}

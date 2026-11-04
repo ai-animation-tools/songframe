@@ -1,0 +1,10 @@
+{
+  "description": "Путь не существует.",
+  "call": "viewCast",
+  "project": null,
+  "covers": [
+    "cast=null",
+    "manifest=null"
+  ],
+  "stubbedMedia": []
+}

@@ -79,6 +79,12 @@ export function TimingLyricsEditor({
   const filter = controlledFilter ?? localFilter;
   const setFilter = onFilterChange ?? setLocalFilter;
   const [dragged, setDragged] = useState<number | null>(null);
+  // Строка под курсором во время перетаскивания: на ней рисуется линия места вставки.
+  const [over, setOver] = useState<number | null>(null);
+  const endDrag = (): void => {
+    setDragged(null);
+    setOver(null);
+  };
   const visible = visibleEditorRows(rows, filter);
   const source = new Map(lyrics.map((line) => [line.number, line]));
   const proposed = new Map(candidates.map((line) => [line.source_line, line]));
@@ -149,20 +155,45 @@ export function TimingLyricsEditor({
             const timed = Number.isFinite(line.start) && Number.isFinite(line.end);
             const active = selected === line.id;
             const highlighted = active || selectedIds.includes(line.id);
+            // moveEditorLine ставит строку на место цели: при движении вниз — после неё, вверх — перед ней.
+            const insert =
+              dragged !== null && over === line.source_line && dragged !== over ? (order.indexOf(dragged) < order.indexOf(over) ? 'after' : 'before') : null;
             return (
               <Box
                 component="li"
                 key={line.source_line}
-                sx={{ listStyle: 'none' }}
+                sx={{
+                  listStyle: 'none',
+                  position: 'relative',
+                  opacity: dragged === line.source_line ? 0.5 : undefined,
+                  // Линия места вставки поверх содержимого строки, чтобы её не перекрывали фон и разделитель.
+                  '&::after': insert
+                    ? {
+                        content: '""',
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        height: 3,
+                        bgcolor: 'primary.main',
+                        pointerEvents: 'none',
+                        zIndex: 1,
+                        ...(insert === 'before' ? { top: 0 } : { bottom: 0 })
+                      }
+                    : undefined
+                }}
                 data-source-line={line.source_line}
+                data-drop-position={insert ?? undefined}
                 onDragOver={(event) => {
-                  if (filter === 'all') event.preventDefault();
+                  if (filter !== 'all') return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'move';
+                  if (dragged !== null && over !== line.source_line) setOver(line.source_line);
                 }}
                 onDrop={(event) => {
                   event.preventDefault();
                   const from = dragged ?? Number(event.dataTransfer.getData('text/plain'));
                   if (filter === 'all' && Number.isFinite(from)) onOrder(moveEditorLine(order, from, line.source_line));
-                  setDragged(null);
+                  endDrag();
                 }}
               >
                 {section && (
@@ -183,8 +214,11 @@ export function TimingLyricsEditor({
                             setDragged(line.source_line);
                             event.dataTransfer.effectAllowed = 'move';
                             event.dataTransfer.setData('text/plain', String(line.source_line));
+                            // Под курсором видна вся строка, а не только значок перетаскивания.
+                            const row = event.currentTarget.closest('li');
+                            if (row) event.dataTransfer.setDragImage(row, 16, 16);
                           }}
-                          onDragEnd={() => setDragged(null)}
+                          onDragEnd={endDrag}
                           onKeyDown={(event) => {
                             if (!event.altKey || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
                             event.preventDefault();

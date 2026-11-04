@@ -1,0 +1,9 @@
+{
+  "description": "Имя MP4 с путём и кириллицей.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "animaticFilenameInvalid"
+  ],
+  "stubbedMedia": []
+}

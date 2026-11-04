@@ -1,0 +1,9 @@
+{
+  "description": "project.json — массив.",
+  "call": "readProjectSettings",
+  "project": "project",
+  "covers": [
+    "projectObjectRequired"
+  ],
+  "stubbedMedia": []
+}

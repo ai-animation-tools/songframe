@@ -1,0 +1,13 @@
+{
+  "error": null,
+  "result": {
+    "agentInstructions": "",
+    "name": "Шаблон",
+    "animaticVideo": "shablon-animatic.mp4",
+    "generation": {
+      "video": null,
+      "image": null
+    }
+  },
+  "fileUnchanged": true
+}

@@ -17,6 +17,7 @@ import (
 	"songframe-go/internal/jobs"
 	"songframe-go/internal/media"
 	"songframe-go/internal/project"
+	"songframe-go/internal/scenarioapply"
 	"songframe-go/internal/store"
 )
 
@@ -88,6 +89,17 @@ func run() error {
 		return err
 	}
 	projects := shell.NewProjectService(mediaServer, profilePath)
+	// Публикации сценария: шлюз записи видит их журнал в каталоге состояния, а прерванные
+	// публикации восстанавливаются до открытия окна. Сбой не мешает запуску: текущий проект
+	// снимается, запись в него запрещена, пока восстановление при открытии не завершится.
+	scenarioJournal := scenarioapply.NewStore(profilePath)
+	scenarioJournal.RegisterWriteCheck()
+	if err := scenarioJournal.RecoverAll(); err != nil {
+		log.Print(err)
+		if closeErr := projects.Close(); closeErr != nil {
+			log.Print(closeErr)
+		}
+	}
 	componentManager, err := components.NewManager(profilePath)
 	if err != nil {
 		return err
@@ -115,12 +127,14 @@ func run() error {
 			return err
 		}
 	}
-	service := shell.NewAppService(profile, true, ready)
+	service := shell.NewAppService(profile, mediaServer, true, ready)
 	files := shell.NewShellService(mediaServer, func(path string) error { return desktop.Browser.OpenFile(path) })
 	services := []application.Service{
 		application.NewService(service), application.NewService(files), application.NewService(projects),
 		application.NewService(native), application.NewService(componentService), application.NewService(shell.NewJobsService(jobManager)),
-		application.NewService(shell.NewTimingService()),
+		application.NewService(shell.NewTimingService(jobManager, componentManager, componentService, profilePath)),
+		application.NewService(shell.NewSourcesService(ffprobePath(componentManager))),
+		application.NewService(shell.NewCastService()), application.NewService(shell.NewScenarioService()),
 	}
 	var nativeCheck *shell.NativeCheckService
 	windowURL := "/"
@@ -184,4 +198,17 @@ func run() error {
 		return fmt.Errorf("проверка запуска оболочки не пройдена")
 	}
 	return nil
+}
+
+// ffprobePath отдаёт сервису исходников найденный ffprobe (выбранный, управляемый или из PATH)
+// для длительности нового трека. Обнаружение — только stat/LookPath; без FFmpeg длительность null.
+func ffprobePath(manager *components.Manager) func() string {
+	return func() string {
+		for _, component := range manager.State().Components {
+			if component.ID == "ffmpeg" {
+				return component.Paths["ffprobe"]
+			}
+		}
+		return ""
+	}
 }

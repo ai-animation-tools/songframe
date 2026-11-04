@@ -1,0 +1,22 @@
+{
+  "shots": [
+    {
+      "id": "M01",
+      "reason": "сдвинуты границы плана",
+      "state": "completed",
+      "produced": true
+    },
+    {
+      "id": "M02",
+      "reason": "сдвинуты границы плана",
+      "state": "completed",
+      "produced": true
+    },
+    {
+      "id": "M03",
+      "reason": "собирается из материала M01",
+      "state": "progress",
+      "produced": true
+    }
+  ]
+}

@@ -80,7 +80,10 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
             <Route index element={<HomeRedirect />} />
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="projects/new" element={migrated(navigationTexts.pages.newProject, ['projects.create'], <NewProjectPage />)} />
-            <Route path="project" element={<RequireProject>{migrated(navigationTexts.pages.project, ['dashboard.view'], <ProjectPage />)}</RequireProject>} />
+            <Route
+              path="project"
+              element={<RequireProject>{migrated(navigationTexts.pages.project, ['projects.settings'], <ProjectPage />)}</RequireProject>}
+            />
             <Route
               path="project/sources"
               element={<RequireProject>{migrated(navigationTexts.pages.sources, ['sources.view'], <SourcesPage />)}</RequireProject>}

@@ -1,0 +1,32 @@
+{
+  "error": null,
+  "status": {
+    "path": "<base>/Клипы и песни/Огород",
+    "state": "empty",
+    "name": "Огород",
+    "animaticVideo": "animatic.mp4",
+    "checks": {
+      "marker": true,
+      "sources": false,
+      "timing": false,
+      "cast": false,
+      "treatment": false,
+      "scenes": false,
+      "shotsTotal": 0,
+      "shotsDone": 0,
+      "animaticBuilt": false,
+      "animaticFresh": false,
+      "animaticApproved": false
+    },
+    "problems": []
+  },
+  "state": {
+    "current": "<base>/Клипы и песни/Огород",
+    "history": [
+      {
+        "path": "<base>/Клипы и песни/Огород",
+        "name": "Огород"
+      }
+    ]
+  }
+}

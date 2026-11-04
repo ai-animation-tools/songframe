@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "current_animatic": null,
+  "current_animatic_status": "none",
+  "shots": {
+    "M01": {
+      "scene_sha256": "d84524d2ad948365c38b7409b8877820049aa70587ecbf680d40aa616d81575c"
+    },
+    "M02": {
+      "scene_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "note": "принят"
+    }
+  }
+}

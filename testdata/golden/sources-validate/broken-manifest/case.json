@@ -1,0 +1,9 @@
+{
+  "description": "Битая опись считается отсутствующей.",
+  "call": "validateSources",
+  "project": "project",
+  "covers": [
+    "readManifest null"
+  ],
+  "stubbedMedia": []
+}

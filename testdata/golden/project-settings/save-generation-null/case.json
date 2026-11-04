@@ -1,0 +1,9 @@
+{
+  "description": "generation: null из формы очищает объект в файле.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "generation: null"
+  ],
+  "stubbedMedia": []
+}

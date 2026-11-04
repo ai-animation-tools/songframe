@@ -140,6 +140,14 @@ func (c Case) CopyProject(t testing.TB) string {
 	if !c.HasProject() {
 		return target
 	}
+	// Git не хранит пустые каталоги: пустой входной проект (например, папка без маркера)
+	// восстанавливается пустой папкой, а не .gitkeep, который стал бы лишним файлом входа.
+	if _, err := os.Stat(c.ProjectPath()); errors.Is(err, fs.ErrNotExist) {
+		if err := os.Mkdir(target, 0o755); err != nil {
+			t.Fatalf("пустой проект %s/%s: %v", c.Domain, c.Name, err)
+		}
+		return target
+	}
 	if err := copyTree(c.ProjectPath(), target); err != nil {
 		t.Fatalf("копия проекта %s/%s: %v", c.Domain, c.Name, err)
 	}

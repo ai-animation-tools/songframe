@@ -1,0 +1,9 @@
+{
+  "description": "Нет plan/project.json.",
+  "call": "Projects.rename",
+  "project": "project",
+  "covers": [
+    "invalidMarker (нет файла)"
+  ],
+  "stubbedMedia": []
+}

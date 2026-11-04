@@ -5,9 +5,24 @@
  * wire.Fill на стороне Go. Методы, ещё не перенесённые в Go, явно отвергаются с кодом UNAVAILABLE.
  */
 import type { Api } from '@shared/api';
-import type { AppState, JobInfo, JobStepInfo, PickOptions, ProjectStatus, TimingFile } from '@shared/types';
+import type {
+  AppState,
+  BriefResult,
+  GenerationSettings,
+  JobInfo,
+  JobStepInfo,
+  PickOptions,
+  ProjectSettings,
+  ProjectStatus,
+  ScenarioImpactShot,
+  SourceManifest,
+  TimingFile
+} from '@shared/types';
+import type { ScenarioStatus } from '@shared/scenario-status';
 import type * as status from '../../bindings/songframe-go/internal/status/models';
 import type * as jobs from '../../bindings/songframe-go/internal/jobs/models';
+import type * as songtiming from '../../bindings/songframe-go/internal/songtiming/models';
+import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
 import { componentTexts } from '@shared/texts/component-manager';
 import { platformTexts } from '@shared/texts/platform';
@@ -93,6 +108,9 @@ export interface Bindings {
   jobs: () => Promise<typeof import('../../bindings/songframe-go/internal/app/jobsservice')>;
   projects: () => Promise<typeof import('../../bindings/songframe-go/internal/app/projectservice')>;
   timing: () => Promise<typeof import('../../bindings/songframe-go/internal/app/timingservice')>;
+  sources: () => Promise<typeof import('../../bindings/songframe-go/internal/app/sourcesservice')>;
+  cast: () => Promise<typeof import('../../bindings/songframe-go/internal/app/castservice')>;
+  scenario: () => Promise<typeof import('../../bindings/songframe-go/internal/app/scenarioservice')>;
   events: EventSource;
 }
 
@@ -104,6 +122,9 @@ export const nativeBindings: Bindings = {
   jobs: () => import('../../bindings/songframe-go/internal/app/jobsservice'),
   projects: () => import('../../bindings/songframe-go/internal/app/projectservice'),
   timing: () => import('../../bindings/songframe-go/internal/app/timingservice'),
+  sources: () => import('../../bindings/songframe-go/internal/app/sourcesservice'),
+  cast: () => import('../../bindings/songframe-go/internal/app/castservice'),
+  scenario: () => import('../../bindings/songframe-go/internal/app/scenarioservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
     return { on: Events.On };
@@ -124,10 +145,39 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'diagnostics.saveReport',
   'notifications.onOpen',
   'projects.open',
+  'projects.create',
+  'projects.validateNew',
   'projects.status',
+  'projects.rename',
   'projects.close',
   'projects.forget',
+  'projects.settings',
+  'projects.saveSettings',
+  'sources.view',
+  'sources.validate',
+  'sources.save',
   'timing.view',
+  'cast.view',
+  'cast.init',
+  'cast.save',
+  'scenario.status',
+  'scenario.view',
+  'scenario.saveTreatment',
+  'scenario.validateTreatment',
+  'scenario.saveScenes',
+  'scenario.saveImpact',
+  'scenario.validateScenes',
+  'scenario.brief',
+  'timing.save',
+  'timing.vocalsView',
+  'timing.downloadVocalModel',
+  'timing.separateVocals',
+  'timing.selectVocal',
+  'timing.deleteVocal',
+  'timing.songModelSetup',
+  'timing.downloadSongModels',
+  'timing.start',
+  'timing.cancel',
   'jobs.list',
   'jobs.get',
   'jobs.copyText',
@@ -168,8 +218,30 @@ function toJob({ modelDownload, error, ...info }: jobs.Info): JobInfo {
   return job;
 }
 
+/** ID моделей вокала — закрытый набор KNOWN_VOCAL_MODELS; Go хранит их строкой. */
+const toVocals = (view: songtiming.VocalPreparationView): VocalPreparationView => ({
+  ...view,
+  models: view.models.map((model) => ({ ...model, id: model.id as VocalModelId })),
+  results: view.results.map((result) => ({ ...result, modelId: result.modelId as VocalModelId }))
+});
+
 /** Состояние проекта — закрытый набор строк computeStatus; Go хранит его строкой. */
 const toStatus = (value: status.ProjectStatus): ProjectStatus => ({ ...value, state: value.state as ProjectStatus['state'] });
+
+/**
+ * Пути ключей generation со значением undefined. Electron IPC передавал такие ключи, и запись
+ * удаляла поле (сброс модели или разрешения); JSON-мост их теряет, поэтому Go получает их списком.
+ */
+export function undefinedPaths(value: unknown, prefix: string[] = []): string[][] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  return Object.entries(value).flatMap(([key, item]) => (item === undefined ? [[...prefix, key]] : undefinedPaths(item, [...prefix, key])));
+}
+
+/** generation — блок plan/project.json как есть (json.RawMessage), null — блока нет или он не объект. */
+const toSettings = (value: { agentInstructions: string; name: string; animaticVideo: string; generation: unknown }): ProjectSettings => ({
+  ...value,
+  generation: value.generation as GenerationSettings | null
+});
 
 const pickOptions = (options?: PickOptions) => ({ title: options?.title ?? '', filters: options?.filters ?? [], multiple: options?.multiple ?? false });
 
@@ -222,12 +294,68 @@ export function createApi(b: Bindings): Api {
   api.projects.status = (path) => call('projects.status', async () => toStatus(await (await b.projects()).Status(path)));
   api.projects.close = () => call('projects.close', async () => (await b.projects()).Close());
   api.projects.forget = (path) => call('projects.forget', async () => (await b.projects()).Forget(path));
+  // Создание копирует шаблон и запускает git init: длительность зависит от диска, срок ожидания не ставится.
+  api.projects.create = (input) => call('projects.create', async () => toStatus(await (await b.projects()).Create(input)), false);
+  api.projects.validateNew = (input) => call('projects.validateNew', async () => (await b.projects()).ValidateNew(input));
+  api.projects.rename = (path, name) => call('projects.rename', async () => toStatus(await (await b.projects()).Rename(path, name)));
+  api.projects.settings = (project) => call('projects.settings', async () => toSettings(await (await b.projects()).Settings(project)));
+  api.projects.saveSettings = (project, settings) =>
+    call('projects.saveSettings', async () =>
+      toSettings(await (await b.projects()).SaveSettings(project, { ...settings, unset: undefinedPaths(settings.generation) }))
+    );
+
+  api.sources.view = (project) =>
+    call('sources.view', async () => {
+      const view = await (await b.sources()).View(project);
+      // manifest — source/manifest.json как есть (json.RawMessage) или null для непригодной описи.
+      return { ...view, manifest: view.manifest as SourceManifest | null };
+    });
+  api.sources.validate = (project, input) => call('sources.validate', async () => (await b.sources()).Validate(project, input));
+  // Сохранение копирует трек и изображения: ожидание не ограничено, чтобы не показать ложную ошибку.
+  api.sources.save = (project, input) => call('sources.save', async () => (await (await b.sources()).Save(project, input)) as SourceManifest, false);
 
   api.timing.view = (project) =>
     call('timing.view', async () => {
       const view = await (await b.timing()).View(project);
       // timing — plan/audio/timing.json как есть (json.RawMessage); как viewTiming, Go отдаёт null при непригодной структуре.
       return { ...view, timing: view.timing as TimingFile | null };
+    });
+  // Документ разметки передаётся как JSON без изменения неизвестных полей (json.RawMessage в Go).
+  api.timing.save = (project, timing) => call('timing.save', async () => (await (await b.timing()).Save(project, timing)) as TimingFile);
+  api.timing.vocalsView = (project) => call('timing.vocalsView', async () => toVocals(await (await b.timing()).VocalsView(project)));
+  api.timing.downloadVocalModel = (model) => call('timing.downloadVocalModel', async () => toJob(await (await b.timing()).DownloadVocalModel(model)));
+  api.timing.separateVocals = (project, model) => call('timing.separateVocals', async () => toJob(await (await b.timing()).SeparateVocals(project, model)));
+  // Выбор и удаление пересчитывают SHA большого WAV и трека; корзина ОС может ждать дольше обычного вызова.
+  api.timing.selectVocal = (project, id) => call('timing.selectVocal', async () => toVocals(await (await b.timing()).SelectVocal(project, id)), false);
+  api.timing.deleteVocal = (project, id) => call('timing.deleteVocal', async () => toVocals(await (await b.timing()).DeleteVocal(project, id)), false);
+  api.timing.songModelSetup = () => call('timing.songModelSetup', async () => (await b.timing()).SongModelSetup());
+  api.timing.downloadSongModels = () => call('timing.downloadSongModels', async () => toJob(await (await b.timing()).DownloadSongModels()));
+  api.timing.start = (project, options) => call('timing.start', async () => toJob(await (await b.timing()).Start(project, options)), false);
+  api.timing.cancel = (id) => call('timing.cancel', async () => toJob(await (await b.timing()).Cancel(id)));
+
+  // Документы сценария Go принимает и отдаёт как json.RawMessage (any в bindings): порядок ключей
+  // и лишние поля сохраняются, а тип документа задаёт контракт. Закрытые строковые наборы
+  // (готовность реестра, состояние плана, фаза) Go хранит строкой — сужается только тип.
+  api.cast.view = (project) => call('cast.view', async () => (await b.cast()).View(project));
+  api.cast.init = (project) => call('cast.init', async () => (await b.cast()).Init(project));
+  api.cast.save = (project, cast) => call('cast.save', async () => (await b.cast()).Save(project, cast));
+
+  api.scenario.status = (project) => call('scenario.status', async () => (await (await b.scenario()).Status(project)) as ScenarioStatus);
+  api.scenario.view = (project) => call('scenario.view', async () => (await b.scenario()).View(project));
+  api.scenario.saveTreatment = (project, treatment) => call('scenario.saveTreatment', async () => (await b.scenario()).SaveTreatment(project, treatment));
+  api.scenario.validateTreatment = (project, treatment) =>
+    call('scenario.validateTreatment', async () => (await b.scenario()).ValidateTreatment(project, treatment));
+  api.scenario.saveScenes = (project, scenes, mode) => call('scenario.saveScenes', async () => (await b.scenario()).SaveScenes(project, scenes, mode));
+  api.scenario.saveImpact = (project, scenes) =>
+    call('scenario.saveImpact', async () => {
+      const impact = await (await b.scenario()).SaveImpact(project, scenes);
+      return { shots: impact.shots.map((shot) => ({ ...shot, state: shot.state as ScenarioImpactShot['state'] })) };
+    });
+  api.scenario.validateScenes = (project, scenes) => call('scenario.validateScenes', async () => (await b.scenario()).ValidateScenes(project, scenes));
+  api.scenario.brief = (project, scenes, shot, phase) =>
+    call('scenario.brief', async () => {
+      const brief = await (await b.scenario()).Brief(project, scenes, shot, phase);
+      return { ...brief, phase: brief.phase as BriefResult['phase'] };
     });
 
   api.jobs.list = () => call('jobs.list', async () => (await (await b.jobs()).List()).map(toJob));

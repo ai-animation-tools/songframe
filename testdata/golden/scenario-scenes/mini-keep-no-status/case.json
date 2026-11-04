@@ -1,0 +1,11 @@
+{
+  "description": "Нет production-status: принятых отпечатков нет, файл не создаётся.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "keep",
+  "covers": [
+    "writeAcceptedFingerprints без изменений",
+    "state=stale без отпечатка"
+  ],
+  "stubbedMedia": []
+}

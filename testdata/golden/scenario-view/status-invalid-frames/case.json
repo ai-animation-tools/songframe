@@ -1,0 +1,12 @@
+{
+  "description": "Неверные кадры: статус invalid, проблемы проверки.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "status=invalid (кадры)",
+    "shotFramesInteger"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

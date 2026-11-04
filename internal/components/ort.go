@@ -56,49 +56,9 @@ func CheckORT(ctx context.Context, library string, models []ModelFile) (ORTRepor
 	if err := ctx.Err(); err != nil {
 		return ortFailure(report, models, "cancelled", err)
 	}
-	if !filepath.IsAbs(library) || strings.ContainsRune(library, 0) {
-		return ortFailure(report, models, "incompatible", fmt.Errorf("ORT: нужен явный абсолютный путь к библиотеке"))
-	}
-	absolute, err := filepath.EvalSymlinks(filepath.Clean(library))
+	status, err := initORT(library, &report)
 	if err != nil {
-		return ortFailure(report, models, "incompatible", fmt.Errorf("ORT: библиотека недоступна: %w", err))
-	}
-	info, err := os.Stat(absolute)
-	if err != nil || !info.Mode().IsRegular() {
-		if err == nil {
-			err = fmt.Errorf("путь не является обычным файлом")
-		}
-		return ortFailure(report, models, "incompatible", fmt.Errorf("ORT: неверная библиотека: %w", err))
-	}
-	if ortState.library != "" && (absolute != ortState.library || !os.SameFile(ortState.file, info) || info.Size() != ortState.file.Size() || !info.ModTime().Equal(ortState.file.ModTime())) {
-		report.RestartRequired = true
-		return ortFailure(report, models, "incompatible", fmt.Errorf("ORT: для смены уже загруженной библиотеки требуется перезапустить приложение"))
-	}
-	if ortState.library == "" {
-		ort.SetSharedLibraryPath(absolute)
-		if err = ort.Init(); err != nil {
-			return ortFailure(report, models, "incompatible", fmt.Errorf("ORT: загрузка библиотеки или C API не удалась: %w", err))
-		}
-		// Успешный Init уже закрепил native handle даже при ошибке дальнейшей диагностики.
-		ortState.library, ortState.file = absolute, info
-	}
-	report.API = ort.APIVersion()
-	report.Version, err = ort.GetVersion()
-	if err != nil {
-		return ortFailure(report, models, "error", fmt.Errorf("ORT: не прочитана версия: %w", err))
-	}
-	if report.API != 27 {
-		return ortFailure(report, models, "incompatible", fmt.Errorf("ORT: нужен C API 27 принятого binding, получен %d", report.API))
-	}
-	if err = ort.DisableTelemetry(); err != nil {
-		return ortFailure(report, models, "error", fmt.Errorf("ORT: не удалось отключить telemetry: %w", err))
-	}
-	providers, err := ort.AvailableProviders()
-	if err != nil {
-		return ortFailure(report, models, "error", fmt.Errorf("ORT: не прочитан список providers: %w", err))
-	}
-	if !slices.Contains(providers, "CPUExecutionProvider") {
-		return ortFailure(report, models, "incompatible", fmt.Errorf("ORT: отсутствует CPUExecutionProvider"))
+		return ortFailure(report, models, status, err)
 	}
 	if err = ctx.Err(); err != nil {
 		return ortFailure(report, models, "cancelled", err)
@@ -111,6 +71,73 @@ func CheckORT(ctx context.Context, library string, models []ModelFile) (ORTRepor
 		}
 	}
 	return report, nil
+}
+
+// initORT выполняет глобальную инициализацию binding по абсолютному пути и проверяет C API 27,
+// telemetry и CPU provider. Вызывается под ortState.gate. Повторная инициализация той же
+// библиотеки — no-op; другая библиотека после успешного Init требует перезапуска приложения.
+// Возвращает статус компонента для ошибки (incompatible/error) и саму ошибку.
+func initORT(library string, report *ORTReport) (string, error) {
+	if !filepath.IsAbs(library) || strings.ContainsRune(library, 0) {
+		return "incompatible", fmt.Errorf("ORT: нужен явный абсолютный путь к библиотеке")
+	}
+	absolute, err := filepath.EvalSymlinks(filepath.Clean(library))
+	if err != nil {
+		return "incompatible", fmt.Errorf("ORT: библиотека недоступна: %w", err)
+	}
+	info, err := os.Stat(absolute)
+	if err != nil || !info.Mode().IsRegular() {
+		if err == nil {
+			err = fmt.Errorf("путь не является обычным файлом")
+		}
+		return "incompatible", fmt.Errorf("ORT: неверная библиотека: %w", err)
+	}
+	if ortState.library != "" && (absolute != ortState.library || !os.SameFile(ortState.file, info) || info.Size() != ortState.file.Size() || !info.ModTime().Equal(ortState.file.ModTime())) {
+		report.RestartRequired = true
+		return "incompatible", fmt.Errorf("ORT: для смены уже загруженной библиотеки требуется перезапустить приложение")
+	}
+	if ortState.library == "" {
+		ort.SetSharedLibraryPath(absolute)
+		if err = ort.Init(); err != nil {
+			return "incompatible", fmt.Errorf("ORT: загрузка библиотеки или C API не удалась: %w", err)
+		}
+		// Успешный Init уже закрепил native handle даже при ошибке дальнейшей диагностики.
+		ortState.library, ortState.file = absolute, info
+	}
+	report.API = ort.APIVersion()
+	report.Version, err = ort.GetVersion()
+	if err != nil {
+		return "error", fmt.Errorf("ORT: не прочитана версия: %w", err)
+	}
+	if report.API != 27 {
+		return "incompatible", fmt.Errorf("ORT: нужен C API 27 принятого binding, получен %d", report.API)
+	}
+	if err = ort.DisableTelemetry(); err != nil {
+		return "error", fmt.Errorf("ORT: не удалось отключить telemetry: %w", err)
+	}
+	providers, err := ort.AvailableProviders()
+	if err != nil {
+		return "error", fmt.Errorf("ORT: не прочитан список providers: %w", err)
+	}
+	if !slices.Contains(providers, "CPUExecutionProvider") {
+		return "incompatible", fmt.Errorf("ORT: отсутствует CPUExecutionProvider")
+	}
+	return "", nil
+}
+
+// PrepareORT готовит загруженный и проверенный ORT для рабочих сессий (разметка, выделение вокала)
+// по тому же пути и с теми же проверками, что CheckORT, но без диагностических моделей. Сессии
+// создаёт вызывающий: шлюз удерживается только на время Init, долгий inference его не держит.
+func PrepareORT(ctx context.Context, library string) error {
+	select {
+	case ortState.gate <- struct{}{}:
+		defer func() { <-ortState.gate }()
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	var report ORTReport
+	_, err := initORT(library, &report)
+	return err
 }
 
 // ortFailure заполняет одинаковую причину у зависимых моделей, если runtime ещё непригоден.

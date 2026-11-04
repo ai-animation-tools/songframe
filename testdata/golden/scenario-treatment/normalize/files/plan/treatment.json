@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "logline": "Логлайн",
+  "sequences": [
+    {
+      "id": "intro",
+      "title": "Вечер у воды",
+      "direction": "Общий план причала, спокойный темп.",
+      "start": 0,
+      "end": 8,
+      "entities": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "max_shot_seconds": 8
+    },
+    {
+      "id": "verse",
+      "title": "Фонарики",
+      "direction": "Постановка",
+      "start": 8,
+      "end": 20,
+      "entities": [
+        "mira",
+        "lev"
+      ],
+      "lipsync": true,
+      "max_shot_seconds": 6
+    },
+    {
+      "id": "outro",
+      "title": "Финал",
+      "direction": "Повтор общего плана как финальная точка.",
+      "start": 20,
+      "end": 30,
+      "entities": [
+        "mira",
+        "lev",
+        "boat"
+      ],
+      "lipsync": false,
+      "max_shot_seconds": 10,
+      "custom": {
+        "keep": true
+      }
+    }
+  ]
+}

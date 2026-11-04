@@ -1,0 +1,41 @@
+{
+  "scenes": null,
+  "treatment": null,
+  "cast": null,
+  "timing": null,
+  "lyrics": [
+    {
+      "number": 1,
+      "text": "[Куплет]",
+      "header": true
+    },
+    {
+      "number": 2,
+      "text": "Вечер зажёг фонари у воды",
+      "header": false
+    },
+    {
+      "number": 3,
+      "text": "Ветер качает бумажные огни",
+      "header": false
+    },
+    {
+      "number": 4,
+      "text": "Мы отпускаем огни в небеса",
+      "header": false
+    },
+    {
+      "number": 5,
+      "text": "",
+      "header": false
+    }
+  ],
+  "duration": 30,
+  "trackPath": "<project>/source/track.mp3",
+  "problems": [
+    "plan/scenes.json повреждён.",
+    "plan/treatment.json повреждён.",
+    "plan/audio/timing.json повреждён.",
+    "plan/cast.json повреждён."
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Образец без plan/cast.json.",
+  "call": "viewCast",
+  "project": "project",
+  "covers": [
+    "cast=null",
+    "imagePaths только из описи"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,5 @@
+{
+  "error": "Название проекта не может быть пустым. Имя MP4 аниматика: буквы, цифры, точки и дефисы, без пути к папке, с расширением .mp4. generation.video: не заполнено поле provider. generation.video: не заполнено поле resolution. generation.video: пропорции записываются как 16:9 или auto. generation.video: watermark должен быть логическим значением. generation.video: правило длительности должно быть одним из: min_supported_strictly_greater_than_window, min_supported_not_less_than_window, exact_window. generation.video: provider_selected должен быть логическим значением. generation.video: options должен быть объектом. generation.image: model должен быть непустой строкой. generation.image: watermark должен быть логическим значением. generation.image: options должен быть объектом. generation.image: outputs должен быть положительным целым числом.",
+  "result": null,
+  "fileUnchanged": true
+}

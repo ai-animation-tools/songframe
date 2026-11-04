@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "kinds": [
+    {
+      "id": "character",
+      "label": "Персонаж",
+      "dir": "heroes"
+    },
+    {
+      "id": "vehicle",
+      "label": "Транспорт",
+      "dir": "vehicles"
+    },
+    {
+      "id": "location",
+      "label": "Локация",
+      "dir": "locations"
+    },
+    {
+      "id": "prop",
+      "label": "Предмет",
+      "dir": "props"
+    },
+    {
+      "id": "style",
+      "label": "Стиль",
+      "dir": "style"
+    }
+  ],
+  "track": {
+    "path": "track.mp3",
+    "sha256": "d9a1e87ce1414c8e86e5b58a38cd7efaa8e5c68e3a34e14989d1e0b8f9167640",
+    "bytes": 120416,
+    "original_name": "track.mp3",
+    "duration_seconds": 30
+  },
+  "lyrics": {
+    "path": "text.md",
+    "sha256": "bc8939f30286d2e4b2c4154fa819f4c245e58563ba787f9fa345abb222ece0a0",
+    "bytes": 161,
+    "lines": 3,
+    "sections": [
+      "Куплет"
+    ]
+  },
+  "idea": {
+    "path": "description.md",
+    "sha256": "73740c9758b5cd11ad19bacccc63760d4c63b532bedaff13ed2a2f55bd3d0037",
+    "bytes": 349
+  },
+  "cover": null,
+  "references": {},
+  "updated_at": "2026-10-25T00:00:00Z"
+}

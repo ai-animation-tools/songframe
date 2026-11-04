@@ -11,9 +11,8 @@ import { timingPageOptions } from '../../../testing/timingPageStories';
 import { ActionButton } from '../../../components/ActionButton';
 import { TimingGenerateDialog } from './TimingGenerateDialog';
 
-function Journey({ running = false, initialVocals = false }: { running?: boolean; initialVocals?: boolean }) {
+function Journey({ running = false }: { running?: boolean }) {
   const [open, setOpen] = useState(true);
-  const [vocals, setVocals] = useState(initialVocals);
   const [reset, setReset] = useState(false);
   const [job, setJob] = useState<JobInfo | null>(
     running
@@ -37,14 +36,12 @@ function Journey({ running = false, initialVocals = false }: { running?: boolean
       <TimingGenerateDialog
         project="/mock/timing-project"
         open={open}
-        vocals={vocals}
         job={job}
         working={false}
         error={null}
         resetAll={reset}
         canGenerate={!job || job.status !== 'running'}
         generateBlockedReason={null}
-        onVocalsChange={setVocals}
         onStop={async () => {
           setJob((value) => (value ? { ...value, status: 'failed', error: texts.cancelled } : null));
           return true;
@@ -74,12 +71,11 @@ const meta = {
 } satisfies Meta<typeof Journey>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Basic: Story = { name: 'Обычный режим · выбор источника' };
-export const InstalledVocals: Story = { name: 'Вокал · установленный комплект · предупреждения видны', args: { initialVocals: true } };
+export const InstalledVocals: Story = { name: 'Вокал · установленный комплект · предупреждения видны' };
 export const ProtectedRunning: Story = {
   name: 'Обработка · Esc и фон не закрывают · остановка сохраняет окно',
   tags: ['ci'],
-  args: { running: true, initialVocals: true },
+  args: { running: true },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body);
     const modal = within(await screen.findByRole('dialog'));
@@ -114,7 +110,6 @@ export const ProtectedRunning: Story = {
 export const DownloadCancelFailure: Story = {
   name: 'Загрузка · отказ остановки оставляет окно · повтор отмены',
   tags: ['ci'],
-  args: { initialVocals: true },
   parameters: { songframe: timingPageOptions({ local: 'cancel-error' }) },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body);
@@ -132,12 +127,11 @@ export const DownloadCancelFailure: Story = {
 };
 
 export const ReopenKeepsChoices: Story = {
-  name: 'Явная отмена · повторное открытие сохраняет режим и настройки',
+  name: 'Явная отмена · повторное открытие сохраняет настройки',
   tags: ['ci'],
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body);
     let modal = within(await screen.findByRole('dialog'));
-    await userEvent.click(modal.getByRole('radio', { name: texts.vocals }));
     await userEvent.click(modal.getByRole('button', { name: texts.recognitionSettings }));
     await userEvent.click(modal.getByRole('checkbox', { name: timingTexts.resetAll }));
     await expect(modal.getByText(texts.resetWarning)).toBeVisible();
@@ -147,7 +141,6 @@ export const ReopenKeepsChoices: Story = {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Открыть окно разметки' }));
     modal = within(await screen.findByRole('dialog'));
-    await expect(modal.getByRole('radio', { name: texts.vocals })).toBeChecked();
     await expect(modal.getByRole('button', { name: texts.recognitionSettings })).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(modal.getByRole('button', { name: texts.recognitionSettings }));
     await expect(modal.getByRole('checkbox', { name: timingTexts.resetAll })).toBeChecked();
@@ -158,7 +151,6 @@ export const ReopenKeepsChoices: Story = {
 export const CachedSelectionReopen: Story = {
   name: 'Выбор вокала сохраняется при закрытии · без автоматического ASR',
   tags: ['ci'],
-  args: { initialVocals: true },
   parameters: { songframe: timingPageOptions({ local: 'vocal-cached' }) },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body);
@@ -182,7 +174,6 @@ export const CachedSelectionReopen: Story = {
 export const CancelPreparation: Story = {
   name: 'Отмена окна останавливает отдельное выделение и ждёт завершения',
   tags: ['ci'],
-  args: { initialVocals: true },
   parameters: { songframe: timingPageOptions({ local: 'vocal-running' }) },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body),
@@ -201,7 +192,6 @@ export const CancelPreparation: Story = {
 export const CancelBothPreparations: Story = {
   name: 'Отмена ждёт выделение вокала и загрузку CTC',
   tags: ['ci'],
-  args: { initialVocals: true },
   parameters: { songframe: timingPageOptions({ local: 'vocal-cancel-pending' }) },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body),
@@ -218,8 +208,10 @@ export const CancelBothPreparations: Story = {
 };
 
 export const CompactInitial: Story = {
-  name: 'Два источника · настройки свёрнуты',
+  name: 'Разметка по вокалу · без выбора режима · настройки свёрнуты',
   tags: ['ci'],
+  // Запуск разрешён только при установленном комплекте и явно выбранном готовом вокале.
+  parameters: { songframe: timingPageOptions({ local: 'vocal-cached' }) },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body);
     const modal = within(await screen.findByRole('dialog'));
@@ -227,10 +219,11 @@ export const CompactInitial: Story = {
     await expect(notice).toHaveTextContent(texts.recognitionNotice);
     await expect(notice).toHaveClass('MuiAlert-standardInfo');
     await expect(notice).toBeVisible();
-    await expect(modal.getByRole('radio', { name: 'Исходный трек' })).toBeChecked();
-    await expect(modal.getByRole('radio', { name: 'Сначала выделить вокал' })).not.toBeChecked();
+    // Отличие от 634fd94: режима «Исходный трек» (распознавание речи) нет — сразу видна подготовка вокала.
+    await expect(modal.queryByRole('radio')).not.toBeInTheDocument();
+    await expect(modal.getByText(texts.vocalPreparation)).toBeVisible();
     await expect(modal.getByRole('button', { name: 'Настройки распознавания' })).toHaveAttribute('aria-expanded', 'false');
     await expect(modal.queryByRole('checkbox', { name: timingTexts.resetAll })).not.toBeInTheDocument();
-    await expect(modal.getByRole('button', { name: 'Запустить' })).toBeEnabled();
+    await waitFor(() => expect(modal.getByRole('button', { name: 'Запустить' })).toBeEnabled());
   }
 };

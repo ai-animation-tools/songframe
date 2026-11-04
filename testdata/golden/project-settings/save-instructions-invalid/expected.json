@@ -1,0 +1,5 @@
+{
+  "error": "plan/project.json: agent_instructions должен быть строкой.",
+  "result": null,
+  "fileUnchanged": true
+}

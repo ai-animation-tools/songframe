@@ -1,0 +1,10 @@
+{
+  "description": "Пересохранение реестра мини-проекта.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "impact пуст"
+  ],
+  "stubbedMedia": []
+}

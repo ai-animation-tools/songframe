@@ -1,0 +1,9 @@
+{
+  "description": "Битая опись.",
+  "call": "viewSources",
+  "project": "project",
+  "covers": [
+    "manifestInvalid"
+  ],
+  "stubbedMedia": []
+}

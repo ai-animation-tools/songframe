@@ -1,0 +1,11 @@
+{
+  "description": "Нет logline.",
+  "call": "saveTreatment",
+  "project": "project",
+  "covers": [
+    "treatmentInvalidDocument"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "description": "Битые scenes, treatment, timing и cast.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "damagedDocument",
+    "damagedCast",
+    "status=invalid",
+    "duration из описи"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

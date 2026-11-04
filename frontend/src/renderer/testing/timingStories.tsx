@@ -264,8 +264,8 @@ export function TimingStory({
         busy={busy}
         generating={false}
         invalidBindings={variant === 'invalid-bindings'}
-        canGenerate={false}
-        generateBlockedReason={trackPath ? timingTexts.toolsMissing : timingTexts.addTrack}
+        canGenerate={!!trackPath && !dirty}
+        generateBlockedReason={!trackPath ? timingTexts.addTrack : dirty ? timingTexts.saveBeforeGenerate : null}
         onGenerate={() => undefined}
         onConfirmAll={() => setDraft((current) => ({ ...current, lines: current.lines.map((line) => withTimingVerification(line, true)) }))}
         onRecalculateSections={() =>

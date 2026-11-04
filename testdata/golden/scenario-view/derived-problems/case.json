@@ -1,0 +1,13 @@
+{
+  "description": "derived_from: неизвестный план и цепочка.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "derivedUnknownSource",
+    "derivedChainedSource",
+    "shotEndsBeforeStart"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

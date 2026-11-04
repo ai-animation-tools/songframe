@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "entities": [
+    {
+      "id": "world",
+      "kind": "world",
+      "name": "Мир сцены",
+      "short_name": "Мир",
+      "role": "",
+      "appearance": "",
+      "images": [],
+      "initial_state": {}
+    },
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "role": "Музыкант",
+      "appearance": "Музыкант с фонариком",
+      "images": [
+        "heroes/mira.png"
+      ],
+      "initial_state": {}
+    },
+    {
+      "id": "boat",
+      "kind": "vehicle",
+      "name": "Лодка «Чайка»",
+      "short_name": "Лодка",
+      "role": "",
+      "appearance": "Деревянная лодка",
+      "images": [
+        "vehicles/boat.png"
+      ],
+      "initial_state": {}
+    }
+  ],
+  "properties": {
+    "character": [
+      {
+        "key": "position",
+        "label": "Положение",
+        "hint": "Где находится",
+        "checklist": "Стоит там, где записано: {value}?"
+      },
+      {
+        "key": "clothes_condition",
+        "label": "Одежда",
+        "checklist": "Одежда: {value}?"
+      },
+      {
+        "key": "mood",
+        "label": "Настроение"
+      }
+    ]
+  }
+}

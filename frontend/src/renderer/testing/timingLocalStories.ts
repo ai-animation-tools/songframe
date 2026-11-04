@@ -58,7 +58,20 @@ export function createTimingLocalModel(variant: TimingLocalVariant, read: () => 
   const calls: Inspection = { starts: [], downloads: 0, cancels: 0, separations: [], vocalDownloads: [], selections: [], deletions: [] };
   const vocals = makeVocalStoryView(
     !['vocal-download', 'vocal-download-failure'].includes(variant),
-    ['vocal-cached', 'vocal-failure', 'vocal-stale', 'vocal-delete-failure', 'vocal-delete-in-use'].includes(variant)
+    // Отличие от 634fd94: режима без вокала нет, поэтому сценарии запуска разметки начинают с уже выбранного вокала.
+    [
+      'vocal-cached',
+      'vocal-failure',
+      'vocal-stale',
+      'vocal-delete-failure',
+      'vocal-delete-in-use',
+      'running',
+      'partial',
+      'reload-failure',
+      'start-failure',
+      'delayed-start',
+      'missing-job'
+    ].includes(variant)
   );
   changeSource = () => {
     vocals.sourceSha256 = 'changed-original-sha';

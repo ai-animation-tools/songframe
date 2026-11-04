@@ -1,0 +1,8 @@
+{
+  "error": "В папке нет plan/project.json с названием проекта: <base>/quote",
+  "status": null,
+  "state": {
+    "current": null,
+    "history": []
+  }
+}

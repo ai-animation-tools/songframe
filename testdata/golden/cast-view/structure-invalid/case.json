@@ -1,0 +1,9 @@
+{
+  "description": "schema_version 2.",
+  "call": "viewCast",
+  "project": "project",
+  "covers": [
+    "structureRequired"
+  ],
+  "stubbedMedia": []
+}

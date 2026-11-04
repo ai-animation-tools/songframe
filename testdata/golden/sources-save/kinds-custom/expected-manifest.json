@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "kinds": [
+    {
+      "id": "character",
+      "label": "Персонаж",
+      "dir": "heroes"
+    },
+    {
+      "id": "creature",
+      "label": "Существо",
+      "dir": "creatures"
+    }
+  ],
+  "track": {
+    "path": "track.mp3",
+    "sha256": "fb0797e290b774181fa7fdbeadc0bd9849889152fca5dc3555a766bb33dfae2b",
+    "bytes": 11,
+    "original_name": "Песня.mp3",
+    "duration_seconds": 30,
+    "custom": "неизвестное поле трека"
+  },
+  "lyrics": {
+    "path": "text.md",
+    "sha256": "b1e26eac3b2d06b950bace0052d5a4439a6c7ad76ad929ec4f73495a31575799",
+    "bytes": 110,
+    "lines": 3,
+    "sections": [
+      "Куплет",
+      "Припев"
+    ]
+  },
+  "idea": {
+    "path": "description.md",
+    "sha256": "c54f98b97377abc668b0fe5c48ebe504a0aac530b912cb8e0f38ab75579355e8",
+    "bytes": 38
+  },
+  "cover": {
+    "path": "cover.png",
+    "sha256": "ca26a7b8bc080b8663cc1d581a24ceb96d8a86007c133ff4e9b17075c5c9e8c1",
+    "bytes": 15
+  },
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "Музыкант с фонариком",
+      "files": [
+        {
+          "path": "heroes/mira.png",
+          "sha256": "f8708eda75833c8227070aafb2fc9388f149e11e1c2f578a10cbd97361e55c4e",
+          "bytes": 14,
+          "view": "full",
+          "note": "",
+          "prompt": "heroes/mira.png.prompt.txt"
+        }
+      ],
+      "prompt": null
+    },
+    {
+      "id": "cat",
+      "kind": "creature",
+      "name": "Кот",
+      "short_name": "Кот",
+      "description": "Рыжий",
+      "files": [
+        {
+          "path": "creatures/cat.png",
+          "sha256": "28d15037b94e6e0b4cd49422fa10e24fa674562dd2c615cb040c12fa59a86e4e",
+          "bytes": 14,
+          "view": "full",
+          "note": "",
+          "prompt": null
+        }
+      ],
+      "prompt": null
+    }
+  ],
+  "updated_at": "<updated_at>"
+}

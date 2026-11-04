@@ -21,10 +21,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
-  Radio,
-  RadioGroup,
-  FormControl,
-  FormLabel,
   Stack
 } from '@mui/material';
 import { ActionButton } from '../../../components/ActionButton';
@@ -32,13 +28,10 @@ import { ActionButton } from '../../../components/ActionButton';
 interface TimingGenerateDialogProps {
   project: string;
   open: boolean;
-  vocals: boolean;
   job: JobInfo | null;
   working: boolean;
   error: string | null;
-  resultReady?: boolean;
   onReloadResult?: () => void;
-  onVocalsChange(vocals: boolean): void;
   onStop(): Promise<boolean>;
   onCancelDownload(id: string): Promise<void>;
   resetAll: boolean;
@@ -51,19 +44,17 @@ interface TimingGenerateDialogProps {
 }
 
 /**
- * Диалог собирает параметры локальной разметки. Отличие от 634fd94: выбор модели Whisper и устройства
- * (CPU/CUDA) удалён вместе с Whisper (D-028) — разметка по известному тексту идёт без распознавания речи.
+ * Диалог собирает параметры локальной разметки. Отличие от 634fd94: распознавания речи больше нет (D-028),
+ * поэтому нет выбора модели, устройства и режима «Исходный трек» — разметка всегда идёт по выбранному
+ * готовому вокалу и известному тексту.
  */
 export function TimingGenerateDialog({
   project,
   open,
-  vocals,
   job,
   working,
   error,
-  resultReady = false,
   onReloadResult,
-  onVocalsChange,
   onStop,
   onCancelDownload,
   resetAll,
@@ -113,9 +104,7 @@ export function TimingGenerateDialog({
   };
   const progressLabel =
     activeJob === job
-      ? vocals
-        ? texts.running
-        : texts.basicRunning
+      ? texts.running
       : activeJob === vocalJob
         ? vocalJob?.kind === 'model_download'
           ? texts.downloadingVocal
@@ -127,7 +116,7 @@ export function TimingGenerateDialog({
     ? texts.restart
     : pending || activeJob
       ? texts.operationPending
-      : vocals && (!songReady || !vocalReady)
+      : !songReady || !vocalReady
         ? texts.missing
         : generateBlockedReason;
   return (
@@ -143,7 +132,6 @@ export function TimingGenerateDialog({
               <JobStatus running label={job?.status === 'done' ? texts.readingResult : texts.startingRecognition} />
             </Box>
           )}
-          {job?.status === 'done' && resultReady && !error && <Alert severity="success">{texts.ready}</Alert>}
           {(job?.status === 'failed' || job?.status === 'interrupted') && (
             <Alert severity={job.error === texts.cancelled ? 'info' : 'error'}>{job.error || texts.noJob}</Alert>
           )}
@@ -152,18 +140,7 @@ export function TimingGenerateDialog({
           {closeError && <Alert severity="error">{closeError}</Alert>}
           {/* Формы остаются смонтированы для наблюдения Jobs, но во время операции виден один рабочий статус. */}
           <Stack spacing={2} sx={{ display: processing ? 'none' : undefined }}>
-            <FormControl disabled={pending}>
-              <FormLabel id="timing-source-label">{texts.mode}</FormLabel>
-              <RadioGroup
-                aria-labelledby="timing-source-label"
-                value={vocals ? 'vocals' : 'basic'}
-                onChange={(event) => onVocalsChange(event.target.value === 'vocals')}
-              >
-                <FormControlLabel value="basic" control={<Radio />} label={texts.basic} />
-                <FormControlLabel value="vocals" control={<Radio />} label={texts.vocals} />
-              </RadioGroup>
-            </FormControl>
-            {open && vocals && (
+            {open && (
               <VocalPreparation
                 key={project}
                 project={project}
@@ -174,7 +151,7 @@ export function TimingGenerateDialog({
                 onBusy={setVocalWorking}
               />
             )}
-            {open && vocals && (
+            {open && (
               <SongModelSetup disabled={pending || !!activeJob} managedProgress onReady={setSongReady} onJob={setDownload} onBusy={setDownloadWorking} />
             )}
             <Accordion expanded={settingsOpen} onChange={(_event, expanded) => setSettingsOpen(expanded)} disableGutters>

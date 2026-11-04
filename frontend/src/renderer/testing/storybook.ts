@@ -278,6 +278,7 @@ export function createStoryApi(
       status: guardedAsync(merged.scenario.status),
       view: guardedAsync(merged.scenario.view),
       saveTreatment: guardedAsync(merged.scenario.saveTreatment),
+      validateTreatment: guardedAsync(merged.scenario.validateTreatment),
       saveScenes: guardedAsync(merged.scenario.saveScenes),
       saveImpact: guardedAsync(merged.scenario.saveImpact),
       validateScenes: guardedAsync(merged.scenario.validateScenes),

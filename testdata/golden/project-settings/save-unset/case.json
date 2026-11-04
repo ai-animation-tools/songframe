@@ -1,0 +1,10 @@
+{
+  "description": "Поля со значением undefined (так IPC передаёт сброс модели и разрешения) удаляются из файла.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "undefined удаляет поле",
+    "unset вложенного options"
+  ],
+  "stubbedMedia": []
+}

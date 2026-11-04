@@ -12,8 +12,6 @@ export const timingSelectionTexts = {
   zoomAllHint: 'Показать весь трек',
   zoomSelectionHint: 'Показать выделение крупнее',
   timelineScale: 'Масштаб шкалы времени',
-  volume: 'Громкость',
-  volumePercent: ({ value }: { value: number }) => `${value}%`,
   clock: ({ time, duration }: { time: string; duration: string }) => `${time} / ${duration}`,
   noSelection: 'Весь трек · нет выделения',
   line: ({ id }: { id: number }) => `Строка ${id}`,

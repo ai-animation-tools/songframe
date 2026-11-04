@@ -1,0 +1,9 @@
+{
+  "description": "Битый JSON: ошибка readLocalJson с путём; текст разбора Node не сравнивается.",
+  "call": "Projects.rename",
+  "project": "project",
+  "covers": [
+    "readLocalJson: readFailed"
+  ],
+  "stubbedMedia": []
+}

@@ -39,9 +39,14 @@ func stateSameHasChanges(shot string) error {
 	return errors.New(shot + ": повтор same не допускает своих state_changes.")
 }
 
-// tracked — состояние «сущность → свойство → значение» на одной фазе плана. Источник значения
-// (resolveStateSources) пока не нужен ни одному перенесённому потребителю и не хранится.
-type tracked = *jscompat.Object
+// tracked — состояние «сущность → свойство → значение» на одной фазе плана вместе с источником
+// каждого значения (resolveStateSources): начальное состояние кастинга или изменение плана в его
+// фазе. values и sources всегда одной формы; значения сериализуются в отпечаток, источники нужны
+// только врезке непрерывности для перехода к месту правки.
+type tracked struct {
+	values  *jscompat.Object
+	sources *jscompat.Object
+}
 
 // resolved — состояние плана: до правок первого кадра (incoming), на первом и на последнем кадре.
 type resolved struct {
@@ -49,17 +54,17 @@ type resolved struct {
 }
 
 // phaseState выбирает состояние по фазе как `incoming[phase]`: ключ приводится к строке, а
-// неизвестная фаза даёт undefined (и TypeError при последующем копировании).
-func (r resolved) phaseState(phase any) any {
+// неизвестная фаза даёт undefined (ok=false) и TypeError при последующем копировании.
+func (r resolved) phaseState(phase any) (tracked, bool) {
 	switch jscompat.ToString(phase) {
 	case "before":
-		return r.before
+		return r.before, true
 	case "after":
-		return r.after
+		return r.after, true
 	case "incoming":
-		return r.incoming
+		return r.incoming, true
 	}
-	return jscompat.Undefined
+	return tracked{}, false
 }
 
 // orderedMap — Map JS с ключами-значениями jscompat и порядком первой вставки.
@@ -82,67 +87,75 @@ func (m *orderedMap[V]) get(key any) (V, bool) {
 	return value, ok
 }
 
-// cloneState копирует состояние на два уровня; значение не объекта — TypeError Object.entries.
-func cloneState(state any) (tracked, error) {
-	entries, err := jscompat.Entries(state)
-	if err != nil {
-		return nil, err
-	}
+// copyLevels копирует объект «сущность → свойство → значение» на два уровня (порядок сохраняется).
+func copyLevels(state *jscompat.Object) *jscompat.Object {
 	result := jscompat.NewObject()
-	for _, entry := range entries {
-		attributes, err := jscompat.Entries(entry.Value)
-		if err != nil {
-			return nil, err
-		}
-		copy := jscompat.NewObject()
-		for _, attribute := range attributes {
-			copy.Set(attribute.Key, attribute.Value)
-		}
-		result.Set(entry.Key, copy)
+	for _, entity := range state.Keys() {
+		result.Set(entity, state.Value(entity).(*jscompat.Object).Clone())
 	}
-	return result, nil
+	return result
+}
+
+// cloneState — clone() оригинала: независимая копия состояния; неизвестная фаза (ok=false) —
+// TypeError Object.entries(undefined).
+func cloneState(state tracked, ok bool) (tracked, error) {
+	if !ok {
+		return tracked{}, &jscompat.TypeError{Message: "Cannot convert undefined or null to object"}
+	}
+	return tracked{values: copyLevels(state.values), sources: copyLevels(state.sources)}, nil
+}
+
+// planSource — источник значения из изменения плана: { kind: 'plan', shot, phase }.
+func planSource(shot any, phase string) *jscompat.Object {
+	source := jscompat.NewObject()
+	source.Set("kind", "plan")
+	source.Set("shot", shot)
+	source.Set("phase", phase)
+	return source
 }
 
 // apply накладывает state_changes.before/after на состояние; null удаляет свойство, пустая
-// сущность исчезает. Проверки и их порядок совпадают с _resolve_states.
-func apply(state any, delta any, sid string) (tracked, error) {
-	result, err := cloneState(state)
-	if err != nil {
-		return nil, err
-	}
+// сущность исчезает. Проверки и их порядок совпадают с _resolve_states. sid — код плана (как в
+// исключениях), shot — исходное значение id для источника значения.
+func apply(state tracked, delta any, sid string, shot any, phase string) (tracked, error) {
+	result, _ := cloneState(state, true)
 	if !jscompat.Truthy(delta) {
 		return result, nil
 	}
 	changes, ok := jscompat.AsObject(delta)
 	if !ok {
-		return nil, stateChangesInvalid(sid)
+		return tracked{}, stateChangesInvalid(sid)
 	}
 	for _, entity := range changes.Keys() {
 		attributes, ok := jscompat.AsObject(changes.Value(entity))
 		if !slug.MatchString(entity) || !ok {
-			return nil, stateEntityInvalid(sid, entity)
+			return tracked{}, stateEntityInvalid(sid, entity)
 		}
 		for _, key := range attributes.Keys() {
 			value := attributes.Value(key)
 			text, isString := value.(string)
 			if !slug.MatchString(key) || (value != nil && (!isString || jscompat.Trim(text) == "")) {
-				return nil, statePropertyInvalid(sid, entity, key)
+				return tracked{}, statePropertyInvalid(sid, entity, key)
 			}
-			current, exists := result.Get(entity)
+			current, exists := result.values.Get(entity)
 			if value == nil {
-				if exists && jscompat.Truthy(current) {
+				if exists {
 					current.(*jscompat.Object).Delete(key)
+					result.sources.Value(entity).(*jscompat.Object).Delete(key)
 				}
 				continue
 			}
 			if !exists {
 				current = jscompat.NewObject()
-				result.Set(entity, current)
+				result.values.Set(entity, current)
+				result.sources.Set(entity, jscompat.NewObject())
 			}
 			current.(*jscompat.Object).Set(key, text)
+			result.sources.Value(entity).(*jscompat.Object).Set(key, planSource(shot, phase))
 		}
-		if current, exists := result.Get(entity); exists && current.(*jscompat.Object).Len() == 0 {
-			result.Delete(entity)
+		if current, exists := result.values.Get(entity); exists && current.(*jscompat.Object).Len() == 0 {
+			result.values.Delete(entity)
+			result.sources.Delete(entity)
 		}
 	}
 	return result, nil
@@ -152,6 +165,14 @@ func apply(state any, delta any, sid string) (tracked, error) {
 type ResolvedState struct {
 	Before *jscompat.Object
 	After  *jscompat.Object
+}
+
+// Object — `{ before, after }` для JSON.stringify: так оригинал сравнивает состояния планов.
+func (s ResolvedState) Object() *jscompat.Object {
+	object := jscompat.NewObject()
+	object.Set("before", s.Before)
+	object.Set("after", s.After)
+	return object
 }
 
 // ResolveStates — resolveStates: состояние каждого плана с учётом state_from (по умолчанию —
@@ -166,7 +187,35 @@ func ResolveStates(data any, initial *jscompat.Object) (*jscompat.Object, error)
 	result := jscompat.NewObject()
 	for _, key := range states.Keys() {
 		state := states.Value(key).(resolved)
-		result.Set(key, ResolvedState{Before: state.before, After: state.after})
+		result.Set(key, ResolvedState{Before: state.before.values, After: state.after.values})
+	}
+	return result, nil
+}
+
+// Detailed — полное вычисление одного плана для врезки непрерывности: состояние (resolveStates),
+// состояние до правок блока (resolveInherited: для первого кадра — пришедшее по state_from, для
+// последнего — первый кадр) и источники значений (resolveStateSources) по фазам.
+type Detailed struct {
+	State     ResolvedState
+	Inherited ResolvedState
+	// Sources — фаза → сущность → свойство → источник ({kind:'cast'} или {kind:'plan', shot, phase}).
+	Sources map[string]*jscompat.Object
+}
+
+// ResolveDetailed вычисляет Detailed для всех планов за один обход реестра; ключ — String(id).
+func ResolveDetailed(data any, initial *jscompat.Object) (map[string]Detailed, error) {
+	states, err := resolveTracked(data, initial)
+	if err != nil {
+		return nil, err
+	}
+	result := map[string]Detailed{}
+	for _, key := range states.Keys() {
+		state := states.Value(key).(resolved)
+		result[key] = Detailed{
+			State:     ResolvedState{Before: state.before.values, After: state.after.values},
+			Inherited: ResolvedState{Before: state.incoming.values, After: state.before.values},
+			Sources:   map[string]*jscompat.Object{"before": state.before.sources, "after": state.after.sources},
+		}
 	}
 	return result, nil
 }
@@ -194,17 +243,22 @@ func resolveTracked(data any, initial *jscompat.Object) (*jscompat.Object, error
 			previous.set(id, jscompat.Get(list[index-1], "id"))
 		}
 	}
-	start := jscompat.NewObject()
+	start := tracked{values: jscompat.NewObject(), sources: jscompat.NewObject()}
+	castSource := jscompat.NewObject()
+	castSource.Set("kind", "cast")
 	for _, entity := range initial.Keys() {
 		attributes, err := jscompat.Entries(initial.Value(entity))
 		if err != nil {
 			return nil, err
 		}
 		values := jscompat.NewObject()
+		origins := jscompat.NewObject()
 		for _, attribute := range attributes {
 			values.Set(attribute.Key, attribute.Value)
+			origins.Set(attribute.Key, castSource)
 		}
-		start.Set(entity, values)
+		start.values.Set(entity, values)
+		start.sources.Set(entity, origins)
 	}
 	done := newOrderedMap[resolved]()
 	var visiting []any
@@ -255,12 +309,9 @@ func resolveTracked(data any, initial *jscompat.Object) (*jscompat.Object, error
 			}
 			incoming = value
 		} else {
-			var err error
-			if incoming.before, err = cloneState(start); err != nil {
-				return resolved{}, err
-			}
-			incoming.after, _ = cloneState(start)
-			incoming.incoming, _ = cloneState(start)
+			incoming.before, _ = cloneState(start, true)
+			incoming.after, _ = cloneState(start, true)
+			incoming.incoming, _ = cloneState(start, true)
 		}
 		var value resolved
 		before := jscompat.Get(changes, "before")
@@ -269,19 +320,22 @@ func resolveTracked(data any, initial *jscompat.Object) (*jscompat.Object, error
 			if jscompat.Truthy(before) || jscompat.Truthy(after) {
 				return resolved{}, stateSameHasChanges(name)
 			}
-			value.before, _ = cloneState(incoming.before)
-			value.after, _ = cloneState(incoming.after)
-			value.incoming, _ = cloneState(incoming.before)
+			value.before, _ = cloneState(incoming.before, true)
+			value.after, _ = cloneState(incoming.after, true)
+			value.incoming, _ = cloneState(incoming.before, true)
 		} else {
-			first, err := apply(incoming.phaseState(phase), before, name)
+			base, err := cloneState(incoming.phaseState(phase))
 			if err != nil {
 				return resolved{}, err
 			}
-			last, err := apply(first, after, name)
+			first, err := apply(base, before, name, sid, "before")
 			if err != nil {
 				return resolved{}, err
 			}
-			base, _ := cloneState(incoming.phaseState(phase))
+			last, err := apply(first, after, name, sid, "after")
+			if err != nil {
+				return resolved{}, err
+			}
 			value = resolved{before: first, after: last, incoming: base}
 		}
 		visiting = visiting[:len(visiting)-1]
@@ -302,7 +356,7 @@ func resolveTracked(data any, initial *jscompat.Object) (*jscompat.Object, error
 }
 
 // plain возвращает состояние как объект «сущность → свойство → значение» (уже в этой форме).
-func plain(state tracked) *jscompat.Object { return state }
+func plain(state *jscompat.Object) *jscompat.Object { return state }
 
 // CanonicalJSON повторяет canonicalJson оригинала (= json.dumps(sort_keys=True, ensure_ascii=False,
 // separators=(",", ":"))): ключи по кодовым единицам UTF-16, undefined пропускается, примитивы —

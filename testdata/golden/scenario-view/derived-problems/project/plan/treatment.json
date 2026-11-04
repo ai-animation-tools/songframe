@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "logline": "Двое друзей украшают причал фонариками и провожают закат.",
+  "sequences": [
+    {
+      "id": "intro",
+      "title": "Вечер у воды",
+      "direction": "Общий план причала, спокойный темп.",
+      "start": 0.0,
+      "end": 8.0,
+      "entities": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "max_shot_seconds": 8
+    },
+    {
+      "id": "verse",
+      "title": "Фонарики",
+      "direction": "Друзья развешивают фонарики.",
+      "start": 8.0,
+      "end": 20.0,
+      "entities": [
+        "mira",
+        "lev",
+        "boat",
+        "pier"
+      ],
+      "lipsync": true,
+      "max_shot_seconds": 6
+    },
+    {
+      "id": "outro",
+      "title": "Проигрыш",
+      "direction": "Повтор общего плана как финальная точка.",
+      "start": 20.0,
+      "end": 30.0,
+      "entities": [
+        "mira",
+        "lev",
+        "boat"
+      ],
+      "lipsync": false,
+      "max_shot_seconds": 10
+    }
+  ]
+}

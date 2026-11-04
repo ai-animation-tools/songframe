@@ -1,0 +1,27 @@
+{
+  "error": null,
+  "result": {
+    "agentInstructions": "",
+    "name": "Клип",
+    "animaticVideo": "klip.mp4",
+    "generation": {
+      "video": {
+        "provider": "test",
+        "provider_selected": true,
+        "resolution": "1080p",
+        "aspect_ratio": "16:9",
+        "watermark": false,
+        "duration_rule": "min_supported_strictly_greater_than_window",
+        "options": {
+          "a": 1
+        }
+      },
+      "image": {
+        "provider": "test",
+        "provider_selected": true,
+        "aspect_ratio": "1:1"
+      }
+    }
+  },
+  "fileUnchanged": false
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Перевод строки в названии.",
+  "call": "Projects.rename",
+  "project": "project",
+  "covers": [
+    "invalidNameCharacter"
+  ],
+  "stubbedMedia": []
+}

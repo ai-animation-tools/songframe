@@ -1,0 +1,12 @@
+{
+  "description": "Порядок ключей JS (индексы первыми), числа после JSON.parse/stringify, неизвестные поля и запись в историю.",
+  "call": "Projects.rename",
+  "project": "project",
+  "covers": [
+    "rename",
+    "renameHistory",
+    "trim",
+    "JSON round-trip"
+  ],
+  "stubbedMedia": []
+}

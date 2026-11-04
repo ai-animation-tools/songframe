@@ -590,7 +590,12 @@ export function useTimingPlayer({
     const handler = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
       if (busy || generating || generateOpen || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+      // Кнопки панели под волной (запуск, «Повторять», масштаб) после клика держат фокус, но относятся
+      // к той же шкале: на них работают V, скобки и стрелки, а пробел и Enter остаются нажатием кнопки.
+      const panelButton = !!target?.closest('[data-timing-shortcuts] button');
+      if (panelButton && (event.code === 'Space' || event.key === 'Enter')) return;
       if (
+        !panelButton &&
         target?.closest(
           'input, textarea, select, button, a, [role="button"], [role="slider"], [role="dialog"], [role="region"][tabindex], [contenteditable="true"]'
         )

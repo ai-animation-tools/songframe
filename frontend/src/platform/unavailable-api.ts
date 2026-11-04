@@ -142,6 +142,7 @@ export function unavailableApi(asyncFailure: (method: ApiMethod) => Promise<neve
       status: () => asyncFailure('scenario.status'),
       view: () => asyncFailure('scenario.view'),
       saveTreatment: () => asyncFailure('scenario.saveTreatment'),
+      validateTreatment: () => asyncFailure('scenario.validateTreatment'),
       saveScenes: () => asyncFailure('scenario.saveScenes'),
       saveImpact: () => asyncFailure('scenario.saveImpact'),
       validateScenes: () => asyncFailure('scenario.validateScenes'),

@@ -1,0 +1,10 @@
+{
+  "description": "Без описи читаются text.md и description.md по фиксированным именам, CRLF сохраняется.",
+  "call": "viewSources",
+  "project": "project",
+  "covers": [
+    "readText по умолчанию",
+    "CRLF"
+  ],
+  "stubbedMedia": []
+}

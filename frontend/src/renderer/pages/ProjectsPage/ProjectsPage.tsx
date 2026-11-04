@@ -1,13 +1,16 @@
-/** Выбор проекта: история открытых папок, открытие любой папки, переход к созданию нового. */
+/**
+ * Выбор проекта: история открытых папок, открытие любой папки, переход к созданию нового.
+ * Отличие от 634fd94: нет предупреждения о ненайденном корне комплекса — шаблон встроен в Go-приложение,
+ * а недоступные инструменты объясняют свои страницы.
+ */
 
 import { projectsTexts } from '@shared/texts/projects';
 import { type ReactElement, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Stack } from '@mui/material';
+import { Stack } from '@mui/material';
 import type { ProjectState } from '@shared/types';
 import { useApp } from '../../state';
 import { ProjectHistory, ProjectsToolbar } from './components';
-import { LinkedText } from '../../components/LinkedText';
 
 export function ProjectsPage(): ReactElement {
   const { state, refresh, openProject, notify, describeError } = useApp();
@@ -72,11 +75,6 @@ export function ProjectsPage(): ReactElement {
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
       <ProjectsToolbar busy={!!busy} onPickFolder={pickFolder} onCreateProject={() => navigate('/projects/new')} />
-      {state && !state.toolsRoot ? (
-        <Alert severity="warning">
-          <LinkedText text={projectsTexts.toolsUnavailable} />
-        </Alert>
-      ) : null}
       <ProjectHistory history={history} states={states} currentPath={state?.current} busy={!!busy} onOpen={open} onForget={forget} />
     </Stack>
   );

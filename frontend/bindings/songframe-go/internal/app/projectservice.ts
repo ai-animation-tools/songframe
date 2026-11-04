@@ -5,8 +5,10 @@
  * ProjectService реализует группу window.api.projects (Projects оригинала, src/main/projects.ts):
  * открытие делает папку текущим проектом и поднимает её в истории каталога состояния,
  * статус вычисляется заново из файлов проекта (status.Compute) и нигде не хранится.
- * Файлы проекта сервис не пишет. Recovery прерванных публикаций монтажа и производных планов,
- * которое оригинал запускает при открытии, перенесётся вместе с этими областями (этапы 44–45).
+ * Запись проекта (создание, переименование, настройки) — в project_edit.go. Сам сервис при открытии
+ * пишет в проект только при восстановлении прерванной публикации сценария (scenarioapply): открытие
+ * сначала возвращает файлы к согласованному состоянию, и лишь затем проект становится текущим.
+ * Recovery публикаций монтажа и производных планов перенесётся вместе с этими областями (этапы 45–46).
  * @module
  */
 
@@ -16,7 +18,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as newproject$0 from "../newproject/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as project$0 from "../project/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as projectfile$0 from "../projectfile/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as status$0 from "../status/models.js";
@@ -26,6 +34,15 @@ import * as status$0 from "../status/models.js";
  */
 export function Close(): $CancellablePromise<void> {
     return $Call.ByID(1417842930);
+}
+
+/**
+ * Create — projects.create: новая папка из встроенного шаблона, git init при наличии git, затем
+ * открытие как текущего проекта. Ошибка открытия (например, кавычка в названии ломает JSON
+ * маркера, как в оригинале) возвращается, созданная папка при этом остаётся.
+ */
+export function Create(input: newproject$0.Input): $CancellablePromise<status$0.ProjectStatus> {
+    return $Call.ByID(3521464466, input);
 }
 
 /**
@@ -52,9 +69,38 @@ export function Open(path: string): $CancellablePromise<status$0.ProjectStatus> 
 }
 
 /**
+ * Rename — projects.rename: меняется только название в plan/project.json и в истории; папка,
+ * MP4 и настройки генерации не переносятся. Нечитаемая история отказывает до записи маркера.
+ */
+export function Rename(path: string, name: string): $CancellablePromise<status$0.ProjectStatus> {
+    return $Call.ByID(610873136, path, name);
+}
+
+/**
+ * SaveSettings — projects.saveSettings: проверка, слияние с сохранённым generation и атомарная запись.
+ */
+export function SaveSettings(project: string, settings: projectfile$0.SettingsInput): $CancellablePromise<projectfile$0.Settings> {
+    return $Call.ByID(2849929374, project, settings);
+}
+
+/**
+ * Settings — projects.settings: название, имя MP4, инструкции агенту и блок generation.
+ */
+export function Settings(project: string): $CancellablePromise<projectfile$0.Settings> {
+    return $Call.ByID(721330659, project);
+}
+
+/**
  * Status — projects.status: полный read-only статус, включая проверку согласования сценария.
  * Ошибка соответствует исключению оригинала на повреждённых данных (например, план без id).
  */
 export function Status(path: string): $CancellablePromise<status$0.ProjectStatus> {
     return $Call.ByID(2467358168, path);
+}
+
+/**
+ * ValidateNew — projects.validateNew: проблемы формы «Новый проект» без записи.
+ */
+export function ValidateNew(input: newproject$0.Input): $CancellablePromise<string[]> {
+    return $Call.ByID(2391726406, input);
 }

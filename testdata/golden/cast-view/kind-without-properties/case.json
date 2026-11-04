@@ -1,0 +1,11 @@
+{
+  "description": "Типы без словаря: известный (location) и неизвестный (animal).",
+  "call": "viewCast",
+  "project": "project",
+  "covers": [
+    "ensureProperties: default",
+    "ensureProperties: generic",
+    "порядок ключей properties"
+  ],
+  "stubbedMedia": []
+}

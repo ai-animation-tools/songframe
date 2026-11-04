@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppState } from '@shared/types';
 import { platformTexts } from '@shared/texts/platform';
-import { ApiError, createApi, methodAvailability, withDeadline, type Bindings } from './api';
+import { ApiError, createApi, methodAvailability, undefinedPaths, withDeadline, type Bindings } from './api';
 
 const state: AppState = { packaged: true, problems: [], toolsRoot: null, localDir: '/isolated/profile', current: null, history: [], platform: 'linux' };
 
@@ -16,6 +16,8 @@ function bindings(
     State?: () => Promise<unknown>;
     FileBase?: () => Promise<string>;
     on?: (name: string, listener: (event: { data: unknown }) => void) => () => void;
+    projects?: Record<string, unknown>;
+    sources?: Record<string, unknown>;
   } = {}
 ) {
   const service = (methods: Record<string, unknown>) => async () => methods as never;
@@ -28,8 +30,11 @@ function bindings(
     native: missing,
     components: missing,
     jobs: missing,
-    projects: missing,
+    projects: overrides.projects ? service(overrides.projects) : missing,
     timing: missing,
+    sources: overrides.sources ? service(overrides.sources) : missing,
+    cast: missing,
+    scenario: missing,
     events: async () => ({ on: overrides.on ?? (() => () => undefined) })
   } as Bindings;
   return b;
@@ -106,5 +111,33 @@ describe('Граница window.api', () => {
     expect(vi.getTimerCount()).toBe(0);
     await expect(withDeadline(async () => state, 'app.state', 20)).resolves.toEqual(state);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('передаёт сброс полей generation (undefined) списком путей, а не теряет его в JSON', async () => {
+    const saved = { agentInstructions: '', name: 'Клип', animaticVideo: 'klip.mp4', generation: null };
+    const SaveSettings = vi.fn(async () => saved);
+    const api = createApi(bindings({ projects: { SaveSettings } }));
+    const generation = { video: null, image: { provider: 'test', model: undefined, options: { a: 1, b: undefined } } };
+    await expect(api.projects.saveSettings('/клип', { name: 'Клип', animaticVideo: 'klip.mp4', generation })).resolves.toEqual(saved);
+    expect(SaveSettings).toHaveBeenCalledWith('/клип', {
+      name: 'Клип',
+      animaticVideo: 'klip.mp4',
+      generation,
+      unset: [
+        ['image', 'model'],
+        ['image', 'options', 'b']
+      ]
+    });
+    expect(undefinedPaths([undefined])).toEqual([]);
+    expect(undefinedPaths(null)).toEqual([]);
+  });
+
+  it('отдаёт опись исходников и настройки проекта как прочитанный JSON', async () => {
+    const manifest = { schema_version: 1, track: null, lyrics: null, idea: null, cover: null, references: [], updated_at: 'x' };
+    const view = { manifest, lyricsText: '', ideaText: '', coverPath: null, referenceFilePaths: {}, problems: [] };
+    const api = createApi(bindings({ sources: { View: async () => view } }));
+    await expect(api.sources.view('/клип')).resolves.toStrictEqual(view);
+    expect(methodAvailability('sources.save')).toEqual({ available: true, reason: null });
+    expect(methodAvailability('dashboard.view').available).toBe(false);
   });
 });

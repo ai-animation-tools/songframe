@@ -2,11 +2,13 @@ package app
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"songframe-go/internal/project"
+	"songframe-go/internal/scenarioapply"
 	"songframe-go/internal/status"
 	"songframe-go/internal/store"
 	"songframe-go/internal/wire"
@@ -22,16 +24,22 @@ type MediaRegistry interface {
 // ProjectService реализует группу window.api.projects (Projects оригинала, src/main/projects.ts):
 // открытие делает папку текущим проектом и поднимает её в истории каталога состояния,
 // статус вычисляется заново из файлов проекта (status.Compute) и нигде не хранится.
-// Файлы проекта сервис не пишет. Recovery прерванных публикаций монтажа и производных планов,
-// которое оригинал запускает при открытии, перенесётся вместе с этими областями (этапы 44–45).
+// Запись проекта (создание, переименование, настройки) — в project_edit.go. Сам сервис при открытии
+// пишет в проект только при восстановлении прерванной публикации сценария (scenarioapply): открытие
+// сначала возвращает файлы к согласованному состоянию, и лишь затем проект становится текущим.
+// Recovery публикаций монтажа и производных планов перенесётся вместе с этими областями (этапы 45–46).
 type ProjectService struct {
-	media MediaRegistry
-	state *store.LocalState
+	media    MediaRegistry
+	state    *store.LocalState
+	scenario scenarioapply.Store
+	// template — шаблон нового проекта; nil означает встроенный resources.ProjectTemplate.
+	template fs.FS
 }
 
-// NewProjectService принимает уже запущенный медиасервер и каталог состояния приложения.
+// NewProjectService принимает уже запущенный медиасервер и каталог состояния приложения; журнал
+// публикаций сценария лежит в том же каталоге состояния.
 func NewProjectService(media MediaRegistry, localDir string) *ProjectService {
-	return &ProjectService{media: media, state: store.NewLocalState(localDir)}
+	return &ProjectService{media: media, state: store.NewLocalState(localDir), scenario: scenarioapply.NewStore(localDir)}
 }
 
 // Open — projects.open: только папка с plan/project.json и названием становится текущей.
@@ -44,6 +52,11 @@ func (s *ProjectService) Open(path string) (status.ProjectStatus, error) {
 	marker := status.ReadMarker(target)
 	if marker == nil {
 		return status.ProjectStatus{}, fmt.Errorf("В папке нет plan/project.json с названием проекта: %s", target)
+	}
+	// Незавершённая публикация сценария восстанавливается до того, как проект станет текущим.
+	// Конфликт или ошибка оставляют журнал (запись запрещена шлюзом) и не открывают проект.
+	if err := s.scenario.Recover(target); err != nil {
+		return status.ProjectStatus{}, err
 	}
 	if _, err := s.state.History(); err != nil {
 		return status.ProjectStatus{}, err

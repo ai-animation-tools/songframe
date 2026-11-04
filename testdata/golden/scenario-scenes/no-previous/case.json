@@ -1,0 +1,11 @@
+{
+  "description": "Реестра ещё нет: файл создаётся, impact пуст.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "keep",
+  "covers": [
+    "создание реестра",
+    "keep без прежних отпечатков"
+  ],
+  "stubbedMedia": []
+}

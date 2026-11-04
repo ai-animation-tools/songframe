@@ -1,0 +1,9 @@
+{
+  "description": "Опись без массива references: кастинг считается повреждённым.",
+  "call": "viewCast",
+  "project": "project",
+  "covers": [
+    "descriptionManifest ошибка → fileDamaged"
+  ],
+  "stubbedMedia": []
+}

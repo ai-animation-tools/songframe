@@ -41,11 +41,17 @@ type AppState struct {
 	Platform  string                `json:"platform"`
 }
 
+// RootAllower — часть медиасервера, которая разрешает показ файлов каталога по shell.fileUrl.
+type RootAllower interface {
+	AllowRoot(directory string) error
+}
+
 // AppService обслуживает только реализованные операции оболочки. Здесь нет
 // поиска Python/Node/ORT, автоматического открытия клипа или чтения старого профиля.
 // Callback готовности принадлежит smoke-проверке main, а не пользовательскому workflow.
 type AppService struct {
 	profile   ProfileStore
+	media     RootAllower
 	packaged  bool
 	platform  string
 	ready     func(AppState) error
@@ -53,14 +59,15 @@ type AppService struct {
 	lastState *AppState
 }
 
-// NewAppService связывает Wails с профилем и необязательной проверкой frontend.
-// Платформа нормализуется к существующему TS-контракту (Windows обозначается win32).
-func NewAppService(profile ProfileStore, packaged bool, ready func(AppState) error) *AppService {
+// NewAppService связывает Wails с профилем, медиасервером и необязательной проверкой frontend.
+// media может быть nil (тесты без медиасервера). Платформа нормализуется к существующему
+// TS-контракту (Windows обозначается win32).
+func NewAppService(profile ProfileStore, media RootAllower, packaged bool, ready func(AppState) error) *AppService {
 	platform := runtime.GOOS
 	if platform == "windows" {
 		platform = "win32"
 	}
-	return &AppService{profile: profile, packaged: packaged, platform: platform, ready: ready}
+	return &AppService{profile: profile, media: media, packaged: packaged, platform: platform, ready: ready}
 }
 
 // State готовит профиль и возвращает снимок без проектных действий. Если диск
@@ -85,8 +92,15 @@ func (s *AppService) State() (AppState, error) {
 		return AppState{}, err
 	}
 	if current != "" {
-		if _, statErr := os.Stat(current); statErr == nil {
+		if info, statErr := os.Stat(current); statErr == nil {
 			state.Current = &current
+			// Текущий проект из прошлого сеанса renderer не открывает заново (projects.open), а сразу
+			// показывает его медиа: корень разрешается здесь, как в Open. Без этого трек, обложка и
+			// референсы получали бы отказ медиасервера (в Electron local-file:// отдавал любой путь).
+			// Ошибка разрешения не мешает старту: страница покажет обычную ошибку проигрывателя.
+			if s.media != nil && info.IsDir() {
+				_ = s.media.AllowRoot(current)
+			}
 		}
 	}
 	history, err := local.History()

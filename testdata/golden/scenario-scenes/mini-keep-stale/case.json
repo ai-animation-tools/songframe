@@ -1,0 +1,11 @@
+{
+  "description": "M02 уже устарел до правки: keep его не возвращает.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "keep",
+  "covers": [
+    "keep не трогает ранее устаревшие",
+    "state=stale"
+  ],
+  "stubbedMedia": []
+}

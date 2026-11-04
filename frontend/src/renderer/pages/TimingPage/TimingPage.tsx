@@ -67,7 +67,6 @@ export function TimingPage(): ReactElement {
   const [generationJob, setGenerationJob] = useState<JobInfo | null>(null);
   const [generationWorking, setGenerationWorking] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
-  const [vocals, setVocals] = useState(false);
   const resultRead = useRef<string | null>(null);
   const [resultReady, setResultReady] = useState(false);
   const [resetAll, setResetAll] = useState(false);
@@ -148,7 +147,8 @@ export function TimingPage(): ReactElement {
   const verifiedCount = editorRows.filter((line) => line.verified).length;
   const invalidBindings = selectLyricTimings(view?.timing?.lines ?? [], view?.lyrics ?? []).invalidIds.length > 0;
   const hasLyrics = !!view?.lyrics.some((line) => line.text && !line.header);
-  const canGenerate = !!view?.trackPath && hasLyrics && !!state?.toolsRoot;
+  // Отличие от 634fd94: разметка не использует Python-комплекс, поэтому папка инструментов не требуется.
+  const canGenerate = !!view?.trackPath && hasLyrics;
 
   const confirmAll = (): void => {
     if (busy || generating) return;
@@ -267,6 +267,11 @@ export function TimingPage(): ReactElement {
       await refresh();
       if (!mounted.current || currentProject.current !== project) return;
       setResultReady(true);
+      // Отличие от 634fd94: после успешной разметки окно закрывается, а следующее открытие начинается
+      // с чистого окна без журнала прошлого задания: итог — в уведомлении и на странице.
+      // Ошибка чтения оставляет окно открытым для повтора.
+      setGenerateOpen(false);
+      setGenerationJob(null);
       notify(songTimingTexts.ready, 'success');
     } catch (reason) {
       if (mounted.current && currentProject.current === project) setGenerationError(describeError(reason));
@@ -297,7 +302,6 @@ export function TimingPage(): ReactElement {
           setGenerationJob(running);
           setGenerating(true);
           setGenerateOpen(true);
-          setVocals(running.steps.some((step) => step.label === songTimingTexts.vocals));
         }
       })
       .catch(() => {
@@ -384,8 +388,8 @@ export function TimingPage(): ReactElement {
     setGenerationJob(null);
     try {
       if (typeof window.api.timing.start !== 'function') throw new Error(songTimingTexts.restart);
-      // Отличие от 634fd94: путь модели Whisper и устройство больше не передаются (D-028).
-      const job = await window.api.timing.start(project, { reset: resetAll, vocals });
+      // Отличие от 634fd94: модель распознавания и устройство не передаются (D-028), разметка всегда идёт по вокалу.
+      const job = await window.api.timing.start(project, { reset: resetAll, vocals: true });
       if (!mounted.current || currentProject.current !== project) return;
       setGenerationJob(job);
       setGenerating(job.status === 'running');
@@ -415,13 +419,7 @@ export function TimingPage(): ReactElement {
   if (!view || viewProject !== project) return <></>;
 
   // Причина недоступности разметки без учёта правок и операций: общая для панели и диалога.
-  const generateBlockedReason = !view.trackPath
-    ? timingTexts.addTrack
-    : !hasLyrics
-      ? timingTexts.addLyrics
-      : !state?.toolsRoot
-        ? timingTexts.toolsMissing
-        : null;
+  const generateBlockedReason = !view.trackPath ? timingTexts.addTrack : !hasLyrics ? timingTexts.addLyrics : null;
 
   return (
     <Stack spacing={2} inert={busy || generating || generationWorking || undefined} aria-busy={busy || generating || generationWorking} sx={{ pb: 8 }}>
@@ -433,13 +431,13 @@ export function TimingPage(): ReactElement {
           busy={busy || generationWorking}
           generating={generating}
           invalidBindings={invalidBindings}
-          canGenerate={!!view.trackPath && !!state?.toolsRoot}
+          canGenerate={!!view.trackPath}
           manualMode={manualMode}
           onManualModeChange={(manual) => {
             player.stopLine();
             setManualMode(manual);
           }}
-          generateBlockedReason={!view.trackPath ? timingTexts.addTrack : !state?.toolsRoot ? timingTexts.toolsMissing : null}
+          generateBlockedReason={!view.trackPath ? timingTexts.addTrack : null}
           onGenerate={() => setGenerateOpen(true)}
           onConfirmAll={confirmAll}
           onRecalculateSections={recalculateSections}
@@ -523,13 +521,10 @@ export function TimingPage(): ReactElement {
         key={`local-${project}`}
         project={project}
         open={generateOpen}
-        vocals={vocals}
         job={generationJob}
         working={generationWorking}
         error={generationError}
-        resultReady={resultReady}
         onReloadResult={() => void readGenerationResult()}
-        onVocalsChange={setVocals}
         onStop={stopGeneration}
         onCancelDownload={async (id) => {
           let job = await window.api.timing.cancel(id);

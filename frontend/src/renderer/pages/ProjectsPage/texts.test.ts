@@ -33,20 +33,6 @@ describe('Тексты создания и выбора проекта', () => {
     expect(projectsTexts.historyDetails({ path: '', exists: true, openedAt: '0' })).toBe(' · открыт 0');
   });
 
-  it.each([
-    ['Ресурсы приложения не найдены: см. страницу «Среда».', () => projectsTexts.resourcesMissing],
-    ['Ресурсы приложения не найдены, шаблон проекта недоступен. Подробности на странице «Среда».', () => projectsTexts.templateUnavailable],
-    [
-      'Ресурсы приложения не найдены: создание проектов и инструменты недоступны, просмотр работает. Подробности на странице «Среда».',
-      () => projectsTexts.toolsUnavailable
-    ]
-  ])('сохраняет фразу и маршрут среды: %s', (expected, text) => {
-    expect(text()).toBe(expected);
-    const html = renderLinked(text());
-    expect([...html.matchAll(/<a [^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/g)].map((match) => [match[1], match[2]])).toEqual([['/environment', '«Среда»']]);
-    expect(html.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '').replace(/<[^>]*>/g, '')).toBe(expected);
-  });
-
   it('показывает прежнее пустое состояние и значения формы без вызова API', () => {
     const history = renderToStaticMarkup(
       createElement(ProjectHistory, { history: [], states: {}, currentPath: null, busy: false, onOpen: () => undefined, onForget: () => undefined })

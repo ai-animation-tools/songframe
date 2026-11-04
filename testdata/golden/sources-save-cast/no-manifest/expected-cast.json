@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "entities": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "role": "",
+      "appearance": "Музыкант",
+      "images": [
+        "heroes/mira.jpg",
+        "heroes/mira-2.webp"
+      ],
+      "initial_state": {}
+    }
+  ],
+  "properties": {
+    "character": [
+      {
+        "key": "position",
+        "label": "Положение",
+        "hint": "Где и относительно чего: «перед сценой, лицом к камере»",
+        "checklist": "Персонаж стоит там, где записано: {value}?"
+      },
+      {
+        "key": "contact",
+        "label": "Опора",
+        "hint": "На чём стоит или сидит персонаж",
+        "values": [
+          "стоит на полу",
+          "сидит на стуле",
+          "стоит у стола"
+        ],
+        "checklist": "Опора: {value}?"
+      },
+      {
+        "key": "posture",
+        "label": "Поза",
+        "hint": "Стоит, наклонился, сидит боком, бежит"
+      },
+      {
+        "key": "facing",
+        "label": "Взгляд и разворот",
+        "hint": "Куда повёрнут корпус и куда смотрит"
+      },
+      {
+        "key": "clothes_condition",
+        "label": "Одежда",
+        "hint": "Цвет, состояние и заметные детали одежды",
+        "checklist": "Одежда: {value}?"
+      },
+      {
+        "key": "face_condition",
+        "label": "Лицо",
+        "hint": "Видимые детали лица и выражение",
+        "checklist": "Лицо: {value}?"
+      },
+      {
+        "key": "marks",
+        "label": "Сквозные метки",
+        "hint": "Детали, которые должны повторяться дальше, например узор на рукаве",
+        "checklist": "Сквозные метки на месте: {value}?"
+      },
+      {
+        "key": "holding",
+        "label": "В руках",
+        "hint": "Предмет и в какой руке",
+        "checklist": "В руках: {value}?"
+      },
+      {
+        "key": "emotion",
+        "label": "Состояние и эмоция",
+        "hint": "Эмоция и её развитие в сюжете"
+      },
+      {
+        "key": "fatigue",
+        "label": "Усталость",
+        "hint": "Накапливается по сюжету"
+      }
+    ]
+  }
+}

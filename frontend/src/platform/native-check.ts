@@ -85,6 +85,13 @@ async function withMedia<T>(file: MediaInput, host: HTMLElement, verify: (elemen
     return await verify(element);
   } finally {
     element.pause();
+    // Звуковой сервер (WirePlumber) запоминает громкость и mute потока по media.role (Music/Movie),
+    // общей для всех приложений на WebKit. Без возврата приглушённая проверка оставила бы пользователю
+    // беззвучное воспроизведение треков и видео. Поток уже на паузе, поэтому возврат не слышен;
+    // пауза даёт значению дойти до сервера до разрушения конвейера.
+    element.volume = 1;
+    element.muted = false;
+    await delay(250);
     element.removeAttribute('src');
     element.load();
     element.remove();

@@ -1,0 +1,11 @@
+{
+  "description": "Пути к отсутствующим файлам.",
+  "call": "validateSources",
+  "project": "project",
+  "covers": [
+    "trackFileMissing",
+    "textFileMissing",
+    "coverFileMissing"
+  ],
+  "stubbedMedia": []
+}

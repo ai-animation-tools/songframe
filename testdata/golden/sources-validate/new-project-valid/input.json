@@ -1,0 +1,53 @@
+{
+  "track": {
+    "path": "<inputs>/Моя песня.mp3"
+  },
+  "lyrics": {
+    "text": "[Куплет]\r\nПервая строка  \r\nВторая строка\r\n\r\n[Припев]\r\nОгни над водой\r\n\r\n\r\n"
+  },
+  "idea": {
+    "path": "<inputs>/идея.md"
+  },
+  "cover": {
+    "path": "<inputs>/Обложка.PNG"
+  },
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": " Мира ",
+      "short_name": "",
+      "description": " Музыкант ",
+      "prompt": "",
+      "files": [
+        {
+          "sourcePath": "<inputs>/mira front.jpeg",
+          "view": "front",
+          "note": " анфас ",
+          "prompt": "Мира анфас\r\n"
+        },
+        {
+          "sourcePath": "<inputs>/mira-side.webp",
+          "view": "side",
+          "note": "",
+          "prompt": ""
+        }
+      ]
+    },
+    {
+      "id": "lamp",
+      "kind": "prop",
+      "name": "Фонарь",
+      "short_name": "Фонарь",
+      "description": "",
+      "prompt": "Общий промпт фонаря",
+      "files": [
+        {
+          "sourcePath": "<inputs>/lamp.png",
+          "view": "full",
+          "note": ""
+        }
+      ]
+    }
+  ]
+}

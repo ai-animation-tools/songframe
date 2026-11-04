@@ -1,0 +1,10 @@
+{
+  "description": "Ошибки типов и референсов в порядке оригинала.",
+  "call": "validateSources",
+  "project": "project",
+  "covers": [
+    "validateKinds",
+    "validateReferences"
+  ],
+  "stubbedMedia": []
+}

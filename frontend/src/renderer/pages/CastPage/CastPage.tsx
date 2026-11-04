@@ -24,6 +24,7 @@ import { LinkedText } from '../../components/LinkedText';
 import { ActionButton } from '../../components/ActionButton';
 import { ENTITY_PARAM } from '../../components/castRoutes';
 import { coveredArea, revealAnchor } from '../../hooks/useAnchorTarget';
+import { useMethodAvailability } from '../../availability';
 
 export function CastPage(): ReactElement {
   const { state, refresh, notify, describeError } = useApp();
@@ -36,6 +37,8 @@ export function CastPage(): ReactElement {
   const [view, setView] = useState<CastView | null>(null);
   const [cast, setCast] = useState<CastFile | null>(null);
   const [busy, setBusy] = useState(false);
+  // Создание изображения референса переносится отдельно: пока его нет, кнопка объясняет причину.
+  const generation = useMethodAvailability('referenceImages.create');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
   const entityParam = params.get(ENTITY_PARAM);
@@ -223,7 +226,9 @@ export function CastPage(): ReactElement {
                 setExpanded(nextId);
               }}
               onGenerate={() => setGenerationTarget({ project, entity: { ...entity } })}
-              generationDisabledReason={busy ? commonTexts.operationPending : dirty ? castTexts.imageGenerationSaveFirst : null}
+              generationDisabledReason={
+                busy ? commonTexts.operationPending : dirty ? castTexts.imageGenerationSaveFirst : generation.available ? null : generation.reason
+              }
               onRemove={() => remove(entity.id)}
             />
           ))}

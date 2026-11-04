@@ -136,6 +136,16 @@ func newManager(profile string, manifest Manifest, options managerOptions) *Mana
 	return m
 }
 
+// ErrBusy распознаёт отказ Check/Install из-за уже идущей проверки или установки (errors.Is).
+// Фоновые задания (разметка, загрузка моделей) по нему ждут и повторяют, а не падают.
+var ErrBusy = errors.New("компоненты заняты другой проверкой или установкой")
+
+// busyError сохраняет прежний текст сообщения для UI и отвечает на errors.Is(err, ErrBusy).
+type busyError struct{ text string }
+
+func (e *busyError) Error() string        { return e.text }
+func (e *busyError) Is(target error) bool { return target == ErrBusy }
+
 // Configure атомарно сохраняет выбор, сохраняя проверки неизменившихся файлов по fingerprint.
 // Во время проверки или установки выбор отклоняется; соответствующая отмена остаётся доступной.
 func (m *Manager) Configure(selection Selection) (Snapshot, error) {
@@ -449,7 +459,7 @@ func (m *Manager) Cancel() {
 // Force заново хеширует набор; обычный повтор использует подтверждение неизменных метаданных.
 func (m *Manager) Check(ctx context.Context, operationIDs []string, force bool) (result Snapshot, resultErr error) {
 	if !m.work.TryLock() {
-		return m.State(), fmt.Errorf("проверка или установка компонентов уже выполняется")
+		return m.State(), &busyError{"проверка или установка компонентов уже выполняется"}
 	}
 	defer m.work.Unlock()
 	needed := map[string]bool{}

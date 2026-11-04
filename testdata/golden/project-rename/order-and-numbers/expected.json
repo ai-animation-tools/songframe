@@ -1,0 +1,37 @@
+{
+  "error": null,
+  "status": {
+    "path": "<project>",
+    "state": "empty",
+    "name": "Новое имя",
+    "animaticVideo": "a.mp4",
+    "checks": {
+      "marker": true,
+      "sources": false,
+      "timing": false,
+      "cast": false,
+      "treatment": false,
+      "scenes": false,
+      "shotsTotal": 0,
+      "shotsDone": 0,
+      "animaticBuilt": false,
+      "animaticFresh": false,
+      "animaticApproved": false
+    },
+    "problems": []
+  },
+  "history": {
+    "current": null,
+    "history": [
+      {
+        "path": "/elsewhere/Другой клип",
+        "name": "Другой клип"
+      },
+      {
+        "path": "<project>",
+        "name": "Новое имя"
+      }
+    ]
+  },
+  "fileUnchanged": false
+}

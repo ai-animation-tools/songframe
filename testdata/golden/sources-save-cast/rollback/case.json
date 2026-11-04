@@ -1,0 +1,12 @@
+{
+  "description": "Запись кастинга отклонена (изображение сущности отсутствует): source/ и cast.json возвращаются к прежнему состоянию.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "откат source/ из резерва",
+    "откат cast.json",
+    "imageMissing в writeCast",
+    "изменённый текст и новые файлы откатываются"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Сохранённые части не требуются повторно; сохранённый текст проверяется разбором.",
+  "call": "validateSources",
+  "project": "project",
+  "covers": [
+    "existing manifest",
+    "parseLyrics сохранённого текста"
+  ],
+  "stubbedMedia": []
+}

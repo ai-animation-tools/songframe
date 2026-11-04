@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "audio": {
+    "path": "source/track.mp3",
+    "end_seconds": "9"
+  },
+  "references": {
+    "mira": {
+      "name": "Мира",
+      "path": "source/heroes/mira.png"
+    },
+    "boat": {
+      "name": "Лодка «Чайка»",
+      "path": "source/vehicles/boat.png",
+      "short_name": "Лодка"
+    }
+  },
+  "visual_direction": "Мягкий вечерний свет.",
+  "sequences": [
+    {
+      "id": "verse",
+      "title": "Первый куплет",
+      "direction": "Спокойно."
+    },
+    {
+      "id": "chorus",
+      "title": "Припев",
+      "direction": "Огни."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "M01",
+      "original": "Строка M01",
+      "sequence": "verse",
+      "title": "План M01",
+      "start_frame": 0,
+      "end_frame_exclusive": 90,
+      "camera": "Статика",
+      "action": "Действие M01.",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_changes": {
+        "after": {
+          "mira": {
+            "position": "в лодке"
+          },
+          "boat": {
+            "wet": "мокрая"
+          }
+        }
+      },
+      "state_from": null
+    },
+    {
+      "id": "M02",
+      "original": "Строка M02",
+      "sequence": "verse",
+      "title": "План M02",
+      "start_frame": 90,
+      "end_frame_exclusive": 180,
+      "camera": "Статика",
+      "action": "Действие M02.",
+      "continuity": "",
+      "references": [
+        "mira",
+        "boat"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_changes": {
+        "before": {
+          "world": {
+            "time_of_day": "сумерки"
+          }
+        },
+        "after": {
+          "mira": {
+            "clothes_condition": null
+          }
+        }
+      }
+    },
+    {
+      "id": "M03",
+      "original": "Строка M03",
+      "sequence": "chorus",
+      "title": "План M03",
+      "start_frame": 180,
+      "end_frame_exclusive": 270,
+      "camera": "Статика",
+      "action": "Действие M03.",
+      "continuity": "",
+      "references": [
+        "mira"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_changes": {},
+      "state_from": {
+        "scene": "M01",
+        "phase": "same"
+      },
+      "derived_from": {
+        "shot": "M01"
+      }
+    }
+  ]
+}

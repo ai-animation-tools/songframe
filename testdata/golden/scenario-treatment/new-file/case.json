@@ -1,0 +1,12 @@
+{
+  "description": "Трактовки нет; без разметки и описи длительность не проверяется.",
+  "call": "saveTreatment",
+  "project": "project",
+  "covers": [
+    "создание файла",
+    "duration=null"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Пересохранение реестра образца.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "impact пуст",
+    "стабильность"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,18 @@
+{
+  "error": "В папке нет корректного plan/project.json с названием проекта.",
+  "status": null,
+  "history": {
+    "current": null,
+    "history": [
+      {
+        "path": "/elsewhere/Другой клип",
+        "name": "Другой клип"
+      },
+      {
+        "path": "<project>",
+        "name": "Старое имя"
+      }
+    ]
+  },
+  "fileUnchanged": true
+}

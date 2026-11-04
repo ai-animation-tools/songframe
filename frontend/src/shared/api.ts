@@ -159,7 +159,10 @@ export interface Api {
     /** Готовность сценария для страниц, которые работают со сценами. */
     status(project: string): Promise<ScenarioStatus>;
     view(project: string): Promise<ScenarioView>;
+    /** Записывает трактовку черновиком: отклоняется только неверная структура, проблемы показывает validateTreatment. */
     saveTreatment(project: string, treatment: TreatmentFile): Promise<TreatmentFile>;
+    /** Проблемы трактовки без записи: стык частей, длительность трека, коды и названия. Отличие от 634fd94: в оригинале их давал только отказ сохранения. */
+    validateTreatment(project: string, treatment: TreatmentFile): Promise<string[]>;
     /** mode=keep оставляет принятые комплекты и пакеты затронутых планов в силе: правка не относится к сюжету. */
     saveScenes(project: string, scenes: ScenesFile, mode: ScenesSaveMode): Promise<ScenesFile>;
     /** Какие планы затронет сохранение черновика: сравнение отпечатков постановки без записи. */

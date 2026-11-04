@@ -1,0 +1,8 @@
+{
+  "settings": {
+    "name": "Клип",
+    "animaticVideo": "папка/клип.mp4",
+    "generation": null
+  },
+  "unset": []
+}

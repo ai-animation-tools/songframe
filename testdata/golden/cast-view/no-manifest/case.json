@@ -1,0 +1,10 @@
+{
+  "description": "Нет описи исходников: описания сущностей собственные.",
+  "call": "viewCast",
+  "project": "project",
+  "covers": [
+    "manifest=null",
+    "без проекции"
+  ],
+  "stubbedMedia": []
+}

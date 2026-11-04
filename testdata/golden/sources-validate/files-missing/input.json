@@ -1,0 +1,15 @@
+{
+  "track": {
+    "path": "<inputs>/нет.mp3"
+  },
+  "lyrics": {
+    "path": "<inputs>/нет.md"
+  },
+  "idea": {
+    "path": "<inputs>/нет идеи.md"
+  },
+  "cover": {
+    "path": "<inputs>/нет.png"
+  },
+  "references": []
+}

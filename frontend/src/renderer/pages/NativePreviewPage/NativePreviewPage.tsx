@@ -7,6 +7,7 @@ import type { PreviewInput } from '../../../../bindings/songframe-go/internal/ap
 /** Служебное второе окно нативной проверки (--native-check): получает медиа из Go по session,
  * сообщает loadedmetadata (preview:ready) и закрывается через Go. Продуктовое окно монтажа
  * ещё не перенесено, поэтому страница обращается к bindings NativeService напрямую, минуя window.api.
+ * Видео не приглушается: окно его не воспроизводит, а mute запомнился бы звуковым сервером для роли Movie.
  */
 export function NativePreviewPage() {
   const { search } = useLocation();
@@ -36,7 +37,6 @@ export function NativePreviewPage() {
           key={input.mediaUrl}
           src={input.mediaUrl}
           controls
-          muted
           preload="metadata"
           style={{ maxWidth: '100%' }}
           onLoadedMetadata={() => void native.PreviewReady(session).catch(fail)}

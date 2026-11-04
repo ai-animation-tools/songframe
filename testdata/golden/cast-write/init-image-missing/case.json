@@ -1,0 +1,9 @@
+{
+  "description": "Файл изображения референса отсутствует — запись отклоняется.",
+  "call": "initCast",
+  "project": "project",
+  "covers": [
+    "imageMissing"
+  ],
+  "stubbedMedia": []
+}

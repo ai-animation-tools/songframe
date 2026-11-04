@@ -1,0 +1,85 @@
+{
+  "error": null,
+  "result": {
+    "schema_version": 1,
+    "kinds": [
+      {
+        "id": "character",
+        "label": "Персонаж",
+        "dir": "heroes"
+      },
+      {
+        "id": "vehicle",
+        "label": "Транспорт",
+        "dir": "vehicles"
+      },
+      {
+        "id": "location",
+        "label": "Локация",
+        "dir": "locations"
+      },
+      {
+        "id": "prop",
+        "label": "Предмет",
+        "dir": "props"
+      },
+      {
+        "id": "style",
+        "label": "Стиль",
+        "dir": "style"
+      }
+    ],
+    "track": {
+      "path": "track.mp3",
+      "sha256": "ed834a6ad1b63649a9aaeb78c18e95bc49a266d0d14c953230bc924876e51bdf",
+      "bytes": 9,
+      "original_name": "Моя песня.mp3",
+      "duration_seconds": null
+    },
+    "lyrics": {
+      "path": "text.md",
+      "sha256": "50197925065424d662e73a6bdecfff200e8957fcdb752c6fc895d54573a9e22b",
+      "bytes": 41,
+      "lines": 1,
+      "sections": [
+        "Куплет"
+      ]
+    },
+    "idea": {
+      "path": "description.md",
+      "sha256": "bef7dbae8f09072623f8f94d72e1829e19426d4c807ddc34a7b47d6f41b8ee5a",
+      "bytes": 9
+    },
+    "cover": null,
+    "references": [
+      {
+        "id": "mira",
+        "kind": "character",
+        "name": "Мира",
+        "short_name": "Мира",
+        "description": "Музыкант",
+        "files": [
+          {
+            "path": "heroes/mira.jpg",
+            "sha256": "d221c60c1b6bcd52f98f95ec6a7c89bc4e66202479530a69aeb3490015abfca9",
+            "bytes": 20,
+            "view": "front",
+            "note": "",
+            "prompt": null
+          },
+          {
+            "path": "heroes/mira-2.webp",
+            "sha256": "9c467d735b791248d627194fd0dbf995e76580b838dcc2f507ed98c344878d58",
+            "bytes": 19,
+            "view": "side",
+            "note": "",
+            "prompt": null
+          }
+        ],
+        "prompt": null
+      }
+    ],
+    "updated_at": "<updated_at>"
+  },
+  "castUnchanged": false
+}

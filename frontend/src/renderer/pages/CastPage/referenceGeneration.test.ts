@@ -35,6 +35,7 @@ vi.mock('react', async (original) => ({
 }));
 vi.mock('react-router-dom', () => ({ useSearchParams: () => [new URLSearchParams(), vi.fn()] }));
 vi.mock('../../components/PageLoader', () => ({ usePageLoading: vi.fn() }));
+vi.mock('../../availability', () => ({ useMethodAvailability: () => ({ available: true, reason: null }) }));
 vi.mock('../../state', () => ({
   useApp: () => ({ state: { current: fixture.project }, refresh: fixture.refresh, notify: fixture.notify, describeError: fixture.describeError })
 }));

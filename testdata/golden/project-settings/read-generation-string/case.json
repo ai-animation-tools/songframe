@@ -1,0 +1,9 @@
+{
+  "description": "generation — строка.",
+  "call": "readProjectSettings",
+  "project": "project",
+  "covers": [
+    "read: generation не объект"
+  ],
+  "stubbedMedia": []
+}

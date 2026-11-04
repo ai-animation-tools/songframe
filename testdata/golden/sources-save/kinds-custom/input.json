@@ -1,0 +1,52 @@
+{
+  "kinds": [
+    {
+      "id": "character",
+      "label": "Персонаж",
+      "dir": "heroes"
+    },
+    {
+      "id": "creature",
+      "label": "Существо",
+      "dir": "creatures"
+    }
+  ],
+  "track": null,
+  "lyrics": null,
+  "idea": null,
+  "cover": {
+    "path": "<inputs>/Обложка.PNG"
+  },
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "Музыкант с фонариком",
+      "prompt": "",
+      "files": [
+        {
+          "existingPath": "heroes/mira.png",
+          "view": "full",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "cat",
+      "kind": "creature",
+      "name": "Кот",
+      "short_name": "Кот",
+      "description": "Рыжий",
+      "prompt": "",
+      "files": [
+        {
+          "sourcePath": "<inputs>/lamp.png",
+          "view": "full",
+          "note": ""
+        }
+      ]
+    }
+  ]
+}

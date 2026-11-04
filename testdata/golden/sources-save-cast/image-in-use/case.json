@@ -1,0 +1,10 @@
+{
+  "description": "Удаление выбранного вида Миры отклоняется до записи.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "imageInUse",
+    "дерево без изменений"
+  ],
+  "stubbedMedia": []
+}

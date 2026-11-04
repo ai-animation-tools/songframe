@@ -1,0 +1,11 @@
+{
+  "description": "Пакет M03 подготовлен по другой постановке: без комплекта план unknown.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "state=unknown",
+    "SCENE_CHANGED в пакете"
+  ],
+  "stubbedMedia": []
+}

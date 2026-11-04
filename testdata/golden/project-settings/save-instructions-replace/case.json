@@ -1,0 +1,9 @@
+{
+  "description": "Новые инструкции заменяют нестроковые сохранённые.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "agentInstructions задано"
+  ],
+  "stubbedMedia": []
+}

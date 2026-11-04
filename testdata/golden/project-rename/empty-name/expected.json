@@ -1,0 +1,18 @@
+{
+  "error": "Название проекта не может быть пустым.",
+  "status": null,
+  "history": {
+    "current": null,
+    "history": [
+      {
+        "path": "/elsewhere/Другой клип",
+        "name": "Другой клип"
+      },
+      {
+        "path": "<project>",
+        "name": "Старое имя"
+      }
+    ]
+  },
+  "fileUnchanged": true
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Дополнение существующего кастинга образца из исходников.",
+  "call": "initCast",
+  "project": "project",
+  "covers": [
+    "initCast на существующем",
+    "appearance из описи",
+    "стабильность"
+  ],
+  "stubbedMedia": []
+}

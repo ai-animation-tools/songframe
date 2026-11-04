@@ -9,8 +9,8 @@ if [ ! -f frontend/dist/index.html ]; then
 fi
 wails3 generate bindings -ts -i -d frontend/bindings
 
-# Wails оставляет пустую строку в конце модуля без событий. Убираем только хвост,
-# чтобы повторная генерация сохраняла чистый diff без ручной правки generated-файлов.
+# Wails оставляет пустую строку в конце модуля без событий и пробел после `*` в пустых
+# строках JSDoc (пустая строка комментария Go). Убираем только эти хвосты, чтобы повторная генерация сохраняла чистый diff без ручной правки generated-файлов.
 # Go-сервисы отдают срезы и словари через wire.Fill, поэтому `T[] | null` и
 # `{ [_ in string]?: T } | null` сужаются до контракта window.api (D-027): typecheck
 # сверяет bindings с shared/types без ручных валидаторов. Nullable-указатели не меняются.
@@ -23,7 +23,7 @@ function trimGenerated(directory) {
     if (entry.isDirectory()) trimGenerated(file);
     else if (entry.name.endsWith('.ts')) {
       const source = readFileSync(file, 'utf8');
-      let result = source.trimEnd() + '\n';
+      let result = source.trimEnd().replace(/[ \t]+$/gm, '') + '\n';
       result = result.replace(/\[\] \| null/g, '[]');
       for (let previous = ''; previous !== result; ) {
         previous = result;

@@ -1,0 +1,12 @@
+{
+  "description": "Разбиение M02 на M02 и M02.5.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "impactNewShot",
+    "state=planned",
+    "produced=false"
+  ],
+  "stubbedMedia": []
+}

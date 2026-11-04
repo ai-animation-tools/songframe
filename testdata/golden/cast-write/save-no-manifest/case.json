@@ -1,0 +1,10 @@
+{
+  "description": "Без описи описания принадлежат кастингу.",
+  "call": "writeCast",
+  "project": "project",
+  "covers": [
+    "manifest=null",
+    "только cast.json"
+  ],
+  "stubbedMedia": []
+}

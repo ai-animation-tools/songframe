@@ -1,0 +1,9 @@
+{
+  "description": "Удаление невыбранного вида: файл удаляется, выбор кастинга прежний.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "удаление неиспользуемого изображения"
+  ],
+  "stubbedMedia": []
+}

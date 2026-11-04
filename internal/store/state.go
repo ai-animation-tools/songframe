@@ -160,3 +160,25 @@ func (s *LocalState) Remove(path string) error {
 	}
 	return projectfs.WriteJSON(s.historyPath(), historyDocument{SchemaVersion: 1, Projects: records})
 }
+
+// Rename меняет название проекта в истории, не трогая порядок и время открытия:
+// переименование не считается повторным открытием. Пути нет в истории — файл не пишется.
+func (s *LocalState) Rename(path, name string) error {
+	history, err := s.History()
+	if err != nil {
+		return err
+	}
+	found := false
+	records := []historyRecord{}
+	for _, entry := range history {
+		record := historyRecord{Path: entry.Path, Name: entry.Name, LastOpened: entry.LastOpened}
+		if entry.Path == path {
+			record.Name, found = name, true
+		}
+		records = append(records, record)
+	}
+	if !found {
+		return nil
+	}
+	return projectfs.WriteJSON(s.historyPath(), historyDocument{SchemaVersion: 1, Projects: records})
+}

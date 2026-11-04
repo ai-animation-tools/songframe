@@ -1,0 +1,12 @@
+{
+  "description": "Пустой список частей. Отличие от 634fd94: оригинал отказывал (originalError), Go сохраняет черновик, а validateTreatment возвращает ту же проблему.",
+  "call": "saveTreatment",
+  "project": "project",
+  "covers": [
+    "treatmentRequiresParts",
+    "черновик записывается"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

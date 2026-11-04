@@ -1,0 +1,10 @@
+{
+  "description": "Изображение сущности отсутствует в source.",
+  "call": "writeCast",
+  "project": "project",
+  "covers": [
+    "imageMissing",
+    "файлы не меняются"
+  ],
+  "stubbedMedia": []
+}

@@ -1,0 +1,12 @@
+{
+  "description": "Без разметки и текста: длительность из описи.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "duration=track.duration_seconds",
+    "lyrics=[]"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

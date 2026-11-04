@@ -1,0 +1,10 @@
+{
+  "description": "Без разметки, описи и трека.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "duration=null",
+    "trackPath=null"
+  ],
+  "stubbedMedia": []
+}

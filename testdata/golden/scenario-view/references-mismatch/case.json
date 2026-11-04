@@ -1,0 +1,12 @@
+{
+  "description": "Карта references реестра расходится с кастингом.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "referencesRefresh",
+    "shotUnknownReference"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

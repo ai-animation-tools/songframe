@@ -4,14 +4,17 @@ import { useSearchParams } from 'react-router-dom';
 import type { CastProperty, ScenarioSaveImpact, ScenarioView, ScenesFile, ScenesSaveMode, TreatmentFile, TreatmentSequence } from '@shared/types';
 import type { ScenarioPass } from '@shared/scenario-workflow';
 import { useApp } from '../../state';
+import { useMethodAvailability } from '../../availability';
 import { KEEP_NOTHING_REASON, type ScenarioBrief, type ScenarioTab, type ScenesSaveRequest, type ShotReveal, type OpenShotState } from './types';
 import { workflowUpdatedView } from './workflowDrafts';
 import { requestedShot } from './shotNavigation';
+import { partsFromSections } from './treatmentParts';
 import { SHOT_PARAM } from '../../components/shotRoutes';
 
 /** Загружает сценарий и сохраняет вкладки независимо; проверка следует текущему черновику. */
 export function useScenario() {
   const { state, refresh, notify, describeError } = useApp();
+  const scaffoldAvailability = useMethodAvailability('tools.run');
   const project = state?.current ?? '';
   const activeProject = useRef(project);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -21,6 +24,9 @@ export function useScenario() {
   const [scenes, setScenes] = useState<ScenesFile | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
+  // Проблемы текущего черновика трактовки (стык, длительность, коды). Отличие от 634fd94: они не
+  // блокируют сохранение черновика, а постоянно показываются над частями и закрывают построение каркаса.
+  const [treatmentProblems, setTreatmentProblems] = useState<string[]>([]);
   const [brief, setBrief] = useState<ScenarioBrief>(null);
   const [busy, setBusy] = useState(false);
   // Последний расчёт затронутых планов для текущего черновика: по нему заранее блокируется «Сохранить без производства».
@@ -112,6 +118,29 @@ export function useScenario() {
     };
   }, [scenes, selected, project, scenesDirty]);
 
+  // Проверка трактовки следует черновику без сохранения, как проверка реестра.
+  useEffect(() => {
+    if (!treatment) {
+      setTreatmentProblems([]);
+      return;
+    }
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      window.api.scenario
+        .validateTreatment(project, treatment)
+        .then((next) => {
+          if (!cancelled) setTreatmentProblems(next);
+        })
+        .catch((error) => {
+          if (!cancelled) setTreatmentProblems([describeError(error)]);
+        });
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [treatment, project, describeError]);
+
   const cast = view?.cast ?? null;
   const entityOptions = useMemo(() => (cast?.entities ?? []).map((e) => ({ id: e.id, label: e.name, images: e.images.length > 0, kind: e.kind })), [cast]);
   const referenceOptions = entityOptions.filter((e) => e.images);
@@ -130,21 +159,27 @@ export function useScenario() {
         ? scenarioTexts.prerequisites.reference
         : null;
   // Те же обязательные данные нужны scene_scaffold; объяснение используем и в кнопке, и при запуске.
-  const scaffoldProblem = !view?.timing?.lines?.length
-    ? scenarioTexts.prerequisites.timing
-    : !(Number(view.timing.duration_decoded || view.timing.duration_container) > 0)
-      ? scenarioTexts.prerequisites.duration
-      : !cast
-        ? scenarioTexts.prerequisites.cast
-        : !referenceOptions.length
-          ? scenarioTexts.prerequisites.reference
-          : !view.treatment
-            ? scenarioTexts.prerequisites.treatment
-            : treatmentDirty || scenesDirty
-              ? scenarioTexts.prerequisites.savedDrafts
-              : !state?.toolsRoot
-                ? scenarioTexts.prerequisites.tools
-                : null;
+  // Отличие от 634fd94: каркас строит инструмент scene_scaffold через tools.run, которого в Go-версии
+  // ещё нет; причина «не перенесено» важнее остальных условий и заменяет просьбу выбрать папку комплекса.
+  const scaffoldProblem = !scaffoldAvailability.available
+    ? (scaffoldAvailability.reason ?? scenarioTexts.prerequisites.tools)
+    : !view?.timing?.lines?.length
+      ? scenarioTexts.prerequisites.timing
+      : !(Number(view.timing.duration_decoded || view.timing.duration_container) > 0)
+        ? scenarioTexts.prerequisites.duration
+        : !cast
+          ? scenarioTexts.prerequisites.cast
+          : !referenceOptions.length
+            ? scenarioTexts.prerequisites.reference
+            : !view.treatment
+              ? scenarioTexts.prerequisites.treatment
+              : treatmentDirty || scenesDirty
+                ? scenarioTexts.prerequisites.savedDrafts
+                : treatmentProblems.length
+                  ? scenarioTexts.prerequisites.treatmentProblems
+                  : !state?.toolsRoot
+                    ? scenarioTexts.prerequisites.tools
+                    : null;
 
   // После публикации меняем только принадлежащий проходу черновик: другая вкладка сохраняет свои правки.
   const acceptWorkflowUpdate = async (pass: ScenarioPass): Promise<void> => {
@@ -191,44 +226,10 @@ export function useScenario() {
     }
   };
 
-  // Действия трактовки сохраняют независимый черновик реестра.
+  // Действия трактовки сохраняют независимый черновик реестра; части строятся встык по музыкальной карте.
   const partsFromTiming = (): void => {
     if (!view?.timing) return;
-    const used = new Set<string>();
-    const slug = (name: string, index: number): string => {
-      // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
-      const base = name.toLowerCase().includes('припев')
-        ? 'chorus'
-        : // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
-          name.toLowerCase().includes('куплет')
-          ? 'verse'
-          : // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
-            name.toLowerCase().includes('вступ')
-            ? 'intro'
-            : // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
-              name.toLowerCase().includes('финал')
-              ? 'final'
-              : // eslint-disable-next-line no-restricted-syntax -- Подстрока исходного названия части определяет сохраняемый ID, а не подпись интерфейса.
-                name.toLowerCase().includes('проигрыш')
-                ? 'bridge'
-                : `part${index + 1}`;
-      let candidate = base;
-      let n = 2;
-      while (used.has(candidate)) candidate = `${base}_${n++}`;
-      used.add(candidate);
-      return candidate;
-    };
-    const sequences: TreatmentSequence[] = view.timing.sections.map((s, i) => ({
-      id: slug(s.name, i),
-      title: s.name,
-      direction: '',
-      start: s.start,
-      end: s.end,
-      entities: [],
-      lipsync: !/без вокала|вступление|проигрыш/i.test(s.name + (s.note ?? '')),
-      max_shot_seconds: 6
-    }));
-    setTreatment({ schema_version: 1, logline: treatment?.logline ?? '', sequences });
+    setTreatment({ schema_version: 1, logline: treatment?.logline ?? '', sequences: partsFromSections(view.timing.sections, view.duration) });
   };
   const updatePart = (index: number, patch: Partial<TreatmentSequence>): void =>
     setTreatment((t) => t && { ...t, sequences: t.sequences.map((s, i) => (i === index ? { ...s, ...patch } : s)) });
@@ -237,11 +238,17 @@ export function useScenario() {
     setBusy(true);
     try {
       const saved = await window.api.scenario.saveTreatment(project, treatment);
+      // Проблемы записанного документа нужны сразу: фоновая проверка черновика могла ещё не закончиться.
+      const found = await window.api.scenario.validateTreatment(project, saved).catch((error: unknown) => [describeError(error)]);
+      if (activeProject.current !== project) return;
       // Сохранение трактовки не заменяет несохранённый черновик реестра другой вкладки.
       setTreatment(saved);
+      setTreatmentProblems(found);
       setView((current) => current && { ...current, treatment: saved });
       await refresh();
-      notify(scenarioTexts.notice.treatmentSaved, 'success');
+      // Черновик с проблемами записан: это не ошибка, список остаётся над частями.
+      if (found.length) notify(scenarioTexts.notice.treatmentSavedDraft, 'info');
+      else notify(scenarioTexts.notice.treatmentSaved, 'success');
     } catch (error) {
       notify(describeError(error), 'error');
     } finally {
@@ -333,6 +340,7 @@ export function useScenario() {
     clearReveal,
     openShotState,
     problems,
+    treatmentProblems,
     brief,
     busy,
     cast,

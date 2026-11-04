@@ -1,0 +1,9 @@
+{
+  "description": "project.json — массив: запись невозможна.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "projectObjectRequired при записи"
+  ],
+  "stubbedMedia": []
+}

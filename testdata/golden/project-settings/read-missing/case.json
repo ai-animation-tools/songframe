@@ -1,0 +1,9 @@
+{
+  "description": "Нет plan/project.json: текст Node не сравнивается.",
+  "call": "readProjectSettings",
+  "project": "project",
+  "covers": [
+    "projectReadFailed"
+  ],
+  "stubbedMedia": []
+}

@@ -53,6 +53,13 @@ async function openAutomatic(canvasElement: HTMLElement): Promise<void> {
   await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: editorTexts.automatic }));
 }
 
+/** Отличие от 634fd94: успешная разметка закрывает окно, итог — в уведомлении страницы. */
+async function expectTimingReady(canvasElement: HTMLElement): Promise<void> {
+  const screen = within(canvasElement.ownerDocument.body);
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), { timeout: 5000 });
+  await expect(await screen.findByText(songTimingTexts.ready)).toBeVisible();
+}
+
 async function enterManual(canvasElement: HTMLElement): Promise<void> {
   await userEvent.click(await within(canvasElement).findByRole('button', { name: editorTexts.recognize }));
   await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: editorTexts.manual }));
@@ -228,7 +235,7 @@ export const ReorderRepeatedChorus: Story = {
 export const LocalTimingNotesRoundTrip: Story = {
   tags: ['ci'],
   name: 'Автоматическая разметка · ручная заметка и подтверждённые строки сохранены',
-  parameters: { songframe: timingPageOptions({ local: 'installed' }) },
+  parameters: { songframe: timingPageOptions({ local: 'vocal-cached' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement),
       screen = within(canvasElement.ownerDocument.body);
@@ -243,11 +250,16 @@ export const LocalTimingNotesRoundTrip: Story = {
     const dialog = within(await screen.findByRole('dialog'));
     await waitFor(() => expect(dialog.getByRole('button', { name: commonTexts.run })).toBeEnabled());
     await userEvent.click(dialog.getByRole('button', { name: commonTexts.run }));
-    await expect(await dialog.findByText(songTimingTexts.ready, {}, { timeout: 5000 })).toBeVisible();
-    await expect(timingLocalInspection().starts[0].vocals).toBe(false);
+    await expectTimingReady(canvasElement);
+    await expect(timingLocalInspection().starts[0].vocals).toBe(true);
     await expect(timingPageInspection().saved.timing!.lines[1]).toEqual(before.timing!.lines[1]);
     await expect(timingPageInspection().saved.timing!.sections).toEqual(before.timing!.sections);
-    await userEvent.click(dialog.getByRole('button', { name: commonTexts.cancel }));
+    // Повторное открытие начинается с чистого окна: журнал и итог прошлого задания не показываются.
+    await openAutomatic(canvasElement);
+    const reopened = within(await screen.findByRole('dialog'));
+    await expect(reopened.queryByText(songTimingTexts.technicalLog)).not.toBeInTheDocument();
+    await expect(reopened.queryByRole('status', { name: songTimingTexts.progress })).not.toBeInTheDocument();
+    await userEvent.click(reopened.getByRole('button', { name: commonTexts.cancel }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await selectSource(canvasElement, 2);
     await expect(canvas.getByRole('textbox', { name: 'Начало строки 2' })).toHaveValue('12');
@@ -267,7 +279,6 @@ export const VocalTimingWithDownload: Story = {
       screen = within(canvasElement.ownerDocument.body);
     await openAutomatic(canvasElement);
     const modal = within(await screen.findByRole('dialog'));
-    await userEvent.click(modal.getByRole('radio', { name: songTimingTexts.vocals }));
     await waitFor(() => expect(modal.getByRole('button', { name: songTimingTexts.separateVocal })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: songTimingTexts.separateVocal }));
     await expect(await modal.findByRole('button', { name: `${songTimingTexts.vocalSelect}: Voc FT` }, { timeout: 5000 })).toBeEnabled();
@@ -286,10 +297,8 @@ export const VocalTimingWithDownload: Story = {
     await expect(await modal.findByRole('status', { name: songTimingTexts.progress })).toBeVisible();
     await userEvent.click(screen.getByRole('dialog').closest('.MuiDialog-root')!.querySelector('.MuiDialog-container')!);
     await expect(screen.getByRole('dialog')).toBeVisible();
-    await waitFor(() => expect(modal.getByText(songTimingTexts.ready)).toBeVisible(), { timeout: 5000 });
+    await expectTimingReady(canvasElement);
     await expect(timingPageInspection().saved.timing!.lines[1]).toEqual(before.timing!.lines[1]);
-    await userEvent.click(modal.getByRole('button', { name: commonTexts.cancel }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await selectSource(canvasElement, 2);
     await expect(canvas.getByRole('textbox', { name: 'Начало строки 2' })).toHaveValue('12');
   }
@@ -303,7 +312,6 @@ export const VocalTimingFailureRetry: Story = {
     const before = timingPageInspection().saved;
     await openAutomatic(canvasElement);
     const modal = within(await screen.findByRole('dialog'));
-    await userEvent.click(modal.getByRole('radio', { name: songTimingTexts.vocals }));
     await waitFor(() => expect(modal.getByRole('button', { name: songTimingTexts.separateVocal })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: songTimingTexts.separateVocal }));
     await expect(await modal.findByRole('button', { name: `${songTimingTexts.vocalSelect}: Voc FT` }, { timeout: 5000 })).toBeEnabled();
@@ -315,7 +323,7 @@ export const VocalTimingFailureRetry: Story = {
     await expect(await modal.findByText('Не удалось уточнить границы. Прежняя разметка сохранена.', {}, { timeout: 5000 })).toBeVisible();
     await expect(timingPageInspection().saved).toEqual(before);
     await userEvent.click(modal.getByRole('button', { name: commonTexts.run }));
-    await waitFor(() => expect(modal.getByText(songTimingTexts.ready)).toBeVisible(), { timeout: 5000 });
+    await expectTimingReady(canvasElement);
   }
 };
 export const TimingCancellation: Story = {
@@ -327,9 +335,19 @@ export const TimingCancellation: Story = {
     const before = timingPageInspection().saved;
     await openAutomatic(canvasElement);
     const modal = within(await screen.findByRole('dialog'));
+    await waitFor(() => expect(modal.getByRole('button', { name: commonTexts.run })).toBeEnabled());
+    // Прослушивание сравнения останавливается при запуске: скрытый плеер не должен продолжать играть.
+    await userEvent.click(modal.getByRole('button', { name: `${songTimingTexts.vocalPreview}: Voc FT` }));
+    const comparison = within(modal.getByRole('group', { name: commonTexts.player.controls }));
+    const audio = screen.getByRole('dialog').querySelector('audio')!;
+    await waitFor(() => expect(audio.readyState).toBeGreaterThanOrEqual(1));
+    await userEvent.click(comparison.getByRole('button', { name: commonTexts.player.play }));
+    await waitFor(() => expect(audio.paused).toBe(false));
     await userEvent.click(modal.getByRole('button', { name: commonTexts.run }));
+    await waitFor(() => expect(audio.paused).toBe(true));
+    await expect(audio.isConnected).toBe(true);
     const progress = await modal.findByRole('status', { name: songTimingTexts.progress });
-    await expect(progress).toHaveTextContent(songTimingTexts.basicRunning);
+    await expect(progress).toHaveTextContent(songTimingTexts.running);
     await expect(progress).not.toHaveTextContent('diagnostic-only');
     const log = modal.getByText(/Уточнение границ: 1\/3/);
     await expect(log).not.toBeVisible();
@@ -357,10 +375,9 @@ export const TimingPartialResult: Story = {
       screen = within(canvasElement.ownerDocument.body);
     await openAutomatic(canvasElement);
     const modal = within(await screen.findByRole('dialog'));
+    await waitFor(() => expect(modal.getByRole('button', { name: commonTexts.run })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: commonTexts.run }));
-    await waitFor(() => expect(modal.getByText(songTimingTexts.ready)).toBeVisible(), { timeout: 5000 });
-    await userEvent.click(modal.getByRole('button', { name: commonTexts.cancel }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await expectTimingReady(canvasElement);
     await expect(timingPageInspection().saved.timing!.lines.some((line) => line.source_line === 2)).toBe(false);
     await selectSource(canvasElement, 2);
     await expect(canvas.getByRole('textbox', { name: 'Начало строки 2' })).toHaveValue('');
@@ -387,11 +404,12 @@ export const TimingResultReadRetry: Story = {
     const screen = within(canvasElement.ownerDocument.body);
     await openAutomatic(canvasElement);
     const modal = within(await screen.findByRole('dialog'));
+    await waitFor(() => expect(modal.getByRole('button', { name: commonTexts.run })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: commonTexts.run }));
     await expect(await modal.findByText('Не удалось прочитать записанный результат. Повторите чтение.', {}, { timeout: 5000 })).toBeVisible();
     await expect(modal.queryByText(songTimingTexts.ready)).not.toBeInTheDocument();
     await userEvent.click(modal.getByRole('button', { name: songTimingTexts.reloadResult }));
-    await expect(await modal.findByText(songTimingTexts.ready)).toBeVisible();
+    await expectTimingReady(canvasElement);
     await expect(timingLocalInspection().starts).toHaveLength(1);
   }
 };
@@ -404,11 +422,12 @@ export const TimingStartFailureRetry: Story = {
     const before = timingPageInspection().saved;
     await openAutomatic(canvasElement);
     const modal = within(await screen.findByRole('dialog'));
+    await waitFor(() => expect(modal.getByRole('button', { name: commonTexts.run })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: commonTexts.run }));
     await expect(await modal.findByText('Не удалось запустить разметку. Повторите запуск.')).toBeVisible();
     await expect(timingPageInspection().saved).toEqual(before);
     await userEvent.click(modal.getByRole('button', { name: commonTexts.run }));
-    await expect(await modal.findByText(songTimingTexts.ready, {}, { timeout: 5000 })).toBeVisible();
+    await expectTimingReady(canvasElement);
     await expect(timingLocalInspection().starts).toHaveLength(2);
   }
 };
@@ -442,6 +461,7 @@ export const TimingProjectChangeDuringStart: Story = {
       screen = within(canvasElement.ownerDocument.body);
     await openAutomatic(canvasElement);
     const modal = within(await screen.findByRole('dialog'));
+    await waitFor(() => expect(modal.getByRole('button', { name: commonTexts.run })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: commonTexts.run }));
     // Внешняя смена контекста не должна дождаться start старого проекта и открыть чужое задание.
     canvas.getByText('Сменить проект в модели').click();
@@ -465,6 +485,7 @@ export const TimingMissingJob: Story = {
     const before = timingPageInspection().saved;
     await openAutomatic(canvasElement);
     const modal = within(await screen.findByRole('dialog'));
+    await waitFor(() => expect(modal.getByRole('button', { name: commonTexts.run })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: commonTexts.run }));
     await expect(await modal.findByText(songTimingTexts.noJob, {}, { timeout: 5000 })).toBeVisible();
     await expect(modal.queryByText(songTimingTexts.ready)).not.toBeInTheDocument();
@@ -483,7 +504,6 @@ export const VocalSelectionReopenAndSourceChange: Story = {
     const screen = within(canvasElement.ownerDocument.body);
     await openAutomatic(canvasElement);
     let modal = within(await screen.findByRole('dialog'));
-    await userEvent.click(modal.getByRole('radio', { name: songTimingTexts.vocals }));
     await waitFor(() => expect(modal.getByRole('button', { name: songTimingTexts.separateVocal })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: songTimingTexts.separateVocal }));
     await expect(await modal.findByRole('button', { name: `${songTimingTexts.vocalSelect}: Voc FT` }, { timeout: 5000 })).toBeEnabled();
@@ -513,7 +533,6 @@ export const VocalWithoutLyrics: Story = {
     const screen = within(canvasElement.ownerDocument.body);
     await openAutomatic(canvasElement);
     const modal = within(await screen.findByRole('dialog'));
-    await userEvent.click(modal.getByRole('radio', { name: songTimingTexts.vocals }));
     await waitFor(() => expect(modal.getByRole('button', { name: songTimingTexts.separateVocal })).toBeEnabled());
     await userEvent.click(modal.getByRole('button', { name: songTimingTexts.separateVocal }));
     await userEvent.click(await modal.findByRole('button', { name: `${songTimingTexts.vocalSelect}: Voc FT` }, { timeout: 5000 }));
@@ -558,7 +577,7 @@ export const LoadFailureRetry: Story = {
 
 export const LoopNavigation: Story = {
   tags: ['ci'],
-  name: 'Настоящий плеер · смена рабочей строки прекращает повтор и звук',
+  name: 'Настоящий плеер · V с фокусом на «Повторять» · смена рабочей строки прекращает повтор и звук',
   parameters: { songframe: timingPageOptions({ local: 'installed' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -568,6 +587,11 @@ export const LoopNavigation: Story = {
     await userEvent.click(canvas.getByRole('button', { name: selectionTexts.loopSelection }));
     await waitFor(() => expect(audio.paused).toBe(false));
     await expect(canvas.getByRole('button', { name: selectionTexts.stopLoop })).toHaveAttribute('aria-pressed', 'true');
+    // Фокус остался на кнопке «Повторять», но V по-прежнему подтверждает выделенную строку.
+    await expect(canvas.getByRole('button', { name: selectionTexts.stopLoop })).toHaveFocus();
+    await expect(canvas.getByRole('button', { name: editorTexts.verify })).toBeVisible();
+    await userEvent.keyboard('v');
+    await waitFor(() => expect(canvas.queryByRole('button', { name: editorTexts.verify })).not.toBeInTheDocument());
     await userEvent.click(canvas.getByRole('button', { name: editorTexts.next }));
     await expect(audio.paused).toBe(true);
     await expect(canvas.getByRole('textbox', { name: 'Начало строки 3' })).toBeVisible();

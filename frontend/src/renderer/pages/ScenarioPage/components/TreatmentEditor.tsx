@@ -1,9 +1,9 @@
 import { scenarioTexts } from '@shared/texts/scenario';
 import type { ReactElement } from 'react';
-import { Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, List, ListItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import type { TreatmentFile, TreatmentSequence } from '@shared/types';
-import type { EntityOption } from '../types';
+import { TREATMENT_PROBLEMS_ID, type EntityOption } from '../types';
 import { TreatmentPartEditor } from './TreatmentPartEditor';
 
 /** Редактирует логлайн и состав трактовки, включая создание вручную без разметки. */
@@ -12,12 +12,15 @@ export function TreatmentEditor({
   setTreatment,
   entityOptions,
   duration,
+  problems,
   updatePart
 }: {
   treatment: TreatmentFile | null;
   setTreatment(value: TreatmentFile): void;
   entityOptions: EntityOption[];
   duration: number;
+  /** Проблемы текущего черновика: видны постоянно, пока их не исправят, и не мешают сохранению. */
+  problems: string[];
   updatePart(index: number, patch: Partial<TreatmentSequence>): void;
 }): ReactElement {
   return (
@@ -37,6 +40,20 @@ export function TreatmentEditor({
             onChange={(e) => setTreatment({ ...treatment, logline: e.target.value })}
             placeholder={scenarioTexts.treatment.loglineHint}
           />
+          {problems.length ? (
+            // Отличие от 634fd94: черновик с проблемами сохраняется, поэтому список виден над частями, а не только в отказе сохранения.
+            <Alert severity="warning" id={TREATMENT_PROBLEMS_ID}>
+              <AlertTitle>{scenarioTexts.treatment.problemsTitle}</AlertTitle>
+              <Typography variant="body2">{scenarioTexts.treatment.problemsHint}</Typography>
+              <List dense disablePadding sx={{ listStyleType: 'disc', pl: 2.5, mt: 0.5 }}>
+                {problems.map((problem, index) => (
+                  <ListItem key={`${index}:${problem}`} disablePadding sx={{ display: 'list-item' }}>
+                    {problem}
+                  </ListItem>
+                ))}
+              </List>
+            </Alert>
+          ) : null}
           {/* Части сохраняют порядок песни и занимают две колонки только в широкой рабочей области. */}
           <Box
             sx={{

@@ -1,0 +1,234 @@
+{
+  "cast": {
+    "schema_version": 1,
+    "entities": [
+      {
+        "id": "world",
+        "kind": "world",
+        "name": "Мир сцены",
+        "short_name": "Мир",
+        "role": "",
+        "appearance": "",
+        "images": [],
+        "initial_state": {
+          "time_of_day": "вечер"
+        }
+      },
+      {
+        "id": "mira",
+        "kind": "character",
+        "name": "Мира",
+        "short_name": "Мира",
+        "role": "Музыкант",
+        "appearance": "Музыкант с фонариком",
+        "images": [
+          "heroes/mira.png"
+        ],
+        "initial_state": {
+          "position": "у причала",
+          "clothes_condition": "сухая куртка"
+        }
+      },
+      {
+        "id": "boat",
+        "kind": "vehicle",
+        "name": "Лодка «Чайка»",
+        "short_name": "Лодка",
+        "role": "",
+        "appearance": "Деревянная лодка",
+        "images": [
+          "vehicles/boat.png"
+        ],
+        "initial_state": {}
+      }
+    ],
+    "properties": {
+      "character": [
+        {
+          "key": "position",
+          "label": "Положение",
+          "hint": "Где находится",
+          "checklist": "Стоит там, где записано: {value}?"
+        },
+        {
+          "key": "clothes_condition",
+          "label": "Одежда",
+          "checklist": "Одежда: {value}?"
+        },
+        {
+          "key": "mood",
+          "label": "Настроение"
+        }
+      ],
+      "world": [
+        {
+          "key": "time_of_day",
+          "label": "Время суток",
+          "values": [
+            "утро",
+            "день",
+            "вечер",
+            "ночь"
+          ],
+          "checklist": "Освещение соответствует: {value}?"
+        },
+        {
+          "key": "weather",
+          "label": "Погода",
+          "hint": "Пасмурно, дождь, солнце; осадки сейчас",
+          "checklist": "Погода: {value}?"
+        },
+        {
+          "key": "season",
+          "label": "Сезон",
+          "hint": "Влияет на одежду и листву"
+        },
+        {
+          "key": "road_axis",
+          "label": "Ось дороги",
+          "hint": "Куда идёт дорога в кадре относительно героев: «вперёд от камеры», «слева направо»",
+          "checklist": "Ось дороги и направление движения: {value}?"
+        },
+        {
+          "key": "left_side",
+          "label": "Слева по ходу",
+          "hint": "Что находится слева по направлению движения",
+          "checklist": "Слева по ходу: {value}?"
+        },
+        {
+          "key": "right_side",
+          "label": "Справа по ходу",
+          "hint": "Что находится справа по направлению движения",
+          "checklist": "Справа по ходу: {value}?"
+        },
+        {
+          "key": "ahead",
+          "label": "Впереди",
+          "hint": "Куда ведёт дорога, что её заканчивает"
+        }
+      ],
+      "vehicle": [
+        {
+          "key": "position",
+          "label": "Положение",
+          "hint": "Где относительно окружения и других объектов",
+          "checklist": "Положение транспорта: {value}?"
+        },
+        {
+          "key": "orientation",
+          "label": "Ориентация",
+          "hint": "Как стоит относительно оси дороги",
+          "values": [
+            "вдоль дороги носом вперёд",
+            "вдоль дороги носом назад",
+            "под небольшим углом к дороге",
+            "поперёк дороги"
+          ],
+          "checklist": "Ориентация транспорта: {value}?"
+        },
+        {
+          "key": "sink",
+          "label": "Погружение",
+          "hint": "Положение относительно поверхности",
+          "values": [
+            "на поверхности",
+            "частично погружён"
+          ],
+          "checklist": "Погружение: {value}?"
+        },
+        {
+          "key": "dirt",
+          "label": "Загрязнение",
+          "hint": "Загрязнение или другие видимые изменения",
+          "checklist": "Загрязнение кузова: {value}?"
+        },
+        {
+          "key": "mobility",
+          "label": "Движение",
+          "hint": "Движется или неподвижен"
+        },
+        {
+          "key": "doors",
+          "label": "Двери и проёмы",
+          "hint": "Какие двери открыты"
+        },
+        {
+          "key": "cargo",
+          "label": "Груз",
+          "hint": "Что и где закреплено",
+          "checklist": "Груз на месте: {value}?"
+        },
+        {
+          "key": "occupants",
+          "label": "Кто внутри",
+          "hint": "Кто на каком месте",
+          "checklist": "Внутри: {value}?"
+        }
+      ]
+    }
+  },
+  "manifest": {
+    "schema_version": 1,
+    "kinds": [
+      {
+        "id": "character",
+        "label": "Персонаж",
+        "dir": "heroes"
+      },
+      {
+        "id": "vehicle",
+        "label": "Транспорт",
+        "dir": "vehicles"
+      }
+    ],
+    "track": {
+      "path": "track.mp3",
+      "sha256": "fb0797e290b774181fa7fdbeadc0bd9849889152fca5dc3555a766bb33dfae2b",
+      "bytes": 11,
+      "original_name": "track.mp3",
+      "duration_seconds": 9
+    },
+    "references": [
+      {
+        "id": "mira",
+        "kind": "character",
+        "name": "Мира",
+        "short_name": "Мира",
+        "description": "Музыкант с фонариком",
+        "prompt": null,
+        "files": [
+          {
+            "path": "heroes/mira.png",
+            "sha256": "f6d91faaf09c0f23d3371c9ba1c914a159654003faad16a43dfd0ba87031c7c3",
+            "bytes": 10,
+            "view": "full",
+            "note": ""
+          }
+        ]
+      },
+      {
+        "id": "boat",
+        "kind": "vehicle",
+        "name": "Лодка «Чайка»",
+        "short_name": "Лодка",
+        "description": "Деревянная лодка",
+        "prompt": null,
+        "files": [
+          {
+            "path": "vehicles/boat.png",
+            "sha256": "cac628e0d9ba2ca91dab44bbd8289a6dac479c2a853517083b1726c08db80a4d",
+            "bytes": 10,
+            "view": "side",
+            "note": ""
+          }
+        ]
+      }
+    ],
+    "updated_at": "2026-10-25T00:00:00Z"
+  },
+  "imagePaths": {
+    "heroes/mira.png": "<project>/source/heroes/mira.png",
+    "vehicles/boat.png": "<project>/source/vehicles/boat.png"
+  },
+  "problems": []
+}

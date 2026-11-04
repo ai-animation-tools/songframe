@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "kinds": [
+    {
+      "id": "character",
+      "label": "Персонаж",
+      "dir": "heroes"
+    },
+    {
+      "id": "vehicle",
+      "label": "Транспорт",
+      "dir": "vehicles"
+    },
+    {
+      "id": "location",
+      "label": "Локация",
+      "dir": "locations"
+    },
+    {
+      "id": "prop",
+      "label": "Предмет",
+      "dir": "props"
+    },
+    {
+      "id": "style",
+      "label": "Стиль",
+      "dir": "style"
+    }
+  ],
+  "track": {
+    "path": "track.mp3",
+    "sha256": "ed834a6ad1b63649a9aaeb78c18e95bc49a266d0d14c953230bc924876e51bdf",
+    "bytes": 9,
+    "original_name": "Моя песня.mp3",
+    "duration_seconds": null
+  },
+  "lyrics": {
+    "path": "text.md",
+    "sha256": "50197925065424d662e73a6bdecfff200e8957fcdb752c6fc895d54573a9e22b",
+    "bytes": 41,
+    "lines": 1,
+    "sections": [
+      "Куплет"
+    ]
+  },
+  "idea": {
+    "path": "description.md",
+    "sha256": "5f1d57ad17700acd62ab13bc056d2b0e9fdc264874ded2dd564940318feb7ff9",
+    "bytes": 20
+  },
+  "cover": {
+    "path": "cover.png",
+    "sha256": "ca26a7b8bc080b8663cc1d581a24ceb96d8a86007c133ff4e9b17075c5c9e8c1",
+    "bytes": 15
+  },
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "",
+      "files": [
+        {
+          "path": "heroes/mira.jpg",
+          "sha256": "d221c60c1b6bcd52f98f95ec6a7c89bc4e66202479530a69aeb3490015abfca9",
+          "bytes": 20,
+          "view": "front",
+          "note": "",
+          "prompt": "heroes/mira.jpg.prompt.txt"
+        },
+        {
+          "path": "heroes/mira-2.webp",
+          "sha256": "9c467d735b791248d627194fd0dbf995e76580b838dcc2f507ed98c344878d58",
+          "bytes": 19,
+          "view": "side",
+          "note": "",
+          "prompt": "heroes/mira-2.webp.prompt.txt"
+        }
+      ],
+      "prompt": null
+    },
+    {
+      "id": "lamp",
+      "kind": "prop",
+      "name": "Фонарь",
+      "short_name": "Фонарь",
+      "description": "",
+      "files": [
+        {
+          "path": "props/lamp.png",
+          "sha256": "28d15037b94e6e0b4cd49422fa10e24fa674562dd2c615cb040c12fa59a86e4e",
+          "bytes": 14,
+          "view": "full",
+          "note": "",
+          "prompt": null
+        }
+      ],
+      "prompt": null
+    }
+  ],
+  "updated_at": "<updated_at>"
+}

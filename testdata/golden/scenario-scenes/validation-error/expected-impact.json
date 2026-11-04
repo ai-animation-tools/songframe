@@ -1,0 +1,16 @@
+{
+  "shots": [
+    {
+      "id": "M02",
+      "reason": "изменена постановка плана",
+      "state": "completed",
+      "produced": true
+    },
+    {
+      "id": "M03",
+      "reason": "изменена постановка плана",
+      "state": "progress",
+      "produced": true
+    }
+  ]
+}

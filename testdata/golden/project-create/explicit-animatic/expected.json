@@ -1,0 +1,32 @@
+{
+  "error": null,
+  "status": {
+    "path": "<base>/explicit",
+    "state": "empty",
+    "name": "Клип {{animatic_video}}",
+    "animaticVideo": "final_cut.v2.mp4",
+    "checks": {
+      "marker": true,
+      "sources": false,
+      "timing": false,
+      "cast": false,
+      "treatment": false,
+      "scenes": false,
+      "shotsTotal": 0,
+      "shotsDone": 0,
+      "animaticBuilt": false,
+      "animaticFresh": false,
+      "animaticApproved": false
+    },
+    "problems": []
+  },
+  "state": {
+    "current": "<base>/explicit",
+    "history": [
+      {
+        "path": "<base>/explicit",
+        "name": "Клип {{animatic_video}}"
+      }
+    ]
+  }
+}

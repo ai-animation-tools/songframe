@@ -532,3 +532,20 @@ export const CoverReferenceSelection: Story = {
     await expect(referencePageSnapshot().sourceSaves).toBe(0);
   }
 };
+
+export const TrackPlayback: Story = {
+  name: 'Трек — общий плеер с громкостью вместо встроенного',
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const play = await canvas.findByRole('button', { name: commonTexts.player.play });
+    const audio = canvasElement.querySelector('audio');
+    // Встроенные элементы WebKitGTK не регулируют громкость: страница показывает общий плеер.
+    await expect(audio).not.toHaveAttribute('controls');
+    await expect(canvas.getByRole('slider', { name: commonTexts.player.volume })).toBeInTheDocument();
+    await expect(canvas.getByRole('slider', { name: commonTexts.player.position })).toBeInTheDocument();
+    await userEvent.click(play);
+    await waitFor(() => expect(audio?.paused).toBe(false), { timeout: 10000 });
+    await userEvent.click(canvas.getByRole('button', { name: commonTexts.player.pause }));
+    await waitFor(() => expect(audio?.paused).toBe(true));
+  }
+};

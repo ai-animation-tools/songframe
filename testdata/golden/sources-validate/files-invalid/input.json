@@ -1,0 +1,15 @@
+{
+  "track": {
+    "path": "<inputs>/track.wav"
+  },
+  "lyrics": {
+    "path": "<inputs>/text.md"
+  },
+  "idea": {
+    "text": "  \n"
+  },
+  "cover": {
+    "path": "<inputs>/bad.txt"
+  },
+  "references": []
+}

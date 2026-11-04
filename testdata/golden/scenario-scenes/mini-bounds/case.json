@@ -1,0 +1,10 @@
+{
+  "description": "Сдвиг границы M01/M02.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "impactBoundsChanged"
+  ],
+  "stubbedMedia": []
+}

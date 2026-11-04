@@ -1,0 +1,10 @@
+{
+  "description": "Путь не существует.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": null,
+  "covers": [
+    "все null",
+    "status=missing"
+  ],
+  "stubbedMedia": []
+}

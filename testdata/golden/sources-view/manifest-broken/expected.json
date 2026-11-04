@@ -1,0 +1,10 @@
+{
+  "manifest": null,
+  "lyricsText": "Текст\n",
+  "ideaText": "",
+  "coverPath": null,
+  "referenceFilePaths": {},
+  "problems": [
+    "source/manifest.json повреждён или другой версии."
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Нестроковые сохранённые инструкции блокируют запись, если поле не меняют.",
+  "call": "writeProjectSettings",
+  "project": "project",
+  "covers": [
+    "agentInstructions undefined: проверка сохранённого"
+  ],
+  "stubbedMedia": []
+}

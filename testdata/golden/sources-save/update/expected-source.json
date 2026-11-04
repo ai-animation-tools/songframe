@@ -1,0 +1,14 @@
+{
+  "dirs": [
+    "heroes"
+  ],
+  "files": {
+    "description.md": "ecbffa656a2f035015f18a05055081147d9df06af86b731f7e0be75feca1bd26",
+    "heroes/mira-2.jpg": "d221c60c1b6bcd52f98f95ec6a7c89bc4e66202479530a69aeb3490015abfca9",
+    "heroes/mira-2.jpg.prompt.txt": "2bf0e3ee2ec0707944fb284a270a7c9dbdd581914969792cb69415c092e4cca8",
+    "heroes/mira-2.webp": "9c467d735b791248d627194fd0dbf995e76580b838dcc2f507ed98c344878d58",
+    "heroes/mira.prompt.txt": "2c856c0a6b283a90ed80059894aa2eac670d8766fe11c72e2c43cce242276ca6",
+    "text.md": "9a71bdf1621dcad82414ac7a9412732bcc911f7585aae9a84e32fcc597affee7",
+    "track.mp3": "ed834a6ad1b63649a9aaeb78c18e95bc49a266d0d14c953230bc924876e51bdf"
+  }
+}

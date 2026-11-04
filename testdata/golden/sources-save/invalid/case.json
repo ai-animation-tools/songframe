@@ -1,0 +1,9 @@
+{
+  "description": "Ошибка проверки: проблемы через пробел, дерево не меняется.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "saveSources: validateSources"
+  ],
+  "stubbedMedia": []
+}

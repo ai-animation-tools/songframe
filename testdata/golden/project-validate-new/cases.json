@@ -1,0 +1,216 @@
+[
+  {
+    "name": "valid",
+    "description": "Корректный ввод.",
+    "setup": {},
+    "input": {
+      "name": "Клип",
+      "path": "<base>/new"
+    },
+    "expected": []
+  },
+  {
+    "name": "valid-animatic",
+    "description": "Корректное явное имя MP4.",
+    "setup": {},
+    "input": {
+      "name": "Клип",
+      "path": "<base>/new",
+      "animaticVideo": "A-b_c.1.mp4"
+    },
+    "expected": []
+  },
+  {
+    "name": "empty",
+    "description": "Пустые название и путь.",
+    "setup": {},
+    "input": {
+      "name": "",
+      "path": ""
+    },
+    "expected": [
+      "Укажите название проекта.",
+      "Укажите полный путь к папке проекта."
+    ]
+  },
+  {
+    "name": "whitespace",
+    "description": "Пробельные название и путь.",
+    "setup": {},
+    "input": {
+      "name": "  \t",
+      "path": "   "
+    },
+    "expected": [
+      "Укажите название проекта.",
+      "Укажите полный путь к папке проекта."
+    ]
+  },
+  {
+    "name": "relative",
+    "description": "Относительный путь.",
+    "setup": {},
+    "input": {
+      "name": "Клип",
+      "path": "clips/new"
+    },
+    "expected": [
+      "Путь должен быть абсолютным."
+    ]
+  },
+  {
+    "name": "exists-dir",
+    "description": "Папка существует.",
+    "setup": {
+      "dirs": [
+        "exists"
+      ]
+    },
+    "input": {
+      "name": "Клип",
+      "path": "<base>/exists"
+    },
+    "expected": [
+      "Папка уже существует: выберите новый путь или откройте её как существующий проект."
+    ]
+  },
+  {
+    "name": "exists-file",
+    "description": "На месте папки файл.",
+    "setup": {
+      "files": [
+        "file"
+      ]
+    },
+    "input": {
+      "name": "Клип",
+      "path": "<base>/file"
+    },
+    "expected": [
+      "Папка уже существует: выберите новый путь или откройте её как существующий проект."
+    ]
+  },
+  {
+    "name": "parent-missing",
+    "description": "Нет родительской папки.",
+    "setup": {},
+    "input": {
+      "name": "Клип",
+      "path": "<base>/missing/child"
+    },
+    "expected": [
+      "Родительская папка не существует: <base>/missing"
+    ]
+  },
+  {
+    "name": "parent-file",
+    "description": "Родитель — файл.",
+    "setup": {
+      "files": [
+        "file"
+      ]
+    },
+    "input": {
+      "name": "Клип",
+      "path": "<base>/file/child"
+    },
+    "expected": [
+      "Родительская папка не существует: <base>/file"
+    ]
+  },
+  {
+    "name": "dotdot",
+    "description": "Путь с .. нормализуется resolve.",
+    "setup": {
+      "dirs": [
+        "a"
+      ]
+    },
+    "input": {
+      "name": "Клип",
+      "path": "<base>/a/../a"
+    },
+    "expected": [
+      "Папка уже существует: выберите новый путь или откройте её как существующий проект."
+    ]
+  },
+  {
+    "name": "trailing-slash",
+    "description": "Завершающая косая черта.",
+    "setup": {},
+    "input": {
+      "name": "Клип",
+      "path": "<base>/new/"
+    },
+    "expected": []
+  },
+  {
+    "name": "animatic-cyrillic",
+    "description": "Кириллица в имени MP4.",
+    "setup": {},
+    "input": {
+      "name": "Клип",
+      "path": "<base>/new",
+      "animaticVideo": "клип.mp4"
+    },
+    "expected": [
+      "Имя MP4: латиница, цифры, точка, дефис, подчёркивание и расширение .mp4."
+    ]
+  },
+  {
+    "name": "animatic-folder",
+    "description": "Путь в имени MP4.",
+    "setup": {},
+    "input": {
+      "name": "Клип",
+      "path": "<base>/new",
+      "animaticVideo": "a/b.mp4"
+    },
+    "expected": [
+      "Имя MP4: латиница, цифры, точка, дефис, подчёркивание и расширение .mp4."
+    ]
+  },
+  {
+    "name": "animatic-upper",
+    "description": "Расширение .MP4 в верхнем регистре.",
+    "setup": {},
+    "input": {
+      "name": "Клип",
+      "path": "<base>/new",
+      "animaticVideo": "clip.MP4"
+    },
+    "expected": [
+      "Имя MP4: латиница, цифры, точка, дефис, подчёркивание и расширение .mp4."
+    ]
+  },
+  {
+    "name": "animatic-blank",
+    "description": "Пробельное имя MP4 не проверяется.",
+    "setup": {},
+    "input": {
+      "name": "Клип",
+      "path": "<base>/new",
+      "animaticVideo": "   "
+    },
+    "expected": []
+  },
+  {
+    "name": "all-problems",
+    "description": "Порядок нескольких проблем.",
+    "setup": {
+      "dirs": [
+        "exists"
+      ]
+    },
+    "input": {
+      "name": " ",
+      "path": "<base>/exists",
+      "animaticVideo": "bad name.mp4"
+    },
+    "expected": [
+      "Укажите название проекта.",
+      "Папка уже существует: выберите новый путь или откройте её как существующий проект.",
+      "Имя MP4: латиница, цифры, точка, дефис, подчёркивание и расширение .mp4."
+    ]
+  }
+]

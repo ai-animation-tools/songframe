@@ -1,0 +1,9 @@
+{
+  "description": "Объект без name.",
+  "call": "Projects.rename",
+  "project": "project",
+  "covers": [
+    "invalidMarker"
+  ],
+  "stubbedMedia": []
+}

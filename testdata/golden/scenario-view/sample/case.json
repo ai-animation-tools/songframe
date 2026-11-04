@@ -1,0 +1,13 @@
+{
+  "description": "Образец: реестр, трактовка, кастинг, разметка.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "status=ready",
+    "duration из duration_decoded",
+    "lyrics"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

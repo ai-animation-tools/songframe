@@ -564,5 +564,1307 @@
       "ошибка: проблемы через пробел",
       "fileUnchanged"
     ]
+  },
+  {
+    "domain": "project-create",
+    "name": "latin",
+    "description": "Латинское название с пробелом: имя MP4 аниматика выводится из названия, проект открывается.",
+    "covers": [
+      "copyTemplate",
+      "defaultAnimaticName slug",
+      "git init",
+      "open: history/current"
+    ]
+  },
+  {
+    "domain": "project-create",
+    "name": "cyrillic",
+    "description": "Кириллическое название с пробелами по краям в папке с пробелами и кириллицей.",
+    "covers": [
+      "trim name",
+      "defaultAnimaticName → animatic.mp4",
+      "Unicode-путь"
+    ]
+  },
+  {
+    "domain": "project-create",
+    "name": "explicit-animatic",
+    "description": "Явное имя MP4 с пробелами по краям и плейсхолдер в названии.",
+    "covers": [
+      "animaticVideo trim",
+      "подстановка без повторного разбора значения"
+    ]
+  },
+  {
+    "domain": "project-create",
+    "name": "quote-in-name",
+    "description": "Кавычка в названии подставляется в JSON без экранирования: маркер не читается, создание завершается ошибкой открытия, папка остаётся.",
+    "covers": [
+      "подстановка без экранирования JSON",
+      "open: markerMissingAtPath"
+    ]
+  },
+  {
+    "domain": "project-create",
+    "name": "validation-failed",
+    "description": "Папка уже существует и имя MP4 неверно: проблемы через пробел, ничего не создаётся.",
+    "covers": [
+      "create: validateNewProject",
+      "problems.join"
+    ]
+  },
+  {
+    "domain": "project-validate-new",
+    "name": "cases.json",
+    "description": "validateNewProject: 16 случаев.",
+    "covers": [
+      "valid",
+      "valid-animatic",
+      "empty",
+      "whitespace",
+      "relative",
+      "exists-dir",
+      "exists-file",
+      "parent-missing",
+      "parent-file",
+      "dotdot",
+      "trailing-slash",
+      "animatic-cyrillic",
+      "animatic-folder",
+      "animatic-upper",
+      "animatic-blank",
+      "all-problems"
+    ]
+  },
+  {
+    "domain": "project-rename",
+    "name": "order-and-numbers",
+    "description": "Порядок ключей JS (индексы первыми), числа после JSON.parse/stringify, неизвестные поля и запись в историю.",
+    "covers": [
+      "rename",
+      "renameHistory",
+      "trim",
+      "JSON round-trip"
+    ]
+  },
+  {
+    "domain": "project-rename",
+    "name": "not-in-history",
+    "description": "Проект шаблона; путь отсутствует в истории (рядом другой путь) — история не меняется.",
+    "covers": [
+      "renameHistory: нет записи"
+    ]
+  },
+  {
+    "domain": "project-rename",
+    "name": "empty-name",
+    "description": "Пробельное название.",
+    "covers": [
+      "emptyName"
+    ]
+  },
+  {
+    "domain": "project-rename",
+    "name": "newline",
+    "description": "Перевод строки в названии.",
+    "covers": [
+      "invalidNameCharacter"
+    ]
+  },
+  {
+    "domain": "project-rename",
+    "name": "marker-without-name",
+    "description": "Объект без name.",
+    "covers": [
+      "invalidMarker"
+    ]
+  },
+  {
+    "domain": "project-rename",
+    "name": "array",
+    "description": "project.json — массив.",
+    "covers": [
+      "invalidMarker (массив)"
+    ]
+  },
+  {
+    "domain": "project-rename",
+    "name": "missing",
+    "description": "Нет plan/project.json.",
+    "covers": [
+      "invalidMarker (нет файла)"
+    ]
+  },
+  {
+    "domain": "project-rename",
+    "name": "broken-json",
+    "description": "Битый JSON: ошибка readLocalJson с путём; текст разбора Node не сравнивается.",
+    "covers": [
+      "readLocalJson: readFailed"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "read-template",
+    "description": "Проект из шаблона.",
+    "covers": [
+      "read",
+      "generation video/image null"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "read-no-generation",
+    "description": "Без generation и agent_instructions, нестроковый animatic_video.",
+    "covers": [
+      "read: generation null",
+      "agentInstructions пусто",
+      "animaticVideo не строка"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "read-generation-extras",
+    "description": "Блок generation с расширениями провайдера и нестроковым image.",
+    "covers": [
+      "read: копия блоков",
+      "image не объект → null",
+      "name не строка → пусто"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "read-generation-string",
+    "description": "generation — строка.",
+    "covers": [
+      "read: generation не объект"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "read-instructions-invalid",
+    "description": "agent_instructions не строка.",
+    "covers": [
+      "agentInstructions.invalid"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "read-array",
+    "description": "project.json — массив.",
+    "covers": [
+      "projectObjectRequired"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "read-null",
+    "description": "project.json — null.",
+    "covers": [
+      "projectObjectRequired (null)"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "read-missing",
+    "description": "Нет plan/project.json: текст Node не сравнивается.",
+    "covers": [
+      "projectReadFailed"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "read-broken",
+    "description": "Битый JSON: текст Node не сравнивается.",
+    "covers": [
+      "projectReadFailed (JSON)"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-template",
+    "description": "Заполнение шаблона: инструкции дословно, видео и изображения выбраны.",
+    "covers": [
+      "write",
+      "agent_instructions дословно",
+      "name trim",
+      "readProjectSettings после записи"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-merge",
+    "description": "Слияние с расширениями провайдера: вложенные options/backend сохраняются, новые ключи добавляются в конец.",
+    "covers": [
+      "mergeSettings вложенный",
+      "неизвестные поля файла",
+      "agentInstructions undefined не трогает поле"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-unset",
+    "description": "Поля со значением undefined (так IPC передаёт сброс модели и разрешения) удаляются из файла.",
+    "covers": [
+      "undefined удаляет поле",
+      "unset вложенного options"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-invalid",
+    "description": "Все проблемы проверки в порядке оригинала; файл не меняется.",
+    "covers": [
+      "validateProjectSettings",
+      "problems.join"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-video-not-object",
+    "description": "Блок video не объект в форме.",
+    "covers": [
+      "generationObjectRequired"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-animatic-invalid",
+    "description": "Имя MP4 с путём и кириллицей.",
+    "covers": [
+      "animaticFilenameInvalid"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-keep-corrupt-block",
+    "description": "Повреждённый непоказанный блок image сохраняется при image: null из формы.",
+    "covers": [
+      "сохранение повреждённого блока"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-keep-corrupt-generation",
+    "description": "generation не объект сохраняется при generation: null из формы; schema_version добавляется.",
+    "covers": [
+      "сохранение повреждённого generation",
+      "schema_version по умолчанию"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-generation-null",
+    "description": "generation: null из формы очищает объект в файле.",
+    "covers": [
+      "generation: null"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-instructions-invalid",
+    "description": "Нестроковые сохранённые инструкции блокируют запись, если поле не меняют.",
+    "covers": [
+      "agentInstructions undefined: проверка сохранённого"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-instructions-replace",
+    "description": "Новые инструкции заменяют нестроковые сохранённые.",
+    "covers": [
+      "agentInstructions задано"
+    ]
+  },
+  {
+    "domain": "project-settings",
+    "name": "save-array",
+    "description": "project.json — массив: запись невозможна.",
+    "covers": [
+      "projectObjectRequired при записи"
+    ]
+  },
+  {
+    "domain": "sources-view",
+    "name": "no-source",
+    "description": "Нет папки source.",
+    "covers": [
+      "manifest null",
+      "тексты пустые"
+    ]
+  },
+  {
+    "domain": "sources-view",
+    "name": "texts-without-manifest",
+    "description": "Без описи читаются text.md и description.md по фиксированным именам, CRLF сохраняется.",
+    "covers": [
+      "readText по умолчанию",
+      "CRLF"
+    ]
+  },
+  {
+    "domain": "sources-view",
+    "name": "manifest",
+    "description": "Опись с референсами, промптами и неизвестными полями.",
+    "covers": [
+      "manifest как есть",
+      "referenceFilePaths"
+    ]
+  },
+  {
+    "domain": "sources-view",
+    "name": "missing-files",
+    "description": "Файлы описи отсутствуют: проблема на каждый, текст по пути описи.",
+    "covers": [
+      "manifestFileMissing",
+      "coverPath",
+      "lyrics.path из описи"
+    ]
+  },
+  {
+    "domain": "sources-view",
+    "name": "manifest-broken",
+    "description": "Битая опись.",
+    "covers": [
+      "manifestInvalid"
+    ]
+  },
+  {
+    "domain": "sources-view",
+    "name": "manifest-other-version",
+    "description": "Опись другой версии.",
+    "covers": [
+      "manifestInvalid (schema_version)"
+    ]
+  },
+  {
+    "domain": "sources-validate",
+    "name": "new-project-empty",
+    "description": "Новый проект без ввода: обязательные части.",
+    "covers": [
+      "trackRequired",
+      "lyricsRequired",
+      "ideaRequired"
+    ]
+  },
+  {
+    "domain": "sources-validate",
+    "name": "new-project-valid",
+    "description": "Полный корректный ввод.",
+    "covers": [
+      "valid"
+    ]
+  },
+  {
+    "domain": "sources-validate",
+    "name": "saved-parts",
+    "description": "Сохранённые части не требуются повторно; сохранённый текст проверяется разбором.",
+    "covers": [
+      "existing manifest",
+      "parseLyrics сохранённого текста"
+    ]
+  },
+  {
+    "domain": "sources-validate",
+    "name": "files-invalid",
+    "description": "Отсутствующие файлы и неверные форматы.",
+    "covers": [
+      "trackFileMissing",
+      "trackFormatInvalid",
+      "textFileMissing",
+      "textEmpty",
+      "coverFileMissing",
+      "coverFormatInvalid",
+      "parseLyrics файла"
+    ]
+  },
+  {
+    "domain": "sources-validate",
+    "name": "files-missing",
+    "description": "Пути к отсутствующим файлам.",
+    "covers": [
+      "trackFileMissing",
+      "textFileMissing",
+      "coverFileMissing"
+    ]
+  },
+  {
+    "domain": "sources-validate",
+    "name": "kinds-and-references",
+    "description": "Ошибки типов и референсов в порядке оригинала.",
+    "covers": [
+      "validateKinds",
+      "validateReferences"
+    ]
+  },
+  {
+    "domain": "sources-validate",
+    "name": "broken-manifest",
+    "description": "Битая опись считается отсутствующей.",
+    "covers": [
+      "readManifest null"
+    ]
+  },
+  {
+    "domain": "sources-save",
+    "name": "new",
+    "description": "Первое сохранение: копирование, нормализация текстов, имена изображений, промпты и опись.",
+    "covers": [
+      "track/lyrics/idea/cover",
+      "normalizeText",
+      "jpeg → .jpg",
+      "суффикс -2",
+      "промпт изображения",
+      "общий промпт",
+      "short_name по name",
+      "папка props создаётся"
+    ]
+  },
+  {
+    "domain": "sources-save",
+    "name": "update",
+    "description": "Повторное сохранение: изменение промптов, удаление изображения, обложки и референса, новый вид с занятым именем.",
+    "covers": [
+      "existingPath",
+      "prompt undefined сохраняет",
+      "пустой промпт удаляет",
+      "удаление файлов прежней описи",
+      "cover remove",
+      "пустая папка типа удаляется",
+      "занятое имя -2"
+    ]
+  },
+  {
+    "domain": "sources-save",
+    "name": "prompt-changes",
+    "description": "Промпт изображения меняется, очищается и остаётся прежним; общий промпт убирается.",
+    "covers": [
+      "changedPromptPaths",
+      "prompt \"\" удаляет файл",
+      "общий промпт пустой"
+    ]
+  },
+  {
+    "domain": "sources-save",
+    "name": "shared-prompt",
+    "description": "Два изображения ссылались на один файл промпта; изменение одного сохраняет прежние байты другого под собственным именем.",
+    "covers": [
+      "общий путь промпта у двух видов"
+    ]
+  },
+  {
+    "domain": "sources-save",
+    "name": "kinds-custom",
+    "description": "Свой набор типов из формы и новый референс; прежние неизвестные поля трека сохраняются.",
+    "covers": [
+      "input.kinds",
+      "папка нового типа",
+      "неизвестные поля описи",
+      "удаление референса без .gitkeep"
+    ]
+  },
+  {
+    "domain": "sources-save",
+    "name": "invalid",
+    "description": "Ошибка проверки: проблемы через пробел, дерево не меняется.",
+    "covers": [
+      "saveSources: validateSources"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "unchanged",
+    "description": "Повторное сохранение той же формы: кастинг, записанный приложением, не меняется.",
+    "covers": [
+      "writeCast без изменений",
+      "невыбранный сохранённый вид не добавляется"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "new-images",
+    "description": "Новые виды Миры и Лодки, новый референс без сущности и изменённое описание.",
+    "covers": [
+      "новые изображения в entity.images",
+      "прежний невыбранный вид не добавляется",
+      "проекция описания в appearance",
+      "референс без сущности не создаёт её"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "reused-name",
+    "description": "Удалён невыбранный вид heroes/mira-2.png, новый вид получает то же имя и добавляется в выбор.",
+    "covers": [
+      "новый вид определяет ввод, а не путь",
+      "удаление неиспользуемого изображения"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "unused-removed",
+    "description": "Удаление невыбранного вида: файл удаляется, выбор кастинга прежний.",
+    "covers": [
+      "удаление неиспользуемого изображения"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "image-in-use",
+    "description": "Удаление выбранного вида Миры отклоняется до записи.",
+    "covers": [
+      "imageInUse",
+      "дерево без изменений"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "cast-damaged",
+    "description": "Битый plan/cast.json: отказ раньше проверки формы (форма тоже неверна).",
+    "covers": [
+      "castInvalid",
+      "порядок: кастинг до validateSources"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "cast-structure",
+    "description": "Кастинг другой схемы: отказ normalizeCast до записи.",
+    "covers": [
+      "normalizeCast structureRequired"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "cast-null",
+    "description": "plan/cast.json содержит null: сохранение без синхронизации, файл кастинга не трогается.",
+    "covers": [
+      "readCast null-значение → без кастинга"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "cast-normalized",
+    "description": "Кастинг в компактной записи с лишними полями: сохранение исходников переписывает его нормализованным.",
+    "covers": [
+      "writeCast нормализует",
+      "лишние поля сущности отбрасываются",
+      "словарь свойств дополняется"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "no-manifest",
+    "description": "Кастинг есть, исходников ещё нет: все файлы нового референса добавляются в выбор сущности.",
+    "covers": [
+      "previous null",
+      "новые изображения без прежней описи",
+      "appearance из описания формы"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "rollback",
+    "description": "Запись кастинга отклонена (изображение сущности отсутствует): source/ и cast.json возвращаются к прежнему состоянию.",
+    "covers": [
+      "откат source/ из резерва",
+      "откат cast.json",
+      "imageMissing в writeCast",
+      "изменённый текст и новые файлы откатываются"
+    ]
+  },
+  {
+    "domain": "sources-save-cast",
+    "name": "invalid-input",
+    "description": "Кастинг исправен, форма неверна: проблемы через пробел, дерево не меняется.",
+    "covers": [
+      "validateSources при кастинге",
+      "откат без изменений"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "sample",
+    "description": "Образец: кастинг с пятью сущностями и описью исходников.",
+    "covers": [
+      "imagePaths из кастинга и описи",
+      "словарь свойств существующих типов"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "mini",
+    "description": "Мини-проект: словарь только для character; vehicle и world получают словарь по умолчанию.",
+    "covers": [
+      "ensureProperties: default для известного типа",
+      "проекция описаний"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "missing-path",
+    "description": "Путь не существует.",
+    "covers": [
+      "cast=null",
+      "manifest=null"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "no-cast",
+    "description": "Образец без plan/cast.json.",
+    "covers": [
+      "cast=null",
+      "imagePaths только из описи"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "cast-damaged",
+    "description": "plan/cast.json — битый JSON.",
+    "covers": [
+      "fileDamaged"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "manifest-invalid",
+    "description": "Опись без массива references: кастинг считается повреждённым.",
+    "covers": [
+      "descriptionManifest ошибка → fileDamaged"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "no-manifest",
+    "description": "Нет описи исходников: описания сущностей собственные.",
+    "covers": [
+      "manifest=null",
+      "без проекции"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "structure-invalid",
+    "description": "schema_version 2.",
+    "covers": [
+      "structureRequired"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "validation-problems",
+    "description": "Ошибки сущностей: код, повтор, тип, название, путь изображения, свойства, два world.",
+    "covers": [
+      "entityCodeInvalid",
+      "entityCodeDuplicate",
+      "entityKindInvalid",
+      "entityNameMissing",
+      "imagePathInvalid",
+      "propertyCodeInvalid",
+      "propertyEmpty",
+      "worldMustBeUnique",
+      "label = name || id"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "description-drift",
+    "description": "Сохранённое описание сущности расходится с описью; новый референс без сущности.",
+    "covers": [
+      "descriptionFromSources",
+      "referencesMissing",
+      "description отсутствует → пустая строка"
+    ]
+  },
+  {
+    "domain": "cast-view",
+    "name": "kind-without-properties",
+    "description": "Типы без словаря: известный (location) и неизвестный (animal).",
+    "covers": [
+      "ensureProperties: default",
+      "ensureProperties: generic",
+      "порядок ключей properties"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "init-sample",
+    "description": "Дополнение существующего кастинга образца из исходников.",
+    "covers": [
+      "initCast на существующем",
+      "appearance из описи",
+      "стабильность"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "init-new",
+    "description": "Кастинга нет: создаётся из описи с world первым.",
+    "covers": [
+      "новый cast.json",
+      "world из словаря",
+      "properties из default"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "init-new-references",
+    "description": "Новые референсы: тип world и неверный тип становятся prop, short_name по name.",
+    "covers": [
+      "castFromSources: новый референс",
+      "kind world/неверный → prop",
+      "ensureProperties prop"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "init-no-manifest",
+    "description": "Без описи — ошибка, файлы не меняются.",
+    "covers": [
+      "manifestMissing"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "init-damaged-cast",
+    "description": "Повреждённый кастинг заменяется собранным из исходников.",
+    "covers": [
+      "readCast=false → новый кастинг"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "init-image-missing",
+    "description": "Файл изображения референса отсутствует — запись отклоняется.",
+    "covers": [
+      "imageMissing"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-sample",
+    "description": "Пересохранение кастинга образца.",
+    "covers": [
+      "writeCast без изменений",
+      "стабильность"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-description",
+    "description": "Правка описания связанной сущности переносится в опись (updated_at = фиксированное время).",
+    "covers": [
+      "manifest description ← appearance",
+      "updated_at",
+      "appearance без trim",
+      "публикация двух файлов"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-normalize",
+    "description": "trim полей, short_name по name, пустые значения состояния отбрасываются, новый тип получает словарь.",
+    "covers": [
+      "normalizeCast trim",
+      "initial_state filter",
+      "ensureProperties generic/default",
+      "собственное описание"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-structure",
+    "description": "schema_version 2.",
+    "covers": [
+      "structureRequired"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-entity-structure",
+    "description": "images — не массив.",
+    "covers": [
+      "entityStructureInvalid"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-properties-invalid",
+    "description": "Свойство без подписи.",
+    "covers": [
+      "propertiesInvalid"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-property-duplicate",
+    "description": "Повтор кода свойства в словаре типа.",
+    "covers": [
+      "propertyDuplicate"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-validation",
+    "description": "Ошибки проверки сущностей объединяются через пробел.",
+    "covers": [
+      "validateCast в writeCast",
+      "worldMustBeUnique"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-image-missing",
+    "description": "Изображение сущности отсутствует в source.",
+    "covers": [
+      "imageMissing",
+      "файлы не меняются"
+    ]
+  },
+  {
+    "domain": "cast-write",
+    "name": "save-no-manifest",
+    "description": "Без описи описания принадлежат кастингу.",
+    "covers": [
+      "manifest=null",
+      "только cast.json"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "sample",
+    "description": "Образец: реестр, трактовка, кастинг, разметка.",
+    "covers": [
+      "status=ready",
+      "duration из duration_decoded",
+      "lyrics"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "mini",
+    "description": "Мини-проект.",
+    "covers": [
+      "references совпадают с кастингом"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "missing-path",
+    "description": "Путь не существует.",
+    "covers": [
+      "все null",
+      "status=missing"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "no-scenes",
+    "description": "Нет реестра.",
+    "covers": [
+      "status=missing",
+      "scenes=null"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "damaged-documents",
+    "description": "Битые scenes, treatment, timing и cast.",
+    "covers": [
+      "damagedDocument",
+      "damagedCast",
+      "status=invalid",
+      "duration из описи"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "scenes-empty",
+    "description": "Реестр без планов.",
+    "covers": [
+      "status=empty",
+      "registryRequiresScenes"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "status-invalid-frames",
+    "description": "Неверные кадры: статус invalid, проблемы проверки.",
+    "covers": [
+      "status=invalid (кадры)",
+      "shotFramesInteger"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "references-mismatch",
+    "description": "Карта references реестра расходится с кастингом.",
+    "covers": [
+      "referencesRefresh",
+      "shotUnknownReference"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "validation-problems",
+    "description": "Ошибки плана: код, повтор, границы, часть, камера, действие, главный референс, derived_from, конец песни.",
+    "covers": [
+      "shotCodeInvalid",
+      "duplicateShotCode",
+      "shotStartMismatch",
+      "shotUnknownPart",
+      "shotCameraMissing",
+      "shotActionMissing",
+      "shotPrimaryReferenceMissing",
+      "derivedSelfReference",
+      "derivedInvalidShape",
+      "registryDurationMismatch",
+      "ошибка состояния после проверок"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "derived-problems",
+    "description": "derived_from: неизвестный план и цепочка.",
+    "covers": [
+      "derivedUnknownSource",
+      "derivedChainedSource",
+      "shotEndsBeforeStart"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "state-cycle",
+    "description": "Цикл state_from.",
+    "covers": [
+      "stateCycle в проблемах"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "no-timing-no-text",
+    "description": "Без разметки и текста: длительность из описи.",
+    "covers": [
+      "duration=track.duration_seconds",
+      "lyrics=[]"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "no-duration",
+    "description": "Без разметки, описи и трека.",
+    "covers": [
+      "duration=null",
+      "trackPath=null"
+    ]
+  },
+  {
+    "domain": "scenario-view",
+    "name": "fps-wrong",
+    "description": "fps 25: реестр не принимается.",
+    "covers": [
+      "registryRequiresScenes",
+      "status=invalid (fps)"
+    ]
+  },
+  {
+    "domain": "scenario-treatment",
+    "name": "sample-resave",
+    "description": "Пересохранение трактовки образца.",
+    "covers": [
+      "стабильность",
+      "числа 0.0 → 0"
+    ]
+  },
+  {
+    "domain": "scenario-treatment",
+    "name": "normalize",
+    "description": "Сортировка частей, округление, trim, пустые сущности отбрасываются, неизвестные поля сохраняются.",
+    "covers": [
+      "sort by start",
+      "round 3",
+      "trim",
+      "entities.filter(Boolean)",
+      "лишние поля части сохраняются",
+      "лишние поля документа отбрасываются"
+    ]
+  },
+  {
+    "domain": "scenario-treatment",
+    "name": "invalid-document",
+    "description": "Нет logline.",
+    "covers": [
+      "treatmentInvalidDocument"
+    ]
+  },
+  {
+    "domain": "scenario-treatment",
+    "name": "invalid-part",
+    "description": "max_shot_seconds = 0.",
+    "covers": [
+      "treatmentInvalidPart"
+    ]
+  },
+  {
+    "domain": "scenario-treatment",
+    "name": "validation-problems",
+    "description": "Код, повтор, название, стык, конец раньше начала, длительность. Отличие от 634fd94: оригинал отказывал (originalError), Go сохраняет черновик, а validateTreatment возвращает те же проблемы.",
+    "covers": [
+      "partCodeLatin",
+      "duplicatePartCode",
+      "partTitleMissing",
+      "partStartMismatch",
+      "partEndsBeforeStart",
+      "treatmentDurationMismatch",
+      "черновик записывается"
+    ]
+  },
+  {
+    "domain": "scenario-treatment",
+    "name": "no-parts",
+    "description": "Пустой список частей. Отличие от 634fd94: оригинал отказывал (originalError), Go сохраняет черновик, а validateTreatment возвращает ту же проблему.",
+    "covers": [
+      "treatmentRequiresParts",
+      "черновик записывается"
+    ]
+  },
+  {
+    "domain": "scenario-treatment",
+    "name": "new-file",
+    "description": "Трактовки нет; без разметки и описи длительность не проверяется.",
+    "covers": [
+      "создание файла",
+      "duration=null"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "sample-resave",
+    "description": "Пересохранение реестра образца.",
+    "covers": [
+      "impact пуст",
+      "стабильность"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-resave",
+    "description": "Пересохранение реестра мини-проекта.",
+    "covers": [
+      "impact пуст"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-cosmetic",
+    "description": "Косметика: название части, audio.path и карта references не входят в отпечатки.",
+    "covers": [
+      "косметическая правка: impact пуст",
+      "references из кастинга",
+      "production-status не меняется"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-staging-production",
+    "description": "Значимая правка действия M01: M01, производный M03; принятые не трогаются.",
+    "covers": [
+      "impactStagingChanged",
+      "impactDerivedSource",
+      "state=completed",
+      "produced",
+      "production mode"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-staging-keep",
+    "description": "Та же правка в режиме keep: отпечаток M01 переписан, пакет M02 не затронут.",
+    "covers": [
+      "keep: writeAcceptedFingerprints",
+      "порядок shots по номеру"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-state-keep",
+    "description": "Изменение итога M01 меняет наследников M02 и M03; keep переписывает отпечатки и пакет M02, но не пакет M03 в awaiting по старому отпечатку не своего.",
+    "covers": [
+      "impactInheritedState",
+      "restampPackage",
+      "state=progress",
+      "keep наследников"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-bounds",
+    "description": "Сдвиг границы M01/M02.",
+    "covers": [
+      "impactBoundsChanged"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-global",
+    "description": "Общее визуальное направление меняет все планы.",
+    "covers": [
+      "impactGlobalRules",
+      "keep всех принятых"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-initial-state",
+    "description": "M01 без state_from (undefined): состояние то же, но смена направления части verse.",
+    "covers": [
+      "impactGlobalRules для части"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-new-shot",
+    "description": "Разбиение M02 на M02 и M02.5.",
+    "covers": [
+      "impactNewShot",
+      "state=planned",
+      "produced=false"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-keep-stale",
+    "description": "M02 уже устарел до правки: keep его не возвращает.",
+    "covers": [
+      "keep не трогает ранее устаревшие",
+      "state=stale"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-keep-status-corrupt",
+    "description": "Повреждённый production-status: keep отказывает до записи реестра.",
+    "covers": [
+      "productionStatusCorrupt",
+      "реестр не записан"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-keep-no-status",
+    "description": "Нет production-status: принятых отпечатков нет, файл не создаётся.",
+    "covers": [
+      "writeAcceptedFingerprints без изменений",
+      "state=stale без отпечатка"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "mini-package-problem",
+    "description": "Пакет M03 подготовлен по другой постановке: без комплекта план unknown.",
+    "covers": [
+      "state=unknown",
+      "SCENE_CHANGED в пакете"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "invalid-mode",
+    "description": "Неизвестный режим.",
+    "covers": [
+      "invalidSaveMode"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "validation-error",
+    "description": "Ошибки проверки: файл не меняется.",
+    "covers": [
+      "ошибка проверки",
+      "файл не меняется",
+      "impact считается и для черновика с ошибками"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "state-error",
+    "description": "Ошибка состояния: impact пуст, сохранение отклонено.",
+    "covers": [
+      "statePropertyInvalid",
+      "fingerprintsOf=null → impact пуст"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "no-previous",
+    "description": "Реестра ещё нет: файл создаётся, impact пуст.",
+    "covers": [
+      "создание реестра",
+      "keep без прежних отпечатков"
+    ]
+  },
+  {
+    "domain": "scenario-scenes",
+    "name": "no-cast",
+    "description": "Без кастинга references берутся из черновика.",
+    "covers": [
+      "references из черновика",
+      "отпечатки без начального состояния"
+    ]
+  },
+  {
+    "domain": "scenario-brief",
+    "name": "sample",
+    "description": "Все планы образца в обеих фазах.",
+    "covers": [
+      "мир первым",
+      "подписи и чек-лист словаря",
+      "источники"
+    ]
+  },
+  {
+    "domain": "scenario-brief",
+    "name": "mini",
+    "description": "Мини-проект: удаление свойства, неизвестная сущность в состоянии, same.",
+    "covers": [
+      "сущность вне кастинга по алфавиту",
+      "свойство без подписи",
+      "inherited"
+    ]
+  },
+  {
+    "domain": "scenario-brief",
+    "name": "no-cast",
+    "description": "Без кастинга: только изменения планов, подписи из кодов.",
+    "covers": [
+      "cast=null",
+      "key.replace(_)"
+    ]
+  },
+  {
+    "domain": "scenario-brief",
+    "name": "empty-state",
+    "description": "Без начального состояния и изменений; длинное действие обрезается.",
+    "covers": [
+      "BRIEF_STATE_UNSET_PREFIX",
+      "action > 80 → …"
+    ]
+  },
+  {
+    "domain": "scenario-brief",
+    "name": "errors",
+    "description": "Неизвестный план и ошибка состояния.",
+    "covers": [
+      "briefShotMissing"
+    ]
+  },
+  {
+    "domain": "scenario-brief",
+    "name": "state-error",
+    "description": "Цикл state_from в черновике: ошибка вычисления.",
+    "covers": [
+      "stateCycle"
+    ]
   }
 ]

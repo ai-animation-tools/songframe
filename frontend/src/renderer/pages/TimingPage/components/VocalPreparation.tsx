@@ -148,7 +148,8 @@ export function VocalPreparation(props: Props): ReactElement {
                   key={`${view.sourceSha256}:${preview.id}`}
                   sourcePath={view.sourcePath}
                   vocalPath={preview.path}
-                  vocalSha256={preview.sha256}
+                  disabled={props.disabled || busy || running}
+                  disabledReason={texts.operationPending}
                 />
               )}
               <Typography variant="body2" color="text.secondary">

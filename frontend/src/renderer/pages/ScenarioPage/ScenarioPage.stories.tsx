@@ -5,6 +5,8 @@ import { componentsTexts } from '@shared/texts/components';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
 import { scenarioTexts } from '@shared/texts/scenario';
+import { migrationTexts } from '@shared/texts/migration';
+import { platformTexts } from '@shared/texts/platform';
 import {
   SCENARIO_PAGE_READ_ERROR,
   ScenarioPageStory,
@@ -216,6 +218,23 @@ export const SaveProducedShots: Story = {
   }
 };
 
+export const WorkflowNotMigrated: Story = {
+  name: 'Процесс с агентом не перенесён · ручная правка и сохранение работают',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ unavailable: ['scenarioWorkflow.view'] }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M01');
+    await expect(screen.getByText(scenarioTexts.workflow.title)).toBeVisible();
+    await expect(screen.getByText(migrationTexts.notMigratedTitle)).toBeVisible();
+    await expect(screen.queryByRole('button', { name: scenarioTexts.workflow.createScenes })).not.toBeInTheDocument();
+    await userEvent.type(field(screen, scenarioTexts.fields.action), ' Ручная правка.');
+    await userEvent.click(saveButton(screen));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
+    await expect(screen.getByTestId('page-model-shot-M01')).toHaveTextContent('Ручная правка.');
+  }
+};
+
 export const RegistryProblems: Story = {
   name: 'Проблемы реестра · сохранение заблокировано до исправления',
   tags: CANVAS_ONLY,
@@ -419,6 +438,19 @@ export const LongRegistry: Story = {
   }
 };
 
+export const ScaffoldNotMigrated: Story = {
+  name: 'Каркас не перенесён · причина «не перенесено», а не папка комплекса',
+  tags: CANVAS_ONLY,
+  parameters: { songframe: scenarioPageOptions({ variant: 'noRegistry', unavailable: ['tools.run'] }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const scaffold = screen.getByRole('button', { name: scenarioTexts.toolbar.buildScaffold });
+    await expect(scaffold).toBeDisabled();
+    await expect(scaffold).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
+    await expect(scaffold).not.toHaveAttribute('title', expect.stringContaining(scenarioTexts.prerequisites.tools));
+  }
+};
+
 export const NoRegistry: Story = {
   name: 'Нет реестра · каркас только по сохранённой трактовке',
   tags: CANVAS_ONLY,
@@ -441,6 +473,75 @@ export const NoRegistry: Story = {
     await expect(screen.getByTestId('page-model-shots')).toHaveTextContent('Сохранённых планов: 6.');
     await expect(screen.getByTestId('page-model-logline')).toHaveTextContent('Черновик.');
     await expect(unsavedChip(screen)).not.toBeInTheDocument();
+  }
+};
+
+export const TreatmentDraftWithProblems: Story = {
+  name: 'Черновик трактовки · сохраняется с проблемами, список виден, каркас недоступен',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ variant: 'noRegistry' }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    const scaffold = () => screen.getByRole('button', { name: scenarioTexts.toolbar.buildScaffold });
+    await expect(scaffold()).toBeEnabled();
+    await expect(screen.queryByText(scenarioTexts.treatment.problemsTitle)).not.toBeInTheDocument();
+    // Конец первой части раньше начала второй: части больше не идут встык.
+    const end = screen.getAllByRole('spinbutton', { name: scenarioTexts.fields.endSeconds })[0];
+    await userEvent.clear(end);
+    await userEvent.type(end, '7.5');
+    const title = await screen.findByText(scenarioTexts.treatment.problemsTitle, {}, { timeout: 3000 });
+    const alert = (title as HTMLElement).closest('[role="alert"]') as HTMLElement;
+    await expect(within(alert).getByText(scenarioTexts.treatment.problemsHint)).toBeVisible();
+    await waitFor(() =>
+      expect(
+        within(alert)
+          .getAllByRole('listitem')
+          .map((item) => item.textContent)
+      ).toEqual([scenarioTexts.main.partStartMismatch({ id: 'verse', start: 8, previousEnd: '7.50' })])
+    );
+    await expect(saveButton(screen)).toBeEnabled();
+    await userEvent.click(saveButton(screen));
+    // Сохранение черновика — не ошибка: уведомление объясняет, а список остаётся над частями.
+    await screen.findByText(scenarioTexts.notice.treatmentSavedDraft, {}, { timeout: 3000 });
+    await expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений трактовки: 1.');
+    await expect(unsavedChip(screen)).not.toBeInTheDocument();
+    await expect(screen.getByText(scenarioTexts.treatment.problemsTitle)).toBeVisible();
+    await expect(screen.getByRole('button', { name: scenarioTexts.toolbar.problems({ count: 1 }) })).toBeInTheDocument();
+    await expect(scaffold()).toBeDisabled();
+    await expect(scaffold()).toHaveAttribute('title', expect.stringContaining(scenarioTexts.prerequisites.treatmentProblems));
+    await expect(screen.getByTestId('page-model-scaffold')).toHaveTextContent('Построений каркаса: 0.');
+    // Исправленный стык снимает список и открывает каркас после сохранения.
+    await userEvent.clear(end);
+    await userEvent.type(end, '8');
+    await waitFor(() => expect(screen.queryByText(scenarioTexts.treatment.problemsTitle)).not.toBeInTheDocument(), { timeout: 3000 });
+    await userEvent.click(saveButton(screen));
+    await screen.findByText(scenarioTexts.notice.treatmentSaved, { exact: true }, { timeout: 3000 });
+    await waitFor(() => expect(scaffold()).toBeEnabled());
+  }
+};
+
+export const PartsFromTimingJoined: Story = {
+  name: 'Части из разметки · промежутки и перекрытия карты закрываются, части встык',
+  tags: ['!autodocs', 'ci'],
+  parameters: { songframe: scenarioPageOptions({ variant: 'noRegistry', gappedTiming: true }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    // Сохранённая трактовка скопировала границы карты как есть: проблемы видны сразу, каркас недоступен.
+    const title = await screen.findByText(scenarioTexts.treatment.problemsTitle, {}, { timeout: 3000 });
+    const alert = (title as HTMLElement).closest('[role="alert"]') as HTMLElement;
+    await waitFor(() => expect(within(alert).getAllByRole('listitem')).toHaveLength(4));
+    const scaffold = () => screen.getByRole('button', { name: scenarioTexts.toolbar.buildScaffold });
+    await expect(scaffold()).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: scenarioTexts.toolbar.partsFromTiming }));
+    const confirm = within(await screen.findByRole('dialog'));
+    await userEvent.click(confirm.getByRole('button', { name: scenarioTexts.toolbar.replacePartsConfirm }));
+    await waitFor(() => expect(screen.queryByText(scenarioTexts.treatment.problemsTitle)).not.toBeInTheDocument(), { timeout: 3000 });
+    const values = (name: string) => screen.getAllByRole('spinbutton', { name }).map((input: HTMLElement) => (input as HTMLInputElement).value);
+    await expect(values(scenarioTexts.fields.startSeconds)).toEqual(['0', '8.1', '16.1']);
+    await expect(values(scenarioTexts.fields.endSeconds)).toEqual(['8.1', '16.1', '24']);
+    await userEvent.click(saveButton(screen));
+    await screen.findByText(scenarioTexts.notice.treatmentSaved, { exact: true }, { timeout: 3000 });
+    await waitFor(() => expect(scaffold()).toBeEnabled());
   }
 };
 

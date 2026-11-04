@@ -1,0 +1,34 @@
+{
+  "track": {
+    "path": "<inputs>/Моя песня.mp3"
+  },
+  "lyrics": {
+    "text": "[Куплет]\nПервая строка\n"
+  },
+  "idea": {
+    "text": "Идея"
+  },
+  "cover": null,
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "",
+      "description": "Музыкант",
+      "prompt": "",
+      "files": [
+        {
+          "sourcePath": "<inputs>/mira front.jpeg",
+          "view": "front",
+          "note": ""
+        },
+        {
+          "sourcePath": "<inputs>/mira-side.webp",
+          "view": "side",
+          "note": ""
+        }
+      ]
+    }
+  ]
+}

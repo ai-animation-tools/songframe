@@ -11,7 +11,7 @@ import SaveAsIcon from '@mui/icons-material/SaveAs';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import type { ScenesFile, ScenesSaveMode, TreatmentFile } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
-import { KEEP_NOTHING_REASON, SCENE_PROBLEMS_ID, type ScenarioTab } from '../types';
+import { KEEP_NOTHING_REASON, SCENE_PROBLEMS_ID, TREATMENT_PROBLEMS_ID, type ScenarioTab } from '../types';
 
 const BUSY_REASON = commonTexts.operationPending;
 
@@ -27,6 +27,7 @@ export function ScenarioToolbar({
   treatmentDirty,
   scenesDirty,
   problems,
+  treatmentProblems,
   showGlobal,
   onToggleGlobal,
   partsFromTiming,
@@ -45,6 +46,8 @@ export function ScenarioToolbar({
   treatmentDirty: boolean;
   scenesDirty: boolean;
   problems: string[];
+  /** Проблемы черновика трактовки: не мешают сохранению, но закрывают каркас (причина — в scaffoldProblem). */
+  treatmentProblems: string[];
   showGlobal: boolean;
   onToggleGlobal(): void;
   partsFromTiming(): void;
@@ -57,6 +60,7 @@ export function ScenarioToolbar({
 }): ReactElement {
   const dirty = tab === 'treatment' ? treatmentDirty : scenesDirty;
   const sceneProblems = tab === 'scenes' && scenes ? problems.length : 0;
+  const shownProblems = tab === 'treatment' && treatment ? treatmentProblems.length : sceneProblems;
   const saveDisabled = busy || (tab === 'treatment' ? !treatment || !treatmentDirty : !scenes || !scenesDirty || problems.length > 0);
   // Причина недоступности сохранения видна в подсказке, даже если список проблем прокручен из вида.
   const saveReason = busy
@@ -85,13 +89,15 @@ export function ScenarioToolbar({
         />
       </Tabs>
       {dirty ? <Chip size="small" color="warning" label={commonTexts.unsavedChanges} /> : null}
-      {sceneProblems ? (
+      {shownProblems ? (
         <Chip
           size="small"
           color="error"
           variant="outlined"
-          label={scenarioTexts.toolbar.problems({ count: sceneProblems })}
-          onClick={() => document.getElementById(SCENE_PROBLEMS_ID)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          label={scenarioTexts.toolbar.problems({ count: shownProblems })}
+          onClick={() =>
+            document.getElementById(tab === 'treatment' ? TREATMENT_PROBLEMS_ID : SCENE_PROBLEMS_ID)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
         />
       ) : null}
       {/* Группа действий прижата вправо и при переносе: «Сохранить» всегда последняя справа. */}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "name": "Новый клип",
+  "animatic_video": "novyi-klip.mp4",
+  "agent_instructions": "  Пиши кратко.\r\n\tБез эмодзи.  ",
+  "generation": {
+    "video": {
+      "provider": "test",
+      "provider_selected": true,
+      "resolution": "1080p",
+      "aspect_ratio": "16:9",
+      "watermark": false,
+      "duration_rule": "min_supported_strictly_greater_than_window",
+      "model": "model-a"
+    },
+    "image": {
+      "provider": "test",
+      "provider_selected": true,
+      "outputs": 2,
+      "aspect_ratio": "auto"
+    }
+  }
+}

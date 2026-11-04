@@ -85,8 +85,18 @@ export const commonTexts = {
     videoMissing: 'Видео отсутствует',
     fileMissing: 'файла нет'
   },
-  // Управление плеером одинаково в разметке песни и монтаже пробы.
-  player: { pause: 'Пауза', play: 'Воспроизвести', volume: 'Громкость' },
+  // Управление плеером одинаково в разметке песни, монтаже пробы и прослушивании трека в исходниках.
+  player: {
+    pause: 'Пауза',
+    play: 'Воспроизвести',
+    volume: 'Громкость',
+    volumePercent: ({ value }: { value: number }) => `${value}%`,
+    controls: 'Управление воспроизведением',
+    position: 'Позиция воспроизведения',
+    clock: ({ time, duration }: { time: string; duration: string }) => `${time} / ${duration}`,
+    loadFailed: 'Не удалось загрузить аудио. Проверьте, что файл на месте.',
+    playbackFailed: ({ reason }: { reason: string }) => `Не удалось воспроизвести аудио: ${reason}`
+  },
   agent: { label: 'Агент', choose: 'Сначала выберите агента.', checking: 'Проверка агента' },
   // Коды свойств проверяются одинаково в словаре кастинга и редакторе состояния.
   stateProperty: {

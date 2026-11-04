@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "name": " ",
+    "animaticVideo": ".hidden.mp4",
+    "generation": {
+      "video": {
+        "provider": "",
+        "resolution": 5,
+        "aspect_ratio": "16x9",
+        "watermark": "нет",
+        "duration_rule": "x",
+        "provider_selected": "да",
+        "options": []
+      },
+      "image": {
+        "provider": "test",
+        "model": "  ",
+        "outputs": 0,
+        "watermark": 1,
+        "aspect_ratio": "auto",
+        "options": "x"
+      }
+    }
+  },
+  "unset": []
+}

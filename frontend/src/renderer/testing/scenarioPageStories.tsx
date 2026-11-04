@@ -24,6 +24,7 @@ import { ScenarioPage } from '../pages/ScenarioPage/ScenarioPage';
 import { shotPageRoute } from '../components/shotRoutes';
 import { createStoryApi, STORY_IMAGE_PATH, STORY_TRACK_PATH, type StoryOptions } from './storybook';
 import { storyAccess } from './commonStories';
+import type { ApiMethod } from '../availability';
 import { scenarioDocuments, scenarioJob, scenarioProposal, SCENARIO_STORY_PROJECT } from './scenarioWorkflowStories';
 import { productionShot } from './productionQueueStories';
 
@@ -47,6 +48,45 @@ export interface ScenarioPageOptions {
   route?: string;
   /** Планы, для которых под страницей есть демонстрационные ссылки ?shot= (переход на уже открытой странице). */
   links?: string[];
+  /** Методы, которые история показывает как ещё не перенесённые в Go (процесс сценария с агентом). */
+  unavailable?: readonly ApiMethod[];
+  /**
+   * Музыкальная карта с промежутками и перекрытием секций, как у автоматической разметки; сохранённая трактовка
+   * скопировала эти границы как есть и поэтому не стыкуется (проблемы видны сразу после открытия).
+   */
+  gappedTiming?: boolean;
+}
+
+/** Секции карты для gappedTiming: промежутки короче порога разметки и перекрытие последних двух частей. */
+const GAPPED_SECTIONS: ReadonlyArray<{ start: number; end: number }> = [
+  { start: 0.4, end: 7.3 },
+  { start: 8.1, end: 16.4 },
+  { start: 16.1, end: 22.8 }
+];
+/** Код части латиницей, как SLUG проверки трактовки в Go. */
+const PART_CODE = /^[a-z][a-z0-9_]*$/;
+
+/**
+ * Упрощённая проверка трактовки для витрины (полная — ValidateTreatment в Go): пустой список, код, повтор, название,
+ * стык с допуском 0.06 с, конец раньше начала и конец по длительности трека; тексты — из словаря сценария.
+ */
+function storyTreatmentProblems(treatment: TreatmentFile, duration: number | null): string[] {
+  const texts = scenarioTexts.main;
+  if (!treatment.sequences.length) return [texts.treatmentRequiresParts];
+  const problems: string[] = [];
+  const ids = new Set<string>();
+  let cursor = 0;
+  for (const part of [...treatment.sequences].sort((a, b) => a.start - b.start)) {
+    if (!PART_CODE.test(part.id)) problems.push(texts.partCodeLatin({ title: part.title || part.id }));
+    if (ids.has(part.id)) problems.push(texts.duplicatePartCode({ id: part.id }));
+    ids.add(part.id);
+    if (!part.title.trim()) problems.push(texts.partTitleMissing({ id: part.id }));
+    if (Math.abs(part.start - cursor) > 0.06) problems.push(texts.partStartMismatch({ id: part.id, start: part.start, previousEnd: cursor.toFixed(2) }));
+    if (part.end <= part.start) problems.push(texts.partEndsBeforeStart({ id: part.id }));
+    cursor = part.end;
+  }
+  if (duration && Math.abs(cursor - duration) > 0.06) problems.push(texts.treatmentDurationMismatch({ end: cursor.toFixed(2), duration: duration.toFixed(2) }));
+  return problems;
 }
 
 const SHOT_SECONDS = 4;
@@ -251,10 +291,13 @@ function pageTiming(duration: number, scenes: ScenesFile | null, treatment: Trea
   };
 }
 
-function pageView(variant: ScenarioPageVariant): ScenarioView {
+function pageView(variant: ScenarioPageVariant, gapped: boolean): ScenarioView {
   const long = variant === 'long';
   const scenes = pageScenes(long);
-  const treatment = pageTreatment(long);
+  const plain = pageTreatment(long);
+  const treatment: TreatmentFile = gapped
+    ? { ...plain, sequences: plain.sequences.map((part, index) => ({ ...part, ...(GAPPED_SECTIONS[index] ?? {}) })) }
+    : plain;
   const duration = scenes.scenes.at(-1)!.end_frame_exclusive / FPS;
   return {
     scenes: variant === 'noRegistry' || variant === 'noTreatment' ? null : scenes,
@@ -382,7 +425,9 @@ export function scenarioPageOptions({
   variant = 'regular',
   route = '/project/scenario',
   links = ['M02', 'M05'],
-  failScenesSaveOnce = false
+  failScenesSaveOnce = false,
+  unavailable,
+  gappedTiming = false
 }: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
@@ -396,13 +441,14 @@ export function scenarioPageOptions({
   return {
     shell: 'page',
     route,
+    unavailable,
     app: { state, online: true, agentProvider: 'codex', aiAccess: storyAccess },
     createApi: () => {
       const listeners = new Set<() => void>();
       let version = 0;
       let failedReads = variant === 'loadError' ? 1 : 0;
       const produced = new Set(variant === 'produced' ? ['M01', 'M02'] : []);
-      const saved = pageView(variant);
+      const saved = pageView(variant, gappedTiming);
       const approved = variant !== 'noRegistry' && variant !== 'noTreatment';
       const workflow: ScenarioWorkflowView = {
         project: SCENARIO_PAGE_PROJECT,
@@ -490,6 +536,10 @@ export function scenarioPageOptions({
           validateScenes: async (project, scenes) => {
             validate(project);
             return scenes.scenes.filter((shot) => !shot.action.trim()).map((shot) => scenarioPageActionProblem(shot.id));
+          },
+          validateTreatment: async (project, treatment) => {
+            validate(project);
+            return storyTreatmentProblems(treatment, model.saved.duration);
           },
           saveImpact: async (project, scenes) => {
             validate(project);

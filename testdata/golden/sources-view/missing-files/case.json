@@ -1,0 +1,11 @@
+{
+  "description": "Файлы описи отсутствуют: проблема на каждый, текст по пути описи.",
+  "call": "viewSources",
+  "project": "project",
+  "covers": [
+    "manifestFileMissing",
+    "coverPath",
+    "lyrics.path из описи"
+  ],
+  "stubbedMedia": []
+}

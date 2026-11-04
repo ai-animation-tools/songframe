@@ -1,0 +1,47 @@
+{
+  "settings": {
+    "name": "Клип",
+    "animaticVideo": "klip.mp4",
+    "generation": {
+      "video": {
+        "provider": "test",
+        "provider_selected": true,
+        "resolution": "1080p",
+        "aspect_ratio": "16:9",
+        "watermark": false,
+        "duration_rule": "min_supported_strictly_greater_than_window",
+        "model": "model-a",
+        "options": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      "image": {
+        "provider": "test",
+        "provider_selected": true,
+        "model": "img-1",
+        "resolution": "2K",
+        "aspect_ratio": "1:1"
+      }
+    }
+  },
+  "unset": [
+    [
+      "video",
+      "model"
+    ],
+    [
+      "video",
+      "options",
+      "b"
+    ],
+    [
+      "image",
+      "resolution"
+    ],
+    [
+      "image",
+      "model"
+    ]
+  ]
+}

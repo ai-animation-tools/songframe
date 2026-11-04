@@ -1,0 +1,372 @@
+[
+  {
+    "shot": "M01",
+    "phase": "before",
+    "result": {
+      "shot": "M01",
+      "phase": "before",
+      "state": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "у причала",
+          "clothes_condition": "сухая куртка"
+        }
+      },
+      "sources": {
+        "world": {
+          "time_of_day": {
+            "kind": "cast"
+          }
+        },
+        "mira": {
+          "position": {
+            "kind": "cast"
+          },
+          "clothes_condition": {
+            "kind": "cast"
+          }
+        }
+      },
+      "labels": {
+        "mira": {
+          "position": "Положение",
+          "clothes_condition": "Одежда"
+        }
+      },
+      "inherited": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "у причала",
+          "clothes_condition": "сухая куртка"
+        }
+      },
+      "paragraph": "Состояние на первый кадр M01. Мир сцены: time of day: вечер. Мира: положение: у причала; одежда: сухая куртка.",
+      "checklist": [
+        "Мира: Стоит там, где записано: у причала?",
+        "Мира: Одежда: сухая куртка?"
+      ],
+      "text": "Состояние на первый кадр M01 (Действие M01.)\n\nМир сцены: time of day: вечер.\nМира: положение: у причала; одежда: сухая куртка.\n\nПроверить по кадру:\n- [ ] Мира: Стоит там, где записано: у причала?\n- [ ] Мира: Одежда: сухая куртка?"
+    }
+  },
+  {
+    "shot": "M01",
+    "phase": "after",
+    "result": {
+      "shot": "M01",
+      "phase": "after",
+      "state": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "в лодке",
+          "clothes_condition": "сухая куртка"
+        },
+        "boat": {
+          "wet": "мокрая"
+        }
+      },
+      "sources": {
+        "world": {
+          "time_of_day": {
+            "kind": "cast"
+          }
+        },
+        "mira": {
+          "position": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          },
+          "clothes_condition": {
+            "kind": "cast"
+          }
+        },
+        "boat": {
+          "wet": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          }
+        }
+      },
+      "labels": {
+        "mira": {
+          "position": "Положение",
+          "clothes_condition": "Одежда"
+        }
+      },
+      "inherited": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "у причала",
+          "clothes_condition": "сухая куртка"
+        }
+      },
+      "paragraph": "Состояние на последний кадр M01. Мир сцены: time of day: вечер. Мира: положение: в лодке; одежда: сухая куртка. Лодка «Чайка»: wet: мокрая.",
+      "checklist": [
+        "Мира: Стоит там, где записано: в лодке?",
+        "Мира: Одежда: сухая куртка?"
+      ],
+      "text": "Состояние на последний кадр M01 (Действие M01.)\n\nМир сцены: time of day: вечер.\nМира: положение: в лодке; одежда: сухая куртка.\nЛодка «Чайка»: wet: мокрая.\n\nПроверить по кадру:\n- [ ] Мира: Стоит там, где записано: в лодке?\n- [ ] Мира: Одежда: сухая куртка?"
+    }
+  },
+  {
+    "shot": "M02",
+    "phase": "before",
+    "result": {
+      "shot": "M02",
+      "phase": "before",
+      "state": {
+        "world": {
+          "time_of_day": "сумерки"
+        },
+        "mira": {
+          "position": "в лодке",
+          "clothes_condition": "сухая куртка"
+        },
+        "boat": {
+          "wet": "мокрая"
+        }
+      },
+      "sources": {
+        "world": {
+          "time_of_day": {
+            "kind": "plan",
+            "shot": "M02",
+            "phase": "before"
+          }
+        },
+        "mira": {
+          "position": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          },
+          "clothes_condition": {
+            "kind": "cast"
+          }
+        },
+        "boat": {
+          "wet": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          }
+        }
+      },
+      "labels": {
+        "mira": {
+          "position": "Положение",
+          "clothes_condition": "Одежда"
+        }
+      },
+      "inherited": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "в лодке",
+          "clothes_condition": "сухая куртка"
+        },
+        "boat": {
+          "wet": "мокрая"
+        }
+      },
+      "paragraph": "Состояние на первый кадр M02. Мир сцены: time of day: сумерки. Мира: положение: в лодке; одежда: сухая куртка. Лодка «Чайка»: wet: мокрая.",
+      "checklist": [
+        "Мира: Стоит там, где записано: в лодке?",
+        "Мира: Одежда: сухая куртка?"
+      ],
+      "text": "Состояние на первый кадр M02 (Действие M02.)\n\nМир сцены: time of day: сумерки.\nМира: положение: в лодке; одежда: сухая куртка.\nЛодка «Чайка»: wet: мокрая.\n\nПроверить по кадру:\n- [ ] Мира: Стоит там, где записано: в лодке?\n- [ ] Мира: Одежда: сухая куртка?"
+    }
+  },
+  {
+    "shot": "M02",
+    "phase": "after",
+    "result": {
+      "shot": "M02",
+      "phase": "after",
+      "state": {
+        "world": {
+          "time_of_day": "сумерки"
+        },
+        "mira": {
+          "position": "в лодке"
+        },
+        "boat": {
+          "wet": "мокрая"
+        }
+      },
+      "sources": {
+        "world": {
+          "time_of_day": {
+            "kind": "plan",
+            "shot": "M02",
+            "phase": "before"
+          }
+        },
+        "mira": {
+          "position": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          }
+        },
+        "boat": {
+          "wet": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          }
+        }
+      },
+      "labels": {
+        "mira": {
+          "position": "Положение"
+        }
+      },
+      "inherited": {
+        "world": {
+          "time_of_day": "сумерки"
+        },
+        "mira": {
+          "position": "в лодке",
+          "clothes_condition": "сухая куртка"
+        },
+        "boat": {
+          "wet": "мокрая"
+        }
+      },
+      "paragraph": "Состояние на последний кадр M02. Мир сцены: time of day: сумерки. Мира: положение: в лодке. Лодка «Чайка»: wet: мокрая.",
+      "checklist": [
+        "Мира: Стоит там, где записано: в лодке?"
+      ],
+      "text": "Состояние на последний кадр M02 (Действие M02.)\n\nМир сцены: time of day: сумерки.\nМира: положение: в лодке.\nЛодка «Чайка»: wet: мокрая.\n\nПроверить по кадру:\n- [ ] Мира: Стоит там, где записано: в лодке?"
+    }
+  },
+  {
+    "shot": "M03",
+    "phase": "before",
+    "result": {
+      "shot": "M03",
+      "phase": "before",
+      "state": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "у причала",
+          "clothes_condition": "сухая куртка"
+        }
+      },
+      "sources": {
+        "world": {
+          "time_of_day": {
+            "kind": "cast"
+          }
+        },
+        "mira": {
+          "position": {
+            "kind": "cast"
+          },
+          "clothes_condition": {
+            "kind": "cast"
+          }
+        }
+      },
+      "labels": {
+        "mira": {
+          "position": "Положение",
+          "clothes_condition": "Одежда"
+        }
+      },
+      "inherited": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "у причала",
+          "clothes_condition": "сухая куртка"
+        }
+      },
+      "paragraph": "Состояние на первый кадр M03. Мир сцены: time of day: вечер. Мира: положение: у причала; одежда: сухая куртка.",
+      "checklist": [
+        "Мира: Стоит там, где записано: у причала?",
+        "Мира: Одежда: сухая куртка?"
+      ],
+      "text": "Состояние на первый кадр M03 (Действие M03.)\n\nМир сцены: time of day: вечер.\nМира: положение: у причала; одежда: сухая куртка.\n\nПроверить по кадру:\n- [ ] Мира: Стоит там, где записано: у причала?\n- [ ] Мира: Одежда: сухая куртка?"
+    }
+  },
+  {
+    "shot": "M03",
+    "phase": "after",
+    "result": {
+      "shot": "M03",
+      "phase": "after",
+      "state": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "в лодке",
+          "clothes_condition": "сухая куртка"
+        },
+        "boat": {
+          "wet": "мокрая"
+        }
+      },
+      "sources": {
+        "world": {
+          "time_of_day": {
+            "kind": "cast"
+          }
+        },
+        "mira": {
+          "position": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          },
+          "clothes_condition": {
+            "kind": "cast"
+          }
+        },
+        "boat": {
+          "wet": {
+            "kind": "plan",
+            "shot": "M01",
+            "phase": "after"
+          }
+        }
+      },
+      "labels": {
+        "mira": {
+          "position": "Положение",
+          "clothes_condition": "Одежда"
+        }
+      },
+      "inherited": {
+        "world": {
+          "time_of_day": "вечер"
+        },
+        "mira": {
+          "position": "у причала",
+          "clothes_condition": "сухая куртка"
+        }
+      },
+      "paragraph": "Состояние на последний кадр M03. Мир сцены: time of day: вечер. Мира: положение: в лодке; одежда: сухая куртка. Лодка «Чайка»: wet: мокрая.",
+      "checklist": [
+        "Мира: Стоит там, где записано: в лодке?",
+        "Мира: Одежда: сухая куртка?"
+      ],
+      "text": "Состояние на последний кадр M03 (Действие M03.)\n\nМир сцены: time of day: вечер.\nМира: положение: в лодке; одежда: сухая куртка.\nЛодка «Чайка»: wet: мокрая.\n\nПроверить по кадру:\n- [ ] Мира: Стоит там, где записано: в лодке?\n- [ ] Мира: Одежда: сухая куртка?"
+    }
+  }
+]

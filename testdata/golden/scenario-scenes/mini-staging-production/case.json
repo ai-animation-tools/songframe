@@ -1,0 +1,14 @@
+{
+  "description": "Значимая правка действия M01: M01, производный M03; принятые не трогаются.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "production",
+  "covers": [
+    "impactStagingChanged",
+    "impactDerivedSource",
+    "state=completed",
+    "produced",
+    "production mode"
+  ],
+  "stubbedMedia": []
+}

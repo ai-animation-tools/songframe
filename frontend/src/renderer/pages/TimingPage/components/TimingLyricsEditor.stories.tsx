@@ -98,7 +98,7 @@ export const Candidate: Story = {
 };
 export const NativeDragAndKeyboard: Story = {
   tags: ['ci'],
-  name: 'Drag за ручку и клавиатурное перемещение сохраняют source_line',
+  name: 'Drag за ручку с линией места вставки и клавиатурное перемещение сохраняют source_line',
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const handle = canvas.getByRole('button', { name: texts.reorder({ number: 6 }) });
@@ -111,7 +111,12 @@ export const NativeDragAndKeyboard: Story = {
     await expect(dataTransfer.getData('text/plain')).toBe('6');
     const target = canvasElement.querySelector('[data-source-line="3"]')!;
     dispatchDrag(target, 'dragover');
+    // Строка 6 идёт вверх: линия вставки видна над целью, перетаскиваемая строка приглушена.
+    await waitFor(() => expect(target).toHaveAttribute('data-drop-position', 'before'));
+    await expect(getComputedStyle(target, '::after').height).toBe('3px');
+    await expect(canvasElement.querySelector('[data-source-line="6"]')).toHaveStyle({ opacity: '0.5' });
     dispatchDrag(target, 'drop');
+    await waitFor(() => expect(canvasElement.querySelector('[data-drop-position]')).toBeNull());
     dispatchDrag(handle, 'dragend');
     const numbers = () =>
       canvas.getAllByRole('button', { name: /^Строка текста/ }).map((button) => button.closest('[data-source-line]')?.getAttribute('data-source-line'));

@@ -3,6 +3,7 @@ package timing
 import (
 	"errors"
 	"math"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"songframe-go/internal/jscompat"
+	"songframe-go/internal/projectfs"
 	"songframe-go/internal/sources"
 )
 
@@ -476,4 +478,25 @@ func jsMax(left, right float64) float64 {
 		return math.NaN()
 	}
 	return math.Max(left, right)
+}
+
+// TimingPath — относительный путь разметки внутри проекта; его пишут сохранение редактора и черновик CTC.
+const TimingPath = "plan/audio/timing.json"
+
+// SaveProject — saveTiming(project, timing) целиком: Prepare строит документ, затем шлюз записи
+// проверяет отсутствие незавершённых многофайловых публикаций (montage/derived), и байты Encode
+// атомарно заменяют plan/audio/timing.json (права существующего файла сохраняются, новый — 0600).
+// Отказ проверки или записи оставляет прежний файл нетронутым. Возвращает записанный документ.
+func SaveProject(project string, input any) (*jscompat.Object, error) {
+	result, err := Prepare(project, input)
+	if err != nil {
+		return nil, err
+	}
+	if err := projectfs.CheckWrite(project); err != nil {
+		return nil, err
+	}
+	if err := projectfs.WriteFile(filepath.Join(project, filepath.FromSlash(TimingPath)), Encode(result), 0); err != nil {
+		return nil, err
+	}
+	return result, nil
 }

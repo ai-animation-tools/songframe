@@ -1,0 +1,9 @@
+{
+  "description": "Проект шаблона; путь отсутствует в истории (рядом другой путь) — история не меняется.",
+  "call": "Projects.rename",
+  "project": "project",
+  "covers": [
+    "renameHistory: нет записи"
+  ],
+  "stubbedMedia": []
+}

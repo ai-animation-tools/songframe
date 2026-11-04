@@ -1,0 +1,9 @@
+{
+  "description": "plan/cast.json — битый JSON.",
+  "call": "viewCast",
+  "project": "project",
+  "covers": [
+    "fileDamaged"
+  ],
+  "stubbedMedia": []
+}

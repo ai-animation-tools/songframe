@@ -1,0 +1,12 @@
+{
+  "description": "Свой набор типов из формы и новый референс; прежние неизвестные поля трека сохраняются.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "input.kinds",
+    "папка нового типа",
+    "неизвестные поля описи",
+    "удаление референса без .gitkeep"
+  ],
+  "stubbedMedia": []
+}

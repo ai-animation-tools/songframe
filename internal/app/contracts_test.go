@@ -53,7 +53,7 @@ func assertContractJSON(t *testing.T, actual any, expected json.RawMessage) {
 // TestContractAppStateMarshal закрепляет и реальный пустой State, и заполненную форму DTO.
 // Второй вариант проверяет wire-формат истории, не объявляя хранение истории реализованным.
 func TestContractAppStateMarshal(t *testing.T) {
-	service := NewAppService(fakeProfile{path: "Профиль теста 🌿"}, false, nil)
+	service := NewAppService(fakeProfile{path: "Профиль теста 🌿"}, nil, false, nil)
 	service.platform = "linux"
 	empty, err := service.State()
 	if err != nil {

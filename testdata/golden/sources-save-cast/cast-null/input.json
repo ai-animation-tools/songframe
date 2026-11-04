@@ -1,0 +1,38 @@
+{
+  "track": null,
+  "lyrics": null,
+  "idea": null,
+  "cover": null,
+  "references": [
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "Мира",
+      "description": "Музыкант с фонариком",
+      "prompt": "",
+      "files": [
+        {
+          "existingPath": "heroes/mira.png",
+          "view": "full",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "boat",
+      "kind": "vehicle",
+      "name": "Лодка",
+      "short_name": "Лодка",
+      "description": "Небольшая лодка",
+      "prompt": "Лодка у причала.",
+      "files": [
+        {
+          "existingPath": "vehicles/boat.png",
+          "view": "side",
+          "note": "борт"
+        }
+      ]
+    }
+  ]
+}

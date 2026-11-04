@@ -1,0 +1,11 @@
+{
+  "description": "max_shot_seconds = 0.",
+  "call": "saveTreatment",
+  "project": "project",
+  "covers": [
+    "treatmentInvalidPart"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

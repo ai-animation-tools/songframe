@@ -23,6 +23,8 @@ export type OpenShotState = (shot: string, entity?: string, phase?: 'before' | '
 
 /** Якорь списка проблем реестра: чип панели прокручивает к нему. */
 export const SCENE_PROBLEMS_ID = 'scenario-scene-problems';
+/** Якорь постоянного списка проблем трактовки для перехода из панели действий. */
+export const TREATMENT_PROBLEMS_ID = 'scenario-treatment-problems';
 
 /** Сохранение реестра, ждущее подтверждения: черновик и затронутые планы на момент расчёта. */
 export interface ScenesSaveRequest {

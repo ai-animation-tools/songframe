@@ -32,7 +32,6 @@ export const timingTexts = {
   draftReady: 'Черновик разметки записан; подтвердите строки на слух',
   addTrack: 'Сначала добавьте трек на странице «Исходники».',
   addLyrics: lyricsRequired,
-  toolsMissing: 'Инструменты комплекса не найдены.',
   openSources: 'Открыть исходники',
   operationPending: commonTexts.waitForCurrentOperation,
   saveBeforeGenerate: 'Сохраните или отмените правки перед автоматической разметкой.',

@@ -1,0 +1,88 @@
+{
+  "kinds": [
+    {
+      "id": "character",
+      "label": "Персонаж",
+      "dir": "heroes"
+    },
+    {
+      "id": "Bad",
+      "label": "",
+      "dir": "Bad Dir"
+    },
+    {
+      "id": "world",
+      "label": "Мир",
+      "dir": "world"
+    },
+    {
+      "id": "character",
+      "label": "Повтор",
+      "dir": "heroes"
+    }
+  ],
+  "track": null,
+  "lyrics": null,
+  "idea": null,
+  "cover": null,
+  "references": [
+    {
+      "id": "1bad",
+      "kind": "character",
+      "name": "",
+      "short_name": "",
+      "description": "",
+      "prompt": "",
+      "files": []
+    },
+    {
+      "id": "",
+      "kind": "unknown",
+      "name": "Без кода",
+      "short_name": "",
+      "description": "",
+      "prompt": "",
+      "files": [
+        {
+          "view": "full",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира",
+      "short_name": "",
+      "description": "",
+      "prompt": "",
+      "files": [
+        {
+          "sourcePath": "<inputs>/bad.txt",
+          "view": "full",
+          "note": ""
+        },
+        {
+          "sourcePath": "<inputs>/нет.png",
+          "view": "full",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "mira",
+      "kind": "character",
+      "name": "Мира 2",
+      "short_name": "",
+      "description": "",
+      "prompt": "",
+      "files": [
+        {
+          "existingPath": "heroes/mira.png",
+          "view": "full",
+          "note": ""
+        }
+      ]
+    }
+  ]
+}

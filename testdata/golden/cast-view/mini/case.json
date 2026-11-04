@@ -1,0 +1,10 @@
+{
+  "description": "Мини-проект: словарь только для character; vehicle и world получают словарь по умолчанию.",
+  "call": "viewCast",
+  "project": "project",
+  "covers": [
+    "ensureProperties: default для известного типа",
+    "проекция описаний"
+  ],
+  "stubbedMedia": []
+}

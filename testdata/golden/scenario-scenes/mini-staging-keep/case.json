@@ -1,0 +1,11 @@
+{
+  "description": "Та же правка в режиме keep: отпечаток M01 переписан, пакет M02 не затронут.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "keep",
+  "covers": [
+    "keep: writeAcceptedFingerprints",
+    "порядок shots по номеру"
+  ],
+  "stubbedMedia": []
+}

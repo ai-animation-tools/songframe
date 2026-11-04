@@ -2,7 +2,6 @@ import type { ReactElement } from 'react';
 import { Alert, Box, Slider, Stack, TextField, Typography } from '@mui/material';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import CloseIcon from '@mui/icons-material/Close';
 import FitScreenIcon from '@mui/icons-material/FitScreen';
@@ -13,6 +12,7 @@ import SelectAllIcon from '@mui/icons-material/SelectAll';
 import { timingSelectionTexts as texts } from '@shared/texts/timing-selection';
 import { ActionButton } from '../../../components/ActionButton';
 import { ActionIconButton } from '../../../components/ActionIconButton';
+import { VolumeSlider } from '../../../components/VolumeSlider';
 import { formatClock } from '../../../format';
 import type { TimingPlayerController } from '../useTimingPlayer';
 
@@ -66,7 +66,7 @@ export function TimingSelectionControls({ player }: TimingSelectionControlsProps
           : texts.noSelection;
 
   return (
-    <Stack role="group" aria-label={texts.controls} spacing={0.75} sx={{ mt: 1 }}>
+    <Stack role="group" aria-label={texts.controls} data-timing-shortcuts spacing={0.75} sx={{ mt: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: 1.5, rowGap: 0.5 }}>
         <ActionIconButton
           size="small"
@@ -83,21 +83,7 @@ export function TimingSelectionControls({ player }: TimingSelectionControlsProps
         <Typography variant="body2" sx={{ fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
           {texts.clock({ time: formatClock(time), duration: formatClock(duration) })}
         </Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <VolumeUpIcon fontSize="small" color="action" />
-          <Slider
-            aria-label={texts.volume}
-            size="small"
-            min={0}
-            max={100}
-            value={Math.round(volume * 100)}
-            onChange={(_event, value) => setVolume((value as number) / 100)}
-            valueLabelDisplay="auto"
-            valueLabelFormat={(value) => texts.volumePercent({ value })}
-            getAriaValueText={(value) => texts.volumePercent({ value })}
-            sx={{ width: 72 }}
-          />
-        </Stack>
+        <VolumeSlider volume={volume} onChange={setVolume} />
         <Box sx={{ flex: 1 }} />
         <Slider
           aria-label={texts.timelineScale}

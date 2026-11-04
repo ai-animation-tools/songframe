@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "logline": "Мира провожает лодку.",
+  "sequences": [
+    {
+      "id": "verse",
+      "title": "Куплет",
+      "direction": "Спокойно.",
+      "start": 0,
+      "end": 6,
+      "entities": [
+        "mira"
+      ],
+      "lipsync": false
+    },
+    {
+      "id": "chorus",
+      "title": "Припев",
+      "direction": "Огни.",
+      "start": 6,
+      "end": 9,
+      "entities": [
+        "mira",
+        "boat"
+      ]
+    }
+  ]
+}

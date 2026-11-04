@@ -144,7 +144,7 @@ func (m *Manager) Download(ctx context.Context, ids []string) (InstallSnapshot, 
 // managed — внутреннее намерение Connect/Download, оно не добавляет технический флаг в transport DTO.
 func (m *Manager) install(ctx context.Context, request InstallRequest, managed bool) (result InstallSnapshot, resultErr error) {
 	if !m.work.TryLock() {
-		return m.Installation(), fmt.Errorf("сначала завершите проверку или установку компонентов")
+		return m.Installation(), &busyError{"сначала завершите проверку или установку компонентов"}
 	}
 	defer m.work.Unlock()
 	if len(request.Components) == 0 {

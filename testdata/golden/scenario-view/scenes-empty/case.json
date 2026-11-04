@@ -1,0 +1,12 @@
+{
+  "description": "Реестр без планов.",
+  "call": "viewScenario + readScenarioRegistry + validateScenes",
+  "project": "project",
+  "covers": [
+    "status=empty",
+    "registryRequiresScenes"
+  ],
+  "stubbedMedia": [
+    "source/track.mp3"
+  ]
+}

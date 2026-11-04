@@ -1,0 +1,103 @@
+{
+  "manifest": {
+    "schema_version": 1,
+    "kinds": [
+      {
+        "id": "character",
+        "label": "Персонаж",
+        "dir": "heroes"
+      },
+      {
+        "id": "vehicle",
+        "label": "Транспорт",
+        "dir": "vehicles",
+        "extra": "неизвестное поле типа"
+      },
+      {
+        "id": "location",
+        "label": "Локация",
+        "dir": "locations"
+      }
+    ],
+    "track": {
+      "path": "track.mp3",
+      "sha256": "fb0797e290b774181fa7fdbeadc0bd9849889152fca5dc3555a766bb33dfae2b",
+      "bytes": 11,
+      "original_name": "Песня.mp3",
+      "duration_seconds": 30,
+      "custom": "неизвестное поле трека"
+    },
+    "lyrics": {
+      "path": "lyrics/песня.md",
+      "sha256": "b1e26eac3b2d06b950bace0052d5a4439a6c7ad76ad929ec4f73495a31575799",
+      "bytes": 110,
+      "lines": 3,
+      "sections": [
+        "Куплет",
+        "Припев"
+      ]
+    },
+    "idea": {
+      "path": "description.md",
+      "sha256": "c54f98b97377abc668b0fe5c48ebe504a0aac530b912cb8e0f38ab75579355e8",
+      "bytes": 38
+    },
+    "cover": {
+      "path": "cover.png",
+      "sha256": "x",
+      "bytes": 1
+    },
+    "references": [
+      {
+        "id": "mira",
+        "kind": "character",
+        "name": "Мира",
+        "short_name": "Мира",
+        "description": "Музыкант с фонариком",
+        "prompt": null,
+        "files": [
+          {
+            "path": "heroes/mira.png",
+            "sha256": "f8708eda75833c8227070aafb2fc9388f149e11e1c2f578a10cbd97361e55c4e",
+            "bytes": 14,
+            "view": "full",
+            "note": "",
+            "prompt": "heroes/mira.png.prompt.txt"
+          }
+        ],
+        "extra": "неизвестное поле референса"
+      },
+      {
+        "id": "boat",
+        "kind": "vehicle",
+        "name": "Лодка",
+        "short_name": "Лодка",
+        "description": "Небольшая лодка",
+        "prompt": "vehicles/boat.prompt.txt",
+        "files": [
+          {
+            "path": "vehicles/boat.png",
+            "sha256": "98d81eaebc29ec302673f7f49d836e620654e82ed6c811787b95d1381be9771b",
+            "bytes": 14,
+            "view": "side",
+            "note": "борт"
+          }
+        ]
+      }
+    ],
+    "updated_at": "2026-10-25T00:00:00Z"
+  },
+  "lyricsText": "Песня\n",
+  "ideaText": "",
+  "coverPath": "<project>/source/cover.png",
+  "referenceFilePaths": {
+    "heroes/mira.png": "<project>/source/heroes/mira.png",
+    "vehicles/boat.png": "<project>/source/vehicles/boat.png"
+  },
+  "problems": [
+    "Трек: файл track.mp3 отсутствует.",
+    "Идея: файл description.md отсутствует.",
+    "Обложка: файл cover.png отсутствует.",
+    "Референс boat: файл vehicles/boat.png отсутствует."
+  ]
+}

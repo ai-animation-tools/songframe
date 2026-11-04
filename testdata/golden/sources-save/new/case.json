@@ -1,0 +1,16 @@
+{
+  "description": "Первое сохранение: копирование, нормализация текстов, имена изображений, промпты и опись.",
+  "call": "saveSourcesWithCastImages",
+  "project": "project",
+  "covers": [
+    "track/lyrics/idea/cover",
+    "normalizeText",
+    "jpeg → .jpg",
+    "суффикс -2",
+    "промпт изображения",
+    "общий промпт",
+    "short_name по name",
+    "папка props создаётся"
+  ],
+  "stubbedMedia": []
+}

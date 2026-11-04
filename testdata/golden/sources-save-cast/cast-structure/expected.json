@@ -1,0 +1,6 @@
+{
+  "error": "cast.json: нужны schema_version 1, entities и properties.",
+  "result": null,
+  "treeUnchanged": true,
+  "castUnchanged": true
+}

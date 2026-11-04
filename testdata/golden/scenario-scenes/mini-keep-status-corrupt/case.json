@@ -1,0 +1,11 @@
+{
+  "description": "Повреждённый production-status: keep отказывает до записи реестра.",
+  "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
+  "project": "project",
+  "mode": "keep",
+  "covers": [
+    "productionStatusCorrupt",
+    "реестр не записан"
+  ],
+  "stubbedMedia": []
+}

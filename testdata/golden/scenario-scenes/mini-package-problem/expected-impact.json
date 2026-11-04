@@ -1,0 +1,22 @@
+{
+  "shots": [
+    {
+      "id": "M01",
+      "reason": "изменены общие правила или направление части",
+      "state": "completed",
+      "produced": true
+    },
+    {
+      "id": "M02",
+      "reason": "изменены общие правила или направление части",
+      "state": "completed",
+      "produced": true
+    },
+    {
+      "id": "M03",
+      "reason": "изменены общие правила или направление части",
+      "state": "unknown",
+      "produced": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Опись с референсами, промптами и неизвестными полями.",
+  "call": "viewSources",
+  "project": "project",
+  "covers": [
+    "manifest как есть",
+    "referenceFilePaths"
+  ],
+  "stubbedMedia": []
+}

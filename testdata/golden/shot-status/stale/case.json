@@ -1,0 +1,14 @@
+{
+  "description": "Изменённая постановка принятого плана и новая работа.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "stale",
+    "новая работа"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

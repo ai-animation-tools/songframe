@@ -1,0 +1,32 @@
+{
+  "title": "plan/cast.json — сущности клипа, их референсы, начальное состояние и словарь свойств состояния",
+  "type": "object",
+  "required": ["schema_version", "entities", "properties"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "entities": {"type": "array", "minItems": 1, "items": {
+      "type": "object",
+      "required": ["id", "kind", "name", "short_name", "role", "appearance", "images", "initial_state"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "name": {"type": "string", "minLength": 1},
+        "short_name": {"type": "string", "minLength": 1},
+        "role": {"type": "string"},
+        "appearance": {"type": "string"},
+        "images": {"type": "array", "items": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*/[^/]+\\.(png|jpg|jpeg|webp)$"}},
+        "initial_state": {"type": "object", "additionalProperties": {"type": "string", "minLength": 1}}
+      }}},
+    "properties": {"type": "object", "additionalProperties": {"type": "array", "items": {
+      "type": "object", "required": ["key", "label"], "additionalProperties": false,
+      "properties": {
+        "key": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "label": {"type": "string", "minLength": 1},
+        "hint": {"type": "string"},
+        "values": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "checklist": {"type": "string"}
+      }}}}
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Неверный реестр.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "ValueError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

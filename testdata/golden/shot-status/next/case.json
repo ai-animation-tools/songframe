@@ -1,0 +1,15 @@
+{
+  "description": "--next.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--next"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--next"
+  ],
+  "remove": [],
+  "mkdir": []
+}

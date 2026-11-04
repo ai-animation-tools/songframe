@@ -8,6 +8,7 @@ import type { Api } from '@shared/api';
 import type {
   AppState,
   BriefResult,
+  CheckId,
   GenerationSettings,
   JobInfo,
   JobStepInfo,
@@ -21,6 +22,7 @@ import type {
 import type { ScenarioStatus } from '@shared/scenario-status';
 import type * as status from '../../bindings/songframe-go/internal/status/models';
 import type * as jobs from '../../bindings/songframe-go/internal/jobs/models';
+import type * as checks from '../../bindings/songframe-go/internal/checks/models';
 import type * as songtiming from '../../bindings/songframe-go/internal/songtiming/models';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
@@ -111,6 +113,8 @@ export interface Bindings {
   sources: () => Promise<typeof import('../../bindings/songframe-go/internal/app/sourcesservice')>;
   cast: () => Promise<typeof import('../../bindings/songframe-go/internal/app/castservice')>;
   scenario: () => Promise<typeof import('../../bindings/songframe-go/internal/app/scenarioservice')>;
+  tools: () => Promise<typeof import('../../bindings/songframe-go/internal/app/toolsservice')>;
+  checks: () => Promise<typeof import('../../bindings/songframe-go/internal/app/checksservice')>;
   events: EventSource;
 }
 
@@ -125,6 +129,8 @@ export const nativeBindings: Bindings = {
   sources: () => import('../../bindings/songframe-go/internal/app/sourcesservice'),
   cast: () => import('../../bindings/songframe-go/internal/app/castservice'),
   scenario: () => import('../../bindings/songframe-go/internal/app/scenarioservice'),
+  tools: () => import('../../bindings/songframe-go/internal/app/toolsservice'),
+  checks: () => import('../../bindings/songframe-go/internal/app/checksservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
     return { on: Events.On };
@@ -168,6 +174,10 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'scenario.saveImpact',
   'scenario.validateScenes',
   'scenario.brief',
+  'tools.run',
+  'checks.list',
+  'checks.run',
+  'checks.runAll',
   'timing.save',
   'timing.vocalsView',
   'timing.downloadVocalModel',
@@ -357,6 +367,17 @@ export function createApi(b: Bindings): Api {
       const brief = await (await b.scenario()).Brief(project, scenes, shot, phase);
       return { ...brief, phase: brief.phase as BriefResult['phase'] };
     });
+
+  // Перенесённые инструменты Go выполняет в процессе приложения; ToolResult повторяет код, stdout
+  // и stderr процесса Python оригинала. Неперенесённое имя — ошибка Go-сервиса своим текстом.
+  api.tools.run = (project, name, args) => call('tools.run', async () => (await b.tools()).Run(project, name, args));
+
+  // Проверки — задания общего менеджера. CheckId Go генерирует TS enum с теми же строками, поэтому
+  // сужается только тип. Проверка «Карточки и списки», пересборка представлений и пробы ещё не
+  // перенесены: checks.run('views') Go отклоняет своим текстом, остальные методы группы недоступны.
+  api.checks.list = () => call('checks.list', async () => (await (await b.checks()).List()).map((info) => ({ ...info, id: info.id as CheckId })));
+  api.checks.run = (project, id, options) => call('checks.run', async () => toJob(await (await b.checks()).Run(project, id as checks.ID, options ?? {})));
+  api.checks.runAll = (project, options) => call('checks.runAll', async () => toJob(await (await b.checks()).RunAll(project, options ?? {})));
 
   api.jobs.list = () => call('jobs.list', async () => (await (await b.jobs()).List()).map(toJob));
   api.jobs.get = (id) =>

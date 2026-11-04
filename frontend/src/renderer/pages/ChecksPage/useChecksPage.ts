@@ -2,6 +2,7 @@ import { checksTexts } from '@shared/texts/checks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CheckId, CheckInfo, JobInfo, ReviewInfo, ShotProduction } from '@shared/types';
 import { useApp } from '../../state';
+import { useMethodAvailability } from '../../availability';
 import type { CheckOutcome } from './types';
 import { selectShot, type ShotSelection } from './shot-selection';
 
@@ -27,24 +28,34 @@ export function useChecksPage() {
   const [lastJob, setLastJob] = useState<Record<string, string>>({});
 
   const loadJobs = useCallback(async () => setJobs((await window.api.jobs.list()).filter((j) => JOB_KINDS.has(j.kind))), []);
-  const loadReviews = useCallback(async () => setReviews(await window.api.checks.listReviews(project)), [project]);
+  // Отличие от 634fd94 на время миграции: пробы, среда и производство ещё не перенесены в Go,
+  // поэтому их методы не вызываются (блок пробы показывает причину), а проверки работают без них.
+  const reviewsAvailable = useMethodAvailability('checks.listReviews').available;
+  const environmentAvailable = useMethodAvailability('environment.check').available;
+  const productionAvailable = useMethodAvailability('production.view').available;
+  const viewsAvailability = useMethodAvailability('checks.updateViews');
+  const loadReviews = useCallback(async () => {
+    if (reviewsAvailable) setReviews(await window.api.checks.listReviews(project));
+  }, [project, reviewsAvailable]);
 
   useEffect(() => {
     window.api.checks
       .list()
       .then(setChecks)
       .catch(() => undefined);
-    window.api.environment
-      .check()
-      .then((list) => setPythonAvailable(list.find((c) => c.id === 'python')?.ok ?? false))
-      .catch(() => undefined);
-    window.api.production
-      .view(project)
-      .then((view) => setShots(view.shots))
-      .catch(() => undefined);
+    if (environmentAvailable)
+      window.api.environment
+        .check()
+        .then((list) => setPythonAvailable(list.find((c) => c.id === 'python')?.ok ?? false))
+        .catch(() => undefined);
+    if (productionAvailable)
+      window.api.production
+        .view(project)
+        .then((view) => setShots(view.shots))
+        .catch(() => undefined);
     void loadJobs();
     void loadReviews();
-  }, [project, loadJobs, loadReviews]);
+  }, [project, loadJobs, loadReviews, environmentAvailable, productionAvailable]);
 
   const running = jobs.some((j) => j.status === 'running');
   useEffect(() => {
@@ -78,13 +89,16 @@ export function useChecksPage() {
   const runAll = (): Promise<void> =>
     start(async () => {
       const job = await window.api.checks.runAll(project, { strict, next });
-      setLastJob(Object.fromEntries(checks.map((c) => [c.id, job.id])));
+      // Итог получают только проверки, вошедшие в задание: неперенесённая проверка в общий запуск
+      // не входит и не должна показывать статус чужого задания.
+      setLastJob((prev) => ({ ...prev, ...Object.fromEntries(checks.filter((c) => job.steps.some((s) => s.tool === c.tool)).map((c) => [c.id, job.id])) }));
       return job;
     });
 
   const options = (id: CheckId): { strict?: boolean; next?: boolean } => (id === 'lint' ? { strict } : id === 'status' ? { next } : {});
   // Список прочитан для этой страницы, тогда как сводка проекта могла остаться от момента до создания сценария.
-  const scenesReady = shots.length > 0;
+  // Пока производство не перенесено, готовность реестра уже подтвердил RequireScenario маршрута.
+  const scenesReady = productionAvailable ? shots.length > 0 : true;
   const byId = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
 
   /** Итог проверки: по её собственному заданию или по шагу общего задания. */
@@ -153,6 +167,8 @@ export function useChecksPage() {
     deletingReview,
     running,
     scenesReady,
+    /** Причина, по которой проверка «Карточки и списки» и пересборка карточек пока недоступны. */
+    viewsUnavailableReason: viewsAvailability.available ? null : (viewsAvailability.reason ?? ''),
     setStrict,
     setNext,
     setPlanOnly,

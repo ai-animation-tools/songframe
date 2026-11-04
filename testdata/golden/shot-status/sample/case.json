@@ -1,0 +1,13 @@
+{
+  "description": "Образец: таблица.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "table"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

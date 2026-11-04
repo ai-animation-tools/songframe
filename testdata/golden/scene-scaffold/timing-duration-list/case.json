@@ -1,0 +1,13 @@
+{
+  "description": "Длительность — список: TypeError.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "TypeError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

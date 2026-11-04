@@ -1,0 +1,13 @@
+{
+  "description": "Готовая проба build_review рядом с MP4.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "completed_output review"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

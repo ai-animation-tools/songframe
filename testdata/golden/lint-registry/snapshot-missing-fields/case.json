@@ -1,0 +1,14 @@
+{
+  "description": "Снимок без провайдера и generation_id.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "provider",
+    "generation_id"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

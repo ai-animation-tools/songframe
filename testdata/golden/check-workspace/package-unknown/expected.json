@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "Принятых планов: 2.\n- plan/batches/M77-attempt-01: пакет планов, которых нет в реестре: M77\nНесоответствий: 1.\n",
+  "stderr": "",
+  "traceback": false
+}

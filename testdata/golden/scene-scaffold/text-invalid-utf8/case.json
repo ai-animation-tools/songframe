@@ -1,0 +1,13 @@
+{
+  "description": "Текст не в UTF-8: UnicodeDecodeError.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "UnicodeDecodeError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

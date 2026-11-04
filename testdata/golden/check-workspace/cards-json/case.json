@@ -1,0 +1,17 @@
+{
+  "description": "Те же карточки в JSON.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--json problems"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [
+    "plan/animatic/cards/M04.png"
+  ],
+  "mkdir": []
+}

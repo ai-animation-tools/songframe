@@ -1,0 +1,20 @@
+{
+  "description": "write_accepted_fingerprints: новый отпечаток M02 и сброс сверки M03.",
+  "call": "project_battery",
+  "project": "project",
+  "covers": [
+    "write_accepted_fingerprints",
+    "права 0600"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M03/video.mp4"
+  ],
+  "write": {
+    "updates": {
+      "M03": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "M02": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "clear": true
+  }
+}

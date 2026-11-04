@@ -1,0 +1,14 @@
+{
+  "description": "--force заменяет реестр, visual_direction сохраняется.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "--force",
+    "visual_direction из прежнего"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

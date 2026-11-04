@@ -1,0 +1,36 @@
+{
+  "load_cast": {
+    "error": {
+      "type": "TypeError",
+      "message": "'int' object is not iterable"
+    }
+  },
+  "initial_states_for": {
+    "error": {
+      "type": "TypeError",
+      "message": "'int' object is not iterable"
+    }
+  },
+  "load_project": {
+    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\"}"
+  },
+  "load_project_generation": {
+    "result": "{\"schema_version\": 1, \"name\": \"Мини\", \"animatic_video\": \"animatic.mp4\"}"
+  },
+  "read_production_status": {
+    "result": "{\"schema_version\": 1, \"current_animatic\": null, \"current_animatic_status\": \"none\", \"shots\": {\"M01\": {\"scene_sha256\": \"949caf12120f4ced6af255fe5526e3952234020d7645a3fb94bbc84ef6735f2d\"}, \"M02\": {\"scene_sha256\": \"add188ef1ceb3a865ea269835bc8aa3ee0810e54dc39712358eebd87eb4daa4d\"}, \"M03\": {\"scene_sha256\": \"8158ff55a10aa55feb6c38f2fa861e2feff36f1cba776668c2807f4c337c4604\"}}}"
+  },
+  "load": {
+    "error": {
+      "type": "TypeError",
+      "message": "'int' object is not iterable"
+    }
+  },
+  "project_shot_acceptance": {
+    "error": {
+      "type": "TypeError",
+      "message": "'int' object is not iterable"
+    }
+  },
+  "source_video_snapshot": "{\"M01\": [\"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\", \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\"], \"M02\": [null, null], \"M03\": [null, \"5b3975651c3cab92d044c096dc30a1c2d9525497457472de48c51ecb363d1f4a\"], \"M99\": [null, null]}"
+}

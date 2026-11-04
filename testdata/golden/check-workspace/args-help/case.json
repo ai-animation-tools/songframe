@@ -1,0 +1,15 @@
+{
+  "description": "-h.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,18 @@
+{
+  "description": "Повтор same и state_from словарём.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "state_from dict"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--independent",
+    "M02",
+    "M05",
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

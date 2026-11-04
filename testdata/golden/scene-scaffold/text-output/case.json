@@ -1,0 +1,11 @@
+{
+  "description": "Без флагов при отсутствии реестра: запись и таблица.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "текстовый вывод",
+    "Записано"
+  ],
+  "stubbedMedia": [],
+  "args": []
+}

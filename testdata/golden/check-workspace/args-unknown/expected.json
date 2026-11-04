@@ -1,0 +1,6 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: check_workspace.py [-h] [--json]\ncheck_workspace.py: error: unrecognized arguments: --x\n",
+  "traceback": false
+}

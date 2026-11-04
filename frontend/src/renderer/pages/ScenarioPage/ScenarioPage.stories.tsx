@@ -439,7 +439,7 @@ export const LongRegistry: Story = {
 };
 
 export const ScaffoldNotMigrated: Story = {
-  name: 'Каркас не перенесён · причина «не перенесено», а не папка комплекса',
+  name: 'Каркас недоступен · причина «не перенесено»',
   tags: CANVAS_ONLY,
   parameters: { songframe: scenarioPageOptions({ variant: 'noRegistry', unavailable: ['tools.run'] }) },
   play: async (context) => {
@@ -447,7 +447,6 @@ export const ScaffoldNotMigrated: Story = {
     const scaffold = screen.getByRole('button', { name: scenarioTexts.toolbar.buildScaffold });
     await expect(scaffold).toBeDisabled();
     await expect(scaffold).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
-    await expect(scaffold).not.toHaveAttribute('title', expect.stringContaining(scenarioTexts.prerequisites.tools));
   }
 };
 

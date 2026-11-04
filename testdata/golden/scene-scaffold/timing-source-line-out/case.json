@@ -1,0 +1,13 @@
+{
+  "description": "source_line вне текста: строка пропускается.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "source_line > len"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Постановка изменена, --json.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "stale JSON"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

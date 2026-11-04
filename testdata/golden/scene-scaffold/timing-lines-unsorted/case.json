@@ -1,0 +1,13 @@
+{
+  "description": "Строки разметки не по порядку, int-границы.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "sorted lines"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "{\n  \"errors\": [\n    {\n      \"level\": \"error\",\n      \"file\": \"plan/scenes.json\",\n      \"where\": \"$.scenes[0].start_frame\",\n      \"message\": \"ожидается тип integer, найдено bool\"\n    },\n    {\n      \"level\": \"error\",\n      \"file\": \"plan/scenes.json\",\n      \"where\": \"$.scenes[1].start_frame\",\n      \"message\": \"ожидается тип integer, найдено float\"\n    },\n    {\n      \"level\": \"error\",\n      \"file\": \"plan/scenes.json\",\n      \"where\": \"$.scenes[2].end_frame_exclusive\",\n      \"message\": \"-1 меньше 1\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"level\": \"warning\",\n      \"file\": \"source/description.md\",\n      \"where\": \"mira\",\n      \"message\": \"персонаж «Мира» из реестра не упомянут в сценарии\"\n    },\n    {\n      \"level\": \"warning\",\n      \"file\": \"source/description.md\",\n      \"where\": \"lev\",\n      \"message\": \"персонаж «Лев» из реестра не упомянут в сценарии\"\n    }\n  ]\n}\n",
+  "stderr": "",
+  "traceback": false
+}

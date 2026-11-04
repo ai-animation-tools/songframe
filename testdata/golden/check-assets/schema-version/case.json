@@ -1,0 +1,13 @@
+{
+  "description": "schema_version 2.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Неизвестная схема"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

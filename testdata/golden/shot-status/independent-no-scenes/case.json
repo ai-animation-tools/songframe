@@ -1,0 +1,18 @@
+{
+  "description": "--independent без реестра: OSError.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "OSError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--independent",
+    "M01"
+  ],
+  "remove": [
+    "plan/scenes.json"
+  ],
+  "mkdir": []
+}

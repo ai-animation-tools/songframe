@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "{\n  \"errors\": [\n    {\n      \"level\": \"error\",\n      \"file\": \"plan/scenes.json\",\n      \"where\": \"$.scenes[3].derived_from\",\n      \"message\": \"ожидается тип object, найдено str\"\n    },\n    {\n      \"level\": \"error\",\n      \"file\": \"plan/scenes.json\",\n      \"where\": \"M05.derived_from\",\n      \"message\": \"ссылается на неизвестный план M99\"\n    }\n  ],\n  \"warnings\": [\n    {\n      \"level\": \"warning\",\n      \"file\": \"source/description.md\",\n      \"where\": \"mira\",\n      \"message\": \"персонаж «Мира» из реестра не упомянут в сценарии\"\n    },\n    {\n      \"level\": \"warning\",\n      \"file\": \"source/description.md\",\n      \"where\": \"lev\",\n      \"message\": \"персонаж «Лев» из реестра не упомянут в сценарии\"\n    }\n  ]\n}\n",
+  "stderr": "",
+  "traceback": false
+}

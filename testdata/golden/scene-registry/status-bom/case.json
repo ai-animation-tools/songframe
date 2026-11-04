@@ -1,0 +1,12 @@
+{
+  "description": "Файл принятия с BOM.",
+  "call": "project_battery",
+  "project": "project",
+  "covers": [
+    "Unexpected UTF-8 BOM"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M03/video.mp4"
+  ]
+}

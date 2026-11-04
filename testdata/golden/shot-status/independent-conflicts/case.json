@@ -1,0 +1,19 @@
+{
+  "description": "Партия с наследованием изменений.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "independence conflicts",
+    "parser.exit"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--independent",
+    "M01",
+    "M02",
+    "M03"
+  ],
+  "remove": [],
+  "mkdir": []
+}

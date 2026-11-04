@@ -1,0 +1,13 @@
+{
+  "description": "Пакет очереди на допустимом этапе.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "awaiting ready"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

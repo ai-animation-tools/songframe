@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 37, in <module>\n    motion = load_motion()\n             ^^^^^^^^^^^^^\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 19, in load_motion\n    data = load(ROOT)\n           ^^^^^^^^^^\n  File \"<songframe>/tools/scene_registry/scene_registry.py\", line 528, in load\n    return validate(json.loads((Path(root) / \"plan/scenes.json\").read_text()))\n                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1029, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '<project>/plan/scenes.json'\n",
+  "traceback": true
+}

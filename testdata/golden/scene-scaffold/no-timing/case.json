@@ -1,0 +1,13 @@
+{
+  "description": "Нет разметки.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "Нет разметки"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

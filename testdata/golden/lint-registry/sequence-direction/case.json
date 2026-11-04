@@ -1,0 +1,14 @@
+{
+  "description": "direction части: факты истории, ссылка в assets и на производное представление.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sequences[].direction",
+    "DERIVED_LINKS"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

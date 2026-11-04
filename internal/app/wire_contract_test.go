@@ -15,7 +15,7 @@ import (
 // добавляется сюда вместе с регистрацией, иначе его DTO не проверяются.
 var boundServices = []any{
 	&AppService{}, &ShellService{}, &ProjectService{}, &NativeService{}, &ComponentsService{}, &NativeCheckService{}, &JobsService{}, &TimingService{}, &SourcesService{},
-	&CastService{}, &ScenarioService{},
+	&CastService{}, &ScenarioService{}, &ToolsService{}, &ChecksService{},
 }
 
 // hasCollection сообщает, может ли значение типа сериализоваться с null вместо [] или {}.

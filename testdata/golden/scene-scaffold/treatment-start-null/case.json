@@ -1,0 +1,13 @@
+{
+  "description": "start null: TypeError — трассировка.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "TypeError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

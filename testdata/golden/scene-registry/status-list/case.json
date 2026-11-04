@@ -1,0 +1,12 @@
+{
+  "description": "Файл принятия — список.",
+  "call": "project_battery",
+  "project": "project",
+  "covers": [
+    "должен быть объектом"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M03/video.mp4"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Битый реестр: JSONDecodeError как ValueError.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "ValueError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

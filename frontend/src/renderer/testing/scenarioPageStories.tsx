@@ -432,7 +432,8 @@ export function scenarioPageOptions({
   const state: AppState = {
     packaged: false,
     problems: [],
-    toolsRoot: '/mock/songframe',
+    // Как в Go-версии: корня комплекса нет, каркас строит сам Go.
+    toolsRoot: null,
     localDir: '/mock/songframe-state',
     current: SCENARIO_PAGE_PROJECT,
     history: [],

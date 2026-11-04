@@ -1,0 +1,12 @@
+{
+  "description": "Реестр есть, без --force: отказ, файл не меняется.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "уже существует"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

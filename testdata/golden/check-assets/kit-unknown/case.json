@@ -1,0 +1,15 @@
+{
+  "description": "Комплект плана вне реестра.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "ассет отсутствует в реестре"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "assets/shots/M02"
+  ],
+  "mkdir": []
+}

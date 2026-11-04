@@ -1,0 +1,13 @@
+{
+  "description": "Папки проекта нет: код 2.",
+  "call": "lint_registry",
+  "project": null,
+  "base": "checks-base",
+  "covers": [
+    "Папка проекта не найдена"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

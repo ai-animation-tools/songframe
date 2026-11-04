@@ -1,0 +1,13 @@
+{
+  "description": "Экспорт без README: папка без владельца.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "completed_output false"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

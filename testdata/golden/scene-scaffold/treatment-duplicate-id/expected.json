@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Часть без уникального id: {'id': 'verse', 'title': 'Проигрыш', 'direction': 'Финальная точка.', 'start': 20, 'end': 30, 'entities': ['mira'], 'lipsync': False, 'max_shot_seconds': 6}\n",
+  "traceback": false,
+  "files": {
+    "plan/scenes.json": "unchanged"
+  }
+}

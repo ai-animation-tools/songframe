@@ -1,0 +1,13 @@
+{
+  "description": "Разметка без строк.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "lines"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

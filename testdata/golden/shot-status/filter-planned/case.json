@@ -1,0 +1,16 @@
+{
+  "description": "--filter planned.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--filter"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--filter",
+    "planned"
+  ],
+  "remove": [],
+  "mkdir": []
+}

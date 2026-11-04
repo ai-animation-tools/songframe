@@ -1,0 +1,15 @@
+{
+  "description": "Снимок запроса отсутствует: проверка пропускается.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "snapshot None"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "assets/shots/M02/generation-request.json"
+  ],
+  "mkdir": []
+}

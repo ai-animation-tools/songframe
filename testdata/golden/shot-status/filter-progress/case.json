@@ -1,0 +1,16 @@
+{
+  "description": "--filter progress.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--filter"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--filter",
+    "progress"
+  ],
+  "remove": [],
+  "mkdir": []
+}

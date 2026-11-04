@@ -1,0 +1,13 @@
+{
+  "description": "Повтор не сходится с длиной.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Число циклов"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

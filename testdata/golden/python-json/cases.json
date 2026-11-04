@@ -1,0 +1,821 @@
+[
+  {
+    "name": "object",
+    "call": "loads",
+    "input": "{\"a\": 1, \"b\": 2.0, \"c\": [true, false, null], \"d\": \"текст\"}",
+    "expected": {
+      "indent": "{\n  \"a\": 1,\n  \"b\": 2.0,\n  \"c\": [\n    true,\n    false,\n    null\n  ],\n  \"d\": \"текст\"\n}",
+      "compact": "{\"a\": 1, \"b\": 2.0, \"c\": [true, false, null], \"d\": \"текст\"}",
+      "canonical": "{\"a\":1,\"b\":2.0,\"c\":[true,false,null],\"d\":\"текст\"}",
+      "ascii": "{\"a\": 1, \"b\": 2.0, \"c\": [true, false, null], \"d\": \"\\u0442\\u0435\\u043a\\u0441\\u0442\"}",
+      "repr": "{'a': 1, 'b': 2.0, 'c': [True, False, None], 'd': 'текст'}",
+      "encodable": true
+    }
+  },
+  {
+    "name": "floats",
+    "call": "loads",
+    "input": "[0.1, 1e-07, 1e16, 1.5e300, 123456789012345680000.0, -0.0, 1E2, 2.50, 100.0]",
+    "expected": {
+      "indent": "[\n  0.1,\n  1e-07,\n  1e+16,\n  1.5e+300,\n  1.2345678901234568e+20,\n  -0.0,\n  100.0,\n  2.5,\n  100.0\n]",
+      "compact": "[0.1, 1e-07, 1e+16, 1.5e+300, 1.2345678901234568e+20, -0.0, 100.0, 2.5, 100.0]",
+      "canonical": "[0.1,1e-07,1e+16,1.5e+300,1.2345678901234568e+20,-0.0,100.0,2.5,100.0]",
+      "ascii": "[0.1, 1e-07, 1e+16, 1.5e+300, 1.2345678901234568e+20, -0.0, 100.0, 2.5, 100.0]",
+      "repr": "[0.1, 1e-07, 1e+16, 1.5e+300, 1.2345678901234568e+20, -0.0, 100.0, 2.5, 100.0]",
+      "encodable": true
+    }
+  },
+  {
+    "name": "ints",
+    "call": "loads",
+    "input": "[0, -0, 12345678901234567890123, -7]",
+    "expected": {
+      "indent": "[\n  0,\n  0,\n  12345678901234567890123,\n  -7\n]",
+      "compact": "[0, 0, 12345678901234567890123, -7]",
+      "canonical": "[0,0,12345678901234567890123,-7]",
+      "ascii": "[0, 0, 12345678901234567890123, -7]",
+      "repr": "[0, 0, 12345678901234567890123, -7]",
+      "encodable": true
+    }
+  },
+  {
+    "name": "constants",
+    "call": "loads",
+    "input": "[NaN, Infinity, -Infinity]",
+    "expected": {
+      "indent": "[\n  NaN,\n  Infinity,\n  -Infinity\n]",
+      "compact": "[NaN, Infinity, -Infinity]",
+      "canonical": "[NaN,Infinity,-Infinity]",
+      "ascii": "[NaN, Infinity, -Infinity]",
+      "repr": "[nan, inf, -inf]",
+      "encodable": true
+    }
+  },
+  {
+    "name": "duplicate-keys",
+    "call": "loads",
+    "input": "{\"a\": 1, \"b\": 2, \"a\": 3}",
+    "expected": {
+      "indent": "{\n  \"a\": 3,\n  \"b\": 2\n}",
+      "compact": "{\"a\": 3, \"b\": 2}",
+      "canonical": "{\"a\":3,\"b\":2}",
+      "ascii": "{\"a\": 3, \"b\": 2}",
+      "repr": "{'a': 3, 'b': 2}",
+      "encodable": true
+    }
+  },
+  {
+    "name": "escapes",
+    "call": "loads",
+    "input": "[\"A\\n\\t\\\"\\\\\\/\\b\\f\\r\", \"😀\", \"\\u0001\\u001f\\u007f \"]",
+    "expected": {
+      "indent": "[\n  \"A\\n\\t\\\"\\\\/\\b\\f\\r\",\n  \"😀\",\n  \"\\u0001\\u001f \"\n]",
+      "compact": "[\"A\\n\\t\\\"\\\\/\\b\\f\\r\", \"😀\", \"\\u0001\\u001f \"]",
+      "canonical": "[\"A\\n\\t\\\"\\\\/\\b\\f\\r\",\"😀\",\"\\u0001\\u001f \"]",
+      "ascii": "[\"A\\n\\t\\\"\\\\/\\b\\f\\r\", \"\\ud83d\\ude00\", \"\\u0001\\u001f\\u007f\\u2028\"]",
+      "repr": "['A\\n\\t\"\\\\/\\x08\\x0c\\r', '😀', '\\x01\\x1f\\x7f\\u2028']",
+      "encodable": true
+    }
+  },
+  {
+    "name": "lone-surrogate",
+    "call": "loads",
+    "input": "[\"\\ud800x\"]",
+    "expected": {
+      "indent": "[\n  \"\ud800x\"\n]",
+      "compact": "[\"\ud800x\"]",
+      "canonical": "[\"\ud800x\"]",
+      "ascii": "[\"\\ud800x\"]",
+      "repr": "['\\ud800x']",
+      "encodable": false,
+      "encodeError": "'utf-8' codec can't encode character '\\ud800' in position 5: surrogates not allowed"
+    }
+  },
+  {
+    "name": "sort-keys",
+    "call": "loads",
+    "input": "{\"б\": 1, \"a\": 2, \"Я\": 3, \"😀\": 4, \"z\": 5, \"ё\": 6}",
+    "expected": {
+      "indent": "{\n  \"б\": 1,\n  \"a\": 2,\n  \"Я\": 3,\n  \"😀\": 4,\n  \"z\": 5,\n  \"ё\": 6\n}",
+      "compact": "{\"б\": 1, \"a\": 2, \"Я\": 3, \"😀\": 4, \"z\": 5, \"ё\": 6}",
+      "canonical": "{\"a\":2,\"z\":5,\"Я\":3,\"б\":1,\"ё\":6,\"😀\":4}",
+      "ascii": "{\"\\u0431\": 1, \"a\": 2, \"\\u042f\": 3, \"\\ud83d\\ude00\": 4, \"z\": 5, \"\\u0451\": 6}",
+      "repr": "{'б': 1, 'a': 2, 'Я': 3, '😀': 4, 'z': 5, 'ё': 6}",
+      "encodable": true
+    }
+  },
+  {
+    "name": "nested-empty",
+    "call": "loads",
+    "input": "{\"a\": {}, \"b\": [], \"c\": [[]], \"d\": {\"e\": {}}}",
+    "expected": {
+      "indent": "{\n  \"a\": {},\n  \"b\": [],\n  \"c\": [\n    []\n  ],\n  \"d\": {\n    \"e\": {}\n  }\n}",
+      "compact": "{\"a\": {}, \"b\": [], \"c\": [[]], \"d\": {\"e\": {}}}",
+      "canonical": "{\"a\":{},\"b\":[],\"c\":[[]],\"d\":{\"e\":{}}}",
+      "ascii": "{\"a\": {}, \"b\": [], \"c\": [[]], \"d\": {\"e\": {}}}",
+      "repr": "{'a': {}, 'b': [], 'c': [[]], 'd': {'e': {}}}",
+      "encodable": true
+    }
+  },
+  {
+    "name": "whitespace",
+    "call": "loads",
+    "input": " \r\n\t{ \"a\" : [ 1 , 2 ] } \n",
+    "expected": {
+      "indent": "{\n  \"a\": [\n    1,\n    2\n  ]\n}",
+      "compact": "{\"a\": [1, 2]}",
+      "canonical": "{\"a\":[1,2]}",
+      "ascii": "{\"a\": [1, 2]}",
+      "repr": "{'a': [1, 2]}",
+      "encodable": true
+    }
+  },
+  {
+    "name": "empty",
+    "call": "loads",
+    "input": "",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      }
+    }
+  },
+  {
+    "name": "spaces",
+    "call": "loads",
+    "input": "   ",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 4 (char 3)"
+      }
+    }
+  },
+  {
+    "name": "bom",
+    "call": "loads",
+    "input": "﻿{}",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)"
+      }
+    }
+  },
+  {
+    "name": "extra-data",
+    "call": "loads",
+    "input": "{\"a\": 1} x",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Extra data: line 1 column 10 (char 9)"
+      }
+    }
+  },
+  {
+    "name": "extra-number",
+    "call": "loads",
+    "input": "01",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Extra data: line 1 column 2 (char 1)"
+      }
+    }
+  },
+  {
+    "name": "trailing-comma-object",
+    "call": "loads",
+    "input": "{\"a\": 1,}",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting property name enclosed in double quotes: line 1 column 9 (char 8)"
+      }
+    }
+  },
+  {
+    "name": "trailing-comma-array",
+    "call": "loads",
+    "input": "[1,]",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 4 (char 3)"
+      }
+    }
+  },
+  {
+    "name": "missing-colon",
+    "call": "loads",
+    "input": "{\"a\" 1}",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting ':' delimiter: line 1 column 6 (char 5)"
+      }
+    }
+  },
+  {
+    "name": "missing-comma",
+    "call": "loads",
+    "input": "{\"a\": 1 \"b\": 2}",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting ',' delimiter: line 1 column 9 (char 8)"
+      }
+    }
+  },
+  {
+    "name": "array-missing-comma",
+    "call": "loads",
+    "input": "[1 2]",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting ',' delimiter: line 1 column 4 (char 3)"
+      }
+    }
+  },
+  {
+    "name": "unquoted-key",
+    "call": "loads",
+    "input": "{a: 1}",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+      }
+    }
+  },
+  {
+    "name": "single-quotes",
+    "call": "loads",
+    "input": "{'a': 1}",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+      }
+    }
+  },
+  {
+    "name": "unterminated-string",
+    "call": "loads",
+    "input": "{\"a\": \"b",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Unterminated string starting at: line 1 column 7 (char 6)"
+      }
+    }
+  },
+  {
+    "name": "unterminated-escape",
+    "call": "loads",
+    "input": "\"abc\\",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Unterminated string starting at: line 1 column 1 (char 0)"
+      }
+    }
+  },
+  {
+    "name": "control-character",
+    "call": "loads",
+    "input": "[\"a\tb\"]",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Invalid control character at: line 1 column 4 (char 3)"
+      }
+    }
+  },
+  {
+    "name": "invalid-escape",
+    "call": "loads",
+    "input": "[\"\\x\"]",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Invalid \\escape: line 1 column 3 (char 2)"
+      }
+    }
+  },
+  {
+    "name": "invalid-unicode-escape",
+    "call": "loads",
+    "input": "[\"\\u12\"]",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Invalid \\uXXXX escape: line 1 column 4 (char 3)"
+      }
+    }
+  },
+  {
+    "name": "invalid-unicode-hex",
+    "call": "loads",
+    "input": "[\"\\u12zz\"]",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Invalid \\uXXXX escape: line 1 column 4 (char 3)"
+      }
+    }
+  },
+  {
+    "name": "multiline-error",
+    "call": "loads",
+    "input": "{\n  \"a\": 1,\n  \"b\": \n}",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 4 column 1 (char 20)"
+      }
+    }
+  },
+  {
+    "name": "lonely-minus",
+    "call": "loads",
+    "input": "-",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      }
+    }
+  },
+  {
+    "name": "minus-letter",
+    "call": "loads",
+    "input": "-a",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      }
+    }
+  },
+  {
+    "name": "bad-literal",
+    "call": "loads",
+    "input": "nul",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      }
+    }
+  },
+  {
+    "name": "exponent-without-digits",
+    "call": "loads",
+    "input": "1e",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Extra data: line 1 column 2 (char 1)"
+      }
+    }
+  },
+  {
+    "name": "exponent-sign-without-digits",
+    "call": "loads",
+    "input": "[1e+]",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting ',' delimiter: line 1 column 3 (char 2)"
+      }
+    }
+  },
+  {
+    "name": "dot-without-digits",
+    "call": "loads",
+    "input": "[1.]",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting ',' delimiter: line 1 column 3 (char 2)"
+      }
+    }
+  },
+  {
+    "name": "open-object",
+    "call": "loads",
+    "input": "{",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+      }
+    }
+  },
+  {
+    "name": "open-array",
+    "call": "loads",
+    "input": "[",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 2 (char 1)"
+      }
+    }
+  },
+  {
+    "name": "unicode-position",
+    "call": "loads",
+    "input": "{\"ключ\": \"значение\" ,, }",
+    "expected": {
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting property name enclosed in double quotes: line 1 column 22 (char 21)"
+      }
+    }
+  },
+  {
+    "name": "utf8-ok",
+    "call": "decode",
+    "input": "d0b0d0b1d0b2f09f9880",
+    "expected": {
+      "text": "абв😀"
+    }
+  },
+  {
+    "name": "utf8-invalid-start",
+    "call": "decode",
+    "input": "61ff",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode byte 0xff in position 1: invalid start byte"
+      }
+    }
+  },
+  {
+    "name": "utf8-end-1",
+    "call": "decode",
+    "input": "c3",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode byte 0xc3 in position 0: unexpected end of data"
+      }
+    }
+  },
+  {
+    "name": "utf8-continuation",
+    "call": "decode",
+    "input": "c328",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode byte 0xc3 in position 0: invalid continuation byte"
+      }
+    }
+  },
+  {
+    "name": "utf8-end-2",
+    "call": "decode",
+    "input": "6162e282",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode bytes in position 2-3: unexpected end of data"
+      }
+    }
+  },
+  {
+    "name": "utf8-continuation-3",
+    "call": "decode",
+    "input": "e28228",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+      }
+    }
+  },
+  {
+    "name": "utf8-overlong",
+    "call": "decode",
+    "input": "e08080",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode byte 0xe0 in position 0: invalid continuation byte"
+      }
+    }
+  },
+  {
+    "name": "utf8-surrogate",
+    "call": "decode",
+    "input": "eda080",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode byte 0xed in position 0: invalid continuation byte"
+      }
+    }
+  },
+  {
+    "name": "utf8-end-4",
+    "call": "decode",
+    "input": "f09f98",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode bytes in position 0-2: unexpected end of data"
+      }
+    }
+  },
+  {
+    "name": "utf8-too-large",
+    "call": "decode",
+    "input": "f4908080",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte"
+      }
+    }
+  },
+  {
+    "name": "utf8-c0",
+    "call": "decode",
+    "input": "c080",
+    "expected": {
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode byte 0xc0 in position 0: invalid start byte"
+      }
+    }
+  },
+  {
+    "name": "float '1'",
+    "call": "float",
+    "input": "1",
+    "expected": {
+      "repr": "1.0"
+    }
+  },
+  {
+    "name": "float ' 1.5 '",
+    "call": "float",
+    "input": " 1.5 ",
+    "expected": {
+      "repr": "1.5"
+    }
+  },
+  {
+    "name": "float '1_0'",
+    "call": "float",
+    "input": "1_0",
+    "expected": {
+      "repr": "10.0"
+    }
+  },
+  {
+    "name": "float '1__0'",
+    "call": "float",
+    "input": "1__0",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: '1__0'"
+      }
+    }
+  },
+  {
+    "name": "float '_1'",
+    "call": "float",
+    "input": "_1",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: '_1'"
+      }
+    }
+  },
+  {
+    "name": "float '1_'",
+    "call": "float",
+    "input": "1_",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: '1_'"
+      }
+    }
+  },
+  {
+    "name": "float '1e1_0'",
+    "call": "float",
+    "input": "1e1_0",
+    "expected": {
+      "repr": "10000000000.0"
+    }
+  },
+  {
+    "name": "float '١٢'",
+    "call": "float",
+    "input": "١٢",
+    "expected": {
+      "repr": "12.0"
+    }
+  },
+  {
+    "name": "float ' ١.٥ '",
+    "call": "float",
+    "input": " ١.٥ ",
+    "expected": {
+      "repr": "1.5"
+    }
+  },
+  {
+    "name": "float '\\x1c1'",
+    "call": "float",
+    "input": "\u001c1",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: '\\x1c1'"
+      }
+    }
+  },
+  {
+    "name": "float 'inf'",
+    "call": "float",
+    "input": "inf",
+    "expected": {
+      "repr": "inf"
+    }
+  },
+  {
+    "name": "float '-Infinity'",
+    "call": "float",
+    "input": "-Infinity",
+    "expected": {
+      "repr": "-inf"
+    }
+  },
+  {
+    "name": "float 'nan'",
+    "call": "float",
+    "input": "nan",
+    "expected": {
+      "repr": "nan"
+    }
+  },
+  {
+    "name": "float '1e500'",
+    "call": "float",
+    "input": "1e500",
+    "expected": {
+      "repr": "inf"
+    }
+  },
+  {
+    "name": "float '0x10'",
+    "call": "float",
+    "input": "0x10",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: '0x10'"
+      }
+    }
+  },
+  {
+    "name": "float 'abc'",
+    "call": "float",
+    "input": "abc",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: 'abc'"
+      }
+    }
+  },
+  {
+    "name": "float ''",
+    "call": "float",
+    "input": "",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: ''"
+      }
+    }
+  },
+  {
+    "name": "float '+-1'",
+    "call": "float",
+    "input": "+-1",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: '+-1'"
+      }
+    }
+  },
+  {
+    "name": "float '.5'",
+    "call": "float",
+    "input": ".5",
+    "expected": {
+      "repr": "0.5"
+    }
+  },
+  {
+    "name": "float '5.'",
+    "call": "float",
+    "input": "5.",
+    "expected": {
+      "repr": "5.0"
+    }
+  },
+  {
+    "name": "float '.'",
+    "call": "float",
+    "input": ".",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: '.'"
+      }
+    }
+  },
+  {
+    "name": "float '1.5.2'",
+    "call": "float",
+    "input": "1.5.2",
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "could not convert string to float: '1.5.2'"
+      }
+    }
+  },
+  {
+    "name": "float '\\u20031\\u2003'",
+    "call": "float",
+    "input": " 1 ",
+    "expected": {
+      "repr": "1.0"
+    }
+  },
+  {
+    "name": "repr 'abc'",
+    "call": "repr",
+    "input": "\"abc\"",
+    "expected": {
+      "repr": "'abc'"
+    }
+  },
+  {
+    "name": "repr \"a'b\"",
+    "call": "repr",
+    "input": "\"a'b\"",
+    "expected": {
+      "repr": "\"a'b\""
+    }
+  },
+  {
+    "name": "repr 'a\"b'",
+    "call": "repr",
+    "input": "\"a\\\"b\"",
+    "expected": {
+      "repr": "'a\"b'"
+    }
+  },
+  {
+    "name": "repr 'a\\'\"b'",
+    "call": "repr",
+    "input": "\"a'\\\"b\"",
+    "expected": {
+      "repr": "'a\\'\"b'"
+    }
+  },
+  {
+    "name": "repr '\\x00\\x7f\\xa0\\xad\\u2028\\U0001f600\\t\\\\'",
+    "call": "repr",
+    "input": "\"\\u0000\\u007f\\u00a0\\u00ad\\u2028\\ud83d\\ude00\\t\\\\\"",
+    "expected": {
+      "repr": "'\\x00\\x7f\\xa0\\xad\\u2028😀\\t\\\\'"
+    }
+  },
+  {
+    "name": "repr '\\u041c\\u0438\\u0440\\u0430'",
+    "call": "repr",
+    "input": "\"\\u041c\\u0438\\u0440\\u0430\"",
+    "expected": {
+      "repr": "'Мира'"
+    }
+  }
+]

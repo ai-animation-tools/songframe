@@ -1,0 +1,6 @@
+{
+  "code": 0,
+  "stdout": "{\n  \"accepted\": [\n    \"M01\"\n  ],\n  \"stale\": [\n    \"M02\"\n  ],\n  \"problems\": []\n}\n",
+  "stderr": "",
+  "traceback": false
+}

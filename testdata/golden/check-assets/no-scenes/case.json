@@ -1,0 +1,15 @@
+{
+  "description": "Нет plan/scenes.json: FileNotFoundError — трассировка.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "FileNotFoundError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "plan/scenes.json"
+  ],
+  "mkdir": []
+}

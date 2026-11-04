@@ -1,0 +1,14 @@
+{
+  "description": "Неизвестный референс и главный референс карточки.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "неизвестный референс",
+    "главный референс"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

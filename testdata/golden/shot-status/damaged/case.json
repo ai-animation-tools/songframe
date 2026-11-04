@@ -1,0 +1,13 @@
+{
+  "description": "Повреждённые файлы пакета и документ false.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "файлы пакета повреждены"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

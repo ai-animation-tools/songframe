@@ -1,0 +1,62 @@
+package tools_test
+
+import (
+	"strings"
+	"testing"
+
+	"songframe-go/internal/golden"
+	"songframe-go/internal/mediaadapters"
+	"songframe-go/internal/pycompat"
+	"songframe-go/internal/tools"
+)
+
+// TestProjectChecksGolden запускает перенесённые проверки проекта через tools.Run на входах
+// эталонов lint-registry, check-assets, check-workspace и shot-status (образец checks-base с
+// разностью случая) и сверяет код завершения, stdout и stderr с процессом
+// `python3 -B tools/<имя>/<имя>.py --project <копия> …` оригинала. Инструменты только читают
+// проект: дерево входа после запуска должно совпасть с исходным.
+func TestProjectChecksGolden(t *testing.T) {
+	for _, domain := range []string{"lint-registry", "check-assets", "check-workspace", "shot-status"} {
+		for _, c := range golden.Load(t, domain) {
+			t.Run(domain+"/"+c.Name, func(t *testing.T) {
+				spec := c.PyRead(t, "case.json")
+				// Случай с особенностью провайдера доказывает его адаптер; без адаптера в таблице
+				// (провайдер удалён) общий тест не должен ломаться.
+				if provider, ok := spec.Value("provider").(string); ok && !mediaadapters.Known(provider) {
+					t.Skipf("нет адаптера провайдера %s", provider)
+				}
+				args := []string{}
+				for _, arg := range spec.Value("args").([]any) {
+					args = append(args, arg.(string))
+				}
+				root := c.BuildProject(t)
+				before, beforeErr := golden.TreeDigest(root)
+				result, err := tools.Run(root, c.Call, args)
+				if err != nil {
+					t.Fatalf("tools.Run: %v", err)
+				}
+				expected := c.PyRead(t, "expected.json")
+				normalize := func(text string) string { return strings.ReplaceAll(text, root, golden.ProjectMarker) }
+				if want := expected.Value("code").(pycompat.Int).String(); result.Code == nil || want != pycompat.NewInt(int64(*result.Code)).String() {
+					t.Errorf("код завершения: ожидалось %s, получено %v", want, result)
+				}
+				if want := golden.PyString(t, expected, "stdout"); normalize(result.Stdout) != want {
+					t.Errorf("stdout:\n--- ожидалось\n%s\n--- получено\n%s", want, normalize(result.Stdout))
+				}
+				wantErr, gotErr := golden.PyString(t, expected, "stderr"), normalize(result.Stderr)
+				if expected.Value("traceback") == true {
+					if !strings.HasPrefix(gotErr, tracebackHeader+"\n") || lastLine(gotErr) != lastLine(wantErr) {
+						t.Errorf("трассировка:\n--- ожидалось (последняя строка)\n%s\n--- получено\n%s", lastLine(wantErr), gotErr)
+					}
+				} else if gotErr != wantErr {
+					t.Errorf("stderr:\n--- ожидалось\n%s\n--- получено\n%s", wantErr, gotErr)
+				}
+				if beforeErr == nil {
+					if after, err := golden.TreeDigest(root); err != nil || after != before {
+						t.Errorf("инструмент изменил проект: %v", err)
+					}
+				}
+			})
+		}
+	}
+}

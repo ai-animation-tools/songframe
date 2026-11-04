@@ -1,0 +1,13 @@
+{
+  "description": "Реестра нет: каркас записан, краткий JSON-отчёт.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "written",
+    "--json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

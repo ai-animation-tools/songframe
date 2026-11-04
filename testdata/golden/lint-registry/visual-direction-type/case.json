@@ -1,0 +1,13 @@
+{
+  "description": "visual_direction числом: TypeError re.finditer — трассировка.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "TypeError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

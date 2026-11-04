@@ -1,0 +1,16 @@
+{
+  "description": "Комплектов нет: ноль сцен.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "0 выбранных сцен"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "assets/shots/M01",
+    "assets/shots/M02"
+  ],
+  "mkdir": []
+}

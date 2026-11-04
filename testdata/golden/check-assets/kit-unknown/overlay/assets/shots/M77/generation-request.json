@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "shot": "M02",
+  "provider": "test",
+  "command": "image_to_video",
+  "model": "test-video",
+  "parameters": {
+    "duration": 5,
+    "resolution": "1080p",
+    "aspect_ratio": "16:9"
+  },
+  "outputs": 1,
+  "request_sha256": "231d3ceb30b5dd74d57cdc18438f638f6a1dc64d00e8300241525d1c73b14e02",
+  "inputs": [
+    {
+      "slot": "image_1",
+      "role": "Первый кадр",
+      "path": "generation-input-1.png",
+      "sha256": "44d251ca77fb39c884dd7513fa3a330617381697616a1cee29ca0a46b2e1e5a2"
+    }
+  ],
+  "prompt": "generation-prompt.txt",
+  "prompt_sha256": "40af36cdf6c3c1cb1697cae3641a4e8a7baba39c271fd9800981cdacd0c0fc68",
+  "generation_id": "sample-m02",
+  "service_status": "completed",
+  "path_base": "asset_directory"
+}

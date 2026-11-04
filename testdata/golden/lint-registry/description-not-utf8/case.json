@@ -1,0 +1,13 @@
+{
+  "description": "Описание не в UTF-8: UnicodeDecodeError — трассировка.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "UnicodeDecodeError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

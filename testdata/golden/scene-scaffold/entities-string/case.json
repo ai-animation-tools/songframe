@@ -1,0 +1,13 @@
+{
+  "description": "entities строкой: перебор символов.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "iter str"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

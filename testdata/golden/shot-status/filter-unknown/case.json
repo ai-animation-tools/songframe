@@ -1,0 +1,16 @@
+{
+  "description": "--filter unknown.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--filter"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--filter",
+    "unknown"
+  ],
+  "remove": [],
+  "mkdir": []
+}

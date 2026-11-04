@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 227, in <module>\n    main()\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 193, in main\n    data = build_scenes(\n           ^^^^^^^^^^^^^\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 108, in build_scenes\n    boundaries, inside = shot_boundaries(part, lines, end_frame)\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 76, in shot_boundaries\n    count = max(1, int(round((end_frame - start) / FPS / step)))\n                             ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~\nZeroDivisionError: float division by zero\n",
+  "traceback": true,
+  "files": {
+    "plan/scenes.json": "unchanged"
+  }
+}

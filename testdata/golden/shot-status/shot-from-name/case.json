@@ -1,0 +1,15 @@
+{
+  "description": "План по имени папки без поля shot.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "SHOT_PREFIX"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

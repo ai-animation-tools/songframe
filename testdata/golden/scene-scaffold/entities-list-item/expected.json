@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 227, in <module>\n    main()\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 193, in main\n    data = build_scenes(\n           ^^^^^^^^^^^^^\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 109, in build_scenes\n    entities = [e for e in part.get(\"entities\", []) if e in refs]\n                                                       ^^^^^^^^^\nTypeError: unhashable type: 'list'\n",
+  "traceback": true,
+  "files": {
+    "plan/scenes.json": "unchanged"
+  }
+}

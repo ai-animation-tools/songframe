@@ -1,0 +1,13 @@
+{
+  "description": "Повреждённая трактовка.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "read_json False"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

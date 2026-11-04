@@ -1,0 +1,13 @@
+{
+  "description": "Описание упоминает героев: предупреждений нет.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "name.split()[0] in text"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

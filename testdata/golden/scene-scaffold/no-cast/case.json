@@ -1,0 +1,13 @@
+{
+  "description": "Нет кастинга.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "Нет plan/cast.json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

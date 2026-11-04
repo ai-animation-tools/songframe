@@ -1,0 +1,17 @@
+{
+  "description": "План дважды.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "дважды"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--independent",
+    "M01",
+    "M01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,17 @@
+{
+  "description": "state_changes null: отказ validate при загрузке реестра.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "load ValueError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--independent",
+    "M01",
+    "M02"
+  ],
+  "remove": [],
+  "mkdir": []
+}

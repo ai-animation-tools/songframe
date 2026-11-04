@@ -1,0 +1,13 @@
+{
+  "description": "plan/scenes.json с BOM.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "JSONDecodeError BOM"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

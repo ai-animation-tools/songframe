@@ -1,0 +1,13 @@
+{
+  "description": "Unicode в заголовках и текстах, символы вне BMP.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "ensure_ascii=False"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

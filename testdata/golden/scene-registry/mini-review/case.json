@@ -1,0 +1,12 @@
+{
+  "description": "Действующая сверка source_review после замены источника.",
+  "call": "project_battery",
+  "project": "project",
+  "covers": [
+    "source_review valid"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M03/video.mp4"
+  ]
+}

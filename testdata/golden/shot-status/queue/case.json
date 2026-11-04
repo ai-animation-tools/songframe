@@ -1,0 +1,18 @@
+{
+  "description": "Очередь: этапы, причина ожидания, пустая папка, неизвестный план.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "awaiting",
+    "WAIT_LABELS",
+    "пакет очереди без файлов",
+    "unassigned_packages"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": [
+    "plan/awaiting/M05"
+  ]
+}

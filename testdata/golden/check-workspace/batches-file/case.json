@@ -1,0 +1,13 @@
+{
+  "description": "Файл в plan/batches игнорируется.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "not is_dir"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

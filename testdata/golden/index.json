@@ -1866,5 +1866,1973 @@
     "covers": [
       "stateCycle"
     ]
+  },
+  {
+    "domain": "python-json",
+    "name": "cases.json",
+    "description": "78 случаев json.loads/dumps, decode, float, repr.",
+    "covers": [
+      "JSONDecodeError",
+      "UnicodeDecodeError",
+      "float()",
+      "repr"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "cases.json",
+    "description": "134 случаев чистых функций scene_registry.",
+    "covers": [
+      "validate",
+      "scene_fingerprints",
+      "scene_state",
+      "derived_from_problems",
+      "validate_project",
+      "generation_settings",
+      "accepted_fingerprints",
+      "with_accepted_fingerprints",
+      "seconds",
+      "clock",
+      "shots",
+      "shot_acceptance"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "sample",
+    "description": "Образец: кастинг с описями, принятые M01 и M02 (ролики отсутствуют).",
+    "covers": [
+      "load",
+      "project_shot_acceptance",
+      "source_video_snapshot=None без ролика"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "mini-derived",
+    "description": "Мини-проект: M03 производный от M01, квитанция совпадает с роликом источника; M02 с битым манифестом.",
+    "covers": [
+      "derived fresh",
+      "kit None"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "mini-source-changed",
+    "description": "Ролик источника заменён после генерации производного плана.",
+    "covers": [
+      "source_changed"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "mini-review",
+    "description": "Действующая сверка source_review после замены источника.",
+    "covers": [
+      "source_review valid"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "mini-write",
+    "description": "write_accepted_fingerprints: новый отпечаток M02 и сброс сверки M03.",
+    "covers": [
+      "write_accepted_fingerprints",
+      "права 0600"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "mini-write-new",
+    "description": "write_accepted_fingerprints без файла принятия: содержимое шаблона.",
+    "covers": [
+      "EMPTY_PRODUCTION_STATUS"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "status-corrupt",
+    "description": "Повреждённый plan/production-status.json: текст JSONDecodeError в сообщении.",
+    "covers": [
+      "read_production_status ValueError"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "status-bom",
+    "description": "Файл принятия с BOM.",
+    "covers": [
+      "Unexpected UTF-8 BOM"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "status-utf8",
+    "description": "Файл принятия не в UTF-8.",
+    "covers": [
+      "UnicodeDecodeError"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "status-list",
+    "description": "Файл принятия — список.",
+    "covers": [
+      "должен быть объектом"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "status-bad-entry",
+    "description": "Запись shots без scene_sha256.",
+    "covers": [
+      "accepted_fingerprints ValueError"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "scenes-missing",
+    "description": "Нет plan/scenes.json: FileNotFoundError с путём.",
+    "covers": [
+      "load OSError"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "scenes-corrupt",
+    "description": "plan/scenes.json с ошибкой JSON на второй строке.",
+    "covers": [
+      "load JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "cast-invalid",
+    "description": "Кастинг с проблемами: initial_states_for даёт пусто, load_cast — ValueError.",
+    "covers": [
+      "validate_cast",
+      "initial_states_for ValueError"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "cast-images-int",
+    "description": "images — число: TypeError при проверке кастинга пробрасывается.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "cast-kind-newline",
+    "description": "Код типа с переводом строки в конце: `$` Python его допускает.",
+    "covers": [
+      "KIND_PATTERN"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "manifest-null",
+    "description": "source/manifest.json — null: опись повреждена.",
+    "covers": [
+      "project_saved_descriptions"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "manifest-description",
+    "description": "Описание референса не строка.",
+    "covers": [
+      "source_descriptions"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "manifest-no-id",
+    "description": "Референс без строкового id.",
+    "covers": [
+      "source_descriptions"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "project-generation",
+    "description": "plan/project.json с неверным generation: проверка только при validate_generation.",
+    "covers": [
+      "load_project"
+    ]
+  },
+  {
+    "domain": "scene-registry",
+    "name": "video-outside",
+    "description": "Ролик источника вне своего комплекта: снимка нет.",
+    "covers": [
+      "is_relative_to"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "new",
+    "description": "Реестра нет: каркас записан, краткий JSON-отчёт.",
+    "covers": [
+      "written",
+      "--json"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "exists",
+    "description": "Реестр есть, без --force: отказ, файл не меняется.",
+    "covers": [
+      "уже существует"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "force",
+    "description": "--force заменяет реестр, visual_direction сохраняется.",
+    "covers": [
+      "--force",
+      "visual_direction из прежнего"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "force-existing-corrupt",
+    "description": "Повреждённый прежний реестр не мешает записи и не даёт visual_direction.",
+    "covers": [
+      "existing False"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "dry-run-json",
+    "description": "--dry-run --json: полный каркас в stdout без записи.",
+    "covers": [
+      "--dry-run --json"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "dry-run-text",
+    "description": "--dry-run без --json: таблица планов.",
+    "covers": [
+      "текстовый вывод"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "text-output",
+    "description": "Без флагов при отсутствии реестра: запись и таблица.",
+    "covers": [
+      "текстовый вывод",
+      "Записано"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "no-treatment",
+    "description": "Нет трактовки.",
+    "covers": [
+      "Нет plan/treatment.json"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-corrupt",
+    "description": "Повреждённая трактовка.",
+    "covers": [
+      "read_json False"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-null",
+    "description": "Трактовка null.",
+    "covers": [
+      "read_json None"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-draft-gap",
+    "description": "Черновик трактовки с разрывом между частями (сохранён редактором).",
+    "covers": [
+      "стык частей"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-draft-overlap",
+    "description": "Черновик: части накладываются, конец раньше начала.",
+    "covers": [
+      "конец раньше начала"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-draft-duration",
+    "description": "Черновик: части короче трека.",
+    "covers": [
+      "Части заканчиваются"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-draft-empty",
+    "description": "Черновик без частей.",
+    "covers": [
+      "непустой список sequences"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-draft-empty-id",
+    "description": "Черновик с пустым кодом части: repr части в сообщении.",
+    "covers": [
+      "repr словаря"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-duplicate-id",
+    "description": "Повтор кода части.",
+    "covers": [
+      "уникальный id"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-unsorted",
+    "description": "Части не по порядку: сортировка по началу.",
+    "covers": [
+      "sorted"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-schema",
+    "description": "schema_version 2.",
+    "covers": [
+      "schema"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-missing-start",
+    "description": "Часть без start: KeyError.",
+    "covers": [
+      "KeyError"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-start-string",
+    "description": "start строкой «8.0» и «восемь».",
+    "covers": [
+      "float(str)"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-start-null",
+    "description": "start null: TypeError — трассировка.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-floats",
+    "description": "Числа трактовки float и строковые заголовки-числа.",
+    "covers": [
+      "repr float",
+      "title не строка"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "treatment-tiny-part",
+    "description": "Две границы в одном кадре: пустое окно и отказ validate.",
+    "covers": [
+      "validate после каркаса"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "no-timing",
+    "description": "Нет разметки.",
+    "covers": [
+      "Нет разметки"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-no-lines",
+    "description": "Разметка без строк.",
+    "covers": [
+      "lines"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-no-duration",
+    "description": "Разметка без длительностей.",
+    "covers": [
+      "нет длительности"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-container-only",
+    "description": "Только длительность контейнера.",
+    "covers": [
+      "duration_container"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-duration-string",
+    "description": "Длительность строкой «30».",
+    "covers": [
+      "float(str)"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-duration-list",
+    "description": "Длительность — список: TypeError.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-line-missing-end",
+    "description": "Строка без end: KeyError.",
+    "covers": [
+      "KeyError"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-source-line-float",
+    "description": "source_line 2.0: индекс списка float — трассировка.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-source-line-out",
+    "description": "source_line вне текста: строка пропускается.",
+    "covers": [
+      "source_line > len"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-lines-unsorted",
+    "description": "Строки разметки не по порядку, int-границы.",
+    "covers": [
+      "sorted lines"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "timing-long-gap",
+    "description": "Пауза перед первой строкой и после последней длиннее 2,5 с.",
+    "covers": [
+      "GAP_SECONDS"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "no-text",
+    "description": "Нет source/text.md: оригиналы — инструментал.",
+    "covers": [
+      "text_lines пусто"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "text-crlf",
+    "description": "Текст с CRLF и пробелами по краям.",
+    "covers": [
+      "splitlines",
+      "strip"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "text-invalid-utf8",
+    "description": "Текст не в UTF-8: UnicodeDecodeError.",
+    "covers": [
+      "UnicodeDecodeError"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "no-cast",
+    "description": "Нет кастинга.",
+    "covers": [
+      "Нет plan/cast.json"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "cast-corrupt",
+    "description": "Повреждённый кастинг.",
+    "covers": [
+      "повреждён"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "cast-invalid",
+    "description": "Кастинг с проблемами.",
+    "covers": [
+      "validate_cast"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "cast-no-images",
+    "description": "В кастинге нет изображений.",
+    "covers": [
+      "нет сущностей с изображениями"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "cast-initial-state",
+    "description": "Кастинг с initial_state и short_name: проверка состояний каркаса.",
+    "covers": [
+      "references short_name"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "manifest-damaged",
+    "description": "Повреждённая опись исходников.",
+    "covers": [
+      "source/manifest.json повреждён"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "too-many-shots",
+    "description": "Больше 99 планов.",
+    "covers": [
+      "Больше 99 планов"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "max-shot-zero",
+    "description": "max_shot_seconds 0 в части без строк: ZeroDivisionError.",
+    "covers": [
+      "ZeroDivisionError"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "max-shot-string",
+    "description": "max_shot_seconds строкой «abc».",
+    "covers": [
+      "float(str)"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "instrumental-split",
+    "description": "Длинный проигрыш делится на равные планы, хвост куплета — отдельный план.",
+    "covers": [
+      "equal pieces"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "entities-string",
+    "description": "entities строкой: перебор символов.",
+    "covers": [
+      "iter str"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "entities-list-item",
+    "description": "Сущность — список: unhashable.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "unicode",
+    "description": "Unicode в заголовках и текстах, символы вне BMP.",
+    "covers": [
+      "ensure_ascii=False"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "args-unknown",
+    "description": "Неизвестный аргумент: ошибка argparse, код 2.",
+    "covers": [
+      "argparse unrecognized"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "args-prefix",
+    "description": "Сокращения --fo --j.",
+    "covers": [
+      "allow_abbrev"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "args-explicit",
+    "description": "--force=1: ignored explicit argument.",
+    "covers": [
+      "explicit argument"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "args-help",
+    "description": "-h: справка, код 0.",
+    "covers": [
+      "help"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "args-dashdash",
+    "description": "«--» и аргументы после него.",
+    "covers": [
+      "--"
+    ]
+  },
+  {
+    "domain": "scene-scaffold",
+    "name": "project-missing",
+    "description": "Папки проекта нет: код 2 до argparse.",
+    "covers": [
+      "Папка проекта не найдена"
+    ]
+  },
+  {
+    "domain": "python-re",
+    "name": "cases.json",
+    "description": "Шаблоны re инструментов проверок и схем на краевых текстах.",
+    "covers": [
+      "search",
+      "match",
+      "fullmatch",
+      "finditer",
+      "re.I",
+      "lookbehind",
+      "Unicode \\w \\d \\s \\b",
+      "$ перед \\n"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "sample",
+    "description": "Образец: два предупреждения описания, код 0.",
+    "covers": [
+      "lint_description",
+      "render"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "strict",
+    "description": "--strict: предупреждения — код 1.",
+    "covers": [
+      "--strict"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "json",
+    "description": "--json: errors и warnings.",
+    "covers": [
+      "--json"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "json-strict",
+    "description": "--json --strict.",
+    "covers": [
+      "--json",
+      "--strict"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "args-help",
+    "description": "-h: справка, код 0.",
+    "covers": [
+      "help"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "args-unknown",
+    "description": "Неизвестный аргумент.",
+    "covers": [
+      "unrecognized"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "args-prefix",
+    "description": "Сокращение --st.",
+    "covers": [
+      "allow_abbrev"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "args-explicit",
+    "description": "--json=1: ignored explicit argument.",
+    "covers": [
+      "explicit argument"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "project-missing",
+    "description": "Папки проекта нет: код 2.",
+    "covers": [
+      "Папка проекта не найдена"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "no-scenes",
+    "description": "Нет plan/scenes.json.",
+    "covers": [
+      "файл отсутствует"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scenes-corrupt",
+    "description": "Битый plan/scenes.json: текст JSONDecodeError и «файл отсутствует».",
+    "covers": [
+      "JSON не разбирается"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scenes-bom",
+    "description": "plan/scenes.json с BOM.",
+    "covers": [
+      "JSONDecodeError BOM"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scenes-not-utf8",
+    "description": "plan/scenes.json не в UTF-8: UnicodeDecodeError — ValueError.",
+    "covers": [
+      "UnicodeDecodeError"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scenes-list",
+    "description": "plan/scenes.json — список.",
+    "covers": [
+      "type object",
+      "not dict"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scenes-empty-object",
+    "description": "plan/scenes.json — {}: обязательные поля.",
+    "covers": [
+      "required"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scenes-schema",
+    "description": "Нарушения схемы реестра: fps, лишнее поле, код плана, тип, enum, minItems.",
+    "covers": [
+      "const",
+      "additionalProperties",
+      "pattern",
+      "type",
+      "minItems",
+      "minLength"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scenes-schema-numbers",
+    "description": "Числа схемы: bool как int, float кадра, отрицательный кадр.",
+    "covers": [
+      "minimum",
+      "integer vs bool",
+      "number"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "visual-direction-links",
+    "description": "visual_direction: изображение из assets (ошибка), материал assets (предупреждение), факты истории.",
+    "covers": [
+      "референс-изображение в assets",
+      "ориентир непрерывности",
+      "history_hits"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "visual-direction-type",
+    "description": "visual_direction числом: TypeError re.finditer — трассировка.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "sequence-direction",
+    "description": "direction части: факты истории, ссылка в assets и на производное представление.",
+    "covers": [
+      "sequences[].direction",
+      "DERIVED_LINKS"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scene-fields-history",
+    "description": "action, continuity, notes плана: все шаблоны истории.",
+    "covers": [
+      "HISTORY_PATTERNS"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scene-references",
+    "description": "Неизвестный референс и главный референс карточки.",
+    "covers": [
+      "неизвестный референс",
+      "главный референс"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scene-no-id",
+    "description": "План без id: «?» в месте ошибки.",
+    "covers": [
+      "sid ?"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "derived-from",
+    "description": "derived_from на неизвестный план и неверной формы.",
+    "covers": [
+      "derived_from_problems",
+      "DERIVED_FORMAT"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "scenes-scenes-dict",
+    "description": "scenes — словарь: derived_from без списка.",
+    "covers": [
+      "scenes not list"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "no-cast",
+    "description": "Нет plan/cast.json: проверка кастинга пропускается.",
+    "covers": [
+      "cast отсутствует"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "cast-corrupt",
+    "description": "Битый plan/cast.json.",
+    "covers": [
+      "JSON не разбирается"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "cast-list",
+    "description": "plan/cast.json — список: схема и validate_cast.",
+    "covers": [
+      "cast not dict"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "cast-problems",
+    "description": "Кастинг: схема, validate_cast, нет файла изображения, нет world, расхождение references.",
+    "covers": [
+      "validate_cast",
+      "нет файла source",
+      "нет сущности world",
+      "references расходится"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "cast-entity-string",
+    "description": "Сущность кастинга строкой: AttributeError validate_cast — трассировка.",
+    "covers": [
+      "AttributeError"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "cast-references-error",
+    "description": "references(cast) падает на сущности без id: проверка расхождения пропускается.",
+    "covers": [
+      "references KeyError"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "description-missing",
+    "description": "Нет source/description.md.",
+    "covers": [
+      "description отсутствует"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "description-mentions",
+    "description": "Описание упоминает героев: предупреждений нет.",
+    "covers": [
+      "name.split()[0] in text"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "description-not-utf8",
+    "description": "Описание не в UTF-8: UnicodeDecodeError — трассировка.",
+    "covers": [
+      "UnicodeDecodeError"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "manifest-corrupt",
+    "description": "Битый manifest.json комплекта.",
+    "covers": [
+      "JSON не разбирается"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "manifest-schema",
+    "description": "Нарушения схемы комплекта.",
+    "covers": [
+      "manifest schema"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "manifest-list",
+    "description": "manifest.json — список: снимок не ищется.",
+    "covers": [
+      "package not dict"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "snapshot-problems",
+    "description": "Снимок запроса: служебные поля, устаревшие имена, нет модели, ID null без provenance.",
+    "covers": [
+      "SNAPSHOT_FORBIDDEN",
+      "SNAPSHOT_ALIASES",
+      "generation_id null"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "snapshot-missing-fields",
+    "description": "Снимок без провайдера и generation_id.",
+    "covers": [
+      "provider",
+      "generation_id"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "snapshot-corrupt",
+    "description": "Битый снимок запроса.",
+    "covers": [
+      "JSON не разбирается"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "snapshot-missing",
+    "description": "Снимок запроса отсутствует: проверка пропускается.",
+    "covers": [
+      "snapshot None"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "snapshot-list",
+    "description": "Снимок — список: множество ключей из элементов.",
+    "covers": [
+      "set(snapshot)"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "snapshot-provider-warning",
+    "description": "Адаптер провайдера: модель с авто-раскадровкой без prefer_multi_shots.",
+    "covers": [
+      "snapshot_warnings"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "snapshot-provider-ok",
+    "description": "Адаптер провайдера: prefer_multi_shots задан.",
+    "covers": [
+      "snapshot_warnings пусто"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "status-not-object",
+    "description": "plan/production-status.json — список.",
+    "covers": [
+      "файл должен быть объектом"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "status-corrupt",
+    "description": "Битый plan/production-status.json.",
+    "covers": [
+      "JSON не разбирается"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "status-shots-invalid",
+    "description": "Неверная запись отпечатка: ValueError accepted_fingerprints.",
+    "covers": [
+      "accepted_fingerprints ValueError"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "status-orphans",
+    "description": "Отпечатки плана вне реестра и без комплекта.",
+    "covers": [
+      "нет в реестре",
+      "без комплекта"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "packages",
+    "description": "Пакеты: этап очереди, схема workflow, битый workflow, схема request.json и вложенного request.",
+    "covers": [
+      "awaiting stage",
+      "workflow schema",
+      "request schema"
+    ]
+  },
+  {
+    "domain": "lint-registry",
+    "name": "packages-awaiting-ok",
+    "description": "Пакет очереди на допустимом этапе.",
+    "covers": [
+      "awaiting ready"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "sample",
+    "description": "Образец: оба комплекта согласованы.",
+    "covers": [
+      "load_motion",
+      "validate_package"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "args-ignored",
+    "description": "Аргументы после --project не разбираются.",
+    "covers": [
+      "без argparse"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "project-missing",
+    "description": "Папки проекта нет: код 2.",
+    "covers": [
+      "Папка проекта не найдена"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "no-scenes",
+    "description": "Нет plan/scenes.json: FileNotFoundError — трассировка.",
+    "covers": [
+      "FileNotFoundError"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "scenes-invalid",
+    "description": "Неверный реестр: ValueError validate — трассировка.",
+    "covers": [
+      "validate"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "no-kits",
+    "description": "Комплектов нет: ноль сцен.",
+    "covers": [
+      "0 выбранных сцен"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "kit-unknown",
+    "description": "Комплект плана вне реестра.",
+    "covers": [
+      "ассет отсутствует в реестре"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "kit-other-shot",
+    "description": "Комплект другого плана.",
+    "covers": [
+      "Комплект относится к другому плану"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "file-changed",
+    "description": "Изменён файл комплекта.",
+    "covers": [
+      "изменился файл комплекта"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "file-missing",
+    "description": "Нет файла комплекта.",
+    "covers": [
+      "изменился файл комплекта"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "manifest-corrupt",
+    "description": "Битый manifest.json: JSONDecodeError.",
+    "covers": [
+      "JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "schema-version",
+    "description": "schema_version 2.",
+    "covers": [
+      "Неизвестная схема"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "no-schema-version",
+    "description": "Без schema_version: KeyError.",
+    "covers": [
+      "KeyError"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "same-original",
+    "description": "Оригинал и монтаж — один файл.",
+    "covers": [
+      "разными файлами"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "no-inputs",
+    "description": "Нет кадров генерации.",
+    "covers": [
+      "кадры или промпт"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "no-request",
+    "description": "Нет снимка запроса.",
+    "covers": [
+      "generation-request.json"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "lipsync-no-audio",
+    "description": "Липсинк без аудио.",
+    "covers": [
+      "входное аудио"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "fps-zero",
+    "description": "fps 0.",
+    "covers": [
+      "параметры воспроизведения"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "duration-mismatch",
+    "description": "Длительность не равна кадрам.",
+    "covers": [
+      "Длительность принятого монтажа"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "stage-frames",
+    "description": "Последний этап другой длины.",
+    "covers": [
+      "Повтор фильтров"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "stage-input",
+    "description": "Вход этапа не зарегистрирован.",
+    "covers": [
+      "вход или фильтр этапа"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "outside",
+    "description": "Файл комплекта вне папки ассета.",
+    "covers": [
+      "вне папки ассета"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "source-root-bad",
+    "description": "Неизвестный корень файла.",
+    "covers": [
+      "Неизвестный корень"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "source-not-shared",
+    "description": "Общий файл вне входов.",
+    "covers": [
+      "Общими могут быть только"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "source-outside",
+    "description": "Общий референс вне source.",
+    "covers": [
+      "вне source"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "source-not-image",
+    "description": "Общий референс не изображение.",
+    "covers": [
+      "должен быть изображением"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "source-image",
+    "description": "Общий референс из source с верным SHA.",
+    "covers": [
+      "root source"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "derived-no-scene",
+    "description": "Производный комплект без source_scene_sha256.",
+    "covers": [
+      "source_scene_sha256"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "derived-no-video",
+    "description": "Производный комплект без SHA клипа источника.",
+    "covers": [
+      "source_accepted_video_sha256"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "repeat-invalid",
+    "description": "Неверный повтор.",
+    "covers": [
+      "целыми full_cycles"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "repeat-mismatch",
+    "description": "Повтор не сходится с длиной.",
+    "covers": [
+      "Число циклов"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "frames-window",
+    "description": "Длина клипа расходится с окном.",
+    "covers": [
+      "монтажным окном"
+    ]
+  },
+  {
+    "domain": "check-assets",
+    "name": "video-path-int",
+    "description": "accepted_edit.video.path числом: TypeError.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "sample",
+    "description": "Образец: два принятых плана, дерево согласовано.",
+    "covers": [
+      "collect"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "json",
+    "description": "--json.",
+    "covers": [
+      "--json"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "args-help",
+    "description": "-h.",
+    "covers": [
+      "help"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "args-unknown",
+    "description": "Неизвестный аргумент.",
+    "covers": [
+      "unrecognized"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "project-missing",
+    "description": "Папки проекта нет.",
+    "covers": [
+      "Папка проекта не найдена"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "no-scenes",
+    "description": "Нет сценария.",
+    "covers": [
+      "Сначала необходимо создать сценарий"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "no-scenes-json",
+    "description": "Нет сценария, --json.",
+    "covers": [
+      "error JSON"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "scenes-corrupt",
+    "description": "Битый реестр: JSONDecodeError как ValueError.",
+    "covers": [
+      "ValueError"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "scenes-invalid",
+    "description": "Неверный реестр.",
+    "covers": [
+      "validate"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "cards",
+    "description": "Карточки: принятого плана, неизвестного, нет карточки, квитанция устарела.",
+    "covers": [
+      "card_of_accepted",
+      "card_unknown",
+      "card_missing",
+      "receipt_stale"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "cards-json",
+    "description": "Те же карточки в JSON.",
+    "covers": [
+      "--json problems"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "no-cards",
+    "description": "Нет папки карточек и квитанции.",
+    "covers": [
+      "cards нет"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "receipt-list",
+    "description": "cards квитанции — список кодов.",
+    "covers": [
+      "set(list)"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "receipt-int",
+    "description": "cards квитанции — число: TypeError — трассировка.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "receipt-corrupt",
+    "description": "Битая квитанция.",
+    "covers": [
+      "read_json False"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "empty-folder",
+    "description": "Пустая папка в plan/batches.",
+    "covers": [
+      "empty_folder"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "package-unowned",
+    "description": "Папка без владельца.",
+    "covers": [
+      "package_unowned"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "package-unknown",
+    "description": "Пакет неизвестного плана.",
+    "covers": [
+      "package_unknown"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "package-of-accepted",
+    "description": "Пакет принятого плана на этапе accepted.",
+    "covers": [
+      "package_of_accepted"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "package-new-attempt",
+    "description": "Новая попытка принятого плана — не остаток.",
+    "covers": [
+      "new_attempt"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "package-same-request",
+    "description": "Попытка с запросом принятого комплекта — остаток.",
+    "covers": [
+      "new_attempt request_sha256"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "package-name-owner",
+    "description": "Владелец по имени папки и по рецепту пробы.",
+    "covers": [
+      "SHOT_NAME",
+      "shots рецепта"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "completed-bundle",
+    "description": "Готовый экспорт монтажа не считается остатком.",
+    "covers": [
+      "completed_output bundle"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "incomplete-bundle",
+    "description": "Экспорт без README: папка без владельца.",
+    "covers": [
+      "completed_output false"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "completed-review",
+    "description": "Готовая проба build_review рядом с MP4.",
+    "covers": [
+      "completed_output review"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "retained-montage",
+    "description": "Материалы черновика ручного монтажа удерживаются.",
+    "covers": [
+      "retained_montage_folders"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "retained-damaged",
+    "description": "Повреждённый черновик удерживает все папки.",
+    "covers": [
+      "montage except"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "retained-type-error",
+    "description": "Черновик с clips-строкой: TypeError перехватывается.",
+    "covers": [
+      "montage TypeError"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "queue-of-accepted",
+    "description": "Пакет очереди принятого плана на этапе accepted.",
+    "covers": [
+      "queue_of_accepted"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "queue-new-attempt",
+    "description": "Очередь новой попытки принятого плана.",
+    "covers": [
+      "queue new_attempt"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "stale",
+    "description": "Постановка принятого плана изменена.",
+    "covers": [
+      "stale"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "stale-json",
+    "description": "Постановка изменена, --json.",
+    "covers": [
+      "stale JSON"
+    ]
+  },
+  {
+    "domain": "check-workspace",
+    "name": "batches-file",
+    "description": "Файл в plan/batches игнорируется.",
+    "covers": [
+      "not is_dir"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "sample",
+    "description": "Образец: таблица.",
+    "covers": [
+      "table"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "json",
+    "description": "--json: полный результат.",
+    "covers": [
+      "--json"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "next",
+    "description": "--next.",
+    "covers": [
+      "--next"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "next-json",
+    "description": "--next --json.",
+    "covers": [
+      "--next --json"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "filter-planned",
+    "description": "--filter planned.",
+    "covers": [
+      "--filter"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "filter-progress",
+    "description": "--filter progress.",
+    "covers": [
+      "--filter"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "filter-completed",
+    "description": "--filter completed.",
+    "covers": [
+      "--filter"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "filter-stale",
+    "description": "--filter stale.",
+    "covers": [
+      "--filter"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "filter-unknown",
+    "description": "--filter unknown.",
+    "covers": [
+      "--filter"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "filter-json",
+    "description": "--filter не влияет на --json.",
+    "covers": [
+      "--json --filter"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "args-help",
+    "description": "-h.",
+    "covers": [
+      "help"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "args-choice",
+    "description": "Неверный --filter.",
+    "covers": [
+      "invalid choice"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "args-missing",
+    "description": "--filter без значения.",
+    "covers": [
+      "expected one argument"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "args-independent-empty",
+    "description": "--independent без кодов.",
+    "covers": [
+      "expected at least one argument"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "args-unknown",
+    "description": "Неизвестный аргумент.",
+    "covers": [
+      "unrecognized"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "project-missing",
+    "description": "Папки проекта нет.",
+    "covers": [
+      "Папка проекта не найдена"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "independent-conflicts",
+    "description": "Партия с наследованием изменений.",
+    "covers": [
+      "independence conflicts",
+      "parser.exit"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "independent-json",
+    "description": "Партия в JSON с конфликтами и соседями.",
+    "covers": [
+      "--independent --json"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "independent-ok",
+    "description": "Независимая партия с соседями.",
+    "covers": [
+      "adjacent_pairs"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "independent-same",
+    "description": "Повтор same и state_from словарём.",
+    "covers": [
+      "state_from dict"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "independent-unknown",
+    "description": "Неизвестные планы.",
+    "covers": [
+      "Неизвестные планы"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "independent-duplicate",
+    "description": "План дважды.",
+    "covers": [
+      "дважды"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "independent-no-scenes",
+    "description": "--independent без реестра: OSError.",
+    "covers": [
+      "OSError"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "independent-changes-type",
+    "description": "state_changes null: отказ validate при загрузке реестра.",
+    "covers": [
+      "load ValueError"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "no-scenes",
+    "description": "Нет реестра: OSError с путём.",
+    "covers": [
+      "OSError"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "scenes-invalid",
+    "description": "Неверный реестр.",
+    "covers": [
+      "ValueError"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "stale",
+    "description": "Изменённая постановка принятого плана и новая работа.",
+    "covers": [
+      "stale",
+      "новая работа"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "queue",
+    "description": "Очередь: этапы, причина ожидания, пустая папка, неизвестный план.",
+    "covers": [
+      "awaiting",
+      "WAIT_LABELS",
+      "пакет очереди без файлов",
+      "unassigned_packages"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "queue-json",
+    "description": "Очередь в JSON.",
+    "covers": [
+      "queue JSON"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "queue-next",
+    "description": "Очередь в --next.",
+    "covers": [
+      "--next queue"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "attempts",
+    "description": "Попытки: статусы attempt.json, request_dir, подготовленный запрос.",
+    "covers": [
+      "ATTEMPT_LABELS",
+      "request_dir",
+      "prepared"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "stages",
+    "description": "Этапы workflow: неизвестный, пустой, кадр опор, ожидание без этапа.",
+    "covers": [
+      "STAGE_LABELS",
+      "этап:",
+      "этап не определён",
+      "None; …"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "damaged",
+    "description": "Повреждённые файлы пакета и документ false.",
+    "covers": [
+      "файлы пакета повреждены"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "shot-from-name",
+    "description": "План по имени папки без поля shot.",
+    "covers": [
+      "SHOT_PREFIX"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "reviews",
+    "description": "Проба review_pending в примечаниях.",
+    "covers": [
+      "reviews"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "reviews-shots-int",
+    "description": "shots пробы числом: TypeError — трассировка.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "request-dir-int",
+    "description": "request_dir числом: TypeError — трассировка.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "attempt-status-list",
+    "description": "status попытки списком: unhashable — трассировка.",
+    "covers": [
+      "TypeError"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "all-completed",
+    "description": "Все планы готовы: next нет.",
+    "covers": [
+      "next None",
+      "нет, все планы готовы"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "all-completed-next",
+    "description": "Все планы готовы: --next.",
+    "covers": [
+      "next нет"
+    ]
+  },
+  {
+    "domain": "shot-status",
+    "name": "two-shots-unassigned",
+    "description": "Два плана, пакет M03 вне реестра, M02 устарел по окну.",
+    "covers": [
+      "unassigned_packages",
+      "stale"
+    ]
   }
 ]

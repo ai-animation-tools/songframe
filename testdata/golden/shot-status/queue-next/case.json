@@ -1,0 +1,15 @@
+{
+  "description": "Очередь в --next.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--next queue"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--next"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -35,6 +35,8 @@ function bindings(
     sources: overrides.sources ? service(overrides.sources) : missing,
     cast: missing,
     scenario: missing,
+    tools: missing,
+    checks: missing,
     events: async () => ({ on: overrides.on ?? (() => () => undefined) })
   } as Bindings;
   return b;

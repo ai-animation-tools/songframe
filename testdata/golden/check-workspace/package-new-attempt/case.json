@@ -1,0 +1,13 @@
+{
+  "description": "Новая попытка принятого плана — не остаток.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "new_attempt"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

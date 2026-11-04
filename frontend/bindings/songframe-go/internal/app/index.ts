@@ -3,6 +3,7 @@
 
 import * as AppService from "./appservice.js";
 import * as CastService from "./castservice.js";
+import * as ChecksService from "./checksservice.js";
 import * as ComponentsService from "./componentsservice.js";
 import * as JobsService from "./jobsservice.js";
 import * as NativeCheckService from "./nativecheckservice.js";
@@ -12,9 +13,11 @@ import * as ScenarioService from "./scenarioservice.js";
 import * as ShellService from "./shellservice.js";
 import * as SourcesService from "./sourcesservice.js";
 import * as TimingService from "./timingservice.js";
+import * as ToolsService from "./toolsservice.js";
 export {
     AppService,
     CastService,
+    ChecksService,
     ComponentsService,
     JobsService,
     NativeCheckService,
@@ -23,7 +26,8 @@ export {
     ScenarioService,
     ShellService,
     SourcesService,
-    TimingService
+    TimingService,
+    ToolsService
 };
 
 export type {

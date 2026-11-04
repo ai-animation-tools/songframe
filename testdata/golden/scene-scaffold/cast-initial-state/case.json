@@ -1,0 +1,13 @@
+{
+  "description": "Кастинг с initial_state и short_name: проверка состояний каркаса.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "references short_name"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

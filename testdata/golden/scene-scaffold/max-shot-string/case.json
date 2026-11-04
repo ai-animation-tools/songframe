@@ -1,0 +1,13 @@
+{
+  "description": "max_shot_seconds строкой «abc».",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "float(str)"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

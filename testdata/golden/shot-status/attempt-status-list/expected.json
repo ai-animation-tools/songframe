@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/shot_status/shot_status.py\", line 331, in <module>\n    main()\n  File \"<songframe>/tools/shot_status/shot_status.py\", line 311, in main\n    result = collect(ROOT)\n             ^^^^^^^^^^^^^\n  File \"<songframe>/tools/shot_status/shot_status.py\", line 145, in collect\n    packages, reviews = work_packages(root)\n                        ^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/shot_status/shot_status.py\", line 128, in work_packages\n    state = package_state(folder)\n            ^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/shot_status/shot_status.py\", line 103, in package_state\n    stage = ATTEMPT_LABELS.get(attempt[\"status\"], \"состояние попытки: \" + str(attempt[\"status\"]))\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n",
+  "traceback": true
+}

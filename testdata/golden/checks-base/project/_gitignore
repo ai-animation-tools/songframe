@@ -1,0 +1,9 @@
+__pycache__
+plan/animatic/.cache/
+*.part
+.lock
+# Полную сборку аниматика в Git не хранят: в репозитории остаются манифест и README.
+plan/animatic/latest/*.mp4
+# Рабочие пакеты и пробы временные: в Git остаётся только .gitkeep; очередь plan/awaiting отслеживается.
+plan/batches/*
+!plan/batches/.gitkeep

@@ -1,0 +1,18 @@
+{
+  "description": "write_accepted_fingerprints без файла принятия: содержимое шаблона.",
+  "call": "project_battery",
+  "project": "project",
+  "covers": [
+    "EMPTY_PRODUCTION_STATUS"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M03/video.mp4"
+  ],
+  "write": {
+    "updates": {
+      "M01": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "clear": false
+  }
+}

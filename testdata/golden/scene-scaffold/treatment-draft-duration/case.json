@@ -1,0 +1,13 @@
+{
+  "description": "Черновик: части короче трека.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "Части заканчиваются"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

@@ -1,4 +1,5 @@
 import { scenarioTexts } from '@shared/texts/scenario';
+import { platformTexts } from '@shared/texts/platform';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { CastProperty, ScenarioSaveImpact, ScenarioView, ScenesFile, ScenesSaveMode, TreatmentFile, TreatmentSequence } from '@shared/types';
@@ -161,8 +162,9 @@ export function useScenario() {
   // Те же обязательные данные нужны scene_scaffold; объяснение используем и в кнопке, и при запуске.
   // Отличие от 634fd94: каркас строит инструмент scene_scaffold через tools.run, которого в Go-версии
   // ещё нет; причина «не перенесено» важнее остальных условий и заменяет просьбу выбрать папку комплекса.
+  // Отличие от 634fd94: каркас строит Go (`tools.run`), корень комплекса (toolsRoot) ему не нужен.
   const scaffoldProblem = !scaffoldAvailability.available
-    ? (scaffoldAvailability.reason ?? scenarioTexts.prerequisites.tools)
+    ? (scaffoldAvailability.reason ?? platformTexts.unavailable)
     : !view?.timing?.lines?.length
       ? scenarioTexts.prerequisites.timing
       : !(Number(view.timing.duration_decoded || view.timing.duration_container) > 0)
@@ -177,9 +179,7 @@ export function useScenario() {
                 ? scenarioTexts.prerequisites.savedDrafts
                 : treatmentProblems.length
                   ? scenarioTexts.prerequisites.treatmentProblems
-                  : !state?.toolsRoot
-                    ? scenarioTexts.prerequisites.tools
-                    : null;
+                  : null;
 
   // После публикации меняем только принадлежащий проходу черновик: другая вкладка сохраняет свои правки.
   const acceptWorkflowUpdate = async (pass: ScenarioPass): Promise<void> => {

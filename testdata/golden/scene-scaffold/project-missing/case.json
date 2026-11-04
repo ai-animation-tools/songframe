@@ -1,0 +1,12 @@
+{
+  "description": "Папки проекта нет: код 2 до argparse.",
+  "call": "scene_scaffold",
+  "project": null,
+  "covers": [
+    "Папка проекта не найдена"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Нет source/description.md.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "description отсутствует"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "source/description.md"
+  ],
+  "mkdir": []
+}

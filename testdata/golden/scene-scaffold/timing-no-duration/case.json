@@ -1,0 +1,13 @@
+{
+  "description": "Разметка без длительностей.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "нет длительности"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

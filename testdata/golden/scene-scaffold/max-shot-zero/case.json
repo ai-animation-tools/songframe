@@ -1,0 +1,13 @@
+{
+  "description": "max_shot_seconds 0 в части без строк: ZeroDivisionError.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "ZeroDivisionError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

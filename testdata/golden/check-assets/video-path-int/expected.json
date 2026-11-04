@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 37, in <module>\n    motion = load_motion()\n             ^^^^^^^^^^^^^\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 26, in load_motion\n    package = validate_package(path, sid)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/asset_package/asset_package.py\", line 128, in validate_package\n    source = descriptor_file(path.parent, item, root)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/asset_package/asset_package.py\", line 35, in descriptor_file\n    return local_file(directory, item[\"path\"])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/asset_package/asset_package.py\", line 25, in local_file\n    path = (directory / name).resolve()\n            ~~~~~~~~~~^~~~~~\nTypeError: unsupported operand type(s) for /: 'PosixPath' and 'int'\n",
+  "traceback": true
+}

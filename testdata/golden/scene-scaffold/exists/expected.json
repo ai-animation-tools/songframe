@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "plan/scenes.json уже существует: добавьте --force, чтобы заменить его каркасом (постановка будет потеряна).\n",
+  "traceback": false,
+  "files": {
+    "plan/scenes.json": "unchanged"
+  }
+}

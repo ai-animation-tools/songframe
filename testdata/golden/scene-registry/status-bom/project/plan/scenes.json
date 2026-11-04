@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "audio": {
+    "path": "source/track.mp3",
+    "end_seconds": "10"
+  },
+  "references": {
+    "mira": {
+      "name": "Мира",
+      "path": "source/heroes/mira.png"
+    },
+    "boat": {
+      "name": "Лодка",
+      "path": "source/vehicles/boat.png"
+    }
+  },
+  "visual_direction": "Тёплый вечер у воды.",
+  "sequences": [
+    {
+      "id": "intro",
+      "title": "Вступление",
+      "direction": "Общий план причала."
+    },
+    {
+      "id": "verse",
+      "title": "Куплет",
+      "direction": "Фонарики над водой."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "M01",
+      "original": "Инструментал",
+      "sequence": "intro",
+      "start_frame": 0,
+      "end_frame_exclusive": 90,
+      "camera": "Общий план",
+      "action": "Мира выходит на причал.",
+      "continuity": "Вечер.",
+      "references": [
+        "mira",
+        "boat"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": null,
+      "state_changes": {
+        "after": {
+          "mira": {
+            "hands": "фонарь"
+          },
+          "world": {
+            "time_of_day": null
+          }
+        }
+      }
+    },
+    {
+      "id": "M02",
+      "original": "Вечер зажёг фонари",
+      "sequence": "verse",
+      "start_frame": 90,
+      "end_frame_exclusive": 200,
+      "camera": "Средний план",
+      "action": "Мира поёт.",
+      "continuity": "Фонарь в руке.",
+      "references": [
+        "mira"
+      ],
+      "lipsync": true,
+      "card": {
+        "primary_reference": "mira"
+      },
+      "state_from": "M01",
+      "state_changes": {
+        "before": {
+          "boat": {
+            "light": "горит"
+          }
+        },
+        "after": {
+          "mira": {
+            "hands": null
+          }
+        }
+      }
+    },
+    {
+      "id": "M03",
+      "original": "Повтор",
+      "sequence": "verse",
+      "start_frame": 200,
+      "end_frame_exclusive": 300,
+      "camera": "Общий план",
+      "action": "Повтор вступления.",
+      "continuity": "",
+      "references": [
+        "—"
+      ],
+      "lipsync": false,
+      "card": {
+        "primary_reference": "boat"
+      },
+      "state_from": {
+        "scene": "M01",
+        "phase": "same"
+      },
+      "state_changes": {},
+      "derived_from": {
+        "shot": "M01"
+      }
+    }
+  ]
+}

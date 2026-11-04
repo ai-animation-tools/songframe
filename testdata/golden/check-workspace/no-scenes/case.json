@@ -1,0 +1,15 @@
+{
+  "description": "Нет сценария.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "Сначала необходимо создать сценарий"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "plan/scenes.json"
+  ],
+  "mkdir": []
+}

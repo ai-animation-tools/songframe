@@ -11,12 +11,14 @@ import { ProjectChecksPanel, ReviewPanel } from './components';
 import { useChecksPage } from './useChecksPage';
 import { PageActionBar } from '../../components/PageActionBar';
 import { LinkedText } from '../../components/LinkedText';
+import { RequireMigrated } from '../../components/NotMigratedNotice';
 
 export function ChecksPage(): ReactElement {
   const page = useChecksPage();
   // Причины блокировки общие для проверок и пробы; показываются в подсказках выключенных кнопок.
   const toolsReason = !page.pythonAvailable ? checksTexts.pythonRequired : page.running ? checksTexts.jobPending : null;
-  const checksReason = toolsReason ?? (!page.scenesReady ? checksTexts.scenesRequired : null);
+  // Отличие от 634fd94: перенесённые проверки выполняются в Go и Python не требуют.
+  const checksReason = page.running ? checksTexts.jobPending : !page.scenesReady ? checksTexts.scenesRequired : null;
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0 }}>
@@ -47,8 +49,9 @@ export function ChecksPage(): ReactElement {
       >
         <ProjectChecksPanel
           checks={page.checks}
-          disabled={!page.pythonAvailable || !page.scenesReady || page.running}
+          disabled={checksReason !== null}
           disabledReason={checksReason}
+          viewsUnavailableReason={page.viewsUnavailableReason}
           strict={page.strict}
           next={page.next}
           setStrict={page.setStrict}
@@ -58,23 +61,25 @@ export function ChecksPage(): ReactElement {
           updateViews={page.updateViews}
           runCheck={page.runCheck}
         />
-        <ReviewPanel
-          shots={page.shots}
-          selected={page.selected}
-          planOnly={page.planOnly}
-          disabled={!page.pythonAvailable || page.running}
-          disabledReason={toolsReason}
-          reviews={page.reviews}
-          openReview={page.openReview}
-          deletingReview={page.deletingReview}
-          setPlanOnly={page.setPlanOnly}
-          toggleShot={page.toggleShot}
-          clearSelection={page.clearSelection}
-          buildReview={page.buildReview}
-          setOpenReview={page.setOpenReview}
-          openDirectory={page.openDirectory}
-          removeReview={page.removeReview}
-        />
+        <RequireMigrated title={navigationTexts.blocks.checksReview} methods={['checks.buildReview', 'checks.listReviews', 'production.view']} level="section">
+          <ReviewPanel
+            shots={page.shots}
+            selected={page.selected}
+            planOnly={page.planOnly}
+            disabled={!page.pythonAvailable || page.running}
+            disabledReason={toolsReason}
+            reviews={page.reviews}
+            openReview={page.openReview}
+            deletingReview={page.deletingReview}
+            setPlanOnly={page.setPlanOnly}
+            toggleShot={page.toggleShot}
+            clearSelection={page.clearSelection}
+            buildReview={page.buildReview}
+            setOpenReview={page.setOpenReview}
+            openDirectory={page.openDirectory}
+            removeReview={page.removeReview}
+          />
+        </RequireMigrated>
       </Box>
     </Stack>
   );

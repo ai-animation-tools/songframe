@@ -22,6 +22,8 @@ function bindings(scenario: Record<string, unknown>, cast: Record<string, unknow
     sources: missing,
     cast: async () => cast as never,
     scenario: async () => scenario as never,
+    tools: missing,
+    checks: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }

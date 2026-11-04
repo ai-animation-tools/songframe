@@ -1,0 +1,17 @@
+{
+  "description": "--filter не влияет на --json.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--json --filter"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--filter",
+    "planned"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Все планы готовы: next нет.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "next None",
+    "нет, все планы готовы"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "plan/batches/M03-attempt-01"
+  ],
+  "mkdir": []
+}

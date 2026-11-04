@@ -1,0 +1,13 @@
+{
+  "description": "Кастинг с проблемами: initial_states_for даёт пусто, load_cast — ValueError.",
+  "call": "project_battery",
+  "project": "project",
+  "covers": [
+    "validate_cast",
+    "initial_states_for ValueError"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M03/video.mp4"
+  ]
+}

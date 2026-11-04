@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "logline": "Двое друзей провожают закат.",
+  "sequences": [
+    {
+      "id": "intro",
+      "title": 1.0,
+      "direction": "Общий план причала.",
+      "start": 0.0,
+      "end": 8.0,
+      "entities": [
+        "boat",
+        "pier"
+      ],
+      "lipsync": false,
+      "max_shot_seconds": 8
+    },
+    {
+      "id": "verse",
+      "title": "Фонарики",
+      "direction": null,
+      "start": 8,
+      "end": 20,
+      "entities": [
+        "mira",
+        "lev",
+        "boat",
+        "world"
+      ],
+      "lipsync": true,
+      "max_shot_seconds": 6
+    },
+    {
+      "id": "outro",
+      "direction": "Финальная точка.",
+      "start": 20,
+      "end": 30,
+      "entities": [
+        "mira"
+      ],
+      "lipsync": false,
+      "max_shot_seconds": 6
+    }
+  ]
+}

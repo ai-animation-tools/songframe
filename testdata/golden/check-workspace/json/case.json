@@ -1,0 +1,15 @@
+{
+  "description": "--json.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,13 @@
+{
+  "description": "schema_version 2.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "schema"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

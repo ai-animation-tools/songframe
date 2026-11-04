@@ -1,0 +1,15 @@
+{
+  "description": "Нет реестра: OSError с путём.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "OSError"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [
+    "plan/scenes.json"
+  ],
+  "mkdir": []
+}

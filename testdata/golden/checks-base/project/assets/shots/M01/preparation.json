@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "shot": "M01",
+  "path_base": "asset_directory",
+  "generation_inputs": [
+    {
+      "path": "generation-input-1.png",
+      "sha256": "44d251ca77fb39c884dd7513fa3a330617381697616a1cee29ca0a46b2e1e5a2",
+      "bytes": 290,
+      "slot": "image_1",
+      "role": "Переданный кадр генерации"
+    }
+  ],
+  "frame_prompts": [],
+  "references": [],
+  "notes": [
+    "Режим согласования: shot"
+  ],
+  "reproduction_note": "Точные байты кадров сохранены. Повтор генерации по промпту не гарантирует тех же пикселей."
+}

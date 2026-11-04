@@ -1,0 +1,13 @@
+{
+  "description": "manifest.json — список: снимок не ищется.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "package not dict"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

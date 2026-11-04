@@ -1,0 +1,14 @@
+{
+  "description": "Адаптер провайдера: prefer_multi_shots задан.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "snapshot_warnings пусто"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": [],
+  "provider": "kling"
+}

@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "ОШИБКА  plan/scenes.json · $: ожидается тип object, найдено list\nпредупреждение  plan/production-status.json · shots.M01: отпечаток принятия плана, которого нет в реестре\nпредупреждение  plan/production-status.json · shots.M02: отпечаток принятия плана, которого нет в реестре\nОшибок: 1, предупреждений: 2.\n",
+  "stderr": "",
+  "traceback": false
+}

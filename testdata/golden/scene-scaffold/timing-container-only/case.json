@@ -1,0 +1,13 @@
+{
+  "description": "Только длительность контейнера.",
+  "call": "scene_scaffold",
+  "project": "project",
+  "covers": [
+    "duration_container"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json",
+    "--force"
+  ]
+}

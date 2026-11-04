@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "M01: state_changes допускает только before и after.\n",
+  "traceback": false
+}

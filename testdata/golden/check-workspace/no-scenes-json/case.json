@@ -1,0 +1,17 @@
+{
+  "description": "Нет сценария, --json.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "error JSON"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [
+    "plan/scenes.json"
+  ],
+  "mkdir": []
+}

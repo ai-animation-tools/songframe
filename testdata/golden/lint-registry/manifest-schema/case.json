@@ -1,0 +1,15 @@
+{
+  "description": "Нарушения схемы комплекта.",
+  "call": "lint_registry",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "manifest schema"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

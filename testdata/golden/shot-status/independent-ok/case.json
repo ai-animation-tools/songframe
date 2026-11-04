@@ -1,0 +1,17 @@
+{
+  "description": "Независимая партия с соседями.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "adjacent_pairs"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--independent",
+    "M05",
+    "M04"
+  ],
+  "remove": [],
+  "mkdir": []
+}

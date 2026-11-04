@@ -1,0 +1,13 @@
+{
+  "description": "Нет кадров генерации.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "кадры или промпт"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "stdout": "{\n  \"errors\": [],\n  \"warnings\": [\n    {\n      \"level\": \"warning\",\n      \"file\": \"source/description.md\",\n      \"where\": \"mira\",\n      \"message\": \"персонаж «Мира» из реестра не упомянут в сценарии\"\n    },\n    {\n      \"level\": \"warning\",\n      \"file\": \"source/description.md\",\n      \"where\": \"lev\",\n      \"message\": \"персонаж «Лев» из реестра не упомянут в сценарии\"\n    }\n  ]\n}\n",
+  "stderr": "",
+  "traceback": false
+}

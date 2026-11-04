@@ -135,6 +135,7 @@ func run() error {
 		application.NewService(shell.NewTimingService(jobManager, componentManager, componentService, profilePath)),
 		application.NewService(shell.NewSourcesService(ffprobePath(componentManager))),
 		application.NewService(shell.NewCastService()), application.NewService(shell.NewScenarioService()),
+		application.NewService(shell.NewToolsService()), application.NewService(shell.NewChecksService(jobManager)),
 	}
 	var nativeCheck *shell.NativeCheckService
 	windowURL := "/"

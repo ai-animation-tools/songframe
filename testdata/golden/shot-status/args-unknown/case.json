@@ -1,0 +1,15 @@
+{
+  "description": "Неизвестный аргумент.",
+  "call": "shot_status",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "unrecognized"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "x"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Аргументы после --project не разбираются.",
+  "call": "check_assets",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "без argparse"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--bogus",
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

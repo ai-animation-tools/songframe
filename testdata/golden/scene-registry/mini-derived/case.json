@@ -1,0 +1,13 @@
+{
+  "description": "Мини-проект: M03 производный от M01, квитанция совпадает с роликом источника; M02 с битым манифестом.",
+  "call": "project_battery",
+  "project": "project",
+  "covers": [
+    "derived fresh",
+    "kit None"
+  ],
+  "stubbedMedia": [
+    "assets/shots/M01/video.mp4",
+    "assets/shots/M03/video.mp4"
+  ]
+}

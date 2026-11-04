@@ -1,0 +1,13 @@
+{
+  "description": "Материалы черновика ручного монтажа удерживаются.",
+  "call": "check_workspace",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "retained_montage_folders"
+  ],
+  "stubbedMedia": [],
+  "args": [],
+  "remove": [],
+  "mkdir": []
+}

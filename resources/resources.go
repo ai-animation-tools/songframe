@@ -59,7 +59,16 @@ var skills embed.FS
 const (
 	SkillScenario    = "ai-clip-scenario"
 	SkillVideoReview = "ai-clip-video-review"
+	SkillScene       = "ai-clip-scene"
 )
+
+// SkillFile возвращает файл встроенного скилла по пути от его папки (SKILL.md или
+// references/<имя>.md). Заменяет чтение `<toolsRoot>/skills/<имя>/<файл>` оригинала для скиллов
+// с дополнительными справками (ai-clip-scene). Нет файла — ошибка fs.ErrNotExist.
+func SkillFile(name, file string) (string, error) {
+	data, err := skills.ReadFile(path.Join("skills", name, file))
+	return string(data), err
+}
 
 // Skill возвращает SKILL.md встроенного скилла по имени папки (SkillScenario). Заменяет чтение
 // `<toolsRoot>/skills/<имя>/SKILL.md` оригинала: промпт не зависит от корня комплекса или

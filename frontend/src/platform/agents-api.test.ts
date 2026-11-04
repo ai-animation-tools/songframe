@@ -34,6 +34,7 @@ function bindings(services: { agents?: Record<string, unknown>; ai?: Record<stri
     production: missing,
     dashboard: missing,
     scenarioWorkflow: missing,
+    productionWorkflow: missing,
     events: events ?? (async () => ({ on: () => () => undefined }))
   } as Bindings;
 }

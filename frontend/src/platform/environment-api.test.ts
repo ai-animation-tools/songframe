@@ -31,6 +31,7 @@ function bindings(services: { environment?: Record<string, unknown>; media?: Rec
     cover: missing,
     referenceImages: missing,
     scenarioWorkflow: missing,
+    productionWorkflow: missing,
     environment: services.environment ? async () => services.environment as never : missing,
     media: services.media ? async () => services.media as never : missing,
     production: missing,

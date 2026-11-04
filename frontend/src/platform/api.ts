@@ -40,6 +40,8 @@ import type { ReferenceImageGenerationInput } from '@shared/reference-image-gene
 import type { AiAccess } from '@shared/ai-access';
 import type * as scenarioworkflow from '../../bindings/songframe-go/internal/scenarioworkflow/models';
 import type { ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
+import type * as productionworkflow from '../../bindings/songframe-go/internal/productionworkflow/models';
+import type { ProductionFramePrompt, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
 import type * as mediaapi from '../../bindings/songframe-go/internal/mediaapi/models';
@@ -136,6 +138,7 @@ export interface Bindings {
   agents: () => Promise<typeof import('../../bindings/songframe-go/internal/app/agentsservice')>;
   ai: () => Promise<typeof import('../../bindings/songframe-go/internal/app/aiservice')>;
   scenarioWorkflow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/scenarioworkflowservice')>;
+  productionWorkflow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/productionworkflowservice')>;
   videoReview: () => Promise<typeof import('../../bindings/songframe-go/internal/app/videoreviewservice')>;
   cover: () => Promise<typeof import('../../bindings/songframe-go/internal/app/coverservice')>;
   referenceImages: () => Promise<typeof import('../../bindings/songframe-go/internal/app/referenceimagesservice')>;
@@ -162,6 +165,7 @@ export const nativeBindings: Bindings = {
   agents: () => import('../../bindings/songframe-go/internal/app/agentsservice'),
   ai: () => import('../../bindings/songframe-go/internal/app/aiservice'),
   scenarioWorkflow: () => import('../../bindings/songframe-go/internal/app/scenarioworkflowservice'),
+  productionWorkflow: () => import('../../bindings/songframe-go/internal/app/productionworkflowservice'),
   videoReview: () => import('../../bindings/songframe-go/internal/app/videoreviewservice'),
   cover: () => import('../../bindings/songframe-go/internal/app/coverservice'),
   referenceImages: () => import('../../bindings/songframe-go/internal/app/referenceimagesservice'),
@@ -306,6 +310,10 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'production.discardAttempt',
   'production.listBundles',
   'production.removeBundle',
+  // Проход агента производства. apply переносит этап 45g.2, generateFrames и importFrames — 45g.3.
+  'productionWorkflow.view',
+  'productionWorkflow.start',
+  'productionWorkflow.discard',
   'dashboard.view'
 ]);
 
@@ -351,6 +359,33 @@ function toWorkflowView({ proposal, job, ...view }: scenarioworkflow.View): Scen
     if (message) next.message = message;
   }
   return { ...view, proposal: next, job: job ? (job as unknown as AgentJob) : null };
+}
+
+/**
+ * Вид прохода агента производства: план опор, ID опор и предложение — документы пакета и
+ * локальной записи, которые Go передаёт сырыми JSON-значениями; провайдеры — значения настроек
+ * проекта как есть (поле отсутствует без значения). Адаптер только сужает типы.
+ */
+function toProductionWorkflowView({
+  imageProvider,
+  videoProvider,
+  framePrompts,
+  nextFrame,
+  approvedFrameIds,
+  proposal,
+  job,
+  ...view
+}: productionworkflow.View): ProductionWorkflowView {
+  return {
+    ...view,
+    ...(imageProvider === undefined ? {} : { imageProvider: imageProvider as string }),
+    ...(videoProvider === undefined ? {} : { videoProvider: videoProvider as string }),
+    framePrompts: framePrompts as ProductionFramePrompt[],
+    nextFrame: nextFrame as string | null,
+    approvedFrameIds: approvedFrameIds as string[],
+    proposal: proposal as ProductionProposal | null,
+    job: job === null ? null : toAgentJob(job)
+  };
 }
 
 /** ID моделей вокала — закрытый набор KNOWN_VOCAL_MODELS; Go хранит их строкой. */
@@ -766,6 +801,15 @@ export function createApi(b: Bindings): Api {
     call('production.discardAttempt', async () => (await production()).DiscardAttempt(project, packageDir));
   api.production.listBundles = (project) => call('production.listBundles', async () => (await production()).ListBundles(project));
   api.production.removeBundle = (project, path) => call('production.removeBundle', async () => (await production()).RemoveBundle(project, path));
+  // Проход агента производства. start ждёт врезки непрерывности и каталог моделей провайдера
+  // (до 35 с), поэтому срок ожидания оболочки не ставится; пакет "" — новая подготовка.
+  const productionWorkflow = async (view: Promise<productionworkflow.View>): Promise<ProductionWorkflowView> => toProductionWorkflowView(await view);
+  api.productionWorkflow.view = (project, shot, packageDir) =>
+    call('productionWorkflow.view', async () => productionWorkflow((await b.productionWorkflow()).View(project, shot, packageDir ?? '')));
+  api.productionWorkflow.start = (input) =>
+    call('productionWorkflow.start', async () => productionWorkflow((await b.productionWorkflow()).Start(input)), false);
+  api.productionWorkflow.discard = (project, shot, packageDir, id) =>
+    call('productionWorkflow.discard', async () => productionWorkflow((await b.productionWorkflow()).Discard(project, shot, packageDir ?? '', id)));
   api.dashboard.view = (project) => call('dashboard.view', async () => (await (await b.dashboard()).View(project)) as unknown as DashboardView);
 
   api.notifications.onOpen = (listener) => subscribe<NotificationTarget>(b.events, 'notifications:open', listener);

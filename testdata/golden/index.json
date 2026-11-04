@@ -8345,5 +8345,158 @@
       "retry_of",
       "production-status.json"
     ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "view-states",
+    "description": "Вид без пакета, с пакетом образца M03, речевого M04, производного M05 и отказы чтения контекста.",
+    "covers": [
+      "view: canPrepare",
+      "derivedFrom и причины",
+      "пакет образца с вопросом",
+      "ошибки ID, реестра, пакета",
+      "сценарий не утверждён",
+      "настройки видео"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "prepare-description",
+    "description": "Подготовка описания: задание агента, готовое предложение, перезапуск, сводка, повторный запуск и отклонение.",
+    "covers": [
+      "start prepare",
+      "промпт и контекст",
+      "busy при выполняющемся задании",
+      "ready",
+      "перезапуск",
+      "pendingProposals",
+      "resolveProposalFirst",
+      "discard"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "job-outcomes",
+    "description": "Итог задания: отмена, сбой с сообщением, ненулевой код, прерывание и потеря истории после перезапуска.",
+    "covers": [
+      "cancelled",
+      "failed",
+      "interrupted",
+      "discard после итога"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "invalid-answers",
+    "description": "Ответ, не прошедший проверку: текст агента, отказ текстом с секретом, испорченный JSON, неверные опоры и длительность.",
+    "covers": [
+      "invalid",
+      "agentText",
+      "refused",
+      "redact",
+      "ошибки parseProductionProposal для description"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "revise-stages",
+    "description": "Доработка с замечанием возвращает к доступному этапу по решению пакета (таблица теста оригинала).",
+    "covers": [
+      "stageFor при revise",
+      "approvedFrames",
+      "promptApproved",
+      "note из решения",
+      "canRevise",
+      "явный stage",
+      "неверные параметры"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "continue-stages",
+    "description": "Продолжение по этапам пакета: видеопромпт после опор, запрос после промпта, каталог моделей и отказы.",
+    "covers": [
+      "stageFor prompt/request",
+      "каталог: ошибка, проблемы команд, все команды на этапе request",
+      "проверка запроса по возможностям и замена модели",
+      "ошибки parseProductionProposal для prompt/request",
+      "stageUnavailable",
+      "descriptionOrFramesReviewRequired",
+      "packageUnavailable"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "package-blocks",
+    "description": "Блокировки пакета: вопрос согласования, изображение, оплата, изменённая постановка, занятость.",
+    "covers": [
+      "pending_decision",
+      "image_*",
+      "paid",
+      "sceneChanged",
+      "isPackageBusy",
+      "waitForJob",
+      "новый пакет после оплаты"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "lipsync",
+    "description": "Речевой план M04: подготовка со всеми командами, требование WAV, длина среза, звуковой вход моделей, длинное окно.",
+    "covers": [
+      "lipSync в правилах",
+      "черновые команды без фильтра",
+      "speechRequiredHint",
+      "speechMismatch",
+      "providerAudioUnsupported",
+      "speechWindowTooLong",
+      "диапазон длительности"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "stale-snapshot",
+    "description": "Актуальность снимка входов: обложка не влияет, референсы и пакет делают предложение устаревшим; изменение во время подготовки.",
+    "covers": [
+      "sameSnapshot",
+      "sourceInputDigest без cover",
+      "stale в сводке",
+      "inputsChangedDuringPreparation",
+      "каталог пакета в снимке"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "pending-cleanup",
+    "description": "Сводка непринятых предложений: обновление выполнявшихся заданий, уборка записей без плана, производного плана и удалённого пакета, чужие записи.",
+    "covers": [
+      "pendingProposals",
+      "running → итог при сводке",
+      "orphan",
+      "запись другого проекта",
+      "повреждённая запись"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "applied-record",
+    "description": "Запись после применения (status applied, target пакета): видна только при выборе целевого пакета, новая подготовка её не наследует.",
+    "covers": [
+      "relevant: applied → target",
+      "stale не считается для applied",
+      "новая подготовка после applied",
+      "nextPackage",
+      "orphan applied без target"
+    ]
+  },
+  {
+    "domain": "production-workflow",
+    "name": "derived-and-access",
+    "description": "Производный план не запускает агента; предложение до отметки derived_from скрывается; без выбранного агента запуск отклоняется до разбора.",
+    "covers": [
+      "derivedShotReason в start",
+      "скрытие предложения производного плана",
+      "requireAccess agent"
+    ]
   }
 ]

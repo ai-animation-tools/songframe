@@ -40,6 +40,7 @@ function bindings(
     agents: missing,
     ai: missing,
     scenarioWorkflow: missing,
+    productionWorkflow: missing,
     videoReview: missing,
     cover: missing,
     referenceImages: missing,

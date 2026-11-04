@@ -27,6 +27,7 @@ function bindings(checks: Record<string, unknown>): Bindings {
     agents: missing,
     ai: missing,
     scenarioWorkflow: missing,
+    productionWorkflow: missing,
     videoReview: missing,
     cover: missing,
     referenceImages: missing,

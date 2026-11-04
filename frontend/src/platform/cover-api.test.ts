@@ -31,6 +31,7 @@ function bindings(cover: Record<string, unknown>, referenceImages: Record<string
     environment: missing,
     media: missing,
     scenarioWorkflow: missing,
+    productionWorkflow: missing,
     production: missing,
     dashboard: missing,
     events: async () => ({ on: () => () => undefined })

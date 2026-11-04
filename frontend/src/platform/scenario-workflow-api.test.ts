@@ -34,6 +34,7 @@ function bindings(scenarioWorkflow: Record<string, unknown>): Bindings {
     production: missing,
     dashboard: missing,
     scenarioWorkflow: async () => scenarioWorkflow as never,
+    productionWorkflow: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }

@@ -15,6 +15,7 @@ import * as MediaService from "./mediaservice.js";
 import * as NativeCheckService from "./nativecheckservice.js";
 import * as NativeService from "./nativeservice.js";
 import * as ProductionService from "./productionservice.js";
+import * as ProductionWorkflowService from "./productionworkflowservice.js";
 import * as ProjectService from "./projectservice.js";
 import * as ReferenceImagesService from "./referenceimagesservice.js";
 import * as ScenarioService from "./scenarioservice.js";
@@ -39,6 +40,7 @@ export {
     NativeCheckService,
     NativeService,
     ProductionService,
+    ProductionWorkflowService,
     ProjectService,
     ReferenceImagesService,
     ScenarioService,

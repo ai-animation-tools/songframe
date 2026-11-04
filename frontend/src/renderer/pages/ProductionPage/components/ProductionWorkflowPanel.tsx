@@ -14,6 +14,7 @@ import { ProductionFrameGenerationButton } from './ProductionFrameGenerationButt
 import { LinkedText } from '../../../components/LinkedText';
 import { BUSY_REASON } from '../constants';
 import { DerivedShotNotice } from './DerivedShotNotice';
+import { useMethodAvailability } from '../../../availability';
 
 export function ProductionWorkflowPanel({
   project,
@@ -45,6 +46,9 @@ export function ProductionWorkflowPanel({
   const [validation, setValidation] = useState<string | null>(null);
   const view = workflow.view;
   const busy = workflow.busy || packageBusy;
+  // Создание и импорт опор переносятся в Go отдельно: до этого кнопки объясняют причину платформы.
+  const generation = useMethodAvailability('productionWorkflow.generateFrames');
+  const importing = useMethodAvailability('productionWorkflow.importFrames');
   const framesStage = view?.proposal?.stage === 'frames' || lastAction === 'frames';
   const reportBusy = useRef(onBusyChange);
   reportBusy.current = onBusyChange;
@@ -123,7 +127,7 @@ export function ProductionWorkflowPanel({
               const action =
                 lastAction ?? (view.proposal?.stage === 'frames' ? 'frames' : view.canPrepare ? 'prepare' : view.canContinue ? 'continue' : 'revise');
               if (action === 'frames') {
-                if (!busy && view.canGenerateFrames) void workflow.generateFrames();
+                if (!busy && view.canGenerateFrames && generation.available) void workflow.generateFrames();
               } else void start(action);
             }}
           />
@@ -144,8 +148,14 @@ export function ProductionWorkflowPanel({
           <ProductionFrameImport
             key={`${packageDir}:${decisionToken ?? ''}`}
             frames={view.framePrompts.filter((frame) => !view.approvedFrameIds.includes(frame.id))}
-            busy={busy || !view.canGenerateFrames}
-            busyReason={busy ? BUSY_REASON : (view.reasons.frames ?? productionTexts.productionWorkflowPanel.descriptionRequired)}
+            busy={busy || !view.canGenerateFrames || !importing.available}
+            busyReason={
+              busy
+                ? BUSY_REASON
+                : !view.canGenerateFrames
+                  ? (view.reasons.frames ?? productionTexts.productionWorkflowPanel.descriptionRequired)
+                  : (importing.reason ?? undefined)
+            }
             onImport={workflow.importFrames}
           />
         ) : null}
@@ -170,8 +180,8 @@ export function ProductionWorkflowPanel({
             {view ? (
               <ProductionFrameGenerationButton
                 provider={view.imageProvider}
-                disabled={busy || !view.canGenerateFrames}
-                disabledReason={busy ? BUSY_REASON : view.reasons.frames}
+                disabled={busy || !view.canGenerateFrames || !generation.available}
+                disabledReason={busy ? BUSY_REASON : !view.canGenerateFrames ? view.reasons.frames : generation.reason}
                 frame={view.nextFrame}
                 title={
                   view.nextFrame

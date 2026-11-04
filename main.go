@@ -21,6 +21,7 @@ import (
 	"songframe-go/internal/mediaadapters"
 	"songframe-go/internal/mediafile"
 	"songframe-go/internal/production"
+	"songframe-go/internal/productionworkflow"
 	"songframe-go/internal/project"
 	"songframe-go/internal/providers"
 	"songframe-go/internal/scenarioapply"
@@ -166,6 +167,17 @@ func run() error {
 		},
 	})
 	productionService := production.New(production.Options{Jobs: jobManager, Layer: providerLayer})
+	// Проход агента производства: записи предложений в каталоге состояния, тот же каталог моделей,
+	// что у настроек, и занятость пакета производственной операцией. Сценарий утверждён, когда
+	// утверждена трактовка и сцены не требуют проверки (isScenarioApproved из ipc.ts оригинала).
+	productionWorkflow := productionworkflow.New(productionworkflow.Options{
+		LocalDir: profilePath, Agents: agentManager, Catalog: providerLayer.Catalogs(),
+		IsScenarioApproved: func(project string) bool {
+			view, err := scenarioWorkflow.View(project)
+			return err == nil && view.TreatmentApproved && !view.ScenesNeedReview
+		},
+		IsPackageBusy: productionService.IsBusy,
+	})
 	// Приёмка (accept_shot) берёт FFmpeg/ffprobe из менеджера компонентов, иначе ищет их в PATH.
 	acceptshot.Programs = func() (string, string) {
 		for _, component := range componentManager.State().Components {
@@ -200,7 +212,8 @@ func run() error {
 		application.NewService(shell.NewReferenceImagesService(coverGenerators.Reference, aiAccess)),
 		// Производство: отправка через платный адаптер слоя провайдеров, проблема «проверьте
 		// сценарий» — из того же сценарного прохода. Проход агента производства подключит этап 45.5.
-		application.NewService(shell.NewProductionService(productionService, aiAccess, scenarioWorkflow, nil)),
+		application.NewService(shell.NewProductionService(productionService, aiAccess, scenarioWorkflow, shell.NewProductionFlow(productionWorkflow))),
+		application.NewService(shell.NewProductionWorkflowService(productionWorkflow, aiAccess)),
 		application.NewService(shell.NewDashboardService(scenarioWorkflow)),
 	}
 	var nativeCheck *shell.NativeCheckService

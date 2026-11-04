@@ -57,6 +57,7 @@
 | `verify-asset-replay/` | CLI `tools/verify_asset_replay/verify_asset_replay.py` (копия и пересборка комплектов ffmpeg, `--preserved`, отчёт) | 9 |
 | `production-view/` | `viewProduction(project)` из `src/main/production.ts` и `viewDashboard(project)` из `src/main/dashboard.ts` | 5 |
 | `production-tools/` | Сценарий CLI `tools/regenerate_shot` и `tools/accept_shot` (с `shot_workflow`, `media_request`, `cost_check`) на тестовом провайдере | 17 шагов |
+| `production-workflow/cases.json` | `ProductionWorkflow` (`view`, `start`, `discard`, `pendingProposals`) из `src/main/production-workflow.ts` с поддельным менеджером агентов, настоящим `continuity_brief` и подставным `media_request capabilities` | 12 сценариев |
 
 `index.json` перечисляет все случаи с описанием и покрытыми ветками.
 
@@ -187,7 +188,8 @@ TS-тест будет читать тот же файл без копии: из
 11. Домен `scenario-workflow` снимает `capture-workflow.sh <корень рабочей области> <папка songframe-go> [--install]` (тот же каталог; вход — `testdata/golden/checks-base/project` из songframe-go, `git archive 634fd94 tools skills`, системный `python3 -B` с Pillow). `--install` заменяет только каталог домена и его строки `index.json`.
 12. Домены `shot-workflow` и `verify-asset-replay` снимает `45c/capture-45c.sh <корень рабочей области> [--install <папка songframe-go>]` (тот же каталог; `git archive 634fd94 tools`, `python3 -B`, обёртка `run_shot_workflow.py` с замороженным `now()`, поддельный адаптер `fakes/sw_fake_adapter.py`). `--install` заменяет только эти домены и их строки `index.json`.
 13. Домены `production-view` и `production-tools` снимают `45e/capture-views.sh` и `45e/capture-tools.sh <корень рабочей области> <папка songframe-go>`; каждый заменяет только свой каталог, строки `index.json` правятся вручную.
-14. После пересъёмки: `git diff --stat testdata/golden`, `go test ./internal/golden/...`, повторная проверка `git -C ../songframe status --short`. Съёмка детерминирована: два прогона подряд дают одинаковые файлы.
+14. Домен `production-workflow` снимает `45g1/capture-production-workflow.ts` (тот же каталог) из корня `../songframe/`: `node_modules/.bin/vite-node --config vitest.config.ts <скрипт> <папка songframe-go> <папка вывода>`; `cases.json` копируется в каталог домена, строки `index.json` — из `scenarios` (`name`, `description`, `covers`).
+15. После пересъёмки: `git diff --stat testdata/golden`, `go test ./internal/golden/...`, повторная проверка `git -C ../songframe status --short`. Съёмка детерминирована: два прогона подряд дают одинаковые файлы.
 
 ## Настоящие клипы
 
@@ -214,6 +216,8 @@ TS-тест будет читать тот же файл без копии: из
 
 - `production-view/<случай>/` — `case.json` (вход как у проверок проекта: `base: checks-base`, `overlay/`, `remove`, `mkdir`), `expected-production.json` — `ProductionView` без поля `tools` (доступность инструментов зависит от машины), `expected-dashboard.json` — `DashboardView`.
 - `production-tools/` — один сквозной сценарий над копией `checks-base` без `plan/batches/M03-attempt-01` и с `provider_selected: true`. `inputs.json` — спецификация запроса, промпт, таблица цен, конфигурация сервиса `test` (`tools/testing/fake_media_request.py`) и ответ подставного `ffprobe`; кадр спецификации — PNG 1×1 из скрипта съёмки, подставной `ffmpeg -version` печатает `ffmpeg version test-build`. `steps.json` — `{label, tool, args, files}` (маркеры `<project>`, `<spec>`, `<sha>` — SHA попытки перед отправкой), `expected.json` — `{label, code, stdout, stderr, files}`: точный текст снимаемых файлов (`null` — файла нет), время — `<time>`. Шаг `accept-cut` (приёмка участка) оригинал завершает рендером FFmpeg; Go до этапа 46 отказывает текстом «не перенесена» с тем же кодом 1, тест сверяет только код и признак отказа.
+
+- `production-workflow/cases.json` — `{blobs, scenarios}` над копией `checks-base` (видео — платный `test`, изображения — `test-agent`). Сценарий — `{name, description, covers, steps}`; шаг — операция `op` с параметрами: `write`/`remove`/`set` (файлы проекта, `config` — настройки генерации), `view`, `start` (`input` — `ProductionWorkflowStart`), `finish` (ответ агента текущему заданию), `job` (статус, код, сообщение задания), `discard`, `pending`, `restart` (новый экземпляр прохода; `freshAgents` — без истории заданий), `writeLocal`/`patchLocal` (подложенная запись каталога состояния), `startNoAgent` (запуск без выбранного агента через проверку доступа). Исход — `result` (вид или сводка) либо `error`, `local` — записи `production-workflow/` каталога состояния под именем `<план>.json` (`unchanged` — без изменений), `starts` — новые задания агента (задача, SHA промпта и контекста), `tools` — новые вызовы инструментов. Промпты, контексты и записи заменены SHA-256 нормализованного текста, тексты — в `blobs`; маркеры `<project>`, `<local>`, `<id>`. `apply`, `generateFrames`, `importFrames` не вызываются (этапы 45g.2 и 45g.3): пакеты создаются шагами `write`. Сообщение `SyntaxError` V8 у ответа агента, не являющегося JSON, Go заменяет текстом «Ответ агента не является JSON-документом предложения.» (осознанное отличие); тест сравнивает такие сообщения по признаку.
 
 ### Домены платной попытки
 

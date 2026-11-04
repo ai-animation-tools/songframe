@@ -1,0 +1,105 @@
+package productionworkflow
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"path/filepath"
+	"regexp"
+	"strings"
+
+	"songframe-go/internal/jscompat"
+)
+
+// packageFolder — отдельный пакет plan/batches/<имя> или plan/awaiting/<имя> относительно проекта.
+var packageFolder = regexp.MustCompile(`^plan/(batches|awaiting)/[^/]+$`)
+
+// digestHex — SHA-256 текста или байтов в hex (digest оригинала).
+func digestHex(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+// isText — text() оригинала: непустая после trim строка без NUL.
+func isText(value any) bool {
+	text, ok := value.(string)
+	return ok && jscompat.Trim(text) != "" && !strings.Contains(text, "\x00")
+}
+
+// outside — относительный путь выходит из корня (`..`, `../…` или абсолютный).
+func outside(local string) bool {
+	local = filepath.ToSlash(local)
+	return local == ".." || strings.HasPrefix(local, "../") || jscompat.IsAbs(local)
+}
+
+// rel — relative(project, path) с прямыми разделителями: ключи снимка и allowedPaths одинаковы
+// в Linux и Windows.
+func rel(project, path string) string {
+	return filepath.ToSlash(jscompat.Relative(project, path))
+}
+
+// ProductionPath — productionPath(root, value) оригинала: путь value внутри проекта root
+// (относительный — от root). Отклоняет пути вне проекта и пути, чей ближайший существующий
+// родитель через ссылку ведёт наружу: запись в пакет не должна уйти за пределы проекта.
+// Возвращает абсолютный путь без разыменования ссылок; сам файл может не существовать.
+func ProductionPath(root, value string) (string, error) {
+	if !isText(value) {
+		return "", errors.New(textPathRequired)
+	}
+	full := jscompat.Resolve(root, value)
+	if outside(jscompat.Relative(root, full)) {
+		return "", errors.New(textPathOutsideProject(value))
+	}
+	parent := full
+	for !jscompat.Exists(parent) {
+		next := jscompat.Resolve(parent, "..")
+		if next == parent {
+			return "", errors.New(textParentMissing)
+		}
+		parent = next
+	}
+	realRoot, err := jscompat.Realpath(root)
+	if err != nil {
+		return "", err
+	}
+	realParent, err := jscompat.Realpath(parent)
+	if err != nil {
+		return "", err
+	}
+	if outside(jscompat.Relative(realRoot, realParent)) {
+		return "", errors.New(textLinkOutsideProject(value))
+	}
+	return full, nil
+}
+
+// PackagePath — packagePath оригинала: ProductionPath, который указывает ровно на отдельный пакет
+// plan/batches/<имя> или plan/awaiting/<имя>. Иначе — packageFolderRequired.
+func PackagePath(project, path string) (string, error) {
+	target, err := ProductionPath(project, path)
+	if err != nil {
+		return "", err
+	}
+	if !packageFolder.MatchString(rel(project, target)) {
+		return "", errors.New(textPackageFolderRequired)
+	}
+	return target, nil
+}
+
+// nextPackage — nextPackage оригинала: первый свободный plan/batches/<план>-attempt-NN.
+func nextPackage(project, shot string) string {
+	for number := 1; ; number++ {
+		path := filepath.Join(project, "plan", "batches", shot+"-attempt-"+twoDigits(number))
+		if !jscompat.Exists(path) {
+			return path
+		}
+	}
+}
+
+// twoDigits — String(n).padStart(2, '0').
+func twoDigits(number int) string {
+	text := jscompat.NumberToString(float64(number))
+	if len(text) < 2 {
+		return "0" + text
+	}
+	return text
+}

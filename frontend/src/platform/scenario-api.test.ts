@@ -27,6 +27,7 @@ function bindings(scenario: Record<string, unknown>, cast: Record<string, unknow
     agents: missing,
     ai: missing,
     scenarioWorkflow: missing,
+    productionWorkflow: missing,
     videoReview: missing,
     cover: missing,
     referenceImages: missing,

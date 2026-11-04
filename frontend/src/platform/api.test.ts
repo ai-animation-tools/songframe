@@ -41,6 +41,12 @@ function bindings(
     ai: missing,
     scenarioWorkflow: missing,
     videoReview: missing,
+    cover: missing,
+    referenceImages: missing,
+    environment: missing,
+    media: missing,
+    production: missing,
+    dashboard: missing,
     events: async () => ({ on: overrides.on ?? (() => () => undefined) })
   } as Bindings;
   return b;
@@ -58,16 +64,17 @@ describe('Граница window.api', () => {
     expect(api.shell.fileUrl('/клип/трек 1.mp3')).toBe('http://127.0.0.1:4100/file/%D0%BA%D0%BB%D0%B8%D0%BF/%D1%82%D1%80%D0%B5%D0%BA%201.mp3');
   });
 
-  it('отвергает неперенесённое платное действие до обращения к bindings', async () => {
+  it('отвергает неперенесённое действие производства до обращения к bindings', async () => {
     const read = vi.fn(async () => state);
     const api = createApi(bindings({ State: read }));
-    await expect(api.production.submit('/project', 'package', 'sha')).rejects.toMatchObject({
+    await expect(api.production.exportBundle('/project', { target: '/project/bundle', copy: true })).rejects.toMatchObject({
       code: 'UNAVAILABLE',
-      method: 'production.submit',
+      method: 'production.exportBundle',
       message: platformTexts.unavailable
     });
     expect(read).not.toHaveBeenCalled();
-    expect(methodAvailability('production.submit')).toEqual({ available: false, reason: platformTexts.unavailable });
+    expect(methodAvailability('production.exportBundle')).toEqual({ available: false, reason: platformTexts.unavailable });
+    expect(methodAvailability('production.submit')).toEqual({ available: true, reason: null });
     expect(methodAvailability('app.state')).toEqual({ available: true, reason: null });
   });
 
@@ -144,6 +151,7 @@ describe('Граница window.api', () => {
     const api = createApi(bindings({ sources: { View: async () => view } }));
     await expect(api.sources.view('/клип')).resolves.toStrictEqual(view);
     expect(methodAvailability('sources.save')).toEqual({ available: true, reason: null });
-    expect(methodAvailability('dashboard.view').available).toBe(false);
+    expect(methodAvailability('dashboard.view').available).toBe(true);
+    expect(methodAvailability('production.contactSheet').available).toBe(false);
   });
 });

@@ -28,6 +28,12 @@ function bindings(tools: Record<string, unknown>): Bindings {
     ai: missing,
     scenarioWorkflow: missing,
     videoReview: missing,
+    cover: missing,
+    referenceImages: missing,
+    environment: missing,
+    media: missing,
+    production: missing,
+    dashboard: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }

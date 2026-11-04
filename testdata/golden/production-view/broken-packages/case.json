@@ -1,0 +1,12 @@
+{
+  "description": "Повреждённый workflow.json пакета и папка без workflow.json в plan/batches.",
+  "call": "viewProduction+viewDashboard",
+  "project": "project",
+  "covers": [
+    "broken",
+    "damaged workflow"
+  ],
+  "base": "checks-base",
+  "remove": [],
+  "mkdir": []
+}

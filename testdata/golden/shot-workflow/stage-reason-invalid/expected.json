@@ -1,0 +1,9 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: shot_workflow.py set-stage [-h] --dir DIR\n                                  [--wait-reason {cost_or_balance_unknown,insufficient_balance,user_saved}]\n                                  [--request-dir REQUEST_DIR]\n                                  stage\nshot_workflow.py set-stage: error: argument --wait-reason: invalid choice: 'nope' (choose from 'cost_or_balance_unknown', 'insufficient_balance', 'user_saved')\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

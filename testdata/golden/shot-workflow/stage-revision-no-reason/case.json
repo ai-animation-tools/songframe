@@ -1,0 +1,18 @@
+{
+  "description": "needs_revision без причины.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "wait_reason required"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-stage",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "needs_revision"
+  ],
+  "remove": [],
+  "mkdir": []
+}

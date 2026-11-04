@@ -1,0 +1,20 @@
+{
+  "description": "Повтор ссылается на тот же пакет.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "retry same"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M03",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--retry-of",
+    "plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

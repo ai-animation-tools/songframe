@@ -1,0 +1,19 @@
+{
+  "description": "Промпт вне пакета.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "outside"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "approve-prompt",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--file",
+    "../../../plan/README.md"
+  ],
+  "remove": [],
+  "mkdir": []
+}

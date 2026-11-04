@@ -27,6 +27,18 @@ type Info struct {
 	Executor string
 	// Paid — платный замороженный запрос: цена, баланс и отдельное подтверждение отправки.
 	Paid bool
+	// DefaultImageResolution — defaults.image.resolution реестра: разрешение обложки и референса,
+	// если модель объявляет параметр, а проект его не задал; "" — значения по умолчанию нет.
+	DefaultImageResolution string
+	// LipSync — допустимая длина звукового входа липсинка в секундах; nil — провайдер не
+	// синхронизирует губы с заданным звуком (речевой план для него недоступен).
+	LipSync *LipSync
+}
+
+// LipSync — поле lipSync реестра: границы длины звукового входа, секунды.
+type LipSync struct {
+	Min float64
+	Max float64
 }
 
 var (
@@ -34,7 +46,7 @@ var (
 	// ids — порядок MEDIA_PROVIDER_IDS; providers — записи по id.
 	ids       = []string{"kling", "codex"}
 	providers = map[string]Info{
-		"kling": {Title: "Kling", Kinds: []string{Image, Video}, Paid: true},
+		"kling": {Title: "Kling", Kinds: []string{Image, Video}, Paid: true, DefaultImageResolution: "2k", LipSync: &LipSync{Min: 5, Max: 30}},
 		"codex": {Title: "Codex", Kinds: []string{Image}, Executor: "codex"},
 	}
 )

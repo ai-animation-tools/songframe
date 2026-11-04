@@ -9,14 +9,19 @@ import type {
   AppState,
   BriefResult,
   CheckId,
+  DashboardView,
+  EnvironmentCheck,
   GenerationSettings,
   JobInfo,
   JobStepInfo,
   PickOptions,
+  ProductionQuote,
+  ProductionView,
   ProjectSettings,
   ProjectStatus,
   ScenarioImpactShot,
   SourceManifest,
+  SpeechPlan,
   TimingFile
 } from '@shared/types';
 import type { ScenarioStatus } from '@shared/scenario-status';
@@ -28,11 +33,17 @@ import type * as agentModels from '../../bindings/songframe-go/internal/agents/m
 import type { AgentCheckResult, AgentDiagnosticCode, AgentEvent, AgentJob, AgentSettings } from '@shared/agents';
 import type * as videoReviewModels from '../../bindings/songframe-go/internal/videoreview/models';
 import type { VideoReviewFinding, VideoReviewView } from '@shared/video-review';
+import type * as covergen from '../../bindings/songframe-go/internal/covergen/models';
+import type * as referenceimage from '../../bindings/songframe-go/internal/referenceimage/models';
+import type { CoverGenerationSession } from '@shared/cover-generation';
+import type { ReferenceImageGenerationInput } from '@shared/reference-image-generation';
 import type { AiAccess } from '@shared/ai-access';
 import type * as scenarioworkflow from '../../bindings/songframe-go/internal/scenarioworkflow/models';
 import type { ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
+import type * as mediaapi from '../../bindings/songframe-go/internal/mediaapi/models';
+import type { MediaCapabilities, MediaKind, ProviderAuth } from '@shared/media-providers';
 import { componentTexts } from '@shared/texts/component-manager';
 import { platformTexts } from '@shared/texts/platform';
 import { unavailableApi, type ApiMethod } from './unavailable-api';
@@ -126,6 +137,12 @@ export interface Bindings {
   ai: () => Promise<typeof import('../../bindings/songframe-go/internal/app/aiservice')>;
   scenarioWorkflow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/scenarioworkflowservice')>;
   videoReview: () => Promise<typeof import('../../bindings/songframe-go/internal/app/videoreviewservice')>;
+  cover: () => Promise<typeof import('../../bindings/songframe-go/internal/app/coverservice')>;
+  referenceImages: () => Promise<typeof import('../../bindings/songframe-go/internal/app/referenceimagesservice')>;
+  environment: () => Promise<typeof import('../../bindings/songframe-go/internal/app/environmentservice')>;
+  media: () => Promise<typeof import('../../bindings/songframe-go/internal/app/mediaservice')>;
+  production: () => Promise<typeof import('../../bindings/songframe-go/internal/app/productionservice')>;
+  dashboard: () => Promise<typeof import('../../bindings/songframe-go/internal/app/dashboardservice')>;
   events: EventSource;
 }
 
@@ -146,6 +163,12 @@ export const nativeBindings: Bindings = {
   ai: () => import('../../bindings/songframe-go/internal/app/aiservice'),
   scenarioWorkflow: () => import('../../bindings/songframe-go/internal/app/scenarioworkflowservice'),
   videoReview: () => import('../../bindings/songframe-go/internal/app/videoreviewservice'),
+  cover: () => import('../../bindings/songframe-go/internal/app/coverservice'),
+  referenceImages: () => import('../../bindings/songframe-go/internal/app/referenceimagesservice'),
+  environment: () => import('../../bindings/songframe-go/internal/app/environmentservice'),
+  media: () => import('../../bindings/songframe-go/internal/app/mediaservice'),
+  production: () => import('../../bindings/songframe-go/internal/app/productionservice'),
+  dashboard: () => import('../../bindings/songframe-go/internal/app/dashboardservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
     return { on: Events.On };
@@ -238,9 +261,52 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'agents.get',
   'agents.list',
   'agents.onEvent',
+  'environment.check',
+  'environment.loginProvider',
+  'environment.cancelLogin',
+  'environment.onLoginUrl',
+  'environment.providerAuth',
+  'media.capabilities',
   'videoReview.view',
   'videoReview.start',
-  'videoReview.cancel'
+  'videoReview.cancel',
+  'cover.inspect',
+  'cover.create',
+  'cover.prepare',
+  'cover.generate',
+  'cover.view',
+  'cover.accept',
+  'cover.close',
+  'referenceImages.inspect',
+  'referenceImages.context',
+  'referenceImages.create',
+  'referenceImages.prepare',
+  'referenceImages.generate',
+  'referenceImages.view',
+  'referenceImages.accept',
+  'referenceImages.attach',
+  'referenceImages.close',
+  // Производство. prepareSpeech, contactSheet и exportBundle требуют FFmpeg-конвейера этапа 46.
+  'production.view',
+  'production.decide',
+  'production.reopenFrame',
+  'production.keepPackageForScene',
+  'production.setKeyframeNote',
+  'production.quote',
+  'production.submit',
+  'production.resume',
+  'production.attachResult',
+  'production.markNotCreated',
+  'production.selectImage',
+  'production.regenerate',
+  'production.accept',
+  'production.park',
+  'production.speechPlan',
+  'production.reopenQuestion',
+  'production.discardAttempt',
+  'production.listBundles',
+  'production.removeBundle',
+  'dashboard.view'
 ]);
 
 /** Доступность принадлежит адаптеру, поэтому UI не повторяет собственный список готовых Go-операций. */
@@ -323,6 +389,42 @@ const toAgentCheck = (value: agentModels.CheckResult): AgentCheckResult => ({
   availability: value.availability as AgentCheckResult['availability'],
   authorization: value.authorization as AgentCheckResult['authorization']
 });
+/** Номер вызова environment.check: события прогресса относятся к своему вызову. */
+let environmentRequest = 0;
+
+/** Строка «Среды» Go: необязательные поля опускаются, статус — значение контракта. */
+function toEnvironmentCheck(check: mediaapi.EnvironmentCheck): EnvironmentCheck {
+  const { elapsedMs, status, bundled, external, loginProvider, ...rest } = check;
+  return {
+    ...rest,
+    ...(elapsedMs === undefined || elapsedMs === null ? {} : { elapsedMs }),
+    ...(status ? { status: status as NonNullable<EnvironmentCheck['status']> } : {}),
+    ...(bundled === undefined || bundled === null ? {} : { bundled }),
+    ...(external === undefined || external === null ? {} : { external }),
+    ...(loginProvider ? { loginProvider } : {})
+  };
+}
+
+/** Состояние входа: Go отдаёт строку состояния из закрытого набора контракта. */
+function toProviderAuth(auth: agentModels.ProviderAuth): ProviderAuth {
+  return { status: auth.status as ProviderAuth['status'], ...(auth.message === undefined ? {} : { message: auth.message }) };
+}
+
+/** Объявления моделей: arguments, slots и limits Go передаёт JSON как есть (json.RawMessage). */
+function toMediaCapabilities(caps: mediaapi.Capabilities): MediaCapabilities {
+  return {
+    ...caps,
+    kind: caps.kind as MediaKind,
+    models: caps.models.map((model) => ({
+      id: model.id,
+      command: model.command,
+      arguments: model.arguments as MediaCapabilities['models'][number]['arguments'],
+      slots: model.slots as MediaCapabilities['models'][number]['slots'],
+      limits: model.limits as Record<string, unknown>
+    }))
+  };
+}
+
 function toAgentJob({ diagnostic, ...job }: agentModels.Job): AgentJob {
   return {
     ...job,
@@ -333,6 +435,18 @@ function toAgentJob({ diagnostic, ...job }: agentModels.Job): AgentJob {
     ...(diagnostic ? { diagnostic: diagnostic as AgentDiagnosticCode } : {})
   };
 }
+
+/** Статус, провайдер и вердикт цены — закрытые наборы строк CoverGenerationSession. */
+const toCoverSession = (session: covergen.Session): CoverGenerationSession => ({
+  ...session,
+  status: session.status as CoverGenerationSession['status'],
+  provider: session.provider as CoverGenerationSession['provider'],
+  quote: session.quote ? { ...session.quote, verdict: session.quote.verdict as NonNullable<CoverGenerationSession['quote']>['verdict'] } : null
+});
+/** Необязательный SHA опоры передаётся только при наличии: отсутствие поля и null в Go равнозначны. */
+const toGenerationInput = (input: ReferenceImageGenerationInput): referenceimage.GenerationInput => ({
+  images: input.images.map((image) => ({ path: image.path, label: image.label, ...(image.sha256 === undefined ? {} : { sha256: image.sha256 }) }))
+});
 
 /**
  * Состояние проверки, вердикт и версия отчёта — закрытые наборы строк контракта VideoReviewView;
@@ -547,6 +661,112 @@ export function createApi(b: Bindings): Api {
     call('videoReview.start', async () => toVideoReview(await (await b.videoReview()).Start(project, packageDir)), false);
   api.videoReview.cancel = (project, packageDir) =>
     call('videoReview.cancel', async () => toVideoReview(await (await b.videoReview()).Cancel(project, packageDir)));
+
+  // Обложка и референсы: создание, подготовка и запуск сначала проверяют доступ к провайдеру
+  // изображений (диагностика до 10 с), подготовка ждёт каталог моделей и цену, поэтому без срока
+  // ожидания оболочки; генерация идёт в Go в фоне, состояние читается через view. Закрытие ждёт
+  // остановки работы сессии.
+  for (const prefix of ['cover', 'referenceImages'] as const) {
+    const service = prefix === 'cover' ? b.cover : b.referenceImages;
+    const group = api[prefix];
+    group.inspect = (input) => call(`${prefix}.inspect`, async () => (await service()).Inspect(toGenerationInput(input)));
+    group.create = (project, prompt, input) =>
+      call(`${prefix}.create`, async () => toCoverSession(await (await service()).Create(project, prompt, input ? toGenerationInput(input) : null)), false);
+    group.prepare = (id) => call(`${prefix}.prepare`, async () => toCoverSession(await (await service()).Prepare(id)), false);
+    group.generate = (id, requestSha, approval) =>
+      call(`${prefix}.generate`, async () => toCoverSession(await (await service()).Generate(id, requestSha, approval)), false);
+    group.view = (id) => call(`${prefix}.view`, async () => toCoverSession(await (await service()).View(id)));
+    group.close = (id) => call(`${prefix}.close`, async () => (await service()).Close(id), false);
+  }
+  api.cover.accept = (id, crop) => call('cover.accept', async () => (await b.cover()).Accept(id, crop));
+  api.referenceImages.accept = (id) => call('referenceImages.accept', async () => (await b.referenceImages()).Accept(id));
+  api.referenceImages.attach = (id, entityId) => call('referenceImages.attach', async () => (await b.referenceImages()).Attach(id, entityId));
+  api.referenceImages.context = (project, drafts) => call('referenceImages.context', async () => (await b.referenceImages()).Context(project, drafts ?? null));
+
+  // Строки «Среды»: события environment:progress относятся к вызову по requestId; подписка
+  // создаётся до вызова и живёт только до его окончания, чужие и запоздалые события отбрасываются.
+  // Проверка входа и вход ждут сервис провайдера (до 135 с и до 5,5 мин), поэтому без срока
+  // ожидания оболочки.
+  api.environment.check = (onProgress) =>
+    call(
+      'environment.check',
+      async () => {
+        const requestId = `${Date.now()}-${++environmentRequest}`;
+        let off: (() => void) | undefined;
+        if (onProgress) {
+          const source = await b.events();
+          off = source.on('environment:progress', (event) => {
+            const value = event.data as { requestId: string; check: mediaapi.EnvironmentCheck };
+            if (value.requestId === requestId) onProgress(toEnvironmentCheck(value.check));
+          });
+        }
+        try {
+          return (await (await b.environment()).Check(requestId)).map(toEnvironmentCheck);
+        } finally {
+          off?.();
+        }
+      },
+      false
+    );
+  api.environment.providerAuth = (provider) =>
+    call('environment.providerAuth', async () => toProviderAuth(await (await b.environment()).ProviderAuth(provider)), false);
+  api.environment.loginProvider = (provider) => call('environment.loginProvider', async () => (await b.environment()).LoginProvider(provider), false);
+  api.environment.cancelLogin = (provider) => call('environment.cancelLogin', async () => (await b.environment()).CancelLogin(provider));
+  api.environment.onLoginUrl = (listener) => subscribe<{ provider: string; url: string }>(b.events, 'environment:loginUrl', listener);
+  // Каталог моделей ждёт сервис провайдера до 35 с: срок ожидания оболочки не ставится.
+  api.media.capabilities = (project, kind, provider) =>
+    call('media.capabilities', async () => toMediaCapabilities(await (await b.media()).Capabilities(project, kind, provider)), false);
+
+  // Производство. Документы пакета (workflow.json, timing, решения, предложения) Go передаёт как
+  // есть сырыми JSON-значениями (json.RawMessage → any в bindings), поэтому ответ сужается до
+  // типов контракта без проверки — их форму задаёт файл проекта, как в оригинале. Отправка,
+  // получение, приёмка и повтор ждут оценку и сервис провайдера: без срока ожидания оболочки.
+  const production = async () => b.production();
+  api.production.view = (project) => call('production.view', async () => (await (await production()).View(project)) as unknown as ProductionView);
+  api.production.decide = (project, packageDir, verdict, note, decisionToken, noteScope) =>
+    call('production.decide', async () => (await production()).Decide(project, packageDir, verdict, note ?? '', decisionToken ?? '', noteScope ?? ''), false);
+  api.production.reopenFrame = (project, packageDir, frame, note, noteScope) =>
+    call('production.reopenFrame', async () => (await production()).ReopenFrame(project, packageDir, frame, note, noteScope), false);
+  api.production.keepPackageForScene = (project, packageDir) =>
+    call('production.keepPackageForScene', async () => (await production()).KeepPackageForScene(project, packageDir));
+  api.production.setKeyframeNote = (project, packageDir, id, active) =>
+    call('production.setKeyframeNote', async () => (await production()).SetKeyframeNote(project, packageDir, id, active));
+  api.production.quote = (project, packageDir, expectedSha, decisionToken) =>
+    call(
+      'production.quote',
+      async () => {
+        const quote = await (await production()).Quote(project, packageDir, expectedSha, decisionToken ?? '');
+        return { ...quote, verdict: quote.verdict as ProductionQuote['verdict'] };
+      },
+      false
+    );
+  api.production.submit = (project, packageDir, expectedSha, decisionToken, quoteToken, unknownCostConsentToken) =>
+    call(
+      'production.submit',
+      async () =>
+        toJob(await (await production()).Submit(project, packageDir, expectedSha, decisionToken ?? '', quoteToken ?? '', unknownCostConsentToken ?? '')),
+      false
+    );
+  api.production.resume = (project, packageDir) => call('production.resume', async () => toJob(await (await production()).Resume(project, packageDir)), false);
+  api.production.attachResult = (project, packageDir, files) =>
+    call('production.attachResult', async () => toJob(await (await production()).AttachResult(project, packageDir, files)), false);
+  api.production.markNotCreated = (project, packageDir) =>
+    call('production.markNotCreated', async () => (await production()).MarkNotCreated(project, packageDir), false);
+  api.production.selectImage = (project, packageDir, index, expectedResultToken) =>
+    call('production.selectImage', async () => (await production()).SelectImage(project, packageDir, index, expectedResultToken), false);
+  api.production.regenerate = (project, shot) => call('production.regenerate', async () => toJob(await (await production()).Regenerate(project, shot)), false);
+  api.production.accept = (project, shot, packageDir, options) =>
+    call('production.accept', async () => toJob(await (await production()).Accept(project, shot, packageDir, options)), false);
+  api.production.park = (project, packageDir) => call('production.park', async () => (await production()).Park(project, packageDir));
+  api.production.speechPlan = (project, shot, packageDir) =>
+    call('production.speechPlan', async () => (await (await production()).SpeechPlan(project, shot, packageDir ?? '')) as unknown as SpeechPlan);
+  api.production.reopenQuestion = (project, packageDir) =>
+    call('production.reopenQuestion', async () => (await production()).ReopenQuestion(project, packageDir));
+  api.production.discardAttempt = (project, packageDir) =>
+    call('production.discardAttempt', async () => (await production()).DiscardAttempt(project, packageDir));
+  api.production.listBundles = (project) => call('production.listBundles', async () => (await production()).ListBundles(project));
+  api.production.removeBundle = (project, path) => call('production.removeBundle', async () => (await production()).RemoveBundle(project, path));
+  api.dashboard.view = (project) => call('dashboard.view', async () => (await (await b.dashboard()).View(project)) as unknown as DashboardView);
 
   api.notifications.onOpen = (listener) => subscribe<NotificationTarget>(b.events, 'notifications:open', listener);
 

@@ -1,0 +1,19 @@
+{
+  "description": "Нулевая длительность.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "request_seconds <= 0"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "0"
+  ],
+  "remove": [],
+  "mkdir": []
+}

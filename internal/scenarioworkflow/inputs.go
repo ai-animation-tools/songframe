@@ -14,6 +14,7 @@ import (
 	"songframe-go/internal/cast"
 	"songframe-go/internal/jscompat"
 	"songframe-go/internal/scenario"
+	"songframe-go/internal/sourceinputs"
 	"songframe-go/internal/timing"
 )
 
@@ -102,43 +103,6 @@ func digestText(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// canonical — canonical из source-input-hash.ts: ключи объектов по возрастанию (сравнение строк
-// JS по кодовым единицам UTF-16), массивы поэлементно.
-func canonical(value any) any {
-	switch typed := value.(type) {
-	case *jscompat.Array:
-		items := make([]any, len(typed.Items))
-		for index, item := range typed.Items {
-			items[index] = canonical(item)
-		}
-		return &jscompat.Array{Items: items}
-	case *jscompat.Object:
-		keys := typed.Keys()
-		sort.SliceStable(keys, func(i, j int) bool { return jscompat.LessUTF16(keys[i], keys[j]) })
-		result := jscompat.NewObject()
-		for _, key := range keys {
-			result.Set(key, canonical(typed.Value(key)))
-		}
-		return result
-	}
-	return value
-}
-
-// sourceInputDigestFromBytes — отпечаток содержательных входов описи: SHA-256 канонического JSON
-// без декоративной обложки (cover) и времени сохранения (updated_at). Повреждённый JSON или
-// не-объект — SHA-256 самих байтов, чтобы порча не маскировалась под прежний набор входов.
-func sourceInputDigestFromBytes(data []byte) string {
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
-	record, ok := jscompat.AsObject(value)
-	if err != nil || !ok {
-		return digestText(data)
-	}
-	inputs := record.Clone()
-	inputs.Delete("cover")
-	inputs.Delete("updated_at")
-	return digestText([]byte(jscompat.Stringify(canonical(inputs))))
-}
-
 // fileHash — hash оригинала: для source/manifest.json — отпечаток входов, для остальных путей —
 // SHA-256 байтов; nil — файла нет (или он не читается: existsSync оригинала тоже давал «нет»
 // только для отсутствующего пути, а ошибку чтения — исключением).
@@ -152,7 +116,7 @@ func fileHash(project, relative string) (*string, error) {
 	}
 	var text string
 	if relative == "source/manifest.json" {
-		text = sourceInputDigestFromBytes(data)
+		text = sourceinputs.DigestBytes(data)
 	} else {
 		text = digestText(data)
 	}

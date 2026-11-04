@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "usage: shot_workflow.py park [-h] --dir DIR\n                             [--wait-reason {cost_or_balance_unknown,insufficient_balance,user_saved}]\n\noptions:\n  -h, --help            show this help message and exit\n  --dir DIR\n  --wait-reason {cost_or_balance_unknown,insufficient_balance,user_saved}\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

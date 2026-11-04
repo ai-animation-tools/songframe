@@ -1,0 +1,21 @@
+{
+  "description": "Абсолютный путь запроса.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "absolute"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-image-request",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--frame",
+    "K02",
+    "--request-dir",
+    "<project>/plan/batches/M03-attempt-01/image-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

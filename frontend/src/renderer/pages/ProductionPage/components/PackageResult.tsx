@@ -10,6 +10,7 @@ import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
+import { useMethodAvailability } from '../../../availability';
 import { VideoReviewPanel } from './VideoReviewPanel';
 
 export function PackageResult({
@@ -32,6 +33,8 @@ export function PackageResult({
   onReopenQuestion?(): void;
 }): ReactElement {
   const originalVideo = useRef<HTMLVideoElement>(null);
+  // Отличие от 634fd94 на время миграции: сводка кадров ждёт медиаконвейера Go, кнопка объясняет причину.
+  const summary = useMethodAvailability('production.contactSheet');
   const pending = pkg.pendingDecision;
   const image = pkg.request?.kind === 'image';
   const canSelectImage = !pending && pkg.stage === 'image_downloaded' && !!pkg.resultToken;
@@ -119,7 +122,14 @@ export function PackageResult({
               ))}
             </Box>
           ) : (
-            <ActionButton startIcon={<GridViewIcon />} size="small" sx={{ mt: 1 }} onClick={onContactSheet} disabled={busy} disabledReason={busyReason}>
+            <ActionButton
+              startIcon={<GridViewIcon />}
+              size="small"
+              sx={{ mt: 1 }}
+              onClick={onContactSheet}
+              disabled={busy || !summary.available}
+              disabledReason={busy ? busyReason : summary.reason}
+            >
               {productionTexts.packageResult.createSummary}
             </ActionButton>
           )}

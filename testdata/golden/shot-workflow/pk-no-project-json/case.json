@@ -1,0 +1,21 @@
+{
+  "description": "Нет plan/project.json: generation_settings(None).",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "read_json None"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "5"
+  ],
+  "remove": [
+    "plan/project.json"
+  ],
+  "mkdir": []
+}

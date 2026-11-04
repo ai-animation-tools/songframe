@@ -1,0 +1,20 @@
+{
+  "description": "request_choice с --request-dir.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "request_dir"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-stage",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "request_choice",
+    "--request-dir",
+    "request"
+  ],
+  "remove": [],
+  "mkdir": []
+}

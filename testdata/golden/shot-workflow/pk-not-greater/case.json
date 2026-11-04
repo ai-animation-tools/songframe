@@ -1,0 +1,19 @@
+{
+  "description": "Не больше окна при строгом правиле.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "strictly"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "4"
+  ],
+  "remove": [],
+  "mkdir": []
+}

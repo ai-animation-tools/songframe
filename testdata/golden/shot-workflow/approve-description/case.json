@@ -1,0 +1,19 @@
+{
+  "description": "Принятие на description_review меняет этап.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "stage"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "approve",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "K01",
+    "<project>/plan/batches/M03-attempt-01/frames/K01.png"
+  ],
+  "remove": [],
+  "mkdir": []
+}

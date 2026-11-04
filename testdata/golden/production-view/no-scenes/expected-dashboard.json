@@ -1,0 +1,15 @@
+{
+  "shots": [],
+  "summary": {
+    "total": 0,
+    "completed": 0,
+    "stale": 0,
+    "progress": 0,
+    "planned": 0,
+    "duration": 0,
+    "completedSeconds": 0
+  },
+  "problems": [
+    "Сначала нужен сценарий. Создайте его на странице «Сценарий»."
+  ]
+}

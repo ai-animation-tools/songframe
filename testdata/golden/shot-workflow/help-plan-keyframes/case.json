@@ -1,0 +1,16 @@
+{
+  "description": "plan-keyframes -h.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sub help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

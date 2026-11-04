@@ -1,0 +1,25 @@
+{
+  "description": "Промежуточные сортируются, заметка с двоеточием.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sorted"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "7",
+    "--middle",
+    "4:б:в",
+    "--middle",
+    "1e0:a",
+    "--middle",
+    "4:а"
+  ],
+  "remove": [],
+  "mkdir": []
+}

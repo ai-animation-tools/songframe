@@ -1,0 +1,10 @@
+{
+  "code": 0,
+  "stdout": "M02 воспроизведён RMS=0.000\nM01 воспроизведён RMS=0.000\nПроверка всех принятых комплектов завершена.\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {},
+  "report": "{\n  \"status\": \"passed\",\n  \"failures\": [],\n  \"shots\": [\n    {\n      \"shot\": \"M01\",\n      \"accepted_copy_sha256_matches\": true,\n      \"rebuild_frames\": 240,\n      \"resolution\": [\n        1920,\n        1080\n      ],\n      \"fps\": 30,\n      \"sampled_frame_indices\": [\n        0,\n        120,\n        239\n      ],\n      \"sampled_yuv_rms\": 0.0\n    },\n    {\n      \"shot\": \"M02\",\n      \"accepted_copy_sha256_matches\": true,\n      \"rebuild_frames\": 120,\n      \"resolution\": [\n        1920,\n        1080\n      ],\n      \"fps\": 30,\n      \"sampled_frame_indices\": [\n        0,\n        60,\n        119\n      ],\n      \"sampled_yuv_rms\": 0.0\n    }\n  ],\n  \"preserved_media_checked\": 1,\n  \"animatic_rebuilt\": false,\n  \"note\": \"Проверены все хеши, точное копирование, повтор фильтров, размер и длина; визуальное сравнение ограничено тремя кадрами каждого плана.\"\n}\n"
+}

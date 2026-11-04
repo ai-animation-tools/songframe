@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "usage: shot_workflow.py select-image [-h] --dir DIR --file FILE\n\noptions:\n  -h, --help   show this help message and exit\n  --dir DIR\n  --file FILE\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

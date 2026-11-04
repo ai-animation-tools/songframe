@@ -1,0 +1,10 @@
+{
+  "code": 0,
+  "stdout": "Проверка всех принятых комплектов завершена.\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {},
+  "report": "{\n  \"status\": \"passed\",\n  \"failures\": [],\n  \"shots\": [],\n  \"preserved_media_checked\": null,\n  \"animatic_rebuilt\": false,\n  \"note\": \"Проверены все хеши, точное копирование, повтор фильтров, размер и длина; визуальное сравнение ограничено тремя кадрами каждого плана.\"\n}\n"
+}

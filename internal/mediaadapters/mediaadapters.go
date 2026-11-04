@@ -1,7 +1,14 @@
 // Package mediaadapters — таблица Go-адаптеров провайдеров генерации: id провайдера → адаптер.
-// Перенос tools/media_adapters.py оригинала для общих проверок (lint_registry): общий код узнаёт
-// сервисы только отсюда, не сравнивает имена и не знает их особенностей. Добавление провайдера —
-// строка в adapters и папка internal/providers/<id>; удаление — обратное действие.
+// Перенос tools/media_adapters.py оригинала: общий код (lint_registry, media_request, cost_check,
+// shot_workflow, regenerate_shot) узнаёт сервисы только отсюда, не сравнивает имена и не знает их
+// особенностей. Добавление провайдера — строка в adapters и папка internal/providers/<id>;
+// удаление — обратное действие.
+//
+// Возможности адаптера — необязательные интерфейсы с одним методом. SnapshotWarner объявлен
+// здесь; возможности платной попытки (ValidateSpec, ValidatePrompt, FrozenFields, TaskTraceID,
+// Submit, Poll, Fetch, Capabilities, Account, PricingFile, NormalizeInputs, PromptWarningChars,
+// Login, AuthStatus) — в листовом пакете internal/mediaapi, чтобы пакет провайдера мог
+// возвращать его ошибки (NotSubmitted, RejectedRequest), не импортируя эту таблицу.
 //
 // Отличие от оригинала: тестовая переменная SONGFRAME_MEDIA_ADAPTERS (подмена таблицы модулями
 // Python) не переносится — Go-тесты подключают адаптер через Register.
@@ -11,7 +18,6 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/providers/kling"
 	"songframe-go/internal/pycompat"
 )
 
@@ -61,6 +67,17 @@ func Known(provider any) bool {
 	return ok
 }
 
+// Lookup — adapter(provider) оригинала: адаптер провайдера либо ValueError с текстом оригинала
+// (repr id — как f"{provider!r}" Python: строка в кавычках, None, число).
+func Lookup(provider any) (Adapter, error) {
+	adapter, ok := Get(provider)
+	if !ok {
+		return nil, pycompat.New(pycompat.ValueError, "Для провайдера генерации "+pycompat.Repr(provider)+
+			" нет адаптера: укажите provider подключённого сервиса.")
+	}
+	return adapter, nil
+}
+
 // Get — адаптер провайдера; false — адаптера нет.
 func Get(provider any) (Adapter, bool) {
 	mu.RLock()
@@ -86,19 +103,4 @@ func Register(id string, adapter Adapter) func() {
 			delete(adapters, key)
 		}
 	}
-}
-
-// klingAdapter связывает таблицу с пакетом провайдера, не давая ему зависеть от таблицы.
-type klingAdapter struct{}
-
-func (klingAdapter) SnapshotWarnings(snapshot *pycompat.Dict) ([]Warning, error) {
-	items, err := kling.SnapshotWarnings(snapshot)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]Warning, len(items))
-	for index, item := range items {
-		result[index] = Warning{Where: item[0], Message: item[1]}
-	}
-	return result, nil
 }

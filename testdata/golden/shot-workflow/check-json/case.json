@@ -1,0 +1,18 @@
+{
+  "description": "check --json.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "check --json"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "check",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

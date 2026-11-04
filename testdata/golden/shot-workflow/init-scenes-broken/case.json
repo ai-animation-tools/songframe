@@ -1,0 +1,18 @@
+{
+  "description": "Битый JSON реестра: JSONDecodeError скрыт.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "JSONDecodeError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "init",
+    "M04",
+    "--dir",
+    "plan/batches/M04-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,18 @@
+{
+  "description": "Из needs_revision в ready.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "from revision"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-stage",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "ready"
+  ],
+  "remove": [],
+  "mkdir": []
+}

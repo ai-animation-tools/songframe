@@ -86,3 +86,18 @@ export const SingleCheckFailure: Story = {
     await expect(within(row(canvasElement, checksTexts.sceneDataLabel)).queryByText(checksTexts.checkDone)).toBeNull();
   }
 };
+
+export const NoShotsYet: Story = {
+  name: 'Сценарий без планов · проверки ждут реестр',
+  tags: ['ci'],
+  parameters: { songframe: checksPageOptions({ noShots: true }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText(checksTexts.sceneDataLabel);
+    // Готовность реестра берётся из сводки производства: без планов проверки не запускаются.
+    const runAll = canvas.getByRole('button', { name: checksTexts.runAll });
+    await waitFor(() => expect(runAll).toBeDisabled());
+    await expect(runAll).toHaveAttribute('title', expect.stringContaining(checksTexts.scenesRequired));
+    await expect(within(row(canvasElement, checksTexts.statusLabel)).getByRole('button', { name: commonTexts.run })).toBeDisabled();
+  }
+};

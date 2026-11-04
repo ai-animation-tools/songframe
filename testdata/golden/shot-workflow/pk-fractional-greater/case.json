@@ -1,0 +1,21 @@
+{
+  "description": "Дробное окно и строгое правило.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "fractional"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "4",
+    "--middle",
+    "0.5:x"
+  ],
+  "remove": [],
+  "mkdir": []
+}

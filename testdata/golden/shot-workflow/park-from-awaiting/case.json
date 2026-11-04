@@ -1,0 +1,19 @@
+{
+  "description": "Пакет уже в plan/awaiting.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "awaiting exists"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "park",
+    "--dir",
+    "plan/awaiting/M03"
+  ],
+  "remove": [
+    "plan/batches/M03-attempt-01"
+  ],
+  "mkdir": []
+}

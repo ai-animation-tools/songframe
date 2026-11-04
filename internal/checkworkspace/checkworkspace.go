@@ -550,3 +550,11 @@ func Run(root string, args []string) pytool.Output {
 	}
 	return printer.Exit(0)
 }
+
+// PackageOwners — package_owners(folder) для очистки после приёмки (accept_shot): коды планов,
+// которым принадлежит рабочая папка.
+func PackageOwners(folder string) (*pycompat.Set, error) { return packageOwners(folder) }
+
+// RetainedMontageFolders — retained_montage_folders(root) для очистки после приёмки: реальные
+// пути папок, которые удерживают черновики и экспорты ручного монтажа.
+func RetainedMontageFolders(root string) map[string]bool { return retainedMontageFolders(root) }

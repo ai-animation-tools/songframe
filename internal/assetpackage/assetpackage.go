@@ -2,8 +2,9 @@
 // tools/asset_package/asset_package.py оригинала (validate_package и разрешение файлов
 // комплекта). Комплект assets/shots/<план>/manifest.json сохраняет оригинал генерации, принятый
 // монтаж, промпт, входы и рецепт воспроизведения; проверка сверяет технический контракт, SHA-256
-// файлов и длину монтажа с окном плана в реестре. Воспроизведение монтажа (replay с ffmpeg) сюда
-// не переносится. Пакет только читает файлы; ошибки — исключения Python с текстами оригинала.
+// файлов и длину монтажа с окном плана в реестре. Replay (replay.go) воспроизводит принятый
+// монтаж в новый файл вне assets для verify_asset_replay. Проверка только читает файлы; ошибки —
+// исключения Python с текстами оригинала.
 package assetpackage
 
 import (
@@ -478,4 +479,10 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 		return nil, pycompat.New(pycompat.ValueError, pycompat.Str(shot)+": длина принятого клипа расходится с монтажным окном.")
 	}
 	return document, nil
+}
+
+// DescriptorFile — descriptor_file(directory, item, root) для других инструментов (regenerate_shot):
+// файл описателя комплекта в его папке либо общий референс из source проекта.
+func DescriptorFile(directory string, descriptor *pycompat.Dict, root string) (string, error) {
+	return descriptorFile(directory, descriptor, root)
 }

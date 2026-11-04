@@ -7,10 +7,16 @@ import * as AppService from "./appservice.js";
 import * as CastService from "./castservice.js";
 import * as ChecksService from "./checksservice.js";
 import * as ComponentsService from "./componentsservice.js";
+import * as CoverService from "./coverservice.js";
+import * as DashboardService from "./dashboardservice.js";
+import * as EnvironmentService from "./environmentservice.js";
 import * as JobsService from "./jobsservice.js";
+import * as MediaService from "./mediaservice.js";
 import * as NativeCheckService from "./nativecheckservice.js";
 import * as NativeService from "./nativeservice.js";
+import * as ProductionService from "./productionservice.js";
 import * as ProjectService from "./projectservice.js";
+import * as ReferenceImagesService from "./referenceimagesservice.js";
 import * as ScenarioService from "./scenarioservice.js";
 import * as ScenarioWorkflowService from "./scenarioworkflowservice.js";
 import * as ShellService from "./shellservice.js";
@@ -25,10 +31,16 @@ export {
     CastService,
     ChecksService,
     ComponentsService,
+    CoverService,
+    DashboardService,
+    EnvironmentService,
     JobsService,
+    MediaService,
     NativeCheckService,
     NativeService,
+    ProductionService,
     ProjectService,
+    ReferenceImagesService,
     ScenarioService,
     ScenarioWorkflowService,
     ShellService,
@@ -40,6 +52,7 @@ export {
 
 export type {
     AppState,
+    ExportBundleOptions,
     NativeCheckConfig,
     NativeCheckItem,
     NativeCheckResult,

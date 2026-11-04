@@ -1,0 +1,13 @@
+{
+  "description": "Комплект M01 удалён: план без материала.",
+  "call": "viewProduction+viewDashboard",
+  "project": "project",
+  "covers": [
+    "planned without asset"
+  ],
+  "base": "checks-base",
+  "remove": [
+    "assets/shots/M01"
+  ],
+  "mkdir": []
+}

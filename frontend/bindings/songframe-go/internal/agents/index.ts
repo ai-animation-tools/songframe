@@ -11,6 +11,7 @@ export type {
     Job,
     Model,
     ModelsResult,
+    ProviderAuth,
     Settings,
     StartInput
 } from "./models.js";

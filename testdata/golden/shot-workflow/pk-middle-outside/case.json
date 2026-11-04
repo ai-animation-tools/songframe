@@ -1,0 +1,21 @@
+{
+  "description": "Промежуточная вне длительности.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "middle range"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "5",
+    "--middle",
+    "5:x"
+  ],
+  "remove": [],
+  "mkdir": []
+}

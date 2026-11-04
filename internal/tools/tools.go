@@ -10,6 +10,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,15 +19,22 @@ import (
 	"regexp"
 	"strings"
 
+	"songframe-go/internal/acceptshot"
 	"songframe-go/internal/checkassets"
 	"songframe-go/internal/checkworkspace"
 	"songframe-go/internal/continuitybrief"
+	"songframe-go/internal/costcheck"
 	"songframe-go/internal/lintregistry"
+	"songframe-go/internal/mediaadapters"
+	"songframe-go/internal/mediarequest"
 	"songframe-go/internal/pycompat"
 	"songframe-go/internal/pytool"
+	"songframe-go/internal/regenerateshot"
 	"songframe-go/internal/scenescaffold"
 	"songframe-go/internal/sceneviews"
 	"songframe-go/internal/shotstatus"
+	"songframe-go/internal/shotworkflow"
+	"songframe-go/internal/verifyassetreplay"
 )
 
 // Result — ToolResult контракта (frontend/src/shared/types.ts). Code — nil, если процесс не
@@ -64,19 +72,58 @@ type tool func(root string, args []string) pytool.Output
 
 // registry — инструменты, перенесённые на Go. Остальные имена оригинала — ошибка «не перенесён».
 var registry = map[string]tool{
-	"scene_scaffold":     scenescaffold.Run,
-	"lint_registry":      lintregistry.Run,
-	"check_assets":       checkassets.Run,
-	"check_workspace":    checkworkspace.Run,
-	"shot_status":        shotstatus.Run,
-	"continuity_brief":   continuitybrief.Run,
-	"update_scene_views": sceneviews.Run,
+	"scene_scaffold":      scenescaffold.Run,
+	"lint_registry":       lintregistry.Run,
+	"check_assets":        checkassets.Run,
+	"check_workspace":     checkworkspace.Run,
+	"shot_status":         shotstatus.Run,
+	"continuity_brief":    continuitybrief.Run,
+	"update_scene_views":  sceneviews.Run,
+	"shot_workflow":       shotworkflow.Run,
+	"verify_asset_replay": verifyassetreplay.Run,
 }
+
+// contextTool — перенесённый инструмент, обращающийся к сервису провайдера или ждущий его:
+// получает контекст отмены задания.
+type contextTool func(ctx context.Context, root string, args []string) pytool.Output
+
+// LocalDir — каталог состояния Go-версии для инструментов, которые пишут в него (наблюдения
+// цен cost_check). По умолчанию — профиль store, как у приложения (SONGFRAME_GO_LOCAL_DIR либо
+// стандартная папка ОС); сервисы приложения подменяют mediaadapters.StateDir своим профилем, и
+// наблюдения цен попадают туда же, где лежит вход провайдера.
+var LocalDir = func() (string, error) { return mediaadapters.StateDir() }
+
+// contextual — инструменты платной попытки и её продолжения (media_request, cost_check,
+// regenerate_shot, accept_shot): получают контекст отмены задания.
+var contextual = map[string]contextTool{
+	"media_request": func(ctx context.Context, root string, args []string) pytool.Output {
+		return mediarequest.Run(ctx, root, args, nil)
+	},
+	"cost_check":      withLocalDir(costcheck.Run),
+	"regenerate_shot": withLocalDir(regenerateshot.Run),
+	"accept_shot":     withLocalDir(acceptshot.Run),
+}
+
+// withLocalDir — инструмент, которому нужен каталог состояния (наблюдения цен cost_check).
+func withLocalDir(run func(ctx context.Context, root string, args []string, localDir string) pytool.Output) contextTool {
+	return func(ctx context.Context, root string, args []string) pytool.Output {
+		dir, err := LocalDir()
+		if err != nil {
+			return pytool.Output{Code: 1, Stderr: pycompat.TextMode(err.Error() + "\n")}
+		}
+		return run(ctx, root, args, dir)
+	}
+}
+
+// projectFree — действия инструментов без проекта (PROJECT_FREE_ACTIONS оригинала): вход к
+// провайдеру со страницы «Среда» выполняется без выбранного клипа.
+var projectFree = map[string]map[string]bool{"media_request": mediarequest.ProjectFreeActions}
 
 // Available — перенесён ли инструмент с таким именем.
 func Available(name string) bool {
 	_, ok := registry[name]
-	return ok
+	_, withContext := contextual[name]
+	return ok || withContext
 }
 
 // resolve — Path(path).resolve() без strict: абсолютный путь, ссылки разыменованы в существующей
@@ -111,10 +158,20 @@ func quote(part string) string {
 // отказ вызова (неверное или не перенесённое имя), как исключение оригинала до запуска процесса;
 // отказ самого инструмента — Result с ненулевым кодом.
 func Run(project, name string, args []string) (Result, error) {
+	return RunContext(context.Background(), project, name, args)
+}
+
+// RunContext — Run с отменой: инструменты платной попытки прерывают вызов сервиса и ожидание.
+// Отменённый запуск возвращает Code nil, как процесс оригинала, завершённый сигналом.
+func RunContext(ctx context.Context, project, name string, args []string) (Result, error) {
 	if !toolName.MatchString(name) {
 		return Result{}, errors.New(textToolNameInvalid(name))
 	}
 	run, ok := registry[name]
+	if withContext, found := contextual[name]; found {
+		ok = true
+		run = func(root string, args []string) pytool.Output { return withContext(ctx, root, args) }
+	}
 	if !ok {
 		return Result{}, errors.New(textToolNotMigrated(name))
 	}
@@ -128,6 +185,10 @@ func Run(project, name string, args []string) (Result, error) {
 	}
 	if project == "" {
 		parts = append(parts, args...)
+		if len(args) > 0 && projectFree[name][args[0]] {
+			output := run("", append([]string(nil), args...))
+			return finish(output.Code, output.Stdout, output.Stderr)
+		}
 		return finish(2, "", pycompat.TextMode(textNoProject+"\n"))
 	}
 	root := resolve(project)
@@ -136,6 +197,11 @@ func Run(project, name string, args []string) (Result, error) {
 		return finish(2, "", pycompat.TextMode(textProjectNotFound(root)+"\n"))
 	}
 	output := run(root, append([]string(nil), args...))
+	if ctx.Err() != nil {
+		result, err := finish(output.Code, output.Stdout, output.Stderr)
+		result.Code = nil
+		return result, err
+	}
 	return finish(output.Code, output.Stdout, output.Stderr)
 }
 

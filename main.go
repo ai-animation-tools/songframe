@@ -12,12 +12,17 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"songframe-go/internal/acceptshot"
 	"songframe-go/internal/agents"
 	shell "songframe-go/internal/app"
 	"songframe-go/internal/components"
 	"songframe-go/internal/jobs"
 	"songframe-go/internal/media"
+	"songframe-go/internal/mediaadapters"
+	"songframe-go/internal/mediafile"
+	"songframe-go/internal/production"
 	"songframe-go/internal/project"
+	"songframe-go/internal/providers"
 	"songframe-go/internal/scenarioapply"
 	"songframe-go/internal/scenarioworkflow"
 	"songframe-go/internal/store"
@@ -126,7 +131,22 @@ func run() error {
 		defer cancel()
 		_ = agentManager.ShutdownAndWait(ctx)
 	}()
-	aiAccess := &agents.AccessChecker{Settings: agentSettings}
+	// Слой провайдеров медиа: вход к платному провайдеру хранится в каталоге состояния этого
+	// профиля, адрес авторизации открывает браузер ОС (OpenURL задаётся после создания GUI).
+	mediaadapters.StateDir = func() (string, error) { return profilePath, nil }
+	var openURL func(url string) error
+	providerLayer := providers.NewLayer(providers.Options{
+		Paid: providers.PaidOptions{ValidateImage: mediafile.Decodes},
+		OpenURL: func(url string) error {
+			if openURL == nil {
+				return nil
+			}
+			return openURL(url)
+		},
+	})
+	environmentService := shell.NewEnvironmentService(providerLayer)
+	aiAccess := &agents.AccessChecker{Settings: agentSettings, ProviderAuth: providerLayer.CheckAuth}
+	coverGenerators := shell.NewCoverGenerators(aiAccess, providerLayer)
 	var desktop *application.App
 	var result *shell.SmokeResult
 	var ready func(shell.AppState) error
@@ -139,6 +159,22 @@ func run() error {
 			return err
 		}
 	}
+	scenarioWorkflow := scenarioworkflow.New(scenarioworkflow.Options{
+		LocalDir: profilePath, Agents: agentManager,
+		RequireAgentAccess: func(project string) error {
+			return aiAccess.RequireAccess(context.Background(), &project, agents.KindAgent)
+		},
+	})
+	productionService := production.New(production.Options{Jobs: jobManager, Layer: providerLayer})
+	// Приёмка (accept_shot) берёт FFmpeg/ffprobe из менеджера компонентов, иначе ищет их в PATH.
+	acceptshot.Programs = func() (string, string) {
+		for _, component := range componentManager.State().Components {
+			if component.ID == "ffmpeg" {
+				return component.Paths["ffmpeg"], component.Paths["ffprobe"]
+			}
+		}
+		return "", ""
+	}
 	service := shell.NewAppService(profile, mediaServer, true, ready)
 	files := shell.NewShellService(mediaServer, func(path string) error { return desktop.Browser.OpenFile(path) })
 	services := []application.Service{
@@ -149,19 +185,23 @@ func run() error {
 		application.NewService(shell.NewCastService()), application.NewService(shell.NewScenarioService()),
 		application.NewService(shell.NewToolsService()), application.NewService(shell.NewChecksService(jobManager)),
 		application.NewService(shell.NewAgentsService(agentSettings, agentManager, aiAccess)), application.NewService(shell.NewAIService(aiAccess)),
+		application.NewService(environmentService), application.NewService(shell.NewMediaService(providerLayer)),
 		// Сценарный проход агента: журнал публикаций тот же каталог состояния, что у scenarioJournal;
 		// перед запуском — ai.requireAccess(project, 'agent') оригинала.
-		application.NewService(shell.NewScenarioWorkflowService(scenarioworkflow.New(scenarioworkflow.Options{
-			LocalDir: profilePath, Agents: agentManager,
-			RequireAgentAccess: func(project string) error {
-				return aiAccess.RequireAccess(context.Background(), &project, agents.KindAgent)
-			},
-		}))),
-		// Проверка видео агентом; занятость пакета производственной операцией подключит этап 45.
+		application.NewService(shell.NewScenarioWorkflowService(scenarioWorkflow)),
+		// Проверка видео агентом не запускается, пока над пакетом идёт производственная операция.
 		application.NewService(shell.NewVideoReviewService(videoreview.New(videoreview.Options{
 			Agents: agentManager, Tools: shell.VideoReviewTools(componentManager), Brief: shell.ContinuityBrief,
-			ImageBudgetBytes: shell.VideoReviewBudget(agentSettings),
+			ImageBudgetBytes: shell.VideoReviewBudget(agentSettings), IsPackageBusy: productionService.IsBusy,
 		}), aiAccess)),
+		// Генерация обложки и изображений референсов провайдером изображений проекта; сессии
+		// окна закрываются вместе с ним, при выходе — все.
+		application.NewService(shell.NewCoverService(coverGenerators.Cover, aiAccess)),
+		application.NewService(shell.NewReferenceImagesService(coverGenerators.Reference, aiAccess)),
+		// Производство: отправка через платный адаптер слоя провайдеров, проблема «проверьте
+		// сценарий» — из того же сценарного прохода. Проход агента производства подключит этап 45.5.
+		application.NewService(shell.NewProductionService(productionService, aiAccess, scenarioWorkflow, nil)),
+		application.NewService(shell.NewDashboardService(scenarioWorkflow)),
 	}
 	var nativeCheck *shell.NativeCheckService
 	windowURL := "/"
@@ -191,6 +231,8 @@ func run() error {
 	shell.ConfigureNativeDesktop(native, desktop)
 	shell.ConfigureNativeMedia(native, mediaServer.ContainsURL, mediaServer.AllowFile)
 	defer shell.ConfigureAgentEvents(agentManager, desktop)()
+	shell.ConfigureEnvironmentEvents(environmentService, desktop)
+	openURL = func(url string) error { return desktop.Browser.OpenURL(url) }
 	window := desktop.Window.NewWithOptions(application.WebviewWindowOptions{
 		// Плотный рабочий интерфейс рассчитан на окно не меньше 1320×860; старт совпадает с нижней границей.
 		Title: "SongFrame — Go", Width: 1320, Height: 860, MinWidth: 1320, MinHeight: 860,

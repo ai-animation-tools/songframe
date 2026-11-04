@@ -1,0 +1,16 @@
+{
+  "code": 0,
+  "stdout": "K01: кандидат выбран; художественное принятие отдельно.\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/batches/M03-attempt-01/keyframes/K01.png": "created",
+    "plan/batches/M03-attempt-01/workflow.json": "changed"
+  },
+  "dirs": {
+    "plan/batches/M03-attempt-01/keyframes": "created"
+  },
+  "modes": {
+    "plan/batches/M03-attempt-01/workflow.json": "0600"
+  }
+}

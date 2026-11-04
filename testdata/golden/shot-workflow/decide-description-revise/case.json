@@ -1,0 +1,21 @@
+{
+  "description": "Отказ описания.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "description_approved false"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "decide",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--verdict",
+    "revise",
+    "--note",
+    "иначе"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,9 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "could not convert string to float: 'abc'\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

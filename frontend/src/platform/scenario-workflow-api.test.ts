@@ -27,6 +27,12 @@ function bindings(scenarioWorkflow: Record<string, unknown>): Bindings {
     agents: missing,
     ai: missing,
     videoReview: missing,
+    cover: missing,
+    referenceImages: missing,
+    environment: missing,
+    media: missing,
+    production: missing,
+    dashboard: missing,
     scenarioWorkflow: async () => scenarioWorkflow as never,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;

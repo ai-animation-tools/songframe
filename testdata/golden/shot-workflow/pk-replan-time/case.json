@@ -1,0 +1,19 @@
+{
+  "description": "Опора с другим временем не сохраняется.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "keep time"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--request-seconds",
+    "6"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "usage: shot_workflow.py ask [-h] --dir DIR --stage\n                            {description_review,keyframes_review,prompt_review,request_choice,downloaded,edit_review,image_request_choice}\n                            [--question QUESTION] [--options OPTIONS]\n                            [--frame FRAME]\n\noptions:\n  -h, --help            show this help message and exit\n  --dir DIR\n  --stage {description_review,keyframes_review,prompt_review,request_choice,downloaded,edit_review,image_request_choice}\n  --question QUESTION\n  --options OPTIONS     Через запятую:\n                        approve,revise,send,park,accept,retry,review\n  --frame FRAME         Вопрос об одной опоре Kxx (только keyframes_review)\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

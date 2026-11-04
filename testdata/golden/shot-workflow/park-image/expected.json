@@ -1,0 +1,35 @@
+{
+  "code": 0,
+  "stdout": "Пакет перенесён: <project>/plan/awaiting/M03\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {
+    "plan/awaiting/M03/description.md": "created",
+    "plan/awaiting/M03/frames/K01.png": "created",
+    "plan/awaiting/M03/image-01/attempt.json": "created",
+    "plan/awaiting/M03/image-01/input-1.png": "created",
+    "plan/awaiting/M03/image-01/prompt.txt": "created",
+    "plan/awaiting/M03/image-01/request.json": "created",
+    "plan/awaiting/M03/video-prompt.txt": "created",
+    "plan/awaiting/M03/workflow.json": "created",
+    "plan/batches/M03-attempt-01/description.md": "removed",
+    "plan/batches/M03-attempt-01/frames/K01.png": "removed",
+    "plan/batches/M03-attempt-01/image-01/attempt.json": "removed",
+    "plan/batches/M03-attempt-01/image-01/input-1.png": "removed",
+    "plan/batches/M03-attempt-01/image-01/prompt.txt": "removed",
+    "plan/batches/M03-attempt-01/image-01/request.json": "removed",
+    "plan/batches/M03-attempt-01/video-prompt.txt": "removed",
+    "plan/batches/M03-attempt-01/workflow.json": "removed"
+  },
+  "dirs": {
+    "plan/awaiting/M03": "created",
+    "plan/awaiting/M03/frames": "created",
+    "plan/awaiting/M03/image-01": "created",
+    "plan/batches/M03-attempt-01": "removed",
+    "plan/batches/M03-attempt-01/frames": "removed",
+    "plan/batches/M03-attempt-01/image-01": "removed"
+  },
+  "modes": {
+    "plan/awaiting/M03/workflow.json": "0600"
+  }
+}

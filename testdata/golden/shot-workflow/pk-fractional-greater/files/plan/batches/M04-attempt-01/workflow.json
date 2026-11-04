@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "shot": "M04",
+  "mode": "shot",
+  "stage": "description_review",
+  "wait_reason": null,
+  "request_dir": null,
+  "description_approved": false,
+  "scene_sha256": "e763bc675a6c7ff53f8d7dab579676eb1c2243b720b105cd7a223fc6af7eccf3",
+  "timing": {
+    "fps": 30,
+    "frames": 105,
+    "window_seconds": 3.5,
+    "request_seconds": 4
+  },
+  "keyframes": [
+    {
+      "id": "K01",
+      "role": "first",
+      "time_seconds": 0.0,
+      "note": "первый кадр",
+      "path": null,
+      "sha256": null,
+      "approved": false
+    },
+    {
+      "id": "K02",
+      "role": "middle",
+      "time_seconds": 0.5,
+      "note": "x",
+      "path": null,
+      "sha256": null,
+      "approved": false
+    },
+    {
+      "id": "K03",
+      "role": "last",
+      "time_seconds": 4.0,
+      "note": "конечный кадр",
+      "path": null,
+      "sha256": null,
+      "approved": false
+    }
+  ],
+  "approved_frames": {},
+  "keyframe_notes": [],
+  "prompt": {
+    "path": "video-prompt.txt",
+    "approved": false
+  },
+  "approved_prompt_sha256": null,
+  "retry_of": null,
+  "frame_source": null,
+  "model": null,
+  "batch": null,
+  "current_keyframe": "K01"
+}

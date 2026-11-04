@@ -1,0 +1,16 @@
+{
+  "description": "Оригинал комплекта изменён: проверка не пройдена.",
+  "call": "verify_asset_replay",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "failures"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--report",
+    "<out>/report.json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

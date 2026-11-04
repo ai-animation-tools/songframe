@@ -1,0 +1,19 @@
+{
+  "description": "Вопрос этапа request_choice.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "DEFAULT_QUESTIONS"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "ask",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--stage",
+    "request_choice"
+  ],
+  "remove": [],
+  "mkdir": []
+}

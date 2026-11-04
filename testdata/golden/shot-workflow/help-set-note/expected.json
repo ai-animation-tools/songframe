@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "usage: shot_workflow.py set-note [-h] --dir DIR --id ID --active {true,false}\n\noptions:\n  -h, --help            show this help message and exit\n  --dir DIR\n  --id ID\n  --active {true,false}\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

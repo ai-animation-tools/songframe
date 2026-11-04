@@ -1,0 +1,477 @@
+[
+  {
+    "name": "authenticated",
+    "generation": {
+      "image": {
+        "provider": "kling",
+        "provider_selected": true
+      },
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "authenticated"
+      }
+    },
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": "kling",
+        "selected": true,
+        "available": true,
+        "message": "Вход в Kling подтверждён."
+      },
+      "video": {
+        "provider": "kling",
+        "selected": true,
+        "available": true,
+        "message": "Вход в Kling подтверждён."
+      }
+    },
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "authenticated-message",
+    "generation": {
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "authenticated",
+        "message": "Аккаунт: студия."
+      }
+    },
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите провайдера изображений в настройках проекта."
+      },
+      "video": {
+        "provider": "kling",
+        "selected": true,
+        "available": true,
+        "message": "Аккаунт: студия."
+      }
+    },
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "unauthenticated",
+    "generation": {
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "unauthenticated"
+      }
+    },
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите провайдера изображений в настройках проекта."
+      },
+      "video": {
+        "provider": "kling",
+        "selected": true,
+        "available": false,
+        "message": "Выполните вход в Kling в настройках приложения."
+      }
+    },
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "unauthenticated-message",
+    "generation": {
+      "image": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "unauthenticated",
+        "message": "Токен истёк."
+      }
+    },
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": "kling",
+        "selected": true,
+        "available": false,
+        "message": "Токен истёк."
+      },
+      "video": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите провайдера видео в настройках проекта."
+      }
+    },
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "unknown",
+    "generation": {
+      "image": {
+        "provider": "kling",
+        "provider_selected": true
+      },
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "unknown",
+        "message": "Нет сети."
+      }
+    },
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": "kling",
+        "selected": true,
+        "available": false,
+        "message": "Нет сети."
+      },
+      "video": {
+        "provider": "kling",
+        "selected": true,
+        "available": false,
+        "message": "Нет сети."
+      }
+    },
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "auth-throws",
+    "generation": {
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "throws": "Для провайдера не подключён исполнитель платного запроса."
+      }
+    },
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите провайдера изображений в настройках проекта."
+      },
+      "video": {
+        "provider": "kling",
+        "selected": true,
+        "available": false,
+        "message": "Для провайдера не подключён исполнитель платного запроса."
+      }
+    },
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "auth-throws-value",
+    "generation": {
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "throwsValue": "строка"
+      }
+    },
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите провайдера изображений в настройках проекта."
+      },
+      "video": {
+        "provider": "kling",
+        "selected": true,
+        "available": false,
+        "message": "Не удалось проверить доступность провайдера."
+      }
+    },
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "not-selected",
+    "generation": {
+      "image": {
+        "provider": "kling"
+      },
+      "video": {
+        "provider": "kling",
+        "provider_selected": "true"
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "authenticated"
+      }
+    },
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите провайдера изображений в настройках проекта."
+      },
+      "video": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите провайдера видео в настройках проекта."
+      }
+    },
+    "authCalls": []
+  },
+  {
+    "name": "unsupported",
+    "generation": {
+      "image": {
+        "provider": "foo",
+        "provider_selected": true
+      },
+      "video": {
+        "provider": "codex",
+        "provider_selected": true
+      }
+    },
+    "auth": {},
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": "foo",
+        "selected": true,
+        "available": false,
+        "message": "Выбранный провайдер не поддерживается."
+      },
+      "video": {
+        "provider": "codex",
+        "selected": true,
+        "available": false,
+        "message": "Выбранный провайдер не поддерживается."
+      }
+    },
+    "authCalls": []
+  },
+  {
+    "name": "case-differs",
+    "generation": {
+      "video": {
+        "provider": "Kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "authenticated"
+      }
+    },
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите провайдера изображений в настройках проекта."
+      },
+      "video": {
+        "provider": "Kling",
+        "selected": true,
+        "available": false,
+        "message": "Выбранный провайдер не поддерживается."
+      }
+    },
+    "authCalls": []
+  },
+  {
+    "name": "required-image",
+    "generation": {
+      "image": {
+        "provider": "kling",
+        "provider_selected": true
+      },
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "authenticated"
+      }
+    },
+    "requiredKind": "image",
+    "access": {
+      "agent": {
+        "provider": null,
+        "selected": false,
+        "available": false,
+        "message": "Сначала выберите агента в настройках приложения."
+      },
+      "image": {
+        "provider": "kling",
+        "selected": true,
+        "available": true,
+        "message": "Вход в Kling подтверждён."
+      },
+      "video": {
+        "provider": "kling",
+        "selected": true,
+        "available": false,
+        "message": "Доступность провайдера ещё не проверена."
+      }
+    },
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "require-video-ok",
+    "generation": {
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "authenticated"
+      }
+    },
+    "require": "video",
+    "required": true,
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "require-video-login",
+    "generation": {
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "unauthenticated"
+      }
+    },
+    "require": "video",
+    "error": "Выполните вход в Kling в настройках приложения.",
+    "authCalls": [
+      "kling"
+    ]
+  },
+  {
+    "name": "require-image-unselected",
+    "generation": {
+      "video": {
+        "provider": "kling",
+        "provider_selected": true
+      }
+    },
+    "auth": {
+      "kling": {
+        "status": "authenticated"
+      }
+    },
+    "require": "image",
+    "error": "Сначала выберите провайдера изображений в настройках проекта.",
+    "authCalls": []
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "description": "Отчёт внутри проекта.",
+  "call": "verify_asset_replay",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "ValueError"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "--report",
+    "<project>/report.json"
+  ],
+  "remove": [],
+  "mkdir": []
+}

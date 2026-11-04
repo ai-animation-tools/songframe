@@ -1,0 +1,19 @@
+{
+  "description": "Кандидат не изображение.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "suffix"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "propose",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "K02",
+    "<project>/inputs"
+  ],
+  "remove": [],
+  "mkdir": []
+}

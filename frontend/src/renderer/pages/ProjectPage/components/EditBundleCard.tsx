@@ -13,6 +13,7 @@ import { joinPath } from '../../../format';
 import { useApp } from '../../../state';
 import { ActionButton, DateTime, JobStatus } from '../../../components';
 import { DestructiveButton } from '../../../components/DestructiveButton';
+import { useMethodAvailability } from '../../../availability';
 
 function stamp(): string {
   const d = new Date();
@@ -75,7 +76,10 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
         : deletingBundle !== null
           ? projectTexts.bundle.waitDeleting
           : null;
-  const buildReason = operationReason ?? (!pythonAvailable ? projectTexts.bundle.pythonRequired : null);
+  // Отличие от 634fd94 на время миграции: сборка пакета монтажа ждёт медиаконвейера Go, кнопка объясняет причину.
+  const exportAvailability = useMethodAvailability('production.exportBundle');
+  const buildReason =
+    operationReason ?? (!pythonAvailable ? projectTexts.bundle.pythonRequired : exportAvailability.available ? null : exportAvailability.reason);
 
   /** Удаляем папку собранного пакета вместе с копиями; исходники проекта остаются на месте. */
   const removeBundle = async (bundle: BundleInfo): Promise<void> => {
@@ -124,7 +128,7 @@ export function EditBundleCard({ project, pythonAvailable }: { project: string; 
         <FormControlLabel control={<Checkbox checked={copy} onChange={(e) => setCopy(e.target.checked)} />} label={projectTexts.bundle.copyMedia} />
         <ActionButton
           variant="contained"
-          disabled={busy || deletingBundle !== null || !pythonAvailable || job?.status === 'running'}
+          disabled={busy || deletingBundle !== null || !pythonAvailable || !exportAvailability.available || job?.status === 'running'}
           disabledReason={buildReason}
           onClick={run}
           startIcon={job?.status === 'running' ? <CircularProgress size={16} color="inherit" aria-hidden /> : <BuildIcon />}

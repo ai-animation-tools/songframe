@@ -20,6 +20,14 @@ export interface AppState {
 }
 
 /**
+ * ExportBundleOptions — ExportBundleOptions контракта.
+ */
+export interface ExportBundleOptions {
+    "target": string;
+    "copy": boolean;
+}
+
+/**
  * NativeCheckConfig задаётся только явными CLI-флагами разработчика. Медиа уже
  * зарегистрированы сервером; WebView не получает произвольный доступ к каталогу.
  */

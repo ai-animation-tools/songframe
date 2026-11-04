@@ -16,7 +16,9 @@ export function useChecksPage() {
   const [jobs, setJobs] = useState<JobInfo[]>([]);
   const [reviews, setReviews] = useState<ReviewInfo[]>([]);
   const [shots, setShots] = useState<ShotProduction[]>([]);
-  const [pythonAvailable, setPythonAvailable] = useState(true);
+  // Отличие от 634fd94: проверки Go-версии выполняются в процессе приложения и Python не требуют,
+  // поэтому строка Python страницы «Среда» (её в Go нет) их не блокирует.
+  const pythonAvailable = true;
   const [strict, setStrict] = useState(false);
   const [next, setNext] = useState(false);
   const [planOnly, setPlanOnly] = useState(false);
@@ -28,11 +30,9 @@ export function useChecksPage() {
   const [lastJob, setLastJob] = useState<Record<string, string>>({});
 
   const loadJobs = useCallback(async () => setJobs((await window.api.jobs.list()).filter((j) => JOB_KINDS.has(j.kind))), []);
-  // Отличие от 634fd94 на время миграции: пробы, среда и производство ещё не перенесены в Go,
+  // Отличие от 634fd94 на время миграции: пробы стыков ещё не перенесены в Go,
   // поэтому их методы не вызываются (блок пробы показывает причину), а проверки работают без них.
   const reviewsAvailable = useMethodAvailability('checks.listReviews').available;
-  const environmentAvailable = useMethodAvailability('environment.check').available;
-  const productionAvailable = useMethodAvailability('production.view').available;
   const loadReviews = useCallback(async () => {
     if (reviewsAvailable) setReviews(await window.api.checks.listReviews(project));
   }, [project, reviewsAvailable]);
@@ -42,19 +42,13 @@ export function useChecksPage() {
       .list()
       .then(setChecks)
       .catch(() => undefined);
-    if (environmentAvailable)
-      window.api.environment
-        .check()
-        .then((list) => setPythonAvailable(list.find((c) => c.id === 'python')?.ok ?? false))
-        .catch(() => undefined);
-    if (productionAvailable)
-      window.api.production
-        .view(project)
-        .then((view) => setShots(view.shots))
-        .catch(() => undefined);
+    window.api.production
+      .view(project)
+      .then((view) => setShots(view.shots))
+      .catch(() => undefined);
     void loadJobs();
     void loadReviews();
-  }, [project, loadJobs, loadReviews, environmentAvailable, productionAvailable]);
+  }, [project, loadJobs, loadReviews]);
 
   const running = jobs.some((j) => j.status === 'running');
   useEffect(() => {
@@ -96,8 +90,7 @@ export function useChecksPage() {
 
   const options = (id: CheckId): { strict?: boolean; next?: boolean } => (id === 'lint' ? { strict } : id === 'status' ? { next } : {});
   // Список прочитан для этой страницы, тогда как сводка проекта могла остаться от момента до создания сценария.
-  // Пока производство не перенесено, готовность реестра уже подтвердил RequireScenario маршрута.
-  const scenesReady = productionAvailable ? shots.length > 0 : true;
+  const scenesReady = shots.length > 0;
   const byId = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
 
   /** Итог проверки: по её собственному заданию или по шагу общего задания. */

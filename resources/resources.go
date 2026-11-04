@@ -68,3 +68,16 @@ func Skill(name string) (string, error) {
 	data, err := skills.ReadFile(path.Join("skills", name, "SKILL.md"))
 	return string(data), err
 }
+
+// providers хранит документы провайдеров медиа (docs/providers оригинала на 634fd94, git archive
+// байт в байт): один документ на вид медиа и провайдера, providers/<вид>/<id>.md. Их раздел
+// «Указания агенту» слой провайдеров (internal/providers) вкладывает в промпт задания.
+//
+//go:embed providers
+var providers embed.FS
+
+// ProviderDoc возвращает документ провайдера id вида медиа kind (image, video). Заменяет чтение
+// `<toolsRoot>/docs/providers/<вид>/<id>.md` оригинала. Документа нет — ошибка fs.ErrNotExist.
+func ProviderDoc(kind, id string) ([]byte, error) {
+	return providers.ReadFile(path.Join("providers", kind, id+".md"))
+}

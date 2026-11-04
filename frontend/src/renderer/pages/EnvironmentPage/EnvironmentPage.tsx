@@ -223,9 +223,6 @@ export function EnvironmentPage(): ReactElement {
           {environmentTexts.elapsed((elapsedMs / 1000).toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }))}
         </Typography>
       )}
-      <Typography variant="caption" color="text.secondary">
-        {environmentTexts.timingExplanation}
-      </Typography>
       <EnvironmentDiagnostics checks={checks} loading={busy} error={error} logins={logins} />
     </Stack>
   );

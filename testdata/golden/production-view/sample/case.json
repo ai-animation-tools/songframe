@@ -1,0 +1,15 @@
+{
+  "description": "Образец: принятые M01/M02, пакет M03 на согласовании опор, остальные планы без работы.",
+  "call": "viewProduction+viewDashboard",
+  "project": "project",
+  "covers": [
+    "completed",
+    "progress",
+    "planned",
+    "keyframes",
+    "asset"
+  ],
+  "base": "checks-base",
+  "remove": [],
+  "mkdir": []
+}

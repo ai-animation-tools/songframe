@@ -1,0 +1,21 @@
+{
+  "description": "У опоры нет кандидата.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "no path"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "ask",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--stage",
+    "keyframes_review",
+    "--frame",
+    "K02"
+  ],
+  "remove": [],
+  "mkdir": []
+}

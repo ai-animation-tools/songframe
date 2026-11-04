@@ -1,0 +1,24 @@
+{
+  "command": "text_to_image",
+  "inputs": [
+    {
+      "path": "input-1.png",
+      "sha256": "3c3ae991d34118987b45080965653e674430b95b84d26cd5452024c4a7208335"
+    }
+  ],
+  "kind": "image",
+  "model": "fixture-model",
+  "outputs": 1,
+  "parameters": {
+    "note": "ёлка",
+    "seed": 7,
+    "strength": 0.5
+  },
+  "prompt": {
+    "path": "prompt.txt",
+    "sha256": "0d33a75b98061ff7fe60a085765defa792b8c958f9ca6886d13a10996d8517d6"
+  },
+  "provider": "test",
+  "schema_version": 1,
+  "shot": "M04"
+}

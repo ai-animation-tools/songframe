@@ -1,0 +1,11 @@
+{
+  "code": 1,
+  "stdout": "",
+  "stderr": "Путь кандидата занят принятой опорой.\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {
+    "plan/batches/M03-attempt-01/keyframes": "created"
+  },
+  "modes": {}
+}

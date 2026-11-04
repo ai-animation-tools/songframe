@@ -104,8 +104,20 @@ var errnoTexts = map[syscall.Errno][2]string{
 	syscall.ELOOP:   {"ELOOP", "too many symbolic links encountered"},
 }
 
+// NodeError — ошибка node:fs: у неё, в отличие от обычного Error, есть поле code. Часть
+// оригинала различает эти два вида ошибок (`'code' in error`), например генерация обложки
+// показывает вместо текста файловой ошибки общее «не удалось прочитать файл».
+type NodeError struct {
+	// Code — код errno Node (ENOENT, EACCES, …) или UNKNOWN.
+	Code    string
+	message string
+}
+
+func (e *NodeError) Error() string { return e.message }
+
 // FsError строит сообщение ошибки node:fs вида «ENOENT: no such file or directory, lstat '<path>'».
-// Пустой path опускает хвост, как у readFileSync каталога («EISDIR: …, read»).
+// Пустой path опускает хвост, как у readFileSync каталога («EISDIR: …, read»). Результат —
+// *NodeError с кодом ошибки.
 func FsError(syscallName, path string, err error) error {
 	code, text := "UNKNOWN", err.Error()
 	var errno syscall.Errno
@@ -120,7 +132,7 @@ func FsError(syscallName, path string, err error) error {
 	if path != "" {
 		message += " '" + path + "'"
 	}
-	return errors.New(message)
+	return &NodeError{Code: code, message: message}
 }
 
 // Realpath — fs.realpathSync. При ошибке сообщение повторяет JS-реализацию Node: она обходит путь

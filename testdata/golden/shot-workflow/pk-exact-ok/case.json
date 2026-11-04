@@ -1,0 +1,19 @@
+{
+  "description": "exact_window: равно.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "exact"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "4"
+  ],
+  "remove": [],
+  "mkdir": []
+}

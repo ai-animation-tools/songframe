@@ -1,0 +1,18 @@
+{
+  "description": "image_request_choice → keyframes_review.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "image back"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-stage",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "keyframes_review"
+  ],
+  "remove": [],
+  "mkdir": []
+}

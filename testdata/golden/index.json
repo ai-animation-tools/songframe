@@ -4967,5 +4967,3383 @@
       "причины недоступности",
       "бюджет изображений агента"
     ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "valid",
+    "description": "Полная спецификация видео.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "minimal",
+    "description": "Без необязательных полей.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "not-object",
+    "description": "Не объект.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "schema-2",
+    "description": "Другая схема.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "schema-true",
+    "description": "True == 1 в Python.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "schema-float",
+    "description": "1.0 == 1.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "empty-provider",
+    "description": "Пустое provider.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "empty-command",
+    "description": "Пустое command.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "empty-model",
+    "description": "Пустое model.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "empty-prompt_file",
+    "description": "Пустое prompt_file.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "provider-number",
+    "description": "provider числом.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "missing-provider",
+    "description": "Нет provider.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "kind-audio",
+    "description": "Неизвестный вид.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "kind-list",
+    "description": "Вид списком.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "unknown-field",
+    "description": "Лишнее поле.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "parameters-list",
+    "description": "parameters списком.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "outputs-zero",
+    "description": "outputs 0.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "outputs-float",
+    "description": "outputs 1.0 — не int.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "outputs-bool",
+    "description": "outputs True — не int.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "inputs-object",
+    "description": "inputs объектом.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "input-string",
+    "description": "Вход строкой.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "input-extra",
+    "description": "Лишнее поле входа.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "input-no-flag",
+    "description": "Вход без flag.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "input-empty-path",
+    "description": "Пустой path.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "input-slot-empty",
+    "description": "Пустой slot.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "input-sha-upper",
+    "description": "SHA заглавными.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "input-sha-ok",
+    "description": "Корректный SHA.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "input-sha-newline",
+    "description": "SHA с переводом строки (fullmatch).",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "selection-ok",
+    "description": "model_selection с null.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "selection-extra",
+    "description": "Лишнее поле выбора.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "selection-list",
+    "description": "Выбор списком.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "selection-preferred-empty",
+    "description": "Пустой preferredModel.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "selection-preferred-number",
+    "description": "preferredModel числом.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "selection-other-model",
+    "description": "selectedModel не совпадает.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "selection-reason-blank",
+    "description": "Пустая причина.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "parameters-nan",
+    "description": "NaN в параметрах (allow_nan=False).",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "parameters-surrogate",
+    "description": "Одиночный суррогат в параметрах.",
+    "covers": [
+      "validate_spec"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "digest-spec",
+    "description": "SHA encoded(): ключи по кодовым точкам, indent=2, UTF-8.",
+    "covers": [
+      "encoded"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "digest-unicode",
+    "description": "Не-ASCII, int/float, вложенная сортировка.",
+    "covers": [
+      "encoded"
+    ]
+  },
+  {
+    "domain": "request-snapshot",
+    "name": "digest-nan",
+    "description": "NaN — ValueError.",
+    "covers": [
+      "encoded"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "capabilities",
+    "description": "capabilities: JSON и текст, problems, отказ discovery, нет адаптера.",
+    "covers": [
+      "capabilities",
+      "provider без адаптера"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare",
+    "description": "prepare: точные байты, стабильный SHA, без сервиса; повтор в ту же папку отклоняется.",
+    "covers": [
+      "prepare",
+      "существующая папка"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-dedup",
+    "description": "Одинаковые входы копируются один раз, суффикс в нижнем регистре, sha256 входа сверяется.",
+    "covers": [
+      "dedup",
+      "sha256 входа"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-selection",
+    "description": "model_selection переносится дословно и входит в SHA.",
+    "covers": [
+      "model_selection"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-unknown-provider",
+    "description": "Провайдер без адаптера — до создания папки.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-provider-number",
+    "description": "provider числом.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-no-provider",
+    "description": "Нет provider.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-empty-prompt",
+    "description": "Пустой промпт.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-prompt-binary",
+    "description": "Промпт не UTF-8 — общий отказ.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-no-prompt",
+    "description": "Нет файла промпта — общий отказ.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-input-hash",
+    "description": "sha256 входа не совпадает.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-input-missing",
+    "description": "Нет файла входа.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-broken-json",
+    "description": "Спецификация не JSON.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-selection-invalid",
+    "description": "Неверный model_selection.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-outside",
+    "description": "Рабочая папка вне plan/batches, plan/awaiting и временной.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-batches-root",
+    "description": "Корень plan/batches не попытка.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-awaiting-root",
+    "description": "Корень plan/awaiting не попытка.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-assets",
+    "description": "Попытка внутри assets (через временную папку не разрешена).",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-temp",
+    "description": "Попытка во временной папке ОС разрешена.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "prepare-awaiting",
+    "description": "Попытка в очереди plan/awaiting/M32/request разрешена.",
+    "covers": [
+      "prepare: отказ"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "lifecycle",
+    "description": "prepare → submit по SHA (неверный SHA отклонён) → повтор запрещён → status → resume → resume без нового скачивания.",
+    "covers": [
+      "submit --confirm",
+      "повторный submit",
+      "resume",
+      "credits_consumed"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "credits-float",
+    "description": "credits_consumed дробный и неверного типа.",
+    "covers": [
+      "credits_consumed float",
+      "credits_consumed строкой не сохраняется"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "unknown-outcome",
+    "description": "Обрыв отправки — submission_unknown, повтор запрещён, ручной ID продолжает получение.",
+    "covers": [
+      "submission_unknown",
+      "--generation-id"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "invalid-service-id",
+    "description": "ID сервиса с URL — неизвестный исход, ID не сохраняется.",
+    "covers": [
+      "identifier"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "rejection",
+    "description": "Явный отказ — prepared и last_rejection; новая отправка возможна.",
+    "covers": [
+      "RejectedRequest",
+      "last_rejection"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "not-submitted",
+    "description": "Сервис недоступен до отправки — prepared без last_rejection.",
+    "covers": [
+      "NotSubmitted"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "limits",
+    "description": "Таймауты, ожидание и интервал вне пределов; ручной ID до неизвестной отправки.",
+    "covers": [
+      "таймаут",
+      "--wait-seconds",
+      "--interval"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "not-created",
+    "description": "Неизвестный исход → not-created → одна новая отправка; повторный not-created отклонён.",
+    "covers": [
+      "not-created",
+      "unknown_outcomes"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "attach-video",
+    "description": "Ручной результат видео без нового запроса; resume без сервиса; повторный attach отклонён.",
+    "covers": [
+      "attach",
+      "manual_result"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "attach-checks",
+    "description": "attach: только неизвестный исход, сигнатура MP4, число, наличие и пустота файлов.",
+    "covers": [
+      "attach: отказы"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "attach-two",
+    "description": "attach двух видео: original-01/02.",
+    "covers": [
+      "attach outputs=2"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "attach-image",
+    "description": "attach изображения: WebP по сигнатуре, sha256 оригинала.",
+    "covers": [
+      "attach image"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "lock",
+    "description": "Занятый замок попытки: повторная отправка отклоняется без сервиса, после освобождения — одна отправка.",
+    "covers": [
+      "locked",
+      "двойной вызов"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "poll-statuses",
+    "description": "Статусы ожидания, ошибки опроса, failed с секретом в service_status.",
+    "covers": [
+      "running",
+      "outputs_pending",
+      "watermark_free_pending",
+      "poll error",
+      "failed"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "wrong-output-count",
+    "description": "completed с неверным числом результатов — outputs_pending без скачивания.",
+    "covers": [
+      "outputs_pending"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "wait-seconds",
+    "description": "resume --wait-seconds опрашивает до готовности; истечение ожидания возвращает running.",
+    "covers": [
+      "--wait-seconds"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "multi-output-fetch-failure",
+    "description": "Два результата, обрыв второго скачивания — download_pending, resume докачивает только второй.",
+    "covers": [
+      "download_pending",
+      "fault fetch"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "interrupt-after-video",
+    "description": "Обрыв после публикации видео до журнала: resume принимает тот же файл без скачивания.",
+    "covers": [
+      "pending_download видео",
+      "fault journal"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "foreign-video",
+    "description": "Чужой original.mp4 не перезаписывается.",
+    "covers": [
+      "не перезаписывается"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "empty-video",
+    "description": "Пустой результат видео — download_pending.",
+    "covers": [
+      "пустой результат"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-png",
+    "description": "Изображение png: расширение по сигнатуре, sha256 в журнале.",
+    "covers": [
+      "image_extension"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-jpeg",
+    "description": "Изображение jpeg: расширение по сигнатуре, sha256 в журнале.",
+    "covers": [
+      "image_extension"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-webp",
+    "description": "Изображение webp: расширение по сигнатуре, sha256 в журнале.",
+    "covers": [
+      "image_extension"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-builtin",
+    "description": "Встроенный PNG тестового сервиса.",
+    "covers": [
+      "builtin:image"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-invalid-body",
+    "description": "HTML вместо изображения не публикуется; тот же ID продолжает получение.",
+    "covers": [
+      "PNG/JPEG/WebP"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-interrupt-after-publication",
+    "description": "Обрыв после публикации изображения: другой адрес результата, принимается опубликованный оригинал.",
+    "covers": [
+      "pending_download изображения"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-pending-changed",
+    "description": "Изменённый опубликованный оригинал — отказ без скачивания.",
+    "covers": [
+      "verify_saved_image"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-foreign",
+    "description": "Чужой original.jpg: изображение не публикуется, pending не записывается.",
+    "covers": [
+      "чужой файл"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-multi-resume",
+    "description": "Два изображения, обрыв второго; докачка второго в другом формате.",
+    "covers": [
+      "original-01/02"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-interrupt-before-link",
+    "description": "Обрыв до публикации изображения: resume публикует тот же оригинал.",
+    "covers": [
+      "fault publication"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-legacy-suffix",
+    "description": "Журнал без sha256 и .jpeg принимается; несоответствие расширения — отказ.",
+    "covers": [
+      "jpeg",
+      "Расширение"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "image-empty",
+    "description": "Пустой результат изображения — download_pending.",
+    "covers": [
+      "пустой результат"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "watch",
+    "description": "watch до терминального статуса со строками смены статуса; повтор без опроса; попытка без ID — error и код 2.",
+    "covers": [
+      "watch"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "watch-timeout",
+    "description": "watch по истечении времени: задание не отменено, код 2.",
+    "covers": [
+      "watch timeout"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "opaque-id",
+    "description": "Непрозрачный ID сохраняется дословно и передаётся опросу.",
+    "covers": [
+      "generation_id"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "changed-request",
+    "description": "Изменённый request.json — отказ до сервиса.",
+    "covers": [
+      "SHA запроса"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "changed-input",
+    "description": "Изменённый вход попытки — отправка запрещена.",
+    "covers": [
+      "verify_inputs"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "provider-guard-missing",
+    "description": "Провайдер без адаптера в замороженном запросе (SHA пересчитан) — отказ до сервиса.",
+    "covers": [
+      "known(provider)"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "provider-guard-blank",
+    "description": "Провайдер без адаптера в замороженном запросе (SHA пересчитан) — отказ до сервиса.",
+    "covers": [
+      "known(provider)"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "provider-guard-custom",
+    "description": "Провайдер без адаптера в замороженном запросе (SHA пересчитан) — отказ до сервиса.",
+    "covers": [
+      "known(provider)"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "task-trace-id",
+    "description": "TASK_TRACE_ID: UUID v7 один на попытку, сохраняется после not-created.",
+    "covers": [
+      "task_trace_id"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "moved-awaiting",
+    "description": "Попытка перенесена в plan/awaiting, исходные входы удалены: те же байты отправляются и получаются.",
+    "covers": [
+      "перенос попытки"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "corrupted-attempt",
+    "description": "Повреждённые attempt.json/request.json — общий отказ без сырого вывода.",
+    "covers": [
+      "generic error"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "auth",
+    "description": "login и auth-status без проекта: адаптер без функций, ответы входа.",
+    "covers": [
+      "login",
+      "auth-status",
+      "PROJECT_FREE_ACTIONS"
+    ]
+  },
+  {
+    "domain": "media-request",
+    "name": "argparse",
+    "description": "Ошибки и справка argparse: подкоманды, обязательные опции, типы, choices, nargs, префиксы, лишние аргументы.",
+    "covers": [
+      "argparse"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "check-table",
+    "description": "Оценка по таблице, остаток адаптера: таблица и JSON, outputs=2, ручной остаток.",
+    "covers": [
+      "таблица цен",
+      "account",
+      "--balance"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "check-outputs",
+    "description": "outputs=2 удваивает таблицу.",
+    "covers": [
+      "outputs"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "estimate-fast-unknown",
+    "description": "Оценка: fast-unknown.",
+    "covers": [
+      "estimate"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "estimate-no-model",
+    "description": "Оценка: no-model.",
+    "covers": [
+      "estimate"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "estimate-720p-null",
+    "description": "Оценка: 720p-null.",
+    "covers": [
+      "estimate"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "estimate-no-resolution",
+    "description": "Оценка: no-resolution.",
+    "covers": [
+      "estimate"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "estimate-no-duration",
+    "description": "Оценка: no-duration.",
+    "covers": [
+      "estimate"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "estimate-string-duration",
+    "description": "Оценка: string-duration.",
+    "covers": [
+      "estimate"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "estimate-numeric-resolution",
+    "description": "Оценка: numeric-resolution.",
+    "covers": [
+      "estimate"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "estimate-unknown-kind",
+    "description": "Оценка: unknown-kind.",
+    "covers": [
+      "estimate"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "observed-scaled",
+    "description": "Пересчёт наблюдения по секундам, затем точное наблюдение.",
+    "covers": [
+      "наблюдение, пересчёт"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "learn",
+    "description": "learn записывает наблюдение в каталог состояния один раз; базовая таблица не меняется; без расхода — отказ.",
+    "covers": [
+      "learn",
+      "pricing-observations.json"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "learn-default-table",
+    "description": "Таблица цен по умолчанию — от адаптера; наблюдения в state, базовая не меняется; приоритет наблюдений состояния.",
+    "covers": [
+      "pricing_file",
+      "приоритет наблюдений"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "pricing-created",
+    "description": "Без таблицы адаптер создаёт пустую; цена неизвестна.",
+    "covers": [
+      "pricing_file по умолчанию"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "damaged-observations",
+    "description": "Повреждённый файл наблюдений — код 1 и путь, файл не перезаписывается.",
+    "covers": [
+      "повреждён"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "image-signature",
+    "description": "Изображение: learn с подписью без промпта и секретов, точное совпадение, иной quality — неизвестно.",
+    "covers": [
+      "image_signature"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "image-per-image",
+    "description": "Ручной per_image × outputs; таблица image-запроса.",
+    "covers": [
+      "per_image"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "check-request",
+    "description": "check --request: спецификация до подготовки проверяется; ошибки схемы и провайдера.",
+    "covers": [
+      "--request"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "errors",
+    "description": "Ошибки: рабочая папка вне проекта, неверная схема таблицы, не JSON, нет request.json, неизвестный провайдер запроса.",
+    "covers": [
+      "ошибки"
+    ]
+  },
+  {
+    "domain": "cost-check",
+    "name": "argparse",
+    "description": "argparse cost_check: группа, обязательные опции, тип float, справка.",
+    "covers": [
+      "argparse"
+    ]
+  },
+  {
+    "domain": "kling-request",
+    "name": "cases.json",
+    "description": "225 случаев чистых функций kling_request и kling_mcp.",
+    "covers": [
+      "validate_spec",
+      "validate_prompt",
+      "capability_fields",
+      "command_capabilities",
+      "capabilities",
+      "normalize_inputs",
+      "argument",
+      "envelope",
+      "find_balance",
+      "tool_body",
+      "sse_messages",
+      "find_upload_url",
+      "upload_type",
+      "token_record",
+      "multipart",
+      "urlencode",
+      "parse_qs",
+      "urlparse",
+      "ответ JSON-RPC"
+    ]
+  },
+  {
+    "domain": "kling-request",
+    "name": "adapter.json",
+    "description": "90 сценариев submit/poll/account/auth_status/login/capabilities на подменённом сеансе MCP.",
+    "covers": [
+      "NotSubmitted",
+      "RejectedRequest",
+      "неизвестный исход и отладочная запись",
+      "статусы query_tasks",
+      "адреса без логотипа",
+      "остаток",
+      "состояние входа"
+    ]
+  },
+  {
+    "domain": "kling-request",
+    "name": "traces.json",
+    "description": "32 HTTP-трасс клиента kling_mcp на сценарии ответов (без сети).",
+    "covers": [
+      "discover",
+      "register",
+      "initialize/notifications/tools",
+      "taskTraceId",
+      "SSE",
+      "refresh под блокировкой",
+      "401 → refresh",
+      "upload multipart",
+      "revoke",
+      "байты credentials.json"
+    ]
+  },
+  {
+    "domain": "kling-request",
+    "name": "callback.json",
+    "description": "9 ответов loopback-колбэка входа CallbackServer.",
+    "covers": [
+      "state",
+      "code",
+      "error",
+      "404",
+      "страница ответа"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-help",
+    "description": "-h верхнего парсера.",
+    "covers": [
+      "help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-none",
+    "description": "Без команды.",
+    "covers": [
+      "required action"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-invalid",
+    "description": "Неизвестная команда.",
+    "covers": [
+      "invalid choice"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-init",
+    "description": "init -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-plan-keyframes",
+    "description": "plan-keyframes -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-approve",
+    "description": "approve -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-approve-prompt",
+    "description": "approve-prompt -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-set-stage",
+    "description": "set-stage -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-set-image-request",
+    "description": "set-image-request -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-select-image",
+    "description": "select-image -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-park",
+    "description": "park -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-propose",
+    "description": "propose -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-ask",
+    "description": "ask -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-decide",
+    "description": "decide -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-reopen",
+    "description": "reopen -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-set-note",
+    "description": "set-note -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-show",
+    "description": "show -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "help-check",
+    "description": "check -h.",
+    "covers": [
+      "sub help"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-required",
+    "description": "init без shot и --dir.",
+    "covers": [
+      "required"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-required-positional",
+    "description": "approve без опоры и пути.",
+    "covers": [
+      "required positional"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-unrecognized",
+    "description": "Лишний аргумент подкоманды — ошибка верхнего парсера.",
+    "covers": [
+      "unrecognized"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-int",
+    "description": "--id не число.",
+    "covers": [
+      "invalid int"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-int-float",
+    "description": "--request-seconds дробное.",
+    "covers": [
+      "invalid int"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-int-spaces",
+    "description": "--request-seconds с пробелами и знаком.",
+    "covers": [
+      "int()"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-choice",
+    "description": "Неверный этап ask.",
+    "covers": [
+      "invalid choice"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-ambiguous",
+    "description": "Неоднозначный префикс --no.",
+    "covers": [
+      "ambiguous"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-abbrev",
+    "description": "Префиксы опций.",
+    "covers": [
+      "allow_abbrev"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-expected-one",
+    "description": "--dir без значения.",
+    "covers": [
+      "expected one argument"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "args-equals",
+    "description": "--dir=ЗНАЧЕНИЕ.",
+    "covers": [
+      "explicit"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "project-missing",
+    "description": "Папки проекта нет.",
+    "covers": [
+      "Папка проекта не найдена"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-ok",
+    "description": "Новый пакет M04.",
+    "covers": [
+      "init"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-frame-batch",
+    "description": "Режим frame и партия.",
+    "covers": [
+      "mode",
+      "batch"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-batch-invalid",
+    "description": "Неверное имя партии.",
+    "covers": [
+      "batch regex"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-mode-invalid",
+    "description": "Неверный режим.",
+    "covers": [
+      "choices"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-unknown-shot",
+    "description": "План вне реестра.",
+    "covers": [
+      "scene_of"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-dir-outside",
+    "description": "Папка вне plan/batches.",
+    "covers": [
+      "package_dir"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-dir-root",
+    "description": "Сам корень plan/batches.",
+    "covers": [
+      "allowed root"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-dir-awaiting",
+    "description": "Пакет в plan/awaiting.",
+    "covers": [
+      "plan/awaiting"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-dir-absolute",
+    "description": "Абсолютный путь внутри проекта.",
+    "covers": [
+      "absolute"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-dir-protected",
+    "description": "Временная папка внутри assets: защищённая папка.",
+    "covers": [
+      "assets"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-tmp",
+    "description": "Пакет во временной папке ОС.",
+    "covers": [
+      "tempdir"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-nonempty",
+    "description": "Папка уже содержит файлы.",
+    "covers": [
+      "nonempty"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-empty-dir",
+    "description": "Пустая существующая папка.",
+    "covers": [
+      "exist_ok"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-retry",
+    "description": "Исправленная попытка M03.",
+    "covers": [
+      "retry_of"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-retry-other-shot",
+    "description": "Повтор чужого плана.",
+    "covers": [
+      "retry shot"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-retry-same",
+    "description": "Повтор ссылается на тот же пакет.",
+    "covers": [
+      "retry same"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-retry-missing",
+    "description": "Повтор несуществующего пакета.",
+    "covers": [
+      "retry exist"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-retry-tmp",
+    "description": "Повтор пакета во временной папке: абсолютная ссылка.",
+    "covers": [
+      "retry absolute"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-no-scenes",
+    "description": "Нет реестра: OSError.",
+    "covers": [
+      "OSError"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-scenes-invalid",
+    "description": "Неверный реестр.",
+    "covers": [
+      "ValueError"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-scenes-broken",
+    "description": "Битый JSON реестра: JSONDecodeError скрыт.",
+    "covers": [
+      "JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "init-fractional",
+    "description": "Дробное окно.",
+    "covers": [
+      "window float"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-ok",
+    "description": "Каркас опор с промежуточными.",
+    "covers": [
+      "plan_keyframes",
+      "middle"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-show",
+    "description": "Каркас без промежуточных: таблица.",
+    "covers": [
+      "table"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-keep-approved",
+    "description": "Перепланирование сохраняет принятые опоры.",
+    "covers": [
+      "keep"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-replan-time",
+    "description": "Опора с другим временем не сохраняется.",
+    "covers": [
+      "keep time"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-not-greater",
+    "description": "Не больше окна при строгом правиле.",
+    "covers": [
+      "strictly"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-min-ok",
+    "description": "Правило не меньше окна: равно.",
+    "covers": [
+      "min rule"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-min-less",
+    "description": "Правило не меньше окна: меньше.",
+    "covers": [
+      "min rule error"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-exact-ok",
+    "description": "exact_window: равно.",
+    "covers": [
+      "exact"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-exact-mismatch",
+    "description": "exact_window: не равно.",
+    "covers": [
+      "exact error"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-exact-fractional",
+    "description": "exact_window и дробное окно.",
+    "covers": [
+      "exact fractional"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-fractional-greater",
+    "description": "Дробное окно и строгое правило.",
+    "covers": [
+      "fractional"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-zero",
+    "description": "Нулевая длительность.",
+    "covers": [
+      "request_seconds <= 0"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-middle-outside",
+    "description": "Промежуточная вне длительности.",
+    "covers": [
+      "middle range"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-middle-float",
+    "description": "Промежуточная не число.",
+    "covers": [
+      "float error"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-middle-sort",
+    "description": "Промежуточные сортируются, заметка с двоеточием.",
+    "covers": [
+      "sorted"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-no-generation",
+    "description": "Нет generation в проекте.",
+    "covers": [
+      "generation_settings"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "pk-no-project-json",
+    "description": "Нет plan/project.json: generation_settings(None).",
+    "covers": [
+      "read_json None"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-no-workflow",
+    "description": "Папка без workflow.json.",
+    "covers": [
+      "exist"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-schema",
+    "description": "Неизвестная схема.",
+    "covers": [
+      "schema"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-shot-type",
+    "description": "shot не строка.",
+    "covers": [
+      "schema shot"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-stage",
+    "description": "Неизвестный этап.",
+    "covers": [
+      "stage"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-stage-none",
+    "description": "Этап null.",
+    "covers": [
+      "stage None"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-notes",
+    "description": "Нет keyframe_notes.",
+    "covers": [
+      "keyframe_notes"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-notes-item",
+    "description": "Элемент keyframe_notes не объект.",
+    "covers": [
+      "keyframe_notes item"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-broken",
+    "description": "Битый workflow.json.",
+    "covers": [
+      "JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-list",
+    "description": "workflow.json — список: AttributeError.",
+    "covers": [
+      "traceback"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-defaults",
+    "description": "Без keyframes и approved_frames: setdefault.",
+    "covers": [
+      "setdefault"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "load-defaults-write",
+    "description": "setdefault сохраняется при записи.",
+    "covers": [
+      "setdefault write"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "approve-outside",
+    "description": "Опора снаружи копируется в frames.",
+    "covers": [
+      "approve copy"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "approve-inside",
+    "description": "Опора внутри пакета.",
+    "covers": [
+      "approve relative"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "approve-last",
+    "description": "Последняя опора: все приняты.",
+    "covers": [
+      "all approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "approve-description",
+    "description": "Принятие на description_review меняет этап.",
+    "covers": [
+      "stage"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "approve-unknown",
+    "description": "Опора вне плана.",
+    "covers": [
+      "unknown frame"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "approve-not-image",
+    "description": "Не изображение.",
+    "covers": [
+      "suffix"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "approve-missing",
+    "description": "Файла нет.",
+    "covers": [
+      "is_file"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "approve-jpeg",
+    "description": "JPEG с расширением .JPEG.",
+    "covers": [
+      "suffix lower"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "propose-ok",
+    "description": "Кандидат снаружи.",
+    "covers": [
+      "propose"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "propose-description",
+    "description": "Кандидат на description_review.",
+    "covers": [
+      "propose stage"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "propose-approved",
+    "description": "Кандидат вместо принятой опоры.",
+    "covers": [
+      "approved_frames pop"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "propose-unknown",
+    "description": "Кандидат вне плана.",
+    "covers": [
+      "unknown frame"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "propose-not-image",
+    "description": "Кандидат не изображение.",
+    "covers": [
+      "suffix"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-pending",
+    "description": "Не все опоры приняты.",
+    "covers": [
+      "pending"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-empty",
+    "description": "План опор пуст.",
+    "covers": [
+      "empty plan"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-ok",
+    "description": "Промпт принят.",
+    "covers": [
+      "approve_prompt"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-file",
+    "description": "Промпт из другого файла.",
+    "covers": [
+      "--file"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-file-outside",
+    "description": "Промпт вне пакета.",
+    "covers": [
+      "outside"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-file-missing",
+    "description": "Файла промпта нет.",
+    "covers": [
+      "missing"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-blank",
+    "description": "Пустой промпт.",
+    "covers": [
+      "blank"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-warning",
+    "description": "Предел длины промпта адаптера test.",
+    "covers": [
+      "PROMPT_WARNING_CHARS"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-limit-equal",
+    "description": "Промпт ровно на пределе.",
+    "covers": [
+      "limit equal"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-unknown-provider",
+    "description": "Провайдер без адаптера: без предупреждения.",
+    "covers": [
+      "known"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-no-generation",
+    "description": "Без generation: без предупреждения.",
+    "covers": [
+      "ValueError none"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-kling",
+    "description": "Предел адаптера kling.",
+    "covers": [
+      "kling limit"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-prompt-path",
+    "description": "Путь промпта из prompt.path.",
+    "covers": [
+      "prompt.path"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-crlf",
+    "description": "Промпт с CRLF: длина после универсальных переводов строк.",
+    "covers": [
+      "newline"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-not-utf8",
+    "description": "Промпт не UTF-8: UnicodeDecodeError скрыт.",
+    "covers": [
+      "UnicodeDecodeError"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ap-stage-later",
+    "description": "Принятие на request_choice этап не меняет.",
+    "covers": [
+      "stage keep"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-default",
+    "description": "Вопрос по умолчанию.",
+    "covers": [
+      "ask"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-description_review",
+    "description": "Вопрос этапа description_review.",
+    "covers": [
+      "DEFAULT_QUESTIONS"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-prompt_review",
+    "description": "Вопрос этапа prompt_review.",
+    "covers": [
+      "DEFAULT_QUESTIONS"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-request_choice",
+    "description": "Вопрос этапа request_choice.",
+    "covers": [
+      "DEFAULT_QUESTIONS"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-image_request_choice",
+    "description": "Вопрос этапа image_request_choice.",
+    "covers": [
+      "DEFAULT_QUESTIONS"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-downloaded",
+    "description": "Вопрос этапа downloaded.",
+    "covers": [
+      "DEFAULT_QUESTIONS"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-edit_review",
+    "description": "Вопрос этапа edit_review.",
+    "covers": [
+      "DEFAULT_QUESTIONS"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-custom",
+    "description": "Свой текст и варианты.",
+    "covers": [
+      "question options"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-options-invalid",
+    "description": "Неизвестный вариант.",
+    "covers": [
+      "VERDICTS"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-options-empty",
+    "description": "Пустые варианты — по умолчанию.",
+    "covers": [
+      "options empty"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-question-empty",
+    "description": "Пустой вопрос — по умолчанию.",
+    "covers": [
+      "question empty"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-frame",
+    "description": "Вопрос об одной опоре.",
+    "covers": [
+      "frame"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-frame-stage",
+    "description": "--frame не на keyframes_review.",
+    "covers": [
+      "frame stage"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-frame-no-candidate",
+    "description": "У опоры нет кандидата.",
+    "covers": [
+      "no path"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-frame-approved",
+    "description": "Опора уже утверждена.",
+    "covers": [
+      "approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "ask-frame-unknown",
+    "description": "Опора вне плана.",
+    "covers": [
+      "keyframe_of"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-kf-approve",
+    "description": "approve принимает всех кандидатов.",
+    "covers": [
+      "approve all"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-kf-approve-partial",
+    "description": "approve при одном кандидате из двух.",
+    "covers": [
+      "approve candidates"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-kf-approve-none",
+    "description": "Нет кандидатов.",
+    "covers": [
+      "no candidates"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-kf-approve-all-done",
+    "description": "Все уже приняты: approve без кандидатов.",
+    "covers": [
+      "all approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-kf-approve-changed",
+    "description": "Файл кандидата изменён.",
+    "covers": [
+      "sha mismatch"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-kf-revise",
+    "description": "revise снимает кандидатов, замечание following.",
+    "covers": [
+      "revise all",
+      "add_note"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-kf-revise-no-note",
+    "description": "revise без замечания.",
+    "covers": [
+      "no note"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-frame-approve",
+    "description": "Вопрос об опоре: approve только её.",
+    "covers": [
+      "frame approve"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-frame-approve-changed",
+    "description": "Вопрос об опоре: файл изменён.",
+    "covers": [
+      "frame sha"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-frame-approve-gone",
+    "description": "Вопрос об опоре: кандидат снят.",
+    "covers": [
+      "frame no path"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-frame-revise",
+    "description": "Вопрос об опоре: revise со scope frame.",
+    "covers": [
+      "frame revise",
+      "scope"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-frame-revise-approved",
+    "description": "Вопрос об опоре, которая уже утверждена.",
+    "covers": [
+      "frame approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-option",
+    "description": "Ответ вне вариантов вопроса.",
+    "covers": [
+      "options"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-json",
+    "description": "--json печатает decision.",
+    "covers": [
+      "--json"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-description-approve",
+    "description": "Принятие описания.",
+    "covers": [
+      "description_approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-description-revise",
+    "description": "Отказ описания.",
+    "covers": [
+      "description_approved false"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-no-pending",
+    "description": "Без вопроса: этап пакета.",
+    "covers": [
+      "stage fallback"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-pending-null-options",
+    "description": "Вопрос без вариантов.",
+    "covers": [
+      "no options"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-prompt-approve",
+    "description": "Ответ approve на prompt_review принимает промпт.",
+    "covers": [
+      "approve_prompt"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-prompt-approve-pending",
+    "description": "approve промпта при непринятых опорах.",
+    "covers": [
+      "approve_prompt error"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-send",
+    "description": "send только записывается.",
+    "covers": [
+      "send"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "decide-scope-invalid",
+    "description": "Неверная область замечания.",
+    "covers": [
+      "choices"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-ok",
+    "description": "Возврат утверждённой опоры.",
+    "covers": [
+      "reopen"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-scope-frame",
+    "description": "Возврат со scope frame на prompt_review.",
+    "covers": [
+      "reopen scope"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-not-approved",
+    "description": "Опора не утверждена.",
+    "covers": [
+      "not approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-empty-note",
+    "description": "Пустое замечание.",
+    "covers": [
+      "empty note"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-prompt",
+    "description": "Промпт уже утверждён.",
+    "covers": [
+      "prompt approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-request",
+    "description": "Запрос подготовлен.",
+    "covers": [
+      "request_dir"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-stage",
+    "description": "Этап image_submitted.",
+    "covers": [
+      "REOPEN_STAGES"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-unknown",
+    "description": "Опора вне плана.",
+    "covers": [
+      "keyframe_of"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "reopen-no-note-arg",
+    "description": "Без --note.",
+    "covers": [
+      "required"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "set-note-off",
+    "description": "Выключить замечание.",
+    "covers": [
+      "set_note"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "set-note-on",
+    "description": "Включить замечание.",
+    "covers": [
+      "set_note true"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "set-note-missing",
+    "description": "Замечания нет.",
+    "covers": [
+      "missing"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-notes",
+    "description": "Таблица с активными замечаниями.",
+    "covers": [
+      "notes table"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-next",
+    "description": "Вперёд на следующий этап.",
+    "covers": [
+      "next"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-skip",
+    "description": "Пропуск этапа запрещён.",
+    "covers": [
+      "skip"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-back",
+    "description": "Назад на любой этап.",
+    "covers": [
+      "back"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-same",
+    "description": "Тот же этап без изменений.",
+    "covers": [
+      "same"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-same-reason",
+    "description": "Тот же этап с причиной: проверка перехода и записи.",
+    "covers": [
+      "same reason"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-revision",
+    "description": "needs_revision с причиной.",
+    "covers": [
+      "needs_revision"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-revision-no-reason",
+    "description": "needs_revision без причины.",
+    "covers": [
+      "wait_reason required"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-revision-keep-reason",
+    "description": "Причина сохраняется.",
+    "covers": [
+      "wait_reason keep"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-from-revision",
+    "description": "Из needs_revision в ready.",
+    "covers": [
+      "from revision"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-from-revision-bad",
+    "description": "Из needs_revision в submitted.",
+    "covers": [
+      "from revision bad"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-accepted-revision",
+    "description": "Из accepted в needs_revision нельзя.",
+    "covers": [
+      "accepted"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-request",
+    "description": "request_choice с --request-dir.",
+    "covers": [
+      "request_dir"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-request-missing",
+    "description": "Папка запроса без request.json.",
+    "covers": [
+      "no request.json"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-request-required",
+    "description": "request_choice без запроса.",
+    "covers": [
+      "request required"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-submitted",
+    "description": "request_choice → submitted.",
+    "covers": [
+      "send skip"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-downloaded-accepted",
+    "description": "downloaded → accepted.",
+    "covers": [
+      "downloaded accepted"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-unknown",
+    "description": "Неизвестный этап.",
+    "covers": [
+      "unknown"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-reason-invalid",
+    "description": "Неверная причина ожидания.",
+    "covers": [
+      "choices"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-ready-reason-none",
+    "description": "ready без причины.",
+    "covers": [
+      "wait required"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-request-dir",
+    "description": "Image-этап с --request-dir.",
+    "covers": [
+      "image request_dir"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-no-request",
+    "description": "Image-этап без запроса изображения.",
+    "covers": [
+      "image_attempt"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-submitted-no-send",
+    "description": "image_submitted без send.",
+    "covers": [
+      "send required"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-submitted-not-registered",
+    "description": "image_submitted без отправки в attempt.",
+    "covers": [
+      "attempt status"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-submitted",
+    "description": "image_submitted после send и отправки.",
+    "covers": [
+      "image_submitted"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-submitted-unknown",
+    "description": "submission_unknown без ID.",
+    "covers": [
+      "submission_unknown"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-downloaded",
+    "description": "image_downloaded.",
+    "covers": [
+      "image_downloaded"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-downloaded-manual",
+    "description": "Ручной результат без ID.",
+    "covers": [
+      "manual_result"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-downloaded-not",
+    "description": "Результат не downloaded.",
+    "covers": [
+      "not downloaded"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-choice-sent",
+    "description": "Возврат к выбору отправленного запроса.",
+    "covers": [
+      "resume"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-to-keyframes",
+    "description": "image_request_choice → keyframes_review.",
+    "covers": [
+      "image back"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "stage-image-bad-transition",
+    "description": "image_downloaded → prompt_review.",
+    "covers": [
+      "image transition"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-ok",
+    "description": "Запрос изображения для K02.",
+    "covers": [
+      "set_image_request",
+      "ask"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-no-shot",
+    "description": "Запрос без shot.",
+    "covers": [
+      "shot None"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-stage",
+    "description": "Этап prompt_review.",
+    "covers": [
+      "stage"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-description",
+    "description": "Описание не принято.",
+    "covers": [
+      "description_approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-frame-approved",
+    "description": "Опора принята.",
+    "covers": [
+      "frame approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-frame-format",
+    "description": "Неверный код опоры.",
+    "covers": [
+      "K\\d{2}"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-pending",
+    "description": "Открыт другой вопрос.",
+    "covers": [
+      "pending"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-kind",
+    "description": "Запрос видео.",
+    "covers": [
+      "kind"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-shot",
+    "description": "Запрос другого плана.",
+    "covers": [
+      "other shot"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-provider",
+    "description": "Провайдер без адаптера.",
+    "covers": [
+      "load_attempt known"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-sha",
+    "description": "Запрос изменён после заморозки.",
+    "covers": [
+      "request sha"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-input",
+    "description": "Вход изменён.",
+    "covers": [
+      "verify_inputs"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-no-attempt",
+    "description": "Нет attempt.json.",
+    "covers": [
+      "inside"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-attempt-sha",
+    "description": "В attempt нет SHA.",
+    "covers": [
+      "request_sha256 KeyError"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-absolute",
+    "description": "Абсолютный путь запроса.",
+    "covers": [
+      "absolute"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-outside",
+    "description": "Запрос вне пакета.",
+    "covers": [
+      "outside"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-self",
+    "description": "Запрос — сама папка пакета.",
+    "covers": [
+      "path == directory"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-sent",
+    "description": "Запрос уже отправлялся.",
+    "covers": [
+      "already sent"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-repeat",
+    "description": "Повтор той же prepared-попытки.",
+    "covers": [
+      "no duplicate"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-rewrite",
+    "description": "Та же папка для другой опоры.",
+    "covers": [
+      "history rewrite"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-history-corrupt",
+    "description": "История не список.",
+    "covers": [
+      "history corrupt"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-active-mismatch",
+    "description": "Активный запрос расходится с историей.",
+    "covers": [
+      "active mismatch"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-previous-sent",
+    "description": "Предыдущая отправка не выбрана.",
+    "covers": [
+      "previous submitted"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-previous-unselected",
+    "description": "Предыдущий результат не выбран.",
+    "covers": [
+      "selected_sha256 missing"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-previous-selected",
+    "description": "Следующая опора после выбора результата.",
+    "covers": [
+      "previous selected"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-previous-mismatch",
+    "description": "Хеш выбора не совпадает.",
+    "covers": [
+      "selected mismatch"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-previous-lost",
+    "description": "Оригинал предыдущей отправки изменён.",
+    "covers": [
+      "image_downloads size"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "sir-from-description",
+    "description": "С этапа description_review.",
+    "covers": [
+      "description_review"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-ok",
+    "description": "Выбор PNG-оригинала.",
+    "covers": [
+      "select_image"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-absolute",
+    "description": "Абсолютный путь оригинала.",
+    "covers": [
+      "absolute"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-jpeg",
+    "description": "Выбор JPEG.",
+    "covers": [
+      "JPEG"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-webp",
+    "description": "Выбор WebP.",
+    "covers": [
+      "WEBP"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-rgba",
+    "description": "PNG с альфой и палитрой.",
+    "covers": [
+      "PNG RGBA"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-stage",
+    "description": "Не image_downloaded.",
+    "covers": [
+      "stage"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-not-download",
+    "description": "Файл не из downloads.",
+    "covers": [
+      "downloads"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-format",
+    "description": "PNG с расширением .jpg.",
+    "covers": [
+      "format mismatch"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-gif",
+    "description": "GIF с расширением .png.",
+    "covers": [
+      "GIF"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-not-image",
+    "description": "Не изображение.",
+    "covers": [
+      "Pillow"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-truncated",
+    "description": "Обрезанный PNG.",
+    "covers": [
+      "load"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-size",
+    "description": "Размер оригинала изменён.",
+    "covers": [
+      "bytes"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-downloads-empty",
+    "description": "Нет downloads.",
+    "covers": [
+      "no downloads"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-downloads-bad",
+    "description": "Повреждённый downloads.",
+    "covers": [
+      "damaged downloads"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-frame-approved",
+    "description": "Опора уже принята.",
+    "covers": [
+      "approved"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-occupied",
+    "description": "Путь занят принятой опорой.",
+    "covers": [
+      "occupied"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-attempt-status",
+    "description": "attempt не downloaded.",
+    "covers": [
+      "status"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "si-replace-candidate",
+    "description": "Замена прежнего кандидата K01.",
+    "covers": [
+      "replace"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-ok",
+    "description": "Перенос в очередь.",
+    "covers": [
+      "park"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-reason",
+    "description": "Причина ожидания.",
+    "covers": [
+      "wait_reason"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-revision",
+    "description": "needs_revision сохраняется.",
+    "covers": [
+      "AWAITING"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-no-request",
+    "description": "Нет подготовленного запроса.",
+    "covers": [
+      "request_dir"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-problems",
+    "description": "Опора изменена.",
+    "covers": [
+      "problems"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-exists",
+    "description": "Пакет уже в очереди.",
+    "covers": [
+      "target exists"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-image",
+    "description": "Перенос image-пакета без видео-запроса.",
+    "covers": [
+      "image_only"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-image-sent",
+    "description": "Отправленная image-попытка.",
+    "covers": [
+      "image sent"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-from-awaiting",
+    "description": "Пакет уже в plan/awaiting.",
+    "covers": [
+      "awaiting exists"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "park-tmp",
+    "description": "Пакет из временной папки.",
+    "covers": [
+      "tmp park"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-sample",
+    "description": "Таблица образца.",
+    "covers": [
+      "table"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-json",
+    "description": "JSON образца.",
+    "covers": [
+      "--json"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "check-ok",
+    "description": "check без проблем.",
+    "covers": [
+      "check 0"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "check-json",
+    "description": "check --json.",
+    "covers": [
+      "check --json"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-full",
+    "description": "Таблица со всеми полями: партия, причина, запрос, попытка.",
+    "covers": [
+      "full table"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-attempt-list",
+    "description": "attempt.json — список.",
+    "covers": [
+      "attempt not dict"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "check-stale",
+    "description": "Постановка изменена.",
+    "covers": [
+      "scene changed"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "check-scene-gone",
+    "description": "План исчез из реестра: проблема.",
+    "covers": [
+      "scene_of"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "check-files",
+    "description": "Опоры и промпт изменены, нет request.json.",
+    "covers": [
+      "frame missing",
+      "frame changed",
+      "prompt",
+      "request"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "check-image",
+    "description": "Проблема запроса изображения.",
+    "covers": [
+      "image problem"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-image",
+    "description": "Таблица image-ветки.",
+    "covers": [
+      "image table"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-image-json",
+    "description": "JSON image-ветки.",
+    "covers": [
+      "image json"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-image-broken",
+    "description": "Битая попытка изображения: статус None.",
+    "covers": [
+      "image status None"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-no-scenes",
+    "description": "Нет реестра: проблема OSError не перехватывается.",
+    "covers": [
+      "OSError"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-request-none",
+    "description": "Запрос не задан и время целым.",
+    "covers": [
+      "не задан",
+      ":g"
+    ]
+  },
+  {
+    "domain": "shot-workflow",
+    "name": "show-tmp",
+    "description": "Пакет во временной папке.",
+    "covers": [
+      "tmp show"
+    ]
+  },
+  {
+    "domain": "verify-asset-replay",
+    "name": "sample",
+    "description": "Образец: оба комплекта воспроизводятся.",
+    "covers": [
+      "verify",
+      "report"
+    ]
+  },
+  {
+    "domain": "verify-asset-replay",
+    "name": "preserved",
+    "description": "Снимок сохранённых медиа совпадает.",
+    "covers": [
+      "--preserved"
+    ]
+  },
+  {
+    "domain": "verify-asset-replay",
+    "name": "preserved-mismatch",
+    "description": "Снимок не совпадает: AssertionError.",
+    "covers": [
+      "preserved assert"
+    ]
+  },
+  {
+    "domain": "verify-asset-replay",
+    "name": "report-inside",
+    "description": "Отчёт внутри проекта.",
+    "covers": [
+      "ValueError"
+    ]
+  },
+  {
+    "domain": "verify-asset-replay",
+    "name": "args-missing",
+    "description": "Без --report.",
+    "covers": [
+      "required"
+    ]
+  },
+  {
+    "domain": "verify-asset-replay",
+    "name": "args-help",
+    "description": "-h.",
+    "covers": [
+      "help"
+    ]
+  },
+  {
+    "domain": "verify-asset-replay",
+    "name": "original-changed",
+    "description": "Оригинал комплекта изменён: проверка не пройдена.",
+    "covers": [
+      "failures"
+    ]
+  },
+  {
+    "domain": "verify-asset-replay",
+    "name": "no-manifest",
+    "description": "Нет индекса комплектов.",
+    "covers": [
+      "FileNotFoundError"
+    ]
+  },
+  {
+    "domain": "verify-asset-replay",
+    "name": "empty",
+    "description": "Пустой индекс комплектов.",
+    "covers": [
+      "no shots"
+    ]
+  },
+  {
+    "domain": "media-providers",
+    "name": "cases.json",
+    "description": "Слой провайдеров: выбор модели и проверка платного запроса, разбор каталога возможностей, указания провайдера, строка «Среды» Kling, запрос опор и исполнитель обложки Codex.",
+    "covers": [
+      "selectPaidRequest",
+      "PaidMediaProvider.capabilities",
+      "providerGuide",
+      "kling.environment",
+      "CodexImageProvider.prepare",
+      "createCodexCoverRunner"
+    ]
+  },
+  {
+    "domain": "ai-access-paid",
+    "name": "cases.json",
+    "description": "Платная часть ai.access: явный выбор провайдера медиа, вход платного провайдера, тексты подтверждения и запрета.",
+    "covers": [
+      "provider_selected",
+      "checkProviderAuth",
+      "loginConfirmed/loginRequired",
+      "requiredKind",
+      "requireAccess"
+    ]
+  },
+  {
+    "domain": "cover-generation",
+    "name": "cases.json",
+    "description": "Генерация обложки и изображений референсов: сессии, согласие на показанный промпт и одноразовый токен, «Ещё», отмена и закрытие, платная попытка тестового сервиса (цена, неизвестная цена, нехватка, двойной запуск), приёмка квадрата и полного оригинала, архив и привязка референса, инспекция опор и контекст конструктора промпта.",
+    "covers": [
+      "CoverGeneration",
+      "prepareProjectCover",
+      "preparePaidCover",
+      "inspectReferenceImageInputs",
+      "readReferenceImageContext",
+      "attachReferenceImage"
+    ]
+  },
+  {
+    "domain": "production-view",
+    "name": "broken-packages",
+    "description": "Повреждённый workflow.json пакета и папка без workflow.json в plan/batches.",
+    "covers": [
+      "broken",
+      "damaged workflow"
+    ]
+  },
+  {
+    "domain": "production-view",
+    "name": "no-asset",
+    "description": "Комплект M01 удалён: план без материала.",
+    "covers": [
+      "planned without asset"
+    ]
+  },
+  {
+    "domain": "production-view",
+    "name": "no-scenes",
+    "description": "Нет plan/scenes.json: сценарий нужен для работы.",
+    "covers": [
+      "requiredForWork"
+    ]
+  },
+  {
+    "domain": "production-view",
+    "name": "sample",
+    "description": "Образец: принятые M01/M02, пакет M03 на согласовании опор, остальные планы без работы.",
+    "covers": [
+      "completed",
+      "progress",
+      "planned",
+      "keyframes",
+      "asset"
+    ]
+  },
+  {
+    "domain": "production-view",
+    "name": "scene-changed",
+    "description": "Постановка M03 изменилась после подготовки пакета.",
+    "covers": [
+      "sceneChanged",
+      "staleReason"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "steps.json",
+    "description": "Сквозной сценарий regenerate_shot (по пакету, с новым текстом, без снимка, по снимку комплекта) и accept_shot --full (отказы и приёмка) на тестовом провайдере.",
+    "covers": [
+      "regenerate_shot",
+      "accept_shot --full",
+      "--replace",
+      "retry_of",
+      "production-status.json"
+    ]
   }
 ]

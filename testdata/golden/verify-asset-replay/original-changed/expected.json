@@ -1,0 +1,10 @@
+{
+  "code": 1,
+  "stdout": "M02 проверка не пройдена\nM01 воспроизведён RMS=0.000\n",
+  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/verify_asset_replay/verify_asset_replay.py\", line 136, in <module>\n    assert not failures, failures\n           ^^^^^^^^^^^^\nAssertionError: [{'shot': 'M02', 'error': 'M02: изменился файл комплекта original.mp4'}]\n",
+  "traceback": true,
+  "files": {},
+  "dirs": {},
+  "modes": {},
+  "report": "{\n  \"status\": \"failed\",\n  \"failures\": [\n    {\n      \"shot\": \"M02\",\n      \"error\": \"M02: изменился файл комплекта original.mp4\"\n    }\n  ],\n  \"shots\": [\n    {\n      \"shot\": \"M01\",\n      \"accepted_copy_sha256_matches\": true,\n      \"rebuild_frames\": 240,\n      \"resolution\": [\n        1920,\n        1080\n      ],\n      \"fps\": 30,\n      \"sampled_frame_indices\": [\n        0,\n        120,\n        239\n      ],\n      \"sampled_yuv_rms\": 0.0\n    }\n  ],\n  \"preserved_media_checked\": null,\n  \"animatic_rebuilt\": false,\n  \"note\": \"Проверены все хеши, точное копирование, повтор фильтров, размер и длина; визуальное сравнение ограничено тремя кадрами каждого плана.\"\n}\n"
+}

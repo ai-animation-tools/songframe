@@ -17,3 +17,7 @@
 ## Промпты агента
 
 `skills/` — тексты промптов, которые приложение вкладывает в задания агента в режиме предложения, перенесены байт в байт из `skills/` SongFrame на срезе `634fd94` (`git archive`): `ai-clip-scenario`, `ai-clip-scene` с `references/`, `ai-clip-video-review` и `README.md`. Каталог встраивается в бинарник (`resources.go`, `//go:embed skills`); `resources.Skill(name)` возвращает `skills/<name>/SKILL.md`. Сценарный проход (`internal/scenarioworkflow`) собирает промпт задания из `ai-clip-scenario` и правил режима предложения так же, как оригинал: байты промпта сверяют эталоны `testdata/golden/scenario-workflow/prompt-*.txt`, контрольную SHA-256 каталога проверяет `resources_test.go`. Правка текста скилла меняет промпт агента и требует пересъёмки эталона.
+
+## Документы провайдеров медиа
+
+`providers/` — документы провайдеров медиа, перенесённые байт в байт из `docs/providers` SongFrame на срезе `634fd94` (`git archive`): `README.md` и по документу на вид медиа и провайдера (`image/codex.md`, `image/kling.md`, `video/kling.md`). Каталог встраивается в бинарник (`resources.go`, `//go:embed providers`); `resources.ProviderDoc(kind, id)` возвращает `providers/<вид>/<id>.md`. Раздел «Указания агенту» выбранного провайдера слой `internal/providers` (`providers.Guide`) вкладывает в промпт задания, поэтому правка документа меняет промпт; контрольные SHA-256 проверяет `resources_test.go`. Добавление провайдера — документ здесь вместе со строкой реестра и папкой адаптера.

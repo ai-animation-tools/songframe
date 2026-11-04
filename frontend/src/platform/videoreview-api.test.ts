@@ -28,6 +28,12 @@ function bindings(videoReview: Record<string, unknown>): Bindings {
     agents: missing,
     ai: missing,
     videoReview: async () => videoReview as never,
+    cover: missing,
+    referenceImages: missing,
+    environment: missing,
+    media: missing,
+    production: missing,
+    dashboard: missing,
     scenarioWorkflow: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;

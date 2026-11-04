@@ -1,0 +1,20 @@
+{
+  "description": "Возврат утверждённой опоры.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "reopen"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "reopen",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "K01",
+    "--note",
+    " Теплее свет "
+  ],
+  "remove": [],
+  "mkdir": []
+}

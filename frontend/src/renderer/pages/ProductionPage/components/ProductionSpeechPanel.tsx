@@ -12,6 +12,7 @@ import { ANCHORS } from '../../../components/linkTargets';
 import { LinkedText } from '../../../components/LinkedText';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
+import { useMethodAvailability } from '../../../availability';
 
 const seconds = productionTexts.productionSpeechPanel.seconds;
 
@@ -71,7 +72,9 @@ export function ProductionSpeechPanel({
           ? productionTexts.productionSpeechPanel.duration({ min: plan.lipSync.min, max: plan.lipSync.max })
           : null;
   const sentReason = productionTexts.productionSpeechPanel.sent;
-  const reason = sent ? sentReason : working ? BUSY_REASON : busy ? busyReason : boundsProblem;
+  // Отличие от 634fd94 на время миграции: вырезка речи ждёт медиаконвейера Go, кнопка объясняет причину.
+  const cut = useMethodAvailability('production.prepareSpeech');
+  const reason = sent ? sentReason : working ? BUSY_REASON : busy ? busyReason : (boundsProblem ?? (cut.available ? null : cut.reason));
   const lines = speech?.lines.length ? speech.lines : (plan?.lines ?? []);
 
   const prepare = async (): Promise<void> => {

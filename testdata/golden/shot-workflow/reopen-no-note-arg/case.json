@@ -1,0 +1,18 @@
+{
+  "description": "Без --note.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "required"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "reopen",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "K01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

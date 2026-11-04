@@ -79,7 +79,7 @@ SongFrame — комплекс для производства музыкаль�
 - Commit, push, remote, релиз и платные запросы — только по поручению.
 - Не добавлять в Git приватные документы spec, клипы, веса, аудио, видео, токены, журналы, локальные отчёты и абсолютные машинные пути.
 - У Go-версии до переключения свои app ID и каталог состояния; профиль Electron, его токены и клипы автоматически не читаются.
-- Проверки: `wails3 task check:all`. Адресно — по `Taskfile.yml` и `frontend/package.json`. Контракты проектов и DTO — по [songframe-go-project-contract](dev-skills/songframe-go-project-contract/SKILL.md).
+- Проверки: `wails3 task check:all`. Адресно — по `Taskfile.yml` и `frontend/package.json`. Во время работы гонять тесты изменённой области; после сбоя исправить и перезапустить только упавшее (`go test ./pkg -run Имя`, `yarn test файл`, `yarn test:storybook --grep` после `yarn build-storybook`), а не весь `check:all`. Полный прогон — один раз в конце; при параллельной работе его выполняет основной агент после слияния. Контракты проектов и DTO — по [songframe-go-project-contract](dev-skills/songframe-go-project-contract/SKILL.md).
 
 ## Параллельная работа
 

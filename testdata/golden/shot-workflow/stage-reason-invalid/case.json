@@ -1,0 +1,20 @@
+{
+  "description": "Неверная причина ожидания.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "choices"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-stage",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "ready",
+    "--wait-reason",
+    "nope"
+  ],
+  "remove": [],
+  "mkdir": []
+}

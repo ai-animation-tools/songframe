@@ -1,0 +1,9 @@
+{
+  "code": 2,
+  "stdout": "",
+  "stderr": "usage: shot_workflow.py plan-keyframes [-h] --dir DIR --request-seconds\n                                       REQUEST_SECONDS [--middle СЕК:ЗАМЕТКА]\nshot_workflow.py plan-keyframes: error: argument --request-seconds: invalid int value: '2.5'\n",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

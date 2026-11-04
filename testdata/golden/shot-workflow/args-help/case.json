@@ -1,0 +1,15 @@
+{
+  "description": "-h верхнего парсера.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -36,8 +36,8 @@ type Access struct {
 
 // ProviderAuth — вход в платного провайдера, проверенный его программой (ProviderAuth оригинала).
 type ProviderAuth struct {
-	Status  string // authenticated, unauthenticated и др.
-	Message string
+	Status  string `json:"status"` // authenticated, unauthenticated или unknown
+	Message string `json:"message,omitempty"`
 }
 
 // AccessChecker — ai-access оригинала: выбор исполнителей проверяется до диагностики, доступность

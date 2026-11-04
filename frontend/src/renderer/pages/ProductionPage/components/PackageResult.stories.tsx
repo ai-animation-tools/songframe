@@ -1,6 +1,7 @@
 /** Просмотр оригиналов, отдельный выбор кандидата и приёмка используют рабочие блоки и локальную модель API. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { platformTexts } from '@shared/texts/platform';
 import { receivedPackage, RESULT_ERROR, resultStoryOptions, ResultStory } from '../../../testing/resultStories';
 
 const meta = {
@@ -210,5 +211,18 @@ export const SummaryFailureRetry: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Сделать техническую сводку' }));
     await canvas.findByRole('button', { name: /Открыть крупно: Техническая сводка.*summary=1/ });
     await expect(canvas.queryByText(RESULT_ERROR)).not.toBeInTheDocument();
+  }
+};
+
+export const SummaryNotMigrated: Story = {
+  name: 'Сводка не перенесена · кнопка объясняет причину, приёмка доступна',
+  tags: ['ci'],
+  parameters: { songframe: { ...resultStoryOptions(), unavailable: ['production.contactSheet'] } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const summary = canvas.getByRole('button', { name: 'Сделать техническую сводку' });
+    await expect(summary).toBeDisabled();
+    await expect(summary).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
+    await expect(canvas.getByRole('button', { name: 'Принять' })).toBeEnabled();
   }
 };

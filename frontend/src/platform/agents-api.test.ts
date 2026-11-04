@@ -27,6 +27,12 @@ function bindings(services: { agents?: Record<string, unknown>; ai?: Record<stri
     agents: services.agents ? async () => services.agents as never : missing,
     ai: services.ai ? async () => services.ai as never : missing,
     videoReview: missing,
+    cover: missing,
+    referenceImages: missing,
+    environment: missing,
+    media: missing,
+    production: missing,
+    dashboard: missing,
     scenarioWorkflow: missing,
     events: events ?? (async () => ({ on: () => () => undefined }))
   } as Bindings;

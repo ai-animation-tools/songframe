@@ -1,0 +1,1594 @@
+[
+  {
+    "name": "submit ok",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"return\": {\"generationId\": \"job-123\", \"creditsConsumed\": 12}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"generation_id\": \"job-123\", \"credits_consumed\": 12}",
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
+    }
+  },
+  {
+    "name": "submit snake-id-float-credits",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"return\": {\"generation_id\": \"job-9\", \"creditsConsumed\": 1.5}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"generation_id\": \"job-9\", \"credits_consumed\": 1.5}",
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
+    }
+  },
+  {
+    "name": "submit bool-credits",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"return\": {\"generationId\": \"job-1\", \"creditsConsumed\": true}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"generation_id\": \"job-1\"}",
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
+    }
+  },
+  {
+    "name": "submit string-credits",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"return\": {\"generationId\": \"job-1\", \"creditsConsumed\": \"12\"}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"generation_id\": \"job-1\"}",
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
+    }
+  },
+  {
+    "name": "submit empty-id",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"return\": {\"generationId\": \"\"}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "ответ без generationId"
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
+      "debug": "--- submit <time> ValueError: ответ без generationId\nstatus: 200\nbody: {\"generationId\": \"\"}\n"
+    }
+  },
+  {
+    "name": "submit no-id",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"return\": {\"error\": \"https://secret.test/TOKEN\"}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "ответ без generationId"
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
+      "debug": "--- submit <time> ValueError: ответ без generationId\nstatus: 200\nbody: {\"error\": \"https://secret.test/TOKEN\"}\n"
+    }
+  },
+  {
+    "name": "submit string-body",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"return\": \"plain\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "ответ без generationId"
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
+      "debug": "--- submit <time> ValueError: ответ без generationId\nstatus: 200\nbody: \"plain\"\n"
+    }
+  },
+  {
+    "name": "submit tool-error",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"ToolError\", \"message\": \"Invalid parameters\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "RejectedRequest",
+        "message": "Invalid parameters"
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
+    }
+  },
+  {
+    "name": "submit auth-on-call",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"AuthRequired\", \"message\": \"Войдите в Kling на странице «Среда».\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Войдите в Kling на странице «Среда». Отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
+    }
+  },
+  {
+    "name": "submit not-sent-on-call",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"NotSent\", \"message\": \"Нет соединения с Kling: ConnectionRefusedError.\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Нет соединения с Kling: ConnectionRefusedError. Отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
+    }
+  },
+  {
+    "name": "submit http-502",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"TransportError\", \"status\": 502, \"text\": \"Bad gateway\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "TransportError",
+        "message": "HTTP 502: Bad gateway"
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
+      "debug": "--- submit <time> TransportError: HTTP 502: Bad gateway\nstatus: 502\nbody: Bad gateway\n"
+    }
+  },
+  {
+    "name": "submit timeout",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"TransportError\", \"status\": null, \"text\": \"Соединение с Kling прервано после отправки: TimeoutError.\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "TransportError",
+        "message": "Соединение с Kling прервано после отправки: TimeoutError."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
+      "debug": "--- submit <time> TransportError: Соединение с Kling прервано после отправки: TimeoutError.\nbody: Соединение с Kling прервано после отправки: TimeoutError.\n"
+    }
+  },
+  {
+    "name": "submit rpc-error",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"ProtocolError\", \"message\": \"Kling: tools/call: bad (1).\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ProtocolError",
+        "message": "Kling: tools/call: bad (1)."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
+      "debug": "--- submit <time> ProtocolError: Kling: tools/call: bad (1).\n"
+    }
+  },
+  {
+    "name": "submit auth-on-initialize",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"initialize\": {\"raise\": \"AuthRequired\", \"message\": \"Войдите в Kling на странице «Среда».\"}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Войдите в Kling на странице «Среда». Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"]]"
+    }
+  },
+  {
+    "name": "submit network-on-initialize",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"initialize\": {\"raise\": \"NotSent\", \"message\": \"Нет соединения с Kling: ConnectionRefusedError.\"}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Нет соединения с Kling: ConnectionRefusedError. Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"]]"
+    }
+  },
+  {
+    "name": "submit http-on-initialize",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"initialize\": {\"raise\": \"TransportError\", \"status\": 500, \"text\": \"busy\"}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "HTTP 500: busy Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"]]"
+    }
+  },
+  {
+    "name": "submit ticket-rejected",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"raise\": \"ToolError\", \"message\": \"Kling MCP is handling too many requests\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Kling MCP is handling too many requests Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"]]"
+    }
+  },
+  {
+    "name": "submit upload-500",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"raise\": \"TransportError\", \"status\": 500, \"text\": \"загрузка файла 01.png не принята\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "HTTP 500: загрузка файла 01.png не принята Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"]]"
+    }
+  },
+  {
+    "name": "submit upload-type",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"raise\": \"ValueError\", \"message\": \"Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: 01.png.\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: 01.png. Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"]]"
+    }
+  },
+  {
+    "name": "submit unnamed-input",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"image\", \"path\": \"inputs/01.png\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Входы запроса передаются только именованными слотами; подготовьте новую попытку."
+      },
+      "log": "[]"
+    }
+  },
+  {
+    "name": "submit empty-slot",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"\", \"path\": \"inputs/01.png\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Входы запроса передаются только именованными слотами; подготовьте новую попытку."
+      },
+      "log": "[]"
+    }
+  },
+  {
+    "name": "submit text-command",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"image\", \"command\": \"text_to_image\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"imgResolution\": \"1k\"}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": []}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"call\": {\"text_to_image\": {\"return\": {\"generationId\": \"job-t\"}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"generation_id\": \"job-t\"}",
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"call\", \"text_to_image\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"imgResolution\", \"value\": \"1k\"}], \"rationale\": \"\"}, 300]]"
+    }
+  },
+  {
+    "name": "submit prompt-missing",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{}",
+      "files": "{\"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Нет локального файла подготовленной попытки. Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"]]"
+    }
+  },
+  {
+    "name": "submit prompt-outside",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"../outside.txt\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Нет локального файла подготовленной попытки. Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"]]"
+    }
+  },
+  {
+    "name": "submit prompt-not-utf8",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{}",
+      "files": "{\"prompt.txt\": \"b2sg/w==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "'utf-8' codec can't decode byte 0xff in position 3: invalid start byte Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"]]"
+    }
+  },
+  {
+    "name": "submit input-missing",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "NotSubmitted",
+        "message": "Нет локального файла подготовленной попытки. Загрузка не завершена, отправка не начиналась."
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"]]"
+    }
+  },
+  {
+    "name": "submit no-trace",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"return\": {\"generationId\": \"job-1\"}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"generation_id\": \"job-1\"}",
+      "log": "[[\"session\", 60, null], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
+    }
+  },
+  {
+    "name": "submit parameters-nan",
+    "call": "submit",
+    "description": "параметр NaN: ошибка конверта после загрузки — неизвестный исход",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": NaN}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"return\": {\"generationId\": \"job-1\"}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Out of range float values are not JSON compliant: nan"
+      },
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"]]",
+      "debug": "--- submit <time> ValueError: Out of range float values are not JSON compliant: nan\n"
+    }
+  },
+  {
+    "name": "submit two-inputs",
+    "call": "submit",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}, {\"flag\": \"input\", \"slot\": \"audio\", \"path\": \"inputs/02.wav\"}]}",
+      "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
+      "timeout": "60",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}, \"02.wav\": {\"return\": \"https://cdn.test/02.wav\"}}, \"call\": {\"image_to_video\": {\"return\": {\"generationId\": \"job-2\"}}}}",
+      "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\", \"inputs/02.wav\": \"UklGRg==\"}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"generation_id\": \"job-2\"}",
+      "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"upload\", \"02.wav\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}, {\"name\": \"audio\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/02.wav\"}]}, 300]]"
+    }
+  },
+  {
+    "name": "poll completed",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"completed\", \"outputs\": [\"https://example.test/video.mp4?SECRET\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll status RUNNING",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"RUNNING\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"running\", \"status\": \"running\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll status queued",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"queued\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"queued\", \"status\": \"running\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll status FAILED",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"FAILED\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"failed\", \"status\": \"failed\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll status Cancelled",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"Cancelled\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"cancelled\", \"status\": \"failed\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll status partial_completed",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"partial_completed\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"partial_completed\", \"status\": \"completed\", \"outputs\": [\"https://example.test/video.mp4?SECRET\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll status succeed",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"succeed\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"succeed\", \"status\": \"completed\", \"outputs\": [\"https://example.test/video.mp4?SECRET\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll status SUCCESS",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"SUCCESS\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"success\", \"status\": \"completed\", \"outputs\": [\"https://example.test/video.mp4?SECRET\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll status error",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"error\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"error\", \"status\": \"failed\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll no-status",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"unknown\", \"status\": \"running\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll status-int",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": 5, \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"5\", \"status\": \"running\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll no-works",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": []}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"outputs_pending\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll works-missing",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"completed\"}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"outputs_pending\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll other-id",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"x\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "query_tasks вернул состояние другого задания."
+      },
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll snake-id",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generation_id\": \"job-123\", \"status\": \"completed\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"completed\", \"outputs\": [\"https://example.test/video.mp4?SECRET\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll both-ids",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generation_id\": \"x\", \"generationId\": \"job-123\", \"status\": \"completed\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"completed\", \"outputs\": [\"https://example.test/video.mp4?SECRET\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll string",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": \"not json\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "query_tasks вернул неверный ответ."
+      },
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll tool-error",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"raise\": \"ToolError\", \"message\": \"PRIVATE_URL\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ToolError",
+        "message": "PRIVATE_URL"
+      },
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll video-no-free-url",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/w\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"watermark_free_pending\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll video-snake-free",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"video\", \"url_without_watermark\": \"https://example.test/o.mp4\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"completed\", \"outputs\": [\"https://example.test/o.mp4\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll video-http",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"video\", \"urlWithoutWatermark\": \"http://example.test/o.mp4\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"watermark_free_pending\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll video-empty-free",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"video\", \"urlWithoutWatermark\": \"\", \"url_without_watermark\": \"https://o\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"completed\", \"outputs\": [\"https://o\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll image-url",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"image\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"image\", \"url\": \"https://example.test/regular\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"completed\", \"outputs\": [\"https://example.test/regular\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll image-free",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"image\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"image\", \"url\": \"https://r\", \"urlWithoutWatermark\": \"https://free\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"completed\", \"outputs\": [\"https://free\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll image-http",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"image\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"content_type\": \"image\", \"url\": \"http://r\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"outputs_pending\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll image-mixed",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"image\", \"outputs\": 2}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"url\": \"https://r\"}, {\"contentType\": \"video\", \"url\": \"https://v\"}, \"x\", {\"status\": \"failed\", \"url\": \"https://f\"}, {\"status\": \"Succeeded\", \"url\": \"https://s\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"completed\", \"outputs\": [\"https://r\", \"https://s\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll image-not-string",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"image\", \"outputs\": 2}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"image\", \"url\": \"https://a\"}, {\"contentType\": \"image\", \"url\": 5}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"outputs_pending\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll short-circuit",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"image\", \"outputs\": 2}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"image\", \"url\": \"ftp://a\"}, {\"contentType\": \"image\", \"url\": \"http://[::1\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"outputs_pending\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll works-dict",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": {\"a\": 1}}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"outputs_pending\"}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll works-int",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": 5}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "TypeError",
+        "message": "'int' object is not iterable"
+      },
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll outputs-float",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1.0}",
+      "state": "{\"generation_id\": \"job-123\", \"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"COMPLETED\", \"works\": [{\"contentType\": \"video\", \"url\": \"https://example.test/watermarked?SECRET\", \"urlWithoutWatermark\": \"https://example.test/video.mp4?SECRET\"}]}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"service_status\": \"completed\", \"status\": \"completed\", \"outputs\": [\"https://example.test/video.mp4?SECRET\"]}",
+      "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
+    }
+  },
+  {
+    "name": "poll state-missing-id",
+    "call": "poll",
+    "description": "",
+    "args": {
+      "request": "{\"kind\": \"video\", \"outputs\": 1}",
+      "state": "{\"task_trace_id\": \"tr\"}",
+      "timeout": "5",
+      "script": "{\"call\": {\"query_tasks\": {\"return\": {\"generationId\": \"job-123\", \"status\": \"completed\"}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "KeyError",
+        "message": "'generation_id'"
+      },
+      "log": "[[\"session\", 5, \"tr\"]]"
+    }
+  },
+  {
+    "name": "account remaining",
+    "call": "account",
+    "description": "",
+    "args": {
+      "timeout": "60",
+      "script": "{\"call\": {\"query_membership_and_credits\": {\"return\": {\"membership\": \"pro\", \"credits\": {\"total\": 2000, \"remaining\": 1824}}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"balance\": 1824.0, \"source\": \"credits.remaining\"}",
+      "log": "[[\"session\", 60, null], [\"call\", \"query_membership_and_credits\", null, null]]"
+    }
+  },
+  {
+    "name": "account preferred-later",
+    "call": "account",
+    "description": "",
+    "args": {
+      "timeout": "60",
+      "script": "{\"call\": {\"query_membership_and_credits\": {\"return\": {\"credit\": 5, \"other\": {\"balance\": 3}}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"balance\": 3.0, \"source\": \"other.balance\"}",
+      "log": "[[\"session\", 60, null], [\"call\", \"query_membership_and_credits\", null, null]]"
+    }
+  },
+  {
+    "name": "account first-found",
+    "call": "account",
+    "description": "",
+    "args": {
+      "timeout": "60",
+      "script": "{\"call\": {\"query_membership_and_credits\": {\"return\": {\"credit\": 5, \"point\": 3}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"balance\": 5.0, \"source\": \"credit\"}",
+      "log": "[[\"session\", 60, null], [\"call\", \"query_membership_and_credits\", null, null]]"
+    }
+  },
+  {
+    "name": "account tool-error",
+    "call": "account",
+    "description": "",
+    "args": {
+      "timeout": "60",
+      "script": "{\"call\": {\"query_membership_and_credits\": {\"raise\": \"ToolError\", \"message\": \"no\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"balance\": null, \"source\": \"ответ query_membership_and_credits не получен или не разобран\"}",
+      "log": "[[\"session\", 60, null], [\"call\", \"query_membership_and_credits\", null, null]]"
+    }
+  },
+  {
+    "name": "account no-number",
+    "call": "account",
+    "description": "",
+    "args": {
+      "timeout": "60",
+      "script": "{\"call\": {\"query_membership_and_credits\": {\"return\": {\"membership\": \"pro\"}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"balance\": null, \"source\": \"в ответе query_membership_and_credits нет числового поля остатка\"}",
+      "log": "[[\"session\", 60, null], [\"call\", \"query_membership_and_credits\", null, null]]"
+    }
+  },
+  {
+    "name": "account auth",
+    "call": "account",
+    "description": "",
+    "args": {
+      "timeout": "60",
+      "script": "{\"call\": {\"query_membership_and_credits\": {\"raise\": \"AuthRequired\", \"message\": \"Войдите в Kling на странице «Среда».\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"balance\": null, \"source\": \"Войдите в Kling на странице «Среда».\"}",
+      "log": "[[\"session\", 60, null], [\"call\", \"query_membership_and_credits\", null, null]]"
+    }
+  },
+  {
+    "name": "account not-sent",
+    "call": "account",
+    "description": "",
+    "args": {
+      "timeout": "60",
+      "script": "{\"call\": {\"query_membership_and_credits\": {\"raise\": \"NotSent\", \"message\": \"x\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"balance\": null, \"source\": \"ответ query_membership_and_credits не получен или не разобран\"}",
+      "log": "[[\"session\", 60, null], [\"call\", \"query_membership_and_credits\", null, null]]"
+    }
+  },
+  {
+    "name": "account value-error",
+    "call": "account",
+    "description": "",
+    "args": {
+      "timeout": "60",
+      "script": "{\"call\": {\"query_membership_and_credits\": {\"raise\": \"ValueError\", \"message\": \"x\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"balance\": null, \"source\": \"ответ query_membership_and_credits не получен или не разобран\"}",
+      "log": "[[\"session\", 60, null], [\"call\", \"query_membership_and_credits\", null, null]]"
+    }
+  },
+  {
+    "name": "auth_status authenticated",
+    "call": "auth_status",
+    "description": "",
+    "args": {
+      "timeout": "30",
+      "script": "{\"call\": {\"who_am_i\": {\"return\": {\"user\": 1}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"status\": \"authenticated\"}",
+      "log": "[[\"session\", 30, null], [\"call\", \"who_am_i\", null, null]]"
+    }
+  },
+  {
+    "name": "auth_status no-credentials",
+    "call": "auth_status",
+    "description": "",
+    "args": {
+      "timeout": "30",
+      "script": "{}",
+      "files": "{}",
+      "credentials": false
+    },
+    "expected": {
+      "result": "{\"status\": \"unauthenticated\", \"message\": \"Войдите в Kling на странице «Среда».\"}",
+      "log": "[]"
+    }
+  },
+  {
+    "name": "auth_status rejected",
+    "call": "auth_status",
+    "description": "",
+    "args": {
+      "timeout": "30",
+      "script": "{\"call\": {\"who_am_i\": {\"raise\": \"AuthRequired\", \"message\": \"Войдите в Kling на странице «Среда».\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"status\": \"unauthenticated\", \"message\": \"Войдите в Kling на странице «Среда».\"}",
+      "log": "[[\"session\", 30, null], [\"call\", \"who_am_i\", null, null]]"
+    }
+  },
+  {
+    "name": "auth_status offline",
+    "call": "auth_status",
+    "description": "",
+    "args": {
+      "timeout": "30",
+      "script": "{\"call\": {\"who_am_i\": {\"raise\": \"NotSent\", \"message\": \"x\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"status\": \"unknown\", \"message\": \"Нет соединения с Kling. Проверьте сеть и повторите проверку.\"}",
+      "log": "[[\"session\", 30, null], [\"call\", \"who_am_i\", null, null]]"
+    }
+  },
+  {
+    "name": "auth_status server-error",
+    "call": "auth_status",
+    "description": "",
+    "args": {
+      "timeout": "30",
+      "script": "{\"call\": {\"who_am_i\": {\"raise\": \"TransportError\", \"status\": 500, \"text\": \"x\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"status\": \"unknown\", \"message\": \"Kling не подтвердил вход. Повторите проверку позже.\"}",
+      "log": "[[\"session\", 30, null], [\"call\", \"who_am_i\", null, null]]"
+    }
+  },
+  {
+    "name": "auth_status tool-error",
+    "call": "auth_status",
+    "description": "",
+    "args": {
+      "timeout": "30",
+      "script": "{\"call\": {\"who_am_i\": {\"raise\": \"ToolError\", \"message\": \"x\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"status\": \"unknown\", \"message\": \"Kling не подтвердил вход. Повторите проверку позже.\"}",
+      "log": "[[\"session\", 30, null], [\"call\", \"who_am_i\", null, null]]"
+    }
+  },
+  {
+    "name": "auth_status os-error",
+    "call": "auth_status",
+    "description": "",
+    "args": {
+      "timeout": "30",
+      "script": "{\"call\": {\"who_am_i\": {\"raise\": \"OSError\", \"message\": \"x\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"status\": \"unknown\", \"message\": \"Kling не подтвердил вход. Повторите проверку позже.\"}",
+      "log": "[[\"session\", 30, null], [\"call\", \"who_am_i\", null, null]]"
+    }
+  },
+  {
+    "name": "capabilities_catalog ok",
+    "call": "capabilities_catalog",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "timeout": "60",
+      "script": "{\"tools\": {\"return\": [{\"name\": \"image_to_image\"}, {\"name\": \"image_to_video\"}, {\"name\": \"motion_control\"}, {\"name\": \"omni_ref_video\"}, {\"name\": \"text_to_image\"}, {\"name\": \"text_to_video\"}]}, \"call\": {\"who_am_i\": {\"return\": {\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"reports\": [{\"command\": \"image_to_video\", \"models\": {\"kling-video-v3_0\": {\"arguments\": {\"prompt\": {\"required\": true}, \"duration\": {\"default\": \"5\", \"allowed\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, \"resolution\": {\"default\": \"1080p\", \"allowed\": [\"720p\", \"1080p\", \"4k\"]}, \"prefer_multi_shots\": {\"default\": \"true\", \"allowed\": [\"true\", \"false\"]}, \"elements\": {\"max_items\": 7}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}}, \"limits\": {}}, \"kling-video-v4_0\": {\"arguments\": {\"duration\": {\"default\": \"10\", \"allowed\": [\"3\", \"4\", \"5\"]}, \"resolution\": {\"default\": \"720p\", \"allowed\": [\"720p\", \"1080p\"]}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}, \"keyframe_1\": {\"required\": false}}, \"limits\": {\"combined_item_cap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}}}}], \"problems\": [{\"command\": \"text_to_video\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}, {\"command\": \"omni_ref_video\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}, {\"command\": \"motion_control\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}]}",
+      "log": "[[\"session\", 60, null], [\"tools\"], [\"call\", \"who_am_i\", {\"tools\": [\"text_to_video\", \"image_to_video\", \"omni_ref_video\", \"motion_control\"]}, null]]"
+    }
+  },
+  {
+    "name": "capabilities_catalog tools-not-dict",
+    "call": "capabilities_catalog",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "timeout": "60",
+      "script": "{\"tools\": {\"return\": [{\"name\": \"image_to_video\"}, \"x\"]}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "tools/list вернул неверное объявление команд."
+      },
+      "log": "[[\"session\", 60, null], [\"tools\"]]"
+    }
+  },
+  {
+    "name": "capabilities_catalog tool-names",
+    "call": "capabilities_catalog",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "timeout": "60",
+      "script": "{\"tools\": {\"return\": [{\"name\": 5}, {\"title\": \"t\"}, {\"name\": \"image_to_video\"}]}, \"call\": {\"who_am_i\": {\"return\": {\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"reports\": [{\"command\": \"image_to_video\", \"models\": {\"kling-video-v3_0\": {\"arguments\": {\"prompt\": {\"required\": true}, \"duration\": {\"default\": \"5\", \"allowed\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, \"resolution\": {\"default\": \"1080p\", \"allowed\": [\"720p\", \"1080p\", \"4k\"]}, \"prefer_multi_shots\": {\"default\": \"true\", \"allowed\": [\"true\", \"false\"]}, \"elements\": {\"max_items\": 7}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}}, \"limits\": {}}, \"kling-video-v4_0\": {\"arguments\": {\"duration\": {\"default\": \"10\", \"allowed\": [\"3\", \"4\", \"5\"]}, \"resolution\": {\"default\": \"720p\", \"allowed\": [\"720p\", \"1080p\"]}}, \"slots\": {\"first_image\": {\"required\": true}, \"tail_image\": {\"required\": false}, \"keyframe_1\": {\"required\": false}}, \"limits\": {\"combined_item_cap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}}}}], \"problems\": [{\"command\": \"text_to_video\", \"message\": \"Команда не объявлена в tool_list текущего аккаунта.\"}, {\"command\": \"omni_ref_video\", \"message\": \"Команда не объявлена в tool_list текущего аккаунта.\"}, {\"command\": \"motion_control\", \"message\": \"Команда не объявлена в tool_list текущего аккаунта.\"}]}",
+      "log": "[[\"session\", 60, null], [\"tools\"], [\"call\", \"who_am_i\", {\"tools\": [\"text_to_video\", \"image_to_video\", \"omni_ref_video\", \"motion_control\"]}, null]]"
+    }
+  },
+  {
+    "name": "capabilities_catalog who-text",
+    "call": "capabilities_catalog",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "timeout": "60",
+      "script": "{\"tools\": {\"return\": [{\"name\": \"image_to_image\"}, {\"name\": \"image_to_video\"}, {\"name\": \"motion_control\"}, {\"name\": \"omni_ref_video\"}, {\"name\": \"text_to_image\"}, {\"name\": \"text_to_video\"}]}, \"call\": {\"who_am_i\": {\"return\": \"PRIVATE text\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "who_am_i вернул неверный ответ; сырой ответ скрыт."
+      },
+      "log": "[[\"session\", 60, null], [\"tools\"], [\"call\", \"who_am_i\", {\"tools\": [\"text_to_video\", \"image_to_video\", \"omni_ref_video\", \"motion_control\"]}, null]]"
+    }
+  },
+  {
+    "name": "capabilities_catalog who-error",
+    "call": "capabilities_catalog",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "timeout": "60",
+      "script": "{\"tools\": {\"return\": [{\"name\": \"image_to_image\"}, {\"name\": \"image_to_video\"}, {\"name\": \"motion_control\"}, {\"name\": \"omni_ref_video\"}, {\"name\": \"text_to_image\"}, {\"name\": \"text_to_video\"}]}, \"call\": {\"who_am_i\": {\"raise\": \"ToolError\", \"message\": \"PRIVATE identity\"}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Discovery Kling недоступен: сервер не ответил или ответил ошибкой."
+      },
+      "log": "[[\"session\", 60, null], [\"tools\"], [\"call\", \"who_am_i\", {\"tools\": [\"text_to_video\", \"image_to_video\", \"omni_ref_video\", \"motion_control\"]}, null]]"
+    }
+  },
+  {
+    "name": "capabilities_catalog tools-500",
+    "call": "capabilities_catalog",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "timeout": "60",
+      "script": "{\"tools\": {\"raise\": \"TransportError\", \"status\": 500, \"text\": \"PRIVATE\"}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Discovery Kling недоступен: сервер не ответил или ответил ошибкой."
+      },
+      "log": "[[\"session\", 60, null], [\"tools\"]]"
+    }
+  },
+  {
+    "name": "capabilities_catalog auth",
+    "call": "capabilities_catalog",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "timeout": "60",
+      "script": "{\"tools\": {\"raise\": \"AuthRequired\", \"message\": \"Войдите в Kling на странице «Среда».\"}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Войдите в Kling на странице «Среда». Объявления моделей недоступны."
+      },
+      "log": "[[\"session\", 60, null], [\"tools\"]]"
+    }
+  },
+  {
+    "name": "capabilities_catalog os-error",
+    "call": "capabilities_catalog",
+    "description": "",
+    "args": {
+      "kind": "\"video\"",
+      "timeout": "60",
+      "script": "{\"tools\": {\"raise\": \"OSError\", \"message\": \"disk\"}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "error": {
+        "type": "ValueError",
+        "message": "Discovery Kling недоступен: сервер не ответил или ответил ошибкой."
+      },
+      "log": "[[\"session\", 60, null], [\"tools\"]]"
+    }
+  },
+  {
+    "name": "capabilities_catalog image",
+    "call": "capabilities_catalog",
+    "description": "",
+    "args": {
+      "kind": "\"image\"",
+      "timeout": "60",
+      "script": "{\"tools\": {\"return\": [{\"name\": \"image_to_image\"}, {\"name\": \"image_to_video\"}, {\"name\": \"motion_control\"}, {\"name\": \"omni_ref_video\"}, {\"name\": \"text_to_image\"}, {\"name\": \"text_to_video\"}]}, \"call\": {\"who_am_i\": {\"return\": {\"user\": {\"userId\": 1}, \"availableModels\": {\"image_to_video\": {\"models\": [{\"model\": \"kling-video-v3_0\", \"arguments\": [{\"name\": \"prompt\", \"required\": true}, {\"name\": \"duration\", \"default\": \"5\", \"allowedValues\": [\"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\"]}, {\"name\": \"resolution\", \"default\": \"1080p\", \"allowedValues\": [\"720p\", \"1080p\", \"4k\"]}, {\"name\": \"prefer_multi_shots\", \"default\": \"true\", \"allowedValues\": [\"true\", \"false\"]}, {\"name\": \"elements\", \"maxItems\": 7}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}]}, {\"model\": \"kling-video-v4_0\", \"arguments\": [{\"name\": \"duration\", \"default\": \"10\", \"allowedValues\": [\"3\", \"4\", \"5\"]}, {\"name\": \"resolution\", \"default\": \"720p\", \"allowedValues\": [\"720p\", \"1080p\"]}], \"inputs\": [{\"name\": \"first_image\", \"required\": true}, {\"name\": \"tail_image\", \"required\": false}, {\"name\": \"keyframe_1\", \"required\": false}], \"combinedItemCap\": {\"maxItems\": 10, \"arguments\": [], \"inputPrefixes\": [\"first_image\", \"tail_image\", \"keyframe_\"]}}]}}}}}}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"reports\": [], \"problems\": [{\"command\": \"text_to_image\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}, {\"command\": \"image_to_image\", \"message\": \"who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.\"}]}",
+      "log": "[[\"session\", 60, null], [\"tools\"], [\"call\", \"who_am_i\", {\"tools\": [\"text_to_image\", \"image_to_image\"]}, null]]"
+    }
+  },
+  {
+    "name": "login ok",
+    "call": "login",
+    "description": "mcp.login подменён успешным",
+    "args": {
+      "open_browser": "false",
+      "timeout": "1",
+      "script": "{}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"ok\": true, \"message\": \"Вход в Kling выполнен, авторизация сохранена.\"}",
+      "log": "[]"
+    }
+  },
+  {
+    "name": "login auth",
+    "call": "login",
+    "description": "AuthRequired",
+    "args": {
+      "open_browser": "false",
+      "timeout": "1",
+      "script": "{}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"ok\": false, \"message\": \"Вход в Kling не завершён: отменён\"}",
+      "log": "[]"
+    }
+  },
+  {
+    "name": "login transport",
+    "call": "login",
+    "description": "TransportError",
+    "args": {
+      "open_browser": "false",
+      "timeout": "1",
+      "script": "{}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"ok\": false, \"message\": \"Вход в Kling не завершён: HTTP 400: Kling не обменял код авторизации на токен.\"}",
+      "log": "[]"
+    }
+  },
+  {
+    "name": "login value",
+    "call": "login",
+    "description": "ValueError",
+    "args": {
+      "open_browser": "false",
+      "timeout": "1",
+      "script": "{}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"ok\": false, \"message\": \"Вход в Kling не завершён: Недопустимый адрес сервера.\"}",
+      "log": "[]"
+    }
+  },
+  {
+    "name": "login not-sent",
+    "call": "login",
+    "description": "NotSent",
+    "args": {
+      "open_browser": "false",
+      "timeout": "1",
+      "script": "{}",
+      "files": "{}",
+      "credentials": true
+    },
+    "expected": {
+      "result": "{\"ok\": false, \"message\": \"Вход в Kling не завершён: Порты входа 8787–8790 заняты: закройте программу, которая их использует, и повторите вход.\"}",
+      "log": "[]"
+    }
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "description": "Пакет из временной папки.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "tmp park"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "park",
+    "--dir",
+    "<tmp>/M04"
+  ],
+  "remove": [],
+  "mkdir": [],
+  "tmp": true
+}

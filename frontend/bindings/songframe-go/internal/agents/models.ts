@@ -126,6 +126,17 @@ export interface ModelsResult {
 }
 
 /**
+ * ProviderAuth — вход в платного провайдера, проверенный его программой (ProviderAuth оригинала).
+ */
+export interface ProviderAuth {
+    /**
+     * authenticated, unauthenticated или unknown
+     */
+    "status": string;
+    "message"?: string;
+}
+
+/**
  * Settings — AgentSettings контракта: исполнитель и необязательная модель. Путь к программе не
  * хранится: CLI всегда находится автоматическим поиском, найденный файл виден в проверке.
  */

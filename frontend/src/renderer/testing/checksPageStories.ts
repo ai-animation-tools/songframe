@@ -1,9 +1,9 @@
 /**
- * Локальная модель страницы «Проверки» в состоянии Go-версии: list/run/runAll и пересборка карточек
- * (updateViews) перенесены, пробы стыков, среда и производство — ещё нет. Задания создаются
+ * Локальная модель страницы «Проверки» в состоянии Go-версии: list/run/runAll, пересборка карточек
+ * (updateViews) и сводка производства (production.view) перенесены, пробы стыков — ещё нет. Задания создаются
  * выполняющимися и завершаются при следующем опросе jobs.list, как задания общего менеджера.
  */
-import type { CheckId, CheckInfo, CheckOptions, JobInfo } from '@shared/types';
+import type { CheckId, CheckInfo, CheckOptions, JobInfo, ShotProduction } from '@shared/types';
 import { checksTexts } from '@shared/texts/checks';
 import type { ApiMethod } from '../availability';
 import type { StoryOptions } from './storybook';
@@ -20,13 +20,26 @@ export const CHECKS_PAGE_LIST: CheckInfo[] = [
 ];
 
 /** Методы группы, которые адаптер Go-версии пока отмечает недоступными. */
-export const CHECKS_PAGE_UNAVAILABLE: readonly ApiMethod[] = [
-  'checks.buildReview',
-  'checks.listReviews',
-  'checks.removeReview',
-  'production.view',
-  'environment.check'
-];
+export const CHECKS_PAGE_UNAVAILABLE: readonly ApiMethod[] = ['checks.buildReview', 'checks.listReviews', 'checks.removeReview'];
+
+/** План сводки производства: страница проверок берёт из неё только готовность сценария (есть ли планы). */
+function shot(id: string, start: number, end: number): ShotProduction {
+  return {
+    id,
+    title: id,
+    original: '',
+    start,
+    end,
+    lipsync: false,
+    state: 'planned',
+    stageLabel: '',
+    regenerateProblem: null,
+    derivedFrom: null,
+    attention: null,
+    asset: null,
+    packages: []
+  };
+}
 
 interface ChecksPageInspection {
   runs: { id: CheckId; options: CheckOptions | undefined }[];
@@ -40,8 +53,8 @@ export function checksPageInspection(): ChecksPageInspection {
   return activeInspection();
 }
 
-/** failing — проверки, шаг которых завершается кодом 1 (как отказ инструмента). */
-export function checksPageOptions({ failing = [] }: { failing?: readonly CheckId[] } = {}): StoryOptions {
+/** failing — проверки, шаг которых завершается кодом 1 (как отказ инструмента); noShots — в сценарии ещё нет планов. */
+export function checksPageOptions({ failing = [], noShots = false }: { failing?: readonly CheckId[]; noShots?: boolean } = {}): StoryOptions {
   return {
     shell: 'page',
     route: '/project/checks',
@@ -116,6 +129,14 @@ export function checksPageOptions({ failing = [] }: { failing?: readonly CheckId
             advance();
             return structuredClone(jobs);
           }
+        },
+        production: {
+          view: async () => ({
+            shots: noShots ? [] : [shot('M01', 0, 4), shot('M02', 4, 8)],
+            broken: [],
+            problems: [],
+            tools: { python: true, providers: {} }
+          })
         },
         shell: { openPath: async () => undefined }
       };

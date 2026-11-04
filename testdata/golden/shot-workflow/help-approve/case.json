@@ -1,0 +1,16 @@
+{
+  "description": "approve -h.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "sub help"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "approve",
+    "-h"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "План M03 · режим shot · этап: запрос изображения на подтверждении (`image_request_choice`)\nОкно 4.0 с (120 кадров), запрос 5 с\n\n| Опора | Роль | Время, с | Принята | Файл |\n| --- | --- | --- | --- | --- |\n| K01 | first | 0 | нет | frames/K01.png |\n| K02 | last | 5 | нет | — |\n\nПромпт: не принят\nЗапрос опоры K02: image-01, состояние None\nПроблема: запрос изображения: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\nДальше: покажите image request SHA и cost_check; каждую отправку подтвердите отдельно\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

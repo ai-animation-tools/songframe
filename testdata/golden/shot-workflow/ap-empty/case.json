@@ -1,0 +1,17 @@
+{
+  "description": "План опор пуст.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "empty plan"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "approve-prompt",
+    "--dir",
+    "plan/batches/M04-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

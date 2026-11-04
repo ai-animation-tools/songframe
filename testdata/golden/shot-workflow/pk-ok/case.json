@@ -1,0 +1,24 @@
+{
+  "description": "Каркас опор с промежуточными.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "plan_keyframes",
+    "middle"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "plan-keyframes",
+    "--dir",
+    "plan/batches/M04-attempt-01",
+    "--request-seconds",
+    "5",
+    "--middle",
+    "2.5:колёса",
+    "--middle",
+    "1"
+  ],
+  "remove": [],
+  "mkdir": []
+}

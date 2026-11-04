@@ -2,8 +2,11 @@
 // сущности кастинга делят одни файлы в source/, поэтому их запись согласуется здесь, а не в
 // internal/sourceedit (форма «Исходники») или internal/cast (документ кастинга).
 //
-// Сейчас пакет содержит сохранение исходников с синхронизацией кастинга (saveSourcesWithCastImages).
-// Публикация принятого изображения референса (attachReferenceImage) переносится в этапе 45.
+// Пакет содержит сохранение исходников с синхронизацией кастинга (saveSourcesWithCastImages,
+// sources.go), публикацию принятого изображения референса (attachReferenceImage, attach.go), а
+// также чтение выбранных опор (reference-image-inputs.ts, inputs.go) и контекста конструктора
+// промпта (reference-image-context.ts, context.go) для генерации обложки и референсов
+// (internal/covergen).
 package referenceimage
 
 import (

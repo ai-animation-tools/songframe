@@ -1,0 +1,101 @@
+[
+  {
+    "name": "code",
+    "target": "/callback?code=abc&state=expected",
+    "expected": {
+      "status": 200,
+      "body": "<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>Вход в Kling выполнен. Вернитесь в SongFrame.</p>",
+      "content_type": "text/html; charset=utf-8",
+      "result": "{\"code\": \"abc\"}",
+      "done": true
+    }
+  },
+  {
+    "name": "error",
+    "target": "/callback?error=access_denied&error_description=%D0%9E%D1%82%D0%BA%D0%B0%D0%B7+%D0%BF%D0%BE%D0%BB%D1%8C%D0%B7%D0%BE%D0%B2%D0%B0%D1%82%D0%B5%D0%BB%D1%8F&state=expected",
+    "expected": {
+      "status": 400,
+      "body": "<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>Вход в Kling отменён. Вернитесь в SongFrame.</p>",
+      "content_type": "text/html; charset=utf-8",
+      "result": "{\"error\": \"Отказ пользователя\"}",
+      "done": true
+    }
+  },
+  {
+    "name": "error-no-description",
+    "target": "/callback?error=access_denied&state=expected",
+    "expected": {
+      "status": 400,
+      "body": "<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>Вход в Kling отменён. Вернитесь в SongFrame.</p>",
+      "content_type": "text/html; charset=utf-8",
+      "result": "{\"error\": \"access_denied\"}",
+      "done": true
+    }
+  },
+  {
+    "name": "foreign-state",
+    "target": "/callback?code=x&state=other",
+    "expected": {
+      "status": 400,
+      "body": "<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>Неверный state: начните вход заново из SongFrame.</p>",
+      "content_type": "text/html; charset=utf-8",
+      "result": "null",
+      "done": false
+    }
+  },
+  {
+    "name": "no-state",
+    "target": "/callback?code=x",
+    "expected": {
+      "status": 400,
+      "body": "<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>Неверный state: начните вход заново из SongFrame.</p>",
+      "content_type": "text/html; charset=utf-8",
+      "result": "null",
+      "done": false
+    }
+  },
+  {
+    "name": "no-code",
+    "target": "/callback?state=expected",
+    "expected": {
+      "status": 400,
+      "body": "<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>Ответ без кода авторизации.</p>",
+      "content_type": "text/html; charset=utf-8",
+      "result": "null",
+      "done": false
+    }
+  },
+  {
+    "name": "empty-code",
+    "target": "/callback?code=&state=expected",
+    "expected": {
+      "status": 400,
+      "body": "<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>Ответ без кода авторизации.</p>",
+      "content_type": "text/html; charset=utf-8",
+      "result": "null",
+      "done": false
+    }
+  },
+  {
+    "name": "other-path",
+    "target": "/favicon.ico",
+    "expected": {
+      "status": 404,
+      "body": "<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>Не найдено.</p>",
+      "content_type": "text/html; charset=utf-8",
+      "result": "null",
+      "done": false
+    }
+  },
+  {
+    "name": "path-params",
+    "target": "/callback;x?code=c&state=expected",
+    "expected": {
+      "status": 200,
+      "body": "<!doctype html><meta charset='utf-8'><title>SongFrame</title><p>Вход в Kling выполнен. Вернитесь в SongFrame.</p>",
+      "content_type": "text/html; charset=utf-8",
+      "result": "{\"code\": \"c\"}",
+      "done": true
+    }
+  }
+]

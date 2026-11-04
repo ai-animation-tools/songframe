@@ -1,0 +1,19 @@
+{
+  "description": "Файл не из downloads.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "downloads"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "select-image",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--file",
+    "image-01/input-1.png"
+  ],
+  "remove": [],
+  "mkdir": []
+}

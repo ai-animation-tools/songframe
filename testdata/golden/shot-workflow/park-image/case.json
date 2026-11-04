@@ -1,0 +1,17 @@
+{
+  "description": "Перенос image-пакета без видео-запроса.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "image_only"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "park",
+    "--dir",
+    "plan/batches/M03-attempt-01"
+  ],
+  "remove": [],
+  "mkdir": []
+}

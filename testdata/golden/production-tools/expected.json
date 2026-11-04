@@ -1,0 +1,133 @@
+[
+  {
+    "label": "init",
+    "code": 0,
+    "stdout": "Пакет M03 создан: этап description_review, окно 4.0 с.\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "prepare",
+    "code": 0,
+    "stdout": "{\n  \"schema_version\": 1,\n  \"shot\": \"M03\",\n  \"provider\": \"test\",\n  \"kind\": \"video\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 5,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"inputs\": [\n    {\n      \"flag\": \"input\",\n      \"slot\": \"first_image\",\n      \"role\": \"first\",\n      \"path\": \"inputs/01.png\",\n      \"sha256\": \"3220fc7838ccdab0a3a21b5d8498275c7abe6930abbb059e9fdb4939bba8c2fd\",\n      \"bytes\": 69\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"32b6a70e75f4b587490a67b241db779d8976c0627b7fac156281bb32e0f96618\"\n  },\n  \"request_sha256\": \"3e807e3ba0c2f5d0b3141c85ca310498bec375b269b362f00282cabcb6594933\",\n  \"prompt_text\": \"Один дубль.\",\n  \"work_dir\": \"<project>/plan/batches/M03-attempt-01/request\",\n  \"warnings\": []\n}\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "keyframes",
+    "code": 0,
+    "stdout": "Этап: keyframes_review.\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "prompt",
+    "code": 0,
+    "stdout": "Этап: prompt_review.\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "choice",
+    "code": 0,
+    "stdout": "Этап: request_choice.\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "ask",
+    "code": 0,
+    "stdout": "Вопрос записан для приложения: Отправить запрос или сохранить пакет в очередь? (send, park, revise).\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "regenerate-package",
+    "code": 0,
+    "stdout": "{\"shot\": \"M03\", \"package\": \"<project>/plan/batches/M03-attempt-02\", \"work_dir\": \"<project>/plan/batches/M03-attempt-02/request\", \"retry_of\": \"plan/batches/M03-attempt-01\", \"request_sha256\": \"3e807e3ba0c2f5d0b3141c85ca310498bec375b269b362f00282cabcb6594933\", \"provider\": \"test\", \"model\": \"test-video\", \"parameters\": {\"duration\": 5, \"resolution\": \"1080p\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"role\": \"first\", \"path\": \"inputs/01.png\", \"sha256\": \"3220fc7838ccdab0a3a21b5d8498275c7abe6930abbb059e9fdb4939bba8c2fd\", \"bytes\": 69}], \"prompt_chars\": 11, \"warnings\": [], \"cost\": {\"model\": \"test-video\", \"kind\": \"video\", \"command\": \"image_to_video\", \"parameters\": {\"duration\": 5, \"resolution\": \"1080p\"}, \"outputs\": 1, \"estimate_credits\": 37.0, \"estimate_source\": \"таблица цен\", \"balance_credits\": 1000.0, \"balance_source\": \"тестовый сервис\", \"verdict\": \"ok\", \"verdict_label\": \"средств достаточно\", \"reasons\": []}, \"source\": \"package\"}\n",
+    "stderr": "",
+    "files": {
+      "plan/batches/M03-attempt-02/workflow.json": "{\n  \"schema_version\": 1,\n  \"shot\": \"M03\",\n  \"mode\": \"shot\",\n  \"stage\": \"request_choice\",\n  \"wait_reason\": null,\n  \"request_dir\": \"request\",\n  \"description_approved\": false,\n  \"scene_sha256\": \"69af153f5fa701a285a4e6a8c9253b5ead4f6031390f7c7cc105b28dfa6cd235\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 120,\n    \"window_seconds\": 4.0,\n    \"request_seconds\": null\n  },\n  \"keyframes\": [],\n  \"approved_frames\": {},\n  \"keyframe_notes\": [],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"approved_prompt_sha256\": null,\n  \"retry_of\": \"plan/batches/M03-attempt-01\",\n  \"frame_source\": null,\n  \"model\": null,\n  \"batch\": null,\n  \"current_keyframe\": null,\n  \"pending_decision\": {\n    \"stage\": \"request_choice\",\n    \"question\": \"Отправить запрос или сохранить пакет в очередь?\",\n    \"options\": [\n      \"send\",\n      \"park\",\n      \"revise\"\n    ],\n    \"asked_at\": \"<time>\"\n  },\n  \"decision\": null\n}\n",
+      "plan/batches/M03-attempt-02/request/request.json": "{\n  \"command\": \"image_to_video\",\n  \"inputs\": [\n    {\n      \"bytes\": 69,\n      \"flag\": \"input\",\n      \"path\": \"inputs/01.png\",\n      \"role\": \"first\",\n      \"sha256\": \"3220fc7838ccdab0a3a21b5d8498275c7abe6930abbb059e9fdb4939bba8c2fd\",\n      \"slot\": \"first_image\"\n    }\n  ],\n  \"kind\": \"video\",\n  \"model\": \"test-video\",\n  \"outputs\": 1,\n  \"parameters\": {\n    \"duration\": 5,\n    \"resolution\": \"1080p\"\n  },\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"32b6a70e75f4b587490a67b241db779d8976c0627b7fac156281bb32e0f96618\"\n  },\n  \"provider\": \"test\",\n  \"schema_version\": 1,\n  \"shot\": \"M03\"\n}\n",
+      "plan/batches/M03-attempt-02/request/attempt.json": "{\n  \"downloads\": [],\n  \"request_sha256\": \"3e807e3ba0c2f5d0b3141c85ca310498bec375b269b362f00282cabcb6594933\",\n  \"schema_version\": 1,\n  \"status\": \"prepared\"\n}\n"
+    }
+  },
+  {
+    "label": "regenerate-text",
+    "code": 0,
+    "stdout": "Пакет <project>/plan/batches/M03-attempt-03 (повтор plan/batches/M03-attempt-02), запрос 3e807e3ba0c2f5d0b3141c85ca310498bec375b269b362f00282cabcb6594933\nМодель test-video, параметры {\"duration\": 5, \"resolution\": \"1080p\"}, входов 1, промпт 11 символов\n| Параметр | Значение |\n| --- | --- |\n| Модель | test-video (video) |\n| Параметры | duration=5, resolution=1080p, результатов 1 |\n| Оценка | 37 кредитов (таблица цен) |\n| Остаток | неизвестно (запрос к аккаунту отключён) |\n| Вердикт | стоимость или баланс неизвестны (`cost_or_balance_unknown`) |\n| Причина | остаток неизвестен: запрос к аккаунту отключён |\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "regenerate-missing",
+    "code": 3,
+    "stdout": "",
+    "stderr": "У плана M05 нет снимка запроса в принятом комплекте.\n",
+    "files": {}
+  },
+  {
+    "label": "submit",
+    "code": 0,
+    "stdout": "{\n  \"downloads\": [],\n  \"request_sha256\": \"3e807e3ba0c2f5d0b3141c85ca310498bec375b269b362f00282cabcb6594933\",\n  \"schema_version\": 1,\n  \"status\": \"submitted\",\n  \"generation_id\": \"test-generation-1\",\n  \"credits_consumed\": 37\n}\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "watch",
+    "code": 0,
+    "stdout": "request: downloaded\n{\n  \"<project>/plan/batches/M03-attempt-01/request\": {\n    \"credits_consumed\": 37,\n    \"downloads\": [\n      {\n        \"number\": 1,\n        \"path\": \"original.mp4\",\n        \"bytes\": 32\n      }\n    ],\n    \"generation_id\": \"test-generation-1\",\n    \"request_sha256\": \"3e807e3ba0c2f5d0b3141c85ca310498bec375b269b362f00282cabcb6594933\",\n    \"schema_version\": 1,\n    \"status\": \"downloaded\",\n    \"service_status\": \"completed\"\n  }\n}\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "submitted",
+    "code": 0,
+    "stdout": "Этап: submitted.\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "downloaded",
+    "code": 0,
+    "stdout": "Этап: downloaded.\n",
+    "stderr": "",
+    "files": {}
+  },
+  {
+    "label": "accept-cut",
+    "code": 1,
+    "stdout": "",
+    "stderr": "Нет звуковой дорожки.\n",
+    "files": {}
+  },
+  {
+    "label": "accept-exists",
+    "code": 1,
+    "stdout": "",
+    "stderr": "Пакет относится к другому плану или не является видеозапросом.\n",
+    "files": {}
+  },
+  {
+    "label": "accept",
+    "code": 0,
+    "stdout": "{\n  \"shot\": \"M03\",\n  \"target\": \"assets/shots/M03\",\n  \"frames\": 120,\n  \"video_sha256\": \"fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2\",\n  \"scene_sha256\": \"69af153f5fa701a285a4e6a8c9253b5ead4f6031390f7c7cc105b28dfa6cd235\",\n  \"replaced\": null,\n  \"observed_credits\": 37.0,\n  \"cleaned\": [\n    \"plan/batches/M03-attempt-01\",\n    \"plan/batches/M03-attempt-02\",\n    \"plan/batches/M03-attempt-03\"\n  ],\n  \"warnings\": []\n}\n",
+    "stderr": "",
+    "files": {
+      "assets/shots/M03/manifest.json": "{\n  \"schema_version\": 1,\n  \"shot\": \"M03\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M03\",\n    \"original\": {\n      \"path\": \"original.mp4\",\n      \"sha256\": \"fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2\",\n      \"bytes\": 32\n    },\n    \"original_media\": {\n      \"width\": 1920,\n      \"height\": 1080,\n      \"r_frame_rate\": \"30/1\",\n      \"duration\": \"4.000000\",\n      \"nb_frames\": \"120\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\",\n      \"sha256\": \"32b6a70e75f4b587490a67b241db779d8976c0627b7fac156281bb32e0f96618\",\n      \"bytes\": 20\n    },\n    \"request\": {\n      \"path\": \"generation-request.json\",\n      \"sha256\": \"9da1add85e04b991474df1e8df1bbf2528f8f058412a447ff0019c041a9a7c2f\",\n      \"bytes\": 746\n    },\n    \"generation_id\": \"test-generation-1\",\n    \"inputs\": [\n      {\n        \"path\": \"generation-input-1.png\",\n        \"sha256\": \"3220fc7838ccdab0a3a21b5d8498275c7abe6930abbb059e9fdb4939bba8c2fd\",\n        \"bytes\": 69,\n        \"slot\": \"first_image\",\n        \"role\": \"Первый кадр\"\n      }\n    ],\n    \"lipsync\": false,\n    \"audio\": null,\n    \"auxiliary_references\": [],\n    \"preparation\": {\n      \"index\": {\n        \"path\": \"preparation.json\",\n        \"sha256\": \"792f9ba836cf9c7ffda27870550f465b1e946e1c70d74c03dedbd38e467244a9\",\n        \"bytes\": 658\n      },\n      \"files\": [\n        {\n          \"path\": \"generation-input-1.png\",\n          \"sha256\": \"3220fc7838ccdab0a3a21b5d8498275c7abe6930abbb059e9fdb4939bba8c2fd\",\n          \"bytes\": 69\n        },\n        {\n          \"path\": \"generation-prompt.txt\",\n          \"sha256\": \"32b6a70e75f4b587490a67b241db779d8976c0627b7fac156281bb32e0f96618\",\n          \"bytes\": 20\n        },\n        {\n          \"path\": \"original.mp4\",\n          \"sha256\": \"fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2\",\n          \"bytes\": 32\n        }\n      ]\n    }\n  },\n  \"accepted_edit\": {\n    \"video\": {\n      \"path\": \"video.mp4\",\n      \"sha256\": \"fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2\",\n      \"bytes\": 32\n    },\n    \"fps\": 30,\n    \"frames\": 120,\n    \"duration_seconds\": 4.0,\n    \"source_interval_seconds\": [\n      0.0,\n      4.0\n    ],\n    \"source_interval_end_exclusive\": true,\n    \"source_frame_grid_fps\": 30,\n    \"still_source_time_seconds\": null,\n    \"speed\": {\n      \"factor\": 1.0,\n      \"ratio\": \"1\",\n      \"selected_source_seconds\": 4.0,\n      \"motion_output_seconds\": 4.0,\n      \"duration_change_seconds\": 0.0\n    },\n    \"hold_first_seconds\": 0.0,\n    \"hold_last_seconds\": 0.0,\n    \"audio_policy\": \"Звук генератора сохранён в оригинале; в монтаже используется непрерывная исходная песня.\",\n    \"montage_source\": {\n      \"path\": \"video.mp4\",\n      \"sha256\": \"fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2\",\n      \"bytes\": 32\n    },\n    \"rebuild\": {\n      \"stages\": [\n        {\n          \"input\": \"original.mp4\",\n          \"filter\": \"fps=30,trim=start_frame=0:end_frame=120,setpts=N/(30*TB),setsar=1\",\n          \"frames\": 120\n        }\n      ],\n      \"source\": {\n        \"path\": \"original.mp4\",\n        \"sha256\": \"fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2\",\n        \"bytes\": 32\n      },\n      \"ffmpeg_version\": \"ffmpeg version test-build\",\n      \"note\": \"Принятые байты восстанавливаются копированием video; повтор фильтров сохраняет монтаж, но не обещает побайтово одинаковое перекодирование.\"\n    },\n    \"source_frame_interval_exclusive\": [\n      0,\n      120\n    ],\n    \"source_fps\": \"30/1\",\n    \"fps_conversion\": \"Исходная частота кадров совпадает со шкалой.\"\n  }\n}\n",
+      "assets/shots/M03/generation-request.json": "{\n  \"schema_version\": 1,\n  \"shot\": \"M03\",\n  \"provider\": \"test\",\n  \"command\": \"image_to_video\",\n  \"model\": \"test-video\",\n  \"parameters\": {\n    \"duration\": 5,\n    \"resolution\": \"1080p\"\n  },\n  \"outputs\": 1,\n  \"request_sha256\": \"3e807e3ba0c2f5d0b3141c85ca310498bec375b269b362f00282cabcb6594933\",\n  \"inputs\": [\n    {\n      \"slot\": \"first_image\",\n      \"role\": \"Первый кадр\",\n      \"path\": \"generation-input-1.png\",\n      \"sha256\": \"3220fc7838ccdab0a3a21b5d8498275c7abe6930abbb059e9fdb4939bba8c2fd\"\n    }\n  ],\n  \"prompt\": \"generation-prompt.txt\",\n  \"prompt_sha256\": \"32b6a70e75f4b587490a67b241db779d8976c0627b7fac156281bb32e0f96618\",\n  \"generation_id\": \"test-generation-1\",\n  \"service_status\": \"completed\",\n  \"path_base\": \"asset_directory\"\n}\n",
+      "assets/shots/M03/preparation.json": "{\n  \"schema_version\": 1,\n  \"shot\": \"M03\",\n  \"path_base\": \"asset_directory\",\n  \"generation_inputs\": [\n    {\n      \"path\": \"generation-input-1.png\",\n      \"sha256\": \"3220fc7838ccdab0a3a21b5d8498275c7abe6930abbb059e9fdb4939bba8c2fd\",\n      \"bytes\": 69,\n      \"slot\": \"first_image\",\n      \"role\": \"Переданный кадр генерации\"\n    }\n  ],\n  \"frame_prompts\": [],\n  \"references\": [],\n  \"notes\": [\n    \"Режим согласования: shot\"\n  ],\n  \"reproduction_note\": \"Точные байты кадров сохранены. Повтор генерации по промпту не гарантирует тех же пикселей.\"\n}\n",
+      "plan/production-status.json": "{\n  \"schema_version\": 1,\n  \"current_animatic\": \"plan/animatic/latest/manifest.json\",\n  \"current_animatic_status\": \"review\",\n  \"shots\": {\n    \"M01\": {\n      \"scene_sha256\": \"a6cb3fb499ac2caf1589f2ecd4127504a1a9d766598493d9a61547a3fe720366\"\n    },\n    \"M02\": {\n      \"scene_sha256\": \"277499fd8f9387443cb75cc72ad2d0e2fb47afcca1d50ba9911c40c4f67c841d\"\n    },\n    \"M03\": {\n      \"scene_sha256\": \"69af153f5fa701a285a4e6a8c9253b5ead4f6031390f7c7cc105b28dfa6cd235\"\n    }\n  }\n}\n"
+    }
+  },
+  {
+    "label": "regenerate-asset",
+    "code": 0,
+    "stdout": "{\"shot\": \"M03\", \"package\": \"<project>/plan/batches/M03-attempt-01\", \"work_dir\": \"<project>/plan/batches/M03-attempt-01/request\", \"retry_of\": null, \"request_sha256\": \"08baa888d798829c4af91903bf976977842bc8bfcc5a96e23bd389195aa0a0d7\", \"provider\": \"test\", \"model\": \"test-video\", \"parameters\": {\"duration\": 5, \"resolution\": \"1080p\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"role\": \"Первый кадр\", \"path\": \"inputs/01.png\", \"sha256\": \"3220fc7838ccdab0a3a21b5d8498275c7abe6930abbb059e9fdb4939bba8c2fd\", \"bytes\": 69}], \"prompt_chars\": 11, \"warnings\": [], \"cost\": {\"model\": \"test-video\", \"kind\": \"video\", \"command\": \"image_to_video\", \"parameters\": {\"duration\": 5, \"resolution\": \"1080p\"}, \"outputs\": 1, \"estimate_credits\": 37.0, \"estimate_source\": \"таблица цен\", \"balance_credits\": 1000.0, \"balance_source\": \"тестовый сервис\", \"verdict\": \"ok\", \"verdict_label\": \"средств достаточно\", \"reasons\": []}, \"source\": \"asset\"}\n",
+    "stderr": "",
+    "files": {
+      "plan/batches/M03-attempt-01/workflow.json": "{\n  \"schema_version\": 1,\n  \"shot\": \"M03\",\n  \"mode\": \"shot\",\n  \"stage\": \"request_choice\",\n  \"wait_reason\": null,\n  \"request_dir\": \"request\",\n  \"description_approved\": false,\n  \"scene_sha256\": \"69af153f5fa701a285a4e6a8c9253b5ead4f6031390f7c7cc105b28dfa6cd235\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 120,\n    \"window_seconds\": 4.0,\n    \"request_seconds\": null\n  },\n  \"keyframes\": [],\n  \"approved_frames\": {},\n  \"keyframe_notes\": [],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"approved_prompt_sha256\": null,\n  \"retry_of\": null,\n  \"frame_source\": null,\n  \"model\": null,\n  \"batch\": null,\n  \"current_keyframe\": null,\n  \"pending_decision\": {\n    \"stage\": \"request_choice\",\n    \"question\": \"Отправить запрос или сохранить пакет в очередь?\",\n    \"options\": [\n      \"send\",\n      \"park\",\n      \"revise\"\n    ],\n    \"asked_at\": \"<time>\"\n  },\n  \"decision\": null\n}\n",
+      "plan/batches/M03-attempt-01/request/request.json": "{\n  \"command\": \"image_to_video\",\n  \"inputs\": [\n    {\n      \"bytes\": 69,\n      \"flag\": \"input\",\n      \"path\": \"inputs/01.png\",\n      \"role\": \"Первый кадр\",\n      \"sha256\": \"3220fc7838ccdab0a3a21b5d8498275c7abe6930abbb059e9fdb4939bba8c2fd\",\n      \"slot\": \"first_image\"\n    }\n  ],\n  \"kind\": \"video\",\n  \"model\": \"test-video\",\n  \"outputs\": 1,\n  \"parameters\": {\n    \"duration\": 5,\n    \"resolution\": \"1080p\"\n  },\n  \"prompt\": {\n    \"path\": \"prompt.txt\",\n    \"sha256\": \"32b6a70e75f4b587490a67b241db779d8976c0627b7fac156281bb32e0f96618\"\n  },\n  \"provider\": \"test\",\n  \"schema_version\": 1,\n  \"shot\": \"M03\"\n}\n"
+    }
+  }
+]

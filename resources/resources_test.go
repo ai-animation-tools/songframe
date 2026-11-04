@@ -44,3 +44,26 @@ func TestSkills(t *testing.T) {
 		t.Error("неизвестный скилл должен давать ошибку")
 	}
 }
+
+// TestProviderDocs проверяет, что документы провайдеров совпадают байт в байт с docs/providers
+// оригинала на 634fd94: их раздел «Указания агенту» входит в промпт задания.
+func TestProviderDocs(t *testing.T) {
+	want := map[[2]string]string{
+		{"image", "kling"}: "b9c9a9f12b4427b4e7efa0a8dc636c7559362e58fc5da3c392c11cbc73c99011",
+		{"image", "codex"}: "e89d8bbab06d298d29442acbbf53539514d479d532e72701d4142c2d3c819fdb",
+		{"video", "kling"}: "609a918e609622e2176c7dbe9a9f516f0409ee9bd53aca33ee8bc252cdf577cc",
+	}
+	for key, digest := range want {
+		data, err := ProviderDoc(key[0], key[1])
+		if err != nil {
+			t.Fatalf("%s/%s: %v", key[0], key[1], err)
+		}
+		sum := sha256.Sum256(data)
+		if got := hex.EncodeToString(sum[:]); got != digest {
+			t.Errorf("%s/%s.md: SHA-256 %s, ожидался %s", key[0], key[1], got, digest)
+		}
+	}
+	if _, err := ProviderDoc("video", "codex"); err == nil {
+		t.Error("отсутствующий документ должен давать ошибку")
+	}
+}

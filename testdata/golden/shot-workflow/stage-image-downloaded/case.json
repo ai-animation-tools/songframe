@@ -1,0 +1,18 @@
+{
+  "description": "image_downloaded.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "image_downloaded"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "set-stage",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "image_downloaded"
+  ],
+  "remove": [],
+  "mkdir": []
+}

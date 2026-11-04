@@ -1,0 +1,19 @@
+{
+  "description": "Промпт из другого файла.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "--file"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "approve-prompt",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--file",
+    "alt.txt"
+  ],
+  "remove": [],
+  "mkdir": []
+}

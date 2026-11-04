@@ -1,0 +1,19 @@
+{
+  "description": "Вопрос без вариантов.",
+  "call": "shot_workflow",
+  "project": "project",
+  "base": "checks-base",
+  "covers": [
+    "no options"
+  ],
+  "stubbedMedia": [],
+  "args": [
+    "decide",
+    "--dir",
+    "plan/batches/M03-attempt-01",
+    "--verdict",
+    "review"
+  ],
+  "remove": [],
+  "mkdir": []
+}

@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "stdout": "{\n  \"directory\": \"<project>/plan/batches/M03-attempt-01\",\n  \"shot\": \"M03\",\n  \"mode\": \"shot\",\n  \"stage\": \"keyframes_review\",\n  \"stage_label\": \"опоры на согласовании\",\n  \"wait_reason\": null,\n  \"batch\": null,\n  \"current_keyframe\": \"K01\",\n  \"timing\": {\n    \"fps\": 30,\n    \"frames\": 120,\n    \"window_seconds\": 4.0,\n    \"request_seconds\": 5\n  },\n  \"keyframes\": [\n    {\n      \"id\": \"K01\",\n      \"role\": \"first\",\n      \"time_seconds\": 0.0,\n      \"note\": \"первый кадр\",\n      \"path\": \"frames/K01.png\",\n      \"sha256\": \"865ff178ce8407825ea5201ce98d16e82bf806feaccd36d5acb0dccd7d5ac2b3\",\n      \"approved\": false\n    },\n    {\n      \"id\": \"K02\",\n      \"role\": \"last\",\n      \"time_seconds\": 5.0,\n      \"note\": \"конечный кадр\",\n      \"path\": null,\n      \"sha256\": null,\n      \"approved\": false\n    }\n  ],\n  \"prompt\": {\n    \"path\": \"video-prompt.txt\",\n    \"approved\": false\n  },\n  \"request_dir\": null,\n  \"attempt_status\": null,\n  \"image_request_dir\": null,\n  \"image_frame_id\": null,\n  \"image_requests\": [],\n  \"image_attempt_status\": null,\n  \"description_approved\": false,\n  \"keyframe_notes\": [],\n  \"pending_decision\": {\n    \"stage\": \"keyframes_review\",\n    \"question\": \"Утвердить опоры?\",\n    \"options\": [\n      \"approve\",\n      \"revise\"\n    ],\n    \"asked_at\": \"2026-10-28T19:03:38+00:00\"\n  },\n  \"decision\": null,\n  \"problems\": [],\n  \"next_action\": \"примите опоры: approve ID ПУТЬ; затем approve-prompt\"\n}\n",
+  "stderr": "",
+  "traceback": false,
+  "files": {},
+  "dirs": {},
+  "modes": {}
+}

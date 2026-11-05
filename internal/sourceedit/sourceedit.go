@@ -24,6 +24,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -121,6 +122,13 @@ type View struct {
 	CoverPath          *string           `json:"coverPath"`
 	ReferenceFilePaths map[string]string `json:"referenceFilePaths"`
 	Problems           []string          `json:"problems"`
+	// PinnedReferences — код референса → планы с готовыми материалами, которые его используют. Файлы
+	// таких референсов при смене типа остаются в прежней папке (SaveOptions.Pinned). Отличие от
+	// 634fd94, как и перенос файлов; заполняет internal/app через internal/referenceimage.
+	PinnedReferences map[string][]string `json:"pinnedReferences"`
+	// EntityKinds — код сущности кастинга → её тип: новый референс с тем же кодом берёт тип сущности.
+	// Отличие от 634fd94: там новый референс всегда начинался с первого типа. Без кастинга пусто.
+	EntityKinds map[string]string `json:"entityKinds"`
 }
 
 // Тексты sourcesTexts.main оригинала.
@@ -304,7 +312,8 @@ func pathOf(file any) (string, error) {
 func ViewProject(project string) (View, error) {
 	manifest := sources.ReadManifest(project)
 	source := filepath.Join(project, sourceDir)
-	view := View{Manifest: json.RawMessage("null"), ReferenceFilePaths: map[string]string{}, Problems: []string{}}
+	view := View{Manifest: json.RawMessage("null"), ReferenceFilePaths: map[string]string{}, Problems: []string{},
+		PinnedReferences: map[string][]string{}, EntityKinds: map[string]string{}}
 	if manifest != nil {
 		view.Manifest = jscompat.Raw(manifest)
 		check := func(file any, label string) error {
@@ -622,35 +631,45 @@ func orNull(value any) any {
 // Ошибка проверки — проблемы через пробел, без записи. Сбой посреди записи оставляет каждый
 // файл целым (старым или новым); опись пишется последней.
 func Save(ctx context.Context, project string, input Input, ffprobe DurationProbe) (json.RawMessage, error) {
-	manifest, err := SaveManifest(ctx, project, input, ffprobe, nil)
+	manifest, _, err := SaveManifest(ctx, project, input, ffprobe, SaveOptions{})
 	if err != nil {
 		return nil, err
 	}
 	return jscompat.Raw(manifest), nil
 }
 
+// SaveOptions — необязательные параметры SaveManifest.
+type SaveOptions struct {
+	// BeforeWrite (может быть nil) вызывается после проверки ввода и шлюза записи, непосредственно
+	// перед первой записью в source/; его ошибка прерывает сохранение без записи. Так вызывающий
+	// делает резервную копию только для сохранения, которое действительно начнёт писать.
+	BeforeWrite func() error
+	// Pinned — коды референсов, чьи сохранённые файлы не переносятся в папку нового типа: их
+	// используют планы с готовыми материалами, и смена пути сделала бы эти материалы устаревшими.
+	Pinned map[string]bool
+}
+
 // SaveManifest — Save, возвращающий записанную опись деревом jscompat (её читает синхронизация
-// кастинга без повторного разбора файла).
+// кастинга без повторного разбора файла) и перенесённые файлы: прежний путь → новый, оба внутри
+// source/. Кастинг ссылается на изображения этими путями, поэтому вызывающий заменяет их у себя.
 //
-// beforeWrite (может быть nil) вызывается после проверки ввода и шлюза записи, непосредственно
-// перед первой записью в source/; его ошибка прерывает сохранение без записи. Так вызывающий
-// делает резервную копию только для сохранения, которое действительно начнёт писать. Все записи
-// Save заменяют файлы через rename (replaceFile) или удаляют их, но никогда не пишут в
+// Все записи Save заменяют файлы через rename (replaceFile) или удаляют их, но никогда не пишут в
 // существующий файл на месте: на этом держится резерв жёсткими ссылками в internal/referenceimage.
-func SaveManifest(ctx context.Context, project string, input Input, ffprobe DurationProbe, beforeWrite func() error) (*jscompat.Object, error) {
+// Перенос тоже копирует файл на новое место, а прежний удаляет cleanup.
+func SaveManifest(ctx context.Context, project string, input Input, ffprobe DurationProbe, options SaveOptions) (*jscompat.Object, map[string]string, error) {
 	problems, err := Validate(project, input)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(problems) > 0 {
-		return nil, errors.New(strings.Join(problems, " "))
+		return nil, nil, errors.New(strings.Join(problems, " "))
 	}
 	if err := projectfs.CheckWrite(project); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if beforeWrite != nil {
-		if err := beforeWrite(); err != nil {
-			return nil, err
+	if options.BeforeWrite != nil {
+		if err := options.BeforeWrite(); err != nil {
+			return nil, nil, err
 		}
 	}
 	previous := sources.ReadManifest(project)
@@ -661,18 +680,18 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 	}
 	source := filepath.Join(project, sourceDir)
 	if err := os.MkdirAll(source, 0o777); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	s := &saver{ctx: ctx, source: source, keep: map[string]bool{}}
+	s := &saver{ctx: ctx, source: source, keep: map[string]bool{}, pinned: options.Pinned, moves: map[string]string{}}
 
 	track := orNull(jscompat.Get(previous, "track"))
 	if input.Track != nil {
 		if err := copyFile(input.Track.Path, filepath.Join(source, trackName)); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		described, err := describe(source, trackName)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		described.Set("original_name", jscompat.Basename(input.Track.Path))
 		described.Set("duration_seconds", ffprobe.probe(ctx, filepath.Join(source, trackName)))
@@ -682,16 +701,16 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 	if input.Lyrics != nil {
 		text, err := textFrom(input.Lyrics)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		text = normalizeText(text)
 		if err := writeText(filepath.Join(source, lyricsName), text); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		parsed := timing.AnalyzeLyrics(text)
 		described, err := describe(source, lyricsName)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		described.Set("lines", float64(parsed.Lines))
 		sections := make([]any, 0, len(parsed.Sections))
@@ -705,13 +724,13 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 	if input.Idea != nil {
 		text, err := textFrom(input.Idea)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if err := writeText(filepath.Join(source, ideaName), normalizeText(text)); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if idea, err = describe(source, ideaName); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	cover := orNull(jscompat.Get(previous, "cover"))
@@ -719,30 +738,30 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 		if cover != nil {
 			path, err := pathOf(cover)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if err := removeLocal(source, path); err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		}
 		cover = nil
 		if input.Cover.Remove == nil {
 			name := "cover" + strings.ToLower(extname(*input.Cover.Path))
 			if err := copyFile(*input.Cover.Path, filepath.Join(source, name)); err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if cover, err = describe(source, name); err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		}
 	}
 
 	references, err := s.references(input.References, previous, dirOf)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := s.cleanup(previous, kinds); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	manifest := jscompat.NewObject()
@@ -755,17 +774,22 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 	manifest.Set("references", references)
 	manifest.Set("updated_at", time.Now().UTC().Format("2006-01-02T15:04:05.000Z"))
 	if err := writeText(filepath.Join(source, manifestName), jscompat.StringifyIndent(manifest, "  ")+"\n"); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return manifest, nil
+	return manifest, s.moves, nil
 }
 
 // saver хранит состояние одного сохранения: keep — пути внутри source, которые остаются в новой
 // описи (изображения и промпты); всё остальное из прежней описи удаляется в cleanup.
+//
+// pinned — коды референсов, файлы которых остаются на месте (SaveOptions.Pinned); moves —
+// перенесённые в этом сохранении файлы: прежний путь → новый.
 type saver struct {
 	ctx    context.Context
 	source string
 	keep   map[string]bool
+	pinned map[string]bool
+	moves  map[string]string
 }
 
 // savePrompt пишет промпт, только если текст изменился (сравнение после нормализации).
@@ -829,7 +853,7 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 	for r, ref := range inputs {
 		for f, file := range ref.Files {
 			if file.ExistingPath != nil && *file.ExistingPath != "" {
-				imagePaths[fileKey{r, f}] = *file.ExistingPath
+				imagePaths[fileKey{r, f}] = s.placeExisting(ref, *file.ExistingPath, dirOf[ref.Kind], occupied)
 				continue
 			}
 			extension := strings.ToLower(extname(*file.SourcePath))
@@ -891,12 +915,18 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 		files := make([]any, 0, len(ref.Files))
 		for f, file := range ref.Files {
 			relative := imagePaths[fileKey{r, f}]
+			moved := false
 			if file.ExistingPath == nil || *file.ExistingPath == "" {
 				target := filepath.Join(s.source, filepath.FromSlash(relative))
 				if jscompat.Resolve("", *file.SourcePath) != jscompat.Resolve("", target) {
 					if err := copyFile(*file.SourcePath, target); err != nil {
 						return nil, err
 					}
+				}
+			} else if moved = relative != *file.ExistingPath; moved {
+				// Прежний файл удалит cleanup: его пути нет в keep.
+				if err := copyFile(filepath.Join(s.source, filepath.FromSlash(*file.ExistingPath)), filepath.Join(s.source, filepath.FromSlash(relative))); err != nil {
+					return nil, err
 				}
 			}
 			s.keep[relative] = true
@@ -912,8 +942,9 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 				prompt = relative + ".prompt.txt"
 			}
 			if path, ok := prompt.(string); ok {
-				if unchanged && changedPromptPaths[path] {
-					// Другой вид перезапишет общий путь: прежние точные байты остаются под собственным именем изображения.
+				if unchanged && (changedPromptPaths[path] || moved) {
+					// Другой вид перезапишет общий путь или изображение переехало в папку нового типа: прежние
+					// точные байты остаются под собственным именем изображения.
 					path = relative + ".prompt.txt"
 					prompt = path
 					if err := writeText(filepath.Join(s.source, filepath.FromSlash(path)), previousFilePrompts[previousPrompt]); err != nil {
@@ -962,7 +993,9 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 		old, hasOld := previousPrompts[ref.ID]
 		dir := dirOf[ref.Kind]
 		prompt := dir + "/" + ref.ID + ".prompt.txt"
-		if hasOld && old.path != "" && normalizeText(old.text) == normalizeText(text) && !s.keep[old.path] {
+		// Общий промпт переезжает вместе с изображениями, если референс не закреплён производством.
+		if hasOld && old.path != "" && normalizeText(old.text) == normalizeText(text) && !s.keep[old.path] &&
+			(s.pinned[ref.ID] || path.Dir(old.path) == dir) {
 			prompt = old.path
 		}
 		// Нестандартный старый путь может быть занят изображением или его промптом: сохраняются оба документа.
@@ -985,6 +1018,27 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 		items = append(items, object)
 	}
 	return &jscompat.Array{Items: items}, nil
+}
+
+// placeExisting — путь сохранённого изображения в новой описи. Файл переносится в папку типа
+// референса, если лежит в другой (тип сменили) и референс не закреплён производством: имя
+// сохраняется, при занятом пути добавляется суффикс «-2», «-3»… Занятым считается путь описи,
+// уже выбранный путь этого сохранения или любой файл на диске — чужой файл не перезаписывается.
+// Перенос запоминается в moves; сам файл копирует references.
+func (s *saver) placeExisting(ref ReferenceInput, existing, dir string, occupied map[string]bool) string {
+	if s.pinned[ref.ID] || dir == "" || path.Dir(existing) == dir {
+		return existing
+	}
+	base := path.Base(existing)
+	extension := path.Ext(base)
+	stem := strings.TrimSuffix(base, extension)
+	relative := dir + "/" + base
+	for suffix := 2; occupied[relative] || jscompat.Exists(filepath.Join(s.source, filepath.FromSlash(relative))); suffix++ {
+		relative = dir + "/" + stem + "-" + strconv.Itoa(suffix) + extension
+	}
+	occupied[relative] = true
+	s.moves[existing] = relative
+	return relative
 }
 
 // cleanup удаляет изображения и промпты прежней описи, которых нет в новой, и пустые папки

@@ -36,7 +36,9 @@ export function Validate(project: string, input: sourceedit$0.Input): $Cancellab
 }
 
 /**
- * View — sources.view: опись, тексты и пути предпросмотра без записи в проект.
+ * View — sources.view: опись, тексты и пути предпросмотра без записи в проект. Закрепление
+ * референсов производством и типы сущностей кастинга вычисляет internal/referenceimage: им нужны
+ * реестр, состояние производства и кастинг, которых нет у формы исходников.
  */
 export function View(project: string): $CancellablePromise<sourceedit$0.View> {
     return $Call.ByID(2639453040, project);

@@ -55,6 +55,8 @@ export interface ScenarioPageOptions {
    * скопировала эти границы как есть и поэтому не стыкуется (проблемы видны сразу после открытия).
    */
   gappedTiming?: boolean;
+  /** Кастинг получил референс после сохранения реестра: карта references устарела, обновит её только запись реестра. */
+  referencesStale?: boolean;
 }
 
 /** Секции карты для gappedTiming: промежутки короче порога разметки и перекрытие последних двух частей. */
@@ -307,7 +309,8 @@ function pageView(variant: ScenarioPageVariant, gapped: boolean): ScenarioView {
     lyrics: scenes.scenes.map((shot, index) => ({ number: index + 1, text: shot.original, header: false })),
     duration,
     trackPath: STORY_TRACK_PATH,
-    problems: []
+    problems: [],
+    referencesStale: false
   };
 }
 
@@ -427,7 +430,8 @@ export function scenarioPageOptions({
   links = ['M02', 'M05'],
   failScenesSaveOnce = false,
   unavailable,
-  gappedTiming = false
+  gappedTiming = false,
+  referencesStale = false
 }: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
@@ -450,6 +454,7 @@ export function scenarioPageOptions({
       let failedReads = variant === 'loadError' ? 1 : 0;
       const produced = new Set(variant === 'produced' ? ['M01', 'M02'] : []);
       const saved = pageView(variant, gappedTiming);
+      if (referencesStale) Object.assign(saved, { referencesStale: true, problems: [scenarioTexts.main.referencesRefresh] });
       const approved = variant !== 'noRegistry' && variant !== 'noTreatment';
       const workflow: ScenarioWorkflowView = {
         project: SCENARIO_PAGE_PROJECT,
@@ -564,6 +569,8 @@ export function scenarioPageOptions({
             }
             model.scenesSaves.push(mode);
             model.saved.scenes = structuredClone(scenes);
+            // Как saveScenes в Go: запись заменяет карту references картой кастинга.
+            Object.assign(model.saved, { referencesStale: false, problems: [] });
             documentsWritten(false);
             model.publish();
             return structuredClone(scenes);

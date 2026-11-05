@@ -48,7 +48,9 @@ const sourceView: SourcesView = {
   ideaText: '',
   coverPath: null,
   referenceFilePaths: {},
-  problems: []
+  problems: [],
+  pinnedReferences: {},
+  entityKinds: {}
 };
 const castView = vi.fn();
 const api = { view: vi.fn(), save: vi.fn(), close: vi.fn() };

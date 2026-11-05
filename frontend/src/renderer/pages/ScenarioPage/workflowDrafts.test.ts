@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ScenarioView, ScenesFile, TreatmentFile } from '@shared/types';
-import { workflowUpdatedView } from './workflowDrafts';
+import { scenarioTexts } from '@shared/texts/scenario';
+import { scenesSavedView, workflowUpdatedView } from './workflowDrafts';
 
 const treatment = (logline: string): TreatmentFile => ({ schema_version: 1, logline, sequences: [] });
 const scenes = (visual_direction: string): ScenesFile => ({
@@ -20,7 +21,8 @@ const view = (logline: string, direction: string): ScenarioView => ({
   lyrics: [],
   duration: 10,
   trackPath: null,
-  problems: []
+  problems: [],
+  referencesStale: false
 });
 
 /** Сценарный Apply не должен менять базу сравнения независимого несохранённого черновика. */
@@ -42,5 +44,15 @@ describe('workflowUpdatedView', () => {
     expect(updated.treatment).toBe(previous.treatment);
     expect(updated.scenes).toBe(next.scenes);
     expect(JSON.stringify(treatment('несохранённый черновик')) !== JSON.stringify(updated.treatment)).toBe(true);
+  });
+});
+
+/** Запись реестра обновляет карту references в Go: предупреждение о расхождении с кастингом больше не верно. */
+describe('scenesSavedView', () => {
+  it('снимает признак устаревшей карты и только её предупреждение', () => {
+    const stale = { ...view('трактовка', 'старые сцены'), referencesStale: true, problems: ['Другое.', scenarioTexts.main.referencesRefresh] };
+    const saved = scenes('сохранённые сцены');
+    expect(scenesSavedView(stale, saved)).toEqual({ ...stale, scenes: saved, referencesStale: false, problems: ['Другое.'] });
+    expect(scenesSavedView(null, saved)).toBeNull();
   });
 });

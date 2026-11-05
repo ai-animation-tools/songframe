@@ -277,5 +277,6 @@
   ],
   "duration": 9,
   "trackPath": "<project>/source/track.mp3",
-  "problems": []
+  "problems": [],
+  "referencesStale": false
 }

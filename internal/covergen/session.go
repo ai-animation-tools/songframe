@@ -164,6 +164,10 @@ type Options struct {
 	Prepare func(ctx context.Context, input CandidateInput) (*Candidate, error)
 	// TempDir — каталог временных папок обложки; nil — os.TempDir.
 	TempDir func() string
+	// AllowMedia разрешает медиасерверу окна папку сессии: копии опор и результаты обложки лежат
+	// во временной папке ОС вне проекта, и без разрешения окно не может показать их превью.
+	// Ошибка не мешает генерации; nil — не нужно (тесты).
+	AllowMedia func(directory string) error
 	// NewID — генератор ID сессий, попыток и токенов; nil — crypto.randomUUID. Тесты и эталоны
 	// подменяют его ради стабильных путей.
 	NewID func() string
@@ -351,6 +355,9 @@ func (g *Generator) Create(project, prompt string, input *referenceimage.Generat
 		if root, err = jscompat.Realpath(temporary); err != nil {
 			return Session{}, err
 		}
+	}
+	if g.options.AllowMedia != nil {
+		_ = g.options.AllowMedia(root)
 	}
 	session := Session{ID: id, Prompt: prompt, ReferenceImages: []mediaapi.ReferenceImage{}, Status: StatusIdle, Provider: provider.(string)}
 	if model != "" {

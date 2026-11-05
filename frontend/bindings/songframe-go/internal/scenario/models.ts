@@ -67,4 +67,11 @@ export interface View {
      */
     "trackPath": string | null;
     "problems": string[];
+
+    /**
+     * ReferencesStale — карта references реестра расходится с кастингом (в Problems — textReferencesRefresh).
+     * Отличие от 634fd94: по нему страница разрешает сохранить реестр без правок, иначе обещанное
+     * в предупреждении обновление карты было недостижимо — «Сохранить» выключена без изменений.
+     */
+    "referencesStale": boolean;
 }

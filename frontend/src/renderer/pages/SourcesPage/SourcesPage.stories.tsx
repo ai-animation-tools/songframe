@@ -533,6 +533,36 @@ export const CoverReferenceSelection: Story = {
   }
 };
 
+/** Смена типа сохранённого референса: перед сохранением видно, переедут ли изображения в папку нового типа. */
+async function changeHeroKind(canvasElement: HTMLElement, label: string, open = true): Promise<void> {
+  const canvas = within(canvasElement);
+  const screen = within(canvasElement.ownerDocument.body);
+  if (open) await userEvent.click(await canvas.findByRole('button', { name: new RegExp(REFERENCE_PAGE_NAME) }));
+  await userEvent.click(await canvas.findByRole('combobox', { name: commonTexts.type }));
+  await userEvent.click(await screen.findByRole('option', { name: label }));
+}
+
+export const KindChangeMovesFiles: Story = {
+  name: 'Тип референса — смена переносит изображения в папку нового типа',
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await changeHeroKind(canvasElement, 'Локация');
+    await expect(await canvas.findByText(sourcesTexts.kindMovesFiles({ dir: 'locations' }))).toBeVisible();
+    await changeHeroKind(canvasElement, 'Персонаж', false);
+    await waitFor(() => expect(canvas.queryByText(sourcesTexts.kindMovesFiles({ dir: 'locations' }))).not.toBeInTheDocument());
+  }
+};
+
+export const PinnedKindChangeKeepsFiles: Story = {
+  name: 'Тип референса — при готовых материалах изображения остаются на месте',
+  parameters: { songframe: referencePageOptions('sources', { pinnedReferences: { hero: ['M01', 'M02'] } }) },
+  play: async ({ canvasElement }) => {
+    await changeHeroKind(canvasElement, 'Локация');
+    const notice = sourcesTexts.kindKeepsFiles({ dir: REFERENCE_PAGE_SAVED.slice(0, REFERENCE_PAGE_SAVED.lastIndexOf('/')), shots: ['M01', 'M02'] });
+    await expect(await within(canvasElement).findByText(notice)).toBeVisible();
+  }
+};
+
 export const TrackPlayback: Story = {
   name: 'Трек — общий плеер с громкостью вместо встроенного',
   play: async ({ canvasElement }) => {

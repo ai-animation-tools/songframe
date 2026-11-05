@@ -38,6 +38,10 @@ type View struct {
 	// TrackPath — абсолютный путь source/track.mp3 или null.
 	TrackPath *string  `json:"trackPath"`
 	Problems  []string `json:"problems"`
+	// ReferencesStale — карта references реестра расходится с кастингом (в Problems — textReferencesRefresh).
+	// Отличие от 634fd94: по нему страница разрешает сохранить реестр без правок, иначе обещанное
+	// в предупреждении обновление карты было недостижимо — «Сохранить» выключена без изменений.
+	ReferencesStale bool `json:"referencesStale"`
 }
 
 // readDocument — readJson модуля scenario: (значение, true) или (nil, false) для отсутствующего
@@ -72,6 +76,7 @@ func rawOrNull(value any) json.RawMessage {
 // другой формы.
 func ViewProject(project string) (View, error) {
 	problems := []string{}
+	stale := false
 	scenes := readDocument(project, "plan/scenes.json", &problems)
 	treatment := readDocument(project, "plan/treatment.json", &problems)
 	timingDocument := readDocument(project, "plan/audio/timing.json", &problems)
@@ -100,6 +105,7 @@ func ViewProject(project string) (View, error) {
 			}
 			if jscompat.Stringify(jscompat.Get(scenes, "references")) != jscompat.Stringify(references) {
 				problems = append(problems, textReferencesRefresh)
+				stale = true
 			}
 		}
 	}
@@ -119,6 +125,8 @@ func ViewProject(project string) (View, error) {
 		Duration:  rawOrNull(duration),
 		TrackPath: trackPath,
 		Problems:  problems,
+
+		ReferencesStale: stale,
 	}, nil
 }
 

@@ -46,6 +46,10 @@ var saveCast = func(project string, document any) error {
 //     виды референса добавляются в images сущности с тем же кодом, кастинг записывается через
 //     cast.Save (нормализация, проверка файлов изображений, публикация описаний).
 //
+// Отличие от 634fd94: файлы референса, сменившего тип, переезжают в папку нового типа
+// (sourceedit.SaveOptions), а пути в images кастинга заменяются на новые. Референсы, которые
+// используют планы с готовыми материалами (PinnedReferences), остаются на месте.
+//
 // Любая ошибка после начала записи возвращает source/ и plan/cast.json к прежнему состоянию из
 // резерва (snapshot); если это не удалось, ошибка restoreFailed называет папку резерва, и резерв
 // остаётся на диске. Отказы до записи ничего не меняют и резерв не создают.
@@ -55,8 +59,13 @@ func SaveSources(ctx context.Context, project string, input sourceedit.Input, ff
 	if read.Damaged {
 		return nil, errors.New(textCastInvalid)
 	}
+	pinned := pinnedSet(project)
 	if !jscompat.Truthy(read.Value) {
-		return sourceedit.Save(ctx, project, input, ffprobe)
+		manifest, _, err := sourceedit.SaveManifest(ctx, project, input, ffprobe, sourceedit.SaveOptions{Pinned: pinned})
+		if err != nil {
+			return nil, err
+		}
+		return jscompat.Raw(manifest), nil
 	}
 	// Результат нормализации не нужен: она только проверяет документ, а записывает его cast.Save.
 	if _, err := cast.Normalize(read.Value, cast.LoadDefaults()); err != nil {
@@ -72,14 +81,17 @@ func SaveSources(ctx context.Context, project string, input sourceedit.Input, ff
 
 	// Резерв создаётся только после проверки формы и шлюза записи — перед первой записью.
 	var backup *snapshot
-	manifest, err := sourceedit.SaveManifest(ctx, project, input, ffprobe, func() error {
-		var err error
-		backup, err = takeSnapshot(project)
-		return err
+	manifest, moves, err := sourceedit.SaveManifest(ctx, project, input, ffprobe, sourceedit.SaveOptions{
+		BeforeWrite: func() error {
+			var err error
+			backup, err = takeSnapshot(project)
+			return err
+		},
+		Pinned: pinned,
 	})
 	if err == nil {
 		var synced any
-		if synced, err = withNewImages(read.Value, previous, input, manifest); err == nil {
+		if synced, err = withNewImages(read.Value, previous, input, manifest, moves); err == nil {
 			err = saveCast(project, synced)
 		}
 	}
@@ -137,17 +149,24 @@ func removesSelectedImage(document, previous any, input sourceedit.Input) (bool,
 }
 
 // withNewImages строит кастинг для записи: независимая копия document с описаниями из новой
-// описи (cast.ProjectDescriptions), где в images сущности дописаны новые виды её референса.
+// описи (cast.ProjectDescriptions), где пути перенесённых файлов (moves) заменены новыми, а в
+// images сущности дописаны новые виды её референса. Перенесённый файл не новый: выбор
+// пользователя не расширяется.
 //
 // Новым считается файл, пришедший из формы новым (sourcePath), или путь, которого не было у
 // референса в прежней описи. Именно ввод, а не только путь: новый вид может занять имя
 // удалённого невыбранного файла, и по одному пути его не отличить от прежнего. Прежние виды не
 // добавляются: images — сохранённый выбор пользователя, а не список доступных видов. Сущности без
 // референса и референсы без сущности не меняются; сущность из референса создаёт только cast.Init.
-func withNewImages(document, previous any, input sourceedit.Input, manifest *jscompat.Object) (any, error) {
+func withNewImages(document, previous any, input sourceedit.Input, manifest *jscompat.Object, moves map[string]string) (any, error) {
 	projected, err := cast.ProjectDescriptions(jscompat.DeepClone(document), manifest)
 	if err != nil {
 		return nil, err
+	}
+	renameImages(projected, moves)
+	movedTo := map[string]bool{}
+	for _, target := range moves {
+		movedTo[target] = true
 	}
 	previousRefs, _ := jscompat.AsArray(jscompat.Get(previous, "references"))
 	manifestRefs, _ := jscompat.AsArray(manifest.Value("references"))
@@ -177,7 +196,7 @@ func withNewImages(document, previous any, input sourceedit.Input, manifest *jsc
 		for index, file := range files {
 			path, _ := jscompat.Get(file, "path").(string)
 			fresh := index < len(incoming) && incoming[index].SourcePath != nil && *incoming[index].SourcePath != ""
-			if (fresh || !old[path]) && images != nil && !contains(images.Items, path) {
+			if (fresh || !old[path]) && !movedTo[path] && images != nil && !contains(images.Items, path) {
 				images.Items = append(images.Items, path)
 			}
 		}

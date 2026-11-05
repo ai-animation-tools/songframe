@@ -7,7 +7,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { ReferenceKind, SourceKind } from '@shared/types';
 import { DestructiveButton } from '../../../components/DestructiveButton';
-import { ID_PATTERN, suggestId } from '../helpers';
+import { ID_PATTERN, kindChangeNotice, suggestId } from '../helpers';
 import type { FileForm, ReferenceForm } from '../types';
 import { ImageGallery } from '../../../components/ImageGallery';
 import { REFERENCE_VIEW_LABELS } from '@shared/types';
@@ -20,6 +20,8 @@ import { LinkedText } from '../../../components/LinkedText';
 interface Props {
   reference: ReferenceForm;
   kinds: SourceKind[];
+  /** Планы с готовыми материалами, которые используют референс; undefined — не закреплён. */
+  pinnedShots?: string[];
   duplicateId: boolean;
   filePath: (path: string, absolute?: boolean) => string;
   removalProblem?: string;
@@ -38,6 +40,7 @@ interface Props {
 export function ReferenceEditor({
   reference,
   kinds,
+  pinnedShots,
   duplicateId,
   fileUrl,
   filePath,
@@ -62,6 +65,8 @@ export function ReferenceEditor({
   const kindError = kinds.some((item) => item.id === reference.kind) ? null : sourcesTexts.kindRequired;
   const filesError = reference.files.length ? null : sourcesTexts.imageRequired;
   const hasErrors = Boolean(nameError || idError || kindError || filesError);
+  // Смена типа переносит сохранённые изображения в папку нового типа: пользователь видит это до сохранения.
+  const kindNotice = kindError ? null : kindChangeNotice(reference, kinds, pinnedShots);
   return (
     <Accordion
       variant="outlined"
@@ -139,6 +144,7 @@ export function ReferenceEditor({
               placeholder={reference.name}
             />
           </Box>
+          {kindNotice ? <Alert severity="info">{kindNotice}</Alert> : null}
           <TextField
             label={sourcesTexts.entityDescription}
             fullWidth

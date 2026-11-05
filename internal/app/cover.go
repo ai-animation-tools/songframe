@@ -28,11 +28,13 @@ type CoverGenerators struct {
 }
 
 // NewCoverGenerators связывает генераторы с явным выбором провайдера изображений (access), слоем
-// провайдеров (платная подготовка через общий адаптер изображений) и декодированием Go вместо
+// провайдеров (платная подготовка через общий адаптер изображений), медиасервером окна (media:
+// временная папка сессии обложки разрешается для превью) и декодированием Go вместо
 // nativeImage. Подготовка, проверка цены и отправка выполняются с отменой сессии.
-func NewCoverGenerators(access *agents.AccessChecker, layer *providers.Layer) CoverGenerators {
+func NewCoverGenerators(access *agents.AccessChecker, layer *providers.Layer, media interface{ AllowRoot(string) error }) CoverGenerators {
 	assert := func(project string) error { return access.AssertSelection(&project, agents.KindImage) }
 	options := covergen.Options{
+		AllowMedia:      media.AllowRoot,
 		AssertSelection: assert,
 		ReadImage:       covergen.ReadImage,
 		CropImage:       covergen.CropImage,

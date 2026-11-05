@@ -99,5 +99,7 @@
     "Идея: файл description.md отсутствует.",
     "Обложка: файл cover.png отсутствует.",
     "Референс boat: файл vehicles/boat.png отсутствует."
-  ]
+  ],
+  "pinnedReferences": {},
+  "entityKinds": {}
 }

@@ -161,7 +161,7 @@ func run() error {
 	})
 	environmentService := shell.NewEnvironmentService(providerLayer)
 	aiAccess := &agents.AccessChecker{Settings: agentSettings, ProviderAuth: providerLayer.CheckAuth}
-	coverGenerators := shell.NewCoverGenerators(aiAccess, providerLayer)
+	coverGenerators := shell.NewCoverGenerators(aiAccess, providerLayer, mediaServer)
 	var desktop *application.App
 	var result *shell.SmokeResult
 	var ready func(shell.AppState) error

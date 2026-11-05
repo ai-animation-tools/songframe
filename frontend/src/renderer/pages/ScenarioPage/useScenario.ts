@@ -7,7 +7,7 @@ import type { ScenarioPass } from '@shared/scenario-workflow';
 import { useApp } from '../../state';
 import { useMethodAvailability } from '../../availability';
 import { KEEP_NOTHING_REASON, type ScenarioBrief, type ScenarioTab, type ScenesSaveRequest, type ShotReveal, type OpenShotState } from './types';
-import { workflowUpdatedView } from './workflowDrafts';
+import { scenesSavedView, workflowUpdatedView } from './workflowDrafts';
 import { requestedShot } from './shotNavigation';
 import { partsFromSections } from './treatmentParts';
 import { SHOT_PARAM } from '../../components/shotRoutes';
@@ -214,7 +214,7 @@ export function useScenario() {
         const saved = await window.api.scenario.saveScenes(project, scenes, 'production');
         if (activeProject.current !== project) return false;
         setScenes(saved);
-        setView((current) => current && { ...current, scenes: saved });
+        setView((current) => scenesSavedView(current, saved));
       }
       await refresh();
       return activeProject.current === project;
@@ -279,7 +279,7 @@ export function useScenario() {
     const saved = await window.api.scenario.saveScenes(project, draft, mode);
     if (activeProject.current !== project) return;
     setScenes(saved);
-    setView((current) => current && { ...current, scenes: saved });
+    setView((current) => scenesSavedView(current, saved));
     setImpact(null);
     await refresh();
     notify(mode === 'keep' ? scenarioTexts.notice.scenesSavedKeep : scenarioTexts.notice.scenesSaved, 'success');

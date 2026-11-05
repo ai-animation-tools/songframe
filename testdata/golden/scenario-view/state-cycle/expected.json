@@ -602,5 +602,6 @@
   "trackPath": "<project>/source/track.mp3",
   "problems": [
     "Цикл state_from: M01 → M04 → M03 → M02 → M01"
-  ]
+  ],
+  "referencesStale": false
 }

@@ -220,6 +220,11 @@ export const sourcesTexts = {
   referenceIdInvalid: 'Латиница в нижнем регистре, цифры и _, начиная с буквы',
   duplicateReferenceId: 'Этот код уже есть у другого референса',
   kindRequired: 'Выберите тип из списка',
+  kindMovesFiles: ({ dir }: { dir: string }) => `При сохранении изображения переедут в папку ${dir}/ этого типа.`,
+  kindKeepsFiles: ({ dir, shots }: { dir: string; shots: string[] }) =>
+    shots.length
+      ? `Изображения останутся в папке ${dir}/: референс используют планы с готовыми материалами — ${shots.join(', ')}.`
+      : `Изображения останутся в папке ${dir}/: не удалось проверить, используют ли референс планы с готовыми материалами.`,
   imageRequired: 'Добавьте хотя бы одно изображение.',
   newReference: 'Новый референс',
   needsCorrection: 'Требует исправления',

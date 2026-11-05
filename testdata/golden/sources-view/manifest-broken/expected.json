@@ -6,5 +6,7 @@
   "referenceFilePaths": {},
   "problems": [
     "source/manifest.json повреждён или другой версии."
-  ]
+  ],
+  "pinnedReferences": {},
+  "entityKinds": {}
 }

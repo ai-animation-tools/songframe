@@ -11,6 +11,8 @@ import { ReferenceKinds } from './ReferenceKinds';
 interface Props {
   refs: ReferenceForm[];
   kinds: SourceKind[];
+  /** Код референса → планы с готовыми материалами: файлы такого референса при смене типа остаются на месте. */
+  pinnedReferences: Record<string, string[]>;
   filePath: (path: string, absolute?: boolean) => string;
   removalProblems: Record<number, string>;
   removalPending: number[];
@@ -31,6 +33,7 @@ interface Props {
 export function ReferencesSection({
   refs,
   kinds,
+  pinnedReferences,
   fileUrl,
   filePath,
   removalProblems,
@@ -74,6 +77,7 @@ export function ReferencesSection({
             key={reference.key}
             reference={reference}
             kinds={kinds}
+            pinnedShots={pinnedReferences[reference.id]}
             duplicateId={(idCounts.get(reference.id) ?? 0) > 1}
             fileUrl={fileUrl}
             filePath={filePath}

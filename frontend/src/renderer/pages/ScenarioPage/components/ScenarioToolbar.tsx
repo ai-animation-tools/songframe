@@ -26,6 +26,7 @@ export function ScenarioToolbar({
   scaffoldProblem,
   treatmentDirty,
   scenesDirty,
+  referencesStale,
   problems,
   treatmentProblems,
   showGlobal,
@@ -45,6 +46,8 @@ export function ScenarioToolbar({
   scaffoldProblem: string | null;
   treatmentDirty: boolean;
   scenesDirty: boolean;
+  /** Карта references реестра устарела после изменения кастинга: сохранение доступно без правок и обновит её. */
+  referencesStale: boolean;
   problems: string[];
   /** Проблемы черновика трактовки: не мешают сохранению, но закрывают каркас (причина — в scaffoldProblem). */
   treatmentProblems: string[];
@@ -59,15 +62,18 @@ export function ScenarioToolbar({
   scaffold(force: boolean): Promise<void>;
 }): ReactElement {
   const dirty = tab === 'treatment' ? treatmentDirty : scenesDirty;
+  // Устаревшая карта референсов — тоже повод сохранить реестр: её обновляет только запись.
+  const scenesSavable = scenesDirty || referencesStale;
+  const savable = tab === 'treatment' ? treatmentDirty : scenesSavable;
   const sceneProblems = tab === 'scenes' && scenes ? problems.length : 0;
   const shownProblems = tab === 'treatment' && treatment ? treatmentProblems.length : sceneProblems;
-  const saveDisabled = busy || (tab === 'treatment' ? !treatment || !treatmentDirty : !scenes || !scenesDirty || problems.length > 0);
+  const saveDisabled = busy || (tab === 'treatment' ? !treatment || !treatmentDirty : !scenes || !scenesSavable || problems.length > 0);
   // Причина недоступности сохранения видна в подсказке, даже если список проблем прокручен из вида.
   const saveReason = busy
     ? BUSY_REASON
-    : sceneProblems && scenesDirty
+    : sceneProblems && scenesSavable
       ? scenarioTexts.toolbar.fixRegistry({ count: sceneProblems })
-      : dirty
+      : savable
         ? null
         : scenarioTexts.toolbar.noChanges;
   // «Без производства» имеет смысл, только когда сохранение затрагивает планы с материалами.

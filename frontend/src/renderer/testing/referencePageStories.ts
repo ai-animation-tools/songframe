@@ -92,6 +92,8 @@ export interface ReferencePageModelOptions {
   failSourceSaveOnce?: boolean;
   failCastSaveOnce?: boolean;
   failCastRead?: boolean;
+  /** Код референса → планы с готовыми материалами, как в sources.view: файлы при смене типа остаются на месте. */
+  pinnedReferences?: Record<string, string[]>;
 }
 interface ReferencePageSnapshot {
   manifest: SourceManifest;
@@ -179,7 +181,9 @@ export function referencePageOptions(page: 'sources' | 'cast', options: Referenc
               ideaText,
               coverPath: null,
               referenceFilePaths: paths(),
-              problems: []
+              problems: [],
+              pinnedReferences: options.pinnedReferences ?? {},
+              entityKinds: Object.fromEntries(savedCast.entities.map((entity) => [entity.id, entity.kind]))
             }),
             validate: async () => [],
             save: async (_project, input) => {

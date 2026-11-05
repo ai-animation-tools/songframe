@@ -556,7 +556,10 @@ func runScenario(t *testing.T, scenario goldenScenario) []byte {
 	access := &agents.AccessChecker{Settings: agents.NewSettingsStore(filepath.Join(state, "settings"))}
 	layer := providers.NewLayer(providers.Options{Paid: providers.PaidOptions{ValidateImage: mediafile.Decodes}})
 	assert := func(project string) error { return access.AssertSelection(&project, agents.KindImage) }
+	// Папки сессий, разрешённые медиасерверу: без этого окно не покажет превью опор и результата.
+	allowedMedia := map[string]bool{}
 	generator := covergen.New(covergen.Options{
+		AllowMedia:      func(directory string) error { allowedMedia[directory] = true; return nil },
 		Reference:       scenario.Reference,
 		AssertSelection: assert,
 		ReadImage:       covergen.ReadImage,
@@ -708,6 +711,9 @@ func runScenario(t *testing.T, scenario goldenScenario) []byte {
 				id = session.ID
 				if !scenario.Reference {
 					lastRoot = newRoot(t, temp, seenRoots)
+					if !allowedMedia[lastRoot] {
+						t.Fatalf("%s: папка сессии %s не разрешена медиасерверу", scenario.Name, lastRoot)
+					}
 				}
 				result = session
 			}

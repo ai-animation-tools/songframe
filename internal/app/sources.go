@@ -23,9 +23,17 @@ func NewSourcesService(ffprobe func() string) *SourcesService {
 	return &SourcesService{ffprobe: ffprobe}
 }
 
-// View — sources.view: опись, тексты и пути предпросмотра без записи в проект.
+// View — sources.view: опись, тексты и пути предпросмотра без записи в проект. Закрепление
+// референсов производством и типы сущностей кастинга вычисляет internal/referenceimage: им нужны
+// реестр, состояние производства и кастинг, которых нет у формы исходников.
 func (s *SourcesService) View(project string) (sourceedit.View, error) {
-	return wire.Done(sourceedit.ViewProject(project))
+	view, err := sourceedit.ViewProject(project)
+	if err != nil {
+		return wire.Done(view, err)
+	}
+	view.PinnedReferences = referenceimage.PinnedReferences(project)
+	view.EntityKinds = referenceimage.EntityKinds(project)
+	return wire.Done(view, nil)
 }
 
 // Validate — sources.validate: список проблем формы без записи.

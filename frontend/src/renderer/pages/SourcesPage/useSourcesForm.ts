@@ -10,7 +10,7 @@ import { joinPath } from '../../format';
 import { useApp } from '../../state';
 import { RequestScope } from '../../hooks/requestScope';
 import { referenceImageOption } from '../../hooks/referenceImageOptions';
-import { AUDIO_FILTER, IMAGE_FILTER, TEXT_FILTER, nextKey, stripKeys } from './helpers';
+import { AUDIO_FILTER, IMAGE_FILTER, TEXT_FILTER, kindForId, nextKey, stripKeys } from './helpers';
 import type { FileForm, KindForm, ReferenceForm } from './types';
 
 export function useSourcesForm() {
@@ -79,6 +79,7 @@ export function useSourcesForm() {
             key: nextKey(),
             id: r.id,
             kind: r.kind,
+            savedKind: r.kind,
             name: r.name,
             short_name: r.short_name,
             description: r.description,
@@ -204,8 +205,15 @@ export function useSourcesForm() {
     selectCover(await window.api.dialog.pickFiles({ title: sourcesTexts.pickCoverTitle, filters: IMAGE_FILTER }));
   };
 
+  // Новый референс с кодом сущности кастинга берёт её тип: изображения сразу лягут в папку этого типа.
   const updateRef = (key: number, patch: Partial<ReferenceForm>): void =>
-    setRefs((current) => current.map((r) => (r.key === key ? { ...r, ...patch, promptError: 'prompt' in patch ? undefined : r.promptError } : r)));
+    setRefs((current) =>
+      current.map((r) => {
+        if (r.key !== key) return r;
+        const kind = patch.id !== undefined && patch.kind === undefined ? kindForId(r, patch.id, view?.entityKinds ?? {}, kinds) : (patch.kind ?? r.kind);
+        return { ...r, ...patch, kind, promptError: 'prompt' in patch ? undefined : r.promptError };
+      })
+    );
   const retryFilePrompt = async (refKey: number, fileKey: number): Promise<void> => {
     const failed = refs.find((r) => r.key === refKey)?.files.find((f) => f.key === fileKey)?.promptError;
     if (!failed) return;
@@ -476,6 +484,7 @@ export function useSourcesForm() {
     referencesProps: {
       refs,
       kinds,
+      pinnedReferences: view?.pinnedReferences ?? {},
       fileUrl,
       filePath: (path: string, absolute = false) => (absolute ? path : joinPath(project, 'source', path)),
       removalProblems,

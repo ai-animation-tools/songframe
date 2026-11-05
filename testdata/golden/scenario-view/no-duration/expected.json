@@ -552,5 +552,6 @@
   ],
   "duration": null,
   "trackPath": null,
-  "problems": []
+  "problems": [],
+  "referencesStale": false
 }

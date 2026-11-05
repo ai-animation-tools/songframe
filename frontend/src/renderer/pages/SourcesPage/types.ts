@@ -15,6 +15,8 @@ export interface ReferenceForm {
   key: number;
   id: string;
   kind: ReferenceKind;
+  /** Тип в сохранённой описи; у нового референса нет. По нему форма видит смену типа до сохранения. */
+  savedKind?: ReferenceKind;
   name: string;
   short_name: string;
   description: string;

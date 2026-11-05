@@ -89,6 +89,7 @@ export function ScenarioPage(): ReactElement {
           scaffoldProblem={scaffoldProblem}
           treatmentDirty={treatmentDirty}
           scenesDirty={scenesDirty}
+          referencesStale={view.referencesStale}
           problems={problems}
           treatmentProblems={treatmentProblems}
           showGlobal={showGlobal}

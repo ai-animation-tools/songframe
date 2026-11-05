@@ -37,5 +37,6 @@
     "plan/treatment.json повреждён.",
     "plan/audio/timing.json повреждён.",
     "plan/cast.json повреждён."
-  ]
+  ],
+  "referencesStale": false
 }

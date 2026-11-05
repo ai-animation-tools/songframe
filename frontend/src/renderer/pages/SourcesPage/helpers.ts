@@ -1,4 +1,6 @@
 /** Преобразования локальной формы: коды, ключи и сравнение сохранённых значений. */
+import { sourcesTexts } from '@shared/texts/sources';
+import type { ReferenceKind, SourceKind } from '@shared/types';
 import type { ReferenceForm } from './types';
 
 let keyCounter = 1;
@@ -67,4 +69,29 @@ export function stripKeys(ref: ReferenceForm): unknown {
     prompt: ref.prompt,
     files: ref.files.map((f) => ({ path: f.sourcePath ?? f.existingPath, view: f.view, note: f.note, prompt: f.prompt }))
   };
+}
+
+/**
+ * Тип нового референса по коду: если в кастинге есть сущность с этим кодом и её тип есть в списке, референс берёт его,
+ * чтобы изображения сразу легли в папку нужного типа. Сохранённый референс (с файлами описи) тип не меняет.
+ */
+export function kindForId(reference: ReferenceForm, id: string, entityKinds: Record<string, string>, kinds: SourceKind[]): ReferenceKind {
+  if (reference.files.some((file) => file.existingPath)) return reference.kind;
+  const kind = entityKinds[id];
+  return kind && kinds.some((item) => item.id === kind) ? kind : reference.kind;
+}
+
+/**
+ * Что сохранение сделает с файлами референса, если тип сменили: перенесёт сохранённые изображения в папку нового типа
+ * или оставит их на месте, когда референс используют планы с готовыми материалами (pinnedShots). null — тип не менялся
+ * или все изображения уже в папке типа.
+ */
+export function kindChangeNotice(reference: ReferenceForm, kinds: SourceKind[], pinnedShots: string[] | undefined): string | null {
+  if (reference.savedKind === undefined || reference.savedKind === reference.kind) return null;
+  const dir = kinds.find((item) => item.id === reference.kind)?.dir;
+  const folder = (path: string): string => path.slice(0, Math.max(path.lastIndexOf('/'), 0));
+  const misplaced = reference.files.find((file) => file.existingPath && folder(file.existingPath) !== dir);
+  if (!dir || !misplaced?.existingPath) return null;
+  const current = folder(misplaced.existingPath);
+  return pinnedShots ? sourcesTexts.kindKeepsFiles({ dir: current, shots: pinnedShots }) : sourcesTexts.kindMovesFiles({ dir });
 }

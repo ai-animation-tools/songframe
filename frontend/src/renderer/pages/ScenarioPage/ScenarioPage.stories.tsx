@@ -256,6 +256,25 @@ export const RegistryProblems: Story = {
   }
 };
 
+export const ReferencesStale: Story = {
+  name: 'Карта референсов устарела · сохранение без правок обновляет её',
+  tags: CANVAS_ONLY,
+  parameters: { songframe: scenarioPageOptions({ referencesStale: true }) },
+  play: async (context) => {
+    const screen = await ready(context);
+    await editorHeading(screen, 'M01');
+    // Кастинг получил референс после записи реестра: правок нет, но сохранение доступно — только оно обновит карту.
+    await expect(screen.getByText(scenarioTexts.main.referencesRefresh)).toBeVisible();
+    await expect(unsavedChip(screen)).not.toBeInTheDocument();
+    await expect(saveButton(screen)).toBeEnabled();
+    await userEvent.click(saveButton(screen));
+    await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
+    await waitFor(() => expect(screen.queryByText(scenarioTexts.main.referencesRefresh)).not.toBeInTheDocument());
+    await expect(saveButton(screen)).toBeDisabled();
+    await expect(saveButton(screen)).toHaveAttribute('title', expect.stringContaining(scenarioTexts.toolbar.noChanges));
+  }
+};
+
 export const AgentWithDrafts: Story = {
   name: 'Запуск агента с несохранёнными правками · решение и пауза редактирования',
   tags: ['!autodocs', 'ci'],

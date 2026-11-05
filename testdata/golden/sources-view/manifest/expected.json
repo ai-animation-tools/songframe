@@ -90,5 +90,7 @@
     "heroes/mira.png": "<project>/source/heroes/mira.png",
     "vehicles/boat.png": "<project>/source/vehicles/boat.png"
   },
-  "problems": []
+  "problems": [],
+  "pinnedReferences": {},
+  "entityKinds": {}
 }

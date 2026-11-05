@@ -21,11 +21,11 @@ type ImagesRequest struct {
 }
 
 // Images — KeyframeImages оригинала (владелец — производство): запуск задания опор менеджером
-// агентов (StartImages в рабочей папке кандидатов), сбор кандидатов по SHA запроса и SHA
-// сохранённого задания после перезапуска приложения.
+// агентов (StartImages в рабочей папке кандидатов), проверка записи задания (RequestSha — SHA
+// согласованного запроса из job.json) и сбор кандидатов завершённого задания.
 type Images interface {
 	Start(input mediaapi.ImagesInput, request ImagesRequest) (agents.Job, error)
-	Collect(job agents.Job, requestSha string) ([]mediaapi.FrameCandidate, error)
+	Collect(job agents.Job) ([]mediaapi.FrameCandidate, error)
 	RequestSha(job agents.Job) (string, error)
 }
 

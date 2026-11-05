@@ -44,7 +44,6 @@ const (
 	textReferenceInvalid  = "Референс не является изображением."
 	textPreparationUsed   = "Эта подготовка или подтверждение уже использованы. Для нового запуска подготовьте и подтвердите новый запрос."
 	textRequestChanged    = "Запрос или референсы изменились после согласования."
-	textJobMismatch       = "Неверное задание для согласованного запроса."
 	textModelsEmpty       = "Codex не вернул доступные модели агента."
 	textModelsUnavailable = "Каталог моделей агента Codex сейчас недоступен. Повторите проверку возможностей."
 )
@@ -342,12 +341,14 @@ func lower(text string) string {
 	return string(runes)
 }
 
-// Collect — кандидаты задания reference: номер по порядку, SHA-256 и размеры изображения.
-func (e *ImageExecutor) Collect(reference mediaapi.AgentExecutionRef, job agents.Job) ([]mediaapi.Artifact, error) {
-	if job.ID != reference.AgentJobID {
-		return nil, errors.New(textJobMismatch)
+// CollectJob — кандидаты завершённого задания опор, в том числе после перезапуска: номер по
+// порядку, SHA-256 и размеры изображения. Сначала проверяется запись задания (RequestSha:
+// версия, проект, формат SHA), затем кандидаты (Images.Collect).
+func (e *ImageExecutor) CollectJob(job agents.Job) ([]mediaapi.Artifact, error) {
+	if _, err := e.options.Images.RequestSha(job); err != nil {
+		return nil, err
 	}
-	candidates, err := e.options.Images.Collect(job, reference.RequestSha)
+	candidates, err := e.options.Images.Collect(job)
 	if err != nil {
 		return nil, err
 	}
@@ -361,15 +362,6 @@ func (e *ImageExecutor) Collect(reference mediaapi.AgentExecutionRef, job agents
 		artifacts[index] = mediaapi.Artifact{Path: candidate.Path, Index: index + 1, FrameID: candidate.ID, Kind: Kind, SHA256: digest, Width: width, Height: height}
 	}
 	return artifacts, nil
-}
-
-// CollectJob собирает задание после перезапуска: ref восстанавливается из записи задания опор.
-func (e *ImageExecutor) CollectJob(job agents.Job) ([]mediaapi.Artifact, error) {
-	sha, err := e.options.Images.RequestSha(job)
-	if err != nil {
-		return nil, err
-	}
-	return e.Collect(mediaapi.AgentExecutionRef{Provider: ID, Kind: Kind, RequestSha: sha, AgentJobID: job.ID}, job)
 }
 
 // NewImages — исполнитель опор с настоящей программой-агентом: диагностика — проверка программы

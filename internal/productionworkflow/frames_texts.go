@@ -15,7 +15,6 @@ const (
 
 	textFrameDescriptionsRequired = "Сначала подготовьте описания опор."
 	textImagesJobIncomplete       = "Задание опор не завершено успешно."
-	textImagesJobRequestMismatch  = "Задание опор относится к другому согласованному запросу."
 	textImagesJobRecordCorrupt    = "Повреждена запись задания опор."
 	textImagesReferencesChanged   = "Референсы изменились: подготовьте опоры заново."
 	textImagesResultInvalid       = "Неверный контракт результата опор."

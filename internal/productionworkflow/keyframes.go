@@ -275,14 +275,16 @@ func (k *KeyframeImages) jobRecord(job agents.Job) (directory string, record any
 }
 
 // Collect — collect оригинала: кандидаты завершённого задания job в порядке согласованных опор.
-// Проверяются связь с SHA запроса requestSha, целостность записи и закреплённых входов, контракт
+// Проверяются целостность записи и закреплённых входов, контракт
 // ответа программы и каждый файл: обычное изображение внутри рабочей папки (не ссылка, не копия
 // входа), расширение по фактическому формату, ровно согласованные опоры.
 //
 // Отличия от оригинала (исправленные недочёты): ответ не JSON — textImagesFileListMissing вместо
 // SyntaxError V8; отсутствующий файл кандидата — textImagesFrameImageRequired вместо ошибки lstat
-// ENOENT. Эталон снят с той же правкой оригинала (testdata/golden/README.md).
-func (k *KeyframeImages) Collect(job agents.Job, requestSha string) ([]mediaapi.FrameCandidate, error) {
+// ENOENT. Эталон снят с той же правкой оригинала (testdata/golden/README.md). Сравнение
+// requestSha записи с «ожидаемым» убрано: единственный путь сбора (CollectJob исполнителя) брал
+// ожидаемый SHA из этой же записи, и проверка всегда проходила.
+func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, error) {
 	if job.Status != "completed" || job.ExitCode == nil || *job.ExitCode != 0 {
 		return nil, errors.New(textImagesJobIncomplete)
 	}
@@ -292,9 +294,6 @@ func (k *KeyframeImages) Collect(job agents.Job, requestSha string) ([]mediaapi.
 	}
 	if !found {
 		return nil, errors.New(textImagesWorkDirUnavailable)
-	}
-	if jscompat.Get(record, "requestSha") != requestSha {
-		return nil, errors.New(textImagesJobRequestMismatch)
 	}
 	provider, _ := jscompat.Get(record, "provider").(string)
 	info, known := mediaproviders.Lookup(provider)

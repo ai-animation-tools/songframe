@@ -77,7 +77,7 @@ func TestKeyframeImagesSymlinkedStateDir(t *testing.T) {
 		t.Fatalf("рабочая папка не разыменована: %s", dir)
 	}
 	job = finishJob(t, manager, "K01.png", `{"schemaVersion":1,"stage":"frames","images":[{"id":"K01","path":"K01.png"}]}`)
-	candidates, err := images.Collect(job, "sha")
+	candidates, err := images.Collect(job)
 	if err != nil {
 		t.Fatalf("кандидат в каталоге состояния через ссылку отклонён: %v", err)
 	}
@@ -98,7 +98,7 @@ func TestKeyframeImagesCollectRefusals(t *testing.T) {
 				t.Fatal(err)
 			}
 			job := finishJob(t, manager, test.file, test.answer)
-			if _, err := images.Collect(job, "sha"); err == nil || err.Error() != test.want {
+			if _, err := images.Collect(job); err == nil || err.Error() != test.want {
 				t.Fatalf("ошибка %v, ожидалась %q", err, test.want)
 			}
 		})

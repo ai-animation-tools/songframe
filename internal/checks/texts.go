@@ -1,5 +1,7 @@
 package checks
 
+import "strings"
+
 // Тексты главного процесса оригинала (checksTexts из src/shared/texts/checks.ts на 634fd94):
 // подписи и описания проверок приходят в renderer списком checks.list, названия заданий видны на
 // странице «Задания». Renderer хранит те же строки в frontend/src/shared/texts/checks.ts; при
@@ -17,6 +19,13 @@ const (
 	textStatusDescription    = "Показать готовые планы, текущие попытки и очередь согласования. Помогает выбрать следующий план для работы."
 	textAllChecksJobTitle    = "Все проверки"
 	textUpdateViewsJobTitle  = "Обновление карточек и списков"
+	textReviewShotsRequired  = "Выберите хотя бы один план для пробы."
+	textCheckReviewStep      = "Проверка пробы без видео"
+	textBuildReviewStep      = "Сборка пробы стыков"
+	textReviewStillBuilding  = "Проба ещё собирается. Дождитесь завершения задания."
+	textReviewNotFound       = "Собранная проба не найдена. Обновите список."
+	// textReviewPlanOnlySuffix — REVIEW_PLAN_ONLY_SUFFIX: по нему уведомления renderer узнают режим.
+	textReviewPlanOnlySuffix = " (проверка без видео)"
 )
 
 // textUnknownCheck — checksTexts.unknownCheck.
@@ -24,3 +33,17 @@ func textUnknownCheck(id string) string { return "Неизвестная про�
 
 // textCheckJobTitle — checksTexts.checkJobTitle.
 func textCheckJobTitle(label string) string { return "Проверка: " + label }
+
+// textInvalidReviewShots — checksTexts.invalidReviewShots.
+func textInvalidReviewShots(shots []string) string {
+	return "Коды планов вида M05 или M05.1: " + strings.Join(shots, ", ")
+}
+
+// textReviewJobTitle — checksTexts.reviewJobTitle: «Проба M01 M02» и суффикс режима без видео.
+func textReviewJobTitle(shots []string, planOnly bool) string {
+	suffix := ""
+	if planOnly {
+		suffix = textReviewPlanOnlySuffix
+	}
+	return "Проба " + strings.Join(shots, " ") + suffix
+}

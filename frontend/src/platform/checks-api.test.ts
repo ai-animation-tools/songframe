@@ -35,6 +35,7 @@ function bindings(checks: Record<string, unknown>): Bindings {
     media: missing,
     production: missing,
     dashboard: missing,
+    animatic: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }
@@ -53,12 +54,18 @@ const job = {
 };
 
 describe('window.api.checks', () => {
-  it('list, run, runAll и updateViews перенесены; пробы — нет', () => {
-    for (const method of ['checks.list', 'checks.run', 'checks.runAll', 'checks.updateViews'] as const) {
+  it('все методы проверок и проб стыков перенесены', () => {
+    const methods = [
+      'checks.list',
+      'checks.run',
+      'checks.runAll',
+      'checks.updateViews',
+      'checks.buildReview',
+      'checks.listReviews',
+      'checks.removeReview'
+    ] as const;
+    for (const method of methods) {
       expect(methodAvailability(method)).toEqual({ available: true, reason: null });
-    }
-    for (const method of ['checks.buildReview', 'checks.listReviews', 'checks.removeReview'] as const) {
-      expect(methodAvailability(method).available).toBe(false);
     }
   });
 

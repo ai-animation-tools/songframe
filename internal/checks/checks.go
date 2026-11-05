@@ -7,7 +7,8 @@
 // Журнал повторяет оригинал: строка «$ <подпись> <аргументы>» (пишет менеджер), затем stdout и
 // stderr инструмента; причина сбоя шага — stderr, иначе stdout (после trim), иначе «Шаг … завершился
 // с кодом N.». Пересборка карточек и списков (checks.updateViews) — задание вида tool с одним шагом
-// update_scene_views без --check, как в оригинале.
+// update_scene_views без --check, как в оригинале. Пробы стыков (buildReview, listReviews,
+// removeReview) — в reviews.go.
 package checks
 
 import (
@@ -109,11 +110,17 @@ func step(project string, info Info, options Options, continueOnFailure bool) jo
 	}
 }
 
-// Service запускает проверки заданиями общего менеджера; состояния, кроме менеджера, нет.
-type Service struct{ jobs *jobs.Manager }
+// Service запускает проверки и пробы заданиями общего менеджера; собственное состояние — только
+// связь путей проб с заданиями их сборки.
+type Service struct {
+	jobs    *jobs.Manager
+	reviews reviews
+}
 
 // New связывает проверки с менеджером заданий приложения.
-func New(manager *jobs.Manager) *Service { return &Service{jobs: manager} }
+func New(manager *jobs.Manager) *Service {
+	return &Service{jobs: manager, reviews: reviews{jobs: map[string]string{}}}
+}
 
 // Run — checks.run(project, id, options): одна проверка заданием «Проверка: <подпись>».
 // Неизвестная проверка — ошибка вызова без задания.

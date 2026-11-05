@@ -7,7 +7,7 @@ import type { ReactElement } from 'react';
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import type { AnimaticShot } from '@shared/types';
 import { formatClock } from '../../../format';
-import { MEDIA_COLORS, MEDIA_LABELS } from '../media';
+import { MEDIA_COLORS, MEDIA_LABELS, MEDIA_TEXT_COLORS } from '../media';
 
 export function ShotCard({ shot }: { shot: AnimaticShot }): ReactElement {
   return (
@@ -16,7 +16,7 @@ export function ShotCard({ shot }: { shot: AnimaticShot }): ReactElement {
         <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
           {shot.id}
         </Typography>
-        <Chip size="small" label={MEDIA_LABELS[shot.media]} sx={{ bgcolor: MEDIA_COLORS[shot.media], color: 'common.white' }} />
+        <Chip size="small" label={MEDIA_LABELS[shot.media]} sx={{ bgcolor: MEDIA_COLORS[shot.media], color: MEDIA_TEXT_COLORS[shot.media] }} />
         {shot.lipsync ? <Chip size="small" variant="outlined" label={animaticTexts.shot.speech} /> : null}
         <Box sx={{ flex: 1 }} />
         <Typography variant="caption" color="text.secondary">

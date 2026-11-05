@@ -62,37 +62,65 @@ func Len(text string) int { return len(Runes(text)) }
 // Python («'utf-8' codec can't decode byte 0xff in position 3: invalid start byte»). Позиция —
 // смещение в байтах; диапазон и причина вычисляются по правилам декодера CPython.
 func DecodeUTF8(data []byte) (string, error) {
+	if start, end, reason, ok := invalidUTF8(data, 0); ok {
+		return "", decodeError(data, start, end, reason)
+	}
+	return string(data), nil
+}
+
+// DecodeReplace — bytes.decode(errors="replace"): каждый максимальный неверный участок, который
+// выделяет декодер CPython, заменяется одним U+FFFD. utf8/strings.ToValidUTF8 Go режут иначе
+// (по байту или целыми сериями), поэтому хвосты stderr FFmpeg в текстах ошибок разошлись бы.
+func DecodeReplace(data []byte) string {
+	var builder strings.Builder
 	for index := 0; index < len(data); {
-		start := data[index]
-		if start < 0x80 {
+		start, end, _, ok := invalidUTF8(data, index)
+		if !ok {
+			builder.Write(data[index:])
+			break
+		}
+		builder.Write(data[index:start])
+		builder.WriteRune(utf8.RuneError)
+		index = end
+	}
+	return builder.String()
+}
+
+// invalidUTF8 — первый неверный участок [start, end) начиная с from и причина CPython; ok=false —
+// дальше всё верно. Границы участка — те, что CPython показывает в UnicodeDecodeError и заменяет
+// при errors="replace".
+func invalidUTF8(data []byte, from int) (start, end int, reason string, ok bool) {
+	for index := from; index < len(data); {
+		first := data[index]
+		if first < 0x80 {
 			index++
 			continue
 		}
 		need, low, high := 0, byte(0x80), byte(0xBF)
 		switch {
-		case start >= 0xC2 && start <= 0xDF:
+		case first >= 0xC2 && first <= 0xDF:
 			need = 1
-		case start >= 0xE0 && start <= 0xEF:
+		case first >= 0xE0 && first <= 0xEF:
 			need = 2
-			if start == 0xE0 {
+			if first == 0xE0 {
 				low = 0xA0
-			} else if start == 0xED {
+			} else if first == 0xED {
 				high = 0x9F
 			}
-		case start >= 0xF0 && start <= 0xF4:
+		case first >= 0xF0 && first <= 0xF4:
 			need = 3
-			if start == 0xF0 {
+			if first == 0xF0 {
 				low = 0x90
-			} else if start == 0xF4 {
+			} else if first == 0xF4 {
 				high = 0x8F
 			}
 		default:
-			return "", decodeError(data, index, index+1, "invalid start byte")
+			return index, index + 1, "invalid start byte", true
 		}
 		for offset := 1; offset <= need; offset++ {
 			position := index + offset
 			if position >= len(data) {
-				return "", decodeError(data, index, len(data), "unexpected end of data")
+				return index, len(data), "unexpected end of data", true
 			}
 			value := data[position]
 			minimum, maximum := byte(0x80), byte(0xBF)
@@ -100,12 +128,12 @@ func DecodeUTF8(data []byte) (string, error) {
 				minimum, maximum = low, high
 			}
 			if value < minimum || value > maximum {
-				return "", decodeError(data, index, position, "invalid continuation byte")
+				return index, position, "invalid continuation byte", true
 			}
 		}
 		index += need + 1
 	}
-	return string(data), nil
+	return 0, 0, "", false
 }
 
 // decodeError — UnicodeDecodeError для байтов [start, end).

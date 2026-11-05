@@ -13,6 +13,7 @@ import (
 
 	"songframe-go/internal/acceptshot"
 	"songframe-go/internal/jobs"
+	"songframe-go/internal/mediacmd"
 	"songframe-go/internal/mediaproviders"
 	"songframe-go/internal/mediatest"
 	"songframe-go/internal/production"
@@ -548,9 +549,9 @@ func fakeMedia(t *testing.T, frames string) {
 	if err := os.WriteFile(ffmpeg, []byte("#!/bin/sh\necho 'ffmpeg version test-build'\necho 'built with test'\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	saved := acceptshot.Programs
-	acceptshot.Programs = func() (string, string) { return ffmpeg, probe }
-	t.Cleanup(func() { acceptshot.Programs = saved })
+	saved := mediacmd.Programs
+	mediacmd.Programs = func() (string, string) { return ffmpeg, probe }
+	t.Cleanup(func() { mediacmd.Programs = saved })
 }
 
 // TestAcceptFullAndRegenerate — приёмка полного оригинала заданием accept_shot: комплект в
@@ -573,9 +574,18 @@ func TestAcceptFullAndRegenerate(t *testing.T) {
 		t.Fatal("участок без длины")
 	}
 	end := 4.0
-	if _, err := e.prod.Accept(e.project, "M03", e.pkg, production.AcceptOptions{Mode: "cut", ExpectedResultToken: view.ResultToken, CutStart: &cut, CutEnd: &end}); err == nil ||
-		err.Error() != production.TextNotMigrated {
-		t.Fatalf("участок до этапа 46: %v", err)
+	// Участок запускает accept_shot --cut со скоростью и удержаниями; подставной ffprobe не видит
+	// звука песни, поэтому приёмка отказывает до записи комплекта.
+	partial, err := e.prod.Accept(e.project, "M03", e.pkg, production.AcceptOptions{Mode: "cut", ExpectedResultToken: view.ResultToken, CutStart: &cut, CutEnd: &end, Speed: "1.5", HoldFirst: 2})
+	if err != nil {
+		t.Fatalf("участок: %v", err)
+	}
+	if finished := e.wait(partial); finished.Status != jobs.StatusFailed || finished.Error == nil || *finished.Error != "Нет звуковой дорожки." ||
+		!strings.Contains(finished.Log, `"--cut" "15:120" "--speed" "1.5" "--hold-first" "2"`) && !strings.Contains(finished.Log, "--cut 15:120 --speed 1.5 --hold-first 2") {
+		t.Fatalf("участок %+v", finished)
+	}
+	if _, err := os.Stat(filepath.Join(e.project, "assets", "shots", "M03")); !os.IsNotExist(err) {
+		t.Fatalf("комплект участка записан: %v", err)
 	}
 	accepted, err := e.prod.Accept(e.project, "M03", e.pkg, production.AcceptOptions{Mode: "full", ExpectedResultToken: view.ResultToken})
 	if err != nil {

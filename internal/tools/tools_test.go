@@ -15,13 +15,13 @@ func TestRunRejectsName(t *testing.T) {
 		"../scene_scaffold": "Недопустимое имя инструмента: ../scene_scaffold",
 		"SceneScaffold":     "Недопустимое имя инструмента: SceneScaffold",
 		"":                  "Недопустимое имя инструмента: ",
-		"build_animatic":    "Инструмент build_animatic ещё не перенесён в Go-версию SongFrame.",
+		"current_project":   "Инструмент current_project ещё не перенесён в Go-версию SongFrame.",
 	} {
 		if _, err := tools.Run(t.TempDir(), name, nil); err == nil || err.Error() != want {
 			t.Errorf("%q: ожидалось %q, получено %v", name, want, err)
 		}
 	}
-	if !tools.Available("scene_scaffold") || !tools.Available("shot_status") || tools.Available("build_animatic") {
+	if !tools.Available("scene_scaffold") || !tools.Available("shot_status") || tools.Available("current_project") || !tools.Available("build_animatic") {
 		t.Error("Available не соответствует реестру перенесённых инструментов")
 	}
 }

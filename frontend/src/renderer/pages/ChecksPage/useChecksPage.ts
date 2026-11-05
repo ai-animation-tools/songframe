@@ -30,8 +30,8 @@ export function useChecksPage() {
   const [lastJob, setLastJob] = useState<Record<string, string>>({});
 
   const loadJobs = useCallback(async () => setJobs((await window.api.jobs.list()).filter((j) => JOB_KINDS.has(j.kind))), []);
-  // Отличие от 634fd94 на время миграции: пробы стыков ещё не перенесены в Go,
-  // поэтому их методы не вызываются (блок пробы показывает причину), а проверки работают без них.
+  // Отличие от 634fd94 на время миграции: список проб читается, только если адаптер считает метод
+  // доступным; иначе блок пробы показывает причину через RequireMigrated, а проверки работают без него.
   const reviewsAvailable = useMethodAvailability('checks.listReviews').available;
   const loadReviews = useCallback(async () => {
     if (reviewsAvailable) setReviews(await window.api.checks.listReviews(project));

@@ -1,10 +1,12 @@
 // Package animatic проверяет сборку аниматика plan/animatic/latest: собрана ли она, свежа ли по
 // реестру сцен и фактическим входам и принята ли именно она в plan/production-status.json.
 //
-// Это ядро viewAnimatic и animaticInputProblems оригинала без построения списка планов для плеера:
-// статусу проекта нужны только признаки built/fresh/approved, но порядок проверок и исключения
-// (например, нестроковый путь в манифесте) повторены полностью, потому что исключение оригинала
-// прерывает computeStatus. Чтение не меняет файлов; хеши входов берутся из кэша filedigest.
+// Это viewAnimatic, animaticInputProblems и setAnimaticStatus оригинала (src/main/animatic.ts,
+// animatic-freshness.ts). Один разбор (inspect) даёт и вид страницы «Аниматик», и признаки
+// built/fresh/approved статуса проекта; порядок проверок и исключения (например, нестроковый путь
+// в манифесте) повторены полностью, потому что исключение оригинала прерывает и страницу, и
+// computeStatus. Чтение не меняет файлов; хеши входов берутся из кэша filedigest. Запись —
+// только SetStatus в plan/production-status.json; задание сборки — Service.Build.
 package animatic
 
 import (
@@ -82,91 +84,11 @@ func readJSON(path string) any {
 	return value
 }
 
-// Inspect — viewAnimatic(project) в части признаков и проблем. Ошибка — исключение оригинала.
+// Inspect — viewAnimatic(project) в части признаков и проблем для статуса проекта. Это тот же
+// разбор, что и ViewAnimatic (inspect в view.go). Ошибка — исключение оригинала.
 func Inspect(project string) (State, error) {
-	state := State{Problems: []string{}}
-	manifestPath := filepath.Join(project, "plan", "animatic", "latest", "manifest.json")
-	manifest := readJSON(manifestPath)
-	registry, hasRegistry := filedigest.File(filepath.Join(project, "plan", "scenes.json"))
-	status := readJSON(filepath.Join(project, "plan", "production-status.json"))
-	if status == nil {
-		defaults := jscompat.NewObject()
-		defaults.Set("schema_version", 1.0)
-		defaults.Set("current_animatic", nil)
-		defaults.Set("current_animatic_status", "none")
-		status = defaults
-	}
-	cards := readJSON(filepath.Join(project, "plan", "animatic", "cards", "manifest.json"))
-	state.CardsFresh = jscompat.Truthy(cards) && hasRegistry && jscompat.StrictEqual(jscompat.Get(cards, "registry_sha256"), registry)
-	if !hasRegistry {
-		state.Problems = append(state.Problems, scenarioRequired)
-	}
-	var videoSha any = nil
-	if shots, ok := jscompat.AsArray(jscompat.Get(manifest, "shots")); ok && jscompat.Truthy(manifest) {
-		videoFile := jscompat.Get(manifest, "video_file")
-		videoExists := false
-		if jscompat.Truthy(videoFile) {
-			name, err := jscompat.PathArg("path", videoFile)
-			if err != nil {
-				return State{}, err
-			}
-			videoExists = jscompat.Exists(filepath.Join(project, "plan", "animatic", "latest", name))
-		}
-		if !videoExists {
-			state.Problems = append(state.Problems, videoMissing(videoFile))
-		}
-		if err := checkShots(shots); err != nil {
-			return State{}, err
-		}
-		inputs, err := inputProblems(project, manifest.(*jscompat.Object))
-		if err != nil {
-			return State{}, err
-		}
-		state.Problems = append(state.Problems, inputs...)
-		state.Built = true
-		sceneRegistry := jscompat.Get(manifest, "scene_registry_sha256")
-		state.Fresh = hasRegistry && jscompat.StrictEqual(sceneRegistry, registry) && videoExists && len(inputs) == 0
-		videoSha = jscompat.Coalesce(jscompat.Get(manifest, "video_sha256"), nil)
-		if !hasRegistry || !jscompat.StrictEqual(sceneRegistry, registry) {
-			state.Problems = append(state.Problems, registryChanged)
-		}
-	} else if jscompat.Exists(manifestPath) {
-		state.Problems = append(state.Problems, manifestCorrupt)
-	}
-	current := jscompat.Get(status, "current_animatic_status")
-	switch {
-	case jscompat.StrictEqual(current, "approved"):
-		state.ApprovalStatus = "approved"
-	case jscompat.StrictEqual(current, "review"):
-		state.ApprovalStatus = "review"
-	default:
-		state.ApprovalStatus = "none"
-	}
-	approvedSha := jscompat.Coalesce(jscompat.GetPath(status, "approved_animatic", "video_sha256"), nil)
-	state.Approved = state.ApprovalStatus == "approved" && state.Fresh && jscompat.Truthy(videoSha) && jscompat.StrictEqual(approvedSha, videoSha)
-	return state, nil
-}
-
-// checkShots воспроизводит исключения построения списка планов viewAnimatic: s.id у null и
-// join() с нестроковым путём карточки.
-func checkShots(shots []any) error {
-	for _, shot := range shots {
-		if _, err := jscompat.Prop(shot, "id"); err != nil {
-			return err
-		}
-		media := jscompat.Get(shot, "media")
-		if path := jscompat.Get(shot, "path"); !jscompat.StrictEqual(media, "video") && jscompat.Truthy(path) {
-			if _, err := jscompat.PathArg("path", path); err != nil {
-				return err
-			}
-		}
-		if last := jscompat.Get(shot, "path_last"); jscompat.StrictEqual(media, "keyframes") && jscompat.Truthy(last) {
-			if _, err := jscompat.PathArg("path", last); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	_, state, err := inspect(project)
+	return state, err
 }
 
 // projectPath — путь входа внутри проекта или "" для абсолютного и выходящего за проект.

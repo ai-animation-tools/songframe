@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "status": "downloaded",
+  "request_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "generation_id": "gen-1",
+  "service_status": "succeed",
+  "downloads": [
+    {
+      "path": "original.mp4"
+    }
+  ]
+}

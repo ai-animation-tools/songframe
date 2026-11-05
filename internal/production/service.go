@@ -718,14 +718,19 @@ type Bounds struct {
 	End   float64 `json:"end"`
 }
 
-// PrepareSpeech — точный срез песни для речевого плана. Проверки пакета и границ перенесены;
-// сам срез WAV (cut_speech на FFmpeg) переносит этап 46 вместе с медиаконвейером, поэтому после
-// проверок метод отказывает текстом «не перенесено» и ничего не пишет.
+// PrepareSpeech — точный срез песни для речевого плана (cut_speech cut в audio/ пакета). WAV
+// перезаписывается только до отправки: запрос и приёмка ссылаются на один файл. cut_speech не
+// перезаписывает WAV, поэтому прежние speech.wav и audio-recipe.json пакета удаляются перед
+// запуском (и при отказе среза пакет остаётся без него, как в оригинале). Пакет занят на время
+// среза: проверка и отметка операции — одна блокировка claim. Границы bounds передаются
+// инструменту строками Number.toString, без них срез предлагает инструмент по разметке.
+// Отказ инструмента — его stderr (иначе stdout) или код; результат — свежий PackageView.
 func (s *Service) PrepareSpeech(project, packageDir string, bounds *Bounds) (*PackageView, error) {
-	directory, err := s.available(project, packageDir)
+	directory, release, err := s.claim(project, packageDir)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 	view, err := mustPackage(project, directory)
 	if err != nil {
 		return nil, err
@@ -739,7 +744,44 @@ func (s *Service) PrepareSpeech(project, packageDir string, bounds *Bounds) (*Pa
 	if bounds != nil && (math.IsInf(bounds.Start, 0) || math.IsInf(bounds.End, 0) || math.IsNaN(bounds.Start) || math.IsNaN(bounds.End) || bounds.Start < 0 || bounds.End <= bounds.Start) {
 		return nil, errors.New(textSpeechBoundsInvalid)
 	}
-	return nil, errors.New(TextNotMigrated)
+	audio := filepath.Join(directory, "audio")
+	if err := removeSpeech(project, audio); err != nil {
+		return nil, err
+	}
+	args := []string{"cut", view.Shot, "--out", audio, "--json"}
+	if bounds != nil {
+		args = append(args, "--start", jscompat.NumberToString(bounds.Start), "--end", jscompat.NumberToString(bounds.End))
+	}
+	result, err := s.run(project, "cut_speech", args...)
+	if err != nil {
+		return nil, err
+	}
+	if !ok(result) {
+		return nil, failure(result, textCutSpeechFailed(result.Code))
+	}
+	next, err := mustPackage(project, directory)
+	if err != nil {
+		return nil, err
+	}
+	if next == nil || next.Speech == nil {
+		return nil, errors.New(textSpeechWavMissing)
+	}
+	return next, nil
+}
+
+// removeSpeech — rmSync(…, { force: true }) прежнего среза пакета: отсутствующий файл не ошибка.
+// Запись в проект проходит шлюз projectfs (незавершённая публикация её запрещает).
+func removeSpeech(project, audio string) error {
+	if err := projectfs.CheckWrite(project); err != nil {
+		return err
+	}
+	for _, name := range []string{"speech.wav", "audio-recipe.json"} {
+		path := filepath.Join(audio, name)
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return jscompat.FsError("rm", path, err)
+		}
+	}
+	return nil
 }
 
 // toolStep — шаг задания, запускающий инструмент комплекса: вывод уходит в журнал, ненулевой код
@@ -1012,8 +1054,7 @@ func (s *Service) resumeSteps(project, directory, requestDir string, image bool)
 	if !image {
 		steps = append(steps,
 			s.toolStep(project, "shot_workflow", []string{"ask", "--dir", directory, "--stage", "downloaded"}, textReviewResultStep, false, nil),
-			// Контактный лист рисует FFmpeg-конвейер этапа 46; до него сопутствующий шаг завершается
-			// текстом «не перенесён» и не делает задание неудачным.
+			// Сопутствующая техническая сводка: её сбой (например, нет FFmpeg) не делает задание неудачным.
 			s.toolStep(project, "contact_sheet", []string{"--package", directory, "--json"}, textTechnicalSummaryStep, true, nil),
 		)
 	}
@@ -1243,8 +1284,9 @@ func cutFrame(seconds *float64) (int, error) {
 
 // Accept — приёмка полученного видео в assets/shots/Mxx (accept_shot заданием). Замена принятого
 // комплекта необратима для индекса сцены: прежний комплект переезжает в assets/replaced только по
-// явному согласию. Перенесён режим full (побайтовая копия оригинала, совпадающего с окном и FPS);
-// участок, скорость и удержания требуют рендера FFmpeg этапа 46 и пока отклоняются после проверок.
+// явному согласию. Режим full — побайтовая копия оригинала, совпадающего с окном и FPS; режим
+// участка передаёт accept_shot кадры --cut из секунд UI и, если заданы, --speed, --hold-first и
+// --hold-last (рендер FFmpeg выполняет инструмент).
 func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions) (jobs.Info, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -1310,10 +1352,6 @@ func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions
 	if lipsync && view.Speech == nil {
 		return jobs.Info{}, errors.New(textAcceptSpeechRequired)
 	}
-	if options.Mode != "full" {
-		// Рендер участка (срез, скорость, удержания) — FFmpeg-конвейер этапа 46.
-		return jobs.Info{}, errors.New(TextNotMigrated)
-	}
 	audio := []string{}
 	if lipsync && view.Speech != nil {
 		audio = []string{"--audio", view.Speech.Path, "--audio-recipe", view.Speech.Recipe}
@@ -1333,13 +1371,24 @@ func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions
 	return info, nil
 }
 
-// ContactSheet — техническая сводка пакета (contact_sheet) рисуется FFmpeg-конвейером этапа 46:
-// пакет проверяется, затем метод отказывает текстом «не перенесено».
+// ContactSheet — contactSheet(project, packageDir) оригинала: задание «Сводка <пакет>» с одним
+// шагом contact_sheet --package <пакет> --json. Пакет должен быть свободен; задание отмечается за
+// пакетом, поэтому до его конца другие операции с пакетом получают «пакет занят». Сам инструмент
+// пишет только preview/ пакета (контактный лист, граничные кадры, сравнения, превью 2×).
 func (s *Service) ContactSheet(project, packageDir string) (jobs.Info, error) {
-	if _, err := s.available(project, packageDir); err != nil {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	directory, err := s.availableLocked(project, packageDir)
+	if err != nil {
 		return jobs.Info{}, err
 	}
-	return jobs.Info{}, errors.New(TextNotMigrated)
+	step := s.toolStep(project, "contact_sheet", []string{"--package", directory, "--json"}, textContactSheetStep, false, nil)
+	info, err := s.start(jobs.KindContactSheet, textContactSheetJob(filepath.Base(directory)), project, []jobs.Step{step})
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	s.packageJobs[directory] = info.ID
+	return info, nil
 }
 
 // montageDraftsUsing — названия сохранённых черновиков монтажа, чьи клипы лежат в папке relative.

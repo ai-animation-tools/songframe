@@ -43,7 +43,7 @@ export function AttachResult(project: string, packageDir: string, files: string[
 }
 
 /**
- * ContactSheet — техническая сводка пакета (этап 46).
+ * ContactSheet — техническая сводка пакета: задание contact_sheet с одним шагом.
  */
 export function ContactSheet(project: string, packageDir: string): $CancellablePromise<jobs$0.Info> {
     return $Call.ByID(4083409895, project, packageDir);
@@ -64,7 +64,7 @@ export function DiscardAttempt(project: string, packageDir: string): $Cancellabl
 }
 
 /**
- * ExportBundle — пакет для монтажёра (export_edit_bundle): переносит этап 46.4.
+ * ExportBundle — пакет для монтажёра (export_edit_bundle): переносит шаг 46c.
  */
 export function ExportBundle(project: string, options: $models.ExportBundleOptions): $CancellablePromise<jobs$0.Info> {
     return $Call.ByID(3384867854, project, options);
@@ -99,7 +99,7 @@ export function Park(project: string, packageDir: string): $CancellablePromise<v
 }
 
 /**
- * PrepareSpeech — точный срез WAV липсинка; проверки перенесены, сам срез — этап 46.
+ * PrepareSpeech — точный срез WAV липсинка инструментом cut_speech; прежний срез пакета заменяется.
  */
 export function PrepareSpeech(project: string, packageDir: string, bounds: production$0.Bounds | null): $CancellablePromise<production$0.PackageView | null> {
     return $Call.ByID(2445314629, project, packageDir, bounds);

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "shot": "M02",
+  "kind": "video",
+  "provider": "test",
+  "command": "image_to_video",
+  "model": "test-video",
+  "parameters": {
+    "duration": 5
+  },
+  "inputs": [
+    {
+      "flag": "input",
+      "slot": "first_image",
+      "path": "frame.png",
+      "role": "first"
+    }
+  ],
+  "prompt": {
+    "path": "prompt.txt",
+    "sha256": "32b6a70e75f4b587490a67b241db779d8976c0627b7fac156281bb32e0f96618"
+  },
+  "outputs": 1
+}

@@ -257,15 +257,42 @@ func lanczosFilter(x float64) float64 {
 	return 0
 }
 
+// bicubicFilter — bicubic_filter Pillow (a = -0.5, опора 2): фильтр Image.resize по умолчанию,
+// которым contact_sheet оригинала масштабировал опоры и кадры сравнения.
+func bicubicFilter(x float64) float64 {
+	const a = -0.5
+	if x < 0 {
+		x = -x
+	}
+	if x < 1 {
+		return ((a+2)*x-(a+3))*x*x + 1
+	}
+	if x < 2 {
+		return (((x-5)*x+8)*x - 4) * a
+	}
+	return 0
+}
+
+// resampleFilter — фильтр ресэмплинга Pillow: опора (support) и функция окна.
+type resampleFilter struct {
+	support float64
+	weight  func(float64) float64
+}
+
+var (
+	lanczos = resampleFilter{3, lanczosFilter}
+	bicubic = resampleFilter{2, bicubicFilter}
+)
+
 // resampleCoefficients — precompute_coeffs + normalize_coeffs_8bpc: для каждой выходной
 // позиции первая входная позиция, число весов и целые веса (ksize на позицию).
-func resampleCoefficients(inSize, outSize int) (bounds []int, weights []int32, ksize int) {
+func resampleCoefficients(inSize, outSize int, filter resampleFilter) (bounds []int, weights []int32, ksize int) {
 	scale := float64(inSize) / float64(outSize)
 	filterScale := scale
 	if filterScale < 1 {
 		filterScale = 1
 	}
-	support := 3 * filterScale
+	support := filter.support * filterScale
 	ksize = int(math.Ceil(support))*2 + 1
 	bounds = make([]int, 2*outSize)
 	weights = make([]int32, outSize*ksize)
@@ -284,7 +311,7 @@ func resampleCoefficients(inSize, outSize int) (bounds []int, weights []int32, k
 		maximum -= minimum
 		total := 0.0
 		for x := 0; x < maximum; x++ {
-			w := lanczosFilter((float64(x+minimum) - center + 0.5) * inverse)
+			w := filter.weight((float64(x+minimum) - center + 0.5) * inverse)
 			values[x] = w
 			total += w
 		}
@@ -321,6 +348,11 @@ func clip8(value int64) byte {
 
 // resizeLanczos — image.resize((width, height), LANCZOS) для RGB; тот же размер — копия.
 func resizeLanczos(source rgbImage, width, height int) (rgbImage, error) {
+	return resize(source, width, height, lanczos)
+}
+
+// resize — image.resize((width, height), filter) для RGB без reducing_gap; тот же размер — копия.
+func resize(source rgbImage, width, height int, filter resampleFilter) (rgbImage, error) {
 	if width < 1 || height < 1 {
 		return rgbImage{}, pycompat.New(pycompat.ValueError, "height and width must be > 0")
 	}
@@ -329,7 +361,7 @@ func resizeLanczos(source rgbImage, width, height int) (rgbImage, error) {
 	}
 	current := source
 	if width != source.width {
-		bounds, weights, ksize := resampleCoefficients(source.width, width)
+		bounds, weights, ksize := resampleCoefficients(source.width, width, filter)
 		next := rgbImage{width: width, height: current.height, pix: make([]byte, 3*width*current.height)}
 		for y := 0; y < current.height; y++ {
 			row := current.pix[3*y*current.width:]
@@ -350,7 +382,7 @@ func resizeLanczos(source rgbImage, width, height int) (rgbImage, error) {
 		current = next
 	}
 	if height != source.height {
-		bounds, weights, ksize := resampleCoefficients(source.height, height)
+		bounds, weights, ksize := resampleCoefficients(source.height, height, filter)
 		next := rgbImage{width: current.width, height: height, pix: make([]byte, 3*current.width*height)}
 		for y := 0; y < height; y++ {
 			start, count := bounds[2*y], bounds[2*y+1]

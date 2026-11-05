@@ -234,7 +234,7 @@ func (s *ProductionService) Accept(project, shot, packageDir string, options pro
 	return wire.Done(s.production.Accept(project, shot, packageDir, options))
 }
 
-// ContactSheet — техническая сводка пакета (этап 46).
+// ContactSheet — техническая сводка пакета: задание contact_sheet с одним шагом.
 func (s *ProductionService) ContactSheet(project, packageDir string) (jobs.Info, error) {
 	if err := s.idle(project, packageDir); err != nil {
 		return jobs.Info{}, err
@@ -269,7 +269,7 @@ func (s *ProductionService) SpeechPlan(project, shot, packageDir string) (speech
 	return wire.Done(speech.PlanFor(project, shot, limits))
 }
 
-// PrepareSpeech — точный срез WAV липсинка; проверки перенесены, сам срез — этап 46.
+// PrepareSpeech — точный срез WAV липсинка инструментом cut_speech; прежний срез пакета заменяется.
 func (s *ProductionService) PrepareSpeech(project, packageDir string, bounds *production.Bounds) (*production.PackageView, error) {
 	if err := s.idle(project, packageDir); err != nil {
 		return nil, err
@@ -303,7 +303,7 @@ type ExportBundleOptions struct {
 	Copy   bool   `json:"copy"`
 }
 
-// ExportBundle — пакет для монтажёра (export_edit_bundle): переносит этап 46.4.
+// ExportBundle — пакет для монтажёра (export_edit_bundle): переносит шаг 46c.
 func (s *ProductionService) ExportBundle(project string, options ExportBundleOptions) (jobs.Info, error) {
 	return wire.Done(jobs.Info{}, errors.New(production.TextNotMigrated))
 }

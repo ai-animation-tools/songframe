@@ -20,10 +20,14 @@ import (
 	"strings"
 
 	"songframe-go/internal/acceptshot"
+	"songframe-go/internal/buildanimatic"
+	"songframe-go/internal/buildreview"
 	"songframe-go/internal/checkassets"
 	"songframe-go/internal/checkworkspace"
+	"songframe-go/internal/contactsheet"
 	"songframe-go/internal/continuitybrief"
 	"songframe-go/internal/costcheck"
+	"songframe-go/internal/cutspeech"
 	"songframe-go/internal/lintregistry"
 	"songframe-go/internal/mediaadapters"
 	"songframe-go/internal/mediarequest"
@@ -94,7 +98,8 @@ type contextTool func(ctx context.Context, root string, args []string) pytool.Ou
 var LocalDir = func() (string, error) { return mediaadapters.StateDir() }
 
 // contextual — инструменты платной попытки и её продолжения (media_request, cost_check,
-// regenerate_shot, accept_shot): получают контекст отмены задания.
+// regenerate_shot, accept_shot) и медиаинструменты с долгими вызовами FFmpeg (build_animatic,
+// build_review, contact_sheet, cut_speech): получают контекст отмены задания.
 var contextual = map[string]contextTool{
 	"media_request": func(ctx context.Context, root string, args []string) pytool.Output {
 		return mediarequest.Run(ctx, root, args, nil)
@@ -102,6 +107,10 @@ var contextual = map[string]contextTool{
 	"cost_check":      withLocalDir(costcheck.Run),
 	"regenerate_shot": withLocalDir(regenerateshot.Run),
 	"accept_shot":     withLocalDir(acceptshot.Run),
+	"build_animatic":  buildanimatic.Run,
+	"build_review":    buildreview.Run,
+	"contact_sheet":   contactsheet.Run,
+	"cut_speech":      cutspeech.Run,
 }
 
 // withLocalDir — инструмент, которому нужен каталог состояния (наблюдения цен cost_check).

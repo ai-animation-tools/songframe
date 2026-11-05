@@ -1,20 +1,22 @@
 // Package acceptshot — перенос tools/accept_shot/accept_shot.py: перенос принятой генерации в
-// комплект assets/shots/Mxx по контракту assets. Перенесён режим --full: скачанный оригинал уже
-// совпадает с окном плана и шкалой 30 кадров/с и копируется побайтово, рядом сохраняются входы,
-// промпт, снимок запроса, индекс подготовки и манифест; затем записывается отпечаток приёмки,
-// комплект проверяется validate_package, наблюдается расход, обновляются представления и (с
-// --clean) удаляются рабочие пакеты плана.
+// комплект assets/shots/Mxx по контракту assets. Режим --full копирует скачанный оригинал, уже
+// совпадающий с окном плана и шкалой 30 кадров/с, побайтово; --cut НАЧАЛО:КОНЕЦ и --review
+// (рецепт пробы build_review) с --speed, --hold-first и --hold-last рендерят участок FFmpeg по
+// фильтру, который считает buildreview.Prepare для одного плана. Рядом сохраняются входы, промпт,
+// снимок запроса, индекс подготовки и манифест с параметрами обработки; затем записывается
+// отпечаток приёмки, комплект проверяется validate_package, наблюдается расход, обновляются
+// представления и (с --clean) удаляются рабочие пакеты плана и использованная проба.
 //
-// Участок оригинала (--cut/--review), скорость и удержания требуют рендера FFmpeg и рецепта пробы
-// build_review; этот конвейер переносит этап 46, поэтому такие режимы отказывают текстом
-// «не перенесено» до любых записей. ffprobe и ffmpeg ищутся как в оригинале — по имени в PATH
-// (приложение может подставить пути компонентов); без них приёмка завершается общей ошибкой
-// медиа, как FileNotFoundError оригинала.
+// ffprobe и ffmpeg ищутся через internal/mediacmd (пара компонентов приложения или имена в PATH);
+// без них приёмка завершается общей ошибкой медиа, как FileNotFoundError оригинала.
+// --preparation приложение не передаёт, и он не перенесён.
 package acceptshot
 
 import (
 	"context"
 	"errors"
+	"math"
+	"math/big"
 	"os"
 	"path/filepath"
 	"sort"
@@ -23,30 +25,15 @@ import (
 	"time"
 
 	"songframe-go/internal/assetpackage"
+	"songframe-go/internal/buildreview"
 	"songframe-go/internal/checkworkspace"
 	"songframe-go/internal/costcheck"
-	"songframe-go/internal/process"
+	"songframe-go/internal/mediacmd"
 	"songframe-go/internal/pycompat"
 	"songframe-go/internal/pytool"
 	"songframe-go/internal/sceneregistry"
 	"songframe-go/internal/sceneviews"
 )
-
-// Programs — пути FFmpeg и ffprobe: приложение подставляет пару менеджера компонентов, пустой
-// путь — голое имя, которое ищется в PATH общим запуском процессов, как в оригинале.
-var Programs = func() (ffmpeg, ffprobe string) { return "", "" }
-
-// programs — пара программ с заменой пустых путей именами.
-func programs() (string, string) {
-	ffmpeg, ffprobe := Programs()
-	if ffmpeg == "" {
-		ffmpeg = "ffmpeg"
-	}
-	if ffprobe == "" {
-		ffprobe = "ffprobe"
-	}
-	return ffmpeg, ffprobe
-}
 
 // Now — время UTC для имени папки прежнего комплекта (подменяется в тестах).
 var Now = func() time.Time { return time.Now().UTC() }
@@ -59,17 +46,20 @@ const (
 	audioPolicy = "Звук генератора сохранён в оригинале; в монтаже используется непрерывная исходная песня."
 	rebuildNote = "Принятые байты восстанавливаются копированием video; повтор фильтров сохраняет монтаж, " +
 		"но не обещает побайтово одинаковое перекодирование."
-	textHidden      = "Ошибка файлов попытки или медиа; сырой вывод скрыт."
-	textNotMigrated = "Приёмка участка, скорости и удержаний ещё не перенесена в Go-версию SongFrame: нужен медиаконвейер этапа 46."
-	textEditMissing = "Укажите режим приёмки: --review, --cut НАЧАЛО:КОНЕЦ или --full."
-	textSourceMiss  = "Укажите пакет (--package) или папку попытки (--work-dir)."
+	textHidden     = "Ошибка файлов попытки или медиа; сырой вывод скрыт."
+	textSourceMiss = "Укажите пакет (--package) или папку попытки (--work-dir)."
+	textCutMissing = "Укажите участок: --review или --cut НАЧАЛО:КОНЕЦ на сетке 30 кадров/с."
+	textCutFormat  = "Участок задаётся как НАЧАЛО:КОНЕЦ."
+	textBadEdit    = "Принятый монтаж имеет неверный формат или число кадров."
 )
 
 // roleLabels — ROLE_LABELS оригинала.
 var roleLabels = map[string]string{"first": "Первый кадр", "last": "Последний кадр", "middle": "Промежуточный кадр"}
 
-// Parser — argparse accept_shot.py. Взаимоисключающие обязательные группы источника и режима
-// проверяются в Run; --preparation приложение не передаёт, и он не перенесён.
+// Parser — argparse accept_shot.py. Общий ArgParser знает одну необязательную группу: ею служит
+// группа режима (--review | --cut | --full); группа источника, обязательность обеих групп и
+// type=int удержаний проверяются в Run, usage и справка подменяются текстом оригинала.
+// --preparation приложение не передаёт, и он не перенесён.
 var Parser = pycompat.ArgParser{
 	Prog:        "accept_shot.py",
 	Description: "Перенос принятой генерации в комплект assets по контракту; @link README.md",
@@ -89,6 +79,55 @@ var Parser = pycompat.ArgParser{
 		{Name: "--replace", Help: "Заменить уже принятый комплект: прежний переезжает в assets/replaced/Mxx/<время>"},
 	},
 	Positionals: []pycompat.Positional{{Name: "shot"}},
+	Exclusive:   []string{"--review", "--cut", "--full"},
+}
+
+// usage и help — format_usage и format_help оригинала (с группами в круглых скобках и
+// --preparation), снятые с Python 3.12.
+const usage = "usage: accept_shot.py [-h] (--package PACKAGE | --work-dir WORK_DIR)\n" +
+	"                      (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n" +
+	"                      [--speed SPEED] [--hold-first HOLD_FIRST]\n" +
+	"                      [--hold-last HOLD_LAST] [--audio AUDIO]\n" +
+	"                      [--audio-recipe AUDIO_RECIPE]\n" +
+	"                      [--preparation [PREPARATION ...]] [--clean] [--no-views]\n" +
+	"                      [--replace]\n" +
+	"                      shot\n"
+
+const help = usage + `
+Перенос принятой генерации в комплект assets по контракту; @link README.md
+
+positional arguments:
+  shot
+
+options:
+  -h, --help            show this help message and exit
+  --package PACKAGE     Папка пакета shot_workflow с workflow.json
+  --work-dir WORK_DIR   Папка попытки media_request с request.json и
+                        attempt.json
+  --review REVIEW       JSON рецепта пробы build_review с этим планом
+  --cut НАЧАЛО:КОНЕЦ    Участок оригинала на сетке 30 кадров/с, конец
+                        исключительно
+  --full                Оригинал уже совпадает с окном и FPS: побайтовая копия
+  --speed SPEED
+  --hold-first HOLD_FIRST
+  --hold-last HOLD_LAST
+  --audio AUDIO         speech.wav для речевого плана
+  --audio-recipe AUDIO_RECIPE
+                        audio-recipe.json к WAV
+  --preparation [PREPARATION ...]
+                        Дополнительные файлы подготовки: промпты кадров,
+                        промежуточные изображения
+  --clean               После проверки удалить все пакеты плана в
+                        plan/batches, переданный пакет очереди, пробу и пустые
+                        папки проб
+  --no-views            Не обновлять представления
+  --replace             Заменить уже принятый комплект: прежний переезжает в
+                        assets/replaced/Mxx/<время>
+`
+
+// argError — parser.error(message) с usage оригинала: код 2.
+func argError(message string) pytool.Output {
+	return pytool.Output{Code: 2, Stderr: pycompat.TextMode(usage + "accept_shot.py: error: " + message + "\n")}
 }
 
 func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
@@ -143,45 +182,14 @@ func writeJSON(path string, value any) error {
 // loadJSON — json.loads(path.read_text()).
 func loadJSON(path string) (any, error) { return pycompat.LoadJSONFile(path) }
 
-// run — run(args) build_animatic: ненулевой код — ValueError с хвостом stderr, программа не
-// найдена — FileNotFoundError.
+// run — run(args) build_animatic (общий mediacmd.AnimaticRun).
 func run(ctx context.Context, program string, args ...string) ([]byte, error) {
-	// JSON ffprobe и строка версии — килобайты; хвост stderr нужен только для текста ошибки.
-	result, err := process.Run(ctx, process.Command{Path: program, Args: args, StdoutLimit: 16 << 20, StderrLimit: 64 << 10})
-	if err != nil {
-		var start *process.StartError
-		if errors.As(err, &start) {
-			return nil, pycompat.New(pycompat.FileNotFoundError, "[Errno 2] No such file or directory: "+pycompat.Repr(program))
-		}
-		var exit *process.ExitError
-		if errors.As(err, &exit) {
-			stderr := []rune(strings.ToValidUTF8(string(result.Stderr), "�"))
-			if len(stderr) > 1200 {
-				stderr = stderr[len(stderr)-1200:]
-			}
-			return nil, valueError("Команда обработки медиа завершилась с ошибкой: " + string(stderr))
-		}
-		return nil, err
-	}
-	return result.Stdout, nil
+	return mediacmd.AnimaticRun(ctx, program, args...)
 }
 
-// probe — probe(path) build_animatic: JSON ffprobe потоков, формата и глав.
+// probe — probe(path) build_animatic (общий mediacmd.AnimaticProbe).
 func probe(ctx context.Context, path string) (*pycompat.Dict, error) {
-	_, ffprobe := programs()
-	data, err := run(ctx, ffprobe, "-v", "error", "-show_streams", "-show_format", "-show_chapters", "-of", "json", path)
-	if err != nil {
-		return nil, err
-	}
-	text, err := pycompat.DecodeUTF8(data)
-	if err != nil {
-		return nil, err
-	}
-	value, err := pycompat.LoadsJSON(text)
-	if err != nil {
-		return nil, err
-	}
-	return dict(value), nil
+	return mediacmd.AnimaticProbe(ctx, path)
 }
 
 // attemptData — resolve_package: пакет, папка попытки, запрос, состояние и workflow.
@@ -304,15 +312,228 @@ func frozenRequestFiles(request *pycompat.Dict, workDir string) (string, []strin
 	return promptFile, files, nil
 }
 
-// Options — параметры accept() перенесённого режима.
+// Options — параметры accept(). Режим — Full либо участок: Review (путь рецепта пробы) или Cut
+// (НАЧАЛО и КОНЕЦ на сетке 30 кадров/с) со Speed (строка Decimal, как --speed; «1» — без
+// изменения скорости) и удержаниями.
 type Options struct {
 	Package, WorkDir   string
 	Full               bool
+	Review             *string
+	Cut                *[2]pycompat.Int
+	Speed              string
+	HoldFirst          pycompat.Int
+	HoldLast           pycompat.Int
 	Audio, AudioRecipe string
 	Clean, Replace     bool
 	UpdateViews        bool
 	// LocalDir — каталог состояния для наблюдения расхода.
 	LocalDir string
+}
+
+// editPlan — параметры обработки принятого участка: рецепт одного плана build_review либо
+// фиксированный план полной копии.
+type editPlan struct {
+	filter              string
+	frames              pycompat.Int
+	start, end, motion  *big.Int
+	holdFirst, holdLast *big.Int
+	speed               string
+	intervalSeconds     []any
+	durationChange      float64
+}
+
+// fullPlan — план режима --full: оригинал целиком, без скорости и удержаний.
+func fullPlan(frames pycompat.Int) editPlan {
+	count := frames.Big()
+	return editPlan{
+		filter: "fps=30,trim=start_frame=0:end_frame=" + frames.String() + ",setpts=N/(30*TB),setsar=1",
+		frames: frames, start: big.NewInt(0), end: count, motion: count, holdFirst: big.NewInt(0), holdLast: big.NewInt(0),
+		speed: "1", intervalSeconds: []any{0.0, intFloat(count) / fps},
+	}
+}
+
+// intFloat — float(int) для кадров (int / FPS Python даёт тот же результат, что float / 30).
+func intFloat(value *big.Int) float64 {
+	result, _ := new(big.Float).SetInt(value).Float64()
+	return result
+}
+
+// pyInt — int(value) Python для значения JSON рецепта или аргумента: int и bool как есть, float
+// с отбрасыванием дробной части (NaN — ValueError, бесконечность — OverflowError), строка — по
+// синтаксису int() (иначе ValueError «invalid literal…»), прочее — TypeError.
+func pyInt(value any) (*big.Int, error) {
+	switch item := value.(type) {
+	case pycompat.Int:
+		return item.Big(), nil
+	case bool:
+		if item {
+			return big.NewInt(1), nil
+		}
+		return big.NewInt(0), nil
+	case float64:
+		if math.IsNaN(item) {
+			return nil, pycompat.Raise(pycompat.ValueError, "cannot convert float NaN to integer")
+		}
+		if math.IsInf(item, 0) {
+			return nil, pycompat.Raise(pycompat.OverflowError, "cannot convert float infinity to integer")
+		}
+		result, _ := new(big.Float).SetFloat64(math.Trunc(item)).Int(nil)
+		return result, nil
+	case string:
+		parsed, ok := pycompat.ParseIntText(item)
+		if !ok {
+			return nil, pycompat.Raise(pycompat.ValueError, "invalid literal for int() with base 10: %s", pycompat.Repr(item))
+		}
+		return parsed.Big(), nil
+	}
+	return nil, pycompat.Raise(pycompat.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", pycompat.TypeName(value))
+}
+
+// planEdit — edit_plan(shot, original, frames, root, review, cut, speed, hold_first, hold_last):
+// параметры обрезки из рецепта пробы (того же оригинала) или аргументов; фильтр и длительности
+// считает buildreview.Prepare по спецификации из одного плана с явным path оригинала. Участок с
+// удержаниями обязан дать ровно окно плана.
+func planEdit(ctx context.Context, shot, original string, frames pycompat.Int, root string, options Options) (editPlan, error) {
+	var cut [2]any
+	var speed, holdFirst, holdLast any = options.Speed, options.HoldFirst, options.HoldLast
+	if options.Cut != nil {
+		cut = [2]any{options.Cut[0], options.Cut[1]}
+	}
+	if options.Review != nil {
+		document, err := loadJSON(*options.Review)
+		if err != nil {
+			return editPlan{}, err
+		}
+		shots, err := pycompat.DictGet(document, "shots", []any{})
+		if err != nil {
+			return editPlan{}, err
+		}
+		list, err := pycompat.Iter(shots)
+		if err != nil {
+			return editPlan{}, err
+		}
+		var item any
+		for _, candidate := range list {
+			id, err := pycompat.DictGet(candidate, "id", nil)
+			if err != nil {
+				return editPlan{}, err
+			}
+			if pycompat.Equal(id, shot) {
+				item = candidate
+				break
+			}
+		}
+		if item == nil {
+			return editPlan{}, valueError(shot + ": в рецепте пробы нет этого плана.")
+		}
+		other := valueError(shot + ": проба собрана не из этого оригинала.")
+		kind, _ := pycompat.DictGet(item, "kind", nil)
+		if !pycompat.Equal(kind, "video") {
+			return editPlan{}, other
+		}
+		pathValue, err := pycompat.Item(item, "path")
+		if err != nil {
+			return editPlan{}, err
+		}
+		path, ok := pathValue.(string)
+		if !ok {
+			return editPlan{}, pycompat.Raise(pycompat.TypeError, "expected str, bytes or os.PathLike object, not %s", pycompat.TypeName(pathValue))
+		}
+		recipeDigest, err := assetpackage.FileSHA256(path)
+		if err != nil {
+			return editPlan{}, err
+		}
+		originalDigest, err := assetpackage.FileSHA256(original)
+		if err != nil {
+			return editPlan{}, err
+		}
+		if recipeDigest != originalDigest {
+			return editPlan{}, other
+		}
+		for index, key := range []string{"source_start_frame", "source_end_frame_exclusive"} {
+			if cut[index], err = pycompat.Item(item, key); err != nil {
+				return editPlan{}, err
+			}
+		}
+		speed, _ = pycompat.DictGet(item, "speed", "1")
+		holdFirst, _ = pycompat.DictGet(item, "hold_first_frames", pycompat.NewInt(0))
+		holdLast, _ = pycompat.DictGet(item, "hold_last_frames", pycompat.NewInt(0))
+	} else if options.Cut == nil {
+		return editPlan{}, valueError(textCutMissing)
+	}
+	values := make([]*big.Int, 4)
+	for index, raw := range []any{cut[0], cut[1], holdFirst, holdLast} {
+		value, err := pyInt(raw)
+		if err != nil {
+			return editPlan{}, err
+		}
+		values[index] = value
+	}
+	spec := pytool.Record("schema_version", pycompat.NewInt(1), "shots", []any{pytool.Record(
+		"scene", shot,
+		"path", original,
+		"kind", "video",
+		"source_start_frame", pycompat.IntFromBig(values[0]),
+		"source_end_frame_exclusive", pycompat.IntFromBig(values[1]),
+		"speed", pycompat.Str(speed),
+		"hold_first_frames", pycompat.IntFromBig(values[2]),
+		"hold_last_frames", pycompat.IntFromBig(values[3]),
+	)})
+	prepared, err := buildreview.Prepare(ctx, spec, root)
+	if err != nil {
+		return editPlan{}, err
+	}
+	item := prepared.Value("shots").([]any)[0].(*pycompat.Dict)
+	count := item.Value("frames").(pycompat.Int)
+	if !pycompat.Equal(count, frames) {
+		return editPlan{}, valueError("Участок с удержаниями даёт " + count.String() + " кадров, а окно плана — " + frames.String() + ".")
+	}
+	number := func(key string) *big.Int { return item.Value(key).(pycompat.Int).Big() }
+	return editPlan{
+		filter: item.Value("filter").(string), frames: count,
+		start: number("source_start_frame"), end: number("source_end_frame_exclusive"), motion: number("motion_frames"),
+		holdFirst: number("hold_first_frames"), holdLast: number("hold_last_frames"),
+		speed: item.Value("speed").(string), intervalSeconds: item.Value("source_interval_seconds").([]any),
+		durationChange: item.Value("duration_change_seconds").(float64),
+	}, nil
+}
+
+// renderEdit — render_edit: участок оригинала по фильтру плана кодируется ENCODE build_animatic
+// без звука ровно в frames кадров; результат обязан быть 1920×1080, 30/1.
+func renderEdit(ctx context.Context, original, filter string, frames pycompat.Int, target string) error {
+	args := append([]string{"-v", "error", "-nostdin", "-n", "-threads", "2", "-i", original, "-map", "0:v:0", "-vf", filter},
+		mediacmd.Encode...)
+	args = append(args, "-frames:v", frames.String(), target)
+	if _, err := run(ctx, mediacmd.FFmpeg(), args...); err != nil {
+		return err
+	}
+	probed, err := probe(ctx, target)
+	if err != nil {
+		return err
+	}
+	streams, _ := probed.Value("streams").([]any)
+	for _, raw := range streams {
+		stream := dict(raw)
+		if stream == nil || !pycompat.Equal(stream.Value("codec_type"), "video") {
+			continue
+		}
+		values := make([]any, 4)
+		for index, key := range []string{"width", "height", "r_frame_rate", "nb_frames"} {
+			if values[index], err = pycompat.Item(stream, key); err != nil {
+				return err
+			}
+		}
+		count, err := pyInt(values[3])
+		if err != nil {
+			return err
+		}
+		if !pycompat.Equal(values[0], pycompat.NewInt(1920)) || !pycompat.Equal(values[1], pycompat.NewInt(1080)) ||
+			!pycompat.Equal(values[2], "30/1") || count.Cmp(frames.Big()) != 0 {
+			return valueError(textBadEdit)
+		}
+		return nil
+	}
+	return pycompat.New("StopIteration", "")
 }
 
 // acceptanceFingerprint — отпечаток постановки, по которой сделан комплект (scene_sha256 пакета),
@@ -360,7 +581,7 @@ func retireKit(root, shot string) (string, error) {
 
 // cleanWork — после проверки комплекта удаляет переданный пакет, все пакеты плана в plan/batches и
 // опустевшие папки проб; assets, очередь других планов и чужие пакеты не трогает.
-func cleanWork(root, shot, packageDir, workDir string) ([]any, error) {
+func cleanWork(root, shot, packageDir, workDir string, review *string) ([]any, error) {
 	root = pycompat.ResolvePath(root)
 	retained := checkworkspace.RetainedMontageFolders(root)
 	batches := pycompat.ResolvePath(pycompat.JoinPath(root, "plan", "batches"))
@@ -394,6 +615,23 @@ func cleanWork(root, shot, packageDir, workDir string) ([]any, error) {
 		}
 		if done {
 			break
+		}
+	}
+	// Использованная проба: её MP4 и рецепт внутри plan/batches, если папка не хранится монтажом.
+	if review != nil {
+		for _, extra := range []string{*review, pycompat.WithSuffix(*review, ".mp4")} {
+			resolved := pycompat.ResolvePath(extra)
+			kept := false
+			for item := range retained {
+				kept = kept || pycompat.IsRelativeTo(resolved, item)
+			}
+			if pycompat.Exists(extra) && pycompat.IsRelativeTo(resolved, batches) && !kept {
+				if err := os.Remove(extra); err != nil {
+					return nil, pycompat.OSErrorFrom(err, extra)
+				}
+				relative, _ := pycompat.RelativeTo(pycompat.ResolvePath(extra), root)
+				removed = append(removed, relative)
+			}
 		}
 	}
 	// Остальные пакеты и пробы, все планы которых уже приняты: проба с незавершённым соседом остаётся.
@@ -440,7 +678,8 @@ func cleanWork(root, shot, packageDir, workDir string) ([]any, error) {
 	return removed, nil
 }
 
-// Accept — accept(shot, …) в режиме full: комплект assets/shots/<shot> из скачанного оригинала.
+// Accept — accept(shot, …): комплект assets/shots/<shot> из скачанного оригинала — полной копией
+// (Full) или рендером участка (Review/Cut со скоростью и удержаниями).
 func Accept(ctx context.Context, root, shot string, options Options) (*pycompat.Dict, error) {
 	root = pycompat.ResolvePath(root)
 	registry, err := sceneregistry.Load(root)
@@ -580,7 +819,7 @@ func Accept(ctx context.Context, root, shot string, options Options) (*pycompat.
 		}
 	}
 	if options.Clean {
-		cleaned, err := cleanWork(root, shot, data.packageDir, data.workDir)
+		cleaned, err := cleanWork(root, shot, data.packageDir, data.workDir, options.Review)
 		if err != nil {
 			return nil, err
 		}
@@ -675,18 +914,41 @@ func buildKit(ctx context.Context, root, shot string, frames pycompat.Int, stagi
 			}
 		}
 	}
-	nbFrames, _ := strconv.ParseInt(pycompat.Str(originalMedia.Value("nb_frames")), 10, 64)
-	if !originalMedia.Has("nb_frames") {
-		nbFrames = 0
+	var plan editPlan
+	if options.Full {
+		nbFrames, _ := strconv.ParseInt(pycompat.Str(originalMedia.Value("nb_frames")), 10, 64)
+		if !originalMedia.Has("nb_frames") {
+			nbFrames = 0
+		}
+		if !pycompat.Equal(originalMedia.Value("r_frame_rate"), "30/1") || nbFrames != count {
+			return nil, "", valueError("Полный оригинал не совпадает с окном и FPS; задайте участок.")
+		}
+		if err := copyFile(pycompat.JoinPath(staging, "original.mp4"), pycompat.JoinPath(staging, "video.mp4")); err != nil {
+			return nil, "", err
+		}
+		plan = fullPlan(frames)
+	} else {
+		if plan, err = planEdit(ctx, shot, pycompat.JoinPath(staging, "original.mp4"), frames, root, options); err != nil {
+			return nil, "", err
+		}
+		if err := renderEdit(ctx, pycompat.JoinPath(staging, "original.mp4"), plan.filter, frames, pycompat.JoinPath(staging, "video.mp4")); err != nil {
+			return nil, "", err
+		}
 	}
-	if !pycompat.Equal(originalMedia.Value("r_frame_rate"), "30/1") || nbFrames != count {
-		return nil, "", valueError("Полный оригинал не совпадает с окном и FPS; задайте участок.")
-	}
-	if err := copyFile(pycompat.JoinPath(staging, "original.mp4"), pycompat.JoinPath(staging, "video.mp4")); err != nil {
+	speedValue, err := pycompat.NewDecimal(plan.speed)
+	if err != nil {
 		return nil, "", err
 	}
-	filter := "fps=30,trim=start_frame=0:end_frame=" + frames.String() + ",setpts=N/(30*TB),setsar=1"
-	seconds := float64(count) / fps
+	selectedValue, err := pycompat.NewDecimal(pycompat.IntFromBig(new(big.Int).Sub(plan.end, plan.start)))
+	if err != nil {
+		return nil, "", err
+	}
+	if selectedValue, err = selectedValue.Div(pycompat.DecimalInt(fps)); err != nil {
+		return nil, "", err
+	}
+	factor, _ := strconv.ParseFloat(speedValue.FormatF(), 64)
+	selected, _ := strconv.ParseFloat(selectedValue.FormatF(), 64)
+	ratio, _ := new(big.Rat).SetString(speedValue.FormatF())
 	video, err := descriptor(staging, "video.mp4")
 	if err != nil {
 		return nil, "", err
@@ -769,8 +1031,7 @@ func buildKit(ctx context.Context, root, shot string, frames pycompat.Int, stagi
 	if err != nil {
 		return nil, "", err
 	}
-	ffmpeg, _ := programs()
-	versionOutput, err := run(ctx, ffmpeg, "-version")
+	versionOutput, err := run(ctx, mediacmd.FFmpeg(), "-version")
 	if err != nil {
 		return nil, "", err
 	}
@@ -808,29 +1069,29 @@ func buildKit(ctx context.Context, root, shot string, frames pycompat.Int, stagi
 			"video", video,
 			"fps", pycompat.NewInt(fps),
 			"frames", frames,
-			"duration_seconds", seconds,
-			"source_interval_seconds", []any{0.0, seconds},
+			"duration_seconds", float64(count)/fps,
+			"source_interval_seconds", plan.intervalSeconds,
 			"source_interval_end_exclusive", true,
 			"source_frame_grid_fps", pycompat.NewInt(fps),
 			"still_source_time_seconds", nil,
 			"speed", pytool.Record(
-				"factor", 1.0,
-				"ratio", "1",
-				"selected_source_seconds", seconds,
-				"motion_output_seconds", seconds,
-				"duration_change_seconds", 0.0,
+				"factor", factor,
+				"ratio", ratio.RatString(),
+				"selected_source_seconds", selected,
+				"motion_output_seconds", intFloat(plan.motion)/fps,
+				"duration_change_seconds", plan.durationChange,
 			),
-			"hold_first_seconds", 0.0,
-			"hold_last_seconds", 0.0,
+			"hold_first_seconds", intFloat(plan.holdFirst)/fps,
+			"hold_last_seconds", intFloat(plan.holdLast)/fps,
 			"audio_policy", audioPolicy,
 			"montage_source", video,
 			"rebuild", pytool.Record(
-				"stages", []any{pytool.Record("input", "original.mp4", "filter", filter, "frames", frames)},
+				"stages", []any{pytool.Record("input", "original.mp4", "filter", plan.filter, "frames", frames)},
 				"source", originalDesc,
 				"ffmpeg_version", lines[0],
 				"note", rebuildNote,
 			),
-			"source_frame_interval_exclusive", []any{pycompat.NewInt(0), frames},
+			"source_frame_interval_exclusive", []any{pycompat.IntFromBig(plan.start), pycompat.IntFromBig(plan.end)},
 			"source_fps", sourceFPS,
 			"fps_conversion", conversion,
 		),
@@ -850,12 +1111,36 @@ func buildKit(ctx context.Context, root, shot string, frames pycompat.Int, stagi
 	return video, replaced, nil
 }
 
-// Run — main() accept_shot.py на разрешённом корне проекта. Перенесён режим --full; --cut и
-// --review отказывают текстом «не перенесено» до любых записей.
+// sourceOrder — имена опций группы источника (--package, --work-dir) в порядке появления в
+// аргументах (с префиксами allow_abbrev и «=значение»), для текста конфликта argparse.
+func sourceOrder(args []string) []string {
+	order := []string{}
+	for _, arg := range args {
+		if arg == "--" {
+			break
+		}
+		name, _, _ := strings.Cut(arg, "=")
+		if len(name) <= 2 || !strings.HasPrefix(name, "--") {
+			continue
+		}
+		for _, flag := range []string{"--package", "--work-dir"} {
+			if strings.HasPrefix(flag, name) {
+				order = append(order, flag)
+			}
+		}
+	}
+	return order
+}
+
+// Run — main() accept_shot.py на разрешённом корне проекта: разбор аргументов с группами
+// источника и режима, участок --cut, приёмка и печать итога JSON.
 func Run(ctx context.Context, root string, args []string, localDir string) pytool.Output {
-	parsed, exit := pytool.Args(Parser, args)
+	parsed, exit := Parser.ParseArgs(args)
 	if exit != nil {
-		return *exit
+		if exit.Code == 0 {
+			return pytool.Output{Code: 0, Stdout: pycompat.TextMode(help)}
+		}
+		return pytool.Output{Code: exit.Code, Stderr: pycompat.TextMode(strings.Replace(exit.Stderr, Parser.Usage(), usage, 1))}
 	}
 	value := func(name string) string {
 		if values := parsed.Values[name]; len(values) > 0 {
@@ -863,27 +1148,65 @@ func Run(ctx context.Context, root string, args []string, localDir string) pytoo
 		}
 		return ""
 	}
-	printer := &pytool.Printer{}
-	if (value("--package") == "") == (value("--work-dir") == "") {
-		return printer.Fail(textSourceMiss)
-	}
-	edits := 0
-	for _, present := range []bool{value("--review") != "", value("--cut") != "", parsed.Bools["--full"]} {
-		if present {
-			edits++
+	present := func(name string) bool { _, ok := parsed.Values[name]; return ok }
+	holds := map[string]pycompat.Int{"--hold-first": pycompat.NewInt(0), "--hold-last": pycompat.NewInt(0)}
+	for _, name := range []string{"--hold-first", "--hold-last"} {
+		if !present(name) {
+			continue
 		}
+		number, ok := pycompat.ParseIntText(value(name))
+		if !ok {
+			return argError("argument " + name + ": invalid int value: " + pycompat.Repr(value(name)))
+		}
+		holds[name] = number
 	}
-	if edits != 1 {
-		return printer.Fail(textEditMissing)
+	if order := sourceOrder(args); present("--package") && present("--work-dir") && len(order) > 1 {
+		second := order[len(order)-1]
+		first := "--package"
+		if second == "--package" {
+			first = "--work-dir"
+		}
+		return argError("argument " + second + ": not allowed with argument " + first)
 	}
-	if !parsed.Bools["--full"] {
-		return printer.Fail(textNotMigrated)
+	if !present("--package") && !present("--work-dir") {
+		return argError("one of the arguments --package --work-dir is required")
 	}
-	result, err := Accept(ctx, root, value("shot"), Options{
-		Package: value("--package"), WorkDir: value("--work-dir"), Full: true, Audio: value("--audio"),
+	if !present("--review") && !present("--cut") && !parsed.Bools["--full"] {
+		return argError("one of the arguments --review --cut --full is required")
+	}
+	printer := &pytool.Printer{}
+	options := Options{
+		Package: value("--package"), WorkDir: value("--work-dir"), Full: parsed.Bools["--full"], Speed: value("--speed"),
+		HoldFirst: holds["--hold-first"], HoldLast: holds["--hold-last"], Audio: value("--audio"),
 		AudioRecipe: value("--audio-recipe"), Clean: parsed.Bools["--clean"], Replace: parsed.Bools["--replace"],
 		UpdateViews: !parsed.Bools["--no-views"], LocalDir: localDir,
-	})
+	}
+	if !present("--speed") {
+		options.Speed = "1"
+	}
+	if present("--review") {
+		review := value("--review")
+		options.Review = &review
+	}
+	result, err := func() (*pycompat.Dict, error) {
+		// Пустой --cut оригинал считает отсутствующим участком (if args.cut).
+		if text := value("--cut"); text != "" {
+			parts := strings.Split(text, ":")
+			numbers := []pycompat.Int{}
+			for _, part := range parts {
+				number, ok := pycompat.ParseIntText(part)
+				if !ok {
+					return nil, pycompat.Raise(pycompat.ValueError, "invalid literal for int() with base 10: %s", pycompat.Repr(part))
+				}
+				numbers = append(numbers, number)
+			}
+			if len(numbers) != 2 {
+				return nil, valueError(textCutFormat)
+			}
+			options.Cut = &[2]pycompat.Int{numbers[0], numbers[1]}
+		}
+		return Accept(ctx, root, value("shot"), options)
+	}()
 	if err != nil {
 		switch {
 		case pycompat.Is(err, pycompat.ValueError) && !pycompat.Is(err, pycompat.JSONDecodeError):

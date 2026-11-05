@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "audio": {
+    "path": "source/track.mp3",
+    "end_seconds": "0.8"
+  },
+  "references": {
+    "pier": {
+      "name": "Причал",
+      "path": "source/pier.png"
+    }
+  },
+  "visual_direction": "Тестовое направление.",
+  "sequences": [
+    {
+      "id": "intro",
+      "title": "Тест",
+      "direction": ""
+    }
+  ],
+  "scenes": [
+    {
+      "id": "M01",
+      "original": "M01",
+      "sequence": "intro",
+      "start_frame": 0,
+      "end_frame_exclusive": 12,
+      "camera": "Статика",
+      "action": "Технический кадр",
+      "continuity": "",
+      "references": [
+        "pier"
+      ],
+      "card": {
+        "primary_reference": "pier"
+      },
+      "state_from": null,
+      "state_changes": {}
+    },
+    {
+      "id": "M02",
+      "original": "M02",
+      "sequence": "intro",
+      "start_frame": 12,
+      "end_frame_exclusive": 24,
+      "camera": "Статика",
+      "action": "Технический кадр",
+      "continuity": "",
+      "references": [
+        "pier"
+      ],
+      "card": {
+        "primary_reference": "pier"
+      },
+      "state_from": null,
+      "state_changes": {}
+    }
+  ]
+}

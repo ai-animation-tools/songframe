@@ -6,6 +6,7 @@
  */
 import type { Api } from '@shared/api';
 import type {
+  AnimaticView,
   AppState,
   BriefResult,
   CheckId,
@@ -14,6 +15,7 @@ import type {
   GenerationSettings,
   JobInfo,
   JobStepInfo,
+  PackageView,
   PickOptions,
   ProductionQuote,
   ProductionView,
@@ -146,6 +148,7 @@ export interface Bindings {
   media: () => Promise<typeof import('../../bindings/songframe-go/internal/app/mediaservice')>;
   production: () => Promise<typeof import('../../bindings/songframe-go/internal/app/productionservice')>;
   dashboard: () => Promise<typeof import('../../bindings/songframe-go/internal/app/dashboardservice')>;
+  animatic: () => Promise<typeof import('../../bindings/songframe-go/internal/app/animaticservice')>;
   events: EventSource;
 }
 
@@ -173,6 +176,7 @@ export const nativeBindings: Bindings = {
   media: () => import('../../bindings/songframe-go/internal/app/mediaservice'),
   production: () => import('../../bindings/songframe-go/internal/app/productionservice'),
   dashboard: () => import('../../bindings/songframe-go/internal/app/dashboardservice'),
+  animatic: () => import('../../bindings/songframe-go/internal/app/animaticservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
     return { on: Events.On };
@@ -290,7 +294,7 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'referenceImages.accept',
   'referenceImages.attach',
   'referenceImages.close',
-  // Производство. prepareSpeech, contactSheet и exportBundle требуют FFmpeg-конвейера этапа 46.
+  // Производство. exportBundle (пакет для монтажёра) переносит шаг 46c.
   'production.view',
   'production.decide',
   'production.reopenFrame',
@@ -304,6 +308,8 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'production.selectImage',
   'production.regenerate',
   'production.accept',
+  'production.contactSheet',
+  'production.prepareSpeech',
   'production.park',
   'production.speechPlan',
   'production.reopenQuestion',
@@ -317,7 +323,14 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'productionWorkflow.discard',
   'productionWorkflow.generateFrames',
   'productionWorkflow.importFrames',
-  'dashboard.view'
+  'dashboard.view',
+  // Аниматик и пробы стыков (FFmpeg-конвейер шага 46a).
+  'animatic.view',
+  'animatic.build',
+  'animatic.setStatus',
+  'checks.buildReview',
+  'checks.listReviews',
+  'checks.removeReview'
 ]);
 
 /** Доступность принадлежит адаптеру, поэтому UI не повторяет собственный список готовых Go-операций. */
@@ -624,11 +637,21 @@ export function createApi(b: Bindings): Api {
   api.tools.run = (project, name, args) => call('tools.run', async () => (await b.tools()).Run(project, name, args), false);
 
   // Проверки — задания общего менеджера. CheckId Go генерирует TS enum с теми же строками, поэтому
-  // сужается только тип. Пробы стыков (buildReview, listReviews, removeReview) ещё не перенесены.
+  // сужается только тип. Пробы стыков — задание build_review; список и удаление читают plan/batches.
   api.checks.list = () => call('checks.list', async () => (await (await b.checks()).List()).map((info) => ({ ...info, id: info.id as CheckId })));
   api.checks.run = (project, id, options) => call('checks.run', async () => toJob(await (await b.checks()).Run(project, id as checks.ID, options ?? {})));
   api.checks.runAll = (project, options) => call('checks.runAll', async () => toJob(await (await b.checks()).RunAll(project, options ?? {})));
   api.checks.updateViews = (project) => call('checks.updateViews', async () => toJob(await (await b.checks()).UpdateViews(project)));
+  api.checks.buildReview = (project, options) => call('checks.buildReview', async () => toJob(await (await b.checks()).BuildReview(project, options)));
+  api.checks.listReviews = (project) => call('checks.listReviews', async () => (await b.checks()).ListReviews(project));
+  api.checks.removeReview = (project, path) => call('checks.removeReview', async () => (await b.checks()).RemoveReview(project, path));
+
+  // Аниматик: сборка — задание update_scene_views + build_animatic; статус и вид медиа плана Go
+  // отдаёт строками контракта, адаптер только сужает тип.
+  api.animatic.view = (project) => call('animatic.view', async () => (await (await b.animatic()).View(project)) as AnimaticView);
+  api.animatic.build = (project, planOnly) => call('animatic.build', async () => toJob(await (await b.animatic()).Build(project, planOnly ?? false)));
+  api.animatic.setStatus = (project, status) =>
+    call('animatic.setStatus', async () => (await (await b.animatic()).SetStatus(project, status)) as AnimaticView, false);
 
   // Сценарный проход агента. Go отдаёт статусы, проход и документы предложения строками и JSON
   // оригинала; адаптер только сужает типы. Записывающие действия ждут Go без срока оболочки:
@@ -795,6 +818,16 @@ export function createApi(b: Bindings): Api {
   api.production.regenerate = (project, shot) => call('production.regenerate', async () => toJob(await (await production()).Regenerate(project, shot)), false);
   api.production.accept = (project, shot, packageDir, options) =>
     call('production.accept', async () => toJob(await (await production()).Accept(project, shot, packageDir, options)), false);
+  // Сводка пакета — задание contact_sheet; срез речи режет cut_speech (до минуты на длинной песне),
+  // поэтому срок ожидания оболочки не ставится.
+  api.production.contactSheet = (project, packageDir) =>
+    call('production.contactSheet', async () => toJob(await (await production()).ContactSheet(project, packageDir)), false);
+  api.production.prepareSpeech = (project, packageDir, bounds) =>
+    call(
+      'production.prepareSpeech',
+      async () => (await (await production()).PrepareSpeech(project, packageDir, bounds ?? null)) as unknown as PackageView,
+      false
+    );
   api.production.park = (project, packageDir) => call('production.park', async () => (await production()).Park(project, packageDir));
   api.production.speechPlan = (project, shot, packageDir) =>
     call('production.speechPlan', async () => (await (await production()).SpeechPlan(project, shot, packageDir ?? '')) as unknown as SpeechPlan);

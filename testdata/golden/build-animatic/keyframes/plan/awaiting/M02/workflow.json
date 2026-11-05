@@ -1,0 +1,20 @@
+{
+  "shot": "M02",
+  "stage": "prompt_review",
+  "keyframes": [
+    {
+      "id": "K01",
+      "role": "first",
+      "time_seconds": 0,
+      "path": "frames/K01.png",
+      "approved": true
+    },
+    {
+      "id": "K02",
+      "role": "last",
+      "time_seconds": 0.4,
+      "path": "frames/K02.png",
+      "approved": true
+    }
+  ]
+}

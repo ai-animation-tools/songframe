@@ -3,6 +3,7 @@
 
 import * as AIService from "./aiservice.js";
 import * as AgentsService from "./agentsservice.js";
+import * as AnimaticService from "./animaticservice.js";
 import * as AppService from "./appservice.js";
 import * as CastService from "./castservice.js";
 import * as ChecksService from "./checksservice.js";
@@ -28,6 +29,7 @@ import * as VideoReviewService from "./videoreviewservice.js";
 export {
     AIService,
     AgentsService,
+    AnimaticService,
     AppService,
     CastService,
     ChecksService,

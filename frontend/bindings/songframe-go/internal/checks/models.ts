@@ -39,3 +39,24 @@ export interface Options {
     "strict"?: boolean;
     "next"?: boolean;
 }
+
+/**
+ * ReviewInfo — ReviewInfo контракта: собранная проба и её рецепт. Пути абсолютные (папка
+ * проекта, как её передал renderer), CreatedAt — время изменения MP4 в ISO UTC с миллисекундами.
+ */
+export interface ReviewInfo {
+    "dir": string;
+    "video": string;
+    "manifest": string;
+    "shots": string[];
+    "totalFrames": number;
+    "createdAt": string;
+}
+
+/**
+ * ReviewOptions — ReviewOptions контракта: коды планов подряд по шкале и режим без кодирования.
+ */
+export interface ReviewOptions {
+    "shots": string[];
+    "planOnly": boolean;
+}

@@ -1,7 +1,6 @@
 /** Просмотр оригиналов, отдельный выбор кандидата и приёмка используют рабочие блоки и локальную модель API. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { platformTexts } from '@shared/texts/platform';
 import { receivedPackage, RESULT_ERROR, resultStoryOptions, ResultStory } from '../../../testing/resultStories';
 
 const meta = {
@@ -214,15 +213,20 @@ export const SummaryFailureRetry: Story = {
   }
 };
 
-export const SummaryNotMigrated: Story = {
-  name: 'Сводка не перенесена · кнопка объясняет причину, приёмка доступна',
+export const SummaryJob: Story = {
+  name: 'Техническая сводка · задание блокирует действия до готовых изображений',
   tags: ['ci'],
-  parameters: { songframe: { ...resultStoryOptions(), unavailable: ['production.contactSheet'] } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const summary = canvas.getByRole('button', { name: 'Сделать техническую сводку' });
-    await expect(summary).toBeDisabled();
-    await expect(summary).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
+    await expect(summary).toBeEnabled();
+    await userEvent.click(summary);
+    // Сводка — задание contact_sheet: пока оно идёт, повтор и приёмка ждут его завершения.
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Сделать техническую сводку' })).toBeDisabled());
+    await expect(canvas.getByRole('button', { name: 'Принять' })).toBeDisabled();
+    await canvas.findByRole('button', { name: /Открыть крупно: Техническая сводка.*summary=2/ });
+    await expect(canvas.getByRole('button', { name: /Открыть крупно: Техническая сводка.*summary=1/ })).toBeVisible();
+    await expect(canvas.queryByRole('button', { name: 'Сделать техническую сводку' })).not.toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Принять' })).toBeEnabled();
   }
 };

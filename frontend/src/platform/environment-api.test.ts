@@ -36,6 +36,7 @@ function bindings(services: { environment?: Record<string, unknown>; media?: Rec
     media: services.media ? async () => services.media as never : missing,
     production: missing,
     dashboard: missing,
+    animatic: missing,
     events
   } as Bindings;
 }

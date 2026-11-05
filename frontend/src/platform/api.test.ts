@@ -18,6 +18,8 @@ function bindings(
     on?: (name: string, listener: (event: { data: unknown }) => void) => () => void;
     projects?: Record<string, unknown>;
     sources?: Record<string, unknown>;
+    animatic?: Record<string, unknown>;
+    checks?: Record<string, unknown>;
   } = {}
 ) {
   const service = (methods: Record<string, unknown>) => async () => methods as never;
@@ -36,7 +38,7 @@ function bindings(
     cast: missing,
     scenario: missing,
     tools: missing,
-    checks: missing,
+    checks: overrides.checks ? service(overrides.checks) : missing,
     agents: missing,
     ai: missing,
     scenarioWorkflow: missing,
@@ -48,6 +50,7 @@ function bindings(
     media: missing,
     production: missing,
     dashboard: missing,
+    animatic: overrides.animatic ? service(overrides.animatic) : missing,
     events: async () => ({ on: overrides.on ?? (() => () => undefined) })
   } as Bindings;
   return b;
@@ -153,6 +156,32 @@ describe('Граница window.api', () => {
     await expect(api.sources.view('/клип')).resolves.toStrictEqual(view);
     expect(methodAvailability('sources.save')).toEqual({ available: true, reason: null });
     expect(methodAvailability('dashboard.view').available).toBe(true);
-    expect(methodAvailability('production.contactSheet').available).toBe(false);
+    expect(methodAvailability('production.contactSheet').available).toBe(true);
+    expect(methodAvailability('montage.view').available).toBe(false);
+  });
+
+  it('передаёт аниматик и пробы стыков в Go без изменения данных', async () => {
+    const view = { built: null, shots: [], approval: { status: 'review', approvedSha256: null, current: false }, cardsFresh: true, problems: [] };
+    const calls: unknown[][] = [];
+    const api = createApi(
+      bindings({
+        animatic: {
+          View: async (...args: unknown[]) => (calls.push(['view', ...args]), view),
+          SetStatus: async (...args: unknown[]) => (calls.push(['status', ...args]), view)
+        },
+        checks: { ListReviews: async (...args: unknown[]) => (calls.push(['reviews', ...args]), []) }
+      })
+    );
+    await expect(api.animatic.view('/клип')).resolves.toStrictEqual(view);
+    await expect(api.animatic.setStatus('/клип', 'approved')).resolves.toStrictEqual(view);
+    await expect(api.checks.listReviews('/клип')).resolves.toStrictEqual([]);
+    expect(calls).toEqual([
+      ['view', '/клип'],
+      ['status', '/клип', 'approved'],
+      ['reviews', '/клип']
+    ]);
+    for (const method of ['animatic.build', 'checks.buildReview', 'checks.removeReview', 'production.prepareSpeech'] as const) {
+      expect(methodAvailability(method).available).toBe(true);
+    }
   });
 });

@@ -49,7 +49,8 @@ export function AnimaticPlayer({
       />
       <Box sx={{ display: 'flex', height: 22, mt: 1, borderRadius: 1, overflow: 'hidden', border: 1, borderColor: 'divider', position: 'relative' }}>
         {shots.map((shot) => (
-          <Tooltip key={shot.id} title={`${shot.id} · ${shot.title} · ${MEDIA_LABELS[shot.media]}`} placement="top">
+          // describeChild: подпись описывает сегмент, а не становится aria-label у div без роли (aria-prohibited-attr).
+          <Tooltip key={shot.id} title={`${shot.id} · ${shot.title} · ${MEDIA_LABELS[shot.media]}`} placement="top" describeChild>
             <Box
               onClick={() => seek(shot)}
               sx={{

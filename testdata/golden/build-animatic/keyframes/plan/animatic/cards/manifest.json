@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "generated_from": "plan/scenes.json",
+  "registry_sha256": "efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5",
+  "project_inputs": {
+    "name": "Тестовый клип"
+  },
+  "reference_hashes": {
+    "source/pier.png": "9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1"
+  },
+  "cards": {
+    "M02": {
+      "path": "plan/animatic/cards/M02.png",
+      "sha256": "9e2de1a1f59ec9cdc1c8c909863ee100733ee62346f694579a3176d23070cdcc",
+      "keyframes": [
+        {
+          "id": "K01",
+          "role": "first",
+          "time_seconds": 0,
+          "path": "plan/awaiting/M02/frames/K01.png",
+          "sha256": "bb9ca552597b418b7745f8818a9def72def9784adaf8804bf1e2d58fa357e5e9"
+        },
+        {
+          "id": "K02",
+          "role": "last",
+          "time_seconds": 0.4,
+          "path": "plan/awaiting/M02/frames/K02.png",
+          "sha256": "32b28073a691a532308155e0c8597ff45907e9590d8ff44d12f59ef6841a5405"
+        }
+      ],
+      "last": {
+        "path": "plan/animatic/cards/M02.last.png",
+        "sha256": "5b70286986b077e24baf9cbcec894905dcb6b376d5f73dd2d321a631cedffe8b"
+      }
+    }
+  }
+}

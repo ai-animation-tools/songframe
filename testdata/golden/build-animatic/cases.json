@@ -1,0 +1,2109 @@
+{
+  "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
+  "python": "3.12.3",
+  "cases": [
+    {
+      "name": "plan-only",
+      "description": "--plan-only: сводка входов без записи; прежний latest с HTML-страницей сохраняется.",
+      "covers": [
+        "--plan-only",
+        "media_counts",
+        "build_started=false",
+        "нет записи"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/animatic/latest/index.html",
+          "text": "Прежняя HTML-страница"
+        },
+        {
+          "op": "run",
+          "args": [
+            "--plan-only"
+          ],
+          "expected": {
+            "code": 0,
+            "stdout": "{\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"build_started\": false\n}\n",
+            "stderr": "",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "build-cache",
+      "description": "Полная сборка: холодный кэш, тёплый кэш, пустой кэш, замена одной карточки и пропавший монтаж.",
+      "covers": [
+        "полная сборка",
+        "manifest/README latest",
+        "представления после сборки",
+        "из кэша",
+        "подготовлена",
+        "segments_created/reused",
+        "удаление index.html",
+        "одна карточка пересоздаёт один фрагмент",
+        "ошибка сохраняет latest"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/animatic/latest/index.html",
+          "text": "Прежняя HTML-страница"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 подготовлена\nM02 подготовлена\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 2,\n  \"segments_reused\": 0,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json": "1eb3bfc7797008107cb4c9002747df8684a0c622d2b346be86fdac047c3cd902",
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4": "9be0c22fc1d40090f881ab19d6c0f88f199f9eb32782e30d355b596a0640d166",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.json": "19b1bc712ca70111f58e4a3d233314baba9f8575462650150e8a6ee32b1b0ab7",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.mp4": "368d3f89b1df3f04a8de6265e74f31d39c5479a28f26151071141bd8d0207b38",
+              "plan/animatic/latest/README.md": "16bd990978ad13839faf95266405f6892229e34f53bac154fe4de44da1114e17",
+              "plan/animatic/latest/index.html": null,
+              "plan/animatic/latest/manifest.json": "9af493684c36765f42b4315c15c3973e420651f503243ec172e2f1e5a3f87107",
+              "plan/animatic/latest/test-output.mp4": "e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 из кэша\nM02 из кэша\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 0,\n  \"segments_reused\": 2,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {},
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "remove",
+          "path": "plan/animatic/.cache"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 подготовлена\nM02 подготовлена\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 2,\n  \"segments_reused\": 0,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json": "1eb3bfc7797008107cb4c9002747df8684a0c622d2b346be86fdac047c3cd902",
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4": "9be0c22fc1d40090f881ab19d6c0f88f199f9eb32782e30d355b596a0640d166",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.json": "19b1bc712ca70111f58e4a3d233314baba9f8575462650150e8a6ee32b1b0ab7",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.mp4": "368d3f89b1df3f04a8de6265e74f31d39c5479a28f26151071141bd8d0207b38"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/M02.png",
+          "file": "media/green-card.png"
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"generated_from\": \"plan/scenes.json\",\n  \"registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\"\n  },\n  \"reference_hashes\": {\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"cards\": {\n    \"M02\": {\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"sha256\": \"29adfbcff62c48c80958a844ad1afb3507c84662453e4e80e9221bd4df2a5777\"\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 из кэша\nM02 подготовлена\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"3096cddc896c9a4820f5110c8e5f2f02a2e75b11ac0611c7b24737f10156606b\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 1,\n  \"segments_reused\": 1,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/56133b1f6378f083afe4dd39c7e1af72d872831e4430208b4579aedc75a106ee.json": "92b840bc4ae6295bede553263af9753b0c9c19a9475ce1d7699683997ec957ed",
+              "plan/animatic/.cache/segments/56133b1f6378f083afe4dd39c7e1af72d872831e4430208b4579aedc75a106ee.mp4": "47a29e67a80ed1f0bfbe0dca21900e9c6e6a9b5925be9a785ef258189aca9d77",
+              "plan/animatic/latest/manifest.json": "4d7a936ed2deb067f5734e42c41b5287c18513b14780195c628195f6cb578912",
+              "plan/animatic/latest/test-output.mp4": "3096cddc896c9a4820f5110c8e5f2f02a2e75b11ac0611c7b24737f10156606b"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"29adfbcff62c48c80958a844ad1afb3507c84662453e4e80e9221bd4df2a5777\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"29adfbcff62c48c80958a844ad1afb3507c84662453e4e80e9221bd4df2a5777\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"3096cddc896c9a4820f5110c8e5f2f02a2e75b11ac0611c7b24737f10156606b\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "remove",
+          "path": "assets/shots/M01/accepted-edit.mp4"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет допустимого входного файла: accepted-edit.mp4\n",
+            "changes": {},
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"29adfbcff62c48c80958a844ad1afb3507c84662453e4e80e9221bd4df2a5777\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"29adfbcff62c48c80958a844ad1afb3507c84662453e4e80e9221bd4df2a5777\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"3096cddc896c9a4820f5110c8e5f2f02a2e75b11ac0611c7b24737f10156606b\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "cache-damaged",
+      "description": "Повреждённый фрагмент кэша и повреждённая квитанция кэша пересоздаются.",
+      "covers": [
+        "lookup: sha не совпал",
+        "lookup: квитанция не JSON",
+        "lookup: квитанции нет"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 подготовлена\nM02 подготовлена\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 2,\n  \"segments_reused\": 0,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json": "1eb3bfc7797008107cb4c9002747df8684a0c622d2b346be86fdac047c3cd902",
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4": "9be0c22fc1d40090f881ab19d6c0f88f199f9eb32782e30d355b596a0640d166",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.json": "19b1bc712ca70111f58e4a3d233314baba9f8575462650150e8a6ee32b1b0ab7",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.mp4": "368d3f89b1df3f04a8de6265e74f31d39c5479a28f26151071141bd8d0207b38",
+              "plan/animatic/latest/README.md": "16bd990978ad13839faf95266405f6892229e34f53bac154fe4de44da1114e17",
+              "plan/animatic/latest/manifest.json": "9af493684c36765f42b4315c15c3973e420651f503243ec172e2f1e5a3f87107",
+              "plan/animatic/latest/test-output.mp4": "e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4",
+          "text": "broken"
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.json",
+          "text": "{не json"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 подготовлена\nM02 подготовлена\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 2,\n  \"segments_reused\": 0,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4": "9be0c22fc1d40090f881ab19d6c0f88f199f9eb32782e30d355b596a0640d166",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.json": "19b1bc712ca70111f58e4a3d233314baba9f8575462650150e8a6ee32b1b0ab7"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "remove",
+          "path": "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 подготовлена\nM02 из кэша\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 1,\n  \"segments_reused\": 1,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json": "1eb3bfc7797008107cb4c9002747df8684a0c622d2b346be86fdac047c3cd902"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "rename",
+      "description": "Новые название и имя MP4: экранирование FFmetadata, удаление прежнего MP4 из манифеста.",
+      "covers": [
+        "title с \\ = ; #",
+        "README с новым именем",
+        "удаление прежнего MP4",
+        "project_inputs"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 подготовлена\nM02 подготовлена\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 2,\n  \"segments_reused\": 0,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json": "1eb3bfc7797008107cb4c9002747df8684a0c622d2b346be86fdac047c3cd902",
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4": "9be0c22fc1d40090f881ab19d6c0f88f199f9eb32782e30d355b596a0640d166",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.json": "19b1bc712ca70111f58e4a3d233314baba9f8575462650150e8a6ee32b1b0ab7",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.mp4": "368d3f89b1df3f04a8de6265e74f31d39c5479a28f26151071141bd8d0207b38",
+              "plan/animatic/latest/README.md": "16bd990978ad13839faf95266405f6892229e34f53bac154fe4de44da1114e17",
+              "plan/animatic/latest/manifest.json": "9af493684c36765f42b4315c15c3973e420651f503243ec172e2f1e5a3f87107",
+              "plan/animatic/latest/test-output.mp4": "e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "write",
+          "path": "plan/project.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"name\": \"Клип <A>&;#=\\\\\",\n  \"animatic_video\": \"another-output.mp4\",\n  \"generation\": {\n    \"video\": null,\n    \"image\": null\n  }\n}\n"
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"generated_from\": \"plan/scenes.json\",\n  \"registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Клип <A>&;#=\\\\\"\n  },\n  \"reference_hashes\": {\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"cards\": {\n    \"M02\": {\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 из кэша\nM02 из кэша\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"0e73ce4e2cc23162d2deac17415a7fa75fce59fab92ad9da90685ba4f4240c9f\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 0,\n  \"segments_reused\": 2,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "ROADMAP.md": "5fc6cfdb371e9aec045f8ae941de4e617b2e475a75a581334db7b55a1eb25356",
+              "plan/animatic/latest/README.md": "e5ea88d364768bf38b9e6e8ef381a4a03a2f71673230e372e13724091325efb8",
+              "plan/animatic/latest/another-output.mp4": "0e73ce4e2cc23162d2deac17415a7fa75fce59fab92ad9da90685ba4f4240c9f",
+              "plan/animatic/latest/manifest.json": "8b9cca5114ea27a0cf4980fb8dd077841e1b70cdcbd503bb33f7237863623cb5",
+              "plan/animatic/latest/test-output.mp4": null,
+              "plan/edit-list.md": "021917b83cf88dbcabac61cbfb62a9a5f930e2291b5fcb483386ae5722dd5f44",
+              "plan/storyboard.md": "6ac21f86d1745d8e57448bab11b843f83445e8d8e1197e16b6c917511ef279fc"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Клип <A>&;#=\\\\\",\n    \"animatic_video\": \"another-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"another-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"0e73ce4e2cc23162d2deac17415a7fa75fce59fab92ad9da90685ba4f4240c9f\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](another-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/another-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Клип <A>&;#=\\ — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "previous-unsafe",
+      "description": "Прежний video_file с путём или не MP4 не удаляется; прежний manifest не JSON останавливает публикацию.",
+      "covers": [
+        "previous_name с путём",
+        "previous_name не .mp4",
+        "прежний manifest повреждён"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/animatic/latest/manifest.json",
+          "text": "{\n  \"video_file\": \"../keep.mp4\"\n}\n"
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/keep.mp4",
+          "text": "keep"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 подготовлена\nM02 подготовлена\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 2,\n  \"segments_reused\": 0,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json": "1eb3bfc7797008107cb4c9002747df8684a0c622d2b346be86fdac047c3cd902",
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4": "9be0c22fc1d40090f881ab19d6c0f88f199f9eb32782e30d355b596a0640d166",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.json": "19b1bc712ca70111f58e4a3d233314baba9f8575462650150e8a6ee32b1b0ab7",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.mp4": "368d3f89b1df3f04a8de6265e74f31d39c5479a28f26151071141bd8d0207b38",
+              "plan/animatic/latest/README.md": "16bd990978ad13839faf95266405f6892229e34f53bac154fe4de44da1114e17",
+              "plan/animatic/latest/manifest.json": "9af493684c36765f42b4315c15c3973e420651f503243ec172e2f1e5a3f87107",
+              "plan/animatic/latest/test-output.mp4": "e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/latest/manifest.json",
+          "text": "{\n  \"video_file\": \"notes.txt\"\n}\n"
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/latest/notes.txt",
+          "text": "notes"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 из кэша\nM02 из кэша\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 0,\n  \"segments_reused\": 2,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/latest/manifest.json": "9af493684c36765f42b4315c15c3973e420651f503243ec172e2f1e5a3f87107"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/latest/manifest.json",
+          "text": "{повреждён"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "M01 из кэша\nM02 из кэша\n",
+            "stderr": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\n",
+            "changes": {},
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{повреждён",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "op": "write",
+          "path": "plan/animatic/latest/manifest.json",
+          "text": "[]\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "M01 из кэша\nM02 из кэша\n",
+            "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/build_animatic/build_animatic.py\", line 472, in <module>\n    main()\n  File \"<songframe>/tools/build_animatic/build_animatic.py\", line 458, in main\n    result = build(plan_only=args.plan_only)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/build_animatic/build_animatic.py\", line 427, in build\n    json.loads(previous_manifest.read_text()).get(\"video_file\") if previous_manifest.is_file() else None\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'list' object has no attribute 'get'\n",
+            "changes": {},
+            "texts": {
+              "plan/animatic/latest/manifest.json": "[]\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "keyframes",
+      "description": "Карточка опор: растворение первой опоры в последнюю, last в source_hashes, keyframes в манифесте.",
+      "covers": [
+        "media=keyframes",
+        "xfade 40/20/40",
+        "path_last/sha256_last",
+        "card_sources из keyframes"
+      ],
+      "base": "keyframes",
+      "steps": [
+        {
+          "op": "run",
+          "args": [
+            "--plan-only"
+          ],
+          "expected": {
+            "code": 0,
+            "stdout": "{\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 0,\n  \"keyframes\": 1,\n  \"build_started\": false\n}\n",
+            "stderr": "",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 подготовлена\nM02 подготовлена\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"8b4919d8fcf6859e2c76f11556f87e64ac1061a8cf2258253c7c62b69469438b\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 0,\n  \"keyframes\": 1,\n  \"segments_created\": 2,\n  \"segments_reused\": 0,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json": "1eb3bfc7797008107cb4c9002747df8684a0c622d2b346be86fdac047c3cd902",
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4": "9be0c22fc1d40090f881ab19d6c0f88f199f9eb32782e30d355b596a0640d166",
+              "plan/animatic/.cache/segments/6872200d57c2adee577a56bb3e562ab41ee3cfaac5171b19fbab30bc776029e8.json": "05613468a349c837bd4afdeb54a0b10e1e0ce4bba58a229ac20274f4ffd4084e",
+              "plan/animatic/.cache/segments/6872200d57c2adee577a56bb3e562ab41ee3cfaac5171b19fbab30bc776029e8.mp4": "995193974ab6ecb5eae3f478b774080ed234df24e62607921bf47ef05a5bc6bb",
+              "plan/animatic/latest/README.md": "16bd990978ad13839faf95266405f6892229e34f53bac154fe4de44da1114e17",
+              "plan/animatic/latest/manifest.json": "a58d483e39100c6e225a39371e6e97dfd20939b16b32901bed4cc1f996826675",
+              "plan/animatic/latest/test-output.mp4": "8b4919d8fcf6859e2c76f11556f87e64ac1061a8cf2258253c7c62b69469438b"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"keyframes\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"keyframes\": [\n        {\n          \"id\": \"K01\",\n          \"role\": \"first\",\n          \"time_seconds\": 0,\n          \"path\": \"plan/awaiting/M02/frames/K01.png\",\n          \"sha256\": \"bb9ca552597b418b7745f8818a9def72def9784adaf8804bf1e2d58fa357e5e9\"\n        },\n        {\n          \"id\": \"K02\",\n          \"role\": \"last\",\n          \"time_seconds\": 0.4,\n          \"path\": \"plan/awaiting/M02/frames/K02.png\",\n          \"sha256\": \"32b28073a691a532308155e0c8597ff45907e9590d8ff44d12f59ef6841a5405\"\n        }\n      ],\n      \"card_sources\": {\n        \"plan/awaiting/M02/frames/K01.png\": \"bb9ca552597b418b7745f8818a9def72def9784adaf8804bf1e2d58fa357e5e9\",\n        \"plan/awaiting/M02/frames/K02.png\": \"32b28073a691a532308155e0c8597ff45907e9590d8ff44d12f59ef6841a5405\"\n      },\n      \"path_last\": \"plan/animatic/cards/M02.last.png\",\n      \"sha256_last\": \"5b70286986b077e24baf9cbcec894905dcb6b376d5f73dd2d321a631cedffe8b\",\n      \"sha256\": \"9e2de1a1f59ec9cdc1c8c909863ee100733ee62346f694579a3176d23070cdcc\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"9e2de1a1f59ec9cdc1c8c909863ee100733ee62346f694579a3176d23070cdcc\",\n    \"plan/animatic/cards/M02.last.png\": \"5b70286986b077e24baf9cbcec894905dcb6b376d5f73dd2d321a631cedffe8b\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"plan/awaiting/M02/frames/K01.png\": \"bb9ca552597b418b7745f8818a9def72def9784adaf8804bf1e2d58fa357e5e9\",\n    \"plan/awaiting/M02/frames/K02.png\": \"32b28073a691a532308155e0c8597ff45907e9590d8ff44d12f59ef6841a5405\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"8b4919d8fcf6859e2c76f11556f87e64ac1061a8cf2258253c7c62b69469438b\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "keyframes-last-changed",
+      "description": "Изменённая последняя карточка опор без новой квитанции.",
+      "covers": [
+        "entry.last sha256"
+      ],
+      "base": "keyframes",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/M02.last.png",
+          "file": "media/white.png"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Карточки устарели; обновите представления реестра сцен.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "keyframes-source-changed",
+      "description": "Изменённая исходная опора: источники карточки изменились.",
+      "covers": [
+        "card_sources keyframes"
+      ],
+      "base": "keyframes",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/awaiting/M02/frames/K02.png",
+          "file": "media/white.png"
+        },
+        {
+          "op": "run",
+          "args": [
+            "--plan-only"
+          ],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Источники карточки изменились; обновите представления реестра сцен.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "keyframes-last-missing",
+      "description": "Нет файла последней карточки опор.",
+      "covers": [
+        "local last"
+      ],
+      "base": "keyframes",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "plan/animatic/cards/M02.last.png"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет допустимого входного файла: plan/animatic/cards/M02.last.png\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "mono-track",
+      "description": "Моно 22050 Гц: выход — стерео AAC 44,1 кГц.",
+      "covers": [
+        "-ac 2 -ar 44100"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "source/track.mp3",
+          "file": "media/mono.mp3"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 0,
+            "stdout": "M01 подготовлена\nM02 подготовлена\n{\n  \"status\": \"passed\",\n  \"video_sha256\": \"4cd60e745dcc75d6ce3bd99060b15949ecabd1ab04c2b4fc2d990863a46189e1\",\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"segments_created\": 2,\n  \"segments_reused\": 0,\n  \"seconds\": \"<seconds>\"\n}\n",
+            "stderr": "",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json": "1eb3bfc7797008107cb4c9002747df8684a0c622d2b346be86fdac047c3cd902",
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4": "9be0c22fc1d40090f881ab19d6c0f88f199f9eb32782e30d355b596a0640d166",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.json": "19b1bc712ca70111f58e4a3d233314baba9f8575462650150e8a6ee32b1b0ab7",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.mp4": "368d3f89b1df3f04a8de6265e74f31d39c5479a28f26151071141bd8d0207b38",
+              "plan/animatic/latest/README.md": "16bd990978ad13839faf95266405f6892229e34f53bac154fe4de44da1114e17",
+              "plan/animatic/latest/manifest.json": "b3d28ef195211c5d0d5096d5dd511b4498b298b08c895159f4be90fbf2e68187",
+              "plan/animatic/latest/test-output.mp4": "4cd60e745dcc75d6ce3bd99060b15949ecabd1ab04c2b4fc2d990863a46189e1"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"6e9eaaab312dde36f4993518b186e96564d5d65fbcec2495e5bfe2f58265325b\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"6e9eaaab312dde36f4993518b186e96564d5d65fbcec2495e5bfe2f58265325b\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"4cd60e745dcc75d6ce3bd99060b15949ecabd1ab04c2b4fc2d990863a46189e1\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "args-help",
+      "description": "--help.",
+      "covers": [
+        "argparse --help"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "run",
+          "args": [
+            "--help"
+          ],
+          "expected": {
+            "code": 0,
+            "stdout": "usage: build_animatic.py [-h] [--plan-only]\n\nДетерминированная сборка единственного latest; @link README.md\n\noptions:\n  -h, --help   show this help message and exit\n  --plan-only  Проверить входы без записи и кодирования.\n",
+            "stderr": "",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "args-unknown",
+      "description": "Неизвестный аргумент.",
+      "covers": [
+        "argparse unrecognized"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "run",
+          "args": [
+            "--bogus"
+          ],
+          "expected": {
+            "code": 2,
+            "stdout": "",
+            "stderr": "usage: build_animatic.py [-h] [--plan-only]\nbuild_animatic.py: error: unrecognized arguments: --bogus\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "no-project",
+      "description": "Нет plan/project.json.",
+      "covers": [
+        "FileNotFoundError в OSError"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "plan/project.json"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "[Errno 2] No such file or directory: '<project>/plan/project.json'\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "no-project-plan-only",
+      "description": "--plan-only без plan/project.json.",
+      "covers": [
+        "FileNotFoundError --plan-only"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "plan/project.json"
+        },
+        {
+          "op": "run",
+          "args": [
+            "--plan-only"
+          ],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "[Errno 2] No such file or directory: '<project>/plan/project.json'\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid-project",
+      "description": "Неверное имя MP4 в plan/project.json.",
+      "covers": [
+        "validate_project ValueError"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/project.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"name\": \"Тестовый клип\",\n  \"animatic_video\": \"../x.mp4\",\n  \"generation\": {\n    \"video\": null,\n    \"image\": null\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "animatic_video должен быть именем MP4 без пути к папке.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "no-scenes",
+      "description": "Нет plan/scenes.json.",
+      "covers": [
+        "sha реестра OSError"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "plan/scenes.json"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "[Errno 2] No such file or directory: '<project>/plan/scenes.json'\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit-frames",
+      "description": "Число кадров принятого монтажа не совпадает с окном.",
+      "covers": [
+        "accepted_edit.frames"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  },\n  \"accepted_edit\": {\n    \"video\": {\n      \"path\": \"accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    \"fps\": 30,\n    \"frames\": 11,\n    \"timeline\": {\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "M01: принятый монтаж не совпадает с окном или хешем.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit-fps",
+      "description": "fps принятого монтажа не 30.",
+      "covers": [
+        "accepted_edit.fps"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  },\n  \"accepted_edit\": {\n    \"video\": {\n      \"path\": \"accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    \"fps\": 24,\n    \"frames\": 12,\n    \"timeline\": {\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "M01: принятый монтаж не совпадает с окном или хешем.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit-sha",
+      "description": "Хеш принятого монтажа не совпадает.",
+      "covers": [
+        "accepted_edit.video.sha256"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  },\n  \"accepted_edit\": {\n    \"video\": {\n      \"path\": \"accepted-edit.mp4\",\n      \"sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\"\n    },\n    \"fps\": 30,\n    \"frames\": 12,\n    \"timeline\": {\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "M01: принятый монтаж не совпадает с окном или хешем.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit-shot",
+      "description": "Манифест комплекта от другого плана.",
+      "covers": [
+        "package.shot"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M02\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  },\n  \"accepted_edit\": {\n    \"video\": {\n      \"path\": \"accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    \"fps\": 30,\n    \"frames\": 12,\n    \"timeline\": {\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "M01: принятый монтаж не совпадает с окном или хешем.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit-video-missing",
+      "description": "Нет файла принятого монтажа.",
+      "covers": [
+        "local: нет файла"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "assets/shots/M01/accepted-edit.mp4"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет допустимого входного файла: accepted-edit.mp4\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit-video-escape",
+      "description": "Путь принятого монтажа за пределами комплекта.",
+      "covers": [
+        "local: вне папки"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  },\n  \"accepted_edit\": {\n    \"video\": {\n      \"path\": \"../../../plan/project.json\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    \"fps\": 30,\n    \"frames\": 12,\n    \"timeline\": {\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет допустимого входного файла: ../../../plan/project.json\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit-missing",
+      "description": "В манифесте комплекта нет accepted_edit.",
+      "covers": [
+        "KeyError accepted_edit"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "'accepted_edit'\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit-list",
+      "description": "accepted_edit — список.",
+      "covers": [
+        "TypeError: трассировка"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  },\n  \"accepted_edit\": []\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/build_animatic/build_animatic.py\", line 472, in <module>\n    main()\n  File \"<songframe>/tools/build_animatic/build_animatic.py\", line 458, in main\n    result = build(plan_only=args.plan_only)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/build_animatic/build_animatic.py\", line 284, in build\n    shots, track = prepare_plan(root)\n                   ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/build_animatic/build_animatic.py\", line 90, in prepare_plan\n    source = local(folder, edit[\"video\"][\"path\"])\n                           ~~~~^^^^^^^^^\nTypeError: list indices must be integers or slices, not str\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "package-corrupt",
+      "description": "Манифест комплекта не JSON.",
+      "covers": [
+        "JSONDecodeError"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "card-missing",
+      "description": "Нет карточки M02.",
+      "covers": [
+        "local карточки"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "plan/animatic/cards/M02.png"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет допустимого входного файла: plan/animatic/cards/M02.png\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-missing",
+      "description": "Нет квитанции карточек.",
+      "covers": [
+        "receipt is None"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "plan/animatic/cards/manifest.json"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет манифеста карточек; обновите представления реестра сцен.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-corrupt",
+      "description": "Квитанция карточек не JSON.",
+      "covers": [
+        "JSONDecodeError квитанции"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/manifest.json",
+          "text": ""
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Expecting value: line 1 column 1 (char 0)\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-registry",
+      "description": "Реестр изменён после карточек.",
+      "covers": [
+        "registry_sha256"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/scenes.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"fps\": 30,\n  \"audio\": {\n    \"path\": \"source/track.mp3\",\n    \"end_seconds\": \"0.8\"\n  },\n  \"references\": {\n    \"pier\": {\n      \"name\": \"Причал\",\n      \"path\": \"source/pier.png\"\n    }\n  },\n  \"visual_direction\": \"Тестовое направление.\",\n  \"sequences\": [\n    {\n      \"id\": \"intro\",\n      \"title\": \"Тест\",\n      \"direction\": \"\"\n    }\n  ],\n  \"scenes\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {}\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Другое действие\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {}\n    }\n  ]\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Карточки устарели; обновите представления реестра сцен.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-name",
+      "description": "Название проекта изменено после карточек.",
+      "covers": [
+        "project_inputs_match"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/project.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"name\": \"Другое имя\",\n  \"animatic_video\": \"test-output.mp4\",\n  \"generation\": {\n    \"video\": null,\n    \"image\": null\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Карточки устарели; обновите представления реестра сцен.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-generation",
+      "description": "Настройки генерации и форматирование project.json не влияют на проверку.",
+      "covers": [
+        "project_inputs без generation"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/project.json",
+          "text": "{\n    \"schema_version\": 1,\n    \"name\": \"\\u0422\\u0435\\u0441\\u0442\\u043e\\u0432\\u044b\\u0439 \\u043a\\u043b\\u0438\\u043f\",\n    \"animatic_video\": \"test-output.mp4\",\n    \"generation\": {\n        \"video\": {\n            \"provider\": \"test\"\n        }\n    }\n}"
+        },
+        {
+          "op": "run",
+          "args": [
+            "--plan-only"
+          ],
+          "expected": {
+            "code": 0,
+            "stdout": "{\n  \"shots\": 2,\n  \"video\": 1,\n  \"cards\": 1,\n  \"keyframes\": 0,\n  \"build_started\": false\n}\n",
+            "stderr": "",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-inputs-extra",
+      "description": "Лишнее поле в project_inputs квитанции.",
+      "covers": [
+        "project_inputs лишний ключ"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"generated_from\": \"plan/scenes.json\",\n  \"registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"extra\": \"x\"\n  },\n  \"reference_hashes\": {\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"cards\": {\n    \"M02\": {\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Карточки устарели; обновите представления реестра сцен.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-reference",
+      "description": "Референс изменён после карточек.",
+      "covers": [
+        "reference_hashes"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "source/pier.png",
+          "file": "media/white.png"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Карточки устарели; обновите представления реестра сцен.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-reference-missing",
+      "description": "Нет файла референса из квитанции.",
+      "covers": [
+        "local reference_hashes"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "source/pier.png"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет допустимого входного файла: source/pier.png\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-card-sha",
+      "description": "Карточка заменена без квитанции.",
+      "covers": [
+        "entry.sha256"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/M02.png",
+          "file": "media/green-card.png"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Карточки устарели; обновите представления реестра сцен.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-entry-missing",
+      "description": "В квитанции нет записи M02.",
+      "covers": [
+        "KeyError cards[M02]"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"generated_from\": \"plan/scenes.json\",\n  \"registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\"\n  },\n  \"reference_hashes\": {\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"cards\": {}\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "'M02'\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-hashes-missing",
+      "description": "В квитанции нет reference_hashes: карточка ссылается на референс.",
+      "covers": [
+        "KeyError reference_hashes"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "plan/animatic/cards/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"generated_from\": \"plan/scenes.json\",\n  \"registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\"\n  },\n  \"cards\": {\n    \"M02\": {\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "'reference_hashes'\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "track-missing",
+      "description": "Нет source/track.mp3.",
+      "covers": [
+        "local track"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "source/track.mp3"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Нет допустимого входного файла: source/track.mp3\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "track-long",
+      "description": "Песня длиннее монтажного списка.",
+      "covers": [
+        "decoded_audio_duration",
+        "конец не совпадает"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "source/track.mp3",
+          "file": "media/long.mp3"
+        },
+        {
+          "op": "run",
+          "args": [
+            "--plan-only"
+          ],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Конец монтажного списка не совпадает с длительностью песни.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "track-damaged",
+      "description": "Песня не декодируется.",
+      "covers": [
+        "Не удалось декодировать трек"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "source/track.mp3",
+          "text": "damaged"
+        },
+        {
+          "op": "run",
+          "args": [
+            "--plan-only"
+          ],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Не удалось декодировать трек: [mp3 @ <addr>] Failed to read frame size: Could not seek to 1030.\n[in#0 @ <addr>] Error opening input: Invalid argument\nError opening input file <project>/source/track.mp3.\nError opening input files: Invalid argument\n\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          },
+          "ffmpegStderr": true
+        }
+      ]
+    },
+    {
+      "name": "clip-damaged",
+      "description": "Принятый монтаж не читается ffprobe: прежний latest не создаётся.",
+      "covers": [
+        "run: ffprobe с ошибкой"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/accepted-edit.mp4",
+          "text": "damaged"
+        },
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  },\n  \"accepted_edit\": {\n    \"video\": {\n      \"path\": \"accepted-edit.mp4\",\n      \"sha256\": \"41f0c27c00e8018f7715b5f50f67b5b54c229c1b843a014152785d9005f58fde\"\n    },\n    \"fps\": 30,\n    \"frames\": 12,\n    \"timeline\": {\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "Команда обработки медиа завершилась с ошибкой: [mov,mp4,m4a,3gp,3g2,mj2 @ <addr>] moov atom not found\n<project>/assets/shots/M01/accepted-edit.mp4: Invalid data found when processing input\n\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          },
+          "ffmpegStderr": true
+        }
+      ]
+    },
+    {
+      "name": "clip-size",
+      "description": "Принятый монтаж 1280×720.",
+      "covers": [
+        "segment: неверный формат"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/accepted-edit.mp4",
+          "file": "media/clip-1280.mp4"
+        },
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  },\n  \"accepted_edit\": {\n    \"video\": {\n      \"path\": \"accepted-edit.mp4\",\n      \"sha256\": \"78eda217ec8c1b0abbf79f27e1ac5b4e79f5b33d8114aa2eac894e0ced21b922\"\n    },\n    \"fps\": 30,\n    \"frames\": 12,\n    \"timeline\": {\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "M01: принятый клип имеет неверный формат или число кадров.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "clip-frames",
+      "description": "Принятый монтаж на 11 кадров.",
+      "covers": [
+        "segment: неверное число кадров"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "write",
+          "path": "assets/shots/M01/accepted-edit.mp4",
+          "file": "media/clip-11.mp4"
+        },
+        {
+          "op": "write",
+          "path": "assets/shots/M01/manifest.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"shot\": \"M01\",\n  \"kind\": \"generated_video\",\n  \"generation\": {\n    \"source_shot\": \"M01\",\n    \"original\": {\n      \"path\": \"original.mp4\"\n    },\n    \"prompt\": {\n      \"path\": \"generation-prompt.txt\"\n    },\n    \"audio\": null\n  },\n  \"accepted_edit\": {\n    \"video\": {\n      \"path\": \"accepted-edit.mp4\",\n      \"sha256\": \"38eacfecc6895552bee5247b3888fa3fcf66f8a8d0c93dc38aaa9ab25ed7399f\"\n    },\n    \"fps\": 30,\n    \"frames\": 12,\n    \"timeline\": {\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12\n    }\n  }\n}\n"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "",
+            "stderr": "M01: принятый клип имеет неверный формат или число кадров.\n",
+            "changes": {},
+            "texts": {},
+            "probe": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "docs-failed",
+      "description": "Сборка прошла, но представления не строятся: нет plan/audio/timing.json.",
+      "covers": [
+        "documents после build"
+      ],
+      "base": "base",
+      "steps": [
+        {
+          "op": "remove",
+          "path": "plan/audio/timing.json"
+        },
+        {
+          "op": "run",
+          "args": [],
+          "expected": {
+            "code": 1,
+            "stdout": "M01 подготовлена\nM02 подготовлена\n",
+            "stderr": "Нет обязательного файла: plan/audio/timing.json\n",
+            "changes": {
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.json": "1eb3bfc7797008107cb4c9002747df8684a0c622d2b346be86fdac047c3cd902",
+              "plan/animatic/.cache/segments/54a399325e51ec2c6a6850823c8bca48802360581fca61771901caef2f393461.mp4": "9be0c22fc1d40090f881ab19d6c0f88f199f9eb32782e30d355b596a0640d166",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.json": "19b1bc712ca70111f58e4a3d233314baba9f8575462650150e8a6ee32b1b0ab7",
+              "plan/animatic/.cache/segments/e7d86c65d7f9784402f209a0ebed71545425d141989232983ba79a9c3fe7c066.mp4": "368d3f89b1df3f04a8de6265e74f31d39c5479a28f26151071141bd8d0207b38",
+              "plan/animatic/latest/README.md": "16bd990978ad13839faf95266405f6892229e34f53bac154fe4de44da1114e17",
+              "plan/animatic/latest/manifest.json": "9af493684c36765f42b4315c15c3973e420651f503243ec172e2f1e5a3f87107",
+              "plan/animatic/latest/test-output.mp4": "e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574"
+            },
+            "texts": {
+              "plan/animatic/latest/manifest.json": "{\n  \"schema_version\": 1,\n  \"version\": \"latest\",\n  \"path_base\": \"project_root\",\n  \"resolution\": [\n    1920,\n    1080\n  ],\n  \"fps\": 30,\n  \"total_frames\": 24,\n  \"video_duration\": 0.8,\n  \"source_audio\": \"source/track.mp3\",\n  \"source_audio_sha256\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n  \"source_audio_duration\": 0.8,\n  \"scene_registry_sha256\": \"efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5\",\n  \"project_inputs\": {\n    \"name\": \"Тестовый клип\",\n    \"animatic_video\": \"test-output.mp4\"\n  },\n  \"shots\": [\n    {\n      \"id\": \"M01\",\n      \"original\": \"M01\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 0,\n      \"end_frame_exclusive\": 12,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0\",\n      \"end\": \"0.4\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.0–00:00.4\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"video\",\n      \"path\": \"assets/shots/M01/accepted-edit.mp4\",\n      \"sha256\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\"\n    },\n    {\n      \"id\": \"M02\",\n      \"original\": \"M02\",\n      \"sequence\": \"intro\",\n      \"start_frame\": 12,\n      \"end_frame_exclusive\": 24,\n      \"camera\": \"Статика\",\n      \"action\": \"Технический кадр\",\n      \"continuity\": \"\",\n      \"references\": [\n        \"pier\"\n      ],\n      \"card\": {\n        \"primary_reference\": \"pier\"\n      },\n      \"state_from\": null,\n      \"state_changes\": {},\n      \"title\": \"Тест\",\n      \"sequence_title\": \"Тест\",\n      \"start\": \"0.4\",\n      \"end\": \"0.8\",\n      \"duration\": \"0.4\",\n      \"interval\": \"00:00.4–00:00.8\",\n      \"frames\": 12,\n      \"state\": \"\",\n      \"refs\": [\n        \"pier\"\n      ],\n      \"media\": \"card\",\n      \"path\": \"plan/animatic/cards/M02.png\",\n      \"card_sources\": {\n        \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n      },\n      \"sha256\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\"\n    }\n  ],\n  \"source_hashes\": {\n    \"assets/shots/M01/accepted-edit.mp4\": \"43906c5699a39d644e2a8ee1d0e36c638d3925ccb4e78e442babe525d723e4bf\",\n    \"plan/animatic/cards/M02.png\": \"b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769\",\n    \"source/track.mp3\": \"f935fb9e6a2b71d7407e3d5cce9f50e9ced5a79b6ae5a07649ff3bd703a53613\",\n    \"source/pier.png\": \"9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1\"\n  },\n  \"video_file\": \"test-output.mp4\",\n  \"toolchain_sha256\": \"dcdc2caec0716ea42c33d61266dacd086191742b545966a7332c73ec066503ab\",\n  \"video_sha256\": \"e2522b28ba7c9e4c8b0fced333dc9c2d4b9e172e71ab53d9dadcfbd2c3f51574\"\n}\n",
+              "plan/animatic/latest/README.md": "# Текущий полный аниматик\n\n[Видео](test-output.mp4) · [Манифест](manifest.json).\n\nСборка: страница «Аниматик» приложения. Источники — принятые монтажные клипы сцен, карточки и песня; правила находятся в [описании](../README.md).\n"
+            },
+            "probe": {
+              "plan/animatic/latest/test-output.mp4": {
+                "video": {
+                  "codec_name": "h264",
+                  "width": 1920,
+                  "height": 1080,
+                  "r_frame_rate": "30/1",
+                  "nb_frames": "24",
+                  "pix_fmt": "yuv420p"
+                },
+                "audio": [
+                  {
+                    "codec_name": "aac",
+                    "channels": 2,
+                    "sample_rate": "44100"
+                  }
+                ],
+                "title": "Тестовый клип — текущий аниматик",
+                "chapters": [
+                  {
+                    "start": 0,
+                    "end": 400,
+                    "time_base": "1/1000",
+                    "title": "M01"
+                  },
+                  {
+                    "start": 400,
+                    "end": 800,
+                    "time_base": "1/1000",
+                    "title": "M02"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

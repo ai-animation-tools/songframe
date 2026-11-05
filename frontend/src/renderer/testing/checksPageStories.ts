@@ -1,11 +1,11 @@
 /**
- * Локальная модель страницы «Проверки» в состоянии Go-версии: list/run/runAll, пересборка карточек
- * (updateViews) и сводка производства (production.view) перенесены, пробы стыков — ещё нет. Задания создаются
- * выполняющимися и завершаются при следующем опросе jobs.list, как задания общего менеджера.
+ * Локальная модель страницы «Проверки» Go-версии: list/run/runAll, пересборка карточек (updateViews),
+ * сводка производства (production.view) и пробы стыков (buildReview/listReviews/removeReview). Задания
+ * создаются выполняющимися и завершаются при следующем опросе jobs.list, как задания общего менеджера;
+ * завершённая сборка пробы (не planOnly) добавляет её в список plan/batches.
  */
-import type { CheckId, CheckInfo, CheckOptions, JobInfo, ShotProduction } from '@shared/types';
+import type { CheckId, CheckInfo, CheckOptions, JobInfo, ReviewInfo, ReviewOptions, ShotProduction } from '@shared/types';
 import { checksTexts } from '@shared/texts/checks';
-import type { ApiMethod } from '../availability';
 import type { StoryOptions } from './storybook';
 
 export const CHECKS_PAGE_PROJECT = '/mock/checks-project';
@@ -19,24 +19,39 @@ export const CHECKS_PAGE_LIST: CheckInfo[] = [
   { id: 'status', label: checksTexts.statusLabel, description: checksTexts.statusDescription, tool: 'shot_status', needsScenes: true }
 ];
 
-/** Методы группы, которые адаптер Go-версии пока отмечает недоступными. */
-export const CHECKS_PAGE_UNAVAILABLE: readonly ApiMethod[] = ['checks.buildReview', 'checks.listReviews', 'checks.removeReview'];
+/** Проба, уже собранная в plan/batches: видео витрины и одноимённый рецепт. */
+export function checksPageReview(shots: readonly string[], stamp = '20261104-120000'): ReviewInfo {
+  const dir = `${CHECKS_PAGE_PROJECT}/plan/batches/review-${shots.join('-')}-${stamp}`;
+  return {
+    dir,
+    // Basename совпадает с видео витрины: плеер пробы получает настоящее медиа.
+    video: `${dir}/story-video.mp4`,
+    manifest: `${dir}/story-video.json`,
+    shots: [...shots],
+    totalFrames: 192,
+    createdAt: '2026-11-04T12:00:00.000Z'
+  };
+}
 
-/** План сводки производства: страница проверок берёт из неё только готовность сценария (есть ли планы). */
-function shot(id: string, start: number, end: number): ShotProduction {
+/**
+ * План сводки производства: страница проверок берёт из неё готовность сценария, а проба — порядок
+ * планов и наличие принятого видео (asset.video; без него план идёт карточкой).
+ */
+function shot(id: string, start: number, end: number, video: 'accepted' | 'missing' | 'none' = 'none'): ShotProduction {
+  const dir = `${CHECKS_PAGE_PROJECT}/assets/shots/${id}`;
   return {
     id,
-    title: id,
+    title: `План ${id}`,
     original: '',
     start,
     end,
     lipsync: false,
     state: 'planned',
-    stageLabel: '',
+    stageLabel: video === 'accepted' ? 'Принят' : 'Запланирован',
     regenerateProblem: null,
     derivedFrom: null,
     attention: null,
-    asset: null,
+    asset: video === 'none' ? null : { dir, video: video === 'accepted' ? `${dir}/${id}.mp4` : null, original: null },
     packages: []
   };
 }
@@ -45,6 +60,8 @@ interface ChecksPageInspection {
   runs: { id: CheckId; options: CheckOptions | undefined }[];
   runAll: (CheckOptions | undefined)[];
   updateViews: number;
+  reviews: ReviewOptions[];
+  removedReviews: string[];
 }
 let activeInspection: (() => ChecksPageInspection) | null = null;
 
@@ -53,22 +70,31 @@ export function checksPageInspection(): ChecksPageInspection {
   return activeInspection();
 }
 
-/** failing — проверки, шаг которых завершается кодом 1 (как отказ инструмента); noShots — в сценарии ещё нет планов. */
-export function checksPageOptions({ failing = [], noShots = false }: { failing?: readonly CheckId[]; noShots?: boolean } = {}): StoryOptions {
+/**
+ * failing — проверки, шаг которых завершается кодом 1 (как отказ инструмента); noShots — в сценарии ещё нет
+ * планов; reviews — пробы, уже собранные в plan/batches.
+ */
+export function checksPageOptions({
+  failing = [],
+  noShots = false,
+  reviews: initialReviews = [checksPageReview(['M01', 'M02'])]
+}: { failing?: readonly CheckId[]; noShots?: boolean; reviews?: readonly ReviewInfo[] } = {}): StoryOptions {
   return {
     shell: 'page',
     route: '/project/checks',
-    unavailable: CHECKS_PAGE_UNAVAILABLE,
     app: {
       state: { packaged: false, problems: [], toolsRoot: null, localDir: '/mock/state', current: CHECKS_PAGE_PROJECT, history: [], platform: 'linux' }
     },
     createApi: () => {
-      const inspection: ChecksPageInspection = { runs: [], runAll: [], updateViews: 0 };
+      const inspection: ChecksPageInspection = { runs: [], runAll: [], updateViews: 0, reviews: [], removedReviews: [] };
       activeInspection = () => inspection;
       const jobs: JobInfo[] = [];
       const pending = new Set<string>();
+      let reviews = structuredClone([...initialReviews]);
+      /** Задания полной сборки пробы и планы, которые она запишет в plan/batches. */
+      const reviewBuilds = new Map<string, readonly string[]>();
       let counter = 0;
-      const start = (title: string, checks: CheckInfo[], kind: JobInfo['kind'] = 'check'): JobInfo => {
+      const start = (title: string, checks: readonly Pick<CheckInfo, 'label' | 'tool'>[], kind: JobInfo['kind'] = 'check'): JobInfo => {
         counter += 1;
         const job: JobInfo = {
           id: `check-${counter}`,
@@ -100,6 +126,8 @@ export function checksPageOptions({ failing = [], noShots = false }: { failing?:
           job.status = failedStep ? 'failed' : 'done';
           job.code = failedStep ? 1 : 0;
           job.finishedAt = '2026-11-04T12:00:01.000Z';
+          const built = reviewBuilds.get(job.id);
+          if (built && job.status === 'done') reviews = [checksPageReview(built, `20261104-12000${reviews.length + 1}`), ...reviews];
         }
       };
       return {
@@ -122,6 +150,21 @@ export function checksPageOptions({ failing = [], noShots = false }: { failing?:
               [{ ...CHECKS_PAGE_LIST.find((check) => check.id === 'views')!, label: checksTexts.updateViewsJobTitle }],
               'tool'
             );
+          },
+          // Проба — задание вида review с одним шагом build_review; planOnly только проверяет входы.
+          buildReview: async (_project, options) => {
+            inspection.reviews.push(structuredClone(options));
+            if (!options.shots.length) throw new Error(checksTexts.reviewShotsRequired);
+            const label = options.planOnly ? checksTexts.checkReviewStep : checksTexts.buildReviewStep;
+            const job = start(checksTexts.reviewJobTitle(options), [{ label, tool: 'build_review' }], 'review');
+            if (!options.planOnly) reviewBuilds.set(job.id, [...options.shots]);
+            return job;
+          },
+          listReviews: async () => structuredClone(reviews),
+          removeReview: async (_project, path) => {
+            inspection.removedReviews.push(path);
+            if (!reviews.some((review) => review.video === path)) throw new Error(checksTexts.reviewNotFound);
+            reviews = reviews.filter((review) => review.video !== path);
           }
         },
         jobs: {
@@ -132,7 +175,7 @@ export function checksPageOptions({ failing = [], noShots = false }: { failing?:
         },
         production: {
           view: async () => ({
-            shots: noShots ? [] : [shot('M01', 0, 4), shot('M02', 4, 8)],
+            shots: noShots ? [] : [shot('M01', 0, 4, 'accepted'), shot('M02', 4, 8), shot('M03', 8, 12, 'missing'), shot('M04', 12, 16, 'accepted')],
             broken: [],
             problems: [],
             tools: { python: true, providers: {} }

@@ -72,7 +72,7 @@ export function ProductionSpeechPanel({
           ? productionTexts.productionSpeechPanel.duration({ min: plan.lipSync.min, max: plan.lipSync.max })
           : null;
   const sentReason = productionTexts.productionSpeechPanel.sent;
-  // Отличие от 634fd94 на время миграции: вырезка речи ждёт медиаконвейера Go, кнопка объясняет причину.
+  // Отличие от 634fd94 на время миграции: если адаптер Go отмечает вырезку недоступной, кнопка объясняет причину.
   const cut = useMethodAvailability('production.prepareSpeech');
   const reason = sent ? sentReason : working ? BUSY_REASON : busy ? busyReason : (boundsProblem ?? (cut.available ? null : cut.reason));
   const lines = speech?.lines.length ? speech.lines : (plan?.lines ?? []);

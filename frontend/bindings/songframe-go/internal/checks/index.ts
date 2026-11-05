@@ -7,5 +7,7 @@ export {
 
 export type {
     Info,
-    Options
+    Options,
+    ReviewInfo,
+    ReviewOptions
 } from "./models.js";

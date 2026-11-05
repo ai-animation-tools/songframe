@@ -34,6 +34,7 @@ function bindings(videoReview: Record<string, unknown>): Bindings {
     media: missing,
     production: missing,
     dashboard: missing,
+    animatic: missing,
     scenarioWorkflow: missing,
     productionWorkflow: missing,
     events: async () => ({ on: () => () => undefined })

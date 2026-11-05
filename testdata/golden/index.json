@@ -8347,6 +8347,146 @@
     ]
   },
   {
+    "domain": "production-tools",
+    "name": "accept-edit/help",
+    "description": "Справка argparse.",
+    "covers": [
+      "--help"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/args-source",
+    "description": "Без --package и --work-dir.",
+    "covers": [
+      "required group"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/args-edit",
+    "description": "Без режима приёмки.",
+    "covers": [
+      "required group"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/args-conflict",
+    "description": "--cut вместе с --full.",
+    "covers": [
+      "not allowed"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/args-hold",
+    "description": "--hold-first не целое.",
+    "covers": [
+      "type=int"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/cut",
+    "description": "Участок 0:12 оригинала 30 к/с.",
+    "covers": [
+      "--cut",
+      "render_edit"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/cut-speed",
+    "description": "Замедление 0.5 участка 2:8.",
+    "covers": [
+      "--speed",
+      "ratio"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/cut-holds",
+    "description": "Удержания первого и последнего кадра.",
+    "covers": [
+      "--hold-first",
+      "--hold-last"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/cut-24fps",
+    "description": "Оригинал 24 к/с: выбор кадров без интерполяции.",
+    "covers": [
+      "fps_conversion"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/review-clean",
+    "description": "Приёмка по рецепту пробы с очисткой пакета и пробы.",
+    "covers": [
+      "--review",
+      "--clean"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/review-missing-shot",
+    "description": "В рецепте нет плана.",
+    "covers": [
+      "review"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/review-other-original",
+    "description": "Рецепт из другого оригинала.",
+    "covers": [
+      "review"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/window-mismatch",
+    "description": "Участок короче окна плана.",
+    "covers": [
+      "frames"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/beyond-original",
+    "description": "Участок за концом оригинала.",
+    "covers": [
+      "available"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/cut-format",
+    "description": "Участок без двоеточия.",
+    "covers": [
+      "cut"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/cut-text",
+    "description": "Участок не числами.",
+    "covers": [
+      "int()"
+    ]
+  },
+  {
+    "domain": "production-tools",
+    "name": "accept-edit/speed-text",
+    "description": "Скорость не число: необработанное InvalidOperation.",
+    "covers": [
+      "traceback"
+    ]
+  },
+  {
     "domain": "production-workflow",
     "name": "view-states",
     "description": "Вид без пакета, с пакетом образца M03, речевого M04, производного M05 и отказы чтения контекста.",
@@ -8714,6 +8854,1628 @@
       "projectUnavailable",
       "packageFolderRequired журнала",
       "paidBackupBlocksRecovery"
+    ]
+  },
+  {
+    "domain": "contact-sheet",
+    "name": "cases.json",
+    "description": "CLI tools/contact_sheet (Python + Pillow 10.2) на синтетических проектах FFmpeg: сводка пакета, папки попытки и файла видео, отказы и разбор ffprobe.",
+    "covers": [
+      "--package с опорами first/last и сравнениями",
+      "--work-dir",
+      "--video относительно cwd",
+      "--out абсолютная и относительная",
+      "--json и таблица",
+      "превью 2×",
+      "nb_frames и длительность × частота Decimal",
+      "1, 7, 10, 12 и 49 кадров",
+      "не скачано / нет downloads / нет файла",
+      "скрытый текст OSError, KeyError, JSONDecodeError, UnidentifiedImageError",
+      "UnicodeDecodeError и ValueError текстом",
+      "трассировка AttributeError, TypeError, InvalidOperation",
+      "ошибка ffprobe с хвостом stderr",
+      "поддельный ffprobe",
+      "argparse: справка, обязательная группа, not allowed with, expected one argument, unrecognized arguments"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "help",
+    "description": "Справка и ошибки разбора аргументов argparse.",
+    "covers": [
+      "-h",
+      "cut -h",
+      "verify -h",
+      "required action",
+      "invalid choice",
+      "required shot/--out",
+      "invalid float value",
+      "expected one argument",
+      "unrecognized arguments"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "text-proposed",
+    "description": "Предложение по разметке с запасами 0,1/0,05: окно M02, строки 2–4 (строка 9 вне текста), текстовый вывод.",
+    "covers": [
+      "speech_lines",
+      "propose round(…,3)",
+      "text output",
+      "source_line вне текста",
+      "CRLF и strip текста",
+      "recipe timing_lines"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "json-warning",
+    "description": "M01 с lipsync=false: предупреждение в stderr, вывод JSON; начало строки — целое 0, запас уводит начало ниже нуля.",
+    "covers": [
+      "lipsync=false warning",
+      "--json",
+      "max(0.0, …)",
+      "int start"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "min-seconds",
+    "description": "Минимальная длина 0,7 с продлевает конец от начала предложения.",
+    "covers": [
+      "--min-seconds"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "explicit-half-up",
+    "description": "Явные границы 0,005–0,015 с: 220,5 и 661,5 сэмпла округляются вверх (ROUND_HALF_UP); M03 без строк — без timing_lines.",
+    "covers": [
+      "explicit bounds",
+      "ROUND_HALF_UP",
+      "no timing_lines"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "explicit-text",
+    "description": "Явные границы с текстовым выводом и подчёркиванием в числе (float('0_0.2')); M03 без строк.",
+    "covers": [
+      "explicit bounds text",
+      "float underscore"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "past-end",
+    "description": "Запасы по умолчанию дают конец 1,25 с при песне 1 с; одно --start без --end тоже ведёт к предложению.",
+    "covers": [
+      "last > total",
+      "only --start"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "empty-interval",
+    "description": "Конец не больше начала после перевода в сэмплы.",
+    "covers": [
+      "last <= first"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "no-lines",
+    "description": "В окне M03 нет строк разметки, границы не заданы.",
+    "covers": [
+      "propose no lines"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "missing-shot",
+    "description": "План отсутствует в реестре.",
+    "covers": [
+      "shot missing"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "exists",
+    "description": "Повторный срез в ту же папку не перезаписывает WAV.",
+    "covers": [
+      "target exists",
+      "mkdir exist_ok"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "out-is-file",
+    "description": "Папка вывода — файл: ошибка файлов скрыта.",
+    "covers": [
+      "mkdir OSError"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "nan-inf",
+    "description": "NaN — ValueError int(); бесконечность — OverflowError с трассировкой; начало переводится раньше конца.",
+    "covers": [
+      "NaN",
+      "Infinity",
+      "order start/end"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "source-missing",
+    "description": "Исходной песни нет.",
+    "covers": [
+      "source not file"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "source-garbage",
+    "description": "Исходная песня не декодируется: хвост stderr FFmpeg.",
+    "covers": [
+      "decode error"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "no-ffmpeg",
+    "description": "FFmpeg нет в PATH: FileNotFoundError скрыт общим текстом.",
+    "covers": [
+      "ffmpeg missing"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "scenes-broken",
+    "description": "plan/scenes.json — битый JSON.",
+    "covers": [
+      "JSONDecodeError hidden"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "scenes-invalid",
+    "description": "Реестр не проходит проверку.",
+    "covers": [
+      "registry ValueError"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "timing-missing",
+    "description": "Нет plan/audio/timing.json.",
+    "covers": [
+      "timing FileNotFoundError hidden"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "timing-broken",
+    "description": "plan/audio/timing.json — битый JSON.",
+    "covers": [
+      "timing JSONDecodeError hidden"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "timing-list",
+    "description": "plan/audio/timing.json — список.",
+    "covers": [
+      "AttributeError traceback"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "timing-no-lines-key",
+    "description": "Разметка без lines.",
+    "covers": [
+      "lines default []"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "timing-line-no-end",
+    "description": "Строка разметки без end.",
+    "covers": [
+      "KeyError hidden"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "timing-line-string",
+    "description": "Строка разметки — строка, а не объект.",
+    "covers": [
+      "TypeError traceback"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "timing-end-string",
+    "description": "Конец строки разметки — строка.",
+    "covers": [
+      "TypeError compare traceback"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "timing-nonutf8",
+    "description": "plan/audio/timing.json не в UTF-8: текст UnicodeDecodeError.",
+    "covers": [
+      "UnicodeDecodeError shown"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "line-values",
+    "description": "Строки с source_line=true, пустой строкой текста, числовой и пустой заметкой, целыми границами и NaN.",
+    "covers": [
+      "bool source_line",
+      "empty text → ?",
+      "note types",
+      "NaN filtered"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "text-missing",
+    "description": "Нет source/text.md.",
+    "covers": [
+      "text.md FileNotFoundError hidden"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "resample",
+    "description": "Песня 22,05 кГц моно: декодирование с передискретизацией в 44,1 кГц стерео; путь источника нормализуется.",
+    "covers": [
+      "resample",
+      "Path normalization"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "negative-start",
+    "description": "Отрицательное начало: оригинал режет срезом Python с конца PCM (пустой WAV, start_sample < 0); Go отказывает.",
+    "covers": [
+      "negative start (исправлено в Go)"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "verify-ok",
+    "description": "Проверка свежего рецепта: SHA и PCM совпадают.",
+    "covers": [
+      "verify match",
+      "pcm_match true"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "verify-tampered",
+    "description": "WAV испорчен: пересборка по рецепту совпадает, PCM — нет; код 0.",
+    "covers": [
+      "pcm_match false",
+      "match or pcm"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "verify-both-fail",
+    "description": "SHA рецепта изменён и WAV испорчен: код 1.",
+    "covers": [
+      "SystemExit 1"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "verify-missing-wav",
+    "description": "WAV удалён: pcm_match null; после смены SHA — код 1.",
+    "covers": [
+      "pcm_match null"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "verify-header",
+    "description": "WAV переписан другим инструментом (FFmpeg с LIST): SHA не совпадает, PCM совпадает — код 0.",
+    "covers": [
+      "pcm_match по содержимому"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "verify-missing-recipe",
+    "description": "Рецепта нет.",
+    "covers": [
+      "recipe FileNotFoundError hidden"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "verify-recipe-errors",
+    "description": "Повреждённые рецепты: битый JSON, список, нет ключа, нестроковый путь, нет источника.",
+    "covers": [
+      "JSONDecodeError hidden",
+      "TypeError list",
+      "KeyError hidden",
+      "TypeError path",
+      "decode error"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "verify-recipe-values",
+    "description": "Необычные параметры рецепта: ошибки wave и struct, срезы с отрицательными и огромными индексами, нецелые индексы.",
+    "covers": [
+      "wave.Error",
+      "struct.error",
+      "slice TypeError",
+      "Python slice clamp",
+      "framerate round"
+    ]
+  },
+  {
+    "domain": "cut-speech",
+    "name": "service.json",
+    "description": "Production.prepareSpeech на образце checks-base с настоящим cut_speech (FFmpeg, MP3): 12 шагов подряд.",
+    "covers": [
+      "предложенный срез по разметке",
+      "явные границы String(number)",
+      "замена прежнего среза",
+      "отказ инструмента удаляет прежний WAV",
+      "speechBoundsInvalid",
+      "submittedSpeechImmutable",
+      "packageMissing",
+      "packageFolderRequired",
+      "PackageView.speech"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "help",
+    "description": "Справка argparse.",
+    "covers": [
+      "--help"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "args-missing",
+    "description": "Без аргументов: нет --output.",
+    "covers": [
+      "required"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "args-group",
+    "description": "Без --shots и --spec.",
+    "covers": [
+      "required group"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "args-conflict",
+    "description": "--shots вместе с --spec.",
+    "covers": [
+      "not allowed"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "plan-only",
+    "description": "--plan-only по --shots: рецепт без записи.",
+    "covers": [
+      "--plan-only",
+      "accepted_edit",
+      "registry_card"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "build-shots",
+    "description": "Сборка трёх планов прямыми склейками.",
+    "covers": [
+      "build",
+      "cuts",
+      "recipe"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "build-tmp",
+    "description": "Выход во временной папке ОС.",
+    "covers": [
+      "tempdir"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "trim-speed-holds",
+    "description": "Обрезка, замедление и удержания явного ролика.",
+    "covers": [
+      "trim",
+      "speed",
+      "holds"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "speedup",
+    "description": "Ускорение с удержаниями.",
+    "covers": [
+      "speed > 1"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "transition-fade",
+    "description": "Переход fade после M02.",
+    "covers": [
+      "xfade"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "transitions-two",
+    "description": "Два перехода подряд.",
+    "covers": [
+      "xfade dissolve fadeblack"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "explicit-card",
+    "description": "Явная карточка с длительностью и песней с явного кадра.",
+    "covers": [
+      "kind card",
+      "audio.start_frame"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "native-24fps",
+    "description": "Ролик 24 к/с: обрезка на сетке 30 к/с.",
+    "covers": [
+      "r_frame_rate != 30/1"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "song-end-pad",
+    "description": "Конец песни раньше кадровой границы: дополнение тишиной.",
+    "covers": [
+      "apad"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "speed-sci",
+    "description": "Скорость в экспоненциальной записи.",
+    "covers": [
+      "str(Decimal)"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "song-short",
+    "description": "Песня короче пробы более чем на полкадра.",
+    "covers": [
+      "Участок песни короче"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "audio-late",
+    "description": "Начало песни за пределами трека.",
+    "covers": [
+      "Участок песни короче"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "no-audio",
+    "description": "Трек без звуковой дорожки.",
+    "covers": [
+      "Нет звуковой дорожки"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "nonconsecutive",
+    "description": "Непоследовательные сцены без audio.start_frame.",
+    "covers": [
+      "audio.start_frame"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "schema",
+    "description": "Неизвестная схема.",
+    "covers": [
+      "schema_version"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "empty",
+    "description": "Пустой список планов.",
+    "covers": [
+      "empty"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "unknown-field",
+    "description": "Лишнее поле спецификации.",
+    "covers": [
+      "fields"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "unknown-audio",
+    "description": "Лишнее поле audio.",
+    "covers": [
+      "audio fields"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "unknown-shot-field",
+    "description": "Опечатка в параметре участка.",
+    "covers": [
+      "shot fields"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "kind-without-path",
+    "description": "kind без path.",
+    "covers": [
+      "kind"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "unknown-scene",
+    "description": "Неизвестная сцена.",
+    "covers": [
+      "scene"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "repeated-scene",
+    "description": "Повтор сцены.",
+    "covers": [
+      "scene"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "bad-kind",
+    "description": "kind не video/card.",
+    "covers": [
+      "kind"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "missing-path",
+    "description": "Нет входного файла.",
+    "covers": [
+      "source"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "negative-start",
+    "description": "Отрицательное начало.",
+    "covers": [
+      "integer"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "float-hold",
+    "description": "Дробное удержание.",
+    "covers": [
+      "integer"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "bool-hold",
+    "description": "Логическое удержание.",
+    "covers": [
+      "integer bool"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "beyond-video",
+    "description": "Участок за концом видео.",
+    "covers": [
+      "available"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "empty-window",
+    "description": "Конец не больше начала.",
+    "covers": [
+      "end <= start"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "speed-zero",
+    "description": "Нулевая скорость.",
+    "covers": [
+      "speed"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "speed-nan",
+    "description": "Скорость NaN.",
+    "covers": [
+      "speed"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "speed-text",
+    "description": "Скорость не число: InvalidOperation.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "card-speed",
+    "description": "Скорость у карточки.",
+    "covers": [
+      "card"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "too-fast",
+    "description": "Ускорение короче кадра.",
+    "covers": [
+      "motion < 1"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "transition-field",
+    "description": "Лишний параметр перехода.",
+    "covers": [
+      "transition fields"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "transition-last",
+    "description": "Переход после последнего плана.",
+    "covers": [
+      "transition"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "transition-type",
+    "description": "Неизвестный тип перехода.",
+    "covers": [
+      "transition"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "transition-repeat",
+    "description": "Повтор стыка.",
+    "covers": [
+      "transition"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "transition-zero",
+    "description": "Переход нулевой длины.",
+    "covers": [
+      "transition.frames"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "transition-swallow",
+    "description": "Переходы поглощают план.",
+    "covers": [
+      "overlap"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "missing-scene-key",
+    "description": "Участок без scene: KeyError.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "spec-list",
+    "description": "Спецификация — список: AttributeError.",
+    "covers": [
+      "traceback"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "spec-invalid",
+    "description": "Спецификация — не JSON.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "broken-video",
+    "description": "Битый ролик: ошибка ffprobe.",
+    "covers": [
+      "run"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "spec-missing",
+    "description": "Нет файла спецификации.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "card-changed",
+    "description": "Карточка изменена после квитанции.",
+    "covers": [
+      "Карточка изменена"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "cards-stale",
+    "description": "Квитанция карточек для другого реестра.",
+    "covers": [
+      "Карточки устарели"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "accepted-mismatch",
+    "description": "Хеш принятого монтажа не совпадает.",
+    "covers": [
+      "accepted_edit"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "output-exists",
+    "description": "Проба уже существует.",
+    "covers": [
+      "no overwrite"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "manifest-exists",
+    "description": "Манифест пробы уже существует.",
+    "covers": [
+      "no overwrite"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "output-assets",
+    "description": "Выход в assets.",
+    "covers": [
+      "destination"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "output-mov",
+    "description": "Выход не MP4.",
+    "covers": [
+      "suffix"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "registry-invalid",
+    "description": "Неверный реестр сцен.",
+    "covers": [
+      "load"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "registry-missing",
+    "description": "Нет реестра сцен.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "build-review",
+    "name": "checks/cases.json",
+    "description": "Сценарий checks.buildReview, listReviews и removeReview из src/main/checks.ts с подставным менеджером заданий: аргументы и название задания, отказы кодов, фильтр рецептов, порядок по времени, отказы и удаление пробы.",
+    "covers": [
+      "buildReview: trim, пустой набор, неверные коды, planOnly",
+      "reviewOutput: больше трёх планов",
+      "listReviews: рецепт без video_sha256 или shots, битый JSON, MP4 без рецепта, ссылка на папку, равные времена",
+      "removeReview: не абсолютный путь, вне plan/batches, каталог, ссылка, не проба, ещё собирается, путь с ..",
+      "удаление пустой папки и сохранение соседних файлов"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "plan-only",
+    "description": "--plan-only: сводка входов без записи; прежний latest с HTML-страницей сохраняется.",
+    "covers": [
+      "--plan-only",
+      "media_counts",
+      "build_started=false",
+      "нет записи"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "build-cache",
+    "description": "Полная сборка: холодный кэш, тёплый кэш, пустой кэш, замена одной карточки и пропавший монтаж.",
+    "covers": [
+      "полная сборка",
+      "manifest/README latest",
+      "представления после сборки",
+      "из кэша",
+      "подготовлена",
+      "segments_created/reused",
+      "удаление index.html",
+      "одна карточка пересоздаёт один фрагмент",
+      "ошибка сохраняет latest"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "cache-damaged",
+    "description": "Повреждённый фрагмент кэша и повреждённая квитанция кэша пересоздаются.",
+    "covers": [
+      "lookup: sha не совпал",
+      "lookup: квитанция не JSON",
+      "lookup: квитанции нет"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "rename",
+    "description": "Новые название и имя MP4: экранирование FFmetadata, удаление прежнего MP4 из манифеста.",
+    "covers": [
+      "title с \\ = ; #",
+      "README с новым именем",
+      "удаление прежнего MP4",
+      "project_inputs"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "previous-unsafe",
+    "description": "Прежний video_file с путём или не MP4 не удаляется; прежний manifest не JSON останавливает публикацию.",
+    "covers": [
+      "previous_name с путём",
+      "previous_name не .mp4",
+      "прежний manifest повреждён"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "keyframes",
+    "description": "Карточка опор: растворение первой опоры в последнюю, last в source_hashes, keyframes в манифесте.",
+    "covers": [
+      "media=keyframes",
+      "xfade 40/20/40",
+      "path_last/sha256_last",
+      "card_sources из keyframes"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "keyframes-last-changed",
+    "description": "Изменённая последняя карточка опор без новой квитанции.",
+    "covers": [
+      "entry.last sha256"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "keyframes-source-changed",
+    "description": "Изменённая исходная опора: источники карточки изменились.",
+    "covers": [
+      "card_sources keyframes"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "keyframes-last-missing",
+    "description": "Нет файла последней карточки опор.",
+    "covers": [
+      "local last"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "mono-track",
+    "description": "Моно 22050 Гц: выход — стерео AAC 44,1 кГц.",
+    "covers": [
+      "-ac 2 -ar 44100"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "args-help",
+    "description": "--help.",
+    "covers": [
+      "argparse --help"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "args-unknown",
+    "description": "Неизвестный аргумент.",
+    "covers": [
+      "argparse unrecognized"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "no-project",
+    "description": "Нет plan/project.json.",
+    "covers": [
+      "FileNotFoundError в OSError"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "no-project-plan-only",
+    "description": "--plan-only без plan/project.json.",
+    "covers": [
+      "FileNotFoundError --plan-only"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "invalid-project",
+    "description": "Неверное имя MP4 в plan/project.json.",
+    "covers": [
+      "validate_project ValueError"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "no-scenes",
+    "description": "Нет plan/scenes.json.",
+    "covers": [
+      "sha реестра OSError"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "edit-frames",
+    "description": "Число кадров принятого монтажа не совпадает с окном.",
+    "covers": [
+      "accepted_edit.frames"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "edit-fps",
+    "description": "fps принятого монтажа не 30.",
+    "covers": [
+      "accepted_edit.fps"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "edit-sha",
+    "description": "Хеш принятого монтажа не совпадает.",
+    "covers": [
+      "accepted_edit.video.sha256"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "edit-shot",
+    "description": "Манифест комплекта от другого плана.",
+    "covers": [
+      "package.shot"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "edit-video-missing",
+    "description": "Нет файла принятого монтажа.",
+    "covers": [
+      "local: нет файла"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "edit-video-escape",
+    "description": "Путь принятого монтажа за пределами комплекта.",
+    "covers": [
+      "local: вне папки"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "edit-missing",
+    "description": "В манифесте комплекта нет accepted_edit.",
+    "covers": [
+      "KeyError accepted_edit"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "edit-list",
+    "description": "accepted_edit — список.",
+    "covers": [
+      "TypeError: трассировка"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "package-corrupt",
+    "description": "Манифест комплекта не JSON.",
+    "covers": [
+      "JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "card-missing",
+    "description": "Нет карточки M02.",
+    "covers": [
+      "local карточки"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-missing",
+    "description": "Нет квитанции карточек.",
+    "covers": [
+      "receipt is None"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-corrupt",
+    "description": "Квитанция карточек не JSON.",
+    "covers": [
+      "JSONDecodeError квитанции"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-registry",
+    "description": "Реестр изменён после карточек.",
+    "covers": [
+      "registry_sha256"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-name",
+    "description": "Название проекта изменено после карточек.",
+    "covers": [
+      "project_inputs_match"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-generation",
+    "description": "Настройки генерации и форматирование project.json не влияют на проверку.",
+    "covers": [
+      "project_inputs без generation"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-inputs-extra",
+    "description": "Лишнее поле в project_inputs квитанции.",
+    "covers": [
+      "project_inputs лишний ключ"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-reference",
+    "description": "Референс изменён после карточек.",
+    "covers": [
+      "reference_hashes"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-reference-missing",
+    "description": "Нет файла референса из квитанции.",
+    "covers": [
+      "local reference_hashes"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-card-sha",
+    "description": "Карточка заменена без квитанции.",
+    "covers": [
+      "entry.sha256"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-entry-missing",
+    "description": "В квитанции нет записи M02.",
+    "covers": [
+      "KeyError cards[M02]"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "receipt-hashes-missing",
+    "description": "В квитанции нет reference_hashes: карточка ссылается на референс.",
+    "covers": [
+      "KeyError reference_hashes"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "track-missing",
+    "description": "Нет source/track.mp3.",
+    "covers": [
+      "local track"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "track-long",
+    "description": "Песня длиннее монтажного списка.",
+    "covers": [
+      "decoded_audio_duration",
+      "конец не совпадает"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "track-damaged",
+    "description": "Песня не декодируется.",
+    "covers": [
+      "Не удалось декодировать трек"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "clip-damaged",
+    "description": "Принятый монтаж не читается ffprobe: прежний latest не создаётся.",
+    "covers": [
+      "run: ffprobe с ошибкой"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "clip-size",
+    "description": "Принятый монтаж 1280×720.",
+    "covers": [
+      "segment: неверный формат"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "clip-frames",
+    "description": "Принятый монтаж на 11 кадров.",
+    "covers": [
+      "segment: неверное число кадров"
+    ]
+  },
+  {
+    "domain": "build-animatic",
+    "name": "docs-failed",
+    "description": "Сборка прошла, но представления не строятся: нет plan/audio/timing.json.",
+    "covers": [
+      "documents после build"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "empty",
+    "description": "Новый проект без сценария и сборки: проблема сценария, отказ принятия без записи production-status, отказ build до задания.",
+    "covers": [
+      "нет scenes.json",
+      "нет манифеста",
+      "buildRequired",
+      "build без сценария"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "build-steps",
+    "description": "Со сценарием build создаёт задание из двух шагов: update_scene_views и build_animatic (--plan-only для проверки).",
+    "covers": [
+      "jobs.start animatic",
+      "шаги и подписи",
+      "--plan-only"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "corrupt-manifest",
+    "description": "Повреждённый манифест: проблема без сборки, принятие отклоняется, файл не меняется.",
+    "covers": [
+      "manifestCorrupt",
+      "built=null"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "video-file-missing",
+    "description": "Нет MP4 сборки (video_file undefined): полный текст проблемы.",
+    "covers": [
+      "videoMissing",
+      "videoPath=null"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "video-file-null",
+    "description": "Нет MP4 сборки (video_file null): полный текст проблемы.",
+    "covers": [
+      "videoMissing",
+      "videoPath=null"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "video-file-empty",
+    "description": "Нет MP4 сборки (video_file \"\"): полный текст проблемы.",
+    "covers": [
+      "videoMissing",
+      "videoPath=null"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "video-file-special",
+    "description": "Нет MP4 сборки (video_file \"«Проба» & <1>.mp4\"): полный текст проблемы.",
+    "covers": [
+      "videoMissing",
+      "videoPath=null"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "fresh",
+    "description": "Свежая сборка из фикстуры свежести: принятие текущее, проблем нет; review, approved и снова review переписывают production-status.",
+    "covers": [
+      "fresh",
+      "approval.current",
+      "counts",
+      "shots",
+      "setStatus review удаляет approved_animatic",
+      "setStatus approved"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "fresh-without-status",
+    "description": "Свежая сборка без production-status.json: принятие создаёт файл из значений по умолчанию.",
+    "covers": [
+      "readStatus по умолчанию",
+      "approved без файла"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "changed-assets-shots-M01-edit-mp4",
+    "description": "Изменение фактически использованного входа assets/shots/M01/edit.mp4 снимает актуальное принятие и не даёт принять сборку.",
+    "covers": [
+      "inputChanged",
+      "freshBuildRequired",
+      "история принятия сохраняется"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "changed-plan-animatic-cards-M02-png",
+    "description": "Изменение фактически использованного входа plan/animatic/cards/M02.png снимает актуальное принятие и не даёт принять сборку.",
+    "covers": [
+      "inputChanged",
+      "freshBuildRequired",
+      "история принятия сохраняется"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "changed-plan-animatic-cards-M03-last-png",
+    "description": "Изменение фактически использованного входа plan/animatic/cards/M03.last.png снимает актуальное принятие и не даёт принять сборку.",
+    "covers": [
+      "inputChanged",
+      "freshBuildRequired",
+      "история принятия сохраняется"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "changed-plan-batches-M03-attempt-01-frames-K01-png",
+    "description": "Изменение фактически использованного входа plan/batches/M03-attempt-01/frames/K01.png снимает актуальное принятие и не даёт принять сборку.",
+    "covers": [
+      "inputChanged",
+      "freshBuildRequired",
+      "история принятия сохраняется"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "changed-plan-batches-M03-attempt-01-frames-K02-png",
+    "description": "Изменение фактически использованного входа plan/batches/M03-attempt-01/frames/K02.png снимает актуальное принятие и не даёт принять сборку.",
+    "covers": [
+      "inputChanged",
+      "freshBuildRequired",
+      "история принятия сохраняется"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "changed-source-hero-png",
+    "description": "Изменение фактически использованного входа source/hero.png снимает актуальное принятие и не даёт принять сборку.",
+    "covers": [
+      "inputChanged",
+      "freshBuildRequired",
+      "история принятия сохраняется"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "changed-source-track-mp3",
+    "description": "Изменение фактически использованного входа source/track.mp3 снимает актуальное принятие и не даёт принять сборку.",
+    "covers": [
+      "inputChanged",
+      "freshBuildRequired",
+      "история принятия сохраняется"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "changed-plan-project-json",
+    "description": "Изменение фактически использованного входа plan/project.json снимает актуальное принятие и не даёт принять сборку.",
+    "covers": [
+      "inputChanged",
+      "freshBuildRequired",
+      "история принятия сохраняется"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "changed-plan-animatic-latest-clip-mp4",
+    "description": "Изменение фактически использованного входа plan/animatic/latest/clip.mp4 снимает актуальное принятие и не даёт принять сборку.",
+    "covers": [
+      "inputChanged",
+      "freshBuildRequired",
+      "история принятия сохраняется"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "dash-reference",
+    "description": "Пометка «—» плана без референсов не считается источником карточки.",
+    "covers": [
+      "«—» в references"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "accepted-switch",
+    "description": "Переключение принятого монтажа и появление видео вместо карточки требуют пересборки.",
+    "covers": [
+      "acceptedEditChanged",
+      "acceptedEditAdded"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "alternatives",
+    "description": "Непринятые кандидаты и принятые альтернативные опоры готового видео не меняют сборку.",
+    "covers": [
+      "selectedFrames: другие пакеты",
+      "видео игнорирует опоры"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "keyframe-selection",
+    "description": "Снятое принятие и изменённое время выбранной опоры обнаруживаются без перерисовки карточки.",
+    "covers": [
+      "keyframesChanged",
+      "selectedFrames: не все approved"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "keyframes-missing",
+    "description": "Карточка опор без сведений об опорах в старой сборке.",
+    "covers": [
+      "keyframeSourcesMissing",
+      "квитанция карточек не совпадает"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "receipt-keyframes",
+    "description": "Опоры старой сборки берутся из квитанции карточек, пока её карточки совпадают с собранными.",
+    "covers": [
+      "receiptMatches",
+      "entry.keyframes",
+      "reference_hashes квитанции"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-missing",
+    "description": "Без обязательного project_inputs сборка не считается свежей.",
+    "covers": [
+      "projectInputsMissing"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-format",
+    "description": "Форматирование, Unicode-экранирование и настройки генерации project.json не меняют свежесть; изменение песни — меняет.",
+    "covers": [
+      "animaticProjectInputsMatch",
+      "cardsFresh"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-changed-1",
+    "description": "Изменение значимых полей {\"name\":\"Другое имя\",\"animatic_video\":\"clip.mp4\"} делает сборку устаревшей.",
+    "covers": [
+      "projectInputsChanged"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-changed-2",
+    "description": "Изменение значимых полей {\"name\":\"Проба\",\"animatic_video\":\"other.mp4\"} делает сборку устаревшей.",
+    "covers": [
+      "projectInputsChanged"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-corrupt-1",
+    "description": "Повреждённый project_inputs null делает сборку устаревшей.",
+    "covers": [
+      "projectInputsChanged"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-corrupt-2",
+    "description": "Повреждённый project_inputs [] делает сборку устаревшей.",
+    "covers": [
+      "projectInputsChanged"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-corrupt-3",
+    "description": "Повреждённый project_inputs {} делает сборку устаревшей.",
+    "covers": [
+      "projectInputsChanged"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-corrupt-4",
+    "description": "Повреждённый project_inputs {\"name\":\"Проба\"} делает сборку устаревшей.",
+    "covers": [
+      "projectInputsChanged"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-corrupt-5",
+    "description": "Повреждённый project_inputs {\"name\":\"Проба\",\"animatic_video\":1} делает сборку устаревшей.",
+    "covers": [
+      "projectInputsChanged"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "project-inputs-corrupt-6",
+    "description": "Повреждённый project_inputs {\"name\":\"Проба\",\"animatic_video\":\"clip.mp4\",\"future\":true} делает сборку устаревшей.",
+    "covers": [
+      "projectInputsChanged"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "ordered-problems",
+    "description": "Целые причины в прежнем порядке; ни манифест, ни история не перезаписываются.",
+    "covers": [
+      "inputChanged",
+      "inputHashMissing",
+      "порядок проблем"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "reference-special",
+    "description": "Кавычки и спецсимволы пути референса сохраняются в тексте проблемы.",
+    "covers": [
+      "inputHashMissing с путём референса"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "registry-changed",
+    "description": "Реестр изменён после сборки: проблема и устаревшая сборка, карточки несвежие.",
+    "covers": [
+      "registryChanged",
+      "cardsFresh=false"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "shot-defaults",
+    "description": "Значения планов по умолчанию: title из id, числа из строк, lipsync, media по умолчанию card, пути карточек.",
+    "covers": [
+      "shots: ?? и Number",
+      "cardPath/lastCardPath",
+      "reference path missing",
+      "shotInputMissing"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "shot-null",
+    "description": "План null в манифесте: исключение оригинала при построении списка.",
+    "covers": [
+      "TypeError s.id"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "shot-path-number",
+    "description": "Нестроковый путь карточки: исключение join оригинала.",
+    "covers": [
+      "TypeError path"
+    ]
+  },
+  {
+    "domain": "animatic-view",
+    "name": "real-keyframes",
+    "description": "Манифест настоящей сборки build_animatic (кадровый аниматик) на входе build-animatic/keyframes с заглушкой MP4.",
+    "covers": [
+      "манифест build_animatic",
+      "media keyframes",
+      "card_sources",
+      "review"
     ]
   }
 ]

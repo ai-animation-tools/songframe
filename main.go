@@ -11,14 +11,13 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/wailsapp/wails/v3/pkg/application"
-	"songframe-go/internal/acceptshot"
 	"songframe-go/internal/agents"
 	shell "songframe-go/internal/app"
 	"songframe-go/internal/components"
 	"songframe-go/internal/jobs"
 	"songframe-go/internal/media"
 	"songframe-go/internal/mediaadapters"
+	"songframe-go/internal/mediacmd"
 	"songframe-go/internal/mediafile"
 	"songframe-go/internal/production"
 	"songframe-go/internal/productionworkflow"
@@ -29,6 +28,8 @@ import (
 	"songframe-go/internal/scenarioworkflow"
 	"songframe-go/internal/store"
 	"songframe-go/internal/videoreview"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // Собранный frontend входит в бинарник: Node/Yarn нужны только разработчику.
@@ -200,8 +201,9 @@ func run() error {
 			return aiAccess.RequireAccess(ctx, &project, agents.KindVideo)
 		},
 	})
-	// Приёмка (accept_shot) берёт FFmpeg/ffprobe из менеджера компонентов, иначе ищет их в PATH.
-	acceptshot.Programs = func() (string, string) {
+	// Медиаинструменты (accept_shot, build_animatic, build_review, cut_speech, contact_sheet) берут
+	// FFmpeg/ffprobe из менеджера компонентов, иначе ищут их в PATH.
+	mediacmd.Programs = func() (string, string) {
 		for _, component := range componentManager.State().Components {
 			if component.ID == "ffmpeg" {
 				return component.Paths["ffmpeg"], component.Paths["ffprobe"]
@@ -237,6 +239,7 @@ func run() error {
 		application.NewService(shell.NewProductionService(productionService, aiAccess, scenarioWorkflow, shell.NewProductionFlow(productionWorkflow))),
 		application.NewService(shell.NewProductionWorkflowService(productionWorkflow, aiAccess)),
 		application.NewService(shell.NewDashboardService(scenarioWorkflow)),
+		application.NewService(shell.NewAnimaticService(jobManager, scenarioWorkflow)),
 	}
 	var nativeCheck *shell.NativeCheckService
 	windowURL := "/"

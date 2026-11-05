@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/acceptshot"
 	"songframe-go/internal/golden"
+	"songframe-go/internal/mediacmd"
 	"songframe-go/internal/mediaproviders"
 	"songframe-go/internal/mediatest"
 	"songframe-go/internal/pycompat"
@@ -38,10 +38,6 @@ type goldenOutcome struct {
 var captureFrame, _ = hex.DecodeString("89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c4944415408d763f8cfc000000301010018dd8db00000000049454e44ae426082")
 
 var goldenTime = regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})`)
-
-// notMigrated — шаги, где Go сознательно отличается: участок оригинала (--cut) требует рендера
-// FFmpeg этапа 46, поэтому Go отказывает текстом «не перенесено» с тем же кодом 1.
-var notMigrated = map[string]bool{"accept-cut": true}
 
 // TestToolsGolden — regenerate_shot и accept_shot --full против CLI оригинала на тестовом
 // провайдере: те же шаги подготовки пакета, повтор по пакету и по снимку комплекта, приёмка
@@ -103,9 +99,9 @@ func TestToolsGolden(t *testing.T) {
 	saved := tools.LocalDir
 	tools.LocalDir = func() (string, error) { return state, nil }
 	t.Cleanup(func() { tools.LocalDir = saved })
-	programs := acceptshot.Programs
-	acceptshot.Programs = func() (string, string) { return filepath.Join(bin, "ffmpeg"), filepath.Join(bin, "ffprobe") }
-	t.Cleanup(func() { acceptshot.Programs = programs })
+	programs := mediacmd.Programs
+	mediacmd.Programs = func() (string, string) { return filepath.Join(bin, "ffmpeg"), filepath.Join(bin, "ffprobe") }
+	t.Cleanup(func() { mediacmd.Programs = programs })
 
 	markers := map[string]string{"<project>": project, "<spec>": spec}
 	mark := func(text string) string {
@@ -138,12 +134,6 @@ func TestToolsGolden(t *testing.T) {
 		}
 		if result.Code == nil || *result.Code != want.Code {
 			t.Fatalf("%s: код %v, ожидался %d; stderr %q", step.Label, result.Code, want.Code, result.Stderr)
-		}
-		if notMigrated[step.Label] {
-			if !strings.Contains(result.Stderr, "не перенесена") {
-				t.Fatalf("%s: %q", step.Label, result.Stderr)
-			}
-			continue
 		}
 		if got := mark(result.Stdout); got != want.Stdout {
 			t.Fatalf("%s: stdout\n%s\nожидался\n%s", step.Label, got, want.Stdout)

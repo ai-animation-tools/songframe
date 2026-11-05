@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "generated_from": "plan/scenes.json",
+  "registry_sha256": "efb10a5d2a6c810f69ccf714d71f6d69bb017e5377ece62aad8bb5e02e3771c5",
+  "project_inputs": {
+    "name": "Тестовый клип"
+  },
+  "reference_hashes": {
+    "source/pier.png": "9fdd8559d75373ae1839671e057e2dfd300b8a3a05d5bda8adc26812491240d1"
+  },
+  "cards": {
+    "M02": {
+      "path": "plan/animatic/cards/M02.png",
+      "sha256": "b2d3f411f1ca05feeb59296eebe5b1d5a263f2282d22a706f44527ff3ceb0769"
+    }
+  }
+}

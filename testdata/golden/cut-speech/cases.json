@@ -1,0 +1,1946 @@
+{
+  "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
+  "python": "3.12.3",
+  "cases": [
+    {
+      "name": "help",
+      "description": "Справка и ошибки разбора аргументов argparse.",
+      "covers": [
+        "-h",
+        "cut -h",
+        "verify -h",
+        "required action",
+        "invalid choice",
+        "required shot/--out",
+        "invalid float value",
+        "expected one argument",
+        "unrecognized arguments"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "-h"
+          ],
+          "code": 0,
+          "stdout": "usage: cut_speech.py [-h] {cut,verify} ...\n\nТочный WAV липсинка и его рецепт из исходной песни по разметке или заданным\nграницам; @link README.md\n\npositional arguments:\n  {cut,verify}\n\noptions:\n  -h, --help    show this help message and exit\n",
+          "stderr": ""
+        },
+        {
+          "run": [
+            "cut",
+            "-h"
+          ],
+          "code": 0,
+          "stdout": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\n\npositional arguments:\n  shot\n\noptions:\n  -h, --help            show this help message and exit\n  --out OUT             Папка для speech.wav и audio-recipe.json\n  --start START         Начало среза, с; по умолчанию по разметке\n  --end END             Конец среза, с, исключительно\n  --lead LEAD           Запас до первой строки при выборе по разметке\n  --tail TAIL           Запас после последней строки\n  --min-seconds MIN_SECONDS\n                        Минимальная длина среза, например под длительность\n                        запроса\n  --json\n",
+          "stderr": ""
+        },
+        {
+          "run": [
+            "verify",
+            "-h"
+          ],
+          "code": 0,
+          "stdout": "usage: cut_speech.py verify [-h] recipe\n\npositional arguments:\n  recipe\n\noptions:\n  -h, --help  show this help message and exit\n",
+          "stderr": ""
+        },
+        {
+          "run": [],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py [-h] {cut,verify} ...\ncut_speech.py: error: the following arguments are required: action\n"
+        },
+        {
+          "run": [
+            "bogus"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py [-h] {cut,verify} ...\ncut_speech.py: error: argument action: invalid choice: 'bogus' (choose from 'cut', 'verify')\n"
+        },
+        {
+          "run": [
+            "cut"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: the following arguments are required: shot, --out\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: the following arguments are required: --out\n"
+        },
+        {
+          "run": [
+            "verify"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py verify [-h] recipe\ncut_speech.py verify: error: the following arguments are required: recipe\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "abc"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: invalid float value: 'abc'\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--lead",
+            "1e"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --lead: invalid float value: '1e'\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--min-seconds"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --min-seconds: expected one argument\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "x",
+            "--end"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: invalid float value: 'x'\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--start",
+            "x"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: invalid float value: 'x'\n"
+        },
+        {
+          "run": [
+            "verify",
+            "a",
+            "b"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py [-h] {cut,verify} ...\ncut_speech.py: error: unrecognized arguments: b\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start=-0x1"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: invalid float value: '-0x?'\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "text-proposed",
+      "description": "Предложение по разметке с запасами 0,1/0,05: окно M02, строки 2–4 (строка 9 вне текста), текстовый вывод.",
+      "covers": [
+        "speech_lines",
+        "propose round(…,3)",
+        "text output",
+        "source_line вне текста",
+        "CRLF и strip текста",
+        "recipe timing_lines"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--lead",
+            "0.1",
+            "--tail",
+            "0.05"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.250–0.800 с (24255 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.25,\n    0.8\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 11025,\n  \"end_sample_exclusive\": 35280,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"805d148ac03efa577bf80eb37ae3de6a5b887976d6b7809f53403ef9f9e51cc0\",\n    \"bytes\": 97064\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "805d148ac03efa577bf80eb37ae3de6a5b887976d6b7809f53403ef9f9e51cc0",
+          "bytes": 97064
+        }
+      }
+    },
+    {
+      "name": "json-warning",
+      "description": "M01 с lipsync=false: предупреждение в stderr, вывод JSON; начало строки — целое 0, запас уводит начало ниже нуля.",
+      "covers": [
+        "lipsync=false warning",
+        "--json",
+        "max(0.0, …)",
+        "int start"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M01",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.75\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 33075,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"e36426eb2a41dc2c6946bef1641a5032d79450437e5f70e8e19e0ba69ed01437\",\n    \"bytes\": 132344\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M01\",\n  \"timing_lines\": [\n    {\n      \"id\": 1,\n      \"source_line\": 1,\n      \"text\": \"Первая строка\",\n      \"start\": 0,\n      \"end\": 0.25,\n      \"note\": \"оценка\"\n    }\n  ]\n}\n",
+          "stderr": "Предупреждение: у M01 в реестре lipsync=false.\n"
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.75\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 33075,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"e36426eb2a41dc2c6946bef1641a5032d79450437e5f70e8e19e0ba69ed01437\",\n    \"bytes\": 132344\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M01\",\n  \"timing_lines\": [\n    {\n      \"id\": 1,\n      \"source_line\": 1,\n      \"text\": \"Первая строка\",\n      \"start\": 0,\n      \"end\": 0.25,\n      \"note\": \"оценка\"\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "e36426eb2a41dc2c6946bef1641a5032d79450437e5f70e8e19e0ba69ed01437",
+          "bytes": 132344
+        }
+      }
+    },
+    {
+      "name": "min-seconds",
+      "description": "Минимальная длина 0,7 с продлевает конец от начала предложения.",
+      "covers": [
+        "--min-seconds"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--lead",
+            "0.1",
+            "--tail",
+            "0.05",
+            "--min-seconds",
+            "0.7",
+            "--json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.25,\n    0.95\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 11025,\n  \"end_sample_exclusive\": 41895,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f\",\n    \"bytes\": 123524\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.25,\n    0.95\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 11025,\n  \"end_sample_exclusive\": 41895,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f\",\n    \"bytes\": 123524\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f",
+          "bytes": 123524
+        }
+      }
+    },
+    {
+      "name": "explicit-half-up",
+      "description": "Явные границы 0,005–0,015 с: 220,5 и 661,5 сэмпла округляются вверх (ROUND_HALF_UP); M03 без строк — без timing_lines.",
+      "covers": [
+        "explicit bounds",
+        "ROUND_HALF_UP",
+        "no timing_lines"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M03",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.005",
+            "--end",
+            "0.015",
+            "--json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.005011337868480726,\n    0.015011337868480726\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 221,\n  \"end_sample_exclusive\": 662,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"e8ed51b7e51dcda1f58651fef6a400f783a5a58b8eb8d6f38b7b9d730ce05c28\",\n    \"bytes\": 1808\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\"\n}\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.005011337868480726,\n    0.015011337868480726\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 221,\n  \"end_sample_exclusive\": 662,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"e8ed51b7e51dcda1f58651fef6a400f783a5a58b8eb8d6f38b7b9d730ce05c28\",\n    \"bytes\": 1808\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\"\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "e8ed51b7e51dcda1f58651fef6a400f783a5a58b8eb8d6f38b7b9d730ce05c28",
+          "bytes": 1808
+        }
+      }
+    },
+    {
+      "name": "explicit-text",
+      "description": "Явные границы с текстовым выводом и подчёркиванием в числе (float('0_0.2')); M03 без строк.",
+      "covers": [
+        "explicit bounds text",
+        "float underscore"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M03",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0_0.2",
+            "--end",
+            " 0.9 "
+          ],
+          "code": 0,
+          "stdout": "M03: окно 0.800–1.000 с; срез 0.200–0.900 с (30870 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.2,\n    0.9\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 8820,\n  \"end_sample_exclusive\": 39690,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f\",\n    \"bytes\": 123524\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M03\"\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f",
+          "bytes": 123524
+        }
+      }
+    },
+    {
+      "name": "past-end",
+      "description": "Запасы по умолчанию дают конец 1,25 с при песне 1 с; одно --start без --end тоже ведёт к предложению.",
+      "covers": [
+        "last > total",
+        "only --start"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Срез выходит за конец песни: 1.000 с.\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Срез выходит за конец песни: 1.000 с.\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.5",
+            "--end",
+            "1e300"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Срез выходит за конец песни: 1.000 с.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "empty-interval",
+      "description": "Конец не больше начала после перевода в сэмплы.",
+      "covers": [
+        "last <= first"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.5",
+            "--end",
+            "0.5"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Конец среза должен быть больше начала.\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.5",
+            "--end",
+            "0.50001"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Конец среза должен быть больше начала.\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.5",
+            "--end",
+            "0.1"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Конец среза должен быть больше начала.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "no-lines",
+      "description": "В окне M03 нет строк разметки, границы не заданы.",
+      "covers": [
+        "propose no lines"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M03",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "В окне плана нет строк разметки; задайте границы явно через --start и --end.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "missing-shot",
+      "description": "План отсутствует в реестре.",
+      "covers": [
+        "shot missing"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M09",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "M09: план отсутствует в реестре сцен.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "exists",
+      "description": "Повторный срез в ту же папку не перезаписывает WAV.",
+      "covers": [
+        "target exists",
+        "mkdir exist_ok"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.100–0.200 с (4410 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2",
+            "--json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Файл WAV уже существует; выберите другую папку или имя.\n"
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178",
+          "bytes": 17684
+        }
+      }
+    },
+    {
+      "name": "out-is-file",
+      "description": "Папка вывода — файл: ошибка файлов скрыта.",
+      "covers": [
+        "mkdir OSError"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "write": "plan/x.txt",
+          "text": "файл"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/x.txt",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        }
+      ],
+      "files": {
+        "plan/x.txt": {
+          "text": "файл"
+        }
+      }
+    },
+    {
+      "name": "nan-inf",
+      "description": "NaN — ValueError int(); бесконечность — OverflowError с трассировкой; начало переводится раньше конца.",
+      "covers": [
+        "NaN",
+        "Infinity",
+        "order start/end"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "nan",
+            "--end",
+            "0.5"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "cannot convert NaN to integer\n"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "inf"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "OverflowError: cannot convert Infinity to integer"
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "-inf",
+            "--end",
+            "nan"
+          ],
+          "code": 2,
+          "stdout": "",
+          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: expected one argument\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "source-missing",
+      "description": "Исходной песни нет.",
+      "covers": [
+        "source not file"
+      ],
+      "overlay": {},
+      "remove": [
+        "source/track.flac"
+      ],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Исходная песня не найдена: source/track.flac\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "source-garbage",
+      "description": "Исходная песня не декодируется: хвост stderr FFmpeg.",
+      "covers": [
+        "decode error"
+      ],
+      "overlay": {
+        "source/track.flac": "not audio"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Не удалось декодировать песню: Cannot determine format of input stream 0:0 after EOF\nError marking filters as finished\nError while filtering: Invalid data found when processing input\n[out#0/s16le @ 0x?] Nothing was written into output file, because at least one of its streams received no packets.\n\n",
+          "ffmpegText": true
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "no-ffmpeg",
+      "description": "FFmpeg нет в PATH: FileNotFoundError скрыт общим текстом.",
+      "covers": [
+        "ffmpeg missing"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n",
+          "noFFmpeg": true
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "scenes-broken",
+      "description": "plan/scenes.json — битый JSON.",
+      "covers": [
+        "JSONDecodeError hidden"
+      ],
+      "overlay": {
+        "plan/scenes.json": "{"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "scenes-invalid",
+      "description": "Реестр не проходит проверку.",
+      "covers": [
+        "registry ValueError"
+      ],
+      "overlay": {
+        "plan/scenes.json": "{\"schema_version\": 1, \"fps\": 0, \"audio\": {\"path\": \"source/track.flac\", \"end_seconds\": \"1\"}, \"references\": {\"П\": {\"name\": \"Мира\", \"path\": \"source/heroes/mira.jpg\"}}, \"visual_direction\": \"# Правила\", \"sequences\": [{\"id\": \"s\", \"title\": \"Сцена\", \"direction\": \"направление\"}], \"scenes\": [{\"id\": \"M01\", \"original\": \"M01\", \"sequence\": \"s\", \"title\": \"M01\", \"start_frame\": 0, \"end_frame_exclusive\": 9, \"camera\": \"статика\", \"action\": \"действие\", \"continuity\": \"связь\", \"references\": [\"П\"], \"lipsync\": false, \"card\": {\"primary_reference\": \"П\"}, \"state_from\": null, \"state_changes\": {}}, {\"id\": \"M02\", \"original\": \"M02\", \"sequence\": \"s\", \"title\": \"M02\", \"start_frame\": 9, \"end_frame_exclusive\": 24, \"camera\": \"статика\", \"action\": \"действие\", \"continuity\": \"связь\", \"references\": [\"П\"], \"lipsync\": true, \"card\": {\"primary_reference\": \"П\"}, \"state_from\": null, \"state_changes\": {}}, {\"id\": \"M03\", \"original\": \"M03\", \"sequence\": \"s\", \"title\": \"M03\", \"start_frame\": 24, \"end_frame_exclusive\": 30, \"camera\": \"статика\", \"action\": \"действие\", \"continuity\": \"связь\", \"references\": [\"П\"], \"lipsync\": true, \"card\": {\"primary_reference\": \"П\"}, \"state_from\": null, \"state_changes\": {}}]}"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Неизвестная схема или пустой реестр сцен.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "timing-missing",
+      "description": "Нет plan/audio/timing.json.",
+      "covers": [
+        "timing FileNotFoundError hidden"
+      ],
+      "overlay": {},
+      "remove": [
+        "plan/audio/timing.json"
+      ],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "timing-broken",
+      "description": "plan/audio/timing.json — битый JSON.",
+      "covers": [
+        "timing JSONDecodeError hidden"
+      ],
+      "overlay": {
+        "plan/audio/timing.json": "[1,"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "timing-list",
+      "description": "plan/audio/timing.json — список.",
+      "covers": [
+        "AttributeError traceback"
+      ],
+      "overlay": {
+        "plan/audio/timing.json": "[]"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "AttributeError: 'list' object has no attribute 'get'"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "timing-no-lines-key",
+      "description": "Разметка без lines.",
+      "covers": [
+        "lines default []"
+      ],
+      "overlay": {
+        "plan/audio/timing.json": "{}"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "В окне плана нет строк разметки; задайте границы явно через --start и --end.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "timing-line-no-end",
+      "description": "Строка разметки без end.",
+      "covers": [
+        "KeyError hidden"
+      ],
+      "overlay": {
+        "plan/audio/timing.json": "{\"lines\": [{\"id\": 1, \"start\": 0.4}]}"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "timing-line-string",
+      "description": "Строка разметки — строка, а не объект.",
+      "covers": [
+        "TypeError traceback"
+      ],
+      "overlay": {
+        "plan/audio/timing.json": "{\"lines\": [\"x\"]}"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "TypeError: string indices must be integers, not 'str'"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "timing-end-string",
+      "description": "Конец строки разметки — строка.",
+      "covers": [
+        "TypeError compare traceback"
+      ],
+      "overlay": {
+        "plan/audio/timing.json": "{\"lines\": [{\"id\": 1, \"start\": 0.4, \"end\": \"0.5\"}]}"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "TypeError: '>' not supported between instances of 'str' and 'float'"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "timing-nonutf8",
+      "description": "plan/audio/timing.json не в UTF-8: текст UnicodeDecodeError.",
+      "covers": [
+        "UnicodeDecodeError shown"
+      ],
+      "overlay": {
+        "plan/audio/timing.json": {
+          "base64": "eyJsaW5lcyI6ICL/In0="
+        }
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "'utf-8' codec can't decode byte 0x? in position 11: invalid start byte\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "line-values",
+      "description": "Строки с source_line=true, пустой строкой текста, числовой и пустой заметкой, целыми границами и NaN.",
+      "covers": [
+        "bool source_line",
+        "empty text → ?",
+        "note types",
+        "NaN filtered"
+      ],
+      "overlay": {
+        "plan/audio/timing.json": "{\"lines\": [{\"id\": \"a\", \"source_line\": true, \"start\": 0.3, \"end\": 0.4, \"note\": 5}, {\"id\": 2, \"source_line\": 2, \"start\": 0.45, \"end\": 0.5, \"note\": \"\", \"text\": \"старый\"}, {\"id\": 3, \"source_line\": 2.0, \"start\": 0.5, \"end\": 1, \"note\": {\"a\": [1, null]}}, {\"id\": 4, \"start\": NaN, \"end\": 0.6}]}",
+        "source/text.md": "Первая\n\nТретья\n"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--lead",
+            "0",
+            "--tail",
+            "0"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.300–1.000 с (30870 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка True: 0.3–0.4 с — Первая; 5\n  строка 2: 0.45–0.5 с — ?; \n  строка 2.0: 0.5–1 с — ?; {'a': [1, None]}\nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        },
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/j",
+            "--lead",
+            "0",
+            "--tail",
+            "0",
+            "--json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.3,\n    1.0\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 13230,\n  \"end_sample_exclusive\": 44100,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f\",\n    \"bytes\": 123524\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": \"a\",\n      \"source_line\": true,\n      \"text\": \"Первая\",\n      \"start\": 0.3,\n      \"end\": 0.4,\n      \"note\": 5\n    },\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"\",\n      \"start\": 0.45,\n      \"end\": 0.5,\n      \"note\": \"\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 2.0,\n      \"text\": null,\n      \"start\": 0.5,\n      \"end\": 1,\n      \"note\": {\n        \"a\": [\n          1,\n          null\n        ]\n      }\n    }\n  ]\n}\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.3,\n    1.0\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 13230,\n  \"end_sample_exclusive\": 44100,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f\",\n    \"bytes\": 123524\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": \"a\",\n      \"source_line\": true,\n      \"text\": \"Первая\",\n      \"start\": 0.3,\n      \"end\": 0.4,\n      \"note\": 5\n    },\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"\",\n      \"start\": 0.45,\n      \"end\": 0.5,\n      \"note\": \"\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 2.0,\n      \"text\": null,\n      \"start\": 0.5,\n      \"end\": 1,\n      \"note\": {\n        \"a\": [\n          1,\n          null\n        ]\n      }\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f",
+          "bytes": 123524
+        },
+        "plan/j/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.3,\n    1.0\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 13230,\n  \"end_sample_exclusive\": 44100,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f\",\n    \"bytes\": 123524\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": \"a\",\n      \"source_line\": true,\n      \"text\": \"Первая\",\n      \"start\": 0.3,\n      \"end\": 0.4,\n      \"note\": 5\n    },\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"\",\n      \"start\": 0.45,\n      \"end\": 0.5,\n      \"note\": \"\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 2.0,\n      \"text\": null,\n      \"start\": 0.5,\n      \"end\": 1,\n      \"note\": {\n        \"a\": [\n          1,\n          null\n        ]\n      }\n    }\n  ]\n}\n"
+        },
+        "plan/j/speech.wav": {
+          "sha256": "0758685019ee852ac24c55338f6e592c66949fb1c69101edc8e4d8cb3378066f",
+          "bytes": 123524
+        }
+      }
+    },
+    {
+      "name": "text-missing",
+      "description": "Нет source/text.md.",
+      "covers": [
+        "text.md FileNotFoundError hidden"
+      ],
+      "overlay": {},
+      "remove": [
+        "source/text.md"
+      ],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "resample",
+      "description": "Песня 22,05 кГц моно: декодирование с передискретизацией в 44,1 кГц стерео; путь источника нормализуется.",
+      "covers": [
+        "resample",
+        "Path normalization"
+      ],
+      "overlay": {
+        "plan/scenes.json": "{\"schema_version\": 1, \"fps\": 30, \"audio\": {\"path\": \"source/./track-mono.wav\", \"end_seconds\": \"1\"}, \"references\": {\"П\": {\"name\": \"Мира\", \"path\": \"source/heroes/mira.jpg\"}}, \"visual_direction\": \"# Правила\", \"sequences\": [{\"id\": \"s\", \"title\": \"Сцена\", \"direction\": \"направление\"}], \"scenes\": [{\"id\": \"M01\", \"original\": \"M01\", \"sequence\": \"s\", \"title\": \"M01\", \"start_frame\": 0, \"end_frame_exclusive\": 9, \"camera\": \"статика\", \"action\": \"действие\", \"continuity\": \"связь\", \"references\": [\"П\"], \"lipsync\": false, \"card\": {\"primary_reference\": \"П\"}, \"state_from\": null, \"state_changes\": {}}, {\"id\": \"M02\", \"original\": \"M02\", \"sequence\": \"s\", \"title\": \"M02\", \"start_frame\": 9, \"end_frame_exclusive\": 24, \"camera\": \"статика\", \"action\": \"действие\", \"continuity\": \"связь\", \"references\": [\"П\"], \"lipsync\": true, \"card\": {\"primary_reference\": \"П\"}, \"state_from\": null, \"state_changes\": {}}, {\"id\": \"M03\", \"original\": \"M03\", \"sequence\": \"s\", \"title\": \"M03\", \"start_frame\": 24, \"end_frame_exclusive\": 30, \"camera\": \"статика\", \"action\": \"действие\", \"continuity\": \"связь\", \"references\": [\"П\"], \"lipsync\": true, \"card\": {\"primary_reference\": \"П\"}, \"state_from\": null, \"state_changes\": {}}]}"
+      },
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0",
+            "--end",
+            "0.25",
+            "--json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track-mono.wav\",\n    \"sha256\": \"e9370804bbd28eaa1c16683ba9b8fbb59c524e538f8339cc3c172c7846737aba\",\n    \"bytes\": 13274\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.25\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 11025,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"8d20f8228e679f779110791ca421144f68109ed165d4c6be78ce3e9f7a3301e4\",\n    \"bytes\": 44144\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n",
+          "stderr": "",
+          "ffmpegText": true
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track-mono.wav\",\n    \"sha256\": \"e9370804bbd28eaa1c16683ba9b8fbb59c524e538f8339cc3c172c7846737aba\",\n    \"bytes\": 13274\n  },\n  \"source_interval_seconds\": [\n    0.0,\n    0.25\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 0,\n  \"end_sample_exclusive\": 11025,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"8d20f8228e679f779110791ca421144f68109ed165d4c6be78ce3e9f7a3301e4\",\n    \"bytes\": 44144\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "8d20f8228e679f779110791ca421144f68109ed165d4c6be78ce3e9f7a3301e4",
+          "bytes": 44144
+        }
+      }
+    },
+    {
+      "name": "negative-start",
+      "description": "Отрицательное начало: оригинал режет срезом Python с конца PCM (пустой WAV, start_sample < 0); Go отказывает.",
+      "covers": [
+        "negative start (исправлено в Go)"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "-0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез -0.100–0.200 с (13230 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        }
+      ],
+      "goDiffers": "Начало среза не может быть меньше нуля.",
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    -0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": -4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"991cd2a53281fab26a26b23f2b3d7a020e277b83978ea36796679e0952ae7575\",\n    \"bytes\": 44\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "991cd2a53281fab26a26b23f2b3d7a020e277b83978ea36796679e0952ae7575",
+          "bytes": 44
+        }
+      }
+    },
+    {
+      "name": "verify-ok",
+      "description": "Проверка свежего рецепта: SHA и PCM совпадают.",
+      "covers": [
+        "verify match",
+        "pcm_match true"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.100–0.200 с (4410 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json\",\n  \"expected\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"actual\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"match\": true,\n  \"pcm_match\": true\n}\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178",
+          "bytes": 17684
+        }
+      }
+    },
+    {
+      "name": "verify-tampered",
+      "description": "WAV испорчен: пересборка по рецепту совпадает, PCM — нет; код 0.",
+      "covers": [
+        "pcm_match false",
+        "match or pcm"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.100–0.200 с (4410 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        },
+        {
+          "tamper": "plan/batches/M02-attempt-01/audio/speech.wav",
+          "offset": 60
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json\",\n  \"expected\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"actual\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"match\": true,\n  \"pcm_match\": false\n}\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "6e5d4cd02f22c31370befaf2fa91754d31513054d2cbb352183773ad88b7c914",
+          "bytes": 17684
+        }
+      }
+    },
+    {
+      "name": "verify-both-fail",
+      "description": "SHA рецепта изменён и WAV испорчен: код 1.",
+      "covers": [
+        "SystemExit 1"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.100–0.200 с (4410 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        },
+        {
+          "tamper": "plan/batches/M02-attempt-01/audio/speech.wav",
+          "offset": 60
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/audio-recipe.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json"
+          ],
+          "code": 1,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json\",\n  \"expected\": \"0000000000000000000000000000000000000000000000000000000000000000\",\n  \"actual\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"match\": false,\n  \"pcm_match\": false\n}\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "6e5d4cd02f22c31370befaf2fa91754d31513054d2cbb352183773ad88b7c914",
+          "bytes": 17684
+        }
+      }
+    },
+    {
+      "name": "verify-missing-wav",
+      "description": "WAV удалён: pcm_match null; после смены SHA — код 1.",
+      "covers": [
+        "pcm_match null"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.100–0.200 с (4410 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        },
+        {
+          "remove": "plan/batches/M02-attempt-01/audio/speech.wav"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json\",\n  \"expected\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"actual\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"match\": true,\n  \"pcm_match\": null\n}\n",
+          "stderr": ""
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/audio-recipe.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": 5,\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json"
+          ],
+          "code": 1,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json\",\n  \"expected\": 5,\n  \"actual\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"match\": false,\n  \"pcm_match\": null\n}\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": 5,\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        }
+      }
+    },
+    {
+      "name": "verify-header",
+      "description": "WAV переписан другим инструментом (FFmpeg с LIST): SHA не совпадает, PCM совпадает — код 0.",
+      "covers": [
+        "pcm_match по содержимому"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.100–0.200 с (4410 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/speech.wav",
+          "input": "speech-ffmpeg.wav"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/audio-recipe.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"40b50dc2b25e5af7f4c8d90ce16ddcef0fadb57e0f356d2016c31adbd1980636\",\n    \"bytes\": 17718\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json\",\n  \"expected\": \"40b50dc2b25e5af7f4c8d90ce16ddcef0fadb57e0f356d2016c31adbd1980636\",\n  \"actual\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"match\": false,\n  \"pcm_match\": true\n}\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"40b50dc2b25e5af7f4c8d90ce16ddcef0fadb57e0f356d2016c31adbd1980636\",\n    \"bytes\": 17718\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "40b50dc2b25e5af7f4c8d90ce16ddcef0fadb57e0f356d2016c31adbd1980636",
+          "bytes": 17718
+        }
+      }
+    },
+    {
+      "name": "verify-missing-recipe",
+      "description": "Рецепта нет.",
+      "covers": [
+        "recipe FileNotFoundError hidden"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/audio-recipe.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        }
+      ],
+      "files": {}
+    },
+    {
+      "name": "verify-recipe-errors",
+      "description": "Повреждённые рецепты: битый JSON, список, нет ключа, нестроковый путь, нет источника.",
+      "covers": [
+        "JSONDecodeError hidden",
+        "TypeError list",
+        "KeyError hidden",
+        "TypeError path",
+        "decode error"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.100–0.200 с (4410 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/r1.json",
+          "text": "{"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/r1.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/r2.json",
+          "text": "[]"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/r2.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "TypeError: list indices must be integers or slices, not str"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/r3.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/r3.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/r4.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": 7,\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/r4.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "TypeError: unsupported operand type(s) for /: 'PosixPath' and 'int'"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/r5.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/none.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/r5.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Не удалось декодировать песню: [in#0 @ 0x?] Error opening input: No such file or directory\nError opening input file <project>/source/none.flac.\nError opening input files: No such file or directory\n\n",
+          "ffmpegText": true
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/r6.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": 7,\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/r6.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "TypeError: unsupported operand type(s) for /: 'PosixPath' and 'int'"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/r7.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/r7.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "stderr": "Ошибка файлов или аудио; сырой вывод скрыт.\n"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/r8.json",
+          "text": "\"текст\""
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/r8.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "TypeError: string indices must be integers, not 'str'"
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/r1.json": {
+          "text": "{"
+        },
+        "plan/batches/M02-attempt-01/audio/r2.json": {
+          "text": "[]"
+        },
+        "plan/batches/M02-attempt-01/audio/r3.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/r4.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": 7,\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/r5.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/none.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/r6.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": 7,\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/r7.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/r8.json": {
+          "text": "\"текст\""
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178",
+          "bytes": 17684
+        }
+      }
+    },
+    {
+      "name": "verify-recipe-values",
+      "description": "Необычные параметры рецепта: ошибки wave и struct, срезы с отрицательными и огромными индексами, нецелые индексы.",
+      "covers": [
+        "wave.Error",
+        "struct.error",
+        "slice TypeError",
+        "Python slice clamp",
+        "framerate round"
+      ],
+      "overlay": {},
+      "remove": [],
+      "steps": [
+        {
+          "run": [
+            "cut",
+            "M02",
+            "--out",
+            "<project>/plan/batches/M02-attempt-01/audio",
+            "--start",
+            "0.1",
+            "--end",
+            "0.2"
+          ],
+          "code": 0,
+          "stdout": "M02: окно 0.300–0.800 с; срез 0.100–0.200 с (4410 сэмплов), speech.wav в <project>/plan/batches/M02-attempt-01/audio\n  строка 2: 0.35–0.5 с — Вторая строка; сверка на слух не выполнена\n  строка 3: 0.55–0.75 с — Третья строка; \n  строка 9: 0.6–0.7 с — ?; \nГраницы строк — оценки разметки; подтвердите их на слух до генерации.\n",
+          "stderr": ""
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w0.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 0,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w0.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "wave.Error: # channels not specified"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w1.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 5,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w1.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "wave.Error: sample width not specified"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w2.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 0,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w2.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "wave.Error: sampling rate not specified"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w3.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": \"x\",\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w3.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "wave.Error: sampling rate not specified"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w4.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 0.4,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w4.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "wave.Error: sampling rate not specified"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w5.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 10000000000.0,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w5.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "struct.error: 'L' format requires 0 <= number <= 4294967295"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w6.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100.0,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w6.json"
+          ],
+          "code": 0,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/w6.json\",\n  \"expected\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"actual\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"match\": true,\n  \"pcm_match\": true\n}\n",
+          "stderr": ""
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w7.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": NaN,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w7.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "wave.Error: sampling rate not specified"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w8.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 70000,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w8.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "struct.error: 'H' format requires 0 <= number <= 65535"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w9.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": true,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w9.json"
+          ],
+          "code": 1,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/w9.json\",\n  \"expected\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"actual\": \"58b63878ff3d8b2f88a22d9fc1112f2f1aa3803a3dbb4203e4e7c0f74ca764bf\",\n  \"match\": false,\n  \"pcm_match\": false\n}\n",
+          "stderr": ""
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w10.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 1,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w10.json"
+          ],
+          "code": 1,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/w10.json\",\n  \"expected\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"actual\": \"58b63878ff3d8b2f88a22d9fc1112f2f1aa3803a3dbb4203e4e7c0f74ca764bf\",\n  \"match\": false,\n  \"pcm_match\": false\n}\n",
+          "stderr": ""
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w11.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 1.5,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w11.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "TypeError: slice indices must be integers or None or have an __index__ method"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w12.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": null,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w12.json"
+          ],
+          "code": 1,
+          "stdout": "",
+          "traceback": "TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'"
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w13.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": -10,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w13.json"
+          ],
+          "code": 1,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/w13.json\",\n  \"expected\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"actual\": \"991cd2a53281fab26a26b23f2b3d7a020e277b83978ea36796679e0952ae7575\",\n  \"match\": false,\n  \"pcm_match\": false\n}\n",
+          "stderr": ""
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w14.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 1000000000000000000000000000000,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w14.json"
+          ],
+          "code": 1,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/w14.json\",\n  \"expected\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"actual\": \"243890547d42b010493562d7a0398044d82ef07c195f5f6b8e095a1366639868\",\n  \"match\": false,\n  \"pcm_match\": false\n}\n",
+          "stderr": ""
+        },
+        {
+          "write": "plan/batches/M02-attempt-01/audio/w15.json",
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 1,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        {
+          "run": [
+            "verify",
+            "<project>/plan/batches/M02-attempt-01/audio/w15.json"
+          ],
+          "code": 1,
+          "stdout": "{\n  \"recipe\": \"<project>/plan/batches/M02-attempt-01/audio/w15.json\",\n  \"expected\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n  \"actual\": \"0d0615d61804b3b1ea219c245fce4e146ac95aadb098cf27800ede4a601ba851\",\n  \"match\": false,\n  \"pcm_match\": false\n}\n",
+          "stderr": ""
+        }
+      ],
+      "files": {
+        "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/speech.wav": {
+          "sha256": "37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178",
+          "bytes": 17684
+        },
+        "plan/batches/M02-attempt-01/audio/w0.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 0,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w1.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 5,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w10.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 1,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w11.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 1.5,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w12.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": null,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w13.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": -10,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w14.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 1000000000000000000000000000000,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w15.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 1,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w2.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 0,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w3.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": \"x\",\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w4.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 0.4,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w5.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 10000000000.0,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w6.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100.0,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w7.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": NaN,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w8.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 70000,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        },
+        "plan/batches/M02-attempt-01/audio/w9.json": {
+          "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": true,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": 4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"37ecf8825eacdf02ae53262ed6e97a4ab856a79c4ee442c7249ec30f4f2bb178\",\n    \"bytes\": 17684\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
+        }
+      }
+    }
+  ]
+}

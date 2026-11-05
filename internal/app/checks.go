@@ -6,9 +6,9 @@ import (
 	"songframe-go/internal/wire"
 )
 
-// ChecksService реализует перенесённую часть window.api.checks: список проверок, их запуск и
-// пересборку карточек и списков заданиями общего менеджера (internal/checks). Пробы стыков
-// (buildReview, listReviews, removeReview) переносит этап 46; в адаптере renderer они недоступны.
+// ChecksService реализует window.api.checks: список проверок, их запуск, пересборку карточек и
+// списков и пробы стыков (сборка build_review заданием, список и удаление собранных проб)
+// заданиями общего менеджера (internal/checks).
 type ChecksService struct{ checks *checks.Service }
 
 // NewChecksService связывает проверки с менеджером заданий приложения.
@@ -34,4 +34,20 @@ func (s *ChecksService) RunAll(project string, options checks.Options) (jobs.Inf
 // (update_scene_views без --check).
 func (s *ChecksService) UpdateViews(project string) (jobs.Info, error) {
 	return wire.Done(s.checks.UpdateViews(project))
+}
+
+// BuildReview — checks.buildReview(project, options): задание «Проба …» вида review с шагом
+// build_review в новую папку plan/batches/review-<планы>-<время>.
+func (s *ChecksService) BuildReview(project string, options checks.ReviewOptions) (jobs.Info, error) {
+	return wire.Done(s.checks.BuildReview(project, options))
+}
+
+// ListReviews — checks.listReviews(project): собранные пробы plan/batches, новые первыми.
+func (s *ChecksService) ListReviews(project string) ([]checks.ReviewInfo, error) {
+	return wire.Done(checks.ListReviews(project))
+}
+
+// RemoveReview — checks.removeReview(project, path): удалить MP4 найденной пробы и её рецепт.
+func (s *ChecksService) RemoveReview(project, path string) error {
+	return s.checks.RemoveReview(project, path)
 }

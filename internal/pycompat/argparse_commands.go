@@ -8,7 +8,7 @@ import (
 
 // Расширенный разбор аргументов argparse CPython 3.12 для инструментов с подкомандами
 // (add_subparsers(dest=…, required=True)) и опциями, которых нет у ArgParser: обязательные опции
-// (required=True), type=int, action="append" и значения по умолчанию. Классификация строк, префиксы
+// (required=True), type=int и type=float, action="append" и значения по умолчанию. Классификация строк, префиксы
 // длинных опций, «=значение», склейка коротких флагов, порядок ошибок, usage и справка повторяют
 // ArgParser (общие помощники getLines, fill и negativeNumber); отдельный тип не меняет поведение
 // уже перенесённых инструментов.
@@ -40,6 +40,9 @@ type Action struct {
 	Required bool
 	// Int — type=int: значение преобразуется int(строка), ошибка — «invalid int value».
 	Int bool
+	// Float — type=float: значение преобразуется float(строка) (FloatFromString), ошибка —
+	// «invalid float value». Default такой опции задаётся уже числом float64, как в оригинале.
+	Float bool
 	// Default — значение по умолчанию (строка или nil); у append без значения — пустой список.
 	Default any
 }
@@ -398,6 +401,13 @@ func (c *Command) parseKnown(args []string) (Namespace, []string, *ArgExit) {
 			number, ok := ParseIntText(values[0])
 			if !ok {
 				return c.fail("argument " + c.argumentName(index) + ": invalid int value: " + Repr(values[0]))
+			}
+			value = number
+		}
+		if action.Float {
+			number, err := FloatFromString(values[0])
+			if err != nil {
+				return c.fail("argument " + c.argumentName(index) + ": invalid float value: " + Repr(values[0]))
 			}
 			value = number
 		}

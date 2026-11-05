@@ -96,6 +96,7 @@ const (
 	textPackageMissing               = "Пакет не найден."
 	textSubmittedSpeechImmutable     = "Запрос этой попытки уже отправлен: её WAV менять нельзя. Подготовьте новую попытку."
 	textSpeechBoundsInvalid          = "Конец среза должен быть позже начала, границы — неотрицательные секунды."
+	textSpeechWavMissing             = "WAV речи не появился в пакете."
 	textQuoteRequired                = "Сначала откройте запрос и подтвердите актуальную стоимость."
 	textQuoteMaterialsChanged        = "Показанные материалы изменились: требуется новое подтверждение."
 	textQuoteExpired                 = "Стоимость, остаток или материалы изменились. Откройте подтверждение заново; отправка не выполнялась."
@@ -145,7 +146,7 @@ const (
 	// textSavedRequestRequired и textMediaProviderChanged — productionTexts.main.access.
 	textSavedRequestRequired = "В пакете нет сохранённого запроса."
 	textMediaProviderChanged = "Провайдер медиа изменился. Подготовьте новый запрос для выбранного провайдера."
-	// TextNotMigrated — часть метода требует медиаконвейера, который переносит этап 46.
+	// TextNotMigrated — метод ещё не перенесён (пакет для монтажёра — шаг 46c).
 	TextNotMigrated = "Действие ещё не перенесено в Go-версию SongFrame: нужен медиаконвейер этапа 46."
 )
 
@@ -236,6 +237,9 @@ func textAskFailed(code *int) string {
 }
 func textParkFailed(code *int) string {
 	return "shot_workflow park завершился с кодом " + codeText(code)
+}
+func textCutSpeechFailed(code *int) string {
+	return "cut_speech завершился с кодом " + codeText(code)
 }
 func textUnfinishedAttemptBlocksRemoval(status string) string {
 	return "В папке есть попытка в состоянии «" + status + "»: удалять её без результата нельзя."

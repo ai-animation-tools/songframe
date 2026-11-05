@@ -33,7 +33,7 @@ export function PackageResult({
   onReopenQuestion?(): void;
 }): ReactElement {
   const originalVideo = useRef<HTMLVideoElement>(null);
-  // Отличие от 634fd94 на время миграции: сводка кадров ждёт медиаконвейера Go, кнопка объясняет причину.
+  // Отличие от 634fd94 на время миграции: если адаптер Go отмечает сводку недоступной, кнопка объясняет причину.
   const summary = useMethodAvailability('production.contactSheet');
   const pending = pkg.pendingDecision;
   const image = pkg.request?.kind === 'image';

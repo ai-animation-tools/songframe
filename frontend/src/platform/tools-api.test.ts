@@ -35,6 +35,7 @@ function bindings(tools: Record<string, unknown>): Bindings {
     media: missing,
     production: missing,
     dashboard: missing,
+    animatic: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }

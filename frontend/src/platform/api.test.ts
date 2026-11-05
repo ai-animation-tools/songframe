@@ -6,7 +6,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppState } from '@shared/types';
 import { platformTexts } from '@shared/texts/platform';
-import { ApiError, createApi, methodAvailability, undefinedPaths, withDeadline, type Bindings } from './api';
+import { ApiError, createApi, methodAvailability, undefinedPaths, withDeadline, type ApiMethod, type Bindings } from './api';
+import { unavailableApi } from './unavailable-api';
 
 const state: AppState = { packaged: true, problems: [], toolsRoot: null, localDir: '/isolated/profile', current: null, history: [], platform: 'linux' };
 
@@ -51,6 +52,8 @@ function bindings(
     production: missing,
     dashboard: missing,
     animatic: overrides.animatic ? service(overrides.animatic) : missing,
+    montage: missing,
+    montageWindow: missing,
     events: async () => ({ on: overrides.on ?? (() => () => undefined) })
   } as Bindings;
   return b;
@@ -83,7 +86,11 @@ describe('Граница window.api', () => {
   });
 
   it('синхронный неперенесённый метод бросает ApiError, подписка неперенесённой области — пустая отписка', () => {
-    const api = createApi(bindings());
+    // Все синхронные методы и подписки контракта уже перенесены: форму отказа проверяем на самой фабрике.
+    const fail = (method: ApiMethod): never => {
+      throw new ApiError('UNAVAILABLE', method, platformTexts.unavailable);
+    };
+    const api = unavailableApi(async (method) => fail(method), fail);
     expect(() => api.montageWindow.send({ type: 'ready' })).toThrow(ApiError);
     const unsubscribe = api.montageWindow.onClosed(() => undefined);
     expect(typeof unsubscribe).toBe('function');
@@ -157,7 +164,7 @@ describe('Граница window.api', () => {
     expect(methodAvailability('sources.save')).toEqual({ available: true, reason: null });
     expect(methodAvailability('dashboard.view').available).toBe(true);
     expect(methodAvailability('production.contactSheet').available).toBe(true);
-    expect(methodAvailability('montage.view').available).toBe(false);
+    expect(methodAvailability('derivedShots.view').available).toBe(false);
   });
 
   it('передаёт аниматик и пробы стыков в Go без изменения данных', async () => {

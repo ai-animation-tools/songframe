@@ -1,6 +1,8 @@
 import { Events } from '@wailsio/runtime';
 import * as checkService from '../../bindings/songframe-go/internal/app/nativecheckservice';
 import * as native from '../../bindings/songframe-go/internal/app/nativeservice';
+import * as montageWindow from '../../bindings/songframe-go/internal/app/montagewindowservice';
+import type { MontageWindowMessage, MontageWindowState } from '@shared/montage-window';
 import * as projects from '../../bindings/songframe-go/internal/app/projectservice';
 import * as timingService from '../../bindings/songframe-go/internal/app/timingservice';
 
@@ -185,6 +187,79 @@ function eventWait(name: string, session: string): { promise: Promise<void>; can
   return { promise, cancel: () => cancel() };
 }
 
+/**
+ * Настоящее окно плеера монтажа (#/montage-player, window.api.montageWindow): эта страница —
+ * владелец. Плеер сообщает ready, получает монтаж с WAV-дорожкой и MP4-планом (адрес плана строит
+ * синхронный shell.fileUrl второго окна), отвечает trackFrames/metadata, по команде toggle
+ * воспроизводит без жеста пользователя (кадры растут) и при Close владелец получает closed.
+ * Громкость 1 % на время проверки и 100 % перед закрытием: звуковой сервер запоминает громкость
+ * потока (см. withMedia), а физический звук здесь не проверяется.
+ */
+async function montagePlayer(track: MediaInput, video: MediaInput): Promise<string> {
+  const session = `native-check-montage-${Date.now()}`;
+  const separator = Math.max(video.path.lastIndexOf('/'), video.path.lastIndexOf('\\'));
+  const clipPath = video.path.slice(separator + 1);
+  const messages: MontageWindowMessage[] = [];
+  let closed = 0;
+  const stopMessages = Events.On('montage-window:message', (event) => {
+    if (event.data?.session === session) messages.push(event.data.message);
+  });
+  const stopClosed = Events.On('montage-window:closed', (event) => {
+    if (event.data === session) closed++;
+  });
+  const waitFor = async (what: string, test: () => boolean, milliseconds = 9000) => {
+    const until = performance.now() + milliseconds;
+    while (!test()) {
+      if (performance.now() > until) throw new Error(`Не получено: ${what}; сообщения ${JSON.stringify(messages)}`);
+      await delay(30);
+    }
+  };
+  const state = (volume: number): MontageWindowState => ({
+    project: video.path.slice(0, separator),
+    draft: {
+      schema_version: 1,
+      name: 'native-check',
+      audio: { path: track.path, start_frame: 0, end_frame_exclusive: 90 },
+      clips: [{ id: 'clip-1', scene: 'S01', path: clipPath, kind: 'video', source_start_frame: 0, source_end_frame_exclusive: 90, source_frames: null }],
+      base_scenes_sha256: '',
+      base_manifest_sha256: {}
+    },
+    trackUrl: track.url,
+    frame: 0,
+    seekVersion: 1,
+    selectedClipId: null,
+    suspended: false,
+    theme: 'light',
+    loop: false,
+    volume
+  });
+  try {
+    await timed(montageWindow.Open(session));
+    await waitFor('ready от плеера', () => messages.some((message) => message.type === 'ready'));
+    await timed(montageWindow.Send({ type: 'state', state: state(1) }));
+    await waitFor(
+      'trackFrames и metadata плана',
+      () =>
+        messages.some((message) => message.type === 'trackFrames' && message.frames > 0) &&
+        messages.some((message) => message.type === 'metadata' && message.path === clipPath && message.frames > 0)
+    );
+    await timed(montageWindow.Send({ type: 'command', action: 'toggle' }));
+    await waitFor('движение кадров после toggle', () => messages.some((message) => message.type === 'frame' && message.frame >= 5));
+    await timed(montageWindow.Send({ type: 'command', action: 'toggle' }));
+    await delay(150);
+    await timed(montageWindow.Send({ type: 'state', state: state(100) }));
+    await delay(250);
+    await timed(montageWindow.Close(session));
+    await waitFor('montage-window:closed', () => closed > 0);
+    const frames = messages.filter((message) => message.type === 'frame').map((message) => message.frame);
+    return JSON.stringify({ messages: messages.length, maxFrame: Math.max(...frames), closed, userGesture: false, sound: 'не проверялся' });
+  } finally {
+    stopMessages();
+    stopClosed();
+    await timed(montageWindow.Close(session));
+  }
+}
+
 /** Запускается только страницей /native-check в явно включённом CLI-режиме.
  * Каждый сценарий фиксирует собственный результат; сбой одного кодека не скрывает остальные.
  * Физический звук и нажатие системного уведомления этим автоматическим режимом не проверяются.
@@ -275,6 +350,7 @@ export async function runNativeCheck(host: HTMLElement, changed: (checks: Native
         await timed(native.ClosePreview(session));
       }
     });
+    await check('Окно плеера монтажа: сообщения, воспроизведение без жеста и закрытие', () => montagePlayer(file('wav'), file('mp4')));
     if (config.project)
       await check('Notification target: настоящий переход события и unsubscribe/remount', async () => {
         const target = { project: config.project, route: '/project/timing' };

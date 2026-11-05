@@ -19,6 +19,7 @@ import (
 	"songframe-go/internal/mediaadapters"
 	"songframe-go/internal/mediacmd"
 	"songframe-go/internal/mediafile"
+	"songframe-go/internal/montage"
 	"songframe-go/internal/production"
 	"songframe-go/internal/productionworkflow"
 	"songframe-go/internal/project"
@@ -120,6 +121,14 @@ func run() error {
 			log.Print(closeErr)
 		}
 	}
+	// Прерванное применение монтажа (журналы apply_montage) откатывается в текущем проекте и в
+	// проектах истории до открытия окна, как recoverMontageApplications оригинала при запуске.
+	if err := montage.RecoverProjects(profilePath); err != nil {
+		log.Print(err)
+		if closeErr := projects.Close(); closeErr != nil {
+			log.Print(closeErr)
+		}
+	}
 	componentManager, err := components.NewManager(profilePath)
 	if err != nil {
 		return err
@@ -201,7 +210,7 @@ func run() error {
 			return aiAccess.RequireAccess(ctx, &project, agents.KindVideo)
 		},
 	})
-	// Медиаинструменты (accept_shot, build_animatic, build_review, cut_speech, contact_sheet) берут
+	// Медиаинструменты (accept_shot, apply_montage, build_animatic, build_review, cut_speech, contact_sheet) берут
 	// FFmpeg/ffprobe из менеджера компонентов, иначе ищут их в PATH.
 	mediacmd.Programs = func() (string, string) {
 		for _, component := range componentManager.State().Components {
@@ -212,6 +221,8 @@ func run() error {
 		return "", ""
 	}
 	service := shell.NewAppService(profile, mediaServer, true, ready)
+	montageWindow := shell.NewMontageWindowService(profilePath)
+	montageService := shell.NewMontageService(jobManager, scenarioWorkflow)
 	files := shell.NewShellService(mediaServer, func(path string) error { return desktop.Browser.OpenFile(path) })
 	services := []application.Service{
 		application.NewService(service), application.NewService(files), application.NewService(projects),
@@ -240,6 +251,10 @@ func run() error {
 		application.NewService(shell.NewProductionWorkflowService(productionWorkflow, aiAccess)),
 		application.NewService(shell.NewDashboardService(scenarioWorkflow)),
 		application.NewService(shell.NewAnimaticService(jobManager, scenarioWorkflow)),
+		// Второе окно плеера монтажа: одно окно у одного владельца, положение — в каталоге состояния.
+		application.NewService(montageWindow),
+		// Ручной монтаж: черновики, экспорт пробы и применение через apply_montage менеджером заданий.
+		application.NewService(montageService),
 	}
 	var nativeCheck *shell.NativeCheckService
 	windowURL := "/"
@@ -261,13 +276,22 @@ func run() error {
 		Name:        "songframe-go-dev",
 		Description: "SongFrame — разработка новой настольной версии",
 		Linux:       application.LinuxOptions{ApplicationID: shell.AppID, ProgramName: shell.AppID},
-		Windows:     application.WindowsOptions{WebviewUserDataPath: filepath.Join(profilePath, "webview")},
-		Mac:         application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
-		Services:    services,
-		Assets:      application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
+		// Electron по умолчанию разрешал воспроизведение без жеста пользователя (autoplayPolicy
+		// no-user-gesture-required, явно — у окна плеера монтажа): плеер второго окна запускают
+		// кнопкой или клавишей в основном окне. WebView2 делит одно окружение на все окна, поэтому
+		// флаг общий; в WebKitGTK политику получает только окно плеера (internal/app/montage_window_linux.go).
+		Windows: application.WindowsOptions{
+			WebviewUserDataPath:   filepath.Join(profilePath, "webview"),
+			AdditionalBrowserArgs: []string{"--autoplay-policy=no-user-gesture-required"},
+		},
+		Mac:      application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
+		Services: services,
+		Assets:   application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
 	})
 	shell.ConfigureNativeDesktop(native, desktop)
 	shell.ConfigureNativeMedia(native, mediaServer.ContainsURL, mediaServer.AllowFile)
+	shell.ConfigureMontageWindow(montageWindow, desktop)
+	shell.ConfigureMontageDesktop(montageService, desktop)
 	defer shell.ConfigureAgentEvents(agentManager, desktop)()
 	shell.ConfigureEnvironmentEvents(environmentService, desktop)
 	openURL = func(url string) error { return desktop.Browser.OpenURL(url) }

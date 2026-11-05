@@ -111,7 +111,8 @@ func nativeCheckNames(withProject bool) []string {
 	for _, ext := range []string{"wav", "mp3", "mp4", "webm"} {
 		names = append(names, ext+": метаданные, seek и воспроизведение", "HTTP HEAD/Range/416: "+ext)
 	}
-	names = append(names, "WAV: фактический возврат loop", "AudioContext: wav, ненулевая волна", "AudioContext: mp3, ненулевая волна", "Второе нативное окно: loadedmetadata и закрытие")
+	names = append(names, "WAV: фактический возврат loop", "AudioContext: wav, ненулевая волна", "AudioContext: mp3, ненулевая волна", "Второе нативное окно: loadedmetadata и закрытие",
+		"Окно плеера монтажа: сообщения, воспроизведение без жеста и закрытие")
 	if withProject {
 		names = append(names, "Копия проекта: чтение Unicode-пути и таймингов через Go", "Notification target: настоящий переход события и unsubscribe/remount")
 	}

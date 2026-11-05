@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"songframe-go/internal/montage"
 	"songframe-go/internal/project"
 	"songframe-go/internal/scenarioapply"
 	"songframe-go/internal/status"
@@ -27,7 +28,8 @@ type MediaRegistry interface {
 // Запись проекта (создание, переименование, настройки) — в project_edit.go. Сам сервис при открытии
 // пишет в проект только при восстановлении прерванной публикации сценария (scenarioapply): открытие
 // сначала возвращает файлы к согласованному состоянию, и лишь затем проект становится текущим.
-// Recovery публикаций монтажа и производных планов перенесётся вместе с этими областями (этапы 45–46).
+// Прерванная публикация ручного монтажа (internal/montage) откатывается там же, до проверки маркера;
+// recovery производных планов перенесётся вместе с этой областью.
 type ProjectService struct {
 	media    MediaRegistry
 	state    *store.LocalState
@@ -47,6 +49,12 @@ func NewProjectService(media MediaRegistry, localDir string) *ProjectService {
 func (s *ProjectService) Open(path string) (status.ProjectStatus, error) {
 	target, err := filepath.Abs(path)
 	if err != nil {
+		return status.ProjectStatus{}, err
+	}
+	// Прерванная публикация ручного монтажа откатывается до проверки маркера, как projects:open
+	// оригинала; живое применение этого процесса (apply_montage) не трогается. Ошибка (ручная
+	// правка после сбоя, повреждённый резерв) оставляет журнал и не открывает проект.
+	if err := montage.RecoverOpened(target); err != nil {
 		return status.ProjectStatus{}, err
 	}
 	marker := status.ReadMarker(target)

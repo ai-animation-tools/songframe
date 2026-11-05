@@ -36,6 +36,8 @@ function bindings(scenario: Record<string, unknown>, cast: Record<string, unknow
     production: missing,
     dashboard: missing,
     animatic: missing,
+    montage: missing,
+    montageWindow: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }

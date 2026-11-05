@@ -35,6 +35,8 @@ function bindings(cover: Record<string, unknown>, referenceImages: Record<string
     production: missing,
     dashboard: missing,
     animatic: missing,
+    montage: missing,
+    montageWindow: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }

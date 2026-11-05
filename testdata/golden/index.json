@@ -10477,5 +10477,892 @@
       "card_sources",
       "review"
     ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "visible",
+    "description": "Окно на доступном мониторе (тест оригинала).",
+    "covers": [
+      "восстановление"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "right-of-screens",
+    "description": "Окно правее всех экранов (тест оригинала).",
+    "covers": [
+      "пересечение по ширине < 100"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "above-screen",
+    "description": "Верх окна выше экрана (тест оригинала).",
+    "covers": [
+      "y < area.y"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "zero-width",
+    "description": "Нулевая ширина (тест оригинала).",
+    "covers": [
+      "width < 480"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "min-size",
+    "description": "Ровно минимальный размер 480×270.",
+    "covers": [
+      "width = 480",
+      "height = 270"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "width-479",
+    "description": "Ширина на единицу меньше минимума.",
+    "covers": [
+      "width < 480"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "height-269",
+    "description": "Высота на единицу меньше минимума.",
+    "covers": [
+      "height < 270"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "overlap-x-100",
+    "description": "По ширине видно ровно 100 точек.",
+    "covers": [
+      "пересечение по ширине = 100"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "overlap-x-99",
+    "description": "По ширине видно 99 точек.",
+    "covers": [
+      "пересечение по ширине < 100"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "overlap-y-100",
+    "description": "По высоте видно ровно 100 точек у нижнего края.",
+    "covers": [
+      "пересечение по высоте = 100",
+      "y < низ − 30"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "overlap-y-99",
+    "description": "По высоте видно 99 точек.",
+    "covers": [
+      "пересечение по высоте < 100"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "top-edge",
+    "description": "Верх окна совпадает с верхом рабочей области.",
+    "covers": [
+      "y = area.y"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "top-minus-one",
+    "description": "Верх окна на точку выше рабочей области, хотя окно почти целиком видно.",
+    "covers": [
+      "y < area.y"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "second-display",
+    "description": "Окно на втором мониторе слева с отрицательным x.",
+    "covers": [
+      "любой из экранов",
+      "отрицательные координаты"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "between-displays",
+    "description": "Окно на стыке двух мониторов.",
+    "covers": [
+      "любой из экранов"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "no-displays",
+    "description": "Список экранов пуст.",
+    "covers": [
+      "displays пуст"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "fractional",
+    "description": "Дробные координаты и размер.",
+    "covers": [
+      "Number.isFinite дробных"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "extra-fields",
+    "description": "Лишние поля рядом с геометрией.",
+    "covers": [
+      "лишние поля"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "string-field",
+    "description": "Координата строкой.",
+    "covers": [
+      "нечисловое поле"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "null-field",
+    "description": "Координата null.",
+    "covers": [
+      "нечисловое поле"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "missing-field",
+    "description": "Нет высоты.",
+    "covers": [
+      "отсутствующее поле"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "empty-object",
+    "description": "Пустой объект.",
+    "covers": [
+      "отсутствующее поле"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "array",
+    "description": "Массив вместо объекта.",
+    "covers": [
+      "массив"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "null",
+    "description": "null вместо объекта.",
+    "covers": [
+      "!saved"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "number",
+    "description": "Число вместо объекта.",
+    "covers": [
+      "typeof !== object"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "boolean",
+    "description": "true вместо объекта.",
+    "covers": [
+      "typeof !== object"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "huge-number",
+    "description": "Число вне double: JSON.parse даёт Infinity.",
+    "covers": [
+      "не конечное число"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "broken-json",
+    "description": "Повреждённый JSON.",
+    "covers": [
+      "JSON.parse бросает"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "empty-file",
+    "description": "Пустой файл.",
+    "covers": [
+      "JSON.parse бросает"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "duplicate-key",
+    "description": "Повтор ключа: действует последнее значение.",
+    "covers": [
+      "последний ключ"
+    ]
+  },
+  {
+    "domain": "montage-window-bounds",
+    "name": "whitespace",
+    "description": "Пробелы и перевод строки вокруг JSON.",
+    "covers": [
+      "пробелы"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "help",
+    "description": "Справка argparse.",
+    "covers": [
+      "--help"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "args-missing",
+    "description": "Без --spec и --recover.",
+    "covers": [
+      "required group"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "args-conflict",
+    "description": "--spec вместе с --recover.",
+    "covers": [
+      "not allowed"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "args-unknown",
+    "description": "Неизвестный аргумент.",
+    "covers": [
+      "unrecognized"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "args-spec-value",
+    "description": "--spec без значения.",
+    "covers": [
+      "expected one argument"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "recover-clean",
+    "description": "--recover без журналов.",
+    "covers": [
+      "recover",
+      "status recovered"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "recover-rollback",
+    "description": "--recover откатывает прерванную публикацию по журналу.",
+    "covers": [
+      "restore",
+      "before None",
+      "staging rmtree",
+      "rolled_back"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "recover-committed",
+    "description": "Завершённый журнал не трогается.",
+    "covers": [
+      "state != publishing"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "recover-conflict",
+    "description": "Файл изменён после прерывания: откат остановлен.",
+    "covers": [
+      "После прерывания изменён файл"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "recover-backup-corrupt",
+    "description": "Повреждена резервная копия.",
+    "covers": [
+      "Повреждена резервная копия"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "recover-journal-invalid",
+    "description": "Журнал — не JSON: скрытая ошибка.",
+    "covers": [
+      "JSONDecodeError hidden"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "recover-before-apply",
+    "description": "Apply сначала откатывает прерванную публикацию соседа.",
+    "covers": [
+      "apply recover"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "cut-views",
+    "description": "Участок 5:125 оригинала M02 той же длины с обновлением представлений.",
+    "covers": [
+      "same duration",
+      "update_views",
+      "revision",
+      "previous-manifest"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "boundary",
+    "description": "Перенос стыка M01/M02: оба комплекта и реестр.",
+    "covers": [
+      "boundary",
+      "carried_acceptance"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "boundary-views",
+    "description": "Перенос стыка с обновлением представлений.",
+    "covers": [
+      "boundary",
+      "views"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "boundary-stale",
+    "description": "M02 принят по прежней постановке: статус M02 не переносится.",
+    "covers": [
+      "accepted != before"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "accepted-source-twice",
+    "description": "Срез принятого клипа, дважды подряд.",
+    "covers": [
+      "accepted_edit source",
+      "revision chain"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "source-review",
+    "description": "Производный M02 с source_review: обновляется только accepted_video_sha256.",
+    "covers": [
+      "source_review"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "relative-spec",
+    "description": "Относительный --spec от проекта.",
+    "covers": [
+      "ROOT / spec"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "stale-manifest",
+    "description": "Снимок манифеста устарел.",
+    "covers": [
+      "assert_baseline manifest"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "stale-registry",
+    "description": "Снимок реестра устарел.",
+    "covers": [
+      "assert_baseline registry"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "beyond-source",
+    "description": "Участок 100:220 за концом оригинала M02.",
+    "covers": [
+      "prepare available"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "reversed",
+    "description": "Сцены в обратном порядке.",
+    "covers": [
+      "positions"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "wrong-duration",
+    "description": "Длина участков меньше окна.",
+    "covers": [
+      "sum"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "card",
+    "description": "Вид card.",
+    "covers": [
+      "kind"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "unknown-scene",
+    "description": "Сцена вне реестра.",
+    "covers": [
+      "by_id"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "scene-list",
+    "description": "Код сцены — список: TypeError.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "schema",
+    "description": "Неизвестная схема.",
+    "covers": [
+      "schema_version"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "schema-bool",
+    "description": "schema_version true (== 1 в Python).",
+    "covers": [
+      "True == 1"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "name-missing",
+    "description": "Нет name.",
+    "covers": [
+      "name"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clips-empty",
+    "description": "Пустой список участков.",
+    "covers": [
+      "clips"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "unknown-field",
+    "description": "Лишнее поле черновика.",
+    "covers": [
+      "fields"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "audio-missing",
+    "description": "Нет audio.",
+    "covers": [
+      "audio"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "audio-unknown",
+    "description": "Лишнее поле audio.",
+    "covers": [
+      "audio fields"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "audio-start-float",
+    "description": "Дробное начало музыки.",
+    "covers": [
+      "integer"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "audio-end-zero",
+    "description": "Конец музыки 0.",
+    "covers": [
+      "integer minimum 1"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "audio-path",
+    "description": "Другая песня.",
+    "covers": [
+      "track"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clip-unknown",
+    "description": "Лишнее поле участка.",
+    "covers": [
+      "clip fields"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clip-id",
+    "description": "Нестроковый id участка.",
+    "covers": [
+      "id"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clip-repeat",
+    "description": "Сцена повторяется.",
+    "covers": [
+      "ids"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clip-bool",
+    "description": "Логическое начало участка.",
+    "covers": [
+      "integer bool"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clip-empty",
+    "description": "Конец не больше начала.",
+    "covers": [
+      "last <= first"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clip-absolute",
+    "description": "Абсолютный путь участка.",
+    "covers": [
+      "is_absolute"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clip-dotdot",
+    "description": "Путь с ...",
+    "covers": [
+      ".."
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clip-other-file",
+    "description": "Файл не original и не принятый клип.",
+    "covers": [
+      "allowed"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "clip-neighbour",
+    "description": "Original соседней сцены.",
+    "covers": [
+      "allowed"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "no-package",
+    "description": "Сцена без принятого комплекта.",
+    "covers": [
+      "manifest is_file"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "outer-bounds",
+    "description": "Начало окна не совпадает со сценой.",
+    "covers": [
+      "outer bounds"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "draft-list",
+    "description": "Черновик — список.",
+    "covers": [
+      "isinstance dict"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "draft-invalid",
+    "description": "Черновик — не JSON: скрытая ошибка.",
+    "covers": [
+      "JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "draft-missing",
+    "description": "Нет файла черновика.",
+    "covers": [
+      "OSError"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "package-invalid",
+    "description": "Манифест принятого комплекта повреждён.",
+    "covers": [
+      "validate_package"
+    ]
+  },
+  {
+    "domain": "apply-montage",
+    "name": "registry-missing",
+    "description": "Нет реестра сцен.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "view-base",
+    "description": "Каталог fixture montage.test.ts: сцены, источники, карточка, нет разметки.",
+    "covers": [
+      "scenes title",
+      "sources original/accepted",
+      "originalFrames duration",
+      "card fallback",
+      "lyricTimingMissing"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "view-lyrics",
+    "description": "Строки песни на абсолютной оси и причины недоступности разметки.",
+    "covers": [
+      "lyricLines",
+      "lyricTrackChanged",
+      "lyricTimingInvalid",
+      "lyricTimingEmpty",
+      "unreadable timing"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "view-scenario",
+    "description": "Отсутствующий, пустой и неверный сценарий останавливают каталог до материалов.",
+    "covers": [
+      "missing",
+      "empty",
+      "invalid",
+      "requiredForWork"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "view-materials",
+    "description": "Повреждённые манифесты, длины оригинала, пути source, отсутствующие файлы и материалы без видео.",
+    "covers": [
+      "readFailed",
+      "originalFrames rate/nb_frames",
+      "root source",
+      "projectFileMissing",
+      "sceneMediaMissing",
+      "sequence title",
+      "original fallback"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "view-attempts",
+    "description": "Скачанные оригиналы рабочих пакетов и очереди: downloads, original-N.mp4, изображения и ошибки.",
+    "covers": [
+      "attempt",
+      "downloads",
+      "original-N",
+      "kind image",
+      "workflowLabel",
+      "requestLabel",
+      "attemptLabel",
+      "awaiting"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "save-load",
+    "description": "Сохранение незавершённого черновика, перезапись, список и чтение.",
+    "covers": [
+      "save",
+      "load",
+      "saved list",
+      "invalidDraftId",
+      "readFailed draft",
+      "draftReadFailed",
+      "non-UUID files"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "save-order",
+    "description": "Список сохранённых сортируется по времени изменения, новые первыми.",
+    "covers": [
+      "saved sort"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "save-stale",
+    "description": "Устаревший черновик открывается и сохраняется после изменения комплекта и переноса исходника.",
+    "covers": [
+      "stale manifest",
+      "checkFiles=false previous",
+      "relocated"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "validate",
+    "description": "Отказы проверки черновика при сохранении: структура, снимок, пути, кадры, повторы, длины.",
+    "covers": [
+      "invalidDraft",
+      "snapshotMissing",
+      "invalidManifestSnapshot",
+      "relativePathRequired",
+      "invalidProjectPath",
+      "projectFileMissing",
+      "invalidAudioBounds",
+      "duplicateClip",
+      "unknownClipKind",
+      "invalidClipBounds",
+      "invalidSourceLength",
+      "invalidCardStart",
+      "sourceBoundsExceeded"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "export",
+    "description": "Экспорт пробы: проверки полного черновика, рецепт build_review и задание review.",
+    "covers": [
+      "export",
+      "review-spec",
+      "montage.json",
+      "lengthMismatch",
+      "sceneMissing",
+      "audioChanged",
+      "audioBoundsExceeded",
+      "card clip",
+      "attempt clip"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "apply",
+    "description": "Применение: снимки реестра и манифестов, рецепт apply-manual и задание apply_montage.",
+    "covers": [
+      "apply",
+      "registryChanged",
+      "manifestsChanged",
+      "unselected change"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "video",
+    "description": "Путь готовой пробы и копия в выбранный MP4.",
+    "covers": [
+      "exportVideoMissing",
+      "exportRecipeMissing",
+      "exportUnconfirmed",
+      "copy",
+      ".mp4 suffix",
+      "exportDestinationInvalid"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "recover",
+    "description": "Восстановление прерванной публикации журнала montage-history и повторный запуск.",
+    "covers": [
+      "rollback",
+      "before null",
+      "staging",
+      "rolled_back",
+      "idempotent"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "recover-conflict",
+    "description": "Последующая ручная правка останавливает откат до первой записи.",
+    "covers": [
+      "recoveryFileChanged"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "recover-backup",
+    "description": "Повреждённый резерв останавливает откат.",
+    "covers": [
+      "recoveryBackupCorrupt"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "recover-backup-missing",
+    "description": "Отсутствующий резерв: исключение чтения.",
+    "covers": [
+      "ENOENT"
+    ]
+  },
+  {
+    "domain": "montage",
+    "name": "recover-journal",
+    "description": "Неизвестные журналы: схема, id, путь, SHA, повтор, файлы не массив; пропуск не publishing и чужих имён.",
+    "covers": [
+      "unknownJournal",
+      "state skip",
+      "name filter"
+    ]
   }
 ]

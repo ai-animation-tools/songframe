@@ -90,11 +90,21 @@ func PendingJournals(project string) []string {
 			}
 			var state string
 			if err != nil || json.Unmarshal(journal["state"], &state) != nil || state == "" {
-				problems = append(problems, fmt.Sprintf("Не удалось проверить журнал plan/%s/%s/journal.json. Откройте исходный проект в прежнем приложении для проверки восстановления.", kind, entry.Name()))
+				problems = append(problems, fmt.Sprintf("Не удалось проверить журнал plan/%s/%s/journal.json. %s", kind, entry.Name(), recoveryHint(kind, "Откройте проект заново для проверки восстановления.", "Откройте исходный проект в прежнем приложении для проверки восстановления.")))
 			} else if state == "publishing" {
-				problems = append(problems, fmt.Sprintf("Незавершённая публикация plan/%s/%s: просмотр заблокирован до восстановления в прежнем приложении.", kind, entry.Name()))
+				problems = append(problems, fmt.Sprintf("Незавершённая публикация plan/%s/%s: просмотр заблокирован до восстановления %s.", kind, entry.Name(), recoveryHint(kind, "при открытии проекта", "в прежнем приложении")))
 			}
 		}
 	}
 	return problems
+}
+
+// recoveryHint — где восстанавливается журнал вида kind: журналы ручного монтажа откатывает
+// montage.RecoverOpened при открытии проекта (этап 46b), производные планы переносит этап 46c,
+// до него их восстанавливает прежнее приложение.
+func recoveryHint(kind, ported, legacy string) string {
+	if kind == "montage-history" {
+		return ported
+	}
+	return legacy
 }

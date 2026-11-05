@@ -46,6 +46,8 @@ import type * as productionworkflow from '../../bindings/songframe-go/internal/p
 import type { ProductionFramePrompt, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
+import type { MontageWindowEvent } from '@shared/montage-window';
+import type { MontageDraft, MontageView } from '@shared/montage';
 import type * as mediaapi from '../../bindings/songframe-go/internal/mediaapi/models';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from '@shared/media-providers';
 import { componentTexts } from '@shared/texts/component-manager';
@@ -149,6 +151,8 @@ export interface Bindings {
   production: () => Promise<typeof import('../../bindings/songframe-go/internal/app/productionservice')>;
   dashboard: () => Promise<typeof import('../../bindings/songframe-go/internal/app/dashboardservice')>;
   animatic: () => Promise<typeof import('../../bindings/songframe-go/internal/app/animaticservice')>;
+  montage: () => Promise<typeof import('../../bindings/songframe-go/internal/app/montageservice')>;
+  montageWindow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/montagewindowservice')>;
   events: EventSource;
 }
 
@@ -177,6 +181,8 @@ export const nativeBindings: Bindings = {
   production: () => import('../../bindings/songframe-go/internal/app/productionservice'),
   dashboard: () => import('../../bindings/songframe-go/internal/app/dashboardservice'),
   animatic: () => import('../../bindings/songframe-go/internal/app/animaticservice'),
+  montage: () => import('../../bindings/songframe-go/internal/app/montageservice'),
+  montageWindow: () => import('../../bindings/songframe-go/internal/app/montagewindowservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
     return { on: Events.On };
@@ -330,7 +336,20 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'animatic.setStatus',
   'checks.buildReview',
   'checks.listReviews',
-  'checks.removeReview'
+  'checks.removeReview',
+  // Ручной монтаж: черновики, экспорт пробы, применение apply_montage (MontageService).
+  'montage.view',
+  'montage.load',
+  'montage.save',
+  'montage.export',
+  'montage.apply',
+  'montage.saveVideo',
+  // Второе окно плеера монтажа (MontageWindowService).
+  'montageWindow.open',
+  'montageWindow.close',
+  'montageWindow.send',
+  'montageWindow.onMessage',
+  'montageWindow.onClosed'
 ]);
 
 /** Доступность принадлежит адаптеру, поэтому UI не повторяет собственный список готовых Go-операций. */
@@ -537,10 +556,29 @@ export function createApi(b: Bindings): Api {
   };
   const api = unavailableApi(async (method) => fail(method), fail);
   let fileBase: string | null = null;
+  let fileBaseLoad: Promise<void> | null = null;
+  /**
+   * Базовый адрес файлов читается один раз; одновременные вызовы ждут общий запрос, а ошибка
+   * не запоминается — следующий вызов повторит чтение.
+   */
+  const loadFileBase = (): Promise<void> => {
+    if (fileBase !== null) return Promise.resolve();
+    fileBaseLoad ??= (async () => {
+      fileBase = await (await b.shell()).FileBase();
+    })().finally(() => {
+      fileBaseLoad = null;
+    });
+    return fileBaseLoad;
+  };
+  /**
+   * Сообщения окна плеера уходят в Go строго по очереди: вызовы binding Wails выполняются
+   * параллельно, а ipcRenderer.send оригинала сохранял порядок (state после state, frame после frame).
+   */
+  let montageQueue: Promise<void> = Promise.resolve();
 
   api.app.state = () =>
     call('app.state', async () => {
-      if (fileBase === null) fileBase = await (await b.shell()).FileBase();
+      await loadFileBase();
       const state = await (await b.app()).State();
       // Платформа — закрытый набор значений Go (runtime.GOOS, Windows → win32); тип строки не сужается генератором.
       return { ...state, platform: state.platform as AppState['platform'] } satisfies AppState;
@@ -557,6 +595,34 @@ export function createApi(b: Bindings): Api {
   };
   api.shell.onFilesDropped = (listener) =>
     subscribe<{ targetID: string; paths: string[] }>(b.events, 'native:files-dropped', (drop) => listener({ targetId: drop.targetID, paths: drop.paths }));
+
+  api.montageWindow.open = (session) => call('montageWindow.open', async () => (await b.montageWindow()).Open(session));
+  api.montageWindow.close = (session) => call('montageWindow.close', async () => (await b.montageWindow()).Close(session));
+  // send контракта синхронный: ошибка доставки не возвращается вызывающему, а уходит в журнал.
+  api.montageWindow.send = (message) => {
+    montageQueue = montageQueue
+      .then(() => call('montageWindow.send', async () => (await b.montageWindow()).Send(message)))
+      .catch((error: unknown) => console.error(error));
+  };
+  /**
+   * Окно плеера не проходит app.state (оно вне AppProvider), а его плеер строит адреса кадров
+   * синхронным shell.fileUrl. Поэтому сообщения доставляются после загрузки базового адреса
+   * файлов — в порядке прихода, и ни одно не приходит после отписки.
+   */
+  api.montageWindow.onMessage = (listener) => {
+    let active = true;
+    const base = loadFileBase().catch((error: unknown) => console.error(error));
+    const stop = subscribe<MontageWindowEvent>(b.events, 'montage-window:message', (event) => {
+      void base.then(() => {
+        if (active) listener(event);
+      });
+    });
+    return () => {
+      active = false;
+      stop();
+    };
+  };
+  api.montageWindow.onClosed = (listener) => subscribe<string>(b.events, 'montage-window:closed', listener);
 
   api.diagnostics.reportRendererError = (report) => {
     void call('diagnostics.reportRendererError', async () => (await b.native()).ReportRendererError(report)).catch((error: unknown) => console.error(error));
@@ -652,6 +718,22 @@ export function createApi(b: Bindings): Api {
   api.animatic.build = (project, planOnly) => call('animatic.build', async () => toJob(await (await b.animatic()).Build(project, planOnly ?? false)));
   api.animatic.setStatus = (project, status) =>
     call('animatic.setStatus', async () => (await (await b.animatic()).SetStatus(project, status)) as AnimaticView, false);
+
+  // Ручной монтаж. Черновик Go принимает и отдаёт сырым JSON (проверяет его сам, как
+  // normalizeMontageDraft оригинала), поэтому адаптер только сужает типы. Экспорт и применение
+  // лишь ставят задание; выбор файла пробы ждёт пользователя и идёт без срока оболочки.
+  api.montage = {
+    view: (project) => call('montage.view', async () => (await (await b.montage()).View(project)) as unknown as MontageView),
+    load: (project, id) => call('montage.load', async () => (await (await b.montage()).Load(project, id)) as unknown as MontageDraft),
+    save: (project, draft, id) => call('montage.save', async () => (await b.montage()).Save(project, draft, id ?? null), false),
+    export: (project, draft) =>
+      call('montage.export', async () => {
+        const { job, video } = await (await b.montage()).Export(project, draft);
+        return { job: toJob(job), video };
+      }),
+    apply: (project, draft) => call('montage.apply', async () => toJob(await (await b.montage()).Apply(project, draft))),
+    saveVideo: (project, video) => call('montage.saveVideo', async () => (await b.montage()).SaveVideo(project, video), false)
+  };
 
   // Сценарный проход агента. Go отдаёт статусы, проход и документы предложения строками и JSON
   // оригинала; адаптер только сужает типы. Записывающие действия ждут Go без срока оболочки:

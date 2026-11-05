@@ -13,6 +13,8 @@ import * as DashboardService from "./dashboardservice.js";
 import * as EnvironmentService from "./environmentservice.js";
 import * as JobsService from "./jobsservice.js";
 import * as MediaService from "./mediaservice.js";
+import * as MontageService from "./montageservice.js";
+import * as MontageWindowService from "./montagewindowservice.js";
 import * as NativeCheckService from "./nativecheckservice.js";
 import * as NativeService from "./nativeservice.js";
 import * as ProductionService from "./productionservice.js";
@@ -39,6 +41,8 @@ export {
     EnvironmentService,
     JobsService,
     MediaService,
+    MontageService,
+    MontageWindowService,
     NativeCheckService,
     NativeService,
     ProductionService,

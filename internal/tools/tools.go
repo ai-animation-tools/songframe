@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"songframe-go/internal/acceptshot"
+	"songframe-go/internal/applymontage"
 	"songframe-go/internal/buildanimatic"
 	"songframe-go/internal/buildreview"
 	"songframe-go/internal/checkassets"
@@ -107,6 +108,7 @@ var contextual = map[string]contextTool{
 	"cost_check":      withLocalDir(costcheck.Run),
 	"regenerate_shot": withLocalDir(regenerateshot.Run),
 	"accept_shot":     withLocalDir(acceptshot.Run),
+	"apply_montage":   applymontage.Run,
 	"build_animatic":  buildanimatic.Run,
 	"build_review":    buildreview.Run,
 	"contact_sheet":   contactsheet.Run,

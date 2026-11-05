@@ -24,6 +24,7 @@ import (
 	"songframe-go/internal/productionworkflow"
 	"songframe-go/internal/project"
 	"songframe-go/internal/providers"
+	"songframe-go/internal/providers/agentexec"
 	"songframe-go/internal/scenarioapply"
 	"songframe-go/internal/scenarioworkflow"
 	"songframe-go/internal/store"
@@ -109,6 +110,15 @@ func run() error {
 			log.Print(closeErr)
 		}
 	}
+	// Прерванное применение предложения производства (замена рабочего пакета) возвращается к
+	// резерву до открытия окна, как recoverInterruptedProductionApplies оригинала: сбой так же
+	// снимает текущий проект, а журнал остаётся для разбора.
+	if err := productionworkflow.RecoverInterrupted(profilePath); err != nil {
+		log.Print(err)
+		if closeErr := projects.Close(); closeErr != nil {
+			log.Print(closeErr)
+		}
+	}
 	componentManager, err := components.NewManager(profilePath)
 	if err != nil {
 		return err
@@ -136,8 +146,12 @@ func run() error {
 	// профиля, адрес авторизации открывает браузер ОС (OpenURL задаётся после создания GUI).
 	mediaadapters.StateDir = func() (string, error) { return profilePath, nil }
 	var openURL func(url string) error
+	// Опоры провайдера-агента: рабочие папки заданий в каталоге состояния, запуск программы
+	// провайдера менеджером агентов, сбор кандидатов — проходом производства.
+	keyframeImages := &productionworkflow.KeyframeImages{LocalDir: profilePath, Agents: agentManager, ValidateImage: mediafile.Decodes}
 	providerLayer := providers.NewLayer(providers.Options{
-		Paid: providers.PaidOptions{ValidateImage: mediafile.Decodes},
+		Paid:   providers.PaidOptions{ValidateImage: mediafile.Decodes},
+		Agents: agentexec.Deps{Images: keyframeImages},
 		OpenURL: func(url string) error {
 			if openURL == nil {
 				return nil
@@ -171,12 +185,20 @@ func run() error {
 	// что у настроек, и занятость пакета производственной операцией. Сценарий утверждён, когда
 	// утверждена трактовка и сцены не требуют проверки (isScenarioApproved из ipc.ts оригинала).
 	productionWorkflow := productionworkflow.New(productionworkflow.Options{
-		LocalDir: profilePath, Agents: agentManager, Catalog: providerLayer.Catalogs(),
+		LocalDir: profilePath, Agents: agentManager, Catalog: providerLayer.Catalogs(), Media: providerLayer,
 		IsScenarioApproved: func(project string) bool {
 			view, err := scenarioWorkflow.View(project)
 			return err == nil && view.TreatmentApproved && !view.ScenesNeedReview
 		},
 		IsPackageBusy: productionService.IsBusy,
+		// Apply запроса готовит request-NN платным адаптером видео слоя провайдеров после
+		// ai.requireAccess(project, 'video') — prepareVideoRequest из ipc.ts оригинала.
+		VideoMedia: func(provider string) (*providers.PaidMedia, bool) {
+			return providerLayer.PaidMedia(provider, agents.KindVideo)
+		},
+		RequireVideoAccess: func(ctx context.Context, project string) error {
+			return aiAccess.RequireAccess(ctx, &project, agents.KindVideo)
+		},
 	})
 	// Приёмка (accept_shot) берёт FFmpeg/ffprobe из менеджера компонентов, иначе ищет их в PATH.
 	acceptshot.Programs = func() (string, string) {

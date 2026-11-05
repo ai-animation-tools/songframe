@@ -15278,8 +15278,8 @@
             }
           },
           "local": {
-            "M02.json": "a3868eaa8296e327c2a44c90719fadbdffe5b6c44f28024d8ac934dddc431ca1",
-            "M01.json": "b43ae794323bb16be9163af9261fe59b667d1a6ad5208c90e2056ba91a07ca08"
+            "M01.json": "b43ae794323bb16be9163af9261fe59b667d1a6ad5208c90e2056ba91a07ca08",
+            "M02.json": "a3868eaa8296e327c2a44c90719fadbdffe5b6c44f28024d8ac934dddc431ca1"
           },
           "starts": [
             {
@@ -16288,8 +16288,57 @@
           "shot": "M04",
           "packageDir": "plan/batches/M04-attempt-01",
           "id": "current",
-          "error": "Предложение недоступно для отклонения; выполняющееся задание сначала отмените.",
-          "local": "unchanged"
+          "result": {
+            "project": "<project>",
+            "shot": "M04",
+            "packageDir": "<project>/plan/batches/M04-attempt-01",
+            "busy": false,
+            "stage": "keyframes_review",
+            "reasons": {
+              "prepare": null,
+              "continue": null,
+              "frames": "опоры уже приняты"
+            },
+            "derivedFrom": null,
+            "canPrepare": true,
+            "canContinue": true,
+            "canRevise": true,
+            "canGenerateFrames": false,
+            "paid": false,
+            "imageProvider": "test-agent",
+            "videoProvider": "test",
+            "framePrompts": [
+              {
+                "id": "K01",
+                "role": "first",
+                "timeSeconds": 0,
+                "prompt": "Лодка у берега",
+                "referencePaths": [
+                  "source/vehicles/boat.png"
+                ]
+              },
+              {
+                "id": "K02",
+                "role": "last",
+                "timeSeconds": 9,
+                "prompt": "Лодка у пристани",
+                "referencePaths": [
+                  "source/vehicles/boat.png"
+                ]
+              }
+            ],
+            "nextFrame": null,
+            "approvedFrameIds": [
+              "K01",
+              "K02"
+            ],
+            "problems": [],
+            "proposal": null,
+            "job": null
+          },
+          "local": {
+            "M04.json": "8c357a03c82ace7b4c560984185f09f270ff455de5ed9942a91e6df8a6770f05"
+          }
         },
         {
           "op": "write",
@@ -18353,8 +18402,8 @@
           ],
           "local": {
             "M01.json": "9d34ff2aa606175f1c8460326f16bc497a77e151610ebf184f22e3973c4abe5c",
-            "M03.json": "2e8c771f3241b30e80f3b229a694902062fe87a3a9b884c3fa8bfb08907f18a7",
             "broken.json": "080a9ed428559ef602668b4c00f114f1a11c3f6b02a435f0bdc154578e4d7f22",
+            "M03.json": "2e8c771f3241b30e80f3b229a694902062fe87a3a9b884c3fa8bfb08907f18a7",
             "M02.json": "1496c1602acfe87a03095eaf0f25b29f92847b40ac0c98dc7d66a49c3c2ef019",
             "foreign.json": "40858fab70f47471b778ac2f2751754175edf8f0639e34bef18233d83e3d230e"
           }
@@ -18372,8 +18421,8 @@
           },
           "local": {
             "M01.json": "9d34ff2aa606175f1c8460326f16bc497a77e151610ebf184f22e3973c4abe5c",
-            "M03.json": "2e8c771f3241b30e80f3b229a694902062fe87a3a9b884c3fa8bfb08907f18a7",
             "broken.json": "080a9ed428559ef602668b4c00f114f1a11c3f6b02a435f0bdc154578e4d7f22",
+            "M03.json": "2e8c771f3241b30e80f3b229a694902062fe87a3a9b884c3fa8bfb08907f18a7",
             "M02.json": "1496c1602acfe87a03095eaf0f25b29f92847b40ac0c98dc7d66a49c3c2ef019",
             "foreign.json": "40858fab70f47471b778ac2f2751754175edf8f0639e34bef18233d83e3d230e",
             "x-request.json": "fe990672aa3bcff35e0938854d762e99b6433359e7ea441d16051ed0de4615d2"

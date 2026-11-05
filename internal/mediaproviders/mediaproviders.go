@@ -30,6 +30,11 @@ type Info struct {
 	// DefaultImageResolution — defaults.image.resolution реестра: разрешение обложки и референса,
 	// если модель объявляет параметр, а проект его не задал; "" — значения по умолчанию нет.
 	DefaultImageResolution string
+	// DefaultImageAspectRatio и DefaultImageOutputs — defaults.image.aspect_ratio и .outputs
+	// реестра: пропорции и число результатов платного запроса опоры, если проект их не задал;
+	// "" и 0 — значения по умолчанию нет.
+	DefaultImageAspectRatio string
+	DefaultImageOutputs     int
 	// LipSync — допустимая длина звукового входа липсинка в секундах; nil — провайдер не
 	// синхронизирует губы с заданным звуком (речевой план для него недоступен).
 	LipSync *LipSync
@@ -46,7 +51,7 @@ var (
 	// ids — порядок MEDIA_PROVIDER_IDS; providers — записи по id.
 	ids       = []string{"kling", "codex"}
 	providers = map[string]Info{
-		"kling": {Title: "Kling", Kinds: []string{Image, Video}, Paid: true, DefaultImageResolution: "2k", LipSync: &LipSync{Min: 5, Max: 30}},
+		"kling": {Title: "Kling", Kinds: []string{Image, Video}, Paid: true, DefaultImageResolution: "2k", DefaultImageAspectRatio: "16:9", DefaultImageOutputs: 1, LipSync: &LipSync{Min: 5, Max: 30}},
 		"codex": {Title: "Codex", Kinds: []string{Image}, Executor: "codex"},
 	}
 )

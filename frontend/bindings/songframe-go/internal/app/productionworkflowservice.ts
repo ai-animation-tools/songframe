@@ -5,9 +5,9 @@
  * ProductionWorkflowService реализует группу window.api.productionWorkflow: проход агента
  * производства одного плана — вид панели подготовки, запуск подготовки описания, видеопромпта или
  * запроса, отклонение предложения. Состояние — записи предложений в каталоге состояния и задания
- * менеджера агентов внутри productionworkflow.Workflow; файлы проекта проход не меняет. Apply,
- * generateFrames и importFrames зарегистрированы, но до этапов 45g.2 и 45g.3 отказывают текстом
- * «не перенесено».
+ * менеджера агентов внутри productionworkflow.Workflow; файлы пакета меняет Apply (под журналом
+ * замены пакета). Создание следующей опоры и импорт своих опор (generateFrames, importFrames)
+ * готовят предложение опор; платная опора готовит запрос и вопрос согласования в пакете.
  * @module
  */
 
@@ -20,7 +20,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as productionworkflow$0 from "../productionworkflow/models.js";
 
 /**
- * Apply — productionWorkflow.apply: применение готового предложения (этап 45g.2).
+ * Apply — productionWorkflow.apply: применение готового актуального предложения к пакету. Как в
+ * ipc.ts оригинала, доступ к агенту здесь не проверяется: ответ уже получен; доступ к провайдеру
+ * видео проверяется внутри при подготовке запроса.
  */
 export function Apply(project: string, shot: string, packageDir: string, id: string): $CancellablePromise<productionworkflow$0.View> {
     return $Call.ByID(861844771, project, shot, packageDir, id);
@@ -34,14 +36,18 @@ export function Discard(project: string, shot: string, packageDir: string, id: s
 }
 
 /**
- * GenerateFrames — productionWorkflow.generateFrames: следующая опора плана (этап 45g.3).
+ * GenerateFrames — productionWorkflow.generateFrames: как в ipc.ts оригинала, сначала
+ * ai.requireAccess(project, 'image') — выбранный провайдер изображений, его программа-агент или
+ * вход в платного провайдера, затем следующая опора плана. Проверка выбора внутри генерации
+ * оригинала (assertAiSelection) повторяла эту же и здесь не выполняется второй раз.
  */
 export function GenerateFrames(project: string, shot: string, packageDir: string): $CancellablePromise<productionworkflow$0.View> {
     return $Call.ByID(616152424, project, shot, packageDir);
 }
 
 /**
- * ImportFrames — productionWorkflow.importFrames: свои изображения опор (этап 45g.3).
+ * ImportFrames — productionWorkflow.importFrames: свои изображения опор; проверку «настоящие
+ * изображения» маршрута оригинала выполняет сам проход. Доступ к ИИ не нужен.
  */
 export function ImportFrames(project: string, shot: string, packageDir: string, images: productionworkflow$0.FrameCandidate[]): $CancellablePromise<productionworkflow$0.View> {
     return $Call.ByID(3681883518, project, shot, packageDir, images);

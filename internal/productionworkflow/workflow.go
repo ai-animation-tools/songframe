@@ -3,15 +3,18 @@
 // 634fd94): один план и один пакет проходят подготовку предложений описания, видеопромпта и
 // запроса; проект меняется только отдельным Apply.
 //
-// Перенесены вид плана (View), запуск подготовки (Start), отклонение (Discard), сводка
+// Перенесены вид плана (View), запуск подготовки (Start), отклонение (Discard), применение
+// предложения к пакету (Apply, apply.go) под журналом замены пакета с восстановлением прерванного
+// применения при старте (journal.go), создание и импорт опор (frames.go: задание
+// провайдера-агента — keyframes.go, платный запрос одной опоры — frame_request.go), сводка
 // непринятых предложений для списка «Производства» (PendingProposals) и занятость плана (Busy).
-// Apply, генерация и импорт опор зарегистрированы, но пока отказывают текстом «не перенесено»
-// (apply.go, frames.go); общие части для них экспортированы: чтение контекста плана (context.go),
-// записи предложений (store.go), снимок входов (snapshot.go), проверка ответа (proposal.go) и
-// распознавание оплаты пакета (paid.go).
+// Общие части: чтение контекста плана (context.go), записи предложений (store.go), снимок входов
+// (snapshot.go), проверка ответа (proposal.go) и распознавание оплаты пакета (paid.go).
 //
 // Владение: локальные записи предложений и множество «готовится» принадлежат Workflow; задания
-// агента — менеджеру агентов (Agents); файлы проекта этот проход не пишет.
+// агента — менеджеру агентов (Agents), рабочие папки заданий опор — KeyframeImages. Файлы
+// проекта пишет Apply; исключение — платная опора: папку запроса пакета создаёт
+// media_request prepare, вопрос согласования в workflow.json — shot_workflow set-image-request.
 package productionworkflow
 
 import (
@@ -29,6 +32,7 @@ import (
 	"songframe-go/internal/agents"
 	"songframe-go/internal/derivedshot"
 	"songframe-go/internal/jscompat"
+	"songframe-go/internal/mediafile"
 	"songframe-go/internal/mediaproviders"
 	"songframe-go/internal/providers"
 	"songframe-go/internal/tools"
@@ -68,9 +72,18 @@ type Options struct {
 	IsScenarioApproved func(project string) bool
 	// IsPackageBusy — над пакетом идёт производственная операция (production.Service.IsBusy).
 	IsPackageBusy func(project, packageDir string) bool
-	// CollectImages — опоры, созданные заданием провайдера-агента (45g.3); nil — такие
-	// предложения не разбираются.
-	CollectImages func(job agents.Job) ([]FrameCandidate, error)
+	// Media — слой провайдеров медиа для опор: исполнитель провайдера-агента и платный адаптер
+	// изображений. nil — опоры не создаются и задания опор не разбираются.
+	Media MediaLayer
+	// ValidateImage — проверка изображения декодированием (nativeImage оригинала) для референсов
+	// платной опоры и импортируемых файлов; nil — mediafile.Decodes.
+	ValidateImage func(path string) bool
+	// VideoMedia — платный адаптер видео провайдера проекта для подготовки request-NN при Apply
+	// запроса; nil — подготовка невозможна (textChooseVideoProvider).
+	VideoMedia VideoMedia
+	// RequireVideoAccess — ai.requireAccess(project, 'video') перед подготовкой запроса: выбранный
+	// провайдер и вход в него; nil — без проверки (тесты).
+	RequireVideoAccess func(ctx context.Context, project string) error
 }
 
 // Workflow — ProductionWorkflow. Методы безопасны для конкурентного вызова из сервисов Wails:
@@ -96,6 +109,9 @@ func New(options Options) *Workflow {
 	}
 	if options.IsScenarioApproved == nil {
 		options.IsScenarioApproved = func(string) bool { return false }
+	}
+	if options.ValidateImage == nil {
+		options.ValidateImage = mediafile.Decodes
 	}
 	return &Workflow{options: options, store: Store{LocalDir: options.LocalDir}, busy: map[string]bool{}}
 }
@@ -436,10 +452,7 @@ func (w *Workflow) refresh(c *Context, stored *Stored) (*agents.Job, error) {
 func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 	raw := job.Result
 	if stored.ImageJob() {
-		if w.options.CollectImages == nil {
-			return errors.New(textFramesNotMigrated)
-		}
-		images, err := w.options.CollectImages(job)
+		images, err := w.collectImages(job)
 		if err != nil {
 			return err
 		}
@@ -800,6 +813,10 @@ func proposalTree(id, jobID, stage, before string) *jscompat.Object {
 // Discard — discard оригинала: отклоняет готовое, недопустимое или завершённое ошибкой
 // предложение плана. Запись заменяется отметкой discarded; история задания агента сохраняется.
 // Выполняющееся и применённое предложение не отклоняются.
+//
+// Отличие от 634fd94: задание могло завершиться после последнего показа плана, а запись ещё
+// хранит running — перед проверкой статус обновляется (refresh). Оригинал в этом случае
+// отказывал, хотя предложение уже готово.
 func (w *Workflow) Discard(project, shot, packageDir, id string) (View, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -808,6 +825,11 @@ func (w *Workflow) Discard(project, shot, packageDir, id string) (View, error) {
 		return View{}, err
 	}
 	stored := w.store.Read(c.Project, shot)
+	if stored != nil && stored.ID() == id && stored.PackageDir() == c.PackageDir {
+		if _, err := w.refresh(c, stored); err != nil {
+			return View{}, err
+		}
+	}
 	if stored == nil || stored.ID() != id || stored.PackageDir() != c.PackageDir || stored.Status() == "running" || stored.Status() == "applied" {
 		return View{}, errors.New(textDiscardUnavailable)
 	}

@@ -1,12 +1,11 @@
 /**
- * Адаптер группы productionWorkflow: view, start и discard перенесены в Go, apply (45g.2),
- * generateFrames и importFrames (45g.3) остаются недоступными с причиной платформы. Документы
+ * Адаптер группы productionWorkflow: все методы (view, start, apply, discard, generateFrames,
+ * importFrames) перенесены в Go. Документы
  * пакета и предложения проходят через json.RawMessage без изменений. Bindings подменяются
  * целиком: Wails runtime и Go не запускаются.
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { ProductionWorkflowStart } from '@shared/production-workflow';
-import { platformTexts } from '@shared/texts/platform';
 import { createApi, methodAvailability, type Bindings } from './api';
 
 function bindings(productionWorkflow: Record<string, unknown>): Bindings {
@@ -65,11 +64,16 @@ const view = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe('window.api.productionWorkflow', () => {
-  it('перенесены вид, запуск и отклонение; применение и опоры недоступны с причиной', () => {
-    for (const method of ['productionWorkflow.view', 'productionWorkflow.start', 'productionWorkflow.discard'] as const)
+  it('перенесены все методы прохода производства', () => {
+    for (const method of [
+      'productionWorkflow.view',
+      'productionWorkflow.start',
+      'productionWorkflow.apply',
+      'productionWorkflow.discard',
+      'productionWorkflow.generateFrames',
+      'productionWorkflow.importFrames'
+    ] as const)
       expect(methodAvailability(method)).toEqual({ available: true, reason: null });
-    for (const method of ['productionWorkflow.apply', 'productionWorkflow.generateFrames', 'productionWorkflow.importFrames'] as const)
-      expect(methodAvailability(method)).toEqual({ available: false, reason: platformTexts.unavailable });
   });
 
   it('передаёт документы как есть, а провайдеров — только при наличии', async () => {
@@ -85,13 +89,41 @@ describe('window.api.productionWorkflow', () => {
   });
 
   it('вызывает методы Go с теми же аргументами; пакет undefined — пустая строка', async () => {
-    const methods = { Start: vi.fn(async () => view()), Discard: vi.fn(async () => view()) };
+    const methods = { Start: vi.fn(async () => view()), Apply: vi.fn(async () => view()), Discard: vi.fn(async () => view()) };
     const api = createApi(bindings(methods));
     const input: ProductionWorkflowStart = { project: '/клип', shot: 'M01', packageDir: '/клип/plan/batches/M01-attempt-01', action: 'revise', note: 'Ветер' };
     await api.productionWorkflow.start(input);
+    await api.productionWorkflow.apply('/клип', 'M01', undefined, 'p');
+    await api.productionWorkflow.apply('/клип', 'M01', '/клип/plan/batches/M01-attempt-01', 'q');
     await api.productionWorkflow.discard('/клип', 'M01', undefined, 'p');
     expect(methods.Start).toHaveBeenCalledWith(input);
+    expect(methods.Apply).toHaveBeenNthCalledWith(1, '/клип', 'M01', '', 'p');
+    expect(methods.Apply).toHaveBeenNthCalledWith(2, '/клип', 'M01', '/клип/plan/batches/M01-attempt-01', 'q');
     expect(methods.Discard).toHaveBeenCalledWith('/клип', 'M01', '', 'p');
+  });
+
+  it('создание и импорт опор передают пакет и кандидатов как есть', async () => {
+    const methods = { GenerateFrames: vi.fn(async () => view()), ImportFrames: vi.fn(async () => view()) };
+    const api = createApi(bindings(methods));
+    const images = [{ id: 'K01', path: '/кадры/K01.png' }];
+    await api.productionWorkflow.generateFrames('/клип', 'M01', '/клип/plan/batches/M01-attempt-01');
+    await api.productionWorkflow.importFrames('/клип', 'M01', '/клип/plan/batches/M01-attempt-01', images);
+    expect(methods.GenerateFrames).toHaveBeenCalledWith('/клип', 'M01', '/клип/plan/batches/M01-attempt-01');
+    expect(methods.ImportFrames).toHaveBeenCalledWith('/клип', 'M01', '/клип/plan/batches/M01-attempt-01', images);
+  });
+
+  it('создание опоры ждёт Go без срока оболочки: платная опора ждёт каталог и подготовку запроса', async () => {
+    vi.useFakeTimers();
+    try {
+      let finish: (value: ReturnType<typeof view>) => void = () => undefined;
+      const api = createApi(bindings({ GenerateFrames: () => new Promise((resolve) => (finish = resolve)) }));
+      const generating = api.productionWorkflow.generateFrames('/клип', 'M01', '/клип/plan/batches/M01-attempt-01');
+      await vi.advanceTimersByTimeAsync(40_000);
+      finish(view());
+      await expect(generating).resolves.toMatchObject({ shot: 'M01' });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('показывает отказ Go-сервиса его текстом', async () => {
@@ -103,15 +135,21 @@ describe('window.api.productionWorkflow', () => {
     });
   });
 
-  it('запуск ждёт Go без срока оболочки: врезки и каталог моделей идут до 35 с', async () => {
+  it('запуск и применение ждут Go без срока оболочки: врезки, каталог моделей и подготовка запроса', async () => {
     vi.useFakeTimers();
     try {
       let finish: (value: ReturnType<typeof view>) => void = () => undefined;
-      const api = createApi(bindings({ Start: () => new Promise((resolve) => (finish = resolve)) }));
+      let applied: (value: ReturnType<typeof view>) => void = () => undefined;
+      const api = createApi(
+        bindings({ Start: () => new Promise((resolve) => (finish = resolve)), Apply: () => new Promise((resolve) => (applied = resolve)) })
+      );
       const starting = api.productionWorkflow.start({ project: '/клип', shot: 'M01', action: 'prepare' });
+      const applying = api.productionWorkflow.apply('/клип', 'M01', undefined, 'p');
       await vi.advanceTimersByTimeAsync(40_000);
       finish(view());
+      applied(view({ shot: 'M02' }));
       await expect(starting).resolves.toMatchObject({ shot: 'M01' });
+      await expect(applying).resolves.toMatchObject({ shot: 'M02' });
     } finally {
       vi.useRealTimers();
     }

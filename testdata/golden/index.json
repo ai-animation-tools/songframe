@@ -8498,5 +8498,222 @@
       "скрытие предложения производного плана",
       "requireAccess agent"
     ]
+  },
+  {
+    "domain": "production-frames",
+    "name": "agent-generate",
+    "description": "Провайдер-агент создаёт K01: задание, рабочая папка, занятость, готовое предложение, повторы, перезапуск, устаревание и отклонение.",
+    "covers": [
+      "generateFrames: задание провайдера-агента",
+      "KeyframeImages.start: копии референсов и job.json",
+      "busy",
+      "сбор после завершения",
+      "resolveProposalFirst",
+      "restart",
+      "stale по imageHashes"
+    ]
+  },
+  {
+    "domain": "production-frames",
+    "name": "agent-approved-notes",
+    "description": "Следующая опора после утверждённой K01: утверждённая опора — референс согласованности, действующие замечания — исправления.",
+    "covers": [
+      "approvedFrames",
+      "notes: frame и following, снятые пропускаются",
+      "nextFrame K02",
+      "промпт с абзацами",
+      "rules.framePrompts — одна опора"
+    ]
+  },
+  {
+    "domain": "production-frames",
+    "name": "agent-collect-errors",
+    "description": "Неверные результаты программы-агента: не JSON, контракт, записи, пути, ссылки, копии входов, формат, неполный набор, сбой задания, изменённые входы и запись задания.",
+    "covers": [
+      "fileListMissing (исправлено: ответ не JSON)",
+      "resultContractInvalid",
+      "frameEntryInvalid",
+      "framePathInvalid",
+      "frameImageRequired (исправлено: нет файла)",
+      "frameExtensionMismatch",
+      "framesIncomplete",
+      "jobIncomplete",
+      "referencesChanged",
+      "jobRecordCorrupt",
+      "requestHashCorrupt",
+      "jobRequestMismatch",
+      "workDirectoryUnavailable"
+    ]
+  },
+  {
+    "domain": "production-frames",
+    "name": "agent-refusals",
+    "description": "Отказы до запуска: нет пакета, производный план, занятость, описание не принято, опоры приняты, кандидат ждёт решения, нет провайдера изображений, недоступные референсы и утверждённая опора.",
+    "covers": [
+      "descriptionAndFramePlanRequired",
+      "derivedShotReason",
+      "packageBusy",
+      "allFramesCreated",
+      "acceptFrameFirst",
+      "imageProviderRequired",
+      "точный id провайдера",
+      "референс исполнителя",
+      "approvedFrameUnavailable"
+    ]
+  },
+  {
+    "domain": "production-frames",
+    "name": "paid-generate",
+    "description": "Платный провайдер изображений готовит запрос одной опоры: несовместимая модель, сбой каталога, успешная подготовка с вопросом согласования, этап изображения блокирует следующую опору.",
+    "covers": [
+      "prepareImageRequest",
+      "frameImageRequest: параметры по умолчанию",
+      "media_request prepare",
+      "shot_workflow set-image-request",
+      "image-K01-1",
+      "busy снят после подготовки"
+    ]
+  },
+  {
+    "domain": "production-frames",
+    "name": "paid-options",
+    "description": "Параметры платной опоры: серия, логотип, явные настройки и модель, замечания в промпте, опора без референсов во второй попытке, и недоступный референс.",
+    "covers": [
+      "seriesUnsupported",
+      "enforced watermark",
+      "resolution/aspect_ratio проекта",
+      "синоним resolution",
+      "resolution указан дважды",
+      "preferredModel",
+      "Исправления к прежним вариантам",
+      "text_to_image",
+      "image-K02-2",
+      "referenceUnavailable"
+    ]
+  },
+  {
+    "domain": "production-frames",
+    "name": "import",
+    "description": "Импорт своих опор: проверка маршрута, отказы проверки кандидатов, готовое предложение, повтор, устаревание и импорт после утверждённой опоры.",
+    "covers": [
+      "actualImagesRequired",
+      "frameImageRequired",
+      "порядок и повторы",
+      "расширение не проверяется",
+      "ready без задания",
+      "imageHashes",
+      "stale",
+      "открытые опоры"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "apply-description",
+    "description": "Применение описания: новый пакет attempt-01 через shot_workflow, запись applied, повтор и чужой ID отклоняются.",
+    "covers": [
+      "apply description: init, description.md, plan-keyframes с --middle, keyframe-prompts.json, workflow.json, set-stage, ask",
+      "applied",
+      "view после apply",
+      "повторное применение",
+      "applyUnavailable"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "apply-chain",
+    "description": "Полный проход: описание, свои опоры, видеопромпт, запрос request-01 и после доработки request-02 без изменения прежнего.",
+    "covers": [
+      "apply frames: propose и вопрос о первом кандидате",
+      "apply prompt",
+      "apply request: prepareVideoRequest, замена модели, request-NN",
+      "revise запроса → request-02",
+      "без -request.json в каталоге состояния"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "apply-revise-description",
+    "description": "Доработка описания пакета с утверждёнными опорами: перестановка ключей сохраняет K01, изменённая K02 сбрасывается.",
+    "covers": [
+      "isDeepStrictEqual опор без учёта порядка ключей",
+      "approved_frames",
+      "description_approved=false",
+      "scene_sha256",
+      "тот же пакет без init"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "apply-refusals",
+    "description": "Отказы Apply: устаревший снимок, занятость, неготовые статусы, нет результата агента, сценарий не утверждён, изменённые кандидаты, сбой согласования с откатом.",
+    "covers": [
+      "stale → applyUnavailable",
+      "busy",
+      "cancelled/invalid",
+      "agentResultMissing",
+      "scenarioApprovalStale",
+      "imageHashes",
+      "откат нового пакета и прежнего пакета",
+      "предложение остаётся ready"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "apply-paid-retry",
+    "description": "Доработка оплаченного пакета создаёт новый attempt-02 с retry_of; оплаченный пакет не меняется.",
+    "covers": [
+      "revise платного пакета",
+      "init --retry-of",
+      "платный оригинал не тронут"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "crash-description",
+    "description": "Обрыв процесса на каждой границе записи при создании нового пакета: восстановление при старте убирает частичный пакет, предложение применяется заново.",
+    "covers": [
+      "pending.json v2 без пакета",
+      "recover: existed=false",
+      "обрыв после последнего инструмента откатывается",
+      "повторное восстановление без журналов",
+      "previousApplyUnrecovered"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "crash-existing",
+    "description": "Обрыв при видеопромпте и запросе существующего пакета: резерв возвращает прежние байты, новые request-NN убираются.",
+    "covers": [
+      "резерв package/",
+      "recover: existed=true",
+      "обрыв до и после media_request prepare",
+      "повтор после восстановления"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "journal-images",
+    "description": "Журнал замены пакета с платной image-попыткой: успех, ошибка и обрыв не трогают оригиналы; отказы и остановленное восстановление.",
+    "covers": [
+      "protectedImages в pending.json",
+      "removeMutable/copyMutable без image roots",
+      "обрыв после удаления изменяемых файлов: доказательство из резерва",
+      "чужая история, подмена резерва, новая оплата, подмена оригинала",
+      "paidVideoRequiresRetry, resolveImageAttemptFirst, previousApplyUnrecovered, packageFolderRequired"
+    ]
+  },
+  {
+    "domain": "production-workflow-apply",
+    "name": "recover-records",
+    "description": "Записи восстановления: неверная форма, снимок image-попыток, несовпадение пути, отсутствие резерва и проекта, каталоги без pending.json.",
+    "covers": [
+      "recoveryRecordInvalid",
+      "protectedImagesSnapshotInvalid",
+      "recoveryPathMismatch",
+      "backupMissing",
+      "projectUnavailable",
+      "packageFolderRequired журнала",
+      "paidBackupBlocksRecovery"
+    ]
   }
 ]

@@ -3,7 +3,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { STORY_IMAGE_PATH } from '../../../testing/storybook';
 import { commonTexts } from '@shared/texts/common';
-import { platformTexts } from '@shared/texts/platform';
 import { productionTexts } from '@shared/texts/production';
 import { PANEL_SAVED_NOTE, WorkflowPanelStory, workflowPanelOptions } from '../../../testing/workflowPanelStories';
 import { WORKFLOW_STORY_DESCRIPTION, WORKFLOW_STORY_PROJECT, WORKFLOW_STORY_PACKAGE } from '../../../testing/productionWorkflowStories';
@@ -320,39 +319,6 @@ export const SingleFrame: Story = {
     await waitFor(() => expect(dialog.getByRole('button', { name: proposalLabels.apply })).toBeEnabled(), { timeout: 4000 });
     await expect(dialog.getByText(proposalLabels.candidate({ id: 'K02' }))).toBeInTheDocument();
     await expect(counts(context)).toHaveTextContent('Запусков: 1. Применений: 0.');
-  }
-};
-
-export const ApplyNotMigrated: Story = {
-  name: 'Применение не перенесено · кнопка объясняет причину, отклонение доступно',
-  tags: ['ci'],
-  parameters: { songframe: { ...workflowPanelOptions('ready'), unavailable: ['productionWorkflow.apply'] } },
-  play: async (context) => {
-    const dialog = await openProposal(context);
-    await expect(dialog.getByText(WORKFLOW_STORY_DESCRIPTION)).toBeInTheDocument();
-    const apply = dialog.getByRole('button', { name: proposalLabels.apply });
-    await expect(apply).toBeDisabled();
-    await expect(apply).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
-    await expect(dialog.getByRole('button', { name: proposalLabels.discard })).toBeEnabled();
-    await expect(counts(context)).toHaveTextContent('Применений: 0.');
-  }
-};
-
-export const FramesNotMigrated: Story = {
-  name: 'Опоры не перенесены · создание и импорт объясняют причину платформы',
-  tags: ['ci'],
-  parameters: { songframe: { ...workflowPanelOptions('frames'), unavailable: ['productionWorkflow.generateFrames', 'productionWorkflow.importFrames'] } },
-  play: async (context) => {
-    const screen = screenOf(context);
-    const create = await screen.findByRole('button', { name: /Создать K02/ }, { timeout: 4000 });
-    await expect(create).toBeDisabled();
-    await expect(create).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
-    const importLabels = productionTexts.productionFrameImport;
-    await userEvent.click(screen.getByText(importLabels.heading));
-    const choose = screen.getByRole('button', { name: importLabels.choose({ id: 'K02' }) });
-    await expect(choose).toBeDisabled();
-    await expect(choose).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
-    await expect(counts(context)).toHaveTextContent('Запусков: 0.');
   }
 };
 

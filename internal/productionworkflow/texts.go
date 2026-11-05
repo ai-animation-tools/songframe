@@ -102,6 +102,63 @@ const (
 	textImageContainsVideoOrPaidRequ = "Image-попытка содержит видео или вложенную неизвестную оплату."
 )
 
+// Тексты применения предложения (productionTexts.main.workflow) и журнала замены пакета
+// (productionTexts.main.apply).
+const (
+	textScenarioApprovalStale          = "Утверждение сценария устарело."
+	textAgentResultMissing             = "Нет успешного результата агента."
+	textProposalImagesChanged          = "Изображения предложения изменились."
+	textProposalStale                  = "Предложение устарело: изменились материалы или пакет."
+	textWorkflowNotCreated             = "Инструмент не создал workflow.json."
+	textWorkflowFrameInvalid           = "Неверная опора в workflow."
+	textAcceptedFramesChanged          = "Утверждённые опоры изменились."
+	textWorkflowMissing                = "Отсутствует workflow.json."
+	textFrameOrPromptApprovalStale     = "Утверждение опор или промпта устарело."
+	textSpeechInputRequired            = "Речевой план: запрос должен передавать подготовленный WAV из блока «Речь» звуковым входом модели."
+	textApplyPackageFolderRequired     = "Нужен отдельный рабочий пакет внутри plan/batches или plan/awaiting."
+	textImageContainsLink              = "Защищённая image-попытка содержит ссылку вместо локального файла."
+	textImageFileTypeUnknown           = "Защищённая image-попытка содержит неизвестный тип файла."
+	textProtectedImageHistoryChanged   = "История защищённых image-попыток изменилась."
+	textProtectedImageChanged          = "Защищённая image-попытка или её оригиналы изменились; автоматическое восстановление остановлено."
+	textPackageContainsPaidRequest     = "Пакет содержит видео или неизвестную платную попытку; резерв сохранён."
+	textApplyProjectUnavailable        = "Проект недоступен по прежнему пути; резерв сохранён."
+	textApplyBackupMissing             = "Отсутствует резерв рабочего пакета."
+	textApplyPaidBackupBlocksRecovery  = "Резерв содержит платную попытку; автоматическое восстановление остановлено."
+	textApplyPaidVideoRequiresRetry    = "После платной отправки видео или неизвестного запроса нужна новая попытка с retry_of."
+	textApplyResolveImageAttemptFirst  = "Сначала завершите image-попытку и выберите опору."
+	textApplyPreviousUnrecovered       = "Предыдущее применение не восстановлено. Перезапустите приложение."
+	textRecoveryRecordInvalid          = "Неверная запись восстановления."
+	textProtectedImagesSnapshotInvalid = "Неверный снимок защищённых image-попыток."
+	textRecoveryPathMismatch           = "Путь восстановления не совпадает с журналом."
+)
+
+// textToolExitCode — toolExitCode: инструмент завершился без текста ошибки; code nil — null.
+func textToolExitCode(tool string, code *int) string {
+	text := "null"
+	if code != nil {
+		text = jscompat.NumberToString(float64(*code))
+	}
+	return tool + ": код " + text
+}
+
+func textRequestShorterThanSpeech(seconds string) string {
+	return "Речевой план: длительность запроса должна быть не меньше длины WAV (" + seconds + " с)."
+}
+
+// textChooseVideoProvider — applicationTexts.chooseVideoProvider: у проекта не выбран платный
+// провайдер видео.
+func textChooseVideoProvider() string {
+	return "Выберите поддерживаемого провайдера видео: " + providerTitles(mediaproviders.Video) + "."
+}
+
+func textApplyRecoveryFailed(cause, restoreError string) string {
+	return "Применение прервано: " + cause + ". Восстановление не завершено: " + restoreError + ". Резерв сохранён."
+}
+
+func textApplyRecoveryAllFailed(errors string) string {
+	return "Не удалось восстановить применение производства: " + errors
+}
+
 // Подписи «Ждут вашего действия» для непринятого предложения (productionTexts.workflow).
 const (
 	textAttentionStale   = "предложение агента устарело: отклоните его или подготовьте заново"

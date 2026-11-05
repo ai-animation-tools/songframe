@@ -1,5 +1,4 @@
 /** Предложения четырёх этапов и сохранение после явного решения пользователя. */
-import { platformTexts } from '@shared/texts/platform';
 import { productionTexts } from '@shared/texts/production';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
@@ -207,18 +206,6 @@ export const Busy: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('button', { name: 'Применить предложение' })).toBeDisabled();
     await expect(canvas.getByRole('button', { name: 'Отклонить предложение' })).toBeDisabled();
-  }
-};
-export const ApplyNotMigrated: Story = {
-  name: 'Применение не перенесено · кнопка объясняет причину, отклонение доступно',
-  tags: ['ci'],
-  parameters: { songframe: { unavailable: ['productionWorkflow.apply'] } },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const apply = canvas.getByRole('button', { name: 'Применить предложение' });
-    await expect(apply).toBeDisabled();
-    await expect(apply).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
-    await expect(canvas.getByRole('button', { name: 'Отклонить предложение' })).toBeEnabled();
   }
 };
 export const SameText: Story = {

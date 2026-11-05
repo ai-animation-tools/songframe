@@ -13,7 +13,6 @@ import { BUSY_REASON, PRODUCTION_PASS_LABELS, PRODUCTION_PROPOSAL_LABELS } from 
 import { RequestParameters } from './RequestParameters';
 import { Prose } from '../../../components/Prose';
 import { ReadableValue } from '../../../components/ReadableValue';
-import { useMethodAvailability } from '../../../availability';
 
 const FRAME_ROLES: Record<ProductionFramePrompt['role'], string> = productionTexts.inputRoles;
 
@@ -248,8 +247,6 @@ export function ProposalActions({
   onApply(): void;
   onDiscard(): void;
 }): ReactElement | null {
-  // Пока применение не перенесено в Go, кнопка остаётся на месте и объясняет причину платформы.
-  const application = useMethodAvailability('productionWorkflow.apply');
   const ready = proposal.status === 'ready' && !proposal.stale && !!proposal.after;
   if (proposal.status === 'applied' || proposal.status === 'running') return null;
   const applyReason = busy
@@ -260,9 +257,7 @@ export function ProposalActions({
         ? productionTexts.productionProposalPreview.invalidReason
         : !proposal.after
           ? productionTexts.productionProposalPreview.emptyReason
-          : application.available
-            ? null
-            : application.reason;
+          : null;
   return (
     <>
       <DestructiveButton
@@ -279,7 +274,7 @@ export function ProposalActions({
         confirmLabel={productionTexts.productionProposalPreview.applyConfirm}
         startIcon={<CheckIcon />}
         variant="contained"
-        disabled={busy || !ready || !application.available}
+        disabled={busy || !ready}
         disabledReason={applyReason}
         onConfirm={onApply}
       />

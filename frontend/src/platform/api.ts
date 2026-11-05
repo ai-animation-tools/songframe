@@ -310,10 +310,13 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'production.discardAttempt',
   'production.listBundles',
   'production.removeBundle',
-  // Проход агента производства. apply переносит этап 45g.2, generateFrames и importFrames — 45g.3.
+  // Проход агента производства.
   'productionWorkflow.view',
   'productionWorkflow.start',
+  'productionWorkflow.apply',
   'productionWorkflow.discard',
+  'productionWorkflow.generateFrames',
+  'productionWorkflow.importFrames',
   'dashboard.view'
 ]);
 
@@ -808,8 +811,17 @@ export function createApi(b: Bindings): Api {
     call('productionWorkflow.view', async () => productionWorkflow((await b.productionWorkflow()).View(project, shot, packageDir ?? '')));
   api.productionWorkflow.start = (input) =>
     call('productionWorkflow.start', async () => productionWorkflow((await b.productionWorkflow()).Start(input)), false);
+  // apply запускает shot_workflow и для запроса — каталог моделей и media_request prepare, поэтому
+  // тоже без срока ожидания оболочки.
+  api.productionWorkflow.apply = (project, shot, packageDir, id) =>
+    call('productionWorkflow.apply', async () => productionWorkflow((await b.productionWorkflow()).Apply(project, shot, packageDir ?? '', id)), false);
   api.productionWorkflow.discard = (project, shot, packageDir, id) =>
     call('productionWorkflow.discard', async () => productionWorkflow((await b.productionWorkflow()).Discard(project, shot, packageDir ?? '', id)));
+  // Платная опора ждёт каталог моделей и подготовку запроса провайдера, поэтому срока ожидания нет.
+  api.productionWorkflow.generateFrames = (project, shot, packageDir) =>
+    call('productionWorkflow.generateFrames', async () => productionWorkflow((await b.productionWorkflow()).GenerateFrames(project, shot, packageDir)), false);
+  api.productionWorkflow.importFrames = (project, shot, packageDir, images) =>
+    call('productionWorkflow.importFrames', async () => productionWorkflow((await b.productionWorkflow()).ImportFrames(project, shot, packageDir, images)));
   api.dashboard.view = (project) => call('dashboard.view', async () => (await (await b.dashboard()).View(project)) as unknown as DashboardView);
 
   api.notifications.onOpen = (listener) => subscribe<NotificationTarget>(b.events, 'notifications:open', listener);

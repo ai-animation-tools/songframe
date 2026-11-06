@@ -5,7 +5,7 @@ import { Button } from '@mui/material';
 import { describe, expect, it, vi } from 'vitest';
 import type { PackageView } from '@shared/types';
 import { PackageRevisionNotice } from './PackageRevisionNotice';
-import { PackageCard } from './PackageCard';
+import { PackageNotices } from './PackageNotices';
 
 vi.mock('../../../state', () => ({ useApp: () => ({ agentProvider: null, aiAccess: null }) }));
 
@@ -37,13 +37,11 @@ const fixture = (overrides: Partial<PackageView> = {}): PackageView => ({
 const render = (pkg = fixture(), onOpenRevision?: () => void): string => renderToStaticMarkup(createElement(PackageRevisionNotice, { pkg, onOpenRevision }));
 
 describe('Продолжение после возврата пакета', () => {
-  it('показывает сохранённый текст и объясняет ручной запуск доработки приложения', () => {
+  it('показывает сохранённый текст и объясняет запуск доработки на текущем шаге', () => {
     const html = render(fixture(), vi.fn());
-    expect(html).toContain('Пакет возвращён с замечанием');
+    expect(html).toContain('Попытка возвращена с замечанием');
     expect(html).toContain(note);
-    expect(html).toContain('Возврат с замечанием не запускает агента автоматически.');
-    expect(html).toContain('Запуск и результат доработки — в блоке «Подготовка плана».');
-    expect(html).toContain('«Запустить доработку с агентом», если ещё не запускали её.');
+    expect(html).toContain('Если агент ещё не запускался, откройте доработку и запустите её на текущем шаге.');
     expect(html).not.toContain('Доработка не запущена');
     expect(html).toContain('white-space:pre-wrap');
     expect(html).toContain('overflow-wrap:anywhere');
@@ -59,7 +57,7 @@ describe('Продолжение после возврата пакета', () =
     );
     expect(isValidElement<{ children: { props: { onClick(): void; children: string } } }>(actionBox)).toBe(true);
     if (isValidElement<{ children: { props: { onClick(): void; children: string } } }>(actionBox)) {
-      expect(actionBox.props.children.props.children).toBe('Перейти к доработке');
+      expect(actionBox.props.children.props.children).toBe('Открыть доработку');
       actionBox.props.children.props.onClick();
     }
     expect(onOpenRevision).toHaveBeenCalledOnce();
@@ -72,7 +70,7 @@ describe('Продолжение после возврата пакета', () =
 
   it('сохраняет пояснение без необязательного перехода', () => {
     const html = render();
-    expect(html).toContain('«Запустить доработку с агентом»');
+    expect(html).toContain('откройте доработку');
     expect(html).not.toContain('<button');
   });
 
@@ -85,29 +83,9 @@ describe('Продолжение после возврата пакета', () =
   });
 
   it('в карточке показывает сохранённый возврат без дублирования последнего ответа', () => {
-    const html = renderToStaticMarkup(
-      createElement(PackageCard, {
-        pkg: fixture(),
-        note: '',
-        setNote: vi.fn(),
-        busy: false,
-        providers: {},
-        onDecide: vi.fn(),
-        onSubmit: vi.fn(),
-        onAccept: vi.fn(),
-        onContactSheet: vi.fn(),
-        onResume: vi.fn(),
-        onAttachResult: vi.fn(),
-        onNotCreated: vi.fn(),
-        onSelectImage: vi.fn(),
-        onReopenFrame: vi.fn(),
-        onKeepForScene: vi.fn(),
-        onSetKeyframeNote: vi.fn(),
-        onOpenRevision: vi.fn()
-      })
-    );
+    const html = renderToStaticMarkup(createElement(PackageNotices, { pkg: fixture(), busy: false, onKeepForScene: vi.fn(), onOpenRevision: vi.fn() }));
     expect(html).toContain(note);
     expect(html).not.toContain('последний ответ:');
-    expect(html).toContain('Перейти к доработке');
+    expect(html).toContain('Открыть доработку');
   });
 });

@@ -32,19 +32,19 @@ describe('preview производства', () => {
     const html = render(proposal);
     expect(html).toContain('Старый промпт');
     expect(html).toContain('Новый промпт');
-    expect(html).toMatch(/<button(?![^>]* disabled)[^>]*>(?:(?!<\/button>)[\s\S])*Применить предложение<\/button>/);
+    expect(html).toMatch(/<button(?![^>]* disabled)[^>]*>(?:(?!<\/button>)[\s\S])*Принять<\/button>/);
     expect(html).toContain('не принимает опоры');
   });
 
   it('блокирует применение устаревшего предложения', () => {
     const html = render({ ...proposal, stale: true });
-    expect(html).toMatch(/<button[^>]* disabled[^>]*>(?:(?!<\/button>)[\s\S])*Применить предложение<\/button>/);
+    expect(html).toMatch(/<button[^>]* disabled[^>]*>(?:(?!<\/button>)[\s\S])*Принять<\/button>/);
     expect(html).toContain('Подготовьте новое предложение');
   });
 
   it('не даёт применять только завершённый job без проверенного предложения', () => {
     const html = render({ ...proposal, status: 'invalid', after: null });
-    expect(html).toMatch(/<button[^>]* disabled[^>]*>(?:(?!<\/button>)[\s\S])*Применить предложение<\/button>/);
+    expect(html).toMatch(/<button[^>]* disabled[^>]*>(?:(?!<\/button>)[\s\S])*Принять<\/button>/);
   });
 
   it('показывает описание структурно: опоры с ролями и временем, а не JSON', () => {
@@ -63,13 +63,13 @@ describe('preview производства', () => {
         ]
       }
     });
-    expect(html).toContain('В пакете ещё нет описания и плана опор');
+    expect(html).toContain('В попытке ещё нет описания и плана опор');
     expect(html).toContain('Первый кадр');
     expect(html).toContain('Последний кадр');
     expect(html).toContain('4 с от начала плана');
     expect(html).toContain('Референсы: oleg.png');
     expect(html).not.toContain('&quot;requestSeconds&quot;');
-    expect(html).toContain('Сейчас в пакете');
+    expect(html).toContain('Сейчас в попытке');
     expect(html).toContain('Предложение агента');
   });
 
@@ -96,7 +96,7 @@ describe('preview производства', () => {
     expect(render(request('unknown_command'), TEST_PROVIDER)).toContain('unknown_command');
     expect(render(request('image_to_video'))).toContain('image_to_video');
     expect(html).toContain('Первый кадр (Изображение 1): K01.png');
-    expect(html).toContain('Опор в пакете: 2; видеопромпт принят');
+    expect(html).toContain('Опор в попытке: 2; видеопромпт принят');
     expect(html).not.toContain('&quot;model&quot;');
   });
 
@@ -133,6 +133,6 @@ describe('preview производства', () => {
     expect(html).toContain('Причина проверки');
     expect(html).toContain('минимум две опоры');
     expect(html).not.toContain('Предложение ещё не получено');
-    expect(html).toMatch(/<button[^>]* disabled[^>]*>(?:(?!<\/button>)[\s\S])*Применить предложение<\/button>/);
+    expect(html).toMatch(/<button[^>]* disabled[^>]*>(?:(?!<\/button>)[\s\S])*Принять<\/button>/);
   });
 });

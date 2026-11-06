@@ -1,36 +1,31 @@
 import { productionTexts } from '@shared/texts/production';
 import GridViewIcon from '@mui/icons-material/GridView';
-/** Скачанные оригиналы, техническая сводка и действие приёмки результата; изображения открываются в общей галерее. */
+/** Скачанные оригиналы и техническая сводка результата; изображения открываются в общей галерее. */
 import { useRef, useState, type ReactElement } from 'react';
 import { Box, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import type { PackageView } from '@shared/types';
 import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
 import { useMethodAvailability } from '../../../availability';
+import { VideoPlayer } from './VideoPlayer';
 import { VideoReviewPanel } from './VideoReviewPanel';
 
 export function PackageResult({
   pkg,
   busy,
   busyReason = BUSY_REASON,
-  onAccept,
   onContactSheet,
-  onSelectImage,
-  onReopenQuestion
+  onSelectImage
 }: {
   pkg: PackageView;
   busy: boolean;
   /** Почему busy блокирует действия: идёт операция или нет Python. */
   busyReason?: string;
-  onAccept(): void;
   onContactSheet(): void;
   onSelectImage(index: number): void;
-  /** Снова задать вопрос о результате, когда прежний ответ уже записан. */
-  onReopenQuestion?(): void;
 }): ReactElement {
   const originalVideo = useRef<HTMLVideoElement>(null);
   // Отличие от 634fd94 на время миграции: если адаптер Go отмечает сводку недоступной, кнопка объясняет причину.
@@ -92,14 +87,7 @@ export function PackageResult({
                   </ActionButton>
                 </Box>
               ) : (
-                <video
-                  key={path}
-                  ref={index === 0 ? originalVideo : undefined}
-                  controls
-                  preload="metadata"
-                  src={window.api.shell.fileUrl(path)}
-                  style={{ width: 420, maxWidth: '100%', borderRadius: 8, background: '#000' }}
-                />
+                <VideoPlayer key={path} path={path} videoRef={index === 0 ? originalVideo : undefined} />
               )
             )}
           </Box>
@@ -143,18 +131,6 @@ export function PackageResult({
                 if (video) video.currentTime = Math.max(0, Math.min(timeSeconds, Number.isFinite(video.duration) ? video.duration : timeSeconds));
               }}
             />
-          ) : null}
-          {!image && !pending && ['downloaded', 'edit_review'].includes(pkg.stage) ? (
-            <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
-              <ActionButton variant="contained" color="error" startIcon={<CheckCircleIcon />} disabled={busy} disabledReason={busyReason} onClick={onAccept}>
-                {productionTexts.packageResult.accept}
-              </ActionButton>
-              {onReopenQuestion ? (
-                <ActionButton variant="outlined" startIcon={<HelpOutlineIcon />} disabled={busy} disabledReason={busyReason} onClick={onReopenQuestion}>
-                  {productionTexts.packageResult.reopen}
-                </ActionButton>
-              ) : null}
-            </Box>
           ) : null}
         </Box>
       ) : null}

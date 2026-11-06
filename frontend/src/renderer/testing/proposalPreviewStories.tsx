@@ -81,7 +81,7 @@ export function ProposalPreviewStory({ initialProposal, busy = false, failFirst 
   return (
     <Stack spacing={2}>
       <Typography variant="caption" color="text.secondary">
-        Локальная модель: предложение записывается только после подтверждения. Применение не утверждает описание, опоры или видеопромпт.
+        Локальная модель: предложение записывается только кнопкой «Принять». Запись материалов не утверждает описание, опоры или видеопромпт.
       </Typography>
       {notice && !dialog && <Alert severity={notice.error ? 'error' : 'success'}>{notice.text}</Alert>}
       {running && (
@@ -98,6 +98,7 @@ export function ProposalPreviewStory({ initialProposal, busy = false, failFirst 
             busy={locked}
             error={notice?.error ? notice.text : null}
             onApply={() => run('apply')}
+            onRevise={() => Promise.resolve(false)}
             onDiscard={() => run('discard')}
           />
         ) : (

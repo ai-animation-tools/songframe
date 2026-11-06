@@ -179,6 +179,8 @@ export interface Api {
     reopenFrame(project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope): Promise<void>;
     /** Оставить неотправленный пакет в силе для текущей постановки плана: правка сценария не меняет его материалы. */
     keepPackageForScene(project: string, packageDir: string): Promise<void>;
+    /** Необязательное указание к опоре до её создания: записывается как замечание к опорам. */
+    addKeyframeNote(project: string, packageDir: string, frame: string, note: string, noteScope: KeyframeNoteScope): Promise<void>;
     /** Включить или снять замечание к опорам пакета. */
     setKeyframeNote(project: string, packageDir: string, id: number, active: boolean): Promise<void>;
     /** Платная отправка подготовленной попытки пакета; разрешение даёт нажатие кнопки. */

@@ -14,7 +14,7 @@ import { PageActionBar } from '../../components/PageActionBar';
 import type { ProviderAuthStatus, ProviderLogin } from './components/EnvironmentCheckRow';
 
 export function EnvironmentPage(): ReactElement {
-  const { state, refresh, notify, describeError, online } = useApp();
+  const { state, refresh, refreshAiAccess, notify, describeError, online } = useApp();
   const [checks, setChecks] = useState<EnvironmentCheck[] | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,6 +175,8 @@ export function EnvironmentPage(): ReactElement {
       // После любой попытки входа заново узнаём текущий аккаунт, включая отмену и ошибку браузерного входа.
       await authInFlight.current.get(provider);
       await checkAuth(provider);
+      // Доступность ИИ хранится во всём приложении: другие страницы сразу видят новый вход.
+      await refreshAiAccess().catch((reason: unknown) => notify(describeError(reason), 'error'));
     }
   };
 

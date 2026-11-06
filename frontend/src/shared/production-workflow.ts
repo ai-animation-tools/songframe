@@ -56,6 +56,10 @@ export interface ProductionWorkflowView {
   packageDir: string | null;
   busy: boolean;
   stage: string | null;
+  /** Следующий проход агента по попытке: им интерфейс называет следующее действие. */
+  nextStage?: ProductionPass | null;
+  /** Опора открытого вопроса: её кандидата можно заменить своим файлом без замечания. */
+  replaceFrame?: string | null;
   canPrepare: boolean;
   canContinue: boolean;
   canRevise: boolean;

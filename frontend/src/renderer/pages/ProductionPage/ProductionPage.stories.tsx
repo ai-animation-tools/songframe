@@ -1,13 +1,16 @@
-/** Целая страница «Производство»: настоящий опрос, выбор плана и пакета, якоря и переходы ответов на локальной модели API. */
+/** Целая страница «Производство»: настоящий опрос, выбор плана и попытки, путь плана, якоря и переходы ответов на локальной модели API. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { expectImplicitCloseBlocked } from '../../testing/dialogStories';
+import { testProviderInfo } from '@shared/testing/media-provider';
 import { commonTexts } from '@shared/texts/common';
+import { navigationTexts } from '@shared/texts/navigation';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import { productionTexts } from '@shared/texts/production';
 import type { ShotProduction } from '@shared/types';
 import { ANCHORS } from '../../components/linkTargets';
 import { keyframePackage } from '../../testing/keyframeStories';
+import { STORY_VIDEO_PATH } from '../../testing/storybook';
 import { preparedPackage, queuedPackage } from '../../testing/productionQueueStories';
 import { receivingPackage, receivedPackage } from '../../testing/resultStories';
 import {
@@ -22,13 +25,15 @@ import {
   type ProductionPageModelOptions
 } from '../../testing/productionPageStories';
 import { PYTHON_REASON } from './constants';
+import { attemptLabel } from './planPath';
 
 const texts = productionTexts;
+const steps = texts.planPath;
 const POLL_TIMEOUT = { timeout: 6000 };
 
 /** Небольшой проект: план в работе с вопросом об опоре, производный, запланированный, устаревший и принятые. */
 function baseShots(main: Partial<ShotProduction> = {}): ShotProduction[] {
-  const waiting = keyframePackage({ keyframeNotes: [] });
+  const waiting = keyframePackage({ keyframeNotes: [], description: 'Герой останавливается у ворот и смотрит на свет в окне.' });
   return [
     pageShot('M01', { title: 'Подъезд к даче', start: 0, end: 6 }),
     pageShot('M02', {
@@ -75,16 +80,40 @@ const shotHeading = (context: Context, id: string) => screenOf(context).findByRo
 const pageReady = (context: Context) => screenOf(context).findByRole('heading', { name: texts.productionToolbar.heading }, POLL_TIMEOUT);
 const readCount = (context: Context) => Number(/Чтений: (\d+)/.exec(counts(context).textContent ?? '')?.[1]);
 const selectedCard = (context: Context) => context.canvasElement.ownerDocument.querySelector<HTMLElement>('[aria-current="true"]');
+const attemptSelect = (context: Context) => screenOf(context).getByRole('combobox', { name: new RegExp(texts.productionPage.packageLabel) });
+const attemptName = (relative: string, stage: string) => texts.productionPage.queuedPrefix({ queued: false, relative, stage });
+/** Шаг пути: разметка Stepper не задаёт ему роль, поэтому шаг ищется по служебному признаку. */
+const planStep = (context: Context, key: string) => context.canvasElement.ownerDocument.querySelector<HTMLElement>(`[data-plan-step="${key}"]`)!;
+/** Меню редких действий плана; пункты появляются в отдельном слое поверх страницы. */
+async function openMenu(context: Context) {
+  await userEvent.click(screenOf(context).getByRole('button', { name: steps.moreActions }));
+  return within(await screenOf(context).findByRole('menu'));
+}
 
 export const Overview: Story = {
-  name: 'Обзор · план с вопросом выбран автоматически',
+  tags: ['ci'],
+  name: 'Обзор · план с вопросом выбран и открыт автоматически',
   play: async (context) => {
+    const screen = screenOf(context);
     await shotHeading(context, 'M02');
     await expect(selectedCard(context)).toHaveTextContent('M02');
-    // Единственный пакет открывается сам; панель подготовки и вопрос об опоре видны без ручного выбора.
-    await expect(await screenOf(context).findByText('Утвердить опору K02?')).toBeInTheDocument();
+    // Единственная попытка открывается сама; вопрос об опоре виден без ручного выбора.
+    await expect(await screen.findByText('Утвердить опору K02?')).toBeInTheDocument();
+    await expect(attemptSelect(context)).toHaveTextContent(attemptName(attemptLabel(keyframePackage()), 'Опоры на согласовании'));
+    await expect(await screen.findByText(steps.now({ text: steps.frameQuestion({ frame: 'K02' }) }))).toBeInTheDocument();
     await expect(context.canvasElement.ownerDocument.querySelector(`[data-anchor="${ANCHORS.productionWorkflow}"]`)).not.toBeNull();
     await expect(route(context)).toHaveTextContent(/^\/project\/production$/);
+    // Текущий шаг открыт, будущий приглушён и не нажимается, пройденный открывается только для чтения.
+    await expect(within(planStep(context, 'frames')).getByText('Утвердить опору K02?')).toBeInTheDocument();
+    await expect(within(planStep(context, 'prompt')).getByText(steps.after.prompt)).toBeInTheDocument();
+    await expect(within(planStep(context, 'prompt')).queryByRole('button')).not.toBeInTheDocument();
+    const description = within(planStep(context, 'description'));
+    await expect(description.queryByText(/Герой останавливается у ворот/)).not.toBeInTheDocument();
+    await userEvent.click(description.getByRole('button', { name: new RegExp(steps.titles.description) }));
+    await expect(await description.findByText(/Герой останавливается у ворот/)).toBeInTheDocument();
+    await expect(description.queryByRole('button', { name: texts.productionWorkflowPanel.prepare })).not.toBeInTheDocument();
+    await userEvent.click(description.getByRole('button', { name: new RegExp(steps.titles.description) }));
+    await waitFor(() => expect(description.queryByText(/Герой останавливается у ворот/)).not.toBeInTheDocument());
   }
 };
 
@@ -117,7 +146,7 @@ export const Anchors: Story = {
   name: 'Якоря ?anchor= · подготовка плана и фильтр очереди',
   parameters: {
     songframe: options(
-      { problems: ['Сохранённые запросы ждут решения в блоке «Очередь».', 'Описание M02 готовится в блоке «Подготовка плана».'] },
+      { problems: ['Сохранённые запросы ждут решения в блоке «Очередь».', `Кандидаты M02 готовятся в блоке «${navigationTexts.blocks.productionFrames}».`] },
       `/project/production?shot=M02&anchor=${ANCHORS.productionWorkflow}`
     )
   },
@@ -141,7 +170,7 @@ export const Anchors: Story = {
     await waitFor(() => expect(filter).toHaveAttribute('data-anchor-highlight'));
     await waitFor(() => expect(route(context)).toHaveTextContent(/^\/project\/production\?shot=M02$/));
     // Повторный переход к тому же блоку снова переводит фокус.
-    await userEvent.click(problems.getByRole('link', { name: '«Подготовка плана»' }));
+    await userEvent.click(problems.getByRole('link', { name: `«${navigationTexts.blocks.productionFrames}»` }));
     await waitFor(() => expect(document.activeElement).toBe(workflow()));
     await waitFor(() => expect(route(context)).toHaveTextContent(/^\/project\/production\?shot=M02$/));
     await expect(screen.getByRole('heading', { name: 'M02', level: 6 })).toBeInTheDocument();
@@ -294,11 +323,11 @@ export const AcceptResult: Story = {
     await waitFor(() => expect(review.getByRole('button', { name: videoReviewTexts.start })).toBeEnabled());
     await userEvent.click(review.getByRole('button', { name: videoReviewTexts.start }));
     await review.findByText(videoReviewTexts.status.preparing);
-    await expect(screen.getByRole('button', { name: texts.packageResult.accept })).toBeEnabled();
+    await expect(screen.getByRole('button', { name: texts.verdictLabels.accept })).toBeEnabled();
     await review.findByText(videoReviewTexts.status.completed, {}, POLL_TIMEOUT);
     await expect(counts(context)).toHaveTextContent('Приёмок комплекта: 0. Отправок генерации: 0.');
     await expect(screen.getByText(texts.productionToolbar.accepted({ completed: 1, total: 2 }))).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: texts.packageResult.accept }));
+    await userEvent.click(await screen.findByRole('button', { name: texts.verdictLabels.accept }));
     const dialog = within(await screen.findByRole('dialog', { name: texts.acceptResultDialog.title({ shot: 'M02' }) }));
     const confirm = dialog.getByRole('button', { name: texts.acceptResultDialog.replace });
     await expect(confirm).toBeDisabled();
@@ -315,11 +344,10 @@ export const AcceptResult: Story = {
     await expect(screen.getByText(texts.productionToolbar.accepted({ completed: 1, total: 2 }))).toBeInTheDocument();
     await expect(await screen.findByText(texts.useProductionPage.jobDone({ title: 'Приёмка M02' }), {}, { timeout: 8000 })).toBeInTheDocument();
     await expect(await screen.findByText(texts.productionToolbar.accepted({ completed: 2, total: 2 }), {}, POLL_TIMEOUT)).toBeInTheDocument();
-    // Рабочие пакеты очищены: запомненный пакет больше не выбран, открыта новая подготовка.
-    await waitFor(() =>
-      expect(screen.getByRole('combobox', { name: new RegExp(texts.productionPage.packageLabel) })).toHaveTextContent(texts.productionPage.newPreparation)
-    );
-    await expect(screen.queryByText(texts.productionPage.choosePackageHint)).not.toBeInTheDocument();
+    // Рабочие попытки очищены: выбирать больше нечего, путь показывает принятый план и новое видео.
+    await waitFor(() => expect(screen.queryByRole('combobox', { name: new RegExp(texts.productionPage.packageLabel) })).not.toBeInTheDocument());
+    await expect(await screen.findByText(steps.finished)).toBeInTheDocument();
+    await expect(within(planStep(context, 'result')).getByText(texts.productionShotCard.accepted)).toBeInTheDocument();
     await expect(context.canvasElement.ownerDocument.querySelector(`[data-anchor="${ANCHORS.productionWorkflow}"]`)).not.toBeNull();
   }
 };
@@ -329,18 +357,16 @@ const multipleShots = () =>
     packages: [keyframePackage({ keyframeNotes: [] }), preparedPackage('02'), queuedPackage('video')]
   });
 export const MultiplePackages: Story = {
-  name: 'Несколько пакетов · переход из карточки плана и выбор с клавиатуры',
+  name: 'Несколько попыток · переход из карточки плана и выбор с клавиатуры',
   parameters: { songframe: options({ shots: multipleShots }) },
   play: async (context) => {
     const screen = screenOf(context);
-    await expect(await screen.findByText(texts.productionPage.choosePackageHint, {}, POLL_TIMEOUT)).toBeInTheDocument();
-    const open = screen.getAllByRole('button', { name: texts.productionShotCard.openPackage });
-    await expect(open).toHaveLength(2);
-    await userEvent.click(open[0]);
+    // Попытка открывается сама: первая с открытым вопросом.
+    const open = await screen.findAllByRole('button', { name: texts.productionShotCard.openPackage }, POLL_TIMEOUT);
+    await expect(open).toHaveLength(1);
     await expect(await screen.findByText('Утвердить опору K02?')).toBeInTheDocument();
-    await expect(screen.getAllByRole('button', { name: texts.productionShotCard.openPackage })).toHaveLength(1);
-    const combobox = screen.getByRole('combobox', { name: new RegExp(texts.productionPage.packageLabel) });
-    await expect(combobox).toHaveTextContent('plan/batches/M02-attempt-01');
+    const combobox = attemptSelect(context);
+    await expect(combobox).toHaveTextContent(attemptName(steps.attempt({ number: '1' }), 'Опоры на согласовании'));
     combobox.focus();
     await userEvent.keyboard('{ArrowDown}');
     await screen.findByRole('listbox');
@@ -349,6 +375,171 @@ export const MultiplePackages: Story = {
     await expect(combobox).toHaveTextContent('plan/awaiting/M02-video-01');
     await expect(await screen.findByText(texts.packageCard.queued)).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByRole('button', { name: texts.productionShotCard.openPackage })).toHaveLength(2));
+  }
+};
+
+export const AttemptMenu: Story = {
+  tags: ['ci'],
+  name: 'Меню плана · новая попытка, отмена повтора и удаление попытки',
+  parameters: { songframe: options({ shots: multipleShots }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await screen.findByText('Утвердить опору K02?', {}, POLL_TIMEOUT);
+    // Новая попытка возвращает путь к началу, не трогая сохранённые попытки.
+    await userEvent.click((await openMenu(context)).getByRole('menuitem', { name: steps.newAttempt }));
+    await expect(await within(planStep(context, 'description')).findByRole('button', { name: texts.productionWorkflowPanel.prepare })).toBeEnabled();
+    await expect(attemptSelect(context)).toHaveTextContent(texts.productionPage.newPreparation);
+    await expect(await screen.findByText(steps.now({ text: steps.prepareDescription }))).toBeInTheDocument();
+    await userEvent.click(attemptSelect(context));
+    await userEvent.click(await screen.findByRole('option', { name: attemptName(steps.attempt({ number: '1' }), 'Опоры на согласовании') }));
+    await screen.findByText('Утвердить опору K02?', {}, POLL_TIMEOUT);
+    // Повтор из меню только спрашивает подтверждение: без него ничего не создаётся.
+    await userEvent.click((await openMenu(context)).getByRole('menuitem', { name: (name) => name.startsWith(steps.retryFromRequest) }));
+    await screen.findByRole('dialog', { name: texts.regenerateDialog.title({ shot: 'M02' }) });
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Удаление подтверждается отдельно; затем план открывается по общему правилу.
+    await userEvent.click((await openMenu(context)).getByRole('menuitem', { name: (name) => name.startsWith(steps.deleteAttempt) }));
+    const dialog = await screen.findByRole('dialog', { name: texts.packageCard.discard });
+    await userEvent.click(within(dialog).getByRole('button', { name: texts.packageCard.delete }));
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Удалений попыток: 1.'));
+    await waitFor(() => expect(attemptSelect(context)).not.toHaveTextContent(texts.productionPage.newPreparation), POLL_TIMEOUT);
+    await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
+  }
+};
+
+/** Попытка без вопроса и кандидатов: следующую опору создают или ставят своим файлом. */
+const noCandidates = () =>
+  keyframePackage({
+    keyframeNotes: [],
+    pendingDecision: null,
+    keyframes: keyframePackage().keyframes.map((frame) => (frame.approved ? frame : { ...frame, imagePath: null }))
+  });
+export const OwnFrameFile: Story = {
+  tags: ['ci'],
+  name: 'Свой файл опоры · сразу кандидат и отдельный вопрос об утверждении',
+  parameters: { songframe: options({ shots: () => baseShots({ attention: null, packages: [noCandidates()] }) }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText(steps.now({ text: steps.chooseFrame({ frame: 'K02' }) }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const frames = within(planStep(context, 'frames'));
+    const generate = texts.productionFrameGenerationButton.prepareRequest({ frame: 'K02', title: testProviderInfo.title });
+    await expect(await screen.findByRole('button', { name: generate })).toBeEnabled();
+    const own = await frames.findAllByRole('button', { name: texts.frameActions.own });
+    await expect(own).toHaveLength(3);
+    await userEvent.click(own[0]);
+    // Файл применяется без окна сравнения: решение принимается вопросом у самой опоры.
+    await expect(await screen.findByText('Утвердить опору K02?', {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await expect(counts(context)).toHaveTextContent('Своих файлов опор: 1.');
+    await expect(counts(context)).toHaveTextContent('Утверждено опор: M02:K01.');
+    await expect(await screen.findByRole('button', { name: texts.frameActions.other })).toBeDisabled();
+    await expect(screen.getByRole('button', { name: approve('K02') })).toBeEnabled();
+  }
+};
+
+export const FrameInstruction: Story = {
+  tags: ['ci'],
+  name: 'Указание к опоре · необязательно, сохраняется замечанием перед созданием',
+  parameters: { songframe: options({ shots: () => baseShots({ attention: null, packages: [noCandidates()] }) }) },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText(steps.now({ text: steps.chooseFrame({ frame: 'K02' }) }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const frames = within(planStep(context, 'frames'));
+    await userEvent.click(await frames.findByRole('button', { name: texts.frameActions.instructionOpen }));
+    await userEvent.type(await frames.findByRole('textbox', { name: texts.frameActions.instruction }), 'Иван смотрит в камеру');
+    await userEvent.click(
+      screen.getByRole('button', { name: texts.productionFrameGenerationButton.prepareRequest({ frame: 'K02', title: testProviderInfo.title }) })
+    );
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Указаний к опорам: K02/frame: Иван смотрит в камеру. Созданий опор: 1.'), POLL_TIMEOUT);
+  }
+};
+
+export const GenerationStep: Story = {
+  tags: ['ci'],
+  name: 'Шаг генерации · ожидание сервиса, пройденный запрос читается',
+  parameters: {
+    songframe: options({
+      receiving: true,
+      shots: () => baseShots({ stageLabel: 'Получение результата', attention: null, packages: [receivingPackage('running')] })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText(steps.now({ text: steps.waitService }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const generation = within(planStep(context, 'generation'));
+    await expect(generation.getByRole('progressbar', { name: steps.titles.generation })).toBeInTheDocument();
+    await expect(generation.getByText(steps.generationWait)).toBeInTheDocument();
+    // Запрос уже отправлен: шаг свёрнут в итог, а открытый только показывает материалы.
+    const request = within(planStep(context, 'request'));
+    await expect(request.getByText(steps.requestSummary({ credits: 12 }))).toBeInTheDocument();
+    await userEvent.click(request.getByRole('button', { name: new RegExp(steps.titles.request) }));
+    await expect(await request.findByText('Камера плавно приближается к старым воротам.')).toBeInTheDocument();
+    await expect(within(planStep(context, 'result')).getByText(steps.after.result)).toBeInTheDocument();
+    await expect(counts(context)).toHaveTextContent('Отправок генерации: 0.');
+  }
+};
+
+export const GenerationInterrupted: Story = {
+  tags: ['ci'],
+  name: 'Шаг генерации · после перезапуска ждать нечего, результат забирает кнопка',
+  parameters: {
+    songframe: options({
+      shots: () => baseShots({ stageLabel: 'Получение результата', attention: null, packages: [receivingPackage('running')] })
+    })
+  },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText(steps.now({ text: steps.receiveResult }), {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const generation = within(planStep(context, 'generation'));
+    await expect(generation.queryByRole('progressbar')).not.toBeInTheDocument();
+    await expect(generation.queryByText(steps.generationWait)).not.toBeInTheDocument();
+    await expect(await generation.findByRole('button', { name: texts.packageResume.resume })).toBeInTheDocument();
+  }
+};
+
+const acceptedOptions = (python = true) =>
+  options(
+    {
+      python,
+      shots: () => [
+        pageShot('M01', {
+          title: 'Подъезд к даче',
+          start: 0,
+          end: 6,
+          asset: { dir: '/mock/assets/shots/M01', video: '/mock/story-derived-source-150.mp4', original: STORY_VIDEO_PATH }
+        })
+      ]
+    },
+    '/project/production?shot=M01'
+  );
+export const AcceptedPlan: Story = {
+  tags: ['ci'],
+  name: 'Принятый план · видео в шаге «Результат» и новая попытка из меню',
+  parameters: { songframe: acceptedOptions() },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await expect(await screen.findByText(steps.finished, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    const result = within(planStep(context, 'result'));
+    await expect(result.getByText(texts.productionShotCard.accepted)).toBeInTheDocument();
+    await expect(planStep(context, 'result').querySelectorAll('video')).toHaveLength(2);
+    await expect(result.getAllByRole('button', { name: texts.videoPlayer.fullscreen })).toHaveLength(2);
+    // Два видео нельзя перепутать: у каждого своя подпись.
+    await expect(result.getByText(texts.productionShotCard.acceptedVideo)).toBeInTheDocument();
+    await expect(result.getByText(texts.productionShotCard.originalVideo)).toBeInTheDocument();
+    await userEvent.click((await openMenu(context)).getByRole('menuitem', { name: steps.newAttempt }));
+    // Новый заход начинается с описания: принятый комплект не показывается как результат этой попытки.
+    await expect(await within(planStep(context, 'description')).findByRole('button', { name: texts.productionWorkflowPanel.prepare })).toBeEnabled();
+    await expect(screen.queryByText(texts.productionShotCard.accepted)).not.toBeInTheDocument();
+  }
+};
+export const AcceptedPlanNoPython: Story = {
+  name: 'Принятый план без Python · видео доступно для просмотра',
+  parameters: { songframe: acceptedOptions(false) },
+  play: async (context) => {
+    await expect(await screenOf(context).findByText(texts.productionPage.pythonMissing, {}, POLL_TIMEOUT)).toBeInTheDocument();
+    await screenOf(context).findByText(texts.productionShotCard.accepted, {}, POLL_TIMEOUT);
+    await expect(planStep(context, 'result').querySelectorAll('video')).toHaveLength(2);
   }
 };
 
@@ -381,8 +572,9 @@ export const Empty: Story = {
 /** У двух планов и двух попыток M02 разные ключи отчётов, хотя все медиа принадлежат витрине. */
 const reviewShots = () => {
   const first = receivedPackage('video', { previews: true });
-  const second = JSON.parse(JSON.stringify(first).replaceAll(first.dir, `${first.dir}-second`)) as typeof first;
-  second.relative = `${first.relative}-second`;
+  const otherDir = first.dir.replace('attempt-01', 'attempt-02');
+  const second = JSON.parse(JSON.stringify(first).replaceAll(first.dir, otherDir)) as typeof first;
+  second.relative = first.relative.replace('attempt-01', 'attempt-02');
   return [
     pageShot('M01', { state: 'progress', stageLabel: 'Результат получен', asset: null, attention: null, packages: [packageForShot(first, 'M01')] }),
     pageShot('M02', { state: 'progress', stageLabel: 'Результат получен', asset: null, attention: null, packages: [first, second] })
@@ -390,7 +582,7 @@ const reviewShots = () => {
 };
 const reviewPanel = async (context: Context) => within(await screenOf(context).findByRole('region', { name: videoReviewTexts.heading }, POLL_TIMEOUT));
 const reviewCounts = (context: Context) => screenOf(context).getByTestId('production-review-model');
-/** У карточек есть собственные видео-превью; в этой фикстуре единственный плеер с controls принадлежит оригиналу пакета. */
+/** У карточек есть собственные видео-превью; в этой фикстуре единственный плеер с controls принадлежит оригиналу попытки. */
 async function originalVideo(context: Context): Promise<HTMLVideoElement> {
   const videos = context.canvasElement.querySelectorAll<HTMLVideoElement>('video[controls]');
   await expect(videos).toHaveLength(1);
@@ -398,9 +590,8 @@ async function originalVideo(context: Context): Promise<HTMLVideoElement> {
 }
 async function chooseReviewPackage(context: Context, second = false) {
   const screen = screenOf(context);
-  const pkg = receivedPackage('video');
-  const name = texts.productionPage.queuedPrefix({ queued: false, relative: `${pkg.relative}${second ? '-second' : ''}`, stage: pkg.stageLabel });
-  await userEvent.click(screen.getByRole('combobox', { name: new RegExp(texts.productionPage.packageLabel) }));
+  const name = attemptName(steps.attempt({ number: second ? '2' : '1' }), receivedPackage('video').stageLabel);
+  await userEvent.click(attemptSelect(context));
   await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', { name }));
   return reviewPanel(context);
 }
@@ -408,12 +599,14 @@ const reviewOptions = (videoReview: ProductionPageModelOptions['videoReview'] = 
   productionPageOptions({ shots: reviewShots, videoReview, python }, '/project/production?shot=M02');
 
 export const VideoReviewPersists: Story = {
-  name: 'Проверка видео · отчёт сохраняется при смене пакета и плана',
+  name: 'Проверка видео · отчёт сохраняется при смене попытки и плана',
   tags: ['ci'],
   parameters: { songframe: reviewOptions() },
   play: async (context) => {
     const screen = screenOf(context);
     await shotHeading(context, 'M02');
+    // Вопросов нет: сама открывается последняя попытка.
+    await waitFor(() => expect(attemptSelect(context)).toHaveTextContent(steps.attempt({ number: '2' })));
     let panel = await chooseReviewPackage(context);
     await waitFor(() => expect(panel.getByRole('button', { name: videoReviewTexts.start })).toBeEnabled());
     await userEvent.click(panel.getByRole('button', { name: videoReviewTexts.start }));

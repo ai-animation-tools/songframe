@@ -43,7 +43,7 @@ import type { AiAccess } from '@shared/ai-access';
 import type * as scenarioworkflow from '../../bindings/songframe-go/internal/scenarioworkflow/models';
 import type { ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import type * as productionworkflow from '../../bindings/songframe-go/internal/productionworkflow/models';
-import type { ProductionFramePrompt, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
+import type { ProductionFramePrompt, ProductionPass, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
 import type { MontageWindowEvent } from '@shared/montage-window';
@@ -308,6 +308,7 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'production.decide',
   'production.reopenFrame',
   'production.keepPackageForScene',
+  'production.addKeyframeNote',
   'production.setKeyframeNote',
   'production.quote',
   'production.submit',
@@ -414,6 +415,7 @@ function toWorkflowView({ proposal, job, ...view }: scenarioworkflow.View): Scen
 function toProductionWorkflowView({
   imageProvider,
   videoProvider,
+  nextStage,
   framePrompts,
   nextFrame,
   approvedFrameIds,
@@ -423,6 +425,7 @@ function toProductionWorkflowView({
 }: productionworkflow.View): ProductionWorkflowView {
   return {
     ...view,
+    ...(nextStage ? { nextStage: nextStage as ProductionPass } : {}),
     ...(imageProvider === undefined ? {} : { imageProvider: imageProvider as string }),
     ...(videoProvider === undefined ? {} : { videoProvider: videoProvider as string }),
     framePrompts: framePrompts as ProductionFramePrompt[],
@@ -898,6 +901,8 @@ export function createApi(b: Bindings): Api {
     call('production.reopenFrame', async () => (await production()).ReopenFrame(project, packageDir, frame, note, noteScope), false);
   api.production.keepPackageForScene = (project, packageDir) =>
     call('production.keepPackageForScene', async () => (await production()).KeepPackageForScene(project, packageDir));
+  api.production.addKeyframeNote = (project, packageDir, frame, note, noteScope) =>
+    call('production.addKeyframeNote', async () => (await production()).AddKeyframeNote(project, packageDir, frame, note, noteScope));
   api.production.setKeyframeNote = (project, packageDir, id, active) =>
     call('production.setKeyframeNote', async () => (await production()).SetKeyframeNote(project, packageDir, id, active));
   api.production.quote = (project, packageDir, expectedSha, decisionToken) =>

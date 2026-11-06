@@ -146,6 +146,14 @@ func (s *ProductionService) KeepPackageForScene(project, packageDir string) erro
 	return s.production.KeepPackageForScene(project, packageDir)
 }
 
+// AddKeyframeNote — необязательное указание к опоре до её создания.
+func (s *ProductionService) AddKeyframeNote(project, packageDir, frame, note, noteScope string) error {
+	if err := s.idle(project, packageDir); err != nil {
+		return err
+	}
+	return s.production.AddKeyframeNote(project, packageDir, frame, note, noteScope)
+}
+
 // SetKeyframeNote — включить или снять замечание к опорам.
 func (s *ProductionService) SetKeyframeNote(project, packageDir string, id float64, active bool) error {
 	if err := s.idle(project, packageDir); err != nil {

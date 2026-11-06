@@ -421,7 +421,7 @@ func (r *framesRun) step(t *testing.T, index int, step framesStep) {
 // compareResult сверяет результат шага (вид, сводку) в форме JSON.stringify.
 func (r *framesRun) compareResult(t *testing.T, label string, want json.RawMessage, got any) {
 	t.Helper()
-	data, err := json.Marshal(got)
+	data, err := json.Marshal(originalFields(got))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -164,7 +164,11 @@ type View struct {
 	Stage   *string `json:"stage"`
 	Reasons Reasons `json:"reasons"`
 	// DerivedFrom — план-источник производного плана: подготовка и генерация заблокированы.
-	DerivedFrom       *string `json:"derivedFrom"`
+	DerivedFrom *string `json:"derivedFrom"`
+	// NextStage — следующий проход агента по пакету ("" → null): им интерфейс называет следующее
+	// действие. ReplaceFrame — опора открытого вопроса, кандидата которой можно заменить файлом.
+	NextStage         *string `json:"nextStage,omitempty"`
+	ReplaceFrame      *string `json:"replaceFrame,omitempty"`
 	CanPrepare        bool    `json:"canPrepare"`
 	CanContinue       bool    `json:"canContinue"`
 	CanRevise         bool    `json:"canRevise"`
@@ -237,7 +241,9 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 	enabled := !busy && !proposalPending && len(c.Problems) == 0 && !pending && !c.Paid
 	stage, _ := c.workflowValue("stage").(string)
 	imagePhase := strings.HasPrefix(stage, "image_")
-	imageEnabled := !busy && !slices.ContainsFunc(c.Problems, func(problem string) bool { return !strings.HasPrefix(problem, textVideoSettingsIncomplete) }) &&
+	// Отличие от оригинала: неприменённое предложение блокирует опоры сразу, а не отказом после
+	// выбора файла; причину reasons.frames уже называет.
+	imageEnabled := !busy && !proposalPending && !slices.ContainsFunc(c.Problems, func(problem string) bool { return !strings.HasPrefix(problem, textVideoSettingsIncomplete) }) &&
 		!pending && !c.Paid && !imagePhase
 	scenarioApproved := w.options.IsScenarioApproved(canonical)
 	framesApproved, err := c.FramesApproved()
@@ -274,8 +280,15 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 	}
 	undecided := c.UndecidedFrame()
 	nextFrame := c.NextFrame()
+	// Кандидата опоры на открытом вопросе можно заменить своим файлом без замечания: остальные
+	// условия те же, что у импорта опор.
+	replaceFrame := ""
+	if frame, ok := jscompat.Get(c.workflowValue("pending_decision"), "frame").(string); ok && derived == "" && !c.SceneChanged && !busy && !proposalPending && !c.Paid && !imagePhase {
+		replaceFrame = frame
+	}
 	view := View{
 		Project: canonical, Shot: shot, PackageDir: optional(c.PackageDir), Busy: busy, Stage: optional(stage), DerivedFrom: optional(c.DerivedFrom),
+		NextStage: optional(nextStage), ReplaceFrame: optional(replaceFrame),
 		Reasons: Reasons{
 			Prepare:  optional(prepareReason(derived, busy, imagePhase, scenarioApproved, c.Problems)),
 			Continue: optional(continueReason(c, derived, common, imagePhase, nextStage, speechMismatch, framesApproved, descriptionApproved)),

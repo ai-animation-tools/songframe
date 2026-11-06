@@ -1,10 +1,29 @@
 import { productionTexts } from '@shared/texts/production';
 import { useId, type ReactElement } from 'react';
 import { Stack, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material';
+import { mediaParameterLabel } from '@shared/media-providers';
 import { ReadableValue } from '../../../components/ReadableValue';
 
-/** Строка на параметр сохраняет имена API, а вложенный JSON читается без расширения диалога. */
-export function RequestParameters({ parameters }: { parameters: Record<string, unknown> }): ReactElement {
+/** Строки параметров общей таблицы запроса: подпись из реестра провайдера, вложенный JSON читается целиком. */
+export function RequestParameterRows({ parameters, provider }: { parameters: Record<string, unknown>; provider?: string | null }): ReactElement {
+  return (
+    <>
+      {Object.entries(parameters).map(([name, value]) => (
+        <TableRow key={name}>
+          <TableCell component="th" scope="row">
+            {mediaParameterLabel(provider, name)}
+          </TableCell>
+          <TableCell>
+            <ReadableValue value={value} />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+/** Параметры отдельным блоком: подтверждение отправки и предложение агента. */
+export function RequestParameters({ parameters, provider }: { parameters: Record<string, unknown>; provider?: string | null }): ReactElement {
   const labelId = useId();
   const entries = Object.entries(parameters);
   return (
@@ -18,7 +37,7 @@ export function RequestParameters({ parameters }: { parameters: Record<string, u
             {entries.map(([name, value]) => (
               <TableRow key={name}>
                 <TableCell component="th" scope="row" sx={{ width: '35%', verticalAlign: 'top', overflowWrap: 'anywhere', pl: 0 }}>
-                  {name}
+                  {mediaParameterLabel(provider, name)}
                 </TableCell>
                 <TableCell sx={{ verticalAlign: 'top', overflowWrap: 'anywhere', pr: 0 }}>
                   <ReadableValue value={value} />

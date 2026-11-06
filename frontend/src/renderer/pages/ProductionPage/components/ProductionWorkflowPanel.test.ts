@@ -25,7 +25,6 @@ const workflow = vi.hoisted(() => ({
   apply: vi.fn(),
   discard: vi.fn()
 }));
-vi.mock('../useProductionWorkflow', () => ({ useProductionWorkflow: () => workflow }));
 // Повтор проверяется по кнопке задания; содержимое предложения к нему не относится.
 vi.mock('./ProductionProposalDialog', () => ({ ProductionProposalDialog: () => null }));
 const app = vi.hoisted(() => ({ agentProvider: 'codex' as 'codex' | 'claude' | null }));
@@ -44,14 +43,15 @@ const savedNote = 'Уточнить движение героя.\nСохрани
 const render = (overrides: Partial<Parameters<typeof ProductionWorkflowPanel>[0]> = {}): string =>
   renderToStaticMarkup(
     createElement(ProductionWorkflowPanel, {
-      project: '/fixture',
-      shot: 'M44',
+      workflow: workflow as unknown as Parameters<typeof ProductionWorkflowPanel>[0]['workflow'],
       packageDir: '/fixture/package',
       decisionToken: 'returned-note-2',
       decision: { stage: 'prompt_review', verdict: 'revise', note: savedNote },
       packageBusy: false,
-      onBusyChange: vi.fn(),
-      onApplied: vi.fn(),
+      reviseOpen: true,
+      onReviseOpen: vi.fn(),
+      onAcceptProposal: vi.fn(),
+      onReviseProposal: vi.fn(),
       ...overrides
     })
   );
@@ -93,8 +93,6 @@ describe('Явный запуск доработки плана', () => {
     const html = render();
     expect(html).toContain('Сохранённое замечание для доработки');
     expect(html).toContain(savedNote);
-    expect(html).toContain('Замечание из возврата подставлено ниже.');
-    expect(html).toContain('Агент автоматически не запускается.');
     expect(html).toContain('Можно уточнить текст перед запуском.');
     expect(action(html)).not.toContain('disabled=""');
     expect(action(html)).toContain('Codex');
@@ -121,6 +119,21 @@ describe('Явный запуск доработки плана', () => {
     expect(html).not.toContain(savedNote);
     expect(html).toContain('Что исправить в текущем этапе');
     expect(action(html)).toContain('disabled=""');
+  });
+
+  it('сворачивает доработку за кнопкой, пока нет сохранённого замечания', () => {
+    const html = render({ reviseOpen: false, decision: null });
+    expect(html).not.toContain('<textarea');
+    expect(html).toContain('Доработать с агентом');
+  });
+
+  it('называет следующий шаг на кнопке и показывает причину недоступности текстом', () => {
+    workflow.view!.nextStage = 'prompt';
+    workflow.view!.reasons.continue = 'сначала утвердите опоры';
+    const html = render({ reviseOpen: false, decision: null });
+    expect(html).toContain('Подготовить видеопромпт');
+    expect(html).toContain('сначала утвердите опоры');
+    expect(render({ questionOpen: true })).not.toContain('Подготовить видеопромпт');
   });
 
   it('не показывает локальную доработку, когда она недоступна выбранному пакету', () => {

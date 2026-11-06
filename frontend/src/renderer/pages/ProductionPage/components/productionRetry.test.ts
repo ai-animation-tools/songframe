@@ -94,6 +94,12 @@ const fixtureShot = (overrides: Partial<ShotProduction> = {}): ShotProduction =>
   ...overrides
 });
 
+// Меню закрыто в SSR: подмена оставляет его пункты в разметке, их доступность и есть предмет теста.
+vi.mock('@mui/material', async (original) => ({
+  ...(await original<typeof import('@mui/material')>()),
+  Menu: ({ children }: { children: ReactNode }) => createElement('ul', null, children)
+}));
+
 const renderCard = (overrides: Partial<ComponentProps<typeof ProductionShotCard>> = {}): string =>
   renderToStaticMarkup(
     createElement(
@@ -113,7 +119,9 @@ const renderDialog = (problem: string | null = null, shot: string | null = 'M44'
 
 function repeatButton(html: string): string {
   // Выбираем именно действие повтора среди кнопок карточки.
-  const button = [...html.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g)].find((match) => match[0].includes('Подготовить повтор'));
+  const button = [...html.matchAll(/<(button|li)\b[^>]*>[\s\S]*?<\/\1>/g)].find((match) =>
+    /Подготовить повтор|Повторить по сохранённому запросу/.test(match[0])
+  );
   expect(button, 'Действие подготовки повтора присутствует').toBeDefined();
   return button![0];
 }
@@ -129,7 +137,6 @@ describe('Локальная подготовка повтора', () => {
     expect(repeatButton(html)).not.toMatch(/\bdisabled(?:=|\s|>)/);
     expect(repeatButton(html)).not.toContain('Codex');
     expect(repeatButton(html)).not.toContain('Claude');
-    expect(html).toContain('songframe-file:///fixture/edit.mp4');
   });
 
   it('разрешает повтор принятого комплекта без активного рабочего пакета', () => {
@@ -203,8 +210,8 @@ describe('Пакет, ждущий решения, у принятой сцен�
     };
     const html = renderCard({ shot: fixtureShot({ packages: [waiting] }), onOpenPackage: unchanged });
     expect(html).toContain('ждёт вашего решения: Принять результат, повторить или собрать пробу?');
-    expect(html).toContain('Открыть пакет');
+    expect(html).toContain('Открыть попытку');
     const selected = renderCard({ shot: fixtureShot({ packages: [waiting] }), onOpenPackage: unchanged, selectedPackage: waiting.dir });
-    expect(selected).not.toContain('Открыть пакет');
+    expect(selected).not.toContain('Открыть попытку');
   });
 });

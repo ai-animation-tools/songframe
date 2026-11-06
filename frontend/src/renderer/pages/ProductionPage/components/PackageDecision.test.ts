@@ -35,37 +35,35 @@ function button(html: string, label: string): string {
 }
 
 describe('Замечание при согласовании пакета', () => {
-  it('показывает многострочное поле с доступными подписью и пояснением', () => {
+  it('без замечания прячет поле: его открывает «Доработать»', () => {
     const html = render();
+    expect(html).not.toContain('<textarea');
+    expect(button(html, 'Доработать')).not.toContain('disabled=""');
+    expect(button(html, 'Отправить')).not.toContain('disabled=""');
+  });
+
+  it('показывает многострочное поле с доступными подписью и пояснением', () => {
+    const html = render({ note: 'Заменить свет' });
     const fieldId = html.match(/<label[^>]*for="([^"]+)"[^>]*>Что нужно исправить<\/label>/)?.[1];
     expect(fieldId).toBeTruthy();
     const textarea = html.match(new RegExp(`<textarea[^>]*id="${fieldId}"[^>]*>`))?.[0];
     expect(textarea).toBeTruthy();
     expect(textarea).toContain(`aria-describedby="${fieldId}-helper-text"`);
     expect(html).toContain(`id="${fieldId}-helper-text"`);
-    expect(html).toContain('Обязательно только для «Вернуть с замечанием»');
-    expect(html).toContain('Замечание сохранится вместе с ответом. Агент автоматически не запускается.');
-    expect(html).toContain('После возврата нажмите «Запустить доработку с агентом» в блоке «Подготовка плана».');
+    expect(html).toContain('агент начнёт доработку сразу после нажатия кнопки');
     expect(textarea).toContain('заменить последнюю опору');
-  });
-
-  it.each(['', ' \n\t '])('при пустом замечании %j блокирует возврат и сохраняет другие ответы', (note) => {
-    const html = render({ note });
-    expect(button(html, 'Вернуть с замечанием')).toContain('disabled=""');
-    expect(button(html, 'Отправить')).not.toContain('disabled=""');
-    expect(button(html, 'Сохранить в очередь')).not.toContain('disabled=""');
   });
 
   it('разрешает возврат с замечанием и сохраняет многострочный текст', () => {
     const note = 'Уточнить действие героя.\nСохранить направление движения камеры.';
     const html = render({ note });
-    expect(button(html, 'Вернуть с замечанием')).not.toContain('disabled=""');
+    expect(button(html, 'Доработать')).not.toContain('disabled=""');
     expect(html).toContain(note);
   });
 
   it('во время операции блокирует все ответы, сохраняя замечание', () => {
     const html = render({ busy: true, note: 'Сохранить одежду героя.' });
-    for (const label of ['Отправить', 'Сохранить в очередь', 'Вернуть с замечанием']) {
+    for (const label of ['Отправить', 'Сохранить в очередь', 'Доработать']) {
       expect(button(html, label)).toContain('disabled=""');
     }
     expect(html).toContain('Сохранить одежду героя.');
@@ -73,6 +71,7 @@ describe('Замечание при согласовании пакета', () =
 
   it('подбирает пример замечания к этапу', () => {
     const html = render({
+      note: 'Заменить свет',
       pending: { stage: 'prompt_review', question: 'Принять промпт?', options: ['approve', 'revise'] }
     });
     expect(html).not.toContain('внешн');
@@ -85,19 +84,21 @@ describe('Замечание при согласовании пакета', () =
     expect(html).not.toContain('<textarea');
     expect(html).not.toContain('Что нужно исправить');
     expect(button(html, 'Принять')).not.toContain('disabled=""');
-    expect(button(html, 'Повторить запрос')).not.toContain('disabled=""');
+    expect(button(html, 'Новая генерация')).not.toContain('disabled=""');
   });
 
-  it('объясняет последствия каждого ответа списком под вопросом', () => {
+  it('объясняет последствия каждого ответа подсказкой кнопки', () => {
     const html = render({ pending: { stage: 'downloaded', question: 'Принять результат?', options: ['accept', 'retry', 'review', 'revise'] } });
-    expect(html).toContain('Готовит новую попытку с теми же опорами и промптом');
-    expect(html).toContain('Открывает «Монтаж пробы» с соседними планами');
-    expect(html).toContain('Переносит результат в assets');
-    expect(button(html, 'Повторить запрос')).toContain('title="Готовит новую попытку');
+    expect(button(html, 'Собрать пробу стыков')).toContain('Открывает «Монтаж пробы» с соседними планами');
+    expect(button(html, 'Принять')).toContain('Переносит результат в assets');
+    expect(button(html, 'Новая генерация')).toContain('title="Готовит новую попытку');
   });
 
   it('для вопроса об опоре показывает её код, обязательное замечание и охват «для следующих» по умолчанию', () => {
+    const empty = render({ pending: { stage: 'keyframes_review', question: 'Утвердить опору K02?', options: ['approve', 'revise'], frame: 'K02' } });
+    expect(button(empty, 'Доработать K02')).not.toContain('disabled=""');
     const html = render({
+      note: 'Сохранить одежду',
       pending: { stage: 'keyframes_review', question: 'Утвердить опору K02?', options: ['approve', 'revise'], frame: 'K02' }
     });
     expect(html).toContain('Опора K02');
@@ -105,7 +106,6 @@ describe('Замечание при согласовании пакета', () =
     expect(html).toContain('Учесть и для следующих опор');
     expect(html).toMatch(/<input[^>]*type="checkbox"[^>]*checked=""/);
     expect(button(html, 'Утвердить K02')).not.toContain('disabled=""');
-    expect(button(html, 'Доработать K02')).toContain('disabled=""');
     expect(html).not.toContain('Запустить доработку с агентом');
   });
 });

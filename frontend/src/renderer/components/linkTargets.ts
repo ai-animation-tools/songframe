@@ -38,7 +38,7 @@ const PROJECT = '/project';
 
 /** Блоки, поля и строки страниц по их названию в кавычках. */
 export const BLOCK_TARGETS: Readonly<Record<string, LinkTarget>> = {
-  [navigationTexts.blocks.productionWorkflow]: { path: PRODUCTION, anchor: ANCHORS.productionWorkflow },
+  [navigationTexts.blocks.productionFrames]: { path: PRODUCTION, anchor: ANCHORS.productionWorkflow },
   [navigationTexts.blocks.productionSpeech]: { path: PRODUCTION, anchor: ANCHORS.productionSpeech },
   [navigationTexts.blocks.productionLipSync]: { path: PRODUCTION, anchor: ANCHORS.productionSpeech },
   // Очередь открывается фильтром «Показать» панели производства.

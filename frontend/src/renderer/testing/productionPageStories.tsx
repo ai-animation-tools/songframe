@@ -9,6 +9,7 @@ import type { VideoReviewView } from '@shared/video-review';
 import { videoReviewTexts } from '@shared/texts/video-review';
 import type { Api } from '@shared/api';
 import type { AppState, BrokenPackage, JobInfo, PackageView, ProductionView, ShotProduction } from '@shared/types';
+import type { ProductionProposal } from '@shared/production-workflow';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { productionTexts } from '@shared/texts/production';
 import { TEST_PROVIDER, testProviderInfo } from '@shared/testing/media-provider';
@@ -18,9 +19,9 @@ import { assertDeliveryAcceptOptions, DELIVERY_PROJECT, deliveryJob } from './de
 import { createDerivedScenario } from './derivedStories';
 import { keyframePackage, keyframeQuestion } from './keyframeStories';
 import { productionShot } from './productionQueueStories';
-import { workflowView } from './productionWorkflowStories';
+import { workflowProposal, workflowView } from './productionWorkflowStories';
 import { reviewView } from './videoReviewStories';
-import { createStoryApi, STORY_VIDEO_PATH, type StoryOptions } from './storybook';
+import { createStoryApi, STORY_IMAGE_PATH, STORY_VIDEO_PATH, type StoryOptions } from './storybook';
 
 export const PAGE_PROJECT = DELIVERY_PROJECT;
 export const PAGE_READ_ERROR = 'Не удалось прочитать состояние производства: plan/project.json занят. Опрос повторит чтение.';
@@ -67,6 +68,8 @@ export interface ProductionPageModelOptions {
   failFirstAction?: boolean;
   /** Ошибка относится к первому завершению анализа каждого пакета, а не к чтению всей страницы. */
   videoReview?: { failFirstRun?: boolean; runMs?: number };
+  /** Идёт получение результата: Go сообщает о занятой попытке. */
+  receiving?: boolean;
 }
 
 interface PageModel {
@@ -77,6 +80,10 @@ interface PageModel {
   selections: number;
   accepts: number;
   submissions: number;
+  frameImports: number;
+  frameNotes: string[];
+  frameRuns: number;
+  discards: number;
   reviewStarts: number;
   reviewCancels: number;
   subscribe(listener: () => void): () => void;
@@ -123,6 +130,10 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         selections: 0,
         accepts: 0,
         submissions: 0,
+        frameImports: 0,
+        frameNotes: [],
+        frameRuns: 0,
+        discards: 0,
         reviewStarts: 0,
         reviewCancels: 0,
         subscribe(listener) {
@@ -190,9 +201,35 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           entry.timer = null;
         }
       };
+      // Свой файл опоры становится предложением только на время между импортом и применением.
+      const frameImports = new Map<string, ProductionProposal>();
+      const workflowSnapshot = (project: string, shot: string, packageDir: string | undefined) => {
+        checked(project);
+        const pkg = model.view.shots.flatMap((item) => item.packages).find((item) => item.dir === packageDir);
+        // Как в Go: следующая опора доступна, пока к попытке нет открытого вопроса.
+        const nextFrame = pkg && !pkg.pendingDecision ? (pkg.keyframes.find((frame) => !frame.approved && !frame.imagePath)?.id ?? null) : null;
+        return workflowView({
+          project: PAGE_PROJECT,
+          shot,
+          packageDir: packageDir ?? null,
+          busy: !!options.receiving,
+          canPrepare: !packageDir,
+          canGenerateFrames: !!nextFrame,
+          nextFrame,
+          proposal: (packageDir && frameImports.get(packageDir)) || null,
+          reasons: packageDir
+            ? { prepare: null, continue: 'Сначала ответьте на вопрос пакета.', frames: nextFrame ? null : 'Сначала ответьте на вопрос пакета.' }
+            : workflowView().reasons
+        });
+      };
       const derived = createDerivedScenario({ view: { project: PAGE_PROJECT } });
       const session = createStoryApi({
         production: {
+          addKeyframeNote: async (project, dir, frame, note, scope) => {
+            find(project, dir);
+            model.frameNotes = [...model.frameNotes, `${frame}/${scope}: ${note}`];
+            publish();
+          },
           submit: async () => {
             model.submissions++;
             publish();
@@ -274,6 +311,13 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
               publish();
             });
             return structuredClone(job);
+          },
+          discardAttempt: async (project, dir) => {
+            const { shot, pkg } = find(project, dir);
+            shot.packages = shot.packages.filter((item) => item !== pkg);
+            shot.attention = shot.packages.find((item) => item.pendingDecision)?.pendingDecision?.question ?? null;
+            model.discards++;
+            publish();
           }
         },
         videoReview: {
@@ -315,20 +359,37 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         },
         jobs: { list: async () => structuredClone(model.jobs) },
         productionWorkflow: {
-          // Подготовка агентом показана отдельной группой историй; здесь панель только читает состояние пакета.
-          view: async (project, shot, packageDir) => {
-            checked(project);
-            return workflowView({
-              project: PAGE_PROJECT,
-              shot,
-              packageDir: packageDir ?? null,
-              canPrepare: !packageDir,
-              reasons: packageDir
-                ? { prepare: null, continue: 'Сначала ответьте на вопрос пакета.', frames: 'Сначала ответьте на вопрос пакета.' }
-                : workflowView().reasons
-            });
+          // Подготовка агентом показана отдельной группой историй; здесь есть только свой файл опоры, идущий мимо агента.
+          view: async (project, shot, packageDir) => workflowSnapshot(project, shot, packageDir),
+          generateFrames: async (project, shot, dir) => {
+            find(project, dir);
+            model.frameRuns++;
+            publish();
+            return workflowSnapshot(project, shot, dir);
+          },
+          importFrames: async (project, shot, dir, images) => {
+            find(project, dir);
+            model.frameImports++;
+            frameImports.set(
+              dir,
+              workflowProposal('frames', { id: `page-import-${model.frameImports}`, jobId: '', after: { schemaVersion: 1, stage: 'frames', images } })
+            );
+            return workflowSnapshot(project, shot, dir);
+          },
+          // Применение записывает кандидата и задаёт вопрос: утверждение остаётся отдельным ответом.
+          apply: async (project, shotId, dir, id) => {
+            const { shot, pkg } = find(project, dir ?? '');
+            const proposal = frameImports.get(pkg.dir);
+            if (proposal?.id !== id || proposal.after?.stage !== 'frames') throw new Error('Предложение больше нельзя применить.');
+            const [image] = proposal.after.images;
+            frameImports.delete(pkg.dir);
+            pkg.keyframes = pkg.keyframes.map((item) => (item.id === image.id ? { ...item, imagePath: image.path, approved: false } : item));
+            ask(shot, pkg, keyframeQuestion(image.id, question + 1));
+            publish();
+            return workflowSnapshot(project, shotId, pkg.dir);
           }
         },
+        dialog: { pickFiles: async () => [STORY_IMAGE_PATH] },
         derivedShots: derived.api.derivedShots
       });
       models.set(session.api, model);
@@ -375,7 +436,8 @@ export function ProductionPageStory({ links = [] }: { links?: StoryLink[] }): Re
           ))}
           <Typography variant="caption" color="text.secondary" data-testid="production-model">
             Чтений: {model.reads}. Ответов: {model.decisions}. Выборов оригинала: {model.selections}. Утверждено опор: {approved.join(', ') || 'нет'}. Приёмок
-            комплекта: {model.accepts}. Отправок генерации: {model.submissions}.
+            комплекта: {model.accepts}. Отправок генерации: {model.submissions}. Своих файлов опор: {model.frameImports}. Указаний к опорам:{' '}
+            {model.frameNotes.join(', ') || 'нет'}. Созданий опор: {model.frameRuns}. Удалений попыток: {model.discards}.
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid="production-review-model">
             Проверок видео: {model.reviewStarts}. Отмен проверок: {model.reviewCancels}.

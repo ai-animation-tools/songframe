@@ -154,6 +154,7 @@ export function unavailableApi(asyncFailure: (method: ApiMethod) => Promise<neve
       decide: () => asyncFailure('production.decide'),
       reopenFrame: () => asyncFailure('production.reopenFrame'),
       keepPackageForScene: () => asyncFailure('production.keepPackageForScene'),
+      addKeyframeNote: () => asyncFailure('production.addKeyframeNote'),
       setKeyframeNote: () => asyncFailure('production.setKeyframeNote'),
       quote: () => asyncFailure('production.quote'),
       submit: () => asyncFailure('production.submit'),

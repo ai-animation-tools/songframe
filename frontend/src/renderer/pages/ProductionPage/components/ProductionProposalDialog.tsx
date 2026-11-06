@@ -2,7 +2,7 @@ import { productionTexts } from '@shared/texts/production';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 /** Просмотр предложения можно закрыть без записи пакета; применение остаётся отдельным действием. */
 import { useId, useState, type ReactElement } from 'react';
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, TextField } from '@mui/material';
 import type { AgentSettings } from '@shared/agents';
 import type { ProductionProposal } from '@shared/production-workflow';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
@@ -16,6 +16,7 @@ export function ProductionProposalDialog({
   busy,
   error,
   onApply,
+  onRevise,
   onDiscard
 }: {
   proposal: ProductionProposal;
@@ -24,19 +25,25 @@ export function ProductionProposalDialog({
   busy: boolean;
   error?: string | null;
   onApply(): Promise<boolean>;
+  /** Замечание и запуск доработки агентом: одно действие над этим предложением. */
+  onRevise(note: string): Promise<boolean>;
   onDiscard(): Promise<boolean>;
 }): ReactElement {
   const [open, setOpen] = useState(false);
+  const [reviseNote, setReviseNote] = useState<string | null>(null);
   const titleId = useId();
   const apply = async (): Promise<void> => {
     if (await onApply()) setOpen(false);
+  };
+  const revise = async (): Promise<void> => {
+    if (reviseNote?.trim() && (await onRevise(reviseNote.trim()))) setOpen(false);
   };
   const discard = async (): Promise<void> => {
     if (await onDiscard()) setOpen(false);
   };
   return (
     <Box data-production-proposal={proposal.id}>
-      <Button startIcon={<CompareArrowsIcon />} onClick={() => setOpen(true)}>
+      <Button variant="contained" startIcon={<CompareArrowsIcon />} onClick={() => setOpen(true)}>
         {productionTexts.productionProposalDialog.open}
       </Button>
       {/* Окно занимает всё рабочее пространство, как галерея: сравнение двух длинных текстов требует места. */}
@@ -67,12 +74,35 @@ export function ProductionProposalDialog({
             fill
           />
         </DialogContent>
+        {reviseNote !== null ? (
+          <Box sx={{ px: 3, pb: 1 }}>
+            <TextField
+              autoFocus
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={6}
+              label={productionTexts.productionWorkflowPanel.note}
+              value={reviseNote}
+              onChange={(event) => setReviseNote(event.target.value)}
+            />
+          </Box>
+        ) : null}
         <DialogActions sx={{ gap: 1, flexWrap: 'wrap' }}>
           <Button startIcon={<CancelOutlinedIcon />} onClick={() => setOpen(false)}>
             {productionTexts.productionProposalDialog.close}
           </Button>
           <Box sx={{ flex: 1 }} />
-          <ProposalActions proposal={proposal} busy={busy} onApply={apply} onDiscard={discard} />
+          <ProposalActions
+            proposal={proposal}
+            busy={busy}
+            revising={reviseNote !== null}
+            reviseNote={reviseNote ?? ''}
+            onReviseOpen={() => setReviseNote('')}
+            onRevise={() => void revise()}
+            onApply={apply}
+            onDiscard={discard}
+          />
         </DialogActions>
       </Dialog>
     </Box>

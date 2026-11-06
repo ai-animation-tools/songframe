@@ -45,6 +45,16 @@ const CI_TAG = 'ci';
 const SETTLE_MS = 500;
 /** Адрес, на который витрина подменяет файлы вне набора: 404 по нему — сценарий истории, а не ошибка. */
 const MISSING_FILE = '/media/missing-story-file';
+/**
+ * Chrome обрывает все идущие запросы, когда меняется сеть хоста (VPN, мост контейнера и т. п.),
+ * даже к 127.0.0.1. Оборванный import оставляет историю незавершённой, и проверка ждала бы весь
+ * тайм-аут случайного сценария. Это не сбой истории: страница открывается заново.
+ */
+const NETWORK_CHANGED = 'net::ERR_NETWORK_CHANGED';
+/** Сколько раз открывать историю, если сеть хоста менялась во время загрузки. */
+const OPEN_ATTEMPTS = 5;
+/** События сети идут пачкой: повтор сразу попадает в ту же пачку, поэтому между попытками есть пауза. */
+const REOPEN_DELAY_MS = 3_000;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const indexPath = resolve(here, '../../storybook-static/index.json');
@@ -108,15 +118,37 @@ for (const story of stories) {
       // Истории утраченного файла намеренно ссылаются на отсутствующий адрес. @link src/renderer/testing/storybook.ts
       if (response.status() >= 400 && !new URL(response.url()).pathname.endsWith(MISSING_FILE)) problems.push(`HTTP ${response.status()}: ${response.url()}`);
     });
+    let networkChanged = (): void => {};
     page.on('requestfailed', (request) => {
+      if (request.failure()?.errorText === NETWORK_CHANGED) {
+        networkChanged();
+        return;
+      }
       // Прерванное чтение медиа штатно: плеер отменяет его при перемотке и размонтировании.
       if (request.resourceType() !== 'media' || request.failure()?.errorText !== 'net::ERR_ABORTED')
         problems.push(`запрос не выполнен: ${request.url()} ${request.failure()?.errorText ?? ''}`);
     });
     await page.addInitScript(observeStory);
-    await page.goto(`iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story&globals=theme:${theme};workspace:${workspace}`);
-    await page.waitForFunction(() => window.__songframeStory?.finished === true, null, { timeout: 75_000 });
-    await page.waitForTimeout(SETTLE_MS);
+    const url = `iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story&globals=theme:${theme};workspace:${workspace}`;
+    for (let attempt = 1, opened = false; !opened; attempt++) {
+      if (attempt > OPEN_ATTEMPTS) throw new Error(`Сеть хоста менялась при каждой из ${OPEN_ATTEMPTS} попыток открыть историю.`);
+      if (attempt > 1) await page.waitForTimeout(REOPEN_DELAY_MS);
+      // Сообщения оборванной попытки не относятся к истории.
+      problems.length = 0;
+      const interrupted = new Promise<boolean>((resolve) => {
+        networkChanged = () => resolve(false);
+      });
+      const finished = (async () => {
+        await page.goto(url);
+        await page.waitForFunction(() => window.__songframeStory?.finished === true, null, { timeout: 75_000 });
+        await page.waitForTimeout(SETTLE_MS);
+        return true;
+      })().catch((error: unknown) => {
+        if (String(error).includes(NETWORK_CHANGED)) return false;
+        throw error;
+      });
+      opened = await Promise.race([finished, interrupted]);
+    }
     const outcome = await page.evaluate(() => window.__songframeStory!);
     const overflow = await page.evaluate(() => {
       const area = document.querySelector('[data-testid="story-workspace"]');

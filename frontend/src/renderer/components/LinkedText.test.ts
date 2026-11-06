@@ -66,7 +66,7 @@ describe('LinkedText', () => {
   });
 
   it.each([
-    ['Подготовка плана', '/project/production?anchor=production-workflow'],
+    ['Опоры', '/project/production?anchor=production-workflow'],
     ['Речь', '/project/production?anchor=production-speech'],
     ['Речь (липсинк)', '/project/production?anchor=production-speech'],
     ['Очередь', '/project/production?anchor=production-filter'],

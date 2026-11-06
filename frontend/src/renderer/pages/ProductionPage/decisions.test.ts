@@ -124,7 +124,7 @@ describe('показанный результат', () => {
   it('приёмка без токена показанных оригиналов не вызывает API', async () => {
     const accept = vi.fn();
     const api = { production: { accept } } as unknown as Api;
-    await expect(acceptShownResult(api, '/fixture/project', { shot: 'S01', dir: '/fixture/package' }, { mode: 'full' })).rejects.toThrow('Обновите пакет');
+    await expect(acceptShownResult(api, '/fixture/project', { shot: 'S01', dir: '/fixture/package' }, { mode: 'full' })).rejects.toThrow('Обновите попытку');
     expect(accept).not.toHaveBeenCalled();
   });
 });

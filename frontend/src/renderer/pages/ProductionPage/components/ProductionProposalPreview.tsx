@@ -6,9 +6,11 @@ import type { AgentSettings } from '@shared/agents';
 import type { ProductionFramePrompt, ProductionProposal, ProductionRequestDraft } from '@shared/production-workflow';
 import { productionInputLabel } from '@shared/production-labels';
 import { mediaCommandLabel } from '@shared/media-providers';
-import { AgentIcon, ImageGallery, ImageThumbnail } from '../../../components';
+import { AgentButton, AgentIcon, ImageGallery, ImageThumbnail } from '../../../components';
+import { ActionButton } from '../../../components/ActionButton';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import CheckIcon from '@mui/icons-material/Check';
+import EditIcon from '@mui/icons-material/Edit';
 import { BUSY_REASON, PRODUCTION_PASS_LABELS, PRODUCTION_PROPOSAL_LABELS } from '../constants';
 import { RequestParameters } from './RequestParameters';
 import { Prose } from '../../../components/Prose';
@@ -145,7 +147,7 @@ function RequestDraft({ request, videoProvider }: { request: ProductionRequestDr
           </Typography>
         )}
       </Section>
-      <RequestParameters parameters={request.parameters} />
+      <RequestParameters parameters={request.parameters} provider={videoProvider} />
     </Stack>
   );
 }
@@ -239,11 +241,20 @@ function Proposed({ proposal, videoProvider }: { proposal: ProductionProposal; v
 export function ProposalActions({
   proposal,
   busy,
+  revising = false,
+  reviseNote,
+  onReviseOpen,
+  onRevise,
   onApply,
   onDiscard
 }: {
   proposal: ProductionProposal;
   busy: boolean;
+  /** Открыто поле замечания: кнопка доработки запускает агента. */
+  revising?: boolean;
+  reviseNote?: string;
+  onReviseOpen?(): void;
+  onRevise?(): void;
   onApply(): void;
   onDiscard(): void;
 }): ReactElement | null {
@@ -268,16 +279,24 @@ export function ProposalActions({
         disabledReason={BUSY_REASON}
         onConfirm={onDiscard}
       />
-      <DestructiveButton
-        label={productionTexts.productionProposalPreview.apply}
-        description={productionTexts.productionProposalPreview.applyDescription}
-        confirmLabel={productionTexts.productionProposalPreview.applyConfirm}
-        startIcon={<CheckIcon />}
-        variant="contained"
-        disabled={busy || !ready}
-        disabledReason={applyReason}
-        onConfirm={onApply}
-      />
+      {onRevise ? (
+        revising ? (
+          <AgentButton
+            disabled={busy || !ready || !reviseNote?.trim()}
+            disabledReason={busy ? BUSY_REASON : (applyReason ?? productionTexts.productionWorkflowPanel.noteReason)}
+            onClick={onRevise}
+          >
+            {productionTexts.productionWorkflowPanel.revise}
+          </AgentButton>
+        ) : (
+          <ActionButton startIcon={<EditIcon />} disabled={busy || !ready} disabledReason={applyReason} onClick={onReviseOpen}>
+            {productionTexts.verdictLabels.revise}
+          </ActionButton>
+        )
+      ) : null}
+      <ActionButton variant="contained" startIcon={<CheckIcon />} disabled={busy || !ready} disabledReason={applyReason} onClick={onApply}>
+        {productionTexts.productionProposalPreview.apply}
+      </ActionButton>
     </>
   );
 }

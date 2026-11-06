@@ -130,7 +130,7 @@ export function SendRequestDialog({
               model: pkg.request.model
             })}
           </Typography>
-          <RequestParameters parameters={pkg.request.parameters} />
+          <RequestParameters parameters={pkg.request.parameters} provider={normalizeMediaProvider(pkg.request.provider)} />
           {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} /> : null}
           {pkg.request.inputs.map((input) => (
             <Typography key={`${input.slot}:${input.path}`} variant="caption">

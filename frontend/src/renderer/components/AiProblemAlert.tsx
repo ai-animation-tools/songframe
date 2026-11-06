@@ -5,6 +5,7 @@ import { Alert, Button } from '@mui/material';
 import { SettingsOutlined, TuneOutlined } from '@mui/icons-material';
 import { aiActionProblem, type AiActionKind } from '@shared/ai-access';
 import { useApp } from '../state';
+import { LinkedText } from './LinkedText';
 
 /** Агент выбирается в настройках приложения, провайдеры медиа — в настройках проекта; ссылки HashRouter работают и вне контекста маршрутизатора. */
 export function AiProblemAlert({ kinds = ['agent'] }: { kinds?: AiActionKind[] }): ReactElement | null {
@@ -14,7 +15,8 @@ export function AiProblemAlert({ kinds = ['agent'] }: { kinds?: AiActionKind[] }
   const problems = kinds.map((kind) => ({ kind, message: aiActionProblem(aiAccess, kind) })).filter((item) => item.message);
   if (!problems.length) return null;
   const agent = problems.some((item) => item.kind === 'agent');
-  const media = problems.some((item) => item.kind !== 'agent');
+  // Настройки проекта нужны только для выбора провайдера; вход выполняется на странице, названной в тексте.
+  const media = !!aiAccess && problems.some((item) => item.kind !== 'agent' && !aiAccess[item.kind].selected);
   return (
     <Alert
       severity="info"
@@ -35,7 +37,7 @@ export function AiProblemAlert({ kinds = ['agent'] }: { kinds?: AiActionKind[] }
         ) : undefined
       }
     >
-      {[...new Set(problems.map((item) => item.message))].join(' ')}
+      <LinkedText text={[...new Set(problems.map((item) => item.message))].join(' ')} />
     </Alert>
   );
 }

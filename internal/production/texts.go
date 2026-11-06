@@ -10,6 +10,9 @@ import (
 // ошибок и подписи сохраняют прежний контракт Error.message и полей API дословно.
 
 // stageLabels — STAGE_LABELS: подписи этапов workflow.json пакета.
+// textDescriptionAccepted — метка попытки с принятым описанием до первой опоры.
+const textDescriptionAccepted = "описание принято"
+
 var stageLabels = map[string]string{
 	"description_review":   "описание на согласовании",
 	"keyframes_review":     "опоры на согласовании",
@@ -51,7 +54,7 @@ var staleReasons = map[string]string{
 }
 
 // SceneChanged — SCENE_CHANGED: проблема пакета, подготовленного по прежней постановке плана.
-const SceneChanged = "Постановка или унаследованное состояние плана изменились после подготовки пакета: описание, опоры и промпт могут не соответствовать сценарию."
+const SceneChanged = "Постановка или унаследованное состояние плана изменились после подготовки попытки: описание, опоры и промпт могут не соответствовать сценарию."
 
 // TextScenarioRequired — commonTexts.scenario.requiredForWork.
 const TextScenarioRequired = "Сначала нужен сценарий. Создайте его на странице «Сценарий»."
@@ -83,6 +86,7 @@ const (
 	textFrameUnknown                 = "Неизвестная опора."
 	textFrameRevisionRequired        = "Опишите, что исправить в опоре."
 	textReopenFrameFailed            = "Не удалось вернуть опору на доработку."
+	textFrameInstructionRequired     = "Напишите указание к опоре."
 	textSceneUnchanged               = "Постановка пакета не менялась."
 	textSubmittedOldSceneNoRestamp   = "Попытка уже отправлялась: её материалы относятся к прежней постановке, оставить их для новой нельзя."
 	textRestampFailed                = "Не удалось обновить отпечаток постановки в workflow.json пакета."
@@ -136,7 +140,7 @@ const (
 	textReplacementConsentRequired   = "У плана уже есть принятый комплект. Подтвердите замену в диалоге приёмки."
 	textAcceptBoundsInvalid          = "Границы участка должны быть конечными неотрицательными секундами на сетке 30 кадров/с."
 	textAcceptEndInvalid             = "Конец участка должен быть позже начала."
-	textAcceptSpeechRequired         = "Речевой план: сначала подготовьте WAV речи в блоке «Речь» этого пакета."
+	textAcceptSpeechRequired         = "Речевой план: сначала подготовьте WAV речи в блоке «Речь» этой попытки."
 	textReplaceAssetsStep            = "замена комплекта в assets"
 	textMoveAssetsStep               = "перенос в assets"
 	textBundleAbsolutePathRequired   = "Укажите абсолютный путь папки пакета."

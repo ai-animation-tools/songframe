@@ -36,6 +36,13 @@ export function Accept(project: string, shot: string, packageDir: string, option
 }
 
 /**
+ * AddKeyframeNote — необязательное указание к опоре до её создания.
+ */
+export function AddKeyframeNote(project: string, packageDir: string, frame: string, note: string, noteScope: string): $CancellablePromise<void> {
+    return $Call.ByID(639418163, project, packageDir, frame, note, noteScope);
+}
+
+/**
  * AttachResult — неизвестный исход: файл из истории генераций сервиса становится оригиналом.
  */
 export function AttachResult(project: string, packageDir: string, files: string[]): $CancellablePromise<jobs$0.Info> {

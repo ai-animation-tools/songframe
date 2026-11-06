@@ -2,7 +2,19 @@ import { settingsTexts } from '@shared/texts/settings';
 import { commonTexts } from '@shared/texts/common';
 /** Поля глобального выбора агента; пустой выбор сохраняет работу приложения без CLI. */
 import type { ReactElement } from 'react';
-import { Autocomplete, createFilterOptions, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, Stack, TextField, Typography } from '@mui/material';
+import {
+  Autocomplete,
+  createFilterOptions,
+  FormControl,
+  FormControlLabel,
+  FormHelperText,
+  FormLabel,
+  Radio,
+  RadioGroup,
+  Stack,
+  TextField,
+  Typography
+} from '@mui/material';
 import type { AgentModel, AgentSettings } from '@shared/agents';
 import { AGENT_PROVIDER_IDS, AGENT_PROVIDERS, isAgentProvider, type AgentProvider } from '@shared/agent-providers';
 import { AgentIcon } from '../../../components';
@@ -53,14 +65,14 @@ export function AgentSettingsForm({
         >
           <FormControlLabel value="" control={<Radio />} label={settingsTexts.withoutAgent} />
           {AGENT_PROVIDER_IDS.map((provider) => {
-            // Пока идёт проверка, вариант недоступен; ненайденный агент выбрать нельзя.
+            // Ненайденный агент выбрать нельзя; пока идёт проверка, выбор не задерживается.
             const missing = installed?.[provider] === false;
             return (
               <FormControlLabel
                 key={provider}
                 value={provider}
                 control={<Radio />}
-                disabled={!installed || missing}
+                disabled={missing}
                 title={missing ? settingsTexts.agentMissing(AGENT_PROVIDERS[provider].title) : undefined}
                 label={
                   <Stack component="span" direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
@@ -76,6 +88,7 @@ export function AgentSettingsForm({
             );
           })}
         </RadioGroup>
+        <FormHelperText>{settingsTexts.agentScope}</FormHelperText>
       </FormControl>
       {/* Без агента модель не выбирается, поле не показываем. */}
       {settings ? (

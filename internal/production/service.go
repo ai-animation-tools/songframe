@@ -23,6 +23,7 @@ import (
 	"songframe-go/internal/projectfile"
 	"songframe-go/internal/projectfs"
 	"songframe-go/internal/providers"
+	"songframe-go/internal/shotworkflow"
 	"songframe-go/internal/tools"
 )
 
@@ -527,6 +528,27 @@ func (s *Service) ReopenFrame(project, packageDir, frame, note, noteScope string
 		return failure(result, textReopenFrameFailed)
 	}
 	return s.askNextFrame(project, directory)
+}
+
+// AddKeyframeNote — необязательное указание пользователя к опоре до её создания. Занимает пакет
+// на время записи, как и другие изменения workflow.json; вопрос пакета не меняется.
+func (s *Service) AddKeyframeNote(project, packageDir, frame, note, noteScope string) error {
+	directory, err := s.available(project, packageDir)
+	if err != nil {
+		return err
+	}
+	if !framePattern.MatchString(frame) {
+		return errors.New(textFrameUnknown)
+	}
+	if jscompat.Trim(note) == "" {
+		return errors.New(textFrameInstructionRequired)
+	}
+	directory, release, err := s.claim(project, directory)
+	if err != nil {
+		return err
+	}
+	defer release()
+	return shotworkflow.AddFrameNote(directory, frame, jscompat.Trim(note), scope(noteScope))
 }
 
 // restampPackage — restampPackage оригинала: в тексте workflow.json меняется только первое значение

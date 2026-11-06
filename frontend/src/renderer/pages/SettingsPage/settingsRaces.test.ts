@@ -80,11 +80,11 @@ describe('Выбор только найденных агентов', () => {
     expect(html).toContain('Claude Code не найден на компьютере');
   });
 
-  it('пока идёт проверка, агентов выбрать нельзя, а «Без агента» доступен', () => {
+  it('пока идёт проверка, выбор агента доступен: он не ждёт ответа программ', () => {
     vi.mocked(useInstalledAgents).mockReturnValue(null);
     const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(SettingsPage)));
-    expect(radioDisabled(html, 'claude')).toBe(true);
-    expect(radioDisabled(html, 'codex')).toBe(true);
+    expect(radioDisabled(html, 'claude')).toBe(false);
+    expect(radioDisabled(html, 'codex')).toBe(false);
     expect(radioDisabled(html, '')).toBe(false);
   });
 });

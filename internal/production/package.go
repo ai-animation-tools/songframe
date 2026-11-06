@@ -352,6 +352,10 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 	if !known {
 		stageLabel = stage
 	}
+	// Принятое описание не меняет этап до первой опоры, но вопрос по нему уже закрыт.
+	if stage == "description_review" && jscompat.Get(workflow, "description_approved") == true {
+		stageLabel = textDescriptionAccepted
+	}
 	if stage == "submitted" && request != nil && request.AttemptStatus != nil && *request.AttemptStatus != "" {
 		label, ok := attemptLabels[*request.AttemptStatus]
 		if !ok {

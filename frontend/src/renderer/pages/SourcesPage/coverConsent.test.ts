@@ -140,7 +140,8 @@ describe('согласование обложки после переноса т
       settingsNotes: {},
       defaults: {},
       modelOrder: {},
-      commandLabels: {}
+      commandLabels: {},
+      parameterLabels: {}
     });
   }
 

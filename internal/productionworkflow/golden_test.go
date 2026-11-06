@@ -173,6 +173,16 @@ func v8Deviation(value any) any {
 	return value
 }
 
+// originalFields убирает поля вида, которых не было в оригинале и которые служат только новому
+// интерфейсу (этап 51): остальной вид сверяется с эталоном как есть.
+func originalFields(value any) any {
+	if view, ok := value.(View); ok {
+		view.NextStage, view.ReplaceFrame = nil, nil
+		return view
+	}
+	return value
+}
+
 // canonical — JSON в форме JSON.stringify после замены сообщений V8.
 func canonical(t *testing.T, data []byte) string {
 	t.Helper()
@@ -382,7 +392,7 @@ func firstDifference(got, want string) string {
 // compareResult сверяет результат шага (вид, сводку) в форме JSON.stringify.
 func (r *goldenRun) compareResult(t *testing.T, label string, want json.RawMessage, got any) {
 	t.Helper()
-	data, err := json.Marshal(got)
+	data, err := json.Marshal(originalFields(got))
 	if err != nil {
 		t.Fatal(err)
 	}

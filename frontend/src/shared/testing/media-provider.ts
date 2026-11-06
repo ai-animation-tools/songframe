@@ -17,7 +17,8 @@ export const testProviderInfo: MediaProviderInfo = {
   settingsNotes: {},
   defaults: { image: { resolution: '2k', aspect_ratio: '16:9', outputs: 1 } },
   modelOrder: { image: ['test-image-pro', 'test-image'], video: ['test-video-pro', 'test-video'] },
-  commandLabels: { image_to_video: 'видео по опорным кадрам' }
+  commandLabels: { image_to_video: 'видео по опорным кадрам' },
+  parameterLabels: {}
 };
 
 /** Тестовый провайдер изображений `test-agent`: генерацию исполняет программа-агент из реестра агентов. */

@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Локальная модель хранит отчёт между открытиями; файлы и исполнитель принадлежат только витрине. */
 import { useState, useSyncExternalStore } from 'react';
 import type { Api } from '@shared/api';
@@ -178,11 +179,15 @@ export function VideoReviewStory({ accepted = false }: { accepted?: boolean }) {
         <PackageResult
           pkg={accepted ? { ...pkg, stage: 'accepted', stageLabel: 'Принят' } : pkg}
           busy={false}
-          onAccept={() => setAccepted((count) => count + 1)}
           onSelectImage={() => undefined}
           onContactSheet={() => undefined}
         />
       )}
+      {open && !accepted ? (
+        <Button variant="contained" onClick={() => setAccepted((count) => count + 1)} sx={{ alignSelf: 'start' }}>
+          {productionTexts.verdictLabels.accept}
+        </Button>
+      ) : null}
       <Typography data-testid="review-agent-calls">
         Запусков агента: {calls.start}; отмен: {calls.cancel}
       </Typography>

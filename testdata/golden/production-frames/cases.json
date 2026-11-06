@@ -399,9 +399,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -504,9 +504,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -644,7 +644,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -779,7 +779,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -895,7 +895,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -1454,9 +1454,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -1622,7 +1622,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -1950,9 +1950,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -2201,9 +2201,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -2462,9 +2462,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -2738,9 +2738,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -3025,9 +3025,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -3326,9 +3326,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -3636,9 +3636,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -4043,9 +4043,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -4377,9 +4377,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -4831,9 +4831,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -5312,9 +5312,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -5821,9 +5821,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -6358,9 +6358,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -6927,9 +6927,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -7335,9 +7335,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -8128,9 +8128,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -8964,9 +8964,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -9842,9 +9842,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -10416,7 +10416,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -10555,9 +10555,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -11259,9 +11259,9 @@
             "busy": true,
             "stage": "keyframes_review",
             "reasons": {
-              "prepare": "идёт задание агента или операция пакета",
-              "continue": "идёт задание агента или операция пакета",
-              "frames": "идёт задание агента или операция пакета"
+              "prepare": "идёт задание агента или операция попытки",
+              "continue": "идёт задание агента или операция попытки",
+              "frames": "идёт задание агента или операция попытки"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -14535,8 +14535,8 @@
             "stage": "image_request_choice",
             "reasons": {
               "prepare": "сначала завершите согласование или получение изображения",
-              "continue": "сначала ответьте на вопрос согласования в карточке пакета",
-              "frames": "сначала ответьте на вопрос согласования в карточке пакета"
+              "continue": "сначала ответьте на вопрос согласования на шаге плана",
+              "frames": "сначала ответьте на вопрос согласования на шаге плана"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -14676,8 +14676,8 @@
             "stage": "image_request_choice",
             "reasons": {
               "prepare": "сначала завершите согласование или получение изображения",
-              "continue": "сначала ответьте на вопрос согласования в карточке пакета",
-              "frames": "сначала ответьте на вопрос согласования в карточке пакета"
+              "continue": "сначала ответьте на вопрос согласования на шаге плана",
+              "frames": "сначала ответьте на вопрос согласования на шаге плана"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -15529,8 +15529,8 @@
             "stage": "image_request_choice",
             "reasons": {
               "prepare": "сначала завершите согласование или получение изображения",
-              "continue": "сначала ответьте на вопрос согласования в карточке пакета",
-              "frames": "сначала ответьте на вопрос согласования в карточке пакета"
+              "continue": "сначала ответьте на вопрос согласования на шаге плана",
+              "frames": "сначала ответьте на вопрос согласования на шаге плана"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -15675,8 +15675,8 @@
             "stage": "image_request_choice",
             "reasons": {
               "prepare": "сначала завершите согласование или получение изображения",
-              "continue": "сначала ответьте на вопрос согласования в карточке пакета",
-              "frames": "сначала ответьте на вопрос согласования в карточке пакета"
+              "continue": "сначала ответьте на вопрос согласования на шаге плана",
+              "frames": "сначала ответьте на вопрос согласования на шаге плана"
             },
             "derivedFrom": null,
             "canPrepare": false,
@@ -16447,7 +16447,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -16523,7 +16523,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -16643,7 +16643,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -17033,7 +17033,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -17107,7 +17107,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",
@@ -17185,7 +17185,7 @@
             "canPrepare": true,
             "canContinue": false,
             "canRevise": false,
-            "canGenerateFrames": true,
+            "canGenerateFrames": false,
             "paid": false,
             "imageProvider": "test-agent",
             "videoProvider": "test",

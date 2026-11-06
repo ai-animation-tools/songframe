@@ -11,7 +11,7 @@ import (
 // оригинала (src/shared/texts/production.ts на 634fd94) дословно. Они уходят в ошибки Wails и в
 // записи предложений, поэтому меняются только вместе с оригиналом поведения.
 const (
-	textSceneChangedReason          = "постановка плана изменилась после подготовки пакета: оставьте пакет для текущей постановки, доработайте описание или подготовьте новый пакет"
+	textSceneChangedReason          = "постановка плана изменилась после подготовки попытки: оставьте попытку для текущей постановки, доработайте описание или подготовьте новую попытку"
 	textPackageFolderRequired       = "Выберите отдельный пакет в plan/batches или plan/awaiting."
 	textShotIDRequired              = "Укажите один явный ID плана Mxx."
 	textSceneRegistryInvalid        = "Нет корректного plan/scenes.json."
@@ -22,28 +22,28 @@ const (
 	textJobCancelled                = "Подготовка остановлена; при необходимости подготовьте новое предложение."
 	textProposalIncomplete          = "Агент не завершил подготовку предложения."
 	textAgentRefused                = "Агент отказался подготовить предложение. Возможно, в сценарии есть противоречия."
-	textOperationBusy               = "идёт задание агента или операция пакета"
+	textOperationBusy               = "идёт задание агента или операция попытки"
 	textResolveProposalFirst        = "сначала примените или отклоните текущее предложение"
-	textResolvePackageQuestionFirst = "сначала ответьте на вопрос согласования в карточке пакета"
+	textResolvePackageQuestionFirst = "сначала ответьте на вопрос согласования на шаге плана"
 	textResolveImageFirst           = "сначала завершите согласование или получение изображения"
 	textApproveScenarioFirst        = "сценарий не утверждён в приложении: утвердите кастинг, трактовку и сцены на странице «Сценарий»"
-	textAcceptedDescriptionFrames   = "нужен выбранный пакет с принятым описанием и опорами"
+	textAcceptedDescriptionFrames   = "нужна выбранная попытка с принятым описанием и опорами"
 	textSentAttemptNeedsRetry       = "попытка уже отправлена: дальше только повтор или возврат с замечанием"
 	textSpeechRequiredHint          = "речевой план: сначала подготовьте WAV речи в блоке «Речь»"
 	textFramesAcceptedPromptNext    = "опоры приняты, видеопромпт готовится этой кнопкой после принятия описания"
 	textCreateAndAcceptFramesFirst  = "сначала создайте и примите опоры"
 	textApplyAndAcceptDescription   = "сначала примените и примите описание плана"
-	textAcceptedDescriptionRequired = "нужен выбранный пакет с принятым описанием"
+	textAcceptedDescriptionRequired = "нужна выбранная попытка с принятым описанием"
 	textAttemptAlreadySent          = "попытка уже отправлена"
 	textFramesAlreadyAccepted       = "опоры уже приняты"
-	textFramePlanMissing            = "в пакете нет плана опор: примените описание с промптами опор"
+	textFramePlanMissing            = "в попытке нет плана опор: примените описание с промптами опор"
 	textAcceptDescriptionFirst      = "сначала примите описание плана"
 	textStartParametersInvalid      = "Неверные параметры подготовки производства."
 	textCurrentImageUnresolved      = "Сначала завершите согласование или получение текущего изображения. Новая отправка автоматически не создаётся."
 	textWaitForJob                  = "Дождитесь завершения текущего задания."
 	textResolveProposalFirstError   = "Сначала примените или отклоните текущее предложение."
 	textScenarioAndSettingsRequired = "Сначала утвердите актуальный сценарий и настройки генерации."
-	textPackageUnavailable          = "Выберите доступный пакет приложения."
+	textPackageUnavailable          = "Выберите доступную попытку."
 	textResolveQuestionFirst        = "Сначала ответьте на текущий вопрос согласования."
 	textDescriptionOrFramesReview   = "На этом этапе требуется согласование описания или опор."
 	textStageUnavailable            = "Запрошенный этап ещё не доступен."
@@ -211,7 +211,7 @@ func textAcceptFrameFirstHint(frame string) string {
 }
 
 func textResolveSceneChangedPackageFirst(reason string) string {
-	return "Сначала решите судьбу пакета: " + reason + "."
+	return "Сначала решите судьбу попытки: " + reason + "."
 }
 
 // textProviderModelsFailed — providerModelsFailed: provider "" — undefined (провайдер не из реестра).

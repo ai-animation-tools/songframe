@@ -1,41 +1,52 @@
 import { productionTexts } from '@shared/texts/production';
-/** Предметные действия работают только с выбранным пакетом; агент возвращает проверяемое предложение. */
+/**
+ * Работа агента внутри текущего шага пути: задание, предложение, следующее действие и доработка.
+ * Предложение решается целиком в окне сравнения; на самом шаге его текст не повторяется.
+ */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Paper, Stack, TextField, Typography } from '@mui/material';
-import type { ProductionWorkflowStart } from '@shared/production-workflow';
+import { Alert, Button, Stack, TextField, Typography } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import type { ProductionPass, ProductionWorkflowStart } from '@shared/production-workflow';
 import type { PackageView } from '@shared/types';
 import { mediaProviderInfo } from '@shared/media-providers';
 import { AgentButton } from '../../../components';
 import { AgentJobCard } from '../../../components/AgentJobCard';
-import { useProductionWorkflow } from '../useProductionWorkflow';
+import type { ProductionWorkflow } from '../useProductionWorkflow';
 import { ProductionProposalDialog } from './ProductionProposalDialog';
-import { ProductionFrameImport } from './ProductionFrameImport';
-import { ProductionFrameGenerationButton } from './ProductionFrameGenerationButton';
 import { LinkedText } from '../../../components/LinkedText';
 import { BUSY_REASON } from '../constants';
-import { DerivedShotNotice } from './DerivedShotNotice';
 import { useMethodAvailability } from '../../../availability';
 
+/** Подпись следующего прохода агента: кнопка называет шаг, а не «продолжить». */
+const CONTINUE_LABELS: Partial<Record<ProductionPass, string>> = {
+  prompt: productionTexts.productionWorkflowPanel.continuePrompt,
+  request: productionTexts.productionWorkflowPanel.continueRequest
+};
+
 export function ProductionWorkflowPanel({
-  project,
-  shot,
+  workflow,
   packageDir,
   decisionToken,
   decision,
   packageBusy,
-  onBusyChange,
-  onApplied
+  questionOpen = false,
+  reviseOpen,
+  onReviseOpen,
+  onAcceptProposal,
+  onReviseProposal
 }: {
-  project: string;
-  shot: string;
+  workflow: ProductionWorkflow;
   packageDir: string | undefined;
   decisionToken?: string;
   decision?: PackageView['decision'];
   packageBusy: boolean;
-  onBusyChange(busy: boolean): void;
-  onApplied(packageDir: string | null): Promise<void>;
+  /** На шаге открыт вопрос попытки: действия агента ждут ответа и не показываются. */
+  questionOpen?: boolean;
+  reviseOpen: boolean;
+  onReviseOpen(open: boolean): void;
+  onAcceptProposal(): Promise<boolean>;
+  onReviseProposal(note: string): Promise<boolean>;
 }): ReactElement {
-  const workflow = useProductionWorkflow(project, shot, packageDir, onApplied);
   // Замечание к опоре уже в списке замечаний и уходит в создание опоры: в поле доработки агентом его не подставляем.
   const savedNote = decision?.verdict === 'revise' && decision.stage !== 'keyframes_review' ? (decision.note ?? '') : '';
   // Возврат уже содержит замечание: для явного запуска агенту не нужно вводить его второй раз.
@@ -46,22 +57,21 @@ export function ProductionWorkflowPanel({
   const [validation, setValidation] = useState<string | null>(null);
   const view = workflow.view;
   const busy = workflow.busy || packageBusy;
-  // Создание и импорт опор переносятся в Go отдельно: до этого кнопки объясняют причину платформы.
   const generation = useMethodAvailability('productionWorkflow.generateFrames');
-  const importing = useMethodAvailability('productionWorkflow.importFrames');
   const framesStage = view?.proposal?.stage === 'frames' || lastAction === 'frames';
-  const reportBusy = useRef(onBusyChange);
-  reportBusy.current = onBusyChange;
-  useEffect(() => onBusyChange(workflow.busy), [workflow.busy, onBusyChange]);
-  // После ухода с пакета его завершение больше не опрашивается этой панелью.
-  useEffect(() => () => reportBusy.current(false), []);
-  // Ошибка ставится у ряда кнопок, вызвавших действие: при закреплённой колонке начало панели может быть вне вида.
+  const reviseArea = useRef<HTMLDivElement>(null);
+  // Указания перед видеопромптом необязательны и не записываются в попытку: они идут в задание агента.
+  const promptNext = view?.nextStage === 'prompt';
+  const [instructionOpen, setInstructionOpen] = useState(false);
+  const [instruction, setInstruction] = useState('');
+  useEffect(() => {
+    if (reviseOpen) reviseArea.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [reviseOpen]);
   const errorAlert = workflow.error ? (
     <Alert severity="error">
       <LinkedText text={workflow.error} />
     </Alert>
   ) : null;
-  const reviseError = lastAction === 'revise' && view?.canRevise;
   const start = async (action: ProductionWorkflowStart['action']): Promise<void> => {
     if (busy) return;
     if (action === 'revise' && !note.trim()) {
@@ -70,39 +80,120 @@ export function ProductionWorkflowPanel({
     }
     setValidation(null);
     setLastAction(action);
-    await workflow.start(action, action === 'revise' ? note.trim() : undefined);
+    const instructionText = action === 'continue' && promptNext ? instruction.trim() : '';
+    await workflow.start(action, action === 'revise' ? note.trim() : instructionText || undefined);
   };
+  const proposal = view?.proposal;
+  // Кнопка просмотра есть только у законченного ответа: идущее задание и применённое предложение нечего решать.
+  const reviewable = !!proposal && proposal.status !== 'running' && proposal.status !== 'applied';
+  // Опора агента применяется сама; окно нужно, только если применить её нельзя.
+  const quietFrames = proposal?.stage === 'frames' && proposal.status === 'ready' && !proposal.stale && !workflow.error;
+  const canAct = !!view && !view.paid && !questionOpen && !view.job?.status.match(/running/) && !reviewable;
+  const continueLabel = view?.nextStage ? CONTINUE_LABELS[view.nextStage] : undefined;
+  const reason = busy ? BUSY_REASON : !packageDir ? view?.reasons.prepare : view?.reasons.continue;
+  const primaryDisabled = busy || !(packageDir ? view?.canContinue : view?.canPrepare);
   return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
-      <Stack spacing={2}>
-        <Typography variant="subtitle1" fontWeight={600}>
-          {productionTexts.productionWorkflowPanel.title({ shot })}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {packageDir ? productionTexts.productionWorkflowPanel.package({ packageDir }) : productionTexts.productionWorkflowPanel.newPreparation}{' '}
-          {view?.paid ? productionTexts.productionWorkflowPanel.sent : productionTexts.productionWorkflowPanel.description}
-        </Typography>
-        {view?.derivedFrom ? <DerivedShotNotice source={view.derivedFrom} /> : null}
-        {view?.problems.length ? (
-          <Alert severity="warning">
-            <LinkedText text={view.problems.join(' ')} />
-          </Alert>
-        ) : null}
-        {view?.canRevise ? (
-          <Stack spacing={1}>
-            <Alert severity="info">{productionTexts.productionWorkflowPanel.revisionHint({ savedNote })}</Alert>
+    <Stack spacing={1.5}>
+      {view?.problems.length ? (
+        <Alert severity="warning">
+          <LinkedText text={view.problems.join(' ')} />
+        </Alert>
+      ) : null}
+      {view?.job ? (
+        <AgentJobCard
+          compact
+          job={view.job}
+          retryKind={framesStage ? 'image' : 'agent'}
+          // Повтор опор выполняет программа-исполнитель провайдера изображений проекта, а не выбранный текстовый агент.
+          retryProvider={framesStage ? (mediaProviderInfo(view.imageProvider, 'image')?.executor ?? view.job.provider) : undefined}
+          onCancel={workflow.cancel}
+          onRetry={() => {
+            const action =
+              lastAction ?? (view.proposal?.stage === 'frames' ? 'frames' : view.canPrepare ? 'prepare' : view.canContinue ? 'continue' : 'revise');
+            if (action === 'frames') {
+              if (!busy && view.canGenerateFrames && generation.available) void workflow.generateFrames();
+            } else void start(action);
+          }}
+        />
+      ) : null}
+      {reviewable && proposal && !quietFrames ? (
+        <ProductionProposalDialog
+          key={proposal.id}
+          proposal={proposal}
+          error={workflow.error}
+          provider={view?.job?.provider ?? null}
+          videoProvider={view?.videoProvider ?? null}
+          busy={busy}
+          onApply={onAcceptProposal}
+          onRevise={onReviseProposal}
+          onDiscard={workflow.discard}
+        />
+      ) : null}
+      {canAct && (!packageDir || continueLabel) ? (
+        <Stack spacing={0.5} sx={{ alignItems: 'flex-start' }}>
+          {packageDir && promptNext && instructionOpen ? (
+            <TextField
+              sx={{ alignSelf: 'stretch' }}
+              label={productionTexts.productionWorkflowPanel.instruction}
+              multiline
+              fullWidth
+              minRows={2}
+              maxRows={8}
+              autoFocus
+              disabled={busy}
+              helperText={productionTexts.productionWorkflowPanel.instructionHint}
+              value={instruction}
+              onChange={(event) => setInstruction(event.target.value)}
+            />
+          ) : null}
+          {packageDir ? (
+            <AgentButton
+              variant="contained"
+              disabled={primaryDisabled}
+              disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
+              title={productionTexts.productionWorkflowPanel.continueHint}
+              onClick={() => void start('continue')}
+            >
+              {continueLabel}
+            </AgentButton>
+          ) : (
+            <AgentButton
+              variant="contained"
+              disabled={primaryDisabled}
+              disabledReason={reason ?? productionTexts.productionWorkflowPanel.loadingReason}
+              title={productionTexts.productionWorkflowPanel.prepareHint}
+              onClick={() => void start('prepare')}
+            >
+              {productionTexts.productionWorkflowPanel.prepare}
+            </AgentButton>
+          )}
+          {packageDir && promptNext && !instructionOpen ? (
+            <Button size="small" startIcon={<EditIcon />} disabled={busy} onClick={() => setInstructionOpen(true)}>
+              {productionTexts.productionWorkflowPanel.instructionOpen}
+            </Button>
+          ) : null}
+          {primaryDisabled && !busy && reason && !view?.problems.includes(reason) ? (
+            <Typography variant="caption" color="text.secondary">
+              <LinkedText text={reason} />
+            </Typography>
+          ) : null}
+        </Stack>
+      ) : null}
+      {view?.canRevise && !reviewable && !questionOpen ? (
+        reviseOpen || savedNote ? (
+          <Stack spacing={1} ref={reviseArea}>
             <TextField
               label={savedNote ? productionTexts.productionWorkflowPanel.savedNote : productionTexts.productionWorkflowPanel.note}
-              size="small"
               multiline
               fullWidth
               minRows={3}
               maxRows={8}
+              autoFocus={!savedNote}
               helperText={productionTexts.productionWorkflowPanel.noteHint}
               value={note}
               onChange={(event) => setNote(event.target.value)}
             />
-            {validation && <Alert severity="warning">{validation}</Alert>}
+            {validation ? <Alert severity="warning">{validation}</Alert> : null}
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <AgentButton
                 disabled={busy || !note.trim()}
@@ -112,92 +203,14 @@ export function ProductionWorkflowPanel({
                 {productionTexts.productionWorkflowPanel.revise}
               </AgentButton>
             </Stack>
-            {reviseError ? errorAlert : null}
           </Stack>
-        ) : null}
-        {view?.job ? (
-          <AgentJobCard
-            compact
-            job={view.job}
-            retryKind={framesStage ? 'image' : 'agent'}
-            // Повтор опор выполняет программа-исполнитель провайдера изображений проекта, а не выбранный текстовый агент.
-            retryProvider={framesStage ? (mediaProviderInfo(view.imageProvider, 'image')?.executor ?? view.job.provider) : undefined}
-            onCancel={workflow.cancel}
-            onRetry={() => {
-              const action =
-                lastAction ?? (view.proposal?.stage === 'frames' ? 'frames' : view.canPrepare ? 'prepare' : view.canContinue ? 'continue' : 'revise');
-              if (action === 'frames') {
-                if (!busy && view.canGenerateFrames && generation.available) void workflow.generateFrames();
-              } else void start(action);
-            }}
-          />
-        ) : null}
-        {view?.proposal ? (
-          <ProductionProposalDialog
-            key={view.proposal.id}
-            proposal={view.proposal}
-            error={workflow.error}
-            provider={view.job?.provider ?? null}
-            videoProvider={view.videoProvider ?? null}
-            busy={busy}
-            onApply={workflow.apply}
-            onDiscard={workflow.discard}
-          />
-        ) : null}
-        {packageDir && view?.framePrompts.length ? (
-          <ProductionFrameImport
-            key={`${packageDir}:${decisionToken ?? ''}`}
-            frames={view.framePrompts.filter((frame) => !view.approvedFrameIds.includes(frame.id))}
-            busy={busy || !view.canGenerateFrames || !importing.available}
-            busyReason={
-              busy
-                ? BUSY_REASON
-                : !view.canGenerateFrames
-                  ? (view.reasons.frames ?? productionTexts.productionWorkflowPanel.descriptionRequired)
-                  : (importing.reason ?? undefined)
-            }
-            onImport={workflow.importFrames}
-          />
-        ) : null}
-        {view?.paid ? null : (
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <AgentButton
-              disabled={busy || !view?.canPrepare}
-              disabledReason={busy ? BUSY_REASON : (view?.reasons.prepare ?? productionTexts.productionWorkflowPanel.loadingReason)}
-              title={productionTexts.productionWorkflowPanel.prepareHint}
-              onClick={() => void start('prepare')}
-            >
-              {productionTexts.productionWorkflowPanel.prepare}
-            </AgentButton>
-            <AgentButton
-              disabled={busy || !view?.canContinue}
-              disabledReason={busy ? BUSY_REASON : (view?.reasons.continue ?? productionTexts.productionWorkflowPanel.loadingReason)}
-              title={productionTexts.productionWorkflowPanel.continueHint}
-              onClick={() => void start('continue')}
-            >
-              {productionTexts.productionWorkflowPanel.continue}
-            </AgentButton>
-            {view ? (
-              <ProductionFrameGenerationButton
-                provider={view.imageProvider}
-                disabled={busy || !view.canGenerateFrames || !generation.available}
-                disabledReason={busy ? BUSY_REASON : !view.canGenerateFrames ? view.reasons.frames : generation.reason}
-                frame={view.nextFrame}
-                title={
-                  view.nextFrame
-                    ? productionTexts.productionWorkflowPanel.frameHint({ nextFrame: view.nextFrame })
-                    : productionTexts.productionWorkflowPanel.createHint
-                }
-                onGenerate={() => {
-                  setLastAction('frames');
-                  void workflow.generateFrames();
-                }}
-              />
-            ) : null}
-          </Stack>
-        )}
-        {reviseError ? null : errorAlert}
-      </Stack>
-    </Paper>
+        ) : (
+          <Button size="small" startIcon={<EditIcon />} sx={{ alignSelf: 'flex-start' }} disabled={busy} onClick={() => onReviseOpen(true)}>
+            {productionTexts.productionWorkflowPanel.reviseOpen}
+          </Button>
+        )
+      ) : null}
+      {errorAlert}
+    </Stack>
   );
 }

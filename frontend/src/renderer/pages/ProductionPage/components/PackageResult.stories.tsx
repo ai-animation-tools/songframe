@@ -1,6 +1,7 @@
 /** Просмотр оригиналов, отдельный выбор кандидата и приёмка используют рабочие блоки и локальную модель API. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { productionTexts } from '@shared/texts/production';
 import { receivedPackage, RESULT_ERROR, resultStoryOptions, ResultStory } from '../../../testing/resultStories';
 
 const meta = {
@@ -111,21 +112,28 @@ export const ZeroSectionRetry: Story = {
   }
 };
 
-export const ReopenAndReview: Story = {
-  name: 'Вернуть вопрос · перейти к монтажной пробе с оригиналом',
+export const Review: Story = {
+  name: 'Монтажная проба · переход с оригиналом, вопрос о результате сохраняется',
   args: { showDecision: true },
+  parameters: { songframe: resultStoryOptions({ pkg: receivedPackage('video', { question: true }) }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Вернуть вопрос о результате' }));
-    await canvas.findByText('Принять полученный результат?');
-    await expect(canvas.queryByRole('button', { name: 'Вернуть вопрос о результате' })).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: 'Собрать пробу' }));
+    await userEvent.click(canvas.getByRole('button', { name: productionTexts.verdictLabels.review }));
     const route = await canvas.findByText(/Открыт маршрут: \/project\/montage/);
     await expect(route).toHaveTextContent('shots=M01,M02,M03');
     await expect(route).toHaveTextContent('source=M02%3Aplan%2Fbatches%2FM02-video-attempt-01');
     await expect(route).toHaveTextContent('Вопрос о результате сохранён');
     await expect(canvas.getByText('Принять полученный результат?')).toBeInTheDocument();
     await expect(canvas.getByTestId('delivery-state')).toHaveTextContent('приёмка: 0');
+  }
+};
+
+export const FullScreen: Story = {
+  name: 'Оригинал · кнопка «На весь экран» у плеера',
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: productionTexts.videoPlayer.fullscreen })).toBeEnabled();
+    await expect(canvasElement.querySelector('video')).toHaveAttribute('controls');
   }
 };
 
@@ -191,7 +199,7 @@ export const Busy: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvasElement.querySelector('video')).toHaveAttribute('controls');
-    for (const name of ['Принять', 'Вернуть вопрос о результате', 'Сделать техническую сводку']) {
+    for (const name of ['Принять', 'Сделать техническую сводку']) {
       await expect(canvas.getByRole('button', { name })).toBeDisabled();
     }
   }

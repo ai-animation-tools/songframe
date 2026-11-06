@@ -11,7 +11,7 @@ describe('пустой список планов', () => {
       createElement(ProductionShotList, { shots: [], selected: null, onSelect: vi.fn(), filter: 'attention', onResetFilter: vi.fn() })
     );
     expect(html).toContain('Ждут вашего действия (0)');
-    expect(html).toContain('Ни один пакет не ждёт вашего действия');
+    expect(html).toContain('Ни одна попытка не ждёт вашего действия');
     expect(html).toContain('Показать все планы');
   });
 

@@ -1,3 +1,4 @@
+import { productionTexts } from '@shared/texts/production';
 /** Локальная модель получения сохраняет оплаченные оригиналы, а выбор опоры и приёмку выполняет отдельными переходами. */
 import { useState, useSyncExternalStore } from 'react';
 import { Alert, Button, Paper, Stack, Typography } from '@mui/material';
@@ -199,10 +200,6 @@ function createResultSession(options: ResultModelOptions): StoryApiSession {
         checked(project, dir);
         return run('contact_sheet', (pkg) => ({ ...pkg, preview: [1, 2].map((index) => `${pkg.dir}/preview/story-image.png?summary=${index}`) }));
       },
-      reopenQuestion: async (project, dir) => {
-        const pkg = checked(project, dir);
-        publish({ pkg: { ...pkg, pendingDecision: question(pkg) } });
-      },
       selectImage: async (project, dir, index, token) => {
         const pkg = checked(project, dir);
         if (!pkg.resultToken || token !== pkg.resultToken || !pkg.request?.downloads[index]) throw new Error('Выбранный оригинал не подтверждён.');
@@ -361,12 +358,16 @@ function DeliveryStory({ resume, busy = false, providerAvailable = true, showDec
             key={`result-${state.epoch}`}
             pkg={pkg}
             busy={locked}
-            onAccept={openAccept}
             onContactSheet={() => act(window.api.production.contactSheet(DELIVERY_PROJECT, pkg.dir))}
             onSelectImage={(index) => act(window.api.production.selectImage(DELIVERY_PROJECT, pkg.dir, index, pkg.resultToken!))}
-            onReopenQuestion={() => act(window.api.production.reopenQuestion(DELIVERY_PROJECT, pkg.dir))}
           />
         )}
+        {/* Решение о результате живёт в шаге пути: витрина блока показывает только его вход. */}
+        {!state.accepted && pkg.request?.kind !== 'image' && !pkg.pendingDecision && ['downloaded', 'edit_review'].includes(pkg.stage) ? (
+          <Button variant="contained" disabled={locked} onClick={openAccept} sx={{ alignSelf: 'start' }}>
+            {productionTexts.verdictLabels.accept}
+          </Button>
+        ) : null}
         {partial && <Alert severity="warning">Скачана часть результата. Приёмка недоступна; сохранённые оригиналы остаются в пакете.</Alert>}
         {pkg.request?.attemptStatus === 'prepared' ? (
           <Alert severity="info">{pkg.pendingDecision?.question} Требуются новая оценка стоимости и отдельное подтверждение отправки.</Alert>

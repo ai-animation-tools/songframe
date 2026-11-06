@@ -39,13 +39,28 @@ func (w *Workflow) ensureFramesAvailable(project, shot, packageDir string) (*Con
 	if err != nil {
 		return nil, err
 	}
+	// Готовое предложение называем прямо: CanGenerateFrames учитывает его сам (этап 51), и общий
+	// отказ скрыл бы настоящую причину.
+	if !view.Busy && w.store.Read(c.Project, shot).active() {
+		return nil, errors.New(textResolveProposalFirstError)
+	}
 	if !view.CanGenerateFrames {
 		return nil, errors.New(TextDescriptionAndFramePlanRequired)
 	}
-	if w.store.Read(c.Project, shot).active() {
-		return nil, errors.New(textResolveProposalFirstError)
-	}
 	return c, nil
+}
+
+// framesForImport — контекст импорта: обычные условия опор либо замена кандидата той опоры, о
+// которой открыт вопрос. Замена не требует замечания: Apply задаст вопрос о новом файле.
+func (w *Workflow) framesForImport(project, shot, packageDir string, images []FrameCandidate) (*Context, error) {
+	view, err := w.view(project, shot, packageDir)
+	if err != nil {
+		return nil, err
+	}
+	if view.ReplaceFrame != nil && len(images) == 1 && images[0].ID == *view.ReplaceFrame {
+		return ReadContext(view.Project, shot, packageDir)
+	}
+	return w.ensureFramesAvailable(project, shot, packageDir)
 }
 
 // planFrames — синхронная часть generateFrames оригинала до запуска генерации: проверки, снимок
@@ -212,7 +227,7 @@ func (w *Workflow) ImportFrames(project, shot, packageDir string, images []Frame
 	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	c, err := w.ensureFramesAvailable(project, shot, packageDir)
+	c, err := w.framesForImport(project, shot, packageDir, images)
 	if err != nil {
 		return View{}, err
 	}

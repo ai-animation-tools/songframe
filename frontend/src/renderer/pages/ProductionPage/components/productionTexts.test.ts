@@ -9,7 +9,7 @@ import { productionInputLabel, SCENE_CHANGED } from '@shared/production-labels';
 import { derivedShotReason, proposalAttention } from '@shared/production-workflow';
 import { linkSegments } from '../../../components/linkTargets';
 import { DerivedShotNotice } from './DerivedShotNotice';
-import { PackageCard } from './PackageCard';
+import { PackageNotices } from './PackageNotices';
 import { PackageKeyframes } from './PackageKeyframes';
 import { SendRequestDialog } from './SendRequestDialog';
 
@@ -99,7 +99,7 @@ it('описывает отдельное подтверждение промп�
   );
   expect(productionTexts.sendRequestDialog.unknownBalance).toBe('Стоимость неизвестна: нажмите «Я согласен», чтобы разрешить один запрос.');
   expect(productionTexts.sendRequestDialog.paymentDescription({ providerTitle: 'Сервис «A&B»' })).toBe(
-    'Это платная операция: будут списаны кредиты аккаунта Сервис «A&B». Запрос отправляется ровно один раз, затем приложение ждёт результат и запишет его в пакет.'
+    'Это платная операция: будут списаны кредиты аккаунта Сервис «A&B». Запрос отправляется ровно один раз, затем приложение ждёт результат и запишет его в попытку.'
   );
   expect(
     productionTexts.sendRequestDialog.requestSummary({
@@ -143,27 +143,7 @@ it('не печатает null вместо отсутствующего JSX-х�
 it.each([null, undefined])('не печатает отсутствующий вердикт %s в последнем ответе пакета', (verdict) => {
   const pkg = fixture();
   pkg.decision = { stage: 'description_review', verdict: verdict as string | null };
-  const html = renderToStaticMarkup(
-    createElement(PackageCard, {
-      pkg,
-      busy: false,
-      providers: {},
-      note: '',
-      setNote: unchanged,
-      onDecide: unchanged,
-      onSubmit: unchanged,
-      onAccept: unchanged,
-      onContactSheet: unchanged,
-      onResume: unchanged,
-      onAttachResult: unchanged,
-      onNotCreated: unchanged,
-      onSelectImage: unchanged,
-      onReopenFrame: unchanged,
-      onKeepForScene: unchanged,
-      onSetKeyframeNote: unchanged
-    })
-  );
-  expect(html).toContain('последний ответ: </span>');
+  const html = renderToStaticMarkup(createElement(PackageNotices, { pkg, busy: false, onKeepForScene: unchanged, onOpenRevision: unchanged }));
   expect(html).not.toContain('последний ответ: null');
   expect(html).not.toContain('последний ответ: undefined');
 });
@@ -182,12 +162,12 @@ it('сохраняет целую фразу производного плана
 
 it('сохраняет весь текст возврата опоры и ссылку к текущему плану', () => {
   const text = productionTexts.useProductionPage.frameNoteSaved({ frame: 'K02' });
-  expect(text).toBe('Замечание к K02 сохранено. Создайте опору заново кнопкой «Создать K02» в блоке «Подготовка плана».');
+  expect(text).toBe('Замечание к K02 сохранено. Создайте опору заново кнопкой «Создать K02» на шаге «Опоры».');
   const segments = linkSegments(text);
   expect(segments.map(({ text }) => text).join('')).toBe(text);
   expect(segments.filter(({ target }) => target).map(({ target }) => target)).toHaveLength(1);
   expect(SCENE_CHANGED).toBe(
-    'Постановка или унаследованное состояние плана изменились после подготовки пакета: описание, опоры и промпт могут не соответствовать сценарию.'
+    'Постановка или унаследованное состояние плана изменились после подготовки попытки: описание, опоры и промпт могут не соответствовать сценарию.'
   );
 });
 

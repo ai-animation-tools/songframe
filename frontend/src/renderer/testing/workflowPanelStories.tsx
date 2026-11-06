@@ -1,18 +1,72 @@
 /** Локальная модель панели сохраняет предложения отдельно от пакета; реальный hook продолжает штатный опрос. */
 import { productionTexts } from '@shared/texts/production';
-import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactElement } from 'react';
 import { Button, Stack, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import type { Api } from '@shared/api';
-import type { PackageView } from '@shared/types';
+import type { PackageKeyframe, PackageView } from '@shared/types';
 import type { ProductionWorkflowView } from '@shared/production-workflow';
 import { registerMediaProviderForTests } from '@shared/media-providers';
 import { TEST_AGENT_PROVIDER, testAgentProviderInfo } from '@shared/testing/media-provider';
+import { FrameActions } from '../pages/ProductionPage/components/FrameActions';
 import { ProductionWorkflowPanel } from '../pages/ProductionPage/components/ProductionWorkflowPanel';
+import { useProductionWorkflow } from '../pages/ProductionPage/useProductionWorkflow';
 import { storyAccess } from './commonStories';
 import { createStoryApi, STORY_IMAGE_PATH, type StoryOptions } from './storybook';
 import { WORKFLOW_STORY_PACKAGE, WORKFLOW_STORY_PROJECT, workflowAgentJob, workflowProposal, workflowView } from './productionWorkflowStories';
+
+/** Панель и действия опор над настоящим hook: на странице их так же собирает путь плана. */
+function PanelHost({
+  shot,
+  packageDir,
+  decisionToken,
+  decision,
+  onBusyChange,
+  onApplied
+}: {
+  shot: string;
+  packageDir: string | undefined;
+  decisionToken: string;
+  decision: PackageView['decision'];
+  onBusyChange(busy: boolean): void;
+  onApplied(packageDir: string | null): Promise<void>;
+}): ReactElement {
+  const workflow = useProductionWorkflow(WORKFLOW_STORY_PROJECT, shot, packageDir, onApplied);
+  const [reviseOpen, setReviseOpen] = useState(true);
+  const { busy } = workflow;
+  useEffect(() => onBusyChange(busy), [busy, onBusyChange]);
+  const view = workflow.view;
+  return (
+    <Stack spacing={1.5}>
+      {packageDir && view?.framePrompts.length ? (
+        <Stack direction="row" spacing={2}>
+          {view.framePrompts.map((frame) => (
+            <FrameActions
+              key={frame.id}
+              frame={{ id: frame.id, role: frame.role, time_seconds: frame.timeSeconds, approved: view.approvedFrameIds.includes(frame.id) } as PackageKeyframe}
+              view={view}
+              busy={workflow.busy}
+              onGenerate={() => void workflow.generateFrames()}
+              onImport={workflow.importFrames}
+            />
+          ))}
+        </Stack>
+      ) : null}
+      <ProductionWorkflowPanel
+        workflow={workflow}
+        packageDir={packageDir}
+        decisionToken={decisionToken}
+        decision={decision}
+        packageBusy={false}
+        reviseOpen={reviseOpen}
+        onReviseOpen={setReviseOpen}
+        onAcceptProposal={() => workflow.apply()}
+        onReviseProposal={() => Promise.resolve(false)}
+      />
+    </Stack>
+  );
+}
 
 export type WorkflowPanelMode =
   | 'empty'
@@ -31,7 +85,8 @@ export type WorkflowPanelMode =
   | 'offline'
   | 'missing'
   | 'late'
-  | 'frames';
+  | 'frames'
+  | 'next';
 export const PANEL_SAVED_NOTE = 'Сохранить свет слева, убрать лишнее движение камеры.';
 interface PanelModel {
   mode: WorkflowPanelMode;
@@ -83,7 +138,7 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
       const snapshot = () => structuredClone(model.view);
       const initial = (): ProductionWorkflowView => {
         const ready = ['ready', 'applyFailure', 'invalid', 'stale', 'refused'].includes(mode);
-        const hasPackage = ['revision', 'paid', 'frames'].includes(mode);
+        const hasPackage = ['revision', 'paid', 'frames', 'next'].includes(mode);
         const view = workflowView({ packageDir: hasPackage ? WORKFLOW_STORY_PACKAGE : null, imageProvider: TEST_AGENT_PROVIDER });
         if (ready) {
           view.canPrepare = mode === 'invalid' || mode === 'refused';
@@ -99,7 +154,16 @@ export function workflowPanelOptions(mode: WorkflowPanelMode = 'empty'): StoryOp
         }
         if (mode === 'failedJob') view.job = workflowAgentJob({ status: 'failed', exitCode: 1, message: 'Программа завершилась до ответа.' });
         if (mode === 'revision') Object.assign(view, { canRevise: true, canPrepare: false, stage: 'needs_revision' });
-        if (mode === 'paid') Object.assign(view, { paid: true, canPrepare: false, stage: 'submitted' });
+        // Как в Go: отправленная попытка не продолжается, но возврат с замечанием остаётся.
+        if (mode === 'paid') Object.assign(view, { paid: true, canPrepare: false, canRevise: true, stage: 'submitted' });
+        if (mode === 'next')
+          Object.assign(view, {
+            canPrepare: false,
+            canContinue: true,
+            nextStage: 'prompt',
+            stage: 'prompt_review',
+            reasons: { ...view.reasons, continue: null }
+          });
         if (mode === 'derived' || mode === 'blocked') {
           view.canPrepare = false;
           view.reasons.prepare =
@@ -435,19 +499,18 @@ export function WorkflowPanelStory() {
       : null;
   return (
     <Stack spacing={2}>
-      <ProductionWorkflowPanel
+      <PanelHost
         key={epoch}
-        project={WORKFLOW_STORY_PROJECT}
         shot={model.shot}
         packageDir={model.dir}
         decisionToken={`question-${model.question}`}
         decision={decision}
-        packageBusy={false}
         onBusyChange={onBusyChange}
         onApplied={onApplied}
       />
       <Typography data-testid="workflow-counts">
-        Запусков: {model.starts}. Применений: {model.applies}. Отклонений: {model.discards}. Обновлений пакета: {model.callbacks}.
+        Запусков: {model.starts}. Применений: {model.applies}. Отклонений: {model.discards}. Обновлений пакета: {model.callbacks}. Текст запуска:{' '}
+        {model.note || 'нет'}.
       </Typography>
       <Typography data-testid="workflow-busy">
         Занятость: {model.busy ? 'да' : 'нет'}. Занятость наблюдалась: {model.busySeen ? 'да' : 'нет'}.

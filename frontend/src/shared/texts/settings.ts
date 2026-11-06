@@ -56,6 +56,7 @@ export const settingsTexts = {
   versionUnknown: 'Не определена',
   agent: commonTexts.agent.label,
   withoutAgent: 'Без агента',
+  agentScope: 'Агент один на всё приложение и не привязан к проекту: выбрать его можно и без открытого проекта.',
   missingAgent: 'не найден',
   modelsLoading: 'Чтение каталога моделей',
   defaultModel: (label: string) => `${label} · по умолчанию`,

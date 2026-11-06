@@ -13,8 +13,8 @@ import { BUSY_REASON, VERDICT_HINTS, VERDICT_LABELS } from '../constants';
 import { useApp } from '../../../state';
 import { aiActionProblem } from '@shared/ai-access';
 import type { AiActionKind } from '@shared/ai-access';
-import { LinkedText } from '../../../components/LinkedText';
 import { ActionButton } from '../../../components/ActionButton';
+import { AgentButton } from '../../../components';
 import { KeyframeNoteScopeField } from './KeyframeNoteScopeField';
 
 /** Пример относится к текущему согласованию и помогает описать конкретное изменение. */
@@ -36,6 +36,7 @@ export function PackageDecision({
   setNote,
   busy,
   busyReason = BUSY_REASON,
+  revisionByAgent = false,
   onDecide
 }: {
   pending: PackageView['pendingDecision'];
@@ -46,6 +47,8 @@ export function PackageDecision({
   busy: boolean;
   /** Почему busy блокирует ответы: идёт операция или нет Python. */
   busyReason?: string;
+  /** Доработка сразу запускает агента: кнопка с полем замечания становится кнопкой агента. */
+  revisionByAgent?: boolean;
   /** Для вопроса об опоре передаётся охват замечания: только эта опора или и следующие. */
   onDecide(verdict: string, noteScope?: KeyframeNoteScope): void;
 }): ReactElement {
@@ -58,6 +61,9 @@ export function PackageDecision({
   const [scopeDraft, setScopeDraft] = useState<{ key: string; scope: KeyframeNoteScope }>({ key: questionKey, scope: 'following' });
   const scope = scopeDraft.key === questionKey ? scopeDraft.scope : 'following';
   const hints = frame ? { ...VERDICT_HINTS, ...frameHints(frame) } : VERDICT_HINTS;
+  // Поле замечания открывается «Доработать…»: пока решение не про доработку, оно только мешает.
+  const [revisingKey, setRevisingKey] = useState<string | null>(null);
+  const revising = revisingKey === questionKey || !!note.trim();
   const label = (verdict: string): string =>
     frame && verdict === 'approve'
       ? productionTexts.packageDecision.approve({ frame })
@@ -85,11 +91,12 @@ export function PackageDecision({
               {productionTexts.packageDecision.workflowHint}
             </Typography>
           )}
-          {options.includes('revise') ? (
+          {options.includes('revise') && revising ? (
             <TextField
               size="small"
               fullWidth
               multiline
+              autoFocus
               minRows={3}
               maxRows={8}
               label={frame ? productionTexts.packageDecision.frameNote({ frame }) : productionTexts.packageDecision.note}
@@ -100,18 +107,9 @@ export function PackageDecision({
               sx={{ mb: 1 }}
             />
           ) : null}
-          {frame && options.includes('revise') ? (
+          {frame && options.includes('revise') && revising ? (
             <Box sx={{ mb: 1 }}>
               <KeyframeNoteScopeField scope={scope} onChange={(next) => setScopeDraft({ key: questionKey, scope: next })} />
-            </Box>
-          ) : null}
-          {options.length > 1 ? (
-            <Box component="ul" sx={{ m: 0, mb: 1, pl: 2.5 }}>
-              {options.map((verdict) => (
-                <Typography key={verdict} component="li" variant="caption" color="text.secondary">
-                  <b>{label(verdict)}.</b> <LinkedText text={hints[verdict] ?? ''} />
-                </Typography>
-              ))}
             </Box>
           ) : null}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -124,11 +122,23 @@ export function PackageDecision({
                   ? busyReason
                   : sendingBlocked && paid
                     ? productionTexts.packageDecision.submissionUnknown
-                    : verdict === 'revise' && !note.trim()
+                    : verdict === 'revise' && revising && !note.trim()
                       ? frame
                         ? productionTexts.packageDecision.frameNoteRequired({ frame })
                         : productionTexts.packageDecision.noteRequired
                       : null);
+              if (verdict === 'revise' && revising && revisionByAgent)
+                return (
+                  <AgentButton
+                    key={verdict}
+                    size="small"
+                    disabled={!!reason || busy || !note.trim()}
+                    disabledReason={disabledReason}
+                    onClick={() => onDecide(verdict)}
+                  >
+                    {productionTexts.productionWorkflowPanel.reviseNow}
+                  </AgentButton>
+                );
               return (
                 <ActionButton
                   key={verdict}
@@ -137,8 +147,10 @@ export function PackageDecision({
                   size="small"
                   variant={verdict === options[0] ? 'contained' : 'outlined'}
                   color={VERDICT_LABELS[verdict]?.color ?? 'inherit'}
-                  disabled={!!reason || busy || (sendingBlocked && ['send', 'retry'].includes(verdict)) || (verdict === 'revise' && !note.trim())}
-                  onClick={() => onDecide(verdict, frame && verdict === 'revise' ? scope : undefined)}
+                  disabled={!!reason || busy || (sendingBlocked && ['send', 'retry'].includes(verdict)) || (verdict === 'revise' && revising && !note.trim())}
+                  onClick={() =>
+                    verdict === 'revise' && !revising ? setRevisingKey(questionKey) : onDecide(verdict, frame && verdict === 'revise' ? scope : undefined)
+                  }
                   startIcon={
                     verdict === 'send' ? (
                       <SendIcon />

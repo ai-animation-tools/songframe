@@ -24,7 +24,7 @@ export function ProductionShotList({
   onSelect(id: string): void;
   filter?: ProductionFilter;
   onResetFilter?(): void;
-  /** Рядом открыт выбранный план: при широком окне он занимает правую колонку, а список держит три карточки в ряд. */
+  /** Рядом открыт выбранный план: при широком окне он занимает правую колонку, а список — узкая колонка в одну карточку. */
   withDetails?: boolean;
 }): ReactElement {
   // Пустой фильтр оформлен как пустая очередь: заголовок с числом, пояснение и путь назад к полному списку.
@@ -49,7 +49,7 @@ export function ProductionShotList({
       sx={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))',
-        '@container workspace (min-width: 1100px)': withDetails ? { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' } : {},
+        '@container workspace (min-width: 1100px)': withDetails ? { gridTemplateColumns: 'minmax(0, 1fr)' } : {},
         gap: 1.5,
         minWidth: 0
       }}

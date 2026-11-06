@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { AcceptOptions, BrokenPackage, JobInfo, KeyframeNoteScope, PackageView, ProductionView } from '@shared/types';
 import { useApp } from '../../state';
 import { VERDICT_LABELS, type ProductionFilter } from './constants';
+import { defaultAttempt } from './planPath';
 import {
   decisionNoteKey,
   isQueuedPackage,
@@ -183,11 +184,13 @@ export function useProductionPage() {
   // Сырое значение остаётся у эффекта автовыбора: попытка повтора, ещё не попавшая в снимок, не перезаписывается.
   const currentPackage =
     rememberedPackage === '' || rememberedPackage === '__new__' || shot?.packages.some((pkg) => pkg.dir === rememberedPackage) ? rememberedPackage : undefined;
-  const packageSelection = currentPackage ?? proposalSelection ?? (shot?.packages.length === 1 ? shot.packages[0].dir : shot?.packages.length ? '' : '__new__');
+  // Без выбора попытка открывается сама: с открытым вопросом, иначе последняя.
+  const packageSelection = currentPackage ?? proposalSelection ?? defaultAttempt(shot?.packages ?? [])?.dir ?? '__new__';
   const selectedPackage = shot?.packages.find((pkg) => pkg.dir === packageSelection) ?? null;
   navigationScope.update(`${project}\0${selected ?? ''}\0${packageSelection}\0${filter}`);
   useEffect(() => {
-    if (rememberedPackage === undefined && !shot?.proposal && shot?.packages.length === 1) selectPackage(shot.packages[0].dir);
+    const attempt = shot ? defaultAttempt(shot.packages) : null;
+    if (rememberedPackage === undefined && !shot?.proposal && attempt) selectPackage(attempt.dir);
   }, [rememberedPackage, shot, selectPackage]);
   const queued = useMemo(() => (view?.shots ?? []).flatMap((item) => item.packages.filter(isQueuedPackage)), [view]);
   const visible = useMemo(
@@ -245,7 +248,18 @@ export function useProductionPage() {
 
   const noteFor = (pkg: PackageView): string => notes[decisionNoteKey(pkg)] ?? '';
   const setNoteFor = (pkg: PackageView, value: string): void => setNotes((current) => ({ ...current, [decisionNoteKey(pkg)]: value }));
-  const decide = (pkg: PackageView, verdict: string, noteScope?: KeyframeNoteScope): void => {
+  /** Вопрос задан применением предложения: токен берётся из свежего снимка попытки. */
+  const answerApplied = useCallback(
+    async (dir: string, verdict: 'approve' | 'revise', note: string): Promise<void> => {
+      const next = await window.api.production.view(project);
+      const pkg = next.shots.flatMap((item) => item.packages).find((item) => item.dir === dir);
+      if (pkg?.pendingDecision) await window.api.production.decide(project, dir, verdict, note, pkg.decisionToken);
+    },
+    [project]
+  );
+
+  /** after выполняется после записи ответа в той же операции: так доработка сразу запускает агента. */
+  const decide = (pkg: PackageView, verdict: string, noteScope?: KeyframeNoteScope, after?: () => Promise<void>): void => {
     const note = noteFor(pkg).trim();
     const frame = pkg.pendingDecision?.frame;
     if (verdict === 'revise' && !note) {
@@ -273,12 +287,19 @@ export function useProductionPage() {
         : verdict === 'revise' && frame
           ? productionTexts.useProductionPage.frameNoteSaved({ frame })
           : verdict === 'revise'
-            ? productionTexts.useProductionPage.revisionSaved
+            ? after
+              ? productionTexts.useProductionPage.revisionStarted
+              : productionTexts.useProductionPage.revisionSaved
             : verdict === 'approve' && frame
               ? productionTexts.useProductionPage.frameApproved({ frame })
               : productionTexts.useProductionPage.answerSaved({ label: VERDICT_LABELS[verdict]?.label ?? verdict }),
       async () => {
-        await window.api.production.decide(project, pkg.dir, verdict, note, pkg.decisionToken, frame && verdict === 'revise' ? noteScope : undefined);
+        // Ответ на результат уже записан, а решение передумали: вопрос восстанавливается сам.
+        if (!pkg.pendingDecision) await window.api.production.reopenQuestion(project, pkg.dir);
+        const token = pkg.pendingDecision
+          ? pkg.decisionToken
+          : (await window.api.production.view(project)).shots.flatMap((item) => item.packages).find((item) => item.dir === pkg.dir)?.decisionToken;
+        await window.api.production.decide(project, pkg.dir, verdict, note, token, frame && verdict === 'revise' ? noteScope : undefined);
         if (verdict === 'park') {
           await window.api.production.park(project, pkg.dir);
           if (!current()) return;
@@ -302,6 +323,7 @@ export function useProductionPage() {
         }
         if (!current()) return;
         setNoteFor(pkg, '');
+        await after?.();
         if (verdict === 'accept') openAccept(pkg, !!shot?.asset, !!shot?.lipsync);
         if (verdict === 'retry') setConfirmRegenerate(pkg.shot);
       },
@@ -367,7 +389,8 @@ export function useProductionPage() {
       productionTexts.useProductionPage.attemptDeleted({ relative: pkg.relative }),
       async () => {
         await window.api.production.discardAttempt(project, pkg.dir);
-        setSelectedPackages((current) => ({ ...current, [`${project}\0${pkg.shot}`]: '__new__' }));
+        // Выбор сбрасывается: откроется попытка с вопросом или последняя, как при обычном открытии плана.
+        setSelectedPackages(({ [`${project}\0${pkg.shot}`]: _removed, ...rest }) => rest);
       },
       pkg.dir,
       pkg.shot
@@ -415,12 +438,14 @@ export function useProductionPage() {
     visible,
     act,
     decide,
+    answerApplied,
     reopenFrame,
     keepPackageForScene,
     setKeyframeNote,
     selectImage,
     packageSelection,
     selectedPackage,
+    newAttempt: rememberedPackage === '__new__',
     selectPackage,
     reportWorkflowBusy,
     workflowBusyFor

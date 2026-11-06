@@ -6,6 +6,9 @@ import type { ProductionProposal } from '@shared/production-workflow';
 import { ProposalPreviewStory } from '../../../testing/proposalPreviewStories';
 import { WORKFLOW_STORY_DESCRIPTION, workflowProposal } from '../../../testing/productionWorkflowStories';
 
+const labels = productionTexts.productionProposalPreview;
+const dialogLabels = productionTexts.productionProposalDialog;
+
 const meta = {
   title: 'Производство/Подготовка/Предложение и сравнение',
   component: ProposalPreviewStory,
@@ -18,35 +21,25 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Description: Story = {
-  name: 'Описание · отмена сохраняет · применение записывает · отклонение убирает',
+  name: 'Описание · принятие записывает сразу · отклонение подтверждается и убирает',
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(document.body);
     const saved = canvas.getByTestId('saved-materials');
     await expect(saved).toHaveTextContent('Герой стоит перед воротами.');
-    await userEvent.click(canvas.getByRole('button', { name: 'Применить предложение' }));
-    let confirmation = body.getByRole('dialog', { name: 'Применить предложение?' });
-    await expect(within(confirmation).getByRole('button', { name: 'Отмена' })).toHaveFocus();
-    await userEvent.keyboard('{Escape}');
-    await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(saved).toHaveTextContent('Герой стоит перед воротами.');
-    await userEvent.click(canvas.getByRole('button', { name: 'Применить предложение' }));
-    confirmation = body.getByRole('dialog', { name: 'Применить предложение?' });
-    await userEvent.click(within(confirmation).getByRole('button', { name: 'Отмена' }));
-    await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(saved).toHaveTextContent('Герой стоит перед воротами.');
-    await userEvent.click(canvas.getByRole('button', { name: 'Применить предложение' }));
-    await userEvent.click(within(body.getByRole('dialog', { name: 'Применить предложение?' })).getByRole('button', { name: 'Применить' }));
+    // Сравнение и есть просмотр перед решением: «Принять» применяет без второго подтверждения.
+    await userEvent.click(canvas.getByRole('button', { name: labels.apply }));
+    await expect(body.queryByRole('dialog')).not.toBeInTheDocument();
     await waitFor(() => expect(saved).toHaveTextContent(WORKFLOW_STORY_DESCRIPTION));
-    await expect(canvas.queryByRole('button', { name: 'Применить предложение' })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: labels.apply })).not.toBeInTheDocument();
     await expect(canvas.getByText('Согласование в этой модели не выполнялось.')).toBeInTheDocument();
     await userEvent.click(canvas.getByRole('button', { name: 'Сбросить модель' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Отклонить предложение' }));
+    await userEvent.click(canvas.getByRole('button', { name: labels.discard }));
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
-    await expect(canvas.getByRole('button', { name: 'Применить предложение' })).toBeEnabled();
-    await userEvent.click(canvas.getByRole('button', { name: 'Отклонить предложение' }));
-    await userEvent.click(within(body.getByRole('dialog')).getByRole('button', { name: 'Отклонить' }));
+    await expect(canvas.getByRole('button', { name: labels.apply })).toBeEnabled();
+    await userEvent.click(canvas.getByRole('button', { name: labels.discard }));
+    await userEvent.click(within(body.getByRole('dialog')).getByRole('button', { name: labels.discardConfirm }));
     await waitFor(() => expect(canvas.getByText('Предложения нет.')).toBeInTheDocument());
     await expect(saved).toHaveTextContent('Герой стоит перед воротами.');
   }
@@ -114,8 +107,7 @@ export const Frames: Story = {
     await expect(within(gallery).getByRole('button', { name: 'Оригинальный размер (1:1)' })).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(within(gallery).getByRole('button', { name: 'Закрыть' }));
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
-    await userEvent.click(canvas.getByRole('button', { name: 'Применить предложение' }));
-    await userEvent.click(within(body.getByRole('dialog')).getByRole('button', { name: 'Применить' }));
+    await userEvent.click(canvas.getByRole('button', { name: labels.apply }));
     await waitFor(() => expect(canvas.getByTestId('saved-materials')).toHaveTextContent('Сохранены кандидаты: K01, K02. Все требуют отдельного утверждения.'));
   }
 };
@@ -125,8 +117,8 @@ export const Running: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Предложение ещё не получено.')).toBeInTheDocument();
-    await expect(canvas.queryByRole('button', { name: 'Применить предложение' })).not.toBeInTheDocument();
-    await expect(canvas.queryByRole('button', { name: 'Отклонить предложение' })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: labels.apply })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: labels.discard })).not.toBeInTheDocument();
   }
 };
 export const ReadyWithoutMaterials: Story = {
@@ -134,8 +126,8 @@ export const ReadyWithoutMaterials: Story = {
   args: { initialProposal: workflowProposal('description', { after: null }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: 'Применить предложение' })).toBeDisabled();
-    await expect(canvas.getByRole('button', { name: 'Отклонить предложение' })).toBeEnabled();
+    await expect(canvas.getByRole('button', { name: labels.apply })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: labels.discard })).toBeEnabled();
   }
 };
 export const Stale: Story = {
@@ -170,7 +162,7 @@ export const Refused: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Причина отказа')).toBeInTheDocument();
     await expect(canvas.queryByText('Причина проверки')).not.toBeInTheDocument();
-    await expect(canvas.getByRole('button', { name: 'Применить предложение' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: labels.apply })).toBeDisabled();
   }
 };
 export const Failed: Story = {
@@ -195,17 +187,17 @@ export const Applied: Story = {
   args: { initialProposal: workflowProposal('description', { status: 'applied', before: WORKFLOW_STORY_DESCRIPTION }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.queryByRole('button', { name: 'Применить предложение' })).not.toBeInTheDocument();
-    await expect(canvas.queryByRole('button', { name: 'Отклонить предложение' })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: labels.apply })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: labels.discard })).not.toBeInTheDocument();
   }
 };
 export const Busy: Story = {
-  name: 'Пакет занят · просмотр доступен, запись заблокирована',
+  name: 'Попытка занята · просмотр доступен, запись заблокирована',
   args: { busy: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: 'Применить предложение' })).toBeDisabled();
-    await expect(canvas.getByRole('button', { name: 'Отклонить предложение' })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: labels.apply })).toBeDisabled();
+    await expect(canvas.getByRole('button', { name: labels.discard })).toBeDisabled();
   }
 };
 export const SameText: Story = {
@@ -214,7 +206,7 @@ export const SameText: Story = {
     initialProposal: workflowProposal('prompt', { before: 'Камера неподвижна.', after: { schemaVersion: 1, stage: 'prompt', prompt: 'Камера неподвижна.' } })
   },
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByRole('button', { name: 'Применить предложение' })).toBeEnabled();
+    await expect(within(canvasElement).getByRole('button', { name: labels.apply })).toBeEnabled();
   }
 };
 export const SaveFailureRetry: Story = {
@@ -222,16 +214,11 @@ export const SaveFailureRetry: Story = {
   args: { failFirst: true, delay: 500 },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const body = within(document.body);
-    const apply = async (): Promise<void> => {
-      await userEvent.click(canvas.getByRole('button', { name: 'Применить предложение' }));
-      await userEvent.click(within(body.getByRole('dialog')).getByRole('button', { name: 'Применить' }));
-      await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
-    };
+    const apply = (): Promise<void> => userEvent.click(canvas.getByRole('button', { name: labels.apply }));
     await apply();
     await waitFor(() => expect(canvas.getByText('Не удалось сохранить изменения. Материалы и предложение сохранены для повтора.')).toBeInTheDocument());
     await expect(canvas.getByTestId('saved-materials')).toHaveTextContent('Герой стоит перед воротами.');
-    await expect(canvas.getByRole('button', { name: 'Применить предложение' })).toBeEnabled();
+    await expect(canvas.getByRole('button', { name: labels.apply })).toBeEnabled();
     await apply();
     await waitFor(() => expect(canvas.getByTestId('saved-materials')).toHaveTextContent(WORKFLOW_STORY_DESCRIPTION));
     await userEvent.click(canvas.getByRole('button', { name: 'Сбросить модель' }));
@@ -243,7 +230,7 @@ export const SaveFailureRetry: Story = {
     await new Promise((resolve) => setTimeout(resolve, 600));
     await expect(canvas.queryByText('Не удалось сохранить изменения. Материалы и предложение сохранены для повтора.')).not.toBeInTheDocument();
     await expect(canvas.getByTestId('saved-materials')).toHaveTextContent('Герой стоит перед воротами.');
-    await expect(canvas.getByRole('button', { name: 'Применить предложение' })).toBeEnabled();
+    await expect(canvas.getByRole('button', { name: labels.apply })).toBeEnabled();
   }
 };
 
@@ -282,9 +269,9 @@ export const LongDialog: Story = {
     const body = within(document.body);
     // Длинный сохранённый текст модели прокручивается локально и тоже доступен с клавиатуры.
     await expect(canvas.getByRole('region', { name: 'Сохранённые материалы' })).toHaveAttribute('tabindex', '0');
-    await userEvent.click(canvas.getByRole('button', { name: 'Просмотреть предложение и сравнение' }));
+    await userEvent.click(canvas.getByRole('button', { name: dialogLabels.open }));
     let dialog = body.getByRole('dialog', { name: /Предложение для производства/ });
-    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Закрыть без применения' })).toBeVisible());
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: dialogLabels.close })).toBeVisible());
     // Колонки прокручиваются локально и доступны с клавиатуры под своими заголовками.
     for (const name of [productionTexts.productionProposalPreview.current, productionTexts.productionProposalPreview.proposed]) {
       const column = within(dialog).getByRole('region', { name });
@@ -293,23 +280,22 @@ export const LongDialog: Story = {
     }
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
-    await userEvent.click(canvas.getByRole('button', { name: 'Просмотреть предложение и сравнение' }));
+    await userEvent.click(canvas.getByRole('button', { name: dialogLabels.open }));
     dialog = body.getByRole('dialog', { name: /Предложение для производства/ });
     // Повторно открытый диалог становится доступным после начала появления, как и при первом открытии.
-    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Применить предложение' })).toBeVisible());
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Применить предложение' }));
-    await userEvent.click(within(body.getByRole('dialog', { name: 'Применить предложение?' })).getByRole('button', { name: 'Применить' }));
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: labels.apply })).toBeVisible());
+    await userEvent.click(within(dialog).getByRole('button', { name: labels.apply }));
     await waitFor(() => expect(within(dialog).getByText('Не удалось сохранить изменения. Материалы и предложение сохранены для повтора.')).toBeInTheDocument());
     await expect(canvas.getByTestId('saved-materials')).toHaveTextContent('Сохранённый фрагмент 1.');
-    // Пока закрывается окно подтверждения, основной диалог скрыт от дерева доступности.
-    await userEvent.click(await within(dialog).findByRole('button', { name: 'Применить предложение' }));
-    await userEvent.click(within(body.getByRole('dialog', { name: 'Применить предложение?' })).getByRole('button', { name: 'Применить' }));
+    // Кнопка заблокирована на время записи и включается заново только после ошибки.
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: labels.apply })).toBeEnabled());
+    await userEvent.click(within(dialog).getByRole('button', { name: labels.apply }));
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByTestId('saved-materials')).toHaveTextContent('Предложенный фрагмент 1.');
     await userEvent.click(canvas.getByRole('button', { name: 'Сбросить модель' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Просмотреть предложение и сравнение' }));
+    await userEvent.click(canvas.getByRole('button', { name: dialogLabels.open }));
     await expect(body.getByRole('dialog', { name: /Предложение для производства/ })).toBeInTheDocument();
-    await userEvent.click(body.getByRole('button', { name: 'Закрыть без применения' }));
+    await userEvent.click(body.getByRole('button', { name: dialogLabels.close }));
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
   }
 };

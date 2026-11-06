@@ -63,6 +63,14 @@ func (w *Workflow) Apply(ctx context.Context, project, shot, packageDir, id stri
 	return w.view(plan.context.Project, shot, plan.stored.Target())
 }
 
+// replacesAskedFrame сообщает, что предложение заменяет кандидата той опоры, о которой открыт
+// вопрос: тогда вопрос не мешает применению, применение задаст его заново о новом файле.
+func replacesAskedFrame(c *Context, after any) bool {
+	frame := jscompat.Get(c.workflowValue("pending_decision"), "frame")
+	images, _ := jscompat.AsArray(jscompat.Get(after, "images"))
+	return jscompat.Get(after, "stage") == "frames" && jscompat.Truthy(frame) && len(images) == 1 && jscompat.Get(images[0], "id") == frame
+}
+
 // checkApply — синхронная часть apply оригинала до занятия плана: предложение готово, относится
 // к выбранному пакету и не устарело, вопрос пакета решён, сценарий утверждён (для нового пакета),
 // задание агента успешно, ответ проходит проверку, изображения и входы не изменились.
@@ -86,7 +94,7 @@ func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan,
 		return nil, err
 	}
 	samePackage := stored.Target() == c.PackageDir
-	if samePackage && jscompat.Truthy(c.workflowValue("pending_decision")) {
+	if samePackage && jscompat.Truthy(c.workflowValue("pending_decision")) && !replacesAskedFrame(c, stored.Proposal().Value("after")) {
 		return nil, errors.New(textResolveQuestionFirst)
 	}
 	if !samePackage && !w.options.IsScenarioApproved(view.Project) {

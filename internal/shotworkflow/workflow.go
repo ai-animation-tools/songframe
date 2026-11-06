@@ -1065,6 +1065,33 @@ func (t *workflowTool) reopen(dirArg, frame, note, scope string) (*pycompat.Dict
 	return save(directory, data)
 }
 
+// AddFrameNote записывает необязательное указание пользователя к неутверждённой опоре до её
+// создания. Это обычная запись keyframe_notes: агент получает её тем же путём, что и замечание
+// доработки, а у платного провайдера текст входит в промпт, SHA и подтверждение цены. directory —
+// уже проверенная папка пакета; утверждённая опора и пустой текст отклоняются.
+func AddFrameNote(directory, frame, note, scope string) error {
+	data, err := load(directory)
+	if err != nil {
+		return err
+	}
+	keyframe, err := keyframeOf(data, frame)
+	if err != nil {
+		return err
+	}
+	if pycompat.Truthy(keyframe.Value("approved")) {
+		return valueError(frame + ": опора уже утверждена; замечание задаётся возвратом на доработку.")
+	}
+	entry, err := addNote(data, frame, note, scope)
+	if err != nil {
+		return err
+	}
+	if entry == nil {
+		return valueError("Напишите указание к опоре.")
+	}
+	_, err = save(directory, data)
+	return err
+}
+
 // setNote — set_note(id, active): включение или выключение замечания к опорам.
 func (t *workflowTool) setNote(dirArg string, id pycompat.Int, active bool) (*pycompat.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)

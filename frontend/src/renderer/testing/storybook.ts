@@ -290,6 +290,7 @@ export function createStoryApi(
       decide: guardedAsync(merged.production.decide),
       reopenFrame: guardedAsync(merged.production.reopenFrame),
       keepPackageForScene: guardedAsync(merged.production.keepPackageForScene),
+      addKeyframeNote: guardedAsync(merged.production.addKeyframeNote),
       setKeyframeNote: guardedAsync(merged.production.setKeyframeNote),
       quote: guardedAsync(merged.production.quote),
       submit: guardedAsync(merged.production.submit),

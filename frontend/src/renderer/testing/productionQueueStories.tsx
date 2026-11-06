@@ -151,6 +151,11 @@ export function ProductionShotStory({ initialShot, initialSelected = '', busy = 
   const [epoch, setEpoch] = useState(0);
   const operation = useLocalOperation();
   const locked = busy || operation.running;
+  const discard = (pkg: PackageView): void => {
+    // Как useProductionPage: после удаления открывается новая попытка, а не соседняя.
+    setShot((current) => ({ ...current, packages: current.packages.filter((item) => item.dir !== pkg.dir), attention: null }));
+    setSelected('__new__');
+  };
   const repeat = (): void => {
     setConfirm(null);
     const pending: JobInfo = {
@@ -188,12 +193,17 @@ export function ProductionShotStory({ initialShot, initialSelected = '', busy = 
         selectedPackage={selected}
         onRegenerate={setConfirm}
         onOpenPackage={setSelected}
+        onNewAttempt={shot.derivedFrom || (!shot.packages.length && !shot.asset) ? undefined : () => setSelected('__new__')}
+        onDiscardAttempt={discard}
         operation={{ job }}
       />
       <RegenerateDialog shot={confirm} problem={shot.regenerateProblem} onClose={() => setConfirm(null)} onConfirm={repeat} />
       {selected && (
         <Alert severity="info">Открыт пакет: {shot.packages.find((pkg) => pkg.dir === selected)?.relative ?? selected}. Отправок генерации: 0.</Alert>
       )}
+      <Typography variant="caption" data-testid="shot-model">
+        Попыток: {shot.packages.length}. Принятый комплект: {shot.asset ? 'сохранён' : 'нет'}.
+      </Typography>
       <Button
         onClick={() => {
           operation.reset();

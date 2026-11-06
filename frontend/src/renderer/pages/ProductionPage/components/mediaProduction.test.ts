@@ -153,7 +153,7 @@ describe('Генерация опор и результаты изображен
 
   it('показывает image-оригинал и выбор опоры без приёмки в assets и видеосводки', () => {
     const html = renderToStaticMarkup(
-      createElement(PackageResult, { pkg: fixture('image'), busy: false, onAccept: unchanged, onContactSheet: unchanged, onSelectImage: unchanged })
+      createElement(PackageResult, { pkg: fixture('image'), busy: false, onContactSheet: unchanged, onSelectImage: unchanged })
     );
     expect(html).toContain('<img');
     expect(html).toContain('Выбрать как опору');
@@ -164,20 +164,16 @@ describe('Генерация опор и результаты изображен
   });
 
   it('сохраняет видеопредставление старого запроса без kind', () => {
-    const html = renderToStaticMarkup(
-      createElement(PackageResult, { pkg: fixture(), busy: false, onAccept: unchanged, onContactSheet: unchanged, onSelectImage: unchanged })
-    );
+    const html = renderToStaticMarkup(createElement(PackageResult, { pkg: fixture(), busy: false, onContactSheet: unchanged, onSelectImage: unchanged }));
     expect(html).toContain('<video');
-    expect(html).toContain('>Принять<');
+    expect(html).toContain('На весь экран');
     expect(html).not.toContain('Выбрать как опору');
   });
 
   it('не разрешает выбрать изображение без токена показанного результата', () => {
     const pkg = fixture('image');
     delete pkg.resultToken;
-    const html = renderToStaticMarkup(
-      createElement(PackageResult, { pkg, busy: false, onAccept: unchanged, onContactSheet: unchanged, onSelectImage: unchanged })
-    );
+    const html = renderToStaticMarkup(createElement(PackageResult, { pkg, busy: false, onContactSheet: unchanged, onSelectImage: unchanged }));
     expect(html).toMatch(/<button[^>]*disabled[^>]*>(?:(?!<\/button>)[\s\S])*Выбрать как опору<\/button>/);
   });
 
@@ -255,7 +251,7 @@ describe('Прямые действия платного провайдера с
     expect(prepare).toMatch(/<button[^>]*disabled/);
     expect(prepare).toContain('Сначала выберите провайдера изображений.');
     const local = renderToStaticMarkup(
-      createElement(PackageResult, { pkg: fixture('image'), busy: false, onAccept: unchanged, onContactSheet: unchanged, onSelectImage: unchanged })
+      createElement(PackageResult, { pkg: fixture('image'), busy: false, onContactSheet: unchanged, onSelectImage: unchanged })
     );
     expect(local).not.toMatch(/<button[^>]*disabled/);
   });

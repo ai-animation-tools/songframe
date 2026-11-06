@@ -62,6 +62,13 @@ export interface View {
      * DerivedFrom — план-источник производного плана: подготовка и генерация заблокированы.
      */
     "derivedFrom": string | null;
+
+    /**
+     * NextStage — следующий проход агента по пакету ("" → null): им интерфейс называет следующее
+     * действие. ReplaceFrame — опора открытого вопроса, кандидата которой можно заменить файлом.
+     */
+    "nextStage"?: string | null;
+    "replaceFrame"?: string | null;
     "canPrepare": boolean;
     "canContinue": boolean;
     "canRevise": boolean;

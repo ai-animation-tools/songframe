@@ -1,6 +1,6 @@
 import { productionTexts } from '@shared/texts/production';
 /** Опоры пакета создаются и согласуются по одной: у каждой видно состояние, утверждённую можно вернуть на доработку. */
-import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
@@ -47,13 +47,16 @@ export function PackageKeyframes({
   busy,
   busyReason = BUSY_REASON,
   onReopen,
-  onSetNote
+  onSetNote,
+  renderActions
 }: {
   pkg: PackageView;
   busy: boolean;
   busyReason?: string;
   onReopen(frame: string, note: string, scope: KeyframeNoteScope): void;
   onSetNote(id: number, active: boolean): void;
+  /** Действия неутверждённой опоры на её карточке: создать или поставить свой файл. */
+  renderActions?(frame: PackageKeyframe): ReactNode;
 }): ReactElement | null {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [reopening, setReopening] = useState<string | null>(null);
@@ -73,7 +76,7 @@ export function PackageKeyframes({
   if (!pkg.keyframes.length) return null;
   const approved = pkg.keyframes.filter((k) => k.approved).length;
   return (
-    <Box sx={{ mb: 2 }}>
+    <Box>
       <Typography variant="subtitle2">
         {productionTexts.packageKeyframes.heading({
           approved,
@@ -146,6 +149,7 @@ export function PackageKeyframes({
                   {productionTexts.packageKeyframes.reopen}
                 </ActionButton>
               ) : null}
+              {renderActions?.(k)}
             </Box>
           );
         })}

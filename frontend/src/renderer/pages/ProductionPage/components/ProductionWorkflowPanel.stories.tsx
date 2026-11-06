@@ -1,11 +1,10 @@
 /** Сценарии проходят реальные hook, опрос и подтверждения; данные и исполнитель существуют только в памяти. */
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { STORY_IMAGE_PATH } from '../../../testing/storybook';
 import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
 import { PANEL_SAVED_NOTE, WorkflowPanelStory, workflowPanelOptions } from '../../../testing/workflowPanelStories';
-import { WORKFLOW_STORY_DESCRIPTION, WORKFLOW_STORY_PROJECT, WORKFLOW_STORY_PACKAGE } from '../../../testing/productionWorkflowStories';
+import { WORKFLOW_STORY_DESCRIPTION, WORKFLOW_STORY_PROJECT } from '../../../testing/productionWorkflowStories';
 
 const labels = productionTexts.productionWorkflowPanel;
 const proposalLabels = productionTexts.productionProposalPreview;
@@ -40,10 +39,10 @@ async function confirm(context: Context, action: 'apply' | 'discard', cancel = f
   const label = action === 'apply' ? proposalLabels.apply : proposalLabels.discard;
   const dialog = within(screen.getByRole('dialog', { name: /Предложение для производства/ }));
   await userEvent.click(dialog.getByRole('button', { name: label }));
+  // «Принять» применяет сразу: окно сравнения и есть просмотр перед решением.
+  if (action === 'apply') return;
   const confirmation = within(await screen.findByRole('dialog', { name: `${label}?` }));
-  await userEvent.click(
-    confirmation.getByRole('button', { name: cancel ? commonTexts.cancel : action === 'apply' ? proposalLabels.applyConfirm : proposalLabels.discardConfirm })
-  );
+  await userEvent.click(confirmation.getByRole('button', { name: cancel ? commonTexts.cancel : proposalLabels.discardConfirm }));
   await waitFor(() => expect(screen.queryByRole('dialog', { name: `${label}?` })).not.toBeInTheDocument());
 }
 async function closed(context: Context) {
@@ -55,9 +54,8 @@ export const Loading: Story = {
   parameters: { songframe: workflowPanelOptions('loading') },
   play: async (context) => {
     const screen = screenOf(context);
-    await expect(screen.getByRole('button', { name: labels.prepare })).toBeDisabled();
-    await userEvent.hover(screen.getByRole('button', { name: labels.prepare }).parentElement!);
-    await expect(await screen.findByRole('tooltip')).toHaveTextContent(labels.loadingReason);
+    // До первого снимка неизвестно, какой шаг доступен: кнопка не обещает действие заранее.
+    await expect(screen.queryByRole('button', { name: labels.prepare })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Завершить отложенное чтение' }));
     await ready(context);
     await expect(counts(context)).toHaveTextContent('Запусков: 0. Применений: 0.');
@@ -98,16 +96,14 @@ export const InspectAndApply: Story = {
     await closed(context);
     await expect(counts(context)).toHaveTextContent('Применений: 0.');
     dialog = await openProposal(context);
-    await confirm(context, 'apply', true);
-    await expect(dialog.getByText(WORKFLOW_STORY_DESCRIPTION)).toBeInTheDocument();
-    await expect(counts(context)).toHaveTextContent('Применений: 0.');
     await confirm(context, 'apply');
     await closed(context);
     await waitFor(() => expect(counts(context)).toHaveTextContent('Применений: 1. Отклонений: 0. Обновлений пакета: 1.'));
     await expect(screenOf(context).getByTestId('workflow-saved')).toHaveTextContent(
       `Сохранено: ${WORKFLOW_STORY_DESCRIPTION}. Согласование требуется отдельно.`
     );
-    await expect(screenOf(context).getByRole('button', { name: labels.continue })).toBeDisabled();
+    // Попытка создана: подготовка описания остаётся только у плана без попытки.
+    await expect(screenOf(context).queryByRole('button', { name: labels.prepare })).not.toBeInTheDocument();
     await userEvent.click(screenOf(context).getByRole('button', { name: 'Сбросить модель' }));
     await openProposal(context);
     await expect(counts(context)).toHaveTextContent('Применений: 0.');
@@ -227,8 +223,10 @@ export const Paid: Story = {
   parameters: { songframe: workflowPanelOptions('paid') },
   play: async (context) => {
     const screen = screenOf(context);
-    await expect(await screen.findByText(new RegExp('Запрос этой попытки уже отправлен'))).toBeInTheDocument();
+    // Дальше только возврат с замечанием: подготовка и следующий проход агента не предлагаются.
+    await expect(await screen.findByRole('textbox', { name: labels.note })).toBeInTheDocument();
     await expect(screen.queryByRole('button', { name: labels.prepare })).not.toBeInTheDocument();
+    await expect(screen.queryByRole('button', { name: labels.continuePrompt })).not.toBeInTheDocument();
     await expect(counts(context)).toHaveTextContent('Запусков: 0.');
   }
 };
@@ -237,7 +235,7 @@ export const Derived: Story = {
   parameters: { songframe: workflowPanelOptions('derived') },
   play: async (context) => {
     const screen = screenOf(context);
-    await expect(await screen.findByText(/План собирается из материала M01/)).toBeInTheDocument();
+    await expect(await screen.findByRole('alert')).toHaveTextContent(/План собирается из материала M01/);
     await expect(screen.getByRole('button', { name: labels.prepare })).toBeDisabled();
     await expect(counts(context)).toHaveTextContent('Запусков: 0.');
   }
@@ -247,7 +245,7 @@ export const Blocked: Story = {
   parameters: { songframe: workflowPanelOptions('blocked') },
   play: async (context) => {
     const screen = screenOf(context);
-    await expect(await screen.findByRole('link', { name: '«Сценарий»' })).toHaveAttribute('href', '/project/scenario');
+    await expect(within(await screen.findByRole('alert')).getByRole('link', { name: '«Сценарий»' })).toHaveAttribute('href', '/project/scenario');
     const button = screen.getByRole('button', { name: labels.prepare });
     await expect(button).toBeDisabled();
     await userEvent.hover(button.parentElement!);
@@ -259,7 +257,7 @@ export const Offline: Story = {
   parameters: { songframe: workflowPanelOptions('offline') },
   play: async (context) => {
     const screen = screenOf(context);
-    await expect(screen.getByRole('button', { name: labels.prepare })).toBeDisabled();
+    await expect(await screen.findByRole('button', { name: labels.prepare })).toBeDisabled();
     await expect(counts(context)).toHaveTextContent('Запусков: 0.');
   }
 };
@@ -268,7 +266,7 @@ export const MissingAgent: Story = {
   parameters: { songframe: workflowPanelOptions('missing') },
   play: async (context) => {
     const screen = screenOf(context);
-    const button = screen.getByRole('button', { name: labels.prepare });
+    const button = await screen.findByRole('button', { name: labels.prepare });
     await expect(button).toBeDisabled();
     await userEvent.hover(button.parentElement!);
     await expect(await screen.findByRole('tooltip')).toHaveTextContent(/выберите агента/i);
@@ -284,30 +282,45 @@ export const LateContext: Story = {
     await expect(await screen.findByText('Выбран новый пакет M03.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Завершить отложенное чтение' }));
     await expect(await screen.findByTestId('workflow-late')).toHaveTextContent('Поздний ответ получен.');
-    await expect(screen.getByText(labels.title({ shot: 'M03' }))).toBeInTheDocument();
     await expect(screen.queryByRole('button', { name: dialogLabels.open })).not.toBeInTheDocument();
     await expect(counts(context)).toHaveTextContent('Применений: 0. Отклонений: 0. Обновлений пакета: 0.');
   }
 };
+export const NextPass: Story = {
+  name: 'Следующий проход · кнопка называет шаг, описание больше не предлагается',
+  parameters: { songframe: workflowPanelOptions('next') },
+  play: async (context) => {
+    const screen = screenOf(context);
+    const next = await screen.findByRole('button', { name: labels.continuePrompt });
+    await waitFor(() => expect(next).toBeEnabled());
+    await expect(screen.queryByRole('button', { name: labels.prepare })).not.toBeInTheDocument();
+    await userEvent.click(next);
+    await expect(await screen.findByRole('button', { name: commonTexts.stop })).toBeEnabled();
+    await expect(counts(context)).toHaveTextContent('Запусков: 1. Применений: 0.');
+  }
+};
+export const PromptInstruction: Story = {
+  name: 'Указания к видеопромпту · необязательное поле уходит в задание агента',
+  parameters: { songframe: workflowPanelOptions('next') },
+  play: async (context) => {
+    const screen = screenOf(context);
+    await userEvent.click(await screen.findByRole('button', { name: labels.instructionOpen }));
+    await userEvent.type(await screen.findByRole('textbox', { name: labels.instruction }), 'Без резких движений камеры');
+    const next = screen.getByRole('button', { name: labels.continuePrompt });
+    await waitFor(() => expect(next).toBeEnabled());
+    await userEvent.click(next);
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Текст запуска: Без резких движений камеры.'));
+  }
+};
 export const SingleFrame: Story = {
-  name: 'Следующая K02 · импорт и генерация сохраняют утверждённую K01',
+  name: 'Следующая K02 · свой файл и генерация сразу становятся кандидатом, K01 сохранена',
   parameters: { songframe: workflowPanelOptions('frames') },
   play: async (context) => {
     const screen = screenOf(context);
-    const importLabels = productionTexts.productionFrameImport;
-    await userEvent.click(await screen.findByText(importLabels.heading));
-    await expect(screen.queryByRole('button', { name: importLabels.choose({ id: 'K01' }) })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: importLabels.choose({ id: 'K02' }) }));
-    await userEvent.click(screen.getByRole('button', { name: importLabels.preview }));
-    await expect(screen.getByRole('button', { name: /Создать K02/ })).toBeDisabled();
-    await expect(window.api.productionWorkflow.generateFrames(WORKFLOW_STORY_PROJECT, 'M02', WORKFLOW_STORY_PACKAGE)).rejects.toThrow();
-    await expect(
-      window.api.productionWorkflow.importFrames(WORKFLOW_STORY_PROJECT, 'M02', WORKFLOW_STORY_PACKAGE, [{ id: 'K02', path: STORY_IMAGE_PATH }])
-    ).rejects.toThrow();
-    let dialog = await openProposal(context);
-    await expect(dialog.getByText(proposalLabels.candidate({ id: 'K02' }))).toBeInTheDocument();
-    await confirm(context, 'apply');
-    await closed(context);
+    const frameLabels = productionTexts.frameActions;
+    // Свой файл сразу становится кандидатом: просмотра предложения между выбором и вопросом нет.
+    await userEvent.click((await screen.findAllByRole('button', { name: frameLabels.own }))[0]);
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Применений: 1.'));
     await expect(screen.getByTestId('workflow-saved')).toHaveTextContent('Сохранено: Кандидат K02; K01 сохранена. Согласование требуется отдельно.');
     await expect(screen.getByTestId('workflow-frames')).toHaveTextContent('K01: утверждена; /mock/story-image.png?frame=K01');
     await expect(screen.getByTestId('workflow-frames')).toHaveTextContent('K02: кандидат; /mock/story-image.png');
@@ -315,10 +328,8 @@ export const SingleFrame: Story = {
     await waitFor(() => expect(screen.getByRole('button', { name: /Создать K02/ })).toBeEnabled());
     await userEvent.click(screen.getByRole('button', { name: /Создать K02/ }));
     await waitFor(() => expect(screen.queryByRole('button', { name: commonTexts.stop })).not.toBeInTheDocument(), { timeout: 4000 });
-    dialog = await openProposal(context);
-    await waitFor(() => expect(dialog.getByRole('button', { name: proposalLabels.apply })).toBeEnabled(), { timeout: 4000 });
-    await expect(dialog.getByText(proposalLabels.candidate({ id: 'K02' }))).toBeInTheDocument();
-    await expect(counts(context)).toHaveTextContent('Запусков: 1. Применений: 0.');
+    // Опора агента применяется сама: вопрос об утверждении откроется у карточки опоры.
+    await waitFor(() => expect(counts(context)).toHaveTextContent('Запусков: 1. Применений: 1.'), { timeout: 4000 });
   }
 };
 

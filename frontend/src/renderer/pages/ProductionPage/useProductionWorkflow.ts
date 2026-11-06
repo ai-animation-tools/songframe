@@ -40,6 +40,9 @@ function announce(previous: Observed | null, view: ProductionWorkflowView, notif
   }
 }
 
+/** Состояние панели и действия над предложением: отдаётся шагам пути целиком. */
+export type ProductionWorkflow = ReturnType<typeof useProductionWorkflow>;
+
 export function useProductionWorkflow(project: string, shot: string, packageDir: string | undefined, onApplied: (packageDir: string | null) => Promise<void>) {
   const { describeError, notify } = useApp();
   const [view, setView] = useState<ProductionWorkflowView | null>(null);
@@ -130,6 +133,33 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     [context, describeError, notify, onApplied, show]
   );
 
+  /** Применение предложения; follow выполняет решение по применённому материалу в той же операции. */
+  const proposal = view?.proposal;
+  const apply = useCallback(
+    (follow?: (applied: ProductionWorkflowView) => Promise<void>): Promise<boolean> =>
+      proposal
+        ? execute(
+            async () => {
+              const applied = await window.api.productionWorkflow.apply(project, shot, packageDir, proposal.id);
+              await follow?.(applied);
+              return applied;
+            },
+            true,
+            follow ? undefined : productionTexts.useProductionWorkflow.applied
+          )
+        : Promise.resolve(false),
+    [execute, packageDir, project, proposal, shot]
+  );
+
+  // Опора агента сразу попадает на карточку с вопросом: решение принимается там, отдельного просмотра нет.
+  // Неудачу видно в ошибке панели и окне предложения, поэтому попытка на одно предложение одна.
+  const autoApplied = useRef<string | null>(null);
+  useEffect(() => {
+    if (proposal?.stage !== 'frames' || proposal.status !== 'ready' || proposal.stale || autoApplied.current === proposal.id) return;
+    autoApplied.current = proposal.id;
+    void apply();
+  }, [apply, proposal]);
+
   return {
     view,
     error,
@@ -137,12 +167,17 @@ export function useProductionWorkflow(project: string, shot: string, packageDir:
     start: (action: ProductionWorkflowStart['action'], note?: string) =>
       execute(() => window.api.productionWorkflow.start({ project, shot, packageDir, action, note })),
     generateFrames: () => (packageDir ? execute(() => window.api.productionWorkflow.generateFrames(project, shot, packageDir)) : Promise.resolve(false)),
+    /** Свой файл сразу становится кандидатом: вопрос об утверждении откроется у опоры, отдельного просмотра нет. */
     importFrames: (images: ProductionFrameCandidate[]) =>
-      packageDir ? execute(() => window.api.productionWorkflow.importFrames(project, shot, packageDir, images)) : Promise.resolve(false),
-    apply: () =>
-      view?.proposal
-        ? execute(() => window.api.productionWorkflow.apply(project, shot, packageDir, view.proposal!.id), true, productionTexts.useProductionWorkflow.applied)
+      packageDir
+        ? execute(async () => {
+            const next = await window.api.productionWorkflow.importFrames(project, shot, packageDir, images);
+            return next.proposal?.status === 'ready' && !next.proposal.stale
+              ? window.api.productionWorkflow.apply(project, shot, packageDir, next.proposal.id)
+              : next;
+          }, true)
         : Promise.resolve(false),
+    apply,
     discard: () =>
       view?.proposal
         ? execute(

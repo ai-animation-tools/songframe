@@ -1,14 +1,15 @@
 import { productionTexts } from '@shared/texts/production';
 /** Сохранённые параметры запроса и переход к общему подтверждению отправки. */
 import type { ReactElement } from 'react';
-import { Box, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SendIcon from '@mui/icons-material/Send';
 import { AiButton } from '../../../components/AiButton';
 import type { PackageView } from '@shared/types';
 import { ATTEMPT_LABELS, productionInputLabel } from '@shared/production-labels';
-import { MEDIA_PROVIDERS, normalizeMediaProvider } from '@shared/media-providers';
+import { MEDIA_PROVIDERS, mediaCommandLabel, normalizeMediaProvider } from '@shared/media-providers';
 import { RequestModelSelection } from './RequestModelSelection';
-import { RequestParameters } from './RequestParameters';
+import { RequestParameterRows } from './RequestParameters';
 import { RequestPrompt } from './RequestPrompt';
 import { BUSY_REASON } from '../constants';
 
@@ -34,38 +35,52 @@ export function PackageRequest({
   return (
     <>
       {pkg.request ? (
-        <Box sx={{ mb: 2, minWidth: 0 }}>
+        <Box sx={{ minWidth: 0 }}>
           <Typography variant="subtitle2" gutterBottom>
             {pkg.request.kind === 'image' ? productionTexts.packageRequest.image : productionTexts.packageRequest.video}
           </Typography>
           <RequestModelSelection selection={pkg.request.modelSelection} />
-          <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', '& .MuiTableCell-root': { overflowWrap: 'anywhere' } }}>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ width: '35%' }}>{productionTexts.packageRequest.parameter}</TableCell>
-                <TableCell>{productionTexts.packageRequest.value}</TableCell>
-              </TableRow>
-            </TableHead>
+          {/* Одна таблица на весь запрос: колонки сведений и параметров совпадают. */}
+          <Table
+            size="small"
+            aria-label={pkg.request.kind === 'image' ? productionTexts.packageRequest.image : productionTexts.packageRequest.video}
+            sx={{
+              tableLayout: 'fixed',
+              width: '100%',
+              '& .MuiTableCell-root': { overflowWrap: 'anywhere', verticalAlign: 'top' },
+              '& th.MuiTableCell-root': { width: '38%', color: 'text.secondary', fontWeight: 400, pl: 0 },
+              '& td.MuiTableCell-root': { pr: 0 }
+            }}
+          >
             <TableBody>
               <TableRow>
-                <TableCell>{productionTexts.packageRequest.executor}</TableCell>
+                <TableCell component="th" scope="row">
+                  {productionTexts.packageRequest.executor}
+                </TableCell>
                 <TableCell>
-                  {pkg.request.provider ?? productionTexts.packageRequest.unspecified}
-                  {pkg.request.command ? ` · ${pkg.request.command}` : ''}
+                  {providerTitle}
+                  {pkg.request.command ? ` · ${mediaCommandLabel(providerId, pkg.request.command)}` : ''}
                 </TableCell>
               </TableRow>
               {pkg.request.kind === 'image' && pkg.request.frameId ? (
                 <TableRow>
-                  <TableCell>{productionTexts.packageRequest.frame}</TableCell>
+                  <TableCell component="th" scope="row">
+                    {productionTexts.packageRequest.frame}
+                  </TableCell>
                   <TableCell>{pkg.request.frameId}</TableCell>
                 </TableRow>
               ) : null}
               <TableRow>
-                <TableCell>{productionTexts.packageRequest.model}</TableCell>
+                <TableCell component="th" scope="row">
+                  {productionTexts.packageRequest.model}
+                </TableCell>
                 <TableCell>{pkg.request.model}</TableCell>
               </TableRow>
+              <RequestParameterRows parameters={pkg.request.parameters} provider={providerId} />
               <TableRow>
-                <TableCell>{productionTexts.packageRequest.inputs}</TableCell>
+                <TableCell component="th" scope="row">
+                  {productionTexts.packageRequest.inputs}
+                </TableCell>
                 <TableCell>
                   {pkg.request.inputs.map((input) => (
                     <Typography
@@ -79,7 +94,9 @@ export function PackageRequest({
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>{productionTexts.packageRequest.attempt}</TableCell>
+                <TableCell component="th" scope="row">
+                  {productionTexts.packageRequest.attempt}
+                </TableCell>
                 <TableCell>
                   {productionTexts.packageRequest.charged({
                     status: pkg.request.attemptStatus ? (ATTEMPT_LABELS[pkg.request.attemptStatus] ?? pkg.request.attemptStatus) : '—',
@@ -88,15 +105,28 @@ export function PackageRequest({
                   })}
                 </TableCell>
               </TableRow>
-              <TableRow>
-                <TableCell>{productionTexts.packageRequest.hash}</TableCell>
-                <TableCell sx={{ fontFamily: 'monospace', fontSize: 11 }}>{pkg.request.sha256 ?? '—'}</TableCell>
-              </TableRow>
             </TableBody>
           </Table>
-          <Box sx={{ my: 2 }}>
-            <RequestParameters parameters={pkg.request.parameters} />
-          </Box>
+          <Accordion disableGutters elevation={0} sx={{ my: 1, '&::before': { display: 'none' } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 0 }}>
+              <Typography variant="body2" color="text.secondary">
+                {productionTexts.packageRequest.technical}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 0 }}>
+              <Stack spacing={0.5}>
+                <Typography variant="caption" sx={{ fontFamily: 'monospace', overflowWrap: 'anywhere' }}>
+                  {`${productionTexts.packageRequest.command}: ${pkg.request.command ?? '—'}`}
+                </Typography>
+                <Typography variant="caption" sx={{ fontFamily: 'monospace', overflowWrap: 'anywhere' }}>
+                  {`${productionTexts.packageRequest.apiParameters}: ${JSON.stringify(pkg.request.parameters)}`}
+                </Typography>
+                <Typography variant="caption" sx={{ fontFamily: 'monospace', overflowWrap: 'anywhere' }}>
+                  {`${productionTexts.packageRequest.hash}: ${pkg.request.sha256 ?? '—'}`}
+                </Typography>
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
           {pkg.request.promptText ? <RequestPrompt text={pkg.request.promptText} /> : null}
           {canSubmit ? (
             <AiButton

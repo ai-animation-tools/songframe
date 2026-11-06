@@ -20,7 +20,7 @@ export const navigationTexts = {
     help: 'Справка'
   },
   blocks: {
-    productionWorkflow: 'Подготовка плана',
+    productionFrames: 'Опоры',
     productionSpeech: 'Речь',
     productionLipSync: 'Речь (липсинк)',
     productionQueue: 'Очередь',

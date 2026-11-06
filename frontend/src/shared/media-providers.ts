@@ -39,6 +39,8 @@ export interface MediaProviderInfo {
   modelOrder: Partial<Record<MediaKind, readonly string[]>>;
   /** Подписи команд провайдера в интерфейсе; команда без подписи показывается своим именем. */
   commandLabels: Readonly<Record<string, string>>;
+  /** Подписи параметров запроса в интерфейсе; параметр без подписи показывается своим именем API. */
+  parameterLabels: Readonly<Record<string, string>>;
 }
 /** Параметры запроса по умолчанию для вида медиа. */
 export interface MediaRequestDefaults {
@@ -96,7 +98,22 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
       omni_ref_video: 'видео по референсам',
       // eslint-disable-next-line no-restricted-syntax -- Особенность конкретного провайдера принадлежит его реестру, а не общему словарю интерфейса.
       motion_control: 'видео по движению'
+    },
+    /* eslint-disable no-restricted-syntax -- Особенность конкретного провайдера: имена параметров его API. */
+    parameterLabels: {
+      duration: 'Длительность, с',
+      resolution: 'Разрешение',
+      img_resolution: 'Разрешение',
+      imgResolution: 'Разрешение',
+      aspect_ratio: 'Пропорции',
+      aspectRatio: 'Пропорции',
+      imageCount: 'Сколько вариантов получить',
+      image_count: 'Сколько вариантов получить',
+      enable_audio: 'Звук от сервиса',
+      prefer_multi_shots: 'Несколько сцен в одном видео',
+      quality: 'Качество'
     }
+    /* eslint-enable no-restricted-syntax */
   },
   codex: {
     title: 'Codex',
@@ -118,9 +135,15 @@ export const MEDIA_PROVIDERS: Record<MediaProviderId, MediaProviderInfo> = {
     },
     defaults: {},
     modelOrder: {},
-    commandLabels: {}
+    commandLabels: {},
+    parameterLabels: {}
   }
 };
+
+/** Подпись параметра запроса из реестра; неизвестный параметр или провайдер — имя API. */
+export function mediaParameterLabel(provider: string | null | undefined, name: string): string {
+  return (provider ? MEDIA_PROVIDERS[provider]?.parameterLabels?.[name] : undefined) ?? name;
+}
 
 /** ID провайдера — данные реестра: общий код не перечисляет конкретные сервисы в типах. */
 export type MediaProviderId = string;

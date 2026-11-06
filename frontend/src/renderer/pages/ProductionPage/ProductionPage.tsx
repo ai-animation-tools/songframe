@@ -1,13 +1,14 @@
 import { productionTexts } from '@shared/texts/production';
-/** Производство: планы, пакеты, решения и подтверждения платных действий. */
-import { useRef, type ReactElement } from 'react';
+/** Производство: список планов и один путь выбранного плана с решениями и подтверждениями платных действий. */
+import { useState, type ReactElement } from 'react';
 import { usePageLoading } from '../../components/PageLoader';
-import { Alert, Box, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
 import { AiProblemAlert } from '../../components';
 import {
   AcceptResultDialog,
   DerivedShotPanel,
-  PackageCard,
+  ProductionPath,
+  ProductionOperationNotice,
   ProductionShotCard,
   ProductionShotList,
   ProductionToolbar,
@@ -15,9 +16,8 @@ import {
   SendRequestDialog
 } from './components';
 import { useProductionPage } from './useProductionPage';
-import { acceptShownResult, isQueuedPackage } from './decisions';
-import { ProductionWorkflowPanel } from './components/ProductionWorkflowPanel';
-import { ProductionSpeechPanel } from './components/ProductionSpeechPanel';
+import { acceptShownResult } from './decisions';
+import type { PlanPath } from './planPath';
 import { PageActionBar } from '../../components/PageActionBar';
 import { ProductionQueue } from './components/ProductionQueue';
 import { useStickyTop } from '../../hooks/useStickyTop';
@@ -26,7 +26,7 @@ import { LinkedText } from '../../components/LinkedText';
 import { BUSY_REASON, PYTHON_REASON } from './constants';
 
 export function ProductionPage(): ReactElement {
-  const workflowPanel = useRef<HTMLDivElement>(null);
+  const [path, setPath] = useState<{ key: string; value: PlanPath } | null>(null);
   const {
     project,
     view,
@@ -40,6 +40,7 @@ export function ProductionPage(): ReactElement {
     workflowBusyFor,
     packageSelection,
     selectedPackage,
+    newAttempt,
     selectPackage,
     filter,
     setFilter,
@@ -62,6 +63,7 @@ export function ProductionPage(): ReactElement {
     visible,
     act,
     decide,
+    answerApplied,
     reopenFrame,
     keepPackageForScene,
     setKeyframeNote,
@@ -74,6 +76,8 @@ export function ProductionPage(): ReactElement {
   // Пока данные страницы не готовы, общий прелоадер оболочки показывает индикатор.
   usePageLoading(!view);
   if (!view) return <></>;
+  // Смена плана или попытки сбрасывает черновики пути и устаревшую фразу шапки.
+  const pathKey = `${project}:${shot?.id ?? ''}:${packageSelection}`;
 
   return (
     <Stack spacing={2} sx={{ width: '100%', minWidth: 0, pb: 8, '--shot-card-scroll-margin': `${stickyTop}px` }}>
@@ -98,8 +102,8 @@ export function ProductionPage(): ReactElement {
           sx={{
             display: 'grid',
             gridTemplateColumns: 'minmax(0, 1fr)',
-            // Колонки как на странице «Сцены»: при широком окне выбранный план справа, список слева в три карточки.
-            '@container workspace (min-width: 1100px)': { gridTemplateColumns: shot ? 'minmax(0, 1fr) minmax(0, 1.4fr)' : 'minmax(0, 1fr)' },
+            // При широком окне выбранный план справа: основная работа здесь, список планов — узкая колонка.
+            '@container workspace (min-width: 1100px)': { gridTemplateColumns: shot ? 'minmax(240px, 280px) minmax(0, 1fr)' : 'minmax(0, 1fr)' },
             gap: 2,
             alignItems: 'start'
           }}
@@ -141,6 +145,7 @@ export function ProductionPage(): ReactElement {
                 }
               }}
             >
+              {selectedPackage ? <ProductionOperationNotice operation={operationFor(selectedPackage.dir)} stickyTop={stickyTop} /> : null}
               <ProductionShotCard
                 shot={shot}
                 busy={busyFor('') || !!shot.packages.find((pkg) => busyFor(pkg.dir) || workflowBusyFor(pkg.dir))}
@@ -151,121 +156,74 @@ export function ProductionPage(): ReactElement {
                 onOpenPackage={selectPackage}
                 broken={view.broken.filter((item) => item.shot === shot.id)}
                 onDiscardBroken={discardBroken}
+                now={shot.derivedFrom || path?.key !== pathKey ? null : { text: path.value.now, tone: path.value.tone }}
+                onNewAttempt={shot.derivedFrom || (!shot.packages.length && !shot.asset) ? undefined : () => selectPackage('__new__')}
+                onDiscardAttempt={discardPackage}
               />
 
               {shot.derivedFrom ? (
                 <DerivedShotPanel key={`${project}:${shot.id}`} project={project} shot={shot.id} onApplied={load} />
               ) : (
-                <>
-                  <TextField
-                    select
-                    label={productionTexts.productionPage.packageLabel}
-                    value={packageSelection}
-                    onChange={(event) => selectPackage(event.target.value)}
-                    helperText={productionTexts.productionPage.packageSelectionHint}
-                  >
-                    <MenuItem value="" disabled>
-                      {productionTexts.productionPage.choosePackage}
-                    </MenuItem>
-                    <MenuItem value="__new__">{productionTexts.productionPage.newPreparation}</MenuItem>
-                    {shot.packages.map((pkg) => (
-                      <MenuItem key={pkg.dir} value={pkg.dir}>
-                        {productionTexts.productionPage.queuedPrefix({ queued: isQueuedPackage(pkg), relative: pkg.relative, stage: pkg.stageLabel })}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-
-                  {packageSelection === '__new__' || selectedPackage ? (
-                    <Box ref={workflowPanel} tabIndex={-1} data-anchor={ANCHORS.productionWorkflow}>
-                      <ProductionWorkflowPanel
-                        key={`${project}:${shot.id}:${packageSelection}`}
-                        project={project}
-                        shot={shot.id}
-                        packageDir={selectedPackage?.dir}
-                        decisionToken={selectedPackage?.decisionToken}
-                        decision={selectedPackage?.decision}
-                        packageBusy={selectedPackage ? busyFor(selectedPackage.dir) : false}
-                        onBusyChange={(value) => reportWorkflowBusy(packageSelection, value)}
-                        onApplied={async (dir) => {
-                          if (dir) selectPackage(dir);
-                          await load();
-                        }}
-                      />
-                    </Box>
-                  ) : (
-                    <Alert severity="info">{productionTexts.productionPage.choosePackageHint}</Alert>
-                  )}
-
-                  {/* Речевому плану нужен точный срез песни до подготовки запроса и для приёмки. */}
-                  {selectedPackage && shot.lipsync ? (
-                    <ProductionSpeechPanel
-                      key={`speech:${selectedPackage.dir}`}
-                      project={project}
-                      pkg={selectedPackage}
-                      busy={busyFor(selectedPackage.dir) || workflowBusyFor(selectedPackage.dir) || !view.tools.python}
-                      busyReason={view.tools.python ? BUSY_REASON : PYTHON_REASON}
-                      onPrepared={load}
-                    />
-                  ) : null}
-
-                  {selectedPackage ? (
-                    <PackageCard
-                      key={selectedPackage.dir}
-                      pkg={selectedPackage}
-                      note={noteFor(selectedPackage)}
-                      setNote={(value) => setNoteFor(selectedPackage, value)}
-                      busy={busyFor(selectedPackage.dir) || workflowBusyFor(selectedPackage.dir) || !view.tools.python}
-                      busyReason={view.tools.python ? BUSY_REASON : PYTHON_REASON}
-                      operation={operationFor(selectedPackage.dir)}
-                      onOpenRevision={(focusNote = true) => {
-                        const panel = workflowPanel.current;
-                        const target = (focusNote ? panel?.querySelector<HTMLTextAreaElement>('textarea') : null) ?? panel;
-                        target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        target?.focus({ preventScroll: true });
-                      }}
-                      onDecide={(verdict, noteScope) => decide(selectedPackage, verdict, noteScope)}
-                      onReopenFrame={(frame, note, scope) => reopenFrame(selectedPackage, frame, note, scope)}
-                      onKeepForScene={() => keepPackageForScene(selectedPackage)}
-                      onSetKeyframeNote={(id, active) => setKeyframeNote(selectedPackage, id, active)}
-                      onSubmit={() => setConfirmSend(selectedPackage)}
-                      onSelectImage={(index) => selectImage(selectedPackage, index)}
-                      onAccept={() => openAccept(selectedPackage, !!shot.asset, shot.lipsync)}
-                      onContactSheet={() =>
-                        act(
-                          productionTexts.productionPage.summaryStarted,
-                          () => window.api.production.contactSheet(project, selectedPackage.dir),
-                          selectedPackage.dir
-                        )
-                      }
-                      onReopenQuestion={() =>
-                        act(
-                          productionTexts.productionPage.resultQuestionReopened,
-                          () => window.api.production.reopenQuestion(project, selectedPackage.dir),
-                          selectedPackage.dir
-                        )
-                      }
-                      onDiscard={() => discardPackage(selectedPackage)}
-                      onResume={() =>
-                        act(productionTexts.productionPage.resumeStarted, () => window.api.production.resume(project, selectedPackage.dir), selectedPackage.dir)
-                      }
-                      onAttachResult={(files) =>
-                        act(
-                          productionTexts.productionPage.importStarted,
-                          () => window.api.production.attachResult(project, selectedPackage.dir, files),
-                          selectedPackage.dir
-                        )
-                      }
-                      onNotCreated={() =>
-                        act(
-                          productionTexts.productionPage.submissionReset,
-                          () => window.api.production.markNotCreated(project, selectedPackage.dir),
-                          selectedPackage.dir
-                        )
-                      }
-                      providers={view.tools.providers}
-                    />
-                  ) : null}
-                </>
+                <Box tabIndex={-1} data-anchor={ANCHORS.productionWorkflow}>
+                  <ProductionPath
+                    key={pathKey}
+                    project={project}
+                    shot={shot}
+                    pkg={selectedPackage}
+                    packageSelection={packageSelection}
+                    newAttempt={newAttempt}
+                    note={selectedPackage ? noteFor(selectedPackage) : ''}
+                    setNote={(value) => selectedPackage && setNoteFor(selectedPackage, value)}
+                    busy={selectedPackage ? busyFor(selectedPackage.dir) || !view.tools.python : false}
+                    busyReason={view.tools.python ? BUSY_REASON : PYTHON_REASON}
+                    providers={view.tools.providers}
+                    speechBusy={!!selectedPackage && (busyFor(selectedPackage.dir) || workflowBusyFor(selectedPackage.dir) || !view.tools.python)}
+                    onBusyChange={(value) => reportWorkflowBusy(packageSelection, value)}
+                    onApplied={async (dir) => {
+                      if (dir) selectPackage(dir);
+                      await load();
+                    }}
+                    onPath={(value) => setPath({ key: pathKey, value })}
+                    answerApplied={answerApplied}
+                    onDecide={(verdict, noteScope, after) => selectedPackage && decide(selectedPackage, verdict, noteScope, after)}
+                    onReopenFrame={(frame, note, scope) => selectedPackage && reopenFrame(selectedPackage, frame, note, scope)}
+                    onKeepForScene={() => selectedPackage && keepPackageForScene(selectedPackage)}
+                    onSetKeyframeNote={(id, active) => selectedPackage && setKeyframeNote(selectedPackage, id, active)}
+                    onSubmit={() => setConfirmSend(selectedPackage)}
+                    onSelectImage={(index) => selectedPackage && selectImage(selectedPackage, index)}
+                    onAccept={() => selectedPackage && openAccept(selectedPackage, !!shot.asset, shot.lipsync)}
+                    onRegenerate={() => setConfirmRegenerate(shot.id)}
+                    onContactSheet={() =>
+                      selectedPackage &&
+                      act(
+                        productionTexts.productionPage.summaryStarted,
+                        () => window.api.production.contactSheet(project, selectedPackage.dir),
+                        selectedPackage.dir
+                      )
+                    }
+                    onResume={() =>
+                      selectedPackage &&
+                      act(productionTexts.productionPage.resumeStarted, () => window.api.production.resume(project, selectedPackage.dir), selectedPackage.dir)
+                    }
+                    onAttachResult={(files) =>
+                      selectedPackage &&
+                      act(
+                        productionTexts.productionPage.importStarted,
+                        () => window.api.production.attachResult(project, selectedPackage.dir, files),
+                        selectedPackage.dir
+                      )
+                    }
+                    onNotCreated={() =>
+                      selectedPackage &&
+                      act(
+                        productionTexts.productionPage.submissionReset,
+                        () => window.api.production.markNotCreated(project, selectedPackage.dir),
+                        selectedPackage.dir
+                      )
+                    }
+                    onSpeechPrepared={load}
+                  />
+                </Box>
               )}
             </Stack>
           ) : (

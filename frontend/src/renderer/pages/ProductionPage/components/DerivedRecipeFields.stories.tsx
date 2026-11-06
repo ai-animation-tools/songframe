@@ -50,6 +50,10 @@ export const TrimByEnd: Story = {
     await userEvent.type(end, '120');
     await expect(canvas.getByRole('spinbutton', { name: texts.start })).toHaveValue(28);
     await expect(canvas.getByText(/Кадры \[28, 120\)/)).toBeVisible();
+    await userEvent.clear(end);
+    await userEvent.type(end, '50');
+    await expect(canvas.getByText(texts.trimEndTooEarly({ frames: 92 }))).toBeVisible();
+    await expect(canvas.getByRole('spinbutton', { name: texts.start })).toHaveValue(28);
   }
 };
 export const Fit: Story = {

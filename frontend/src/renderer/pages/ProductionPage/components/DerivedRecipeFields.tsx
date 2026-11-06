@@ -21,7 +21,7 @@ export function DerivedRecipeFields({
   // может быть меньше длины плана: текст живёт в поле, а начало меняется только на допустимом значении.
   const [typedEnd, setTypedEnd] = useState<string | null>(null);
   const trimEnd = trimEndFrame(draft, targetFrames);
-  const typedStart = typedEnd === null ? null : startForTrimEnd(typedEnd, targetFrames);
+  const endRejected = typedEnd !== null && startForTrimEnd(typedEnd, targetFrames) === null;
   return (
     <Stack spacing={1.5}>
       <TextField
@@ -80,8 +80,8 @@ export function DerivedRecipeFields({
               label={texts.end}
               value={typedEnd ?? trimEnd}
               disabled={disabled}
-              error={typedEnd !== null && typedStart === null}
-              helperText={texts.trimEndHint({ frames: targetFrames })}
+              error={endRejected}
+              helperText={endRejected ? texts.trimEndTooEarly({ frames: targetFrames }) : texts.trimEndHint({ frames: targetFrames })}
               slotProps={{ htmlInput: { min: targetFrames, max: sourceFrames, step: 1 } }}
               onBlur={() => setTypedEnd(null)}
               onChange={(event) => {

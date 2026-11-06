@@ -18,6 +18,15 @@ describe('поиск по справке', () => {
     expect(searchGlossary(examples, 'несуществующее слово').entries).toEqual([]);
   });
 
+  it('объясняет режимы производного плана', () => {
+    for (const query of ['производный план', 'обрезка', 'подогнать скоростью', 'повтор участка', 'стоп-кадр', 'конечный кадр']) {
+      expect(
+        searchGlossary(GLOSSARY, query).entries.map((entry) => entry.id),
+        query
+      ).toContain('derived-shot-modes');
+    }
+  });
+
   it('находит практические ответы по вопросам новичка', () => {
     for (const query of ['с чего начать', 'как перенести проект', 'почему кнопка недоступна', 'стоимость']) {
       expect(searchGlossary(GLOSSARY, query).entries.length, query).toBeGreaterThan(0);

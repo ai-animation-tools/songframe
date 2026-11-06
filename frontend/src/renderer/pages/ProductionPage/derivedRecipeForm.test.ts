@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { draftRecipe, recipeDraft, recipeInfo, sameRecipe } from './derivedRecipeForm';
+import { draftRecipe, recipeDraft, recipeInfo, sameRecipe, startForTrimEnd, trimEndFrame } from './derivedRecipeForm';
 
 describe('кадровая форма производного плана', () => {
   it.each(['', '-1', '1.5', ' 1 ', 'NaN', '9007199254740992'])('не принимает нецелое или пустое поле %s', (start) => {
@@ -17,5 +17,15 @@ describe('кадровая форма производного плана', () =
     expect(recipeInfo({ mode: 'repeat', start_frame: 5, end_frame_exclusive: 35 }, 95)).toContain('полных повторов 3, затем 5 кадров');
     expect(recipeInfo({ mode: 'still', frame: 10 }, 90)).toBe('Кадр 10 удерживается 90 кадров без движения.');
     expect(recipeInfo({ mode: 'trim', start_frame: 10 }, 90)).toContain('Кадры [10, 100)');
+  });
+
+  it('конец обрезки — другая запись начала при длине плана', () => {
+    expect(trimEndFrame(recipeDraft({ mode: 'trim', start_frame: 10 }), 90)).toBe('100');
+    expect(trimEndFrame({ mode: 'trim', start: '', end: '', frame: '0' }, 90)).toBe('');
+    expect(startForTrimEnd('120', 90)).toBe(30);
+    expect(startForTrimEnd('90', 90)).toBe(0);
+    expect(startForTrimEnd('89', 90)).toBeNull();
+    expect(startForTrimEnd('', 90)).toBeNull();
+    expect(startForTrimEnd('1.5', 90)).toBeNull();
   });
 });

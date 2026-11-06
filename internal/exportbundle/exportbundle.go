@@ -152,12 +152,15 @@ func export(ctx context.Context, root, out string, copyMedia bool) (*pycompat.Di
 		return nil, err
 	}
 	copied := 0
-	mediaRoot := root
+	place := mediaPlace{root: root, bundle: target}
+	if pycompat.IsRelativeTo(target, root) {
+		place.portable = root
+	}
 	if copyMedia {
 		if copied, err = copyAll(ctx, bundle, root, target); err != nil {
 			return nil, err
 		}
-		mediaRoot = target
+		place.root, place.portable = target, target
 	}
 	if err := writeCSV(rowsOf(bundle), pycompat.JoinPath(target, "shots.csv"), shotColumns); err != nil {
 		return nil, err
@@ -168,7 +171,7 @@ func export(ctx context.Context, root, out string, copyMedia bool) (*pycompat.Di
 	if err := writeEDL(bundle, pycompat.JoinPath(target, "timeline.edl")); err != nil {
 		return nil, err
 	}
-	if err := writeFCPXML(bundle, pycompat.JoinPath(target, "timeline.fcpxml"), mediaRoot); err != nil {
+	if err := writeFCPXML(bundle, pycompat.JoinPath(target, "timeline.fcpxml"), place); err != nil {
 		return nil, err
 	}
 	document, err := pytool.JSON(bundle)

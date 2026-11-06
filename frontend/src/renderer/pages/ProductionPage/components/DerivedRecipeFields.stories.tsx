@@ -1,6 +1,7 @@
 import { useState, type ComponentProps, type ReactElement } from 'react';
 import { Alert, Stack, Typography } from '@mui/material';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, userEvent, within } from 'storybook/test';
 import { derivedShotTexts as texts } from '@shared/texts/derived-shot';
 import { derivedView } from '../../../testing/derivedStories';
 import { derivedActionReasons, recipeDraft, recipeInfo } from '../derivedRecipeForm';
@@ -29,7 +30,7 @@ const meta = {
   title: 'Производство/Производный план/Поля рецепта',
   component: DerivedRecipeFields,
   render: (args) => <RecipeDemo {...args} />,
-  args: { draft: recipeDraft(null), disabled: false, sourceFrames: 150, onChange: () => {} },
+  args: { draft: recipeDraft(null), disabled: false, sourceFrames: 150, targetFrames: 92, onChange: () => {} },
   parameters: { controls: { disable: true }, songframe: {} }
 } satisfies Meta<typeof DerivedRecipeFields>;
 export default meta;
@@ -37,6 +38,20 @@ type Story = StoryObj<typeof meta>;
 
 export const ChooseMode: Story = { name: 'Явный выбор способа' };
 export const Trim: Story = { name: 'Обрезка · 92 кадра без изменения скорости', args: { draft: recipeDraft({ mode: 'trim', start_frame: 10 }) } };
+export const TrimByEnd: Story = {
+  name: 'Обрезка · конечный кадр сдвигает начало, длина остаётся длиной плана',
+  tags: ['ci'],
+  args: { draft: recipeDraft({ mode: 'trim', start_frame: 10 }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const end = canvas.getByRole('spinbutton', { name: texts.end });
+    await expect(end).toHaveValue(102);
+    await userEvent.clear(end);
+    await userEvent.type(end, '120');
+    await expect(canvas.getByRole('spinbutton', { name: texts.start })).toHaveValue(28);
+    await expect(canvas.getByText(/Кадры \[28, 120\)/)).toBeVisible();
+  }
+};
 export const Fit: Story = {
   name: 'Подгонка скоростью · коэффициент 0.500',
   args: { draft: recipeDraft({ mode: 'fit', start_frame: 0, end_frame_exclusive: 46 }) }

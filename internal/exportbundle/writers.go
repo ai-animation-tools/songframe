@@ -323,18 +323,34 @@ func pathJoin(base string, part any) (string, error) {
 	return pycompat.JoinPath(base, text), nil
 }
 
-// mediaURI — src(path) оригинала: URI файла с разрешёнными ссылками.
-func mediaURI(mediaRoot string, path any) (string, error) {
-	joined, err := pathJoin(mediaRoot, path)
+// mediaPlace — откуда timeline.fcpxml берёт медиа. Абсолютный путь привязал бы пакет к этой машине,
+// поэтому файл внутри portable записывается относительно папки пакета: portable — сам пакет с
+// копиями либо проект, в котором лежит пакет без копий (тогда переносится весь проект). Пустой
+// portable и файл вне его — пакет вне проекта без копий и песня снаружи: опоры для относительного
+// пути нет, остаётся абсолютный URI оригинала.
+type mediaPlace struct {
+	root     string
+	bundle   string
+	portable string
+}
+
+// mediaURI — src(path) оригинала: URI файла с разрешёнными ссылками, относительный внутри portable.
+func (place mediaPlace) mediaURI(path any) (string, error) {
+	joined, err := pathJoin(place.root, path)
 	if err != nil {
 		return "", err
 	}
 	resolved := pycompat.ResolvePath(joined)
+	if place.portable != "" && pycompat.IsRelativeTo(resolved, place.portable) {
+		if relative, err := filepath.Rel(place.bundle, resolved); err == nil {
+			return quoteURI(filepath.ToSlash(relative)), nil
+		}
+	}
 	return fileURI(filepath.ToSlash(resolved), filepath.VolumeName(resolved)), nil
 }
 
 // timelineItem — asset и элемент spine одного плана FCPXML.
-func timelineItem(row *pycompat.Dict, mediaRoot string) (asset, clip string, err error) {
+func timelineItem(row *pycompat.Dict, place mediaPlace) (asset, clip string, err error) {
 	shot := row.Value("shot").(string)
 	id := "c" + strings.ReplaceAll(shot, ".", "_")
 	offset, err := rational(row.Value("song_in_s"))
@@ -343,7 +359,7 @@ func timelineItem(row *pycompat.Dict, mediaRoot string) (asset, clip string, err
 	}
 	duration := pycompat.Str(row.Value("frames_30")) + "/30s"
 	if row.Value("status") == "video" {
-		uri, err := mediaURI(mediaRoot, row.Value("accepted_clip"))
+		uri, err := place.mediaURI(row.Value("accepted_clip"))
 		if err != nil {
 			return "", "", err
 		}
@@ -352,7 +368,7 @@ func timelineItem(row *pycompat.Dict, mediaRoot string) (asset, clip string, err
 		clip = `<asset-clip ref="` + id + `" name=` + quoteAttr(shot) + ` offset="` + offset + `" start="0s" duration="` + duration + `"`
 		return asset, clip, nil
 	}
-	uri, err := mediaURI(mediaRoot, row.Value("card"))
+	uri, err := place.mediaURI(row.Value("card"))
 	if err != nil {
 		return "", "", err
 	}
@@ -363,12 +379,12 @@ func timelineItem(row *pycompat.Dict, mediaRoot string) (asset, clip string, err
 
 // writeFCPXML — write_fcpxml: шкала аниматика из принятых клипов и карточек по порядку, песня —
 // связанным клипом первого плана на дорожке -1.
-func writeFCPXML(bundle *pycompat.Dict, path, mediaRoot string) error {
+func writeFCPXML(bundle *pycompat.Dict, path string, place mediaPlace) error {
 	total, err := rational(bundle.Value("song_end_s"))
 	if err != nil {
 		return err
 	}
-	song, err := mediaURI(mediaRoot, bundle.Value("song"))
+	song, err := place.mediaURI(bundle.Value("song"))
 	if err != nil {
 		return err
 	}
@@ -376,7 +392,7 @@ func writeFCPXML(bundle *pycompat.Dict, path, mediaRoot string) error {
 		`" hasAudio="1" audioSources="1" audioChannels="2" audioRate="44100"/>`}
 	spine := []string{}
 	for index, row := range rowsOf(bundle) {
-		asset, clip, err := timelineItem(row, mediaRoot)
+		asset, clip, err := timelineItem(row, place)
 		if err != nil {
 			return err
 		}
@@ -417,7 +433,7 @@ func readme(bundle *pycompat.Dict, copied int) string {
 	videos := videoCount(rows)
 	files := "- Пути в таблицах относительны к корню папки проекта; файлы не копировались."
 	if copied > 0 {
-		files = "- `media/` — копии исходников, если пакет собран с `--copy`."
+		files = "- `media/` — копии исходников, если пакет собран с `--copy`; `timeline.fcpxml` ссылается на них относительными путями, поэтому папку пакета можно передавать целиком."
 	}
 	status := "без примечаний"
 	if value := bundle.Value("timing_status"); pycompat.Truthy(value) {

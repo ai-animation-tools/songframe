@@ -1,20 +1,27 @@
-import type { ReactElement } from 'react';
+import { type ReactElement, useState } from 'react';
 import { MenuItem, Stack, TextField } from '@mui/material';
 import { derivedShotTexts as texts } from '@shared/texts/derived-shot';
-import type { DerivedRecipeDraft } from '../derivedRecipeForm';
+import { startForTrimEnd, trimEndFrame, type DerivedRecipeDraft } from '../derivedRecipeForm';
 
 /** Рецепт задаётся кадрами, чтобы округление секунд не меняло точные входы сборки. */
 export function DerivedRecipeFields({
   draft,
   disabled,
   sourceFrames,
+  targetFrames,
   onChange
 }: {
   draft: DerivedRecipeDraft;
   disabled: boolean;
   sourceFrames: number;
+  targetFrames: number;
   onChange(draft: DerivedRecipeDraft): void;
 }): ReactElement {
+  // Длину обрезки задаёт план, поэтому конец — другая запись начала. Пока число набирается, оно
+  // может быть меньше длины плана: текст живёт в поле, а начало меняется только на допустимом значении.
+  const [typedEnd, setTypedEnd] = useState<string | null>(null);
+  const trimEnd = trimEndFrame(draft, targetFrames);
+  const typedStart = typedEnd === null ? null : startForTrimEnd(typedEnd, targetFrames);
   return (
     <Stack spacing={1.5}>
       <TextField
@@ -66,7 +73,24 @@ export function DerivedRecipeFields({
               slotProps={{ htmlInput: { min: 1, max: sourceFrames, step: 1 } }}
               onChange={(event) => onChange({ ...draft, end: event.target.value })}
             />
-          ) : null}
+          ) : (
+            <TextField
+              fullWidth
+              type="number"
+              label={texts.end}
+              value={typedEnd ?? trimEnd}
+              disabled={disabled}
+              error={typedEnd !== null && typedStart === null}
+              helperText={texts.trimEndHint({ frames: targetFrames })}
+              slotProps={{ htmlInput: { min: targetFrames, max: sourceFrames, step: 1 } }}
+              onBlur={() => setTypedEnd(null)}
+              onChange={(event) => {
+                const start = startForTrimEnd(event.target.value, targetFrames);
+                setTypedEnd(event.target.value);
+                if (start !== null) onChange({ ...draft, start: String(start) });
+              }}
+            />
+          )}
         </Stack>
       ) : null}
     </Stack>

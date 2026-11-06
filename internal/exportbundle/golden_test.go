@@ -58,10 +58,71 @@ type bundleCase struct {
 }
 
 // fixedReadme — исправленные ошибки README пакета оригинала, эталон остаётся снимком оригинала:
-// файлы лежат в папке проекта, а не в репозитории, а пример из чужого клипа убран.
+// файлы лежат в папке проекта, а не в репозитории, пример из чужого клипа убран, добавлено
+// пояснение о переносимости timeline.fcpxml.
 func fixedReadme(text string) string {
+	text = strings.ReplaceAll(text, "- `media/` — копии исходников, если пакет собран с `--copy`.", "- `media/` — копии исходников, если пакет собран с `--copy`; `timeline.fcpxml` ссылается на них относительными путями, поэтому папку пакета можно передавать целиком.")
 	text = strings.ReplaceAll(text, "относительны к корню репозитория;", "относительны к корню папки проекта;")
 	return strings.ReplaceAll(text, "генерации (например, вступление из M13);", "генерации;")
+}
+
+var relativeSource = regexp.MustCompile(`src="([^"]*)"`)
+
+// absoluteSources возвращает относительные src переносимого FCPXML к абсолютному URI оригинала:
+// эталон хранит абсолютные пути, а сравнение заодно доказывает, что относительный путь от папки
+// пакета ведёт в тот же файл.
+func absoluteSources(text, bundle string) string {
+	return relativeSource.ReplaceAllStringFunc(text, func(attribute string) string {
+		value := relativeSource.FindStringSubmatch(attribute)[1]
+		if strings.HasPrefix(value, "file:") {
+			return attribute
+		}
+		decoded, err := url.PathUnescape(value)
+		if err != nil {
+			return attribute
+		}
+		path := filepath.Join(bundle, filepath.FromSlash(decoded))
+		return `src="` + fileURI(filepath.ToSlash(path), filepath.VolumeName(path)) + `"`
+	})
+}
+
+// TestFCPXMLPortable — пакет с копиями и пакет внутри проекта не содержат абсолютных путей машины;
+// пакет вне проекта без копий опирается на абсолютные пути, потому что переносить его не с чем.
+func TestFCPXMLPortable(t *testing.T) {
+	root := t.TempDir()
+	root, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	project := filepath.Join(root, "клип")
+	copyProject(t, project)
+	cases := []struct {
+		out      string
+		copyAll  bool
+		absolute bool
+		song     string
+	}{
+		{filepath.Join(project, "plan/batches/с-копиями"), true, false, "media/source/"},
+		{filepath.Join(project, "plan/batches/без-копий"), false, false, "../../../source/"},
+		{filepath.Join(root, "наружу"), true, false, "media/source/"},
+		{filepath.Join(root, "наружу-без-копий"), false, true, "file://"},
+	}
+	for _, c := range cases {
+		if _, err := export(context.Background(), project, c.out, c.copyAll); err != nil {
+			t.Fatal(err)
+		}
+		data, err := os.ReadFile(filepath.Join(c.out, "timeline.fcpxml"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(data), "file://") != c.absolute {
+			t.Errorf("%s: абсолютные пути: ожидалось %v", c.out, c.absolute)
+		}
+		song := relativeSource.FindStringSubmatch(string(data))[1]
+		if !strings.HasPrefix(song, c.song) {
+			t.Errorf("%s: песня %s", c.out, song)
+		}
+	}
 }
 
 // copyProject — копия образца checks-base в рабочую папку случая.
@@ -240,6 +301,9 @@ func TestExportGolden(t *testing.T) {
 					}
 				case want.Text != nil:
 					expected := fixedReadme(*want.Text)
+					if strings.HasSuffix(path, ".fcpxml") {
+						content = absoluteSources(content, filepath.Dir(filepath.Join(tmp, filepath.FromSlash(path))))
+					}
 					if got := norm(content); got != expected {
 						t.Errorf("%s\n%s", path, firstDifference(got, expected))
 					}

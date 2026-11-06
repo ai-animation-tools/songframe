@@ -34,6 +34,17 @@ export function draftRecipe(draft: DerivedRecipeDraft): DerivedShotRecipe | null
   }
 }
 
+/** Конец обрезки следует из начала и длины плана; пустое начало не даёт числа. */
+export function trimEndFrame(draft: DerivedRecipeDraft, targetFrames: number): string {
+  return /^\d+$/.test(draft.start) ? String(Number(draft.start) + targetFrames) : '';
+}
+
+/** Начало обрезки для введённого конца; конец раньше длины плана или не целое число — null. */
+export function startForTrimEnd(end: string, targetFrames: number): number | null {
+  if (!/^\d+$/.test(end) || Number(end) < targetFrames) return null;
+  return Number(end) - targetFrames;
+}
+
 export function sameRecipe(left: DerivedShotRecipe | null, right: DerivedShotRecipe | null): boolean {
   return JSON.stringify(recipeDraft(left)) === JSON.stringify(recipeDraft(right));
 }

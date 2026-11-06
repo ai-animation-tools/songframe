@@ -87,7 +87,13 @@ export function DerivedShotPanel({ project, shot, onApplied }: { project: string
                 <LinkedText text={view.toolsProblem} />
               </Alert>
             ) : null}
-            <DerivedRecipeFields draft={form.draft} disabled={form.busy} sourceFrames={view.sourceFrames} onChange={form.change} />
+            <DerivedRecipeFields
+              draft={form.draft}
+              disabled={form.busy}
+              sourceFrames={view.sourceFrames}
+              targetFrames={view.targetFrames}
+              onChange={form.change}
+            />
             {reasons.shapeProblem && form.draft.mode ? <Alert severity="warning">{reasons.shapeProblem}</Alert> : null}
             {reasons.boundsProblem && !view.problem ? (
               <Alert severity="warning">

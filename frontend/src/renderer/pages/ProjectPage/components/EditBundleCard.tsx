@@ -13,16 +13,11 @@ import { joinPath } from '../../../format';
 import { useApp } from '../../../state';
 import { ActionButton, DateTime, JobStatus } from '../../../components';
 import { DestructiveButton } from '../../../components/DestructiveButton';
-
-function stamp(): string {
-  const d = new Date();
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
-}
+import { bundleName, renewedBundleTarget } from '../bundleTarget';
 
 export function EditBundleCard({ project }: { project: string }): ReactElement {
   const { notify, describeError } = useApp();
-  const [target, setTarget] = useState(() => joinPath(project, 'plan', 'batches', `edit-bundle-${stamp()}`));
+  const [target, setTarget] = useState(() => joinPath(project, 'plan', 'batches', bundleName()));
   const [copy, setCopy] = useState(true);
   const [bundles, setBundles] = useState<BundleInfo[]>([]);
   const [job, setJob] = useState<JobInfo | null>(null);
@@ -42,6 +37,8 @@ export function EditBundleCard({ project }: { project: string }): ReactElement {
       const next = await window.api.jobs.get(job.id);
       if (next) setJob(next);
       if (next && next.status !== 'running') {
+        // Занятая папка не годится для следующей сборки: имя с отметкой времени сразу обновляется.
+        setTarget(renewedBundleTarget);
         await load();
         notify(next.status === 'done' ? projectTexts.bundle.built : projectTexts.bundle.failed, next.status === 'done' ? 'success' : 'error');
       }
@@ -51,7 +48,7 @@ export function EditBundleCard({ project }: { project: string }): ReactElement {
 
   const pickFolder = async (): Promise<void> => {
     const folder = await window.api.dialog.pickFolder({ title: projectTexts.bundle.pickFolder });
-    if (folder) setTarget(joinPath(folder, `edit-bundle-${stamp()}`));
+    if (folder) setTarget(joinPath(folder, bundleName()));
   };
 
   const run = async (): Promise<void> => {

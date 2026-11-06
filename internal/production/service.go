@@ -1477,6 +1477,54 @@ func ListBundles(project string) ([]Bundle, error) {
 	return result, nil
 }
 
+// ExportBundle — exportBundle(project, options) оригинала: пакет для монтажёра в пустую папку
+// target; внутри проекта допускается только plan/batches. Папка создаётся сразу, задание вида tool
+// запоминается за ней, и до его конца RemoveBundle отказывает. С копированием первым идёт
+// необязательный шаг update_scene_views: в пакет входят карточки неготовых планов, а их рисует
+// обновление представлений; его сбой не отменяет сборку.
+//
+// Отличие от оригинала: plan/batches проверяется по границе компонента пути. Оригинал сверял
+// только префикс, поэтому plan/batches-x получала пустую папку и отказ уже от инструмента.
+func (s *Service) ExportBundle(project, requested string, copyMedia bool) (jobs.Info, error) {
+	target := jscompat.Resolve(requested)
+	if !filepath.IsAbs(requested) {
+		return jobs.Info{}, errors.New(textBundleAbsolutePathRequired)
+	}
+	separator := string(filepath.Separator)
+	root := jscompat.Resolve(project)
+	batches := filepath.Join(root, "plan", "batches")
+	if strings.HasPrefix(target, root+separator) && target != batches && !strings.HasPrefix(target, batches+separator) {
+		return jobs.Info{}, errors.New(textBundlePathInvalid)
+	}
+	if jscompat.Exists(target) {
+		entries, err := jscompat.ReadDir(target)
+		if err != nil {
+			return jobs.Info{}, err
+		}
+		if len(entries) > 0 {
+			return jobs.Info{}, errors.New(textBundleFolderNotEmpty(target))
+		}
+	}
+	if err := os.MkdirAll(target, 0o777); err != nil {
+		return jobs.Info{}, jscompat.FsError("mkdir", target, err)
+	}
+	args := []string{"--out", target}
+	steps := []jobs.Step{}
+	if copyMedia {
+		args = append(args, "--copy")
+		steps = append(steps, s.toolStep(project, "update_scene_views", []string{}, textBundleViewsStep, true, nil))
+	}
+	steps = append(steps, s.toolStep(project, "export_edit_bundle", args, textBundleExportStep, false, nil))
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	info, err := s.start(jobs.KindTool, textBundleJob(copyMedia), project, steps)
+	if err != nil {
+		return jobs.Info{}, err
+	}
+	s.bundleJobs[target] = info.ID
+	return info, nil
+}
+
 // RemoveBundle — удаление собранного пакета для монтажёра после завершения сборки; весь пакет
 // содержит только экспорт и его копии медиа. Рабочий пакет сцены так не удаляется.
 func (s *Service) RemoveBundle(project, path string) error {

@@ -29,6 +29,8 @@ import (
 	"songframe-go/internal/continuitybrief"
 	"songframe-go/internal/costcheck"
 	"songframe-go/internal/cutspeech"
+	"songframe-go/internal/deriveshot"
+	"songframe-go/internal/exportbundle"
 	"songframe-go/internal/lintregistry"
 	"songframe-go/internal/mediaadapters"
 	"songframe-go/internal/mediarequest"
@@ -99,20 +101,23 @@ type contextTool func(ctx context.Context, root string, args []string) pytool.Ou
 var LocalDir = func() (string, error) { return mediaadapters.StateDir() }
 
 // contextual — инструменты платной попытки и её продолжения (media_request, cost_check,
-// regenerate_shot, accept_shot) и медиаинструменты с долгими вызовами FFmpeg (build_animatic,
-// build_review, contact_sheet, cut_speech): получают контекст отмены задания.
+// regenerate_shot, accept_shot), медиаинструменты с долгими вызовами FFmpeg (derive_shot, build_animatic,
+// build_review, contact_sheet, cut_speech) и копирование медиа пакета для монтажёра
+// (export_edit_bundle): получают контекст отмены задания.
 var contextual = map[string]contextTool{
 	"media_request": func(ctx context.Context, root string, args []string) pytool.Output {
 		return mediarequest.Run(ctx, root, args, nil)
 	},
-	"cost_check":      withLocalDir(costcheck.Run),
-	"regenerate_shot": withLocalDir(regenerateshot.Run),
-	"accept_shot":     withLocalDir(acceptshot.Run),
-	"apply_montage":   applymontage.Run,
-	"build_animatic":  buildanimatic.Run,
-	"build_review":    buildreview.Run,
-	"contact_sheet":   contactsheet.Run,
-	"cut_speech":      cutspeech.Run,
+	"cost_check":         withLocalDir(costcheck.Run),
+	"regenerate_shot":    withLocalDir(regenerateshot.Run),
+	"accept_shot":        withLocalDir(acceptshot.Run),
+	"apply_montage":      applymontage.Run,
+	"build_animatic":     buildanimatic.Run,
+	"build_review":       buildreview.Run,
+	"contact_sheet":      contactsheet.Run,
+	"cut_speech":         cutspeech.Run,
+	"derive_shot":        deriveshot.Run,
+	"export_edit_bundle": exportbundle.Run,
 }
 
 // withLocalDir — инструмент, которому нужен каталог состояния (наблюдения цен cost_check).

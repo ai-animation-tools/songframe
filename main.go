@@ -14,6 +14,7 @@ import (
 	"songframe-go/internal/agents"
 	shell "songframe-go/internal/app"
 	"songframe-go/internal/components"
+	"songframe-go/internal/derivedworkflow"
 	"songframe-go/internal/jobs"
 	"songframe-go/internal/media"
 	"songframe-go/internal/mediaadapters"
@@ -124,6 +125,13 @@ func run() error {
 	// Прерванное применение монтажа (журналы apply_montage) откатывается в текущем проекте и в
 	// проектах истории до открытия окна, как recoverMontageApplications оригинала при запуске.
 	if err := montage.RecoverProjects(profilePath); err != nil {
+		log.Print(err)
+		if closeErr := projects.Close(); closeErr != nil {
+			log.Print(closeErr)
+		}
+	}
+	// Прерванная приёмка производного плана (журналы derive_shot) откатывается так же.
+	if err := derivedworkflow.RecoverProjects(profilePath); err != nil {
 		log.Print(err)
 		if closeErr := projects.Close(); closeErr != nil {
 			log.Print(closeErr)
@@ -251,6 +259,7 @@ func run() error {
 		application.NewService(shell.NewProductionWorkflowService(productionWorkflow, aiAccess)),
 		application.NewService(shell.NewDashboardService(scenarioWorkflow)),
 		application.NewService(shell.NewAnimaticService(jobManager, scenarioWorkflow)),
+		application.NewService(shell.NewDerivedShotService(jobManager)),
 		// Второе окно плеера монтажа: одно окно у одного владельца, положение — в каталоге состояния.
 		application.NewService(montageWindow),
 		// Ручной монтаж: черновики, экспорт пробы и применение через apply_montage менеджером заданий.

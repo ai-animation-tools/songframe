@@ -137,9 +137,9 @@ func TestRenderFailureHasNoPartialMutation(t *testing.T) {
 		if calls == 2 {
 			return valueError("Сбой второго рендера")
 		}
-		return renderEdit(ctx, original, filter, frames, target)
+		return RenderEdit(ctx, original, filter, frames, target)
 	}
-	t.Cleanup(func() { renderEditHook = renderEdit })
+	t.Cleanup(func() { renderEditHook = RenderEdit })
 	if _, err := Apply(context.Background(), draft, root, false); !pycompat.Is(err, pycompat.ValueError) {
 		t.Fatalf("ожидался ValueError: %v", err)
 	}
@@ -163,13 +163,13 @@ func TestChangeDuringRenderIsRejectedBeforePublication(t *testing.T) {
 		if !Active() {
 			t.Error("во время рендера применение не отмечено")
 		}
-		if err := renderEdit(ctx, original, filter, frames, target); err != nil {
+		if err := RenderEdit(ctx, original, filter, frames, target); err != nil {
 			return err
 		}
 		data, _ := os.ReadFile(registry)
 		return os.WriteFile(registry, append(data, '\n'), 0o644)
 	}
-	t.Cleanup(func() { renderEditHook = renderEdit })
+	t.Cleanup(func() { renderEditHook = RenderEdit })
 	_, err := Apply(context.Background(), draft, root, false)
 	if err == nil || err.Error() != textRegistry {
 		t.Fatalf("ожидался отказ по реестру: %v", err)
@@ -187,7 +187,7 @@ func TestPublicationErrorRollsBack(t *testing.T) {
 	registry := filepath.Join(root, "plan", "scenes.json")
 	publishFileHook = func(source, target string) error {
 		calls++
-		if err := publishFile(source, target); err != nil {
+		if err := PublishFile(source, target); err != nil {
 			return err
 		}
 		if target == registry {
@@ -195,7 +195,7 @@ func TestPublicationErrorRollsBack(t *testing.T) {
 		}
 		return nil
 	}
-	t.Cleanup(func() { publishFileHook = publishFile })
+	t.Cleanup(func() { publishFileHook = PublishFile })
 	_, err := Apply(context.Background(), makeDraft(t, root, boundary...), root, true)
 	if !pycompat.Is(err, pycompat.OSError) {
 		t.Fatalf("ожидался OSError: %v", err)
@@ -224,7 +224,7 @@ func TestNextLaunchRecoversInterruptedPublication(t *testing.T) {
 	before := projectFiles(t, root)
 	crash := errors.New("имитация аварийного завершения")
 	publishFileHook = func(source, target string) error {
-		if err := publishFile(source, target); err != nil {
+		if err := PublishFile(source, target); err != nil {
 			return err
 		}
 		return crash
@@ -232,7 +232,7 @@ func TestNextLaunchRecoversInterruptedPublication(t *testing.T) {
 	// Остановка процесса не выполняет откат: подменённый restore оставляет журнал publishing.
 	restoreHook = func(string, *pycompat.Dict, string) error { return crash }
 	_, err := Apply(context.Background(), makeDraft(t, root, interval{"M02", 5, 125}), root, false)
-	publishFileHook, restoreHook = publishFile, restore
+	publishFileHook, restoreHook = PublishFile, restore
 	if !errors.Is(err, crash) {
 		t.Fatalf("ожидалась остановка: %v", err)
 	}
@@ -258,7 +258,7 @@ func TestInvalidDraftsNeverRender(t *testing.T) {
 		t.Error("рендер неверного черновика")
 		return nil
 	}
-	t.Cleanup(func() { renderEditHook = renderEdit })
+	t.Cleanup(func() { renderEditHook = RenderEdit })
 	stale := makeDraft(t, root, interval{"M02", 5, 125})
 	stale.Value("base_manifest_sha256").(*pycompat.Dict).Set("M02", strings.Repeat("0", 64))
 	staleRegistry := makeDraft(t, root, interval{"M02", 5, 125})

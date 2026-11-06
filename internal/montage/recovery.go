@@ -46,8 +46,8 @@ func targetAllowed(path string) bool {
 	return fixedTargets[path] || shotTarget.MatchString(path) || cardTarget.MatchString(path)
 }
 
-// digest — SHA-256 файла или nil, если пути нет; каталог — ошибка чтения node:fs.
-func digest(path string) (*string, error) {
+// Digest — SHA-256 файла или nil, если пути нет; каталог — ошибка чтения node:fs.
+func Digest(path string) (*string, error) {
 	if !jscompat.Exists(path) {
 		return nil, nil
 	}
@@ -58,15 +58,15 @@ func digest(path string) (*string, error) {
 	return &value, nil
 }
 
-// readJournal — readLocalJson(path): nil без ошибки для отсутствующего файла; повреждённый JSON и
+// ReadJournal — readLocalJson(path): nil без ошибки для отсутствующего файла; повреждённый JSON и
 // примитив — ошибка «Не удалось прочитать <путь>: <причина>…». Массив допускается (typeof object).
-func readJournal(path string) (any, error) {
+func ReadJournal(path string) (any, error) {
 	data, err := os.ReadFile(path)
 	if errors.Is(err, syscall.ENOENT) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, errors.New(textLocalReadFailed(path, readError(path, err).Error()))
+		return nil, errors.New(textLocalReadFailed(path, ReadError(path, err).Error()))
 	}
 	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
 	if err != nil {
@@ -158,7 +158,7 @@ func RecoverApplications(project string) error {
 		}
 		directory := filepath.Join(history, entry.Name())
 		path := filepath.Join(directory, "journal.json")
-		value, err := readJournal(path)
+		value, err := ReadJournal(path)
 		if err != nil {
 			return err
 		}
@@ -172,7 +172,7 @@ func RecoverApplications(project string) error {
 		}
 		backups := make([][]byte, len(files))
 		for index, file := range files {
-			current, err := digest(filepath.Join(project, filepath.FromSlash(file.path)))
+			current, err := Digest(filepath.Join(project, filepath.FromSlash(file.path)))
 			if err != nil {
 				return err
 			}
@@ -185,7 +185,7 @@ func RecoverApplications(project string) error {
 			backup := filepath.Join(directory, "before", filepath.FromSlash(file.path))
 			data, err := os.ReadFile(backup)
 			if err != nil {
-				return readError(backup, err)
+				return ReadError(backup, err)
 			}
 			sum := sha256.Sum256(data)
 			if hex.EncodeToString(sum[:]) != *file.before {
@@ -229,9 +229,13 @@ func RecoverOpened(project string) error {
 }
 
 // RecoverProjects — восстановление при запуске приложения: текущий проект и все проекты истории
-// каталога состояния localDir, по одному разу, в порядке «текущий, затем история». Первая ошибка
-// (чтение состояния или конфликт журнала) прерывает обход; вызывающий снимает текущий проект.
-func RecoverProjects(localDir string) error {
+// каталога состояния localDir. Первая ошибка прерывает обход; вызывающий снимает текущий проект.
+func RecoverProjects(localDir string) error { return EachKnownProject(localDir, RecoverApplications) }
+
+// EachKnownProject вызывает visit для текущего проекта и проектов истории каталога состояния
+// localDir, по одному разу, в порядке «текущий, затем история». Первая ошибка (чтение состояния или
+// конфликт журнала) прерывает обход. Общий обход восстановления монтажа и производных планов.
+func EachKnownProject(localDir string, visit func(project string) error) error {
 	state := store.NewLocalState(localDir)
 	current, err := state.Current()
 	if err != nil {
@@ -251,7 +255,7 @@ func RecoverProjects(localDir string) error {
 			continue
 		}
 		seen[project] = true
-		if err := RecoverApplications(project); err != nil {
+		if err := visit(project); err != nil {
 			return err
 		}
 	}

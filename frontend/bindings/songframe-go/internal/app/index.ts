@@ -10,6 +10,7 @@ import * as ChecksService from "./checksservice.js";
 import * as ComponentsService from "./componentsservice.js";
 import * as CoverService from "./coverservice.js";
 import * as DashboardService from "./dashboardservice.js";
+import * as DerivedShotService from "./derivedshotservice.js";
 import * as EnvironmentService from "./environmentservice.js";
 import * as JobsService from "./jobsservice.js";
 import * as MediaService from "./mediaservice.js";
@@ -38,6 +39,7 @@ export {
     ComponentsService,
     CoverService,
     DashboardService,
+    DerivedShotService,
     EnvironmentService,
     JobsService,
     MediaService,

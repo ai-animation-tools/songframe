@@ -17,7 +17,6 @@ export const projectTexts = {
     waitBuilding: 'Дождитесь окончания сборки пакета.',
     waitStarting: 'Дождитесь запуска сборки.',
     waitDeleting: 'Дождитесь удаления пакета.',
-    pythonRequired: commonTexts.runtime.pythonRequired,
     removed: 'Пакет для монтажёра удалён',
     title: 'Пакет для монтажёра',
     description:

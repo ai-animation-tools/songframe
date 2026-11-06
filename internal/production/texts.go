@@ -139,6 +139,10 @@ const (
 	textAcceptSpeechRequired         = "Речевой план: сначала подготовьте WAV речи в блоке «Речь» этого пакета."
 	textReplaceAssetsStep            = "замена комплекта в assets"
 	textMoveAssetsStep               = "перенос в assets"
+	textBundleAbsolutePathRequired   = "Укажите абсолютный путь папки пакета."
+	textBundlePathInvalid            = "Внутри проекта пакет можно собирать только в plan/batches; иначе выберите папку вне проекта."
+	textBundleExportStep             = "Сборка пакета для монтажёра"
+	textBundleViewsStep              = "карточки и представления"
 	textBundleBusy                   = "Пакет ещё собирается. Дождитесь завершения задания."
 	textBundleMissing                = "Собранный пакет не найден. Обновите список."
 	textScenePackageNotBundle        = "Нельзя удалить рабочий пакет сцены как пакет для монтажёра."
@@ -146,9 +150,18 @@ const (
 	// textSavedRequestRequired и textMediaProviderChanged — productionTexts.main.access.
 	textSavedRequestRequired = "В пакете нет сохранённого запроса."
 	textMediaProviderChanged = "Провайдер медиа изменился. Подготовьте новый запрос для выбранного провайдера."
-	// TextNotMigrated — метод ещё не перенесён (пакет для монтажёра — шаг 46c).
-	TextNotMigrated = "Действие ещё не перенесено в Go-версию SongFrame: нужен медиаконвейер этапа 46."
 )
+
+// textBundleFolderNotEmpty — productionTexts.main.bundleFolderNotEmpty.
+func textBundleFolderNotEmpty(path string) string { return "Папка не пуста: " + path }
+
+// textBundleJob — название задания пакета для монтажёра.
+func textBundleJob(copyMedia bool) string {
+	if copyMedia {
+		return "Пакет для монтажёра с медиа"
+	}
+	return "Пакет для монтажёра"
+}
 
 func textAttentionQuestion(name, question string) string {
 	if question == "" {

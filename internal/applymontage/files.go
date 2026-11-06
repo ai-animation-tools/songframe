@@ -15,8 +15,8 @@ import (
 // копия проекта в staging (stage_project/copy_input). Ошибки Go превращаются в OSError Python,
 // чтобы CLI показывал тот же скрытый текст, что и оригинал.
 
-// jsonBytes — json_bytes(value): json.dumps(ensure_ascii=False, indent=2) + "\n" в UTF-8.
-func jsonBytes(value any) ([]byte, error) {
+// JSONBytes — json_bytes(value): json.dumps(ensure_ascii=False, indent=2) + "\n" в UTF-8.
+func JSONBytes(value any) ([]byte, error) {
 	text, err := pycompat.DumpsJSON(value, pycompat.Indented)
 	if err != nil {
 		return nil, err
@@ -24,10 +24,10 @@ func jsonBytes(value any) ([]byte, error) {
 	return pycompat.EncodeUTF8(text + "\n")
 }
 
-// replaceBytes — replace_bytes(path, data): данные пишутся во временный «.<имя>.montage-tmp»
+// ReplaceBytes — replace_bytes(path, data): данные пишутся во временный «.<имя>.montage-tmp»
 // рядом с целью, сбрасываются на диск и заменяют файл одним rename. Временный файл удаляется
 // при любом исходе. Журнал транзакции пишется так же до публикации.
-func replaceBytes(path string, data []byte) error {
+func ReplaceBytes(path string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
 		return pycompat.OSErrorFrom(err, filepath.Dir(path))
 	}
@@ -56,16 +56,16 @@ func replaceBytes(path string, data []byte) error {
 // sha — sha(path) tools/common.py: SHA-256 содержимого файла.
 func sha(path string) (string, error) { return assetpackage.FileSHA256(path) }
 
-// digestOrNone — digest_or_none(path): SHA-256 обычного файла или nil, если файла нет.
-func digestOrNone(path string) (any, error) {
+// DigestOrNone — digest_or_none(path): SHA-256 обычного файла или nil, если файла нет.
+func DigestOrNone(path string) (any, error) {
 	if !pycompat.IsFile(path) {
 		return nil, nil
 	}
 	return sha(path)
 }
 
-// copyFile — shutil.copyfile(source, target): только байты, права нового файла по umask.
-func copyFile(source, target string) error {
+// CopyFile — shutil.copyfile(source, target): только байты, права нового файла по umask.
+func CopyFile(source, target string) error {
 	data, err := os.ReadFile(source)
 	if err != nil {
 		return pycompat.OSErrorFrom(err, source)
@@ -76,8 +76,8 @@ func copyFile(source, target string) error {
 	return nil
 }
 
-// copyWithStat — shutil.copy2: байты, права и время изменения источника.
-func copyWithStat(source, target string) error {
+// CopyWithStat — shutil.copy2: байты, права и время изменения источника.
+func CopyWithStat(source, target string) error {
 	input, err := os.Open(source)
 	if err != nil {
 		return pycompat.OSErrorFrom(err, source)
@@ -107,16 +107,16 @@ func copyWithStat(source, target string) error {
 // жёсткой ссылкой, а не копировать гигабайты видео.
 var mediaSuffixes = map[string]bool{".mp4": true, ".mp3": true, ".wav": true}
 
-// copyInput — copy_input(source, target): большие медиа — жёсткая ссылка (если ФС позволяет),
+// CopyInput — copy_input(source, target): большие медиа — жёсткая ссылка (если ФС позволяет),
 // прочие файлы — копия с метаданными. Копии нужны потому, что штатное обновление представлений
 // переписывает Markdown и карточки на месте: ссылка изменила бы файл настоящего проекта.
-func copyInput(source, target string) error {
+func CopyInput(source, target string) error {
 	if mediaSuffixes[strings.ToLower(filepath.Ext(source))] {
 		if err := os.Link(source, target); err == nil {
 			return nil
 		}
 	}
-	return copyWithStat(source, target)
+	return CopyWithStat(source, target)
 }
 
 // ignoredNames — shutil.ignore_patterns("montage-history", ".cache"): на любом уровне дерева.
@@ -149,7 +149,7 @@ func copyTree(source, target string) error {
 		if stat.IsDir() {
 			err = copyTree(from, to)
 		} else {
-			err = copyInput(from, to)
+			err = CopyInput(from, to)
 		}
 		if err != nil {
 			return err
@@ -169,20 +169,20 @@ func stageProject(root, stage string) error {
 	}
 	roadmap := filepath.Join(root, "ROADMAP.md")
 	if pycompat.IsFile(roadmap) {
-		return copyWithStat(roadmap, filepath.Join(stage, "ROADMAP.md"))
+		return CopyWithStat(roadmap, filepath.Join(stage, "ROADMAP.md"))
 	}
 	return nil
 }
 
-// publishFile — publish_file(source, target): файл staging заменяет файл проекта, отсутствие
+// PublishFile — publish_file(source, target): файл staging заменяет файл проекта, отсутствие
 // файла в staging удаляет его в проекте. Отдельная функция — точка подмены тестов отката.
-func publishFile(source, target string) error {
+func PublishFile(source, target string) error {
 	if pycompat.IsFile(source) {
 		data, err := os.ReadFile(source)
 		if err != nil {
 			return pycompat.OSErrorFrom(err, source)
 		}
-		return replaceBytes(target, data)
+		return ReplaceBytes(target, data)
 	}
 	if err := os.Remove(target); err != nil && !os.IsNotExist(err) {
 		return pycompat.OSErrorFrom(err, target)

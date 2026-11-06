@@ -91,7 +91,7 @@ func CopyVideo(project, video, destination string) (string, error) {
 	if inside && workFolders.MatchString(name) {
 		return "", errors.New(textExportDestination)
 	}
-	temporary := target + "." + randomUUID() + ".tmp"
+	temporary := target + "." + RandomUUID() + ".tmp"
 	defer os.Remove(temporary)
 	if err := copyFile(source, temporary); err != nil {
 		return "", err

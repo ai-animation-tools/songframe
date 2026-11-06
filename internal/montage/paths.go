@@ -54,14 +54,14 @@ func number(value any) (float64, bool) {
 func fileHash(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", readError(path, err)
+		return "", ReadError(path, err)
 	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// readError — ошибка readFileSync: каталог даёт EISDIR без пути, остальное — open '<путь>'.
-func readError(path string, err error) error {
+// ReadError — ошибка readFileSync: каталог даёт EISDIR без пути, остальное — open '<путь>'.
+func ReadError(path string, err error) error {
 	if info, statErr := os.Stat(path); statErr == nil && info.IsDir() {
 		return jscompat.FsError("read", "", err)
 	}
@@ -124,8 +124,8 @@ func readObject(path, label string) (*jscompat.Object, error) {
 	return nil, errors.New(textReadFailed(label))
 }
 
-// randomUUID — crypto.randomUUID (версия 4, строчные): имена черновиков и папок проб.
-var randomUUID = func() string {
+// RandomUUID — crypto.RandomUUID (версия 4, строчные): имена черновиков и папок проб.
+var RandomUUID = func() string {
 	value := make([]byte, 16)
 	if _, err := rand.Read(value); err != nil {
 		panic(err)

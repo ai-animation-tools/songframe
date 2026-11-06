@@ -41,9 +41,9 @@ const History = "plan/montage-history"
 
 // Тексты оригинала (ValueError, печатаются как есть).
 const (
-	textAudioPolicy  = "Звук генератора сохранён в оригинале; в монтаже используется непрерывная исходная песня."
-	textRebuildNote  = "Принятые байты восстанавливаются копированием video; повтор фильтров сохраняет монтаж, но не обещает побайтово одинаковое перекодирование."
-	textFPSConvert   = "Выбор кадров без интерполяции движения."
+	AudioPolicy      = "Звук генератора сохранён в оригинале; в монтаже используется непрерывная исходная песня."
+	RebuildNote      = "Принятые байты восстанавливаются копированием video; повтор фильтров сохраняет монтаж, но не обещает побайтово одинаковое перекодирование."
+	FPSConversion    = "Выбор кадров без интерполяции движения."
 	textBadEdit      = "Принятый монтаж имеет неверный формат или число кадров."
 	textMedia        = "Ошибка обработки медиа; исходники не изменены, сырой вывод скрыт."
 	textRegistry     = "Реестр сцен изменился. Заново откройте материалы монтажа."
@@ -81,8 +81,8 @@ func valueError(message string) error { return pycompat.New(pycompat.ValueError,
 // Точки подмены для тестов сбоев (patch.object в test_apply_montage оригинала): рендер клипа,
 // публикация файла и откат. В работе не меняются.
 var (
-	renderEditHook  = renderEdit
-	publishFileHook = publishFile
+	renderEditHook  = RenderEdit
+	publishFileHook = PublishFile
 	restoreHook     = restore
 )
 
@@ -145,11 +145,11 @@ func join(base, relative string) string { return pycompat.JoinPath(base, relativ
 
 // saveJournal — save_journal(directory, journal): journal.json той же заменой одним rename.
 func saveJournal(directory string, journal *pycompat.Dict) error {
-	data, err := jsonBytes(journal)
+	data, err := JSONBytes(journal)
 	if err != nil {
 		return err
 	}
-	return replaceBytes(filepath.Join(directory, "journal.json"), data)
+	return ReplaceBytes(filepath.Join(directory, "journal.json"), data)
 }
 
 // restore — restore(directory, journal, root): откат по журналу. Сначала проверяется весь набор:
@@ -187,7 +187,7 @@ func restore(directory string, journal *pycompat.Dict, root string) error {
 		if err != nil {
 			return err
 		}
-		current, err := digestOrNone(join(root, name))
+		current, err := DigestOrNone(join(root, name))
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func restore(directory string, journal *pycompat.Dict, root string) error {
 			return valueError("После прерывания изменён файл " + name + "; сохранён журнал " + directory)
 		}
 		if before != nil {
-			backup, err := digestOrNone(join(filepath.Join(directory, "before"), name))
+			backup, err := DigestOrNone(join(filepath.Join(directory, "before"), name))
 			if err != nil {
 				return err
 			}
@@ -218,7 +218,7 @@ func restore(directory string, journal *pycompat.Dict, root string) error {
 		if err != nil {
 			return pycompat.OSErrorFrom(err, backup)
 		}
-		if err := replaceBytes(target, data); err != nil {
+		if err := ReplaceBytes(target, data); err != nil {
 			return err
 		}
 	}
@@ -548,8 +548,8 @@ func prepareDraft(ctx context.Context, value any, root string) (*pycompat.Dict, 
 	return draft, result, nil
 }
 
-// descriptor — {"path", "sha256", "bytes"} файла name в папке directory (accept_shot.descriptor).
-func descriptor(directory, name string) (*pycompat.Dict, error) {
+// Descriptor — {"path", "sha256", "bytes"} файла name в папке directory (accept_shot.descriptor).
+func Descriptor(directory, name string) (*pycompat.Dict, error) {
 	path := join(directory, name)
 	digest, err := sha(path)
 	if err != nil {
@@ -562,8 +562,8 @@ func descriptor(directory, name string) (*pycompat.Dict, error) {
 	return pytool.Record("path", name, "sha256", digest, "bytes", pycompat.NewInt(info.Size())), nil
 }
 
-// run — run(argv) build_review: stdout программы; ненулевой код — ValueError без сырого вывода.
-func run(ctx context.Context, program string, args ...string) ([]byte, error) {
+// Media — run(argv) build_review: stdout программы; ненулевой код — ValueError без сырого вывода.
+func Media(ctx context.Context, program string, args ...string) ([]byte, error) {
 	result, err := mediacmd.Run(ctx, program, args...)
 	if err != nil {
 		return nil, err
@@ -576,7 +576,7 @@ func run(ctx context.Context, program string, args ...string) ([]byte, error) {
 
 // probe — probe(path) build_review: потоки и формат ffprobe значением Python.
 func probe(ctx context.Context, path string) (any, error) {
-	data, err := run(ctx, mediacmd.FFprobe(), "-v", "error", "-show_streams", "-show_format", "-of", "json", path)
+	data, err := Media(ctx, mediacmd.FFprobe(), "-v", "error", "-show_streams", "-show_format", "-of", "json", path)
 	if err != nil {
 		return nil, err
 	}
@@ -596,10 +596,10 @@ func streams(meta any) ([]any, error) {
 	return pycompat.Iter(value)
 }
 
-// renderEdit — accept_shot.render_edit: участок по фильтру кодируется ENCODE build_animatic без
+// RenderEdit — accept_shot.render_edit: участок по фильтру кодируется ENCODE build_animatic без
 // звука ровно в frames кадров (run/probe build_animatic, как у accept_shot); результат обязан быть
 // 1920×1080, 30/1 и иметь ровно frames кадров.
-func renderEdit(ctx context.Context, original, filter string, frames pycompat.Int, target string) error {
+func RenderEdit(ctx context.Context, original, filter string, frames pycompat.Int, target string) error {
 	args := append([]string{"-v", "error", "-nostdin", "-n", "-threads", "2", "-i", original, "-map", "0:v:0", "-vf", filter},
 		mediacmd.Encode...)
 	args = append(args, "-frames:v", frames.String(), target)
@@ -660,11 +660,11 @@ func pyInt(value any) (pycompat.Int, error) {
 // accepted_edit не повторяет его цепочку ещё одним lossy проходом.
 func editManifest(ctx context.Context, pkg *pycompat.Dict, sourceName string, item *pycompat.Dict, directory, videoName, version, revision string) (*pycompat.Dict, error) {
 	manifest := pycompat.DeepCopy(pkg).(*pycompat.Dict)
-	video, err := descriptor(directory, videoName)
+	video, err := Descriptor(directory, videoName)
 	if err != nil {
 		return nil, err
 	}
-	source, err := descriptor(directory, sourceName)
+	source, err := Descriptor(directory, sourceName)
 	if err != nil {
 		return nil, err
 	}
@@ -699,7 +699,7 @@ func editManifest(ctx context.Context, pkg *pycompat.Dict, sourceName string, it
 	if !found {
 		return nil, pycompat.New("StopIteration", "")
 	}
-	previous, err := descriptor(directory, "revisions/"+revision+"/previous-manifest.json")
+	previous, err := Descriptor(directory, "revisions/"+revision+"/previous-manifest.json")
 	if err != nil {
 		return nil, err
 	}
@@ -722,15 +722,15 @@ func editManifest(ctx context.Context, pkg *pycompat.Dict, sourceName string, it
 		),
 		"hold_first_seconds", 0.0,
 		"hold_last_seconds", 0.0,
-		"audio_policy", textAudioPolicy,
+		"audio_policy", AudioPolicy,
 		"montage_source", video,
 		"source_fps", sourceFPS,
-		"fps_conversion", textFPSConvert,
+		"fps_conversion", FPSConversion,
 		"rebuild", pytool.Record(
 			"stages", []any{pytool.Record("input", sourceName, "filter", item.Value("filter"), "frames", frames)},
 			"source", source,
 			"ffmpeg_version", version,
-			"note", textRebuildNote,
+			"note", RebuildNote,
 		),
 		"montage_revision", pytool.Record("id", revision, "previous_manifest", previous),
 	)
@@ -749,9 +749,9 @@ var fixedViews = []string{
 	"plan/animatic/cards/manifest.json",
 }
 
-// viewPaths — view_paths(stage, root): постоянные представления, README комплектов и карточки
+// ViewPaths — view_paths(stage, root): постоянные представления, README комплектов и карточки
 // обоих деревьев (удалённая в staging карточка тоже публикуется — удалением).
-func viewPaths(stage, root string, names map[string]bool) {
+func ViewPaths(stage, root string, names map[string]bool) {
 	for _, name := range fixedViews {
 		names[name] = true
 	}
@@ -859,7 +859,7 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 		return nil, err
 	}
 	statusPath := join(root, sceneregistry.ProductionStatus)
-	statusDigest, err := digestOrNone(statusPath)
+	statusDigest, err := DigestOrNone(statusPath)
 	if err != nil {
 		return nil, err
 	}
@@ -881,11 +881,11 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 		return nil, pycompat.OSErrorFrom(err, directory)
 	}
 	stage := filepath.Join(directory, "staging")
-	data, err := jsonBytes(draft)
+	data, err := JSONBytes(draft)
 	if err != nil {
 		return nil, err
 	}
-	if err := replaceBytes(filepath.Join(directory, "draft.json"), data); err != nil {
+	if err := ReplaceBytes(filepath.Join(directory, "draft.json"), data); err != nil {
 		return nil, err
 	}
 	journal := pytool.Record("schema_version", pycompat.NewInt(1), "id", transaction, "state", "preparing", "files", []any{})
@@ -903,15 +903,15 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 			return err
 		}
 		if !pycompat.Equal(prepared.candidate, current) {
-			data, err := jsonBytes(prepared.candidate)
+			data, err := JSONBytes(prepared.candidate)
 			if err != nil {
 				return err
 			}
-			if err := replaceBytes(join(stage, sceneregistry.ScenesPath), data); err != nil {
+			if err := ReplaceBytes(join(stage, sceneregistry.ScenesPath), data); err != nil {
 				return err
 			}
 		}
-		output, err := run(ctx, mediacmd.FFmpeg(), "-version")
+		output, err := Media(ctx, mediacmd.FFmpeg(), "-version")
 		if err != nil {
 			return err
 		}
@@ -934,7 +934,7 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 			if err := os.Mkdir(revision, 0o777); err != nil {
 				return pycompat.OSErrorFrom(err, revision)
 			}
-			if err := copyFile(filepath.Join(asset, "manifest.json"), filepath.Join(revision, "previous-manifest.json")); err != nil {
+			if err := CopyFile(filepath.Join(asset, "manifest.json"), filepath.Join(revision, "previous-manifest.json")); err != nil {
 				return err
 			}
 			relative, err := pycompat.RelativeTo(shot.Value("path").(string), join(root, "assets/shots/"+sid))
@@ -954,11 +954,11 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 			if err != nil {
 				return err
 			}
-			data, err := jsonBytes(manifest)
+			data, err := JSONBytes(manifest)
 			if err != nil {
 				return err
 			}
-			if err := replaceBytes(filepath.Join(asset, "manifest.json"), data); err != nil {
+			if err := ReplaceBytes(filepath.Join(asset, "manifest.json"), data); err != nil {
 				return err
 			}
 			if _, err := assetpackage.ValidatePackage(filepath.Join(asset, "manifest.json"), sid, stage); err != nil {
@@ -992,11 +992,11 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 		}
 		// Статус публикуется вместе с монтажом до обновления представлений.
 		if status != nil {
-			data, err := jsonBytes(status)
+			data, err := JSONBytes(status)
 			if err != nil {
 				return err
 			}
-			if err := replaceBytes(join(stage, sceneregistry.ProductionStatus), data); err != nil {
+			if err := ReplaceBytes(join(stage, sceneregistry.ProductionStatus), data); err != nil {
 				return err
 			}
 		}
@@ -1012,7 +1012,7 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 			names["assets/shots/"+sid+"/manifest.json"] = true
 		}
 		if updateViews {
-			viewPaths(stage, root, names)
+			ViewPaths(stage, root, names)
 		}
 		sorted := make([]string, 0, len(names))
 		for name := range names {
@@ -1021,11 +1021,11 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 		sort.Strings(sorted)
 		files := []any{}
 		for _, name := range sorted {
-			before, err := digestOrNone(join(root, name))
+			before, err := DigestOrNone(join(root, name))
 			if err != nil {
 				return err
 			}
-			after, err := digestOrNone(join(stage, name))
+			after, err := DigestOrNone(join(stage, name))
 			if err != nil {
 				return err
 			}
@@ -1037,7 +1037,7 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 				if err := os.MkdirAll(filepath.Dir(backup), 0o777); err != nil {
 					return pycompat.OSErrorFrom(err, backup)
 				}
-				if err := copyFile(join(root, name), backup); err != nil {
+				if err := CopyFile(join(root, name), backup); err != nil {
 					return err
 				}
 			}
@@ -1049,7 +1049,7 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 		if err := assertBaseline(draft, root); err != nil {
 			return err
 		}
-		digest, err := digestOrNone(statusPath)
+		digest, err := DigestOrNone(statusPath)
 		if err != nil {
 			return err
 		}

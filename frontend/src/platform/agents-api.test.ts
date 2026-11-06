@@ -36,6 +36,7 @@ function bindings(services: { agents?: Record<string, unknown>; ai?: Record<stri
     animatic: missing,
     montage: missing,
     montageWindow: missing,
+    derivedShots: missing,
     scenarioWorkflow: missing,
     productionWorkflow: missing,
     events: events ?? (async () => ({ on: () => () => undefined }))

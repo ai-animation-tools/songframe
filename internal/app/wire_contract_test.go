@@ -18,7 +18,7 @@ var boundServices = []any{
 	&CastService{}, &ScenarioService{}, &ToolsService{}, &ChecksService{},
 	&AgentsService{}, &AIService{}, &VideoReviewService{},
 	&ScenarioWorkflowService{}, &EnvironmentService{}, &MediaService{}, &CoverService{}, &ReferenceImagesService{},
-	&ProductionService{}, &DashboardService{}, &AnimaticService{}, &MontageWindowService{}, &MontageService{},
+	&ProductionService{}, &DashboardService{}, &AnimaticService{}, &MontageWindowService{}, &MontageService{}, &DerivedShotService{},
 }
 
 // hasCollection сообщает, может ли значение типа сериализоваться с null вместо [] или {}.

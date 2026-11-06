@@ -64,7 +64,7 @@ func readObject(path string) (map[string]json.RawMessage, error) {
 
 // PendingJournals замечает прерванную публикацию montage/derived в самой копии проекта.
 // Нечитаемый журнал также блокирует просмотр: угадывать целостность или откатывать файлы здесь нельзя.
-// Источник для шлюза записи projectfs (запрет записи) и будущего recovery монтажа/производных:
+// Источник для шлюза записи projectfs (запрет записи) и восстановления монтажа и производных планов:
 // обе стороны должны одинаково распознавать незавершённые многофайловые операции.
 // Возвращает непустой срез сообщений при блокировке и пустой (не nil) — когда журналов нет.
 func PendingJournals(project string) []string {
@@ -90,21 +90,11 @@ func PendingJournals(project string) []string {
 			}
 			var state string
 			if err != nil || json.Unmarshal(journal["state"], &state) != nil || state == "" {
-				problems = append(problems, fmt.Sprintf("Не удалось проверить журнал plan/%s/%s/journal.json. %s", kind, entry.Name(), recoveryHint(kind, "Откройте проект заново для проверки восстановления.", "Откройте исходный проект в прежнем приложении для проверки восстановления.")))
+				problems = append(problems, fmt.Sprintf("Не удалось проверить журнал plan/%s/%s/journal.json. Откройте проект заново для проверки восстановления.", kind, entry.Name()))
 			} else if state == "publishing" {
-				problems = append(problems, fmt.Sprintf("Незавершённая публикация plan/%s/%s: просмотр заблокирован до восстановления %s.", kind, entry.Name(), recoveryHint(kind, "при открытии проекта", "в прежнем приложении")))
+				problems = append(problems, fmt.Sprintf("Незавершённая публикация plan/%s/%s: просмотр заблокирован до восстановления при открытии проекта.", kind, entry.Name()))
 			}
 		}
 	}
 	return problems
-}
-
-// recoveryHint — где восстанавливается журнал вида kind: журналы ручного монтажа откатывает
-// montage.RecoverOpened при открытии проекта (этап 46b), производные планы переносит этап 46c,
-// до него их восстанавливает прежнее приложение.
-func recoveryHint(kind, ported, legacy string) string {
-	if kind == "montage-history" {
-		return ported
-	}
-	return legacy
 }

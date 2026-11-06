@@ -144,11 +144,6 @@ describe('Переходы и смешанный текст обзора про�
     expect(links(renderLinked(text))).toEqual(anchors.map((anchor) => `/project?keep=yes&anchor=${anchor}`));
   });
 
-  it('сохраняет ссылку на среду в причине недоступности сборки', () => {
-    expect(projectTexts.bundle.pythonRequired).toBe('Нужен Python: проверьте его на странице «Среда».');
-    expect(links(renderLinked(projectTexts.bundle.pythonRequired))).toEqual(['/environment?anchor=python']);
-  });
-
   it('сохраняет один пробел перед датой и безопасный элемент слота', () => {
     const html = renderToStaticMarkup(
       createElement(SlottedText, { text: projectTexts.capabilities.checkedAt, slots: { date: createElement('time', null, '<&>') } })

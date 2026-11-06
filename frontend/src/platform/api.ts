@@ -48,6 +48,7 @@ import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
 import type { MontageWindowEvent } from '@shared/montage-window';
 import type { MontageDraft, MontageView } from '@shared/montage';
+import type { DerivedShotView } from '@shared/derived-shot';
 import type * as mediaapi from '../../bindings/songframe-go/internal/mediaapi/models';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from '@shared/media-providers';
 import { componentTexts } from '@shared/texts/component-manager';
@@ -153,6 +154,7 @@ export interface Bindings {
   animatic: () => Promise<typeof import('../../bindings/songframe-go/internal/app/animaticservice')>;
   montage: () => Promise<typeof import('../../bindings/songframe-go/internal/app/montageservice')>;
   montageWindow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/montagewindowservice')>;
+  derivedShots: () => Promise<typeof import('../../bindings/songframe-go/internal/app/derivedshotservice')>;
   events: EventSource;
 }
 
@@ -183,6 +185,7 @@ export const nativeBindings: Bindings = {
   animatic: () => import('../../bindings/songframe-go/internal/app/animaticservice'),
   montage: () => import('../../bindings/songframe-go/internal/app/montageservice'),
   montageWindow: () => import('../../bindings/songframe-go/internal/app/montagewindowservice'),
+  derivedShots: () => import('../../bindings/songframe-go/internal/app/derivedshotservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
     return { on: Events.On };
@@ -300,7 +303,7 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'referenceImages.accept',
   'referenceImages.attach',
   'referenceImages.close',
-  // Производство. exportBundle (пакет для монтажёра) переносит шаг 46c.
+  // Производство.
   'production.view',
   'production.decide',
   'production.reopenFrame',
@@ -320,6 +323,7 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'production.speechPlan',
   'production.reopenQuestion',
   'production.discardAttempt',
+  'production.exportBundle',
   'production.listBundles',
   'production.removeBundle',
   // Проход агента производства.
@@ -345,6 +349,11 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'montage.export',
   'montage.apply',
   'montage.saveVideo',
+  // Производные планы: рецепт, проба и приёмка показанных байтов (DerivedShotService).
+  'derivedShots.view',
+  'derivedShots.save',
+  'derivedShots.build',
+  'derivedShots.accept',
   // Второе окно плеера монтажа (MontageWindowService).
   'montageWindow.open',
   'montageWindow.close',
@@ -737,6 +746,21 @@ export function createApi(b: Bindings): Api {
     saveVideo: (project, video) => call('montage.saveVideo', async () => (await b.montage()).SaveVideo(project, video), false)
   };
 
+  // Производные планы. Рецепт и вид проверяет Go (как checkedDerivedRecipe оригинала), адаптер только
+  // сужает типы и приводит задание к JobInfo контракта. Сборка и приёмка лишь ставят задание, но
+  // сначала сверяют байты пробы, поэтому идут без срока оболочки.
+  const derivedView = async (view: Promise<unknown>): Promise<DerivedShotView> => {
+    const value = (await view) as DerivedShotView & { job: Parameters<typeof toJob>[0] | null };
+    return { ...value, job: value.job ? toJob(value.job) : null };
+  };
+  api.derivedShots = {
+    view: (project, shot) => call('derivedShots.view', async () => derivedView((await b.derivedShots()).View(project, shot))),
+    save: (project, shot, recipe) => call('derivedShots.save', async () => derivedView((await b.derivedShots()).Save(project, shot, recipe)), false),
+    build: (project, shot, recipe) => call('derivedShots.build', async () => derivedView((await b.derivedShots()).Build(project, shot, recipe)), false),
+    accept: (project, shot, previewId, resultToken, replace) =>
+      call('derivedShots.accept', async () => derivedView((await b.derivedShots()).Accept(project, shot, previewId, resultToken, replace)), false)
+  };
+
   // Сценарный проход агента. Go отдаёт статусы, проход и документы предложения строками и JSON
   // оригинала; адаптер только сужает типы. Записывающие действия ждут Go без срока оболочки:
   // start проверяет вход CLI, а apply гоняет проверки staging-копии и на клипе в 40 планов идёт
@@ -919,6 +943,8 @@ export function createApi(b: Bindings): Api {
     call('production.reopenQuestion', async () => (await production()).ReopenQuestion(project, packageDir));
   api.production.discardAttempt = (project, packageDir) =>
     call('production.discardAttempt', async () => (await production()).DiscardAttempt(project, packageDir));
+  api.production.exportBundle = (project, options) =>
+    call('production.exportBundle', async () => toJob(await (await production()).ExportBundle(project, options)), false);
   api.production.listBundles = (project) => call('production.listBundles', async () => (await production()).ListBundles(project));
   api.production.removeBundle = (project, path) => call('production.removeBundle', async () => (await production()).RemoveBundle(project, path));
   // Проход агента производства. start ждёт врезки непрерывности и каталог моделей провайдера

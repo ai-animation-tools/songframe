@@ -64,7 +64,8 @@ export function DiscardAttempt(project: string, packageDir: string): $Cancellabl
 }
 
 /**
- * ExportBundle — пакет для монтажёра (export_edit_bundle): переносит шаг 46c.
+ * ExportBundle — задание сборки пакета для монтажёра в пустую папку; маршрут оригинала проверок
+ * доступа не имеет: пакет собирается из уже принятых материалов без провайдеров.
  */
 export function ExportBundle(project: string, options: $models.ExportBundleOptions): $CancellablePromise<jobs$0.Info> {
     return $Call.ByID(3384867854, project, options);

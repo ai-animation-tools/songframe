@@ -303,9 +303,10 @@ type ExportBundleOptions struct {
 	Copy   bool   `json:"copy"`
 }
 
-// ExportBundle — пакет для монтажёра (export_edit_bundle): переносит шаг 46c.
+// ExportBundle — задание сборки пакета для монтажёра в пустую папку; маршрут оригинала проверок
+// доступа не имеет: пакет собирается из уже принятых материалов без провайдеров.
 func (s *ProductionService) ExportBundle(project string, options ExportBundleOptions) (jobs.Info, error) {
-	return wire.Done(jobs.Info{}, errors.New(production.TextNotMigrated))
+	return wire.Done(s.production.ExportBundle(project, options.Target, options.Copy))
 }
 
 // ListBundles — собранные пакеты для монтажёра внутри plan/batches.

@@ -21,7 +21,7 @@ func TestRunRejectsName(t *testing.T) {
 			t.Errorf("%q: ожидалось %q, получено %v", name, want, err)
 		}
 	}
-	if !tools.Available("scene_scaffold") || !tools.Available("shot_status") || tools.Available("current_project") || !tools.Available("build_animatic") {
+	if !tools.Available("scene_scaffold") || !tools.Available("shot_status") || tools.Available("current_project") || !tools.Available("build_animatic") || !tools.Available("export_edit_bundle") {
 		t.Error("Available не соответствует реестру перенесённых инструментов")
 	}
 }

@@ -1,7 +1,7 @@
 import { projectTexts } from '@shared/texts/project';
 /** Обзор проекта: состояние, признаки, проблемы и следующий шаг. */
 
-import { type ReactElement, useCallback, useEffect, useState } from 'react';
+import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Stack, Typography } from '@mui/material';
 import { useApp } from '../../state';
@@ -9,18 +9,8 @@ import { EditBundleCard, NextStepCard, ProjectChecksCard, ProjectHeader, Project
 
 export function ProjectPage(): ReactElement {
   const { status, refresh, closeProject, state, notify, describeError } = useApp();
-  const [pythonAvailable, setPythonAvailable] = useState<boolean | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [openingFolder, setOpeningFolder] = useState(false);
-  const checkEnvironment = useCallback(async () => {
-    await window.api.environment
-      .check()
-      .then((checks) => setPythonAvailable(checks.find((c) => c.id === 'python')?.ok ?? false))
-      .catch(() => setPythonAvailable(false));
-  }, []);
-  useEffect(() => {
-    void checkEnvironment();
-  }, [checkEnvironment]);
   const act = async (action: () => Promise<unknown>): Promise<void> => {
     try {
       await action();
@@ -37,7 +27,7 @@ export function ProjectPage(): ReactElement {
         status={status}
         onRename={() => setRenaming(true)}
         openingFolder={openingFolder}
-        onRefresh={() => act(() => Promise.all([refresh(), checkEnvironment()]))}
+        onRefresh={() => act(refresh)}
         onOpenFolder={async () => {
           setOpeningFolder(true);
           try {
@@ -73,7 +63,7 @@ export function ProjectPage(): ReactElement {
             <NextStepCard status={status} />
             <ProjectChecksCard status={status} />
           </Box>
-          {status.checks.scenes && state?.current ? <EditBundleCard project={state.current} pythonAvailable={pythonAvailable ?? false} /> : null}
+          {status.checks.scenes && state?.current ? <EditBundleCard project={state.current} /> : null}
         </Stack>
         <ProjectSettingsCard key={`settings:${status.path}`} project={status.path} name={status.name} />
       </Box>

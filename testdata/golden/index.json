@@ -11364,5 +11364,1917 @@
       "state skip",
       "name filter"
     ]
+  },
+  {
+    "domain": "export-edit-bundle",
+    "name": "cases.json",
+    "description": "CLI tools/export_edit_bundle на копиях образца checks-base: 144 случая, разность с образцом, код, stdout, stderr, тексты пакета побайтно, копии медиа SHA-256 и размером.",
+    "covers": [
+      "только карточки",
+      "24 FPS и NTSC, native frames",
+      "скорость и M2, 05.1f, nan/inf",
+      "удержания и :g",
+      "still",
+      "repeat с хвостом и без, крайние счётчики",
+      "производный source_shot и edit-source.mp4",
+      "липсинк с WAV и audio-recipe.json",
+      "кириллица и спецсимволы, quoteattr, as_uri, QUOTE_MINIMAL",
+      "разметка: ROUND_HALF_UP, Fraction(str), 28 цифр Decimal, splitlines",
+      "--copy: байты копий, дедупликация, нормализация путей, символические ссылки, частичная папка",
+      "папка не пустая, путь внутри проекта, файл вместо папки, ссылка внутрь проекта",
+      "скрытый текст OSError, KeyError, JSONDecodeError",
+      "ValueError и UnicodeDecodeError/EncodeError текстом",
+      "трассировка TypeError, AttributeError, IndexError, ZeroDivisionError",
+      "argparse: required --out, справка, префиксы, лишние аргументы"
+    ]
+  },
+  {
+    "domain": "export-edit-bundle",
+    "name": "numbers.json",
+    "description": "frames_at, timecode, rational, round(v, 6), :g, :05.1f, :.4f модуля оригинала на случайных значениях, половинах кадра и дробях.",
+    "covers": [
+      "частоты 30, 24, NTSC, 23.976, 1/3",
+      "половина кадра вверх",
+      "отрицательные секунды",
+      "крайние float"
+    ]
+  },
+  {
+    "domain": "export-bundle-job",
+    "name": "steps.json",
+    "description": "Production.exportBundle и removeBundle из src/main/production.ts: 27 шагов над копией checks-base с заглушкой Jobs.",
+    "covers": [
+      "неабсолютный путь",
+      "plan вне batches",
+      "корень проекта",
+      "папка не пуста",
+      "ENOTDIR scandir и mkdir",
+      "вид, название и шаги задания",
+      "необязательный update_scene_views при копировании",
+      "нормализация цели",
+      "занятость пакета до конца задания",
+      "удаление после done и failed",
+      "удаление без задания",
+      "проверки builtoutput",
+      "маркеры рабочего пакета",
+      "символическая ссылка",
+      "goDiffers: plan/batches-x"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "help",
+    "description": "Справка верхнего парсера.",
+    "covers": [
+      "--help",
+      "subcommands"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "help-build",
+    "description": "Справка build.",
+    "covers": [
+      "build --help"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "help-accept",
+    "description": "Справка accept.",
+    "covers": [
+      "accept --help"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "help-recover",
+    "description": "Справка recover.",
+    "covers": [
+      "recover --help"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "args-missing",
+    "description": "Без подкоманды.",
+    "covers": [
+      "required command"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "args-invalid-command",
+    "description": "Неизвестная подкоманда.",
+    "covers": [
+      "invalid choice"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "args-build-required",
+    "description": "build без --shot.",
+    "covers": [
+      "required"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "args-accept-required",
+    "description": "accept без --confirm.",
+    "covers": [
+      "required"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "args-unknown",
+    "description": "Неизвестный аргумент подкоманды.",
+    "covers": [
+      "unrecognized"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "args-value",
+    "description": "--work-dir без значения.",
+    "covers": [
+      "expected one argument"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-clean",
+    "description": "recover без журналов.",
+    "covers": [
+      "recover",
+      "status recovered"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-text",
+    "description": "recover без --json печатает тот же JSON.",
+    "covers": [
+      "print"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-trim",
+    "description": "trim: 12 кадров от начала 3.",
+    "covers": [
+      "trim",
+      "filter",
+      "preview.json",
+      "build.json",
+      "recipe.json",
+      "audio aac"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-fit-slow",
+    "description": "fit: 6 кадров растягиваются до 12.",
+    "covers": [
+      "fit",
+      "setpts ratio"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-fit-fast",
+    "description": "fit: 6 кадров ускоряются до 3.",
+    "covers": [
+      "fit",
+      "speed up"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-fit-fraction",
+    "description": "fit: множитель 7/12.",
+    "covers": [
+      "fit",
+      "Fraction"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-still",
+    "description": "still: один кадр 12 раз.",
+    "covers": [
+      "still",
+      "loop"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-repeat-tail",
+    "description": "repeat: два цикла и хвост.",
+    "covers": [
+      "repeat",
+      "tail"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-repeat-exact",
+    "description": "repeat: три полных цикла.",
+    "covers": [
+      "repeat",
+      "no tail"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-current-revision",
+    "description": "Источник — текущий accepted_edit в revisions/current.",
+    "covers": [
+      "descriptor_file accepted_edit"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-no-music",
+    "description": "Файла песни нет: превью — копия кандидата, sha256 null.",
+    "covers": [
+      "song missing",
+      "audio_source null"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-text",
+    "description": "build без --json печатает JSON результата.",
+    "covers": [
+      "print"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-twice",
+    "description": "Вторая проба в новой папке рядом с первой.",
+    "covers": [
+      "immutable work_dir"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-trim-beyond",
+    "description": "trim за концом источника.",
+    "covers": [
+      "source bounds"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-still-beyond",
+    "description": "still за концом источника.",
+    "covers": [
+      "source bounds"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-fit-beyond",
+    "description": "fit за концом источника.",
+    "covers": [
+      "source bounds"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-bool",
+    "description": "Логическое значение кадра.",
+    "covers": [
+      "type is int"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-float",
+    "description": "Дробное значение кадра.",
+    "covers": [
+      "type is int"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-negative",
+    "description": "Отрицательное начало.",
+    "covers": [
+      "value < 0"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-huge",
+    "description": "Кадр больше 64 бит.",
+    "covers": [
+      "big int bounds"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-empty-interval",
+    "description": "Пустой интервал repeat.",
+    "covers": [
+      "first < last"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-extra",
+    "description": "Лишнее поле.",
+    "covers": [
+      "exact fields"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-missing-field",
+    "description": "Нет поля режима.",
+    "covers": [
+      "exact fields"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-unknown-mode",
+    "description": "Неизвестный режим.",
+    "covers": [
+      "mode"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-mode-list",
+    "description": "Режим — список: TypeError скрыт.",
+    "covers": [
+      "unhashable hidden"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-list",
+    "description": "Рецепт — список.",
+    "covers": [
+      "not dict"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-invalid-json",
+    "description": "Рецепт — не JSON: текст JSONDecodeError.",
+    "covers": [
+      "JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-missing-file",
+    "description": "Нет файла рецепта: скрытая ошибка.",
+    "covers": [
+      "OSError hidden"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-absolute",
+    "description": "Абсолютный путь рецепта.",
+    "covers": [
+      "project_path"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recipe-dotdot",
+    "description": "Рецепт с «..».",
+    "covers": [
+      "project_path"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "work-outside",
+    "description": "Рабочая папка вне plan/derived/M05.",
+    "covers": [
+      "prefix"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "work-other-shot",
+    "description": "Рабочая папка другого плана.",
+    "covers": [
+      "prefix"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "work-nested",
+    "description": "Рабочая папка глубже plan/derived/Mxx/<id>.",
+    "covers": [
+      "parent"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "work-root",
+    "description": "Рабочая папка совпадает с plan/derived/M05.",
+    "covers": [
+      "parent"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "work-exists",
+    "description": "Рабочая папка занята.",
+    "covers": [
+      "exists"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-lipsync",
+    "description": "Производный план с липсинком.",
+    "covers": [
+      "lipsync"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-not-derived",
+    "description": "План без derived_from.",
+    "covers": [
+      "derived_from"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-unknown-shot",
+    "description": "План вне реестра.",
+    "covers": [
+      "scene None"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-chain",
+    "description": "Источник сам производный.",
+    "covers": [
+      "chain"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-source-no-kit",
+    "description": "У источника нет комплекта.",
+    "covers": [
+      "source acceptance"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-source-stale",
+    "description": "Источник принят по прежней постановке.",
+    "covers": [
+      "source acceptance"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-source-tampered",
+    "description": "Принятое видео источника изменено.",
+    "covers": [
+      "validate_package"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-source-manifest",
+    "description": "Манифест источника не объект JSON.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-error-text",
+    "description": "Ошибка без --json — текст в stderr.",
+    "covers": [
+      "parser.exit"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-error-hidden-text",
+    "description": "Скрытая ошибка без --json.",
+    "covers": [
+      "parser.exit hidden"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "build-registry-missing",
+    "description": "Нет реестра сцен.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-repeat",
+    "description": "Первая приёмка repeat с представлениями.",
+    "covers": [
+      "make_manifest",
+      "repeat",
+      "journal",
+      "views",
+      "status"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-trim",
+    "description": "Приёмка trim.",
+    "covers": [
+      "speed 1"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-fit",
+    "description": "Приёмка fit 7/12.",
+    "covers": [
+      "speed ratio"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-still",
+    "description": "Приёмка still.",
+    "covers": [
+      "still_source_time_seconds",
+      "motion_output 0"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-text",
+    "description": "accept без --json.",
+    "covers": [
+      "print"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-idempotent",
+    "description": "Повтор подтверждения ничего не пишет.",
+    "covers": [
+      "idempotent"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-idempotent-changed",
+    "description": "Посторонний файл в принятом комплекте.",
+    "covers": [
+      "after digest"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-replace-required",
+    "description": "Комплект уже есть, --replace не задан.",
+    "covers": [
+      "replace"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-replace",
+    "description": "Замена целиком архивирует прежний комплект.",
+    "covers": [
+      "retired",
+      "before-kit",
+      "source_review cleared",
+      "user file"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-wrong-token",
+    "description": "Чужое подтверждение.",
+    "covers": [
+      "token"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-missing-work",
+    "description": "Нет рабочей папки.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-work-outside",
+    "description": "Рабочая папка вне plan/derived.",
+    "covers": [
+      "prefix"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-foreign-work",
+    "description": "Проба лежит в папке другого плана.",
+    "covers": [
+      "parent shot"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-recipe",
+    "description": "Изменён входной рецепт.",
+    "covers": [
+      "recipe sha"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-recipe-copy",
+    "description": "Изменён recipe.json пробы.",
+    "covers": [
+      "recipe.json"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-candidate",
+    "description": "Изменён кандидат.",
+    "covers": [
+      "descriptor video"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-preview-video",
+    "description": "Изменено превью.",
+    "covers": [
+      "descriptor preview"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "missing-candidate",
+    "description": "Удалён кандидат: скрытая ошибка.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-preview-json",
+    "description": "Изменён preview.json без токена.",
+    "covers": [
+      "token"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-build-json",
+    "description": "Изменён build.json без токена.",
+    "covers": [
+      "token"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-source-video",
+    "description": "Изменено видео источника.",
+    "covers": [
+      "validate_package"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-source-manifest",
+    "description": "Изменены только метаданные манифеста источника.",
+    "covers": [
+      "source_manifest_sha256"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-source-scene",
+    "description": "Изменена постановка источника: принятие устарело.",
+    "covers": [
+      "source acceptance"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-target-scene",
+    "description": "Изменена постановка цели.",
+    "covers": [
+      "target_scene_sha256"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-audio-replaced",
+    "description": "Заменён файл песни.",
+    "covers": [
+      "audio_source"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-audio-removed",
+    "description": "Удалён файл песни.",
+    "covers": [
+      "audio_source"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-audio-path",
+    "description": "Изменён путь песни.",
+    "covers": [
+      "audio_source path"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "changed-audio-appeared",
+    "description": "Файл песни появился после пробы.",
+    "covers": [
+      "audio_source null"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "forged-schema",
+    "description": "Неверная схема при верном токене.",
+    "covers": [
+      "schema_version"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "forged-filter",
+    "description": "Подделанный фильтр при верном токене.",
+    "covers": [
+      "filter"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "forged-bounds",
+    "description": "Подделанные границы цели.",
+    "covers": [
+      "target bounds"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "forged-recipe",
+    "description": "Подделанный рецепт при верном токене.",
+    "covers": [
+      "recipe.json != preview"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "forged-frames",
+    "description": "Подделанное число кадров.",
+    "covers": [
+      "current compare"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "forged-shot",
+    "description": "Проба объявляет план не из производных.",
+    "covers": [
+      "snapshot preview shot"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-collision",
+    "description": "Имена занятых файлов сохраняются, выход — derived-output-1.",
+    "covers": [
+      "derived-output-N",
+      "nested json"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-collision-second",
+    "description": "Заняты derived-output и derived-output-1.",
+    "covers": [
+      "derived-output-2"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-nested-preparation",
+    "description": "Файл из JSON попадает в preparation.files.",
+    "covers": [
+      "discovered preparation"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-nested-auxiliary",
+    "description": "Без preparation — в auxiliary_references.",
+    "covers": [
+      "discovered auxiliary"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-source-reference",
+    "description": "root:source остаётся ссылкой.",
+    "covers": [
+      "root source"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-source-derived-folder",
+    "description": "Папка source/derived не исключается из staging.",
+    "covers": [
+      "exclusions per folder"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-nested-changed",
+    "description": "Достижимый файл изменён: журнал failed, проект не тронут.",
+    "covers": [
+      "copy_generation",
+      "state failed",
+      "staging removed"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-registry-invalid",
+    "description": "Манифест источника пропал после пробы.",
+    "covers": [
+      "hidden"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-first",
+    "description": "Откат первой приёмки: комплект и представления исчезают.",
+    "covers": [
+      "restore",
+      "before null",
+      "rolled_back",
+      "staging"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-replace",
+    "description": "Откат замены: прежний комплект из before-kit, retired удалён.",
+    "covers": [
+      "restore",
+      "retired rmtree",
+      "restore-kit"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-between-renames",
+    "description": "Авария между переносами папок: цели нет.",
+    "covers": [
+      "target None"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-restore-leftover",
+    "description": "Остаток restore-kit прошлого отката заменяется.",
+    "covers": [
+      "pending rmtree"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-kit-changed",
+    "description": "Посторонняя правка комплекта останавливает откат.",
+    "covers": [
+      "изменён комплект"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-file-changed",
+    "description": "Посторонняя правка файла останавливает откат.",
+    "covers": [
+      "изменён файл"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-backup-kit",
+    "description": "Повреждён before-kit.",
+    "covers": [
+      "резервная копия комплекта"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-backup-file",
+    "description": "Повреждён резерв файла.",
+    "covers": [
+      "резервная копия файла"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-retired-changed",
+    "description": "Изменён архив комплекта.",
+    "covers": [
+      "архив комплекта"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-journal-invalid",
+    "description": "Журнал — не JSON: текст JSONDecodeError.",
+    "covers": [
+      "JSONDecodeError"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-journal-state",
+    "description": "Журнал без state: скрытая ошибка.",
+    "covers": [
+      "KeyError hidden"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-committed",
+    "description": "Завершённый журнал не трогается.",
+    "covers": [
+      "state != publishing"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "recover-failed-state",
+    "description": "Журнал failed не трогается.",
+    "covers": [
+      "state != publishing"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-recovers-first",
+    "description": "accept сначала откатывает прерванную публикацию и принимает заново.",
+    "covers": [
+      "accept recover"
+    ]
+  },
+  {
+    "domain": "derive-shot",
+    "name": "accept-recover-conflict",
+    "description": "Конфликт восстановления блокирует приёмку.",
+    "covers": [
+      "accept recover error"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "view-context",
+    "description": "Контекст без записи: источник, кадры, название.",
+    "covers": [
+      "view",
+      "sourceTitle",
+      "sourceFrames",
+      "hasAsset"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "view-sequence-title",
+    "description": "Названия берутся из эпизода.",
+    "covers": [
+      "title fallback"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "view-title-shot",
+    "description": "Без названий: код плана и код источника.",
+    "covers": [
+      "title shot"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "tools-unavailable",
+    "description": "Без инструментов контекст и сохранение работают, сборка — нет.",
+    "covers": [
+      "toolsProblem",
+      "save without tools"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "save-valid",
+    "description": "Сохранение настроек пишет draft.json.",
+    "covers": [
+      "save",
+      "draft"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "save-invalid",
+    "description": "Тексты отказа рецепта.",
+    "covers": [
+      "recipeInvalid",
+      "frameInvalid",
+      "intervalInvalid"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "save-not-derived",
+    "description": "Сохранение для обычного плана.",
+    "covers": [
+      "notDerived"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "build-started",
+    "description": "Сборка: задание, рецепт отдельно от папки результата, двойной клик.",
+    "covers": [
+      "build",
+      "started",
+      "latest",
+      "busy"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "build-after-job",
+    "description": "Вторая сборка после завершения первой.",
+    "covers": [
+      "build",
+      "latest"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "build-rejects",
+    "description": "Рецепт вне источника и неверный рецепт.",
+    "covers": [
+      "sourceBounds",
+      "recipeInvalid"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "build-trim-exact",
+    "description": "trim заканчивается ровно на конце источника.",
+    "covers": [
+      "trim bound"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "ready-view",
+    "description": "Готовая проба свежая.",
+    "covers": [
+      "preview",
+      "fresh",
+      "job"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accept-requires-replace",
+    "description": "Приёмка требует явную замену; замена запускает задание.",
+    "covers": [
+      "replacementRequired",
+      "accept",
+      "started",
+      "busy"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accept-no-asset",
+    "description": "Без комплекта замена не нужна.",
+    "covers": [
+      "hasAsset false",
+      "accept without --replace"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accept-wrong",
+    "description": "Чужие id и токен.",
+    "covers": [
+      "previewMissing"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accept-none",
+    "description": "Нет готовой пробы.",
+    "covers": [
+      "previewMissing"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "stale-settings",
+    "description": "Смена настроек делает пробу устаревшей и возвращает её.",
+    "covers": [
+      "previewStale",
+      "canonicalJson"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "stale-key-order",
+    "description": "Порядок ключей рецепта не влияет на свежесть.",
+    "covers": [
+      "canonicalJson order"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "stale-no-draft",
+    "description": "Удалённый черновик устаревает пробу.",
+    "covers": [
+      "recipe null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "stale-scene",
+    "description": "Правка постановки цели.",
+    "covers": [
+      "target_scene_sha256"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "stale-source-video",
+    "description": "Новые байты источника.",
+    "covers": [
+      "sourceUnavailable",
+      "preview problem"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "tampered-candidate",
+    "description": "Подменённый кандидат скрывает пробу.",
+    "covers": [
+      "artifact sha",
+      "preview null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "tampered-preview",
+    "description": "Подменённое превью скрывает пробу.",
+    "covers": [
+      "artifact sha"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "missing-candidate",
+    "description": "Удалённый кандидат скрывает пробу.",
+    "covers": [
+      "realpath"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "artifact-outside",
+    "description": "Файл результата вне папки пробы.",
+    "covers": [
+      "artifact local"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "artifact-self",
+    "description": "Путь результата — сама папка.",
+    "covers": [
+      "artifact local empty"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "artifact-absolute",
+    "description": "Абсолютный путь результата.",
+    "covers": [
+      "isAbsolute"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "artifact-bad-sha",
+    "description": "Неверный формат SHA.",
+    "covers": [
+      "SHA regexp"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "artifact-missing-field",
+    "description": "Нет описания файла результата.",
+    "covers": [
+      "record"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-invalid-recipe",
+    "description": "Рецепт пробы неверный.",
+    "covers": [
+      "checkedDerivedRecipe saved"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-other-shot",
+    "description": "Проба другого плана.",
+    "covers": [
+      "receipt.shot"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-schema",
+    "description": "Схема пробы.",
+    "covers": [
+      "schema_version"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-token",
+    "description": "Токен не SHA.",
+    "covers": [
+      "SHA token"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-corrupt",
+    "description": "preview.json не JSON.",
+    "covers": [
+      "read null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-frames",
+    "description": "Другая длина цели.",
+    "covers": [
+      "target_frames"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-source-shot",
+    "description": "Другой источник в пробе.",
+    "covers": [
+      "source_shot"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-source-scene",
+    "description": "Другой отпечаток источника.",
+    "covers": [
+      "source_scene_sha256"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-source-video",
+    "description": "Другой SHA видео источника.",
+    "covers": [
+      "source_accepted_video_sha256"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-audio-missing",
+    "description": "Нет снимка трека.",
+    "covers": [
+      "audio_source"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "preview-audio-invalid",
+    "description": "Неверный снимок трека.",
+    "covers": [
+      "audio_source sha"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "provenance-changed",
+    "description": "Правка метаданных манифеста источника.",
+    "covers": [
+      "source_manifest_sha256",
+      "problem null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "build-json-missing",
+    "description": "Нет build.json.",
+    "covers": [
+      "build null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "build-json-invalid",
+    "description": "Неверный SHA манифеста в build.json.",
+    "covers": [
+      "build sha"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "audio-replaced",
+    "description": "Замена трека.",
+    "covers": [
+      "audio sha"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "audio-removed",
+    "description": "Удаление трека.",
+    "covers": [
+      "audio null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "audio-appeared",
+    "description": "Трек появился после пробы.",
+    "covers": [
+      "audio null ready"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "audio-path",
+    "description": "Изменён путь трека.",
+    "covers": [
+      "audio path"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "audio-outside",
+    "description": "Путь трека вне source.",
+    "covers": [
+      "audioSource null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "audio-other-root",
+    "description": "Путь трека вне source/.",
+    "covers": [
+      "audioSource prefix"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-flag",
+    "description": "Принятие сохраняется по журналу проекта после удаления задания.",
+    "covers": [
+      "acceptedResult",
+      "job null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-moved",
+    "description": "Перенос проекта не теряет принятие.",
+    "covers": [
+      "moved project"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-manifest-changed",
+    "description": "Правка манифеста снимает признак.",
+    "covers": [
+      "after_files"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-video-changed",
+    "description": "Правка видео снимает признак.",
+    "covers": [
+      "video sha"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-missing",
+    "description": "Удалённый комплект снимает признак.",
+    "covers": [
+      "realpath"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-state",
+    "description": "Журнал не committed.",
+    "covers": [
+      "journal state"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-token",
+    "description": "Журнал другого подтверждения.",
+    "covers": [
+      "journal token"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-id",
+    "description": "id журнала не совпадает с папкой.",
+    "covers": [
+      "journal id"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-uuid-folder",
+    "description": "Папка журнала с именем UUID.",
+    "covers": [
+      "journal name 36"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-wrong-kind",
+    "description": "Комплект не derived_video.",
+    "covers": [
+      "manifest kind"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "accepted-root-source",
+    "description": "Видео комплекта с root source.",
+    "covers": [
+      "video root"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "project-relative",
+    "description": "Относительный путь проекта.",
+    "covers": [
+      "projectInvalid"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "project-missing",
+    "description": "Папки проекта нет: текст realpath.",
+    "covers": [
+      "ENOENT"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "project-no-marker",
+    "description": "Папка без plan/project.json.",
+    "covers": [
+      "projectInvalid"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "shot-invalid",
+    "description": "Неверный код плана.",
+    "covers": [
+      "SHOT"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "shot-decimal",
+    "description": "План Mxx.N вне реестра.",
+    "covers": [
+      "sceneMissing"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "scene-missing",
+    "description": "План вне реестра.",
+    "covers": [
+      "sceneMissing"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "scenes-corrupt",
+    "description": "Реестр не читается.",
+    "covers": [
+      "sceneMissing"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "scenes-absent",
+    "description": "Реестра нет.",
+    "covers": [
+      "sceneMissing"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "not-derived",
+    "description": "План без источника.",
+    "covers": [
+      "notDerived"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "source-self",
+    "description": "Источник совпадает с целью.",
+    "covers": [
+      "invalidSource"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "source-chain",
+    "description": "Источник сам производный.",
+    "covers": [
+      "invalidSource"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "source-absent",
+    "description": "Источника нет в реестре.",
+    "covers": [
+      "invalidSource"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "lipsync",
+    "description": "Производный план с липсинком.",
+    "covers": [
+      "lipsyncUnsupported"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "source-no-kit",
+    "description": "У источника нет комплекта.",
+    "covers": [
+      "sourceUnavailable"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "source-derived-kit",
+    "description": "Комплект источника — производный.",
+    "covers": [
+      "sourceUnavailable"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "source-frames",
+    "description": "Нет числа кадров источника.",
+    "covers": [
+      "sourceFrames 0"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "source-fps",
+    "description": "Источник не на сетке 30 FPS.",
+    "covers": [
+      "sourceFrames 0"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "source-stale",
+    "description": "Источник принят по прежней постановке.",
+    "covers": [
+      "sourceStale"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "source-unaccepted",
+    "description": "Источника нет в статусе, комплект есть.",
+    "covers": [
+      "sourceStale"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "draft-corrupt",
+    "description": "draft.json не JSON.",
+    "covers": [
+      "draft null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "draft-other-shot",
+    "description": "Черновик другого плана.",
+    "covers": [
+      "draft.shot"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "draft-schema",
+    "description": "Схема черновика.",
+    "covers": [
+      "schema_version"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "draft-invalid-recipe",
+    "description": "Рецепт черновика неверный.",
+    "covers": [
+      "recipe null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "latest-corrupt",
+    "description": "latest.json не JSON.",
+    "covers": [
+      "latest null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "latest-bad-id",
+    "description": "Неверный id.",
+    "covers": [
+      "ID regexp"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "latest-bad-operation",
+    "description": "Неверная операция.",
+    "covers": [
+      "operation"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "latest-bad-job",
+    "description": "jobId не строка.",
+    "covers": [
+      "jobId"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-empty",
+    "description": "Нет истории.",
+    "covers": [
+      "no history"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-after-publish",
+    "description": "Откат после публикации, повторный запуск ничего не меняет.",
+    "covers": [
+      "restore",
+      "rolled_back",
+      "twice"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-between-renames",
+    "description": "Старая папка перенесена, новая не появилась.",
+    "covers": [
+      "target missing"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-first-accept",
+    "description": "Откат первой приёмки к отсутствию комплекта и статуса.",
+    "covers": [
+      "before null"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-staging",
+    "description": "staging и незавершённый restore-kit удаляются.",
+    "covers": [
+      "staging",
+      "restore-kit"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-asset-changed",
+    "description": "Чужая правка комплекта.",
+    "covers": [
+      "recoveryFailed"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-backup-changed",
+    "description": "Порча резерва комплекта.",
+    "covers": [
+      "recoveryFailed"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-status-changed",
+    "description": "Чужая правка статуса.",
+    "covers": [
+      "recoveryFailed"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-file-backup-changed",
+    "description": "Порча резерва файла.",
+    "covers": [
+      "recoveryFailed"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-retired-changed",
+    "description": "Порча архива комплекта.",
+    "covers": [
+      "recoveryFailed"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-foreign-path",
+    "description": "Посторонний путь журнала: исходники сохраняются.",
+    "covers": [
+      "publicationFile"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-duplicate-path",
+    "description": "Повтор пути в журнале.",
+    "covers": [
+      "unique paths"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-bad-sha",
+    "description": "Неверный SHA журнала.",
+    "covers": [
+      "HASH"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-bad-shot",
+    "description": "Неверный код плана журнала.",
+    "covers": [
+      "shot regexp"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-bad-kit",
+    "description": "Чужая папка комплекта.",
+    "covers": [
+      "kit.path"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-bad-backup",
+    "description": "Чужой резерв.",
+    "covers": [
+      "kit.backup"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-bad-retired",
+    "description": "Чужой архив.",
+    "covers": [
+      "kit.retired"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-bad-map",
+    "description": "Неверная карта файлов.",
+    "covers": [
+      "descriptorMap"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-bad-schema",
+    "description": "Неизвестная схема журнала.",
+    "covers": [
+      "schema_version"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-bad-id",
+    "description": "id журнала не совпадает с папкой.",
+    "covers": [
+      "journal id"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-committed",
+    "description": "Завершённый журнал не трогается.",
+    "covers": [
+      "state"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-corrupt",
+    "description": "Нечитаемый журнал: текст readLocalJson.",
+    "covers": [
+      "readFailed"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-primitive",
+    "description": "Журнал — число.",
+    "covers": [
+      "objectExpected"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-other-folder",
+    "description": "Папка с другим именем пропускается.",
+    "covers": [
+      "folder regexp"
+    ]
+  },
+  {
+    "domain": "derived-workflow",
+    "name": "recover-no-journal",
+    "description": "Папка без журнала пропускается.",
+    "covers": [
+      "journal null"
+    ]
   }
 ]

@@ -46,7 +46,7 @@ func Replay(ctx context.Context, path, destination string, fromOriginal bool, ro
 		if err != nil {
 			return err
 		}
-		source, err := localFile(directory, name)
+		source, err := LocalFile(directory, name)
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func Replay(ctx context.Context, path, destination string, fromOriginal bool, ro
 			if err != nil {
 				return err
 			}
-			if source, err = localFile(directory, input); err != nil {
+			if source, err = LocalFile(directory, input); err != nil {
 				return err
 			}
 		}

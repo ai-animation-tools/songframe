@@ -86,7 +86,7 @@ func writeDraft(project, rel string, value any) error {
 // экспортом и применением). Перезаписываемый файл проверяется только структурно: устаревшие пути
 // прежней версии не мешают сохранить исправленный черновик. id nil — новый UUID.
 func Save(project string, draft any, id *string) (Saved, error) {
-	name := randomUUID()
+	name := RandomUUID()
 	if id != nil {
 		name = *id
 	}
@@ -147,7 +147,7 @@ func (s *Service) Export(project string, draft any) (Export, error) {
 	if err != nil {
 		return Export{}, err
 	}
-	folder := "plan/batches/review-manual-" + randomUUID()
+	folder := "plan/batches/review-manual-" + RandomUUID()
 	spec := folder + "/review-spec.json"
 	video := folder + "/review.mp4"
 	if err := writeDraft(project, folder+"/montage.json", draft); err != nil {
@@ -174,7 +174,7 @@ func (s *Service) Export(project string, draft any) (Export, error) {
 	args := []string{"--spec", filepath.Join(project, filepath.FromSlash(spec)), "--output", filepath.Join(project, filepath.FromSlash(video))}
 	job, err := s.jobs.Start(jobs.Spec{
 		Kind: jobs.KindReview, Title: textExportTitle(checked.name), Project: project,
-		Steps: []jobs.Step{toolStep(project, "build_review", textExportStep, args)},
+		Steps: []jobs.Step{ToolStep(project, "build_review", textExportStep, args)},
 	})
 	if err != nil {
 		return Export{}, err
@@ -206,19 +206,19 @@ func (s *Service) Apply(project string, draft any) (jobs.Info, error) {
 			return jobs.Info{}, errors.New(textManifestsChanged)
 		}
 	}
-	spec := "plan/batches/apply-manual-" + randomUUID() + "/montage.json"
+	spec := "plan/batches/apply-manual-" + RandomUUID() + "/montage.json"
 	if err := writeDraft(project, spec, draft); err != nil {
 		return jobs.Info{}, err
 	}
 	return s.jobs.Start(jobs.Spec{
 		Kind: jobs.KindTool, Title: textApplyTitle(checked.name), Project: project,
-		Steps: []jobs.Step{toolStep(project, "apply_montage", textApplyStep, []string{"--spec", spec})},
+		Steps: []jobs.Step{ToolStep(project, "apply_montage", textApplyStep, []string{"--spec", spec})},
 	})
 }
 
-// toolStep — шаг задания с инструментом, выполняемым в процессе (tools.RunContext): потоки — в
+// ToolStep — шаг задания с инструментом, выполняемым в процессе (tools.RunContext): потоки — в
 // журнал, ненулевой код — сбой шага с текстом stderr (или stdout), отмена — остановка.
-func toolStep(project, tool, label string, args []string) jobs.Step {
+func ToolStep(project, tool, label string, args []string) jobs.Step {
 	return jobs.Step{
 		Tool: tool, Label: label, Args: args,
 		Run: func(ctx context.Context, journal *jobs.StepContext) error {

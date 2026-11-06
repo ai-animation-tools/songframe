@@ -301,7 +301,8 @@ export const LongDialog: Story = {
     await userEvent.click(within(body.getByRole('dialog', { name: 'Применить предложение?' })).getByRole('button', { name: 'Применить' }));
     await waitFor(() => expect(within(dialog).getByText('Не удалось сохранить изменения. Материалы и предложение сохранены для повтора.')).toBeInTheDocument());
     await expect(canvas.getByTestId('saved-materials')).toHaveTextContent('Сохранённый фрагмент 1.');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Применить предложение' }));
+    // Пока закрывается окно подтверждения, основной диалог скрыт от дерева доступности.
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Применить предложение' }));
     await userEvent.click(within(body.getByRole('dialog', { name: 'Применить предложение?' })).getByRole('button', { name: 'Применить' }));
     await waitFor(() => expect(body.queryByRole('dialog')).not.toBeInTheDocument());
     await expect(canvas.getByTestId('saved-materials')).toHaveTextContent('Предложенный фрагмент 1.');

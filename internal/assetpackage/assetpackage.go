@@ -62,8 +62,8 @@ func pathClass() string {
 	return "PosixPath"
 }
 
-// localFile — local_file(directory, name): путь внутри папки комплекта после resolve().
-func localFile(directory string, name any) (string, error) {
+// LocalFile — local_file(directory, name): путь внутри папки комплекта после resolve().
+func LocalFile(directory string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
 		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), pycompat.TypeName(name))
@@ -84,7 +84,7 @@ func descriptorFile(directory string, descriptor *pycompat.Dict, root string) (s
 		return "", err
 	}
 	if pycompat.Equal(scope, "asset") {
-		return localFile(directory, path)
+		return LocalFile(directory, path)
 	}
 	if !pycompat.Equal(scope, "source") {
 		return "", pycompat.New(pycompat.ValueError, textUnknownRoot)
@@ -108,9 +108,9 @@ func descriptorFile(directory string, descriptor *pycompat.Dict, root string) (s
 	return source, nil
 }
 
-// descriptors — descriptors(value): словари с path и sha256 в порядке обхода (сам словарь, затем
+// Descriptors — descriptors(value): словари с path и sha256 в порядке обхода (сам словарь, затем
 // его значения), вложенные — тоже.
-func descriptors(value any, visit func(*pycompat.Dict) error) error {
+func Descriptors(value any, visit func(*pycompat.Dict) error) error {
 	switch node := value.(type) {
 	case *pycompat.Dict:
 		if node.Has("path") && node.Has("sha256") {
@@ -119,13 +119,13 @@ func descriptors(value any, visit func(*pycompat.Dict) error) error {
 			}
 		}
 		for _, key := range node.Keys() {
-			if err := descriptors(node.Value(key), visit); err != nil {
+			if err := Descriptors(node.Value(key), visit); err != nil {
 				return err
 			}
 		}
 	case []any:
 		for _, element := range node {
-			if err := descriptors(element, visit); err != nil {
+			if err := Descriptors(element, visit); err != nil {
 				return err
 			}
 		}
@@ -383,7 +383,7 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	directory := filepath.Dir(path)
 	shotValue := document.Value("shot")
 	registered := map[[2]string]bool{}
-	err = descriptors(document, func(descriptor *pycompat.Dict) error {
+	err = Descriptors(document, func(descriptor *pycompat.Dict) error {
 		scope, _ := pycompat.DictGet(descriptor, "root", "asset")
 		if pycompat.Equal(scope, "source") && !shared[descriptor] {
 			return pycompat.New(pycompat.ValueError, textSharedOnly)
@@ -422,7 +422,7 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 		if err != nil {
 			return nil, err
 		}
-		source, err := localFile(directory, input)
+		source, err := LocalFile(directory, input)
 		if err != nil {
 			return nil, err
 		}

@@ -1,6 +1,6 @@
 import { montageTexts } from '@shared/texts/montage';
 import { FPS } from '@shared/video';
-import type { MontageClip, MontageDraft, MontageSource, MontageView } from '@shared/montage';
+import type { MontageClip, MontageDraft, MontageScene, MontageSource, MontageView } from '@shared/montage';
 
 export const clipLength = (clip: MontageClip): number => clip.source_end_frame_exclusive - clip.source_start_frame;
 export const montageLength = (clips: MontageClip[]): number => clips.reduce((sum, clip) => sum + clipLength(clip), 0);
@@ -66,6 +66,20 @@ export function moveClip(clips: MontageClip[], id: string, before: string | null
   const rest = clips.filter((item) => item.id !== id);
   const index = before === null ? rest.length : rest.findIndex((item) => item.id === before);
   return [...rest.slice(0, index < 0 ? rest.length : index), clip, ...rest.slice(index < 0 ? rest.length : index)];
+}
+
+/**
+ * Новый фрагмент на дорожке. Первый берёт музыку своей сцены; пока длина музыки равна длине дорожки,
+ * следующие продлевают её вперёд, иначе плеер оставался бы на участке первого плана. Вручную
+ * заданное расхождение длин не трогаем: его показывает панель, а подгоняет явная кнопка.
+ */
+export function addClip(draft: MontageDraft, clip: MontageClip, before: string | null, scene: MontageScene | undefined): MontageDraft {
+  const clips = moveClip([...draft.clips, clip], clip.id, before);
+  const { audio } = draft;
+  if (!draft.clips.length)
+    return { ...draft, clips, audio: { ...audio, start_frame: scene?.startFrame ?? 0, end_frame_exclusive: scene?.endFrame ?? clipLength(clip) } };
+  if (audio.end_frame_exclusive - audio.start_frame !== montageLength(draft.clips)) return { ...draft, clips };
+  return { ...draft, clips, audio: { ...audio, end_frame_exclusive: audio.start_frame + montageLength(clips) } };
 }
 
 export function sourceClip(source: MontageSource, length: number): MontageClip {

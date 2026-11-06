@@ -116,6 +116,24 @@ func Save(project string, draft any, id *string) (Saved, error) {
 	return Saved{ID: name, Name: jscompat.Get(draft, "name").(string), UpdatedAt: isoTime(info)}, nil
 }
 
+// RemoveDraft удаляет сохранённый черновик plan/montage/<id>.json. В оригинале этого действия нет:
+// черновики только копились. Применённые сцены от файла не зависят, история применения хранит
+// собственную копию draft.json, поэтому удаление не меняет ни сцены, ни возможность восстановления.
+// Уже отсутствующий файл — не ошибка: цель действия достигнута.
+func RemoveDraft(project, id string) error {
+	path, err := draftPath(project, id)
+	if err != nil {
+		return err
+	}
+	if err := projectfs.CheckWrite(project); err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return jscompat.FsError("unlink", path, err)
+	}
+	return nil
+}
+
 // Export — Montage.export(project, draft): полный черновик (длины, сцены, трек) записывается в
 // plan/batches/review-manual-<uuid>/montage.json вместе с рецептом review-spec.json, и запускается
 // задание review с шагом build_review. Пути рецепта остаются от корня проекта; инструменту

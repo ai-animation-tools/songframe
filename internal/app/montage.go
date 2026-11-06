@@ -65,6 +65,11 @@ func (s *MontageService) Load(project, id string) (json.RawMessage, error) {
 	return wire.Done(jscompat.Raw(value), nil)
 }
 
+// Remove удаляет сохранённый черновик; принятые сцены и история применения остаются.
+func (s *MontageService) Remove(project, id string) error {
+	return montage.RemoveDraft(project, id)
+}
+
 // Save — montage:save: незавершённый черновик в plan/montage/<id>.json; id nil — новый UUID.
 func (s *MontageService) Save(project string, draft json.RawMessage, id *string) (montage.Saved, error) {
 	value, err := montage.ParseDraft(draft)

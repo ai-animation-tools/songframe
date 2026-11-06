@@ -85,6 +85,8 @@ export interface MontageApi {
   view(project: string): Promise<MontageView>;
   load(project: string, id: string): Promise<MontageDraft>;
   save(project: string, draft: MontageDraft, id?: string): Promise<MontageSaved>;
+  /** Удаляет сохранённый черновик; принятые сцены и история применения не меняются. */
+  remove(project: string, id: string): Promise<void>;
   export(project: string, draft: MontageDraft): Promise<MontageExport>;
   /** Применение меняет только перечисленные сцены; перенос стыка включает обоих соседей. */
   apply(project: string, draft: MontageDraft): Promise<JobInfo>;

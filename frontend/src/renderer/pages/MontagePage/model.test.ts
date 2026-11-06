@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MontageClip, MontageDraft, MontageView } from '@shared/montage';
-import { clipLength, historyReducer, initialDraft, montageLength, moveClip, rollCut, slipClip, trimClip } from './model';
+import { addClip, clipLength, historyReducer, initialDraft, montageLength, moveClip, rollCut, slipClip, trimClip } from './model';
 
 const clip = (id: string, start = 10, end = 40): MontageClip => ({
   id,
@@ -21,6 +21,50 @@ const draft = (clips: MontageClip[]): MontageDraft => ({
 });
 
 describe('Кадровый монтаж', () => {
+  describe('Добавление фрагмента на дорожку', () => {
+    const scene = { id: 'M10', title: 'Сцена', startFrame: 1100, endFrame: 1175 };
+    const clip = (id: string, length: number): MontageClip => ({
+      id,
+      scene: id,
+      path: `${id}.mp4`,
+      kind: 'video',
+      source_start_frame: 0,
+      source_end_frame_exclusive: length,
+      source_frames: 300
+    });
+    const draft = (clips: MontageClip[], start: number, end: number): MontageDraft => ({
+      schema_version: 1,
+      name: 'Проба',
+      audio: { path: 'track.wav', start_frame: start, end_frame_exclusive: end },
+      clips,
+      base_scenes_sha256: '',
+      base_manifest_sha256: {}
+    });
+
+    it('первый фрагмент берёт музыку своей сцены', () => {
+      expect(addClip(draft([], 0, 0), clip('M10', 75), null, scene).audio).toMatchObject({ start_frame: 1100, end_frame_exclusive: 1175 });
+    });
+
+    it('следующий продлевает музыку вперёд, пока её длина равна длине дорожки', () => {
+      const next = addClip(draft([clip('M10', 75)], 1100, 1175), clip('M11', 147), null, scene);
+      expect(next.audio).toMatchObject({ start_frame: 1100, end_frame_exclusive: 1322 });
+      expect(next.clips.map((item) => item.id)).toEqual(['M10', 'M11']);
+    });
+
+    it('вставка перед фрагментом продлевает музыку так же и сохраняет порядок', () => {
+      const next = addClip(draft([clip('M10', 75)], 1100, 1175), clip('M11', 147), 'M10', scene);
+      expect(next.audio.end_frame_exclusive).toBe(1322);
+      expect(next.clips.map((item) => item.id)).toEqual(['M11', 'M10']);
+    });
+
+    it('вручную заданное расхождение длин не подгоняется незаметно', () => {
+      expect(addClip(draft([clip('M10', 75)], 1100, 1200), clip('M11', 147), null, scene).audio).toMatchObject({
+        start_frame: 1100,
+        end_frame_exclusive: 1200
+      });
+    });
+  });
+
   it('начинает пробу с принятого монтажа, чтобы сохранить прежнюю обрезку сцены', () => {
     const view: MontageView = {
       scenarioStatus: 'ready',

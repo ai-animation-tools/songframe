@@ -42,6 +42,7 @@ export function unavailableApi(asyncFailure: (method: ApiMethod) => Promise<neve
       view: () => asyncFailure('montage.view'),
       load: () => asyncFailure('montage.load'),
       save: () => asyncFailure('montage.save'),
+      remove: () => asyncFailure('montage.remove'),
       export: () => asyncFailure('montage.export'),
       apply: () => asyncFailure('montage.apply'),
       saveVideo: () => asyncFailure('montage.saveVideo')

@@ -184,6 +184,7 @@ export function createStoryApi(
       view: guardedAsync(merged.montage.view),
       load: guardedAsync(merged.montage.load),
       save: guardedAsync(merged.montage.save),
+      remove: guardedAsync(merged.montage.remove),
       export: guardedAsync(merged.montage.export),
       apply: guardedAsync(merged.montage.apply),
       saveVideo: guardedAsync(merged.montage.saveVideo)

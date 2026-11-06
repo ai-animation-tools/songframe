@@ -63,6 +63,28 @@ static int sf_montage_show(void *window, int move, int x, int y) {
 	g_free(uri);
 	return 1;
 }
+
+// sf_montage_release_idle снимает ссылки на закрытое окно, уже вне gtk_window_destroy. Обычно их
+// две: своя и лишняя ссылка Wails. Единица значит, что Wails свою уже отпускает, и трогать её нельзя.
+static gboolean sf_montage_release_idle(gpointer data) {
+	GObject *window = G_OBJECT(data);
+	if (window->ref_count == 2) g_object_unref(window);
+	g_object_unref(window);
+	return G_SOURCE_REMOVE;
+}
+
+static void sf_montage_unrealized(GtkWidget *widget, gpointer data) {
+	g_signal_handlers_disconnect_by_func(widget, (gpointer)sf_montage_unrealized, data);
+	g_idle_add(sf_montage_release_idle, widget);
+}
+
+// sf_montage_release_on_close готовит освобождение окна: срабатывает из gtk_window_destroy, когда
+// Wails его вызовет. Окно, которое ни разу не показывалось, не реализовано и остаётся как есть.
+static void sf_montage_release_on_close(void *window) {
+	if (window == NULL || !gtk_widget_get_realized(GTK_WIDGET(window))) return;
+	g_object_ref(window);
+	g_signal_connect(window, "unrealize", G_CALLBACK(sf_montage_unrealized), NULL);
+}
 */
 import "C"
 
@@ -75,7 +97,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-// newMontageNativeWindow создаёт окно плеера в сборке GTK4 с двумя поправками к Wails 3.
+// newMontageNativeWindow создаёт окно плеера в сборке GTK4 с тремя поправками к Wails 3.
 //
 // Воспроизведение без жеста: аналог autoplayPolicy 'no-user-gesture-required' окна Electron.
 // Плеер запускают кнопкой или клавишей в основном окне, жеста в самом окне нет, и WebKitGTK
@@ -87,6 +109,12 @@ import (
 // при первом начале загрузки его страницы (раньше нативного webview нет), уже на своём месте.
 // Без сохранённого положения место выбирает оконный менеджер, как у окна Electron без x/y.
 // Если событие загрузки не придёт, окно показывается по таймеру — скрытым оно не останется.
+//
+// Закрытие: Wails 3 в сборке GTK4 берёт на окно лишнюю ссылку (g_object_ref_sink в windowNew) и не
+// отпускает её, поэтому gtk_window_destroy только прячет окно, а webview со страницей живёт
+// дальше. Для плеера это слышно: <audio> играет без окна, а часы на requestAnimationFrame в
+// скрытой странице стоят, поэтому звук уходит за границы участка и накладывается на встроенный
+// плеер. Хук освобождает окно сразу после destroy, вместе с ним уходят страница и её медиа.
 func newMontageNativeWindow(desktop *application.App, options application.WebviewWindowOptions) *application.WebviewWindow {
 	native := options
 	native.Hidden = true
@@ -108,6 +136,10 @@ func newMontageNativeWindow(desktop *application.App, options application.Webvie
 	// Окно запускается в отдельной горутине Wails: если начало загрузки придёт раньше хука,
 	// показ выполнит конец той же загрузки.
 	window.RegisterHook(events.Linux.WindowLoadStarted, func(*application.WindowEvent) { show() })
+	var release sync.Once
+	window.RegisterHook(events.Common.WindowClosing, func(*application.WindowEvent) {
+		release.Do(func() { application.InvokeSync(func() { C.sf_montage_release_on_close(window.NativeWindow()) }) })
+	})
 	window.RegisterHook(events.Linux.WindowLoadFinished, func(*application.WindowEvent) { show() })
 	time.AfterFunc(3*time.Second, func() {
 		if window.NativeWindow() != nil {

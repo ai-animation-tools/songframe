@@ -3,7 +3,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import type { MontageApi, MontageDraft, MontageSource, MontageView } from '@shared/montage';
 import type { JobInfo } from '@shared/types';
 import { useApp } from '../../state';
-import { clipLength, historyReducer, initialDraft, montageLength, moveClip, sourceClip } from './model';
+import { addClip, clipLength, historyReducer, initialDraft, montageLength, sourceClip } from './model';
 
 const EMPTY: MontageDraft = {
   schema_version: 1,
@@ -61,35 +61,39 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
     []
   );
 
-  const load = useCallback(async (): Promise<void> => {
-    const request = ++requestId.current;
-    setError(null);
-    setBusy(true);
-    try {
-      const next = await api().view(project);
-      if (!alive.current || request !== requestId.current) return;
-      setView(next);
-      loaded.current = true;
-      setSources(next.sources);
-      const initial = snapshot(initialDraft(next, shots, next.trackPath ?? '', preferred));
-      dispatch({ type: 'reset', draft: initial });
-      // Новая проба ещё не сохранена, но само открытие не является правкой.
-      setBaseline(initial);
-      setSavedId(undefined);
-      setSelected(initial.clips[0]?.id ?? null);
-      setFrame(0);
-      // Открытие черновика — явная перемотка, даже если путь музыки и границы участка совпадают.
-      setSeekVersion((value) => value + 1);
-      setJob(null);
-      setVideo(null);
-    } catch (cause) {
-      if (!alive.current || request !== requestId.current) return;
-      if (loaded.current) notify(describeError(cause), 'error');
-      else setError(describeError(cause));
-    } finally {
-      if (alive.current && request === requestId.current) setBusy(false);
-    }
-  }, [project, shots, preferred, snapshot, describeError, notify]);
+  /** scenes — сцены начальной пробы; по умолчанию выбранные при открытии страницы. */
+  const load = useCallback(
+    async (scenes: string[] = shots): Promise<void> => {
+      const request = ++requestId.current;
+      setError(null);
+      setBusy(true);
+      try {
+        const next = await api().view(project);
+        if (!alive.current || request !== requestId.current) return;
+        setView(next);
+        loaded.current = true;
+        setSources(next.sources);
+        const initial = snapshot(initialDraft(next, scenes, next.trackPath ?? '', preferred));
+        dispatch({ type: 'reset', draft: initial });
+        // Новая проба ещё не сохранена, но само открытие не является правкой.
+        setBaseline(initial);
+        setSavedId(undefined);
+        setSelected(initial.clips[0]?.id ?? null);
+        setFrame(0);
+        // Открытие черновика — явная перемотка, даже если путь музыки и границы участка совпадают.
+        setSeekVersion((value) => value + 1);
+        setJob(null);
+        setVideo(null);
+      } catch (cause) {
+        if (!alive.current || request !== requestId.current) return;
+        if (loaded.current) notify(describeError(cause), 'error');
+        else setError(describeError(cause));
+      } finally {
+        if (alive.current && request === requestId.current) setBusy(false);
+      }
+    },
+    [project, shots, preferred, snapshot, describeError, notify]
+  );
   useEffect(() => {
     alive.current = true;
     void load();
@@ -127,6 +131,19 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       setBaseline(captured);
       setView((current) => (current ? { ...current, saved: [saved, ...current.saved.filter((item) => item.id !== saved.id)] } : current));
       notify(montageTexts.draftSaved, 'success');
+    });
+  // Переоткрытие обновляет материалы тех же сцен, что на дорожке; страница без выбранных сцен иначе
+  // получала бы пустую дорожку. Границы и источники берутся заново из текущих принятых версий.
+  const reopen = (): Promise<void> => load(draft.clips.length ? [...new Set(draft.clips.map((clip) => clip.scene))] : shots);
+  const removeDraft = (): Promise<void> =>
+    operate(async () => {
+      const id = savedId;
+      if (!id) return;
+      await api().remove(project, id);
+      if (!alive.current) return;
+      setSavedId(undefined);
+      setView((current) => (current ? { ...current, saved: current.saved.filter((item) => item.id !== id) } : current));
+      notify(montageTexts.draftRemoved, 'success');
     });
   const open = (id: string): Promise<void> =>
     operate(async () => {
@@ -248,13 +265,7 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
       const canonical = view.scenes.find((scene) => scene.id === source.scene);
       const clip = sourceClip(source, existing ? clipLength(existing) : canonical ? canonical.endFrame - canonical.startFrame : (source.frames ?? 1));
       if (existing) commit({ ...draft, clips: draft.clips.map((item) => (item.id === existing.id ? { ...clip, id: existing.id } : item)) });
-      else {
-        const clips = [...draft.clips, clip];
-        const audio = draft.clips.length
-          ? draft.audio
-          : { ...draft.audio, start_frame: canonical?.startFrame ?? 0, end_frame_exclusive: canonical?.endFrame ?? clipLength(clip) };
-        commit({ ...draft, audio, clips: moveClip(clips, clip.id, before) });
-      }
+      else commit(addClip(draft, clip, before, canonical));
       // При замене сохраняется id фрагмента на дорожке, поэтому выделение должно ссылаться на него же.
       setSelected(existing?.id ?? clip.id);
     },
@@ -308,6 +319,8 @@ export function useMontage(project: string, shots: string[], preferred: Record<s
     save,
     open,
     load,
+    reopen,
+    removeDraft,
     addSource,
     onMetadata,
     exportVideo,

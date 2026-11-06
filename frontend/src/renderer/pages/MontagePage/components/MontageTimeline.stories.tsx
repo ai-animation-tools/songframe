@@ -26,7 +26,7 @@ function TimelineStory() {
         onMove={() => undefined}
       />
       <Typography role="status">
-        Выбрано: {selected}. Длительности: {draft.clips.map((clip) => clip.source_end_frame_exclusive - clip.source_start_frame).join(', ')}.
+        Выбрано: {selected}. Длительности: {draft.clips.map((clip) => clip.source_end_frame_exclusive - clip.source_start_frame).join(', ')}. Кадр: {frame}.
       </Typography>
     </Stack>
   );
@@ -43,8 +43,9 @@ export const SelectedAndAdjacent: Story = {
     await expect(canvas.getAllByText('45 к · видео')).toHaveLength(2);
     // Надписи пропускают указатель к области клипа: выбираем тот же контейнер, что получает реальный клик.
     await userEvent.click(canvas.getByText('M02').closest<HTMLElement>('[draggable]')!);
-    await expect(canvas.getByRole('status')).toHaveTextContent('Выбрано: M02. Длительности: 45, 45.');
+    // Выбор плана переводит плеер к его началу, иначе звук остаётся на прежнем плане.
+    await expect(canvas.getByRole('status')).toHaveTextContent('Выбрано: M02. Длительности: 45, 45. Кадр: 45.');
     await userEvent.click(canvas.getByText('M01').closest<HTMLElement>('[draggable]')!);
-    await expect(canvas.getByRole('status')).toHaveTextContent('Выбрано: M01. Длительности: 45, 45.');
+    await expect(canvas.getByRole('status')).toHaveTextContent('Выбрано: M01. Длительности: 45, 45. Кадр: 0.');
   }
 };

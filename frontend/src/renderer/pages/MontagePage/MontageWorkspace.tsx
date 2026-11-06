@@ -20,6 +20,7 @@ import {
   MontagePreview,
   MontageSourcesDrawer,
   MontageShortcuts,
+  MontageDraftRemoveDialog,
   MontageTimeline,
   SourceMetadata
 } from './components';
@@ -33,7 +34,6 @@ import { MontageActionBar } from './components/MontageActionBar';
 import { MontageExportDialog } from './components/MontageExportDialog';
 import { useThemeMode } from '../../theme';
 import { useDetachedMontage } from './useDetachedMontage';
-import { useMethodAvailability } from '../../availability';
 import { useHeaderHeight } from '../../components/headerHeight';
 import { LinkedText } from '../../components/LinkedText';
 
@@ -76,6 +76,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
     return () => observer.disconnect();
   }, [actionBar]);
   const [pendingOpen, setPendingOpen] = useState<string | null>(null);
+  const [removeDraftOpen, setRemoveDraftOpen] = useState(false);
   const [trackFrames, setTrackFrames] = useState<number | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [material, setMaterial] = useState<MontageSource | null>(null);
@@ -101,17 +102,16 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
     project,
     clip: selectedClip,
     locked,
-    blocked: sourcesOpen || page.applyOpen || videoOpen || pendingOpen !== null || material !== null || view?.scenarioStatus !== 'ready',
+    blocked: sourcesOpen || page.applyOpen || videoOpen || pendingOpen !== null || removeDraftOpen || material !== null || view?.scenarioStatus !== 'ready',
     onRemove: (id) => {
       commit({ ...draft, clips: draft.clips.filter((clip) => clip.id !== id) });
       page.setSelected(null);
     }
   });
   const trackUrl = draft.audio.path ? projectMediaUrl(project, draft.audio.path) : null;
-  const suspended = sourcesOpen || page.applyOpen || videoOpen || pendingOpen !== null || remove.target !== null || material !== null || locked;
+  const suspended =
+    sourcesOpen || page.applyOpen || videoOpen || pendingOpen !== null || removeDraftOpen || remove.target !== null || material !== null || locked;
   const suspendedReason = locked ? lockedReason : montageTexts.closeDialogToWatch;
-  // Отличие от 634fd94: второго окна монтажа в Go пока нет — кнопка объясняет причину блокировки.
-  const detachAvailability = useMethodAvailability('montageWindow.open');
   const detachedPlayer = useDetachedMontage(
     { project, draft, trackUrl, frame: page.frame, seekVersion: page.seekVersion, selectedClipId: page.selected, suspended, theme, loop, volume },
     {
@@ -165,7 +165,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
   const exportProblemLabel = boundsProblem ? montageTexts.pastEndLabel : page.exportProblemLabel;
   const requestOpen = (id: string): void => {
     if (page.dirty) setPendingOpen(id);
-    else if (id === '__refresh') void page.load();
+    else if (id === '__refresh') void page.reopen();
     else void page.open(id);
   };
   const previewTop = headerHeight + actionBarHeight + 8;
@@ -216,6 +216,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
         onSave={() => void page.save()}
         onSaveAsNew={() => void page.save(true)}
         onReopen={() => requestOpen('__refresh')}
+        onRemoveDraft={() => setRemoveDraftOpen(true)}
         onExport={() => void page.exportVideo()}
         onApply={() => page.setApplyOpen(true)}
         onShowProblem={() => lengthStatus.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
@@ -288,12 +289,7 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
                   suspended={suspended}
                   suspendedReason={suspendedReason}
                   actions={
-                    <ActionIconButton
-                      aria-label={montageTexts.detachPlayer}
-                      onClick={detachedPlayer.open}
-                      disabled={locked || !detachAvailability.available}
-                      disabledReason={detachAvailability.available ? lockedReason : detachAvailability.reason}
-                    >
+                    <ActionIconButton aria-label={montageTexts.detachPlayer} onClick={detachedPlayer.open} disabled={locked} disabledReason={lockedReason}>
                       <OpenInNew />
                     </ActionIconButton>
                   }
@@ -327,12 +323,13 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
                     <Select
                       labelId={savedLabelId}
                       label={montageTexts.openDraft}
-                      value=""
+                      value={view.saved.some((saved) => saved.id === page.savedId) ? page.savedId : ''}
                       disabled={locked || !view.saved.length}
                       onChange={(event) => requestOpen(event.target.value)}
                     >
                       {view.saved.map((saved) => (
-                        <MenuItem key={saved.id} value={saved.id}>
+                        // Select не сообщает о выборе текущего значения: повторный выбор возвращает сохранённую версию.
+                        <MenuItem key={saved.id} value={saved.id} onClick={() => saved.id === page.savedId && page.dirty && requestOpen(saved.id)}>
                           {saved.name} · <DateTime value={saved.updatedAt} />
                         </MenuItem>
                       ))}
@@ -455,8 +452,17 @@ export function MontageWorkspace({ project, shots, preferred = {} }: { project: 
         onContinue={() => {
           const id = pendingOpen;
           setPendingOpen(null);
-          if (id === '__refresh') void page.load();
+          if (id === '__refresh') void page.reopen();
           else if (id) void page.open(id);
+        }}
+      />
+      <MontageDraftRemoveDialog
+        open={removeDraftOpen}
+        name={view.saved.find((saved) => saved.id === page.savedId)?.name ?? draft.name}
+        onClose={() => setRemoveDraftOpen(false)}
+        onConfirm={() => {
+          setRemoveDraftOpen(false);
+          void page.removeDraft();
         }}
       />
     </Stack>

@@ -192,20 +192,23 @@ function eventWait(name: string, session: string): { promise: Promise<void>; can
  * владелец. Плеер сообщает ready, получает монтаж с WAV-дорожкой и MP4-планом (адрес плана строит
  * синхронный shell.fileUrl второго окна), отвечает trackFrames/metadata, по команде toggle
  * воспроизводит без жеста пользователя (кадры растут) и при Close владелец получает closed.
+ * Закрывается окно во время воспроизведения, а затем открывается заново: так закрытие уничтожает
+ * живую страницу со звуком (internal/app/montage_window_linux.go), и падение процесса здесь видно.
  * Громкость 1 % на время проверки и 100 % перед закрытием: звуковой сервер запоминает громкость
  * потока (см. withMedia), а физический звук здесь не проверяется.
  */
 async function montagePlayer(track: MediaInput, video: MediaInput): Promise<string> {
   const session = `native-check-montage-${Date.now()}`;
+  const reopened = `${session}-reopened`;
   const separator = Math.max(video.path.lastIndexOf('/'), video.path.lastIndexOf('\\'));
   const clipPath = video.path.slice(separator + 1);
   const messages: MontageWindowMessage[] = [];
   let closed = 0;
   const stopMessages = Events.On('montage-window:message', (event) => {
-    if (event.data?.session === session) messages.push(event.data.message);
+    if (event.data?.session === session || event.data?.session === reopened) messages.push(event.data.message);
   });
   const stopClosed = Events.On('montage-window:closed', (event) => {
-    if (event.data === session) closed++;
+    if (event.data === session || event.data === reopened) closed++;
   });
   const waitFor = async (what: string, test: () => boolean, milliseconds = 9000) => {
     const until = performance.now() + milliseconds;
@@ -245,18 +248,21 @@ async function montagePlayer(track: MediaInput, video: MediaInput): Promise<stri
     );
     await timed(montageWindow.Send({ type: 'command', action: 'toggle' }));
     await waitFor('движение кадров после toggle', () => messages.some((message) => message.type === 'frame' && message.frame >= 5));
-    await timed(montageWindow.Send({ type: 'command', action: 'toggle' }));
-    await delay(150);
     await timed(montageWindow.Send({ type: 'state', state: state(100) }));
-    await delay(250);
     await timed(montageWindow.Close(session));
     await waitFor('montage-window:closed', () => closed > 0);
+    const ready = messages.filter((message) => message.type === 'ready').length;
+    await timed(montageWindow.Open(reopened));
+    await waitFor('ready от заново открытого плеера', () => messages.filter((message) => message.type === 'ready').length > ready);
+    await timed(montageWindow.Close(reopened));
+    await waitFor('montage-window:closed заново открытого плеера', () => closed > 1);
     const frames = messages.filter((message) => message.type === 'frame').map((message) => message.frame);
     return JSON.stringify({ messages: messages.length, maxFrame: Math.max(...frames), closed, userGesture: false, sound: 'не проверялся' });
   } finally {
     stopMessages();
     stopClosed();
     await timed(montageWindow.Close(session));
+    await timed(montageWindow.Close(reopened));
   }
 }
 

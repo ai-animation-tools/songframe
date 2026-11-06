@@ -6,4 +6,5 @@ export { MontageTimeline } from './MontageTimeline';
 export { SourceMetadata } from './SourceMetadata';
 export { MontageAudioRange } from './MontageAudioRange';
 export { MontageDiscardDialog } from './MontageDiscardDialog';
+export { MontageDraftRemoveDialog } from './MontageDraftRemoveDialog';
 export { MontageShortcuts } from './MontageShortcuts';

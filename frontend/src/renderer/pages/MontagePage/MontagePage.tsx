@@ -20,15 +20,17 @@ export function MontagePage(): ReactElement {
     [raw]
   );
   // source=M45:plan/batches/M45-attempt-01/request/original.mp4 ставит на дорожку сцены конкретный материал.
-  const rawSources = params.getAll('source');
+  // Зависимость — строка, а не массив: getAll даёт новый массив на каждую перерисовку, а новый preferred
+  // перезапускал чтение в useMontage и сбрасывал несохранённую пробу при любом обновлении статуса приложения.
+  const rawSources = params.getAll('source').join('\n');
   const preferred = useMemo(() => {
     const result: Record<string, string> = {};
-    for (const value of rawSources) {
+    for (const value of rawSources.split('\n')) {
       const colon = value.indexOf(':');
       if (colon > 0) result[value.slice(0, colon).trim()] = value.slice(colon + 1).trim();
     }
     return result;
   }, [rawSources]);
   const project = state?.current ?? '';
-  return <MontageWorkspace key={`${project}:${raw}:${rawSources.join('|')}`} project={project} shots={shots} preferred={preferred} />;
+  return <MontageWorkspace key={`${project}:${raw}:${rawSources}`} project={project} shots={shots} preferred={preferred} />;
 }

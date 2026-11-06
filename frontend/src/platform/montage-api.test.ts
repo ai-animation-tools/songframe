@@ -40,7 +40,7 @@ function harness(montage: Record<string, unknown>) {
 
 describe('montage поверх MontageService', () => {
   it('все методы монтажа перенесены', () => {
-    for (const method of ['view', 'load', 'save', 'export', 'apply', 'saveVideo'] as const)
+    for (const method of ['view', 'load', 'save', 'remove', 'export', 'apply', 'saveVideo'] as const)
       expect(methodAvailability(`montage.${method}`)).toEqual({ available: true, reason: null });
   });
 
@@ -57,6 +57,12 @@ describe('montage поверх MontageService', () => {
     ]);
     await expect(api.montage.load('/клип', 'id-1')).resolves.toStrictEqual(draft);
     expect(Load).toHaveBeenCalledWith('/клип', 'id-1');
+  });
+
+  it('удаление черновика передаёт проект и идентификатор', async () => {
+    const Remove = vi.fn(async () => undefined);
+    await expect(harness({ Remove }).montage.remove('/клип', 'id-1')).resolves.toBeUndefined();
+    expect(Remove).toHaveBeenCalledWith('/клип', 'id-1');
   });
 
   it('экспорт и применение возвращают задание контракта', async () => {

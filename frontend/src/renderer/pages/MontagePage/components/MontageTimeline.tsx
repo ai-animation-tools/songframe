@@ -206,6 +206,7 @@ export function MontageTimeline({
   let cursor = active.audio.start_frame;
   const clipBlocks = active.clips.map((clip: MontageClip, index) => {
     const left = xFor(cursor);
+    const offset = cursor - active.audio.start_frame;
     cursor += clipLength(clip);
     return (
       <Box
@@ -218,6 +219,8 @@ export function MontageTimeline({
         onClick={(event) => {
           event.stopPropagation();
           onSelect(clip.id);
+          // Выбранный план сразу виден и слышен: плеер и музыка переходят к его началу.
+          onSeek(offset);
         }}
         onPointerDown={(event) => {
           if (event.altKey) begin(event, 'slip', clip.id);

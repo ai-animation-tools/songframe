@@ -47,6 +47,7 @@ export function unconfiguredStoryApi(): Api {
       view: async () => unconfigured('montage.view'),
       load: async () => unconfigured('montage.load'),
       save: async () => unconfigured('montage.save'),
+      remove: async () => unconfigured('montage.remove'),
       export: async () => unconfigured('montage.export'),
       apply: async () => unconfigured('montage.apply'),
       saveVideo: async () => unconfigured('montage.saveVideo')

@@ -341,6 +341,7 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'montage.view',
   'montage.load',
   'montage.save',
+  'montage.remove',
   'montage.export',
   'montage.apply',
   'montage.saveVideo',
@@ -726,6 +727,7 @@ export function createApi(b: Bindings): Api {
     view: (project) => call('montage.view', async () => (await (await b.montage()).View(project)) as unknown as MontageView),
     load: (project, id) => call('montage.load', async () => (await (await b.montage()).Load(project, id)) as unknown as MontageDraft),
     save: (project, draft, id) => call('montage.save', async () => (await b.montage()).Save(project, draft, id ?? null), false),
+    remove: (project, id) => call('montage.remove', async () => (await b.montage()).Remove(project, id), false),
     export: (project, draft) =>
       call('montage.export', async () => {
         const { job, video } = await (await b.montage()).Export(project, draft);

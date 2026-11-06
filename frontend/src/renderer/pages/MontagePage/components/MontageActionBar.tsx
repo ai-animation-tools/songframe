@@ -4,7 +4,7 @@ import { montageTexts } from '@shared/texts/montage';
 import { useState, type ReactElement, type Ref } from 'react';
 import { Link } from 'react-router-dom';
 import { Box, Chip, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Stack, Tooltip, Typography } from '@mui/material';
-import { ErrorOutline, FileDownload, MoreVert, OndemandVideo, Redo, Refresh, Save, SaveAs, Undo, WarningAmber } from '@mui/icons-material';
+import { DeleteOutline, ErrorOutline, FileDownload, MoreVert, OndemandVideo, Redo, Refresh, Save, SaveAs, Undo, WarningAmber } from '@mui/icons-material';
 import { FPS } from '@shared/video';
 import { ActionButton } from '../../../components/ActionButton';
 import { ActionIconButton } from '../../../components/ActionIconButton';
@@ -36,6 +36,7 @@ interface Props {
   onSave: () => void;
   onSaveAsNew: () => void;
   onReopen: () => void;
+  onRemoveDraft: () => void;
   onExport: () => void;
   onApply: () => void;
   onShowProblem: () => void;
@@ -109,14 +110,6 @@ export function MontageActionBar(props: Props): ReactElement {
         <ActionButton startIcon={<FileDownload />} disabled={locked || !!exportProblem} disabledReason={lockedReason ?? exportProblem} onClick={props.onExport}>
           {montageTexts.exportVideo}
         </ActionButton>
-        <ActionIconButton
-          aria-label={montageTexts.more}
-          aria-haspopup="menu"
-          aria-expanded={menuAnchor ? true : undefined}
-          onClick={(event) => setMenuAnchor(event.currentTarget)}
-        >
-          <MoreVert />
-        </ActionIconButton>
         <ActionButton
           variant="contained"
           startIcon={<Save />}
@@ -126,6 +119,14 @@ export function MontageActionBar(props: Props): ReactElement {
         >
           {montageTexts.saveDraft}
         </ActionButton>
+        <ActionIconButton
+          aria-label={montageTexts.more}
+          aria-haspopup="menu"
+          aria-expanded={menuAnchor ? true : undefined}
+          onClick={(event) => setMenuAnchor(event.currentTarget)}
+        >
+          <MoreVert />
+        </ActionIconButton>
       </Stack>
       <Menu
         anchorEl={menuAnchor}
@@ -145,6 +146,12 @@ export function MontageActionBar(props: Props): ReactElement {
             <SaveAs fontSize="small" />
           </ListItemIcon>
           <ListItemText>{montageTexts.saveAsNew}</ListItemText>
+        </MenuItem>
+        <MenuItem disabled={locked || !props.saved} onClick={fromMenu(props.onRemoveDraft)}>
+          <ListItemIcon>
+            <DeleteOutline fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{montageTexts.removeDraft}</ListItemText>
         </MenuItem>
         {props.exportReady ? <Divider /> : null}
         {props.exportReady ? (

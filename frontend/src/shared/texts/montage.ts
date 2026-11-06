@@ -106,6 +106,12 @@ export const montageTexts = {
   saveDraft: 'Сохранить черновик',
   reopenMaterials: 'Переоткрыть материалы',
   saveAsNew: 'Сохранить как новый',
+  removeDraft: 'Удалить черновик',
+  removeDraftTitle: 'Удалить черновик?',
+  removeDraftDescription: ({ name }: { name: string }) =>
+    `Черновик «${name}» будет удалён без возможности восстановления. Сцены, к которым он применён, и история применений не изменятся.`,
+  removeDraftConfirm: 'Удалить',
+  draftRemoved: 'Черновик удалён',
   watchExport: 'Просмотреть пробу MP4',
   saveVideoAs: 'Сохранить MP4 как',
   applyToScenes: 'Применить к сценам',

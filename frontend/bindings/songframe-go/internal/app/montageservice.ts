@@ -48,6 +48,13 @@ export function Load(project: string, id: string): $CancellablePromise<json$0.Ra
 }
 
 /**
+ * Remove удаляет сохранённый черновик; принятые сцены и история применения остаются.
+ */
+export function Remove(project: string, id: string): $CancellablePromise<void> {
+    return $Call.ByID(2025390394, project, id);
+}
+
+/**
  * Save — montage:save: незавершённый черновик в plan/montage/<id>.json; id nil — новый UUID.
  */
 export function Save(project: string, draft: json$0.RawMessage, id: string | null): $CancellablePromise<montage$0.Saved> {

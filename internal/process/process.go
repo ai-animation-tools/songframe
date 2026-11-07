@@ -1,4 +1,4 @@
-// Package process — единственный путь запуска внешних программ SongFrame (FFmpeg, Python, агенты).
+// Package process — единственный путь запуска внешних программ SongFrame (FFmpeg, ffprobe, агенты).
 //
 // Программа запускается без shell, с отменой через context, необязательным таймаутом,
 // потоковой передачей вывода и захватом ограниченного хвоста stdout/stderr. Отмена и таймаут
@@ -189,7 +189,7 @@ func displayName(c Command) string {
 	return filepath.Base(c.Path)
 }
 
-// DisplayName — то же имя для внешних сообщений журнала (например, «Ошибка запуска Python»).
+// DisplayName — то же имя для внешних сообщений журнала (например, «Ошибка запуска FFmpeg»).
 func DisplayName(c Command) string { return displayName(c) }
 
 // stream передаёт вывод в OnOutput и хранит хвост не больше limit байт.

@@ -201,6 +201,10 @@ func TestApplyFaults(t *testing.T) {
 	}
 	readOnly := func(relative string) func(*testing.T, prepared) func() {
 		return func(t *testing.T, p prepared) func() {
+			// root пишет и в папку без права записи: сбой не воспроизвести (контейнерные раннеры CI).
+			if os.Geteuid() == 0 {
+				t.Skip("права доступа не ограничивают root")
+			}
 			path := filepath.Join(p.project, filepath.FromSlash(relative))
 			if err := os.Chmod(path, 0o555); err != nil {
 				t.Fatal(err)

@@ -1,0 +1,211 @@
+# Проверки исходников Go-версии: то же, что `wails3 task check:all`, разбитое на два независимых job.
+# Go-часть требует CGO с GTK4/WebKitGTK 6.0, frontend-часть — только Node/Yarn и Chromium.
+# Поставки (AppImage, NSIS) здесь не собираются: их собирают и проверяют локально (packaging/README.md).
+name: CI
+
+# `*` в фильтре путей не проходит через `/`: `!*.md` исключает только корневые документы.
+# docs/ содержит лишь руководства разработки (на них ссылаются @link-комментарии), в бинарник
+# не встраивается. Встроенные промпты, шаблон и документы провайдеров лежат в resources/
+# и остаются под CI: их байты сверяют resources_test.go и эталоны промптов.
+on:
+  pull_request:
+    paths: &checked-paths
+      - '**'
+      - '!*.md'
+      - '!LICENSE'
+      - '!docs/**'
+      - '!dev-skills/**'
+      - '!.claude/**'
+      - '!.agents/**'
+      - '!www/**'
+      - '!.github/ISSUE_TEMPLATE/**'
+      - '!.github/pull_request_template.md'
+  push:
+    branches: [main]
+    paths: *checked-paths
+  # Ручной запуск всего набора: Actions → CI → Run workflow.
+  workflow_dispatch:
+
+# Новый push в ветку PR отменяет устаревшую проверку; push в main и ручные запуски не прерываются.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Явная оболочка включает pipefail: ошибка в начале конвейера роняет шаг.
+    shell: bash
+
+# Раннер задаётся переменной CI_LINUX_RUNS_ON (JSON: строка или массив меток). Пока репозиторий
+# приватный, переменная организации указывает на домашние self-hosted раннеры; без неё — GitHub-hosted
+# Ubuntu 24.04. Поэтому шаги не полагаются на предустановленное в образе GitHub и ставят всё сами.
+jobs:
+  go:
+    name: 'Go: bindings, тесты, vet, race, формат'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 45
+    steps:
+      # Node 24 (OpenSSL 3.5) предлагает постквантовый X25519MLKEM768; его большое приветствие TLS
+      # сеть домашних раннеров обрывает на пути к Cloudflare. Ограничиваем группы только для Node:
+      # curl, apt и Go не читают раздел nodejs_conf. Файл временный, в репозиторий не входит.
+      - name: TLS для Node
+        run: |
+          conf="$RUNNER_TEMP/node-openssl.cnf"
+          cat > "$conf" <<'EOF'
+          nodejs_conf = nodejs_init
+
+          [nodejs_init]
+          ssl_conf = ssl_init
+
+          [ssl_init]
+          system_default = tls_defaults
+
+          [tls_defaults]
+          Groups = X25519:P-256:P-384
+          EOF
+          echo "OPENSSL_CONF=$conf" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      # Wails 3 на Linux собирается через CGO с `pkg-config: gtk4 webkitgtk-6.0` и x11 (зависимость
+      # libgtk-4-dev). Генератор bindings тоже загружает пакеты с CGO, race detector требует C-компилятор.
+      # Контейнер self-hosted может работать от root без sudo, поэтому sudo используется только при необходимости.
+      - name: GTK4, WebKitGTK 6.0 и C-компилятор
+        run: |
+          if command -v gcc >/dev/null && pkg-config --exists gtk4 webkitgtk-6.0 x11 2>/dev/null; then
+            echo 'Библиотеки разработки уже установлены.'
+            exit 0
+          fi
+          as_root=()
+          [ "$(id -u)" -eq 0 ] || as_root=(sudo)
+          "${as_root[@]}" apt-get update
+          "${as_root[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+      # go.mod задаёт минимальную версию (go 1.26.0); берём последний выпуск этой ветки с исправлениями.
+      - name: Версия Go из go.mod
+        id: go-version
+        run: echo "minor=$(sed -n 's/^go \([0-9]*\.[0-9]*\).*/\1/p' go.mod)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ steps.go-version.outputs.minor }}
+          check-latest: true
+          cache-dependency-path: go.sum
+      # Node нужен только скрипту bindings.sh (нормализация generated TypeScript); Yarn здесь не нужен.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      # Версия CLI берётся из go.mod: генератор bindings должен совпадать с библиотекой Wails проекта.
+      - name: Wails CLI
+        run: |
+          version=$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)
+          go install "github.com/wailsapp/wails/v3/cmd/wails3@$version"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Формат Go
+        run: sh scripts/check-format.sh
+      # check:go генерирует bindings (с временным frontend/dist для go:embed), затем go test и go vet.
+      - name: Bindings, Go tests и vet
+        run: wails3 task check:go
+      # Локально check:all проверяет frontend по свежим bindings. Здесь frontend-job читает закоммиченные,
+      # поэтому повторная генерация обязана дать чистый diff: иначе bindings забыли обновить.
+      - name: Закоммиченные bindings актуальны
+        run: |
+          if [ -n "$(git status --porcelain -- frontend/bindings)" ]; then
+            git status --short -- frontend/bindings
+            git --no-pager diff --stat -- frontend/bindings
+            echo '::error::frontend/bindings устарели: выполните «wails3 task bindings» и закоммитьте результат.'
+            exit 1
+          fi
+      - name: Race detector
+        run: wails3 task check:race
+
+  frontend:
+    name: 'Frontend: формат, типы, Vitest, Storybook и Playwright'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      # Тот же обход TLS, что в Go-job: Corepack, Yarn и загрузка Chromium идут через Node.
+      - name: TLS для Node
+        working-directory: .
+        run: |
+          conf="$RUNNER_TEMP/node-openssl.cnf"
+          cat > "$conf" <<'EOF'
+          nodejs_conf = nodejs_init
+
+          [nodejs_init]
+          ssl_conf = ssl_init
+
+          [ssl_init]
+          system_default = tls_defaults
+
+          [tls_defaults]
+          Groups = X25519:P-256:P-384
+          EOF
+          echo "OPENSSL_CONF=$conf" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      # Файла версии Node нет; 24 — текущая LTS, совпадает с @types/node ^24 и локальной разработкой.
+      # Первый setup-node даёт Node для corepack, второй после `corepack enable` находит Yarn 4
+      # из packageManager и подключает кэш Yarn по frontend/yarn.lock.
+      - name: Node.js для Corepack
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Yarn 4 через Corepack
+        run: corepack enable
+      - name: Кэш Yarn
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - name: Зависимости
+        run: yarn install --immutable
+      - name: Формат frontend
+        run: yarn format:check
+      # Типы проверяются по закоммиченным bindings; их соответствие Go проверяет Go-job.
+      - name: Типизация
+        run: yarn typecheck
+      # Vitest считает потоки по числу CPU хоста; в контейнере self-hosted раннера квота cgroup
+      # может быть меньше. Playwright ограничивает workers сам (playwright.config.ts).
+      - name: Vitest
+        run: |
+          workers=()
+          if read -r quota period < /sys/fs/cgroup/cpu.max 2>/dev/null && [ "$quota" != max ]; then
+            count=$((quota / period))
+            workers=(--minWorkers=1 "--maxWorkers=$((count > 0 ? count : 1))")
+          fi
+          yarn test "${workers[@]}"
+      - name: Статическая витрина Storybook
+        run: yarn build-storybook
+      # Кэш браузера привязан к установленной версии Playwright: новая версия скачивает свой Chromium.
+      - name: Версия Playwright
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+      # Нужен только headless shell Chromium. Системные библиотеки ставятся, лишь если браузер не стартует.
+      - name: Chromium для браузерного набора
+        run: |
+          yarn playwright install --only-shell chromium
+          node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())" || yarn playwright install-deps chromium
+      # Полный обход витрины, как в check:ui (STORYBOOK_TEST_CI не задаётся).
+      - name: Браузерный набор витрины
+        id: storybook-browser
+        run: yarn test:storybook
+      - name: Отчёт браузерного набора
+        if: failure() && steps.storybook-browser.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: storybook-browser-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -16,7 +16,7 @@ import (
 const stillActive = 259
 
 // Prepare запрещает фоновым программам создавать окно консоли. GUI subsystem приложения
-// на дочерние exe не распространяется: без CREATE_NO_WINDOW каждый запуск ffmpeg, Python
+// на дочерние exe не распространяется: без CREATE_NO_WINDOW каждый запуск ffmpeg, ffprobe
 // или агента открывал бы отдельное окно. CREATE_NEW_CONSOLE несовместим с этим и снимается,
 // остальные флаги и поля SysProcAttr сохраняются; pipes и отмена продолжают работать.
 func Prepare(command *exec.Cmd) {
@@ -28,8 +28,8 @@ func Prepare(command *exec.Cmd) {
 	command.SysProcAttr.CreationFlags |= windows.CREATE_NO_WINDOW
 }
 
-// KillTree завершает процесс вместе с потомками через taskkill /T /F, как оригинал
-// (agent-command.ts killProcessTree, python-launcher.ts). taskkill находит потомков только
+// KillTree завершает процесс вместе с потомками через taskkill /T /F, как Electron-версия
+// (agent-command.ts killProcessTree). taskkill находит потомков только
 // через живого родителя, поэтому уже завершённый процесс не трогается (os.ErrProcessDone).
 // Пока Go держит handle процесса (до Wait), его pid не может достаться другой программе.
 // taskkill запускается без окна и не дольше 5 секунд; при его сбое убивается сам процесс.

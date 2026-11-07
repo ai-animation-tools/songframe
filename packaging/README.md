@@ -1,6 +1,6 @@
 # Ранние поставки Go/Wails
 
-Сборка выполняется только в этом репозитории; соседние SongFrame и Forktopus используются как источники для чтения. [Скилл сборки](../dev-skills/songframe-go-build/SKILL.md) хранится здесь и подключён ссылками `.agents/skills` и `.claude/skills`.
+Сборка выполняется только в этом репозитории, соседние каталоги ей не нужны. [Скилл сборки](../dev-skills/songframe-go-build/SKILL.md) хранится здесь и подключён ссылками `.agents/skills` и `.claude/skills`.
 
 Linux AppImage описан ниже; для Windows amd64 NSIS использовать [отдельный рецепт](windows/README.md) и `wails3 task package:windows`.
 

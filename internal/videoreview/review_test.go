@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"go/ast"
 	"go/parser"
@@ -23,18 +24,7 @@ import (
 // promptDigest — SHA-256 skills/ai-clip-video-review/SKILL.md оригинала 634fd94.
 const promptDigest = "edacbfacff0237f9b918ed559b105527e912f881b7749312cf26c3aecac64aad"
 
-// TestPromptIsOriginalSkill — встроенный промпт совпадает с инструкцией оригинала байт в байт.
-func TestPromptIsOriginalSkill(t *testing.T) {
-	original, err := os.ReadFile(filepath.Join("..", "..", "..", "songframe", "skills", "ai-clip-video-review", "SKILL.md"))
-	if err != nil {
-		t.Skip("соседний songframe недоступен")
-	}
-	if string(original) != prompt {
-		t.Fatal("встроенный SKILL.md отличается от оригинала")
-	}
-}
-
-// TestPromptDigest фиксирует байты промпта без соседнего оригинала.
+// TestPromptDigest фиксирует байты промпта: встроенный SKILL.md совпадает с оригиналом 634fd94.
 func TestPromptDigest(t *testing.T) {
 	sum := sha256.Sum256([]byte(prompt))
 	if got := hex.EncodeToString(sum[:]); got != promptDigest {
@@ -42,8 +32,9 @@ func TestPromptDigest(t *testing.T) {
 	}
 }
 
-// TestTextsMatchOriginal — тексты renderer совпадают с frontend/src/shared/texts, тексты подготовки
-// кадров — с tools/video_review оригинала (если он рядом).
+// TestTextsMatchOriginal — тексты renderer совпадают с frontend/src/shared/texts, остальные тексты
+// подготовки кадров — с сообщениями tools/video_review оригинала 634fd94. Строки исходника Python,
+// в которых они стоят (плейсхолдеры подставлены), сняты в testdata/golden/video-review-frames/texts.json.
 func TestTextsMatchOriginal(t *testing.T) {
 	var frontend strings.Builder
 	for _, name := range []string{"video-review.ts", "production.ts"} {
@@ -53,13 +44,19 @@ func TestTextsMatchOriginal(t *testing.T) {
 		}
 		frontend.Write(data)
 	}
-	python, _ := os.ReadFile(filepath.Join("..", "..", "..", "songframe", "tools", "video_review", "video_review.py"))
-	pythonText := strings.NewReplacer("{MAX_DURATION}", "600", "{MAX_DECODED_FRAMES}", "72000", "{IMAGE_BUDGET}", "16777216").Replace(string(python))
+	data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "golden", "video-review-frames", "texts.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var python map[string]string
+	if err := json.Unmarshal(data, &python); err != nil {
+		t.Fatal(err)
+	}
 	file, err := parser.ParseFile(token.NewFileSet(), "texts.go", nil, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	checked := 0
+	checked, seen := 0, map[string]bool{}
 	ast.Inspect(file, func(node ast.Node) bool {
 		spec, ok := node.(*ast.ValueSpec)
 		if !ok || len(spec.Values) != 1 {
@@ -70,19 +67,22 @@ func TestTextsMatchOriginal(t *testing.T) {
 			return true
 		}
 		value, _ := strconv.Unquote(literal.Value)
-		if strings.Contains(frontend.String(), "'"+value+"'") || strings.Contains(frontend.String(), "`"+value) {
-			checked++
-			return true
-		}
-		if len(python) == 0 {
-			return true
-		}
-		if !strings.Contains(pythonText, value) {
-			t.Errorf("%s = %q нет ни в текстах renderer, ни в video_review.py", spec.Names[0].Name, value)
-		}
 		checked++
+		if strings.Contains(frontend.String(), "'"+value+"'") || strings.Contains(frontend.String(), "`"+value) {
+			return true
+		}
+		name := spec.Names[0].Name
+		seen[name] = true
+		if !strings.Contains(python[name], value) {
+			t.Errorf("%s = %q нет ни в текстах renderer, ни в строке video_review.py %q", name, value, python[name])
+		}
 		return true
 	})
+	for name := range python {
+		if !seen[name] {
+			t.Errorf("в texts.json лишний текст %s", name)
+		}
+	}
 	if checked < 15 {
 		t.Fatalf("проверено слишком мало текстов: %d", checked)
 	}

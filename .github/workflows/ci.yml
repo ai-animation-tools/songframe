@@ -183,8 +183,6 @@ jobs:
 
   storybook:
     name: 'Storybook: сборка и обход ${{ matrix.shard }}'
-    # Временно выключено, пока чинятся Go-проверки CI: витрина в прогоне 33c44c6 прошла.
-    if: false
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
     timeout-minutes: 30
     strategy:

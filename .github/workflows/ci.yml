@@ -121,9 +121,9 @@ jobs:
         run: wails3 task check:race
 
   frontend:
-    name: 'Frontend: формат, типы, Vitest, Storybook и Playwright'
+    name: 'Frontend: формат, типы и Vitest'
     runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
-    timeout-minutes: 40
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: frontend
@@ -180,6 +180,57 @@ jobs:
             workers=(--minWorkers=1 "--maxWorkers=$((count > 0 ? count : 1))")
           fi
           yarn test "${workers[@]}"
+
+  storybook:
+    name: 'Storybook: сборка и обход ${{ matrix.shard }}'
+    runs-on: ${{ fromJSON(vars.CI_LINUX_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 30
+    strategy:
+      # Одна упавшая часть не отменяет остальные: отчёт нужен по всем историям.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      # Тот же обход TLS, что в Go-job: Corepack, Yarn и загрузка Chromium идут через Node.
+      - name: TLS для Node
+        working-directory: .
+        run: |
+          conf="$RUNNER_TEMP/node-openssl.cnf"
+          cat > "$conf" <<'EOF'
+          nodejs_conf = nodejs_init
+
+          [nodejs_init]
+          ssl_conf = ssl_init
+
+          [ssl_init]
+          system_default = tls_defaults
+
+          [tls_defaults]
+          Groups = X25519:P-256:P-384
+          EOF
+          echo "OPENSSL_CONF=$conf" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      # Файла версии Node нет; 24 — текущая LTS, совпадает с @types/node ^24 и локальной разработкой.
+      # Первый setup-node даёт Node для corepack, второй после `corepack enable` находит Yarn 4
+      # из packageManager и подключает кэш Yarn по frontend/yarn.lock.
+      - name: Node.js для Corepack
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Yarn 4 через Corepack
+        run: corepack enable
+      - name: Кэш Yarn
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - name: Зависимости
+        run: yarn install --immutable
       - name: Статическая витрина Storybook
         run: yarn build-storybook
       # Кэш браузера привязан к установленной версии Playwright: новая версия скачивает свой Chromium.
@@ -195,15 +246,18 @@ jobs:
         run: |
           yarn playwright install --only-shell chromium
           node -e "require('@playwright/test').chromium.launch().then((browser) => browser.close())" || yarn playwright install-deps chromium
-      # Полный обход витрины, как в check:ui (STORYBOOK_TEST_CI не задаётся).
+      # Полный обход витрины, как в check:ui (STORYBOOK_TEST_CI не задаётся), поделённый на части.
+      # Раннер приватного репозитория имеет 2 ядра, и Playwright по умолчанию берёт половину:
+      # один поток проходил 1184 истории дольше 40 минут. Истории ждут браузер, а не CPU,
+      # поэтому потоков столько, сколько ядер.
       - name: Браузерный набор витрины
         id: storybook-browser
-        run: yarn test:storybook
+        run: yarn test:storybook --shard=${{ matrix.shard }}/${{ strategy.job-total }} --workers="$(nproc)"
       - name: Отчёт браузерного набора
         if: failure() && steps.storybook-browser.outcome == 'failure'
         uses: actions/upload-artifact@v7
         with:
-          name: storybook-browser-report
+          name: storybook-browser-report-${{ matrix.shard }}
           path: |
             frontend/playwright-report/
             frontend/test-results/

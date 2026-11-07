@@ -507,7 +507,8 @@ func (s *Service) Start(project, packageDir string) (View, error) {
 var errCancelled = errors.New(textCancelled)
 
 // run выполняет подготовку и фиксирует её итог в latest.json: ошибка — failed с причиной, отмена —
-// cancelled. Запись итога и удаление из preparing идут под mu одним шагом.
+// cancelled. Запись итога и удаление из preparing идут под mu одним шагом; успешный запуск агента
+// удаляет запись сам (prepare), здесь удаление повторное и безвредное.
 func (s *Service) run(material *reviewContext, record stored, pending *preparation) {
 	defer s.wg.Done()
 	defer close(pending.done)
@@ -657,7 +658,13 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 	}
 	record.doc.Set("jobId", job.ID)
 	record.doc.Set("status", StatusRunning)
-	return save(project, directory, record)
+	if err := save(project, directory, record); err != nil {
+		return err
+	}
+	// Подготовка закончена тем же шагом под mu, что и запись running: иначе View между ними видел бы
+	// проверку уже запущенной, а пакет — ещё занятым подготовкой («Дождитесь завершения…»).
+	delete(s.preparing, directory)
+	return nil
 }
 
 // Cancel — videoReview.cancel: останавливает подготовку и задание агента и отмечает проверку

@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -30,7 +31,9 @@ type goldenFile struct {
 
 // goldenCase — операции подготовки, шаги CLI и ожидаемое состояние проекта после всех шагов.
 type goldenCase struct {
-	Name     string     `json:"name"`
+	Name string `json:"name"`
+	// Covers — ветки оригинала, которые проходит случай; «prepare available» читает длину видео ffprobe.
+	Covers   []string   `json:"covers"`
 	Setup    []setupOp  `json:"setup"`
 	Steps    []stepSpec `json:"steps"`
 	Expected struct {
@@ -327,14 +330,15 @@ func injectIDs(t *testing.T, ids []string) {
 // и всё изменённое дерево проекта: тексты манифестов, журналов, реестра, статуса и представлений
 // побайтно, новые MP4 — SHA-256, размером и сводкой ffprobe. ID транзакций выдаются те же, что у
 // оригинала. Карточки аниматика (PNG Pillow) сверяются отдельным правилом: см. cardsDiffer.
-// Без FFmpeg случаи с медиа пропускаются; другая версия FFmpeg сверяет MP4 только сводкой.
+// Без FFmpeg пропускаются случаи с медиа и с проверкой длины источника ffprobe; при другой версии
+// FFmpeg пропускаются случаи, публикующие новые MP4.
 func TestApplyMontageGolden(t *testing.T) {
 	file, sameFFmpeg := loadGolden(t)
 	_, ffmpegErr := exec.LookPath(mediacmd.FFmpeg())
 	base := baseProject(t, file.Base)
 	for _, item := range file.Cases {
 		t.Run(item.Name, func(t *testing.T) {
-			if len(item.Expected.Revisions) > 0 && ffmpegErr != nil {
+			if (len(item.Expected.Revisions) > 0 || slices.Contains(item.Covers, "prepare available")) && ffmpegErr != nil {
 				t.Skip("нет FFmpeg")
 			}
 			if len(item.Expected.Revisions) > 0 && !sameFFmpeg {

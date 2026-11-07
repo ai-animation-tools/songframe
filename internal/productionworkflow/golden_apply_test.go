@@ -115,7 +115,9 @@ func TestGoldenProductionWorkflowApply(t *testing.T) {
 	}
 }
 
-// preserveModes — права файлов копии как у cpSync оригинала (os.CopyFS создаёт их с 0666 & umask).
+// preserveModes — права файлов копии как у cpSync оригинала при съёмке эталона: образец распакован
+// из Git с umask 002, поэтому обычный файл — 0664, исполняемый — 0775. Права checkout не берутся:
+// Git хранит только бит исполнения, а остальное зависит от umask клонирования (на CI — 022).
 func preserveModes(t *testing.T, base, project string) {
 	err := filepath.WalkDir(base, func(path string, entry os.DirEntry, err error) error {
 		if err != nil || entry.IsDir() {
@@ -126,7 +128,11 @@ func preserveModes(t *testing.T, base, project string) {
 			return err
 		}
 		rel, _ := filepath.Rel(base, path)
-		return os.Chmod(filepath.Join(project, rel), info.Mode().Perm())
+		mode := os.FileMode(0o664)
+		if info.Mode().Perm()&0o111 != 0 {
+			mode = 0o775
+		}
+		return os.Chmod(filepath.Join(project, rel), mode)
 	})
 	if err != nil {
 		t.Fatal(err)

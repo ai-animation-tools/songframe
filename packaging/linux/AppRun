@@ -5,7 +5,7 @@
 set -eu
 appdir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 status=0
-"$appdir/usr/libexec/songframe-go-appimage" "$@" || status=$?
+"$appdir/usr/libexec/songframe-appimage" "$@" || status=$?
 case "$status" in
   0) ;;
   20) export SONGFRAME_GO_APPIMAGE_SETUP_RETRY=1; exec "$APPIMAGE" "$@" ;;

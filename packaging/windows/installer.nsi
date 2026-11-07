@@ -36,14 +36,17 @@ Unicode true
   !error "Не передан LICENSES"
 !endif
 
-!define PRODUCT "SongFrame Go"
-!define EXE "songframe-go.exe"
-!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\SongFrameGo"
+!define PRODUCT "SongFrame"
+; Папка установки и ключ удаления отличаются от Electron SongFrame (D-038): его папка
+; %LOCALAPPDATA%\Programs\SongFrame и профиль не затрагиваются.
+!define INSTALL_NAME "SongFrame Desktop"
+!define EXE "songframe.exe"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\SongFrameDesktop"
 !define WEBVIEW_KEY "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 
 Name "${PRODUCT} ${VERSION}"
 OutFile "${OUTPUT}"
-InstallDir "$LOCALAPPDATA\Programs\${PRODUCT}"
+InstallDir "$LOCALAPPDATA\Programs\${INSTALL_NAME}"
 RequestExecutionLevel user
 ManifestDPIAware true
 ManifestSupportedOS all
@@ -65,11 +68,11 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "© 2026 Yarkov Aleksey"
 !define MUI_ICON "${ICON}"
 !define MUI_UNICON "${ICON}"
 !define MUI_ABORTWARNING
-!define MUI_WELCOMEPAGE_TEXT "Будет установлена ранняя Go/Wails-версия SongFrame для текущего пользователя.$\r$\n$\r$\nПеред установкой закройте SongFrame Go. Проекты, профиль и внешние компоненты сохраняются.$\r$\n$\r$\nЕсли Microsoft WebView2 отсутствует, установщик загрузит его через официальный bootstrapper. Для этого может потребоваться интернет."
+!define MUI_WELCOMEPAGE_TEXT "Будет установлен SongFrame для текущего пользователя.$\r$\n$\r$\nПеред установкой закройте SongFrame. Проекты, профиль и внешние компоненты сохраняются.$\r$\n$\r$\nЕсли Microsoft WebView2 отсутствует, установщик загрузит его через официальный bootstrapper. Для этого может потребоваться интернет."
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${EXE}"
 !define MUI_FINISHPAGE_RUN_TEXT "Запустить ${PRODUCT}"
 !define MUI_FINISHPAGE_RUN_NOTCHECKED
-!define MUI_FINISHPAGE_TEXT "SongFrame Go установлен.$\r$\n$\r$\nORT и модели устанавливаются отдельно в разделе «Компоненты». Если для ORT нужен Microsoft Visual C++ 14 Runtime, запустите prerequisites\vc_redist.x64.exe в папке приложения вручную. Это отдельная системная установка, которая может запросить права администратора."
+!define MUI_FINISHPAGE_TEXT "SongFrame установлен.$\r$\n$\r$\nORT и модели устанавливаются отдельно в разделе «Компоненты». Если для ORT нужен Microsoft Visual C++ 14 Runtime, запустите prerequisites\vc_redist.x64.exe в папке приложения вручную. Это отдельная системная установка, которая может запросить права администратора."
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -96,7 +99,7 @@ Function ${PREFIX}CheckExecutableUnlocked
   IfFileExists "$INSTDIR\${EXE}" 0 unlocked
   System::Call 'kernel32::CreateFileW(w "$INSTDIR\${EXE}", i 0x40000000, i 0, p 0, i 3, i 0x80, p 0) p.r0'
   ${If} $0 == -1
-    !insertmacro Fail 73 "Не удалось открыть файл SongFrame Go для замены или удаления. Закройте приложение и повторите. Если оно уже закрыто, проверьте права доступа к папке приложения."
+    !insertmacro Fail 73 "Не удалось открыть файл SongFrame для замены или удаления. Закройте приложение и повторите. Если оно уже закрыто, проверьте права доступа к папке приложения."
   ${EndIf}
   System::Call 'kernel32::CloseHandle(p r0)'
 unlocked:
@@ -109,15 +112,15 @@ FunctionEnd
 # поэтому /D не превращает ранний uninstaller в очистку произвольной выбранной папки.
 Function .onInit
   SetShellVarContext current
-  StrCpy $INSTDIR "$LOCALAPPDATA\Programs\${PRODUCT}"
+  StrCpy $INSTDIR "$LOCALAPPDATA\Programs\${INSTALL_NAME}"
   ${IfNot} ${AtLeastWin10}
-    !insertmacro Fail 64 "SongFrame Go поддерживает только Windows 10 и Windows 11 (x64)."
+    !insertmacro Fail 64 "SongFrame поддерживает только Windows 10 и Windows 11 (x64)."
   ${EndIf}
   ${If} ${IsServerOS}
     !insertmacro Fail 64 "Эта ранняя поставка предназначена для Windows 10 и Windows 11; Windows Server не поддерживается."
   ${EndIf}
   ${IfNot} ${IsNativeAMD64}
-    !insertmacro Fail 65 "Для этой поставки SongFrame Go требуется Windows x64 на процессоре AMD64/Intel 64."
+    !insertmacro Fail 65 "Для этой поставки SongFrame требуется Windows x64 на процессоре AMD64/Intel 64."
   ${EndIf}
   SetRegView 64
   Call CheckExecutableUnlocked
@@ -170,12 +173,12 @@ Function EnsureWebView2
   ${EndIf}
   Call DetectWebView2
   ${If} $WebViewPresent != 1
-    !insertmacro Fail 71 "Microsoft WebView2 Runtime не установлен (код bootstrapper: $BootstrapExit). Проверьте интернет или установите WebView2 Runtime отдельно с сайта Microsoft, затем повторите установку SongFrame Go."
+    !insertmacro Fail 71 "Microsoft WebView2 Runtime не установлен (код bootstrapper: $BootstrapExit). Проверьте интернет или установите WebView2 Runtime отдельно с сайта Microsoft, затем повторите установку SongFrame."
   ${EndIf}
   DetailPrint "Microsoft WebView2 Runtime подтверждён после установки (код: $BootstrapExit)."
 FunctionEnd
 
-Section "SongFrame Go" InstallApplication
+Section "SongFrame" InstallApplication
   SectionIn RO
   SetShellVarContext current
   SetRegView 64
@@ -184,9 +187,9 @@ Section "SongFrame Go" InstallApplication
   Call CheckExecutableUnlocked
   SetOutPath "$INSTDIR"
   ClearErrors
-  File /oname=songframe-go.exe "${BINARY}"
+  File /oname=songframe.exe "${BINARY}"
   ${If} ${Errors}
-    !insertmacro Fail 74 "Не удалось записать SongFrame Go. Закройте приложение, проверьте свободное место и права доступа, затем повторите установку."
+    !insertmacro Fail 74 "Не удалось записать SongFrame. Закройте приложение, проверьте свободное место и права доступа, затем повторите установку."
   ${EndIf}
   SetOutPath "$INSTDIR\licenses"
   ClearErrors
@@ -201,7 +204,7 @@ Section "SongFrame Go" InstallApplication
   ${If} ${Errors}
     !insertmacro Fail 74 "Не удалось сохранить отдельный установщик Microsoft Visual C++ Runtime. Повторите установку."
   ${EndIf}
-  FileWriteUTF16LE /BOM $0 "Microsoft Visual C++ 14 Runtime (x64)$\r$\n$\r$\nНужен для отдельно установленного ONNX Runtime CPU. Оболочка SongFrame Go работает без ORT.$\r$\nПри необходимости запустите vc_redist.x64.exe вручную. Он может запросить права администратора.$\r$\nУстановщик SongFrame Go не запускает его автоматически.$\r$\n"
+  FileWriteUTF16LE /BOM $0 "Microsoft Visual C++ 14 Runtime (x64)$\r$\n$\r$\nНужен для отдельно установленного ONNX Runtime CPU. SongFrame работает без ORT.$\r$\nПри необходимости запустите vc_redist.x64.exe вручную. Он может запросить права администратора.$\r$\nУстановщик SongFrame не запускает его автоматически.$\r$\n"
   FileClose $0
   ${If} ${Errors}
     !insertmacro Fail 74 "Не удалось записать пояснение к Microsoft Visual C++ Runtime. Повторите установку."
@@ -236,7 +239,7 @@ SectionEnd
 Function un.onInit
   SetShellVarContext current
   SetRegView 64
-  StrCpy $INSTDIR "$LOCALAPPDATA\Programs\${PRODUCT}"
+  StrCpy $INSTDIR "$LOCALAPPDATA\Programs\${INSTALL_NAME}"
   Call un.CheckExecutableUnlocked
 FunctionEnd
 
@@ -247,7 +250,7 @@ Section "Uninstall"
   ClearErrors
   Delete "$INSTDIR\${EXE}"
   ${If} ${Errors}
-    !insertmacro Fail 74 "Не удалось удалить SongFrame Go. Закройте приложение и повторите удаление; профиль и проекты сохранены."
+    !insertmacro Fail 74 "Не удалось удалить SongFrame. Закройте приложение и повторите удаление; профиль и проекты сохранены."
   ${EndIf}
   Delete "$SMPROGRAMS\${PRODUCT}.lnk"
   Delete "$DESKTOP\${PRODUCT}.lnk"

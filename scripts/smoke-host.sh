@@ -15,7 +15,7 @@ environment=("--setenv=SONGFRAME_GO_LOCAL_DIR=$output/profile" "--setenv=XDG_CON
 for name in DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS; do
   if [[ -n ${!name:-} ]]; then environment+=("--setenv=$name=${!name}"); fi
 done
-systemd-run --user --wait --pipe --collect --unit="songframe-go-smoke-$$" "${environment[@]}" \
+systemd-run --user --wait --pipe --collect --unit="songframe-smoke-$$" "${environment[@]}" \
   timeout 180s "$image" --smoke --smoke-report "$output/startup.json" --smoke-timeout 60s \
   > "$output/run.log" 2>&1
 grep -q '"passed": true' "$output/startup.json"

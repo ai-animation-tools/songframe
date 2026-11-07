@@ -1,4 +1,4 @@
-// SongFrame Go запускает изолированную Wails-оболочку со встроенным React frontend.
+// SongFrame запускает Wails-приложение со встроенным React frontend.
 package main
 
 import (
@@ -9,10 +9,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"songframe-go/internal/agents"
 	shell "songframe-go/internal/app"
+	"songframe-go/internal/appversion"
 	"songframe-go/internal/components"
 	"songframe-go/internal/derivedworkflow"
 	"songframe-go/internal/jobs"
@@ -29,6 +31,7 @@ import (
 	"songframe-go/internal/scenarioapply"
 	"songframe-go/internal/scenarioworkflow"
 	"songframe-go/internal/store"
+	"songframe-go/internal/updates"
 	"songframe-go/internal/videoreview"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -59,6 +62,8 @@ func run() error {
 	checkReport := flag.String("native-check-report", "", "JSON-отчёт нативной проверки медиа и bridge")
 	componentInput := flag.String("component-smoke-input", "", "JSON с новым профилем и четырьмя офлайн-компонентами")
 	componentReport := flag.String("component-smoke-report", "", "JSON-отчёт установки и короткого CPU inference")
+	updateInput := flag.String("update-smoke-input", "", "JSON с пакетом подставного выпуска для проверки обновления AppImage")
+	updateReport := flag.String("update-smoke-report", "", "JSON-отчёт проверки обновления до перезапуска")
 	flag.Parse()
 	// Проверка поставки использует тот же менеджер, но не создаёт WebView и не читает профиль GUI.
 	// Это позволяет проверить CGO/ORT именно из AppImage, без Go, Node и Python на целевой машине.
@@ -69,6 +74,16 @@ func run() error {
 		ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 		defer cancel()
 		return runComponentSmoke(ctx, *componentInput, *componentReport)
+	}
+	// Проверка обновления поставки: замена запущенного AppImage и перезапуск с GUI smoke.
+	// WebView не создаётся; перезапущенная версия проходит обычную подготовку и окно.
+	if *updateInput != "" || *updateReport != "" {
+		if *updateInput == "" || *updateReport == "" || *smoke || *checkDir != "" || *report != "" {
+			return fmt.Errorf("update-smoke требует input и report и отдельный запуск без GUI smoke")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+		defer cancel()
+		return runUpdateSmoke(ctx, *updateInput, *updateReport)
 	}
 	if *checkDir != "" && (*smoke || *checkReport == "" || *timeout <= 0) {
 		return fmt.Errorf("native-check требует отдельный отчёт, положительный timeout и не совмещается с --smoke")
@@ -233,8 +248,22 @@ func run() error {
 	montageWindow := shell.NewMontageWindowService(profilePath)
 	montageService := shell.NewMontageService(jobManager, scenarioWorkflow)
 	files := shell.NewShellService(mediaServer, func(path string) error { return desktop.Browser.OpenFile(path) })
+	// Обновление приложения по кнопке: пакет своей поставки скачивается в каталог состояния.
+	// Установка закрывает окно после ответа binding; задания останавливаются штатными defer.
+	executable, _ := os.Executable()
+	updateManager := updates.New(updates.Options{
+		CurrentVersion: appversion.Version,
+		Kind:           updates.DetectKind(runtime.GOOS, os.Getenv("APPIMAGE"), executable),
+		Directory:      filepath.Join(profilePath, "updates"),
+		AppImage:       os.Getenv("APPIMAGE"),
+		Launch:         updates.LaunchInstaller,
+		Relaunch:       func(path string) error { return updates.RelaunchAppImage(path) },
+		Quit:           func() { time.AfterFunc(300*time.Millisecond, desktop.Quit) },
+		Reveal:         func(file string) error { return files.OpenPath(filepath.Dir(file)) },
+	})
 	services := []application.Service{
 		application.NewService(service), application.NewService(files), application.NewService(projects),
+		application.NewService(shell.NewUpdatesService(updateManager)),
 		application.NewService(native), application.NewService(componentService), application.NewService(shell.NewJobsService(jobManager)),
 		application.NewService(shell.NewTimingService(jobManager, componentManager, componentService, profilePath)),
 		application.NewService(shell.NewSourcesService(ffprobePath(componentManager))),
@@ -283,8 +312,8 @@ func run() error {
 		windowURL = "/#/native-check"
 	}
 	desktop = application.New(application.Options{
-		Name:        "songframe-go-dev",
-		Description: "SongFrame — разработка новой настольной версии",
+		Name:        "SongFrame",
+		Description: "SongFrame — производство музыкальных клипов с помощью ИИ",
 		Linux:       application.LinuxOptions{ApplicationID: shell.AppID, ProgramName: shell.AppID},
 		// Electron по умолчанию разрешал воспроизведение без жеста пользователя (autoplayPolicy
 		// no-user-gesture-required, явно — у окна плеера монтажа): плеер второго окна запускают
@@ -307,7 +336,7 @@ func run() error {
 	openURL = func(url string) error { return desktop.Browser.OpenURL(url) }
 	window := desktop.Window.NewWithOptions(application.WebviewWindowOptions{
 		// Плотный рабочий интерфейс рассчитан на окно не меньше 1320×860; старт совпадает с нижней границей.
-		Title: "SongFrame — Go", Width: 1320, Height: 860, MinWidth: 1320, MinHeight: 860,
+		Title: "SongFrame", Width: 1320, Height: 860, MinWidth: 1320, MinHeight: 860,
 		BackgroundColour: application.NewRGB(244, 246, 248), URL: windowURL, EnableFileDrop: true,
 	})
 	defer shell.AttachNativeWindow(native, window)()

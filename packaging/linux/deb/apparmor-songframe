@@ -1,0 +1,12 @@
+# Разрешение user namespaces для /usr/bin/songframe: песочница WebKit (bubblewrap)
+# создаёт их при каждом запуске, а Ubuntu 24.04 запрещает это непривилегированным
+# программам без профиля. Общая политика AppArmor и песочница остаются включёнными;
+# так же устроены профили браузеров в /etc/apparmor.d.
+abi <abi/4.0>,
+include <tunables/global>
+
+profile songframe /usr/bin/songframe flags=(unconfined) {
+  userns,
+
+  include if exists <local/songframe>
+}

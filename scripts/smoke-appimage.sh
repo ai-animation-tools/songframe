@@ -9,14 +9,14 @@ image=$1
 output=$2
 [[ -f $image && ! -e $output ]] || { echo 'Нет AppImage или папка отчёта уже существует.' >&2; exit 1; }
 mkdir -m 700 -- "$output"
-docker build -t songframe-go-smoke:ubuntu24 -f packaging/linux/smoke.Dockerfile packaging/linux
+docker build -t songframe-smoke:ubuntu24 -f packaging/linux/smoke.Dockerfile packaging/linux
 # В Docker внешние AppArmor/seccomp запрещают namespace даже исправной WebKit sandbox.
 # Разрешаем namespace контейнеру; sandbox WebKit остаётся включённой. Это не тест desktop AppArmor setup.
 docker run --rm --network=none --cap-drop=ALL \
   --security-opt "apparmor=${SONGFRAME_SMOKE_APPARMOR_PROFILE:-unconfined}" --security-opt seccomp=unconfined --security-opt systempaths=unconfined \
   --user "$(id -u):$(id -g)" --shm-size=512m \
   -v "$image:/package/SongFrame.AppImage:ro" -v "$output:/result" \
-  songframe-go-smoke:ubuntu24 sh -ec '
+  songframe-smoke:ubuntu24 sh -ec '
     test "$(id -u)" != 0
     mkdir -m 700 -p "$HOME" "$XDG_RUNTIME_DIR"
     for command in node python3 go git ffmpeg ffprobe; do

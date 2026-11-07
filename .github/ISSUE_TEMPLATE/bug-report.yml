@@ -42,7 +42,7 @@ body:
         Укажите версию из имени скачанного файла: songframe-go-ВЕРСИЯ-linux-x86_64.AppImage
         или songframe-go-ВЕРСИЯ-win-x64-setup.exe. Для сборки из исходников
         укажите commit или тег.
-      placeholder: 'Например: 0.0.0-dev.41.4 или commit исходников'
+      placeholder: 'Например: 1.0.0-dev.47 или commit исходников'
     validations:
       required: true
 
@@ -119,7 +119,7 @@ body:
         Укажите ошибки на страницах «Среда» и «Компоненты». На странице «Журнал заданий»
         нажмите «Сохранить отчёт для разработчика» и приложите файл ниже.
         Если окно не открывается, приложите журнал приложения logs/app.log из папки
-        состояния: в Linux ~/.config/songframe-go-dev, в Windows %APPDATA%\songframe-go-dev
+        состояния: в Linux ~/.config/songframe-desktop, в Windows %APPDATA%\songframe-desktop
         (или папка из SONGFRAME_GO_LOCAL_DIR, если она задана).
         Можно добавить точный текст ошибки или фрагмент журнала без токенов,
         данных входа и личных путей.

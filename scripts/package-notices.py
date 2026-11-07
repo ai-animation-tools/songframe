@@ -8,7 +8,7 @@ import sys
 
 appdir = pathlib.Path(sys.argv[1])
 platform = sys.argv[2] if len(sys.argv) > 2 else 'linux'
-notices = appdir / ('licenses' if platform == 'windows' else 'usr/share/doc/songframe-go')
+notices = appdir / ('licenses' if platform == 'windows' else 'usr/share/doc/songframe')
 notices.mkdir(parents=True, exist_ok=True)
 shutil.copyfile('LICENSE', notices / 'LICENSE')
 # Bootstrap адаптирован из Forktopus; полный MIT notice сохранён в исходнике.
@@ -31,7 +31,9 @@ for package in sorted(packages):
         target = notices / 'system' / name
         target.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(copyright_file, target / 'copyright')
-(notices / 'system-packages.txt').write_text('\n'.join(sorted(packages)) + '\n')
+# В deb системные библиотеки не вкладываются, а ставятся зависимостями пакета.
+if platform != 'deb':
+    (notices / 'system-packages.txt').write_text('\n'.join(sorted(packages)) + '\n')
 # Go module cache хранит исходные лицензии; JSON-декодер читает поток объектов go list.
 raw = subprocess.check_output(['go', 'list', '-m', '-json', 'all'], text=True)
 decoder = json.JSONDecoder()

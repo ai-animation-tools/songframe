@@ -40,6 +40,7 @@ function bindings(services: { environment?: Record<string, unknown>; media?: Rec
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,
+    updates: missing,
     events
   } as Bindings;
 }

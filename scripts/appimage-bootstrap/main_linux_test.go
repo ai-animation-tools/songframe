@@ -16,7 +16,7 @@ import (
 func TestProfileExactPath(t *testing.T) {
 	path := "/tmp/тест [*?]/{a,b}/@{HOME}/quote\"\\\n.AppImage"
 	name, body := profile(path)
-	if !strings.HasPrefix(name, "songframe-go-appimage-") || len(name) != len("songframe-go-appimage-")+64 {
+	if !strings.HasPrefix(name, "songframe-appimage-") || len(name) != len("songframe-appimage-")+64 {
 		t.Fatalf("неверное имя: %s", name)
 	}
 	for _, unwanted := range []string{"@{HOME}", "[*?]", "{a,b}", "quote\"", "\n.AppImage"} {
@@ -52,7 +52,7 @@ func TestProfileExactPath(t *testing.T) {
 // Некорректный или отсутствующий AppImage не должен получать профиль.
 func TestImagePath(t *testing.T) {
 	dir := t.TempDir()
-	file := filepath.Join(dir, "SongFrameGo.AppImage")
+	file := filepath.Join(dir, "SongFrame.AppImage")
 	data := []byte("\x7fELF\x02\x01\x01\x00AI\x02")
 	if err := os.WriteFile(file, data, 0700); err != nil {
 		t.Fatal(err)
@@ -110,7 +110,7 @@ func TestSetupOutcomes(t *testing.T) {
 // TestInstallerRejectsInvalidNames останавливает shell до обращения к системе.
 // Для неверных имён даже под root нельзя создавать профиль или вызывать parser.
 func TestInstallerRejectsInvalidNames(t *testing.T) {
-	for _, name := range []string{"../../bad", "songframe-go-appimage-../bad", "songframe-go-appimage-a", "songframe-go-appimage-" + strings.Repeat("z", 64)} {
+	for _, name := range []string{"../../bad", "songframe-appimage-../bad", "songframe-appimage-a", "songframe-appimage-" + strings.Repeat("z", 64)} {
 		if err := exec.Command("/bin/sh", "-c", installScript, "test", name, "body").Run(); err == nil {
 			t.Fatalf("принято неверное имя %q", name)
 		}
@@ -121,7 +121,7 @@ func TestInstallerRejectsInvalidNames(t *testing.T) {
 // Внешние команды полностью заменены временными скриптами без прав root.
 func TestNormalStartupDecisions(t *testing.T) {
 	dir := t.TempDir()
-	image := filepath.Join(dir, "SongFrameGo.AppImage")
+	image := filepath.Join(dir, "SongFrame.AppImage")
 	if err := os.WriteFile(image, []byte("\x7fELF\x02\x01\x01\x00AI\x02"), 0700); err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestNormalStartupDecisions(t *testing.T) {
 	t.Setenv("PATH", dir)
 	marker := filepath.Join(dir, "installed")
 	t.Setenv("CAPTURE", marker)
-	if err := os.WriteFile(filepath.Join(dir, "pkexec"), []byte("#!/bin/sh\n[ \"$1\" = /bin/sh ] && [ \"$2\" = -c ] && [ \"$4\" = songframe-go-apparmor ] || exit 1\nprintf '%s' \"$5\" > \"$CAPTURE\"\n"), 0700); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "pkexec"), []byte("#!/bin/sh\n[ \"$1\" = /bin/sh ] && [ \"$2\" = -c ] && [ \"$4\" = songframe-apparmor ] || exit 1\nprintf '%s' \"$5\" > \"$CAPTURE\"\n"), 0700); err != nil {
 		t.Fatal(err)
 	}
 	for _, tt := range []struct {
@@ -188,10 +188,10 @@ func TestAppRunForwarding(t *testing.T) {
 		t.Fatal(err)
 	}
 	files := map[string][]byte{
-		"AppRun":                            wrapper,
-		"usr/libexec/songframe-go-appimage": []byte("#!/bin/sh\nexit \"$HELPER_STATUS\"\n"),
-		"AppRun.wails":                      []byte("#!/bin/sh\nprintf '%s\\n' inner \"$@\" > \"$CAPTURE\"\n"),
-		"image":                             []byte("#!/bin/sh\nprintf '%s\\n' \"$SONGFRAME_GO_APPIMAGE_SETUP_RETRY\" \"$@\" > \"$CAPTURE\"\n"),
+		"AppRun":                         wrapper,
+		"usr/libexec/songframe-appimage": []byte("#!/bin/sh\nexit \"$HELPER_STATUS\"\n"),
+		"AppRun.wails":                   []byte("#!/bin/sh\nprintf '%s\\n' inner \"$@\" > \"$CAPTURE\"\n"),
+		"image":                          []byte("#!/bin/sh\nprintf '%s\\n' \"$SONGFRAME_GO_APPIMAGE_SETUP_RETRY\" \"$@\" > \"$CAPTURE\"\n"),
 	}
 	for name, body := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), body, 0700); err != nil {
@@ -260,7 +260,7 @@ func TestCommandLineBypassesPreparation(t *testing.T) {
 // профиль не помог; отсутствие zenity оставляет воспроизводимую CLI-команду.
 func TestNoPromptWithoutDialogOrAfterRetry(t *testing.T) {
 	dir := t.TempDir()
-	image := filepath.Join(dir, "SongFrameGo.AppImage")
+	image := filepath.Join(dir, "SongFrame.AppImage")
 	if err := os.WriteFile(image, []byte("\x7fELF\x02\x01\x01\x00AI\x02"), 0700); err != nil {
 		t.Fatal(err)
 	}

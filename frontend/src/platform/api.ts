@@ -40,6 +40,7 @@ import type * as referenceimage from '../../bindings/songframe-go/internal/refer
 import type { CoverGenerationSession } from '@shared/cover-generation';
 import type { ReferenceImageGenerationInput } from '@shared/reference-image-generation';
 import type { AiAccess } from '@shared/ai-access';
+import type { UpdateView } from '@shared/updates';
 import type * as scenarioworkflow from '../../bindings/songframe-go/internal/scenarioworkflow/models';
 import type { ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
 import type * as productionworkflow from '../../bindings/songframe-go/internal/productionworkflow/models';
@@ -155,6 +156,7 @@ export interface Bindings {
   montage: () => Promise<typeof import('../../bindings/songframe-go/internal/app/montageservice')>;
   montageWindow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/montagewindowservice')>;
   derivedShots: () => Promise<typeof import('../../bindings/songframe-go/internal/app/derivedshotservice')>;
+  updates: () => Promise<typeof import('../../bindings/songframe-go/internal/app/updatesservice')>;
   events: EventSource;
 }
 
@@ -186,6 +188,7 @@ export const nativeBindings: Bindings = {
   montage: () => import('../../bindings/songframe-go/internal/app/montageservice'),
   montageWindow: () => import('../../bindings/songframe-go/internal/app/montagewindowservice'),
   derivedShots: () => import('../../bindings/songframe-go/internal/app/derivedshotservice'),
+  updates: () => import('../../bindings/songframe-go/internal/app/updatesservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
     return { on: Events.On };
@@ -355,6 +358,11 @@ const IMPLEMENTED = new Set<ApiMethod>([
   'derivedShots.save',
   'derivedShots.build',
   'derivedShots.accept',
+  // Обновление приложения по кнопке (UpdatesService).
+  'updates.view',
+  'updates.check',
+  'updates.download',
+  'updates.install',
   // Второе окно плеера монтажа (MontageWindowService).
   'montageWindow.open',
   'montageWindow.close',
@@ -756,6 +764,17 @@ export function createApi(b: Bindings): Api {
     const value = (await view) as DerivedShotView & { job: Parameters<typeof toJob>[0] | null };
     return { ...value, job: value.job ? toJob(value.job) : null };
   };
+  // Обновление приложения. Go возвращает вид без путей; статус — строка UpdateStatus контракта.
+  // Проверка, скачивание пакета в сотни мегабайт и установка идут без срока оболочки: у Go
+  // свои сроки (20 с и 30 мин), а страница опрашивает view во время скачивания.
+  const updateView = async (view: Promise<{ status: string }>): Promise<UpdateView> => (await view) as UpdateView;
+  api.updates = {
+    view: () => call('updates.view', async () => updateView((await b.updates()).View())),
+    check: () => call('updates.check', async () => updateView((await b.updates()).Check()), false),
+    download: () => call('updates.download', async () => updateView((await b.updates()).Download()), false),
+    install: () => call('updates.install', async () => updateView((await b.updates()).Install()), false)
+  };
+
   api.derivedShots = {
     view: (project, shot) => call('derivedShots.view', async () => derivedView((await b.derivedShots()).View(project, shot))),
     save: (project, shot, recipe) => call('derivedShots.save', async () => derivedView((await b.derivedShots()).Save(project, shot, recipe)), false),

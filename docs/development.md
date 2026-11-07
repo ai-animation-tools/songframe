@@ -1,4 +1,4 @@
-# Разработка SongFrame Go
+# Разработка SongFrame
 
 Руководство для разработчика Go/Wails-версии: как устроено приложение, где проходят границы, как добавлять провайдеров, какими тестами доказывать сохранность результата и какие команды запускать. Правила работы в репозитории — в [AGENTS.md](../AGENTS.md), быстрый старт — в [README](../README.md).
 
@@ -70,7 +70,7 @@ dev-skills/             скиллы разработки (в поставку �
 Renderer не читает файловую систему и не запускает процессы. Единственный путь к Go — контракт [`frontend/src/shared/api.ts`](../frontend/src/shared/api.ts):
 
 - [`frontend/src/platform/api.ts`](../frontend/src/platform/api.ts) — единственная реализация: каждый метод вызывает сгенерированный binding Wails, а события Wails превращает в подписки. Список `IMPLEMENTED` и функция `methodAvailability` задают доступность методов; UI не ведёт собственный список готовых операций.
-- [`frontend/src/platform/unavailable-api.ts`](../frontend/src/platform/unavailable-api.ts) перечисляет формы всех методов. Метод вне `IMPLEMENTED` отвечает ошибкой `UNAVAILABLE`, а не успешной заглушкой; подписка на событие такой области ничего не делает. Сейчас недоступны только `updates.*` (обновление из приложения не реализовано) и `app.setToolsRoot` (инструменты встроены в приложение).
+- [`frontend/src/platform/unavailable-api.ts`](../frontend/src/platform/unavailable-api.ts) перечисляет формы всех методов. Метод вне `IMPLEMENTED` отвечает ошибкой `UNAVAILABLE`, а не успешной заглушкой; подписка на событие такой области ничего не делает. Сейчас недоступен только `app.setToolsRoot` (инструменты встроены в приложение).
 - `frontend/bindings/` создаёт `wails3 task bindings` ([`scripts/bindings.sh`](../scripts/bindings.sh)): `wails3 generate bindings`, затем скрипт убирает хвостовые пробелы и сужает `T[] | null` до `T[]`, что честно благодаря `wire.Fill`. Файлы хранятся в Git и вручную не правятся; после изменения Go-сервиса bindings перегенерируются.
 
 Новая возможность — это метод предметного пакета, метод Wails-сервиса в `internal/app`, перегенерированный binding, метод в `shared/api.ts` и его реализация в `platform/api.ts` с тестом рядом (`frontend/src/platform/*-api.test.ts` подменяют generated-вызовы). Контракты DTO и форматов проекта меняются по [songframe-go-project-contract](../dev-skills/songframe-go-project-contract/SKILL.md).
@@ -91,8 +91,8 @@ Renderer не читает файловую систему и не запуск�
 
 | Что | Значение |
 | --- | --- |
-| App ID | `tools.songframe.go.dev` (`internal/app/app.go`) |
-| Каталог состояния | `songframe-go-dev` внутри `os.UserConfigDir()` (`internal/store/profile.go`) |
+| App ID | `tools.songframe.desktop` (`internal/app/app.go`) |
+| Каталог состояния | `songframe-desktop` внутри `os.UserConfigDir()` (`internal/store/profile.go`) |
 | Подмена каталога | `SONGFRAME_GO_LOCAL_DIR`; относительный путь отсчитывается от текущего каталога запуска |
 | Ключ темы renderer | `songframe-go.theme` в `localStorage` |
 
@@ -181,7 +181,7 @@ Python 3 нужен только сборщику поставок и отдел
 | --- | --- |
 | `wails3 task deps` | Установить frontend-зависимости по lock (`yarn install --immutable`) |
 | `wails3 task bindings` | Перегенерировать `frontend/bindings` |
-| `wails3 task build` | Bindings, frontend и бинарник `build/bin/songframe-go` |
+| `wails3 task build` | Bindings, frontend и бинарник `build/bin/songframe` |
 | `wails3 task run` | Запустить собранный бинарник |
 | `wails3 task check` | `check:go` и `check:frontend` |
 | `wails3 task check:go` | Bindings, `go test ./...`, `go vet ./...` |
@@ -216,13 +216,13 @@ Python 3 нужен только сборщику поставок и отдел
 
 ```sh
 # Запуск интерфейса: успешный вызов State из frontend и монтирование страницы.
-SONGFRAME_GO_LOCAL_DIR=/tmp/songframe-go-smoke-profile \
-  ./build/bin/songframe-go --smoke \
-  --smoke-report /tmp/songframe-go-smoke.json --smoke-timeout 30s
+SONGFRAME_GO_LOCAL_DIR=/tmp/songframe-smoke-profile \
+  ./build/bin/songframe --smoke \
+  --smoke-report /tmp/songframe-smoke.json --smoke-timeout 30s
 
 # Медиа WebView, HTTP-сервер и второе окно на синтетических файлах (FFmpeg нужен только для подготовки).
 sh scripts/make-media-fixtures.sh /tmp/songframe-media-fixtures
-SONGFRAME_GO_LOCAL_DIR=/tmp/songframe-native-profile ./build/bin/songframe-go \
+SONGFRAME_GO_LOCAL_DIR=/tmp/songframe-native-profile ./build/bin/songframe \
   --native-check-dir /tmp/songframe-media-fixtures \
   --native-check-report /tmp/songframe-native-report.json --smoke-timeout 90s
 ```
@@ -231,7 +231,7 @@ SONGFRAME_GO_LOCAL_DIR=/tmp/songframe-native-profile ./build/bin/songframe-go \
 
 ## Поставки
 
-Целевые поставки — Linux x86_64 AppImage и deb-пакет, Windows amd64 установщик NSIS. Сейчас есть ранние AppImage и NSIS; deb-пакета пока нет. Все поставки собираются локально на Linux (`wails3 task package:linux`, `wails3 task package:windows`), CI их не собирает. Состав, prerequisites, проверки на хосте и в чистой системе — [packaging/README.md](../packaging/README.md) и [рецепт Windows](../packaging/windows/README.md); порядок сборки — скилл [songframe-go-build](../dev-skills/songframe-go-build/SKILL.md), выпуск — [songframe-go-release](../dev-skills/songframe-go-release/SKILL.md). Сборка установщика не доказывает работу в Windows: нативный прогон выполняется отдельно. Публикация релизов и обновление из приложения ещё не реализованы.
+Целевые поставки — Linux x86_64 AppImage и deb-пакет, Windows amd64 установщик NSIS. Все поставки собираются локально на Linux (`wails3 task package:linux`, `package:deb`, `package:windows`), CI их не собирает. Состав, prerequisites, проверки на хосте и в чистой системе — [packaging/README.md](../packaging/README.md) и [рецепт Windows](../packaging/windows/README.md); порядок сборки — скилл [songframe-go-build](../dev-skills/songframe-go-build/SKILL.md), выпуск — [songframe-go-release](../dev-skills/songframe-go-release/SKILL.md). Сборка установщика не доказывает работу в Windows: нативный прогон выполняется отдельно. Обновление из приложения (`internal/updates`, страница «Настройки») берёт выпуски публичного songframe; публикация выпусков описана в скилле выпуска.
 
 ## Скиллы разработки
 

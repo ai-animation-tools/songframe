@@ -16,6 +16,7 @@ export const updatesTexts = {
   available: ({ version }: { version: string }) => `Доступна версия ${version}.`,
   ready: ({ version }: { version: string }) => `Версия ${version} скачана и проверена.`,
   readyManual: 'Закройте приложение и замените его скачанным файлом.',
+  readyPackage: 'Закройте приложение и установите скачанный пакет, например командой sudo apt install с путём к файлу.',
   confirmTitle: 'Установить обновление?',
   confirmText: ({ version }: { version: string }) =>
     `Приложение закроется, установит версию ${version} и запустится снова. Выполняющиеся задания будут прерваны, сохранённые данные не пострадают.`,

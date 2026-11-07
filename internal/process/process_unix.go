@@ -42,3 +42,18 @@ func signalName(state *os.ProcessState) string {
 	}
 	return unix.SignalName(status.Signal())
 }
+
+// StartDetached запускает программу в отдельном сеансе без потоков ввода-вывода и сразу
+// отпускает её: она переживает выход приложения и не попадает под KillTree его заданий.
+// Нужен помощникам, которые продолжают работу после закрытия окна (перезапуск обновления).
+func StartDetached(command *exec.Cmd) error {
+	if command.SysProcAttr == nil {
+		command.SysProcAttr = &syscall.SysProcAttr{}
+	}
+	command.SysProcAttr.Setsid = true
+	command.Stdin, command.Stdout, command.Stderr = nil, nil, nil
+	if err := command.Start(); err != nil {
+		return err
+	}
+	return command.Process.Release()
+}

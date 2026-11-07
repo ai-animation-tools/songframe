@@ -34,7 +34,7 @@ def check_pe(path):
     imports = re.findall(r'DLL Name:\s*(\S+)', imports_text)
     for name in imports:
         assert name.lower() == 'kernel32.dll' or name.lower().startswith('api-ms-win-crt-'), f'Неподтверждённая native dependency: {name}'
-    assert b'tools.songframe.go.dev' in data and b'asInvoker' in data, 'Нет отдельного app ID/asInvoker manifest'
+    assert b'tools.songframe.desktop' in data and b'asInvoker' in data, 'Нет отдельного app ID/asInvoker manifest'
     return imports
 
 
@@ -42,10 +42,13 @@ imports = check_pe(binary)
 build_info = subprocess.check_output(['go', 'version', '-m', str(binary)], text=True)
 for required in ['CGO_ENABLED=1', 'GOOS=windows', 'GOARCH=amd64', 'github.com/microsoft/onnxruntime/go']:
     assert required in build_info, f'Не подтверждён {required}'
-with tempfile.TemporaryDirectory(prefix='songframe-go-nsis-') as directory:
+# Обновление из приложения сравнивает выпуски по версии, вшитой в бинарник через -X.
+# -trimpath не сохраняет ldflags в build info, поэтому ищем саму строку версии.
+assert version.encode() in binary.read_bytes(), 'В exe не вшита версия packaging/VERSION'
+with tempfile.TemporaryDirectory(prefix='songframe-nsis-') as directory:
     subprocess.run(['7z', 'x', '-y', '-o' + directory, str(installer)], check=True, stdout=subprocess.DEVNULL)
     root = pathlib.Path(directory)
-    candidates = list(root.rglob('songframe-go.exe'))
+    candidates = list(root.rglob('songframe.exe'))
     assert len(candidates) == 1 and digest(candidates[0]) == digest(binary), 'В NSIS другой exe'
     assert list(root.rglob('MicrosoftEdgeWebview2Setup.exe')), 'Нет WebView2 bootstrapper'
     assert list(root.rglob('vc_redist.x64.exe')), 'Нет VC++ prerequisite'

@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=SongFrame Go
-Comment=SongFrame — ранняя настольная версия
-Exec=songframe-go
-Icon=songframe-go
-Terminal=false
-Categories=AudioVideo;AudioVideoEditing;
-StartupWMClass=tools.songframe.go.dev

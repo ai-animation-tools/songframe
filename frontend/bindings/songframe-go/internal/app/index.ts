@@ -28,6 +28,7 @@ import * as ShellService from "./shellservice.js";
 import * as SourcesService from "./sourcesservice.js";
 import * as TimingService from "./timingservice.js";
 import * as ToolsService from "./toolsservice.js";
+import * as UpdatesService from "./updatesservice.js";
 import * as VideoReviewService from "./videoreviewservice.js";
 export {
     AIService,
@@ -57,6 +58,7 @@ export {
     SourcesService,
     TimingService,
     ToolsService,
+    UpdatesService,
     VideoReviewService
 };
 

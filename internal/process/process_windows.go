@@ -80,3 +80,18 @@ func taskkillPath() string {
 
 // signalName пуст: в Windows программы не завершаются POSIX-сигналами.
 func signalName(*os.ProcessState) string { return "" }
+
+// StartDetached запускает программу отдельно от приложения и сразу отпускает её. В отличие
+// от Prepare окно не скрывается: так запускается установщик обновления, которому нужен его
+// собственный интерфейс. Новая группа процессов не получает Ctrl+C приложения.
+func StartDetached(command *exec.Cmd) error {
+	if command.SysProcAttr == nil {
+		command.SysProcAttr = &syscall.SysProcAttr{}
+	}
+	command.SysProcAttr.CreationFlags |= windows.CREATE_NEW_PROCESS_GROUP
+	command.Stdin, command.Stdout, command.Stderr = nil, nil, nil
+	if err := command.Start(); err != nil {
+		return err
+	}
+	return command.Process.Release()
+}

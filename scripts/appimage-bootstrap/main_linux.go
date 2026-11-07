@@ -45,7 +45,7 @@ const restart = 20
 // После exec разрешение наследуют AppRun, приложение и песочница WebKit.
 func profile(image string) (string, string) {
 	sum := sha256.Sum256([]byte(image))
-	name := fmt.Sprintf("songframe-go-appimage-%x", sum[:])
+	name := fmt.Sprintf("songframe-appimage-%x", sum[:])
 	var path strings.Builder
 	for _, c := range []byte(image) {
 		if c == '/' || c == '.' || c == '-' || c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' {
@@ -56,7 +56,7 @@ func profile(image string) (string, string) {
 			fmt.Fprintf(&path, `\x%02x`, c)
 		}
 	}
-	body := fmt.Sprintf(`# Разрешение user namespaces для одного файла SongFrame Go AppImage.
+	body := fmt.Sprintf(`# Разрешение user namespaces для одного файла SongFrame AppImage.
 # Общая политика AppArmor и песочница WebKit остаются включёнными.
 abi <abi/4.0>,
 profile %s "%s" flags=(unconfined) {
@@ -70,15 +70,15 @@ profile %s "%s" flags=(unconfined) {
 // из пользовательского FUSE mount. Аргументы передаются отдельно от кода sh.
 const installScript = `set -eu
 name=$1
-case "$name" in songframe-go-appimage-*) ;; *) exit 1 ;; esac
-suffix=${name#songframe-go-appimage-}
+case "$name" in songframe-appimage-*) ;; *) exit 1 ;; esac
+suffix=${name#songframe-appimage-}
 case "$suffix" in ''|*[!0-9a-f]*) exit 1 ;; esac
 [ "${#suffix}" -eq 64 ]
 [ "$(id -u)" -eq 0 ]
 parser=/sbin/apparmor_parser
 [ -x "$parser" ] || parser=/usr/sbin/apparmor_parser
 umask 022
-tmp=$(mktemp /etc/apparmor.d/.songframe-go-appimage.XXXXXX)
+tmp=$(mktemp /etc/apparmor.d/.songframe-appimage.XXXXXX)
 trap 'rm -f "$tmp"' EXIT HUP INT TERM
 printf '%s' "$2" > "$tmp"
 chmod 644 "$tmp"
@@ -143,7 +143,7 @@ func restricted() bool {
 func notify(text string) {
 	fmt.Fprintln(os.Stderr, text)
 	if bin, err := exec.LookPath("zenity"); err == nil {
-		_ = exec.Command(bin, "--error", "--title=SongFrame Go", "--no-markup", "--text="+text).Run()
+		_ = exec.Command(bin, "--error", "--title=SongFrame", "--no-markup", "--text="+text).Run()
 	}
 }
 
@@ -187,34 +187,34 @@ func prepare(args []string, isRestricted func() bool, checkUserns func() error) 
 	}
 	image, err := imagePath(os.Getenv("APPIMAGE"))
 	if err != nil {
-		notify("Не удалось настроить запуск SongFrame Go: " + err.Error())
+		notify("Не удалось настроить запуск SongFrame: " + err.Error())
 		return 1
 	}
-	message := "Ubuntu запрещает песочнице WebKit создавать user namespaces. Для запуска SongFrame Go нужен профиль AppArmor только для этого файла AppImage. Система попросит пароль администратора. Настроить запуск?"
+	message := "Ubuntu запрещает песочнице WebKit создавать user namespaces. Для запуска SongFrame нужен профиль AppArmor только для этого файла AppImage. Система попросит пароль администратора. Настроить запуск?"
 	if !explicit {
 		// Автозапуск не должен открывать запрос пароля при входе в систему.
 		if slices.Contains(args, "--hidden") {
-			fmt.Fprintln(os.Stderr, "SongFrame Go: требуется настройка AppArmor; запустите AppImage вручную.")
+			fmt.Fprintln(os.Stderr, "SongFrame: требуется настройка AppArmor; запустите AppImage вручную.")
 			return 1
 		}
 		bin, err := exec.LookPath("zenity")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "SongFrame Go: требуется профиль AppArmor. Выполните: '%s' %s\n", strings.ReplaceAll(image, "'", "'\\''"), setupFlag)
+			fmt.Fprintf(os.Stderr, "SongFrame: требуется профиль AppArmor. Выполните: '%s' %s\n", strings.ReplaceAll(image, "'", "'\\''"), setupFlag)
 			return 1
 		}
-		if exec.Command(bin, "--question", "--title=Запуск SongFrame Go", "--no-markup", "--text="+message, "--ok-label=Настроить", "--cancel-label=Отмена").Run() != nil {
+		if exec.Command(bin, "--question", "--title=Запуск SongFrame", "--no-markup", "--text="+message, "--ok-label=Настроить", "--cancel-label=Отмена").Run() != nil {
 			return 1
 		}
 	}
 	name, body := profile(image)
-	cmd := exec.Command("pkexec", "/bin/sh", "-c", installScript, "songframe-go-apparmor", name, body)
+	cmd := exec.Command("pkexec", "/bin/sh", "-c", installScript, "songframe-apparmor", name, body)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		notify("Настройка AppArmor не выполнена. Запуск отменён; повторите запуск AppImage для новой попытки.")
 		return 1
 	}
 	if explicit {
-		fmt.Println("Профиль AppArmor настроен. Запустите SongFrame Go обычным способом.")
+		fmt.Println("Профиль AppArmor настроен. Запустите SongFrame обычным способом.")
 		return 0
 	}
 	return restart

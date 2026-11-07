@@ -23,11 +23,16 @@ tasks:
       - task: frontend
       - mkdir -p build/bin
       # Исходный архив не обязан содержать .git; версия раннего пакета задаётся в packaging/VERSION.
-      - go build -buildvcs=false -tags production -trimpath -ldflags '-s -w' -o build/bin/songframe-go .
+      # Версия из packaging/VERSION попадает в бинарник: по ней обновление сравнивает выпуски.
+      - go build -buildvcs=false -tags production -trimpath -ldflags "-s -w -X songframe-go/internal/appversion.Version=$(cat packaging/VERSION)" -o build/bin/songframe .
   package:linux:
     desc: Собрать ранний Linux AppImage с GTK/WebKit, bootstrap и метаданными
     cmds:
       - bash scripts/package-linux.sh
+  package:deb:
+    desc: Собрать deb-пакет для Ubuntu 24.04 с зависимостями GTK4/WebKitGTK 6.0
+    cmds:
+      - bash scripts/package-deb.sh
   package:windows:
     desc: Собрать Windows amd64 CGO-приложение и установщик NSIS с WebView2
     cmds:
@@ -38,6 +43,18 @@ tasks:
       vars: [APPIMAGE, OUTPUT]
     cmds:
       - bash scripts/smoke-host.sh "{{.APPIMAGE}}" "{{.OUTPUT}}"
+  smoke:deb:
+    desc: Установить deb-пакет в чистую Ubuntu 24.04 и проверить запуск интерфейса
+    requires:
+      vars: [DEB, OUTPUT]
+    cmds:
+      - bash scripts/smoke-deb.sh "{{.DEB}}" "{{.OUTPUT}}"
+  smoke:update:
+    desc: Обновить готовый AppImage подставным выпуском и проверить перезапуск новой версии
+    requires:
+      vars: [APPIMAGE, OUTPUT]
+    cmds:
+      - bash scripts/smoke-update.sh "{{.APPIMAGE}}" "{{.OUTPUT}}"
   smoke:appimage:
     desc: Проверить конечный AppImage без компонентов в чистой Ubuntu 24.04
     requires:
@@ -115,4 +132,4 @@ tasks:
   run:
     desc: Открыть собранную оболочку
     cmds:
-      - ./build/bin/songframe-go
+      - ./build/bin/songframe

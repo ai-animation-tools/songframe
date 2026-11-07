@@ -38,6 +38,7 @@ function bindings(productionWorkflow: Record<string, unknown>): Bindings {
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,
+    updates: missing,
     scenarioWorkflow: missing,
     productionWorkflow: async () => productionWorkflow as never,
     events: async () => ({ on: () => () => undefined })

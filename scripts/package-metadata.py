@@ -7,8 +7,14 @@ import platform
 import subprocess
 import sys
 
-image, appdir, tool = map(pathlib.Path, sys.argv[1:4])
-version = sys.argv[4]
+# AppImage: файл, AppDir, linuxdeploy и версия; deb: --deb, файл, дерево пакета и версия.
+deb = sys.argv[1] == '--deb'
+if deb:
+    image, appdir = map(pathlib.Path, sys.argv[2:4])
+    tool, version = None, sys.argv[4]
+else:
+    image, appdir, tool = map(pathlib.Path, sys.argv[1:4])
+    version = sys.argv[4]
 
 
 def digest(path):
@@ -20,7 +26,8 @@ def digest(path):
 revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
 dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], text=True))
 # Receipt не может подтвердить неподходящий GTK/WebKit даже при ручном вызове metadata.
-runtime_policy = json.loads(subprocess.check_output(
+# В deb библиотек нет: GTK4/WebKitGTK 6.0 приходят зависимостями пакета.
+runtime_policy = None if deb else json.loads(subprocess.check_output(
     [sys.executable, 'scripts/linux_runtime_policy.py', 'check', str(appdir)], text=True))
 result = {
     'version': version, 'revision': revision, 'dirty': dirty,
@@ -28,8 +35,8 @@ result = {
     'kernel': platform.release(), 'file': image.name,
     'bytes': image.stat().st_size, 'sha256': digest(image),
     'unpackedBytes': sum(p.stat().st_size for p in appdir.rglob('*') if p.is_file() and not p.is_symlink()),
-    'tool': {'wails': '3.0.0', 'linuxdeploySHA256': digest(tool)},
-    'runtimePolicy': runtime_policy,
+    'tool': {'wails': '3.0.0'} if deb else {'wails': '3.0.0', 'linuxdeploySHA256': digest(tool)},
+    **({'depends': subprocess.check_output(['dpkg-deb', '--field', str(image), 'Depends'], text=True).strip()} if deb else {'runtimePolicy': runtime_policy}),
     'externalComponents': ['ffmpeg', 'ort-cpu', 'voc-ft', 'ctc-ru', 'ctc-vocab'],
 }
 image.with_suffix(image.suffix + '.build.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n')

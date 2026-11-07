@@ -1,16 +1,16 @@
-# Ранние поставки Go/Wails
+# Поставки
 
 Сборка выполняется только в этом репозитории, соседние каталоги ей не нужны. [Скилл сборки](../dev-skills/songframe-go-build/SKILL.md) хранится здесь и подключён ссылками `.agents/skills` и `.claude/skills`.
 
-Linux AppImage описан ниже; для Windows amd64 NSIS использовать [отдельный рецепт](windows/README.md) и `wails3 task package:windows`.
+Linux AppImage и deb-пакет описаны ниже; для Windows amd64 NSIS использовать [отдельный рецепт](windows/README.md) и `wails3 task package:windows`. macOS в первый выпуск не входит.
 
-Это минимальная оболочка миграции, а не замена рабочего SongFrame. Версия раннего пакета находится в [VERSION](VERSION); номер не связан с релизами Electron. Commit, push и публикация в эту процедуру не входят.
+Версия поставки находится в [VERSION](VERSION) и вшивается в бинарник (`internal/appversion`): по ней обновление из приложения сравнивает выпуски. Ранние сборки имеют версию `1.0.0-dev.N` — младше выпуска 1.0.0 и старше выпусков Electron 0.x того же репозитория. Commit, push и публикация в эту процедуру не входят.
 
 ## Состав и проверяемая платформа
 
 Первая база — **Ubuntu 24.04 amd64, glibc 2.39**. Сборочная и доступная настольная машина — Ubuntu 24.04; изолированная проверка использует Ubuntu 24.04 Docker. Более старые glibc и другие дистрибутивы пока не приняты. Для Windows и macOS рецепт этого пакета не применяется.
 
-AppImage содержит production Go-бинарник со встроенным frontend, GTK4, WebKitGTK 6.0 с helper processes, их библиотеки/ресурсы, bootstrap AppArmor и лицензионные материалы. GStreamer не вкладывается: ядро, plugins-base и плагины берутся из одной системной установки. Вложенная `libgstreamer` искала бы плагины рядом с собой внутри образа, не нашла бы `appsink`/`autoaudiosink`, и процесс страницы WebKit падал бы при первом `<audio>`. Собственных Electron, Node, Python и Git нет. FFmpeg/ffprobe, ORT и модели находятся вне AppImage и устанавливаются пользователем через «Компоненты». Приложение использует отдельный прежний dev app ID `tools.songframe.go.dev` и профиль `songframe-go-dev`; smoke использует новые временные профили.
+AppImage содержит production Go-бинарник со встроенным frontend, GTK4, WebKitGTK 6.0 с helper processes, их библиотеки/ресурсы, bootstrap AppArmor и лицензионные материалы. GStreamer не вкладывается: ядро, plugins-base и плагины берутся из одной системной установки. Вложенная `libgstreamer` искала бы плагины рядом с собой внутри образа, не нашла бы `appsink`/`autoaudiosink`, и процесс страницы WebKit падал бы при первом `<audio>`. Собственных Electron, Node, Python и Git нет. FFmpeg/ffprobe, ORT и модели находятся вне AppImage и устанавливаются пользователем через «Компоненты». Приложение использует app ID `tools.songframe.desktop` и профиль `songframe-desktop`, отличные от Electron-версии (D-038); smoke использует новые временные профили.
 
 Системе нужны графическая сессия X11/Wayland, драйверы Mesa/GL/EGL/GBM, ALSA/PulseAudio, D-Bus, fonts/fontconfig, CA certificates, `bubblewrap`, `xdg-dbus-proxy`, GStreamer с GL-библиотекой и plugins. На Ubuntu базовый runtime устанавливается средствами ОС:
 
@@ -35,7 +35,7 @@ wails3 task package:linux
 
 `package:linux` заново генерирует bindings, проверяет TypeScript, собирает frontend и Go, упаковывает системные библиотеки через Wails, добавляет bootstrap и лицензии, финализирует AppImage. Финализация использует appimagetool из того же закреплённого linuxdeploy и runtime уже созданного Wails-образа; повторного обхода всех системных библиотек нет. Артефакты в `build/release`:
 
-- `songframe-go-<VERSION>-linux-x86_64.AppImage`;
+- `songframe-<VERSION>-linux-x86_64.AppImage`;
 - рядом `<имя>.sha256` и `<имя>.build.json`: версия, исходный commit и dirty, SHA/размер, распакованный объём, минимум ОС и версия упаковщика.
 
 AppImage оставлять в штатной папке. Повторная локальная сборка этой ранней версии заменяет её предыдущий локальный результат; отчёты проверок создавать в новой папке. Это не рецепт переиздания опубликованных релизов. Состав лицензий собирает [package-notices.py](../scripts/package-notices.py): материалы system/Go/frontend и MIT notice Forktopus. Сетевые компоненты и их собственные notices устанавливаются отдельным менеджером.
@@ -54,8 +54,8 @@ wails3 task smoke:host APPIMAGE=/absolute/file.AppImage OUTPUT=/tmp/new-host-che
 
 ```sh
 wails3 task smoke:appimage \
-  APPIMAGE=/absolute/build/release/songframe-go-0.0.0-dev.41.4-linux-x86_64.AppImage \
-  OUTPUT=/tmp/songframe-go-appimage-new-check
+  APPIMAGE=/absolute/build/release/songframe-1.0.0-dev.47-linux-x86_64.AppImage \
+  OUTPUT=/tmp/songframe-appimage-new-check
 ```
 
 Сценарий [smoke-appimage.sh](../scripts/smoke-appimage.sh) собирает окружение из [smoke.Dockerfile](linux/smoke.Dockerfile), затем запускает конечный файл непривилегированным пользователем, без сети и без системных GTK/WebKit, Node, Python, Go, Git, FFmpeg/ORT/моделей. Новый профиль и `startup.json` сохраняются в выбранной папке. Успех — настоящий React frontend вызвал Wails State и подтвердил монтирование страницы. Сборка образа может требовать сеть; само приложение проверяется offline.
@@ -96,6 +96,31 @@ wails3 task smoke:appimage \
 Режим использует тот же `Manager.Install` и `Manager.Check`, что приложение. Четыре LocalFiles исключают сетевую загрузку; PATH отключён внутри проверочного менеджера. Вместо FFmpeg-архива разрешён абсолютный путь готовой программы `ffmpeg` с соседним `ffprobe`: менеджер подключает пригодную пару по месту и не распаковывает большой XZ повторно. ORT, CTC и словарь в обоих режимах действительно устанавливаются в новый профиль. Успешная установка проверяет SHA, staging, публикацию поколений и файлы. Далее проверяются FFmpeg recipes, загрузка отдельной ORT library/API 27, CPU provider и реальная CTC session. Секунда синтетического сигнала 16 kHz должна дать finite logits `[1,49,39]`. Изменения ML-рецепта, настоящие клипы и ручная разметка не нужны.
 
 Код 0 и `status: ready` в отчёте означают готовность `ctc-existing-vocals`. Ошибки отдельных моделей проверяются по snapshot, а не только по возврату Check. Это короткий inference, не полный CTC workflow и не оценка качества трека. Профиль после проверки остаётся для осмотра; пользовательские профили не читаются. По умолчанию timeout 30s, для импорта большого XZ задавать явно 10m или больше; CreateSession учитывает отмену после возврата native-вызова.
+
+## deb-пакет
+
+```sh
+wails3 task package:deb
+wails3 task smoke:deb DEB=/absolute/build/release/songframe-<VERSION>-linux-amd64.deb OUTPUT=/tmp/new-deb-check
+```
+
+[package-deb.sh](../scripts/package-deb.sh) собирает тот же production-бинарник, что AppImage, и упаковывает его `dpkg-deb` в `songframe-<VERSION>-linux-amd64.deb` (версия Debian `X.Y.Z~суффикс`). В пакет входят `/usr/bin/songframe`, `songframe.desktop`, значок, лицензии и [профиль AppArmor](linux/deb/apparmor-songframe) `/etc/apparmor.d/songframe`. Библиотек внутри нет: GTK4, WebKitGTK 6.0, libsoup и glib определяет `dpkg-shlibdeps` по ELF, а невидимый в ELF рантайм WebKit — bubblewrap, xdg-dbus-proxy, GStreamer с плагинами, Mesa и сертификаты — перечислен в Depends явно. Рядом пишутся `.sha256` и `.build.json` с итоговыми Depends.
+
+Профиль AppArmor разрешает user namespaces только `/usr/bin/songframe`, как профили браузеров в Ubuntu: песочница WebKit остаётся включённой, общая политика не ослабляется. `postinst` загружает его, `prerm` выгружает. Отдельная настройка `--setup-apparmor`, как у AppImage, для deb не нужна.
+
+`smoke:deb` ставит пакет `apt` в чистую Ubuntu 24.04 без Recommends и запускает GUI smoke без сети обычным пользователем: так проверяется достаточность Depends. Если хост запрещает uid mapping в контейнере, задать `SONGFRAME_SMOKE_APPARMOR_PROFILE`, как для `smoke:appimage`. Установка на настольную систему (`sudo apt install ./файл.deb`) и загрузка профиля AppArmor проверяются отдельно вручную.
+
+## Обновление из приложения
+
+Кнопка в «Настройках» читает последний выпуск `ai-animation-tools/songframe` на GitHub и выбирает вложение своей поставки: AppImage, deb или установщик Windows. Пакет скачивается в `updates/` каталога состояния и сверяется с размером и digest SHA-256 из GitHub API. AppImage заменяется атомарно по тому же пути (профиль AppArmor привязан к пути и остаётся действительным) и перезапускается после выхода прежнего процесса; установщик Windows запускается, и приложение закрывается. deb приложение не ставит: оно показывает скачанный пакет для `sudo apt install`. Профиль, проекты и компоненты обновление не трогает.
+
+Проверка на хосте без GitHub — подставной выпуск 99.0.0 с копией того же AppImage:
+
+```sh
+wails3 task smoke:update APPIMAGE=/absolute/file.AppImage OUTPUT=/tmp/new-update-check
+```
+
+Сценарий запускает AppImage в отдельном scope пользовательского systemd с `--update-smoke-input`: настоящий менеджер обновления скачивает и сверяет пакет, заменяет запущенный файл и перезапускает его с GUI smoke. Успех — отчёт перезапущенной версии с `"passed": true`, файл совпадает с пакетом, не осталось `.update` и смонтированных образов. Для нового пути файла сначала нужен `smoke:host` (настройка AppArmor). Проверка в Windows — в [рецепте Windows](windows/README.md#ручная-проверка-в-vm).
 
 ## Границы приёмки
 

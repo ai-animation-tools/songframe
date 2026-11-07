@@ -140,7 +140,7 @@ func (l *Log) Report() ([]byte, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	marker, _ := json.MarshalIndent(l.marker, "", "  ")
-	prefix := []byte("SongFrame Go — диагностический отчёт\nСеанс:\n" + string(marker) + "\nЖурнал (последние 4 МиБ):\n")
+	prefix := []byte("SongFrame — диагностический отчёт\nСеанс:\n" + string(marker) + "\nЖурнал (последние 4 МиБ):\n")
 	file, err := os.Open(filepath.Join(l.directory, "app.log"))
 	if os.IsNotExist(err) {
 		return append(prefix, []byte("Ошибок интерфейса не записано.\n")...), nil

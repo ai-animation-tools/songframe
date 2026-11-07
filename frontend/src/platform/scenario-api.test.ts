@@ -39,6 +39,7 @@ function bindings(scenario: Record<string, unknown>, cast: Record<string, unknow
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,
+    updates: missing,
     events: async () => ({ on: () => () => undefined })
   } as Bindings;
 }

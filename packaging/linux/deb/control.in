@@ -1,0 +1,13 @@
+Package: songframe
+Version: @VERSION@
+Architecture: amd64
+Maintainer: Yarkov Aleksey <yarkovaleksei@users.noreply.github.com>
+Installed-Size: @SIZE@
+Depends: @DEPENDS@
+Section: video
+Priority: optional
+Homepage: https://ai-animation-tools.github.io/songframe/
+Description: производство музыкальных клипов с помощью ИИ
+ SongFrame ведёт клип от песни до монтажа: разметка текста, сценарий,
+ генерация опор и видео у выбранного провайдера, проверки и экспорт.
+ FFmpeg, ONNX Runtime и модели устанавливаются из приложения отдельно.

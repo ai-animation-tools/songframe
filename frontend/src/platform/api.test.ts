@@ -55,6 +55,7 @@ function bindings(
     montage: missing,
     montageWindow: missing,
     derivedShots: missing,
+    updates: missing,
     events: async () => ({ on: overrides.on ?? (() => () => undefined) })
   } as Bindings;
   return b;
@@ -75,13 +76,14 @@ describe('Граница window.api', () => {
   it('отвергает неперенесённое действие до обращения к bindings', async () => {
     const read = vi.fn(async () => state);
     const api = createApi(bindings({ State: read }));
-    await expect(api.updates.check()).rejects.toMatchObject({
+    await expect(api.app.setToolsRoot(null)).rejects.toMatchObject({
       code: 'UNAVAILABLE',
-      method: 'updates.check',
+      method: 'app.setToolsRoot',
       message: platformTexts.unavailable
     });
     expect(read).not.toHaveBeenCalled();
-    expect(methodAvailability('updates.check')).toEqual({ available: false, reason: platformTexts.unavailable });
+    expect(methodAvailability('app.setToolsRoot')).toEqual({ available: false, reason: platformTexts.unavailable });
+    expect(methodAvailability('updates.check')).toEqual({ available: true, reason: null });
     expect(methodAvailability('production.submit')).toEqual({ available: true, reason: null });
     expect(methodAvailability('app.state')).toEqual({ available: true, reason: null });
   });

@@ -44,7 +44,7 @@ body:
       description: >-
         Если предлагаете изменить существующую функцию, укажите версию
         из имени скачанного AppImage или установщика.
-      placeholder: 'Например: 0.0.0-dev.41.4'
+      placeholder: 'Например: 1.0.0-dev.47'
 
   - type: textarea
     id: alternatives

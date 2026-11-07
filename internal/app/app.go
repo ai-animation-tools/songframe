@@ -11,8 +11,9 @@ import (
 	"songframe-go/internal/wire"
 )
 
-// AppID отделяет приложение разработки от установленного Electron SongFrame.
-const AppID = "tools.songframe.go.dev"
+// AppID отличается от app ID Electron-версии (tools.songframe.app), чтобы окна, ярлыки и
+// единственный экземпляр GTK не смешивались с ней (D-038).
+const AppID = "tools.songframe.desktop"
 
 // ProfileStore — нужная оболочке граница файловой системы. Сервис не определяет
 // каталоги ОС сам; в тестах ошибка хранения подменяется без настоящего профиля.

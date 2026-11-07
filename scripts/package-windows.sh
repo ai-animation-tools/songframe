@@ -22,8 +22,8 @@ version, numeric = sys.argv[1:]
 info = {'fixed': {'file_version': numeric}, 'info': {'0419': {
     'ProductVersion': version, 'CompanyName': 'SongFrame',
     'FileDescription': 'SongFrame — ранняя версия Go/Wails',
-    'LegalCopyright': '© 2026 Yarkov Aleksey', 'ProductName': 'SongFrame Go',
-    'OriginalFilename': 'songframe-go.exe'}}}
+    'LegalCopyright': '© 2026 Yarkov Aleksey', 'ProductName': 'SongFrame',
+    'OriginalFilename': 'songframe.exe'}}}
 pathlib.Path('build/windows/info.json').write_text(json.dumps(info, ensure_ascii=False))
 PY
 syso="$root/songframe_windows_amd64.syso"
@@ -32,7 +32,7 @@ trap 'rm -f -- "$syso"' EXIT
 wails3 generate syso -arch amd64 -icon resources/icon.ico -manifest packaging/windows/app.manifest -info build/windows/info.json -out "$syso"
 # Zig обеспечивает MinGW ABI для ONNX C shim. GUI-флаг передаётся и внешнему линкеру:
 # одного Go -H windowsgui у этого toolchain недостаточно, что проверяет PE checker.
-cache="${SONGFRAME_WINDOWS_BUILD_CACHE:-${TMPDIR:-/tmp}/songframe-go-cross-cache}"
+cache="${SONGFRAME_WINDOWS_BUILD_CACHE:-${TMPDIR:-/tmp}/songframe-cross-cache}"
 mkdir -p "$cache"
 image="${SONGFRAME_WINDOWS_CROSS_IMAGE:-wails-cross:latest}"
 docker image inspect "$image" >/dev/null
@@ -41,7 +41,7 @@ docker run --rm --user "$(id -u):$(id -g)" --entrypoint /usr/local/go/bin/go \
   -e GOOS=windows -e GOARCH=amd64 -e CGO_ENABLED=1 -e 'CC=/usr/local/bin/zig cc -target x86_64-windows-gnu' \
   -e GOCACHE=/cache/go -e GOMODCACHE=/deps -e ZIG_GLOBAL_CACHE_DIR=/cache/zig -e HOME=/tmp -e GOTOOLCHAIN=local \
   -w /src "$image" build -buildvcs=false -tags production -trimpath \
-  -ldflags '-s -w -H windowsgui -extldflags=-Wl,--subsystem,windows' -o /out/songframe-go.exe .
+  -ldflags "-s -w -H windowsgui -extldflags=-Wl,--subsystem,windows -X songframe-go/internal/appversion.Version=$version" -o /out/songframe.exe .
 wails3 generate webview2bootstrapper -dir "$work/prerequisites"
 printf '%s  %s\n' 7ebc4ce80143ef89cea86a61ea151502868db6caaa678b8b43660a66ace11c3a "$work/prerequisites/MicrosoftEdgeWebview2Setup.exe" | sha256sum --check
 vc="$work/prerequisites/vc_redist.x64.exe"
@@ -52,9 +52,9 @@ fi
 # Закреплён файл Microsoft, проверенный для ранней поставки. Изменение permalink требует проверки нового SHA.
 printf '%s  %s\n' 843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c "$vc" | sha256sum --check
 python3 scripts/package-notices.py "$work" windows
-installer="$out/songframe-go-$version-win-x64-setup.exe"
-makensis -WX "-DVERSION=$version" "-DNUMERIC_VERSION=$numeric" "-DBINARY=$root/build/windows/songframe-go.exe" \
+installer="$out/songframe-$version-win-x64-setup.exe"
+makensis -WX "-DVERSION=$version" "-DNUMERIC_VERSION=$numeric" "-DBINARY=$root/build/windows/songframe.exe" \
   "-DWEBVIEW_BOOTSTRAPPER=$work/prerequisites/MicrosoftEdgeWebview2Setup.exe" "-DVC_REDIST=$vc" \
   "-DOUTPUT=$installer" "-DICON=$root/resources/icon.ico" "-DLICENSES=$work/licenses" packaging/windows/installer.nsi
-python3 scripts/check-windows-package.py "$root/build/windows/songframe-go.exe" "$installer" "$version" "$image"
+python3 scripts/check-windows-package.py "$root/build/windows/songframe.exe" "$installer" "$version" "$image"
 printf 'Готово: %s\n' "$installer"

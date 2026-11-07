@@ -1,6 +1,6 @@
-# Ранняя Windows-поставка Go/Wails
+# Windows-поставка
 
-Цель — Windows 10/11 x64 (AMD64), отдельный профиль `songframe-go-dev` в `%APPDATA%`. Нативная установка и работа проверяются пользователем в VM; Linux-кросс-сборка этого не подтверждает.
+Цель — Windows 10/11 x64 (AMD64), профиль `songframe-desktop` в `%APPDATA%`. Нативная установка и работа проверяются пользователем в VM; Linux-кросс-сборка этого не подтверждает.
 
 ## Сборка на Linux
 
@@ -14,11 +14,11 @@ wails3 task package:windows
 
 Для Zig передаётся `-extldflags=-Wl,--subsystem,windows` вместе с Go `-H windowsgui`. Одного Go-флага в проверенном toolchain оказалось недостаточно: предварительный PE оставался консольным. Проверка заголовка не позволяет такому exe попасть в комплект. Чужая обёртка компилятора не используется.
 
-Результат — `build/release/songframe-go-<VERSION>-win-x64-setup.exe`, рядом `.sha256` и `.build.json`. [check-windows-package.py](../../scripts/check-windows-package.py) сверяет AMD64/GUI/resources/asInvoker, Go build info CGO/ORT, системные PE imports и хеш извлечённого из NSIS app exe; проверяет bootstrapper, VC prerequisite, лицензии, uninstaller и отсутствие встроенных ORT/ONNX. Windows-код не запускается, receipt содержит `nativeWindowsTested: false`.
+Результат — `build/release/songframe-<VERSION>-win-x64-setup.exe`, рядом `.sha256` и `.build.json`. [check-windows-package.py](../../scripts/check-windows-package.py) сверяет AMD64/GUI/resources/asInvoker, Go build info CGO/ORT, вшитую версию `packaging/VERSION`, системные PE imports и хеш извлечённого из NSIS app exe; проверяет bootstrapper, VC prerequisite, лицензии, uninstaller и отсутствие встроенных ORT/ONNX. Windows-код не запускается, receipt содержит `nativeWindowsTested: false`.
 
 ## Установка и prerequisites
 
-[installer.nsi](installer.nsi) ставит SongFrame Go текущему пользователю в `%LOCALAPPDATA%\Programs\SongFrame Go`, создаёт ярлыки и запись удаления HKCU. Само приложение и его установщик не требуют повышения прав. Запущенный exe не завершается принудительно: установщик просит закрыть его. Удаление сохраняет профиль, проекты и внешние компоненты.
+[installer.nsi](installer.nsi) ставит SongFrame текущему пользователю в `%LOCALAPPDATA%\Programs\SongFrame Desktop`, создаёт ярлыки «SongFrame» и запись удаления HKCU `SongFrameDesktop`. Папка, ключ удаления и профиль `%APPDATA%\songframe-desktop` отличаются от Electron-версии (`Programs\SongFrame`, профиль `songframe`) и её не затрагивают (D-038); ярлык «SongFrame» в меню заменяет ярлык Electron. Само приложение и его установщик не требуют повышения прав. Запущенный exe не завершается принудительно: установщик просит закрыть его. Удаление сохраняет профиль, проекты и внешние компоненты.
 
 Microsoft WebView2 обнаруживается по pv в HKLM/HKCU. Отсутствующий runtime ставится встроенным официальным bootstrapper `/silent /install`; для этого нужен интернет. После установки проверяется действительное наличие runtime, а не только exit code. Источник — [документация Microsoft](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution). Bootstrapper берётся из закреплённого Wails 3.0.0, SHA проверяется.
 
@@ -31,6 +31,21 @@ FFmpeg/ffprobe, ORT и модели устанавливаются через э
 1. Запустить setup обычным пользователем. Проверить завершение установки, ярлыки и запуск окна без консоли/UAC приложения; если WebView2 отсутствует, дать bootstrapper завершить загрузку.
 2. Открыть «Компоненты» без установленных ORT/моделей: окно и навигация должны оставаться доступны. При необходимости установить VC prerequisite из папки приложения, затем компоненты. Готовность CTC-модели подтверждается настоящей CPU session/inference встроенной проверкой.
 3. Повторно открыть приложение: установленные компоненты должны использоваться без повторного скачивания. Проверить закрытие, повторную установку/удаление и сохранность профиля; полный CTC workflow относится к следующему этапу.
+
+4. Проверить обновление: положить рядом с setup файл `build/release/update-check.cmd` (создаётся вручную по образцу ниже) и запустить его в VM после установки. Установленное приложение получает подставной выпуск 99.0.0 с этим же установщиком, скачивает и сверяет его, запускает установщик и закрывается, как кнопка «Установить и перезапустить». Пройти установщик поверх установленной версии: приложение должно запуститься снова, «Компоненты», настройки и история — остаться. В консоли печатается отчёт `update.json` (`launchedInstaller: true`, `download.status: ready`).
+
+```bat
+@echo off
+chcp 65001 >nul
+set "SETUP=%~dp0songframe-<VERSION>-win-x64-setup.exe"
+set "OUT=%TEMP%\songframe-update-check"
+if exist "%OUT%" rmdir /s /q "%OUT%"
+mkdir "%OUT%"
+> "%OUT%\request.json" echo {"package": "%SETUP:\=\\%", "version": "99.0.0"}
+start "" /wait "%LOCALAPPDATA%\Programs\SongFrame Desktop\songframe.exe" --update-smoke-input "%OUT%\request.json" --update-smoke-report "%OUT%\update.json"
+type "%OUT%\update.json"
+pause
+```
 
 Записать фактический результат и ошибки. Предупреждение Windows о неподписанном локальном пакете не является результатом native smoke. Сборка не разрешает commit, push или выпуск релиза.
 

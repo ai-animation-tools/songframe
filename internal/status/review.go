@@ -24,12 +24,11 @@ func scenarioReviewFailed(reason string) string {
 	return "Не удалось проверить актуальность сценария: " + reason
 }
 
-// ScenarioReview — источник решения scenesNeedReview сценарного процесса. В оригинале это
-// ScenarioWorkflow.view: его локальная запись (согласование трактовки и сценария) хранится в
-// профиле приложения. Сценарный процесс в Go ещё не перенесён, и профиль Electron не читается,
-// поэтому запись согласования всегда пуста, а значит scenesNeedReview ложно. Проблема возникает
-// только из исключений сбора входов, которые оригинал выполняет до чтения записи (см. reviewInputs).
-// Этап переноса сценарного процесса должен заменить reviewProblem вызовом своего view.
+// reviewProblem — проверка актуальности сценария без записи согласования: только исключения сбора
+// входов, которые ScenarioWorkflow.view оригинала выполняет до чтения записи (см. reviewInputs).
+// Её используют Compute (открытие и переименование проекта) и тесты. Полная проверка с записью
+// согласования принадлежит сценарному проходу: projects.status передаёт её в ComputeWith
+// (app.ConnectScenarioReview).
 func reviewProblem(path string) string {
 	if err := reviewInputs(path); err != nil {
 		return scenarioReviewFailed(err.Error())

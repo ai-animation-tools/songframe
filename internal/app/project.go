@@ -11,6 +11,7 @@ import (
 	"songframe-go/internal/montage"
 	"songframe-go/internal/project"
 	"songframe-go/internal/scenarioapply"
+	"songframe-go/internal/scenarioworkflow"
 	"songframe-go/internal/status"
 	"songframe-go/internal/store"
 	"songframe-go/internal/wire"
@@ -37,6 +38,17 @@ type ProjectService struct {
 	scenario scenarioapply.Store
 	// template — шаблон нового проекта; nil означает встроенный resources.ProjectTemplate.
 	template fs.FS
+	// review — проблема актуальности сценария для projects.status (reviewProblem оригинала);
+	// nil — только проверка входов status.Compute.
+	review func(string) string
+}
+
+// ConnectScenarioReview подключает сценарный проход к projects.status: сценарий, требующий
+// проверки после правки кастинга, трактовки или исходников, становится проблемой статуса проекта.
+// Вызывается один раз при сборке сервисов, до регистрации в Wails. Это функция, а не метод:
+// экспортированный метод стал бы частью Wails-сервиса и попал бы в bindings frontend.
+func ConnectScenarioReview(s *ProjectService, workflow *scenarioworkflow.Workflow) {
+	s.review = func(project string) string { return reviewProblem(workflow, project) }
 }
 
 // NewProjectService принимает уже запущенный медиасервер и каталог состояния приложения; журнал
@@ -93,6 +105,9 @@ func (s *ProjectService) Open(path string) (status.ProjectStatus, error) {
 // Status — projects.status: полный read-only статус, включая проверку согласования сценария.
 // Ошибка соответствует исключению оригинала на повреждённых данных (например, план без id).
 func (s *ProjectService) Status(path string) (status.ProjectStatus, error) {
+	if s.review != nil {
+		return wire.Done(status.ComputeWith(path, s.review))
+	}
 	return wire.Done(status.Compute(path))
 }
 

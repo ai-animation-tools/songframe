@@ -198,6 +198,7 @@ func run() error {
 			return aiAccess.RequireAccess(context.Background(), &project, agents.KindAgent)
 		},
 	})
+	shell.ConnectScenarioReview(projects, scenarioWorkflow)
 	productionService := production.New(production.Options{Jobs: jobManager, Layer: providerLayer})
 	// Проход агента производства: записи предложений в каталоге состояния, тот же каталог моделей,
 	// что у настроек, и занятость пакета производственной операцией. Сценарий утверждён, когда

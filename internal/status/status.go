@@ -113,15 +113,22 @@ func readJSON(path string) (any, bool) {
 	return jscompat.ReadJSONFile(path)
 }
 
-// Compute — результат projects:status: computeStatus и проверка актуальности сценария
-// (reviewProblem). Ошибка соответствует исключению оригинала, например на плане без
-// строкового id; обработчик IPC тогда отклонял вызов.
+// Compute — computeStatus с проверкой только входов сценария (reviewProblem без сценарного
+// прохода). Полный результат projects:status даёт ComputeWith с проверкой сценарного прохода.
 func Compute(path string) (ProjectStatus, error) {
+	return ComputeWith(path, reviewProblem)
+}
+
+// ComputeWith — результат projects:status: computeStatus и проблема актуальности сценария
+// review(path) (reviewProblem из ipc.ts оригинала). Проблема добавляется в конец списка и снимает
+// свежесть и утверждение аниматика; завершённый проект возвращается в производство. Ошибка
+// соответствует исключению оригинала, например на плане без строкового id.
+func ComputeWith(path string, review func(string) string) (ProjectStatus, error) {
 	status, err := ComputeBase(path)
 	if err != nil {
 		return ProjectStatus{}, err
 	}
-	if problem := reviewProblem(path); problem != "" {
+	if problem := review(path); problem != "" {
 		status.Problems = append(status.Problems, problem)
 		status.Checks.AnimaticFresh = false
 		status.Checks.AnimaticApproved = false

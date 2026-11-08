@@ -124,12 +124,12 @@ func TestNewer(t *testing.T) {
 }
 
 func TestReleasePackage(t *testing.T) {
-	found, err := ReleasePackage(encode(t, releaseJSON("0.3.0", KindWindows, packageBytes)), KindWindows)
+	found, err := ReleasePackage(encode(t, releaseJSON("0.3.0", KindWindows, packageBytes)), KindWindows, "0.2.0")
 	if err != nil || found.Version != "0.3.0" || found.Name != "songframe-0.3.0-win-x64-setup.exe" ||
 		found.Page != "https://github.com/"+Repository+"/releases/tag/v0.3.0" || found.Size != int64(len(packageBytes)) {
 		t.Fatalf("пакет Windows: %+v, %v", found, err)
 	}
-	if found, err := ReleasePackage(encode(t, releaseJSON("1.2.3", KindDeb, packageBytes)), KindDeb); err != nil || found.Name != "songframe-1.2.3-linux-amd64.deb" {
+	if found, err := ReleasePackage(encode(t, releaseJSON("1.2.3", KindDeb, packageBytes)), KindDeb, "0.2.0"); err != nil || found.Name != "songframe-1.2.3-linux-amd64.deb" {
 		t.Fatalf("пакет deb: %+v, %v", found, err)
 	}
 	broken := func(change func(map[string]any)) []byte {
@@ -146,14 +146,18 @@ func TestReleasePackage(t *testing.T) {
 		"без размера": broken(func(v map[string]any) { assetOf(v)["size"] = 0 }),
 		"не JSON":     []byte("<html>"),
 	} {
-		if _, err := ReleasePackage(data, KindAppImage); err == nil || err.Error() != textInvalidRelease {
+		if _, err := ReleasePackage(data, KindAppImage, "0.2.0"); err == nil || err.Error() != textInvalidRelease {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
 	linux := encode(t, releaseJSON("0.3.0", KindAppImage, packageBytes))
 	for _, kind := range []Kind{KindWindows, KindDeb} {
-		if _, err := ReleasePackage(linux, kind); err == nil || err.Error() != textPackageMissing {
+		if _, err := ReleasePackage(linux, kind, "0.2.0"); err == nil || err.Error() != textPackageMissing {
 			t.Errorf("%s: %v", kind, err)
+		}
+		// Выпуск не новее установленного не обязан содержать пакет этой поставки.
+		if found, err := ReleasePackage(linux, kind, "1.0.0-dev.47"); found != nil || err != nil {
+			t.Errorf("%s, прежний выпуск: %+v, %v", kind, found, err)
 		}
 	}
 }
@@ -163,6 +167,12 @@ func TestCheckCurrentAndErrors(t *testing.T) {
 	service, _ := manager(t, github{latest: releaseJSON("0.2.0", KindManual, packageBytes)}, Options{})
 	if view := service.Check(ctx); view != (View{Status: StatusCurrent, CurrentVersion: "0.2.0", Message: textCurrent}) {
 		t.Fatalf("актуальная версия: %+v", view)
+	}
+	// deb-версия 1.0 против прежнего выпуска только с AppImage: актуальная версия, а не
+	// «нет пакета» (так отвечал публичный выпуск Electron 0.5.0).
+	older, _ := manager(t, github{latest: releaseJSON("0.5.0", KindAppImage, packageBytes)}, Options{Kind: KindDeb, CurrentVersion: "1.0.0-dev.47"})
+	if view := older.Check(ctx); view.Status != StatusCurrent || view.Message != textCurrent {
+		t.Fatalf("прежний выпуск без deb: %+v", view)
 	}
 	failing, _ := manager(t, github{latest: http.StatusForbidden}, Options{})
 	if view := failing.Check(ctx); view.Status != StatusError || view.Message != textCheckFailed {

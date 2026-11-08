@@ -188,9 +188,12 @@ type asset struct {
 	DownloadURL string `json:"browser_download_url"`
 }
 
-// ReleasePackage выбирает вложение своей поставки. Адрес обязан быть версионной ссылкой
-// этого репозитория, digest — SHA-256, размер — положительным: иначе выпуск отвергается.
-func ReleasePackage(data []byte, kind Kind) (*Package, error) {
+// ReleasePackage выбирает вложение своей поставки в выпуске новее current. Адрес обязан быть
+// версионной ссылкой этого репозитория, digest — SHA-256, размер — положительным: иначе выпуск
+// отвергается. Выпуск не новее current возвращает nil без ошибки и без разбора вложений:
+// в прежних выпусках может не быть пакета этой поставки (у Electron 0.x нет deb), и это
+// не ошибка, а «актуальная версия».
+func ReleasePackage(data []byte, kind Kind, current string) (*Package, error) {
 	var value release
 	if err := json.Unmarshal(data, &value); err != nil {
 		return nil, userError(textInvalidRelease)
@@ -200,6 +203,9 @@ func ReleasePackage(data []byte, kind Kind) (*Package, error) {
 		return nil, userError(textInvalidRelease)
 	}
 	version := tag[1]
+	if !Newer(version, current) {
+		return nil, nil
+	}
 	name := PackageName(version, kind)
 	var found *asset
 	for index := range value.Assets {
@@ -294,13 +300,13 @@ func (m *Manager) Check(ctx context.Context) View {
 		if err != nil {
 			return View{}, err
 		}
-		found, err := ReleasePackage(data, m.options.Kind)
+		found, err := ReleasePackage(data, m.options.Kind, m.options.CurrentVersion)
 		if err != nil {
 			return View{}, err
 		}
 		m.mu.Lock()
 		defer m.mu.Unlock()
-		if !Newer(found.Version, m.options.CurrentVersion) {
+		if found == nil {
 			return m.set(View{Status: StatusCurrent, Message: textCurrent}), nil
 		}
 		m.found = found

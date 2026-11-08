@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/jobs"
+	"songframe/internal/jobs"
 )
 
-// TestContactSheet — contactSheet(project, packageDir): задание «Сводка <пакет>» с одним шагом
+// TestContactSheet — ContactSheet: задание «Сводка <пакет>» с одним шагом
 // contact_sheet --package <пакет> --json пишет preview/ пакета по скачанному видео; отказ
 // инструмента — неудача задания с его текстом, пакет вне проекта отклоняется до задания.
 func TestContactSheet(t *testing.T) {

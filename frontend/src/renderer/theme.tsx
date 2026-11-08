@@ -6,7 +6,7 @@ import { ruRU } from '@mui/material/locale';
 import { themePalettes } from './theme-palette';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
-const STORAGE_KEY = 'songframe-go.theme';
+const STORAGE_KEY = 'songframe.theme';
 
 interface ThemeModeContextValue {
   mode: ThemeMode;

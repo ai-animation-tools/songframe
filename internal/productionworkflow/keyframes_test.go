@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers/agentexec"
+	"songframe/internal/agents"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers/agentexec"
 )
 
 // tinyPNG — PNG 1×1 RGB, декодируемый целиком.

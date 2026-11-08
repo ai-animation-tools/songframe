@@ -4,12 +4,12 @@ import (
 	"context"
 	"io/fs"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/newproject"
-	"songframe-go/internal/projectfile"
-	"songframe-go/internal/status"
-	"songframe-go/internal/wire"
-	"songframe-go/resources"
+	"songframe/internal/dynvalue"
+	"songframe/internal/newproject"
+	"songframe/internal/projectfile"
+	"songframe/internal/status"
+	"songframe/internal/wire"
+	"songframe/resources"
 )
 
 // Методы ProjectService, которые пишут проект: создание из встроенного шаблона,
@@ -43,7 +43,7 @@ func (s *ProjectService) Create(input newproject.Input) (status.ProjectStatus, e
 // Rename — projects.rename: меняется только название в plan/project.json и в истории; папка,
 // MP4 и настройки генерации не переносятся. Нечитаемая история отказывает до записи маркера.
 func (s *ProjectService) Rename(path, name string) (status.ProjectStatus, error) {
-	target := jscompat.Resolve("", path)
+	target := dynvalue.Resolve("", path)
 	next, err := projectfile.Rename(target, name, func() error {
 		_, err := s.state.History()
 		return err

@@ -11,16 +11,16 @@ import (
 	"sync"
 	"testing"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/mediatest"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/providers/kling"
-	"songframe-go/internal/tools"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/mediatest"
+	"songframe/internal/providers"
+	"songframe/internal/providers/kling"
+	"songframe/internal/tools"
 )
 
 // Эталон testdata/golden/production-workflow/cases.json: шаги
@@ -85,7 +85,7 @@ func (f *fakeAgents) Start(input agents.StartInput) (agents.Job, error) {
 	defer f.mu.Unlock()
 	f.starts = append(f.starts, input)
 	job := &agents.Job{
-		SchemaVersion: 1, ID: "job-" + jscompat.NumberToString(float64(len(f.jobs)+1)), Sequence: 1, Project: input.Project, Provider: "codex",
+		SchemaVersion: 1, ID: "job-" + dynvalue.NumberToString(float64(len(f.jobs)+1)), Sequence: 1, Project: input.Project, Provider: "codex",
 		Task: input.Task, Permissions: "read-only", Status: "running",
 	}
 	f.jobs = append(f.jobs, job)
@@ -147,35 +147,36 @@ type captureConfig struct {
 }
 
 var (
-	v8Message   = regexp.MustCompile(`(?s)^(Unexpected .*JSON.*|Expected .* in JSON at position \d+.*|.* is not valid JSON)$`)
-	uuidPattern = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}`)
-	videoCmds   = []string{"text_to_video", "image_to_video", "omni_ref_video", "motion_control"}
+	parseErrorMessage = regexp.MustCompile(`(?s)^(Unexpected .*JSON.*|Expected .* in JSON at position \d+.*|.* is not valid JSON)$`)
+	uuidPattern       = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}`)
+	videoCmds         = []string{"text_to_video", "image_to_video", "omni_ref_video", "motion_control"}
 )
 
-// v8Deviation — осознанное отличие от эталона: ответ, который не разбирается как JSON,
-// отклоняется текстом textProposalNotJSON, а эталон хранит сообщение SyntaxError разборщика.
+// notJSONDeviation — осознанное отличие от эталона: ответ, который не разбирается как JSON,
+// отклоняется текстом textProposalNotJSON, а эталон хранит на его месте текст ошибки разбора
+// JSON (Unexpected token…, … is not valid JSON).
 // Заменяет такие строки в дереве эталона.
-func v8Deviation(value any) any {
+func notJSONDeviation(value any) any {
 	switch typed := value.(type) {
 	case string:
-		if v8Message.MatchString(typed) {
+		if parseErrorMessage.MatchString(typed) {
 			return textProposalNotJSON
 		}
-	case *jscompat.Array:
+	case *dynvalue.Array:
 		for index, item := range typed.Items {
-			typed.Items[index] = v8Deviation(item)
+			typed.Items[index] = notJSONDeviation(item)
 		}
-	case *jscompat.Object:
+	case *dynvalue.Object:
 		for _, key := range typed.Keys() {
-			typed.Set(key, v8Deviation(typed.Value(key)))
+			typed.Set(key, notJSONDeviation(typed.Value(key)))
 		}
 	}
 	return value
 }
 
-// originalFields убирает поля вида, которых нет в эталоне и которые служат только интерфейсу
+// goldenFields убирает поля вида, которых нет в эталоне и которые служат только интерфейсу
 // (NextStage, ReplaceFrame): остальной вид сверяется с эталоном как есть.
-func originalFields(value any) any {
+func goldenFields(value any) any {
 	if view, ok := value.(View); ok {
 		view.NextStage, view.ReplaceFrame = nil, nil
 		return view
@@ -183,28 +184,28 @@ func originalFields(value any) any {
 	return value
 }
 
-// canonical — JSON в форме JSON.stringify после замены сообщений SyntaxError.
+// canonical — компактный JSON dynvalue после замены текстов ошибки разбора.
 func canonical(t *testing.T, data []byte) string {
 	t.Helper()
-	value, err := jscompat.Parse(data)
+	value, err := dynvalue.Parse(data)
 	if err != nil {
 		t.Fatalf("%v: %s", err, data)
 	}
-	return jscompat.Stringify(v8Deviation(value))
+	return dynvalue.Stringify(notJSONDeviation(value))
 }
 
-// canonicalText — запись каталога состояния эталона: файл `JSON.stringify(v, null, 2) + '\n'`
-// или компактный JSON записи writeLocal.
+// canonicalText — запись каталога состояния эталона: файл JSON с отступом в два пробела и
+// переводом строки в конце или компактный JSON записи шага writeLocal.
 func canonicalText(t *testing.T, text string) string {
 	t.Helper()
-	value, err := jscompat.Parse([]byte(text))
+	value, err := dynvalue.Parse([]byte(text))
 	if err != nil {
 		return text
 	}
 	if !strings.Contains(text, "\n") {
-		return jscompat.Stringify(v8Deviation(value))
+		return dynvalue.Stringify(notJSONDeviation(value))
 	}
-	return jscompat.StringifyIndent(v8Deviation(value), "  ") + "\n"
+	return dynvalue.StringifyIndent(notJSONDeviation(value), "  ") + "\n"
 }
 
 func TestGoldenProductionWorkflow(t *testing.T) {
@@ -276,27 +277,27 @@ func (r *goldenRun) runTool(ctx context.Context, project, name string, args []st
 			code := 1
 			return tools.Result{Code: &code, Stderr: "Каталог временно недоступен."}, nil
 		}
-		reports := &jscompat.Array{}
+		reports := &dynvalue.Array{}
 		for _, command := range videoCmds {
 			if slices.ContainsFunc(r.config.CapabilityProblems, func(problem providers.CatalogProblem) bool { return problem.Command == command }) {
 				continue
 			}
 			slots := `{"first_image":{"required":true},"tail_image":{}` + map[bool]string{true: `,"audio_1":{}`}[r.config.AudioSlot] + `}`
-			report, _ := jscompat.Parse([]byte(`{"command":"` + command + `","models":{"test-video":{"arguments":{"duration":{"allowed":["9"]},"resolution":{"allowed":["1080p"]}},"slots":` + slots + `}}}`))
+			report, _ := dynvalue.Parse([]byte(`{"command":"` + command + `","models":{"test-video":{"arguments":{"duration":{"allowed":["9"]},"resolution":{"allowed":["1080p"]}},"slots":` + slots + `}}}`))
 			reports.Items = append(reports.Items, report)
 		}
-		problems := &jscompat.Array{}
+		problems := &dynvalue.Array{}
 		for _, problem := range r.config.CapabilityProblems {
-			item := jscompat.NewObject()
+			item := dynvalue.NewObject()
 			item.Set("command", problem.Command)
 			item.Set("message", problem.Message)
 			problems.Items = append(problems.Items, item)
 		}
-		output := jscompat.NewObject()
+		output := dynvalue.NewObject()
 		output.Set("reports", reports)
 		output.Set("problems", problems)
 		code := 0
-		return tools.Result{Code: &code, Stdout: jscompat.Stringify(output)}, nil
+		return tools.Result{Code: &code, Stdout: dynvalue.Stringify(output)}, nil
 	}
 	result, err := tools.RunContext(ctx, project, name, args)
 	if err == nil && r.config.MutateOnBrief != nil && slices.Contains(args, "after") {
@@ -331,7 +332,7 @@ func (r *goldenRun) recordPath(shot string) string {
 // step исполняет шаг и сверяет его исход с эталоном.
 func (r *goldenRun) step(t *testing.T, index int, step goldenStep) {
 	t.Helper()
-	label := func() string { return jscompat.NumberToString(float64(index)) + " " + step.Op }
+	label := func() string { return dynvalue.NumberToString(float64(index)) + " " + step.Op }
 	startsBefore, callsBefore := len(r.agents.starts), len(r.calls)
 	manager := r.agents
 	result, err := r.execute(t, step)
@@ -342,7 +343,7 @@ func (r *goldenRun) step(t *testing.T, index int, step goldenStep) {
 		if err == nil {
 			t.Fatalf("%s: ожидалась ошибка %q", label(), *step.Error)
 		}
-		if got := r.normalize(err.Error()); canonical(t, []byte(jscompat.Quote(got))) != canonical(t, []byte(jscompat.Quote(*step.Error))) {
+		if got := r.normalize(err.Error()); canonical(t, []byte(dynvalue.Quote(got))) != canonical(t, []byte(dynvalue.Quote(*step.Error))) {
 			t.Fatalf("%s: ошибка\n got %s\nwant %s", label(), got, *step.Error)
 		}
 	} else if err != nil {
@@ -389,24 +390,24 @@ func firstDifference(got, want string) string {
 	return "got:  …" + got[from:min(position+200, len(got))] + "\nwant: …" + want[from:min(position+200, len(want))]
 }
 
-// compareResult сверяет результат шага (вид, сводку) в форме JSON.stringify.
+// compareResult сверяет результат шага (вид, сводку) в форме компактного JSON.
 func (r *goldenRun) compareResult(t *testing.T, label string, want json.RawMessage, got any) {
 	t.Helper()
-	data, err := json.Marshal(originalFields(got))
+	data, err := json.Marshal(goldenFields(got))
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotText := canonical(t, []byte(r.normalize(jscompat.Stringify(mustParse(t, data)))))
+	gotText := canonical(t, []byte(r.normalize(dynvalue.Stringify(mustParse(t, data)))))
 	if summaries, ok := got.(map[string]Summary); ok {
 		// Порядок ключей сводки в эталоне — порядок файлов каталога состояния; план ищется по ID.
-		expected := mustParse(t, want).(*jscompat.Object)
+		expected := mustParse(t, want).(*dynvalue.Object)
 		if len(expected.Keys()) != len(summaries) {
 			t.Fatalf("%s: сводка %s, ожидалась %s", label, gotText, want)
 		}
 		for _, shot := range expected.Keys() {
 			summary, found := summaries[shot]
-			if !found || r.normalize(string(summary.Value)) != jscompat.Stringify(expected.Value(shot)) {
-				t.Fatalf("%s: сводка %s: %s, ожидалась %s", label, shot, summary.Value, jscompat.Stringify(expected.Value(shot)))
+			if !found || r.normalize(string(summary.Value)) != dynvalue.Stringify(expected.Value(shot)) {
+				t.Fatalf("%s: сводка %s: %s, ожидалась %s", label, shot, summary.Value, dynvalue.Stringify(expected.Value(shot)))
 			}
 		}
 		return
@@ -418,7 +419,7 @@ func (r *goldenRun) compareResult(t *testing.T, label string, want json.RawMessa
 
 func mustParse(t *testing.T, data []byte) any {
 	t.Helper()
-	value, err := jscompat.Parse(data)
+	value, err := dynvalue.Parse(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -491,7 +492,7 @@ func (r *goldenRun) execute(t *testing.T, step goldenStep) (any, error) {
 				t.Fatal(err)
 			}
 		case len(step.JSON) > 0:
-			data = []byte(jscompat.StringifyIndent(mustParse(t, step.JSON), "  ") + "\n")
+			data = []byte(dynvalue.StringifyIndent(mustParse(t, step.JSON), "  ") + "\n")
 		default:
 			data = []byte(*step.Text)
 		}
@@ -530,7 +531,7 @@ func (r *goldenRun) execute(t *testing.T, step goldenStep) (any, error) {
 		input.Project = r.project
 		input.PackageDir = r.packagePath(input.PackageDir)
 		if step.Op == "startNoAgent" {
-			// Маршрут productionWorkflow:start: сначала ai.requireAccess(project, 'agent').
+			// Запуск прохода приложением: сначала проверка доступа вида agent.
 			checker := &agents.AccessChecker{Settings: agents.NewSettingsStore(t.TempDir())}
 			project := r.project
 			if err := checker.RequireAccess(context.Background(), &project, agents.KindAgent); err != nil {
@@ -544,7 +545,7 @@ func (r *goldenRun) execute(t *testing.T, step goldenStep) (any, error) {
 		if text, ok := result.(string); ok {
 			job.Result = text
 		} else {
-			job.Result = jscompat.Stringify(result)
+			job.Result = dynvalue.Stringify(result)
 		}
 		job.Status = "completed"
 		if step.Status != "" {
@@ -552,7 +553,7 @@ func (r *goldenRun) execute(t *testing.T, step goldenStep) (any, error) {
 		}
 		code := 0
 		if len(step.ExitCode) > 0 {
-			code = int(jscompat.ToNumber(mustParse(t, step.ExitCode)))
+			code = int(dynvalue.ToNumber(mustParse(t, step.ExitCode)))
 		}
 		job.ExitCode = &code
 		return nil, nil
@@ -579,8 +580,8 @@ func (r *goldenRun) execute(t *testing.T, step goldenStep) (any, error) {
 		id := step.ID
 		if id == "current" {
 			id = ""
-			if value, ok := jscompat.ReadJSONFile(r.recordPath(step.Shot)); ok {
-				id, _ = jscompat.GetPath(value, "proposal", "id").(string)
+			if value, ok := dynvalue.ReadJSONFile(r.recordPath(step.Shot)); ok {
+				id, _ = dynvalue.GetPath(value, "proposal", "id").(string)
 			}
 		}
 		return r.workflow.Discard(r.project, step.Shot, r.packagePath(step.PackageDir), id)
@@ -597,24 +598,24 @@ func (r *goldenRun) execute(t *testing.T, step goldenStep) (any, error) {
 		if err := os.MkdirAll(folder, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		text := strings.ReplaceAll(jscompat.Stringify(mustParse(t, step.JSON)), "<project>", r.project)
+		text := strings.ReplaceAll(dynvalue.Stringify(mustParse(t, step.JSON)), "<project>", r.project)
 		if err := os.WriteFile(filepath.Join(folder, step.Name), []byte(text), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		return nil, nil
 	case "patchLocal":
 		path := r.recordPath(step.Shot)
-		value, ok := jscompat.ReadJSONFile(path)
+		value, ok := dynvalue.ReadJSONFile(path)
 		if !ok {
 			t.Fatal("нет записи для patchLocal")
 		}
 		if step.Status != "" {
-			value.(*jscompat.Object).Value("proposal").(*jscompat.Object).Set("status", step.Status)
+			value.(*dynvalue.Object).Value("proposal").(*dynvalue.Object).Set("status", step.Status)
 		}
 		if step.Target != "" {
-			value.(*jscompat.Object).Set("target", filepath.Join(r.project, step.Target))
+			value.(*dynvalue.Object).Set("target", filepath.Join(r.project, step.Target))
 		}
-		if err := os.WriteFile(path, []byte(jscompat.StringifyIndent(value, "  ")+"\n"), 0o644); err != nil {
+		if err := os.WriteFile(path, []byte(dynvalue.StringifyIndent(value, "  ")+"\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		return nil, nil

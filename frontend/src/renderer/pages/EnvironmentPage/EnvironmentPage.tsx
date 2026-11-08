@@ -124,7 +124,7 @@ export function EnvironmentPage(): ReactElement {
     notify(missing.length ? environmentTexts.checksMissing(missing.join(', ')) : environmentTexts.allAvailable, missing.length ? 'warning' : 'success');
   };
 
-  // Адрес страницы входа приходит из главного процесса во время ожидания и исчезает с окончанием входа.
+  // Адрес страницы входа приходит из Go во время ожидания и исчезает с окончанием входа.
   const [authorizeUrls, setAuthorizeUrls] = useState<Record<string, string>>({});
   useEffect(
     () =>

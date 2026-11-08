@@ -5,7 +5,7 @@
   "covers": [
     "mergeSettings вложенный",
     "неизвестные поля файла",
-    "agentInstructions undefined не трогает поле"
+    "без agentInstructions поле не меняется"
   ],
   "stubbedMedia": []
 }

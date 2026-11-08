@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"songframe-go/internal/process"
+	"songframe/internal/process"
 )
 
 // RelaunchEnvironment — окружение нового AppImage без следов прежнего монтирования.

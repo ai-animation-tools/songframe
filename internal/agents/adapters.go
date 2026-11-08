@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Виды обновлений потокового протокола, общие для всех CLI.
@@ -62,7 +62,7 @@ type Adapter interface {
 	// Args — аргументы рабочего запуска; неподдерживаемые режим или версия — *Error до запуска.
 	Args(config Settings, version string, mode Mode, images []Image) ([]string, error)
 	// Parse переводит событие JSONL в обновления; *Error — нарушение протокола.
-	Parse(value *jscompat.Object) ([]Update, error)
+	Parse(value *dynvalue.Object) ([]Update, error)
 }
 
 // InputEncoder — адаптер, который умеет передать промпт и вложения через stdin. Без него
@@ -86,12 +86,12 @@ func NewAdapterOptions(provider string, options CheckOptions) Adapter {
 	return nil
 }
 
-// object — `value && typeof value === 'object' && !Array.isArray(value) ? value : {}`.
-func object(value any) *jscompat.Object {
-	if record, ok := value.(*jscompat.Object); ok {
+// object — значение как объект JSON; массив, null и скаляры дают пустой объект.
+func object(value any) *dynvalue.Object {
+	if record, ok := value.(*dynvalue.Object); ok {
 		return record
 	}
-	return jscompat.NewObject()
+	return dynvalue.NewObject()
 }
 
 // text — строковое значение или "".
@@ -101,12 +101,12 @@ func text(value any) string {
 }
 
 // blocks — элементы массива, приведённые к объектам; не массив — пустой список.
-func blocks(value any) []*jscompat.Object {
-	items, ok := jscompat.AsArray(value)
+func blocks(value any) []*dynvalue.Object {
+	items, ok := dynvalue.AsArray(value)
 	if !ok {
 		return nil
 	}
-	result := make([]*jscompat.Object, len(items))
+	result := make([]*dynvalue.Object, len(items))
 	for index, item := range items {
 		result[index] = object(item)
 	}
@@ -197,7 +197,7 @@ func (a *claudeAdapter) Args(config Settings, version string, mode Mode, images 
 func (a *claudeAdapter) Input(prompt string, images []Image) (string, error) {
 	input := prompt
 	if len(images) > 0 {
-		content := &jscompat.Array{Items: []any{object2("type", "text", "text", prompt)}}
+		content := &dynvalue.Array{Items: []any{object2("type", "text", "text", prompt)}}
 		for _, image := range images {
 			source := object2("type", "base64", "media_type", image.MediaType)
 			source.Set("data", base64.StdEncoding.EncodeToString(image.Data))
@@ -206,7 +206,7 @@ func (a *claudeAdapter) Input(prompt string, images []Image) (string, error) {
 		message := object2("role", "user", "content", content)
 		envelope := object2("type", "user", "message", message)
 		envelope.Set("parent_tool_use_id", nil)
-		input = jscompat.Stringify(envelope) + "\n"
+		input = dynvalue.Stringify(envelope) + "\n"
 	}
 	if len(input) > claudeInputLimit {
 		return "", agentError(CodeInvalidInput, textClaudeInputTooLarge)
@@ -215,14 +215,14 @@ func (a *claudeAdapter) Input(prompt string, images []Image) (string, error) {
 }
 
 // object2 — объект с двумя ключами в заданном порядке.
-func object2(k1 string, v1 any, k2 string, v2 any) *jscompat.Object {
-	result := jscompat.NewObject()
+func object2(k1 string, v1 any, k2 string, v2 any) *dynvalue.Object {
+	result := dynvalue.NewObject()
 	result.Set(k1, v1)
 	result.Set(k2, v2)
 	return result
 }
 
-func (a *claudeAdapter) Parse(value *jscompat.Object) ([]Update, error) {
+func (a *claudeAdapter) Parse(value *dynvalue.Object) ([]Update, error) {
 	kind := value.Value("type")
 	switch kind {
 	case "system":
@@ -262,14 +262,14 @@ func (a *claudeAdapter) Parse(value *jscompat.Object) ([]Update, error) {
 	case "result":
 		if value.Value("is_error") == true || value.Value("subtype") != "success" {
 			reason := []any{value.Value("subtype"), value.Value("result")}
-			if errors, ok := jscompat.AsArray(value.Value("errors")); ok {
+			if errors, ok := dynvalue.AsArray(value.Value("errors")); ok {
 				for _, item := range errors {
 					if _, isString := item.(string); isString {
 						reason = append(reason, item)
 					}
 				}
 			}
-			joined := jscompat.Join(reason, " ")
+			joined := dynvalue.Join(reason, " ")
 			return []Update{{Type: UpdateFailed, Err: providerFailure(joined, joined)}}, nil
 		}
 		result := text(value.Value("result"))
@@ -330,7 +330,7 @@ func (a *codexAdapter) Input(prompt string, _ []Image) (string, error) { return 
 // codexTools — элементы, которые показываются как работа инструмента.
 var codexTools = map[string]bool{"command_execution": true, "mcp_tool_call": true, "web_search": true, "file_change": true}
 
-func (a *codexAdapter) Parse(value *jscompat.Object) ([]Update, error) {
+func (a *codexAdapter) Parse(value *dynvalue.Object) ([]Update, error) {
 	kind := value.Value("type")
 	switch kind {
 	case "thread.started":
@@ -341,10 +341,10 @@ func (a *codexAdapter) Parse(value *jscompat.Object) ([]Update, error) {
 	case "turn.failed":
 		// Фатален только turn.failed. Событие error верхнего уровня Codex шлёт и при переподключении
 		// потока, после которого ход продолжается; если ход оборвётся, менеджер покажет уведомление.
-		reason := jscompat.Coalesce(object(value.Value("error")).Value("message"), value.Value("message"))
+		reason := dynvalue.Coalesce(object(value.Value("error")).Value("message"), value.Value("message"))
 		return []Update{{Type: UpdateFailed, Err: providerFailure(reason, reason)}}, nil
 	case "error":
-		message := jscompat.Coalesce(value.Value("message"), object(value.Value("error")).Value("message"))
+		message := dynvalue.Coalesce(value.Value("message"), object(value.Value("error")).Value("message"))
 		return []Update{{Type: UpdateNotice, Text: text(message)}}, nil
 	case "item.completed", "item.updated", "item.started":
 		item := object(value.Value("item"))

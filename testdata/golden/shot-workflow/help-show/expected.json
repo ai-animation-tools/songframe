@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow.py show [-h] --dir DIR [--json]\n\noptions:\n  -h, --help  show this help message and exit\n  --dir DIR\n  --json\n",
+  "stdout": "usage: shot_workflow show [-h] --dir DIR [--json]\n\noptions:\n  -h, --help  show this help message and exit\n  --dir DIR\n  --json\n",
   "stderr": "",
   "traceback": false,
   "files": {},

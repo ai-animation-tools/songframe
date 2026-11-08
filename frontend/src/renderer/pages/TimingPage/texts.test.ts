@@ -21,7 +21,7 @@ const numbers = [
 ] as const;
 
 describe('целые фразы разметки', () => {
-  it.each(numbers)('сохраняет прежнюю грамматику числа %s', (value, written, fixed) => {
+  it.each(numbers)('сохраняет грамматику числа %s', (value, written, fixed) => {
     expect(timingTexts.missingSourceLine({ line: value })).toBe(`(строка ${written} отсутствует)`);
     expect(timingTexts.exitCode({ code: value })).toBe(`код ${written}`);
     expect(timingTexts.lineStart({ id: value })).toBe(`Начало строки ${written}`);
@@ -86,7 +86,7 @@ describe('разметка текста в таблице и ссылках', ()
     }
   });
 
-  it('показывает прежние заголовки и пустое состояние', () => {
+  it('показывает заголовки и пустое состояние', () => {
     const html = renderToStaticMarkup(
       createElement(TimingLinesTable, {
         lines: [],

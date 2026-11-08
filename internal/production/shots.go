@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"sort"
 
-	"songframe-go/internal/acceptance"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/acceptance"
+	"songframe/internal/dynvalue"
 )
 
 // Состояния плана ShotProductionState.
@@ -32,24 +32,24 @@ type ShotState struct {
 	Produced bool
 }
 
-// ShotStates — состояние каждого плана сохранённого реестра plan/scenes.json так же, как
-// viewProduction(project).shots[*].state и наличие комплекта/пакетов. Без реестра — пусто.
-// Ключ — String(id) плана. Ничего не пишет.
+// ShotStates — состояние каждого плана сохранённого реестра plan/scenes.json по тем же
+// правилам, что поле State в ViewProduction, и наличие комплекта/пакетов. Без реестра — пусто.
+// Ключ — id плана строкой (dynvalue.ToString). Ничего не пишет.
 func ShotStates(project string) (map[string]ShotState, error) {
 	result := map[string]ShotState{}
 	scenes := readJSON(filepath.Join(project, "plan", "scenes.json"))
-	if !jscompat.Truthy(scenes) {
+	if !dynvalue.Truthy(scenes) {
 		return result, nil
 	}
-	// currentShotFingerprint: отпечатки сохранённого реестра по кастингу проекта, один раз за вызов.
+	// Отпечатки сохранённого реестра по кастингу проекта (CurrentShotFingerprint), один раз за вызов.
 	fingerprint := projectFingerprint(project)
 	var packages []*PackageView
 	for _, base := range []string{"batches", "awaiting"} {
 		folder := filepath.Join(project, "plan", base)
-		if !jscompat.Exists(folder) {
+		if !dynvalue.Exists(folder) {
 			continue
 		}
-		entries, err := jscompat.ReadDir(folder)
+		entries, err := dynvalue.ReadDir(folder)
 		if err != nil {
 			return nil, err
 		}
@@ -70,28 +70,28 @@ func ShotStates(project string) (map[string]ShotState, error) {
 			}
 		}
 	}
-	if _, ok := jscompat.AsArray(jscompat.Get(scenes, "sequences")); !ok {
-		return nil, &jscompat.TypeError{Message: "scenes.sequences.map is not a function"}
+	if _, ok := dynvalue.AsArray(dynvalue.Get(scenes, "sequences")); !ok {
+		return nil, &dynvalue.TypeError{Message: "scenes.sequences.map is not a function"}
 	}
 	accepted, err := acceptance.Compute(project, scenes)
 	if err != nil {
 		return nil, err
 	}
-	list, err := jscompat.Iterate(jscompat.Get(scenes, "scenes"))
+	list, err := dynvalue.Iterate(dynvalue.Get(scenes, "scenes"))
 	if err != nil {
 		return nil, err
 	}
 	for _, scene := range list {
-		rawID, err := jscompat.Prop(scene, "id")
+		rawID, err := dynvalue.Prop(scene, "id")
 		if err != nil {
 			return nil, err
 		}
-		id, err := jscompat.PathArg("path", rawID)
+		id, err := dynvalue.PathArg("path", rawID)
 		if err != nil {
 			return nil, err
 		}
 		manifest := readJSON(filepath.Join(project, "assets", "shots", id, "manifest.json"))
-		hasManifest := jscompat.Truthy(manifest)
+		hasManifest := dynvalue.Truthy(manifest)
 		mine, troubled := 0, false
 		for _, item := range packages {
 			if item.Shot == id {
@@ -111,7 +111,7 @@ func ShotStates(project string) (map[string]ShotState, error) {
 		} else if troubled {
 			state = StateUnknown
 		}
-		result[jscompat.ToString(rawID)] = ShotState{State: state, Produced: hasManifest || mine > 0}
+		result[dynvalue.ToString(rawID)] = ShotState{State: state, Produced: hasManifest || mine > 0}
 	}
 	return result, nil
 }

@@ -19,11 +19,11 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/scenarioapply"
-	"songframe-go/internal/tools"
-	"songframe-go/resources"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/scenarioapply"
+	"songframe/internal/tools"
+	"songframe/resources"
 )
 
 // StartInput — ScenarioWorkflowStart: проход и, для revise, замечание и выбранные планы.
@@ -119,9 +119,9 @@ func defaultScaffold(project string) (any, error) {
 		if details == "" {
 			details = result.Stdout
 		}
-		return nil, errors.New(textScaffoldFailed(sliceTail(jscompat.Trim(details), 2000)))
+		return nil, errors.New(textScaffoldFailed(sliceTail(dynvalue.Trim(details), 2000)))
 	}
-	return jscompat.Parse([]byte(result.Stdout))
+	return dynvalue.Parse([]byte(result.Stdout))
 }
 
 // randomUUID — crypto.randomUUID: UUID версии 4 для ID предложения.
@@ -136,12 +136,12 @@ func randomUUID() string {
 }
 
 // pendingProposal — state.pending.proposal или nil.
-func pendingProposal(state *jscompat.Object) (*jscompat.Object, *jscompat.Object) {
-	stored, ok := jscompat.AsObject(state.Value("pending"))
+func pendingProposal(state *dynvalue.Object) (*dynvalue.Object, *dynvalue.Object) {
+	stored, ok := dynvalue.AsObject(state.Value("pending"))
 	if !ok {
 		return nil, nil
 	}
-	proposal, _ := jscompat.AsObject(stored.Value("proposal"))
+	proposal, _ := dynvalue.AsObject(stored.Value("proposal"))
 	return stored, proposal
 }
 
@@ -149,28 +149,28 @@ func pendingProposal(state *jscompat.Object) (*jscompat.Object, *jscompat.Object
 func stringItems(value any) []string {
 	result := []string{}
 	for _, item := range arrayItems(value) {
-		result = append(result, jscompat.ToString(item))
+		result = append(result, dynvalue.ToString(item))
 	}
 	return result
 }
 
 // stringArray — массив строк как значение JSON.
-func stringArray(items []string) *jscompat.Array {
+func stringArray(items []string) *dynvalue.Array {
 	values := make([]any, len(items))
 	for index, item := range items {
 		values[index] = item
 	}
-	return &jscompat.Array{Items: values}
+	return &dynvalue.Array{Items: values}
 }
 
 // refresh — устаревание предложения и итог задания агента. Запись обновляется,
 // только когда работавшее задание завершилось (ready, invalid, failed, cancelled, interrupted).
-func (w *Workflow) refresh(input *inputs, state *jscompat.Object) (*AgentJob, error) {
+func (w *Workflow) refresh(input *inputs, state *dynvalue.Object) (*AgentJob, error) {
 	stored, proposal := pendingProposal(state)
 	if proposal == nil {
 		return nil, nil
 	}
-	jobID := jscompat.ToString(proposal.Value("jobId"))
+	jobID := dynvalue.ToString(proposal.Value("jobId"))
 	found, known := w.options.Agents.Get(jobID)
 	var job *AgentJob
 	if known {
@@ -181,7 +181,7 @@ func (w *Workflow) refresh(input *inputs, state *jscompat.Object) (*AgentJob, er
 	if err != nil {
 		return nil, err
 	}
-	status := jscompat.ToString(proposal.Value("status"))
+	status := dynvalue.ToString(proposal.Value("status"))
 	proposal.Set("stale", status != "applied" && !matches)
 	if status != "running" {
 		return job, nil
@@ -217,8 +217,8 @@ func (w *Workflow) refresh(input *inputs, state *jscompat.Object) (*AgentJob, er
 
 // acceptResult — ветка успешного задания в refresh: разбор ответа, проверка изображений
 // кастинга, изменённые планы и предупреждение о сущностях без референса.
-func (w *Workflow) acceptResult(input *inputs, stored, proposal *jscompat.Object, result string) error {
-	pass := jscompat.ToString(proposal.Value("pass"))
+func (w *Workflow) acceptResult(input *inputs, stored, proposal *dynvalue.Object, result string) error {
+	pass := dynvalue.ToString(proposal.Value("pass"))
 	before := documentsFrom(proposal.Value("before"))
 	duration, _ := stored.Value("duration").(float64)
 	after, err := proposalDocuments(result, pass, before, nullable(stored.Value("scaffold")), stringItems(proposal.Value("selectedIds")), duration)
@@ -227,13 +227,13 @@ func (w *Workflow) acceptResult(input *inputs, stored, proposal *jscompat.Object
 	}
 	expected := hashesFrom(stored.Value("expectedHashes"))
 	base := filepath.Join(input.project, "source")
-	for _, entity := range arrayItems(jscompat.Get(after.Cast, "entities")) {
-		name := jscompat.ToString(jscompat.Get(entity, "name"))
-		for _, item := range arrayItems(jscompat.Get(entity, "images")) {
-			image := jscompat.ToString(item)
-			full := jscompat.Resolve(base, image)
-			local := jscompat.Relative(base, full)
-			if jscompat.IsAbs(image) || strings.HasPrefix(local, "..") || !jscompat.Exists(full) {
+	for _, entity := range arrayItems(dynvalue.Get(after.Cast, "entities")) {
+		name := dynvalue.ToString(dynvalue.Get(entity, "name"))
+		for _, item := range arrayItems(dynvalue.Get(entity, "images")) {
+			image := dynvalue.ToString(item)
+			full := dynvalue.Resolve(base, image)
+			local := dynvalue.Relative(base, full)
+			if dynvalue.IsAbs(image) || strings.HasPrefix(local, "..") || !dynvalue.Exists(full) {
 				return errors.New(textProposalImageMissing(name, image))
 			}
 			// Новое изображение тоже становится входом применения, даже если его не было в исходной паре.
@@ -252,9 +252,9 @@ func (w *Workflow) acceptResult(input *inputs, stored, proposal *jscompat.Object
 	proposal.Set("changedIds", stringArray(changed))
 	// Сущности без изображения допустимы (место действия, реквизит): одно предупреждение вместо списка одинаковых.
 	without := []string{}
-	for _, entity := range arrayItems(jscompat.Get(after.Cast, "entities")) {
-		if !jscompat.StrictEqual(jscompat.Get(entity, "kind"), "world") && len(arrayItems(jscompat.Get(entity, "images"))) == 0 {
-			without = append(without, jscompat.ToString(jscompat.Get(entity, "name")))
+	for _, entity := range arrayItems(dynvalue.Get(after.Cast, "entities")) {
+		if !dynvalue.StrictEqual(dynvalue.Get(entity, "kind"), "world") && len(arrayItems(dynvalue.Get(entity, "images"))) == 0 {
+			without = append(without, dynvalue.ToString(dynvalue.Get(entity, "name")))
 		}
 	}
 	warnings := []string{}
@@ -268,7 +268,7 @@ func (w *Workflow) acceptResult(input *inputs, stored, proposal *jscompat.Object
 
 // nullable — Undefined как nil.
 func nullable(value any) any {
-	if value == jscompat.Undefined {
+	if value == dynvalue.Undefined {
 		return nil
 	}
 	return value
@@ -294,12 +294,12 @@ func (w *Workflow) view(project string) (View, *inputs, error) {
 		return View{}, nil, err
 	}
 	busy := w.busy(input.project)
-	approval, hasApproval := jscompat.AsObject(state.Value("approval"))
+	approval, hasApproval := dynvalue.AsObject(state.Value("approval"))
 	treatmentApproved := input.pairValid && len(input.problems) == 0 && hasApproval && hashesFrom(approval).matches(input.approval)
 	scenesNeedReview := false
 	if input.documents.Scenes != nil {
 		review, _ := state.Value("needsScenesReview").(bool)
-		scenes, hasScenes := jscompat.AsObject(state.Value("scenesApproval"))
+		scenes, hasScenes := dynvalue.AsObject(state.Value("scenesApproval"))
 		scenesNeedReview = review || (hasApproval && !treatmentApproved) ||
 			(hasScenes && !hashesFrom(scenes.Value("hashes")).matches(input.approval))
 	}
@@ -324,20 +324,20 @@ func (w *Workflow) view(project string) (View, *inputs, error) {
 }
 
 // proposalView — DTO предложения из локальной записи.
-func proposalView(proposal *jscompat.Object) *Proposal {
+func proposalView(proposal *dynvalue.Object) *Proposal {
 	message, _ := proposal.Value("message").(string)
 	stale, _ := proposal.Value("stale").(bool)
 	return &Proposal{
-		ID:          jscompat.ToString(proposal.Value("id")),
-		JobID:       jscompat.ToString(proposal.Value("jobId")),
-		Pass:        jscompat.ToString(proposal.Value("pass")),
+		ID:          dynvalue.ToString(proposal.Value("id")),
+		JobID:       dynvalue.ToString(proposal.Value("jobId")),
+		Pass:        dynvalue.ToString(proposal.Value("pass")),
 		SelectedIDs: stringItems(proposal.Value("selectedIds")),
-		Status:      jscompat.ToString(proposal.Value("status")),
+		Status:      dynvalue.ToString(proposal.Value("status")),
 		Message:     message,
 		Warnings:    stringItems(proposal.Value("warnings")),
 		Stale:       stale,
-		Before:      jscompat.Raw(proposal.Value("before")),
-		After:       jscompat.Raw(proposal.Value("after")),
+		Before:      dynvalue.Raw(proposal.Value("before")),
+		After:       dynvalue.Raw(proposal.Value("after")),
 		ChangedIDs:  stringItems(proposal.Value("changedIds")),
 	}
 }
@@ -403,12 +403,12 @@ func (w *Workflow) start(input StartInput) (string, error) {
 	}
 	note := ""
 	if input.Note != nil {
-		note = jscompat.Trim(*input.Note)
+		note = dynvalue.Trim(*input.Note)
 	}
 	if input.Pass == "revise" {
 		known := func(id string) bool {
-			return slices.ContainsFunc(arrayItems(jscompat.Get(initial.documents.Scenes, "scenes")), func(scene any) bool {
-				return jscompat.StrictEqual(jscompat.Get(scene, "id"), id)
+			return slices.ContainsFunc(arrayItems(dynvalue.Get(initial.documents.Scenes, "scenes")), func(scene any) bool {
+				return dynvalue.StrictEqual(dynvalue.Get(scene, "id"), id)
 			})
 		}
 		if note == "" || len(selected) == 0 || slices.ContainsFunc(selected, func(id string) bool { return !known(id) }) {
@@ -460,18 +460,18 @@ func (w *Workflow) start(input StartInput) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	proposal := jscompat.NewObject()
+	proposal := dynvalue.NewObject()
 	proposal.Set("id", randomUUID())
 	proposal.Set("jobId", job.ID)
 	proposal.Set("pass", input.Pass)
 	proposal.Set("selectedIds", stringArray(selected))
 	proposal.Set("status", "running")
-	proposal.Set("warnings", &jscompat.Array{Items: []any{}})
+	proposal.Set("warnings", &dynvalue.Array{Items: []any{}})
 	proposal.Set("stale", false)
 	proposal.Set("before", initial.documents.object())
 	proposal.Set("after", initial.documents.object())
-	proposal.Set("changedIds", &jscompat.Array{Items: []any{}})
-	stored := jscompat.NewObject()
+	proposal.Set("changedIds", &dynvalue.Array{Items: []any{}})
+	stored := dynvalue.NewObject()
 	stored.Set("proposal", proposal)
 	stored.Set("expectedHashes", initial.hashes.object())
 	stored.Set("scaffold", scaffold)
@@ -483,7 +483,7 @@ func (w *Workflow) start(input StartInput) (string, error) {
 
 // agentContext — контекст задания: JSON без отступов; байты входят в хеш задания и эталоны.
 func agentContext(initial *inputs, pass string, selected []string, note string, scaffold any) (string, error) {
-	idea, err := readText(initial.project, "source", jscompat.ToString(jscompat.GetPath(initial.manifest, "idea", "path")))
+	idea, err := readText(initial.project, "source", dynvalue.ToString(dynvalue.GetPath(initial.manifest, "idea", "path")))
 	if err != nil {
 		return "", err
 	}
@@ -499,13 +499,13 @@ func agentContext(initial *inputs, pass string, selected []string, note string, 
 	}
 	// Обложка оформляет проект и не передаётся агенту как возможный референс сцены.
 	// Явный состав сохраняет только исходники сценария и зарегистрированные референсы.
-	manifest := jscompat.NewObject()
+	manifest := dynvalue.NewObject()
 	for _, key := range []string{"schema_version", "kinds", "track", "lyrics", "idea", "references"} {
-		if value := initial.manifest.Value(key); value != jscompat.Undefined {
+		if value := initial.manifest.Value(key); value != dynvalue.Undefined {
 			manifest.Set(key, value)
 		}
 	}
-	context := jscompat.NewObject()
+	context := dynvalue.NewObject()
 	context.Set("mode", "proposal")
 	context.Set("pass", pass)
 	context.Set("selectedIds", stringArray(selected))
@@ -525,7 +525,7 @@ func agentContext(initial *inputs, pass string, selected []string, note string, 
 		context.Set("scenes", scaffold)
 	}
 	context.Set("note", note)
-	return jscompat.Stringify(context), nil
+	return dynvalue.Stringify(context), nil
 }
 
 // readText — содержимое файла проекта как текст UTF-8.
@@ -533,9 +533,9 @@ func readText(project string, parts ...string) (string, error) {
 	path := filepath.Join(append([]string{project}, parts...)...)
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", jscompat.FsError("open", path, err)
+		return "", dynvalue.FsError("open", path, err)
 	}
-	return jscompat.DecodeUTF8(data), nil
+	return dynvalue.DecodeUTF8(data), nil
 }
 
 // agentPrompt — промпт задания: скилл ai-clip-scenario и правила режима предложения дословно.
@@ -574,7 +574,7 @@ func (w *Workflow) apply(project, id string) (string, error) {
 	}
 	state := readState(w.options.LocalDir, view.Project)
 	stored, proposal := pendingProposal(state)
-	if view.Busy || proposal == nil || !jscompat.StrictEqual(proposal.Value("id"), id) || !jscompat.StrictEqual(proposal.Value("status"), "ready") ||
+	if view.Busy || proposal == nil || !dynvalue.StrictEqual(proposal.Value("id"), id) || !dynvalue.StrictEqual(proposal.Value("status"), "ready") ||
 		(view.Proposal != nil && view.Proposal.Stale) {
 		w.mu.Unlock()
 		return "", errors.New(textProposalNotApplicable)
@@ -584,7 +584,7 @@ func (w *Workflow) apply(project, id string) (string, error) {
 		w.mu.Unlock()
 		return "", err
 	}
-	pass := jscompat.ToString(proposal.Value("pass"))
+	pass := dynvalue.ToString(proposal.Value("pass"))
 	if pass != "treatment" && !view.TreatmentApproved {
 		w.mu.Unlock()
 		return "", errors.New(textPairApprovalStale)
@@ -594,7 +594,7 @@ func (w *Workflow) apply(project, id string) (string, error) {
 		return "", errors.New(strings.Join(initial.problems, " "))
 	}
 	// Повторный разбор берёт успешный результат менеджера, а не доверяет сохранённому предпросмотру.
-	job, known := w.options.Agents.Get(jscompat.ToString(proposal.Value("jobId")))
+	job, known := w.options.Agents.Get(dynvalue.ToString(proposal.Value("jobId")))
 	if !known || job.Status != "completed" || job.ExitCode == nil || *job.ExitCode != 0 {
 		w.mu.Unlock()
 		return "", errors.New(textAgentResultMissing)
@@ -645,8 +645,8 @@ func (w *Workflow) apply(project, id string) (string, error) {
 }
 
 // scenesApproval — { hashes, sceneHash } утверждения сцен.
-func scenesApproval(input *inputs) *jscompat.Object {
-	approval := jscompat.NewObject()
+func scenesApproval(input *inputs) *dynvalue.Object {
+	approval := dynvalue.NewObject()
 	approval.Set("hashes", input.approval.object())
 	hash, _ := input.hashes.get("plan/scenes.json")
 	if hash != nil {
@@ -673,7 +673,7 @@ func (w *Workflow) ApproveCurrent(project string) (View, error) {
 		return View{}, err
 	}
 	state := readState(w.options.LocalDir, view.Project)
-	if approval, ok := jscompat.AsObject(state.Value("approval")); input.documents.Scenes != nil && ok && !hashesFrom(approval).matches(input.approval) {
+	if approval, ok := dynvalue.AsObject(state.Value("approval")); input.documents.Scenes != nil && ok && !hashesFrom(approval).matches(input.approval) {
 		state.Set("needsScenesReview", true)
 	}
 	state.Set("approval", input.approval.object())
@@ -719,7 +719,7 @@ func (w *Workflow) Discard(project, id string) (View, error) {
 		return View{}, err
 	}
 	state := readState(w.options.LocalDir, input.project)
-	if _, proposal := pendingProposal(state); proposal == nil || !jscompat.StrictEqual(proposal.Value("id"), id) {
+	if _, proposal := pendingProposal(state); proposal == nil || !dynvalue.StrictEqual(proposal.Value("id"), id) {
 		return View{}, errors.New(textProposalMissing)
 	}
 	state.Delete("pending")

@@ -9,7 +9,7 @@
 //
 // Эталон testdata/golden/animatic-cards фиксирует макет 1280×720, цвета, координаты, выбор
 // кегля, переносы, многоточие, размеры и положение вписанных изображений, пиксели фона, полос и
-// вписанных PNG/WebP/GIF (Lanczos Pillow и преобразования libwebp считаются целочисленно), а
+// вписанных PNG/WebP/GIF (ресэмплинг Lanczos и преобразования libwebp считаются целочисленно), а
 // также тексты исключений для неверных данных (вызывающий инструмент печатает их последней
 // строкой трассировки). Не фиксируются сглаживание глифов (растеризатор x/image без хинтинга),
 // пиксели JPEG (±3 уровня из-за обратного DCT декодера Go) и сжатие PNG, поэтому SHA-256 файла
@@ -19,7 +19,7 @@ package animaticcards
 import (
 	"runtime"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // Макет карточки; значения зафиксированы эталоном.
@@ -67,15 +67,15 @@ type cardResult struct {
 }
 
 // RenderCard рисует PNG текстовой карточки плана в target.
-// shot — элемент sceneregistry.Shots(data, nil) (*pycompat.Dict: id, title, interval, duration, camera,
+// shot — элемент sceneregistry.Shots(data, nil) (*toolrt.Dict: id, title, interval, duration, camera,
 // action, state, refs, card.primary_reference, derived_from, lipsync); project — результат
-// sceneregistry.ValidateProject(..., false); references — data["references"] реестра (*pycompat.Dict);
+// sceneregistry.ValidateProject(..., false); references — data["references"] реестра (*toolrt.Dict);
 // root — корень проекта, пути изображений относительно него.
 //
-// Ошибки — исключения pycompat с типом и текстом Python: KeyError отсутствующего поля,
-// TypeError/AttributeError неверного типа, FileNotFoundError и PIL.UnidentifiedImageError
-// референса, AssertionError слова шире поля.
-func RenderCard(shot, project, references *pycompat.Dict, root string) ([]byte, error) {
+// Ошибки — исключения toolrt с типом и текстом, зафиксированными эталоном: KeyError
+// отсутствующего поля, TypeError/AttributeError неверного типа, FileNotFoundError и
+// нераспознанный формат референса (unidentifiedImage), AssertionError слова шире поля.
+func RenderCard(shot, project, references *toolrt.Dict, root string) ([]byte, error) {
 	c, _, err := renderCard(shot, project, references, root, nil)
 	if err != nil {
 		return nil, err
@@ -83,11 +83,11 @@ func RenderCard(shot, project, references *pycompat.Dict, root string) ([]byte, 
 	return c.img.encodePNG()
 }
 
-// RenderKeyframeCard — render_keyframe_card(shot, target, project, keyframes, root, last_target):
-// PNG карточки опор; last — PNG последней опоры (fit_canvas), если withLast и опор >= 2, иначе nil.
+// RenderKeyframeCard рисует PNG карточки опор; last — PNG последней опоры на весь холст
+// (fitCanvas), если withLast и опор >= 2, иначе nil.
 // keyframes — словари {id, role, time_seconds, path, sha256}, path относительно root.
 // Пустой список опор — ValueError «Нет принятых опор для карточки.».
-func RenderKeyframeCard(shot, project *pycompat.Dict, keyframes []*pycompat.Dict, root string, withLast bool) (card, last []byte, err error) {
+func RenderKeyframeCard(shot, project *toolrt.Dict, keyframes []*toolrt.Dict, root string, withLast bool) (card, last []byte, err error) {
 	rendered, lastImage, err := renderKeyframeCard(shot, project, keyframes, root, withLast, nil)
 	if err != nil {
 		return nil, nil, err
@@ -103,7 +103,7 @@ func RenderKeyframeCard(shot, project *pycompat.Dict, keyframes []*pycompat.Dict
 	return card, last, nil
 }
 
-// pathName — имя класса Path в тексте TypeError деления пути.
+// pathName — имя типа пути ОС в тексте TypeError склейки пути (зафиксировано эталоном).
 func pathName() string {
 	if runtime.GOOS == "windows" {
 		return "WindowsPath"
@@ -111,20 +111,22 @@ func pathName() string {
 	return "PosixPath"
 }
 
-// joinRoot — root / path: нестроковая часть — TypeError оператора «/» pathlib.
+// joinRoot склеивает root и путь из данных; нестроковый путь — TypeError склейки с именем
+// типа пути ОС.
 func joinRoot(root string, path any) (string, error) {
 	text, ok := path.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathName(), pycompat.TypeName(path))
+		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathName(), toolrt.TypeName(path))
 	}
-	return pycompat.JoinPath(root, text), nil
+	return toolrt.JoinPath(root, text), nil
 }
 
-// item — container[key] (ключ любого типа, ошибки Python).
-func item(container, key any) (any, error) { return pycompat.GetItem(container, key) }
+// item — значение container по ключу любого типа; отсутствие ключа и неверный тип контейнера —
+// исключения toolrt.GetItem.
+func item(container, key any) (any, error) { return toolrt.GetItem(container, key) }
 
-// concat — левоассоциативное сложение a + b + … Python: значения вычисляются по одному, поэтому
-// ошибка первого сложения возникает раньше KeyError следующего операнда.
+// concat — левоассоциативное сложение a + b + … значений toolrt.Add: операнды вычисляются по
+// одному, поэтому ошибка первого сложения возникает раньше KeyError следующего операнда.
 func concat(first any, rest ...func() (any, error)) (any, error) {
 	result := first
 	for _, next := range rest {
@@ -132,7 +134,7 @@ func concat(first any, rest ...func() (any, error)) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		if result, err = pycompat.Add(result, value); err != nil {
+		if result, err = toolrt.Add(result, value); err != nil {
 			return nil, err
 		}
 	}
@@ -144,26 +146,26 @@ func literal(text string) func() (any, error) {
 	return func() (any, error) { return text, nil }
 }
 
-// field — операнд concat dict[key].
+// field — операнд concat: значение container по ключу key.
 func field(container any, key string) func() (any, error) {
 	return func() (any, error) { return item(container, key) }
 }
 
-// upperName — project["name"].upper().
-func upperName(project *pycompat.Dict) (any, error) {
+// upperName — имя проекта прописными (toUpper); нестроковое имя — AttributeError.
+func upperName(project *toolrt.Dict) (any, error) {
 	name, err := item(project, "name")
 	if err != nil {
 		return nil, err
 	}
 	text, ok := name.(string)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'upper'", pycompat.TypeName(name))
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'upper'", toolrt.TypeName(name))
 	}
-	return pythonUpper(text), nil
+	return toUpper(text), nil
 }
 
-// placeReference — place_reference(card, path, box, root): референс вписывается в рамку и
-// центрируется (`//` целочисленное деление; смещения неотрицательны).
+// placeReference вписывает референс в рамку и центрирует его (смещения — деление с округлением
+// вниз; они неотрицательны).
 func (c *card) placeReference(path any, x, y, width, height int, root string) error {
 	full, err := joinRoot(root, path)
 	if err != nil {
@@ -181,7 +183,7 @@ func (c *card) placeReference(path any, x, y, width, height int, root string) er
 	return nil
 }
 
-// floorDiv — a // b Python для b > 0.
+// floorDiv — целочисленное деление с округлением вниз (к минус бесконечности) для b > 0.
 func floorDiv(a, b int) int {
 	quotient := a / b
 	if (a%b != 0) && (a < 0) {
@@ -190,7 +192,7 @@ func floorDiv(a, b int) int {
 	return quotient
 }
 
-// fitCanvas — fit_canvas(path): изображение целиком на холсте 1280×720 цвета фона.
+// fitCanvas — изображение целиком на холсте 1280×720 цвета фона.
 func fitCanvas(path string, c *card) (rgbImage, error) {
 	canvas := &card{img: newRGB(cardWidth, cardHeight, hexColor(background))}
 	if c != nil {
@@ -210,7 +212,7 @@ func fitCanvas(path string, c *card) (rgbImage, error) {
 
 // renderCard — тело RenderCard с необязательной трассировкой; порядок вычислений и рисования
 // зафиксирован эталоном, поэтому при неверных данных первой возникает одна и та же ошибка.
-func renderCard(shot, project, references *pycompat.Dict, root string, tr *trace) (*card, cardResult, error) {
+func renderCard(shot, project, references *toolrt.Dict, root string, tr *trace) (*card, cardResult, error) {
 	c := &card{img: newRGB(cardWidth, cardHeight, hexColor(background)), trace: tr}
 	c.img.fillRect(0, 0, 1280, 7, hexColor(accent))
 	fail := func(err error) (*card, cardResult, error) { return nil, cardResult{}, err }
@@ -242,7 +244,7 @@ func renderCard(shot, project, references *pycompat.Dict, root string, tr *trace
 		return fail(err)
 	}
 	// План из материала другого плана помечается источником; у обычного плана заголовок прежний.
-	if derived := shot.Value("derived_from"); pycompat.Truthy(derived) {
+	if derived := shot.Value("derived_from"); toolrt.Truthy(derived) {
 		source, err := item(derived, "shot")
 		if err != nil {
 			return fail(err)
@@ -251,7 +253,7 @@ func renderCard(shot, project, references *pycompat.Dict, root string, tr *trace
 		if err != nil {
 			return fail(err)
 		}
-		if title, err = pycompat.Add(title, suffix); err != nil {
+		if title, err = toolrt.Add(title, suffix); err != nil {
 			return fail(err)
 		}
 	}
@@ -333,13 +335,13 @@ func renderCard(shot, project, references *pycompat.Dict, root string, tr *trace
 	if err != nil {
 		return fail(err)
 	}
-	refs, err := pycompat.Iter(refsValue)
+	refs, err := toolrt.Iter(refsValue)
 	if err != nil {
 		return fail(err)
 	}
 	others := []any{}
 	for _, ref := range refs {
-		if !pycompat.Equal(ref, key) {
+		if !toolrt.Equal(ref, key) {
 			others = append(others, ref)
 		}
 	}
@@ -357,27 +359,28 @@ func renderCard(shot, project, references *pycompat.Dict, root string, tr *trace
 		if err := c.placeReference(path, x, 582, cellWidth-6, 62, root); err != nil {
 			return fail(err)
 		}
-		// references[ref].get("short_name", references[ref]["name"]): метод ищется до вычисления
-		// аргумента, а запасное имя вычисляется всегда.
+		// Подпись — short_name референса, иначе его name. Тип референса проверяется до запасного
+		// имени, а запасное name обязательно даже при заданном short_name: порядок ошибок
+		// зафиксирован эталоном.
 		reference, err = item(references, ref)
 		if err != nil {
 			return fail(err)
 		}
-		if _, ok := reference.(*pycompat.Dict); !ok {
-			return fail(pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'get'", pycompat.TypeName(reference)))
+		if _, ok := reference.(*toolrt.Dict); !ok {
+			return fail(toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(reference)))
 		}
 		fallback, err := item(reference, "name")
 		if err != nil {
 			return fail(err)
 		}
-		short, _ := pycompat.DictGet(reference, "short_name", fallback)
+		short, _ := toolrt.DictGet(reference, "short_name", fallback)
 		if _, err := c.textBox(short, x, 647, cellWidth-6, 23, 16, muted, false); err != nil {
 			return fail(err)
 		}
 	}
 	c.img.fillRect(0, 679, 1280, 720, hexColor("#0D1216"))
 	notice, color := "Референсы не показывают текущую позу, ракурс и состояние", muted
-	if pycompat.Truthy(shot.Value("lipsync")) {
+	if toolrt.Truthy(shot.Value("lipsync")) {
 		notice, color = "РЕЧЕВОЙ ПЛАН • губы не анимированы, границы слов не проверены", accent
 	}
 	if _, err := c.textBox(notice, 32, 689, 974, 26, 17, color, false); err != nil {
@@ -386,8 +389,8 @@ func renderCard(shot, project, references *pycompat.Dict, root string, tr *trace
 	return c, cardResult{ActionFont: actionFont, StateFont: stateFont, PrimaryReference: key, PrimaryImage: sourcePath}, nil
 }
 
-// keyframePath — root / keyframe["path"].
-func keyframePath(keyframe *pycompat.Dict, root string) (string, error) {
+// keyframePath — путь опоры keyframe["path"] относительно root.
+func keyframePath(keyframe *toolrt.Dict, root string) (string, error) {
 	path, err := item(keyframe, "path")
 	if err != nil {
 		return "", err
@@ -395,11 +398,11 @@ func keyframePath(keyframe *pycompat.Dict, root string) (string, error) {
 	return joinRoot(root, path)
 }
 
-// renderKeyframeCard — тело render_keyframe_card с необязательной трассировкой. Вторым
+// renderKeyframeCard — тело RenderKeyframeCard с необязательной трассировкой. Вторым
 // значением возвращается холст последней опоры (nil, если он не нужен).
-func renderKeyframeCard(shot, project *pycompat.Dict, keyframes []*pycompat.Dict, root string, withLast bool, tr *trace) (*card, *rgbImage, error) {
+func renderKeyframeCard(shot, project *toolrt.Dict, keyframes []*toolrt.Dict, root string, withLast bool, tr *trace) (*card, *rgbImage, error) {
 	if len(keyframes) == 0 {
-		return nil, nil, pycompat.New(pycompat.ValueError, "Нет принятых опор для карточки.")
+		return nil, nil, toolrt.New(toolrt.ValueError, "Нет принятых опор для карточки.")
 	}
 	c := &card{trace: tr}
 	firstPath, err := keyframePath(keyframes[0], root)
@@ -445,7 +448,7 @@ func renderKeyframeCard(shot, project *pycompat.Dict, keyframes []*pycompat.Dict
 	if _, err := c.textBox(heading, 32, cardHeight-100, 760, 40, 24, foreground, true); err != nil {
 		return nil, nil, err
 	}
-	// " → ".join(f"{k['id']} {k['time_seconds']:g} с" for k in keyframes)
+	// План опор: «id время с» каждой опоры через « → »; время — formatG.
 	plan := ""
 	for index, keyframe := range keyframes {
 		keyID, err := item(keyframe, "id")
@@ -463,7 +466,7 @@ func renderKeyframeCard(shot, project *pycompat.Dict, keyframes []*pycompat.Dict
 		if index > 0 {
 			plan += " → "
 		}
-		plan += pycompat.Str(keyID) + " " + formatted + " с"
+		plan += toolrt.Str(keyID) + " " + formatted + " с"
 	}
 	if _, err := c.textBox("План опор: "+plan, 32, cardHeight-58, 760, 24, 16, muted, false); err != nil {
 		return nil, nil, err

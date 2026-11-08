@@ -80,7 +80,7 @@ describe('тексты среды', () => {
     expect(text(row({ status, loggingIn: false, onCheck: vi.fn() }))).toContain(label);
   });
 
-  it('показывает проверяемую строку и её время с прежним форматом', () => {
+  it('показывает проверяемую строку и её время с точностью до десятой секунды', () => {
     expect(row({}, { status: 'running' })).toContain('aria-label="«Тест» &lt;script&gt; &amp; C:\\путь\\модель: выполняется проверка"');
     expect(text(row({}, { elapsedMs: 1500 }))).toContain('· 1,5 с');
     expect(text(row({}, { elapsedMs: 0 }))).toContain('· 0,0 с');

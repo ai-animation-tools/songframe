@@ -27,11 +27,11 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediatest"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/golden"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediatest"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // markers — папки каталога случая и маркеры их путей в эталоне.
@@ -158,7 +158,7 @@ func registerAuth(service *mediatest.Service) func() {
 
 // Runner выполняет шаг: инструмент step.Tool с аргументами args (маркеры уже заменены).
 // interrupted — шаг прерван внесённым сбоем (обрыв процесса).
-type Runner func(t *testing.T, env *Env, step Step, args []string) (output pytool.Output, interrupted bool)
+type Runner func(t *testing.T, env *Env, step Step, args []string) (output toolcli.Output, interrupted bool)
 
 // Play проигрывает все сценарии домена подтестами.
 func Play(t *testing.T, domain string, run Runner) {
@@ -241,9 +241,9 @@ func prepare(t *testing.T, env *Env, step Step) {
 			keys = append(keys, key)
 		}
 		sort.Strings(keys)
-		values := pycompat.NewDict()
+		values := toolrt.NewDict()
 		for _, key := range keys {
-			value, err := pycompat.LoadsJSON(string(step.Configure[key]))
+			value, err := toolrt.LoadsJSON(string(step.Configure[key]))
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -16,14 +16,14 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/mediatest"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/shotworkflow"
-	"songframe-go/internal/tools"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/mediatest"
+	"songframe/internal/providers"
+	"songframe/internal/shotworkflow"
+	"songframe/internal/tools"
 )
 
 // Эталон testdata/golden/production-workflow-apply/cases.json (осознанные отличия — в README
@@ -230,8 +230,8 @@ func (r *applyRun) expand(text string) string {
 
 // currentID — ID предложения из записи плана или "".
 func (r *applyRun) currentID(shot string) string {
-	if value, ok := jscompat.ReadJSONFile(r.recordPath(shot)); ok {
-		id, _ := jscompat.GetPath(value, "proposal", "id").(string)
+	if value, ok := dynvalue.ReadJSONFile(r.recordPath(shot)); ok {
+		id, _ := dynvalue.GetPath(value, "proposal", "id").(string)
 		return id
 	}
 	return ""
@@ -430,7 +430,7 @@ func (r *applyRun) execute(t *testing.T, step applyStep) (any, error) {
 	ctx := context.Background()
 	switch step.Op {
 	case "write":
-		// writeFileSync (0666 & umask) или cpSync с правами источника.
+		// Новый файл — 0666 с учётом umask, копия — с правами источника.
 		path := filepath.Join(r.project, step.Path)
 		if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
 			t.Fatal(err)
@@ -449,7 +449,7 @@ func (r *applyRun) execute(t *testing.T, step applyStep) (any, error) {
 			}
 			perm = info.Mode().Perm()
 		case len(step.JSON) > 0:
-			data = []byte(jscompat.StringifyIndent(mustParse(t, step.JSON), "  ") + "\n")
+			data = []byte(dynvalue.StringifyIndent(mustParse(t, step.JSON), "  ") + "\n")
 		default:
 			data = []byte(*step.Text)
 		}
@@ -566,7 +566,7 @@ func (r *applyRun) execute(t *testing.T, step applyStep) (any, error) {
 		}
 		text := ""
 		if len(step.JSON) > 0 {
-			text = r.expand(jscompat.Stringify(mustParse(t, step.JSON)))
+			text = r.expand(dynvalue.Stringify(mustParse(t, step.JSON)))
 		} else {
 			text = *step.Text
 		}
@@ -591,7 +591,7 @@ func (r *applyRun) journal(t *testing.T, step applyStep) error {
 			}
 			text := ""
 			if len(item.JSON) > 0 {
-				text = jscompat.Stringify(mustParse(t, item.JSON))
+				text = dynvalue.Stringify(mustParse(t, item.JSON))
 			} else {
 				text = *item.Text
 			}

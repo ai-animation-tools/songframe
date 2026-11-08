@@ -51,7 +51,7 @@ describe('тексты просмотра аниматика', () => {
     expect(markup).not.toContain('{builtAt}');
   });
 
-  it('выводит постановку с прежним выделением и безопасными пользовательскими данными', () => {
+  it('выводит постановку с выделением и безопасными пользовательскими данными', () => {
     const markup = renderToStaticMarkup(
       createElement(ShotCard, {
         shot: { id: 'M01', media: 'video', start: 0, end: 2, frames: 1, camera: '', action: '<движение> {label}' } as AnimaticShot

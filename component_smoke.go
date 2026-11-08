@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"songframe-go/internal/components"
+	"songframe/internal/components"
 )
 
 // runComponentSmoke читает явный офлайн-запрос и сохраняет исход даже при отказе установки/inference.

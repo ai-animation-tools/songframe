@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/mediatest"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/tools"
+	"songframe/internal/golden"
+	"songframe/internal/mediacmd"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/mediatest"
+	"songframe/internal/toolrt"
+	"songframe/internal/tools"
 )
 
 // goldenStep — шаг домена production-tools: инструмент, аргументы с маркерами и снимаемые файлы.
@@ -84,15 +84,15 @@ func TestToolsGolden(t *testing.T) {
 	write(filepath.Join(bin, "ffprobe"), []byte("#!/bin/sh\nprintf '%s' '"+string(inputs.Probe)+"'\n"), 0o755)
 	write(filepath.Join(bin, "ffmpeg"), []byte("#!/bin/sh\necho 'ffmpeg version test-build'\necho 'built with test'\n"), 0o755)
 	t.Cleanup(mediaproviders.Register("test", mediaproviders.Info{Title: "Тестовый сервис", Kinds: []string{"image", "video"}, Paid: true}))
-	service, err := mediatest.New(serviceDir, pycompat.NewDict())
+	service, err := mediatest.New(serviceDir, toolrt.NewDict())
 	if err != nil {
 		t.Fatal(err)
 	}
-	config, err := pycompat.LoadsJSON(string(inputs.Service))
+	config, err := toolrt.LoadsJSON(string(inputs.Service))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := service.Configure(config.(*pycompat.Dict)); err != nil {
+	if err := service.Configure(config.(*toolrt.Dict)); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(service.Register())

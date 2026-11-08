@@ -11,9 +11,9 @@ import (
 
 	"encoding/base64"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/providers/kling/mcp"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/golden"
+	"songframe/internal/providers/kling/mcp"
+	"songframe/internal/toolrt"
 )
 
 // Эталоны kling-request: cases.json — чистые функции адаптера, adapter.json —
@@ -22,17 +22,17 @@ import (
 
 const domain = "kling-request"
 
-func field(value any, key string) any { return value.(*pycompat.Dict).Value(key) }
+func field(value any, key string) any { return value.(*toolrt.Dict).Value(key) }
 
-// arg — аргумент случая, записанный строкой json.dumps.
+// arg — аргумент случая, записанный JSON-строкой.
 func arg(t *testing.T, entry any, key string) any {
 	t.Helper()
-	return golden.PyParse(t, golden.PyString(t, field(entry, "args"), key))
+	return golden.ParseValue(t, golden.ValueString(t, field(entry, "args"), key))
 }
 
 func dumps(t *testing.T, value any) string {
 	t.Helper()
-	text, err := pycompat.DumpsJSON(value, pycompat.DumpOptions{})
+	text, err := toolrt.DumpsJSON(value, toolrt.DumpOptions{})
 	if err != nil {
 		t.Fatalf("сериализация: %v", err)
 	}
@@ -45,8 +45,8 @@ func assertOutcome(t *testing.T, label string, expected any, got any, err error,
 	if normalize == nil {
 		normalize = func(text string) string { return text }
 	}
-	want := expected.(*pycompat.Dict)
-	if failure, ok := want.Value("error").(*pycompat.Dict); ok {
+	want := expected.(*toolrt.Dict)
+	if failure, ok := want.Value("error").(*toolrt.Dict); ok {
 		wantType, wantMessage := failure.Value("type").(string), failure.Value("message").(string)
 		if err == nil {
 			t.Errorf("%s: ожидалось %s: %s, получено %s", label, wantType, wantMessage, dumps(t, got))
@@ -72,11 +72,11 @@ func snapshotOf(tools any, body any) catalog {
 	for _, name := range tools.([]any) {
 		names[name.(string)] = true
 	}
-	values, _ := body.(*pycompat.Dict)
+	values, _ := body.(*toolrt.Dict)
 	return catalog{tools: names, body: values}
 }
 
-// strings — []string как список Python.
+// list — []string как список значений toolrt.
 func list(items []string) []any {
 	result := make([]any, len(items))
 	for index, item := range items {
@@ -87,23 +87,23 @@ func list(items []string) []any {
 
 // TestPureGolden — чистые функции адаптера на cases.json.
 func TestPureGolden(t *testing.T) {
-	cases := golden.PyFile(t, domain, "cases.json").([]any)
+	cases := golden.ValueFile(t, domain, "cases.json").([]any)
 	var who any
 	for _, entry := range cases {
-		if golden.PyString(t, entry, "name") == "command_capabilities all-models" {
+		if golden.ValueString(t, entry, "name") == "command_capabilities all-models" {
 			who = arg(t, entry, "body")
 		}
 	}
 	adapter := &Adapter{}
 	count := 0
 	for _, entry := range cases {
-		name, call := golden.PyString(t, entry, "name"), golden.PyString(t, entry, "call")
+		name, call := golden.ValueString(t, entry, "name"), golden.ValueString(t, entry, "call")
 		expected := field(entry, "expected")
 		var got any
 		var err error
 		switch call {
 		case "validate_spec":
-			err = adapter.ValidateSpec(arg(t, entry, "spec").(*pycompat.Dict))
+			err = adapter.ValidateSpec(arg(t, entry, "spec").(*toolrt.Dict))
 		case "validate_prompt":
 			got = list(adapter.ValidatePrompt(arg(t, entry, "prompt").(string)))
 		case "capability_fields":
@@ -113,7 +113,7 @@ func TestPureGolden(t *testing.T) {
 		case "capabilities":
 			got, err = capabilityReport(arg(t, entry, "kind").(string), snapshotOf(arg(t, entry, "tools"), arg(t, entry, "body")))
 		case "normalize_inputs":
-			spec, _ := arg(t, entry, "spec").(*pycompat.Dict)
+			spec, _ := arg(t, entry, "spec").(*toolrt.Dict)
 			loads := []any{}
 			got, err = adapter.normalizeInputs(spec, func(command string) (catalog, error) {
 				loads = append(loads, []any{command})
@@ -121,17 +121,17 @@ func TestPureGolden(t *testing.T) {
 				for _, name := range []string{"image_to_image", "image_to_video", "motion_control", "text_to_image", "text_to_video"} {
 					tools = append(tools, name)
 				}
-				return snapshotOf(tools, pycompat.DeepCopy(who)), nil
+				return snapshotOf(tools, toolrt.DeepCopy(who)), nil
 			})
-			want := expected.(*pycompat.Dict)
+			want := expected.(*toolrt.Dict)
 			if dumps(t, spec) != want.Value("spec") || dumps(t, loads) != want.Value("catalog") {
 				t.Errorf("%s: spec %s каталог %s, ожидалось %s %s", name, dumps(t, spec), dumps(t, loads), want.Value("spec"), want.Value("catalog"))
 			}
 		case "argument":
 			got, err = argument(arg(t, entry, "value"))
 		case "envelope":
-			value := arg(t, entry, "request").(*pycompat.Dict)
-			if parameters, ok := value.Value("parameters").(*pycompat.Dict); ok && parameters.Value("x") == "nan" {
+			value := arg(t, entry, "request").(*toolrt.Dict)
+			if parameters, ok := value.Value("parameters").(*toolrt.Dict); ok && parameters.Value("x") == "nan" {
 				parameters.Set("x", nanValue())
 			}
 			inputs := []slotURL{}
@@ -162,23 +162,23 @@ func TestPureGolden(t *testing.T) {
 // fakeSession — сеанс MCP сценария adapter.json: отвечает по script и пишет журнал вызовов в
 // формате эталона.
 type fakeSession struct {
-	script *pycompat.Dict
+	script *toolrt.Dict
 	log    *[]any
 }
 
-// seconds — таймаут в секундах в форме эталона (целое или None для 0).
+// seconds — таймаут в секундах в форме эталона (целое или null для 0).
 func seconds(timeout time.Duration) any {
 	if timeout == 0 {
 		return nil
 	}
 	if timeout%time.Second == 0 {
-		return pycompat.NewInt(int64(timeout / time.Second))
+		return toolrt.NewInt(int64(timeout / time.Second))
 	}
 	return timeout.Seconds()
 }
 
 func (f *fakeSession) behave(script any) (any, error) {
-	values, ok := script.(*pycompat.Dict)
+	values, ok := script.(*toolrt.Dict)
 	if !ok {
 		panic("вызов без сценария")
 	}
@@ -187,7 +187,7 @@ func (f *fakeSession) behave(script any) (any, error) {
 		switch kind {
 		case "TransportError":
 			var status int64
-			if number, ok := values.Value("status").(pycompat.Int); ok {
+			if number, ok := values.Value("status").(toolrt.Int); ok {
 				status, _ = number.Int64()
 			}
 			return nil, &mcp.TransportError{Status: int(status), Text: values.Value("text").(string)}
@@ -200,17 +200,17 @@ func (f *fakeSession) behave(script any) (any, error) {
 		case "ToolError":
 			return nil, &mcp.ToolError{Message: message}
 		default:
-			return nil, pycompat.New(kind, message)
+			return nil, toolrt.New(kind, message)
 		}
 	}
-	return pycompat.DeepCopy(values.Value("return")), nil
+	return toolrt.DeepCopy(values.Value("return")), nil
 }
 
 func (f *fakeSession) Initialize(context.Context) (any, error) {
 	*f.log = append(*f.log, []any{"initialize"})
 	script, found := f.script.Get("initialize")
 	if !found {
-		return pycompat.NewDict(), nil
+		return toolrt.NewDict(), nil
 	}
 	return f.behave(script)
 }
@@ -224,20 +224,20 @@ func (f *fakeSession) Tools(context.Context) ([]any, error) {
 	return value.([]any), nil
 }
 
-func (f *fakeSession) Call(_ context.Context, name string, arguments *pycompat.Dict, timeout time.Duration, _ any) (any, error) {
+func (f *fakeSession) Call(_ context.Context, name string, arguments *toolrt.Dict, timeout time.Duration, _ any) (any, error) {
 	var logged any
 	if arguments != nil {
-		logged = pycompat.DeepCopy(arguments)
+		logged = toolrt.DeepCopy(arguments)
 	}
 	*f.log = append(*f.log, []any{"call", name, logged, seconds(timeout)})
-	calls, _ := f.script.Value("call").(*pycompat.Dict)
+	calls, _ := f.script.Value("call").(*toolrt.Dict)
 	return f.behave(calls.Value(name))
 }
 
 func (f *fakeSession) Upload(_ context.Context, path string, _ any) (string, error) {
 	name := filepath.Base(path)
 	*f.log = append(*f.log, []any{"upload", name})
-	uploads, _ := f.script.Value("upload").(*pycompat.Dict)
+	uploads, _ := f.script.Value("upload").(*toolrt.Dict)
 	value, err := f.behave(uploads.Value(name))
 	if err != nil {
 		return "", err
@@ -249,7 +249,7 @@ func (f *fakeSession) Upload(_ context.Context, path string, _ any) (string, err
 var loginErrors = map[string]error{
 	"auth":      &mcp.AuthRequiredError{Message: "отменён"},
 	"transport": &mcp.TransportError{Status: 400, Text: "Kling не обменял код авторизации на токен."},
-	"value":     pycompat.New(pycompat.ValueError, "Недопустимый адрес сервера."),
+	"value":     toolrt.New(toolrt.ValueError, "Недопустимый адрес сервера."),
 	"not-sent":  &mcp.NotSentError{Message: "Порты входа 8787–8790 заняты: закройте программу, которая их использует, и повторите вход."},
 }
 
@@ -258,21 +258,21 @@ var debugTime = regexp.MustCompile(`(?m)^--- (\S+) \d\d:\d\d:\d\d `)
 // TestAdapterGolden — сетевые функции адаптера на сценарии сеанса adapter.json.
 func TestAdapterGolden(t *testing.T) {
 	ctx := context.Background()
-	for _, entry := range golden.PyFile(t, domain, "adapter.json").([]any) {
-		name, call := golden.PyString(t, entry, "name"), golden.PyString(t, entry, "call")
-		expected := field(entry, "expected").(*pycompat.Dict)
+	for _, entry := range golden.ValueFile(t, domain, "adapter.json").([]any) {
+		name, call := golden.ValueString(t, entry, "name"), golden.ValueString(t, entry, "call")
+		expected := field(entry, "expected").(*toolrt.Dict)
 		t.Run(name, func(t *testing.T) {
 			state := t.TempDir()
 			debug := filepath.Join(t.TempDir(), "debug.log")
 			log := []any{}
-			script := arg(t, entry, "script").(*pycompat.Dict)
+			script := arg(t, entry, "script").(*toolrt.Dict)
 			adapter := &Adapter{Client: &mcp.Client{StateDir: state, DebugFile: debug}}
 			adapter.newSession = func(timeout time.Duration, traceID any) session {
 				log = append(log, []any{"session", seconds(timeout), traceID})
 				return &fakeSession{script: script, log: &log}
 			}
 			if field(field(entry, "args"), "credentials") == true {
-				record := pycompat.NewDict()
+				record := toolrt.NewDict()
 				record.Set("access_token", "a")
 				if err := adapter.Client.WriteCredentials(record); err != nil {
 					t.Fatal(err)
@@ -290,21 +290,21 @@ func TestAdapterGolden(t *testing.T) {
 				}
 			}
 			timeout := func() time.Duration {
-				value, _ := arg(t, entry, "timeout").(pycompat.Int).Int64()
+				value, _ := arg(t, entry, "timeout").(toolrt.Int).Int64()
 				return time.Duration(value) * time.Second
 			}
 			var got any
 			var err error
 			switch call {
 			case "submit", "poll":
-				request := arg(t, entry, "request").(*pycompat.Dict)
-				if parameters, ok := request.Value("parameters").(*pycompat.Dict); ok && name == "submit parameters-nan" {
+				request := arg(t, entry, "request").(*toolrt.Dict)
+				if parameters, ok := request.Value("parameters").(*toolrt.Dict); ok && name == "submit parameters-nan" {
 					parameters.Set("duration", nanValue())
 				}
 				if call == "submit" {
-					got, err = adapter.Submit(ctx, directory, request, arg(t, entry, "state").(*pycompat.Dict), timeout())
+					got, err = adapter.Submit(ctx, directory, request, arg(t, entry, "state").(*toolrt.Dict), timeout())
 				} else {
-					got, err = adapter.Poll(ctx, directory, request, arg(t, entry, "state").(*pycompat.Dict), timeout())
+					got, err = adapter.Poll(ctx, directory, request, arg(t, entry, "state").(*toolrt.Dict), timeout())
 				}
 			case "account":
 				got, err = adapter.Account(ctx, timeout())
@@ -314,11 +314,11 @@ func TestAdapterGolden(t *testing.T) {
 				got, err = adapter.Capabilities(ctx, arg(t, entry, "kind").(string), timeout())
 			case "login":
 				failure := loginErrors[strings.TrimPrefix(name, "login ")]
-				adapter.clientLogin = func(context.Context, mcp.LoginOptions) (*pycompat.Dict, error) {
+				adapter.clientLogin = func(context.Context, mcp.LoginOptions) (*toolrt.Dict, error) {
 					if failure != nil {
 						return nil, failure
 					}
-					return pycompat.NewDict(), nil
+					return toolrt.NewDict(), nil
 				}
 				got = adapter.Login(ctx, mcp.LoginOptions{Timeout: time.Second})
 			default:
@@ -344,14 +344,14 @@ func TestAdapterGolden(t *testing.T) {
 // iterDict — пары словаря эталона.
 func iterDict(value any) map[string]any {
 	result := map[string]any{}
-	values := value.(*pycompat.Dict)
+	values := value.(*toolrt.Dict)
 	for _, key := range values.Keys() {
 		result[key] = values.Value(key)
 	}
 	return result
 }
 
-// nanValue — float("nan"): во входах эталона NaN записан строкой.
+// nanValue — NaN для входов эталона, где он записан строкой.
 func nanValue() float64 {
 	zero := 0.0
 	return zero / zero

@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 
-	"songframe-go/internal/updates"
+	"songframe/internal/updates"
 )
 
 // UpdatesService реализует группу window.api.updates: проверку, скачивание и установку новой

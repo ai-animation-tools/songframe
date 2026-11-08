@@ -138,7 +138,7 @@ export function useImageGeneration(project: string, mode: 'cover' | 'reference' 
       if (currentBlock.current) throw new Error(currentBlock.current);
       if (MEDIA_PROVIDERS[session.provider].paid && !priceAllowsGeneration(session.quote, approval.allowUnknownCost)) return;
       setPreparedSha(null);
-      // Старый результат больше нельзя принять после запуска новой попытки, даже при ошибке IPC.
+      // Старый результат больше нельзя принять после запуска новой попытки, даже при ошибке вызова API.
       setSession({ ...session, status: 'generating', image: null, error: null });
       try {
         update(await api.generate(session.id, session.requestSha, approval));

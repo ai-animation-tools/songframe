@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/sources"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
+	"songframe/internal/sources"
 )
 
 // now — источник времени updated_at описи; тесты подменяют его фиксированным значением эталонов.
@@ -21,32 +21,32 @@ var now = time.Now
 var writeFile = func(path string, data []byte) error { return projectfs.WriteFile(path, data, 0) }
 
 // encode — байты файла: JSON с отступом в два пробела и перевод строки.
-func encode(value any) []byte { return []byte(jscompat.StringifyIndent(value, "  ") + "\n") }
+func encode(value any) []byte { return []byte(dynvalue.StringifyIndent(value, "  ") + "\n") }
 
 // FromSources строит кастинг из референсов описи. Существующие сущности сохраняют
 // свои правки и порядок изображений, получая только описание референса; новые референсы
 // становятся сущностями (тип world или неверный тип — prop). Без сущности world она добавляется
 // первой. Результат дополнен словарём свойств; existing не меняется.
-func FromSources(manifest, existing any, defaults Defaults) (*jscompat.Object, error) {
-	var cast *jscompat.Object
-	if jscompat.Truthy(existing) {
-		cast, _ = jscompat.AsObject(jscompat.DeepClone(existing))
+func FromSources(manifest, existing any, defaults Defaults) (*dynvalue.Object, error) {
+	var cast *dynvalue.Object
+	if dynvalue.Truthy(existing) {
+		cast, _ = dynvalue.AsObject(dynvalue.DeepClone(existing))
 	}
 	if cast == nil {
-		if jscompat.Truthy(existing) {
-			// Истинное значение не-объект (строка, число) — TypeError обращения к cast.entities.map.
-			return nil, &jscompat.TypeError{Message: "cast.entities.map is not a function"}
+		if dynvalue.Truthy(existing) {
+			// Истинное значение не-объект (строка, число) — TypeError: у него нет списка entities.
+			return nil, &dynvalue.TypeError{Message: "cast.entities.map is not a function"}
 		}
-		cast = jscompat.NewObject()
+		cast = dynvalue.NewObject()
 		cast.Set("schema_version", 1.0)
-		cast.Set("entities", &jscompat.Array{Items: []any{jscompat.DeepClone(defaults.World)}})
-		cast.Set("properties", jscompat.DeepClone(defaults.Default))
+		cast.Set("entities", &dynvalue.Array{Items: []any{dynvalue.DeepClone(defaults.World)}})
+		cast.Set("properties", dynvalue.DeepClone(defaults.Default))
 	}
-	entities, ok := cast.Value("entities").(*jscompat.Array)
+	entities, ok := cast.Value("entities").(*dynvalue.Array)
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "cast.entities.map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "cast.entities.map is not a function"}
 	}
-	// byId — `new Map(cast.entities.map((e) => [e.id, e]))`: при повторе кода побеждает последняя сущность.
+	// byId — сущности по коду: при повторе кода побеждает последняя сущность.
 	type pair struct {
 		id     any
 		entity any
@@ -54,77 +54,77 @@ func FromSources(manifest, existing any, defaults Defaults) (*jscompat.Object, e
 	var byID []pair
 	find := func(id any) (any, bool) {
 		for index := len(byID) - 1; index >= 0; index-- {
-			if jscompat.StrictEqual(byID[index].id, id) {
+			if dynvalue.StrictEqual(byID[index].id, id) {
 				return byID[index].entity, true
 			}
 		}
 		return nil, false
 	}
 	for _, entity := range entities.Items {
-		id, err := jscompat.Prop(entity, "id")
+		id, err := dynvalue.Prop(entity, "id")
 		if err != nil {
 			return nil, err
 		}
 		byID = append(byID, pair{id, entity})
 	}
-	references, err := jscompat.Iterate(jscompat.Get(manifest, "references"))
+	references, err := dynvalue.Iterate(dynvalue.Get(manifest, "references"))
 	if err != nil {
 		return nil, err
 	}
 	for _, ref := range references {
-		files, ok := jscompat.AsArray(jscompat.Get(ref, "files"))
+		files, ok := dynvalue.AsArray(dynvalue.Get(ref, "files"))
 		if !ok {
-			return nil, &jscompat.TypeError{Message: "ref.files.map is not a function"}
+			return nil, &dynvalue.TypeError{Message: "ref.files.map is not a function"}
 		}
 		images := make([]any, len(files))
 		for index, file := range files {
-			path, err := jscompat.Prop(file, "path")
+			path, err := dynvalue.Prop(file, "path")
 			if err != nil {
 				return nil, err
 			}
 			images[index] = path
 		}
-		id := jscompat.Get(ref, "id")
+		id := dynvalue.Get(ref, "id")
 		if entity, found := find(id); found {
 			// Список source — доступные виды, а images — сохранённый выбор; порядок и пустой выбор не сбрасываем.
-			object, ok := jscompat.AsObject(entity)
+			object, ok := dynvalue.AsObject(entity)
 			if !ok {
-				return nil, &jscompat.TypeError{Message: "Cannot set properties of non-object entity (setting 'appearance')"}
+				return nil, &dynvalue.TypeError{Message: "Cannot set properties of non-object entity (setting 'appearance')"}
 			}
-			object.Set("appearance", jscompat.Coalesce(jscompat.Get(ref, "description"), ""))
+			object.Set("appearance", dynvalue.Coalesce(dynvalue.Get(ref, "description"), ""))
 			continue
 		}
-		kind := jscompat.Get(ref, "kind")
-		if !slugTest(kind) || jscompat.StrictEqual(kind, WorldID) {
+		kind := dynvalue.Get(ref, "kind")
+		if !slugTest(kind) || dynvalue.StrictEqual(kind, WorldID) {
 			kind = "prop"
 		}
-		name := jscompat.Get(ref, "name")
-		short := jscompat.Get(ref, "short_name")
-		if !jscompat.Truthy(short) {
+		name := dynvalue.Get(ref, "name")
+		short := dynvalue.Get(ref, "short_name")
+		if !dynvalue.Truthy(short) {
 			short = name
 		}
-		created := jscompat.NewObject()
+		created := dynvalue.NewObject()
 		created.Set("id", id)
 		created.Set("kind", kind)
 		created.Set("name", name)
 		created.Set("short_name", short)
 		created.Set("role", "")
-		// Отсутствующее описание остаётся undefined: Normalize отклонит такую сущность.
-		created.Set("appearance", jscompat.Get(ref, "description"))
-		created.Set("images", &jscompat.Array{Items: images})
-		created.Set("initial_state", jscompat.NewObject())
+		// Отсутствующее описание остаётся незаданным: Normalize отклонит такую сущность.
+		created.Set("appearance", dynvalue.Get(ref, "description"))
+		created.Set("images", &dynvalue.Array{Items: images})
+		created.Set("initial_state", dynvalue.NewObject())
 		entities.Items = append(entities.Items, created)
 		byID = append(byID, pair{id, created})
 	}
 	hasWorld := false
 	for _, entity := range entities.Items {
-		if jscompat.StrictEqual(jscompat.Get(entity, "kind"), WorldID) {
+		if dynvalue.StrictEqual(dynvalue.Get(entity, "kind"), WorldID) {
 			hasWorld = true
 			break
 		}
 	}
 	if !hasWorld {
-		entities.Items = append([]any{jscompat.DeepClone(defaults.World)}, entities.Items...)
+		entities.Items = append([]any{dynvalue.DeepClone(defaults.World)}, entities.Items...)
 	}
 	return EnsureProperties(cast, defaults)
 }
@@ -132,7 +132,7 @@ func FromSources(manifest, existing any, defaults Defaults) (*jscompat.Object, e
 // Init — cast.init: создаёт кастинг из референсов исходников или дополняет
 // существующий, затем записывает его через Save-путь. Повреждённый кастинг заменяется новым.
 // Без описи — ошибка, файлы не меняются.
-func Init(project string) (*jscompat.Object, error) {
+func Init(project string) (*dynvalue.Object, error) {
 	manifest := sources.ReadManifest(project)
 	if manifest == nil {
 		return nil, errors.New(textManifestMissing)
@@ -150,28 +150,28 @@ func Init(project string) (*jscompat.Object, error) {
 	return write(project, cast, defaults)
 }
 
-// Save — cast.save (writeCast): нормализует и проверяет документ, проверяет наличие изображений в
+// Save — cast.save: нормализует и проверяет документ, проверяет наличие изображений в
 // source и публикует cast.json вместе с описанием референсов в описи (descriptionPlan). Возвращает
 // записанный кастинг. Отказ не меняет файлы.
-func Save(project string, input any) (*jscompat.Object, error) {
+func Save(project string, input any) (*dynvalue.Object, error) {
 	return write(project, input, LoadDefaults())
 }
 
-func write(project string, input any, defaults Defaults) (*jscompat.Object, error) {
+func write(project string, input any, defaults Defaults) (*dynvalue.Object, error) {
 	normalized, err := Normalize(input, defaults)
 	if err != nil {
 		return nil, err
 	}
-	entities, _ := jscompat.AsArray(normalized.Value("entities"))
+	entities, _ := dynvalue.AsArray(normalized.Value("entities"))
 	for _, entity := range entities {
-		images, _ := jscompat.AsArray(jscompat.Get(entity, "images"))
+		images, _ := dynvalue.AsArray(dynvalue.Get(entity, "images"))
 		for _, image := range images {
 			path, err := joinSource(project, image)
 			if err != nil {
 				return nil, err
 			}
-			if !jscompat.Exists(path) {
-				return nil, errors.New(textImageMissing(jscompat.ToString(jscompat.Get(entity, "name")), jscompat.ToString(image)))
+			if !dynvalue.Exists(path) {
+				return nil, errors.New(textImageMissing(dynvalue.ToString(dynvalue.Get(entity, "name")), dynvalue.ToString(image)))
 			}
 		}
 	}
@@ -189,52 +189,52 @@ func write(project string, input any, defaults Defaults) (*jscompat.Object, erro
 	return plan.Cast, nil
 }
 
-// DescriptionPlan — итог planCastDescriptions: опись с обновлёнными описаниями (nil без описи) и
-// кастинг, спроецированный на неё. Используется записью кастинга и (в этапе 44) применением
-// предложения трактовки.
+// DescriptionPlan — итог PlanDescriptions: опись с обновлёнными описаниями (nil без описи) и
+// кастинг, спроецированный на неё. Используется записью кастинга и применением предложения
+// трактовки.
 type DescriptionPlan struct {
 	Manifest any
-	Cast     *jscompat.Object
+	Cast     *dynvalue.Object
 }
 
 // PlanDescriptions согласует описания кастинга и описи. Описание связанного референса
 // принадлежит описи, а appearance кастинга — его проекция. fromCast=true — явная запись из кастинга: appearance
 // сущностей переносится в description референсов, а при изменении обновляется updated_at.
 // Исходные cast и manifest не меняются.
-func PlanDescriptions(cast *jscompat.Object, manifest any, fromCast bool) (DescriptionPlan, error) {
+func PlanDescriptions(cast *dynvalue.Object, manifest any, fromCast bool) (DescriptionPlan, error) {
 	var next any
 	if manifest != nil {
-		next = jscompat.DeepClone(manifest)
+		next = dynvalue.DeepClone(manifest)
 	}
 	if next != nil && fromCast {
-		entities, _ := jscompat.AsArray(cast.Value("entities"))
-		references, _ := jscompat.AsArray(jscompat.Get(next, "references"))
+		entities, _ := dynvalue.AsArray(cast.Value("entities"))
+		references, _ := dynvalue.AsArray(dynvalue.Get(next, "references"))
 		changed := false
 		for _, ref := range references {
 			var entity any
 			found := false
-			// `new Map(entities.map(...))`: последняя сущность с кодом побеждает.
+			// Как в FromSources: при повторе кода побеждает последняя сущность.
 			for index := len(entities) - 1; index >= 0; index-- {
-				if jscompat.StrictEqual(jscompat.Get(entities[index], "id"), jscompat.Get(ref, "id")) {
+				if dynvalue.StrictEqual(dynvalue.Get(entities[index], "id"), dynvalue.Get(ref, "id")) {
 					entity, found = entities[index], true
 					break
 				}
 			}
-			appearance := jscompat.Get(entity, "appearance")
-			if found && jscompat.Truthy(entity) && !jscompat.StrictEqual(jscompat.Get(ref, "description"), appearance) {
-				ref.(*jscompat.Object).Set("description", appearance)
+			appearance := dynvalue.Get(entity, "appearance")
+			if found && dynvalue.Truthy(entity) && !dynvalue.StrictEqual(dynvalue.Get(ref, "description"), appearance) {
+				ref.(*dynvalue.Object).Set("description", appearance)
 				changed = true
 			}
 		}
 		if changed {
-			next.(*jscompat.Object).Set("updated_at", now().UTC().Format("2006-01-02T15:04:05.000Z"))
+			next.(*dynvalue.Object).Set("updated_at", now().UTC().Format("2006-01-02T15:04:05.000Z"))
 		}
 	}
-	projected, err := ProjectDescriptions(jscompat.DeepClone(cast), next)
+	projected, err := ProjectDescriptions(dynvalue.DeepClone(cast), next)
 	if err != nil {
 		return DescriptionPlan{}, err
 	}
-	object, _ := jscompat.AsObject(projected)
+	object, _ := dynvalue.AsObject(projected)
 	return DescriptionPlan{Manifest: next, Cast: object}, nil
 }
 
@@ -257,7 +257,7 @@ func publish(project string, plan DescriptionPlan) error {
 		if err != nil {
 			return err
 		}
-		if jscompat.Stringify(current) != jscompat.Stringify(plan.Manifest) {
+		if dynvalue.Stringify(current) != dynvalue.Stringify(plan.Manifest) {
 			values = append(values, fileChange{rel: "source/manifest.json", next: encode(plan.Manifest)})
 		}
 	}
@@ -328,7 +328,7 @@ func restore(project string, changes []fileChange) error {
 }
 
 // RestoreFailed — referenceImageTexts.restoreFailed: откат после ошибки не удался, прежние данные
-// оставлены в резерве backup. reason выводится как String(error) в JS («Error: …»). Текст общий
+// оставлены в резерве backup. reason выводится с префиксом «Error: ». Текст общий
 // для публикации описаний и сохранения исходников с кастингом (internal/referenceimage).
 func RestoreFailed(backup string, reason error) error {
 	return fmt.Errorf("%s%s: Error: %v", textRestoreFailedPrefix, backup, reason)

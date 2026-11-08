@@ -1,4 +1,4 @@
-/** Номер события защищает список от старого IPC-снимка и повторной доставки при начальной загрузке. */
+/** Номер события защищает список от устаревшего снимка list и повторной доставки при начальной загрузке. */
 import type { AgentEvent, AgentJob } from '@shared/agents';
 
 export function mergeAgentJobs(current: AgentJob[], loaded: AgentJob[]): AgentJob[] {

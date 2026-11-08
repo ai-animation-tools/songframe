@@ -12,11 +12,11 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/shotworkflow"
-	"songframe-go/internal/tools"
+	"songframe/internal/golden"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/shotworkflow"
+	"songframe/internal/toolrt"
+	"songframe/internal/tools"
 )
 
 // Маркеры эталонов shot-workflow и verify-asset-replay: временная папка ОС и папка отчёта.
@@ -119,7 +119,7 @@ func (m markers) text(text string) string {
 	return text
 }
 
-// bytes — normalize_bytes: только текст UTF-8, двоичные файлы как есть.
+// bytes — нормализация байтов файла: текст UTF-8 проходит m.text, двоичные файлы — как есть.
 func (m markers) bytes(data []byte) []byte {
 	if !utf8.Valid(data) {
 		return data
@@ -142,8 +142,8 @@ func (m markers) substitute(args []any) []string {
 
 // toolCase — подготовленный запуск случая: проект, временная папка ОС и папка отчёта.
 type toolCase struct {
-	spec     *pycompat.Dict
-	expected *pycompat.Dict
+	spec     *toolrt.Dict
+	expected *toolrt.Dict
 	root     string
 	tmp      string
 	inside   bool
@@ -154,9 +154,9 @@ type toolCase struct {
 // prepareCase собирает вход случая: проект из образца и разности, временную папку ОС (TMPDIR,
 // отдельная или внутри проекта по case.json.tmpdir) с входом tmp/ и пустую папку отчёта.
 func prepareCase(t *testing.T, c golden.Case) toolCase {
-	spec := c.PyRead(t, "case.json")
+	spec := c.ReadValue(t, "case.json")
 	root := c.BuildProject(t)
-	run := toolCase{spec: spec, expected: c.PyRead(t, "expected.json"), root: root, out: t.TempDir()}
+	run := toolCase{spec: spec, expected: c.ReadValue(t, "expected.json"), root: root, out: t.TempDir()}
 	if inside, ok := spec.Value("tmpdir").(string); ok {
 		run.tmp, run.inside = filepath.Join(root, filepath.FromSlash(strings.TrimPrefix(inside, golden.ProjectMarker+"/"))), true
 	} else {
@@ -176,17 +176,17 @@ func prepareCase(t *testing.T, c golden.Case) toolCase {
 // checkStreams сверяет код, stdout и stderr; у трассировки — заголовок и последнюю строку.
 func (run toolCase) checkStreams(t *testing.T, result tools.Result, sortedStdout bool) {
 	t.Helper()
-	if want := run.expected.Value("code").(pycompat.Int).String(); result.Code == nil || want != pycompat.NewInt(int64(*result.Code)).String() {
+	if want := run.expected.Value("code").(toolrt.Int).String(); result.Code == nil || want != toolrt.NewInt(int64(*result.Code)).String() {
 		t.Errorf("код завершения: ожидалось %s, получено %v (stderr %s)", want, result.Code, result.Stderr)
 	}
-	want, got := golden.PyString(t, run.expected, "stdout"), run.markers.text(result.Stdout)
+	want, got := golden.ValueString(t, run.expected, "stdout"), run.markers.text(result.Stdout)
 	if sortedStdout {
 		want, got = sortedLines(want), sortedLines(got)
 	}
 	if got != want {
 		t.Errorf("stdout:\n--- ожидалось\n%s\n--- получено\n%s", want, got)
 	}
-	wantErr, gotErr := golden.PyString(t, run.expected, "stderr"), run.markers.text(result.Stderr)
+	wantErr, gotErr := golden.ValueString(t, run.expected, "stderr"), run.markers.text(result.Stderr)
 	if run.expected.Value("traceback") == true {
 		if !strings.HasPrefix(gotErr, tracebackHeader+"\n") || lastLine(gotErr) != lastLine(wantErr) {
 			t.Errorf("трассировка:\n--- ожидалось (последняя строка)\n%s\n--- получено\n%s", lastLine(wantErr), gotErr)
@@ -266,7 +266,7 @@ func (run toolCase) checkTree(t *testing.T, c golden.Case, before snapshot) {
 	diff(tmpMarker+"/", "tmp-files", before.tmpFiles, after.tmpFiles, before.tmpDirs, after.tmpDirs)
 	for label, got := range map[string]map[string]string{"files": gotFiles, "dirs": gotDirs, "modes": gotModes} {
 		want := map[string]string{}
-		expected := run.expected.Value(label).(*pycompat.Dict)
+		expected := run.expected.Value(label).(*toolrt.Dict)
 		for _, key := range expected.Keys() {
 			want[key] = expected.Value(key).(string)
 		}
@@ -316,7 +316,7 @@ func TestVerifyAssetReplayGolden(t *testing.T) {
 	for _, c := range golden.Load(t, "verify-asset-replay") {
 		t.Run(c.Name, func(t *testing.T) {
 			run := prepareCase(t, c)
-			if (ffmpegErr != nil || ffprobeErr != nil) && strings.Contains(golden.PyString(t, run.expected, "stdout"), "RMS=") {
+			if (ffmpegErr != nil || ffprobeErr != nil) && strings.Contains(golden.ValueString(t, run.expected, "stdout"), "RMS=") {
 				t.Skip("нет ffmpeg/ffprobe")
 			}
 			before := run.snapshot(t)

@@ -205,7 +205,7 @@ export function Layout(): ReactElement {
       </Drawer>
       {/* Страницы перестраивают блоки по доступной ширине рабочей области, уже без бокового меню. */}
       <Box component="main" sx={{ flex: 1, minWidth: 0, p: 3, containerType: 'inline-size', containerName: 'workspace' }}>
-        {/* Отступ равен шапке без нижней границы, как прежняя плотная панель. */}
+        {/* Отступ равен высоте шапки без её нижней границы: контент начинается сразу под панелью. */}
         <Box sx={{ height: headerHeight - 1 }} />
         <HeaderHeightContext.Provider value={headerHeight}>
           {/* Пока страница загружает данные, поверх неё виден общий индикатор (страница сообщает через usePageLoading). */}

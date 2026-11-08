@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/filedigest"
+	"songframe/internal/projectfs"
+	"songframe/internal/toolrt"
 )
 
 // Принятие плана привязано к постановке: отпечаток хранится в plan/production-status.json →
@@ -27,30 +27,30 @@ const (
 
 // EmptyProductionStatus — содержимое нового файла принятия, совпадающее с
 // шаблоном проекта. Возвращается новая копия.
-func EmptyProductionStatus() *pycompat.Dict {
-	status := pycompat.NewDict()
-	status.Set("schema_version", pycompat.NewInt(1))
+func EmptyProductionStatus() *toolrt.Dict {
+	status := toolrt.NewDict()
+	status.Set("schema_version", toolrt.NewInt(1))
 	status.Set("current_animatic", nil)
 	status.Set("current_animatic_status", "none")
-	status.Set("shots", pycompat.NewDict())
+	status.Set("shots", toolrt.NewDict())
 	return status
 }
 
 // ReadProductionStatus — объект plan/production-status.json;
 // отсутствующий файл — nil, ошибка чтения или разбора — ValueError «Не удалось прочитать …: <текст
-// исключения Python>», не-объект — ValueError.
-func ReadProductionStatus(root string) (*pycompat.Dict, error) {
-	value, err := pycompat.LoadJSONFile(filepath.Join(root, filepath.FromSlash(ProductionStatus)))
+// исключения>», не-объект — ValueError.
+func ReadProductionStatus(root string) (*toolrt.Dict, error) {
+	value, err := toolrt.LoadJSONFile(filepath.Join(root, filepath.FromSlash(ProductionStatus)))
 	if err != nil {
-		if pycompat.IsNotFound(err) {
+		if toolrt.IsNotFound(err) {
 			return nil, nil
 		}
-		if pycompat.IsAny(err, pycompat.OSError, pycompat.ValueError) {
+		if toolrt.IsAny(err, toolrt.OSError, toolrt.ValueError) {
 			return nil, valueError("Не удалось прочитать %s: %s", ProductionStatus, err.Error())
 		}
 		return nil, err
 	}
-	status, ok := value.(*pycompat.Dict)
+	status, ok := value.(*toolrt.Dict)
 	if !ok {
 		return nil, valueError("%s должен быть объектом.", ProductionStatus)
 	}
@@ -60,19 +60,19 @@ func ReadProductionStatus(root string) (*pycompat.Dict, error) {
 // AcceptedFingerprints — отпечатки постановки, по которым приняты
 // комплекты, {Mxx: sha} в порядке файла; nil-статус или пустой объект без shots — пусто. Неверная
 // запись — ValueError.
-func AcceptedFingerprints(status *pycompat.Dict) (*pycompat.Dict, error) {
-	var shotsField any = pycompat.NewDict()
+func AcceptedFingerprints(status *toolrt.Dict) (*toolrt.Dict, error) {
+	var shotsField any = toolrt.NewDict()
 	if status.Len() > 0 {
-		shotsField, _ = pycompat.DictGet(status, "shots", pycompat.NewDict())
+		shotsField, _ = toolrt.DictGet(status, "shots", toolrt.NewDict())
 	}
-	shots, ok := shotsField.(*pycompat.Dict)
+	shots, ok := shotsField.(*toolrt.Dict)
 	if !ok {
 		return nil, valueError(`%s: shots должен быть объектом {"Mxx": {"scene_sha256": "..."}}.`, ProductionStatus)
 	}
-	result := pycompat.NewDict()
+	result := toolrt.NewDict()
 	for _, sid := range shots.Keys() {
 		var digest any
-		if entry, ok := shots.Value(sid).(*pycompat.Dict); ok {
+		if entry, ok := shots.Value(sid).(*toolrt.Dict); ok {
 			digest = entry.Value("scene_sha256")
 		}
 		text, isString := digest.(string)
@@ -89,24 +89,24 @@ func AcceptedFingerprints(status *pycompat.Dict) (*pycompat.Dict, error) {
 // сохраняются; clearSourceReviews удаляет прежнюю сверку source_review (новая приёмка приносит
 // свою квитанцию generation). Записи shots упорядочиваются по монтажному номеру, как при записи
 // статуса из приложения (internal/acceptance). nil-статус — EmptyProductionStatus.
-func WithAcceptedFingerprints(status *pycompat.Dict, updates *pycompat.Dict, clearSourceReviews bool) (*pycompat.Dict, error) {
+func WithAcceptedFingerprints(status *toolrt.Dict, updates *toolrt.Dict, clearSourceReviews bool) (*toolrt.Dict, error) {
 	result := EmptyProductionStatus()
 	if status != nil {
-		result = pycompat.DeepCopy(status).(*pycompat.Dict)
+		result = toolrt.DeepCopy(status).(*toolrt.Dict)
 	}
 	if _, err := AcceptedFingerprints(result); err != nil {
 		return nil, err
 	}
-	existing, _ := pycompat.DictGet(result, "shots", pycompat.NewDict())
-	shots := existing.(*pycompat.Dict).Clone()
+	existing, _ := toolrt.DictGet(result, "shots", toolrt.NewDict())
+	shots := existing.(*toolrt.Dict).Clone()
 	for _, sid := range updates.Keys() {
 		digest := updates.Value(sid)
 		text, isString := digest.(string)
 		if !ShotID.MatchString(sid) || !isString || !SHA256.MatchString(text) {
-			return nil, valueError("%s: неверный отпечаток постановки %s.", sid, pycompat.Repr(digest))
+			return nil, valueError("%s: неверный отпечаток постановки %s.", sid, toolrt.Repr(digest))
 		}
-		entry := pycompat.NewDict()
-		if previous, ok := shots.Value(sid).(*pycompat.Dict); ok {
+		entry := toolrt.NewDict()
+		if previous, ok := shots.Value(sid).(*toolrt.Dict); ok {
 			entry = previous.Clone()
 		}
 		entry.Set("scene_sha256", text)
@@ -118,14 +118,14 @@ func WithAcceptedFingerprints(status *pycompat.Dict, updates *pycompat.Dict, cle
 	keys := shots.Keys()
 	numbers := make(map[string]float64, len(keys))
 	for _, key := range keys {
-		number, err := pycompat.FloatFromString(string(pycompat.Runes(key)[1:]))
+		number, err := toolrt.FloatFromString(string(toolrt.Runes(key)[1:]))
 		if err != nil {
 			return nil, err
 		}
 		numbers[key] = number
 	}
 	sort.SliceStable(keys, func(i, j int) bool { return numbers[keys[i]] < numbers[keys[j]] })
-	ordered := pycompat.NewDict()
+	ordered := toolrt.NewDict()
 	for _, key := range keys {
 		ordered.Set(key, shots.Value(key))
 	}
@@ -136,7 +136,7 @@ func WithAcceptedFingerprints(status *pycompat.Dict, updates *pycompat.Dict, cle
 // WriteAcceptedFingerprints — атомарная запись
 // plan/production-status.json с новыми отпечатками (WithAcceptedFingerprints). Запись проходит
 // шлюз projectfs.CheckWrite, как любая запись приложения в проект.
-func WriteAcceptedFingerprints(root string, updates *pycompat.Dict, clearSourceReviews bool) error {
+func WriteAcceptedFingerprints(root string, updates *toolrt.Dict, clearSourceReviews bool) error {
 	status, err := ReadProductionStatus(root)
 	if err != nil {
 		return err
@@ -148,10 +148,10 @@ func WriteAcceptedFingerprints(root string, updates *pycompat.Dict, clearSourceR
 	if err := projectfs.CheckWrite(root); err != nil {
 		return err
 	}
-	return pycompat.WriteJSONAtomic(filepath.Join(root, filepath.FromSlash(ProductionStatus)), next)
+	return toolrt.WriteJSONAtomic(filepath.Join(root, filepath.FromSlash(ProductionStatus)), next)
 }
 
-// resolvePath — Path.resolve(): абсолютный путь с разыменованными ссылками; ok=false, если путь
+// resolvePath — абсолютный путь с разыменованными ссылками; ok=false, если путь
 // не существует (тогда снимок источника всё равно недоступен).
 func resolvePath(path string) (string, bool) {
 	absolute, err := filepath.Abs(path)
@@ -165,7 +165,7 @@ func resolvePath(path string) (string, bool) {
 	return resolved, true
 }
 
-// isRelativeTo — Path.is_relative_to(directory) для разрешённых путей.
+// isRelativeTo — path совпадает с directory или лежит внутри неё (оба пути уже разрешены).
 func isRelativeTo(path, directory string) bool {
 	return path == directory || strings.HasPrefix(path, strings.TrimSuffix(directory, string(filepath.Separator))+string(filepath.Separator))
 }
@@ -179,31 +179,31 @@ func SourceVideoSnapshot(root, shot string, allowDerived bool) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	value, err := pycompat.LoadJSONFile(filepath.Join(directory, "manifest.json"))
+	value, err := toolrt.LoadJSONFile(filepath.Join(directory, "manifest.json"))
 	if err != nil {
 		return "", false
 	}
-	manifest, ok := value.(*pycompat.Dict)
-	if !ok || !pycompat.Equal(manifest.Value("schema_version"), pycompat.NewInt(1)) || !pycompat.Equal(manifest.Value("shot"), shot) ||
-		pycompat.Equal(manifest.Value("kind"), "derived_video") && !allowDerived {
+	manifest, ok := value.(*toolrt.Dict)
+	if !ok || !toolrt.Equal(manifest.Value("schema_version"), toolrt.NewInt(1)) || !toolrt.Equal(manifest.Value("shot"), shot) ||
+		toolrt.Equal(manifest.Value("kind"), "derived_video") && !allowDerived {
 		return "", false
 	}
-	edit, err := pycompat.GetItem(manifest, "accepted_edit")
+	edit, err := toolrt.GetItem(manifest, "accepted_edit")
 	if err != nil {
 		return "", false
 	}
-	videoValue, err := pycompat.GetItem(edit, "video")
+	videoValue, err := toolrt.GetItem(edit, "video")
 	if err != nil {
 		return "", false
 	}
-	video, ok := videoValue.(*pycompat.Dict)
+	video, ok := videoValue.(*toolrt.Dict)
 	if !ok || !video.Has("path") || !video.Has("sha256") {
 		return "", false
 	}
 	name, nameOK := video.Value("path").(string)
 	digest, digestOK := video.Value("sha256").(string)
-	rootValue, _ := pycompat.DictGet(video, "root", "asset")
-	if !nameOK || name == "" || filepath.IsAbs(name) || !pycompat.Equal(rootValue, "asset") || !digestOK || !SHA256.MatchString(digest) {
+	rootValue, _ := toolrt.DictGet(video, "root", "asset")
+	if !nameOK || name == "" || filepath.IsAbs(name) || !toolrt.Equal(rootValue, "asset") || !digestOK || !SHA256.MatchString(digest) {
 		return "", false
 	}
 	path, ok := resolvePath(filepath.Join(directory, name))
@@ -228,19 +228,19 @@ type Snapshot func(shot string) (string, bool)
 // Initial — начальное состояние кастинга; SourceSnapshot — SHA выбранного видео источника;
 // SourceReviews — записи shots.Mxx.source_review; AcceptedSnapshot — SHA собственного ролика плана.
 type AcceptanceInput struct {
-	Kits             *pycompat.Dict
-	Accepted         *pycompat.Dict
-	Initial          *pycompat.Dict
+	Kits             *toolrt.Dict
+	Accepted         *toolrt.Dict
+	Initial          *toolrt.Dict
 	SourceSnapshot   Snapshot
-	SourceReviews    *pycompat.Dict
+	SourceReviews    *toolrt.Dict
 	AcceptedSnapshot Snapshot
 }
 
 // Acceptance — итог ShotAcceptance: состояние (completed/stale) планов с комплектом и причины
 // устаревания; порядок обоих словарей зафиксирован эталоном (причины — по порядку назначения).
 type Acceptance struct {
-	States  *pycompat.Dict
-	Reasons *pycompat.Dict
+	States  *toolrt.Dict
+	Reasons *toolrt.Dict
 }
 
 // reviewFields — ключи действующей сверки source_review.
@@ -248,7 +248,7 @@ var reviewFields = []string{"source_shot", "source_scene_sha256", "source_accept
 
 // validReview — запись source_review ровно с полями reviewFields, кодом плана и hex-отпечатками.
 func validReview(value any) bool {
-	review, ok := value.(*pycompat.Dict)
+	review, ok := value.(*toolrt.Dict)
 	if !ok || review.Len() != len(reviewFields) {
 		return false
 	}
@@ -274,10 +274,10 @@ func ShotAcceptance(data any, input AcceptanceInput) (Acceptance, error) {
 	if err != nil {
 		return Acceptance{}, err
 	}
-	states, reasons := pycompat.NewDict(), pycompat.NewDict()
+	states, reasons := toolrt.NewDict(), toolrt.NewDict()
 	for _, sid := range current.Keys() {
 		if input.Kits.Has(sid) {
-			if pycompat.Equal(input.Accepted.Value(sid), current.Value(sid)) {
+			if toolrt.Equal(input.Accepted.Value(sid), current.Value(sid)) {
 				states.Set(sid, Completed)
 			} else {
 				states.Set(sid, Stale)
@@ -289,15 +289,15 @@ func ShotAcceptance(data any, input AcceptanceInput) (Acceptance, error) {
 			reasons.Set(sid, SceneChanged)
 		}
 	}
-	scenes := pycompat.NewDict()
-	list, _ := pycompat.Iter(data.(*pycompat.Dict).Value("scenes"))
+	scenes := toolrt.NewDict()
+	list, _ := toolrt.Iter(data.(*toolrt.Dict).Value("scenes"))
 	for _, item := range list {
-		scene := item.(*pycompat.Dict)
+		scene := item.(*toolrt.Dict)
 		scenes.Set(scene.Value("id").(string), scene)
 	}
 	reviews := input.SourceReviews
 	for _, item := range list {
-		scene := item.(*pycompat.Dict)
+		scene := item.(*toolrt.Dict)
 		sid := scene.Value("id").(string)
 		if states.Value(sid) != Completed {
 			continue
@@ -312,26 +312,26 @@ func ShotAcceptance(data any, input AcceptanceInput) (Acceptance, error) {
 }
 
 // derivedReason — причина устаревания принятого производного плана или пустая строка.
-func derivedReason(scene *pycompat.Dict, sid string, input AcceptanceInput, scenes, states, current, reviews *pycompat.Dict) string {
+func derivedReason(scene *toolrt.Dict, sid string, input AcceptanceInput, scenes, states, current, reviews *toolrt.Dict) string {
 	var source string
-	if link, ok := scene.Value("derived_from").(*pycompat.Dict); ok {
+	if link, ok := scene.Value("derived_from").(*toolrt.Dict); ok {
 		source, _ = link.Value("shot").(string)
 	}
-	manifest, _ := input.Kits.Value(sid).(*pycompat.Dict)
-	storedDerived := manifest != nil && pycompat.Equal(manifest.Value("kind"), "derived_video")
+	manifest, _ := input.Kits.Value(sid).(*toolrt.Dict)
+	storedDerived := manifest != nil && toolrt.Equal(manifest.Value("kind"), "derived_video")
 	if source == "" && !storedDerived {
 		return ""
 	}
-	generation, _ := manifest.Value("generation").(*pycompat.Dict)
-	if source == "" || !storedDerived || generation == nil || !pycompat.Equal(generation.Value("source_shot"), source) {
+	generation, _ := manifest.Value("generation").(*toolrt.Dict)
+	if source == "" || !storedDerived || generation == nil || !toolrt.Equal(generation.Value("source_shot"), source) {
 		return DerivedLinkChanged
 	}
-	sourceScene, _ := scenes.Value(source).(*pycompat.Dict)
+	sourceScene, _ := scenes.Value(source).(*toolrt.Dict)
 	snapshot, snapshotOK := "", false
 	if input.SourceSnapshot != nil {
 		snapshot, snapshotOK = input.SourceSnapshot(source)
 	}
-	if sourceScene == nil || pycompat.Truthy(sourceScene.Value("derived_from")) || states.Value(source) != Completed || !snapshotOK {
+	if sourceScene == nil || toolrt.Truthy(sourceScene.Value("derived_from")) || states.Value(source) != Completed || !snapshotOK {
 		return SourceUnavailable
 	}
 	if reviews.Has(sid) {
@@ -341,7 +341,7 @@ func derivedReason(scene *pycompat.Dict, sid string, input AcceptanceInput, scen
 		if !validReview(review) {
 			return SourceReceiptMissing
 		}
-		record := review.(*pycompat.Dict)
+		record := review.(*toolrt.Dict)
 		if record.Value("source_shot") != source {
 			return DerivedLinkChanged
 		}
@@ -370,7 +370,7 @@ func derivedReason(scene *pycompat.Dict, sid string, input AcceptanceInput, scen
 // ProjectShotAcceptance — свежесть комплектов по файлам
 // проекта (манифесты assets/shots, plan/production-status.json, кастинг, выбранные ролики) без
 // записи и изменения исторических снимков. data nil — Load(root).
-func ProjectShotAcceptance(root string, data *pycompat.Dict) (Acceptance, error) {
+func ProjectShotAcceptance(root string, data *toolrt.Dict) (Acceptance, error) {
 	if data == nil {
 		loaded, err := Load(root)
 		if err != nil {
@@ -378,24 +378,24 @@ func ProjectShotAcceptance(root string, data *pycompat.Dict) (Acceptance, error)
 		}
 		data = loaded
 	}
-	scenes, err := pycompat.Iter(data.Value("scenes"))
+	scenes, err := toolrt.Iter(data.Value("scenes"))
 	if err != nil {
 		return Acceptance{}, err
 	}
-	kits := pycompat.NewDict()
+	kits := toolrt.NewDict()
 	for _, item := range scenes {
-		idValue, err := pycompat.GetItem(item, "id")
+		idValue, err := toolrt.GetItem(item, "id")
 		if err != nil {
 			return Acceptance{}, err
 		}
 		id, ok := idValue.(string)
 		if !ok {
-			return Acceptance{}, pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", pycompat.TypeName(idValue))
+			return Acceptance{}, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(idValue))
 		}
 		path := filepath.Join(root, "assets", "shots", id, "manifest.json")
-		if pycompat.IsFile(path) {
-			manifest, err := pycompat.LoadJSONFile(path)
-			if err != nil && !pycompat.IsAny(err, pycompat.OSError, pycompat.ValueError) {
+		if toolrt.IsFile(path) {
+			manifest, err := toolrt.LoadJSONFile(path)
+			if err != nil && !toolrt.IsAny(err, toolrt.OSError, toolrt.ValueError) {
 				return Acceptance{}, err
 			}
 			kits.Set(id, manifest)
@@ -409,11 +409,11 @@ func ProjectShotAcceptance(root string, data *pycompat.Dict) (Acceptance, error)
 	if err != nil {
 		return Acceptance{}, err
 	}
-	reviews := pycompat.NewDict()
+	reviews := toolrt.NewDict()
 	if status.Len() > 0 {
-		shots, _ := pycompat.DictGet(status, "shots", pycompat.NewDict())
-		for _, sid := range shots.(*pycompat.Dict).Keys() {
-			entry := shots.(*pycompat.Dict).Value(sid).(*pycompat.Dict)
+		shots, _ := toolrt.DictGet(status, "shots", toolrt.NewDict())
+		for _, sid := range shots.(*toolrt.Dict).Keys() {
+			entry := shots.(*toolrt.Dict).Value(sid).(*toolrt.Dict)
 			if review, ok := entry.Get("source_review"); ok {
 				reviews.Set(sid, review)
 			}

@@ -3,7 +3,7 @@
   "call": "viewTiming",
   "project": "project",
   "covers": [
-    "unreadableTiming (Number.isFinite строки)"
+    "unreadableTiming (строка вместо числа)"
   ],
   "stubbedMedia": [
     "source/track.mp3"

@@ -15,7 +15,7 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Текст ошибки чтения реестра для речевого плана.
@@ -73,23 +73,23 @@ type Package struct {
 
 // readJSON читает JSON-файл: nil при отсутствии файла и любой ошибке разбора.
 func readJSON(path string) any {
-	value, ok := jscompat.ReadJSONFile(path)
+	value, ok := dynvalue.ReadJSONFile(path)
 	if !ok {
 		return nil
 	}
 	return value
 }
 
-// finite — typeof value === 'number' && Number.isFinite(value).
+// finite — значение — конечное число.
 func finite(value any) (float64, bool) {
 	number, ok := value.(float64)
-	return number, ok && jscompat.IsFinite(number)
+	return number, ok && dynvalue.IsFinite(number)
 }
 
 // newline — разделитель строк текста песни: /\r?\n/.
 var newline = regexp.MustCompile(`\r?\n`)
 
-// round3 — Math.round(value * 1000) / 1000: половина округляется к +∞, как в JS.
+// round3 — округление до тысячных: половина округляется к +∞.
 func round3(value float64) float64 {
 	return math.Floor(value*1000+0.5) / 1000
 }
@@ -100,40 +100,40 @@ func round3(value float64) float64 {
 // или плана в нём нет.
 func PlanFor(project, shot string, limits Limits) (Plan, error) {
 	scenes := readJSON(filepath.Join(project, "plan", "scenes.json"))
-	list, isList := jscompat.AsArray(jscompat.Get(scenes, "scenes"))
-	fps, fpsOK := finite(jscompat.Get(scenes, "fps"))
-	if !jscompat.IsRecord(scenes) || !isList || !fpsOK {
+	list, isList := dynvalue.AsArray(dynvalue.Get(scenes, "scenes"))
+	fps, fpsOK := finite(dynvalue.Get(scenes, "fps"))
+	if !dynvalue.IsRecord(scenes) || !isList || !fpsOK {
 		return Plan{}, errors.New(textSceneRegistryUnreadable)
 	}
 	var scene any
 	for _, item := range list {
-		if jscompat.IsRecord(item) && jscompat.StrictEqual(jscompat.Get(item, "id"), shot) {
+		if dynvalue.IsRecord(item) && dynvalue.StrictEqual(dynvalue.Get(item, "id"), shot) {
 			scene = item
 			break
 		}
 	}
-	startFrame, startOK := finite(jscompat.Get(scene, "start_frame"))
-	endFrame, endOK := finite(jscompat.Get(scene, "end_frame_exclusive"))
-	if !jscompat.IsRecord(scene) || !startOK || !endOK {
+	startFrame, startOK := finite(dynvalue.Get(scene, "start_frame"))
+	endFrame, endOK := finite(dynvalue.Get(scene, "end_frame_exclusive"))
+	if !dynvalue.IsRecord(scene) || !startOK || !endOK {
 		return Plan{}, errors.New(textShotMissing(shot))
 	}
 	window := Interval{Start: startFrame / fps, End: endFrame / fps}
 	timing := readJSON(filepath.Join(project, "plan", "audio", "timing.json"))
 	var text []string
 	if data, err := os.ReadFile(filepath.Join(project, "source", "text.md")); err == nil {
-		text = newline.Split(jscompat.DecodeUTF8(data), -1)
+		text = newline.Split(dynvalue.DecodeUTF8(data), -1)
 	}
 	lines := []Line{}
-	if timingLines, ok := jscompat.AsArray(jscompat.Get(timing, "lines")); ok && jscompat.IsRecord(timing) {
+	if timingLines, ok := dynvalue.AsArray(dynvalue.Get(timing, "lines")); ok && dynvalue.IsRecord(timing) {
 		for _, line := range timingLines {
-			start, startOK := finite(jscompat.Get(line, "start"))
-			end, endOK := finite(jscompat.Get(line, "end"))
-			if !jscompat.IsRecord(line) || !startOK || !endOK || !(end > window.Start && start < window.End) {
+			start, startOK := finite(dynvalue.Get(line, "start"))
+			end, endOK := finite(dynvalue.Get(line, "end"))
+			if !dynvalue.IsRecord(line) || !startOK || !endOK || !(end > window.Start && start < window.End) {
 				continue
 			}
 			entry := Line{Start: start, End: end}
-			if number, ok := jscompat.Get(line, "source_line").(float64); ok && jscompat.IsInteger(number) && number > 0 && number <= float64(len(text)) {
-				value := jscompat.Trim(text[int(number)-1])
+			if number, ok := dynvalue.Get(line, "source_line").(float64); ok && dynvalue.IsInteger(number) && number > 0 && number <= float64(len(text)) {
+				value := dynvalue.Trim(text[int(number)-1])
 				entry.Text = &value
 			}
 			lines = append(lines, entry)
@@ -159,37 +159,37 @@ func PlanFor(project, shot string, limits Limits) (Plan, error) {
 func ReadPackage(packageDir string) *Package {
 	recipePath := filepath.Join(packageDir, "audio", "audio-recipe.json")
 	recipe := readJSON(recipePath)
-	interval, isInterval := jscompat.AsArray(jscompat.Get(recipe, "source_interval_seconds"))
-	output := jscompat.Get(recipe, "output")
-	if !jscompat.IsRecord(recipe) || !isInterval || !jscompat.IsRecord(output) {
+	interval, isInterval := dynvalue.AsArray(dynvalue.Get(recipe, "source_interval_seconds"))
+	output := dynvalue.Get(recipe, "output")
+	if !dynvalue.IsRecord(recipe) || !isInterval || !dynvalue.IsRecord(output) {
 		return nil
 	}
 	item := func(index int) any {
 		if index < len(interval) {
 			return interval[index]
 		}
-		return jscompat.Undefined
+		return dynvalue.Undefined
 	}
 	start, startOK := finite(item(0))
 	end, endOK := finite(item(1))
-	name, nameOK := jscompat.Get(output, "path").(string)
+	name, nameOK := dynvalue.Get(output, "path").(string)
 	if !startOK || !endOK || !nameOK || strings.ContainsAny(name, `/\`) {
 		return nil
 	}
 	path := filepath.Join(packageDir, "audio", name)
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return nil
 	}
 	lines := []Line{}
-	if list, ok := jscompat.AsArray(jscompat.Get(recipe, "timing_lines")); ok {
+	if list, ok := dynvalue.AsArray(dynvalue.Get(recipe, "timing_lines")); ok {
 		for _, line := range list {
-			lineStart, startOK := finite(jscompat.Get(line, "start"))
-			lineEnd, endOK := finite(jscompat.Get(line, "end"))
-			if !jscompat.IsRecord(line) || !startOK || !endOK {
+			lineStart, startOK := finite(dynvalue.Get(line, "start"))
+			lineEnd, endOK := finite(dynvalue.Get(line, "end"))
+			if !dynvalue.IsRecord(line) || !startOK || !endOK {
 				continue
 			}
 			entry := Line{Start: lineStart, End: lineEnd}
-			if text, ok := jscompat.Get(line, "text").(string); ok {
+			if text, ok := dynvalue.Get(line, "text").(string); ok {
 				entry.Text = &text
 			}
 			lines = append(lines, entry)

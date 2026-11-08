@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/providers/kling/mcp"
+	"songframe/internal/mediaapi"
+	"songframe/internal/providers/kling/mcp"
 )
 
 // Особенности Kling для слоя провайдеров приложения (internal/providers): правила нормализации

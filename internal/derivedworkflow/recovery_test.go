@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/project"
+	"songframe/internal/project"
 )
 
 // sha — SHA-256 текста.

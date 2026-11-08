@@ -13,7 +13,7 @@ mkdir -m 700 -- "$output" "$output/config" "$output/cache" "$output/data"
 cp -- "$image" "$output/package.AppImage"
 before=$(sha256sum "$image" | cut -d' ' -f1)
 printf '{"package": "%s", "version": "99.0.0", "relaunchReport": "%s"}\n' "$output/package.AppImage" "$output/relaunch.json" > "$output/request.json"
-environment=("--setenv=SONGFRAME_GO_LOCAL_DIR=$output/profile" "--setenv=XDG_CONFIG_HOME=$output/config" "--setenv=XDG_CACHE_HOME=$output/cache" "--setenv=XDG_DATA_HOME=$output/data")
+environment=("--setenv=SONGFRAME_LOCAL_DIR=$output/profile" "--setenv=XDG_CONFIG_HOME=$output/config" "--setenv=XDG_CACHE_HOME=$output/cache" "--setenv=XDG_DATA_HOME=$output/data")
 for name in DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS; do
   if [[ -n ${!name:-} ]]; then environment+=("--setenv=$name=${!name}"); fi
 done

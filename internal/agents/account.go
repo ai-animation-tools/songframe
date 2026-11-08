@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // AccountLimit — AgentAccountLimit: окно лимита из штатной диагностики CLI. usedPercent — в
@@ -37,7 +37,7 @@ type AccountResult struct {
 	Message               string          `json:"message,omitempty"`
 }
 
-// timestamp — new Date().toISOString(): UTC с миллисекундами.
+// timestamp — время ISO 8601 в UTC с миллисекундами и суффиксом Z.
 func timestamp(now time.Time) string { return now.UTC().Format("2006-01-02T15:04:05.000Z") }
 
 var controlCharacters = regexp.MustCompile(`\p{Cc}`)
@@ -46,10 +46,10 @@ var controlCharacters = regexp.MustCompile(`\p{Cc}`)
 // длиннее 512 кодовых единиц; иначе nil.
 func accountText(value any) *string {
 	raw, ok := value.(string)
-	if !ok || jscompat.Trim(raw) == "" {
+	if !ok || dynvalue.Trim(raw) == "" {
 		return nil
 	}
-	cleaned := utf16Slice(jscompat.Trim(controlCharacters.ReplaceAllString(raw, "")), 512)
+	cleaned := utf16Slice(dynvalue.Trim(controlCharacters.ReplaceAllString(raw, "")), 512)
 	if cleaned == "" {
 		return nil
 	}
@@ -117,7 +117,7 @@ func claudeAccount(ctx context.Context, config Settings, options CheckOptions) (
 			method := data.Value("authMethod")
 			source := data.Value("apiKeySource")
 			canReadUsage = (method == "claude.ai" || method == "oauth_token") && data.Value("apiProvider") == "firstParty" &&
-				(source == jscompat.Undefined || source == "none")
+				(source == dynvalue.Undefined || source == "none")
 		case false:
 		default:
 			result.Message = textPartialAccount
@@ -189,16 +189,16 @@ func resetTime(value any) *string {
 // readClaudeUsage выполняет initialize и get_usage (skip_behaviors исключает чтение истории за семь
 // дней); любой сбой — nil.
 func readClaudeUsage(ctx context.Context, executable string, options ProcessOptions) *claudeUsage {
-	usageRequest := jscompat.NewObject()
+	usageRequest := dynvalue.NewObject()
 	usageRequest.Set("subtype", "get_usage")
 	usageRequest.Set("skip_behaviors", true)
-	initialize := jscompat.NewObject()
+	initialize := dynvalue.NewObject()
 	initialize.Set("subtype", "initialize")
-	responses, err := claudeControl(ctx, executable, options, []*jscompat.Object{initialize, usageRequest})
+	responses, err := claudeControl(ctx, executable, options, []*dynvalue.Object{initialize, usageRequest})
 	if err != nil {
 		return nil
 	}
-	data, ok := responses[1].(*jscompat.Object)
+	data, ok := responses[1].(*dynvalue.Object)
 	if !ok || (!data.Has("rate_limits_available") && !data.Has("rate_limits")) {
 		return nil
 	}
@@ -206,24 +206,24 @@ func readClaudeUsage(ctx context.Context, executable string, options ProcessOpti
 	if available, ok := data.Value("rate_limits_available").(bool); ok {
 		usage.available = &available
 	}
-	rateLimits, ok := data.Value("rate_limits").(*jscompat.Object)
+	rateLimits, ok := data.Value("rate_limits").(*dynvalue.Object)
 	if !ok {
 		return usage
 	}
 	rates := &claudeRates{windows: map[string]claudeWindow{}}
 	for _, key := range claudeWindows {
-		if window, ok := rateLimits.Value(key).(*jscompat.Object); ok {
+		if window, ok := rateLimits.Value(key).(*dynvalue.Object); ok {
 			rates.windows[key] = claudeWindow{utilization: usagePercent(window.Value("utilization")), resetsAt: resetTime(window.Value("resets_at"))}
 		}
 	}
-	if rows, ok := jscompat.AsArray(rateLimits.Value("limits")); ok {
+	if rows, ok := dynvalue.AsArray(rateLimits.Value("limits")); ok {
 		rates.hasRow = true
 		rates.limits = []claudeRow{}
 		if len(rows) > 32 {
 			rows = rows[:32]
 		}
 		for _, raw := range rows {
-			row, ok := raw.(*jscompat.Object)
+			row, ok := raw.(*dynvalue.Object)
 			if !ok {
 				continue
 			}
@@ -238,7 +238,8 @@ func readClaudeUsage(ctx context.Context, executable string, options ProcessOpti
 	return usage
 }
 
-// resetSeconds — Math.floor(Date.parse(value) / 1000) или nil без времени.
+// resetSeconds — целые секунды Unix-времени даты value (с округлением вниз) или nil, если
+// даты нет или она не разбирается.
 func resetSeconds(value *string) *float64 {
 	if value == nil {
 		return nil
@@ -302,16 +303,16 @@ type codexSnapshot struct {
 // readCodexAccount — только штатные операции чтения: account/read без обновления токена и
 // account/rateLimits/read; сбой одного запроса не отменяет другой.
 func readCodexAccount(ctx context.Context, executable string, options ProcessOptions) codexSnapshot {
-	snapshot := codexSnapshot{account: jscompat.Undefined, rateLimits: jscompat.Undefined}
-	_, err := codexRPC(ctx, executable, options, func(request func(string, *jscompat.Object) (any, error)) (struct{}, error) {
-		params := jscompat.NewObject()
+	snapshot := codexSnapshot{account: dynvalue.Undefined, rateLimits: dynvalue.Undefined}
+	_, err := codexRPC(ctx, executable, options, func(request func(string, *dynvalue.Object) (any, error)) (struct{}, error) {
+		params := dynvalue.NewObject()
 		params.Set("refreshToken", false)
 		if value, err := request("account/read", params); err != nil {
 			snapshot.partial = true
 		} else {
 			snapshot.account = value
 		}
-		if value, err := request("account/rateLimits/read", jscompat.NewObject()); err != nil {
+		if value, err := request("account/rateLimits/read", dynvalue.NewObject()); err != nil {
 			snapshot.partial = true
 		} else {
 			snapshot.rateLimits = value
@@ -326,17 +327,17 @@ func readCodexAccount(ctx context.Context, executable string, options ProcessOpt
 
 // codexLimits — окна и кредиты Codex. Многокорзинный ответ авторитетен даже при пустой карте:
 // legacy-корзина не подменяет его старыми числами.
-func codexLimits(response *jscompat.Object) (*[]AccountLimit, *string) {
+func codexLimits(response *dynvalue.Object) (*[]AccountLimit, *string) {
 	type bucket struct {
 		id    string
 		value any
 	}
 	buckets := []bucket{}
-	if byID, ok := response.Value("rateLimitsByLimitId").(*jscompat.Object); ok {
+	if byID, ok := response.Value("rateLimitsByLimitId").(*dynvalue.Object); ok {
 		for _, key := range byID.Keys() {
 			buckets = append(buckets, bucket{key, byID.Value(key)})
 		}
-	} else if legacy, ok := response.Value("rateLimits").(*jscompat.Object); ok {
+	} else if legacy, ok := response.Value("rateLimits").(*dynvalue.Object); ok {
 		id := "codex"
 		if limitID := accountText(legacy.Value("limitId")); limitID != nil {
 			id = *limitID
@@ -442,7 +443,7 @@ func codexAccount(ctx context.Context, config Settings, options CheckOptions) (A
 			result.Message = textUsageRestricted(Title(Codex))
 		}
 	}
-	if snapshot.partial || !jscompat.Truthy(snapshot.rateLimits) || !jscompat.Truthy(snapshot.account) {
+	if snapshot.partial || !dynvalue.Truthy(snapshot.rateLimits) || !dynvalue.Truthy(snapshot.account) {
 		result.Message = textPartialAccount
 	}
 	return result, nil

@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/components"
-	"songframe-go/internal/tools"
-	"songframe-go/internal/videoreview"
-	"songframe-go/internal/wire"
+	"songframe/internal/agents"
+	"songframe/internal/components"
+	"songframe/internal/tools"
+	"songframe/internal/videoreview"
+	"songframe/internal/wire"
 )
 
 // VideoReviewService реализует window.api.videoReview: проверку полученного видео агентом без

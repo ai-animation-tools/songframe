@@ -7,7 +7,7 @@
 // stdout/stderr, коды завершения и байты записанных файлов зафиксированы эталонами
 // testdata/golden/shot-workflow. Ожидаемые отказы (ValueError, OSError, KeyError, TypeError)
 // печатаются в stderr с кодом 1 — текст ValueError как есть, прочие «Ошибка файлов пакета; сырой
-// вывод скрыт.»; остальные исключения Python (AttributeError на данных неожиданной формы) дают
+// вывод скрыт.»; остальные исключения toolrt (AttributeError на данных неожиданной формы) дают
 // трассировку. Пакет не обращается к сервисам генерации и не меняет attempt.json и оригиналы.
 package shotworkflow
 
@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/shotstatus"
+	"songframe/internal/shotstatus"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // Этапы пакета: единый порядок подготовки видео, image-ветка и возврат на исправление.
@@ -67,72 +67,72 @@ func contains(items []string, value string) bool {
 	return false
 }
 
-// containsValue — `value in (строки…)` Python: со строками совпадает только строка.
+// containsValue — value входит в список строк: совпасть может только строка.
 func containsValue(items []string, value any) bool {
 	text, ok := value.(string)
 	return ok && contains(items, text)
 }
 
 // valueError — ValueError с текстом, который CLI печатает пользователю.
-func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
+func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
 
-// Parser — аргументы инструмента в стиле argparse: верхний парсер с обязательной подкомандой action.
-func Parser() *pycompat.Command {
-	dir := pycompat.Action{Name: "--dir", Required: true}
+// Parser — аргументы инструмента (toolrt.Command): верхний парсер с обязательной подкомандой action.
+func Parser() *toolrt.Command {
+	dir := toolrt.Action{Name: "--dir", Required: true}
 	waitChoices := append([]string(nil), shotstatus.WaitReasons...)
 	sort.Strings(waitChoices)
-	sub := func(name string, actions ...pycompat.Action) *pycompat.Command {
-		return &pycompat.Command{Name: name, Actions: actions}
+	sub := func(name string, actions ...toolrt.Action) *toolrt.Command {
+		return &toolrt.Command{Name: name, Actions: actions}
 	}
-	shows := []*pycompat.Command{}
+	shows := []*toolrt.Command{}
 	for _, name := range []string{"show", "check"} {
-		shows = append(shows, sub(name, dir, pycompat.Action{Name: "--json", Kind: pycompat.StoreTrue}))
+		shows = append(shows, sub(name, dir, toolrt.Action{Name: "--json", Kind: toolrt.StoreTrue}))
 	}
-	return &pycompat.Command{
-		Prog:        "shot_workflow.py",
+	return &toolrt.Command{
+		Prog:        "shot_workflow",
 		Description: "Ведение workflow.json рабочего пакета плана: этапы, опоры, промпт, очередь; @link README.md",
 		Dest:        "action",
-		Subcommands: append([]*pycompat.Command{
-			sub("init", pycompat.Action{Name: "shot"}, dir,
-				pycompat.Action{Name: "--mode", Choices: modes, Default: "shot"},
-				pycompat.Action{Name: "--batch", Help: "Имя партии независимых планов, готовящихся вместе"},
-				pycompat.Action{Name: "--retry-of", Help: "Пакет того же плана, для которого создаётся исправленная попытка"}),
+		Subcommands: append([]*toolrt.Command{
+			sub("init", toolrt.Action{Name: "shot"}, dir,
+				toolrt.Action{Name: "--mode", Choices: modes, Default: "shot"},
+				toolrt.Action{Name: "--batch", Help: "Имя партии независимых планов, готовящихся вместе"},
+				toolrt.Action{Name: "--retry-of", Help: "Пакет того же плана, для которого создаётся исправленная попытка"}),
 			sub("plan-keyframes", dir,
-				pycompat.Action{Name: "--request-seconds", Int: true, Required: true},
-				pycompat.Action{Name: "--middle", Kind: pycompat.AppendValue, Metavar: "СЕК:ЗАМЕТКА"}),
-			sub("approve", dir, pycompat.Action{Name: "keyframe"}, pycompat.Action{Name: "path"}),
-			sub("approve-prompt", dir, pycompat.Action{Name: "--file"}),
-			sub("set-stage", dir, pycompat.Action{Name: "stage"},
-				pycompat.Action{Name: "--wait-reason", Choices: waitChoices},
-				pycompat.Action{Name: "--request-dir"}),
+				toolrt.Action{Name: "--request-seconds", Int: true, Required: true},
+				toolrt.Action{Name: "--middle", Kind: toolrt.AppendValue, Metavar: "СЕК:ЗАМЕТКА"}),
+			sub("approve", dir, toolrt.Action{Name: "keyframe"}, toolrt.Action{Name: "path"}),
+			sub("approve-prompt", dir, toolrt.Action{Name: "--file"}),
+			sub("set-stage", dir, toolrt.Action{Name: "stage"},
+				toolrt.Action{Name: "--wait-reason", Choices: waitChoices},
+				toolrt.Action{Name: "--request-dir"}),
 			sub("set-image-request", dir,
-				pycompat.Action{Name: "--frame", Required: true},
-				pycompat.Action{Name: "--request-dir", Required: true}),
-			sub("select-image", dir, pycompat.Action{Name: "--file", Required: true}),
-			sub("park", dir, pycompat.Action{Name: "--wait-reason", Choices: waitChoices, Default: "user_saved"}),
-			sub("propose", dir, pycompat.Action{Name: "keyframe"}, pycompat.Action{Name: "path"}),
+				toolrt.Action{Name: "--frame", Required: true},
+				toolrt.Action{Name: "--request-dir", Required: true}),
+			sub("select-image", dir, toolrt.Action{Name: "--file", Required: true}),
+			sub("park", dir, toolrt.Action{Name: "--wait-reason", Choices: waitChoices, Default: "user_saved"}),
+			sub("propose", dir, toolrt.Action{Name: "keyframe"}, toolrt.Action{Name: "path"}),
 			sub("ask", dir,
-				pycompat.Action{Name: "--stage", Required: true, Choices: decisionStages},
-				pycompat.Action{Name: "--question"},
-				pycompat.Action{Name: "--options", Help: "Через запятую: " + strings.Join(verdicts, ",")},
-				pycompat.Action{Name: "--frame", Help: "Вопрос об одной опоре Kxx (только keyframes_review)"}),
+				toolrt.Action{Name: "--stage", Required: true, Choices: decisionStages},
+				toolrt.Action{Name: "--question"},
+				toolrt.Action{Name: "--options", Help: "Через запятую: " + strings.Join(verdicts, ",")},
+				toolrt.Action{Name: "--frame", Help: "Вопрос об одной опоре Kxx (только keyframes_review)"}),
 			sub("decide", dir,
-				pycompat.Action{Name: "--verdict", Required: true, Choices: verdicts},
-				pycompat.Action{Name: "--note", Default: ""},
-				pycompat.Action{Name: "--note-scope", Choices: noteScopes, Default: "following"},
-				pycompat.Action{Name: "--json", Kind: pycompat.StoreTrue}),
-			sub("reopen", dir, pycompat.Action{Name: "keyframe"},
-				pycompat.Action{Name: "--note", Required: true},
-				pycompat.Action{Name: "--note-scope", Choices: noteScopes, Default: "following"}),
+				toolrt.Action{Name: "--verdict", Required: true, Choices: verdicts},
+				toolrt.Action{Name: "--note", Default: ""},
+				toolrt.Action{Name: "--note-scope", Choices: noteScopes, Default: "following"},
+				toolrt.Action{Name: "--json", Kind: toolrt.StoreTrue}),
+			sub("reopen", dir, toolrt.Action{Name: "keyframe"},
+				toolrt.Action{Name: "--note", Required: true},
+				toolrt.Action{Name: "--note-scope", Choices: noteScopes, Default: "following"}),
 			sub("set-note", dir,
-				pycompat.Action{Name: "--id", Int: true, Required: true},
-				pycompat.Action{Name: "--active", Choices: []string{"true", "false"}, Required: true}),
+				toolrt.Action{Name: "--id", Int: true, Required: true},
+				toolrt.Action{Name: "--active", Choices: []string{"true", "false"}, Required: true}),
 		}, shows...),
 	}
 }
 
 // optional — значение необязательной строковой опции (nil — не задана).
-func optional(args pycompat.Namespace, key string) *string {
+func optional(args toolrt.Namespace, key string) *string {
 	if text, ok := args[key].(string); ok {
 		return &text
 	}
@@ -140,12 +140,12 @@ func optional(args pycompat.Namespace, key string) *string {
 }
 
 // Run — инструмент shot_workflow на корне проекта root (уже выбранном tools.Run).
-func Run(root string, argv []string) pytool.Output {
+func Run(root string, argv []string) toolcli.Output {
 	args, exit := Parser().ParseArgs(argv)
 	if exit != nil {
-		return pytool.Output{Code: exit.Code, Stdout: pycompat.TextMode(exit.Stdout), Stderr: pycompat.TextMode(exit.Stderr)}
+		return toolcli.Output{Code: exit.Code, Stdout: toolrt.TextMode(exit.Stdout), Stderr: toolrt.TextMode(exit.Stderr)}
 	}
-	out := &pytool.Printer{}
+	out := &toolcli.Printer{}
 	tool := &workflowTool{root: root}
 	dir := args["dir"].(string)
 	err := func() error {
@@ -155,14 +155,14 @@ func Run(root string, argv []string) pytool.Output {
 			if err != nil {
 				return err
 			}
-			timing, _ := data.Value("timing").(*pycompat.Dict)
-			return out.Print("Пакет " + pycompat.Str(data.Value("shot")) + " создан: этап " + pycompat.Str(data.Value("stage")) + ", окно " + pycompat.Str(timing.Value("window_seconds")) + " с.")
+			timing, _ := data.Value("timing").(*toolrt.Dict)
+			return out.Print("Пакет " + toolrt.Str(data.Value("shot")) + " создан: этап " + toolrt.Str(data.Value("stage")) + ", окно " + toolrt.Str(timing.Value("window_seconds")) + " с.")
 		case "plan-keyframes":
 			middles := []middle{}
 			list, _ := args["middle"].([]string)
 			for _, item := range list {
 				seconds, note, _ := strings.Cut(item, ":")
-				value, err := pycompat.FloatFromString(seconds)
+				value, err := toolrt.FloatFromString(seconds)
 				if err != nil {
 					return err
 				}
@@ -171,7 +171,7 @@ func Run(root string, argv []string) pytool.Output {
 				}
 				middles = append(middles, middle{value, note})
 			}
-			if _, err := tool.planKeyframes(dir, args["request_seconds"].(pycompat.Int), middles); err != nil {
+			if _, err := tool.planKeyframes(dir, args["request_seconds"].(toolrt.Int), middles); err != nil {
 				return err
 			}
 			return printTable(out, tool, dir)
@@ -181,8 +181,8 @@ func Run(root string, argv []string) pytool.Output {
 				return err
 			}
 			next := "все опоры приняты, можно approve-prompt"
-			if current := data.Value("current_keyframe"); pycompat.Truthy(current) {
-				next = pycompat.Str(current)
+			if current := data.Value("current_keyframe"); toolrt.Truthy(current) {
+				next = toolrt.Str(current)
 			}
 			return out.Print(args["keyframe"].(string) + " принята; следующая: " + next + ".")
 		case "approve-prompt":
@@ -190,7 +190,7 @@ func Run(root string, argv []string) pytool.Output {
 			if err != nil {
 				return err
 			}
-			text := "Промпт принят: " + pycompat.Str(data.Value("approved_prompt_sha256"))
+			text := "Промпт принят: " + toolrt.Str(data.Value("approved_prompt_sha256"))
 			if len(warnings) > 0 {
 				text += "\n" + strings.Join(warnings, "\n")
 			}
@@ -200,19 +200,19 @@ func Run(root string, argv []string) pytool.Output {
 			if err != nil {
 				return err
 			}
-			return out.Print("Этап: " + pycompat.Str(data.Value("stage")) + ".")
+			return out.Print("Этап: " + toolrt.Str(data.Value("stage")) + ".")
 		case "set-image-request":
 			data, err := tool.setImageRequest(dir, args["frame"].(string), args["request_dir"].(string))
 			if err != nil {
 				return err
 			}
-			return out.Print("Запрос опоры " + pycompat.Str(data.Value("image_frame_id")) + " ждёт отдельного подтверждения: " + pycompat.Str(data.Value("image_request_dir")) + ".")
+			return out.Print("Запрос опоры " + toolrt.Str(data.Value("image_frame_id")) + " ждёт отдельного подтверждения: " + toolrt.Str(data.Value("image_request_dir")) + ".")
 		case "select-image":
 			data, err := tool.selectImage(dir, args["file"].(string))
 			if err != nil {
 				return err
 			}
-			return out.Print(pycompat.Str(data.Value("image_frame_id")) + ": кандидат выбран; художественное принятие отдельно.")
+			return out.Print(toolrt.Str(data.Value("image_frame_id")) + ": кандидат выбран; художественное принятие отдельно.")
 		case "park":
 			target, err := tool.park(dir, args["wait_reason"].(string))
 			if err != nil {
@@ -233,12 +233,12 @@ func Run(root string, argv []string) pytool.Output {
 			if err != nil {
 				return err
 			}
-			pending := data.Value("pending_decision").(*pycompat.Dict)
+			pending := data.Value("pending_decision").(*toolrt.Dict)
 			parts := []string{}
 			for _, option := range pending.Value("options").([]any) {
 				parts = append(parts, option.(string))
 			}
-			return out.Print("Вопрос записан для приложения: " + pycompat.Str(pending.Value("question")) + " (" + strings.Join(parts, ", ") + ").")
+			return out.Print("Вопрос записан для приложения: " + toolrt.Str(pending.Value("question")) + " (" + strings.Join(parts, ", ") + ").")
 		case "decide":
 			note := args["note"].(string)
 			data, err := tool.decide(dir, args["verdict"].(string), note, args["note_scope"].(string))
@@ -246,7 +246,7 @@ func Run(root string, argv []string) pytool.Output {
 				return err
 			}
 			if args["json"] == true {
-				text, err := pycompat.DumpsJSON(data.Value("decision"), pycompat.DumpOptions{})
+				text, err := toolrt.DumpsJSON(data.Value("decision"), toolrt.DumpOptions{})
 				if err != nil {
 					return err
 				}
@@ -264,21 +264,21 @@ func Run(root string, argv []string) pytool.Output {
 			return out.Print(args["keyframe"].(string) + " возвращена на доработку; видеопромпт согласуется заново.")
 		case "set-note":
 			active := args["active"] == "true"
-			if _, err := tool.setNote(dir, args["id"].(pycompat.Int), active); err != nil {
+			if _, err := tool.setNote(dir, args["id"].(toolrt.Int), active); err != nil {
 				return err
 			}
 			state := "выключено."
 			if active {
 				state = "включено."
 			}
-			return out.Print("Замечание " + args["id"].(pycompat.Int).String() + " " + state)
+			return out.Print("Замечание " + args["id"].(toolrt.Int).String() + " " + state)
 		default:
 			info, err := tool.report(dir)
 			if err != nil {
 				return err
 			}
 			if args["json"] == true {
-				text, err := pytool.JSON(info.dict)
+				text, err := toolcli.JSON(info.dict)
 				if err != nil {
 					return err
 				}
@@ -303,13 +303,13 @@ func Run(root string, argv []string) pytool.Output {
 	return finish(out, err)
 }
 
-// exitCode — raise SystemExit(code) после вывода.
+// exitCode — завершение инструмента с кодом code после вывода (текст ошибки — «SystemExit»).
 type exitCode int
 
 func (e exitCode) Error() string { return "SystemExit" }
 
 // finish — обработка исключений Run: ожидаемые типы — текст в stderr и код 1.
-func finish(out *pytool.Printer, err error) pytool.Output {
+func finish(out *toolcli.Printer, err error) toolcli.Output {
 	if err == nil {
 		return out.Exit(0)
 	}
@@ -317,20 +317,20 @@ func finish(out *pytool.Printer, err error) pytool.Output {
 		return out.Exit(int(code))
 	}
 	// Ошибки Go вне модели исключений возникают только в файловых операциях — это OSError.
-	if _, isPython := err.(*pycompat.Exception); !isPython {
+	if _, isToolError := err.(*toolrt.Exception); !isToolError {
 		return out.Fail("Ошибка файлов пакета; сырой вывод скрыт.")
 	}
-	if !pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError, pycompat.TypeError) {
+	if !toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError, toolrt.TypeError) {
 		return out.Crash(err)
 	}
-	if pycompat.Is(err, pycompat.ValueError) && !pycompat.Is(err, pycompat.JSONDecodeError) {
+	if toolrt.Is(err, toolrt.ValueError) && !toolrt.Is(err, toolrt.JSONDecodeError) {
 		return out.Fail(err.Error())
 	}
 	return out.Fail("Ошибка файлов пакета; сырой вывод скрыт.")
 }
 
 // printTable печатает таблицу сводки пакета dir.
-func printTable(out *pytool.Printer, tool *workflowTool, dir string) error {
+func printTable(out *toolcli.Printer, tool *workflowTool, dir string) error {
 	info, err := tool.report(dir)
 	if err != nil {
 		return err

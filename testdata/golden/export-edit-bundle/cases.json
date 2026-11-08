@@ -1,5 +1,4 @@
 {
- "python": "3.12.3",
  "base": "checks-base",
  "cases": [
   {
@@ -497,7 +496,7 @@
    "name": "out-equals",
    "description": "Запись --out=значение и префикс опции.",
    "covers": [
-    "argparse: =значение",
+    "аргументы: =значение",
     "префиксы"
    ],
    "project": "project",
@@ -898,7 +897,7 @@
     "24 FPS",
     "native frames",
     "M2",
-    "Fraction float"
+    "дробь из float"
    ],
    "project": "project",
    "args": [
@@ -1109,7 +1108,7 @@
    "name": "rate-numeric",
    "description": "Сетка true, отсутствующая сетка, числовые частоты, нулевая длительность.",
    "covers": [
-    "Fraction(True)",
+    "дробь из true",
     "FPS по умолчанию",
     "duration 0 → пусто"
    ],
@@ -1406,7 +1405,7 @@
    "covers": [
     "speed 0 без M2",
     "отрицательная",
-    "float(str)"
+    "float из строки"
    ],
    "project": "project",
    "args": [
@@ -1720,7 +1719,7 @@
    "description": "Границы :g и строковое удержание.",
    "covers": [
     ":g экспонента",
-    "float(str)",
+    "float из строки",
     "нет ключа удержания"
    ],
    "project": "project",
@@ -3192,9 +3191,9 @@
    "name": "escape-names",
    "description": "Кириллица и спецсимволы в именах, XML и CSV.",
    "covers": [
-    "quoteattr",
-    "as_uri",
-    "QUOTE_MINIMAL",
+    "кавычки атрибутов XML",
+    "file URI",
+    "минимальные кавычки CSV",
     "\\r\\n окончания"
    ],
    "project": "project",
@@ -3471,7 +3470,7 @@
    "name": "project-dir-special",
    "description": "Кириллица и спецсимволы в пути проекта.",
    "covers": [
-    "as_uri корня проекта"
+    "file URI корня проекта"
    ],
    "project": "проект клипа #1 100%&'",
    "args": [
@@ -3545,7 +3544,7 @@
    "name": "name-double-quote",
    "description": "Название с двойной кавычкой без одинарной.",
    "covers": [
-    "quoteattr: одинарные кавычки"
+    "кавычки атрибутов XML: одинарные кавычки"
    ],
    "project": "project",
    "args": [
@@ -3593,7 +3592,7 @@
    "name": "name-both-quotes",
    "description": "Название с обеими кавычками.",
    "covers": [
-    "quoteattr: &quot;"
+    "кавычки атрибутов XML: &quot;"
    ],
    "project": "project",
    "args": [
@@ -3642,10 +3641,10 @@
    "description": "Нестроковые значения в таблице.",
    "covers": [
     "join списка",
-    "round(v, 6)",
+    "округление до 6 знаков",
     "None → пусто",
     "str(bool)",
-    "str(dict)"
+    "текст объекта"
    ],
    "project": "project",
    "args": [
@@ -3693,8 +3692,8 @@
    "name": "timing-values",
    "description": "Разметка: округление, типы, номера строк.",
    "covers": [
-    "ROUND_HALF_UP",
-    "Fraction(str)",
+    "половина вверх",
+    "дробь из строки",
     "1/3 строкой",
     "источник вне текста",
     "bool source_line",
@@ -3744,10 +3743,10 @@
   },
   {
    "name": "text-splitlines",
-   "description": "Текст песни: splitlines и strip.",
+   "description": "Текст песни: разбиение на строки и обрезка пробелов.",
    "covers": [
     "universal newlines",
-    "splitlines",
+    "разбиение на строки",
     "strip",
     "note null",
     "нет статуса"
@@ -4110,8 +4109,8 @@
    "name": "interval-types",
    "description": "Участок целыми, строками, больше часа.",
    "covers": [
-    "float(raw)",
-    "frames_at(raw)",
+    "float из исходного значения",
+    "кадры исходного значения",
     "часы таймкода"
    ],
    "project": "project",
@@ -4216,7 +4215,7 @@
    "description": "Отрицательное начало и большие значения.",
    "covers": [
     "отрицательный таймкод",
-    "28 значащих цифр Decimal",
+    "28 значащих цифр десятичной арифметики",
     "floor //"
    ],
    "project": "project",
@@ -4318,7 +4317,7 @@
   },
   {
    "name": "rounding-precision",
-   "description": "Двойное округление Decimal: 28 цифр, затем половина вверх.",
+   "description": "Двойное десятичное округление: 28 цифр, затем половина вверх.",
    "covers": [
     "precision 28",
     "half-even затем half-up"
@@ -7483,7 +7482,7 @@
    "name": "interval-null-item",
    "description": "null в участке.",
    "covers": [
-    "трассировка float(None)"
+    "трассировка float из None"
    ],
    "project": "project",
    "args": [
@@ -7622,9 +7621,9 @@
   },
   {
    "name": "interval-nan",
-   "description": "NaN в участке: Fraction не читает.",
+   "description": "NaN в участке: дробь не читается.",
    "covers": [
-    "ValueError Fraction текстом"
+    "ValueError дроби текстом"
    ],
    "project": "project",
    "args": [
@@ -7671,7 +7670,7 @@
    "name": "timing-none-start",
    "description": "null в начале строки разметки.",
    "covers": [
-    "ValueError Fraction текстом"
+    "ValueError дроби текстом"
    ],
    "project": "project",
    "args": [
@@ -7701,7 +7700,7 @@
    "name": "timing-list-start",
    "description": "Список в начале строки.",
    "covers": [
-    "repr в тексте Fraction"
+    "repr в тексте дроби"
    ],
    "project": "project",
    "args": [
@@ -8018,7 +8017,7 @@
    "name": "rate-text",
    "description": "Частота текстом.",
    "covers": [
-    "ValueError Fraction текстом"
+    "ValueError дроби текстом"
    ],
    "project": "project",
    "args": [
@@ -8065,7 +8064,7 @@
    "name": "rate-list",
    "description": "Частота списком.",
    "covers": [
-    "Fraction(str(list))"
+    "дробь из текста списка"
    ],
    "project": "project",
    "args": [
@@ -8112,7 +8111,7 @@
    "name": "grid-list",
    "description": "Сетка списком.",
    "covers": [
-    "трассировка TypeError Fraction"
+    "трассировка TypeError дроби"
    ],
    "project": "project",
    "args": [
@@ -8159,7 +8158,7 @@
    "name": "grid-text",
    "description": "Сетка текстом.",
    "covers": [
-    "ValueError Fraction"
+    "ValueError дроби"
    ],
    "project": "project",
    "args": [
@@ -8535,7 +8534,7 @@
    "name": "input-string",
    "description": "Вход строкой.",
    "covers": [
-    "трассировка str.get"
+    "трассировка get у строки"
    ],
    "project": "project",
    "args": [
@@ -8771,7 +8770,7 @@
     "code": 2,
     "stdout": "",
     "created": {},
-    "stderr": "usage: export_edit_bundle.py [-h] --out OUT [--copy]\nexport_edit_bundle.py: error: the following arguments are required: --out\n"
+    "stderr": "usage: export_edit_bundle [-h] --out OUT [--copy]\nexport_edit_bundle: error: the following arguments are required: --out\n"
    }
   },
   {
@@ -8790,7 +8789,7 @@
    "dirs": [],
    "expected": {
     "code": 0,
-    "stdout": "usage: export_edit_bundle.py [-h] --out OUT [--copy]\n\nПакет для монтажёра: таблица планов, EDL, FCPXML, строки песни и исходники;\n@link README.md\n\noptions:\n  -h, --help  show this help message and exit\n  --out OUT   Пустая папка вне папки проекта или внутри plan/batches\n  --copy      Скопировать оригиналы, клипы, кадры, промпты, WAV, карточки и\n              песню в media/\n",
+    "stdout": "usage: export_edit_bundle [-h] --out OUT [--copy]\n\nПакет для монтажёра: таблица планов, EDL, FCPXML, строки песни и исходники;\n@link README.md\n\noptions:\n  -h, --help  show this help message and exit\n  --out OUT   Пустая папка вне папки проекта или внутри plan/batches\n  --copy      Скопировать оригиналы, клипы, кадры, промпты, WAV, карточки и\n              песню в media/\n",
     "created": {},
     "stderr": ""
    }
@@ -8813,7 +8812,7 @@
     "code": 2,
     "stdout": "",
     "created": {},
-    "stderr": "usage: export_edit_bundle.py [-h] --out OUT [--copy]\nexport_edit_bundle.py: error: the following arguments are required: --out\n"
+    "stderr": "usage: export_edit_bundle [-h] --out OUT [--copy]\nexport_edit_bundle: error: the following arguments are required: --out\n"
    }
   },
   {
@@ -8836,7 +8835,7 @@
     "code": 2,
     "stdout": "",
     "created": {},
-    "stderr": "usage: export_edit_bundle.py [-h] --out OUT [--copy]\nexport_edit_bundle.py: error: unrecognized arguments: лишнее\n"
+    "stderr": "usage: export_edit_bundle [-h] --out OUT [--copy]\nexport_edit_bundle: error: unrecognized arguments: лишнее\n"
    }
   },
   {
@@ -8857,7 +8856,7 @@
     "code": 2,
     "stdout": "",
     "created": {},
-    "stderr": "usage: export_edit_bundle.py [-h] --out OUT [--copy]\nexport_edit_bundle.py: error: argument --out: expected one argument\n"
+    "stderr": "usage: export_edit_bundle [-h] --out OUT [--copy]\nexport_edit_bundle: error: argument --out: expected one argument\n"
    }
   },
   {
@@ -8880,7 +8879,7 @@
     "code": 2,
     "stdout": "",
     "created": {},
-    "stderr": "usage: export_edit_bundle.py [-h] --out OUT [--copy]\nexport_edit_bundle.py: error: argument --copy: ignored explicit argument '1'\n"
+    "stderr": "usage: export_edit_bundle [-h] --out OUT [--copy]\nexport_edit_bundle: error: argument --copy: ignored explicit argument '1'\n"
    }
   },
   {
@@ -8901,7 +8900,7 @@
     "code": 2,
     "stdout": "",
     "created": {},
-    "stderr": "usage: export_edit_bundle.py [-h] --out OUT [--copy]\nexport_edit_bundle.py: error: the following arguments are required: --out\n"
+    "stderr": "usage: export_edit_bundle [-h] --out OUT [--copy]\nexport_edit_bundle: error: the following arguments are required: --out\n"
    }
   }
  ]

@@ -3,7 +3,7 @@
   "call": "Projects.create",
   "project": null,
   "covers": [
-    "copyTemplate",
+    "копирование шаблона",
     "defaultAnimaticName slug",
     "git init",
     "open: history/current"

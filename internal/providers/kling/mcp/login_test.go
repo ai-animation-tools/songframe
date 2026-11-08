@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // Лёгкие сценарии входа и обновления на минимальном OAuth-сервере httptest: точные байты
@@ -172,12 +172,12 @@ func TestLoginWaitFailures(t *testing.T) {
 func TestParallelRefreshOnce(t *testing.T) {
 	server := newAuthServer(t)
 	client := testClient(t, server.URL)
-	record := pycompat.NewDict()
+	record := toolrt.NewDict()
 	record.Set("client_id", "songframe-test")
 	record.Set("token_endpoint", server.URL+"/auth/token")
 	record.Set("access_token", "stale")
 	record.Set("refresh_token", "refresh-0")
-	record.Set("expires_at", pycompat.NewInt(1))
+	record.Set("expires_at", toolrt.NewInt(1))
 	if err := client.WriteCredentials(record); err != nil {
 		t.Fatal(err)
 	}

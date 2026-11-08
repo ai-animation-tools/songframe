@@ -12,28 +12,28 @@ import (
 	"path/filepath"
 	"strings"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // Подготовка копий изображений: опоры с EXIF-ориентацией и уменьшением, упаковка в бюджет.
-// Оригинал делал это через Pillow; здесь пиксели обрабатывает тот же FFmpeg (lanczos, RGB24),
-// а JPEG кодирует стандартная библиотека Go с той же шкалой качества IJG. Размеры, порядок и
-// правила выбора качества совпадают с инструментом; байты копий опор и переупакованных JPEG
-// отличаются от Pillow (другой кодек PNG/JPEG), байты кадров в пределах бюджета — нет (их пишет FFmpeg).
+// Пиксели обрабатывает FFmpeg (lanczos, RGB24), а JPEG кодирует стандартная библиотека Go по
+// шкале качества IJG. Размеры, порядок и правила выбора качества зафиксированы эталоном
+// video-review-frames; копии опор и переупакованные JPEG эталон сверяет по размерам и среднему
+// цвету ячеек, байты кадров в пределах бюджета — побайтно (их пишет FFmpeg).
 
 // reviewSide — наибольшая сторона копий (960×960 без увеличения).
 const reviewSide = 960
 
-// thumbnailSize — размер Image.thumbnail((boxW, boxH)) Pillow 10: пропорции сохраняются с
-// округлением к ближайшему по отношению сторон, без увеличения. ok=false — изображение уже
-// помещается в рамку и не меняется.
+// thumbnailSize — размер копии, вписанной в рамку boxW×boxH без увеличения: пропорции
+// сохраняются, изменяемая сторона — ближайшее к исходному отношению сторон целое (floor или ceil,
+// при равенстве floor, не меньше 1). ok=false — изображение уже помещается в рамку и не меняется.
 func thumbnailSize(width, height, boxW, boxH int) (int, int, bool) {
 	if boxW >= width && boxH >= height {
 		return width, height, false
 	}
 	aspect := float64(width) / float64(height)
 	x, y := boxW, boxH
-	// roundAspect — max(min(floor(n), ceil(n), key=key), 1): при равных ключах берётся floor.
+	// roundAspect — floor или ceil value с меньшим key (при равенстве floor), не меньше 1.
 	roundAspect := func(value float64, key func(n float64) float64) int {
 		floor, ceil := math.Floor(value), math.Ceil(value)
 		chosen := floor
@@ -55,7 +55,7 @@ func thumbnailSize(width, height, boxW, boxH int) (int, int, bool) {
 	return x, y, true
 }
 
-// orientationFilter — фильтр FFmpeg для ImageOps.exif_transpose: 2 — зеркало, 3 — 180°,
+// orientationFilter — фильтр FFmpeg для EXIF-ориентации: 2 — зеркало, 3 — 180°,
 // 4 — вертикальное зеркало, 5 — транспонирование, 6 — 90° по часовой, 7 — поперечное
 // транспонирование, 8 — 90° против часовой. swap — стороны меняются местами.
 func orientationFilter(orientation int) (string, bool) {
@@ -171,12 +171,12 @@ func (r *mediaRunner) imageSize(path string) (int, int, error) {
 		Streams []map[string]any `json:"streams"`
 	}
 	if err := decodeJSON(output, &info); err != nil || len(info.Streams) == 0 {
-		return 0, 0, fail("cannot identify image file " + pycompat.Repr(path))
+		return 0, 0, fail("cannot identify image file " + toolrt.Repr(path))
 	}
-	width, okWidth := pyInt(info.Streams[0]["width"])
-	height, okHeight := pyInt(info.Streams[0]["height"])
+	width, okWidth := intOf(info.Streams[0]["width"])
+	height, okHeight := intOf(info.Streams[0]["height"])
 	if !okWidth || !okHeight || width <= 0 || height <= 0 {
-		return 0, 0, fail("cannot identify image file " + pycompat.Repr(path))
+		return 0, 0, fail("cannot identify image file " + toolrt.Repr(path))
 	}
 	return width, height, nil
 }
@@ -193,7 +193,7 @@ func (r *mediaRunner) reference(source, target string) error {
 		if r.ctx.Err() != nil {
 			return err
 		}
-		return fail("cannot identify image file " + pycompat.Repr(source))
+		return fail("cannot identify image file " + toolrt.Repr(source))
 	}
 	filters := []string{"format=rgb24"}
 	if filter, swap := orientationFilter(exifOrientation(data)); filter != "" {
@@ -225,7 +225,7 @@ func (r *mediaRunner) resized(path string, width, height int) (image.Image, erro
 	return decoded, nil
 }
 
-// budgetImages — budget_images инструмента: упаковывает только приватные копии, сохраняя порядок
+// budgetImages — упаковка в бюджет: упаковывает только приватные копии, сохраняя порядок
 // и ID. Доля файла — min(perFile, total / число изображений). PNG в пределах доли не трогается
 // (точные пиксели нужны для технических сверок). Крупный PNG переупаковывается в JPEG с качеством
 // 85, затем 70 и 55; если не помогло, размеры уменьшаются на четверть с сохранением пропорций и
@@ -256,7 +256,7 @@ func (r *mediaRunner) budgetImages(paths []string, total, perFile int) ([]string
 		current, _, err := image.Decode(file)
 		file.Close()
 		if err != nil {
-			return nil, fail("cannot identify image file " + pycompat.Repr(path))
+			return nil, fail("cannot identify image file " + toolrt.Repr(path))
 		}
 		for {
 			var payload []byte

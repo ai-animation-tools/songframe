@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"songframe-go/internal/process"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/process"
+	"songframe/internal/toolrt"
 )
 
 // textReplayTarget, textReplayCopy и textReplayFilter — тексты отказов Replay.
@@ -21,16 +21,16 @@ const (
 // Штатный режим копирует принятые
 // байты и сверяет SHA; fromOriginal повторяет этапы фильтров rebuild.stages из оригинала
 // генерации программой ffmpeg (путь ffmpeg) во временной папке. Комплект проверяется
-// ValidatePackage без сверки кода плана. Ошибки — исключения Python (pycompat) с фиксированными
-// текстами; незапустившийся ffmpeg — FileNotFoundError, как у subprocess.run.
+// ValidatePackage без сверки кода плана. Ошибки — исключения toolrt с фиксированными
+// текстами; незапустившийся ffmpeg — FileNotFoundError (NotFound).
 func Replay(ctx context.Context, path, destination string, fromOriginal bool, root, ffmpeg string) error {
 	pack, err := ValidatePackage(path, "", root)
 	if err != nil {
 		return err
 	}
-	destination = pycompat.ResolvePath(destination)
-	if pycompat.Exists(destination) || pycompat.IsRelativeTo(destination, pycompat.ResolvePath(pycompat.JoinPath(root, "assets"))) {
-		return pycompat.New(pycompat.ValueError, textReplayTarget)
+	destination = toolrt.ResolvePath(destination)
+	if toolrt.Exists(destination) || toolrt.IsRelativeTo(destination, toolrt.ResolvePath(toolrt.JoinPath(root, "assets"))) {
+		return toolrt.New(toolrt.ValueError, textReplayTarget)
 	}
 	edit, err := item(pack, "accepted_edit")
 	if err != nil {
@@ -57,14 +57,14 @@ func Replay(ctx context.Context, path, destination string, fromOriginal bool, ro
 		if err != nil {
 			return err
 		}
-		if !pycompat.Equal(digest, video.(*pycompat.Dict).Value("sha256")) {
-			return pycompat.New(pycompat.ValueError, textReplayCopy)
+		if !toolrt.Equal(digest, video.(*toolrt.Dict).Value("sha256")) {
+			return toolrt.New(toolrt.ValueError, textReplayCopy)
 		}
 		return nil
 	}
 	folder, err := os.MkdirTemp("", "asset-replay-")
 	if err != nil {
-		return pycompat.OSErrorFrom(err, os.TempDir())
+		return toolrt.OSErrorFrom(err, os.TempDir())
 	}
 	defer os.RemoveAll(folder)
 	rebuild, err := item(edit, "rebuild")
@@ -75,7 +75,7 @@ func Replay(ctx context.Context, path, destination string, fromOriginal bool, ro
 	if err != nil {
 		return err
 	}
-	stages, err := pycompat.Iter(stagesValue)
+	stages, err := toolrt.Iter(stagesValue)
 	if err != nil {
 		return err
 	}
@@ -85,12 +85,12 @@ func Replay(ctx context.Context, path, destination string, fromOriginal bool, ro
 	}
 	previous := ""
 	for number, stage := range stages {
-		usePrevious, err := pycompat.DictGet(stage, "use_previous", nil)
+		usePrevious, err := toolrt.DictGet(stage, "use_previous", nil)
 		if err != nil {
 			return err
 		}
 		source := previous
-		if !pycompat.Truthy(usePrevious) {
+		if !toolrt.Truthy(usePrevious) {
 			input, err := item(stage, "input")
 			if err != nil {
 				return err
@@ -107,46 +107,47 @@ func Replay(ctx context.Context, path, destination string, fromOriginal bool, ro
 		if err != nil {
 			return err
 		}
-		target := filepath.Join(folder, pycompat.NewInt(int64(number)).String()+".mp4")
-		args := []string{"-v", "error", "-nostdin", "-n", "-threads", "2", "-i", source, "-vf", pycompat.Str(filter),
-			"-frames:v", pycompat.Str(frames), "-an", "-c:v", "libx264", "-threads", "2", "-preset", "fast", "-crf", "18",
-			"-pix_fmt", "yuv420p", "-r", pycompat.Str(fps), target}
+		target := filepath.Join(folder, toolrt.NewInt(int64(number)).String()+".mp4")
+		args := []string{"-v", "error", "-nostdin", "-n", "-threads", "2", "-i", source, "-vf", toolrt.Str(filter),
+			"-frames:v", toolrt.Str(frames), "-an", "-c:v", "libx264", "-threads", "2", "-preset", "fast", "-crf", "18",
+			"-pix_fmt", "yuv420p", "-r", toolrt.Str(fps), target}
 		if _, err := process.Run(ctx, process.Command{Path: ffmpeg, Args: args, Name: "ffmpeg"}); err != nil {
 			if _, ok := err.(*process.StartError); ok {
 				return NotFound(ffmpeg)
 			}
-			return pycompat.New(pycompat.ValueError, textReplayFilter)
+			return toolrt.New(toolrt.ValueError, textReplayFilter)
 		}
 		previous = target
 	}
 	if previous == "" {
-		return pycompat.Raise(pycompat.AttributeError, "'NoneType' object has no attribute 'open'")
+		return toolrt.Raise(toolrt.AttributeError, "'NoneType' object has no attribute 'open'")
 	}
 	return copyNew(previous, destination)
 }
 
-// copyNew — open("xb") и shutil.copyfileobj: новый файл, существующий — FileExistsError.
+// copyNew копирует source в новый файл destination; существующий файл — FileExistsError.
 func copyNew(source, destination string) error {
 	input, err := os.Open(source)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	defer input.Close()
 	output, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, destination)
+		return toolrt.OSErrorFrom(err, destination)
 	}
 	if _, err := io.Copy(output, input); err != nil {
 		output.Close()
-		return pycompat.OSErrorFrom(err, destination)
+		return toolrt.OSErrorFrom(err, destination)
 	}
 	if err := output.Close(); err != nil {
-		return pycompat.OSErrorFrom(err, destination)
+		return toolrt.OSErrorFrom(err, destination)
 	}
 	return nil
 }
 
-// NotFound — FileNotFoundError subprocess.run для программы, которую не удалось запустить.
+// NotFound — FileNotFoundError для программы, которую не удалось запустить (текст
+// зафиксирован эталоном).
 func NotFound(program string) error {
-	return pycompat.New(pycompat.FileNotFoundError, "[Errno 2] No such file or directory: "+pycompat.Repr(program))
+	return toolrt.New(toolrt.FileNotFoundError, "[Errno 2] No such file or directory: "+toolrt.Repr(program))
 }

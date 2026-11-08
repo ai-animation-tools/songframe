@@ -1,8 +1,8 @@
 package app
 
 import (
-	"songframe-go/internal/scenarioworkflow"
-	"songframe-go/internal/wire"
+	"songframe/internal/scenarioworkflow"
+	"songframe/internal/wire"
 )
 
 // ScenarioWorkflowService реализует группу window.api.scenarioWorkflow: сценарный проход агента

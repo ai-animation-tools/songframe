@@ -1,6 +1,6 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_status.py [-h]\n                      [--filter {all,planned,progress,completed,stale,unknown}]\n                      [--json] [--next] [--independent Mxx [Mxx ...]]\nshot_status.py: error: unrecognized arguments: x\n",
+  "stderr": "usage: shot_status [-h]\n                   [--filter {all,planned,progress,completed,stale,unknown}]\n                   [--json] [--next] [--independent Mxx [Mxx ...]]\nshot_status: error: unrecognized arguments: x\n",
   "traceback": false
 }

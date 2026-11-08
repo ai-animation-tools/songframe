@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/timing"
+	"songframe/internal/golden"
+	"songframe/internal/timing"
 )
 
 // TestTimingServiceSave — сохранение через Wails-метод: тот же документ JSON на входе

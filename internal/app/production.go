@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/dashboard"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/production"
-	"songframe-go/internal/scenarioworkflow"
-	"songframe-go/internal/speech"
-	"songframe-go/internal/wire"
+	"songframe/internal/agents"
+	"songframe/internal/dashboard"
+	"songframe/internal/jobs"
+	"songframe/internal/production"
+	"songframe/internal/scenarioworkflow"
+	"songframe/internal/speech"
+	"songframe/internal/wire"
 )
 
 // Тексты ошибок маршрутов производства.

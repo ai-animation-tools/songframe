@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
 )
 
 // writeFile — запись документа сценария (treatment.json, scenes.json). Замена атомарная: сбой не
@@ -24,9 +24,9 @@ var writeFile = func(path string, data []byte) error {
 }
 
 // Encode — байты файла: JSON с отступом в два пробела и перевод строки (формат эталонов).
-func Encode(value any) []byte { return []byte(jscompat.StringifyIndent(value, "  ") + "\n") }
+func Encode(value any) []byte { return []byte(dynvalue.StringifyIndent(value, "  ") + "\n") }
 
-// round — Math.round(value * 1000) / 1000: половина округляется к +∞.
+// round — округление до тысячных: половина округляется к +∞.
 func round(value float64) float64 {
 	scaled := value * 1000
 	result := math.Floor(scaled)
@@ -41,7 +41,7 @@ func round(value float64) float64 {
 func sortByStart(parts []any) []any {
 	sorted := append([]any(nil), parts...)
 	sort.SliceStable(sorted, func(i, j int) bool {
-		return jscompat.ToNumber(jscompat.Get(sorted[i], "start"))-jscompat.ToNumber(jscompat.Get(sorted[j], "start")) < 0
+		return dynvalue.ToNumber(dynvalue.Get(sorted[i], "start"))-dynvalue.ToNumber(dynvalue.Get(sorted[j], "start")) < 0
 	})
 	return sorted
 }
@@ -49,16 +49,16 @@ func sortByStart(parts []any) []any {
 // ValidateTreatment — содержательная проверка документа, уже прошедшего проверку типов
 // NormalizeTreatment: коды, названия, стык частей с допуском 0.06 с и конец по длительности
 // трека. duration — значение из View.Duration (число, null или иное значение как есть).
-func ValidateTreatment(treatment *jscompat.Object, duration any) ([]string, error) {
-	parts, ok := jscompat.AsArray(treatment.Value("sequences"))
-	if !jscompat.StrictEqual(treatment.Value("schema_version"), 1.0) || !ok || len(parts) == 0 {
+func ValidateTreatment(treatment *dynvalue.Object, duration any) ([]string, error) {
+	parts, ok := dynvalue.AsArray(treatment.Value("sequences"))
+	if !dynvalue.StrictEqual(treatment.Value("schema_version"), 1.0) || !ok || len(parts) == 0 {
 		return []string{textTreatmentRequiresParts}, nil
 	}
 	problems := []string{}
 	ids := map[string]bool{}
 	cursor := 0.0
 	for _, item := range sortByStart(parts) {
-		part := item.(*jscompat.Object)
+		part := item.(*dynvalue.Object)
 		id := part.Value("id").(string)
 		title := part.Value("title").(string)
 		start := part.Value("start").(float64)
@@ -74,28 +74,28 @@ func ValidateTreatment(treatment *jscompat.Object, duration any) ([]string, erro
 			problems = append(problems, textDuplicatePartCode(id))
 		}
 		ids[id] = true
-		if jscompat.Trim(title) == "" {
+		if dynvalue.Trim(title) == "" {
 			problems = append(problems, textPartTitleMissing(id))
 		}
 		if math.Abs(start-cursor) > 0.06 {
-			problems = append(problems, textPartStartMismatch(id, start, jscompat.ToFixed(cursor, 2)))
+			problems = append(problems, textPartStartMismatch(id, start, dynvalue.ToFixed(cursor, 2)))
 		}
 		if end <= start {
 			problems = append(problems, textPartEndsBeforeStart(id))
 		}
 		cursor = end
 	}
-	if jscompat.Truthy(duration) && math.Abs(cursor-jscompat.ToNumber(duration)) > 0.06 {
+	if dynvalue.Truthy(duration) && math.Abs(cursor-dynvalue.ToNumber(duration)) > 0.06 {
 		seconds, isNumber := duration.(float64)
 		if !isNumber {
-			return nil, &jscompat.TypeError{Message: "duration.toFixed is not a function"}
+			return nil, &dynvalue.TypeError{Message: "duration.toFixed is not a function"}
 		}
-		problems = append(problems, textTreatmentDurationMismatch(jscompat.ToFixed(cursor, 2), jscompat.ToFixed(seconds, 2)))
+		problems = append(problems, textTreatmentDurationMismatch(dynvalue.ToFixed(cursor, 2), dynvalue.ToFixed(seconds, 2)))
 	}
 	return problems, nil
 }
 
-// finiteNumber — `typeof v === 'number' && Number.isFinite(v)`.
+// finiteNumber — значение — конечное число.
 func finiteNumber(value any) bool {
 	number, ok := value.(float64)
 	return ok && !math.IsNaN(number) && !math.IsInf(number, 0)
@@ -105,7 +105,7 @@ func finiteNumber(value any) bool {
 // проверка ValidateTreatment; любая проблема отклоняет документ, и её текст — сообщения через
 // пробел. Используется для ответа агента, где принимается только
 // готовая к построению сцен трактовка. Файлы не пишутся.
-func NormalizeTreatment(value any, duration any) (*jscompat.Object, error) {
+func NormalizeTreatment(value any, duration any) (*dynvalue.Object, error) {
 	normalized, err := NormalizeTreatmentDraft(value)
 	if err != nil {
 		return nil, err
@@ -127,18 +127,18 @@ func NormalizeTreatment(value any, duration any) (*jscompat.Object, error) {
 // Содержательные проблемы (коды, стык, длительность, пустой список частей) не проверяются:
 // их даёт ValidateTreatment. Структурная проверка отделена, потому что редактор сохраняет
 // трактовку черновиком (SaveTreatment).
-func NormalizeTreatmentDraft(value any) (*jscompat.Object, error) {
-	document, ok := jscompat.AsObject(value)
-	if !ok || !jscompat.StrictEqual(document.Value("schema_version"), 1.0) {
+func NormalizeTreatmentDraft(value any) (*dynvalue.Object, error) {
+	document, ok := dynvalue.AsObject(value)
+	if !ok || !dynvalue.StrictEqual(document.Value("schema_version"), 1.0) {
 		return nil, errors.New(textTreatmentInvalidDoc)
 	}
 	logline, loglineOK := document.Value("logline").(string)
-	parts, partsOK := jscompat.AsArray(document.Value("sequences"))
+	parts, partsOK := dynvalue.AsArray(document.Value("sequences"))
 	if !loglineOK || !partsOK {
 		return nil, errors.New(textTreatmentInvalidDoc)
 	}
 	for _, item := range parts {
-		part, ok := jscompat.AsObject(item)
+		part, ok := dynvalue.AsObject(item)
 		valid := ok
 		if valid {
 			for _, key := range []string{"id", "title", "direction"} {
@@ -146,19 +146,19 @@ func NormalizeTreatmentDraft(value any) (*jscompat.Object, error) {
 					valid = false
 				}
 			}
-			entities, entitiesOK := jscompat.AsArray(part.Value("entities"))
+			entities, entitiesOK := dynvalue.AsArray(part.Value("entities"))
 			valid = valid && finiteNumber(part.Value("start")) && finiteNumber(part.Value("end")) && entitiesOK
 			for _, entity := range entities {
 				if _, isString := entity.(string); !isString {
 					valid = false
 				}
 			}
-			if lipsync := part.Value("lipsync"); lipsync != jscompat.Undefined {
+			if lipsync := part.Value("lipsync"); lipsync != dynvalue.Undefined {
 				if _, isBool := lipsync.(bool); !isBool {
 					valid = false
 				}
 			}
-			if limit := part.Value("max_shot_seconds"); limit != jscompat.Undefined {
+			if limit := part.Value("max_shot_seconds"); limit != dynvalue.Undefined {
 				if !finiteNumber(limit) || limit.(float64) <= 0 {
 					valid = false
 				}
@@ -171,25 +171,25 @@ func NormalizeTreatmentDraft(value any) (*jscompat.Object, error) {
 	sorted := sortByStart(parts)
 	sequences := make([]any, len(sorted))
 	for index, item := range sorted {
-		part := jscompat.Spread(item)
-		part.Set("title", jscompat.Trim(part.Value("title").(string)))
-		part.Set("direction", jscompat.Trim(part.Value("direction").(string)))
+		part := dynvalue.Spread(item)
+		part.Set("title", dynvalue.Trim(part.Value("title").(string)))
+		part.Set("direction", dynvalue.Trim(part.Value("direction").(string)))
 		part.Set("start", round(part.Value("start").(float64)))
 		part.Set("end", round(part.Value("end").(float64)))
-		entities, _ := jscompat.AsArray(part.Value("entities"))
+		entities, _ := dynvalue.AsArray(part.Value("entities"))
 		kept := []any{}
 		for _, entity := range entities {
 			if entity.(string) != "" {
 				kept = append(kept, entity)
 			}
 		}
-		part.Set("entities", &jscompat.Array{Items: kept})
+		part.Set("entities", &dynvalue.Array{Items: kept})
 		sequences[index] = part
 	}
-	normalized := jscompat.NewObject()
+	normalized := dynvalue.NewObject()
 	normalized.Set("schema_version", 1.0)
-	normalized.Set("logline", jscompat.Trim(logline))
-	normalized.Set("sequences", &jscompat.Array{Items: sequences})
+	normalized.Set("logline", dynvalue.Trim(logline))
+	normalized.Set("sequences", &dynvalue.Array{Items: sequences})
 	return normalized, nil
 }
 
@@ -200,7 +200,7 @@ func projectDuration(project string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return jscompat.Parse(view.Duration)
+	return dynvalue.Parse(view.Duration)
 }
 
 // SaveTreatment — scenario.saveTreatment: структурная нормализация (NormalizeTreatmentDraft) и
@@ -212,7 +212,7 @@ func projectDuration(project string) (any, error) {
 // каркаса сцен остаётся недоступным, пока они есть. Неверная структура отклоняется. Длительность
 // проекта для записи не нужна, но проект всё равно читается: ошибка на документе другой формы
 // отменяет сохранение.
-func SaveTreatment(project string, input any) (*jscompat.Object, error) {
+func SaveTreatment(project string, input any) (*dynvalue.Object, error) {
 	if _, err := projectDuration(project); err != nil {
 		return nil, err
 	}

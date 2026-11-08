@@ -9,14 +9,14 @@
 // Запросы к сервису (адреса, тела, формы OAuth, порядок вызовов), записи токенов, тексты ошибок и
 // различие «не отправлено» / «явный отказ» / «исход неизвестен» зафиксированы эталонами: от них
 // зависят согласование платной отправки и защита от её повтора в media_request. Тела JSON
-// сериализуются моделью internal/pycompat, поэтому байты совпадают с json.dumps Python.
+// сериализуются моделью internal/toolrt, поэтому байты совпадают с эталонами.
 package mcp
 
 import (
 	"errors"
 	"fmt"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // AuthRequiredError — нет сохранённого входа или сервер отверг токен после
@@ -98,7 +98,7 @@ func IsToolError(err error) bool {
 }
 
 // ErrorTypeName — имя типа ошибки для отладочной записи и эталонов: имена
-// классов клиента, тип исключения pycompat или «Exception» для прочих ошибок Go.
+// классов клиента, тип исключения toolrt или «Exception» для прочих ошибок Go.
 func ErrorTypeName(err error) string {
 	switch err.(type) {
 	case *AuthRequiredError:
@@ -114,13 +114,13 @@ func ErrorTypeName(err error) string {
 	case *cancelledError:
 		return "CancelledError"
 	}
-	var exception *pycompat.Exception
+	var exception *toolrt.Exception
 	if errors.As(err, &exception) {
 		return exception.Type
 	}
-	var named interface{ PythonType() string }
+	var named interface{ ExceptionType() string }
 	if errors.As(err, &named) {
-		return named.PythonType()
+		return named.ExceptionType()
 	}
 	return "Exception"
 }

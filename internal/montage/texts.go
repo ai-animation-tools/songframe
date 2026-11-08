@@ -39,7 +39,7 @@ const (
 	// textOriginal и textAccepted — scenesTexts.mediaEdit.original/accepted.
 	textOriginal = "Оригинал генерации"
 	textAccepted = "Принятый монтаж"
-	// objectExpected — localFilesTexts.main.objectExpected (readLocalJson журнала восстановления).
+	// objectExpected — причина ошибки ReadJournal, если в журнале восстановления не объект.
 	objectExpected = "ожидался JSON-объект"
 )
 
@@ -92,7 +92,7 @@ func textRecoveryBackupCorrupt(path, directory string) string {
 	return "Повреждён резерв " + path + ": " + directory + "."
 }
 
-// textLocalReadFailed — localFilesTexts.main.readFailed({ path, reason }).
+// textLocalReadFailed — ошибка чтения локального JSON-файла с путём и причиной.
 func textLocalReadFailed(path, reason string) string {
 	return "Не удалось прочитать " + path + ": " + reason + ". Файл сохранён; исправьте его или перенесите в резервную папку."
 }

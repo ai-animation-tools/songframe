@@ -1,5 +1,5 @@
 {
-  "description": "Битый JSON: ошибка readLocalJson с путём; текст разбора Node не сравнивается.",
+  "description": "Битый JSON: ошибка чтения с путём; текст разбора не сравнивается.",
   "call": "Projects.rename",
   "project": "project",
   "covers": [

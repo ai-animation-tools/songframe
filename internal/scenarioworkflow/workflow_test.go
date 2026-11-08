@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/scenarioapply"
-	"songframe-go/internal/tools"
+	"songframe/internal/golden"
+	"songframe/internal/scenarioapply"
+	"songframe/internal/tools"
 )
 
 // Проверки A-11 сценарного прохода: отмена и недопустимый ответ ничего не пишут в проект, сбой

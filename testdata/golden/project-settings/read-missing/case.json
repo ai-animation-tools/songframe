@@ -1,5 +1,5 @@
 {
-  "description": "Нет plan/project.json: текст Node не сравнивается.",
+  "description": "Нет plan/project.json: текст системной ошибки не сравнивается.",
   "call": "readProjectSettings",
   "project": "project",
   "covers": [

@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"songframe-go/internal/components"
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/songml"
+	"songframe/internal/components"
+	"songframe/internal/filedigest"
+	"songframe/internal/jobs"
+	"songframe/internal/projectfs"
+	"songframe/internal/songml"
 )
 
 // separate — шаг выделения вокала. Порядок публикации: полный

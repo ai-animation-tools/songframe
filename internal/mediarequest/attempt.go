@@ -27,10 +27,10 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/requestsnapshot"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
+	"songframe/internal/requestsnapshot"
+	"songframe/internal/toolrt"
 )
 
 // Статусы. pending — ожидание продолжения того же задания; pollStatuses — допустимые ответы
@@ -42,7 +42,7 @@ var (
 	Terminal = map[string]bool{"downloaded": true, "failed": true}
 )
 
-// Тексты отказов (модель ValueError): CLI печатает их в stderr как есть.
+// Тексты отказов (исключение toolrt ValueError): CLI печатает их в stderr как есть.
 const (
 	textWorkDir          = "Рабочая папка должна находиться внутри plan/batches, plan/awaiting, plan/reference-images или временной папки ОС."
 	textWorkDirProtected = "Рабочая папка не может заменять исходники или аниматик."
@@ -76,7 +76,7 @@ const (
 	textKind             = "Вид медиа должен быть image или video."
 )
 
-func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
+func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
 
 // Часы попытки: монотонное время в секундах, ожидание с отменой и время UTC отметок решений.
 // Тесты и эталоны подменяют их детерминированными (ожидание продвигает часы), чтобы опрос
@@ -102,36 +102,37 @@ var (
 // оригинала (файлы original*). Тест прерывает работу panic: отложенные снятие замка и удаление
 // временных папок выполняются, как при обрыве процесса.
 var hooks struct {
-	journal func(state *pycompat.Dict)
+	journal func(state *toolrt.Dict)
 	link    func(destination string)
 }
 
 // writeState атомарно записывает журнал попытки attempt.json.
-func writeState(directory string, state *pycompat.Dict) error {
+func writeState(directory string, state *toolrt.Dict) error {
 	if hooks.journal != nil {
 		hooks.journal(state)
 	}
 	return requestsnapshot.AtomicJSON(filepath.Join(directory, "attempt.json"), state)
 }
 
-// link — os.link(source, destination): публикация без перезаписи (существующая цель — OSError).
+// link публикует source жёсткой ссылкой destination без перезаписи (существующая цель —
+// исключение toolrt OSError).
 func link(source, destination string) error {
 	if hooks.link != nil && strings.HasPrefix(filepath.Base(destination), "original") {
 		hooks.link(destination)
 	}
 	if err := os.Link(source, destination); err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	return nil
 }
 
-// isSymlink — Path.is_symlink().
+// isSymlink сообщает, что путь — символическая ссылка; ошибка lstat — false.
 func isSymlink(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode()&os.ModeSymlink != 0
 }
 
-// tempDir — tempfile.gettempdir().
+// tempDir — временная папка ОС, в которой разрешены попытки вне проекта.
 func tempDir() string { return os.TempDir() }
 
 // WorkPath — проверенная рабочая папка попытки. Попытка — внутри
@@ -139,23 +140,23 @@ func tempDir() string { return os.TempDir() }
 // plan/reference-images (архив попыток генерации референса) или временной папки ОС; сами
 // корни этих папок проекта, исходники и аниматик попыткой быть не могут.
 func WorkPath(root, value string) (string, error) {
-	path := pycompat.ResolvePath(value)
+	path := toolrt.ResolvePath(value)
 	allowed := []string{
-		pycompat.ResolvePath(pycompat.JoinPath(root, "plan/batches")),
-		pycompat.ResolvePath(pycompat.JoinPath(root, "plan/awaiting")),
-		pycompat.ResolvePath(pycompat.JoinPath(root, "plan/reference-images")),
+		toolrt.ResolvePath(toolrt.JoinPath(root, "plan/batches")),
+		toolrt.ResolvePath(toolrt.JoinPath(root, "plan/awaiting")),
+		toolrt.ResolvePath(toolrt.JoinPath(root, "plan/reference-images")),
 	}
 	inside, isRoot := false, false
 	for _, base := range allowed {
-		inside = inside || pycompat.IsRelativeTo(path, base)
+		inside = inside || toolrt.IsRelativeTo(path, base)
 		isRoot = isRoot || path == base
 	}
-	inside = inside || pycompat.IsRelativeTo(path, pycompat.ResolvePath(tempDir()))
+	inside = inside || toolrt.IsRelativeTo(path, toolrt.ResolvePath(tempDir()))
 	if isRoot || !inside {
 		return "", valueError(textWorkDir)
 	}
 	for _, name := range []string{"assets", "source", "plan/animatic"} {
-		if pycompat.IsRelativeTo(path, pycompat.ResolvePath(pycompat.JoinPath(root, name))) {
+		if toolrt.IsRelativeTo(path, toolrt.ResolvePath(toolrt.JoinPath(root, name))) {
 			return "", valueError(textWorkDirProtected)
 		}
 	}
@@ -166,10 +167,10 @@ func WorkPath(root, value string) (string, error) {
 func insideFile(directory string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", pycompat.TypeName(name))
+		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(name))
 	}
-	path := pycompat.ResolvePath(pycompat.JoinPath(directory, text))
-	if !pycompat.IsRelativeTo(path, pycompat.ResolvePath(directory)) || !pycompat.IsFile(path) {
+	path := toolrt.ResolvePath(toolrt.JoinPath(directory, text))
+	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(directory)) || !toolrt.IsFile(path) {
 		return "", valueError(textNoLocalFile)
 	}
 	return path, nil
@@ -181,14 +182,14 @@ func withLock(directory string, action func() error) error {
 	path := filepath.Join(directory, ".lock")
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, path)
+		return toolrt.OSErrorFrom(err, path)
 	}
 	defer file.Close()
 	if err := lockFile(file); err != nil {
 		if errors.Is(err, errBusy) {
 			return valueError(textBusy)
 		}
-		return pycompat.OSErrorFrom(err, path)
+		return toolrt.OSErrorFrom(err, path)
 	}
 	defer unlockFile(file)
 	return action()
@@ -197,19 +198,20 @@ func withLock(directory string, action func() error) error {
 // errBusy — замок держит другой процесс (EAGAIN/EACCES/EDEADLK).
 var errBusy = errors.New("занято")
 
-// readJSON — json.loads(path.read_text()).
-func readJSON(path string) (any, error) { return pycompat.LoadJSONFile(path) }
+// readJSON читает JSON-файл в значения toolrt (toolrt.LoadJSONFile).
+func readJSON(path string) (any, error) { return toolrt.LoadJSONFile(path) }
 
-// item — container[key] моделью Python (KeyError/TypeError на чужой форме).
-func item(container any, key string) (any, error) { return pycompat.Item(container, key) }
+// item — значение ключа (toolrt.Item): исключение KeyError или TypeError на чужой форме.
+func item(container any, key string) (any, error) { return toolrt.Item(container, key) }
 
-// get — container.get(key) (AttributeError у не-словаря).
-func get(container any, key string) (any, error) { return pycompat.DictGet(container, key, nil) }
+// get — значение ключа или nil, если его нет (toolrt.DictGet; у не-словаря — исключение
+// AttributeError).
+func get(container any, key string) (any, error) { return toolrt.DictGet(container, key, nil) }
 
 // LoadAttempt читает зафиксированный запрос и журнал попытки.
 // Запрос должен указывать провайдера подключённого адаптера и совпадать с request_sha256
 // журнала; с verifyInputs сверяются хеши промпта и входов.
-func LoadAttempt(directory string, verifyInputs bool) (*pycompat.Dict, *pycompat.Dict, error) {
+func LoadAttempt(directory string, verifyInputs bool) (*toolrt.Dict, *toolrt.Dict, error) {
 	requestPath, err := insideFile(directory, "request.json")
 	if err != nil {
 		return nil, nil, err
@@ -225,7 +227,7 @@ func LoadAttempt(directory string, verifyInputs bool) (*pycompat.Dict, *pycompat
 	if !mediaadapters.Known(provider) {
 		return nil, nil, valueError(textNoProvider)
 	}
-	request := requestValue.(*pycompat.Dict)
+	request := requestValue.(*toolrt.Dict)
 	statePath, err := insideFile(directory, "attempt.json")
 	if err != nil {
 		return nil, nil, err
@@ -242,7 +244,7 @@ func LoadAttempt(directory string, verifyInputs bool) (*pycompat.Dict, *pycompat
 	if err != nil {
 		return nil, nil, err
 	}
-	if !pycompat.Equal(digest, saved) {
+	if !toolrt.Equal(digest, saved) {
 		return nil, nil, valueError(textRequestChanged)
 	}
 	if verifyInputs {
@@ -254,7 +256,7 @@ func LoadAttempt(directory string, verifyInputs bool) (*pycompat.Dict, *pycompat
 		if err != nil {
 			return nil, nil, err
 		}
-		entries, err := pycompat.Iter(inputs)
+		entries, err := toolrt.Iter(inputs)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -275,16 +277,16 @@ func LoadAttempt(directory string, verifyInputs bool) (*pycompat.Dict, *pycompat
 			if err != nil {
 				return nil, nil, err
 			}
-			if !pycompat.Equal(actual, expected) {
+			if !toolrt.Equal(actual, expected) {
 				return nil, nil, valueError(textInputChanged)
 			}
 		}
 	}
-	return request, stateValue.(*pycompat.Dict), nil
+	return request, stateValue.(*toolrt.Dict), nil
 }
 
-// adapterOf — media_adapters.adapter(request["provider"]).
-func adapterOf(request *pycompat.Dict) (mediaadapters.Adapter, error) {
+// adapterOf — адаптер провайдера из поля provider зафиксированного запроса.
+func adapterOf(request *toolrt.Dict) (mediaadapters.Adapter, error) {
 	provider, err := item(request, "provider")
 	if err != nil {
 		return nil, err
@@ -294,9 +296,9 @@ func adapterOf(request *pycompat.Dict) (mediaadapters.Adapter, error) {
 
 // Prepare — замораживает спецификацию в новой папке попытки.
 // Общую форму проверяет requestsnapshot, ограничения сервиса и промпта — адаптер провайдера
-// спецификации до создания папки; FROZEN_FIELDS адаптера входят в запрос и SHA, предупреждения
+// спецификации до создания папки; поля FrozenFields адаптера входят в запрос и SHA, предупреждения
 // о промпте — в warnings результата. Сервис не вызывается.
-func Prepare(root, request, directory string) (*pycompat.Dict, error) {
+func Prepare(root, request, directory string) (*toolrt.Dict, error) {
 	value, err := readJSON(request)
 	if err != nil {
 		return nil, err
@@ -304,7 +306,7 @@ func Prepare(root, request, directory string) (*pycompat.Dict, error) {
 	if err := requestsnapshot.ValidateSpec(value); err != nil {
 		return nil, err
 	}
-	spec := value.(*pycompat.Dict)
+	spec := value.(*toolrt.Dict)
 	service, err := mediaadapters.Lookup(spec.Value("provider"))
 	if err != nil {
 		return nil, err
@@ -314,12 +316,12 @@ func Prepare(root, request, directory string) (*pycompat.Dict, error) {
 			return nil, err
 		}
 	}
-	promptPath := pycompat.JoinPath(filepath.Dir(pycompat.ResolvePath(request)), spec.Value("prompt_file").(string))
+	promptPath := toolrt.JoinPath(filepath.Dir(toolrt.ResolvePath(request)), spec.Value("prompt_file").(string))
 	data, err := os.ReadFile(promptPath)
 	if err != nil {
-		return nil, pycompat.OSErrorFrom(err, promptPath)
+		return nil, toolrt.OSErrorFrom(err, promptPath)
 	}
-	prompt, err := pycompat.DecodeUTF8(data)
+	prompt, err := toolrt.DecodeUTF8(data)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +335,7 @@ func Prepare(root, request, directory string) (*pycompat.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	var frozen *pycompat.Dict
+	var frozen *toolrt.Dict
 	if fielder, ok := service.(mediaapi.FrozenFielder); ok {
 		frozen = fielder.FrozenFields()
 	}
@@ -350,7 +352,7 @@ func Prepare(root, request, directory string) (*pycompat.Dict, error) {
 }
 
 // Status — только локальный журнал попытки, без обращения к сервису.
-func Status(root, directory string) (*pycompat.Dict, error) {
+func Status(root, directory string) (*toolrt.Dict, error) {
 	workDir, err := WorkPath(root, directory)
 	if err != nil {
 		return nil, err
@@ -366,11 +368,11 @@ func identifier(value any) (string, error) {
 	if !ok {
 		return "", valueError(textBadID)
 	}
-	length := pycompat.Len(text)
+	length := toolrt.Len(text)
 	if length < 1 || length > 2048 || strings.HasPrefix(text, "-") || strings.Contains(text, "://") {
 		return "", valueError(textBadID)
 	}
-	for _, r := range pycompat.Runes(text) {
+	for _, r := range toolrt.Runes(text) {
 		if r < 33 || r > 126 {
 			return "", valueError(textBadID)
 		}
@@ -378,7 +380,7 @@ func identifier(value any) (string, error) {
 	return text, nil
 }
 
-// finite — math.isfinite(value) and value > 0 для таймаута.
+// positive — конечное положительное значение таймаута.
 func positive(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) && value > 0 }
 
 // Submit — единственная отправка подготовленной
@@ -386,7 +388,7 @@ func positive(value float64) bool { return !math.IsNaN(value) && !math.IsInf(val
 // записывается submitting; generation_id сохраняется сразу после ответа. Повтор запрещён,
 // включая submitting и submission_unknown. Явный отказ и «отправка не начиналась» возвращают
 // попытку в prepared (отказ — с last_rejection); прочие сбои — submission_unknown.
-func Submit(ctx context.Context, root, directory, confirmation string, timeout float64) (*pycompat.Dict, error) {
+func Submit(ctx context.Context, root, directory, confirmation string, timeout float64) (*toolrt.Dict, error) {
 	workDir, err := WorkPath(root, directory)
 	if err != nil {
 		return nil, err
@@ -394,7 +396,7 @@ func Submit(ctx context.Context, root, directory, confirmation string, timeout f
 	if !positive(timeout) {
 		return nil, valueError(textTimeout)
 	}
-	var result *pycompat.Dict
+	var result *toolrt.Dict
 	err = withLock(workDir, func() error {
 		request, state, err := LoadAttempt(workDir, true)
 		if err != nil {
@@ -404,10 +406,10 @@ func Submit(ctx context.Context, root, directory, confirmation string, timeout f
 		if err != nil {
 			return err
 		}
-		if !pycompat.Equal(status, "prepared") || pycompat.Truthy(state.Value("generation_id")) {
+		if !toolrt.Equal(status, "prepared") || toolrt.Truthy(state.Value("generation_id")) {
 			return valueError(textAlreadySent)
 		}
-		if !pycompat.Equal(confirmation, state.Value("request_sha256")) {
+		if !toolrt.Equal(confirmation, state.Value("request_sha256")) {
 			return valueError(textConfirm)
 		}
 		service, err := adapterOf(request)
@@ -463,7 +465,7 @@ func Submit(ctx context.Context, root, directory, confirmation string, timeout f
 		state.Set("status", "submitted")
 		state.Set("generation_id", generationID)
 		switch credits := answer.CreditsConsumed.(type) {
-		case pycompat.Int:
+		case toolrt.Int:
 			state.Set("credits_consumed", credits)
 		case float64:
 			if !math.IsNaN(credits) && !math.IsInf(credits, 0) {
@@ -479,9 +481,9 @@ func Submit(ctx context.Context, root, directory, confirmation string, timeout f
 	return result, err
 }
 
-// unsupported — отказ provider_function: у адаптера нет нужной возможности.
+// unsupported — отказ, когда у адаптера нет нужной возможности.
 func unsupported(provider any) error {
-	return valueError("Провайдер " + pycompat.Repr(provider) + " не поддерживает это действие.")
+	return valueError("Провайдер " + toolrt.Repr(provider) + " не поддерживает это действие.")
 }
 
 // publish — адаптер пишет байты результата во временный
@@ -495,13 +497,13 @@ func publish(ctx context.Context, fetcher mediaapi.Fetcher, output, destination 
 	}
 	info, err := os.Stat(temporary)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, temporary)
+		return toolrt.OSErrorFrom(err, temporary)
 	}
 	if info.Size() == 0 {
 		return valueError(textEmptyResult)
 	}
 	if err := os.Link(temporary, destination); err != nil {
-		return pycompat.OSErrorFrom(err, temporary)
+		return toolrt.OSErrorFrom(err, temporary)
 	}
 	return nil
 }
@@ -510,7 +512,7 @@ func publish(ctx context.Context, fetcher mediaapi.Fetcher, output, destination 
 func header(path string) ([]byte, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, pycompat.OSErrorFrom(err, path)
+		return nil, toolrt.OSErrorFrom(err, path)
 	}
 	defer file.Close()
 	data := make([]byte, 12)
@@ -547,22 +549,22 @@ func videoExtension(path string) (string, error) {
 	return ".mp4", nil
 }
 
-// size — Path.stat().st_size как int Python.
-func size(path string) (pycompat.Int, error) {
+// size — размер файла в байтах целым toolrt.Int (в attempt.json — целое JSON).
+func size(path string) (toolrt.Int, error) {
 	info, err := os.Stat(path)
 	if err != nil {
-		return pycompat.Int{}, pycompat.OSErrorFrom(err, path)
+		return toolrt.Int{}, toolrt.OSErrorFrom(err, path)
 	}
-	return pycompat.NewInt(info.Size()), nil
+	return toolrt.NewInt(info.Size()), nil
 }
 
 // verifySavedImage — сохранённый оригинал без переименования и перекодирования.
-func verifySavedImage(directory string, entry *pycompat.Dict) error {
+func verifySavedImage(directory string, entry *toolrt.Dict) error {
 	name, err := item(entry, "path")
 	if err != nil {
 		return err
 	}
-	if text, ok := name.(string); ok && isSymlink(pycompat.JoinPath(directory, text)) {
+	if text, ok := name.(string); ok && isSymlink(toolrt.JoinPath(directory, text)) {
 		return valueError(textSymlink)
 	}
 	target, err := insideFile(directory, name)
@@ -573,7 +575,7 @@ func verifySavedImage(directory string, entry *pycompat.Dict) error {
 	if err != nil {
 		return err
 	}
-	suffix := strings.ToLower(pycompat.PathSuffix(name.(string)))
+	suffix := strings.ToLower(toolrt.PathSuffix(name.(string)))
 	if suffix != actual && !(actual == ".jpg" && suffix == ".jpeg") {
 		return valueError(textExtension)
 	}
@@ -585,15 +587,15 @@ func verifySavedImage(directory string, entry *pycompat.Dict) error {
 	if err != nil {
 		return err
 	}
-	if !pycompat.Equal(actualSize, bytesValue) {
+	if !toolrt.Equal(actualSize, bytesValue) {
 		return valueError(textResultChanged)
 	}
-	if expected := entry.Value("sha256"); pycompat.Truthy(expected) {
+	if expected := entry.Value("sha256"); toolrt.Truthy(expected) {
 		digest, err := requestsnapshot.FileSHA(target)
 		if err != nil {
 			return err
 		}
-		if !pycompat.Equal(digest, expected) {
+		if !toolrt.Equal(digest, expected) {
 			return valueError(textResultChanged)
 		}
 	}
@@ -601,12 +603,12 @@ func verifySavedImage(directory string, entry *pycompat.Dict) error {
 }
 
 // verifyDownload — зарегистрированный результат на месте и не изменился.
-func verifyDownload(directory string, request *pycompat.Dict, value any) error {
-	entry, ok := value.(*pycompat.Dict)
+func verifyDownload(directory string, request *toolrt.Dict, value any) error {
+	entry, ok := value.(*toolrt.Dict)
 	if !ok {
-		return pycompat.Raise(pycompat.TypeError, "'%s' object is not subscriptable", pycompat.TypeName(value))
+		return toolrt.Raise(toolrt.TypeError, "'%s' object is not subscriptable", toolrt.TypeName(value))
 	}
-	if pycompat.Equal(request.Value("kind"), "image") {
+	if toolrt.Equal(request.Value("kind"), "image") {
 		return verifySavedImage(directory, entry)
 	}
 	name, err := item(entry, "path")
@@ -625,7 +627,7 @@ func verifyDownload(directory string, request *pycompat.Dict, value any) error {
 	if err != nil {
 		return err
 	}
-	if !pycompat.Equal(actualSize, expected) {
+	if !toolrt.Equal(actualSize, expected) {
 		return valueError(textResultChanged)
 	}
 	return nil
@@ -634,17 +636,17 @@ func verifyDownload(directory string, request *pycompat.Dict, value any) error {
 // receiveImage сначала получает исходные байты, затем фиксирует намерение
 // (номер, путь, размер, SHA) и публикует оригинал. После обрыва между публикацией и журналом
 // принимается только тот же оригинал; чужой существующий файл не становится результатом.
-func receiveImage(ctx context.Context, fetcher mediaapi.Fetcher, output, directory, stem string, number int, state *pycompat.Dict) (*pycompat.Dict, error) {
-	numberValue := pycompat.NewInt(int64(number))
-	if pendingDownload, ok := state.Value("pending_download").(*pycompat.Dict); ok && pendingDownload.Len() > 0 {
+func receiveImage(ctx context.Context, fetcher mediaapi.Fetcher, output, directory, stem string, number int, state *toolrt.Dict) (*toolrt.Dict, error) {
+	numberValue := toolrt.NewInt(int64(number))
+	if pendingDownload, ok := state.Value("pending_download").(*toolrt.Dict); ok && pendingDownload.Len() > 0 {
 		names := map[string]bool{}
 		for _, extension := range []string{".png", ".jpg", ".jpeg", ".webp"} {
 			names[stem+extension] = true
 		}
 		path, isString := pendingDownload.Value("path").(string)
-		if pycompat.Equal(pendingDownload.Value("number"), numberValue) && isString && names[path] {
-			target := pycompat.JoinPath(directory, path)
-			if pycompat.Exists(target) || isSymlink(target) {
+		if toolrt.Equal(pendingDownload.Value("number"), numberValue) && isString && names[path] {
+			target := toolrt.JoinPath(directory, path)
+			if toolrt.Exists(target) || isSymlink(target) {
 				proof := pendingDownload
 				if !proof.Has("bytes") {
 					targetSize, err := size(target)
@@ -663,7 +665,7 @@ func receiveImage(ctx context.Context, fetcher mediaapi.Fetcher, output, directo
 	}
 	temporary, err := os.MkdirTemp(directory, ".image-download-")
 	if err != nil {
-		return nil, pycompat.OSErrorFrom(err, directory)
+		return nil, toolrt.OSErrorFrom(err, directory)
 	}
 	defer os.RemoveAll(temporary)
 	raw := filepath.Join(temporary, "original.raw")
@@ -676,7 +678,7 @@ func receiveImage(ctx context.Context, fetcher mediaapi.Fetcher, output, directo
 	}
 	name := stem + extension
 	target := filepath.Join(directory, name)
-	if pycompat.Exists(target) || isSymlink(target) {
+	if toolrt.Exists(target) || isSymlink(target) {
 		return nil, valueError(textExists)
 	}
 	rawSize, err := size(raw)
@@ -687,7 +689,7 @@ func receiveImage(ctx context.Context, fetcher mediaapi.Fetcher, output, directo
 	if err != nil {
 		return nil, err
 	}
-	proof := pycompat.NewDict()
+	proof := toolrt.NewDict()
 	proof.Set("number", numberValue)
 	proof.Set("path", name)
 	proof.Set("bytes", rawSize)
@@ -705,14 +707,14 @@ func receiveImage(ctx context.Context, fetcher mediaapi.Fetcher, output, directo
 
 // receiveVideo записывает намерение до скачивания; если процесс оборвался
 // после публикации файла, повтор принимает этот файл.
-func receiveVideo(ctx context.Context, fetcher mediaapi.Fetcher, output, directory, name string, number int, state *pycompat.Dict) (*pycompat.Dict, error) {
-	intent := pycompat.NewDict()
-	intent.Set("number", pycompat.NewInt(int64(number)))
+func receiveVideo(ctx context.Context, fetcher mediaapi.Fetcher, output, directory, name string, number int, state *toolrt.Dict) (*toolrt.Dict, error) {
+	intent := toolrt.NewDict()
+	intent.Set("number", toolrt.NewInt(int64(number)))
 	intent.Set("path", name)
 	target := filepath.Join(directory, name)
-	if pycompat.Exists(target) {
+	if toolrt.Exists(target) {
 		info, err := os.Stat(target)
-		if !pycompat.Equal(state.Value("pending_download"), intent) || isSymlink(target) || err != nil || info.Size() == 0 {
+		if !toolrt.Equal(state.Value("pending_download"), intent) || isSymlink(target) || err != nil || info.Size() == 0 {
 			return nil, valueError(textExists)
 		}
 	} else {
@@ -732,23 +734,23 @@ func receiveVideo(ctx context.Context, fetcher mediaapi.Fetcher, output, directo
 	if err != nil {
 		return nil, err
 	}
-	result := pycompat.NewDict()
-	result.Set("number", pycompat.NewInt(int64(number)))
+	result := toolrt.NewDict()
+	result.Set("number", toolrt.NewInt(int64(number)))
 	result.Set("path", name)
 	result.Set("bytes", targetSize)
 	return result, nil
 }
 
-// receive — receive: сохраняет все результаты по порядку; зарегистрированные повторно не
+// receive сохраняет все результаты по порядку; зарегистрированные повторно не
 // скачиваются. Итог — downloaded.
-func receive(ctx context.Context, fetcher mediaapi.Fetcher, directory string, request, state *pycompat.Dict, outputs []string) error {
+func receive(ctx context.Context, fetcher mediaapi.Fetcher, directory string, request, state *toolrt.Dict, outputs []string) error {
 	state.Set("status", "downloading")
 	if err := writeState(directory, state); err != nil {
 		return err
 	}
 	for index, output := range outputs {
 		number := index + 1
-		downloads, err := pycompat.Iter(state.Value("downloads"))
+		downloads, err := toolrt.Iter(state.Value("downloads"))
 		if err != nil {
 			return err
 		}
@@ -758,12 +760,12 @@ func receive(ctx context.Context, fetcher mediaapi.Fetcher, directory string, re
 			if err != nil {
 				return err
 			}
-			if pycompat.Equal(value, pycompat.NewInt(int64(number))) {
+			if toolrt.Equal(value, toolrt.NewInt(int64(number))) {
 				existing = entry
 				break
 			}
 		}
-		if pycompat.Truthy(existing) {
+		if toolrt.Truthy(existing) {
 			if err := verifyDownload(directory, request, existing); err != nil {
 				return err
 			}
@@ -773,8 +775,8 @@ func receive(ctx context.Context, fetcher mediaapi.Fetcher, directory string, re
 		if len(outputs) != 1 {
 			stem = "original-" + twoDigits(number)
 		}
-		var original *pycompat.Dict
-		if pycompat.Equal(request.Value("kind"), "image") {
+		var original *toolrt.Dict
+		if toolrt.Equal(request.Value("kind"), "image") {
 			original, err = receiveImage(ctx, fetcher, output, directory, stem, number, state)
 			if err != nil {
 				state.Set("status", "download_pending")
@@ -800,9 +802,9 @@ func receive(ctx context.Context, fetcher mediaapi.Fetcher, directory string, re
 	return writeState(directory, state)
 }
 
-// twoDigits — f"{number:02}".
+// twoDigits — номер не короче двух цифр, с ведущим нулём.
 func twoDigits(number int) string {
-	text := pycompat.NewInt(int64(number)).String()
+	text := toolrt.NewInt(int64(number)).String()
 	if len(text) < 2 {
 		return "0" + text
 	}
@@ -815,7 +817,7 @@ var serviceStatus = regexp.MustCompile(`^[a-z_]{1,40}$`)
 // Resume — опрос только сохранённого ID (один раз либо в пределах waitSeconds с шагом interval) и
 // получение готовых оригиналов. generationID привязывает известный ID неизвестной отправки. Ручной
 // результат продолжается без ID и без обращения к сервису.
-func Resume(ctx context.Context, root, directory, generationID string, waitSeconds, interval, timeout float64) (*pycompat.Dict, error) {
+func Resume(ctx context.Context, root, directory, generationID string, waitSeconds, interval, timeout float64) (*toolrt.Dict, error) {
 	workDir, err := WorkPath(root, directory)
 	if err != nil {
 		return nil, err
@@ -823,14 +825,14 @@ func Resume(ctx context.Context, root, directory, generationID string, waitSecon
 	return resume(ctx, workDir, generationID, waitSeconds, interval, timeout)
 }
 
-func resume(ctx context.Context, workDir, generationID string, waitSeconds, interval, timeout float64) (*pycompat.Dict, error) {
+func resume(ctx context.Context, workDir, generationID string, waitSeconds, interval, timeout float64) (*toolrt.Dict, error) {
 	if !positive(timeout) {
 		return nil, valueError(textTimeout)
 	}
 	if !(0 <= waitSeconds && waitSeconds <= 60) || !(1 <= interval && interval <= 60) {
 		return nil, valueError(textWaitLimits)
 	}
-	var result *pycompat.Dict
+	var result *toolrt.Dict
 	err := withLock(workDir, func() error {
 		request, state, err := LoadAttempt(workDir, false)
 		if err != nil {
@@ -842,15 +844,15 @@ func resume(ctx context.Context, workDir, generationID string, waitSeconds, inte
 				return err
 			}
 			saved := state.Value("generation_id")
-			if saved != nil && !pycompat.Equal(saved, id) {
+			if saved != nil && !toolrt.Equal(saved, id) {
 				return valueError(textOtherID)
 			}
-			if !pycompat.Truthy(saved) {
+			if !toolrt.Truthy(saved) {
 				status, err := item(state, "status")
 				if err != nil {
 					return err
 				}
-				if !pycompat.Equal(status, "submitting") && !pycompat.Equal(status, "submission_unknown") {
+				if !toolrt.Equal(status, "submitting") && !toolrt.Equal(status, "submission_unknown") {
 					return valueError(textManualID)
 				}
 			}
@@ -860,14 +862,14 @@ func resume(ctx context.Context, workDir, generationID string, waitSeconds, inte
 				return err
 			}
 		}
-		if !pycompat.Truthy(state.Value("generation_id")) {
+		if !toolrt.Truthy(state.Value("generation_id")) {
 			manual := false
-			if pycompat.Truthy(state.Value("manual_result")) {
+			if toolrt.Truthy(state.Value("manual_result")) {
 				status, err := item(state, "status")
 				if err != nil {
 					return err
 				}
-				manual = pycompat.Equal(status, "downloaded")
+				manual = toolrt.Equal(status, "downloaded")
 			}
 			if !manual {
 				return valueError(textNoID)
@@ -877,8 +879,8 @@ func resume(ctx context.Context, workDir, generationID string, waitSeconds, inte
 		if err != nil {
 			return err
 		}
-		if pycompat.Equal(status, "downloaded") {
-			downloads, err := pycompat.Iter(state.Value("downloads"))
+		if toolrt.Equal(status, "downloaded") {
+			downloads, err := toolrt.Iter(state.Value("downloads"))
 			if err != nil {
 				return err
 			}
@@ -890,7 +892,7 @@ func resume(ctx context.Context, workDir, generationID string, waitSeconds, inte
 			result = state
 			return nil
 		}
-		if pycompat.Equal(status, "failed") {
+		if toolrt.Equal(status, "failed") {
 			result = state
 			return nil
 		}
@@ -906,7 +908,7 @@ func resume(ctx context.Context, workDir, generationID string, waitSeconds, inte
 			}
 			text := "unknown"
 			if answer.ServiceStatus != nil {
-				text = strings.ToLower(pycompat.Str(answer.ServiceStatus))
+				text = strings.ToLower(toolrt.Str(answer.ServiceStatus))
 			}
 			if !serviceStatus.MatchString(text) {
 				text = "unknown"
@@ -922,7 +924,7 @@ func resume(ctx context.Context, workDir, generationID string, waitSeconds, inte
 				result = state
 				return nil
 			case "completed":
-				if answer.Outputs != nil && pycompat.Equal(pycompat.NewInt(int64(len(answer.Outputs))), request.Value("outputs")) {
+				if answer.Outputs != nil && toolrt.Equal(toolrt.NewInt(int64(len(answer.Outputs))), request.Value("outputs")) {
 					fetcher, ok := service.(mediaapi.Fetcher)
 					if !ok {
 						return unsupported(request.Value("provider"))
@@ -954,7 +956,7 @@ func resume(ctx context.Context, workDir, generationID string, waitSeconds, inte
 
 // poll — вызов Poll адаптера; любая ошибка или неизвестный статус — «ID сохранён, повторите
 // resume» без подробностей сервиса. Отмена задания возвращается как есть.
-func poll(ctx context.Context, service mediaadapters.Adapter, directory string, request, state *pycompat.Dict, timeout float64) (mediaapi.PollResult, error) {
+func poll(ctx context.Context, service mediaadapters.Adapter, directory string, request, state *toolrt.Dict, timeout float64) (mediaapi.PollResult, error) {
 	poller, ok := service.(mediaapi.Poller)
 	if !ok {
 		return mediaapi.PollResult{}, valueError(textPollFailed)
@@ -970,7 +972,7 @@ func poll(ctx context.Context, service mediaadapters.Adapter, directory string, 
 }
 
 // unknownAttempt — попытка с неизвестным исходом без ID и без скачанных файлов.
-func unknownAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
+func unknownAttempt(directory string) (*toolrt.Dict, *toolrt.Dict, error) {
 	request, state, err := LoadAttempt(directory, false)
 	if err != nil {
 		return nil, nil, err
@@ -979,8 +981,8 @@ func unknownAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	unknown := pycompat.Equal(status, "submitting") || pycompat.Equal(status, "submission_unknown")
-	if pycompat.Truthy(state.Value("generation_id")) || !unknown || pycompat.Truthy(state.Value("downloads")) {
+	unknown := toolrt.Equal(status, "submitting") || toolrt.Equal(status, "submission_unknown")
+	if toolrt.Truthy(state.Value("generation_id")) || !unknown || toolrt.Truthy(state.Value("downloads")) {
 		return nil, nil, valueError(textNotUnknown)
 	}
 	return request, state, nil
@@ -988,8 +990,8 @@ func unknownAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
 
 // resolveUnknown записывает решение пользователя с временем UTC в unknown_outcomes.
 // По истории видно, что исход установил пользователь, а не сервис.
-func resolveUnknown(state *pycompat.Dict, resolution string) error {
-	entry := pycompat.NewDict()
+func resolveUnknown(state *toolrt.Dict, resolution string) error {
+	entry := toolrt.NewDict()
 	entry.Set("resolution", resolution)
 	entry.Set("at", utcNow().Format("2006-01-02T15:04:05Z"))
 	if !state.Has("unknown_outcomes") {
@@ -997,7 +999,7 @@ func resolveUnknown(state *pycompat.Dict, resolution string) error {
 	}
 	list, ok := state.Value("unknown_outcomes").([]any)
 	if !ok {
-		return pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'append'", pycompat.TypeName(state.Value("unknown_outcomes")))
+		return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'append'", toolrt.TypeName(state.Value("unknown_outcomes")))
 	}
 	state.Set("unknown_outcomes", append(list, entry))
 	return nil
@@ -1005,12 +1007,12 @@ func resolveUnknown(state *pycompat.Dict, resolution string) error {
 
 // NotCreated — пользователь не нашёл генерацию в истории сервиса; попытка снова
 // готова к одной отправке после нового согласия.
-func NotCreated(root, directory string) (*pycompat.Dict, error) {
+func NotCreated(root, directory string) (*toolrt.Dict, error) {
 	workDir, err := WorkPath(root, directory)
 	if err != nil {
 		return nil, err
 	}
-	var result *pycompat.Dict
+	var result *toolrt.Dict
 	err = withLock(workDir, func() error {
 		_, state, err := unknownAttempt(workDir)
 		if err != nil {
@@ -1033,12 +1035,12 @@ func NotCreated(root, directory string) (*pycompat.Dict, error) {
 // попытки без новой отправки. Число файлов равно outputs; видео —
 // сигнатура MP4, изображение — PNG/JPEG/WebP. Файлы копируются без перекодирования, публикуются
 // только все вместе после проверки; существующие не перезаписываются.
-func Attach(root, directory string, files []string) (*pycompat.Dict, error) {
+func Attach(root, directory string, files []string) (*toolrt.Dict, error) {
 	workDir, err := WorkPath(root, directory)
 	if err != nil {
 		return nil, err
 	}
-	var result *pycompat.Dict
+	var result *toolrt.Dict
 	err = withLock(workDir, func() error {
 		request, state, err := unknownAttempt(workDir)
 		if err != nil {
@@ -1048,13 +1050,13 @@ func Attach(root, directory string, files []string) (*pycompat.Dict, error) {
 		if err != nil {
 			return err
 		}
-		if !pycompat.Equal(pycompat.NewInt(int64(len(files))), outputs) {
-			return valueError("Нужно файлов результата: " + pycompat.Str(outputs) + ", выбрано: " + pycompat.NewInt(int64(len(files))).String() + ".")
+		if !toolrt.Equal(toolrt.NewInt(int64(len(files))), outputs) {
+			return valueError("Нужно файлов результата: " + toolrt.Str(outputs) + ", выбрано: " + toolrt.NewInt(int64(len(files))).String() + ".")
 		}
-		image := pycompat.Equal(request.Value("kind"), "image")
+		image := toolrt.Equal(request.Value("kind"), "image")
 		temporary, err := os.MkdirTemp(workDir, ".manual-result-")
 		if err != nil {
-			return pycompat.OSErrorFrom(err, workDir)
+			return toolrt.OSErrorFrom(err, workDir)
 		}
 		defer os.RemoveAll(temporary)
 		type staged struct {
@@ -1064,11 +1066,11 @@ func Attach(root, directory string, files []string) (*pycompat.Dict, error) {
 		prepared := []staged{}
 		for index, source := range files {
 			number := index + 1
-			name := pycompat.PathName(source)
-			if !pycompat.IsFile(source) {
+			name := toolrt.PathName(source)
+			if !toolrt.IsFile(source) {
 				return valueError("Файл результата не найден: " + name)
 			}
-			raw := filepath.Join(temporary, pycompat.NewInt(int64(number)).String()+".raw")
+			raw := filepath.Join(temporary, toolrt.NewInt(int64(number)).String()+".raw")
 			if err := requestsnapshot.CopyFile(source, raw); err != nil {
 				return err
 			}
@@ -1093,7 +1095,7 @@ func Attach(root, directory string, files []string) (*pycompat.Dict, error) {
 				target = "original-" + twoDigits(number)
 			}
 			target += extension
-			if path := filepath.Join(workDir, target); pycompat.Exists(path) || isSymlink(path) {
+			if path := filepath.Join(workDir, target); toolrt.Exists(path) || isSymlink(path) {
 				return valueError(textExists)
 			}
 			prepared = append(prepared, staged{number, raw, target})
@@ -1104,8 +1106,8 @@ func Attach(root, directory string, files []string) (*pycompat.Dict, error) {
 			if err != nil {
 				return err
 			}
-			download := pycompat.NewDict()
-			download.Set("number", pycompat.NewInt(int64(entry.number)))
+			download := toolrt.NewDict()
+			download.Set("number", toolrt.NewInt(int64(entry.number)))
 			download.Set("path", entry.name)
 			download.Set("bytes", rawSize)
 			if image {
@@ -1138,7 +1140,7 @@ func Attach(root, directory string, files []string) (*pycompat.Dict, error) {
 // WatchEntry — итог одной попытки watch: путь (ключ JSON) и журнал либо {status, detail}.
 type WatchEntry struct {
 	Path  string
-	State *pycompat.Dict
+	State *toolrt.Dict
 }
 
 // Watch — одно длинное ожидание
@@ -1168,20 +1170,20 @@ func Watch(ctx context.Context, root string, directories []string, maxMinutes, i
 		for _, directory := range append([]string(nil), order...) {
 			state, err := resume(ctx, directory, "", 0, 15, timeout)
 			if err != nil {
-				if !pycompat.Is(err, pycompat.ValueError) && !mediaapi.IsNotSubmitted(err) {
+				if !toolrt.Is(err, toolrt.ValueError) && !mediaapi.IsNotSubmitted(err) {
 					return results, err
 				}
-				entry := pycompat.NewDict()
+				entry := toolrt.NewDict()
 				entry.Set("status", "error")
 				entry.Set("detail", err.Error())
 				results = append(results, WatchEntry{directory, entry})
-				report(pycompat.PathName(directory) + ": " + err.Error())
+				report(toolrt.PathName(directory) + ": " + err.Error())
 				order = remove(order, directory)
 				continue
 			}
 			status := state.Value("status")
-			if !pycompat.Equal(status, last[directory]) {
-				report(pycompat.PathName(directory) + ": " + pycompat.Str(status))
+			if !toolrt.Equal(status, last[directory]) {
+				report(toolrt.PathName(directory) + ": " + toolrt.Str(status))
 				last[directory] = status
 			}
 			if text, ok := status.(string); ok && Terminal[text] {
@@ -1191,9 +1193,9 @@ func Watch(ctx context.Context, root string, directories []string, maxMinutes, i
 		}
 		if len(order) > 0 && monotonic() >= deadline {
 			for _, directory := range order {
-				entry := pycompat.NewDict()
+				entry := toolrt.NewDict()
 				status := last[directory]
-				if !pycompat.Truthy(status) {
+				if !toolrt.Truthy(status) {
 					status = "unknown"
 				}
 				entry.Set("status", status)
@@ -1224,7 +1226,7 @@ func remove(items []string, value string) []string {
 
 // Capabilities — объявления моделей провайдера для вида
 // медиа {"reports", "problems"}; генерации нет.
-func Capabilities(ctx context.Context, provider, kind string, timeout float64) (*pycompat.Dict, error) {
+func Capabilities(ctx context.Context, provider, kind string, timeout float64) (*toolrt.Dict, error) {
 	if kind != "image" && kind != "video" {
 		return nil, valueError(textKind)
 	}

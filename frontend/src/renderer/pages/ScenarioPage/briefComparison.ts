@@ -8,7 +8,7 @@ export type BriefChange = 'same' | 'changed' | 'added' | 'removed';
 
 export interface BriefCell {
   value: string;
-  /** Где задано значение; null, если главный процесс не сообщил источник. */
+  /** Где задано значение; null, если Go не сообщил источник. */
   source: StateSource | null;
 }
 
@@ -76,7 +76,7 @@ export function compareBrief(before: BriefResult, after: BriefResult, cast: Cast
       const end = cell(after, id, key);
       return {
         key,
-        // Подпись главного процесса учитывает и набор по умолчанию для типа без своего словаря.
+        // Подпись из Go учитывает и набор по умолчанию для типа без своего словаря.
         label: propertyLabel(key, after.labels?.[id]?.[key] ?? before.labels?.[id]?.[key] ?? properties.find((property) => property.key === key)?.label),
         before: start,
         after: end,

@@ -108,7 +108,7 @@ describe('window.api.scenarioWorkflow', () => {
 
   it('показывает отказ Go-сервиса его текстом', async () => {
     // Ошибку Go Wails доставляет как RuntimeError с текстом сервиса.
-    const error = Object.assign(new Error('Запуск агента ещё не подключён в Go-версии SongFrame.'), { name: 'RuntimeError' });
+    const error = Object.assign(new Error('Запуск агента сейчас недоступен.'), { name: 'RuntimeError' });
     const api = createApi(bindings({ Start: async () => Promise.reject(error) }));
     await expect(api.scenarioWorkflow.start({ project: '/клип', pass: 'treatment' })).rejects.toMatchObject({ code: 'SERVICE_FAILED', message: error.message });
   });

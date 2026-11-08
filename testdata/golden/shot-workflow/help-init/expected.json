@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow.py init [-h] --dir DIR [--mode {shot,frame}]\n                             [--batch BATCH] [--retry-of RETRY_OF]\n                             shot\n\npositional arguments:\n  shot\n\noptions:\n  -h, --help           show this help message and exit\n  --dir DIR\n  --mode {shot,frame}\n  --batch BATCH        Имя партии независимых планов, готовящихся вместе\n  --retry-of RETRY_OF  Пакет того же плана, для которого создаётся\n                       исправленная попытка\n",
+  "stdout": "usage: shot_workflow init [-h] --dir DIR [--mode {shot,frame}] [--batch BATCH]\n                          [--retry-of RETRY_OF]\n                          shot\n\npositional arguments:\n  shot\n\noptions:\n  -h, --help           show this help message and exit\n  --dir DIR\n  --mode {shot,frame}\n  --batch BATCH        Имя партии независимых планов, готовящихся вместе\n  --retry-of RETRY_OF  Пакет того же плана, для которого создаётся\n                       исправленная попытка\n",
   "stderr": "",
   "traceback": false,
   "files": {},

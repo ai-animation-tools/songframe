@@ -1,8 +1,9 @@
 // Package projectfs записывает файлы проекта и локального состояния атомарно и решает,
 // разрешена ли запись в проект. Чтение и открытие проекта остаются в internal/project.
 //
-// Формат JSON — JSON.stringify(value, null, 2) + "\n": байты проектных файлов зафиксированы
-// эталонами testdata/golden в этом формате.
+// Формат JSON проекта — отступ в два пробела, ключи в порядке документа, перевод строки в конце;
+// HTML-символы и U+2028/U+2029 не экранируются, \b и \f пишутся короткими escape. Байты
+// проектных файлов зафиксированы эталонами testdata/golden в этом формате.
 package projectfs
 
 import (
@@ -26,12 +27,13 @@ var (
 	syncFile = func(file *os.File) error { return file.Sync() }
 )
 
-// MarshalJSON возвращает байты в формате JSON.stringify(value, null, 2) + "\n".
+// MarshalJSON возвращает байты в формате JSON проекта (см. описание пакета).
 //
 // Порядок ключей задаёт значение: поля структуры — в порядке объявления, json.RawMessage —
-// как есть; ключи map Go сортирует (в отличие от порядка вставки JS), поэтому для документов
-// с заданным порядком нужны структуры или RawMessage. Отличия кодировщика Go от JS исправляются:
-// HTML-символы не экранируются, U+2028/U+2029 пишутся как есть, \b и \f — короткими escape.
+// как есть; ключи map Go сортирует, а не хранит в порядке вставки, поэтому для документов
+// с заданным порядком нужны структуры или RawMessage. Отличия encoding/json от формата проекта
+// исправляются: HTML-символы не экранируются, U+2028/U+2029 пишутся как есть, \b и \f — короткими
+// escape.
 func MarshalJSON(value any) ([]byte, error) {
 	var buffer bytes.Buffer
 	encoder := json.NewEncoder(&buffer)
@@ -40,13 +42,13 @@ func MarshalJSON(value any) ([]byte, error) {
 	if err := encoder.Encode(value); err != nil {
 		return nil, err
 	}
-	return jsEscapes(buffer.Bytes()), nil
+	return projectEscapes(buffer.Bytes()), nil
 }
 
-// jsEscapes приводит escape-последовательности encoding/json к виду JSON.stringify.
+// projectEscapes приводит escape-последовательности encoding/json к формату проекта.
 // Обратная косая вне строк в JSON не встречается, поэтому достаточно пройти по парам «\x»:
 // экранированная косая «\\» пропускается целиком и не путается с началом \u2028.
-func jsEscapes(data []byte) []byte {
+func projectEscapes(data []byte) []byte {
 	if !bytes.Contains(data, []byte(`\u`)) {
 		return data
 	}
@@ -154,7 +156,7 @@ func writeFailed(path string, err error) error {
 	return fmt.Errorf("Не удалось сохранить %s: %w. Проверьте доступ на запись к папке.", path, err)
 }
 
-// ReadJSON читает JSON-объект (или массив: оба — typeof === 'object') в value.
+// ReadJSON читает JSON-объект (или массив: он допускается наравне с объектом) в value.
 // Отсутствующий файл — (false, nil), чтобы вызывающий подставил значение по умолчанию;
 // повреждённый — ошибка с путём и советом: файл не трогается и не перезаписывается.
 func ReadJSON(path string, value any) (bool, error) {

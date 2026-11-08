@@ -26,13 +26,13 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/acceptance"
-	"songframe-go/internal/agents"
-	"songframe-go/internal/cast"
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/scenario"
-	"songframe-go/resources"
+	"songframe/internal/acceptance"
+	"songframe/internal/agents"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/filedigest"
+	"songframe/internal/scenario"
+	"songframe/resources"
 )
 
 // prompt — инструкция агенту из встроенного скилла resources/skills (SkillVideoReview), как промпт
@@ -125,10 +125,10 @@ var packageFolder = regexp.MustCompile(`^plan/(batches|awaiting)/[^/]+$`)
 
 // directory — проверенные realpath проекта и папка пакета plan/batches|awaiting/<имя> с workflow.json.
 func (s *Service) directory(project, packageDir string) (string, string, error) {
-	if !jscompat.IsAbs(project) {
+	if !dynvalue.IsAbs(project) {
 		return "", "", errors.New(textInvalidPackage)
 	}
-	root, err := jscompat.Realpath(project)
+	root, err := dynvalue.Realpath(project)
 	if err != nil {
 		return "", "", err
 	}
@@ -136,7 +136,7 @@ func (s *Service) directory(project, packageDir string) (string, string, error) 
 	if err != nil {
 		return "", "", err
 	}
-	if !packageFolder.MatchString(slash(jscompat.Relative(root, directory))) || !jscompat.Exists(filepath.Join(directory, "workflow.json")) {
+	if !packageFolder.MatchString(slash(dynvalue.Relative(root, directory))) || !dynvalue.Exists(filepath.Join(directory, "workflow.json")) {
 		return "", "", errors.New(textInvalidPackage)
 	}
 	return root, directory, nil
@@ -152,7 +152,7 @@ type reviewContext struct {
 	references []string
 	// approved — те же опоры: их ID, роль и время уходят агенту рядом с R001….
 	approved   []keyframe
-	staging    *jscompat.Object
+	staging    *dynvalue.Object
 	sourceHash string
 }
 
@@ -164,22 +164,22 @@ func readRegistry(project string) any {
 	if err != nil {
 		return nil
 	}
-	registry, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
-	if err != nil || !jscompat.IsRecord(registry) || !jscompat.StrictEqual(jscompat.Get(registry, "schema_version"), 1.0) ||
-		!jscompat.StrictEqual(jscompat.Get(registry, "fps"), float64(scenario.FPS)) {
+	registry, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
+	if err != nil || !dynvalue.IsRecord(registry) || !dynvalue.StrictEqual(dynvalue.Get(registry, "schema_version"), 1.0) ||
+		!dynvalue.StrictEqual(dynvalue.Get(registry, "fps"), float64(scenario.FPS)) {
 		return nil
 	}
-	scenes, ok := jscompat.AsArray(jscompat.Get(registry, "scenes"))
+	scenes, ok := dynvalue.AsArray(dynvalue.Get(registry, "scenes"))
 	if !ok {
 		return nil
 	}
 	ids := map[string]bool{}
 	for _, scene := range scenes {
-		id, isString := jscompat.Get(scene, "id").(string)
-		if !jscompat.IsRecord(scene) || !isString || !sceneCode.MatchString(id) || ids[id] {
+		id, isString := dynvalue.Get(scene, "id").(string)
+		if !dynvalue.IsRecord(scene) || !isString || !sceneCode.MatchString(id) || ids[id] {
 			return nil
 		}
-		start, finish := jscompat.Get(scene, "start_frame"), jscompat.Get(scene, "end_frame_exclusive")
+		start, finish := dynvalue.Get(scene, "start_frame"), dynvalue.Get(scene, "end_frame_exclusive")
 		if !isFrame(start) || !isFrame(finish) || finish.(float64) <= start.(float64) {
 			return nil
 		}
@@ -193,13 +193,13 @@ var sceneCode = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 // isFrame — неотрицательное безопасное целое (граница плана в кадрах).
 func isFrame(value any) bool {
 	number, ok := value.(float64)
-	return ok && jscompat.IsSafeInteger(value) && number >= 0
+	return ok && dynvalue.IsSafeInteger(value) && number >= 0
 }
 
 // currentFingerprint — currentShotFingerprint: отпечаток текущей постановки плана по кастингу
 // проекта или nil, если реестр не разбирается или плана нет.
 func currentFingerprint(project, shot string) any {
-	scenes, ok := jscompat.ReadJSONFile(filepath.Join(project, "plan", "scenes.json"))
+	scenes, ok := dynvalue.ReadJSONFile(filepath.Join(project, "plan", "scenes.json"))
 	if !ok {
 		return nil
 	}
@@ -207,7 +207,7 @@ func currentFingerprint(project, shot string) any {
 	if err != nil || fingerprints == nil {
 		return nil
 	}
-	return jscompat.Coalesce(fingerprints.Value(shot), nil)
+	return dynvalue.Coalesce(fingerprints.Value(shot), nil)
 }
 
 // digest — cachedFileDigest: SHA-256 обычного файла или nil.
@@ -218,9 +218,9 @@ func digest(path string) any {
 	return nil
 }
 
-// sha — SHA-256 hex от JSON.stringify(value).
+// sha — SHA-256 hex от компактной JSON-записи value (dynvalue.Stringify).
 func sha(value any) string {
-	sum := sha256.Sum256([]byte(jscompat.Stringify(value)))
+	sum := sha256.Sum256([]byte(dynvalue.Stringify(value)))
 	return hex.EncodeToString(sum[:])
 }
 
@@ -233,17 +233,17 @@ func (s *Service) source(project, directory string) (*reviewContext, error) {
 		return nil, err
 	}
 	registry := readRegistry(project)
-	var scene any = jscompat.Undefined
+	var scene any = dynvalue.Undefined
 	if registry != nil && pkg != nil {
-		scenes, _ := jscompat.AsArray(jscompat.Get(registry, "scenes"))
+		scenes, _ := dynvalue.AsArray(dynvalue.Get(registry, "scenes"))
 		for _, item := range scenes {
-			if jscompat.StrictEqual(jscompat.Get(item, "id"), pkg.shot) {
+			if dynvalue.StrictEqual(dynvalue.Get(item, "id"), pkg.shot) {
 				scene = item
 				break
 			}
 		}
 	}
-	if pkg == nil || scene == jscompat.Undefined || pkg.request == nil || jscompat.StrictEqual(pkg.request.kind, "image") ||
+	if pkg == nil || scene == dynvalue.Undefined || pkg.request == nil || dynvalue.StrictEqual(pkg.request.kind, "image") ||
 		(pkg.stage != "downloaded" && pkg.stage != "edit_review" && pkg.stage != "accepted") ||
 		!pkg.resultToken || len(pkg.request.downloads) != 1 {
 		return nil, errors.New(textVideoRequired)
@@ -266,47 +266,47 @@ func (s *Service) source(project, directory string) (*reviewContext, error) {
 	if len(result.references) == 0 || len(result.references) > 20 {
 		return nil, errors.New(textReferencesRequired)
 	}
-	files := &jscompat.Array{}
+	files := &dynvalue.Array{}
 	complete := true
 	for _, path := range append([]string{video}, result.references...) {
-		file := jscompat.NewObject()
-		file.Set("path", slash(jscompat.Relative(project, path)))
+		file := dynvalue.NewObject()
+		file.Set("path", slash(dynvalue.Relative(project, path)))
 		hash := digest(path)
 		complete = complete && hash != nil
 		file.Set("sha256", hash)
 		files.Items = append(files.Items, file)
 	}
 	fingerprint := currentFingerprint(project, pkg.shot)
-	if !jscompat.Truthy(fingerprint) || !complete {
+	if !dynvalue.Truthy(fingerprint) || !complete {
 		return nil, errors.New(textSourceChanged)
 	}
 	castValue := cast.Read(project).Value
-	if !jscompat.Truthy(castValue) {
+	if !dynvalue.Truthy(castValue) {
 		return nil, errors.New(textSourceChanged)
 	}
-	sequences, ok := jscompat.AsArray(jscompat.Get(registry, "sequences"))
+	sequences, ok := dynvalue.AsArray(dynvalue.Get(registry, "sequences"))
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "registry.sequences.find is not a function"}
+		return nil, &dynvalue.TypeError{Message: "registry.sequences.find is not a function"}
 	}
-	var sequence any = jscompat.Undefined
+	var sequence any = dynvalue.Undefined
 	for _, item := range sequences {
-		if jscompat.StrictEqual(jscompat.Get(item, "id"), jscompat.Get(scene, "sequence")) {
+		if dynvalue.StrictEqual(dynvalue.Get(item, "id"), dynvalue.Get(scene, "sequence")) {
 			sequence = item
 			break
 		}
 	}
-	staging := jscompat.NewObject()
+	staging := dynvalue.NewObject()
 	staging.Set("scene", scene)
 	staging.Set("sequence", sequence)
-	start, _ := jscompat.Get(scene, "start_frame").(float64)
-	finish, _ := jscompat.Get(scene, "end_frame_exclusive").(float64)
+	start, _ := dynvalue.Get(scene, "start_frame").(float64)
+	finish, _ := dynvalue.Get(scene, "end_frame_exclusive").(float64)
 	staging.Set("windowSeconds", (finish-start)/float64(scenario.FPS))
-	staging.Set("requestSeconds", jscompat.Get(pkg.timing, "request_seconds"))
-	staging.Set("visualDirection", jscompat.Get(registry, "visual_direction"))
+	staging.Set("requestSeconds", dynvalue.Get(pkg.timing, "request_seconds"))
+	staging.Set("visualDirection", dynvalue.Get(registry, "visual_direction"))
 	staging.Set("cast", castValue)
 	staging.Set("description", pkg.description)
-	staging.Set("videoPrompt", jscompat.Coalesce(jscompat.Coalesce(pkg.request.promptText, pkg.promptText), ""))
-	keyframes := &jscompat.Array{}
+	staging.Set("videoPrompt", dynvalue.Coalesce(dynvalue.Coalesce(pkg.request.promptText, pkg.promptText), ""))
+	keyframes := &dynvalue.Array{}
 	for _, frame := range pkg.keyframes {
 		if frame.approved {
 			keyframes.Items = append(keyframes.Items, keyframeContext(frame))
@@ -314,7 +314,7 @@ func (s *Service) source(project, directory string) (*reviewContext, error) {
 	}
 	staging.Set("keyframes", keyframes)
 	result.staging = staging
-	snapshot := jscompat.NewObject()
+	snapshot := dynvalue.NewObject()
 	snapshot.Set("fingerprint", fingerprint)
 	snapshot.Set("staging", staging)
 	snapshot.Set("files", files)
@@ -323,8 +323,8 @@ func (s *Service) source(project, directory string) (*reviewContext, error) {
 }
 
 // keyframeContext — {id, role, timeSeconds} опоры для постановки агента.
-func keyframeContext(frame keyframe) *jscompat.Object {
-	object := jscompat.NewObject()
+func keyframeContext(frame keyframe) *dynvalue.Object {
+	object := dynvalue.NewObject()
 	object.Set("id", frame.id)
 	object.Set("role", frame.role)
 	object.Set("timeSeconds", frame.timeSeconds)
@@ -424,7 +424,7 @@ func (s *Service) view(root, directory string) (View, error) {
 	stale := material == nil || material.sourceHash != record.sourceHash()
 	for _, entry := range record.imageHashes() {
 		path, err := productionPath(directory, entry.Key)
-		stale = stale || err != nil || !jscompat.StrictEqual(digest(path), entry.Value)
+		stale = stale || err != nil || !dynvalue.StrictEqual(digest(path), entry.Value)
 	}
 	status := record.status()
 	active := status == StatusRunning || status == StatusPreparing
@@ -519,13 +519,13 @@ func (s *Service) run(material *reviewContext, record stored, pending *preparati
 		if pending.ctx.Err() != nil {
 			record.finish(StatusCancelled, textCancelled)
 		} else {
-			message := jscompat.Trim(err.Error())
+			message := dynvalue.Trim(err.Error())
 			if message == "" {
 				message = textPreparationFailed
 			}
 			record.finish(StatusFailed, message)
 		}
-		if jscompat.Exists(material.directory) {
+		if dynvalue.Exists(material.directory) {
 			_ = save(material.project, material.directory, record)
 		}
 	}
@@ -559,7 +559,7 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 		len(manifest.References) != len(material.references) {
 		return errors.New(textInvalidFrames)
 	}
-	hashes, _ := record.doc.Value("imageHashes").(*jscompat.Object)
+	hashes, _ := record.doc.Value("imageHashes").(*dynvalue.Object)
 	images := []string{}
 	image := func(path string) (string, error) {
 		absolute, err := productionPath(out, path)
@@ -570,12 +570,12 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 		if !ok {
 			return "", errors.New(textInvalidFrames)
 		}
-		hashes.Set(slash(jscompat.Relative(directory, absolute)), hash)
+		hashes.Set(slash(dynvalue.Relative(directory, absolute)), hash)
 		images = append(images, absolute)
 		return absolute, nil
 	}
-	frames := &jscompat.Array{}
-	contextFrames := &jscompat.Array{}
+	frames := &dynvalue.Array{}
+	contextFrames := &dynvalue.Array{}
 	ids := map[string]bool{}
 	previous := -1.0
 	for _, frame := range manifest.Frames {
@@ -589,18 +589,18 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 		if err != nil {
 			return err
 		}
-		item := jscompat.NewObject()
+		item := dynvalue.NewObject()
 		item.Set("id", frame.ID)
 		item.Set("timeSeconds", frame.TimeSeconds)
-		item.Set("path", slash(jscompat.Relative(directory, absolute)))
+		item.Set("path", slash(dynvalue.Relative(directory, absolute)))
 		frames.Items = append(frames.Items, item)
-		short := jscompat.NewObject()
+		short := dynvalue.NewObject()
 		short.Set("id", frame.ID)
 		short.Set("timeSeconds", frame.TimeSeconds)
 		contextFrames.Items = append(contextFrames.Items, short)
 	}
 	record.doc.Set("frames", frames)
-	references := &jscompat.Array{}
+	references := &dynvalue.Array{}
 	for index, reference := range manifest.References {
 		if reference.ID != fmt.Sprintf("R%03d", index+1) || reference.SourcePath != material.references[index] {
 			return errors.New(textInvalidFrames)
@@ -609,7 +609,7 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 			return err
 		}
 		frame := material.approved[index]
-		item := jscompat.NewObject()
+		item := dynvalue.NewObject()
 		item.Set("id", reference.ID)
 		item.Set("keyframeId", frame.id)
 		item.Set("role", frame.role)
@@ -617,7 +617,7 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 		references.Items = append(references.Items, item)
 	}
 	record.doc.Set("durationSeconds", duration)
-	briefs := jscompat.NewObject()
+	briefs := dynvalue.NewObject()
 	for _, phase := range []string{"before", "after"} {
 		if s.options.Brief == nil {
 			return errors.New(textPreparationFailed)
@@ -629,7 +629,7 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 		if err != nil {
 			return err
 		}
-		value, err := jscompat.Parse([]byte(stdout))
+		value, err := dynvalue.Parse([]byte(stdout))
 		if err != nil {
 			return errors.New(textPreparationFailed)
 		}
@@ -640,7 +640,7 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 	} else if current.sourceHash != record.sourceHash() {
 		return errors.New(textSourceChanged)
 	}
-	payload := jscompat.NewObject()
+	payload := dynvalue.NewObject()
 	payload.Set("staging", material.staging)
 	payload.Set("briefs", briefs)
 	payload.Set("durationSeconds", duration)
@@ -652,7 +652,7 @@ func (s *Service) prepare(material *reviewContext, record stored, ctx context.Co
 	if ctx.Err() != nil {
 		return errCancelled
 	}
-	job, err := s.options.Agents.Start(agents.StartInput{Project: project, Task: textHeading, Prompt: prompt, Images: images, Context: jscompat.Stringify(payload)})
+	job, err := s.options.Agents.Start(agents.StartInput{Project: project, Task: textHeading, Prompt: prompt, Images: images, Context: dynvalue.Stringify(payload)})
 	if err != nil {
 		return err
 	}

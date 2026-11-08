@@ -8,7 +8,7 @@
 // SHA-256 результата и строки разметки. Действие verify повторяет срез по рецепту в памяти и
 // сверяет SHA-256, а при наличии сохранённого WAV — ещё и его PCM.
 //
-// Коды выхода, stdout, stderr, байты WAV (как у модуля wave Python) и JSON рецепта
+// Коды выхода, stdout, stderr, байты WAV и JSON рецепта
 // зафиксированы эталоном testdata/golden/cut-speech. Владельцы: файлы пишет только cut (в папку
 // --out), песня и разметка только читаются; FFmpeg запускается через общий mediacmd с отменой по
 // context.
@@ -22,8 +22,8 @@ import (
 	"errors"
 	"strings"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // Параметры PCM принятых рецептов и имена файлов результата.
@@ -52,23 +52,23 @@ const (
 
 // Parser — разбор аргументов cut_speech: подкоманды cut и verify. Значения по умолчанию:
 // --lead/--tail — float 0.5, --min-seconds — целое 0.
-func Parser() *pycompat.Command {
-	return &pycompat.Command{
-		Prog:        "cut_speech.py",
+func Parser() *toolrt.Command {
+	return &toolrt.Command{
+		Prog:        "cut_speech",
 		Description: textDescription,
 		Dest:        "action",
-		Subcommands: []*pycompat.Command{
-			{Name: "cut", Actions: []pycompat.Action{
+		Subcommands: []*toolrt.Command{
+			{Name: "cut", Actions: []toolrt.Action{
 				{Name: "shot"},
 				{Name: "--out", Required: true, Help: "Папка для speech.wav и audio-recipe.json"},
 				{Name: "--start", Float: true, Help: "Начало среза, с; по умолчанию по разметке"},
 				{Name: "--end", Float: true, Help: "Конец среза, с, исключительно"},
 				{Name: "--lead", Float: true, Default: 0.5, Help: "Запас до первой строки при выборе по разметке"},
 				{Name: "--tail", Float: true, Default: 0.5, Help: "Запас после последней строки"},
-				{Name: "--min-seconds", Float: true, Default: pycompat.NewInt(0), Help: "Минимальная длина среза, например под длительность запроса"},
-				{Name: "--json", Kind: pycompat.StoreTrue},
+				{Name: "--min-seconds", Float: true, Default: toolrt.NewInt(0), Help: "Минимальная длина среза, например под длительность запроса"},
+				{Name: "--json", Kind: toolrt.StoreTrue},
 			}},
-			{Name: "verify", Actions: []pycompat.Action{{Name: "recipe"}}},
+			{Name: "verify", Actions: []toolrt.Action{{Name: "recipe"}}},
 		},
 	}
 }
@@ -78,12 +78,12 @@ func Parser() *pycompat.Command {
 // текстом без сырого вывода, прочие исключения — трассировкой; везде код 1. verify без
 // совпадения SHA и PCM завершается кодом 1 после печати отчёта. Отмена context останавливает
 // FFmpeg; тогда результат — код 1 с текстом отмены (tools.RunContext заменит код на null).
-func Run(ctx context.Context, root string, argv []string) pytool.Output {
+func Run(ctx context.Context, root string, argv []string) toolcli.Output {
 	args, exit := Parser().ParseArgs(argv)
 	if exit != nil {
-		return pytool.Output{Code: exit.Code, Stdout: pycompat.TextMode(exit.Stdout), Stderr: pycompat.TextMode(exit.Stderr)}
+		return toolcli.Output{Code: exit.Code, Stdout: toolrt.TextMode(exit.Stdout), Stderr: toolrt.TextMode(exit.Stderr)}
 	}
-	out := &pytool.Printer{}
+	out := &toolcli.Printer{}
 	var stderr strings.Builder
 	code, err := run(ctx, root, args, out, &stderr)
 	switch {
@@ -91,41 +91,41 @@ func Run(ctx context.Context, root string, argv []string) pytool.Output {
 	case ctx.Err() != nil:
 		stderr.WriteString(err.Error() + "\n")
 		code = 1
-	case pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError):
+	case toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError):
 		message := textHidden
-		if pycompat.Is(err, pycompat.ValueError) && !pycompat.Is(err, pycompat.JSONDecodeError) {
+		if toolrt.Is(err, toolrt.ValueError) && !toolrt.Is(err, toolrt.JSONDecodeError) {
 			message = err.Error()
 		}
 		stderr.WriteString(message + "\n")
 		code = 1
 	default:
-		var exception *pycompat.Exception
+		var exception *toolrt.Exception
 		if errors.As(err, &exception) {
-			stderr.WriteString(pycompat.Traceback(err))
+			stderr.WriteString(toolrt.Traceback(err))
 		} else {
 			stderr.WriteString(err.Error() + "\n")
 		}
 		code = 1
 	}
-	return pytool.Output{Code: code, Stdout: out.String(), Stderr: pycompat.TextMode(stderr.String())}
+	return toolcli.Output{Code: code, Stdout: out.String(), Stderr: toolrt.TextMode(stderr.String())}
 }
 
 // run выполняет действие: код выхода (1 — несовпадение verify) либо исключение.
-func run(ctx context.Context, root string, args pycompat.Namespace, out *pytool.Printer, stderr *strings.Builder) (int, error) {
+func run(ctx context.Context, root string, args toolrt.Namespace, out *toolcli.Printer, stderr *strings.Builder) (int, error) {
 	if args["action"] == "verify" {
 		recipePath := args["recipe"].(string)
 		result, err := verify(ctx, root, recipePath)
 		if err != nil {
 			return 0, err
 		}
-		text, err := pytool.JSON(result)
+		text, err := toolcli.JSON(result)
 		if err != nil {
 			return 0, err
 		}
 		if err := out.Print(text); err != nil {
 			return 0, err
 		}
-		if !pycompat.Truthy(result.Value("match")) && !pycompat.Truthy(result.Value("pcm_match")) {
+		if !toolrt.Truthy(result.Value("match")) && !toolrt.Truthy(result.Value("pcm_match")) {
 			return 1, nil
 		}
 		return 0, nil
@@ -150,7 +150,7 @@ func run(ctx context.Context, root string, args pycompat.Namespace, out *pytool.
 		return 0, err
 	}
 	if args["json"] == true {
-		text, err := pytool.JSON(recipe)
+		text, err := toolcli.JSON(recipe)
 		if err != nil {
 			return 0, err
 		}
@@ -161,29 +161,29 @@ func run(ctx context.Context, root string, args pycompat.Namespace, out *pytool.
 
 // printSummary — текстовый вывод cut: окно, срез, найденные строки с текстом и пометками и
 // напоминание проверить границы на слух.
-func printSummary(out *pytool.Printer, shot, outDir string, found speech, recipe *pycompat.Dict) error {
+func printSummary(out *toolcli.Printer, shot, outDir string, found speech, recipe *toolrt.Dict) error {
 	interval := recipe.Value("source_interval_seconds").([]any)
-	first := recipe.Value("start_sample").(pycompat.Int).Big()
-	last := recipe.Value("end_sample_exclusive").(pycompat.Int).Big()
-	count := pycompat.IntFromBig(last.Sub(last, first))
-	output := recipe.Value("output").(*pycompat.Dict)
-	line := shot + ": окно " + pycompat.FormatFixed(found.window[0], 3) + "–" + pycompat.FormatFixed(found.window[1], 3) +
-		" с; срез " + pycompat.FormatFixed(interval[0].(float64), 3) + "–" + pycompat.FormatFixed(interval[1].(float64), 3) +
-		" с (" + count.String() + " сэмплов), " + pycompat.Str(output.Value("path")) + " в " + outDir
+	first := recipe.Value("start_sample").(toolrt.Int).Big()
+	last := recipe.Value("end_sample_exclusive").(toolrt.Int).Big()
+	count := toolrt.IntFromBig(last.Sub(last, first))
+	output := recipe.Value("output").(*toolrt.Dict)
+	line := shot + ": окно " + toolrt.FormatFixed(found.window[0], 3) + "–" + toolrt.FormatFixed(found.window[1], 3) +
+		" с; срез " + toolrt.FormatFixed(interval[0].(float64), 3) + "–" + toolrt.FormatFixed(interval[1].(float64), 3) +
+		" с (" + count.String() + " сэмплов), " + toolrt.Str(output.Value("path")) + " в " + outDir
 	if err := out.Print(line); err != nil {
 		return err
 	}
 	for _, item := range found.lines {
 		text := "?"
-		if value := item.Value("text"); pycompat.Truthy(value) {
-			text = pycompat.Str(value)
+		if value := item.Value("text"); toolrt.Truthy(value) {
+			text = toolrt.Str(value)
 		}
 		note := ""
-		if value := item.Value("note"); pycompat.Truthy(value) {
-			note = pycompat.Str(value)
+		if value := item.Value("note"); toolrt.Truthy(value) {
+			note = toolrt.Str(value)
 		}
-		if err := out.Print("  строка " + pycompat.Str(item.Value("source_line")) + ": " + pycompat.Str(item.Value("start")) + "–" +
-			pycompat.Str(item.Value("end")) + " с — " + text + "; " + note); err != nil {
+		if err := out.Print("  строка " + toolrt.Str(item.Value("source_line")) + ": " + toolrt.Str(item.Value("start")) + "–" +
+			toolrt.Str(item.Value("end")) + " с — " + text + "; " + note); err != nil {
 			return err
 		}
 	}

@@ -18,11 +18,11 @@ import (
 	"sort"
 	"unicode/utf16"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/production"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/scenario"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/production"
+	"songframe/internal/projectfs"
+	"songframe/internal/scenario"
 )
 
 // Режимы сохранения ScenesSaveMode.
@@ -79,7 +79,7 @@ func readRegistry(project string) any {
 	if err != nil {
 		return nil
 	}
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(raw)))
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(raw)))
 	if err != nil {
 		return nil
 	}
@@ -87,10 +87,10 @@ func readRegistry(project string) any {
 }
 
 // initialStates — начальное состояние сущностей кастинга проекта (`readCast(project) || null`).
-func initialStates(project string) (*jscompat.Object, error) {
+func initialStates(project string) (*dynvalue.Object, error) {
 	read := cast.Read(project)
 	var value any
-	if jscompat.Truthy(read.Value) {
+	if dynvalue.Truthy(read.Value) {
 		value = read.Value
 	}
 	return cast.InitialStates(value)
@@ -98,7 +98,7 @@ func initialStates(project string) (*jscompat.Object, error) {
 
 // fingerprintsOf — отпечатки планов реестра: nil, если реестра нет или отпечатки
 // не вычисляются (цикл состояний, неверные изменения и т. п.).
-func fingerprintsOf(project string, scenes any) *jscompat.Object {
+func fingerprintsOf(project string, scenes any) *dynvalue.Object {
 	if scenes == nil {
 		return nil
 	}
@@ -115,14 +115,14 @@ func fingerprintsOf(project string, scenes any) *jscompat.Object {
 
 // sceneList — элементы scenes реестра, у которого уже вычислены отпечатки (массив гарантирован).
 func sceneList(registry any) []any {
-	list, _ := jscompat.AsArray(jscompat.Get(registry, "scenes"))
+	list, _ := dynvalue.AsArray(dynvalue.Get(registry, "scenes"))
 	return list
 }
 
-// findScene — `scenes.find((scene) => scene.id === id)`.
+// findScene — первый план с кодом id.
 func findScene(registry any, id string) (any, bool) {
 	for _, scene := range sceneList(registry) {
-		if jscompat.StrictEqual(jscompat.Get(scene, "id"), id) {
+		if dynvalue.StrictEqual(dynvalue.Get(scene, "id"), id) {
 			return scene, true
 		}
 	}
@@ -131,14 +131,14 @@ func findScene(registry any, id string) (any, bool) {
 
 // withoutBounds — план без start_frame и end_frame_exclusive для сравнения постановки.
 func withoutBounds(scene any) string {
-	rest := jscompat.Spread(scene)
+	rest := dynvalue.Spread(scene)
 	rest.Delete("start_frame")
 	rest.Delete("end_frame_exclusive")
-	return jscompat.Stringify(rest)
+	return dynvalue.Stringify(rest)
 }
 
 // stateJSON — компактный JSON вычисленного состояния плана id; второй результат — значение есть.
-func stateJSON(registry any, initial *jscompat.Object, id string) (string, bool, error) {
+func stateJSON(registry any, initial *dynvalue.Object, id string) (string, bool, error) {
 	states, err := scenario.ResolveStates(registry, initial)
 	if err != nil {
 		return "", false, err
@@ -147,7 +147,7 @@ func stateJSON(registry any, initial *jscompat.Object, id string) (string, bool,
 	if !ok {
 		return "", false, nil
 	}
-	return jscompat.Stringify(state.Object()), true, nil
+	return dynvalue.Stringify(state.Object()), true, nil
 }
 
 // reasonOf — формальная причина изменения отпечатка плана: новый план, изменённая постановка,
@@ -162,8 +162,8 @@ func reasonOf(project string, before, after any, id string) (string, error) {
 	if withoutBounds(previous) != withoutBounds(next) {
 		return textImpactStaging, nil
 	}
-	if !jscompat.StrictEqual(jscompat.Get(previous, "start_frame"), jscompat.Get(next, "start_frame")) ||
-		!jscompat.StrictEqual(jscompat.Get(previous, "end_frame_exclusive"), jscompat.Get(next, "end_frame_exclusive")) {
+	if !dynvalue.StrictEqual(dynvalue.Get(previous, "start_frame"), dynvalue.Get(next, "start_frame")) ||
+		!dynvalue.StrictEqual(dynvalue.Get(previous, "end_frame_exclusive"), dynvalue.Get(next, "end_frame_exclusive")) {
 		return textImpactBounds, nil
 	}
 	initial, err := initialStates(project)
@@ -179,13 +179,13 @@ func reasonOf(project string, before, after any, id string) (string, error) {
 		return "", err
 	}
 	if was != now || wasOK != nowOK {
-		from := jscompat.Get(next, "state_from")
+		from := dynvalue.Get(next, "state_from")
 		source := from
 		if _, isString := from.(string); !isString {
-			source = jscompat.Coalesce(jscompat.Get(from, "scene"), nil)
+			source = dynvalue.Coalesce(dynvalue.Get(from, "scene"), nil)
 		}
-		if jscompat.Truthy(source) {
-			return textImpactInherited(jscompat.ToString(source)), nil
+		if dynvalue.Truthy(source) {
+			return textImpactInherited(dynvalue.ToString(source)), nil
 		}
 		return textImpactInitialState, nil
 	}
@@ -204,8 +204,8 @@ func affectedShots(project string, before, after any) ([]affected, error) {
 	}
 	changed := map[string]string{}
 	for _, scene := range sceneList(after) {
-		id := jscompat.ToString(jscompat.Get(scene, "id"))
-		if !jscompat.StrictEqual(previous.Value(id), next.Value(id)) {
+		id := dynvalue.ToString(dynvalue.Get(scene, "id"))
+		if !dynvalue.StrictEqual(previous.Value(id), next.Value(id)) {
 			reason, err := reasonOf(project, before, after, id)
 			if err != nil {
 				return nil, err
@@ -214,8 +214,8 @@ func affectedShots(project string, before, after any) ([]affected, error) {
 		}
 	}
 	for _, scene := range sceneList(after) {
-		id := jscompat.ToString(jscompat.Get(scene, "id"))
-		source, isString := jscompat.GetPath(scene, "derived_from", "shot").(string)
+		id := dynvalue.ToString(dynvalue.Get(scene, "id"))
+		source, isString := dynvalue.GetPath(scene, "derived_from", "shot").(string)
 		if _, has := changed[source]; isString && source != "" && has {
 			if _, already := changed[id]; !already {
 				changed[id] = textImpactDerived(source)
@@ -224,7 +224,7 @@ func affectedShots(project string, before, after any) ([]affected, error) {
 	}
 	result := []affected{}
 	for _, scene := range sceneList(after) {
-		id := jscompat.ToString(jscompat.Get(scene, "id"))
+		id := dynvalue.ToString(dynvalue.Get(scene, "id"))
 		if reason, ok := changed[id]; ok {
 			result = append(result, affected{id: id, reason: reason})
 		}
@@ -260,37 +260,37 @@ func SaveImpact(project string, draft any) (Impact, error) {
 
 // writableStatus — текущий plan/production-status.json для записи, nil без файла;
 // повреждённый файл (не объект) — ошибка, чтобы keep не оставил полусохранение.
-func writableStatus(project string) (*jscompat.Object, error) {
+func writableStatus(project string) (*dynvalue.Object, error) {
 	path := filepath.Join(project, statusPath)
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return nil, nil
 	}
-	value, _ := jscompat.ReadJSONFile(path)
-	if !jscompat.IsRecord(value) {
+	value, _ := dynvalue.ReadJSONFile(path)
+	if !dynvalue.IsRecord(value) {
 		return nil, errors.New(textStatusCorrupt(statusPath))
 	}
-	return value.(*jscompat.Object), nil
+	return value.(*dynvalue.Object), nil
 }
 
 // acceptedFingerprints — отпечатки, по которым приняты комплекты (shots.*.scene_sha256).
 func acceptedFingerprints(project string) map[string]string {
 	result := map[string]string{}
-	status, _ := jscompat.ReadJSONFile(filepath.Join(project, statusPath))
-	shots, ok := jscompat.AsObject(jscompat.Get(status, "shots"))
-	if !jscompat.IsRecord(status) || !ok {
+	status, _ := dynvalue.ReadJSONFile(filepath.Join(project, statusPath))
+	shots, ok := dynvalue.AsObject(dynvalue.Get(status, "shots"))
+	if !dynvalue.IsRecord(status) || !ok {
 		return result
 	}
 	for _, id := range shots.Keys() {
 		entry := shots.Value(id)
-		if sha, isString := jscompat.Get(entry, "scene_sha256").(string); isString && jscompat.IsRecord(entry) {
+		if sha, isString := dynvalue.Get(entry, "scene_sha256").(string); isString && dynvalue.IsRecord(entry) {
 			result[id] = sha
 		}
 	}
 	return result
 }
 
-// writeFile — замена файла проекта. Оригинал писал через временный файл и rename, то есть права
-// становились 0666 с umask; здесь существующий файл сохраняет свои права, новый — 0666 с umask.
+// writeFile — замена файла проекта: существующий файл сохраняет свои права, новый получает
+// 0666 с umask.
 // Переменная — точка подмены в тестах сбоя.
 var writeFile = func(path string, data []byte) error {
 	perm := os.FileMode(0o666)
@@ -300,13 +300,14 @@ var writeFile = func(path string, data []byte) error {
 	return projectfs.WriteFile(path, data, perm)
 }
 
-// shotNumber — Number(id.slice(1)) для порядка планов в production-status.json.
+// shotNumber — числовое значение кода плана без первого символа (dynvalue.ToNumber: «M07» → 7,
+// нечисловой остаток — NaN) для порядка планов в production-status.json.
 func shotNumber(id string) float64 {
 	units := utf16.Encode([]rune(id))
 	if len(units) == 0 {
 		return 0
 	}
-	return jscompat.ToNumber(string(utf16.Decode(units[1:])))
+	return dynvalue.ToNumber(string(utf16.Decode(units[1:])))
 }
 
 // writeAcceptedFingerprints — атомарно записывает новые отпечатки принятых планов, сохраняя прочие
@@ -322,19 +323,19 @@ func writeAcceptedFingerprints(project string, ids []string, updates map[string]
 	}
 	status := current
 	if status == nil {
-		status = jscompat.NewObject()
+		status = dynvalue.NewObject()
 		status.Set("schema_version", 1.0)
 		status.Set("current_animatic", nil)
 		status.Set("current_animatic_status", "none")
 	}
-	shots := jscompat.NewObject()
-	if existing, ok := jscompat.AsObject(status.Value("shots")); ok {
-		shots = jscompat.Spread(existing)
+	shots := dynvalue.NewObject()
+	if existing, ok := dynvalue.AsObject(status.Value("shots")); ok {
+		shots = dynvalue.Spread(existing)
 	}
 	for _, id := range ids {
-		entry := jscompat.NewObject()
-		if previous, ok := jscompat.AsObject(shots.Value(id)); ok {
-			entry = jscompat.Spread(previous)
+		entry := dynvalue.NewObject()
+		if previous, ok := dynvalue.AsObject(shots.Value(id)); ok {
+			entry = dynvalue.Spread(previous)
 		}
 		entry.Set("scene_sha256", updates[id])
 		shots.Set(id, entry)
@@ -344,7 +345,7 @@ func writeAcceptedFingerprints(project string, ids []string, updates map[string]
 		difference := shotNumber(keys[i]) - shotNumber(keys[j])
 		return !math.IsNaN(difference) && difference < 0
 	})
-	sorted := jscompat.NewObject()
+	sorted := dynvalue.NewObject()
 	for _, key := range keys {
 		sorted.Set(key, shots.Value(key))
 	}
@@ -352,8 +353,9 @@ func writeAcceptedFingerprints(project string, ids []string, updates map[string]
 	return writeFile(filepath.Join(project, statusPath), scenario.Encode(status))
 }
 
-// jsSpace — класс \s регулярного выражения JS (RE2 понимает \s только как ASCII).
-const jsSpace = `[\t\n\v\f\r \x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\x{feff}]`
+// unicodeSpace — пробельные символы Unicode и BOM, допустимые вокруг «:» в workflow.json
+// (\s RE2 понимает только ASCII).
+const unicodeSpace = `[\t\n\v\f\r \x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\x{feff}]`
 
 // restampPackage — в тексте workflow.json заменяется только первое
 // значение "scene_sha256": "<from>", остальной файл (форматирование, порядок полей) не меняется.
@@ -362,10 +364,10 @@ func restampPackage(directory, from, to string) (bool, error) {
 	path := filepath.Join(directory, "workflow.json")
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return false, jscompat.FsError("open", path, err)
+		return false, dynvalue.FsError("open", path, err)
 	}
-	text := jscompat.DecodeUTF8(raw)
-	pattern := regexp.MustCompile(`("scene_sha256"` + jsSpace + `*:` + jsSpace + `*)"` + regexp.QuoteMeta(from) + `"`)
+	text := dynvalue.DecodeUTF8(raw)
+	pattern := regexp.MustCompile(`("scene_sha256"` + unicodeSpace + `*:` + unicodeSpace + `*)"` + regexp.QuoteMeta(from) + `"`)
 	match := pattern.FindStringSubmatchIndex(text)
 	if match == nil {
 		return false, nil
@@ -376,13 +378,13 @@ func restampPackage(directory, from, to string) (bool, error) {
 
 // restampPackages — пакеты plan/batches и plan/awaiting затронутых планов, не принятые и
 // подготовленные по прежнему отпечатку, получают новый. Нечитаемый workflow.json пропускается.
-func restampPackages(project string, shots map[string]bool, previous, next *jscompat.Object) error {
+func restampPackages(project string, shots map[string]bool, previous, next *dynvalue.Object) error {
 	for _, base := range []string{"batches", "awaiting"} {
 		folder := filepath.Join(project, "plan", base)
-		if !jscompat.Exists(folder) {
+		if !dynvalue.Exists(folder) {
 			continue
 		}
-		entries, err := jscompat.ReadDir(folder)
+		entries, err := dynvalue.ReadDir(folder)
 		if err != nil {
 			return err
 		}
@@ -394,17 +396,17 @@ func restampPackages(project string, shots map[string]bool, previous, next *jsco
 		}
 		sort.Strings(names)
 		for _, name := range names {
-			workflow, ok := jscompat.ReadJSONFile(filepath.Join(folder, name, "workflow.json"))
+			workflow, ok := dynvalue.ReadJSONFile(filepath.Join(folder, name, "workflow.json"))
 			if !ok {
 				continue
 			}
-			shot, _ := jscompat.Get(workflow, "shot").(string)
+			shot, _ := dynvalue.Get(workflow, "shot").(string)
 			from, hasFrom := previous.Value(shot).(string)
-			if !shots[shot] || jscompat.StrictEqual(jscompat.Get(workflow, "stage"), "accepted") ||
-				!hasFrom || !jscompat.StrictEqual(jscompat.Get(workflow, "scene_sha256"), from) {
+			if !shots[shot] || dynvalue.StrictEqual(dynvalue.Get(workflow, "stage"), "accepted") ||
+				!hasFrom || !dynvalue.StrictEqual(dynvalue.Get(workflow, "scene_sha256"), from) {
 				continue
 			}
-			if _, err := restampPackage(filepath.Join(folder, name), from, jscompat.ToString(next.Value(shot))); err != nil {
+			if _, err := restampPackage(filepath.Join(folder, name), from, dynvalue.ToString(next.Value(shot))); err != nil {
 				return err
 			}
 		}
@@ -417,7 +419,7 @@ func restampPackages(project string, shots map[string]bool, previous, next *jsco
 // по прежней постановке, получают новый отпечаток; ранее устаревшие остаются устаревшими, чтобы
 // правка опечатки не отменяла прежнюю сюжетную правку. Файл принятия в режиме keep проверяется до
 // записи реестра. Возвращает записанный реестр.
-func SaveScenesWithMode(project string, data any, mode string) (*jscompat.Object, error) {
+func SaveScenesWithMode(project string, data any, mode string) (*dynvalue.Object, error) {
 	if mode != ModeProduction && mode != ModeKeep {
 		return nil, errors.New(textInvalidSaveMode)
 	}

@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/mediacmd"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
-// pathType — имя класса Path в текстах TypeError pathlib.
+// pathType — имя класса пути ОС в текстах TypeError соединения путей.
 var pathType = func() string {
 	if runtime.GOOS == "windows" {
 		return "WindowsPath"
@@ -24,31 +24,31 @@ var pathType = func() string {
 	return "PosixPath"
 }()
 
-// Классы исключений модулей wave и struct: необработанные, печатаются трассировкой.
+// Виды исключений записи WAV и упаковки заголовка: необработанные, печатаются трассировкой.
 const (
 	waveError   = "wave.Error"
 	structError = "struct.error"
 )
 
 // verify — повтор среза по рецепту в памяти и сверка SHA-256 с записанным; рядом сохранённый WAV
-// дополнительно декодируется FFmpeg и сравнивается по PCM (pcm_match; None, если файла нет).
-// Значения рецепта берутся как есть: необычные типы и числа дают исключения Python, зафиксированные
-// эталоном (умножение, срез bytes с отрицательными и большими индексами, проверки wave и
-// struct). recipePath отсчитывается от рабочего каталога процесса.
-func verify(ctx context.Context, root, recipePath string) (*pycompat.Dict, error) {
-	text, err := pycompat.ReadText(recipePath)
+// дополнительно декодируется FFmpeg и сравнивается по PCM (pcm_match; null, если файла нет).
+// Значения рецепта берутся как есть: необычные типы и числа дают исключения toolrt, зафиксированные
+// эталоном (умножение, срез байтов с отрицательными и большими индексами, проверки параметров WAV
+// и полей заголовка). recipePath отсчитывается от рабочего каталога процесса.
+func verify(ctx context.Context, root, recipePath string) (*toolrt.Dict, error) {
+	text, err := toolrt.ReadText(recipePath)
 	if err != nil {
 		return nil, err
 	}
-	recipe, err := pycompat.LoadsJSON(text)
+	recipe, err := toolrt.LoadsJSON(text)
 	if err != nil {
 		return nil, err
 	}
-	sourceValue, err := pycompat.Item(recipe, "source")
+	sourceValue, err := toolrt.Item(recipe, "source")
 	if err != nil {
 		return nil, err
 	}
-	path, err := pycompat.Item(sourceValue, "path")
+	path, err := toolrt.Item(sourceValue, "path")
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func verify(ctx context.Context, root, recipePath string) (*pycompat.Dict, error
 	}
 	values := map[string]any{}
 	for _, key := range []string{"channels", "sample_width_bytes"} {
-		if values[key], err = pycompat.Item(recipe, key); err != nil {
+		if values[key], err = toolrt.Item(recipe, key); err != nil {
 			return nil, err
 		}
 	}
@@ -72,7 +72,7 @@ func verify(ctx context.Context, root, recipePath string) (*pycompat.Dict, error
 	}
 	bounds := [2]any{}
 	for position, key := range []string{"start_sample", "end_sample_exclusive"} {
-		value, err := pycompat.Item(recipe, key)
+		value, err := toolrt.Item(recipe, key)
 		if err != nil {
 			return nil, err
 		}
@@ -84,47 +84,47 @@ func verify(ctx context.Context, root, recipePath string) (*pycompat.Dict, error
 	if err != nil {
 		return nil, err
 	}
-	rate, rateErr := pycompat.Item(recipe, "sample_rate")
+	rate, rateErr := toolrt.Item(recipe, "sample_rate")
 	data, err := waveBytes(values["channels"], values["sample_width_bytes"], rate, rateErr, chunk)
 	if err != nil {
 		return nil, err
 	}
 	sum := sha256.Sum256(data)
 	digest := hex.EncodeToString(sum[:])
-	output, err := pycompat.Item(recipe, "output")
+	output, err := toolrt.Item(recipe, "output")
 	if err != nil {
 		return nil, err
 	}
-	expected, err := pycompat.Item(output, "sha256")
+	expected, err := toolrt.Item(output, "sha256")
 	if err != nil {
 		return nil, err
 	}
-	output, err = pycompat.Item(recipe, "output")
+	output, err = toolrt.Item(recipe, "output")
 	if err != nil {
 		return nil, err
 	}
-	name, err := pycompat.Item(output, "path")
+	name, err := toolrt.Item(output, "path")
 	if err != nil {
 		return nil, err
 	}
-	stored, err := pathDiv(filepath.Dir(pycompat.JoinPath(recipePath)), name)
+	stored, err := pathDiv(filepath.Dir(toolrt.JoinPath(recipePath)), name)
 	if err != nil {
 		return nil, err
 	}
 	var pcmMatch any
-	if pycompat.IsFile(stored) {
+	if toolrt.IsFile(stored) {
 		result, err := mediacmd.Run(ctx, mediacmd.FFmpeg(), "-v", "error", "-nostdin", "-i", stored, "-f", "s16le", "-acodec", "pcm_s16le",
-			"-ac", pycompat.Str(values["channels"]), "-ar", pycompat.Str(rate), "pipe:1")
+			"-ac", toolrt.Str(values["channels"]), "-ar", toolrt.Str(rate), "pipe:1")
 		if err != nil {
 			return nil, err
 		}
 		pcmMatch = result.Code == 0 && bytes.Equal(result.Stdout, chunk)
 	}
-	return pytool.Record(
+	return toolcli.Record(
 		"recipe", recipePath,
 		"expected", expected,
 		"actual", digest,
-		"match", pycompat.Equal(digest, expected),
+		"match", toolrt.Equal(digest, expected),
 		"pcm_match", pcmMatch,
 	), nil
 }
@@ -133,15 +133,15 @@ func verify(ctx context.Context, root, recipePath string) (*pycompat.Dict, error
 // дальнейшего хода не нужно, важен только тип в текстах следующих TypeError.
 type repeated struct{ kind string }
 
-// typeName — type(value).__name__ с учётом repeated.
+// typeName — имя типа значения в текстах исключений (toolrt.TypeName) с учётом repeated.
 func typeName(value any) string {
 	if item, ok := value.(repeated); ok {
 		return item.kind
 	}
-	return pycompat.TypeName(value)
+	return toolrt.TypeName(value)
 }
 
-// sequenceKind — имя типа последовательности Python, если value — str, list или повтор.
+// sequenceKind — имя типа последовательности (str или list), если value — строка, список или повтор.
 func sequenceKind(value any) (string, bool) {
 	switch item := value.(type) {
 	case string:
@@ -154,7 +154,7 @@ func sequenceKind(value any) (string, bool) {
 	return "", false
 }
 
-// multiply — left * right Python для значений рецепта: целые точно (bool — 0/1), с float —
+// multiply — произведение значений рецепта: целые точно (bool — 0/1), с float —
 // числом float; последовательность на целое — повтор, на нецелое — «can't multiply sequence»;
 // прочее — «unsupported operand type(s) for *». Содержимое повтора не строится: далее оно
 // годится только для TypeError среза.
@@ -162,7 +162,7 @@ func multiply(left, right any) (any, error) {
 	a, leftInt := index(left)
 	b, rightInt := index(right)
 	if leftInt && rightInt {
-		return pycompat.IntFromBig(new(big.Int).Mul(a, b)), nil
+		return toolrt.IntFromBig(new(big.Int).Mul(a, b)), nil
 	}
 	if x, ok := floatOperand(left); ok {
 		if y, ok := floatOperand(right); ok {
@@ -181,15 +181,15 @@ func multiply(left, right any) (any, error) {
 		if rightInt {
 			return repeated{kind}, nil
 		}
-		return nil, pycompat.Raise(pycompat.TypeError, "can't multiply sequence by non-int of type '%s'", typeName(right))
+		return nil, toolrt.Raise(toolrt.TypeError, "can't multiply sequence by non-int of type '%s'", typeName(right))
 	}
 	if kind, ok := sequenceKind(right); ok {
 		if leftInt {
 			return repeated{kind}, nil
 		}
-		return nil, pycompat.Raise(pycompat.TypeError, "can't multiply sequence by non-int of type '%s'", typeName(left))
+		return nil, toolrt.Raise(toolrt.TypeError, "can't multiply sequence by non-int of type '%s'", typeName(left))
 	}
-	return nil, pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for *: '%s' and '%s'", typeName(left), typeName(right))
+	return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for *: '%s' and '%s'", typeName(left), typeName(right))
 }
 
 // floatOperand — число для арифметики с float: целое переводится в float (OverflowError для
@@ -199,18 +199,18 @@ func floatOperand(value any) (func() (float64, error), bool) {
 		return func() (float64, error) { return number, nil }, true
 	}
 	if integer, ok := index(value); ok {
-		return func() (float64, error) { return pycompat.IntFromBig(integer).Float() }, true
+		return func() (float64, error) { return toolrt.IntFromBig(integer).Float() }, true
 	}
 	return nil, false
 }
 
-// slice — data[start:stop] Python: отрицательные индексы отсчитываются от конца, выход за
+// slice — байты data с start по stop: отрицательные индексы отсчитываются от конца, выход за
 // границы обрезается, пустой результат при stop <= start. Нецелые индексы — TypeError.
 func slice(data []byte, start, stop any) ([]byte, error) {
 	a, okA := index(start)
 	b, okB := index(stop)
 	if !okA || !okB {
-		return nil, pycompat.New(pycompat.TypeError, "slice indices must be integers or None or have an __index__ method")
+		return nil, toolrt.New(toolrt.TypeError, "slice indices must be integers or None or have an __index__ method")
 	}
 	length := big.NewInt(int64(len(data)))
 	clamp := func(value *big.Int) int {
@@ -233,26 +233,26 @@ func slice(data []byte, start, stop any) ([]byte, error) {
 	return data[from:to], nil
 }
 
-// waveBytes — байты, которые модуль wave Python 3.12 пишет для setnchannels/setsampwidth/
-// setframerate и writeframes(data): 44-байтный заголовок PCM и данные. Каналы и ширина здесь уже
-// целые (иначе раньше упал бы срез). Ошибка установки параметра внутри `with wave.open(…)`
-// заменяется исключением close(): у первого незаданного параметра — «… not specified»; поля
-// заголовка вне диапазона struct — struct.error. rateErr — исключение чтения sample_rate внутри
-// with (тоже замещается ошибкой close).
+// waveBytes — файл WAV: 44-байтный заголовок PCM (каналы, ширина сэмпла, частота) и данные;
+// байты зафиксированы эталоном testdata/golden/cut-speech. Каналы и ширина здесь уже целые
+// (иначе раньше упал бы срез). Неверный параметр сообщается при завершении записи: у первого
+// незаданного параметра — «… not specified» (waveError); поле заголовка вне диапазона 16 или 32
+// бит — structError. rateErr — ошибка чтения sample_rate: она тоже заменяется отказом
+// «sampling rate not specified».
 func waveBytes(channelsValue, widthValue, rate any, rateErr error, data []byte) ([]byte, error) {
 	count, _ := index(channelsValue)
 	width, _ := index(widthValue)
 	if count.Sign() < 1 {
-		return nil, pycompat.New(waveError, "# channels not specified")
+		return nil, toolrt.New(waveError, "# channels not specified")
 	}
 	if width.Sign() < 1 || width.Cmp(big.NewInt(4)) > 0 {
-		return nil, pycompat.New(waveError, "sample width not specified")
+		return nil, toolrt.New(waveError, "sample width not specified")
 	}
-	unspecifiedRate := pycompat.New(waveError, "sampling rate not specified")
+	unspecifiedRate := toolrt.New(waveError, "sampling rate not specified")
 	if rateErr != nil {
 		return nil, unspecifiedRate
 	}
-	notPositive, err := pycompat.LessEqual(rate, pycompat.NewInt(0))
+	notPositive, err := toolrt.LessEqual(rate, toolrt.NewInt(0))
 	if err != nil || notPositive {
 		return nil, unspecifiedRate
 	}
@@ -265,7 +265,7 @@ func waveBytes(channelsValue, widthValue, rate any, rateErr error, data []byte) 
 	initial := new(big.Int).Mul(frames, frameSize)
 	byteRate := new(big.Int).Mul(new(big.Int).Mul(count, framerate), width)
 	bits := new(big.Int).Mul(width, big.NewInt(8))
-	// Порядок полей '<L4s4sLHHLLHH4s': первая ошибка диапазона — та, что видит Python.
+	// Поля проверяются в порядке заголовка: сообщается первая ошибка диапазона.
 	fields := []struct {
 		value *big.Int
 		wide  bool
@@ -278,10 +278,10 @@ func waveBytes(channelsValue, widthValue, rate any, rateErr error, data []byte) 
 			limit, format = big.NewInt(math.MaxUint32), "'L' format requires 0 <= number <= 4294967295"
 		}
 		if field.value.Cmp(limit) > 0 {
-			return nil, pycompat.New(structError, format)
+			return nil, toolrt.New(structError, format)
 		}
 	}
-	// writeframes исправляет размеры заголовка по фактически записанным байтам.
+	// Размеры в заголовке — по фактически записанным байтам данных.
 	header := make([]byte, 0, 44+len(data))
 	header = append(header, "RIFF"...)
 	header = binary.LittleEndian.AppendUint32(header, uint32(36+len(data)))
@@ -298,7 +298,7 @@ func waveBytes(channelsValue, widthValue, rate any, rateErr error, data []byte) 
 	return append(header, data...), nil
 }
 
-// roundRate — int(round(framerate)) setframerate: целое как есть, float — к ближайшему чётному;
+// roundRate — целая частота для заголовка: целое как есть, float — к ближайшему, половина к чётному;
 // NaN и бесконечность — исключение (false).
 func roundRate(rate any) (*big.Int, bool) {
 	if integer, ok := index(rate); ok {

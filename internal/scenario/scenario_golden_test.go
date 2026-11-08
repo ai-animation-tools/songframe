@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
 )
 
 // TestViewMatchesGolden сверяет viewScenario, readScenarioRegistry и validateScenes с эталонами
@@ -47,15 +47,15 @@ func TestBriefMatchesGolden(t *testing.T) {
 			if err != nil {
 				raw = item.Read(t, "project/plan/scenes.json")
 			}
-			data, err := jscompat.Parse(raw)
+			data, err := dynvalue.Parse(raw)
 			if err != nil {
 				t.Fatal(err)
 			}
 			pairs := spec.Briefs
 			if pairs == nil {
-				scenes, _ := jscompat.AsArray(jscompat.Get(data, "scenes"))
+				scenes, _ := dynvalue.AsArray(dynvalue.Get(data, "scenes"))
 				for _, scene := range scenes {
-					id := jscompat.ToString(jscompat.Get(scene, "id"))
+					id := dynvalue.ToString(dynvalue.Get(scene, "id"))
 					pairs = append(pairs, [2]string{id, "before"}, [2]string{id, "after"})
 				}
 			}
@@ -67,7 +67,7 @@ func TestBriefMatchesGolden(t *testing.T) {
 			}
 			got := []entry{}
 			for _, pair := range pairs {
-				brief, err := BuildBrief(jscompat.DeepClone(data), readCastValue(path), pair[0], pair[1])
+				brief, err := BuildBrief(dynvalue.DeepClone(data), readCastValue(path), pair[0], pair[1])
 				if err != nil {
 					message := err.Error()
 					got = append(got, entry{Shot: pair[0], Phase: pair[1], Error: &message})
@@ -107,7 +107,7 @@ func TestSaveTreatmentMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "scenario-treatment") {
 		t.Run(item.Name, func(t *testing.T) {
 			project := item.CopyProject(t)
-			input, err := jscompat.Parse(item.Read(t, "treatment-input.json"))
+			input, err := dynvalue.Parse(item.Read(t, "treatment-input.json"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -116,7 +116,7 @@ func TestSaveTreatmentMatchesGolden(t *testing.T) {
 				t.Fatal(err)
 			}
 			before := treeFiles(t, project)
-			problems, err := ValidateProjectTreatment(project, jscompat.DeepClone(input))
+			problems, err := ValidateProjectTreatment(project, dynvalue.DeepClone(input))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -139,8 +139,8 @@ func TestSaveTreatmentMatchesGolden(t *testing.T) {
 			after := treeFiles(t, project)
 			AssertWrite(t, item.Dir, want.Error, want.Result, want.Files, err, result, before, after)
 			if want.Resave != nil {
-				again, err := SaveTreatment(project, jscompat.DeepClone(result))
-				if err != nil || (jscompat.Stringify(again) == jscompat.Stringify(result)) != want.Resave.SameResult {
+				again, err := SaveTreatment(project, dynvalue.DeepClone(result))
+				if err != nil || (dynvalue.Stringify(again) == dynvalue.Stringify(result)) != want.Resave.SameResult {
 					t.Fatalf("повторное сохранение: %v", err)
 				}
 				assertFiles(t, want.Resave.Files, changes(after, treeFiles(t, project)))
@@ -158,7 +158,7 @@ func TestNormalizeTreatmentRejectsProblems(t *testing.T) {
 			if err := json.Unmarshal(item.Expected(t), &want); err != nil {
 				t.Fatal(err)
 			}
-			input, err := jscompat.Parse(item.Read(t, "treatment-input.json"))
+			input, err := dynvalue.Parse(item.Read(t, "treatment-input.json"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -194,7 +194,7 @@ func AssertWrite(t *testing.T, dir string, wantError *string, wantResult json.Ra
 		t.Fatalf("ошибка\n  Go:  %s\n  TS:  %s", err, *wantError)
 	}
 	if wantError == nil {
-		golden.AssertJSON(t, wantResult, []byte(jscompat.Stringify(result)))
+		golden.AssertJSON(t, wantResult, []byte(dynvalue.Stringify(result)))
 	}
 	got := changes(before, after)
 	assertFiles(t, wantFiles, got)

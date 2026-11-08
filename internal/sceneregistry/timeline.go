@@ -4,17 +4,17 @@ import (
 	"math/big"
 	"strings"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
-// Seconds — seconds(number, fps): кадр в секундах Decimal с шестью знаками после запятой без
-// хвостовых нулей («12.5», «0»). number — значение Python (обычно int), fps — делитель (int).
+// Seconds — кадр number в секундах (десятичное деление на fps, шесть знаков после запятой без
+// хвостовых нулей: «12.5», «0»). number — значение реестра (обычно целое), fps — целый делитель.
 func Seconds(number any, fps any) (string, error) {
-	value, err := pycompat.NewDecimal(number)
+	value, err := toolrt.NewDecimal(number)
 	if err != nil {
 		return "", err
 	}
-	divisor, err := pycompat.DecimalOperand(fps, "/")
+	divisor, err := toolrt.DecimalOperand(fps, "/")
 	if err != nil {
 		return "", err
 	}
@@ -33,14 +33,14 @@ func Seconds(number any, fps any) (string, error) {
 	return text, nil
 }
 
-// Clock — clock(value): «ММ:СС.d» для секунд (строка, int или float Python): минуты — int(value)
-// // 60 с дополнением до двух знаков, секунды — остаток Decimal со всеми его цифрами.
+// Clock — «ММ:СС.d» для секунд (строка, целое или дробное): минуты — целая часть value, делённая
+// на 60, с дополнением до двух знаков; секунды — десятичный остаток от 60 со всеми его цифрами.
 func Clock(value any) (string, error) {
-	number, err := pycompat.NewDecimal(value)
+	number, err := toolrt.NewDecimal(value)
 	if err != nil {
 		return "", err
 	}
-	remainder, err := number.Mod(pycompat.DecimalInt(60))
+	remainder, err := number.Mod(toolrt.DecimalInt(60))
 	if err != nil {
 		return "", err
 	}
@@ -59,7 +59,7 @@ func Clock(value any) (string, error) {
 	} else {
 		padded = leftPad(padded, 2)
 	}
-	less, err := remainder.Cmp(pycompat.DecimalInt(10))
+	less, err := remainder.Cmp(toolrt.DecimalInt(10))
 	if err != nil {
 		return "", err
 	}
@@ -70,7 +70,7 @@ func Clock(value any) (string, error) {
 	return padded + ":" + zero + text, nil
 }
 
-// leftPad — дополнение нулями слева до ширины width (f"{n:02}").
+// leftPad — дополнение нулями слева до ширины width.
 func leftPad(text string, width int) string {
 	if len(text) >= width {
 		return text
@@ -82,22 +82,22 @@ func leftPad(text string, width int) string {
 // сборки. Каждый план — копия полей реестра плюс title (свой или части), sequence_title, start/end
 // (секунды строкой; у последнего end — end_seconds реестра как есть), duration, interval
 // («ММ:СС.d–ММ:СС.d»), frames, state (continuity) и refs (references без заглушки «—»).
-func Shots(data any, initial *pycompat.Dict) ([]*pycompat.Dict, error) {
+func Shots(data any, initial *toolrt.Dict) ([]*toolrt.Dict, error) {
 	document, err := Validate(data, initial)
 	if err != nil {
 		return nil, err
 	}
-	sequences, err := pycompat.Iter(document.Value("sequences"))
+	sequences, err := toolrt.Iter(document.Value("sequences"))
 	if err != nil {
 		return nil, err
 	}
 	titleKeys := newKeyed()
 	for _, item := range sequences {
-		id, err := pycompat.GetItem(item, "id")
+		id, err := toolrt.GetItem(item, "id")
 		if err != nil {
 			return nil, err
 		}
-		title, err := pycompat.GetItem(item, "title")
+		title, err := toolrt.GetItem(item, "title")
 		if err != nil {
 			return nil, err
 		}
@@ -105,32 +105,32 @@ func Shots(data any, initial *pycompat.Dict) ([]*pycompat.Dict, error) {
 			return nil, err
 		}
 	}
-	scenes, _ := pycompat.Iter(document.Value("scenes"))
+	scenes, _ := toolrt.Iter(document.Value("scenes"))
 	fps := document.Value("fps")
-	result := make([]*pycompat.Dict, 0, len(scenes))
+	result := make([]*toolrt.Dict, 0, len(scenes))
 	for index, item := range scenes {
-		scene := item.(*pycompat.Dict)
+		scene := item.(*toolrt.Dict)
 		start, err := Seconds(scene.Value("start_frame"), fps)
 		if err != nil {
 			return nil, err
 		}
 		var end any
 		if index == len(scenes)-1 {
-			audio, err := pycompat.GetItem(document, "audio")
+			audio, err := toolrt.GetItem(document, "audio")
 			if err != nil {
 				return nil, err
 			}
-			if end, err = pycompat.GetItem(audio, "end_seconds"); err != nil {
+			if end, err = toolrt.GetItem(audio, "end_seconds"); err != nil {
 				return nil, err
 			}
 		} else if end, err = Seconds(scene.Value("end_frame_exclusive"), fps); err != nil {
 			return nil, err
 		}
-		finish, err := pycompat.NewDecimal(end)
+		finish, err := toolrt.NewDecimal(end)
 		if err != nil {
 			return nil, err
 		}
-		begin, _ := pycompat.NewDecimal(start)
+		begin, _ := toolrt.NewDecimal(start)
 		length, err := finish.Sub(begin)
 		if err != nil {
 			return nil, err
@@ -140,9 +140,9 @@ func Shots(data any, initial *pycompat.Dict) ([]*pycompat.Dict, error) {
 			return nil, err
 		}
 		if !found {
-			return nil, pycompat.NewKeyError(scene.Value("sequence"))
+			return nil, toolrt.NewKeyError(scene.Value("sequence"))
 		}
-		title, _ := pycompat.DictGet(scene, "title", sequenceTitle)
+		title, _ := toolrt.DictGet(scene, "title", sequenceTitle)
 		from, err := Clock(start)
 		if err != nil {
 			return nil, err
@@ -151,18 +151,18 @@ func Shots(data any, initial *pycompat.Dict) ([]*pycompat.Dict, error) {
 		if err != nil {
 			return nil, err
 		}
-		frames, err := pycompat.Sub(scene.Value("end_frame_exclusive"), scene.Value("start_frame"))
+		frames, err := toolrt.Sub(scene.Value("end_frame_exclusive"), scene.Value("start_frame"))
 		if err != nil {
 			return nil, err
 		}
-		continuity, err := pycompat.GetItem(scene, "continuity")
+		continuity, err := toolrt.GetItem(scene, "continuity")
 		if err != nil {
 			return nil, err
 		}
-		references, _ := pycompat.Iter(scene.Value("references"))
+		references, _ := toolrt.Iter(scene.Value("references"))
 		refs := []any{}
 		for _, reference := range references {
-			if !pycompat.Equal(reference, "—") {
+			if !toolrt.Equal(reference, "—") {
 				refs = append(refs, reference)
 			}
 		}

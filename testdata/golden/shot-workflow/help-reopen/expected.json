@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow.py reopen [-h] --dir DIR --note NOTE\n                               [--note-scope {frame,following}]\n                               keyframe\n\npositional arguments:\n  keyframe\n\noptions:\n  -h, --help            show this help message and exit\n  --dir DIR\n  --note NOTE\n  --note-scope {frame,following}\n",
+  "stdout": "usage: shot_workflow reopen [-h] --dir DIR --note NOTE\n                            [--note-scope {frame,following}]\n                            keyframe\n\npositional arguments:\n  keyframe\n\noptions:\n  -h, --help            show this help message and exit\n  --dir DIR\n  --note NOTE\n  --note-scope {frame,following}\n",
   "stderr": "",
   "traceback": false,
   "files": {},

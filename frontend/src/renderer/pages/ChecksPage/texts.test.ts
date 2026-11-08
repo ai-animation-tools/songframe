@@ -69,7 +69,7 @@ describe('целые фразы проверок', () => {
     );
   });
 
-  it('возвращает целые сообщения полей настроек с прежним префиксом', () => {
+  it('возвращает целые сообщения полей настроек с префиксом generation.<вид>', () => {
     expect(checksTexts.generationObjectRequired('video')).toBe('generation.video: ожидается объект настроек.');
     expect(checksTexts.generationFieldRequired({ kind: 'image', field: 'provider' })).toBe('generation.image: не заполнено поле provider.');
     expect(checksTexts.generationStringRequired({ kind: 'image', field: 'model' })).toBe('generation.image: model должен быть непустой строкой.');
@@ -98,7 +98,7 @@ describe('целые фразы проверок', () => {
 });
 
 describe('текст панели пробы', () => {
-  it('сохраняет целый абзац с одним пробелом на месте переноса JSX', () => {
+  it('сохраняет целый абзац с одним пробелом между предложениями', () => {
     const html = render();
     expect(html).toContain(
       'Соберите временный ролик, чтобы оценить переходы между планами. Готовые планы будут показаны принятыми клипами, остальные — карточками, под непрерывный участок музыки. Проба сохраняется в plan/batches. Она не заменяет аниматик, её сборка не означает приёмку сцен.'

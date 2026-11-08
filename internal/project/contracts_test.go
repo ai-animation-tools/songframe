@@ -20,7 +20,7 @@ type recoveryContractFixtures struct {
 	} `json:"cases"`
 }
 
-// readProjectContract открывает fixture только внутри songframe-go, без обращения к старому приложению.
+// readProjectContract читает fixture контракта из testdata/contracts репозитория.
 func readProjectContract(t *testing.T, name string, target any) {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join("../../testdata/contracts", name))
@@ -32,7 +32,8 @@ func readProjectContract(t *testing.T, name string, target any) {
 	}
 }
 
-// TestContractRecoveryGateNeverRollsBack проверяет оба семейства журналов, их резервы и оригиналы.
+// TestContractRecoveryGateNeverRollsBack проверяет оба семейства журналов, их резервы и текущие
+// файлы.
 // Повторная проверка после переноса папки не завершает публикацию и не выполняет recovery.
 func TestContractRecoveryGateNeverRollsBack(t *testing.T) {
 	var fixtures recoveryContractFixtures
@@ -54,7 +55,7 @@ func TestContractRecoveryGateNeverRollsBack(t *testing.T) {
 					t.Fatalf("причина блокировки: %v", problems)
 				}
 				if !reflect.DeepEqual(before, tree(t, root)) {
-					t.Fatal("проект, оригиналы, резервы или журнал изменены при чтении")
+					t.Fatal("проект, текущие файлы, резервы или журнал изменены при чтении")
 				}
 				if attempt == 0 {
 					moved := filepath.Join(filepath.Dir(root), "Перенесённый журнал 🌿")

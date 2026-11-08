@@ -13,10 +13,10 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/assetpackage"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/assetpackage"
+	"songframe/internal/golden"
+	"songframe/internal/mediacmd"
+	"songframe/internal/toolrt"
 )
 
 // goldenFile — testdata/golden/derive-shot/cases.json: случаи CLI на копии общего образца
@@ -135,16 +135,16 @@ func applyOps(t *testing.T, project, inputs string, ops []setupOp) {
 	}
 }
 
-// localCards подставляет в журнал из эталона отпечатки карточек, нарисованных Go: в эталоне
-// записаны отпечатки карточек Pillow, а откат сверяет их с файлами проекта. Прочие записи
-// журнала не меняются.
+// localCards подставляет в журнал из эталона отпечатки карточек, нарисованных в этом прогоне:
+// байты PNG карточек эталон не фиксирует (правило эталона scene-views), а откат сверяет
+// отпечатки журнала с файлами проекта. Прочие записи журнала не меняются.
 func localCards(t *testing.T, project, path string) {
 	t.Helper()
 	value, err := readJSON(path)
 	if err != nil {
 		return // Случаи с повреждённым журналом проверяют именно такой текст.
 	}
-	journal, ok := value.(*pycompat.Dict)
+	journal, ok := value.(*toolrt.Dict)
 	if !ok {
 		return
 	}
@@ -153,7 +153,7 @@ func localCards(t *testing.T, project, path string) {
 		return
 	}
 	for _, raw := range list {
-		entry := raw.(*pycompat.Dict)
+		entry := raw.(*toolrt.Dict)
 		name := entry.Value("path").(string)
 		if !cardPNG(name) && name != "plan/animatic/cards/manifest.json" {
 			continue
@@ -227,7 +227,7 @@ func treeSnapshot(t *testing.T, folder, base string) map[string]treeEntry {
 			if err != nil {
 				return err
 			}
-			text := pycompat.DecodeReplace(data)
+			text := toolrt.DecodeReplace(data)
 			result[name] = treeEntry{Text: &text}
 			return nil
 		}
@@ -272,7 +272,8 @@ func expectedEntry(t *testing.T, raw json.RawMessage) treeEntry {
 	return entry
 }
 
-// sameEntry сравнивает записи; сводку ffprobe — через JSON (числа и строки как у Python).
+// sameEntry сравнивает записи; сводку ffprobe — через JSON-кодирование (числа и строки сравниваются
+// по записи).
 func sameEntry(want, got treeEntry) bool {
 	if want.Dir != got.Dir || want.SHA256 != got.SHA256 || want.IsNew != got.IsNew || want.Bytes != got.Bytes {
 		return false
@@ -303,7 +304,7 @@ func cardPNG(name string) bool {
 	return strings.HasSuffix(name, ".png") && (directory == "plan/animatic/cards" || strings.HasSuffix(directory, "/before/plan/animatic/cards"))
 }
 
-// checkPNG — перерисованная карточка Go остаётся PNG 1280×720.
+// checkPNG — перерисованная карточка остаётся PNG 1280×720.
 func checkPNG(t *testing.T, project, name string) {
 	t.Helper()
 	file, err := os.Open(filepath.Join(project, filepath.FromSlash(name)))
@@ -318,22 +319,22 @@ func checkPNG(t *testing.T, project, name string) {
 	}
 }
 
-// maskCards — текст для сравнения без SHA-256 PNG карточек: байты карточек Go не совпадают с Pillow
+// maskCards — текст для сравнения без SHA-256 PNG карточек: байты карточек эталон не фиксирует
 // (правило эталона scene-views), всё остальное сравнивается побайтно.
 func maskCards(name, text string) string {
-	value, err := pycompat.LoadsJSON(text)
+	value, err := toolrt.LoadsJSON(text)
 	if err != nil {
 		return text
 	}
 	switch {
 	case name == "plan/animatic/cards/manifest.json":
-		if cards, ok := value.(*pycompat.Dict).Value("cards").(*pycompat.Dict); ok {
+		if cards, ok := value.(*toolrt.Dict).Value("cards").(*toolrt.Dict); ok {
 			for _, sid := range cards.Keys() {
-				cards.Value(sid).(*pycompat.Dict).Set("sha256", "<sha256>")
+				cards.Value(sid).(*toolrt.Dict).Set("sha256", "<sha256>")
 			}
 		}
 	case strings.HasPrefix(name, History+"/") && strings.HasSuffix(name, "/journal.json"):
-		journal, ok := value.(*pycompat.Dict)
+		journal, ok := value.(*toolrt.Dict)
 		if !ok {
 			return text
 		}
@@ -343,7 +344,7 @@ func maskCards(name, text string) string {
 		}
 		files := []any{}
 		for _, raw := range list {
-			entry := raw.(*pycompat.Dict)
+			entry := raw.(*toolrt.Dict)
 			path := entry.Value("path").(string)
 			if cardPNG(path) {
 				continue
@@ -358,7 +359,7 @@ func maskCards(name, text string) string {
 	default:
 		return text
 	}
-	masked, _ := pycompat.DumpsJSON(value, pycompat.Indented)
+	masked, _ := toolrt.DumpsJSON(value, toolrt.Indented)
 	return masked
 }
 

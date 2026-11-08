@@ -1,10 +1,10 @@
 {
-  "description": "Все проблемы проверки в порядке оригинала; файл не меняется.",
+  "description": "Все проблемы проверки в порядке проверки полей; файл не меняется.",
   "call": "writeProjectSettings",
   "project": "project",
   "covers": [
     "validateProjectSettings",
-    "problems.join"
+    "склейка проблем"
   ],
   "stubbedMedia": []
 }

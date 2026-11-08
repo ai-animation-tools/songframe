@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
 )
 
 // fixedNow — фиксированное время updated_at, записанное в эталонах.
@@ -29,7 +29,7 @@ func TestViewMatchesGolden(t *testing.T) {
 			_ = json.Unmarshal(item.Expected(t), &want)
 			if want.Throws != nil {
 				if err == nil {
-					t.Fatalf("эталон завершился исключением %q, Go вернул результат", *want.Throws)
+					t.Fatalf("эталон завершился исключением %q, получен результат", *want.Throws)
 				}
 				return
 			}
@@ -70,13 +70,13 @@ func TestWriteMatchesGolden(t *testing.T) {
 			}
 			var input any
 			if item.Call == "writeCast" {
-				parsed, err := jscompat.Parse(item.Read(t, "cast-input.json"))
+				parsed, err := dynvalue.Parse(item.Read(t, "cast-input.json"))
 				if err != nil {
 					t.Fatal(err)
 				}
 				input = parsed
 			}
-			run := func(value any) (*jscompat.Object, error) {
+			run := func(value any) (*dynvalue.Object, error) {
 				if item.Call == "initCast" {
 					return Init(project)
 				}
@@ -89,11 +89,11 @@ func TestWriteMatchesGolden(t *testing.T) {
 			if want.Resave == nil {
 				return
 			}
-			again, err := run(jscompat.DeepClone(result))
+			again, err := run(dynvalue.DeepClone(result))
 			if want.Resave.Error != nil || err != nil {
-				t.Fatalf("повторное сохранение: эталон %v, Go %v", want.Resave.Error, err)
+				t.Fatalf("повторное сохранение: эталон %v, получено %v", want.Resave.Error, err)
 			}
-			if same := jscompat.Stringify(again) == jscompat.Stringify(result); same != want.Resave.SameResult {
+			if same := dynvalue.Stringify(again) == dynvalue.Stringify(result); same != want.Resave.SameResult {
 				t.Fatalf("повторный результат совпадает: %v, ожидалось %v", same, want.Resave.SameResult)
 			}
 			assertFiles(t, want.Resave.Files, changes(after, treeFiles(t, project)))
@@ -106,14 +106,14 @@ func assertWrite(t *testing.T, item golden.Case, wantError *string, wantResult j
 	t.Helper()
 	switch {
 	case wantError != nil && err == nil:
-		t.Fatalf("эталон отказал %q, Go сохранил", *wantError)
+		t.Fatalf("эталон отказал %q, а запись прошла", *wantError)
 	case wantError == nil && err != nil:
-		t.Fatalf("эталон сохранил, Go: %v", err)
+		t.Fatalf("эталон сохранил, получено: %v", err)
 	case wantError != nil && err.Error() != *wantError:
-		t.Fatalf("ошибка\n  Go:  %s\n  TS:  %s", err, *wantError)
+		t.Fatalf("ошибка\n  получено: %s\n  эталон:  %s", err, *wantError)
 	}
 	if wantError == nil {
-		golden.AssertJSON(t, wantResult, []byte(jscompat.Stringify(result)))
+		golden.AssertJSON(t, wantResult, []byte(dynvalue.Stringify(result)))
 	}
 	got := changes(before, after)
 	assertFiles(t, wantFiles, got)
@@ -126,7 +126,7 @@ func assertWrite(t *testing.T, item golden.Case, wantError *string, wantResult j
 			t.Fatal(readErr)
 		}
 		if !bytes.Equal(expected, after[path]) {
-			t.Fatalf("%s: байты отличаются\n  Go: %q\n  TS: %q", path, after[path], expected)
+			t.Fatalf("%s: байты отличаются\n  получено: %q\n  эталон:  %q", path, after[path], expected)
 		}
 	}
 }
@@ -139,7 +139,7 @@ func assertFiles(t *testing.T, want, got map[string]string) {
 	wantJSON, _ := json.Marshal(want)
 	gotJSON, _ := json.Marshal(got)
 	if !bytes.Equal(wantJSON, gotJSON) {
-		t.Fatalf("изменённые файлы\n  Go: %s\n  TS: %s", gotJSON, wantJSON)
+		t.Fatalf("изменённые файлы\n  получено: %s\n  эталон:  %s", gotJSON, wantJSON)
 	}
 }
 

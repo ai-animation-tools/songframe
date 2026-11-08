@@ -1,11 +1,10 @@
 {
   "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
-  "python": "3.12.3",
   "base": "checks-base",
   "cases": [
     {
       "name": "help",
-      "description": "Справка argparse.",
+      "description": "Справка разбора аргументов.",
       "covers": [
         "--help"
       ],
@@ -21,7 +20,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: apply_montage.py [-h] (--spec SPEC | --recover) [--no-views]\n\nПрименяет явный ручной монтаж к принятым сценам; @link README.md.\n\noptions:\n  -h, --help   show this help message and exit\n  --spec SPEC  MontageDraft JSON с относительными путями проекта\n  --recover    Только восстановить прерванную публикацию\n  --no-views   Не обновлять производные представления\n",
+            "stdout": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\n\nПрименяет явный ручной монтаж к принятым сценам; @link README.md.\n\noptions:\n  -h, --help   show this help message and exit\n  --spec SPEC  MontageDraft JSON с относительными путями проекта\n  --recover    Только восстановить прерванную публикацию\n  --no-views   Не обновлять производные представления\n",
             "stderr": ""
           }
         ],
@@ -47,7 +46,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: apply_montage.py [-h] (--spec SPEC | --recover) [--no-views]\napply_montage.py: error: one of the arguments --spec --recover is required\n"
+            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: error: one of the arguments --spec --recover is required\n"
           }
         ],
         "changed": {},
@@ -76,7 +75,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: apply_montage.py [-h] (--spec SPEC | --recover) [--no-views]\napply_montage.py: error: argument --recover: not allowed with argument --spec\n"
+            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: error: argument --recover: not allowed with argument --spec\n"
           }
         ],
         "changed": {},
@@ -104,7 +103,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: apply_montage.py [-h] (--spec SPEC | --recover) [--no-views]\napply_montage.py: error: unrecognized arguments: --extra\n"
+            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: error: unrecognized arguments: --extra\n"
           }
         ],
         "changed": {},
@@ -131,7 +130,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: apply_montage.py [-h] (--spec SPEC | --recover) [--no-views]\napply_montage.py: error: argument --spec: expected one argument\n"
+            "stderr": "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\napply_montage: error: argument --spec: expected one argument\n"
           }
         ],
         "changed": {},
@@ -1809,7 +1808,7 @@
     },
     {
       "name": "schema-bool",
-      "description": "schema_version true (== 1 в Python).",
+      "description": "schema_version true (равно 1).",
       "covers": [
         "True == 1"
       ],
@@ -2551,7 +2550,7 @@
       "name": "draft-list",
       "description": "Черновик — список.",
       "covers": [
-        "isinstance dict"
+        "проверка объекта"
       ],
       "setup": [
         {

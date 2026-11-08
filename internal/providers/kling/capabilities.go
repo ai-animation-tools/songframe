@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/providers/kling/mcp"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pyre"
+	"songframe/internal/providers/kling/mcp"
+	"songframe/internal/toolregex"
+	"songframe/internal/toolrt"
 )
 
 // Каталог возможностей: tools/list (какие команды есть у аккаунта) и who_am_i {tools: [...]}
@@ -20,20 +20,20 @@ const textBadField = "who_am_i вернул неверное объявлени�
 
 // capabilityFields — объявленные параметры или слоты по имени с
 // нормализованными именами полей контракта приложения (allowed, max_items).
-func capabilityFields(values any) (*pycompat.Dict, error) {
+func capabilityFields(values any) (*toolrt.Dict, error) {
 	list, ok := values.([]any)
 	if !ok {
 		return nil, valueError(textBadField)
 	}
-	fields := pycompat.NewDict()
+	fields := toolrt.NewDict()
 	for _, item := range list {
-		value, ok := item.(*pycompat.Dict)
+		value, ok := item.(*toolrt.Dict)
 		name, isName := value.Value("name").(string)
 		_, isBool := value.Value("required").(bool)
 		if !ok || !isName || name == "" || fields.Has(name) || (value.Has("required") && !isBool) {
 			return nil, valueError(textBadField)
 		}
-		entry := pycompat.NewDict()
+		entry := toolrt.NewDict()
 		for _, key := range []string{"required", "default", "description"} {
 			if field, found := value.Get(key); found {
 				entry.Set(key, field)
@@ -56,7 +56,7 @@ func capabilityFields(values any) (*pycompat.Dict, error) {
 			entry.Set("allowed", allowed)
 		}
 		if limit, found := value.Get("maxItems"); found {
-			number, ok := limit.(pycompat.Int)
+			number, ok := limit.(toolrt.Int)
 			if !ok || number.Sign() < 1 {
 				return nil, valueError("who_am_i вернул неверный лимит параметра или слота.")
 			}
@@ -70,7 +70,7 @@ func capabilityFields(values any) (*pycompat.Dict, error) {
 // catalog — снимок tools/list + who_am_i одного сеанса.
 type catalog struct {
 	tools map[string]bool
-	body  *pycompat.Dict
+	body  *toolrt.Dict
 }
 
 // capabilityCatalog — один снимок аккаунта обслуживает
@@ -82,7 +82,7 @@ func (a *Adapter) capabilityCatalog(ctx context.Context, timeout time.Duration, 
 		if mcp.IsAuthRequired(err) {
 			return valueError(err.Error() + " Объявления моделей недоступны.")
 		}
-		if mcp.IsKlingError(err) || pycompat.Is(err, pycompat.OSError) {
+		if mcp.IsKlingError(err) || toolrt.Is(err, toolrt.OSError) {
 			return valueError("Discovery " + mcp.Title + " недоступен: сервер не ответил или ответил ошибкой.")
 		}
 		return err
@@ -92,11 +92,11 @@ func (a *Adapter) capabilityCatalog(ctx context.Context, timeout time.Duration, 
 		return catalog{}, wrap(err)
 	}
 	for _, tool := range tools {
-		if _, ok := tool.(*pycompat.Dict); !ok {
+		if _, ok := tool.(*toolrt.Dict); !ok {
 			return catalog{}, valueError("tools/list вернул неверное объявление команд.")
 		}
 	}
-	arguments := pycompat.NewDict()
+	arguments := toolrt.NewDict()
 	if len(commands) > 0 {
 		names := make([]any, len(commands))
 		for index, command := range commands {
@@ -108,13 +108,13 @@ func (a *Adapter) capabilityCatalog(ctx context.Context, timeout time.Duration, 
 	if err != nil {
 		return catalog{}, wrap(err)
 	}
-	values, ok := body.(*pycompat.Dict)
+	values, ok := body.(*toolrt.Dict)
 	if !ok {
 		return catalog{}, valueError("who_am_i вернул неверный ответ; сырой ответ скрыт.")
 	}
 	names := map[string]bool{}
 	for _, tool := range tools {
-		if name, ok := tool.(*pycompat.Dict).Value("name").(string); ok {
+		if name, ok := tool.(*toolrt.Dict).Value("name").(string); ok {
 			names[name] = true
 		}
 	}
@@ -124,7 +124,7 @@ func (a *Adapter) capabilityCatalog(ctx context.Context, timeout time.Duration, 
 // commandCapabilities — объявление одной
 // команды проверяется отдельно, не теряя остальные корректные модели снимка. model nil — все
 // модели, иначе только указанная (необъявленная — ValueError со списком).
-func commandCapabilities(command string, model any, snapshot catalog) (*pycompat.Dict, error) {
+func commandCapabilities(command string, model any, snapshot catalog) (*toolrt.Dict, error) {
 	if !snapshot.tools[command] {
 		return nil, valueError("Команда не объявлена в tool_list текущего аккаунта.")
 	}
@@ -132,7 +132,7 @@ func commandCapabilities(command string, model any, snapshot catalog) (*pycompat
 	if !found {
 		available = snapshot.body.Value("available_models")
 	}
-	declared, ok := available.(*pycompat.Dict)
+	declared, ok := available.(*toolrt.Dict)
 	if !ok {
 		return nil, valueError("who_am_i не вернул объявления моделей.")
 	}
@@ -140,7 +140,7 @@ func commandCapabilities(command string, model any, snapshot catalog) (*pycompat
 	if !found {
 		entries = []any{}
 	}
-	if group, ok := entries.(*pycompat.Dict); ok {
+	if group, ok := entries.(*toolrt.Dict); ok {
 		if entries, found = group.Get("models"); !found {
 			entries = []any{}
 		}
@@ -149,14 +149,14 @@ func commandCapabilities(command string, model any, snapshot catalog) (*pycompat
 	if !ok {
 		return nil, valueError("who_am_i вернул неверное объявление моделей команды.")
 	}
-	models := pycompat.NewDict()
+	models := toolrt.NewDict()
 	for _, item := range list {
-		value, ok := item.(*pycompat.Dict)
+		value, ok := item.(*toolrt.Dict)
 		name, isName := value.Value("model").(string)
 		if !ok || !isName || name == "" || models.Has(name) {
 			return nil, valueError("who_am_i вернул неверное объявление модели.")
 		}
-		limits := pycompat.NewDict()
+		limits := toolrt.NewDict()
 		for _, pair := range [][2]string{
 			{"combinedItemCap", "combined_item_cap"},
 			{"combinedItemCaps", "combined_item_caps"},
@@ -166,17 +166,17 @@ func commandCapabilities(command string, model any, snapshot catalog) (*pycompat
 				limits.Set(pair[1], field)
 			}
 		}
-		arguments, _ := pycompat.DictGet(value, "arguments", []any{})
+		arguments, _ := toolrt.DictGet(value, "arguments", []any{})
 		argumentFields, err := capabilityFields(arguments)
 		if err != nil {
 			return nil, err
 		}
-		inputs, _ := pycompat.DictGet(value, "inputs", []any{})
+		inputs, _ := toolrt.DictGet(value, "inputs", []any{})
 		slotFields, err := capabilityFields(inputs)
 		if err != nil {
 			return nil, err
 		}
-		entry := pycompat.NewDict()
+		entry := toolrt.NewDict()
 		entry.Set("arguments", argumentFields)
 		entry.Set("slots", slotFields)
 		entry.Set("limits", limits)
@@ -186,7 +186,7 @@ func commandCapabilities(command string, model any, snapshot catalog) (*pycompat
 		return nil, valueError("who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды.")
 	}
 	if model != nil {
-		has, err := pycompat.Contains(models, model)
+		has, err := toolrt.Contains(models, model)
 		if err != nil {
 			return nil, err
 		}
@@ -196,11 +196,11 @@ func commandCapabilities(command string, model any, snapshot catalog) (*pycompat
 			return nil, valueError("Модель не объявлена для этой команды: " + strings.Join(names, ", "))
 		}
 		name := model.(string)
-		only := pycompat.NewDict()
+		only := toolrt.NewDict()
 		only.Set(name, models.Value(name))
 		models = only
 	}
-	result := pycompat.NewDict()
+	result := toolrt.NewDict()
 	result.Set("command", command)
 	result.Set("models", models)
 	return result, nil
@@ -208,15 +208,15 @@ func commandCapabilities(command string, model any, snapshot catalog) (*pycompat
 
 // capabilityReport — отчёт вида медиа по снимку: команды с объявлениями и проблемы отдельных
 // команд (только ValueError проверки объявления; прочие ошибки прерывают отчёт).
-func capabilityReport(kind string, snapshot catalog) (*pycompat.Dict, error) {
+func capabilityReport(kind string, snapshot catalog) (*toolrt.Dict, error) {
 	reports, problems := []any{}, []any{}
 	for _, command := range KindCommands[kind] {
 		report, err := commandCapabilities(command, nil, snapshot)
 		if err != nil {
-			if !pycompat.Is(err, pycompat.ValueError) {
+			if !toolrt.Is(err, toolrt.ValueError) {
 				return nil, err
 			}
-			problem := pycompat.NewDict()
+			problem := toolrt.NewDict()
 			problem.Set("command", command)
 			problem.Set("message", err.Error())
 			problems = append(problems, problem)
@@ -224,7 +224,7 @@ func capabilityReport(kind string, snapshot catalog) (*pycompat.Dict, error) {
 		}
 		reports = append(reports, report)
 	}
-	result := pycompat.NewDict()
+	result := toolrt.NewDict()
 	result.Set("reports", reports)
 	result.Set("problems", problems)
 	return result, nil
@@ -233,11 +233,11 @@ func capabilityReport(kind string, snapshot catalog) (*pycompat.Dict, error) {
 // Capabilities — согласованный каталог команд вида медиа за два
 // вызова MCP (tools/list и who_am_i) независимо от числа команд: {"reports": [...],
 // "problems": [{command, message}]}. Не загружает опоры и не создаёт генераций. Неизвестный kind —
-// KeyError Python; общий сбой discovery — ValueError без сырого ответа.
-func (a *Adapter) Capabilities(ctx context.Context, kind string, timeout time.Duration) (*pycompat.Dict, error) {
+// KeyError; общий сбой discovery — ValueError без сырого ответа.
+func (a *Adapter) Capabilities(ctx context.Context, kind string, timeout time.Duration) (*toolrt.Dict, error) {
 	commands, ok := KindCommands[kind]
 	if !ok {
-		return nil, pycompat.NewKeyError(kind)
+		return nil, toolrt.NewKeyError(kind)
 	}
 	snapshot, err := a.capabilityCatalog(ctx, timeout, commands)
 	if err != nil {
@@ -248,40 +248,40 @@ func (a *Adapter) Capabilities(ctx context.Context, kind string, timeout time.Du
 
 // legacySlots — короткие флаги входов и шаблоны объявленных слотов,
 // в которые они раскрываются (те же, что inputFlags правил приложения).
-var legacySlots = map[string]*pyre.Regexp{
-	"image":     pyre.MustCompile(`^(?:first_image|image(?:_\d+)?|keyframe_\d+)$`, 0),
-	"tailImage": pyre.MustCompile(`^tail_image(?:_\d+)?$`, 0),
-	"audio":     pyre.MustCompile(`^audio(?:_\d+)?$`, 0),
-	"video":     pyre.MustCompile(`^video(?:_\d+)?$`, 0),
+var legacySlots = map[string]*toolregex.Regexp{
+	"image":     toolregex.MustCompile(`^(?:first_image|image(?:_\d+)?|keyframe_\d+)$`, 0),
+	"tailImage": toolregex.MustCompile(`^tail_image(?:_\d+)?$`, 0),
+	"audio":     toolregex.MustCompile(`^audio(?:_\d+)?$`, 0),
+	"video":     toolregex.MustCompile(`^video(?:_\d+)?$`, 0),
 }
 
 // NormalizeInputs раскрывает короткие флаги входов (image, tailImage, audio, video) в
 // объявленные слоты модели до фиксации запроса повтора.
 // Изменяет spec на месте и возвращает его же; если все входы уже именованные, к сервису не
 // обращается. Нет подходящего слота — ValueError с объяснением.
-func (a *Adapter) NormalizeInputs(ctx context.Context, spec *pycompat.Dict, timeout time.Duration) (*pycompat.Dict, error) {
+func (a *Adapter) NormalizeInputs(ctx context.Context, spec *toolrt.Dict, timeout time.Duration) (*toolrt.Dict, error) {
 	return a.normalizeInputs(spec, func(command string) (catalog, error) {
 		return a.capabilityCatalog(ctx, timeout, []string{command})
 	})
 }
 
 // normalizeInputs — тело NormalizeInputs с источником снимка (тесты эталонов подменяют его).
-func (a *Adapter) normalizeInputs(spec *pycompat.Dict, load func(command string) (catalog, error)) (*pycompat.Dict, error) {
-	inputs, err := pycompat.GetItem(spec, "inputs")
+func (a *Adapter) normalizeInputs(spec *toolrt.Dict, load func(command string) (catalog, error)) (*toolrt.Dict, error) {
+	inputs, err := toolrt.GetItem(spec, "inputs")
 	if err != nil {
 		return nil, err
 	}
-	items, err := pycompat.Iter(inputs)
+	items, err := toolrt.Iter(inputs)
 	if err != nil {
 		return nil, err
 	}
 	named := true
 	for _, item := range items {
-		flag, err := pycompat.DictGet(item, "flag", nil)
+		flag, err := toolrt.DictGet(item, "flag", nil)
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(flag, "input") {
+		if !toolrt.Equal(flag, "input") {
 			named = false
 			break
 		}
@@ -289,17 +289,17 @@ func (a *Adapter) normalizeInputs(spec *pycompat.Dict, load func(command string)
 	if named {
 		return spec, nil
 	}
-	command, err := pycompat.GetItem(spec, "command")
+	command, err := toolrt.GetItem(spec, "command")
 	if err != nil {
 		return nil, err
 	}
-	model, err := pycompat.GetItem(spec, "model")
+	model, err := toolrt.GetItem(spec, "model")
 	if err != nil {
 		return nil, err
 	}
 	commandName, ok := command.(string)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.TypeError, "unhashable or non-string command %s", pycompat.Repr(command))
+		return nil, toolrt.Raise(toolrt.TypeError, "unhashable or non-string command %s", toolrt.Repr(command))
 	}
 	snapshot, err := load(commandName)
 	if err != nil {
@@ -309,15 +309,15 @@ func (a *Adapter) normalizeInputs(spec *pycompat.Dict, load func(command string)
 	if err != nil {
 		return nil, err
 	}
-	declared := report.Value("models").(*pycompat.Dict).Value(model.(string)).(*pycompat.Dict).Value("slots").(*pycompat.Dict).Keys()
+	declared := report.Value("models").(*toolrt.Dict).Value(model.(string)).(*toolrt.Dict).Value("slots").(*toolrt.Dict).Keys()
 	used := map[string]bool{}
 	for _, item := range items {
 		values, err := asDict(item)
 		if err != nil {
 			return nil, err
 		}
-		if pycompat.Equal(values.Value("flag"), "input") && pycompat.Truthy(values.Value("slot")) {
-			slot, err := pycompat.HashKey(values.Value("slot"))
+		if toolrt.Equal(values.Value("flag"), "input") && toolrt.Truthy(values.Value("slot")) {
+			slot, err := toolrt.HashKey(values.Value("slot"))
 			if err != nil {
 				return nil, err
 			}
@@ -330,10 +330,10 @@ func (a *Adapter) normalizeInputs(spec *pycompat.Dict, load func(command string)
 			return nil, err
 		}
 		flag := values.Value("flag")
-		if pycompat.Equal(flag, "input") {
+		if toolrt.Equal(flag, "input") {
 			continue
 		}
-		if _, err := pycompat.HashKey(flag); err != nil {
+		if _, err := toolrt.HashKey(flag); err != nil {
 			return nil, err
 		}
 		name, _ := flag.(string)
@@ -349,7 +349,7 @@ func (a *Adapter) normalizeInputs(spec *pycompat.Dict, load func(command string)
 			}
 		}
 		if slot == "" {
-			return nil, valueError("Для входа " + pycompat.Str(flag) + " модель " + pycompat.Str(model) +
+			return nil, valueError("Для входа " + toolrt.Str(flag) + " модель " + toolrt.Str(model) +
 				" не объявляет подходящего слота; повторите запрос вручную в новой подготовке.")
 		}
 		used["s"+slot] = true
@@ -359,11 +359,11 @@ func (a *Adapter) normalizeInputs(spec *pycompat.Dict, load func(command string)
 	return spec, nil
 }
 
-// asDict — значение как словарь для item.get(...): не словарь — AttributeError Python.
-func asDict(value any) (*pycompat.Dict, error) {
-	values, ok := value.(*pycompat.Dict)
+// asDict — значение как словарь для чтения полей: не словарь — AttributeError.
+func asDict(value any) (*toolrt.Dict, error) {
+	values, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'get'", pycompat.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(value))
 	}
 	return values, nil
 }

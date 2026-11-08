@@ -13,8 +13,8 @@ import (
 	"sync"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
 )
 
 // Эталоны testdata/golden/scenario-workflow описывают шаги сценарного прохода с поддельным
@@ -85,7 +85,7 @@ func (f *fakeAgents) update(change func(*AgentJob)) {
 
 const fixedNow = "2026-11-04T12:00:00.000Z"
 
-func itoa(value int) string { return jscompat.NumberToString(float64(value)) }
+func itoa(value int) string { return dynvalue.NumberToString(float64(value)) }
 
 // goldenStep — шаг case.json.
 type goldenStep struct {
@@ -138,16 +138,16 @@ func containsString(items []string, item string) bool {
 	return false
 }
 
-// tree — normalize для дерева jscompat (строки значений, ключи как есть).
+// tree — normalize для дерева dynvalue (строки значений, ключи как есть).
 func (n *normalizer) tree(value any) any {
 	switch typed := value.(type) {
 	case string:
 		return n.text(typed)
-	case *jscompat.Array:
+	case *dynvalue.Array:
 		for index, item := range typed.Items {
 			typed.Items[index] = n.tree(item)
 		}
-	case *jscompat.Object:
+	case *dynvalue.Object:
 		for _, key := range typed.Keys() {
 			typed.Set(key, n.tree(typed.Value(key)))
 		}
@@ -161,22 +161,23 @@ func (n *normalizer) json(t *testing.T, value any) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tree, err := jscompat.Parse(data)
+	tree, err := dynvalue.Parse(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return []byte(jscompat.Stringify(n.tree(tree)))
+	return []byte(dynvalue.Stringify(n.tree(tree)))
 }
 
-// v8Message — текст SyntaxError JSON.parse движка V8 в эталоне.
-var v8Message = regexp.MustCompile(`^(Unexpected .*JSON.*|Expected .* in JSON at position \d+.*|.* is not valid JSON)$`)
+// parseMessage — текст ошибки разбора JSON, который эталон хранит на месте отказа
+// («Unexpected … JSON», «Expected … in JSON at position N», «… is not valid JSON»).
+var parseMessage = regexp.MustCompile(`^(Unexpected .*JSON.*|Expected .* in JSON at position \d+.*|.* is not valid JSON)$`)
 
-// v8Deviation — ответ агента, который не разбирается как JSON, отклоняется текстом
+// replaceParseMessages — ответ агента, который не разбирается как JSON, отклоняется текстом
 // proposalInvalidDocument (см. proposalDocuments), а эталон хранит на этом месте сообщение
-// SyntaxError V8. Функция заменяет такие сообщения эталона и сохраняет его форму (отступы state.json).
-func v8Deviation(t *testing.T, data []byte) []byte {
+// разбора (parseMessage). Функция заменяет такие сообщения эталона и сохраняет его форму (отступы state.json).
+func replaceParseMessages(t *testing.T, data []byte) []byte {
 	t.Helper()
-	value, err := jscompat.Parse(data)
+	value, err := dynvalue.Parse(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,15 +186,15 @@ func v8Deviation(t *testing.T, data []byte) []byte {
 	walk = func(item any) any {
 		switch typed := item.(type) {
 		case string:
-			if v8Message.MatchString(typed) {
+			if parseMessage.MatchString(typed) {
 				changed = true
 				return textProposalInvalidDocument
 			}
-		case *jscompat.Array:
+		case *dynvalue.Array:
 			for index, entry := range typed.Items {
 				typed.Items[index] = walk(entry)
 			}
-		case *jscompat.Object:
+		case *dynvalue.Object:
 			for _, key := range typed.Keys() {
 				typed.Set(key, walk(typed.Value(key)))
 			}
@@ -204,7 +205,7 @@ func v8Deviation(t *testing.T, data []byte) []byte {
 	if !changed {
 		return data
 	}
-	return []byte(jscompat.StringifyIndent(value, "  ") + "\n")
+	return []byte(dynvalue.StringifyIndent(value, "  ") + "\n")
 }
 
 // treeFiles — файлы проекта без .git: путь → байты.
@@ -237,18 +238,18 @@ func treeFiles(t *testing.T, root string) map[string][]byte {
 // maskCards — манифест карточек без SHA PNG: байты PNG зависят от растеризатора и с эталоном не сравниваются.
 func maskCards(t *testing.T, data []byte) []byte {
 	t.Helper()
-	value, err := jscompat.Parse(data)
+	value, err := dynvalue.Parse(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cards, ok := jscompat.AsObject(jscompat.Get(value, "cards")); ok {
+	if cards, ok := dynvalue.AsObject(dynvalue.Get(value, "cards")); ok {
 		for _, key := range cards.Keys() {
-			if card, ok := jscompat.AsObject(cards.Value(key)); ok && card.Has("sha256") {
+			if card, ok := dynvalue.AsObject(cards.Value(key)); ok && card.Has("sha256") {
 				card.Set("sha256", "<png>")
 			}
 		}
 	}
-	return []byte(jscompat.StringifyIndent(value, "  "))
+	return []byte(dynvalue.StringifyIndent(value, "  "))
 }
 
 func TestGoldenWorkflow(t *testing.T) {
@@ -276,7 +277,7 @@ func TestGoldenWorkflow(t *testing.T) {
 			before := treeFiles(t, project)
 			current := func() string {
 				_, proposal := pendingProposal(readState(localDir, project))
-				return jscompat.ToString(proposal.Value("id"))
+				return dynvalue.ToString(proposal.Value("id"))
 			}
 			for index, step := range spec.Steps {
 				label := item.Name + "#" + itoa(index) + " " + step.Op
@@ -372,7 +373,7 @@ func TestGoldenWorkflow(t *testing.T) {
 					t.Fatalf("%s: %v", label, err)
 				}
 				names.remember(view)
-				if diffs, err := golden.Diff(v8Deviation(t, step.View), names.json(t, view)); err != nil || len(diffs) > 0 {
+				if diffs, err := golden.Diff(replaceParseMessages(t, step.View), names.json(t, view)); err != nil || len(diffs) > 0 {
 					t.Fatalf("%s: вид отличается от эталона: %v %s", label, err, strings.Join(diffs, "\n"))
 				}
 			}
@@ -397,13 +398,13 @@ func editCast(t *testing.T, project string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	value, err := jscompat.Parse(data)
+	value, err := dynvalue.Parse(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	entity, _ := jscompat.AsObject(arrayItems(jscompat.Get(value, "entities"))[1])
-	entity.Set("role", jscompat.ToString(entity.Value("role"))+" Ведёт лодку.")
-	if err := os.WriteFile(path, []byte(jscompat.StringifyIndent(value, "  ")+"\n"), 0o644); err != nil {
+	entity, _ := dynvalue.AsObject(arrayItems(dynvalue.Get(value, "entities"))[1])
+	entity.Set("role", dynvalue.ToString(entity.Value("role"))+" Ведёт лодку.")
+	if err := os.WriteFile(path, []byte(dynvalue.StringifyIndent(value, "  ")+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -479,16 +480,16 @@ func compareFiles(t *testing.T, item golden.Case, project string, before map[str
 // maskUpdated — опись с updated_at, заменённым маркером, после проверки формата времени.
 func maskUpdated(t *testing.T, data []byte) []byte {
 	t.Helper()
-	value, err := jscompat.Parse(data)
+	value, err := dynvalue.Parse(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	record, _ := jscompat.AsObject(value)
+	record, _ := dynvalue.AsObject(value)
 	if text, ok := record.Value("updated_at").(string); !ok || !isoTime.MatchString(text) {
 		t.Fatalf("updated_at описи не время ISO: %v", record.Value("updated_at"))
 	}
 	record.Set("updated_at", "<time>")
-	return []byte(jscompat.StringifyIndent(value, "  ") + "\n")
+	return []byte(dynvalue.StringifyIndent(value, "  ") + "\n")
 }
 
 var isoTime = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$`)
@@ -496,18 +497,18 @@ var isoTime = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$`
 // checkCardHashes — SHA карточек в манифесте совпадают с записанными PNG.
 func checkCardHashes(t *testing.T, project string, manifest []byte) {
 	t.Helper()
-	value, err := jscompat.Parse(manifest)
+	value, err := dynvalue.Parse(manifest)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cards, _ := jscompat.AsObject(jscompat.Get(value, "cards"))
+	cards, _ := dynvalue.AsObject(dynvalue.Get(value, "cards"))
 	for _, key := range cards.Keys() {
 		card := cards.Value(key)
-		data, err := os.ReadFile(filepath.Join(project, filepath.FromSlash(jscompat.ToString(jscompat.Get(card, "path")))))
+		data, err := os.ReadFile(filepath.Join(project, filepath.FromSlash(dynvalue.ToString(dynvalue.Get(card, "path")))))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if sum := sha256.Sum256(data); hex.EncodeToString(sum[:]) != jscompat.Get(card, "sha256") {
+		if sum := sha256.Sum256(data); hex.EncodeToString(sum[:]) != dynvalue.Get(card, "sha256") {
 			t.Fatalf("карточка %s: SHA манифеста не совпадает с PNG", key)
 		}
 	}
@@ -516,7 +517,7 @@ func checkCardHashes(t *testing.T, project string, manifest []byte) {
 // compareState — локальная запись сценария побайтно после замены путей и ID.
 func compareState(t *testing.T, item golden.Case, localDir, project string, names *normalizer) {
 	t.Helper()
-	want := v8Deviation(t, item.Read(t, "state.json"))
+	want := replaceParseMessages(t, item.Read(t, "state.json"))
 	data, err := os.ReadFile(statePath(localDir, project))
 	if os.IsNotExist(err) {
 		if strings.TrimSpace(string(want)) != "null" {
@@ -527,11 +528,11 @@ func compareState(t *testing.T, item golden.Case, localDir, project string, name
 	if err != nil {
 		t.Fatal(err)
 	}
-	value, err := jscompat.Parse(data)
+	value, err := dynvalue.Parse(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := jscompat.StringifyIndent(names.tree(value), "  ") + "\n"
+	got := dynvalue.StringifyIndent(names.tree(value), "  ") + "\n"
 	if got != string(want) {
 		golden.AssertJSON(t, want, []byte(got))
 		t.Fatalf("локальная запись отличается порядком ключей или форматом:\n%s", got)

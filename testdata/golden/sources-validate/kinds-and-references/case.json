@@ -1,5 +1,5 @@
 {
-  "description": "Ошибки типов и референсов в порядке оригинала.",
+  "description": "Ошибки типов и референсов в порядке проверки.",
   "call": "validateSources",
   "project": "project",
   "covers": [

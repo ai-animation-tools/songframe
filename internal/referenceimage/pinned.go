@@ -4,10 +4,10 @@ import (
 	"path/filepath"
 	"sort"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/production"
-	"songframe-go/internal/sources"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/production"
+	"songframe/internal/sources"
 )
 
 // PinnedReferences — какие референсы описи закреплены производством: код референса → планы
@@ -27,21 +27,21 @@ func PinnedReferences(project string) map[string][]string {
 		}
 		return result
 	}
-	scenes, _ := jscompat.ReadJSONFile(filepath.Join(project, "plan", "scenes.json"))
-	list, _ := jscompat.AsArray(jscompat.Get(scenes, "scenes"))
+	scenes, _ := dynvalue.ReadJSONFile(filepath.Join(project, "plan", "scenes.json"))
+	list, _ := dynvalue.AsArray(dynvalue.Get(scenes, "scenes"))
 	for _, shot := range list {
-		id := jscompat.ToString(jscompat.Get(shot, "id"))
+		id := dynvalue.ToString(dynvalue.Get(shot, "id"))
 		if !states[id].Produced {
 			continue
 		}
 		used := map[string]bool{}
-		references, _ := jscompat.AsArray(jscompat.Get(shot, "references"))
+		references, _ := dynvalue.AsArray(dynvalue.Get(shot, "references"))
 		for _, ref := range references {
 			if text, ok := ref.(string); ok {
 				used[text] = true
 			}
 		}
-		if primary, ok := jscompat.GetPath(shot, "card", "primary_reference").(string); ok {
+		if primary, ok := dynvalue.GetPath(shot, "card", "primary_reference").(string); ok {
 			used[primary] = true
 		}
 		for ref := range used {
@@ -62,10 +62,10 @@ func EntityKinds(project string) map[string]string {
 	if read.Damaged || read.Missing {
 		return result
 	}
-	entities, _ := jscompat.AsArray(jscompat.Get(read.Value, "entities"))
+	entities, _ := dynvalue.AsArray(dynvalue.Get(read.Value, "entities"))
 	for _, entity := range entities {
-		id, idOK := jscompat.Get(entity, "id").(string)
-		kind, kindOK := jscompat.Get(entity, "kind").(string)
+		id, idOK := dynvalue.Get(entity, "id").(string)
+		kind, kindOK := dynvalue.Get(entity, "kind").(string)
 		if idOK && kindOK {
 			result[id] = kind
 		}
@@ -76,9 +76,9 @@ func EntityKinds(project string) map[string]string {
 // manifestReferenceIDs — коды референсов описи (строковые), в порядке описи.
 func manifestReferenceIDs(manifest any) []string {
 	ids := []string{}
-	references, _ := jscompat.AsArray(jscompat.Get(manifest, "references"))
+	references, _ := dynvalue.AsArray(dynvalue.Get(manifest, "references"))
 	for _, ref := range references {
-		if id, ok := jscompat.Get(ref, "id").(string); ok {
+		if id, ok := dynvalue.Get(ref, "id").(string); ok {
 			ids = append(ids, id)
 		}
 	}
@@ -100,9 +100,9 @@ func renameImages(document any, moves map[string]string) {
 	if len(moves) == 0 {
 		return
 	}
-	entities, _ := jscompat.AsArray(jscompat.Get(document, "entities"))
+	entities, _ := dynvalue.AsArray(dynvalue.Get(document, "entities"))
 	for _, entity := range entities {
-		images, _ := jscompat.Get(entity, "images").(*jscompat.Array)
+		images, _ := dynvalue.Get(entity, "images").(*dynvalue.Array)
 		if images == nil {
 			continue
 		}

@@ -1,4 +1,4 @@
-/** Проверяет счётчики и смешанные подписи справки, сохраняя статьи и отсылки у прежнего владельца. */
+/** Проверяет счётчики и смешанные подписи справки; статьи и отсылки остаются в glossary.ts. */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
@@ -7,7 +7,7 @@ import { helpTexts } from '@shared/texts/help';
 import { GlossaryItem } from './components/GlossaryItem';
 import type { GlossaryEntry } from './glossary';
 
-it.each([0, 1, 2, 5, 11, 21, -2, 1.5])('сохраняет прежнюю фразу счётчиков для %s', (count) => {
+it.each([0, 1, 2, 5, 11, 21, -2, 1.5])('сохраняет фразу счётчиков для %s', (count) => {
   expect(helpTexts.found({ count, total: 74 })).toBe(`Найдено статей: ${count} из 74`);
   expect(helpTexts.found({ count: 0, total: count })).toBe(`Найдено статей: 0 из ${count}`);
   expect(helpTexts.total(count)).toBe(`Всего статей: ${count}`);

@@ -3,7 +3,7 @@
 // монтаж, промпт, входы и рецепт воспроизведения; проверка сверяет технический контракт, SHA-256
 // файлов и длину монтажа с окном плана в реестре. Replay (replay.go) воспроизводит принятый
 // монтаж в новый файл вне assets для verify_asset_replay. Проверка только читает файлы; ошибки —
-// исключения Python (pycompat) с фиксированными текстами: инструменты печатают их как есть, а
+// исключения toolrt с фиксированными текстами: инструменты печатают их как есть, а
 // эталоны check-assets и verify-asset-replay сверяют вывод.
 package assetpackage
 
@@ -18,11 +18,11 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolrt"
 )
 
-// sha256Hex — re.fullmatch(r"[0-9a-f]{64}").
+// sha256Hex — SHA-256 целиком: ровно 64 строчные шестнадцатеричные цифры.
 var sha256Hex = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 // imageSuffixes — допустимые расширения общего референса из source.
@@ -51,10 +51,10 @@ const (
 	textStageInput    = "Не сохранён вход или фильтр этапа воспроизведения."
 )
 
-// item — package[key] с исключением Python.
-func item(container any, key string) (any, error) { return pycompat.Item(container, key) }
+// item — значение комплекта по ключу key; отсутствие ключа — исключение toolrt.Item.
+func item(container any, key string) (any, error) { return toolrt.Item(container, key) }
 
-// pathClass — имя класса пути для текста TypeError оператора `/`.
+// pathClass — имя типа пути ОС для текста TypeError склейки пути (зафиксировано эталоном).
 func pathClass() string {
 	if os.PathSeparator == '\\' {
 		return "WindowsPath"
@@ -62,57 +62,57 @@ func pathClass() string {
 	return "PosixPath"
 }
 
-// LocalFile — путь файла name внутри папки комплекта после resolve().
+// LocalFile — разрешённый абсолютный путь файла name внутри папки комплекта.
 func LocalFile(directory string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), pycompat.TypeName(name))
+		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(name))
 	}
-	path := pycompat.ResolvePath(pycompat.JoinPath(directory, text))
-	if !pycompat.IsRelativeTo(path, pycompat.ResolvePath(directory)) {
-		return "", pycompat.New(pycompat.ValueError, textOutsideAsset)
+	path := toolrt.ResolvePath(toolrt.JoinPath(directory, text))
+	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(directory)) {
+		return "", toolrt.New(toolrt.ValueError, textOutsideAsset)
 	}
 	return path, nil
 }
 
 // descriptorFile — файл описателя item: локальный файл комплекта либо общий референс
 // из source проекта (без абсолютного пути, «..» и выхода по ссылке; только изображения).
-func descriptorFile(directory string, descriptor *pycompat.Dict, root string) (string, error) {
-	scope, _ := pycompat.DictGet(descriptor, "root", "asset")
+func descriptorFile(directory string, descriptor *toolrt.Dict, root string) (string, error) {
+	scope, _ := toolrt.DictGet(descriptor, "root", "asset")
 	path, err := item(descriptor, "path")
 	if err != nil {
 		return "", err
 	}
-	if pycompat.Equal(scope, "asset") {
+	if toolrt.Equal(scope, "asset") {
 		return LocalFile(directory, path)
 	}
-	if !pycompat.Equal(scope, "source") {
-		return "", pycompat.New(pycompat.ValueError, textUnknownRoot)
+	if !toolrt.Equal(scope, "source") {
+		return "", toolrt.New(toolrt.ValueError, textUnknownRoot)
 	}
-	base := pycompat.ResolvePath(pycompat.JoinPath(root, "source"))
+	base := toolrt.ResolvePath(toolrt.JoinPath(root, "source"))
 	name, ok := path.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "argument should be a str or an os.PathLike object where __fspath__ returns a str, not '%s'", pycompat.TypeName(path))
+		return "", toolrt.Raise(toolrt.TypeError, "argument should be a str or an os.PathLike object where __fspath__ returns a str, not '%s'", toolrt.TypeName(path))
 	}
-	source := pycompat.ResolvePath(pycompat.JoinPath(base, name))
+	source := toolrt.ResolvePath(toolrt.JoinPath(base, name))
 	parent := false
 	for _, part := range strings.FieldsFunc(name, func(r rune) bool { return r == '/' || r == os.PathSeparator }) {
 		parent = parent || part == ".."
 	}
-	if filepath.IsAbs(name) || strings.HasPrefix(name, "/") || parent || !pycompat.IsRelativeTo(source, base) {
-		return "", pycompat.New(pycompat.ValueError, textOutsideSource)
+	if filepath.IsAbs(name) || strings.HasPrefix(name, "/") || parent || !toolrt.IsRelativeTo(source, base) {
+		return "", toolrt.New(toolrt.ValueError, textOutsideSource)
 	}
-	if !imageSuffixes[strings.ToLower(pycompat.PathSuffix(source))] {
-		return "", pycompat.New(pycompat.ValueError, textSourceImage)
+	if !imageSuffixes[strings.ToLower(toolrt.PathSuffix(source))] {
+		return "", toolrt.New(toolrt.ValueError, textSourceImage)
 	}
 	return source, nil
 }
 
 // Descriptors — все словари с path и sha256 внутри value в порядке обхода (сам словарь, затем
 // его значения), вложенные — тоже.
-func Descriptors(value any, visit func(*pycompat.Dict) error) error {
+func Descriptors(value any, visit func(*toolrt.Dict) error) error {
 	switch node := value.(type) {
-	case *pycompat.Dict:
+	case *toolrt.Dict:
 		if node.Has("path") && node.Has("sha256") {
 			if err := visit(node); err != nil {
 				return err
@@ -137,46 +137,46 @@ func Descriptors(value any, visit func(*pycompat.Dict) error) error {
 func FileSHA256(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return "", pycompat.OSErrorFrom(err, path)
+		return "", toolrt.OSErrorFrom(err, path)
 	}
 	defer file.Close()
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		return "", pycompat.OSErrorFrom(err, path)
+		return "", toolrt.OSErrorFrom(err, path)
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// lessEqual — a <= b по правилам Python (TypeError для нечисел).
-func lessEqual(a, b any) (bool, error) { return pycompat.LessEqual(a, b) }
+// lessEqual — сравнение a <= b значений toolrt.LessEqual (TypeError для нечисел).
+func lessEqual(a, b any) (bool, error) { return toolrt.LessEqual(a, b) }
 
 // checkRepeat — проверка необязательного accepted_edit.repeat.
-func checkRepeat(edit *pycompat.Dict, repeat any) error {
-	block, ok := repeat.(*pycompat.Dict)
+func checkRepeat(edit *toolrt.Dict, repeat any) error {
+	block, ok := repeat.(*toolrt.Dict)
 	keys := []string{"full_cycles", "tail_frames", "cycle_frames"}
 	if ok && block.Len() == 3 {
 		for _, key := range keys {
-			ok = ok && block.Has(key) && pycompat.IsExactInt(block.Value(key))
+			ok = ok && block.Has(key) && toolrt.IsExactInt(block.Value(key))
 		}
 	} else {
 		ok = false
 	}
 	if !ok {
-		return pycompat.New(pycompat.ValueError, textRepeatShape)
+		return toolrt.New(toolrt.ValueError, textRepeatShape)
 	}
-	full := block.Value("full_cycles").(pycompat.Int).Big()
-	tail := block.Value("tail_frames").(pycompat.Int).Big()
-	cycle := block.Value("cycle_frames").(pycompat.Int).Big()
+	full := block.Value("full_cycles").(toolrt.Int).Big()
+	tail := block.Value("tail_frames").(toolrt.Int).Big()
+	cycle := block.Value("cycle_frames").(toolrt.Int).Big()
 	if full.Sign() < 0 || cycle.Sign() <= 0 || tail.Sign() < 0 || tail.Cmp(cycle) >= 0 {
-		return pycompat.New(pycompat.ValueError, textRepeatLength)
+		return toolrt.New(toolrt.ValueError, textRepeatLength)
 	}
 	frames, err := item(edit, "frames")
 	if err != nil {
 		return err
 	}
-	total := pycompat.IntFromBig(new(big.Int).Add(new(big.Int).Mul(full, cycle), tail))
-	if !pycompat.Equal(total, frames) {
-		return pycompat.New(pycompat.ValueError, textRepeatLength)
+	total := toolrt.IntFromBig(new(big.Int).Add(new(big.Int).Mul(full, cycle), tail))
+	if !toolrt.Equal(total, frames) {
+		return toolrt.New(toolrt.ValueError, textRepeatLength)
 	}
 	return nil
 }
@@ -184,12 +184,12 @@ func checkRepeat(edit *pycompat.Dict, repeat any) error {
 // ValidatePackage — проверенный комплект path или исключение.
 // shotID пустой — без сверки кода плана; root — корень проекта, от которого разрешаются общие
 // референсы source.
-func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
-	text, err := pycompat.ReadText(path)
+func ValidatePackage(path, shotID, root string) (*toolrt.Dict, error) {
+	text, err := toolrt.ReadText(path)
 	if err != nil {
 		return nil, err
 	}
-	value, err := pycompat.LoadsJSON(text)
+	value, err := toolrt.LoadsJSON(text)
 	if err != nil {
 		return nil, err
 	}
@@ -199,16 +199,16 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Equal(schema, pycompat.NewInt(1)) {
-		return nil, pycompat.New(pycompat.ValueError, textSchema)
+	if !toolrt.Equal(schema, toolrt.NewInt(1)) {
+		return nil, toolrt.New(toolrt.ValueError, textSchema)
 	}
 	if shotID != "" {
 		shot, err := item(value, "shot")
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(shot, shotID) {
-			return nil, pycompat.New(pycompat.ValueError, textOtherShot)
+		if !toolrt.Equal(shot, shotID) {
+			return nil, toolrt.New(toolrt.ValueError, textOtherShot)
 		}
 	}
 	generationValue, err := item(value, "generation")
@@ -219,27 +219,27 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	document := value.(*pycompat.Dict)
-	if kind := document.Value("kind"); pycompat.Equal(kind, "derived_video") {
-		sourceScene, err := pycompat.DictGet(generationValue, "source_scene_sha256", nil)
+	document := value.(*toolrt.Dict)
+	if kind := document.Value("kind"); toolrt.Equal(kind, "derived_video") {
+		sourceScene, err := toolrt.DictGet(generationValue, "source_scene_sha256", nil)
 		if err != nil {
 			return nil, err
 		}
-		sourceVideo, _ := pycompat.DictGet(generationValue, "source_accepted_video_sha256", nil)
-		generation := generationValue.(*pycompat.Dict)
+		sourceVideo, _ := toolrt.DictGet(generationValue, "source_accepted_video_sha256", nil)
+		generation := generationValue.(*toolrt.Dict)
 		text, isString := sourceScene.(string)
 		if !generation.Has("source_scene_sha256") || (sourceScene != nil && (!isString || !sha256Hex.MatchString(text))) {
-			return nil, pycompat.New(pycompat.ValueError, textDerivedScene)
+			return nil, toolrt.New(toolrt.ValueError, textDerivedScene)
 		}
 		if video, isString := sourceVideo.(string); !isString || !sha256Hex.MatchString(video) {
-			return nil, pycompat.New(pycompat.ValueError, textDerivedVideo)
+			return nil, toolrt.New(toolrt.ValueError, textDerivedVideo)
 		}
 	}
-	repeat, err := pycompat.DictGet(editValue, "repeat", nil)
+	repeat, err := toolrt.DictGet(editValue, "repeat", nil)
 	if err != nil {
 		return nil, err
 	}
-	edit := editValue.(*pycompat.Dict)
+	edit := editValue.(*toolrt.Dict)
 	if repeat != nil {
 		if err := checkRepeat(edit, repeat); err != nil {
 			return nil, err
@@ -261,58 +261,58 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	if pycompat.Equal(originalPath, videoPath) {
-		return nil, pycompat.New(pycompat.ValueError, textSameFiles)
+	if toolrt.Equal(originalPath, videoPath) {
+		return nil, toolrt.New(toolrt.ValueError, textSameFiles)
 	}
 	inputs, err := item(generationValue, "inputs")
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Truthy(inputs) {
-		return nil, pycompat.New(pycompat.ValueError, textNoInputs)
+	if !toolrt.Truthy(inputs) {
+		return nil, toolrt.New(toolrt.ValueError, textNoInputs)
 	}
 	prompt, err := item(generationValue, "prompt")
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Truthy(prompt) {
-		return nil, pycompat.New(pycompat.ValueError, textNoInputs)
+	if !toolrt.Truthy(prompt) {
+		return nil, toolrt.New(toolrt.ValueError, textNoInputs)
 	}
 	// Снимок запроса обязателен: провайдер, модель, параметры и ID либо явная причина его отсутствия.
-	generation := generationValue.(*pycompat.Dict)
-	request, isDict := generation.Value("request").(*pycompat.Dict)
+	generation := generationValue.(*toolrt.Dict)
+	request, isDict := generation.Value("request").(*toolrt.Dict)
 	if !isDict {
-		return nil, pycompat.New(pycompat.ValueError, textNoRequest)
+		return nil, toolrt.New(toolrt.ValueError, textNoRequest)
 	}
-	if !pycompat.Truthy(request.Value("path")) {
-		return nil, pycompat.New(pycompat.ValueError, textNoRequest)
+	if !toolrt.Truthy(request.Value("path")) {
+		return nil, toolrt.New(toolrt.ValueError, textNoRequest)
 	}
 	lipsync, err := item(generation, "lipsync")
 	if err != nil {
 		return nil, err
 	}
-	if pycompat.Truthy(lipsync) && !pycompat.Truthy(generation.Value("audio")) {
-		return nil, pycompat.New(pycompat.ValueError, textNoAudio)
+	if toolrt.Truthy(lipsync) && !toolrt.Truthy(generation.Value("audio")) {
+		return nil, toolrt.New(toolrt.ValueError, textNoAudio)
 	}
 	fps, err := item(edit, "fps")
 	if err != nil {
 		return nil, err
 	}
-	if bad, err := lessEqual(fps, pycompat.NewInt(0)); err != nil || bad {
+	if bad, err := lessEqual(fps, toolrt.NewInt(0)); err != nil || bad {
 		if err != nil {
 			return nil, err
 		}
-		return nil, pycompat.New(pycompat.ValueError, textNoReplay)
+		return nil, toolrt.New(toolrt.ValueError, textNoReplay)
 	}
 	frames, err := item(edit, "frames")
 	if err != nil {
 		return nil, err
 	}
-	if bad, err := lessEqual(frames, pycompat.NewInt(0)); err != nil || bad {
+	if bad, err := lessEqual(frames, toolrt.NewInt(0)); err != nil || bad {
 		if err != nil {
 			return nil, err
 		}
-		return nil, pycompat.New(pycompat.ValueError, textNoReplay)
+		return nil, toolrt.New(toolrt.ValueError, textNoReplay)
 	}
 	rebuild, err := item(edit, "rebuild")
 	if err != nil {
@@ -322,25 +322,25 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Truthy(stagesValue) {
-		return nil, pycompat.New(pycompat.ValueError, textNoReplay)
+	if !toolrt.Truthy(stagesValue) {
+		return nil, toolrt.New(toolrt.ValueError, textNoReplay)
 	}
 	duration, err := item(edit, "duration_seconds")
 	if err != nil {
 		return nil, err
 	}
-	quotient, err := pycompat.TrueDiv(frames, fps)
+	quotient, err := toolrt.TrueDiv(frames, fps)
 	if err != nil {
 		return nil, err
 	}
-	difference, err := pycompat.Sub(duration, quotient)
+	difference, err := toolrt.Sub(duration, quotient)
 	if err != nil {
 		return nil, err
 	}
 	if math.Abs(difference.(float64)) > 1e-8 {
-		return nil, pycompat.New(pycompat.ValueError, textDuration)
+		return nil, toolrt.New(toolrt.ValueError, textDuration)
 	}
-	last, err := pycompat.GetItem(stagesValue, pycompat.NewInt(-1))
+	last, err := toolrt.GetItem(stagesValue, toolrt.NewInt(-1))
 	if err != nil {
 		return nil, err
 	}
@@ -348,19 +348,19 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Equal(lastFrames, frames) {
-		return nil, pycompat.New(pycompat.ValueError, textStageLength)
+	if !toolrt.Equal(lastFrames, frames) {
+		return nil, toolrt.New(toolrt.ValueError, textStageLength)
 	}
 	// Общими могут быть входные изображения и референсы подготовки. Оригинал, монтаж, промпт и
 	// WAV принадлежат конкретной сцене и остаются локальными. Сравнение — по идентичности объекта.
-	shared := map[*pycompat.Dict]bool{}
+	shared := map[*toolrt.Dict]bool{}
 	addShared := func(value any) error {
-		elements, err := pycompat.Iter(value)
+		elements, err := toolrt.Iter(value)
 		if err != nil {
-			return pycompat.Raise(pycompat.TypeError, "Value after * must be an iterable, not %s", pycompat.TypeName(value))
+			return toolrt.Raise(toolrt.TypeError, "Value after * must be an iterable, not %s", toolrt.TypeName(value))
 		}
 		for _, element := range elements {
-			if descriptor, ok := element.(*pycompat.Dict); ok {
+			if descriptor, ok := element.(*toolrt.Dict); ok {
 				shared[descriptor] = true
 			}
 		}
@@ -369,12 +369,12 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	if err := addShared(inputs); err != nil {
 		return nil, err
 	}
-	auxiliary, _ := pycompat.DictGet(generation, "auxiliary_references", []any{})
+	auxiliary, _ := toolrt.DictGet(generation, "auxiliary_references", []any{})
 	if err := addShared(auxiliary); err != nil {
 		return nil, err
 	}
-	preparation, _ := pycompat.DictGet(generation, "preparation", pycompat.NewDict())
-	files, err := pycompat.DictGet(preparation, "files", []any{})
+	preparation, _ := toolrt.DictGet(generation, "preparation", toolrt.NewDict())
+	files, err := toolrt.DictGet(preparation, "files", []any{})
 	if err != nil {
 		return nil, err
 	}
@@ -384,37 +384,37 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	directory := filepath.Dir(path)
 	shotValue := document.Value("shot")
 	registered := map[[2]string]bool{}
-	err = Descriptors(document, func(descriptor *pycompat.Dict) error {
-		scope, _ := pycompat.DictGet(descriptor, "root", "asset")
-		if pycompat.Equal(scope, "source") && !shared[descriptor] {
-			return pycompat.New(pycompat.ValueError, textSharedOnly)
+	err = Descriptors(document, func(descriptor *toolrt.Dict) error {
+		scope, _ := toolrt.DictGet(descriptor, "root", "asset")
+		if toolrt.Equal(scope, "source") && !shared[descriptor] {
+			return toolrt.New(toolrt.ValueError, textSharedOnly)
 		}
 		source, err := descriptorFile(directory, descriptor, root)
 		if err != nil {
 			return err
 		}
-		changed := !pycompat.IsFile(source)
+		changed := !toolrt.IsFile(source)
 		if !changed {
 			digest, err := FileSHA256(source)
 			if err != nil {
 				return err
 			}
-			changed = !pycompat.Equal(digest, descriptor.Value("sha256"))
+			changed = !toolrt.Equal(digest, descriptor.Value("sha256"))
 		}
 		if changed {
 			shot, err := item(document, "shot")
 			if err != nil {
 				return err
 			}
-			return pycompat.New(pycompat.ValueError, pycompat.Str(shot)+": изменился файл комплекта "+pycompat.Str(descriptor.Value("path")))
+			return toolrt.New(toolrt.ValueError, toolrt.Str(shot)+": изменился файл комплекта "+toolrt.Str(descriptor.Value("path")))
 		}
-		registered[[2]string{pycompat.Str(scope), descriptor.Value("path").(string)}] = true
+		registered[[2]string{toolrt.Str(scope), descriptor.Value("path").(string)}] = true
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	stages, err := pycompat.Iter(stagesValue)
+	stages, err := toolrt.Iter(stagesValue)
 	if err != nil {
 		return nil, err
 	}
@@ -427,25 +427,25 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 		if err != nil {
 			return nil, err
 		}
-		bad := !registered[[2]string{"asset", input.(string)}] || !pycompat.IsFile(source)
+		bad := !registered[[2]string{"asset", input.(string)}] || !toolrt.IsFile(source)
 		if !bad {
 			filter, err := item(stage, "filter")
 			if err != nil {
 				return nil, err
 			}
-			bad = !pycompat.Truthy(filter)
+			bad = !toolrt.Truthy(filter)
 		}
 		if !bad {
 			stageFrames, err := item(stage, "frames")
 			if err != nil {
 				return nil, err
 			}
-			if bad, err = lessEqual(stageFrames, pycompat.NewInt(0)); err != nil {
+			if bad, err = lessEqual(stageFrames, toolrt.NewInt(0)); err != nil {
 				return nil, err
 			}
 		}
 		if bad {
-			return nil, pycompat.New(pycompat.ValueError, textStageInput)
+			return nil, toolrt.New(toolrt.ValueError, textStageInput)
 		}
 	}
 	// Даже внутренне согласованный комплект может иметь длину другого окна. Сверяем только JSON
@@ -458,32 +458,32 @@ func ValidatePackage(path, shotID, root string) (*pycompat.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	scenes, _ := pycompat.Iter(registry.Value("scenes"))
-	var scene *pycompat.Dict
+	scenes, _ := toolrt.Iter(registry.Value("scenes"))
+	var scene *toolrt.Dict
 	for _, candidate := range scenes {
-		if entry := candidate.(*pycompat.Dict); pycompat.Equal(entry.Value("id"), shot) {
+		if entry := candidate.(*toolrt.Dict); toolrt.Equal(entry.Value("id"), shot) {
 			scene = entry
 			break
 		}
 	}
 	if scene == nil {
-		return nil, pycompat.New(pycompat.ValueError, pycompat.Str(shotValue)+": ассет отсутствует в реестре сцен.")
+		return nil, toolrt.New(toolrt.ValueError, toolrt.Str(shotValue)+": ассет отсутствует в реестре сцен.")
 	}
-	if !pycompat.Equal(fps, registry.Value("fps")) {
-		return nil, pycompat.New(pycompat.ValueError, pycompat.Str(shot)+": FPS принятого клипа расходится с реестром сцен.")
+	if !toolrt.Equal(fps, registry.Value("fps")) {
+		return nil, toolrt.New(toolrt.ValueError, toolrt.Str(shot)+": FPS принятого клипа расходится с реестром сцен.")
 	}
-	window, err := pycompat.Sub(scene.Value("end_frame_exclusive"), scene.Value("start_frame"))
+	window, err := toolrt.Sub(scene.Value("end_frame_exclusive"), scene.Value("start_frame"))
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Equal(frames, window) {
-		return nil, pycompat.New(pycompat.ValueError, pycompat.Str(shot)+": длина принятого клипа расходится с монтажным окном.")
+	if !toolrt.Equal(frames, window) {
+		return nil, toolrt.New(toolrt.ValueError, toolrt.Str(shot)+": длина принятого клипа расходится с монтажным окном.")
 	}
 	return document, nil
 }
 
 // DescriptorFile — descriptorFile для других инструментов (regenerate_shot):
 // файл описателя комплекта в его папке либо общий референс из source проекта.
-func DescriptorFile(directory string, descriptor *pycompat.Dict, root string) (string, error) {
+func DescriptorFile(directory string, descriptor *toolrt.Dict, root string) (string, error) {
 	return descriptorFile(directory, descriptor, root)
 }

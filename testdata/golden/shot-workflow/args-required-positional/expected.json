@@ -1,7 +1,7 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow.py approve [-h] --dir DIR keyframe path\nshot_workflow.py approve: error: the following arguments are required: keyframe, path\n",
+  "stderr": "usage: shot_workflow approve [-h] --dir DIR keyframe path\nshot_workflow approve: error: the following arguments are required: keyframe, path\n",
   "traceback": false,
   "files": {},
   "dirs": {},

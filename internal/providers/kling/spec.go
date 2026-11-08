@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pyre"
+	"songframe/internal/toolregex"
+	"songframe/internal/toolrt"
 )
 
 // KindCommands — команды генерации по видам медиа (порядок — порядок каталога возможностей).
@@ -44,28 +44,28 @@ var explicitResolutionModels = map[string]bool{"kling-video-v4_0": true}
 const PromptWarningChars = 2500
 
 var (
-	identifierPattern = pyre.MustCompile(`[A-Za-z0-9_.-]+`, 0)
-	parameterPattern  = pyre.MustCompile(`[A-Za-z][A-Za-z0-9_-]*`, 0)
-	slotPattern       = pyre.MustCompile(`[A-Za-z][A-Za-z0-9_]*`, 0)
+	identifierPattern = toolregex.MustCompile(`[A-Za-z0-9_.-]+`, 0)
+	parameterPattern  = toolregex.MustCompile(`[A-Za-z][A-Za-z0-9_-]*`, 0)
+	slotPattern       = toolregex.MustCompile(`[A-Za-z][A-Za-z0-9_]*`, 0)
 )
 
-// fullMatch — re.fullmatch(pattern, value): не строка — TypeError Python 3.12.
-func fullMatch(pattern *pyre.Regexp, value any) (bool, error) {
+// fullMatch — совпадение pattern со всей строкой value; не строка — TypeError.
+func fullMatch(pattern *toolregex.Regexp, value any) (bool, error) {
 	text, ok := value.(string)
 	if !ok {
-		return false, pycompat.Raise(pycompat.TypeError, "expected string or bytes-like object, got '%s'", pycompat.TypeName(value))
+		return false, toolrt.Raise(toolrt.TypeError, "expected string or bytes-like object, got '%s'", toolrt.TypeName(value))
 	}
 	_, matched := pattern.FullMatch(text)
 	return matched, nil
 }
 
 // valueError — ValueError с данным текстом.
-func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
+func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
 
 // FrozenFields — признак входит в зафиксированный запрос и его SHA, поэтому
 // получаются только оригиналы без логотипа.
-func (a *Adapter) FrozenFields() *pycompat.Dict {
-	fields := pycompat.NewDict()
+func (a *Adapter) FrozenFields() *toolrt.Dict {
+	fields := toolrt.NewDict()
 	fields.Set("video_without_watermark", true)
 	return fields
 }
@@ -76,17 +76,17 @@ func (a *Adapter) TaskTraceID() bool { return true }
 
 // ValidateSpec — ограничения Kling поверх общей формы спецификации,
 // проверенной request_snapshot. Нарушение — ValueError с текстом для пользователя; данные
-// неожиданной формы дают TypeError/KeyError/AttributeError модели Python.
-func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
+// неожиданной формы дают TypeError/KeyError/AttributeError модели toolrt.
+func (a *Adapter) ValidateSpec(spec *toolrt.Dict) error {
 	command := spec.Value("command")
-	if _, err := pycompat.HashKey(command); err != nil {
+	if _, err := toolrt.HashKey(command); err != nil {
 		return err
 	}
 	name, ok := command.(string)
 	if !ok || !commands[name] {
 		return valueError("Неизвестная команда генерации.")
 	}
-	model, _ := pycompat.DictGet(spec, "model", "")
+	model, _ := toolrt.DictGet(spec, "model", "")
 	if matched, err := fullMatch(identifierPattern, model); err != nil {
 		return err
 	} else if !matched {
@@ -96,15 +96,15 @@ func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
 	if strings.HasSuffix(name, "_image") {
 		expected = "image"
 	}
-	kind, err := pycompat.GetItem(spec, "kind")
+	kind, err := toolrt.GetItem(spec, "kind")
 	if err != nil {
 		return err
 	}
-	if !pycompat.Equal(expected, kind) {
+	if !toolrt.Equal(expected, kind) {
 		return valueError("Вид результата не соответствует команде.")
 	}
 	if spec.Has("model_selection") {
-		preferred, err := pycompat.GetItem(spec.Value("model_selection"), "preferredModel")
+		preferred, err := toolrt.GetItem(spec.Value("model_selection"), "preferredModel")
 		if err != nil {
 			return err
 		}
@@ -116,8 +116,8 @@ func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
 			}
 		}
 	}
-	parameters, _ := pycompat.DictGet(spec, "parameters", pycompat.NewDict())
-	names, err := pycompat.Iter(parameters)
+	parameters, _ := toolrt.DictGet(spec, "parameters", toolrt.NewDict())
+	names, err := toolrt.Iter(parameters)
 	if err != nil {
 		return err
 	}
@@ -138,16 +138,16 @@ func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
 			return valueError("Недопустимый параметр команды; файлы передаются через inputs.")
 		}
 	}
-	if pycompat.Equal(kind, "video") {
+	if toolrt.Equal(kind, "video") {
 		modelName, _ := model.(string)
-		hasMultiShot, err := pycompat.Contains(parameters, "prefer_multi_shots")
+		hasMultiShot, err := toolrt.Contains(parameters, "prefer_multi_shots")
 		if err != nil && multiShotModels[modelName] {
 			return err
 		}
 		if multiShotModels[modelName] && !hasMultiShot {
 			return valueError("Для этой модели укажите prefer_multi_shots явно: для единого плана — false.")
 		}
-		hasResolution, err := pycompat.Contains(parameters, "resolution")
+		hasResolution, err := toolrt.Contains(parameters, "resolution")
 		if err != nil && explicitResolutionModels[modelName] {
 			return err
 		}
@@ -155,37 +155,37 @@ func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
 			return valueError("Для этой модели укажите resolution явно: по умолчанию сервис даёт 720p.")
 		}
 	}
-	count, _ := pycompat.DictGet(spec, "outputs", pycompat.NewInt(1))
-	inRange, err := pycompat.LessEqual(pycompat.NewInt(1), count)
+	count, _ := toolrt.DictGet(spec, "outputs", toolrt.NewInt(1))
+	inRange, err := toolrt.LessEqual(toolrt.NewInt(1), count)
 	if err != nil {
 		return err
 	}
 	if inRange {
-		if inRange, err = pycompat.LessEqual(count, pycompat.NewInt(9)); err != nil {
+		if inRange, err = toolrt.LessEqual(count, toolrt.NewInt(9)); err != nil {
 			return err
 		}
 	}
 	if !inRange {
 		return valueError("Неверное число результатов.")
 	}
-	hasCount, err := pycompat.Contains(parameters, "imageCount")
+	hasCount, err := toolrt.Contains(parameters, "imageCount")
 	if err != nil {
 		return err
 	}
 	if hasCount {
-		value, err := pycompat.GetItem(parameters, "imageCount")
+		value, err := toolrt.GetItem(parameters, "imageCount")
 		if err != nil {
 			return err
 		}
-		if pycompat.Str(value) != pycompat.Str(count) {
+		if toolrt.Str(value) != toolrt.Str(count) {
 			return valueError("outputs и imageCount должны совпадать.")
 		}
 	}
-	if !strings.HasPrefix(name, "text_to_") && !pycompat.Truthy(spec.Value("inputs")) {
+	if !strings.HasPrefix(name, "text_to_") && !toolrt.Truthy(spec.Value("inputs")) {
 		return valueError("Для этой команды нет входов.")
 	}
-	inputs, _ := pycompat.DictGet(spec, "inputs", []any{})
-	items, err := pycompat.Iter(inputs)
+	inputs, _ := toolrt.DictGet(spec, "inputs", []any{})
+	items, err := toolrt.Iter(inputs)
 	if err != nil {
 		return err
 	}
@@ -193,13 +193,13 @@ func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
 	for _, item := range items {
 		// Сервер принимает только именованные входы; короткие флаги приложение раскрывает в слоты
 		// до SHA.
-		flag, err := pycompat.DictGet(item, "flag", nil)
+		flag, err := toolrt.DictGet(item, "flag", nil)
 		if err != nil {
 			return err
 		}
-		bad := !pycompat.Equal(flag, "input")
+		bad := !toolrt.Equal(flag, "input")
 		if !bad {
-			slot, _ := pycompat.DictGet(item, "slot", "")
+			slot, _ := toolrt.DictGet(item, "slot", "")
 			matched, err := fullMatch(slotPattern, slot)
 			if err != nil {
 				return err
@@ -209,7 +209,7 @@ func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
 		if bad {
 			return valueError("Вход должен быть именованным слотом: flag=input и slot из объявления модели.")
 		}
-		slot := item.(*pycompat.Dict).Value("slot").(string)
+		slot := item.(*toolrt.Dict).Value("slot").(string)
 		if slots[slot] {
 			return valueError("Один входной слот указан дважды.")
 		}
@@ -221,7 +221,7 @@ func (a *Adapter) ValidateSpec(spec *pycompat.Dict) error {
 // ValidatePrompt — промпт уходит отдельным аргументом prompt без
 // изменений; длиннее PromptWarningChars символов — только предупреждение.
 func (a *Adapter) ValidatePrompt(prompt string) []string {
-	length := pycompat.Len(prompt)
+	length := toolrt.Len(prompt)
 	if length > PromptWarningChars {
 		return []string{fmt.Sprintf("Промпт длиннее %d символов (%d): сервис может обрезать или ослабить хвост текста.", PromptWarningChars, length)}
 	}

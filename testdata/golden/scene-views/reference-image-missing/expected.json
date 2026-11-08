@@ -1,13 +1,13 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 214, in <module>\n    main()\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 204, in main\n    changed = update(args.check)\n              ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 105, in update\n    cards = expected_cards(sources, directory)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 91, in expected_cards\n    render_card(scene, path, project, data[\"references\"], root)\n  File \"<songframe>/tools/render_animatic_cards/render_animatic_cards.py\", line 179, in render_card\n    place_reference(card, references[ref][\"path\"], (x, 582, cell_width - 6, 62), root)\n  File \"<songframe>/tools/render_animatic_cards/render_animatic_cards.py\", line 92, in place_reference\n    image = Image.open(root / source_path).convert(\"RGB\")\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/PIL/Image.py\", line 3247, in open\n    fp = builtins.open(filename, \"rb\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '<project>/source/heroes/lev.png'\n",
+  "stderr": "Traceback (most recent call last):\nFileNotFoundError: [Errno 2] No such file or directory: '<project>/source/heroes/lev.png'\n",
   "traceback": true,
   "files": {},
   "recheck": {
     "code": 1,
     "stdout": "",
-    "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 214, in <module>\n    main()\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 204, in main\n    changed = update(args.check)\n              ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 105, in update\n    cards = expected_cards(sources, directory)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 91, in expected_cards\n    render_card(scene, path, project, data[\"references\"], root)\n  File \"<songframe>/tools/render_animatic_cards/render_animatic_cards.py\", line 179, in render_card\n    place_reference(card, references[ref][\"path\"], (x, 582, cell_width - 6, 62), root)\n  File \"<songframe>/tools/render_animatic_cards/render_animatic_cards.py\", line 92, in place_reference\n    image = Image.open(root / source_path).convert(\"RGB\")\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3/dist-packages/PIL/Image.py\", line 3247, in open\n    fp = builtins.open(filename, \"rb\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '<project>/source/heroes/lev.png'\n"
+    "stderr": "Traceback (most recent call last):\nFileNotFoundError: [Errno 2] No such file or directory: '<project>/source/heroes/lev.png'\n"
   },
   "cards": null
 }

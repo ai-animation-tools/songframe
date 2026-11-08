@@ -65,7 +65,7 @@ it.each([
   [21, 'Очередь (21)', 'принято 21 из 23', '21,00 с'],
   [-2, 'Очередь (-2)', 'принято -2 из 23', '-2,00 с'],
   [1.5, 'Очередь (1.5)', 'принято 1.5 из 23', '1,50 с']
-] as const)('сохраняет прежнюю запись счётчиков и секунд для %s', (count, queue, accepted, seconds) => {
+] as const)('сохраняет запись счётчиков и секунд для %s', (count, queue, accepted, seconds) => {
   expect(productionTexts.productionQueue.heading({ count })).toBe(queue);
   expect(productionTexts.productionToolbar.accepted({ completed: count, total: 23 })).toBe(accepted);
   expect(productionTexts.productionSpeechPanel.seconds(count)).toBe(seconds);

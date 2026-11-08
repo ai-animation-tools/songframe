@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
 )
 
 // Эталоны testdata/golden/agents-* фиксируют чистые функции протокола, SettingsStore и вызовы
@@ -50,10 +50,10 @@ func outcome(value any, err error) any {
 	return map[string]any{"throws": map[string]string{"message": err.Error()}}
 }
 
-// jsValue — значение JSON как значение JS (jscompat).
-func jsValue(t *testing.T, raw json.RawMessage) any {
+// dynamicValue разбирает JSON эталона в динамическое значение dynvalue, как его видит пакет.
+func dynamicValue(t *testing.T, raw json.RawMessage) any {
 	t.Helper()
-	value, err := jscompat.Parse(raw)
+	value, err := dynvalue.Parse(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,12 +203,12 @@ func TestGoldenProtocol(t *testing.T) {
 		for _, item := range cases.Parse {
 			adapter := NewAdapter(item.Provider)
 			for index, raw := range item.Events {
-				updates, err := adapter.Parse(jsValue(t, raw).(*jscompat.Object))
+				updates, err := adapter.Parse(dynamicValue(t, raw).(*dynvalue.Object))
 				converted := []map[string]any{}
 				for _, update := range updates {
 					converted = append(converted, tsUpdate(update))
 				}
-				assertGolden(t, item.Name+" #"+jscompat.NumberToString(float64(index)), item.Expected[index], outcome(converted, err))
+				assertGolden(t, item.Name+" #"+dynvalue.NumberToString(float64(index)), item.Expected[index], outcome(converted, err))
 			}
 		}
 	})
@@ -219,8 +219,8 @@ func TestGoldenProtocol(t *testing.T) {
 			if lineBytes == 0 {
 				lineBytes = DefaultLineBytes
 			}
-			parser := NewJSONLines(func(value *jscompat.Object) error {
-				values = append(values, json.RawMessage(jscompat.Stringify(value)))
+			parser := NewJSONLines(func(value *dynvalue.Object) error {
+				values = append(values, json.RawMessage(dynvalue.Stringify(value)))
 				return nil
 			}, lineBytes)
 			var failure any
@@ -246,12 +246,12 @@ func TestGoldenProtocol(t *testing.T) {
 			}
 		}
 		for _, item := range cases.Detail {
-			if got := providerDetail(jsValue(t, item.Input)); got != item.Expected {
+			if got := providerDetail(dynamicValue(t, item.Input)); got != item.Expected {
 				t.Fatalf("providerDetail(%s) = %q, ожидалось %q", item.Input, got, item.Expected)
 			}
 		}
 		for _, item := range cases.Failure {
-			failure := providerFailure(jsValue(t, item.Value), jsValue(t, item.Detail))
+			failure := providerFailure(dynamicValue(t, item.Value), dynamicValue(t, item.Detail))
 			assertGolden(t, string(item.Value), item.Expected, map[string]string{"code": failure.Code, "detail": failure.Detail})
 		}
 	})
@@ -276,7 +276,7 @@ func TestGoldenProtocol(t *testing.T) {
 	})
 	t.Run("normalize", func(t *testing.T) {
 		for _, item := range cases.Normalize {
-			settings, err := normalizeValue(jsValue(t, item.Input))
+			settings, err := normalizeValue(dynamicValue(t, item.Input))
 			assertGolden(t, string(item.Input), item.Expected, outcome(settings, err))
 		}
 	})
@@ -419,7 +419,7 @@ func (n *normalizer) text(text string) string {
 	text = isoTime.ReplaceAllString(text, "<time>")
 	return uuidV4.ReplaceAllStringFunc(text, func(id string) string {
 		if _, ok := n.ids[id]; !ok {
-			n.ids[id] = "<id" + jscompat.NumberToString(float64(len(n.ids)+1)) + ">"
+			n.ids[id] = "<id" + dynvalue.NumberToString(float64(len(n.ids)+1)) + ">"
 		}
 		return n.ids[id]
 	})

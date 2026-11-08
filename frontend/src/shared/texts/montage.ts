@@ -1,7 +1,7 @@
 import { countLabel } from '../plural';
 import { commonTexts } from './common';
 
-/** Дословные подписи ручного монтажа; формат проекта и медиа остаётся у прежних владельцев. @link ../../../docs/ui/texts.md */
+/** Дословные подписи ручного монтажа; формат проекта и медиа этим словарём не задаётся. @link ../../../docs/ui/texts.md */
 export const montageTexts = {
   jobPending: 'Дождитесь завершения задания.',
   closeDialogToWatch: 'Закройте открытое окно, чтобы продолжить просмотр.',

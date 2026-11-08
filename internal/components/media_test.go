@@ -18,7 +18,7 @@ import (
 )
 
 // TestMain превращает копию тестового бинарника в управляемую медиапрограмму.
-// Так негативные проверки запуска/вывода/отмены не зависят от shell, Python или установленного FFmpeg.
+// Так негативные проверки запуска/вывода/отмены не зависят от shell, интерпретаторов или установленного FFmpeg.
 func TestMain(m *testing.M) {
 	if mode := os.Getenv("SONGFRAME_MEDIA_TEST_HELPER"); mode != "" {
 		mediaTestHelper(mode)
@@ -310,7 +310,7 @@ func TestMediaInputsAreEmbedded(t *testing.T) {
 }
 
 // TestProbeFFmpegNative выполняет настоящие кодеки и фильтры только на явной паре разработчика.
-// Без переменной штатные unit-тесты не требуют FFmpeg, Python, сети или текущего проекта.
+// Без переменной штатные unit-тесты не требуют FFmpeg, сети или текущего проекта.
 func TestProbeFFmpegNative(t *testing.T) {
 	directory := os.Getenv("SONGFRAME_TEST_MEDIA_BIN")
 	if directory == "" {

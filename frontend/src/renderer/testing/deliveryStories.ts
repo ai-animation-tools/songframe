@@ -63,7 +63,7 @@ export function deliveryQuote(pkg: PackageView, overrides: Partial<ProductionQuo
 }
 
 /** Повторяет проверку Go в Production.Accept: неточные и пустые срезы не запускают задание.
- * Реальную обработку медиа и полный контракт accept_shot по-прежнему проверяют тесты приложения. */
+ * Реальную обработку медиа и полный контракт accept_shot проверяют тесты Go. */
 export function assertDeliveryAcceptOptions(options: AcceptOptions): void {
   if (options.mode === 'full') return;
   const frame = (seconds: number | undefined): number => {

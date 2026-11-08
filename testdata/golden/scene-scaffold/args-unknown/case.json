@@ -1,9 +1,9 @@
 {
-  "description": "Неизвестный аргумент: ошибка argparse, код 2.",
+  "description": "Неизвестный аргумент: отказ разбора аргументов, код 2.",
   "call": "scene_scaffold",
   "project": "project",
   "covers": [
-    "argparse unrecognized"
+    "неизвестный аргумент"
   ],
   "stubbedMedia": [],
   "args": [

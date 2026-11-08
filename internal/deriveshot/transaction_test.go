@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/assetpackage"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/assetpackage"
+	"songframe/internal/toolrt"
 )
 
 // Тесты сбоев: точки подмены выбирают момент отказа, эталоны
@@ -72,7 +72,7 @@ func (f *fixture) accept(ctx context.Context, args ...string) (code int, message
 }
 
 // journal — единственный журнал проекта или журнал с индексом index.
-func (f *fixture) journal(t *testing.T, index int) (string, *pycompat.Dict) {
+func (f *fixture) journal(t *testing.T, index int) (string, *toolrt.Dict) {
 	t.Helper()
 	paths := journals(f.project)
 	if index >= len(paths) {
@@ -82,7 +82,7 @@ func (f *fixture) journal(t *testing.T, index int) (string, *pycompat.Dict) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return filepath.Dir(paths[index]), value.(*pycompat.Dict)
+	return filepath.Dir(paths[index]), value.(*toolrt.Dict)
 }
 
 // state — tree-снимок проекта без истории транзакций и рабочих папок.
@@ -153,17 +153,17 @@ func TestPublishFailureRollsBack(t *testing.T) {
 		"второй файл": func(t *testing.T, _ *fixture) { replaced(t, &publishFile, failFile(2)) },
 		"третий файл": func(t *testing.T, _ *fixture) { replaced(t, &publishFile, failFile(3)) },
 		"проверка итога": func(t *testing.T, _ *fixture) {
-			replaced(t, &validatePublished, func(string, string, string) (*pycompat.Dict, error) { return nil, errInjected })
+			replaced(t, &validatePublished, func(string, string, string) (*toolrt.Dict, error) { return nil, errInjected })
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			f := newFixture(t)
 			if name != "папка до переноса" && name != "первый файл" {
 				// Прежний комплект есть: откат обязан вернуть именно его.
-				if err := os.MkdirAll(pycompat.JoinPath(f.project, "assets/shots/M05"), 0o755); err != nil {
+				if err := os.MkdirAll(toolrt.JoinPath(f.project, "assets/shots/M05"), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.WriteFile(pycompat.JoinPath(f.project, "assets/shots/M05/old.txt"), []byte("прежний"), 0o644); err != nil {
+				if err := os.WriteFile(toolrt.JoinPath(f.project, "assets/shots/M05/old.txt"), []byte("прежний"), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -177,10 +177,10 @@ func TestPublishFailureRollsBack(t *testing.T) {
 			if journal.Value("state") != "rolled_back" {
 				t.Errorf("журнал %v", journal.Value("state"))
 			}
-			if pycompat.Exists(filepath.Join(directory, "staging")) {
+			if toolrt.Exists(filepath.Join(directory, "staging")) {
 				t.Error("staging остался")
 			}
-			if pycompat.Exists(pycompat.JoinPath(f.project, "assets/replaced/M05", journal.Value("id").(string))) {
+			if toolrt.Exists(toolrt.JoinPath(f.project, "assets/replaced/M05", journal.Value("id").(string))) {
 				t.Error("архив остался")
 			}
 			// Откаченную приёмку можно повторить тем же подтверждением.
@@ -205,7 +205,7 @@ func restoreOriginals(t *testing.T) {
 // publishing, данные не теряются, а после возврата файла восстановление завершается.
 func TestForeignEditStopsRollback(t *testing.T) {
 	f := newFixture(t)
-	status := pycompat.JoinPath(f.project, "plan/production-status.json")
+	status := toolrt.JoinPath(f.project, "plan/production-status.json")
 	original, err := os.ReadFile(status)
 	if err != nil {
 		t.Fatal(err)
@@ -222,10 +222,10 @@ func TestForeignEditStopsRollback(t *testing.T) {
 		t.Fatalf("код %d %q", code, message)
 	}
 	directory, journal := f.journal(t, 0)
-	if journal.Value("state") != "publishing" || !pycompat.IsDir(filepath.Join(directory, "staging")) {
+	if journal.Value("state") != "publishing" || !toolrt.IsDir(filepath.Join(directory, "staging")) {
 		t.Fatalf("журнал %v", journal.Value("state"))
 	}
-	if !pycompat.Exists(pycompat.JoinPath(f.project, "assets/shots/M05/manifest.json")) {
+	if !toolrt.Exists(toolrt.JoinPath(f.project, "assets/shots/M05/manifest.json")) {
 		t.Fatal("опубликованный комплект потерян")
 	}
 	if _, err := Recover(f.project); err == nil {
@@ -255,7 +255,7 @@ func TestRepeatedRecovery(t *testing.T) {
 	replaced(t, &publishFile, func(string, string) error { return errInjected })
 	calls := 0
 	real := restore
-	replaced(t, &restoreHook, func(directory string, journal *pycompat.Dict, root string) error {
+	replaced(t, &restoreHook, func(directory string, journal *toolrt.Dict, root string) error {
 		if calls++; calls == 1 {
 			return errInjected // Процесс умер: журнал остался publishing.
 		}
@@ -286,7 +286,7 @@ func TestRepeatedRecovery(t *testing.T) {
 func TestInterruptedRestoreResumes(t *testing.T) {
 	f := newFixture(t)
 	before := f.state(t)
-	replaced(t, &restoreHook, func(string, *pycompat.Dict, string) error { return errInjected })
+	replaced(t, &restoreHook, func(string, *toolrt.Dict, string) error { return errInjected })
 	replaced(t, &publishFile, func(string, string) error { return errInjected })
 	if code, _ := f.accept(context.Background()); code == 0 {
 		t.Fatal("приёмка должна упасть")
@@ -310,12 +310,12 @@ func TestInterruptedRestoreResumes(t *testing.T) {
 // следов: ни рабочей папки, ни временной.
 func TestBuildNoticesChangesDuringRender(t *testing.T) {
 	f := newFixture(t)
-	if err := os.RemoveAll(pycompat.JoinPath(f.project, f.work)); err != nil {
+	if err := os.RemoveAll(toolrt.JoinPath(f.project, f.work)); err != nil {
 		t.Fatal(err)
 	}
-	song := pycompat.JoinPath(f.project, "source/track.mp3")
+	song := toolrt.JoinPath(f.project, "source/track.mp3")
 	render := renderEdit
-	replaced(t, &renderEdit, func(ctx context.Context, original, filter string, frames pycompat.Int, target string) error {
+	replaced(t, &renderEdit, func(ctx context.Context, original, filter string, frames toolrt.Int, target string) error {
 		if err := render(ctx, original, filter, frames, target); err != nil {
 			return err
 		}
@@ -331,7 +331,7 @@ func TestBuildNoticesChangesDuringRender(t *testing.T) {
 	if output.Code != 1 || !strings.Contains(output.Stdout, textChangedBuild) {
 		t.Fatalf("%d %s %s", output.Code, output.Stdout, output.Stderr)
 	}
-	entries, err := os.ReadDir(pycompat.JoinPath(f.project, "plan/derived/M05"))
+	entries, err := os.ReadDir(toolrt.JoinPath(f.project, "plan/derived/M05"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -353,7 +353,7 @@ func TestCancelBeforePublishing(t *testing.T) {
 		t.Fatal("приёмка должна остановиться")
 	}
 	directory, journal := f.journal(t, 0)
-	if journal.Value("state") != "failed" || pycompat.Exists(filepath.Join(directory, "staging")) {
+	if journal.Value("state") != "failed" || toolrt.Exists(filepath.Join(directory, "staging")) {
 		t.Fatalf("журнал %v", journal.Value("state"))
 	}
 	sameState(t, before, f.state(t))
@@ -362,11 +362,11 @@ func TestCancelBeforePublishing(t *testing.T) {
 // TestCancelDuringBuild — отмена сборки не оставляет временную папку.
 func TestCancelDuringBuild(t *testing.T) {
 	f := newFixture(t)
-	if err := os.RemoveAll(pycompat.JoinPath(f.project, f.work)); err != nil {
+	if err := os.RemoveAll(toolrt.JoinPath(f.project, f.work)); err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	replaced(t, &renderEdit, func(ctx context.Context, _, _ string, _ pycompat.Int, _ string) error {
+	replaced(t, &renderEdit, func(ctx context.Context, _, _ string, _ toolrt.Int, _ string) error {
 		cancel()
 		return ctx.Err()
 	})
@@ -374,7 +374,7 @@ func TestCancelDuringBuild(t *testing.T) {
 	if output.Code == 0 {
 		t.Fatal("сборка должна остановиться")
 	}
-	entries, _ := os.ReadDir(pycompat.JoinPath(f.project, "plan/derived/M05"))
+	entries, _ := os.ReadDir(toolrt.JoinPath(f.project, "plan/derived/M05"))
 	if len(entries) != 1 {
 		t.Fatalf("лишние папки: %v", entries)
 	}

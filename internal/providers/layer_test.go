@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers/kling"
-	"songframe-go/internal/tools"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers/kling"
+	"songframe/internal/tools"
 )
 
 // fakePaid — платный провайдер test для общей логики слоя: правила, вход, проверка входа и
@@ -233,9 +233,9 @@ func TestCapabilitiesDispatch(t *testing.T) {
 }
 
 func TestAcceptsAudioInput(t *testing.T) {
-	parse := func(text string) *jscompat.Object {
-		value, _ := jscompat.Parse([]byte(text))
-		return value.(*jscompat.Object)
+	parse := func(text string) *dynvalue.Object {
+		value, _ := dynvalue.Parse([]byte(text))
+		return value.(*dynvalue.Object)
 	}
 	if AcceptsAudioInput([]CatalogReport{{Command: "a", Models: parse(`{"m":{"slots":{"first_image":{}}}}`)}}) {
 		t.Fatal("без звукового слота")
@@ -284,14 +284,14 @@ func TestPaidLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := func(data []byte) string { hash := sha256.Sum256(data); return hex.EncodeToString(hash[:]) }
-	var spec *jscompat.Object
+	var spec *dynvalue.Object
 	run := func(_ context.Context, _ string, name string, args []string) (tools.Result, error) {
 		data, err := os.ReadFile(args[2])
 		if err != nil {
 			t.Fatal(err)
 		}
-		value, _ := jscompat.Parse(data)
-		spec = value.(*jscompat.Object)
+		value, _ := dynvalue.Parse(data)
+		spec = value.(*dynvalue.Object)
 		dir := args[4]
 		_ = os.MkdirAll(filepath.Join(dir, "inputs"), 0o777)
 		prompt := []byte("Промпт.")
@@ -316,7 +316,7 @@ func TestPaidLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := jscompat.Stringify(spec); !strings.Contains(got, `"model_selection":{"preferredModel":"m","selectedModel":"m","reason":"Предпочтительная модель m поддерживает все параметры запроса."}`) ||
+	if got := dynvalue.Stringify(spec); !strings.Contains(got, `"model_selection":{"preferredModel":"m","selectedModel":"m","reason":"Предпочтительная модель m поддерживает все параметры запроса."}`) ||
 		!strings.Contains(got, `"parameters":{"image_count":1}`) || !strings.Contains(got, `"inputs":[{"flag":"input","slot":"image_1","path":"`+filepath.Join(project, "ref.png")) {
 		t.Fatalf("spec %s", got)
 	}
@@ -338,7 +338,7 @@ func TestPaidLifecycle(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(prepared.RequestDir, "out.png"), original, 0o666); err != nil {
 		t.Fatal(err)
 	}
-	attempt := `{"status":"downloaded","generation_id":"g","request_sha256":"` + prepared.RequestSha + `","downloads":[{"number":1,"path":"out.png","bytes":` + jscompat.NumberToString(float64(len(original))) + `,"sha256":"` + sum(original) + `"}]}`
+	attempt := `{"status":"downloaded","generation_id":"g","request_sha256":"` + prepared.RequestSha + `","downloads":[{"number":1,"path":"out.png","bytes":` + dynvalue.NumberToString(float64(len(original))) + `,"sha256":"` + sum(original) + `"}]}`
 	if err := os.WriteFile(filepath.Join(prepared.RequestDir, "attempt.json"), []byte(attempt), 0o666); err != nil {
 		t.Fatal(err)
 	}

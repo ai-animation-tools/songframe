@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"songframe-go/internal/components"
+	"songframe/internal/components"
 )
 
 // TestComponentsService сохраняет границу Wails: чтение и каталог не начинают установку,

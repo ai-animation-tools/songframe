@@ -4,9 +4,9 @@
 
 | Скилл | Когда применять |
 | --- | --- |
-| [songframe-go-build](songframe-go-build/SKILL.md) | Локальные Linux AppImage / Windows NSIS, prerequisites, GUI smoke и отдельный CPU smoke |
-| [songframe-go-ui](songframe-go-ui/SKILL.md) | Страницы, компоненты, тексты, Wails API, влияющий на UI, и Storybook |
-| [songframe-go-project-contract](songframe-go-project-contract/SKILL.md) | JSON проектов, доменные данные, DTO и общие Go/TS fixtures |
-| [songframe-go-release](songframe-go-release/SKILL.md) | План и выпуск 1.0.0 и следующих версий в публичном songframe |
+| [songframe-build](songframe-build/SKILL.md) | Локальные Linux AppImage / Windows NSIS, prerequisites, GUI smoke и отдельный CPU smoke |
+| [songframe-ui](songframe-ui/SKILL.md) | Страницы, компоненты, тексты, Wails API, влияющий на UI, и Storybook |
+| [songframe-project-contract](songframe-project-contract/SKILL.md) | JSON проектов, доменные данные, DTO и общие Go/TS fixtures |
+| [songframe-release](songframe-release/SKILL.md) | План и выпуск версий в публичном songframe |
 
-Скиллы описывают порядок работы и ссылаются на руководства `docs/`, `packaging/` и README; сами правила продукта и устройства в них не дублируются. Локальная сборка не означает выпуск; публикация — только по отдельному поручению. Приставка `go` в именах скиллов, как и имя модуля `songframe-go`, — служебное имя, которое не видно пользователю.
+Скиллы описывают порядок работы и ссылаются на руководства `docs/`, `packaging/` и README; сами правила продукта и устройства в них не дублируются. Локальная сборка не означает выпуск; публикация — только по отдельному поручению.

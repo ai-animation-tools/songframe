@@ -185,7 +185,7 @@ export function ProductionShotCard({
           <DerivedShotNotice source={shot.derivedFrom} />
         </Box>
       ) : null}
-      {/* Статус задаёт главный процесс по отпечатку постановки; комплект остаётся доступен для просмотра. */}
+      {/* Статус задаёт Go по отпечатку постановки; комплект остаётся доступен для просмотра. */}
       {shot.state === 'stale' ? (
         <Alert severity="info" sx={{ mt: 1.5 }}>
           <LinkedText text={shot.staleReason ?? productionTexts.productionShotCard.stale} />

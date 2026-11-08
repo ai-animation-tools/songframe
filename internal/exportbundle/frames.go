@@ -6,22 +6,24 @@ import (
 	"strconv"
 	"strings"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pyre"
+	"songframe/internal/toolregex"
+	"songframe/internal/toolrt"
 )
 
 // fps — частота шкалы аниматика.
 const fps = 30
 
-// Числа и форматы Python, от которых зависят байты пакета: fractions.Fraction, Decimal с контекстом
-// по умолчанию (28 значащих цифр) и форматные спецификации.
+// Точная арифметика и форматы чисел, от которых зависят байты пакета (эталон
+// testdata/golden/export-edit-bundle): дроби big.Rat, десятичное деление с точностью 28 значащих
+// цифр и записи чисел в строках пакета.
 
-// rationalFormat — _RATIONAL_FORMAT модуля fractions CPython 3.12 с нумерованными группами: знак (1),
-// числитель (2), знаменатель (4), дробная часть (6), порядок (8).
-var rationalFormat = pyre.MustCompile(`\A\s*([-+]?)(?=\d|\.\d)(\d*|\d+(_\d+)*)(?:(?:\s*/\s*(\d+(_\d+)*))?|(?:\.(\d*|\d+(_\d+)*))?(?:E([-+]?\d+(_\d+)*))?)\s*\Z`, pyre.IgnoreCase)
+// rationalFormat — грамматика строковой записи дроби с нумерованными группами: знак (1), целая
+// часть или числитель (2), знаменатель после «/» (4), дробная часть (6), десятичный порядок после
+// «e» (8). Между цифрами допускаются одиночные «_», по краям — пробельные символы.
+var rationalFormat = toolregex.MustCompile(`\A\s*([-+]?)(?=\d|\.\d)(\d*|\d+(_\d+)*)(?:(?:\s*/\s*(\d+(_\d+)*))?|(?:\.(\d*|\d+(_\d+)*))?(?:E([-+]?\d+(_\d+)*))?)\s*\Z`, toolregex.IgnoreCase)
 
-// parseInteger — int(text) для группы цифр регулярного выражения: подчёркивания убираются,
-// цифры Unicode читаются своим значением.
+// parseInteger — целое из группы цифр регулярного выражения: подчёркивания пропускаются, цифра
+// любой письменности Unicode читается своим значением (toolrt.DigitValue).
 func parseInteger(text string) *big.Int {
 	result := new(big.Int)
 	ten := big.NewInt(10)
@@ -29,22 +31,23 @@ func parseInteger(text string) *big.Int {
 		if r == '_' {
 			continue
 		}
-		result.Mul(result, ten).Add(result, big.NewInt(int64(pycompat.DigitValue(r))))
+		result.Mul(result, ten).Add(result, big.NewInt(int64(toolrt.DigitValue(r))))
 	}
 	return result
 }
 
-// power10 — 10**n.
+// power10 — десять в степени n.
 func power10(n int64) *big.Int {
 	return new(big.Int).Exp(big.NewInt(10), big.NewInt(n), nil)
 }
 
-// parseFraction — Fraction(text): целое, «a/b» или десятичная запись с порядком.
-// Неверная строка — ValueError, нулевой знаменатель — ZeroDivisionError с текстом Python.
+// parseFraction — точная дробь из строки: целое, «a/b» или десятичная запись с порядком.
+// Неверная строка — исключение toolrt ValueError, нулевой знаменатель — ZeroDivisionError;
+// их тексты зафиксированы эталоном.
 func parseFraction(text string) (*big.Rat, error) {
 	match, ok := rationalFormat.MatchString(text)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.ValueError, "Invalid literal for Fraction: %s", pycompat.Repr(text))
+		return nil, toolrt.Raise(toolrt.ValueError, "Invalid literal for Fraction: %s", toolrt.Repr(text))
 	}
 	whole, _ := match.Group(2)
 	numerator := parseInteger(whole)
@@ -54,7 +57,7 @@ func parseFraction(text string) (*big.Rat, error) {
 	} else {
 		if decimal, found := match.Group(6); found && decimal != "" {
 			digits := strings.ReplaceAll(decimal, "_", "")
-			scale := power10(int64(len(pycompat.Runes(digits))))
+			scale := power10(int64(len(toolrt.Runes(digits))))
 			numerator.Mul(numerator, scale).Add(numerator, parseInteger(digits))
 			denominator.Mul(denominator, scale)
 		}
@@ -72,13 +75,14 @@ func parseFraction(text string) (*big.Rat, error) {
 		numerator.Neg(numerator)
 	}
 	if denominator.Sign() == 0 {
-		return nil, pycompat.Raise(pycompat.ZeroDivisionError, "Fraction(%s, 0)", numerator.String())
+		return nil, toolrt.Raise(toolrt.ZeroDivisionError, "Fraction(%s, 0)", numerator.String())
 	}
 	return new(big.Rat).SetFrac(numerator, denominator), nil
 }
 
-// fractionOf — Fraction(value) для значения из JSON: bool и int — целые, float — точное двоичное
-// значение, строка разбирается parseFraction, прочее — TypeError.
+// fractionOf — точная дробь значения из JSON: bool и целое toolrt.Int — целые, float — его точное
+// двоичное значение (NaN — ValueError, бесконечность — OverflowError), строка разбирается
+// parseFraction, прочее — TypeError.
 func fractionOf(value any) (*big.Rat, error) {
 	switch item := value.(type) {
 	case bool:
@@ -86,27 +90,27 @@ func fractionOf(value any) (*big.Rat, error) {
 			return big.NewRat(1, 1), nil
 		}
 		return new(big.Rat), nil
-	case pycompat.Int:
+	case toolrt.Int:
 		return new(big.Rat).SetInt(item.Big()), nil
 	case float64:
 		if math.IsNaN(item) {
-			return nil, pycompat.New(pycompat.ValueError, "cannot convert NaN to integer ratio")
+			return nil, toolrt.New(toolrt.ValueError, "cannot convert NaN to integer ratio")
 		}
 		if math.IsInf(item, 0) {
-			return nil, pycompat.New(pycompat.OverflowError, "cannot convert Infinity to integer ratio")
+			return nil, toolrt.New(toolrt.OverflowError, "cannot convert Infinity to integer ratio")
 		}
 		return new(big.Rat).SetFloat64(item), nil
 	case string:
 		return parseFraction(item)
 	}
-	return nil, pycompat.New(pycompat.TypeError, "argument should be a string or a Rational instance")
+	return nil, toolrt.New(toolrt.TypeError, "argument should be a string or a Rational instance")
 }
 
-// decimalPrecision — точность контекста Decimal по умолчанию.
+// decimalPrecision — число значащих цифр десятичного деления.
 const decimalPrecision = 28
 
-// divideDecimal — Decimal(numerator) / Decimal(denominator) контекста по умолчанию для модуля
-// дроби value: значащие цифры coefficient и степень десяти exponent, округление половины к чётному.
+// divideDecimal — модуль дроби value десятичным числом из decimalPrecision значащих цифр:
+// коэффициент coefficient и степень десяти exponent, половина округляется к чётному.
 func divideDecimal(value *big.Rat) (coefficient *big.Int, exponent int) {
 	numerator := new(big.Int).Abs(value.Num())
 	denominator := value.Denom()
@@ -129,11 +133,12 @@ func divideDecimal(value *big.Rat) (coefficient *big.Int, exponent int) {
 	return kept, drop - shift
 }
 
-// framesAt — секунды в кадры: Fraction(str(seconds)) * rate делится как Decimal
-// (28 значащих цифр) и затем округляется до целого половиной от нуля (ROUND_HALF_UP).
-// Двойное округление входит в формат пакета, зафиксированный эталоном.
+// framesAt — секунды в кадры: строковая запись seconds (toolrt.Str) читается точной дробью и
+// умножается на rate, произведение приводится к 28 значащим цифрам (половина к чётному) и затем
+// округляется до целого, половина — от нуля. Двойное округление входит в формат пакета,
+// зафиксированный эталоном.
 func framesAt(seconds any, rate *big.Rat) (*big.Int, error) {
-	value, err := parseFraction(pycompat.Str(seconds))
+	value, err := parseFraction(toolrt.Str(seconds))
 	if err != nil {
 		return nil, err
 	}
@@ -159,10 +164,10 @@ func framesAt(seconds any, rate *big.Rat) (*big.Int, error) {
 	return result, nil
 }
 
-// frameGrid — Fraction(FPS).
+// frameGrid — частота шкалы аниматика дробью.
 var frameGrid = big.NewRat(fps, 1)
 
-// pad — f"{value:0{width}}" целого: нули между знаком и цифрами.
+// pad — целое, дополненное нулями до ширины width; нули стоят между знаком и цифрами.
 func pad(value *big.Int, width int) string {
 	text := value.String()
 	sign := ""
@@ -172,8 +177,9 @@ func pad(value *big.Int, width int) string {
 	return sign + strings.Repeat("0", max(width-len(sign)-len(text), 0)) + text
 }
 
-// timecode — таймкод ЧЧ:ММ:СС:КК non-drop на 30 кадров/с. Деление с остатком — вниз,
-// как // и % Python (big.Int.DivMod евклидов, при положительном делителе это то же самое).
+// timecode — таймкод ЧЧ:ММ:СС:КК non-drop на 30 кадров/с. Частное округляется вниз, остаток
+// неотрицателен (big.Int.DivMod евклидов, при положительном делителе это то же самое): у
+// отрицательного времени отрицательны только часы.
 func timecode(seconds any) (string, error) {
 	total, err := framesAt(seconds, frameGrid)
 	if err != nil {
@@ -189,7 +195,7 @@ func timecode(seconds any) (string, error) {
 	return pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(secondsPart, 2) + ":" + pad(frames, 2), nil
 }
 
-// rational — rational(seconds): время FCPXML «кадры/30s».
+// rational — время FCPXML «кадры/30s» на шкале 30 кадров/с.
 func rational(seconds any) (string, error) {
 	frames, err := framesAt(seconds, frameGrid)
 	if err != nil {
@@ -198,16 +204,17 @@ func rational(seconds any) (string, error) {
 	return frames.String() + "/30s", nil
 }
 
-// ratFloat — float(Fraction): корректно округлённое деление; слишком большое значение — OverflowError.
+// ratFloat — дробь в ближайший float64; значение вне диапазона float — исключение toolrt OverflowError.
 func ratFloat(value *big.Rat) (float64, error) {
 	result, _ := value.Float64()
 	if math.IsInf(result, 0) {
-		return 0, pycompat.New(pycompat.OverflowError, "integer division result too large for a float")
+		return 0, toolrt.New(toolrt.OverflowError, "integer division result too large for a float")
 	}
 	return result, nil
 }
 
-// round6 — round(value, 6) для float: точное двоичное значение округляется до шести знаков.
+// round6 — float, округлённый до шести знаков после точки по точному двоичному значению;
+// NaN и бесконечности не меняются.
 func round6(value float64) float64 {
 	if math.IsNaN(value) || math.IsInf(value, 0) {
 		return value
@@ -216,17 +223,19 @@ func round6(value float64) float64 {
 	return rounded
 }
 
-// formatG — f"{value:g}" для float.
+// formatG — краткая запись float: шесть значащих цифр без хвостовых нулей, экспонента при
+// больших и малых порядках; NaN и бесконечности — как toolrt.FloatRepr.
 func formatG(value float64) string {
 	if math.IsNaN(value) || math.IsInf(value, 0) {
-		return pycompat.FloatRepr(value)
+		return toolrt.FloatRepr(value)
 	}
 	return strconv.FormatFloat(value, 'g', 6, 64)
 }
 
-// speedField — f"{value:05.1f}" для поля M2: нули между знаком и цифрами, в том числе у nan и inf.
+// speedField — скорость для поля M2: одна цифра после точки, ширина 5 с нулями между знаком и
+// цифрами, в том числе у nan и inf.
 func speedField(value float64) string {
-	text := pycompat.FormatFixed(value, 1)
+	text := toolrt.FormatFixed(value, 1)
 	sign := ""
 	if strings.HasPrefix(text, "-") {
 		sign, text = "-", text[1:]

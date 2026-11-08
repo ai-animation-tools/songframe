@@ -469,7 +469,7 @@
   },
   {
     "name": "boundaries-null",
-    "description": "start: null (в TS Number.isFinite(null)=false; Go должен различать отсутствие числа)",
+    "description": "start: null — не число: отсутствие числа отличается от нуля",
     "tags": [
       "null-number"
     ],

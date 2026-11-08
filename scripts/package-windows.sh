@@ -41,7 +41,7 @@ docker run --rm --user "$(id -u):$(id -g)" --entrypoint /usr/local/go/bin/go \
   -e GOOS=windows -e GOARCH=amd64 -e CGO_ENABLED=1 -e 'CC=/usr/local/bin/zig cc -target x86_64-windows-gnu' \
   -e GOCACHE=/cache/go -e GOMODCACHE=/deps -e ZIG_GLOBAL_CACHE_DIR=/cache/zig -e HOME=/tmp -e GOTOOLCHAIN=local \
   -w /src "$image" build -buildvcs=false -tags production -trimpath \
-  -ldflags "-s -w -H windowsgui -extldflags=-Wl,--subsystem,windows -X songframe-go/internal/appversion.Version=$version" -o /out/songframe.exe .
+  -ldflags "-s -w -H windowsgui -extldflags=-Wl,--subsystem,windows -X songframe/internal/appversion.Version=$version" -o /out/songframe.exe .
 wails3 generate webview2bootstrapper -dir "$work/prerequisites"
 printf '%s  %s\n' 7ebc4ce80143ef89cea86a61ea151502868db6caaa678b8b43660a66ace11c3a "$work/prerequisites/MicrosoftEdgeWebview2Setup.exe" | sha256sum --check
 # Visual C++ runtime для ORT кладётся рядом с songframe.exe (app-local, из колеса msvc-runtime):

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/process"
+	"songframe/internal/dynvalue"
+	"songframe/internal/process"
 )
 
 // ProcessOptions — окружение короткой служебной сессии CLI (аккаунт, лимиты, каталог моделей):
@@ -229,6 +229,6 @@ func readAccountCommand(ctx context.Context, executable string, args []string, o
 		}
 		output = append(output, s.buffer...)
 		s.mu.Unlock()
-		return jscompat.Parse([]byte(jscompat.DecodeUTF8(output)))
+		return dynvalue.Parse([]byte(dynvalue.DecodeUTF8(output)))
 	})
 }

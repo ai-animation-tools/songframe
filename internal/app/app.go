@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"sync"
 
-	"songframe-go/internal/store"
-	"songframe-go/internal/wire"
+	"songframe/internal/store"
+	"songframe/internal/wire"
 )
 
 // AppID — собственный идентификатор приложения: по нему GTK держит единственный экземпляр, а
@@ -47,7 +47,7 @@ type RootAllower interface {
 }
 
 // AppService обслуживает только реализованные операции оболочки. Здесь нет
-// поиска Python/Node/ORT и автоматического открытия клипа.
+// поиска компонентов вроде ONNX Runtime и автоматического открытия клипа.
 // Callback готовности принадлежит smoke-проверке main, а не пользовательскому workflow.
 type AppService struct {
 	profile   ProfileStore

@@ -1,7 +1,7 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: update_scene_views.py [-h] [--check] [--staged | --ref REF]\nupdate_scene_views.py: error: unrecognized arguments: --bogus\n",
+  "stderr": "usage: update_scene_views [-h] [--check]\nupdate_scene_views: error: unrecognized arguments: --bogus\n",
   "traceback": false,
   "files": {},
   "recheck": {

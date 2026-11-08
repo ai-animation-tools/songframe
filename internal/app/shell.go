@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	"songframe-go/internal/desktop"
+	"songframe/internal/desktop"
 )
 
 // FileServer — часть медиасервера, нужная группам shell, dialog и projects: базовый

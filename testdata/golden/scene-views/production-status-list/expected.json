@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 214, in <module>\n    main()\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 204, in main\n    changed = update(args.check)\n              ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 99, in update\n    output = documents(sources)\n             ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/project_views/project_views.py\", line 427, in documents\n    \"ROADMAP.md\": render(sources),\n                  ^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/project_views/project_views.py\", line 179, in render\n    latest_path = work[\"current_animatic\"]\n                  ~~~~^^^^^^^^^^^^^^^^^^^^\nTypeError: list indices must be integers or slices, not str\n",
+  "stderr": "Traceback (most recent call last):\nTypeError: list indices must be integers or slices, not str\n",
   "traceback": true,
   "cards": null
 }

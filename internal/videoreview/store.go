@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
 )
 
 // Состояния проверки (VideoReviewView.status).
@@ -33,22 +33,22 @@ var (
 
 // stored — снимок проверки в <пакет>/video-review/latest.json (schemaVersion 1):
 // schemaVersion, id, shot, sourceHash, status, durationSeconds, frames, imageHashes, jobId, report,
-// error. Документ хранится деревом jscompat: запись меняет только нужные поля и сохраняет
-// остальное (порядок ключей, посторонние поля) при записи в формате JSON.stringify.
+// error. Документ хранится деревом dynvalue: запись меняет только нужные поля и сохраняет
+// остальное (порядок ключей, посторонние поля) при записи (dynvalue.StringifyIndent).
 // Все пути внутри относительны папке пакета, поэтому перенос папки не требует исправления отчёта.
-type stored struct{ doc *jscompat.Object }
+type stored struct{ doc *dynvalue.Object }
 
 // newStored — запись новой проверки в состоянии preparing с ключами в порядке формата latest.json.
 func newStored(id, shot, sourceHash string) stored {
-	doc := jscompat.NewObject()
+	doc := dynvalue.NewObject()
 	doc.Set("schemaVersion", 1.0)
 	doc.Set("id", id)
 	doc.Set("shot", shot)
 	doc.Set("sourceHash", sourceHash)
 	doc.Set("status", StatusPreparing)
 	doc.Set("durationSeconds", nil)
-	doc.Set("frames", &jscompat.Array{})
-	doc.Set("imageHashes", jscompat.NewObject())
+	doc.Set("frames", &dynvalue.Array{})
+	doc.Set("imageHashes", dynvalue.NewObject())
 	doc.Set("jobId", nil)
 	doc.Set("report", nil)
 	doc.Set("error", nil)
@@ -78,21 +78,21 @@ func (s stored) duration() *float64 {
 
 // frames — кадры выборки с путями относительно пакета (уже проверены read).
 func (s stored) frames() []Frame {
-	items, _ := jscompat.AsArray(s.doc.Value("frames"))
+	items, _ := dynvalue.AsArray(s.doc.Value("frames"))
 	result := make([]Frame, 0, len(items))
 	for _, item := range items {
 		frame := Frame{}
-		frame.ID, _ = jscompat.Get(item, "id").(string)
-		frame.TimeSeconds, _ = jscompat.Get(item, "timeSeconds").(float64)
-		frame.Path, _ = jscompat.Get(item, "path").(string)
+		frame.ID, _ = dynvalue.Get(item, "id").(string)
+		frame.TimeSeconds, _ = dynvalue.Get(item, "timeSeconds").(float64)
+		frame.Path, _ = dynvalue.Get(item, "path").(string)
 		result = append(result, frame)
 	}
 	return result
 }
 
 // imageHashes — SHA-256 подготовленных копий по пути относительно пакета, в порядке записи.
-func (s stored) imageHashes() []jscompat.Entry {
-	entries, _ := jscompat.Entries(s.doc.Value("imageHashes"))
+func (s stored) imageHashes() []dynvalue.Entry {
+	entries, _ := dynvalue.Entries(s.doc.Value("imageHashes"))
 	return entries
 }
 
@@ -107,7 +107,7 @@ func latestPath(directory string) (string, error) {
 	return productionPath(directory, filepath.Join(reviewDir, "latest.json"))
 }
 
-// save атомарно записывает latest.json в формате JSON.stringify(value, null, 2) + "\n".
+// save атомарно записывает latest.json: JSON с отступом два пробела и перевод строки в конце.
 // Запись идёт через шлюз проекта: при незавершённой многофайловой операции проект не меняется.
 func save(project, directory string, record stored) error {
 	path, err := latestPath(directory)
@@ -117,7 +117,7 @@ func save(project, directory string, record stored) error {
 	if err := projectfs.CheckWrite(project); err != nil {
 		return err
 	}
-	return projectfs.WriteFile(path, []byte(jscompat.StringifyIndent(record.doc, "  ")+"\n"), 0)
+	return projectfs.WriteFile(path, []byte(dynvalue.StringifyIndent(record.doc, "  ")+"\n"), 0)
 }
 
 // inside — путь сохранённой копии принадлежит выборке id (`video-review/<id>/…`).
@@ -133,18 +133,18 @@ func read(directory string) (*stored, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return nil, nil
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errInvalidReport
 	}
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 	if err != nil {
 		return nil, errInvalidReport
 	}
-	doc, ok := value.(*jscompat.Object)
+	doc, ok := value.(*dynvalue.Object)
 	if !ok {
 		return nil, errInvalidReport
 	}
@@ -152,11 +152,11 @@ func read(directory string) (*stored, error) {
 	hash, hashOK := doc.Value("sourceHash").(string)
 	duration := doc.Value("durationSeconds")
 	durationValue, durationOK := number(duration)
-	frames, framesOK := jscompat.AsArray(doc.Value("frames"))
-	hashes, hashesOK := doc.Value("imageHashes").(*jscompat.Object)
-	if !jscompat.StrictEqual(doc.Value("schemaVersion"), 1.0) || !nonempty(doc.Value("id"), 80) || !storedID.MatchString(id) ||
+	frames, framesOK := dynvalue.AsArray(doc.Value("frames"))
+	hashes, hashesOK := doc.Value("imageHashes").(*dynvalue.Object)
+	if !dynvalue.StrictEqual(doc.Value("schemaVersion"), 1.0) || !nonempty(doc.Value("id"), 80) || !storedID.MatchString(id) ||
 		!nonempty(doc.Value("shot"), 20) || !hashOK || !sha256Hex.MatchString(hash) ||
-		!statusNames[jscompat.ToString(doc.Value("status"))] ||
+		!statusNames[dynvalue.ToString(doc.Value("status"))] ||
 		!(duration == nil || (durationOK && durationValue > 0)) ||
 		!(doc.Value("jobId") == nil || nonempty(doc.Value("jobId"), 128)) ||
 		!(doc.Value("error") == nil || nonempty(doc.Value("error"), 16000)) ||
@@ -167,7 +167,7 @@ func read(directory string) (*stored, error) {
 	previous := -1.0
 	list := make([]Frame, 0, len(frames))
 	for _, raw := range frames {
-		frame, ok := raw.(*jscompat.Object)
+		frame, ok := raw.(*dynvalue.Object)
 		if !ok {
 			return nil, errInvalidReport
 		}
@@ -176,7 +176,7 @@ func read(directory string) (*stored, error) {
 		framePath := frame.Value("path")
 		pathText, _ := framePath.(string)
 		if !isString || !frameID.MatchString(fid) || ids[fid] || !finite || time < 0 || time <= previous ||
-			duration == nil || time >= durationValue || !nonempty(framePath, 4000) || jscompat.IsAbs(pathText) {
+			duration == nil || time >= durationValue || !nonempty(framePath, 4000) || dynvalue.IsAbs(pathText) {
 			return nil, errInvalidReport
 		}
 		if _, err := productionPath(directory, pathText); err != nil {
@@ -192,9 +192,9 @@ func read(directory string) (*stored, error) {
 		ids[fid] = true
 		list = append(list, Frame{ID: fid, TimeSeconds: time, Path: pathText})
 	}
-	status := jscompat.ToString(doc.Value("status"))
+	status := dynvalue.ToString(doc.Value("status"))
 	if (status == StatusRunning || status == StatusCompleted) &&
-		(len(frames) == 0 || !jscompat.Truthy(doc.Value("jobId")) || !jscompat.Truthy(duration)) {
+		(len(frames) == 0 || !dynvalue.Truthy(doc.Value("jobId")) || !dynvalue.Truthy(duration)) {
 		return nil, errInvalidReport
 	}
 	if status == StatusCompleted && doc.Value("report") == nil {
@@ -202,7 +202,7 @@ func read(directory string) (*stored, error) {
 	}
 	for _, key := range hashes.Keys() {
 		value, isString := hashes.Value(key).(string)
-		if jscompat.IsAbs(key) || !inside(key, id) || !isString || !sha256Hex.MatchString(value) {
+		if dynvalue.IsAbs(key) || !inside(key, id) || !isString || !sha256Hex.MatchString(value) {
 			return nil, errInvalidReport
 		}
 		if _, err := productionPath(directory, key); err != nil {
@@ -210,7 +210,7 @@ func read(directory string) (*stored, error) {
 		}
 	}
 	if report := doc.Value("report"); report != nil {
-		// Number(durationSeconds): null даёт 0, и тогда любое наблюдение выходит за длительность.
+		// durationSeconds приводится к числу: null даёт 0, и тогда любое наблюдение выходит за длительность.
 		if _, err := ParseReport(report, list, durationValue); err != nil {
 			return nil, err
 		}
@@ -218,5 +218,5 @@ func read(directory string) (*stored, error) {
 	return &stored{doc: doc}, nil
 }
 
-// mathFinite — число конечно (Number.isFinite).
+// mathFinite — число конечно (не NaN и не ±Inf).
 func mathFinite(value float64) bool { return !math.IsInf(value, 0) && !math.IsNaN(value) }

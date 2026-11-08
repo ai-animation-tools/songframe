@@ -1,11 +1,10 @@
 {
-  "description": "-h: справка с группой --staged | --ref.",
+  "description": "-h: справка.",
   "call": "update_scene_views",
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "help",
-    "mutually exclusive usage"
+    "help"
   ],
   "stubbedMedia": [],
   "args": [

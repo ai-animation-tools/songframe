@@ -251,7 +251,7 @@
     },
     {
       "name": "video-file-missing",
-      "description": "Нет MP4 сборки (video_file undefined): полный текст проблемы.",
+      "description": "Нет MP4 сборки (video_file отсутствует): полный текст проблемы.",
       "covers": [
         "videoMissing",
         "videoPath=null"
@@ -4866,7 +4866,7 @@
       "name": "shot-defaults",
       "description": "Значения планов по умолчанию: title из id, числа из строк, lipsync, media по умолчанию card, пути карточек.",
       "covers": [
-        "shots: ?? и Number",
+        "shots: значения по умолчанию и числа из строк",
         "cardPath/lastCardPath",
         "reference path missing",
         "shotInputMissing"
@@ -4993,7 +4993,7 @@
     },
     {
       "name": "shot-null",
-      "description": "План null в манифесте: исключение оригинала при построении списка.",
+      "description": "План null в манифесте: исключение при построении списка.",
       "covers": [
         "TypeError s.id"
       ],
@@ -5023,7 +5023,7 @@
     },
     {
       "name": "shot-path-number",
-      "description": "Нестроковый путь карточки: исключение join оригинала.",
+      "description": "Нестроковый путь карточки: исключение при сборке пути.",
       "covers": [
         "TypeError path"
       ],

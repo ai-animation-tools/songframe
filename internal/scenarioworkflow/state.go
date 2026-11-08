@@ -10,10 +10,10 @@ import (
 	"slices"
 	"strings"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/scenario"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
+	"songframe/internal/scenario"
 )
 
 // Локальная запись сценарного прохода хранится вне проекта, в каталоге
@@ -21,7 +21,7 @@ import (
 // (approval), утверждение сцен (scenesApproval), признак needsScenesReview и ожидающее
 // предложение (pending: proposal, expectedHashes, scaffold, duration).
 //
-// Запись держится деревом jscompat и меняется на месте: порядок ключей (в том числе message,
+// Запись держится деревом dynvalue и меняется на месте: порядок ключей (в том числе message,
 // добавленного после status) и форма JSON зафиксированы эталоном testdata/golden/scenario-workflow.
 // Повреждённая или чужая по форме запись не даёт утверждения: читается как пустая
 // {schemaVersion: 1}, проект при этом не меняется.
@@ -41,42 +41,42 @@ func statePath(localDir, project string) string {
 }
 
 // emptyState — {schemaVersion: 1}.
-func emptyState() *jscompat.Object {
-	state := jscompat.NewObject()
+func emptyState() *dynvalue.Object {
+	state := dynvalue.NewObject()
 	state.Set("schemaVersion", 1.0)
 	return state
 }
 
 // readState — проверенная запись или пустая при любой ошибке чтения и формы.
-func readState(localDir, project string) *jscompat.Object {
+func readState(localDir, project string) *dynvalue.Object {
 	data, err := os.ReadFile(statePath(localDir, project))
 	if err != nil {
 		return emptyState()
 	}
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 	if err != nil {
 		return emptyState()
 	}
 	if checkStoredState(value) != nil {
 		return emptyState()
 	}
-	state, _ := jscompat.AsObject(value)
+	state, _ := dynvalue.AsObject(value)
 	return state
 }
 
 // writeState — JSON с отступом в два пробела и переводом строки, атомарная замена.
-func writeState(localDir, project string, state *jscompat.Object) error {
+func writeState(localDir, project string, state *dynvalue.Object) error {
 	path := statePath(localDir, project)
 	if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
 		return err
 	}
-	return projectfs.WriteFile(path, []byte(jscompat.StringifyIndent(state, "  ")+"\n"), 0o666)
+	return projectfs.WriteFile(path, []byte(dynvalue.StringifyIndent(state, "  ")+"\n"), 0o666)
 }
 
 // validHashes — hashes() из checkStoredState: объект путь → SHA-256 или null; путь непустой,
 // не абсолютный и без сегмента «..».
 func validHashes(value any) bool {
-	record, ok := jscompat.AsObject(value)
+	record, ok := dynvalue.AsObject(value)
 	if !ok {
 		return false
 	}
@@ -95,7 +95,7 @@ func validHashes(value any) bool {
 // checkDocuments — documents() из checkStoredState: снимок документов проходит те же
 // нормализаторы, что и чтение проекта (трактовка — черновиком, см. readDocuments).
 func checkDocuments(value any) error {
-	record, ok := jscompat.AsObject(value)
+	record, ok := dynvalue.AsObject(value)
 	if !ok {
 		return errors.New(textSnapshotInvalidDocuments)
 	}
@@ -119,7 +119,7 @@ func checkDocuments(value any) error {
 
 // stringsArray — массив строк.
 func stringsArray(value any) bool {
-	items, ok := jscompat.AsArray(value)
+	items, ok := dynvalue.AsArray(value)
 	if !ok {
 		return false
 	}
@@ -133,23 +133,23 @@ func stringsArray(value any) bool {
 
 // checkStoredState — проверка формы локальной записи и снимков документов.
 func checkStoredState(value any) error {
-	state, ok := jscompat.AsObject(value)
-	invalid := !ok || !jscompat.StrictEqual(state.Value("schemaVersion"), 1.0)
+	state, ok := dynvalue.AsObject(value)
+	invalid := !ok || !dynvalue.StrictEqual(state.Value("schemaVersion"), 1.0)
 	if !invalid {
-		if approval := state.Value("approval"); approval != jscompat.Undefined && !validHashes(approval) {
+		if approval := state.Value("approval"); approval != dynvalue.Undefined && !validHashes(approval) {
 			invalid = true
 		}
-		if scenes := state.Value("scenesApproval"); scenes != jscompat.Undefined {
-			record, isRecord := jscompat.AsObject(scenes)
+		if scenes := state.Value("scenesApproval"); scenes != dynvalue.Undefined {
+			record, isRecord := dynvalue.AsObject(scenes)
 			if !isRecord || !validHashes(record.Value("hashes")) {
 				invalid = true
-			} else if hash := record.Value("sceneHash"); hash != jscompat.Undefined && hash != nil {
+			} else if hash := record.Value("sceneHash"); hash != dynvalue.Undefined && hash != nil {
 				if text, isText := hash.(string); !isText || !sha256Text.MatchString(text) {
 					invalid = true
 				}
 			}
 		}
-		if review := state.Value("needsScenesReview"); review != jscompat.Undefined {
+		if review := state.Value("needsScenesReview"); review != dynvalue.Undefined {
 			if _, isBool := review.(bool); !isBool {
 				invalid = true
 			}
@@ -159,15 +159,15 @@ func checkStoredState(value any) error {
 		return errors.New(textWorkflowInvalidState)
 	}
 	pendingValue := state.Value("pending")
-	if pendingValue == jscompat.Undefined {
+	if pendingValue == dynvalue.Undefined {
 		return nil
 	}
-	stored, ok := jscompat.AsObject(pendingValue)
+	stored, ok := dynvalue.AsObject(pendingValue)
 	if !ok || !validHashes(stored.Value("expectedHashes")) {
 		return errors.New(textWorkflowInvalidProposal)
 	}
 	duration, isNumber := stored.Value("duration").(float64)
-	if !isNumber || !jscompat.IsFinite(duration) || duration <= 0 || !jscompat.IsRecord(stored.Value("proposal")) {
+	if !isNumber || !dynvalue.IsFinite(duration) || duration <= 0 || !dynvalue.IsRecord(stored.Value("proposal")) {
 		return errors.New(textWorkflowInvalidProposal)
 	}
 	if scaffold := stored.Value("scaffold"); scaffold != nil {
@@ -175,7 +175,7 @@ func checkStoredState(value any) error {
 			return err
 		}
 	}
-	proposal, _ := jscompat.AsObject(stored.Value("proposal"))
+	proposal, _ := dynvalue.AsObject(stored.Value("proposal"))
 	text := func(key string) (string, bool) {
 		value, ok := proposal.Value(key).(string)
 		return value, ok
@@ -190,7 +190,7 @@ func checkStoredState(value any) error {
 	if !idOK || id == "" || !jobOK || jobID == "" || !passOK || !slices.Contains(passes, pass) || !statusOK ||
 		!slices.Contains(proposalStatuses, status) || !stringsArray(proposal.Value("selectedIds")) ||
 		!stringsArray(proposal.Value("warnings")) || !stringsArray(proposal.Value("changedIds")) || !staleOK ||
-		(message != jscompat.Undefined && !messageOK) {
+		(message != dynvalue.Undefined && !messageOK) {
 		return errors.New(textWorkflowInvalidMetadata)
 	}
 	if err := checkDocuments(proposal.Value("before")); err != nil {

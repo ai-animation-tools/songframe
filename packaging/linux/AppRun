@@ -8,7 +8,7 @@ status=0
 "$appdir/usr/libexec/songframe-appimage" "$@" || status=$?
 case "$status" in
   0) ;;
-  20) export SONGFRAME_GO_APPIMAGE_SETUP_RETRY=1; exec "$APPIMAGE" "$@" ;;
+  20) export SONGFRAME_APPIMAGE_SETUP_RETRY=1; exec "$APPIMAGE" "$@" ;;
   *) exit "$status" ;;
 esac
 if [ "$#" -eq 1 ] && [ "$1" = --setup-apparmor ]; then

@@ -15,9 +15,9 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/tools"
+	"songframe/internal/golden"
+	"songframe/internal/mediacmd"
+	"songframe/internal/tools"
 )
 
 // goldenStep — шаг случая домена cut-speech: запуск CLI с ожидаемым исходом либо правка

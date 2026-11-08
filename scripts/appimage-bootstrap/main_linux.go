@@ -181,7 +181,7 @@ func prepare(args []string, isRestricted func() bool, checkUserns func() error) 
 	if !explicit && (!isRestricted() || checkUserns() == nil) {
 		return 0
 	}
-	if !explicit && os.Getenv("SONGFRAME_GO_APPIMAGE_SETUP_RETRY") == "1" {
+	if !explicit && os.Getenv("SONGFRAME_APPIMAGE_SETUP_RETRY") == "1" {
 		notify("После настройки AppArmor user namespaces всё ещё недоступны. Запуск отменён; проверьте ограничения системы.")
 		return 1
 	}

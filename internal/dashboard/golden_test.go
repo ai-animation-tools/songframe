@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"testing"
 
-	"songframe-go/internal/dashboard"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/production"
+	"songframe/internal/dashboard"
+	"songframe/internal/golden"
+	"songframe/internal/production"
 )
 
 // TestGolden — домен production-view: просмотр производства и дашборд на образце с
-// правками случаев. Наличие Python и платных клиентов (tools) относится к машине и не сравнивается.
+// правками случаев. Состояние инструментов (tools) относится к машине и не сравнивается.
 func TestGolden(t *testing.T) {
 	for _, c := range golden.Load(t, "production-view") {
 		t.Run(c.Name, func(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/providers/kling/mcp"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/providers/kling/mcp"
+	"songframe/internal/toolrt"
 )
 
 // Adapter — адаптер провайдера kling для общего цикла попытки (media_request) и оценки цены
@@ -18,8 +18,8 @@ import (
 // SHA и сохранение оригиналов ведёт общий код; адаптер файлов попытки не пишет, кроме
 // destination в Fetch.
 //
-// Данные запросов и состояния — словари pycompat (как dict Python), ошибки проверки — исключения
-// pycompat с текстами, зафиксированными эталонами. Методы безопасны для параллельного вызова:
+// Данные запросов и состояния — словари toolrt с порядком ключей, ошибки проверки — исключения
+// toolrt с текстами, зафиксированными эталонами. Методы безопасны для параллельного вызова:
 // каждый сетевой метод открывает собственный сеанс MCP.
 type Adapter struct {
 	// Client — клиент MCP с каталогом состояния и адресом сервера.
@@ -30,7 +30,7 @@ type Adapter struct {
 	// newSession подменяет сеанс MCP в тестах эталонов; nil — настоящий сеанс Client.
 	newSession func(timeout time.Duration, traceID any) session
 	// clientLogin подменяет вход клиента в тестах эталонов; nil — Client.Login.
-	clientLogin func(ctx context.Context, options mcp.LoginOptions) (*pycompat.Dict, error)
+	clientLogin func(ctx context.Context, options mcp.LoginOptions) (*toolrt.Dict, error)
 
 	fetchOnce   sync.Once
 	fetchClient *http.Client
@@ -43,7 +43,7 @@ func New(stateDir string) *Adapter { return &Adapter{Client: mcp.NewClient(state
 type session interface {
 	Initialize(ctx context.Context) (any, error)
 	Tools(ctx context.Context) ([]any, error)
-	Call(ctx context.Context, name string, arguments *pycompat.Dict, timeout time.Duration, traceID any) (any, error)
+	Call(ctx context.Context, name string, arguments *toolrt.Dict, timeout time.Duration, traceID any) (any, error)
 	Upload(ctx context.Context, path string, traceID any) (string, error)
 }
 
@@ -62,8 +62,8 @@ type NotSubmittedError struct{ Message string }
 
 func (e *NotSubmittedError) Error() string { return e.Message }
 
-// PythonType — имя класса для эталонов и отладочной записи.
-func (e *NotSubmittedError) PythonType() string { return "NotSubmitted" }
+// ExceptionType — имя класса для эталонов и отладочной записи.
+func (e *NotSubmittedError) ExceptionType() string { return "NotSubmitted" }
 
 // RejectedRequestError — RejectedRequest (подкласс NotSubmitted): сервис явно отклонил запрос
 // (isError), задание не создано; текст — краткая причина без секретов для last_rejection.
@@ -71,8 +71,8 @@ type RejectedRequestError struct{ Message string }
 
 func (e *RejectedRequestError) Error() string { return e.Message }
 
-// PythonType — имя класса для эталонов и отладочной записи.
-func (e *RejectedRequestError) PythonType() string { return "RejectedRequest" }
+// ExceptionType — имя класса для эталонов и отладочной записи.
+func (e *RejectedRequestError) ExceptionType() string { return "RejectedRequest" }
 
 //go:embed pricing.json
 var pricing []byte
@@ -83,6 +83,6 @@ var pricing []byte
 func (a *Adapter) PricingFile() []byte { return pricing }
 
 // SnapshotWarnings — предупреждения снимка принятого комплекта (см. функцию пакета).
-func (a *Adapter) SnapshotWarnings(snapshot *pycompat.Dict) ([][2]string, error) {
+func (a *Adapter) SnapshotWarnings(snapshot *toolrt.Dict) ([][2]string, error) {
 	return SnapshotWarnings(snapshot)
 }

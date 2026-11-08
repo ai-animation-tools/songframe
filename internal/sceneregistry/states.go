@@ -4,51 +4,51 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // apply — изменения состояния delta поверх state (копия): null удаляет факт, который больше не
 // установлен (а не делает героя «чистым»), строка задаёт значение; сущность без фактов исчезает.
-func apply(state any, delta any, sid any) (*pycompat.Dict, error) {
-	result := pycompat.DeepCopy(state).(*pycompat.Dict)
-	changes, ok := delta.(*pycompat.Dict)
+func apply(state any, delta any, sid any) (*toolrt.Dict, error) {
+	result := toolrt.DeepCopy(state).(*toolrt.Dict)
+	changes, ok := delta.(*toolrt.Dict)
 	if !ok {
-		return nil, valueError("%s: изменения состояния должны быть объектом.", pycompat.Str(sid))
+		return nil, valueError("%s: изменения состояния должны быть объектом.", toolrt.Str(sid))
 	}
 	for _, entity := range changes.Keys() {
-		attributes, ok := changes.Value(entity).(*pycompat.Dict)
+		attributes, ok := changes.Value(entity).(*toolrt.Dict)
 		if !slug.MatchString(entity) || !ok {
-			return nil, valueError("%s: неверный объект состояния.", pycompat.Str(sid))
+			return nil, valueError("%s: неверный объект состояния.", toolrt.Str(sid))
 		}
 		for _, key := range attributes.Keys() {
 			value := attributes.Value(key)
 			text, isString := value.(string)
-			if !slug.MatchString(key) || value != nil && (!isString || pycompat.Strip(text) == "") {
-				return nil, valueError("%s: неверное свойство состояния.", pycompat.Str(sid))
+			if !slug.MatchString(key) || value != nil && (!isString || toolrt.Strip(text) == "") {
+				return nil, valueError("%s: неверное свойство состояния.", toolrt.Str(sid))
 			}
 			if value == nil {
-				if facts, ok := result.Value(entity).(*pycompat.Dict); ok {
+				if facts, ok := result.Value(entity).(*toolrt.Dict); ok {
 					facts.Delete(key)
 				}
 			} else {
-				facts, ok := result.Value(entity).(*pycompat.Dict)
+				facts, ok := result.Value(entity).(*toolrt.Dict)
 				if !ok {
-					facts = pycompat.NewDict()
+					facts = toolrt.NewDict()
 					result.Set(entity, facts)
 				}
 				facts.Set(key, value)
 			}
 		}
-		if facts, ok := result.Get(entity); ok && !pycompat.Truthy(facts) {
+		if facts, ok := result.Get(entity); ok && !toolrt.Truthy(facts) {
 			result.Delete(entity)
 		}
 	}
 	return result, nil
 }
 
-// resolver — состояние обхода _resolve_states: разрешённые планы и текущая цепочка state_from.
+// resolver — состояние обхода ResolveStates: разрешённые планы и текущая цепочка state_from.
 type resolver struct {
-	base     *pycompat.Dict
+	base     *toolrt.Dict
 	scenes   *keyed
 	resolved *keyed
 	visiting []any
@@ -59,15 +59,15 @@ var phases = []any{"before", "after", "same"}
 
 // visit — состояние {before, after} плана sid с разворачиванием источника (рекурсивно, включая
 // будущие планы вступления); цикл, неизвестный источник и неверная форма — ValueError.
-func (r *resolver) visit(sid any) (*pycompat.Dict, error) {
+func (r *resolver) visit(sid any) (*toolrt.Dict, error) {
 	if value, ok, err := r.resolved.get(sid); err != nil || ok {
 		if err != nil {
 			return nil, err
 		}
-		return value.(*pycompat.Dict), nil
+		return value.(*toolrt.Dict), nil
 	}
 	for _, item := range r.visiting {
-		if pycompat.Equal(item, sid) {
+		if toolrt.Equal(item, sid) {
 			return nil, valueError("Цикл state_from: %s", joinShots(append(append([]any{}, r.visiting...), sid)))
 		}
 	}
@@ -76,34 +76,34 @@ func (r *resolver) visit(sid any) (*pycompat.Dict, error) {
 		return nil, err
 	}
 	if !ok {
-		return nil, valueError("%s: неизвестный источник state_from.", pycompat.Str(sid))
+		return nil, valueError("%s: неизвестный источник state_from.", toolrt.Str(sid))
 	}
 	r.visiting = append(r.visiting, sid)
-	scene, isDict := found.(*pycompat.Dict)
+	scene, isDict := found.(*toolrt.Dict)
 	if !isDict {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'keys'", pycompat.TypeName(found))
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'keys'", toolrt.TypeName(found))
 	}
 	if !scene.Has("state_from") || !scene.Has("state_changes") {
-		return nil, valueError("%s: нужны state_from и state_changes.", pycompat.Str(sid))
+		return nil, valueError("%s: нужны state_from и state_changes.", toolrt.Str(sid))
 	}
 	source := scene.Value("state_from")
 	var phase any = "after"
-	if link, ok := source.(*pycompat.Dict); ok {
+	if link, ok := source.(*toolrt.Dict); ok {
 		if link.Len() != 2 || !link.Has("scene") || !link.Has("phase") {
-			return nil, valueError("%s: неверная ссылка state_from.", pycompat.Str(sid))
+			return nil, valueError("%s: неверная ссылка state_from.", toolrt.Str(sid))
 		}
 		source, phase = link.Value("scene"), link.Value("phase")
 	}
 	_, sourceIsString := source.(string)
 	knownPhase := false
 	for _, item := range phases {
-		knownPhase = knownPhase || pycompat.Equal(phase, item)
+		knownPhase = knownPhase || toolrt.Equal(phase, item)
 	}
-	if source != nil && !sourceIsString || !knownPhase || source == nil && !pycompat.Equal(phase, "after") {
-		return nil, valueError("%s: неверный источник или фаза state_from.", pycompat.Str(sid))
+	if source != nil && !sourceIsString || !knownPhase || source == nil && !toolrt.Equal(phase, "after") {
+		return nil, valueError("%s: неверный источник или фаза state_from.", toolrt.Str(sid))
 	}
-	changeValue, _ := pycompat.DictGet(scene, "state_changes", pycompat.NewDict())
-	changes, ok := changeValue.(*pycompat.Dict)
+	changeValue, _ := toolrt.DictGet(scene, "state_changes", toolrt.NewDict())
+	changes, ok := changeValue.(*toolrt.Dict)
 	if ok {
 		for _, key := range changes.Keys() {
 			if key != "before" && key != "after" {
@@ -112,38 +112,38 @@ func (r *resolver) visit(sid any) (*pycompat.Dict, error) {
 		}
 	}
 	if !ok {
-		return nil, valueError("%s: state_changes допускает только before и after.", pycompat.Str(sid))
+		return nil, valueError("%s: state_changes допускает только before и after.", toolrt.Str(sid))
 	}
-	var incoming *pycompat.Dict
+	var incoming *toolrt.Dict
 	if source != nil {
 		if incoming, err = r.visit(source); err != nil {
 			return nil, err
 		}
 	} else {
-		incoming = pycompat.NewDict()
-		incoming.Set("before", pycompat.DeepCopy(r.base))
-		incoming.Set("after", pycompat.DeepCopy(r.base))
+		incoming = toolrt.NewDict()
+		incoming.Set("before", toolrt.DeepCopy(r.base))
+		incoming.Set("after", toolrt.DeepCopy(r.base))
 	}
-	var value *pycompat.Dict
-	if pycompat.Equal(phase, "same") {
+	var value *toolrt.Dict
+	if toolrt.Equal(phase, "same") {
 		// Повтор во вступлении использует обе границы исходного события, не копируя его изменения
 		// и не создавая второго события в сюжете.
 		if changes.Len() > 0 {
-			return nil, valueError("%s: повтор same не допускает своих state_changes.", pycompat.Str(sid))
+			return nil, valueError("%s: повтор same не допускает своих state_changes.", toolrt.Str(sid))
 		}
-		value = pycompat.DeepCopy(incoming).(*pycompat.Dict)
+		value = toolrt.DeepCopy(incoming).(*toolrt.Dict)
 	} else {
-		beforeDelta, _ := pycompat.DictGet(changes, "before", pycompat.NewDict())
+		beforeDelta, _ := toolrt.DictGet(changes, "before", toolrt.NewDict())
 		before, err := apply(incoming.Value(phase.(string)), beforeDelta, sid)
 		if err != nil {
 			return nil, err
 		}
-		afterDelta, _ := pycompat.DictGet(changes, "after", pycompat.NewDict())
+		afterDelta, _ := toolrt.DictGet(changes, "after", toolrt.NewDict())
 		after, err := apply(before, afterDelta, sid)
 		if err != nil {
 			return nil, err
 		}
-		value = pycompat.NewDict()
+		value = toolrt.NewDict()
 		value.Set("before", before)
 		value.Set("after", after)
 	}
@@ -158,22 +158,22 @@ func (r *resolver) visit(sid any) (*pycompat.Dict, error) {
 // сюжетным зависимостям state_from/state_changes, ключ — код плана. initial — состояние сущностей
 // до первого события (начальное состояние кастинга, nil — пустое): источник `state_from: null`
 // стартует с него. Каждый план обязан иметь state_from и state_changes. Реестр не меняется;
-// data — значение Python (не-объект и отсутствие scenes дают исключения).
-func ResolveStates(data any, initial *pycompat.Dict) (*pycompat.Dict, error) {
+// data — значение toolrt (не-объект и отсутствие scenes дают исключения).
+func ResolveStates(data any, initial *toolrt.Dict) (*toolrt.Dict, error) {
 	if initial == nil {
-		initial = pycompat.NewDict()
+		initial = toolrt.NewDict()
 	}
-	r := &resolver{base: pycompat.DeepCopy(initial).(*pycompat.Dict), scenes: newKeyed(), resolved: newKeyed()}
-	list, err := pycompat.Item(data, "scenes")
+	r := &resolver{base: toolrt.DeepCopy(initial).(*toolrt.Dict), scenes: newKeyed(), resolved: newKeyed()}
+	list, err := toolrt.Item(data, "scenes")
 	if err != nil {
 		return nil, err
 	}
-	scenes, err := pycompat.Iter(list)
+	scenes, err := toolrt.Iter(list)
 	if err != nil {
 		return nil, err
 	}
 	for _, scene := range scenes {
-		id, err := pycompat.GetItem(scene, "id")
+		id, err := toolrt.GetItem(scene, "id")
 		if err != nil {
 			return nil, err
 		}
@@ -188,16 +188,16 @@ func ResolveStates(data any, initial *pycompat.Dict) (*pycompat.Dict, error) {
 	}
 	// Порядок результата — порядок завершения обхода: план, от которого
 	// зависит более ранний (вступление по будущему плану), оказывается раньше него.
-	result := pycompat.NewDict()
+	result := toolrt.NewDict()
 	for index, sid := range r.resolved.order {
-		result.Set(pycompat.Str(sid), r.resolved.values[index])
+		result.Set(toolrt.Str(sid), r.resolved.values[index])
 	}
 	return result, nil
 }
 
 // SceneState — независимая копия сводки до/после плана без
 // записи в реестр; реестр предварительно проверяется Validate.
-func SceneState(data any, sid string, initial *pycompat.Dict) (*pycompat.Dict, error) {
+func SceneState(data any, sid string, initial *toolrt.Dict) (*toolrt.Dict, error) {
 	document, err := Validate(data, initial)
 	if err != nil {
 		return nil, err
@@ -210,22 +210,22 @@ func SceneState(data any, sid string, initial *pycompat.Dict) (*pycompat.Dict, e
 	if !ok {
 		return nil, valueError("%s: сцена отсутствует в реестре.", sid)
 	}
-	return pycompat.DeepCopy(state).(*pycompat.Dict), nil
+	return toolrt.DeepCopy(state).(*toolrt.Dict), nil
 }
 
-// fingerprint — SHA-256 канонического JSON контекста плана: json.dumps(sort_keys=True,
-// ensure_ascii=False, separators=(",", ":")).encode().
+// fingerprint — SHA-256 канонического JSON контекста плана в UTF-8: toolrt.DumpsJSON с ключами
+// по возрастанию и компактными разделителями, не-ASCII без экранирования.
 func fingerprint(scene, direction, visual, state any) (string, error) {
-	context := pycompat.NewDict()
+	context := toolrt.NewDict()
 	context.Set("scene", scene)
 	context.Set("sequence_direction", direction)
 	context.Set("visual_direction", visual)
 	context.Set("state", state)
-	text, err := pycompat.DumpsJSON(context, pycompat.DumpOptions{SortKeys: true, Compact: true})
+	text, err := toolrt.DumpsJSON(context, toolrt.DumpOptions{SortKeys: true, Compact: true})
 	if err != nil {
 		return "", err
 	}
-	data, err := pycompat.EncodeUTF8(text)
+	data, err := toolrt.EncodeUTF8(text)
 	if err != nil {
 		return "", err
 	}
@@ -236,45 +236,45 @@ func fingerprint(scene, direction, visual, state any) (string, error) {
 // SceneFingerprint — отпечаток постановки плана. Отложенный
 // запрос зависит и от унаследованных условий, не только от самого плана: в контекст входят план,
 // направление его части (первой с таким id), общее визуальное направление и вычисленное состояние.
-func SceneFingerprint(data any, sid string, initial *pycompat.Dict) (string, error) {
+func SceneFingerprint(data any, sid string, initial *toolrt.Dict) (string, error) {
 	state, err := SceneState(data, sid, initial)
 	if err != nil {
 		return "", err
 	}
-	document := data.(*pycompat.Dict)
-	scenes, _ := pycompat.Iter(document.Value("scenes"))
+	document := data.(*toolrt.Dict)
+	scenes, _ := toolrt.Iter(document.Value("scenes"))
 	var scene any
 	for _, item := range scenes {
-		if id, _ := pycompat.GetItem(item, "id"); pycompat.Equal(id, sid) {
+		if id, _ := toolrt.GetItem(item, "id"); toolrt.Equal(id, sid) {
 			scene = item
 			break
 		}
 	}
-	sequences, err := pycompat.Iter(document.Value("sequences"))
+	sequences, err := toolrt.Iter(document.Value("sequences"))
 	if err != nil {
 		return "", err
 	}
 	var direction any
 	for _, item := range sequences {
-		id, err := pycompat.GetItem(item, "id")
+		id, err := toolrt.GetItem(item, "id")
 		if err != nil {
 			return "", err
 		}
-		if pycompat.Equal(id, scene.(*pycompat.Dict).Value("sequence")) {
-			if direction, err = pycompat.DictGet(item, "direction", ""); err != nil {
+		if toolrt.Equal(id, scene.(*toolrt.Dict).Value("sequence")) {
+			if direction, err = toolrt.DictGet(item, "direction", ""); err != nil {
 				return "", err
 			}
 			break
 		}
 	}
-	visual, _ := pycompat.DictGet(document, "visual_direction", "")
+	visual, _ := toolrt.DictGet(document, "visual_direction", "")
 	return fingerprint(scene, direction, visual, state)
 }
 
 // SceneFingerprints — отпечатки всех планов за одно вычисление
 // состояния, в порядке планов (код → hex). Значения совпадают с SceneFingerprint, кроме повтора id
-// части: здесь берётся направление последней такой части (словарь Python), там — первой.
-func SceneFingerprints(data any, initial *pycompat.Dict) (*pycompat.Dict, error) {
+// части: здесь берётся направление последней такой части (запись словаря перезаписывается), там — первой.
+func SceneFingerprints(data any, initial *toolrt.Dict) (*toolrt.Dict, error) {
 	document, err := Validate(data, initial)
 	if err != nil {
 		return nil, err
@@ -283,17 +283,17 @@ func SceneFingerprints(data any, initial *pycompat.Dict) (*pycompat.Dict, error)
 	if err != nil {
 		return nil, err
 	}
-	sequences, err := pycompat.Iter(document.Value("sequences"))
+	sequences, err := toolrt.Iter(document.Value("sequences"))
 	if err != nil {
 		return nil, err
 	}
 	directions := newKeyed()
 	for _, item := range sequences {
-		id, err := pycompat.GetItem(item, "id")
+		id, err := toolrt.GetItem(item, "id")
 		if err != nil {
 			return nil, err
 		}
-		direction, err := pycompat.DictGet(item, "direction", "")
+		direction, err := toolrt.DictGet(item, "direction", "")
 		if err != nil {
 			return nil, err
 		}
@@ -301,11 +301,11 @@ func SceneFingerprints(data any, initial *pycompat.Dict) (*pycompat.Dict, error)
 			return nil, err
 		}
 	}
-	visual, _ := pycompat.DictGet(document, "visual_direction", "")
-	scenes, _ := pycompat.Iter(document.Value("scenes"))
-	result := pycompat.NewDict()
+	visual, _ := toolrt.DictGet(document, "visual_direction", "")
+	scenes, _ := toolrt.Iter(document.Value("scenes"))
+	result := toolrt.NewDict()
 	for _, item := range scenes {
-		scene := item.(*pycompat.Dict)
+		scene := item.(*toolrt.Dict)
 		direction, _, _ := directions.get(scene.Value("sequence"))
 		id := scene.Value("id").(string)
 		digest, err := fingerprint(scene, direction, visual, states.Value(id))

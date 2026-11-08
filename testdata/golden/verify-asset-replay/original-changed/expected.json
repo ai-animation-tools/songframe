@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "M02 проверка не пройдена\nM01 воспроизведён RMS=0.000\n",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/verify_asset_replay/verify_asset_replay.py\", line 136, in <module>\n    assert not failures, failures\n           ^^^^^^^^^^^^\nAssertionError: [{'shot': 'M02', 'error': 'M02: изменился файл комплекта original.mp4'}]\n",
+  "stderr": "Traceback (most recent call last):\nAssertionError: [{'shot': 'M02', 'error': 'M02: изменился файл комплекта original.mp4'}]\n",
   "traceback": true,
   "files": {},
   "dirs": {},

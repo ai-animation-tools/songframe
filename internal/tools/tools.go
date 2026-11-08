@@ -4,7 +4,7 @@
 //
 // Результат — код завершения, stdout и stderr в формате CLI-инструмента (тексты, коды и форматы
 // вывода зафиксированы эталонами testdata/golden), поэтому разбор в интерфейсе от них зависит.
-// Перед инструментом выбирается проект: путь разрешается до реального (Path.resolve),
+// Перед инструментом выбирается проект: путь разрешается до реального (ссылки разыменованы),
 // отсутствующая папка — код 2 с текстом «Папка проекта не найдена».
 package tools
 
@@ -18,29 +18,29 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/acceptshot"
-	"songframe-go/internal/applymontage"
-	"songframe-go/internal/buildanimatic"
-	"songframe-go/internal/buildreview"
-	"songframe-go/internal/checkassets"
-	"songframe-go/internal/checkworkspace"
-	"songframe-go/internal/contactsheet"
-	"songframe-go/internal/continuitybrief"
-	"songframe-go/internal/costcheck"
-	"songframe-go/internal/cutspeech"
-	"songframe-go/internal/deriveshot"
-	"songframe-go/internal/exportbundle"
-	"songframe-go/internal/lintregistry"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediarequest"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/regenerateshot"
-	"songframe-go/internal/scenescaffold"
-	"songframe-go/internal/sceneviews"
-	"songframe-go/internal/shotstatus"
-	"songframe-go/internal/shotworkflow"
-	"songframe-go/internal/verifyassetreplay"
+	"songframe/internal/acceptshot"
+	"songframe/internal/applymontage"
+	"songframe/internal/buildanimatic"
+	"songframe/internal/buildreview"
+	"songframe/internal/checkassets"
+	"songframe/internal/checkworkspace"
+	"songframe/internal/contactsheet"
+	"songframe/internal/continuitybrief"
+	"songframe/internal/costcheck"
+	"songframe/internal/cutspeech"
+	"songframe/internal/deriveshot"
+	"songframe/internal/exportbundle"
+	"songframe/internal/lintregistry"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediarequest"
+	"songframe/internal/regenerateshot"
+	"songframe/internal/scenescaffold"
+	"songframe/internal/sceneviews"
+	"songframe/internal/shotstatus"
+	"songframe/internal/shotworkflow"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
+	"songframe/internal/verifyassetreplay"
 )
 
 // Result — ToolResult контракта (frontend/src/shared/types.ts). Code — nil, если процесс не
@@ -75,7 +75,7 @@ func textProjectNotFound(root string) string {
 var toolName = regexp.MustCompile(`^[a-z_]+$`)
 
 // tool — инструмент реестра: точка входа на разрешённом корне проекта.
-type tool func(root string, args []string) pytool.Output
+type tool func(root string, args []string) toolcli.Output
 
 // registry — инструменты приложения по имени. Имя вне реестра — ошибка «Неизвестный инструмент».
 var registry = map[string]tool{
@@ -92,10 +92,10 @@ var registry = map[string]tool{
 
 // contextTool — инструмент, обращающийся к сервису провайдера или ждущий его:
 // получает контекст отмены задания.
-type contextTool func(ctx context.Context, root string, args []string) pytool.Output
+type contextTool func(ctx context.Context, root string, args []string) toolcli.Output
 
 // LocalDir — каталог состояния приложения для инструментов, которые пишут в него (наблюдения
-// цен cost_check). По умолчанию — профиль store, как у приложения (SONGFRAME_GO_LOCAL_DIR либо
+// цен cost_check). По умолчанию — профиль store, как у приложения (SONGFRAME_LOCAL_DIR либо
 // стандартная папка ОС); сервисы приложения подменяют mediaadapters.StateDir своим профилем, и
 // наблюдения цен попадают туда же, где лежит вход провайдера.
 var LocalDir = func() (string, error) { return mediaadapters.StateDir() }
@@ -105,7 +105,7 @@ var LocalDir = func() (string, error) { return mediaadapters.StateDir() }
 // build_review, contact_sheet, cut_speech) и копирование медиа пакета для монтажёра
 // (export_edit_bundle): получают контекст отмены задания.
 var contextual = map[string]contextTool{
-	"media_request": func(ctx context.Context, root string, args []string) pytool.Output {
+	"media_request": func(ctx context.Context, root string, args []string) toolcli.Output {
 		return mediarequest.Run(ctx, root, args, nil)
 	},
 	"cost_check":         withLocalDir(costcheck.Run),
@@ -121,11 +121,11 @@ var contextual = map[string]contextTool{
 }
 
 // withLocalDir — инструмент, которому нужен каталог состояния (наблюдения цен cost_check).
-func withLocalDir(run func(ctx context.Context, root string, args []string, localDir string) pytool.Output) contextTool {
-	return func(ctx context.Context, root string, args []string) pytool.Output {
+func withLocalDir(run func(ctx context.Context, root string, args []string, localDir string) toolcli.Output) contextTool {
+	return func(ctx context.Context, root string, args []string) toolcli.Output {
 		dir, err := LocalDir()
 		if err != nil {
-			return pytool.Output{Code: 1, Stderr: pycompat.TextMode(err.Error() + "\n")}
+			return toolcli.Output{Code: 1, Stderr: toolrt.TextMode(err.Error() + "\n")}
 		}
 		return run(ctx, root, args, dir)
 	}
@@ -142,7 +142,7 @@ func Available(name string) bool {
 	return ok || withContext
 }
 
-// resolve — Path(path).resolve() без strict: абсолютный путь, ссылки разыменованы в существующей
+// resolve — абсолютный путь, ссылки разыменованы в существующей
 // части, несуществующий хвост добавляется как есть.
 func resolve(path string) string {
 	absolute, err := filepath.Abs(path)
@@ -161,7 +161,7 @@ func resolve(path string) string {
 	}
 }
 
-// quote — JSON.stringify(part) для строки запуска.
+// quote — строка в кавычках JSON (без экранирования HTML) для строки запуска.
 func quote(part string) string {
 	var builder strings.Builder
 	encoder := json.NewEncoder(&builder)
@@ -186,7 +186,7 @@ func RunContext(ctx context.Context, project, name string, args []string) (Resul
 	run, ok := registry[name]
 	if withContext, found := contextual[name]; found {
 		ok = true
-		run = func(root string, args []string) pytool.Output { return withContext(ctx, root, args) }
+		run = func(root string, args []string) toolcli.Output { return withContext(ctx, root, args) }
 	}
 	if !ok {
 		return Result{}, errors.New(textToolUnknown(name))
@@ -205,12 +205,12 @@ func RunContext(ctx context.Context, project, name string, args []string) (Resul
 			output := run("", append([]string(nil), args...))
 			return finish(output.Code, output.Stdout, output.Stderr)
 		}
-		return finish(2, "", pycompat.TextMode(textNoProject+"\n"))
+		return finish(2, "", toolrt.TextMode(textNoProject+"\n"))
 	}
 	root := resolve(project)
 	parts = append(append(parts, "--project", root), args...)
 	if info, err := os.Stat(root); err != nil || !info.IsDir() {
-		return finish(2, "", pycompat.TextMode(textProjectNotFound(root)+"\n"))
+		return finish(2, "", toolrt.TextMode(textProjectNotFound(root)+"\n"))
 	}
 	output := run(root, append([]string(nil), args...))
 	if ctx.Err() != nil {

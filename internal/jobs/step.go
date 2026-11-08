@@ -8,7 +8,7 @@ import (
 	"time"
 	"unicode"
 
-	"songframe-go/internal/process"
+	"songframe/internal/process"
 )
 
 // execCaptureLimit — хвост каждого потока внешней программы по умолчанию: причине сбоя
@@ -110,9 +110,9 @@ func (s *StepContext) Exec(command process.Command) (process.Result, error) {
 		line = "\n" + err.Error() + "\n"
 	}
 	s.manager.write(s.job, line)
-	message := jsTrim(string(result.Stderr) + line)
+	message := trimSpace(string(result.Stderr) + line)
 	if message == "" {
-		message = jsTrim(string(result.Stdout))
+		message = trimSpace(string(result.Stdout))
 	}
 	return result, &StepError{Code: code, Message: message, Err: err}
 }
@@ -133,12 +133,13 @@ func timeoutText(limit time.Duration) string {
 	return fmt.Sprintf("Превышено время выполнения (%d мс).", limit.Milliseconds())
 }
 
-// jsTrim повторяет String.prototype.trim: пробельные символы Unicode и BOM,
-// но не U+0085, который unicode.IsSpace считает пробелом, а JS — нет.
-func jsTrim(text string) string {
-	return strings.TrimFunc(text, isJSSpace)
+// trimSpace обрезает по краям сообщения шага пробельные символы Unicode и BOM (U+FEFF), но не
+// U+0085 (NEL): unicode.IsSpace считает его пробелом, а принятое правило обрезки — нет.
+func trimSpace(text string) string {
+	return strings.TrimFunc(text, isTrimSpace)
 }
 
-func isJSSpace(r rune) bool {
+// isTrimSpace — символ, который обрезает trimSpace.
+func isTrimSpace(r rune) bool {
 	return r == 0xFEFF || (r != '\u0085' && unicode.IsSpace(r))
 }

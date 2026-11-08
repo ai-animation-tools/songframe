@@ -1,7 +1,7 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow.py reopen [-h] --dir DIR --note NOTE\n                               [--note-scope {frame,following}]\n                               keyframe\nshot_workflow.py reopen: error: the following arguments are required: --note\n",
+  "stderr": "usage: shot_workflow reopen [-h] --dir DIR --note NOTE\n                            [--note-scope {frame,following}]\n                            keyframe\nshot_workflow reopen: error: the following arguments are required: --note\n",
   "traceback": false,
   "files": {},
   "dirs": {},

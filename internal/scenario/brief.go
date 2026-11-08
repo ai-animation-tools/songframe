@@ -6,8 +6,8 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
 )
 
 // Brief — BriefResult контракта, ответ scenario.brief: вычисленное состояние плана на первом или
@@ -32,7 +32,7 @@ type property struct {
 	checklist any
 }
 
-// vocabulary — Map «код свойства → свойство» одного типа (`new Map(items.map((p) => [p.key, p]))`).
+// vocabulary — словарь «код свойства → свойство» одного типа: порядок первого появления кода, при повторе значение — последнее.
 type vocabulary struct {
 	keys  []string
 	props map[string]property
@@ -41,15 +41,15 @@ type vocabulary struct {
 func newVocabulary(items []any) (*vocabulary, error) {
 	result := &vocabulary{props: map[string]property{}}
 	for _, item := range items {
-		key, err := jscompat.Prop(item, "key")
+		key, err := dynvalue.Prop(item, "key")
 		if err != nil {
 			return nil, err
 		}
-		name := jscompat.ToString(key)
+		name := dynvalue.ToString(key)
 		if _, ok := result.props[name]; !ok {
 			result.keys = append(result.keys, name)
 		}
-		result.props[name] = property{label: jscompat.Get(item, "label"), checklist: jscompat.Get(item, "checklist")}
+		result.props[name] = property{label: dynvalue.Get(item, "label"), checklist: dynvalue.Get(item, "checklist")}
 	}
 	return result, nil
 }
@@ -85,7 +85,7 @@ func replaceFirst(text, pattern, replacement string) string {
 	return text[:index] + builder.String() + text[index+len(pattern):]
 }
 
-// sliceUTF16 — `text.slice(0, limit)` и `text.length > limit` по кодовым единицам UTF-16.
+// sliceUTF16 — первые limit кодовых единиц UTF-16 текста и признак, что текст длиннее limit.
 func sliceUTF16(text string, limit int) (string, bool) {
 	units := utf16.Encode([]rune(text))
 	if len(units) <= limit {
@@ -108,7 +108,7 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 		return Brief{}, err
 	}
 	detail, found := details[sid]
-	var state, inherited, sources *jscompat.Object
+	var state, inherited, sources *dynvalue.Object
 	if found {
 		switch phase {
 		case "before":
@@ -118,14 +118,14 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 		}
 		sources = detail.Sources[phase]
 	}
-	list, err := jscompat.Iterate(jscompat.Get(data, "scenes"))
+	list, err := dynvalue.Iterate(dynvalue.Get(data, "scenes"))
 	if err != nil {
 		return Brief{}, err
 	}
 	var scene any
 	sceneFound := false
 	for _, item := range list {
-		if jscompat.StrictEqual(jscompat.Get(item, "id"), sid) {
+		if dynvalue.StrictEqual(dynvalue.Get(item, "id"), sid) {
 			scene, sceneFound = item, true
 			break
 		}
@@ -134,7 +134,7 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 		return Brief{}, errorText(textBriefShotMissing(sid))
 	}
 	defaults := cast.LoadDefaults()
-	entities, err := jscompat.Iterate(jscompat.Coalesce(jscompat.Get(castValue, "entities"), &jscompat.Array{}))
+	entities, err := dynvalue.Iterate(dynvalue.Coalesce(dynvalue.Get(castValue, "entities"), &dynvalue.Array{}))
 	if err != nil {
 		return Brief{}, err
 	}
@@ -142,28 +142,28 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 	names := map[string]info{}
 	namesHas := func(id string) bool { _, ok := names[id]; return ok }
 	for _, entity := range entities {
-		id, err := jscompat.Prop(entity, "id")
+		id, err := dynvalue.Prop(entity, "id")
 		if err != nil {
 			return Brief{}, err
 		}
-		names[jscompat.ToString(id)] = info{jscompat.Get(entity, "name"), jscompat.Get(entity, "kind")}
+		names[dynvalue.ToString(id)] = info{dynvalue.Get(entity, "name"), dynvalue.Get(entity, "kind")}
 	}
 	vocab := map[string]*vocabulary{}
-	propertiesEntries, err := jscompat.Entries(jscompat.Coalesce(jscompat.Get(castValue, "properties"), jscompat.NewObject()))
+	propertiesEntries, err := dynvalue.Entries(dynvalue.Coalesce(dynvalue.Get(castValue, "properties"), dynvalue.NewObject()))
 	if err != nil {
 		return Brief{}, err
 	}
 	for _, entry := range propertiesEntries {
-		items, ok := jscompat.AsArray(entry.Value)
+		items, ok := dynvalue.AsArray(entry.Value)
 		if !ok {
-			return Brief{}, &jscompat.TypeError{Message: "items.map is not a function"}
+			return Brief{}, &dynvalue.TypeError{Message: "items.map is not a function"}
 		}
 		if vocab[entry.Key], err = newVocabulary(items); err != nil {
 			return Brief{}, err
 		}
 	}
 	for _, entity := range entities {
-		kind := jscompat.ToString(jscompat.Get(entity, "kind"))
+		kind := dynvalue.ToString(dynvalue.Get(entity, "kind"))
 		if _, ok := vocab[kind]; !ok {
 			if vocab[kind], err = newVocabulary(defaults.Generic.Items); err != nil {
 				return Brief{}, err
@@ -172,7 +172,7 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 	}
 	propsOf := func(entity string) *vocabulary {
 		if item, ok := names[entity]; ok {
-			return vocab[jscompat.ToString(item.kind)]
+			return vocab[dynvalue.ToString(item.kind)]
 		}
 		return nil
 	}
@@ -186,8 +186,8 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 	// Порядок: сущности кастинга с состоянием (мир первым, устойчиво), затем прочие коды по UTF-16.
 	var known []string
 	for _, entity := range entities {
-		id := jscompat.ToString(jscompat.Get(entity, "id"))
-		if jscompat.Truthy(state.Value(id)) {
+		id := dynvalue.ToString(dynvalue.Get(entity, "id"))
+		if dynvalue.Truthy(state.Value(id)) {
 			known = append(known, id)
 		}
 	}
@@ -201,18 +201,18 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 	sortUTF16(others)
 	order := append(known, others...)
 
-	labels := jscompat.NewObject()
+	labels := dynvalue.NewObject()
 	for _, entity := range state.Keys() {
 		props := propsOf(entity)
-		for _, key := range state.Value(entity).(*jscompat.Object).Keys() {
+		for _, key := range state.Value(entity).(*dynvalue.Object).Keys() {
 			item, ok := lookup(props, key)
-			if ok && jscompat.Truthy(item.label) {
+			if ok && dynvalue.Truthy(item.label) {
 				group, exists := labels.Get(entity)
 				if !exists {
-					group = jscompat.NewObject()
+					group = dynvalue.NewObject()
 					labels.Set(entity, group)
 				}
-				group.(*jscompat.Object).Set(key, item.label)
+				group.(*dynvalue.Object).Set(key, item.label)
 			}
 		}
 	}
@@ -222,21 +222,21 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 		entityInfo, hasInfo := names[eid]
 		props := propsOf(eid)
 		displayName := eid
-		if hasInfo && !jscompat.IsNullish(entityInfo.name) {
-			displayName = jscompat.ToString(entityInfo.name)
+		if hasInfo && !dynvalue.IsNullish(entityInfo.name) {
+			displayName = dynvalue.ToString(entityInfo.name)
 		}
-		attributes := state.Value(eid).(*jscompat.Object)
+		attributes := state.Value(eid).(*dynvalue.Object)
 		var parts []string
 		for _, key := range attributes.Keys() {
-			value := jscompat.ToString(attributes.Value(key))
+			value := dynvalue.ToString(attributes.Value(key))
 			item, ok := lookup(props, key)
 			label := strings.ReplaceAll(key, "_", " ")
-			if ok && !jscompat.IsNullish(item.label) {
-				label = jscompat.ToString(item.label)
+			if ok && !dynvalue.IsNullish(item.label) {
+				label = dynvalue.ToString(item.label)
 			}
 			parts = append(parts, strings.ToLower(label)+": "+value)
-			if ok && jscompat.Truthy(item.checklist) {
-				checklist = append(checklist, displayName+": "+replaceFirst(jscompat.ToString(item.checklist), "{value}", value))
+			if ok && dynvalue.Truthy(item.checklist) {
+				checklist = append(checklist, displayName+": "+replaceFirst(dynvalue.ToString(item.checklist), "{value}", value))
 			}
 		}
 		description = append(description, displayName+": "+strings.Join(parts, "; ")+".")
@@ -249,13 +249,13 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 	if len(description) > 0 {
 		paragraph = title + " " + sid + ". " + strings.Join(description, " ")
 	}
-	action, err := jscompat.Prop(scene, "action")
+	action, err := dynvalue.Prop(scene, "action")
 	if err != nil {
 		return Brief{}, err
 	}
 	actionText, ok := action.(string)
 	if !ok {
-		return Brief{}, &jscompat.TypeError{Message: "scene.action.slice is not a function"}
+		return Brief{}, &dynvalue.TypeError{Message: "scene.action.slice is not a function"}
 	}
 	short, cut := sliceUTF16(actionText, 80)
 	if cut {
@@ -274,14 +274,14 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 		}
 	}
 	if sources == nil {
-		sources = jscompat.NewObject()
+		sources = dynvalue.NewObject()
 	}
 	if inherited == nil {
-		inherited = jscompat.NewObject()
+		inherited = dynvalue.NewObject()
 	}
 	return Brief{
 		Shot: sid, Phase: phase,
-		State: jscompat.Raw(state), Sources: jscompat.Raw(sources), Labels: jscompat.Raw(labels), Inherited: jscompat.Raw(inherited),
+		State: dynvalue.Raw(state), Sources: dynvalue.Raw(sources), Labels: dynvalue.Raw(labels), Inherited: dynvalue.Raw(inherited),
 		Paragraph: paragraph, Checklist: checklist, Text: strings.Join(text, "\n"),
 	}, nil
 }

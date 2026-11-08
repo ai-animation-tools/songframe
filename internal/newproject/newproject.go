@@ -21,8 +21,8 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/process"
+	"songframe/internal/dynvalue"
+	"songframe/internal/process"
 )
 
 // Тексты проблем projectsTexts.main (frontend/src/shared/texts/projects.ts): форма показывает их
@@ -57,18 +57,20 @@ var animaticPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+\.mp4$`)
 var slugPattern = regexp.MustCompile(`[^a-z0-9]+`)
 
 // DefaultAnimaticName — имя MP4 аниматика из названия: латиница, цифры и дефисы; для названия
-// без латиницы и цифр остаётся animatic.mp4. Нижний регистр повторяет String.toLowerCase.
+// без латиницы и цифр остаётся animatic.mp4. Нижний регистр (lowerName) совпадает с подсказкой
+// формы в frontend/src/renderer/pages/NewProjectPage/helpers.ts.
 func DefaultAnimaticName(name string) string {
-	slug := strings.Trim(slugPattern.ReplaceAllString(jsLower(name), "-"), "-")
+	slug := strings.Trim(slugPattern.ReplaceAllString(lowerName(name), "-"), "-")
 	if slug == "" {
 		return "animatic.mp4"
 	}
 	return slug + "-animatic.mp4"
 }
 
-// jsLower — String.prototype.toLowerCase. Единственное отличие strings.ToLower в значимой для
-// slug области — «İ» (U+0130): JS даёт «i» с комбинирующей точкой, то есть i и дефис в slug.
-func jsLower(text string) string {
+// lowerName — нижний регистр по полным правилам Unicode, как toLowerCase формы. Единственное
+// отличие strings.ToLower в значимой для slug области — «İ» (U+0130): полное правило даёт «i» с
+// комбинирующей точкой, то есть i и дефис в slug.
+func lowerName(text string) string {
 	return strings.ToLower(strings.ReplaceAll(text, "İ", "i̇"))
 }
 
@@ -76,17 +78,17 @@ func jsLower(text string) string {
 // Функция только читает файловую систему (существование цели и родителя).
 func Validate(input Input) []string {
 	problems := []string{}
-	if jscompat.Trim(input.Name) == "" {
+	if dynvalue.Trim(input.Name) == "" {
 		problems = append(problems, nameRequired)
 	}
 	switch {
-	case jscompat.Trim(input.Path) == "":
+	case dynvalue.Trim(input.Path) == "":
 		problems = append(problems, pathRequired)
-	case !jscompat.IsAbs(input.Path):
+	case !dynvalue.IsAbs(input.Path):
 		problems = append(problems, absolutePathRequired)
 	default:
-		target := jscompat.Resolve("", input.Path)
-		if jscompat.Exists(target) {
+		target := dynvalue.Resolve("", input.Path)
+		if dynvalue.Exists(target) {
 			problems = append(problems, targetExists)
 		}
 		parent := filepath.Dir(target)
@@ -95,7 +97,7 @@ func Validate(input Input) []string {
 		}
 	}
 	if input.AnimaticVideo != nil {
-		if video := jscompat.Trim(*input.AnimaticVideo); video != "" && !animaticPattern.MatchString(video) {
+		if video := dynvalue.Trim(*input.AnimaticVideo); video != "" && !animaticPattern.MatchString(video) {
 			problems = append(problems, invalidAnimaticName)
 		}
 	}
@@ -112,11 +114,11 @@ func Create(ctx context.Context, template fs.FS, input Input) (string, error) {
 	if problems := Validate(input); len(problems) > 0 {
 		return "", errors.New(strings.Join(problems, " "))
 	}
-	target := jscompat.Resolve("", input.Path)
-	name := jscompat.Trim(input.Name)
+	target := dynvalue.Resolve("", input.Path)
+	name := dynvalue.Trim(input.Name)
 	video := ""
 	if input.AnimaticVideo != nil {
-		video = jscompat.Trim(*input.AnimaticVideo)
+		video = dynvalue.Trim(*input.AnimaticVideo)
 	}
 	if video == "" {
 		video = DefaultAnimaticName(name)
@@ -141,7 +143,7 @@ func materialize(template fs.FS, target string, values Placeholders) error {
 		return err
 	}
 	// Цель могли занять, пока шаблон копировался: rename поверх пустой папки в Linux удался бы молча.
-	if jscompat.Exists(target) {
+	if dynvalue.Exists(target) {
 		return errors.New(targetExists)
 	}
 	if err := os.Rename(staging, target); err != nil {
@@ -214,18 +216,19 @@ func RenderPlaceholders(text string, values Placeholders) string {
 	})
 }
 
-// isText выбирает файлы для подстановки: по расширению (jsExtname) или по всему имени, если
+// isText выбирает файлы для подстановки: по расширению (fileExtension) или по всему имени, если
 // расширения нет, как у «.gitignore».
 func isText(name string) bool {
-	extension := jsExtname(name)
+	extension := fileExtension(name)
 	if extension == "" {
 		extension = name
 	}
 	return textExtensions[extension]
 }
 
-// jsExtname — path.extname для имени файла: точка в начале имени расширением не считается.
-func jsExtname(name string) string {
+// fileExtension — расширение имени файла с точкой; точка в начале имени расширением не считается,
+// имя без точки даёт пустую строку.
+func fileExtension(name string) string {
 	index := strings.LastIndex(name, ".")
 	if index <= 0 {
 		return ""
@@ -250,7 +253,7 @@ func CopyTemplate(template fs.FS, target string, values Placeholders) error {
 			return err
 		}
 		if isText(path.Base(name)) {
-			data = []byte(RenderPlaceholders(jscompat.DecodeUTF8(data), values))
+			data = []byte(RenderPlaceholders(dynvalue.DecodeUTF8(data), values))
 		}
 		// Новый файл создаётся с правами 0666 с учётом umask.
 		return os.WriteFile(destination, data, 0o666)

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/process"
+	"songframe/internal/dynvalue"
+	"songframe/internal/process"
 )
 
 // Значения availability и authorization результата проверки (AgentCheckResult).
@@ -91,16 +91,16 @@ type probe struct {
 
 var probes = map[string]probe{
 	Claude: {
-		version:    mustJS(`(?m)^(\d+\.\d+\.\d+(?:[-+][\w.-]+)?) \(Claude Code\)\s*$`, false),
+		version:    mustPattern(`(?m)^(\d+\.\d+\.\d+(?:[-+][\w.-]+)?) \(Claude Code\)\s*$`, false),
 		statusArgs: []string{"auth", "status", "--json"},
 		authorization: func(result commandResult) (string, string, bool) {
 			// CLI может вернуть адрес аккаунта и другие поля: наружу передаётся только признак входа.
 			// Старый или изменившийся формат не доказывает отсутствие входа.
-			data, err := jscompat.Parse([]byte(jscompat.Trim(result.stdout)))
+			data, err := dynvalue.Parse([]byte(dynvalue.Trim(result.stdout)))
 			if err != nil {
 				return "", "", false
 			}
-			loggedIn := jscompat.Get(data, "loggedIn")
+			loggedIn := dynvalue.Get(data, "loggedIn")
 			if loggedIn == true && result.code != nil && *result.code == 0 {
 				return Authenticated, textCheckAuthenticated(Claude), true
 			}
@@ -111,10 +111,10 @@ var probes = map[string]probe{
 		},
 	},
 	Codex: {
-		version:    mustJS(`(?m)^codex-cli (\d+\.\d+\.\d+(?:[-+][\w.-]+)?)\s*$`, false),
+		version:    mustPattern(`(?m)^codex-cli (\d+\.\d+\.\d+(?:[-+][\w.-]+)?)\s*$`, false),
 		statusArgs: []string{"login", "status"},
 		authorization: func(result commandResult) (string, string, bool) {
-			output := jsLines(result.output)
+			output := normalizeLines(result.output)
 			if result.code != nil && *result.code == 0 && codexLoggedIn.MatchString(output) {
 				return Authenticated, textCheckAuthenticated(Codex), true
 			}
@@ -128,14 +128,14 @@ var probes = map[string]probe{
 
 var (
 	codexLoggedIn  = regexp.MustCompile(`(?m)^Logged in using [^\r\n]+$`)
-	codexLoggedOut = mustJS(`(?m)^Not logged in\s*$`, false)
-	networkFailure = mustJS(`\b(ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH)\b|\b(network is unreachable|failed to connect|connection refused)\b`, true)
+	codexLoggedOut = mustPattern(`(?m)^Not logged in\s*$`, false)
+	networkFailure = mustPattern(`\b(ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH)\b|\b(network is unreachable|failed to connect|connection refused)\b`, true)
 )
 
 // parseVersion выделяет версию из вывода --version; неизвестный формат не доказывает
 // несовместимость, а только не позволяет запустить рабочее задание.
 func parseVersion(provider, output string) string {
-	match := probes[provider].version.FindStringSubmatch(jsLines(output))
+	match := probes[provider].version.FindStringSubmatch(normalizeLines(output))
 	if match == nil {
 		return ""
 	}
@@ -174,8 +174,8 @@ func runCommand(ctx context.Context, executable string, args []string, options C
 	mu.Lock()
 	exceeded := overflow
 	mu.Unlock()
-	stdout := jscompat.DecodeUTF8(result.Stdout)
-	value := commandResult{stdout: stdout, output: stdout + "\n" + jscompat.DecodeUTF8(result.Stderr)}
+	stdout := dynvalue.DecodeUTF8(result.Stdout)
+	value := commandResult{stdout: stdout, output: stdout + "\n" + dynvalue.DecodeUTF8(result.Stderr)}
 	var exit *process.ExitError
 	var start *process.StartError
 	switch {

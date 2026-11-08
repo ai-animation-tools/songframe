@@ -16,16 +16,16 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/mediacmd"
+	"songframe/internal/golden"
+	"songframe/internal/mediacmd"
 )
 
-// Эталон contact-sheet описывает синтетические проекты (семантика Python + Pillow 10.2): входы
+// Эталон contact-sheet описывает синтетические проекты: входы
 // воспроизводятся FFmpeg из описания случая. Сверяются код,
 // stdout (отчёт и таблица побайтно), stderr (у трассировки — заголовок и последняя строка), состав
 // файлов проекта, размеры и средние цвета сетки 4×4 каждого PNG, поля ffprobe превью, неизменность
 // входов и пустой TMPDIR. Граничные кадры совпадают по пикселям точно (их декодирует FFmpeg); лист и
-// сравнения — с допуском: буквы подписей сглаживает другой растеризатор, JPEG опоры — другой декодер.
+// сравнения — с допуском: сглаживание букв подписей и декодирование JPEG опоры эталон не фиксирует.
 
 type sheetInput struct {
 	Path   string   `json:"path"`
@@ -110,7 +110,7 @@ func projectFiles(t *testing.T, root string) []string {
 	return files
 }
 
-// pictureGrid — размеры и средний RGB 16 ячеек, как поле grid эталона (Pillow convert("RGB")).
+// pictureGrid — размеры и средний RGB 16 ячеек (изображение приводится к RGB), как поле grid эталона.
 func pictureGrid(t *testing.T, path string) (int, int, [][3]float64) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -307,8 +307,8 @@ func TestRunGolden(t *testing.T) {
 					t.Errorf("%s: размер %d×%d, ожидался %d×%d", name, w, h, want.Width, want.Height)
 					continue
 				}
-				// Граничные кадры — пиксели FFmpeg без перерисовки; лист и сравнения — с подписями
-				// другого растеризатора и опорами JPEG другого декодера.
+				// Граничные кадры — пиксели FFmpeg без перерисовки; у листа и сравнений сглаживание
+				// подписей и декодирование JPEG опор зависят от растеризатора и декодера.
 				tolerance := 0.5
 				if strings.HasSuffix(name, "-frame.png") {
 					tolerance = 0

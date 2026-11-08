@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/project"
+	"songframe/internal/project"
 )
 
 // BlockedError объясняет, почему запись в проект запрещена. Problems — те же сообщения,

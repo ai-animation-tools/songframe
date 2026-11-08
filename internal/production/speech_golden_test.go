@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/production"
+	"songframe/internal/golden"
+	"songframe/internal/production"
 )
 
 // speechStep — шаг сценария PrepareSpeech домена cut-speech (service.json): вызов на пакете с

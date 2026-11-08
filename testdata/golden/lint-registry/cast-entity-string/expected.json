@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 454, in <module>\n    main()\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 444, in main\n    report = lint(ROOT)\n             ^^^^^^^^^^\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 418, in lint\n    lint_cast(root, data, report)\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 287, in lint_cast\n    derived = references(data)\n              ^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/cast_registry/cast_registry.py\", line 146, in references\n    if entity.get(\"images\"):\n       ^^^^^^^^^^\nAttributeError: 'str' object has no attribute 'get'\n",
+  "stderr": "Traceback (most recent call last):\nAttributeError: 'str' object has no attribute 'get'\n",
   "traceback": true
 }

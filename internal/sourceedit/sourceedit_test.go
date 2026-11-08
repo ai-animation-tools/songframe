@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
+	"songframe/internal/golden"
 )
 
 // readInput разбирает input.json случая, подставляя папку входных файлов вместо <inputs>.

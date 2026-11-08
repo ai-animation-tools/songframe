@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/diagnostics"
+	"songframe/internal/diagnostics"
 )
 
 // TestNativePreviewLifecycle проверяет реальные переходы сервиса без зависимости от оконного менеджера.

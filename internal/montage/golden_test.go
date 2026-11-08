@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/jobs"
 )
 
 // Эталон testdata/golden/montage/cases.json фиксирует операции монтажа: черновики, экспорт и
@@ -28,7 +28,7 @@ type goldenScenario struct {
 	Steps []json.RawMessage `json:"steps"`
 }
 
-// fakeJobs — Starter теста: записывает параметры jobs.Start и возвращает job-N, как capture.
+// fakeJobs — Starter теста: записывает параметры jobs.Start и возвращает job-N, как в эталоне.
 type fakeJobs struct{ started []jobs.Spec }
 
 func (f *fakeJobs) Start(spec jobs.Spec) (jobs.Info, error) {
@@ -42,7 +42,7 @@ func jobJSON(info jobs.Info) map[string]any {
 	return map[string]any{"id": info.ID, "kind": string(info.Kind), "title": info.Title, "status": string(info.Status)}
 }
 
-// startedJSON — аргументы jobs.start в форме эталона.
+// startedJSON — спецификация запущенного задания (вид, название, проект, шаги) в форме эталона.
 func startedJSON(spec jobs.Spec) map[string]any {
 	steps := []any{}
 	for _, step := range spec.Steps {
@@ -125,7 +125,7 @@ func treeText(t *testing.T, root string) map[string]any {
 			return nil
 		}
 		data, err := os.ReadFile(path)
-		result[filepath.ToSlash(relative)] = jscompat.DecodeUTF8(data)
+		result[filepath.ToSlash(relative)] = dynvalue.DecodeUTF8(data)
 		return err
 	})
 	if err != nil {
@@ -134,8 +134,8 @@ func treeText(t *testing.T, root string) map[string]any {
 	return result
 }
 
-// jsonParse — сообщение JSON.parse V8 (позиция и строка) в Go другое: такие ошибки сверяются
-// по тексту до причины и после неё.
+// jsonParse — причина ошибки разбора JSON в эталоне записана с другой позицией и формулировкой,
+// чем у dynvalue.Parse: такие ошибки сверяются по тексту до причины и после неё.
 var jsonParse = regexp.MustCompile(`^(Не удалось прочитать .*?: )(?:Expected|Unexpected|Unterminated|Bad).*?(\. Файл сохранён; .*)$`)
 
 // sameError сравнивает текст ошибки с эталоном с поправкой на jsonParse.
@@ -233,7 +233,7 @@ func TestMontageGolden(t *testing.T) {
 					done(ViewProject(m.project))
 				case "load":
 					value, err := Load(m.project, text("id"))
-					done(jscompat.Raw(value), err)
+					done(dynvalue.Raw(value), err)
 				case "save":
 					var id *string
 					if _, ok := step["id"]; ok {
@@ -303,7 +303,7 @@ func TestMontageGolden(t *testing.T) {
 				if len(starter.started) > before {
 					outcome["started"] = startedJSON(starter.started[len(starter.started)-1])
 				}
-				// Порядок ключей как у { ...item, ...outcome }: UUID нумеруются по первому появлению.
+				// Поля исхода обходятся в порядке эталона: UUID нумеруются по первому появлению.
 				ordered := []string{"result", "error", "files", "copied", "out", "tree", "started"}
 				got := map[string]any{}
 				for _, key := range ordered {

@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: lint_registry.py [-h] [--json] [--strict]\n\nПроверка реестра, комплектов и пакетов по схемам и правилам владения\nсведениями; @link README.md\n\noptions:\n  -h, --help  show this help message and exit\n  --json\n  --strict    Предупреждения тоже считать ошибками\n",
+  "stdout": "usage: lint_registry [-h] [--json] [--strict]\n\nПроверка реестра, комплектов и пакетов по схемам и правилам владения\nсведениями; @link README.md\n\noptions:\n  -h, --help  show this help message and exit\n  --json\n  --strict    Предупреждения тоже считать ошибками\n",
   "stderr": "",
   "traceback": false
 }

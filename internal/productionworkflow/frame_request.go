@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/providers/agentexec"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers"
+	"songframe/internal/providers/agentexec"
 )
 
 // MediaLayer — часть слоя провайдеров медиа (providers.Layer), через которую производство создаёт
@@ -24,7 +24,8 @@ type MediaLayer interface {
 	PaidMedia(provider, kind string) (*providers.PaidMedia, bool)
 }
 
-// imageAliases — rules.aliases.image?.[name] ?? [name]: все написания параметра изображения.
+// imageAliases — все написания параметра изображения name из псевдонимов правил провайдера;
+// без записи о параметре — только само name.
 func imageAliases(rules mediaapi.RequestRules, name string) []string {
 	for _, alias := range rules.Aliases[mediaproviders.Image] {
 		if alias.Name == name {
@@ -35,7 +36,7 @@ func imageAliases(rules mediaapi.RequestRules, name string) []string {
 }
 
 // hasAny — хотя бы одно из имён есть в объекте (name in object).
-func hasAny(object *jscompat.Object, names []string) bool {
+func hasAny(object *dynvalue.Object, names []string) bool {
 	for _, name := range names {
 		if object.Has(name) {
 			return true
@@ -66,26 +67,26 @@ func sameMediaProvider(left any, right string) bool {
 func frameImageRequest(paid providers.Paid, input mediaapi.ImagesInput, settings any, caps mediaapi.Capabilities, validate func(string) bool) (providers.PaidInput, error) {
 	info, _ := mediaproviders.Lookup(paid.ID)
 	rules := paid.Rules
-	if !jscompat.Truthy(settings) || !sameMediaProvider(jscompat.Get(settings, "provider"), paid.ID) {
+	if !dynvalue.Truthy(settings) || !sameMediaProvider(dynvalue.Get(settings, "provider"), paid.ID) {
 		return providers.PaidInput{}, errors.New(textImageProviderMismatch(info.Title))
 	}
 	if len(input.Frames) != 1 {
 		return providers.PaidInput{}, errors.New(textOneFrameRequired)
 	}
 	frame := input.Frames[0]
-	parameters := jscompat.NewObject()
-	if options, ok := jscompat.Get(settings, "options").(*jscompat.Object); ok {
+	parameters := dynvalue.NewObject()
+	if options, ok := dynvalue.Get(settings, "options").(*dynvalue.Object); ok {
 		parameters = options.Clone()
 	}
 	for _, rule := range rules.Enforced {
 		value := parameters.Value(rule.Name)
 		for _, rejected := range rule.Rejected {
-			if jscompat.StrictEqual(value, rejected) {
+			if dynvalue.StrictEqual(value, rejected) {
 				return providers.PaidInput{}, errors.New(rule.Message)
 			}
 		}
 	}
-	defaults := map[string]any{"resolution": jscompat.Undefined, "aspect_ratio": jscompat.Undefined}
+	defaults := map[string]any{"resolution": dynvalue.Undefined, "aspect_ratio": dynvalue.Undefined}
 	if info.DefaultImageResolution != "" {
 		defaults["resolution"] = info.DefaultImageResolution
 	}
@@ -93,16 +94,16 @@ func frameImageRequest(paid providers.Paid, input mediaapi.ImagesInput, settings
 		defaults["aspect_ratio"] = info.DefaultImageAspectRatio
 	}
 	for _, key := range []string{"resolution", "aspect_ratio"} {
-		setting := jscompat.Get(settings, key)
+		setting := dynvalue.Get(settings, key)
 		value := setting
-		if jscompat.IsNullish(value) {
+		if dynvalue.IsNullish(value) {
 			value = defaults[key]
 		}
-		if !jscompat.Truthy(value) {
+		if !dynvalue.Truthy(value) {
 			continue
 		}
 		// Явный provider-параметр сохраняем; конфликт двух значений выявит общий валидатор.
-		if !hasAny(parameters, imageAliases(rules, key)) || setting != jscompat.Undefined {
+		if !hasAny(parameters, imageAliases(rules, key)) || setting != dynvalue.Undefined {
 			parameters.Set(key, value)
 		}
 	}
@@ -126,13 +127,13 @@ func frameImageRequest(paid providers.Paid, input mediaapi.ImagesInput, settings
 		inputs[index] = providers.PaidInputItem{Flag: "input", Slot: rules.Image.ReferenceSlot(index), Path: full, Role: "reference"}
 	}
 	number := 1
-	for jscompat.Exists(filepath.Join(input.PackageDir, "image-"+frame.ID+"-"+strconv.Itoa(number))) {
+	for dynvalue.Exists(filepath.Join(input.PackageDir, "image-"+frame.ID+"-"+strconv.Itoa(number))) {
 		number++
 	}
-	model, _ := jscompat.Get(settings, "model").(string)
-	model = jscompat.Trim(model)
+	model, _ := dynvalue.Get(settings, "model").(string)
+	model = dynvalue.Trim(model)
 	outputs := info.DefaultImageOutputs
-	if value, ok := jscompat.Get(settings, "outputs").(float64); ok {
+	if value, ok := dynvalue.Get(settings, "outputs").(float64); ok {
 		outputs = int(value)
 	} else if outputs == 0 {
 		outputs = 1
@@ -142,12 +143,12 @@ func frameImageRequest(paid providers.Paid, input mediaapi.ImagesInput, settings
 		Kind: mediaproviders.Image, Command: rules.Image.Command(len(frame.ReferencePaths)), Model: model, PreferredModel: &model,
 		Prompt: frame.Prompt, Parameters: parameters, Outputs: outputs, FrameID: frame.ID, Inputs: inputs,
 	}
-	return providers.SelectPaidRequest(paid, request, caps, func(item mediaapi.Model) *jscompat.Object {
+	return providers.SelectPaidRequest(paid, request, caps, func(item mediaapi.Model) *dynvalue.Object {
 		candidate := parameters.Clone()
 		// Неявный обычный режим добавляем только при наличии объявления; пользовательские options не удаляем.
 		if series != nil && !hasAny(candidate, series.Names) {
-			arguments, _ := jscompat.Parse(item.Arguments)
-			if declared, ok := arguments.(*jscompat.Object); ok {
+			arguments, _ := dynvalue.Parse(item.Arguments)
+			if declared, ok := arguments.(*dynvalue.Object); ok {
 				for _, name := range series.Names {
 					if declared.Has(name) {
 						candidate.Set(name, series.Off)
@@ -170,8 +171,8 @@ func (w *Workflow) prepareImageRequest(ctx context.Context, input mediaapi.Image
 	if err != nil {
 		return err
 	}
-	settings := jscompat.Get(generation, "image")
-	id, _ := mediaproviders.Normalize(jscompat.Get(settings, "provider"))
+	settings := dynvalue.Get(generation, "image")
+	id, _ := mediaproviders.Normalize(dynvalue.Get(settings, "provider"))
 	var media *providers.PaidMedia
 	found := false
 	if w.options.Media != nil {
@@ -204,7 +205,7 @@ func (w *Workflow) prepareImageRequest(ctx context.Context, input mediaapi.Image
 		if details == "" {
 			details = result.Stdout
 		}
-		if details = jscompat.Trim(details); details == "" {
+		if details = dynvalue.Trim(details); details == "" {
 			details = textImageConsentFailed
 		}
 		return errors.New(details)
@@ -220,7 +221,7 @@ func (w *Workflow) generateImages(project string, input mediaapi.ImagesInput) (a
 	if err != nil {
 		return agents.Job{}, err
 	}
-	executor, err := w.options.Media.ProjectAgentImages(jscompat.Get(jscompat.Get(generation, "image"), "provider"))
+	executor, err := w.options.Media.ProjectAgentImages(dynvalue.Get(dynvalue.Get(generation, "image"), "provider"))
 	if err != nil {
 		return agents.Job{}, err
 	}

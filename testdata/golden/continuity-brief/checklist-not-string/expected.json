@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 108, in <module>\n    main()\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 96, in main\n    result = brief(data, cast, args.shot, args.phase)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 64, in brief\n    questions = checklist(cast, state)\n                ^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 56, in checklist\n    questions.append(f\"{name}: \" + template.format(value=value))\n                                   ^^^^^^^^^^^^^^^\nAttributeError: 'int' object has no attribute 'format'\n",
+  "stderr": "Traceback (most recent call last):\nAttributeError: 'int' object has no attribute 'format'\n",
   "traceback": true
 }

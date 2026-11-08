@@ -20,13 +20,13 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers/agentexec"
-	"songframe-go/internal/providers/codex"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers/agentexec"
+	"songframe/internal/providers/codex"
 )
 
 // Тексты (applicationTexts и providerTexts из frontend/src/shared/texts), которые слой
@@ -77,7 +77,7 @@ func normalizedID(provider any) string {
 	if !ok {
 		return ""
 	}
-	return strings.ToLower(jscompat.Trim(text))
+	return strings.ToLower(dynvalue.Trim(text))
 }
 
 // PaidAdapter — платный адаптер по id (регистр и крайние пробелы

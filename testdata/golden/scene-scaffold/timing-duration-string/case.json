@@ -3,7 +3,7 @@
   "call": "scene_scaffold",
   "project": "project",
   "covers": [
-    "float(str)"
+    "float из строки"
   ],
   "stubbedMedia": [],
   "args": [

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/golden"
+	"songframe/internal/golden"
 )
 
 // TestPaidAccessGolden сверяет платную часть ai.access (выбор provider_selected, вход платного

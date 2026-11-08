@@ -1,7 +1,6 @@
 // Package mediatest — тестовый провайдер генерации `test` без сети и платных запросов. Общая
-// логика платной попытки (media_request,
-// cost_check, shot_workflow, производство) тестируется на нём, поэтому удаление реального
-// провайдера не ломает общие тесты.
+// логика платной попытки (media_request, cost_check, shot_workflow, производство) тестируется на
+// нём, поэтому удаление реального провайдера не ломает общие тесты.
 //
 // Поведение задаёт JSON-файл <Dir>/service.json, читаемый при каждом вызове (его можно менять
 // между шагами), каждый вызов дописывается строкой JSON в <Dir>/calls.jsonl; формат журнала
@@ -23,10 +22,10 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/requestsnapshot"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
+	"songframe/internal/requestsnapshot"
+	"songframe/internal/toolrt"
 )
 
 // ID — id тестового провайдера.
@@ -62,9 +61,9 @@ type Service struct {
 type WithAuth struct{ *Service }
 
 // New создаёт сервис в dir с начальной конфигурацией config (nil — пустая).
-func New(dir string, config *pycompat.Dict) (*Service, error) {
+func New(dir string, config *toolrt.Dict) (*Service, error) {
 	if config == nil {
-		config = pycompat.NewDict()
+		config = toolrt.NewDict()
 	}
 	if err := os.MkdirAll(dir, 0o777); err != nil {
 		return nil, err
@@ -78,8 +77,8 @@ func (s *Service) Register() func() { return mediaadapters.Register(ID, s) }
 
 func (s *Service) configPath() string { return filepath.Join(s.Dir, "service.json") }
 
-func (s *Service) write(config *pycompat.Dict) error {
-	text, err := pycompat.DumpsJSON(config, pycompat.DumpOptions{})
+func (s *Service) write(config *toolrt.Dict) error {
+	text, err := toolrt.DumpsJSON(config, toolrt.DumpOptions{})
 	if err != nil {
 		return err
 	}
@@ -87,16 +86,16 @@ func (s *Service) write(config *pycompat.Dict) error {
 }
 
 // Config — текущая конфигурация (отсутствующий файл — пустая).
-func (s *Service) Config() *pycompat.Dict {
-	value, err := pycompat.LoadJSONFile(s.configPath())
-	if dict, ok := value.(*pycompat.Dict); err == nil && ok {
+func (s *Service) Config() *toolrt.Dict {
+	value, err := toolrt.LoadJSONFile(s.configPath())
+	if dict, ok := value.(*toolrt.Dict); err == nil && ok {
 		return dict
 	}
-	return pycompat.NewDict()
+	return toolrt.NewDict()
 }
 
 // Configure — Service.configure(**values): дополняет конфигурацию полями values.
-func (s *Service) Configure(values *pycompat.Dict) error {
+func (s *Service) Configure(values *toolrt.Dict) error {
 	config := s.Config()
 	for _, key := range values.Keys() {
 		config.Set(key, values.Value(key))
@@ -105,16 +104,16 @@ func (s *Service) Configure(values *pycompat.Dict) error {
 }
 
 // local — пути конфигурации отсчитываются от её папки.
-func (s *Service) local(value string) string { return pycompat.JoinPath(s.Dir, value) }
+func (s *Service) local(value string) string { return toolrt.JoinPath(s.Dir, value) }
 
 // journal дописывает вызов в calls.jsonl: {"action", …поля} в порядке, зафиксированном эталонами.
 func (s *Service) journal(action string, pairs ...any) error {
-	entry := pycompat.NewDict()
+	entry := toolrt.NewDict()
 	entry.Set("action", action)
 	for index := 0; index+1 < len(pairs); index += 2 {
 		entry.Set(pairs[index].(string), pairs[index+1])
 	}
-	text, err := pycompat.DumpsJSON(entry, pycompat.DumpOptions{})
+	text, err := toolrt.DumpsJSON(entry, toolrt.DumpOptions{})
 	if err != nil {
 		return err
 	}
@@ -130,18 +129,18 @@ func (s *Service) journal(action string, pairs ...any) error {
 }
 
 // Calls — записи журнала, по желанию только с данным action ("" — все).
-func (s *Service) Calls(action string) []*pycompat.Dict {
+func (s *Service) Calls(action string) []*toolrt.Dict {
 	data, err := os.ReadFile(filepath.Join(s.Dir, "calls.jsonl"))
 	if err != nil {
 		return nil
 	}
-	entries := []*pycompat.Dict{}
+	entries := []*toolrt.Dict{}
 	for _, line := range strings.Split(strings.TrimSuffix(string(data), "\n"), "\n") {
 		if line == "" {
 			continue
 		}
-		value, err := pycompat.LoadsJSON(line)
-		entry, ok := value.(*pycompat.Dict)
+		value, err := toolrt.LoadsJSON(line)
+		entry, ok := value.(*toolrt.Dict)
 		if err != nil || !ok {
 			continue
 		}
@@ -153,31 +152,31 @@ func (s *Service) Calls(action string) []*pycompat.Dict {
 }
 
 // failure — исключение адаптера с типом и текстом из конфигурации сервиса.
-func failure(kind, message string) error { return pycompat.New(kind, message) }
+func failure(kind, message string) error { return toolrt.New(kind, message) }
 
 // ValidateSpec — тестовый сервис принимает любые команды и параметры общей формы.
-func (s *Service) ValidateSpec(*pycompat.Dict) error { return nil }
+func (s *Service) ValidateSpec(*toolrt.Dict) error { return nil }
 
 // ValidatePrompt — промпт не ограничивается.
 func (s *Service) ValidatePrompt(string) ([]string, error) { return []string{}, nil }
 
 // FrozenFields — FROZEN_FIELDS пуст.
-func (s *Service) FrozenFields() *pycompat.Dict { return pycompat.NewDict() }
+func (s *Service) FrozenFields() *toolrt.Dict { return toolrt.NewDict() }
 
 // TaskTraceID — TASK_TRACE_ID объявлен, если в конфигурации task_trace_id истинно.
-func (s *Service) TaskTraceID() bool { return pycompat.Truthy(s.Config().Value("task_trace_id")) }
+func (s *Service) TaskTraceID() bool { return toolrt.Truthy(s.Config().Value("task_trace_id")) }
 
 // Capabilities — reports/problems вида медиа из конфигурации либо встроенные.
-func (s *Service) Capabilities(_ context.Context, kind string, _ time.Duration) (*pycompat.Dict, error) {
+func (s *Service) Capabilities(_ context.Context, kind string, _ time.Duration) (*toolrt.Dict, error) {
 	if err := s.journal("capabilities", "kind", kind); err != nil {
 		return nil, err
 	}
 	config := s.Config()
-	if pycompat.Equal(config.Value("capabilities"), "error") {
-		return nil, failure(pycompat.ValueError, "Тестовый сервис не подтвердил возможности.")
+	if toolrt.Equal(config.Value("capabilities"), "error") {
+		return nil, failure(toolrt.ValueError, "Тестовый сервис не подтвердил возможности.")
 	}
-	defaults, _ := pycompat.LoadsJSON(defaultReports)
-	reports, err := section(config, "reports", kind, defaults.(*pycompat.Dict).Value(kind))
+	defaults, _ := toolrt.LoadsJSON(defaultReports)
+	reports, err := section(config, "reports", kind, defaults.(*toolrt.Dict).Value(kind))
 	if err != nil {
 		return nil, err
 	}
@@ -185,21 +184,21 @@ func (s *Service) Capabilities(_ context.Context, kind string, _ time.Duration) 
 	if err != nil {
 		return nil, err
 	}
-	result := pycompat.NewDict()
+	result := toolrt.NewDict()
 	result.Set("reports", reports)
 	result.Set("problems", problems)
 	return result, nil
 }
 
 // section — data.get(key, {}).get(kind, fallback).
-func section(config *pycompat.Dict, key, kind string, fallback any) (any, error) {
+func section(config *toolrt.Dict, key, kind string, fallback any) (any, error) {
 	value, has := config.Get(key)
 	if !has {
 		return fallback, nil
 	}
-	dict, ok := value.(*pycompat.Dict)
+	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, failure(pycompat.AttributeError, "'"+pycompat.TypeName(value)+"' object has no attribute 'get'")
+		return nil, failure(toolrt.AttributeError, "'"+toolrt.TypeName(value)+"' object has no attribute 'get'")
 	}
 	if item, has := dict.Get(kind); has {
 		return item, nil
@@ -210,21 +209,21 @@ func section(config *pycompat.Dict, key, kind string, fallback any) (any, error)
 // Submit — запись отправки в журнал и ответ из конфигурации submit: объект {generation_id?,
 // credits_consumed?}, "unknown" — обрыв (неизвестный исход), "not_submitted" — отправка не
 // начиналась, {"reject": причина} — явный отказ.
-func (s *Service) Submit(_ context.Context, directory string, request, state *pycompat.Dict, _ time.Duration) (mediaapi.SubmitResult, error) {
-	promptPath, _ := request.Value("prompt").(*pycompat.Dict).Value("path").(string)
-	data, err := os.ReadFile(pycompat.JoinPath(directory, promptPath))
+func (s *Service) Submit(_ context.Context, directory string, request, state *toolrt.Dict, _ time.Duration) (mediaapi.SubmitResult, error) {
+	promptPath, _ := request.Value("prompt").(*toolrt.Dict).Value("path").(string)
+	data, err := os.ReadFile(toolrt.JoinPath(directory, promptPath))
 	if err != nil {
 		return mediaapi.SubmitResult{}, err
 	}
-	prompt, err := pycompat.DecodeUTF8(data)
+	prompt, err := toolrt.DecodeUTF8(data)
 	if err != nil {
 		return mediaapi.SubmitResult{}, err
 	}
 	inputs := []any{}
 	items, _ := request.Value("inputs").([]any)
 	for _, element := range items {
-		item := element.(*pycompat.Dict)
-		entry := pycompat.NewDict()
+		item := element.(*toolrt.Dict)
+		entry := toolrt.NewDict()
 		for _, key := range []string{"flag", "slot", "sha256"} {
 			if value, has := item.Get(key); has {
 				entry.Set(key, value)
@@ -240,27 +239,27 @@ func (s *Service) Submit(_ context.Context, directory string, request, state *py
 	}
 	answer, has := s.Config().Get("submit")
 	if !has {
-		answer = pycompat.NewDict()
+		answer = toolrt.NewDict()
 	}
 	switch {
-	case pycompat.Equal(answer, "unknown"):
+	case toolrt.Equal(answer, "unknown"):
 		return mediaapi.SubmitResult{}, failure("RuntimeError", "Тестовый сервис оборвал отправку.")
-	case pycompat.Equal(answer, "not_submitted"):
+	case toolrt.Equal(answer, "not_submitted"):
 		return mediaapi.SubmitResult{}, &mediaapi.NotSubmitted{Message: "Тестовый сервис недоступен; отправка не начиналась."}
 	}
-	dict, ok := answer.(*pycompat.Dict)
+	dict, ok := answer.(*toolrt.Dict)
 	if !ok {
-		return mediaapi.SubmitResult{}, failure(pycompat.TypeError, "неверный ответ submit тестового сервиса")
+		return mediaapi.SubmitResult{}, failure(toolrt.TypeError, "неверный ответ submit тестового сервиса")
 	}
 	if reason, has := dict.Get("reject"); has {
-		return mediaapi.SubmitResult{}, &mediaapi.RejectedRequest{Message: pycompat.Str(reason)}
+		return mediaapi.SubmitResult{}, &mediaapi.RejectedRequest{Message: toolrt.Str(reason)}
 	}
-	result := mediaapi.SubmitResult{GenerationID: "test-generation-" + pycompat.NewInt(int64(len(s.Calls("submit")))).String()}
+	result := mediaapi.SubmitResult{GenerationID: "test-generation-" + toolrt.NewInt(int64(len(s.Calls("submit")))).String()}
 	if value, has := dict.Get("generation_id"); has {
 		text, ok := value.(string)
 		if !ok {
 			// Нестроковый ID отвергает проверка identifier: это неизвестный исход.
-			return mediaapi.SubmitResult{}, failure(pycompat.ValueError, "Некорректный generationId.")
+			return mediaapi.SubmitResult{}, failure(toolrt.ValueError, "Некорректный generationId.")
 		}
 		result.GenerationID = text
 	}
@@ -272,11 +271,11 @@ func (s *Service) Submit(_ context.Context, directory string, request, state *py
 
 // Poll — состояние по конфигурации poll: объект или список (n-й опрос того же ID берёт n-й
 // элемент, после конца — последний), "error" — отказ опроса.
-func (s *Service) Poll(_ context.Context, directory string, request, state *pycompat.Dict, _ time.Duration) (mediaapi.PollResult, error) {
+func (s *Service) Poll(_ context.Context, directory string, request, state *toolrt.Dict, _ time.Duration) (mediaapi.PollResult, error) {
 	generationID := state.Value("generation_id")
 	previous := 0
 	for _, entry := range s.Calls("poll") {
-		if pycompat.Equal(entry.Value("generation_id"), generationID) {
+		if toolrt.Equal(entry.Value("generation_id"), generationID) {
 			previous++
 		}
 	}
@@ -286,47 +285,48 @@ func (s *Service) Poll(_ context.Context, directory string, request, state *pyco
 	config := s.Config()
 	answer, has := config.Get("poll")
 	if !has {
-		completed := pycompat.NewDict()
+		completed := toolrt.NewDict()
 		completed.Set("status", "completed")
 		answer = completed
 	}
-	if pycompat.Equal(answer, "error") {
-		return mediaapi.PollResult{}, failure(pycompat.ValueError, "Тестовый сервис не ответил на запрос состояния.")
+	if toolrt.Equal(answer, "error") {
+		return mediaapi.PollResult{}, failure(toolrt.ValueError, "Тестовый сервис не ответил на запрос состояния.")
 	}
 	if list, ok := answer.([]any); ok {
 		if len(list) == 0 {
-			return mediaapi.PollResult{}, failure(pycompat.IndexError, "list index out of range")
+			return mediaapi.PollResult{}, failure(toolrt.IndexError, "list index out of range")
 		}
 		answer = list[min(previous, len(list)-1)]
 	}
-	dict, ok := answer.(*pycompat.Dict)
+	dict, ok := answer.(*toolrt.Dict)
 	if !ok || !dict.Has("status") {
-		return mediaapi.PollResult{}, failure(pycompat.KeyError, "'status'")
+		return mediaapi.PollResult{}, failure(toolrt.KeyError, "'status'")
 	}
 	status, _ := dict.Value("status").(string)
 	result := mediaapi.PollResult{Status: status, ServiceStatus: dict.Value("status")}
 	if value, has := dict.Get("service_status"); has {
 		result.ServiceStatus = value
 		if value == nil {
-			// Явный null печатается как str(None): в attempt.json попадёт «none», а не «unknown».
+			// Явный null хранится текстовой записью «None» (toolrt.Str(nil)): в attempt.json попадёт
+			// «none», а не «unknown».
 			result.ServiceStatus = "None"
 		}
 	}
 	if status == "completed" {
 		kind, _ := request.Value("kind").(string)
 		output := "builtin:" + kind
-		if files, ok := config.Value("results").(*pycompat.Dict); ok && files.Has(kind) {
-			output = s.local(pycompat.Str(files.Value(kind)))
+		if files, ok := config.Value("results").(*toolrt.Dict); ok && files.Has(kind) {
+			output = s.local(toolrt.Str(files.Value(kind)))
 		}
 		if value, has := dict.Get("outputs"); has {
 			if list, ok := value.([]any); ok {
 				result.Outputs = make([]string, len(list))
 				for index, item := range list {
-					result.Outputs[index] = pycompat.Str(item)
+					result.Outputs[index] = toolrt.Str(item)
 				}
 			}
 		} else {
-			count, _ := request.Value("outputs").(pycompat.Int).Int64()
+			count, _ := request.Value("outputs").(toolrt.Int).Int64()
 			for range count {
 				result.Outputs = append(result.Outputs, output)
 			}
@@ -342,10 +342,10 @@ func (s *Service) Fetch(_ context.Context, output, destination string) error {
 		return err
 	}
 	if errors, ok := s.Config().Value("fetch_errors").([]any); ok {
-		number := pycompat.NewInt(int64(len(s.Calls("fetch"))))
+		number := toolrt.NewInt(int64(len(s.Calls("fetch"))))
 		for _, item := range errors {
-			if pycompat.Equal(item, number) {
-				return failure(pycompat.OSError, "SECRET")
+			if toolrt.Equal(item, number) {
+				return failure(toolrt.OSError, "SECRET")
 			}
 		}
 	}
@@ -365,12 +365,12 @@ func (s *Service) Account(context.Context, time.Duration) (mediaapi.Account, err
 	}
 	value, has := s.Config().Get("balance")
 	if !has {
-		value = pycompat.NewInt(1000)
+		value = toolrt.NewInt(1000)
 	}
 	if value == nil {
 		return mediaapi.Account{Source: "тестовый сервис не сообщил остаток"}, nil
 	}
-	balance, err := pycompat.Float(value)
+	balance, err := toolrt.Float(value)
 	if err != nil {
 		return mediaapi.Account{}, err
 	}
@@ -381,10 +381,10 @@ func (s *Service) Account(context.Context, time.Duration) (mediaapi.Account, err
 // при отсутствии создаётся пустая таблица (цены узнаются наблюдениями).
 func (s *Service) PricingFile() (string, error) {
 	path := filepath.Join(s.Dir, "pricing.json")
-	if value := s.Config().Value("pricing"); pycompat.Truthy(value) {
-		path = s.local(pycompat.Str(value))
+	if value := s.Config().Value("pricing"); toolrt.Truthy(value) {
+		path = s.local(toolrt.Str(value))
 	}
-	if !pycompat.Exists(path) {
+	if !toolrt.Exists(path) {
 		if err := os.MkdirAll(filepath.Dir(path), 0o777); err != nil {
 			return "", err
 		}
@@ -398,15 +398,15 @@ func (s *Service) PricingFile() (string, error) {
 // Login — ответ login конфигурации {ok, message}.
 func (s WithAuth) Login(_ context.Context, options mediaapi.LoginOptions) mediaapi.LoginResult {
 	_ = s.journal("login", "open_browser", options.OpenBrowser)
-	answer, _ := s.Config().Value("login").(*pycompat.Dict)
+	answer, _ := s.Config().Value("login").(*toolrt.Dict)
 	message, _ := answer.Value("message").(string)
-	return mediaapi.LoginResult{OK: pycompat.Truthy(answer.Value("ok")), Message: message}
+	return mediaapi.LoginResult{OK: toolrt.Truthy(answer.Value("ok")), Message: message}
 }
 
 // AuthStatus — ответ auth_status конфигурации {status, message?}.
 func (s WithAuth) AuthStatus(context.Context, time.Duration) mediaapi.AuthStatus {
 	_ = s.journal("auth_status")
-	answer, _ := s.Config().Value("auth_status").(*pycompat.Dict)
+	answer, _ := s.Config().Value("auth_status").(*toolrt.Dict)
 	status, _ := answer.Value("status").(string)
 	message, _ := answer.Value("message").(string)
 	return mediaapi.AuthStatus{Status: status, Message: message}

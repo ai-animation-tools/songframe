@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 454, in <module>\n    main()\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 444, in main\n    report = lint(ROOT)\n             ^^^^^^^^^^\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 417, in lint\n    data = lint_scenes(root, report)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 244, in lint_scenes\n    sid = scene.get(\"id\", \"?\")\n          ^^^^^^^^^\nAttributeError: 'str' object has no attribute 'get'\n",
+  "stderr": "Traceback (most recent call last):\nAttributeError: 'str' object has no attribute 'get'\n",
   "traceback": true
 }

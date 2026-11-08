@@ -12,10 +12,10 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/production"
-	"songframe-go/internal/scenario"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/production"
+	"songframe/internal/scenario"
 )
 
 // image — расширения изображений-входов запроса.
@@ -160,7 +160,7 @@ type View struct {
 
 // existing — путь, если файл существует.
 func existing(path string) *string {
-	if jscompat.Exists(path) {
+	if dynvalue.Exists(path) {
 		return &path
 	}
 	return nil
@@ -169,12 +169,12 @@ func existing(path string) *string {
 // descriptorPath — путь дескриптора комплекта: без root или с root asset от папки сцены, с root
 // source от папки source.
 func descriptorPath(project, assetDir string, item any) *string {
-	path, ok := jscompat.Get(item, "path").(string)
+	path, ok := dynvalue.Get(item, "path").(string)
 	if !ok || path == "" {
 		return nil
 	}
 	base := assetDir
-	if jscompat.StrictEqual(jscompat.Get(item, "root"), "source") {
+	if dynvalue.StrictEqual(dynvalue.Get(item, "root"), "source") {
 		base = filepath.Join(project, "source")
 	}
 	return existing(filepath.Join(base, path))
@@ -197,23 +197,23 @@ func readFile(path string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	return jscompat.DecodeUTF8(data), true
+	return dynvalue.DecodeUTF8(data), true
 }
 
-// orText — `value ?? fallback` как строка шаблона JS.
+// orText — значение строкой (dynvalue.ToString), а при null или отсутствии — fallback.
 func orText(value any, fallback string) string {
-	if jscompat.IsNullish(value) {
+	if dynvalue.IsNullish(value) {
 		return fallback
 	}
-	return jscompat.ToString(value)
+	return dynvalue.ToString(value)
 }
 
-// raw — значение в JSON (undefined — null).
+// raw — значение в JSON (отсутствующее, dynvalue.Undefined, — null).
 func raw(value any) json.RawMessage {
-	if value == jscompat.Undefined {
+	if value == dynvalue.Undefined {
 		return json.RawMessage("null")
 	}
-	return jscompat.Raw(value)
+	return dynvalue.Raw(value)
 }
 
 // videoTitles — mediaProviderTitles('video'): названия провайдеров видео через « или ».
@@ -231,70 +231,70 @@ func videoTitles() string {
 // readAsset — комплект плана: оригинал против принятого монтажа, рецепт, промпт, входы.
 func readAsset(project, sid string, fps float64) *Asset {
 	dir := filepath.Join(project, "assets", "shots", sid)
-	manifest, ok := jscompat.ReadJSONFile(filepath.Join(dir, "manifest.json"))
-	if !ok || jscompat.IsNullish(manifest) {
+	manifest, ok := dynvalue.ReadJSONFile(filepath.Join(dir, "manifest.json"))
+	if !ok || dynvalue.IsNullish(manifest) {
 		return nil
 	}
-	generation := jscompat.Coalesce(jscompat.Get(manifest, "generation"), jscompat.NewObject())
-	edit := jscompat.Coalesce(jscompat.Get(manifest, "accepted_edit"), jscompat.NewObject())
+	generation := dynvalue.Coalesce(dynvalue.Get(manifest, "generation"), dynvalue.NewObject())
+	edit := dynvalue.Coalesce(dynvalue.Get(manifest, "accepted_edit"), dynvalue.NewObject())
 	var request any
-	if path := descriptorPath(project, dir, jscompat.Get(generation, "request")); path != nil {
-		if value, ok := jscompat.ReadJSONFile(*path); ok {
+	if path := descriptorPath(project, dir, dynvalue.Get(generation, "request")); path != nil {
+		if value, ok := dynvalue.ReadJSONFile(*path); ok {
 			request = value
 		}
 	}
 	inputs := []Input{}
-	list, _ := jscompat.AsArray(jscompat.Coalesce(jscompat.Get(generation, "inputs"), []any{}))
+	list, _ := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(generation, "inputs"), []any{}))
 	for _, item := range list {
 		path := descriptorPath(project, dir, item)
 		if path == nil || !image.MatchString(*path) {
 			continue
 		}
-		role := jscompat.Coalesce(jscompat.Get(item, "role"), jscompat.Coalesce(jscompat.Get(item, "slot"), ""))
-		inputs = append(inputs, Input{Path: *path, Role: jscompat.ToString(role)})
+		role := dynvalue.Coalesce(dynvalue.Get(item, "role"), dynvalue.Coalesce(dynvalue.Get(item, "slot"), ""))
+		inputs = append(inputs, Input{Path: *path, Role: dynvalue.ToString(role)})
 	}
 	var originalMedia *string
-	if media := jscompat.Get(generation, "original_media"); jscompat.Truthy(media) {
-		text := textOriginalMedia(orText(jscompat.Get(media, "width"), "?"), orText(jscompat.Get(media, "height"), "?"),
-			orText(jscompat.Get(media, "r_frame_rate"), "?"), orText(jscompat.Get(media, "nb_frames"), "?"),
-			jscompat.ToFixed(jscompat.ToNumber(jscompat.Coalesce(jscompat.Get(media, "duration"), 0.0)), 2))
+	if media := dynvalue.Get(generation, "original_media"); dynvalue.Truthy(media) {
+		text := textOriginalMedia(orText(dynvalue.Get(media, "width"), "?"), orText(dynvalue.Get(media, "height"), "?"),
+			orText(dynvalue.Get(media, "r_frame_rate"), "?"), orText(dynvalue.Get(media, "nb_frames"), "?"),
+			dynvalue.ToFixed(dynvalue.ToNumber(dynvalue.Coalesce(dynvalue.Get(media, "duration"), 0.0)), 2))
 		originalMedia = &text
 	}
-	frames := jscompat.Coalesce(jscompat.Get(edit, "frames"), 0.0)
-	speed := jscompat.Get(edit, "speed")
-	speedValue := jscompat.Get(speed, "ratio")
-	if jscompat.IsNullish(speedValue) {
-		if factor := jscompat.Get(speed, "factor"); jscompat.Truthy(factor) {
-			speedValue = jscompat.ToString(factor)
+	frames := dynvalue.Coalesce(dynvalue.Get(edit, "frames"), 0.0)
+	speed := dynvalue.Get(edit, "speed")
+	speedValue := dynvalue.Get(speed, "ratio")
+	if dynvalue.IsNullish(speedValue) {
+		if factor := dynvalue.Get(speed, "factor"); dynvalue.Truthy(factor) {
+			speedValue = dynvalue.ToString(factor)
 		} else {
 			speedValue = "1"
 		}
 	}
-	duration := jscompat.Get(edit, "duration_seconds")
-	if jscompat.IsNullish(duration) {
-		duration = jscompat.ToNumber(frames) / fps
+	duration := dynvalue.Get(edit, "duration_seconds")
+	if dynvalue.IsNullish(duration) {
+		duration = dynvalue.ToNumber(frames) / fps
 	}
 	asset := &Asset{
-		Dir: dir, Video: descriptorPath(project, dir, jscompat.Get(edit, "video")),
-		Original: descriptorPath(project, dir, jscompat.Get(generation, "original")), OriginalMedia: originalMedia,
+		Dir: dir, Video: descriptorPath(project, dir, dynvalue.Get(edit, "video")),
+		Original: descriptorPath(project, dir, dynvalue.Get(generation, "original")), OriginalMedia: originalMedia,
 		Edit: Edit{
-			Frames: jscompat.ToNumber(frames), Duration: jscompat.ToNumber(duration),
-			SourceInterval: raw(jscompat.Coalesce(jscompat.Get(edit, "source_interval_seconds"), nil)),
-			StillAt:        raw(jscompat.Coalesce(jscompat.Get(edit, "still_source_time_seconds"), nil)),
+			Frames: dynvalue.ToNumber(frames), Duration: dynvalue.ToNumber(duration),
+			SourceInterval: raw(dynvalue.Coalesce(dynvalue.Get(edit, "source_interval_seconds"), nil)),
+			StillAt:        raw(dynvalue.Coalesce(dynvalue.Get(edit, "still_source_time_seconds"), nil)),
 			Speed:          raw(speedValue),
-			HoldFirst:      jscompat.ToNumber(jscompat.Coalesce(jscompat.Get(edit, "hold_first_seconds"), 0.0)),
-			HoldLast:       jscompat.ToNumber(jscompat.Coalesce(jscompat.Get(edit, "hold_last_seconds"), 0.0)),
-			Note:           raw(jscompat.Coalesce(jscompat.Get(edit, "processing_note"), "")),
+			HoldFirst:      dynvalue.ToNumber(dynvalue.Coalesce(dynvalue.Get(edit, "hold_first_seconds"), 0.0)),
+			HoldLast:       dynvalue.ToNumber(dynvalue.Coalesce(dynvalue.Get(edit, "hold_last_seconds"), 0.0)),
+			Note:           raw(dynvalue.Coalesce(dynvalue.Get(edit, "processing_note"), "")),
 		},
-		Prompt: readText(descriptorPath(project, dir, jscompat.Get(generation, "prompt"))),
-		Inputs: inputs, Lipsync: jscompat.Truthy(jscompat.Get(generation, "lipsync")),
-		Audio: descriptorPath(project, dir, jscompat.Get(generation, "audio")),
+		Prompt: readText(descriptorPath(project, dir, dynvalue.Get(generation, "prompt"))),
+		Inputs: inputs, Lipsync: dynvalue.Truthy(dynvalue.Get(generation, "lipsync")),
+		Audio: descriptorPath(project, dir, dynvalue.Get(generation, "audio")),
 	}
-	if jscompat.Truthy(request) {
+	if dynvalue.Truthy(request) {
 		asset.Request = &AssetRequest{
-			Provider:   raw(jscompat.Coalesce(jscompat.Get(request, "provider"), videoTitles())),
-			Model:      raw(jscompat.Coalesce(jscompat.Get(request, "model"), "")),
-			Parameters: raw(jscompat.Coalesce(jscompat.Get(request, "parameters"), jscompat.NewObject())),
+			Provider:   raw(dynvalue.Coalesce(dynvalue.Get(request, "provider"), videoTitles())),
+			Model:      raw(dynvalue.Coalesce(dynvalue.Get(request, "model"), "")),
+			Parameters: raw(dynvalue.Coalesce(dynvalue.Get(request, "parameters"), dynvalue.NewObject())),
 		}
 	}
 	return asset
@@ -328,12 +328,12 @@ func brief(project string, scenes any, sid, phase string, problems *[]string) *P
 
 // ViewDashboard — карточки планов, сводка и проблемы чтения.
 func ViewDashboard(project string) (View, error) {
-	scenes, ok := jscompat.ReadJSONFile(filepath.Join(project, "plan", "scenes.json"))
-	if !ok || jscompat.IsNullish(scenes) {
+	scenes, ok := dynvalue.ReadJSONFile(filepath.Join(project, "plan", "scenes.json"))
+	if !ok || dynvalue.IsNullish(scenes) {
 		return View{Shots: []Shot{}, Problems: []string{production.TextScenarioRequired}}, nil
 	}
 	// Частота кадров принадлежит реестру сцен (schema требует 30), приложение её не выбирает.
-	fps := jscompat.ToNumber(jscompat.Get(scenes, "fps"))
+	fps := dynvalue.ToNumber(dynvalue.Get(scenes, "fps"))
 	if fps == 0 || fps != fps {
 		fps = production.FPS
 	}
@@ -345,29 +345,29 @@ func ViewDashboard(project string) (View, error) {
 	for _, shot := range view.Shots {
 		byID[shot.ID] = shot
 	}
-	sequences, err := jscompat.Iterate(jscompat.Get(scenes, "sequences"))
+	sequences, err := dynvalue.Iterate(dynvalue.Get(scenes, "sequences"))
 	if err != nil {
 		return View{}, err
 	}
 	titles := map[string]any{}
 	for _, sequence := range sequences {
-		titles[jscompat.ToString(jscompat.Get(sequence, "id"))] = jscompat.Get(sequence, "title")
+		titles[dynvalue.ToString(dynvalue.Get(sequence, "id"))] = dynvalue.Get(sequence, "title")
 	}
-	animatic, _ := jscompat.ReadJSONFile(filepath.Join(project, "plan", "animatic", "latest", "manifest.json"))
+	animatic, _ := dynvalue.ReadJSONFile(filepath.Join(project, "plan", "animatic", "latest", "manifest.json"))
 	animaticMedia := map[string]any{}
-	if list, ok := jscompat.AsArray(jscompat.Get(animatic, "shots")); ok {
+	if list, ok := dynvalue.AsArray(dynvalue.Get(animatic, "shots")); ok {
 		for _, item := range list {
-			animaticMedia[jscompat.ToString(jscompat.Get(item, "id"))] = jscompat.Coalesce(jscompat.Get(item, "media"), "card")
+			animaticMedia[dynvalue.ToString(dynvalue.Get(item, "id"))] = dynvalue.Coalesce(dynvalue.Get(item, "media"), "card")
 		}
 	}
 	problems := append([]string{}, view.Problems...)
-	list, err := jscompat.Iterate(jscompat.Get(scenes, "scenes"))
+	list, err := dynvalue.Iterate(dynvalue.Get(scenes, "scenes"))
 	if err != nil {
 		return View{}, err
 	}
 	shots := []Shot{}
 	for _, scene := range list {
-		sid := jscompat.ToString(jscompat.Get(scene, "id"))
+		sid := dynvalue.ToString(dynvalue.Get(scene, "id"))
 		prod := byID[sid]
 		asset := readAsset(project, sid, fps)
 		packages := []*production.PackageView{}
@@ -394,39 +394,39 @@ func ViewDashboard(project string) (View, error) {
 					continue
 				}
 				label := frame.ID + " · " + frame.Role
-				if note, err := jscompat.Parse(frame.Note); err == nil && len(frame.Note) > 0 && jscompat.Truthy(note) {
-					label += " · " + jscompat.ToString(note)
+				if note, err := dynvalue.Parse(frame.Note); err == nil && len(frame.Note) > 0 && dynvalue.Truthy(note) {
+					label += " · " + dynvalue.ToString(note)
 				}
 				keyframes = append(keyframes, Keyframe{ImagePath: *frame.ImagePath, Label: label, Approved: frame.Approved})
 			}
 		}
 		references := []Reference{}
-		refs, _ := jscompat.AsArray(jscompat.Get(scene, "references"))
+		refs, _ := dynvalue.AsArray(dynvalue.Get(scene, "references"))
 		for _, item := range refs {
-			id := jscompat.ToString(item)
-			ref := jscompat.Get(jscompat.Get(scenes, "references"), id)
+			id := dynvalue.ToString(item)
+			ref := dynvalue.Get(dynvalue.Get(scenes, "references"), id)
 			var imagePath *string
-			if path, ok := jscompat.Get(ref, "path").(string); ok && path != "" {
+			if path, ok := dynvalue.Get(ref, "path").(string); ok && path != "" {
 				imagePath = existing(filepath.Join(project, path))
 			}
-			name := jscompat.Coalesce(jscompat.Get(ref, "short_name"), jscompat.Coalesce(jscompat.Get(ref, "name"), id))
-			references = append(references, Reference{ID: id, Name: jscompat.ToString(name), ImagePath: imagePath})
+			name := dynvalue.Coalesce(dynvalue.Get(ref, "short_name"), dynvalue.Coalesce(dynvalue.Get(ref, "name"), id))
+			references = append(references, Reference{ID: id, Name: dynvalue.ToString(name), ImagePath: imagePath})
 		}
-		sequence := jscompat.Get(scene, "sequence")
-		sequenceTitle, known := titles[jscompat.ToString(sequence)]
-		if !known || jscompat.IsNullish(sequenceTitle) {
+		sequence := dynvalue.Get(scene, "sequence")
+		sequenceTitle, known := titles[dynvalue.ToString(sequence)]
+		if !known || dynvalue.IsNullish(sequenceTitle) {
 			sequenceTitle = sequence
 		}
-		start := jscompat.ToNumber(jscompat.Get(scene, "start_frame"))
-		end := jscompat.ToNumber(jscompat.Get(scene, "end_frame_exclusive"))
+		start := dynvalue.ToNumber(dynvalue.Get(scene, "start_frame"))
+		end := dynvalue.ToNumber(dynvalue.Get(scene, "end_frame_exclusive"))
 		shot := Shot{
-			DerivedFrom: raw(jscompat.Coalesce(jscompat.Get(jscompat.Get(scene, "derived_from"), "shot"), nil)),
-			ID:          sid, Title: raw(jscompat.Coalesce(jscompat.Get(scene, "title"), sequenceTitle)),
-			SequenceTitle: raw(sequenceTitle), Original: raw(jscompat.Get(scene, "original")),
+			DerivedFrom: raw(dynvalue.Coalesce(dynvalue.Get(dynvalue.Get(scene, "derived_from"), "shot"), nil)),
+			ID:          sid, Title: raw(dynvalue.Coalesce(dynvalue.Get(scene, "title"), sequenceTitle)),
+			SequenceTitle: raw(sequenceTitle), Original: raw(dynvalue.Get(scene, "original")),
 			Start: start / fps, End: end / fps, Frames: end - start,
-			Camera: raw(jscompat.Get(scene, "camera")), Action: raw(jscompat.Get(scene, "action")),
-			Continuity: raw(jscompat.Get(scene, "continuity")), Notes: raw(jscompat.Coalesce(jscompat.Get(scene, "notes"), "")),
-			Lipsync: raw(jscompat.Get(scene, "lipsync")), References: references,
+			Camera: raw(dynvalue.Get(scene, "camera")), Action: raw(dynvalue.Get(scene, "action")),
+			Continuity: raw(dynvalue.Get(scene, "continuity")), Notes: raw(dynvalue.Coalesce(dynvalue.Get(scene, "notes"), "")),
+			Lipsync: raw(dynvalue.Get(scene, "lipsync")), References: references,
 			State: production.StatePlanned, StageLabel: textNotStarted, Asset: asset, PackagesCount: len(packages),
 			Keyframes: keyframes, CardPath: existing(card), AnimaticMedia: json.RawMessage("null"),
 		}

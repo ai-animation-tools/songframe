@@ -11,11 +11,11 @@ import (
 	"strings"
 	"unicode"
 
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/mediacmd"
+	"songframe/internal/toolrt"
 )
 
-// stderrTail — сколько последних символов stderr FFmpeg/ffprobe попадает в текст ошибки ([-600:]).
+// stderrTail — сколько последних символов stderr FFmpeg/ffprobe попадает в текст ошибки.
 const stderrTail = 600
 
 // runMedia запускает программу и возвращает её stdout; ненулевой код — ValueError «Ошибка обработки медиа: »
@@ -27,7 +27,7 @@ func runMedia(ctx context.Context, program string, args ...string) ([]byte, erro
 		return nil, err
 	}
 	if result.Code != 0 {
-		return nil, pycompat.New(pycompat.ValueError, textMediaFailed+mediacmd.Tail(result.Stderr, stderrTail))
+		return nil, toolrt.New(toolrt.ValueError, textMediaFailed+mediacmd.Tail(result.Stderr, stderrTail))
 	}
 	return result.Stdout, nil
 }
@@ -35,18 +35,18 @@ func runMedia(ctx context.Context, program string, args ...string) ([]byte, erro
 // media — параметры потока probe; поля в порядке словаря media отчёта. Значения из JSON
 // ffprobe (codec, pixFmt, rFrameRate) хранятся как есть: отчёт печатает их без преобразования.
 type media struct {
-	width, height pycompat.Int
+	width, height toolrt.Int
 	rFrameRate    any
 	fps, duration float64
-	frames        pycompat.Int
+	frames        toolrt.Int
 	codec, pixFmt any
 	audio         int
-	bytes         pycompat.Int
+	bytes         toolrt.Int
 }
 
 // dict — словарь media отчёта.
-func (m media) dict() *pycompat.Dict {
-	result := pycompat.NewDict()
+func (m media) dict() *toolrt.Dict {
+	result := toolrt.NewDict()
 	result.Set("width", m.width)
 	result.Set("height", m.height)
 	result.Set("r_frame_rate", m.rFrameRate)
@@ -55,12 +55,12 @@ func (m media) dict() *pycompat.Dict {
 	result.Set("nb_frames", m.frames)
 	result.Set("codec", m.codec)
 	result.Set("pix_fmt", m.pixFmt)
-	result.Set("audio_streams", pycompat.NewInt(int64(m.audio)))
+	result.Set("audio_streams", toolrt.NewInt(int64(m.audio)))
 	result.Set("bytes", m.bytes)
 	return result
 }
 
-// probe — первый видеопоток ffprobe, частота Decimal(числитель)/Decimal(знаменатель)
+// probe — первый видеопоток ffprobe, частота числитель/знаменатель в toolrt.Decimal
 // (28 знаков), длительность потока или формата, число кадров из nb_frames либо округлённое
 // произведение длительности на частоту. Порядок обращений к полям определяет, какое исключение даёт
 // неполный JSON (KeyError — скрытый текст, прочее — трассировка); он зафиксирован эталоном.
@@ -69,67 +69,67 @@ func probe(ctx context.Context, path string) (media, error) {
 	if err != nil {
 		return media{}, err
 	}
-	text, err := pycompat.DecodeUTF8(output)
+	text, err := toolrt.DecodeUTF8(output)
 	if err != nil {
 		return media{}, err
 	}
-	info, err := pycompat.LoadsJSON(text)
+	info, err := toolrt.LoadsJSON(text)
 	if err != nil {
 		return media{}, err
 	}
-	listed, err := pycompat.Item(info, "streams")
+	listed, err := toolrt.Item(info, "streams")
 	if err != nil {
 		return media{}, err
 	}
-	streams, err := pycompat.Iter(listed)
+	streams, err := toolrt.Iter(listed)
 	if err != nil {
 		return media{}, err
 	}
 	var video any
 	for _, stream := range streams {
-		kind, err := pycompat.Item(stream, "codec_type")
+		kind, err := toolrt.Item(stream, "codec_type")
 		if err != nil {
 			return media{}, err
 		}
-		if pycompat.Equal(kind, "video") {
+		if toolrt.Equal(kind, "video") {
 			video = stream
 			break
 		}
 	}
 	if video == nil {
-		return media{}, pycompat.New(pycompat.ValueError, textNoVideoStream)
+		return media{}, toolrt.New(toolrt.ValueError, textNoVideoStream)
 	}
 	rate, err := frameRate(video)
 	if err != nil {
 		return media{}, err
 	}
-	durationValue, err := pycompat.DictGet(video, "duration", nil)
+	durationValue, err := toolrt.DictGet(video, "duration", nil)
 	if err != nil {
 		return media{}, err
 	}
-	if !pycompat.Truthy(durationValue) {
-		format, err := pycompat.Item(info, "format")
+	if !toolrt.Truthy(durationValue) {
+		format, err := toolrt.Item(info, "format")
 		if err != nil {
 			return media{}, err
 		}
-		if durationValue, err = pycompat.DictGet(format, "duration", nil); err != nil {
+		if durationValue, err = toolrt.DictGet(format, "duration", nil); err != nil {
 			return media{}, err
 		}
-		if !pycompat.Truthy(durationValue) {
+		if !toolrt.Truthy(durationValue) {
 			durationValue = "0"
 		}
 	}
-	duration, err := pycompat.NewDecimal(durationValue)
+	duration, err := toolrt.NewDecimal(durationValue)
 	if err != nil {
 		return media{}, err
 	}
 	var result media
-	counted, err := pycompat.DictGet(video, "nb_frames", "")
+	counted, err := toolrt.DictGet(video, "nb_frames", "")
 	if err != nil {
 		return media{}, err
 	}
-	if isDigit(pycompat.Str(counted)) {
-		raw, err := pycompat.Item(video, "nb_frames")
+	if isDigit(toolrt.Str(counted)) {
+		raw, err := toolrt.Item(video, "nb_frames")
 		if err != nil {
 			return media{}, err
 		}
@@ -141,9 +141,9 @@ func probe(ctx context.Context, path string) (media, error) {
 	}
 	for _, field := range []struct {
 		key    string
-		target *pycompat.Int
+		target *toolrt.Int
 	}{{"width", &result.width}, {"height", &result.height}} {
-		raw, err := pycompat.Item(video, field.key)
+		raw, err := toolrt.Item(video, field.key)
 		if err != nil {
 			return media{}, err
 		}
@@ -151,7 +151,7 @@ func probe(ctx context.Context, path string) (media, error) {
 			return media{}, err
 		}
 	}
-	if result.rFrameRate, err = pycompat.Item(video, "r_frame_rate"); err != nil {
+	if result.rFrameRate, err = toolrt.Item(video, "r_frame_rate"); err != nil {
 		return media{}, err
 	}
 	if result.fps, err = decimalFloat(rate); err != nil {
@@ -160,22 +160,22 @@ func probe(ctx context.Context, path string) (media, error) {
 	if result.duration, err = decimalFloat(duration); err != nil {
 		return media{}, err
 	}
-	result.codec, _ = pycompat.DictGet(video, "codec_name", nil)
-	result.pixFmt, _ = pycompat.DictGet(video, "pix_fmt", nil)
+	result.codec, _ = toolrt.DictGet(video, "codec_name", nil)
+	result.pixFmt, _ = toolrt.DictGet(video, "pix_fmt", nil)
 	for _, stream := range streams {
-		kind, err := pycompat.Item(stream, "codec_type")
+		kind, err := toolrt.Item(stream, "codec_type")
 		if err != nil {
 			return media{}, err
 		}
-		if pycompat.Equal(kind, "audio") {
+		if toolrt.Equal(kind, "audio") {
 			result.audio++
 		}
 	}
-	format, err := pycompat.Item(info, "format")
+	format, err := toolrt.Item(info, "format")
 	if err != nil {
 		return media{}, err
 	}
-	size, err := pycompat.DictGet(format, "size", pycompat.NewInt(0))
+	size, err := toolrt.DictGet(format, "size", toolrt.NewInt(0))
 	if err != nil {
 		return media{}, err
 	}
@@ -185,34 +185,34 @@ func probe(ctx context.Context, path string) (media, error) {
 	return result, nil
 }
 
-// frameRate — Decimal(r.split("/")[0]) / Decimal(r.split("/")[1]): 0/0 — decimal.InvalidOperation,
-// N/0 — DivisionByZero, строка без «/» — IndexError (все — трассировка).
-func frameRate(video any) (pycompat.Decimal, error) {
-	raw, err := pycompat.Item(video, "r_frame_rate")
+// frameRate — r_frame_rate «числитель/знаменатель» как частное toolrt.Decimal: 0/0 —
+// InvalidOperation, N/0 — DivisionByZero, строка без «/» — IndexError (все — трассировка).
+func frameRate(video any) (toolrt.Decimal, error) {
+	raw, err := toolrt.Item(video, "r_frame_rate")
 	if err != nil {
-		return pycompat.Decimal{}, err
+		return toolrt.Decimal{}, err
 	}
 	text, ok := raw.(string)
 	if !ok {
-		return pycompat.Decimal{}, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'split'", pycompat.TypeName(raw))
+		return toolrt.Decimal{}, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'split'", toolrt.TypeName(raw))
 	}
 	parts := strings.Split(text, "/")
-	numerator, err := pycompat.NewDecimal(parts[0])
+	numerator, err := toolrt.NewDecimal(parts[0])
 	if err != nil {
-		return pycompat.Decimal{}, err
+		return toolrt.Decimal{}, err
 	}
 	if len(parts) < 2 {
-		return pycompat.Decimal{}, pycompat.New(pycompat.IndexError, "list index out of range")
+		return toolrt.Decimal{}, toolrt.New(toolrt.IndexError, "list index out of range")
 	}
-	denominator, err := pycompat.NewDecimal(parts[1])
+	denominator, err := toolrt.NewDecimal(parts[1])
 	if err != nil {
-		return pycompat.Decimal{}, err
+		return toolrt.Decimal{}, err
 	}
 	return numerator.Div(denominator)
 }
 
-// isDigit — str.isdigit() для записи nb_frames: непустая строка из десятичных цифр Unicode.
-// Надстрочные цифры (тоже isdigit у Python) ffprobe не выводит.
+// isDigit — запись nb_frames — непустая строка из десятичных цифр Unicode (unicode.IsDigit).
+// Надстрочные и прочие особые цифры ffprobe не выводит, поэтому их не различаем.
 func isDigit(text string) bool {
 	if text == "" {
 		return false
@@ -225,37 +225,37 @@ func isDigit(text string) bool {
 	return true
 }
 
-// toInt — int(value) для чисел и строк из JSON ffprobe: int как есть, bool — 0/1, float —
+// toInt — целое из числа или строки JSON ffprobe: целое как есть, bool — 0/1, float —
 // отбрасывание дробной части, строка — десятичная запись с необязательными пробелами и знаком.
-func toInt(value any) (pycompat.Int, error) {
+func toInt(value any) (toolrt.Int, error) {
 	switch item := value.(type) {
-	case pycompat.Int:
+	case toolrt.Int:
 		return item, nil
 	case bool:
 		if item {
-			return pycompat.NewInt(1), nil
+			return toolrt.NewInt(1), nil
 		}
-		return pycompat.NewInt(0), nil
+		return toolrt.NewInt(0), nil
 	case float64:
-		truncated, err := pycompat.FloatToInt(item, false)
+		truncated, err := toolrt.FloatToInt(item, false)
 		if err != nil {
-			return pycompat.Int{}, err
+			return toolrt.Int{}, err
 		}
-		return pycompat.NewInt(truncated), nil
+		return toolrt.NewInt(truncated), nil
 	case string:
 		if parsed, ok := parseIntText(item); ok {
 			return parsed, nil
 		}
-		return pycompat.Int{}, pycompat.Raise(pycompat.ValueError, "invalid literal for int() with base 10: %s", pycompat.Repr(item))
+		return toolrt.Int{}, toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(item))
 	}
-	return pycompat.Int{}, pycompat.Raise(pycompat.TypeError,
-		"int() argument must be a string, a bytes-like object or a real number, not '%s'", pycompat.TypeName(value))
+	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError,
+		"int() argument must be a string, a bytes-like object or a real number, not '%s'", toolrt.TypeName(value))
 }
 
-// parseIntText — int(str): пробелы по краям, необязательный знак, десятичные цифры Unicode с
+// parseIntText — целое из строки: пробелы по краям, необязательный знак, десятичные цифры Unicode с
 // одиночными подчёркиваниями между ними.
-func parseIntText(text string) (pycompat.Int, bool) {
-	text = pycompat.Strip(text)
+func parseIntText(text string) (toolrt.Int, bool) {
+	text = toolrt.Strip(text)
 	var builder strings.Builder
 	if strings.HasPrefix(text, "-") || strings.HasPrefix(text, "+") {
 		if text[0] == '-' {
@@ -268,20 +268,21 @@ func parseIntText(text string) (pycompat.Int, bool) {
 		switch {
 		case r == '_' && previous != '_':
 		case unicode.IsDigit(r):
-			builder.WriteByte(byte('0' + pycompat.DigitValue(r)))
+			builder.WriteByte(byte('0' + toolrt.DigitValue(r)))
 		default:
-			return pycompat.Int{}, false
+			return toolrt.Int{}, false
 		}
 		previous = r
 	}
 	if text == "" || previous == '_' {
-		return pycompat.Int{}, false
+		return toolrt.Int{}, false
 	}
-	return pycompat.ParseInt(builder.String())
+	return toolrt.ParseInt(builder.String())
 }
 
-// decimalFloat — float(Decimal): ближайшее двоичное значение десятичной записи.
-func decimalFloat(value pycompat.Decimal) (float64, error) {
+// decimalFloat — ближайшее float64 к значению toolrt.Decimal; бесконечности и NaN переносятся,
+// сигнальный NaN — ValueError.
+func decimalFloat(value toolrt.Decimal) (float64, error) {
 	text := value.FormatF()
 	switch strings.TrimPrefix(text, "-") {
 	case "Infinity":
@@ -291,7 +292,7 @@ func decimalFloat(value pycompat.Decimal) (float64, error) {
 		return math.Inf(1), nil
 	}
 	if strings.Contains(text, "sNaN") {
-		return 0, pycompat.New(pycompat.ValueError, "cannot convert signaling NaN to float")
+		return 0, toolrt.New(toolrt.ValueError, "cannot convert signaling NaN to float")
 	}
 	if strings.Contains(text, "NaN") {
 		return math.NaN(), nil
@@ -299,8 +300,8 @@ func decimalFloat(value pycompat.Decimal) (float64, error) {
 	return strconv.ParseFloat(text, 64)
 }
 
-// decimalParts — знак, коэффициент и показатель конечного Decimal по записи format(d, "f").
-func decimalParts(value pycompat.Decimal) (bool, *big.Int, int) {
+// decimalParts — знак, коэффициент и показатель конечного toolrt.Decimal по его записи FormatF.
+func decimalParts(value toolrt.Decimal) (bool, *big.Int, int) {
 	text := value.FormatF()
 	negative := strings.HasPrefix(text, "-")
 	text = strings.TrimPrefix(text, "-")
@@ -320,12 +321,11 @@ func roundHalfEven(coef *big.Int, drop int) *big.Int {
 	return quotient
 }
 
-// roundedProduct — int((duration * rate).to_integral_value()): произведение в контексте Decimal
-// по умолчанию (28 значащих цифр, ROUND_HALF_EVEN), затем округление до целого тем же правилом.
-// Особые значения дают исключения Python: NaN — ValueError, бесконечность — OverflowError,
-// бесконечность на ноль — InvalidOperation.
-func roundedProduct(duration, rate pycompat.Decimal) (pycompat.Int, error) {
-	special := func(value pycompat.Decimal) string {
+// roundedProduct — оценка числа кадров: произведение duration × rate округляется до 28 значащих
+// цифр половиной к чётному, затем до целого тем же правилом. Особые значения дают исключения:
+// NaN — ValueError, бесконечность — OverflowError, бесконечность на ноль — InvalidOperation.
+func roundedProduct(duration, rate toolrt.Decimal) (toolrt.Int, error) {
+	special := func(value toolrt.Decimal) string {
 		text := strings.TrimPrefix(value.FormatF(), "-")
 		switch {
 		case strings.HasPrefix(text, "sNaN"):
@@ -337,22 +337,22 @@ func roundedProduct(duration, rate pycompat.Decimal) (pycompat.Int, error) {
 		}
 		return ""
 	}
-	invalid := pycompat.New(pycompat.InvalidOperation, "[<class 'decimal.InvalidOperation'>]")
+	invalid := toolrt.New(toolrt.InvalidOperation, "[<class 'decimal.InvalidOperation'>]")
 	left, right := special(duration), special(rate)
 	switch {
 	case left == "snan" || right == "snan":
-		return pycompat.Int{}, invalid
+		return toolrt.Int{}, invalid
 	case left == "nan" || right == "nan":
-		return pycompat.Int{}, pycompat.New(pycompat.ValueError, "cannot convert NaN to integer")
+		return toolrt.Int{}, toolrt.New(toolrt.ValueError, "cannot convert NaN to integer")
 	case left == "inf" || right == "inf":
 		other := rate
 		if left != "inf" {
 			other = duration
 		}
 		if _, coef, _ := decimalParts(other); special(other) == "" && coef.Sign() == 0 {
-			return pycompat.Int{}, invalid
+			return toolrt.Int{}, invalid
 		}
-		return pycompat.Int{}, pycompat.New(pycompat.OverflowError, "cannot convert Infinity to integer")
+		return toolrt.Int{}, toolrt.New(toolrt.OverflowError, "cannot convert Infinity to integer")
 	}
 	negativeA, coefA, expA := decimalParts(duration)
 	negativeB, coefB, expB := decimalParts(rate)
@@ -370,11 +370,11 @@ func roundedProduct(duration, rate pycompat.Decimal) (pycompat.Int, error) {
 	if negativeA != negativeB {
 		coef.Neg(coef)
 	}
-	return pycompat.IntFromBig(coef), nil
+	return toolrt.IntFromBig(coef), nil
 }
 
 // extract — один проход FFmpeg с фильтром select по
-// номерам кадров, PNG frame-NNN.png по порядку. Номер сопоставляется с файлом по порядку (zip):
+// номерам кадров, PNG frame-NNN.png по порядку. Номер сопоставляется с файлом по порядку:
 // если кадров оказалось меньше, чем обещал ffprobe, у последних номеров файла нет, и обращение к
 // ним даёт KeyError (скрытый текст).
 func extract(ctx context.Context, video string, indices []int64, directory string, scale bool) (map[int64]string, error) {
@@ -404,12 +404,12 @@ func extract(ctx context.Context, video string, indices []int64, directory strin
 func frame(frames map[int64]string, index int64) (string, error) {
 	path, ok := frames[index]
 	if !ok {
-		return "", pycompat.NewKeyError(pycompat.NewInt(index))
+		return "", toolrt.NewKeyError(toolrt.NewInt(index))
 	}
 	return path, nil
 }
 
-// uniqueSorted — sorted(set(indices)).
+// uniqueSorted — номера кадров без повторов по возрастанию.
 func uniqueSorted(indices []int64) []int64 {
 	seen := map[int64]bool{}
 	result := []int64{}

@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/projectfile"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/projectfile"
 )
 
 // RequirePackageAccess — общая проверка доступа к
@@ -37,8 +37,8 @@ func RequirePackageAccess(ctx context.Context, project, packageDir string, requi
 	if err != nil {
 		return err
 	}
-	generation, _ := jscompat.Parse(settings.Generation)
-	selected, _ := jscompat.GetPath(generation, kind, "provider").(string)
+	generation, _ := dynvalue.Parse(settings.Generation)
+	selected, _ := dynvalue.GetPath(generation, kind, "provider").(string)
 	if !sameProvider(selected, *request.Provider) {
 		return errors.New(textMediaProviderChanged)
 	}

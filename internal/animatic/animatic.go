@@ -14,8 +14,8 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
+	"songframe/internal/filedigest"
 )
 
 // fps — кадровая сетка приложения.
@@ -34,7 +34,7 @@ const (
 )
 
 func videoMissing(filename any) string {
-	return "MP4 сборки не найден: " + jscompat.ToString(jscompat.Coalesce(filename, "имя не записано")) + ". Соберите аниматик заново."
+	return "MP4 сборки не найден: " + dynvalue.ToString(dynvalue.Coalesce(filename, "имя не записано")) + ". Соберите аниматик заново."
 }
 func inputHashMissing(name string) string {
 	return "Нет сохранённого хеша входа " + name + ": пересоберите аниматик для проверки свежести."
@@ -43,22 +43,22 @@ func inputChanged(name string) string {
 	return "Вход аниматика изменён или отсутствует: " + name + ". Нужна пересборка."
 }
 func shotInputMissing(shot any) string {
-	return jscompat.ToString(shot) + ": в манифесте нет входного файла; нужна пересборка."
+	return dynvalue.ToString(shot) + ": в манифесте нет входного файла; нужна пересборка."
 }
 func acceptedEditChanged(shot any) string {
-	return jscompat.ToString(shot) + ": выбранный принятый монтаж изменился после сборки; нужна пересборка."
+	return dynvalue.ToString(shot) + ": выбранный принятый монтаж изменился после сборки; нужна пересборка."
 }
 func acceptedEditAdded(shot any) string {
-	return jscompat.ToString(shot) + ": вместо карточки появился принятый монтаж; нужна пересборка."
+	return dynvalue.ToString(shot) + ": вместо карточки появился принятый монтаж; нужна пересборка."
 }
 func keyframesChanged(shot any) string {
-	return jscompat.ToString(shot) + ": выбор принятых опор изменился после сборки; нужна пересборка."
+	return dynvalue.ToString(shot) + ": выбор принятых опор изменился после сборки; нужна пересборка."
 }
 func keyframeSourcesMissing(shot any) string {
-	return jscompat.ToString(shot) + ": нет сведений об исходных опорах старой сборки; пересоберите аниматик."
+	return dynvalue.ToString(shot) + ": нет сведений об исходных опорах старой сборки; пересоберите аниматик."
 }
 func referencePathMissing(shot, id any) string {
-	return jscompat.ToString(shot) + ": нет пути референса " + jscompat.ToString(id) + "; нужна пересборка."
+	return dynvalue.ToString(shot) + ": нет пути референса " + dynvalue.ToString(id) + "; нужна пересборка."
 }
 
 // State — признаки сборки для статуса проекта и страницы аниматика.
@@ -79,7 +79,7 @@ type State struct {
 
 // readJSON читает JSON-файл; при любой ошибке возвращает nil.
 func readJSON(path string) any {
-	value, _ := jscompat.ReadJSONFile(path)
+	value, _ := dynvalue.ReadJSONFile(path)
 	return value
 }
 
@@ -92,19 +92,19 @@ func Inspect(project string) (State, error) {
 
 // projectPath — путь входа внутри проекта или "" для абсолютного и выходящего за проект.
 func projectPath(project string, name any) (string, error) {
-	text, err := jscompat.PathArg("paths[1]", name)
+	text, err := dynvalue.PathArg("paths[1]", name)
 	if err != nil {
 		return "", err
 	}
-	path := jscompat.Resolve(project, text)
-	local := jscompat.Relative(project, path)
-	if jscompat.IsAbs(text) || local == ".." || strings.HasPrefix(local, ".."+string(filepath.Separator)) {
+	path := dynvalue.Resolve(project, text)
+	local := dynvalue.Relative(project, path)
+	if dynvalue.IsAbs(text) || local == ".." || strings.HasPrefix(local, ".."+string(filepath.Separator)) {
 		return "", nil
 	}
 	return path, nil
 }
 
-// digestOf — cachedFileDigest как значение JS: строка или null.
+// digestOf — кэшированный SHA-256 файла (filedigest.File) как значение JSON: строка или null.
 func digestOf(path string) any {
 	if digest, ok := filedigest.File(path); ok {
 		return digest
@@ -119,31 +119,31 @@ func toSlash(path string) string {
 
 // inputProblems — animaticInputProblems: сверка source_hashes, project_inputs, принятых монтажей,
 // выбранных опор и референсов карточек. Результат без повторов, в порядке первого появления.
-func inputProblems(project string, manifest *jscompat.Object) ([]string, error) {
+func inputProblems(project string, manifest *dynvalue.Object) ([]string, error) {
 	var problems []string
-	sources := jscompat.Coalesce(manifest.Value("source_hashes"), jscompat.NewObject())
+	sources := dynvalue.Coalesce(manifest.Value("source_hashes"), dynvalue.NewObject())
 	check := func(name, digest any) error {
 		path, err := projectPath(project, name)
 		if err != nil {
 			return err
 		}
 		text, isString := digest.(string)
-		label := jscompat.ToString(name)
+		label := dynvalue.ToString(name)
 		if !isString || !sha256Pattern.MatchString(text) {
 			problems = append(problems, inputHashMissing(label))
-		} else if path == "" || !jscompat.StrictEqual(digestOf(path), text) {
+		} else if path == "" || !dynvalue.StrictEqual(digestOf(path), text) {
 			problems = append(problems, inputChanged(label))
 		}
 		return nil
 	}
-	in := func(key any) (bool, error) { return jscompat.HasProperty(sources, key) }
+	in := func(key any) (bool, error) { return dynvalue.HasProperty(sources, key) }
 	currentProject := readJSON(filepath.Join(project, "plan", "project.json"))
 	if !manifest.Has("project_inputs") {
 		problems = append(problems, projectInputsMissing)
 	} else if !projectInputsMatch(manifest.Value("project_inputs"), currentProject) {
 		problems = append(problems, projectInputsChanged)
 	}
-	entries, err := jscompat.Entries(sources)
+	entries, err := dynvalue.Entries(sources)
 	if err != nil {
 		return nil, err
 	}
@@ -153,14 +153,14 @@ func inputProblems(project string, manifest *jscompat.Object) ([]string, error) 
 		}
 	}
 	audio := manifest.Value("source_audio")
-	name := jscompat.Coalesce(audio, "source/track.mp3")
+	name := dynvalue.Coalesce(audio, "source/track.mp3")
 	found, err := in(name)
 	if err != nil {
 		return nil, err
 	}
 	if !found {
-		var digest any = jscompat.Undefined
-		if jscompat.StrictEqual(name, audio) {
+		var digest any = dynvalue.Undefined
+		if dynvalue.StrictEqual(name, audio) {
 			digest = manifest.Value("source_audio_sha256")
 		}
 		if err := check(name, digest); err != nil {
@@ -169,56 +169,56 @@ func inputProblems(project string, manifest *jscompat.Object) ([]string, error) 
 	}
 	receipt := readJSON(filepath.Join(project, "plan", "animatic", "cards", "manifest.json"))
 	registry := readJSON(filepath.Join(project, "plan", "scenes.json"))
-	shots, _ := jscompat.AsArray(manifest.Value("shots"))
+	shots, _ := dynvalue.AsArray(manifest.Value("shots"))
 	for _, shot := range shots {
-		shotID := jscompat.Get(shot, "id")
-		path := jscompat.Get(shot, "path")
-		if !jscompat.Truthy(path) {
+		shotID := dynvalue.Get(shot, "id")
+		path := dynvalue.Get(shot, "path")
+		if !dynvalue.Truthy(path) {
 			problems = append(problems, shotInputMissing(shotID))
 			continue
 		}
 		if found, err := in(path); err != nil {
 			return nil, err
 		} else if !found {
-			if err := check(path, jscompat.Get(shot, "sha256")); err != nil {
+			if err := check(path, dynvalue.Get(shot, "sha256")); err != nil {
 				return nil, err
 			}
 		}
-		last := jscompat.Get(shot, "path_last")
-		if jscompat.Truthy(last) {
+		last := dynvalue.Get(shot, "path_last")
+		if dynvalue.Truthy(last) {
 			if found, err := in(last); err != nil {
 				return nil, err
 			} else if !found {
-				if err := check(last, jscompat.Get(shot, "sha256_last")); err != nil {
+				if err := check(last, dynvalue.Get(shot, "sha256_last")); err != nil {
 					return nil, err
 				}
 			}
 		}
-		id, err := jscompat.PathArg("path", shotID)
+		id, err := dynvalue.PathArg("path", shotID)
 		if err != nil {
 			return nil, err
 		}
 		assetPath := filepath.Join(project, "assets", "shots", id, "manifest.json")
 		asset := readJSON(assetPath)
-		if jscompat.StrictEqual(jscompat.Get(shot, "media"), "video") {
-			edit := jscompat.Get(asset, "accepted_edit")
+		if dynvalue.StrictEqual(dynvalue.Get(shot, "media"), "video") {
+			edit := dynvalue.Get(asset, "accepted_edit")
 			var selected any = nil
-			if videoPath := jscompat.GetPath(edit, "video", "path"); jscompat.Truthy(videoPath) {
-				text, err := jscompat.PathArg("paths[1]", videoPath)
+			if videoPath := dynvalue.GetPath(edit, "video", "path"); dynvalue.Truthy(videoPath) {
+				text, err := dynvalue.PathArg("paths[1]", videoPath)
 				if err != nil {
 					return nil, err
 				}
-				selected = toSlash(jscompat.Relative(project, jscompat.Resolve(filepath.Dir(assetPath), text)))
+				selected = toSlash(dynvalue.Relative(project, dynvalue.Resolve(filepath.Dir(assetPath), text)))
 			}
-			expected := jscompat.Coalesce(jscompat.GetKey(sources, path), jscompat.Get(shot, "sha256"))
-			if !jscompat.StrictEqual(jscompat.Get(asset, "shot"), shotID) || !jscompat.StrictEqual(selected, path) ||
-				!jscompat.StrictEqual(jscompat.GetPath(edit, "video", "sha256"), expected) ||
-				!jscompat.StrictEqual(jscompat.Get(edit, "fps"), fps) || !jscompat.StrictEqual(jscompat.Get(edit, "frames"), jscompat.Get(shot, "frames")) {
+			expected := dynvalue.Coalesce(dynvalue.GetKey(sources, path), dynvalue.Get(shot, "sha256"))
+			if !dynvalue.StrictEqual(dynvalue.Get(asset, "shot"), shotID) || !dynvalue.StrictEqual(selected, path) ||
+				!dynvalue.StrictEqual(dynvalue.GetPath(edit, "video", "sha256"), expected) ||
+				!dynvalue.StrictEqual(dynvalue.Get(edit, "fps"), fps) || !dynvalue.StrictEqual(dynvalue.Get(edit, "frames"), dynvalue.Get(shot, "frames")) {
 				problems = append(problems, acceptedEditChanged(shotID))
 			}
 			continue
 		}
-		if jscompat.Exists(assetPath) {
+		if dynvalue.Exists(assetPath) {
 			problems = append(problems, acceptedEditAdded(shotID))
 			continue
 		}
@@ -226,16 +226,16 @@ func inputProblems(project string, manifest *jscompat.Object) ([]string, error) 
 		if err != nil {
 			return nil, err
 		}
-		entry := jscompat.GetKey(jscompat.Get(receipt, "cards"), shotID)
-		receiptMatches := jscompat.StrictEqual(jscompat.Get(receipt, "registry_sha256"), manifest.Value("scene_registry_sha256")) &&
-			jscompat.StrictEqual(jscompat.Get(entry, "sha256"), jscompat.Coalesce(jscompat.GetKey(sources, path), jscompat.Get(shot, "sha256"))) &&
-			(!jscompat.Truthy(last) || jscompat.StrictEqual(jscompat.GetPath(entry, "last", "sha256"),
-				jscompat.Coalesce(jscompat.GetKey(sources, last), jscompat.Get(shot, "sha256_last"))))
-		var fromReceipt any = jscompat.Undefined
+		entry := dynvalue.GetKey(dynvalue.Get(receipt, "cards"), shotID)
+		receiptMatches := dynvalue.StrictEqual(dynvalue.Get(receipt, "registry_sha256"), manifest.Value("scene_registry_sha256")) &&
+			dynvalue.StrictEqual(dynvalue.Get(entry, "sha256"), dynvalue.Coalesce(dynvalue.GetKey(sources, path), dynvalue.Get(shot, "sha256"))) &&
+			(!dynvalue.Truthy(last) || dynvalue.StrictEqual(dynvalue.GetPath(entry, "last", "sha256"),
+				dynvalue.Coalesce(dynvalue.GetKey(sources, last), dynvalue.Get(shot, "sha256_last"))))
+		var fromReceipt any = dynvalue.Undefined
 		if receiptMatches {
-			fromReceipt = jscompat.Get(entry, "keyframes")
+			fromReceipt = dynvalue.Get(entry, "keyframes")
 		}
-		recorded := jscompat.Coalesce(jscompat.Coalesce(jscompat.Get(shot, "keyframes"), fromReceipt), nil)
+		recorded := dynvalue.Coalesce(dynvalue.Coalesce(dynvalue.Get(shot, "keyframes"), fromReceipt), nil)
 		left, err := normalizeFrames(selectedFrames)
 		if err != nil {
 			return nil, err
@@ -244,21 +244,21 @@ func inputProblems(project string, manifest *jscompat.Object) ([]string, error) 
 		if err != nil {
 			return nil, err
 		}
-		if jscompat.Stringify(left) != jscompat.Stringify(right) {
+		if dynvalue.Stringify(left) != dynvalue.Stringify(right) {
 			problems = append(problems, keyframesChanged(shotID))
 		}
-		if jscompat.StrictEqual(jscompat.Get(shot, "media"), "keyframes") && !jscompat.Truthy(recorded) {
+		if dynvalue.StrictEqual(dynvalue.Get(shot, "media"), "keyframes") && !dynvalue.Truthy(recorded) {
 			problems = append(problems, keyframeSourcesMissing(shotID))
 		}
-		frames, _ := jscompat.AsArray(recorded)
+		frames, _ := dynvalue.AsArray(recorded)
 		for _, frame := range frames {
-			framePath := jscompat.Get(frame, "path")
+			framePath := dynvalue.Get(frame, "path")
 			found, err := in(framePath)
 			if err != nil {
 				return nil, err
 			}
 			if !found {
-				if err := check(framePath, jscompat.Get(frame, "sha256")); err != nil {
+				if err := check(framePath, dynvalue.Get(frame, "sha256")); err != nil {
 					return nil, err
 				}
 			}
@@ -269,8 +269,8 @@ func inputProblems(project string, manifest *jscompat.Object) ([]string, error) 
 				return nil, err
 			}
 			for _, id := range references {
-				name := jscompat.Get(jscompat.GetKey(jscompat.Get(registry, "references"), id), "path")
-				if !jscompat.Truthy(name) {
+				name := dynvalue.Get(dynvalue.GetKey(dynvalue.Get(registry, "references"), id), "path")
+				if !dynvalue.Truthy(name) {
 					problems = append(problems, referencePathMissing(shotID, id))
 					continue
 				}
@@ -279,9 +279,9 @@ func inputProblems(project string, manifest *jscompat.Object) ([]string, error) 
 					return nil, err
 				}
 				if !found {
-					var digest any = jscompat.Undefined
+					var digest any = dynvalue.Undefined
 					if receiptMatches {
-						digest = jscompat.GetKey(jscompat.Get(receipt, "reference_hashes"), name)
+						digest = dynvalue.GetKey(dynvalue.Get(receipt, "reference_hashes"), name)
 					}
 					if err := check(name, digest); err != nil {
 						return nil, err
@@ -290,8 +290,8 @@ func inputProblems(project string, manifest *jscompat.Object) ([]string, error) 
 			}
 		}
 	}
-	if videoFile := manifest.Value("video_file"); jscompat.Truthy(videoFile) {
-		if err := check("plan/animatic/latest/"+jscompat.ToString(videoFile), manifest.Value("video_sha256")); err != nil {
+	if videoFile := manifest.Value("video_file"); dynvalue.Truthy(videoFile) {
+		if err := check("plan/animatic/latest/"+dynvalue.ToString(videoFile), manifest.Value("video_sha256")); err != nil {
 			return nil, err
 		}
 	}
@@ -308,16 +308,16 @@ func inputProblems(project string, manifest *jscompat.Object) ([]string, error) 
 
 // shotReferences — уникальные референсы карточки: references (или refs) и primary_reference без «—».
 func shotReferences(shot any) ([]any, error) {
-	list := jscompat.Coalesce(jscompat.Coalesce(jscompat.Get(shot, "references"), jscompat.Get(shot, "refs")), &jscompat.Array{})
-	items, err := jscompat.Iterate(list)
+	list := dynvalue.Coalesce(dynvalue.Coalesce(dynvalue.Get(shot, "references"), dynvalue.Get(shot, "refs")), &dynvalue.Array{})
+	items, err := dynvalue.Iterate(list)
 	if err != nil {
 		return nil, err
 	}
-	items = append(append([]any(nil), items...), jscompat.GetPath(shot, "card", "primary_reference"))
+	items = append(append([]any(nil), items...), dynvalue.GetPath(shot, "card", "primary_reference"))
 	seen := map[any]bool{}
 	var result []any
 	for _, id := range items {
-		if !jscompat.Truthy(id) || jscompat.StrictEqual(id, "—") || seen[id] {
+		if !dynvalue.Truthy(id) || dynvalue.StrictEqual(id, "—") || seen[id] {
 			continue
 		}
 		seen[id] = true
@@ -327,23 +327,23 @@ func shotReferences(shot any) ([]any, error) {
 }
 
 // normalizeFrames — сравнимый вид списка опор: поля id, role, time_seconds, path, sha256 в этом
-// порядке; null остаётся null. Не-массив — TypeError вызова .map.
+// порядке; null остаётся null. Не-массив и пустой элемент списка — TypeError.
 func normalizeFrames(frames any) (any, error) {
-	if jscompat.IsNullish(frames) {
+	if dynvalue.IsNullish(frames) {
 		return nil, nil
 	}
-	items, ok := jscompat.AsArray(frames)
+	items, ok := dynvalue.AsArray(frames)
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "frames?.map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "frames?.map is not a function"}
 	}
-	result := &jscompat.Array{Items: make([]any, len(items))}
+	result := &dynvalue.Array{Items: make([]any, len(items))}
 	for index, frame := range items {
-		if jscompat.IsNullish(frame) {
-			return nil, &jscompat.TypeError{Message: "Cannot destructure property 'id' of '" + jscompat.ToString(frame) + "' as it is " + jscompat.ToString(frame) + "."}
+		if dynvalue.IsNullish(frame) {
+			return nil, &dynvalue.TypeError{Message: "Cannot destructure property 'id' of '" + dynvalue.ToString(frame) + "' as it is " + dynvalue.ToString(frame) + "."}
 		}
-		object := jscompat.NewObject()
+		object := dynvalue.NewObject()
 		for _, key := range []string{"id", "role", "time_seconds", "path", "sha256"} {
-			object.Set(key, jscompat.Get(frame, key))
+			object.Set(key, dynvalue.Get(frame, key))
 		}
 		result.Items[index] = object
 	}
@@ -356,8 +356,8 @@ func normalizeFrames(frames any) (any, error) {
 func selectFrames(project, shot string) (any, error) {
 	batches := filepath.Join(project, "plan", "batches")
 	candidates := []string{filepath.Join(project, "plan", "awaiting", shot, "workflow.json")}
-	if jscompat.Exists(batches) {
-		entries, err := jscompat.ReadDir(batches)
+	if dynvalue.Exists(batches) {
+		entries, err := dynvalue.ReadDir(batches)
 		if err != nil {
 			return nil, err
 		}
@@ -367,32 +367,32 @@ func selectFrames(project, shot string) (any, error) {
 				names = append(names, entry.Name())
 			}
 		}
-		sort.SliceStable(names, func(i, j int) bool { return jscompat.LessUTF16(names[i], names[j]) })
+		sort.SliceStable(names, func(i, j int) bool { return dynvalue.LessUTF16(names[i], names[j]) })
 		for _, name := range names {
 			candidates = append(candidates, filepath.Join(batches, name, "workflow.json"))
 		}
 	}
 	for _, path := range candidates {
 		workflow := readJSON(path)
-		keyframes, isArray := jscompat.AsArray(jscompat.Get(workflow, "keyframes"))
-		if !jscompat.StrictEqual(jscompat.Get(workflow, "shot"), shot) || jscompat.StrictEqual(jscompat.Get(workflow, "stage"), "accepted") ||
+		keyframes, isArray := dynvalue.AsArray(dynvalue.Get(workflow, "keyframes"))
+		if !dynvalue.StrictEqual(dynvalue.Get(workflow, "shot"), shot) || dynvalue.StrictEqual(dynvalue.Get(workflow, "stage"), "accepted") ||
 			!isArray || len(keyframes) == 0 {
 			continue
 		}
 		approved := true
 		for _, frame := range keyframes {
-			if _, err := jscompat.Prop(frame, "approved"); err != nil {
+			if _, err := dynvalue.Prop(frame, "approved"); err != nil {
 				return nil, err
 			}
-			if !jscompat.Truthy(jscompat.Get(frame, "approved")) || !jscompat.Truthy(jscompat.Get(frame, "path")) {
+			if !dynvalue.Truthy(dynvalue.Get(frame, "approved")) || !dynvalue.Truthy(dynvalue.Get(frame, "path")) {
 				approved = false
 				break
 			}
-			text, err := jscompat.PathArg("paths[1]", jscompat.Get(frame, "path"))
+			text, err := dynvalue.PathArg("paths[1]", dynvalue.Get(frame, "path"))
 			if err != nil {
 				return nil, err
 			}
-			if digestOf(jscompat.Resolve(filepath.Dir(path), text)) == nil {
+			if digestOf(dynvalue.Resolve(filepath.Dir(path), text)) == nil {
 				approved = false
 				break
 			}
@@ -400,14 +400,14 @@ func selectFrames(project, shot string) (any, error) {
 		if !approved {
 			continue
 		}
-		result := &jscompat.Array{}
+		result := &dynvalue.Array{}
 		for _, frame := range keyframes {
-			full := jscompat.Resolve(filepath.Dir(path), jscompat.Get(frame, "path").(string))
-			object := jscompat.NewObject()
-			object.Set("id", jscompat.Get(frame, "id"))
-			object.Set("role", jscompat.Get(frame, "role"))
-			object.Set("time_seconds", jscompat.Get(frame, "time_seconds"))
-			object.Set("path", toSlash(jscompat.Relative(project, full)))
+			full := dynvalue.Resolve(filepath.Dir(path), dynvalue.Get(frame, "path").(string))
+			object := dynvalue.NewObject()
+			object.Set("id", dynvalue.Get(frame, "id"))
+			object.Set("role", dynvalue.Get(frame, "role"))
+			object.Set("time_seconds", dynvalue.Get(frame, "time_seconds"))
+			object.Set("path", toSlash(dynvalue.Relative(project, full)))
 			object.Set("sha256", digestOf(full))
 			result.Items = append(result.Items, object)
 		}
@@ -419,11 +419,11 @@ func selectFrames(project, shot string) (any, error) {
 // projectInputsMatch — animaticProjectInputsMatch: снимок project_inputs содержит ровно строковые
 // name и animatic_video текущего plan/project.json.
 func projectInputsMatch(snapshot, project any) bool {
-	name, nameOK := jscompat.Get(project, "name").(string)
-	video, videoOK := jscompat.Get(project, "animatic_video").(string)
-	object, ok := jscompat.AsObject(snapshot)
-	if !jscompat.IsRecord(project) || !nameOK || !videoOK || !ok || object.Len() != 2 {
+	name, nameOK := dynvalue.Get(project, "name").(string)
+	video, videoOK := dynvalue.Get(project, "animatic_video").(string)
+	object, ok := dynvalue.AsObject(snapshot)
+	if !dynvalue.IsRecord(project) || !nameOK || !videoOK || !ok || object.Len() != 2 {
 		return false
 	}
-	return jscompat.StrictEqual(object.Value("name"), name) && jscompat.StrictEqual(object.Value("animatic_video"), video)
+	return dynvalue.StrictEqual(object.Value("name"), name) && dynvalue.StrictEqual(object.Value("animatic_video"), video)
 }

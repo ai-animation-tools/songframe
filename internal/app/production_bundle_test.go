@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/production"
+	"songframe/internal/jobs"
+	"songframe/internal/production"
 )
 
 // TestExportBundleRoute — маршрут window.api.production.exportBundle доходит до сервиса: отказ по

@@ -12,17 +12,17 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pyre"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolregex"
+	"songframe/internal/toolrt"
 )
 
-// Parser — аргументы инструмента shot_status в стиле argparse.
-var Parser = pycompat.ArgParser{
-	Prog:        "shot_status.py",
+// Parser — аргументы инструмента shot_status (toolrt.ArgParser).
+var Parser = toolrt.ArgParser{
+	Prog:        "shot_status",
 	Description: "Статусы планов по реестру, assets, очереди и рабочим попыткам; @link README.md",
-	Flags: []pycompat.Flag{
+	Flags: []toolrt.Flag{
 		{Name: "--filter", Value: true, Choices: []string{"all", "planned", "progress", "completed", "stale", "unknown"}},
 		{Name: "--json", Help: "Машиночитаемый вывод для приложения."},
 		{Name: "--next", Help: "Только кандидат next и очередь."},
@@ -83,12 +83,12 @@ var waitLabels = map[string]string{
 }
 
 // shotPrefix — код плана в начале имени папки без учёта регистра.
-var shotPrefix = pyre.MustCompile(`^(m\d{2}(?:\.\d+)?)(?![\d.])`, pyre.IgnoreCase)
+var shotPrefix = toolregex.MustCompile(`^(m\d{2}(?:\.\d+)?)(?![\d.])`, toolregex.IgnoreCase)
 
-// label — словарь_меток.get(key): только строковый ключ может совпасть со строковым ключом
-// словаря, нехешируемый ключ (список, словарь) — TypeError, как у dict.get.
+// label — подпись по ключу: только строковый ключ может совпасть со строковым ключом
+// словаря, нехешируемый ключ (список, словарь) — TypeError.
 func label(labels map[string]string, key any) (string, bool, error) {
-	if _, err := pycompat.HashKey(key); err != nil {
+	if _, err := toolrt.HashKey(key); err != nil {
 		return "", false, err
 	}
 	text, isString := key.(string)
@@ -99,31 +99,31 @@ func label(labels map[string]string, key any) (string, bool, error) {
 	return found, ok, nil
 }
 
-// document — результат readJSON: значение, отсутствие файла (None) или повреждение (False;
-// документ `false` тоже считается повреждённым, как `is False` Python).
+// document — результат readJSON: значение, отсутствие файла (nil) или повреждение (damaged;
+// документ `false` тоже считается повреждённым).
 type document struct {
 	value   any
 	damaged bool
 }
 
-// readJSON читает JSON-документ пакета: отсутствующий файл — None, нечитаемый или битый — False.
+// readJSON читает JSON-документ пакета: отсутствующий файл — nil, нечитаемый или битый — damaged.
 func readJSON(path string) document {
-	value, damaged := pycompat.ReadJSON(path)
+	value, damaged := toolrt.ReadJSON(path)
 	return document{value: value, damaged: damaged}
 }
 
-// isFalse — `document is False`.
+// isFalse — документ повреждён или равен false.
 func (d document) isFalse() bool { return d.damaged || d.value == false }
 
-// isNone — `document is None`.
+// isNone — файла нет (значение nil без повреждения).
 func (d document) isNone() bool { return !d.damaged && d.value == nil }
 
 // dict — документ-словарь или nil.
-func (d document) dict() *pycompat.Dict {
+func (d document) dict() *toolrt.Dict {
 	if d.damaged {
 		return nil
 	}
-	result, _ := d.value.(*pycompat.Dict)
+	result, _ := d.value.(*toolrt.Dict)
 	return result
 }
 
@@ -138,7 +138,7 @@ type pkg struct {
 }
 
 // shotOf — план пакета: поле shot документов или код в имени папки.
-func shotOf(directory string, documents ...*pycompat.Dict) any {
+func shotOf(directory string, documents ...*toolrt.Dict) any {
 	for _, document := range documents {
 		if document == nil {
 			continue
@@ -147,45 +147,45 @@ func shotOf(directory string, documents ...*pycompat.Dict) any {
 			return shot
 		}
 	}
-	if match, ok := shotPrefix.Search(pycompat.PathName(directory)); ok {
+	if match, ok := shotPrefix.Search(toolrt.PathName(directory)); ok {
 		code, _ := match.Group(1)
 		return strings.ToUpper(code)
 	}
 	return nil
 }
 
-// childPath — directory / value: строка или TypeError оператора «/» pathlib.
+// childPath — путь value внутри directory: value должен быть строкой, иначе TypeError.
 func childPath(directory string, value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", pycompat.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(value))
 	}
-	return pycompat.JoinPath(directory, text), nil
+	return toolrt.JoinPath(directory, text), nil
 }
 
 // packageState — этап одного пакета очереди или попытки; nil — в папке
 // нет ни одного документа пакета.
 func packageState(directory string) (*pkg, error) {
-	workflow := readJSON(pycompat.JoinPath(directory, "workflow.json"))
+	workflow := readJSON(toolrt.JoinPath(directory, "workflow.json"))
 	// Свежий пакет хранит request_dir: null до заморозки запроса; это обычное состояние, а не ошибка.
 	var requestName any
 	if document := workflow.dict(); document != nil {
 		requestName = document.Value("request_dir")
 	}
-	if !pycompat.Truthy(requestName) {
+	if !toolrt.Truthy(requestName) {
 		requestName = "request"
 	}
 	requestDir, err := childPath(directory, requestName)
 	if err != nil {
 		return nil, err
 	}
-	attempt := readJSON(pycompat.JoinPath(requestDir, "attempt.json"))
+	attempt := readJSON(toolrt.JoinPath(requestDir, "attempt.json"))
 	if attempt.isNone() {
-		attempt = readJSON(pycompat.JoinPath(directory, "attempt.json"))
+		attempt = readJSON(toolrt.JoinPath(directory, "attempt.json"))
 	}
-	request := readJSON(pycompat.JoinPath(requestDir, "request.json"))
+	request := readJSON(toolrt.JoinPath(requestDir, "request.json"))
 	if request.isNone() {
-		request = readJSON(pycompat.JoinPath(directory, "request.json"))
+		request = readJSON(toolrt.JoinPath(directory, "request.json"))
 	}
 	if workflow.isFalse() || attempt.isFalse() || request.isFalse() {
 		return &pkg{shot: shotOf(directory), stage: "файлы пакета повреждены", unknown: true}, nil
@@ -202,13 +202,13 @@ func packageState(directory string) (*pkg, error) {
 	if attemptDoc != nil {
 		status = attemptDoc.Value("status")
 	}
-	if found, _ := pycompat.Contains([]any{nil, "prepared"}, status); attemptDoc != nil && !found {
+	if found, _ := toolrt.Contains([]any{nil, "prepared"}, status); attemptDoc != nil && !found {
 		text, ok, err := label(attemptLabels, status)
 		if err != nil {
 			return nil, err
 		}
 		if !ok {
-			text = "состояние попытки: " + pycompat.Str(status)
+			text = "состояние попытки: " + toolrt.Str(status)
 		}
 		stage = text
 	} else if workflowDoc != nil {
@@ -220,18 +220,18 @@ func packageState(directory string) (*pkg, error) {
 		switch {
 		case ok:
 			stage = text
-		case pycompat.Truthy(raw):
-			stage = "этап: " + pycompat.Str(raw)
+		case toolrt.Truthy(raw):
+			stage = "этап: " + toolrt.Str(raw)
 		}
-		if pycompat.Equal(raw, "keyframes_review") && pycompat.Truthy(workflowDoc.Value("current_keyframe")) {
-			stage = "кадр " + pycompat.Str(workflowDoc.Value("current_keyframe")) + " на согласовании"
+		if toolrt.Equal(raw, "keyframes_review") && toolrt.Truthy(workflowDoc.Value("current_keyframe")) {
+			stage = "кадр " + toolrt.Str(workflowDoc.Value("current_keyframe")) + " на согласовании"
 		}
 		wait, ok, err := label(waitLabels, workflowDoc.Value("wait_reason"))
 		if err != nil {
 			return nil, err
 		}
 		if ok {
-			stage = pycompat.Str(stage) + "; " + wait
+			stage = toolrt.Str(stage) + "; " + wait
 		}
 	} else if attemptDoc != nil {
 		stage = attemptLabels["prepared"]
@@ -249,7 +249,7 @@ type packages struct {
 	items map[string][]*pkg
 }
 
-// add — packages.setdefault(key, []).append(state).
+// add — добавляет состояние в список ключа; новый ключ встаёт в конец порядка.
 func (p *packages) add(key string, state *pkg) {
 	if _, ok := p.items[key]; !ok {
 		p.order = append(p.order, key)
@@ -262,7 +262,7 @@ func packageKey(state *pkg, folder string) string {
 	if shot, ok := state.shot.(string); ok && shot != "" {
 		return shot
 	}
-	return pycompat.PathName(folder)
+	return toolrt.PathName(folder)
 }
 
 // workPackages — пакеты очереди и рабочих папок по планам и пробы
@@ -271,13 +271,13 @@ func workPackages(root string) (*packages, map[string][]string, error) {
 	result := &packages{items: map[string][]*pkg{}}
 	reviews := map[string][]string{}
 	relative := func(path string) string {
-		text, _ := pycompat.RelativeTo(path, root)
+		text, _ := toolrt.RelativeTo(path, root)
 		return text
 	}
-	awaiting := pycompat.Glob(pycompat.JoinPath(root, "plan", "awaiting"), "M*")
-	pycompat.SortPaths(awaiting)
+	awaiting := toolrt.Glob(toolrt.JoinPath(root, "plan", "awaiting"), "M*")
+	toolrt.SortPaths(awaiting)
 	for _, folder := range awaiting {
-		if !pycompat.IsDir(folder) {
+		if !toolrt.IsDir(folder) {
 			continue
 		}
 		state, err := packageState(folder)
@@ -285,15 +285,15 @@ func workPackages(root string) (*packages, map[string][]string, error) {
 			return nil, nil, err
 		}
 		if state == nil {
-			state = &pkg{shot: pycompat.PathName(folder), stage: "пакет очереди без файлов", unknown: true}
+			state = &pkg{shot: toolrt.PathName(folder), stage: "пакет очереди без файлов", unknown: true}
 		}
 		state.kind, state.path = "awaiting", relative(folder)
 		result.add(packageKey(state, folder), state)
 	}
-	batches := pycompat.Glob(pycompat.JoinPath(root, "plan", "batches"), "*")
-	pycompat.SortPaths(batches)
+	batches := toolrt.Glob(toolrt.JoinPath(root, "plan", "batches"), "*")
+	toolrt.SortPaths(batches)
 	for _, folder := range batches {
-		if !pycompat.IsDir(folder) {
+		if !toolrt.IsDir(folder) {
 			continue
 		}
 		state, err := packageState(folder)
@@ -304,26 +304,26 @@ func workPackages(root string) (*packages, map[string][]string, error) {
 			state.kind, state.path = "batch", relative(folder)
 			result.add(packageKey(state, folder), state)
 		}
-		// folder.glob("*.json") без сортировки: рецепты проб обходятся в порядке каталога.
-		for _, review := range pycompat.Glob(folder, "*.json") {
+		// Рецепты проб обходятся в порядке каталога, без сортировки.
+		for _, review := range toolrt.Glob(folder, "*.json") {
 			recipe := readJSON(review).dict()
-			if recipe == nil || !pycompat.Equal(recipe.Value("status"), "review_pending") {
+			if recipe == nil || !toolrt.Equal(recipe.Value("status"), "review_pending") {
 				continue
 			}
-			shots, err := pycompat.DictGet(recipe, "shots", []any{})
+			shots, err := toolrt.DictGet(recipe, "shots", []any{})
 			if err != nil {
 				return nil, nil, err
 			}
-			items, err := pycompat.Iter(shots)
+			items, err := toolrt.Iter(shots)
 			if err != nil {
 				return nil, nil, err
 			}
 			for _, item := range items {
-				entry, ok := item.(*pycompat.Dict)
-				if !ok || !pycompat.Truthy(entry.Value("id")) {
+				entry, ok := item.(*toolrt.Dict)
+				if !ok || !toolrt.Truthy(entry.Value("id")) {
 					continue
 				}
-				key, err := pycompat.HashKey(entry.Value("id"))
+				key, err := toolrt.HashKey(entry.Value("id"))
 				if err != nil {
 					return nil, nil, err
 				}
@@ -347,7 +347,7 @@ type result struct {
 	rows       []row
 	queue      []string
 	next       any
-	unassigned *pycompat.Dict
+	unassigned *toolrt.Dict
 }
 
 // staleStage — подпись устаревшего комплекта по коду причины единого правила приёмки.
@@ -365,18 +365,18 @@ func staleStage(reason any, source string) string {
 	return "постановка изменена после приёмки: нужно новое производство"
 }
 
-// get — dict.get для объекта, который должен быть словарём: иначе AttributeError Python.
+// get — значение ключа объекта, который должен быть словарём: иначе AttributeError.
 func get(value any, key string) (any, error) {
-	document, ok := value.(*pycompat.Dict)
+	document, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'get'", pycompat.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(value))
 	}
 	return document.Value(key), nil
 }
 
 // collect собирает статусы всех планов реестра проекта root: комплекты, очередь и рабочие пакеты.
 func collect(root string) (*result, error) {
-	root = pycompat.ResolvePath(root)
+	root = toolrt.ResolvePath(root)
 	data, err := sceneregistry.Load(root)
 	if err != nil {
 		return nil, err
@@ -397,7 +397,7 @@ func collect(root string) (*result, error) {
 	if err != nil {
 		return nil, err
 	}
-	output := &result{queue: []string{}, unassigned: pycompat.NewDict()}
+	output := &result{queue: []string{}, unassigned: toolrt.NewDict()}
 	ids := map[string]bool{}
 	for _, scene := range items {
 		sid := scene.Value("id").(string)
@@ -413,22 +413,22 @@ func collect(root string) (*result, error) {
 		state, _ := acceptance.States.Get(sid)
 		var status, stage string
 		switch {
-		case pycompat.Equal(state, sceneregistry.Completed):
+		case toolrt.Equal(state, sceneregistry.Completed):
 			// Комплект принят по текущей постановке; незавершённая альтернатива не отменяет
 			// готовность и показывается примечанием.
 			status, stage = "completed", "выбранный комплект в assets"
-		case pycompat.Equal(state, sceneregistry.Stale):
+		case toolrt.Equal(state, sceneregistry.Stale):
 			// Код причины приходит из единого правила, а не вычисляется повторно по соседним статусам.
 			derived := scene.Value("derived_from")
-			if !pycompat.Truthy(derived) {
-				derived = pycompat.NewDict()
+			if !toolrt.Truthy(derived) {
+				derived = toolrt.NewDict()
 			}
 			source, err := get(derived, "shot")
 			if err != nil {
 				return nil, err
 			}
 			reason, _ := acceptance.Reasons.Get(sid)
-			status, stage = "stale", staleStage(reason, pycompat.Str(source))
+			status, stage = "stale", staleStage(reason, toolrt.Str(source))
 			if len(own) > 0 {
 				stage += "; новая работа: " + own[0].stage
 			}
@@ -441,7 +441,7 @@ func collect(root string) (*result, error) {
 		}
 		output.rows = append(output.rows, row{
 			id: sid, interval: scene.Value("interval"), duration: scene.Value("duration"),
-			lipsync: pycompat.Truthy(scene.Value("lipsync")), status: status, stage: stage, notes: notes,
+			lipsync: toolrt.Truthy(scene.Value("lipsync")), status: status, stage: stage, notes: notes,
 		})
 	}
 	for _, line := range output.rows {
@@ -471,11 +471,11 @@ func collect(root string) (*result, error) {
 
 // mustHash — HashKey строки (у строки он всегда есть).
 func mustHash(text string) string {
-	key, _ := pycompat.HashKey(text)
+	key, _ := toolrt.HashKey(text)
 	return key
 }
 
-// anyUnknown — any(p["unknown"] for p in own).
+// anyUnknown — хотя бы у одного пакета состояние неизвестно.
 func anyUnknown(own []*pkg) bool {
 	for _, state := range own {
 		if state.unknown {
@@ -486,15 +486,15 @@ func anyUnknown(own []*pkg) bool {
 }
 
 // document — JSON результата collect для --json; порядок полей зафиксирован эталоном.
-func (r *result) document() *pycompat.Dict {
+func (r *result) document() *toolrt.Dict {
 	shots := make([]any, len(r.rows))
 	for index, line := range r.rows {
-		shots[index] = pytool.Record(
+		shots[index] = toolcli.Record(
 			"id", line.id, "interval", line.interval, "duration", line.duration, "lipsync", line.lipsync,
-			"status", line.status, "label", statusLabels[line.status], "stage", line.stage, "notes", pytool.Strings(line.notes),
+			"status", line.status, "label", statusLabels[line.status], "stage", line.stage, "notes", toolcli.Strings(line.notes),
 		)
 	}
-	return pytool.Record("shots", shots, "queue", pytool.Strings(r.queue), "next", r.next, "unassigned_packages", r.unassigned)
+	return toolcli.Record("shots", shots, "queue", toolcli.Strings(r.queue), "next", r.next, "unassigned_packages", r.unassigned)
 }
 
 // table — таблица Markdown с фильтром статуса, сводка, очередь и кандидат next.
@@ -508,7 +508,7 @@ func (r *result) table(filter string) string {
 		if notes == "" {
 			notes = "—"
 		}
-		lines = append(lines, "| "+pycompat.Str(line.id)+" | "+pycompat.Str(line.interval)+" · "+pycompat.Str(line.duration)+" с | "+
+		lines = append(lines, "| "+toolrt.Str(line.id)+" | "+toolrt.Str(line.interval)+" · "+toolrt.Str(line.duration)+" с | "+
 			statusLabels[line.status]+" | "+line.stage+" | "+notes+" |")
 	}
 	summary := []string{}
@@ -520,10 +520,10 @@ func (r *result) table(filter string) string {
 			}
 		}
 		if count > 0 {
-			summary = append(summary, statusLabels[status]+": "+pycompat.NewInt(int64(count)).String())
+			summary = append(summary, statusLabels[status]+": "+toolrt.NewInt(int64(count)).String())
 		}
 	}
-	lines = append(lines, "", "Всего "+pycompat.NewInt(int64(len(r.rows))).String()+"; "+strings.Join(summary, ", ")+".")
+	lines = append(lines, "", "Всего "+toolrt.NewInt(int64(len(r.rows))).String()+"; "+strings.Join(summary, ", ")+".")
 	if len(r.queue) > 0 {
 		lines = append(lines, "Очередь plan/awaiting: "+strings.Join(r.queue, ", ")+".")
 	}
@@ -544,20 +544,20 @@ func (r *result) table(filter string) string {
 
 // sceneIndex — словарь {id: scene} и порядок кодов реестра (ancestors, independence).
 type sceneIndex struct {
-	scenes map[string]*pycompat.Dict
+	scenes map[string]*toolrt.Dict
 	order  []any
 }
 
 // indexScenes — {s["id"]: s for s in data["scenes"]} и [s["id"] for s in data["scenes"]].
-func indexScenes(data *pycompat.Dict) (*sceneIndex, error) {
-	items, err := pycompat.Iter(data.Value("scenes"))
+func indexScenes(data *toolrt.Dict) (*sceneIndex, error) {
+	items, err := toolrt.Iter(data.Value("scenes"))
 	if err != nil {
 		return nil, err
 	}
-	index := &sceneIndex{scenes: map[string]*pycompat.Dict{}}
+	index := &sceneIndex{scenes: map[string]*toolrt.Dict{}}
 	for _, item := range items {
-		scene := item.(*pycompat.Dict)
-		key, err := pycompat.HashKey(scene.Value("id"))
+		scene := item.(*toolrt.Dict)
+		key, err := toolrt.HashKey(scene.Value("id"))
 		if err != nil {
 			return nil, err
 		}
@@ -568,14 +568,14 @@ func indexScenes(data *pycompat.Dict) (*sceneIndex, error) {
 }
 
 // scene — scenes[sid]: KeyError для неизвестного кода, TypeError для нехешируемого.
-func (s *sceneIndex) scene(sid any) (*pycompat.Dict, error) {
-	key, err := pycompat.HashKey(sid)
+func (s *sceneIndex) scene(sid any) (*toolrt.Dict, error) {
+	key, err := toolrt.HashKey(sid)
 	if err != nil {
 		return nil, err
 	}
 	scene, ok := s.scenes[key]
 	if !ok {
-		return nil, pycompat.NewKeyError(sid)
+		return nil, toolrt.NewKeyError(sid)
 	}
 	return scene, nil
 }
@@ -583,11 +583,11 @@ func (s *sceneIndex) scene(sid any) (*pycompat.Dict, error) {
 // position — order.index(sid).
 func (s *sceneIndex) position(sid any) (int, error) {
 	for index, item := range s.order {
-		if pycompat.Equal(item, sid) {
+		if toolrt.Equal(item, sid) {
 			return index, nil
 		}
 	}
-	return 0, pycompat.New(pycompat.ValueError, pycompat.Repr(sid)+" is not in list")
+	return 0, toolrt.New(toolrt.ValueError, toolrt.Repr(sid)+" is not in list")
 }
 
 // ancestors — все планы, от которых наследуется состояние sid, включая
@@ -611,10 +611,10 @@ func (s *sceneIndex) ancestors(sid any) ([]any, error) {
 		if value, ok := scene.Get("state_from"); ok {
 			source = value
 		}
-		if reference, ok := source.(*pycompat.Dict); ok {
+		if reference, ok := source.(*toolrt.Dict); ok {
 			source = reference.Value("scene")
 		}
-		if found, _ := pycompat.Contains(result, source); source == nil || found {
+		if found, _ := toolrt.Contains(result, source); source == nil || found {
 			return result, nil
 		}
 		result = append(result, source)
@@ -623,8 +623,8 @@ func (s *sceneIndex) ancestors(sid any) ([]any, error) {
 }
 
 // hasChanges — есть ли у плана изменения состояния до или после него.
-func hasChanges(scene *pycompat.Dict) (bool, error) {
-	changes, err := pycompat.DictGet(scene, "state_changes", pycompat.NewDict())
+func hasChanges(scene *toolrt.Dict) (bool, error) {
+	changes, err := toolrt.DictGet(scene, "state_changes", toolrt.NewDict())
 	if err != nil {
 		return false, err
 	}
@@ -633,7 +633,7 @@ func hasChanges(scene *pycompat.Dict) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if pycompat.Truthy(value) {
+		if toolrt.Truthy(value) {
 			return true, nil
 		}
 	}
@@ -650,14 +650,14 @@ func (s *sceneIndex) independence(ids []string) ([]any, error) {
 		}
 	}
 	if len(missing) > 0 {
-		return nil, pycompat.New(pycompat.ValueError, "Неизвестные планы: "+strings.Join(missing, ", "))
+		return nil, toolrt.New(toolrt.ValueError, "Неизвестные планы: "+strings.Join(missing, ", "))
 	}
 	unique := map[string]bool{}
 	for _, sid := range ids {
 		unique[sid] = true
 	}
 	if len(unique) != len(ids) {
-		return nil, pycompat.New(pycompat.ValueError, "План указан в партии дважды.")
+		return nil, toolrt.New(toolrt.ValueError, "План указан в партии дважды.")
 	}
 	conflicts := []any{}
 	for _, later := range ids {
@@ -669,7 +669,7 @@ func (s *sceneIndex) independence(ids []string) ([]any, error) {
 			if earlier == later {
 				continue
 			}
-			if found, _ := pycompat.Contains(chain, earlier); !found {
+			if found, _ := toolrt.Contains(chain, earlier); !found {
 				continue
 			}
 			changed, err := hasChanges(s.scenes[mustHash(earlier)])
@@ -677,7 +677,7 @@ func (s *sceneIndex) independence(ids []string) ([]any, error) {
 				return nil, err
 			}
 			if changed {
-				conflicts = append(conflicts, pytool.Record("shot", later, "depends_on", earlier,
+				conflicts = append(conflicts, toolcli.Record("shot", later, "depends_on", earlier,
 					"reason", later+" наследует состояние после изменений "+earlier))
 			}
 		}
@@ -710,7 +710,7 @@ func (s *sceneIndex) adjacentPairs(ids []string) ([]any, error) {
 	for index := 0; index+1 < len(positions); index++ {
 		first, second := positions[index], positions[index+1]
 		if second.index == first.index+1 {
-			pairs = append(pairs, pytool.Record("first", first.sid, "second", second.sid,
+			pairs = append(pairs, toolcli.Record("first", first.sid, "second", second.sid,
 				"reason", first.sid+" и "+second.sid+" соседи по монтажной шкале: стык между ними проверяется только после получения обоих"))
 		}
 	}
@@ -719,20 +719,20 @@ func (s *sceneIndex) adjacentPairs(ids []string) ([]any, error) {
 
 // expected — ожидаемый отказ Run: ValueError, OSError, KeyError.
 func expected(err error) bool {
-	return pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError)
+	return toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError)
 }
 
-// failure — завершение Run по исключению: parser.exit(1, …) или трассировка.
-func failure(printer *pytool.Printer, err error) pytool.Output {
+// failure — завершение Run по исключению: ожидаемый отказ — текст и код 1, иначе трассировка.
+func failure(printer *toolcli.Printer, err error) toolcli.Output {
 	if expected(err) {
 		return printer.Fail(err.Error())
 	}
 	return printer.Crash(err)
 }
 
-// printJSON — print(json.dumps(value, ensure_ascii=False, indent=2)).
-func printJSON(printer *pytool.Printer, value any) error {
-	text, err := pytool.JSON(value)
+// printJSON — печать value как JSON с отступом два пробела, не-ASCII без экранирования.
+func printJSON(printer *toolcli.Printer, value any) error {
+	text, err := toolcli.JSON(value)
 	if err != nil {
 		return err
 	}
@@ -740,7 +740,7 @@ func printJSON(printer *pytool.Printer, value any) error {
 }
 
 // runIndependent — ветка --independent.
-func runIndependent(root string, ids []string, asJSON bool, printer *pytool.Printer) pytool.Output {
+func runIndependent(root string, ids []string, asJSON bool, printer *toolcli.Printer) toolcli.Output {
 	data, err := sceneregistry.Load(root)
 	if err != nil {
 		return failure(printer, err)
@@ -759,13 +759,13 @@ func runIndependent(root string, ids []string, asJSON bool, printer *pytool.Prin
 	}
 	switch {
 	case asJSON:
-		if err := printJSON(printer, pytool.Record("shots", pytool.Strings(ids), "conflicts", conflicts, "adjacent", adjacent)); err != nil {
+		if err := printJSON(printer, toolcli.Record("shots", toolcli.Strings(ids), "conflicts", conflicts, "adjacent", adjacent)); err != nil {
 			return failure(printer, err)
 		}
 	case len(conflicts) > 0:
 		reasons := []string{}
 		for _, conflict := range conflicts {
-			reasons = append(reasons, conflict.(*pycompat.Dict).Value("reason").(string))
+			reasons = append(reasons, conflict.(*toolrt.Dict).Value("reason").(string))
 		}
 		return printer.Fail(strings.Join(reasons, "\n"))
 	default:
@@ -773,7 +773,7 @@ func runIndependent(root string, ids []string, asJSON bool, printer *pytool.Prin
 			return failure(printer, err)
 		}
 		for _, pair := range adjacent {
-			if err := printer.Print("Предупреждение: " + pair.(*pycompat.Dict).Value("reason").(string) + "."); err != nil {
+			if err := printer.Print("Предупреждение: " + pair.(*toolrt.Dict).Value("reason").(string) + "."); err != nil {
 				return failure(printer, err)
 			}
 		}
@@ -782,12 +782,12 @@ func runIndependent(root string, ids []string, asJSON bool, printer *pytool.Prin
 }
 
 // Run — инструмент shot_status на разрешённом корне проекта.
-func Run(root string, args []string) pytool.Output {
-	parsed, exit := pytool.Args(Parser, args)
+func Run(root string, args []string) toolcli.Output {
+	parsed, exit := toolcli.Args(Parser, args)
 	if exit != nil {
 		return *exit
 	}
-	printer := &pytool.Printer{}
+	printer := &toolcli.Printer{}
 	asJSON, next := parsed.Bools["--json"], parsed.Bools["--next"]
 	if ids := parsed.Values["--independent"]; len(ids) > 0 {
 		return runIndependent(root, ids, asJSON, printer)
@@ -798,7 +798,7 @@ func Run(root string, args []string) pytool.Output {
 	}
 	switch {
 	case asJSON && next:
-		err = printJSON(printer, pytool.Record("next", output.next, "queue", pytool.Strings(output.queue)))
+		err = printJSON(printer, toolcli.Record("next", output.next, "queue", toolcli.Strings(output.queue)))
 	case asJSON:
 		err = printJSON(printer, output.document())
 	case next:

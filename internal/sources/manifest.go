@@ -1,5 +1,5 @@
 // Package sources читает опись исходников source/manifest.json. Документ возвращается деревом
-// jscompat без схемы: потребители (статус, кастинг, разметка) проверяют только нужные им поля, а
+// dynvalue без схемы: потребители (статус, кастинг, разметка) проверяют только нужные им поля, а
 // неизвестные поля сохраняются.
 package sources
 
@@ -7,7 +7,7 @@ import (
 	"errors"
 	"path/filepath"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // ManifestInvalid — текст sourcesTexts.main.manifestInvalid.
@@ -19,10 +19,10 @@ func ManifestPath(project string) string {
 }
 
 // ReadManifest возвращает опись схемы 1 или nil: отсутствие, битый JSON и другая версия
-// неразличимы. Любое истинное значение с schema_version === 1 подходит.
+// неразличимы. Подходит любое истинное значение, у которого schema_version — число 1.
 func ReadManifest(project string) any {
-	data, ok := jscompat.ReadJSONFile(ManifestPath(project))
-	if !ok || !jscompat.Truthy(data) || !jscompat.StrictEqual(jscompat.Get(data, "schema_version"), 1.0) {
+	data, ok := dynvalue.ReadJSONFile(ManifestPath(project))
+	if !ok || !dynvalue.Truthy(data) || !dynvalue.StrictEqual(dynvalue.Get(data, "schema_version"), 1.0) {
 		return nil
 	}
 	return data
@@ -32,18 +32,18 @@ func ReadManifest(project string) any {
 // Отсутствующий файл даёт nil без ошибки; существующий, но непригодный (не та схема, references
 // не массив, ссылка без строкового id или с нестроковым description) — ошибку ManifestInvalid.
 func DescriptionManifest(project string) (any, error) {
-	if !jscompat.Exists(ManifestPath(project)) {
+	if !dynvalue.Exists(ManifestPath(project)) {
 		return nil, nil
 	}
 	manifest := ReadManifest(project)
-	references, ok := jscompat.AsArray(jscompat.Get(manifest, "references"))
+	references, ok := dynvalue.AsArray(dynvalue.Get(manifest, "references"))
 	if manifest == nil || !ok {
 		return nil, errors.New(ManifestInvalid)
 	}
 	for _, ref := range references {
-		description := jscompat.Get(ref, "description")
-		if !jscompat.Truthy(ref) || jscompat.TypeOf(jscompat.Get(ref, "id")) != "string" ||
-			(description != jscompat.Undefined && jscompat.TypeOf(description) != "string") {
+		description := dynvalue.Get(ref, "description")
+		if !dynvalue.Truthy(ref) || dynvalue.TypeOf(dynvalue.Get(ref, "id")) != "string" ||
+			(description != dynvalue.Undefined && dynvalue.TypeOf(description) != "string") {
 			return nil, errors.New(ManifestInvalid)
 		}
 	}

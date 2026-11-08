@@ -3,8 +3,8 @@ package productionworkflow
 import (
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaproviders"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
 )
 
 // Тексты прохода агента производства: подготовка, проверка предложения и его применение. Они
@@ -53,8 +53,8 @@ const (
 	textInputsChangedDuringPrep     = "Входные материалы изменились во время подготовки задания."
 	textDiscardUnavailable          = "Предложение недоступно для отклонения; выполняющееся задание сначала отмените."
 	textProposalDiscarded           = "Предложение отклонено пользователем."
-	// TextDescriptionAndFramePlanRequired — messages.descriptionAndFramePlanRequired: generateFrames
-	// и importFrames без утверждённого описания и плана опор.
+	// TextDescriptionAndFramePlanRequired — messages.descriptionAndFramePlanRequired: GenerateFrames
+	// и ImportFrames без утверждённого описания и плана опор.
 	TextDescriptionAndFramePlanRequired = "Сначала утвердите описание и план опор."
 	// TextApplyUnavailable — applyUnavailable: Apply возможен только для завершённого актуального
 	// предложения.
@@ -136,7 +136,7 @@ const (
 func textToolExitCode(tool string, code *int) string {
 	text := "null"
 	if code != nil {
-		text = jscompat.NumberToString(float64(*code))
+		text = dynvalue.NumberToString(float64(*code))
 	}
 	return tool + ": код " + text
 }
@@ -145,7 +145,7 @@ func textRequestShorterThanSpeech(seconds string) string {
 	return "Речевой план: длительность запроса должна быть не меньше длины WAV (" + seconds + " с)."
 }
 
-// textChooseVideoProvider — applicationTexts.chooseVideoProvider: у проекта не выбран платный
+// textChooseVideoProvider — у проекта не выбран платный
 // провайдер видео.
 func textChooseVideoProvider() string {
 	return "Выберите поддерживаемого провайдера видео: " + providerTitles(mediaproviders.Video) + "."
@@ -177,7 +177,7 @@ func textShotMissing(shot string) string {
 	return "План " + shot + " отсутствует в реестре."
 }
 
-// providerTitles — mediaProviderTitles(kind): названия провайдеров вида медиа в порядке реестра
+// providerTitles — названия провайдеров вида медиа в порядке реестра
 // через « или ».
 func providerTitles(kind string) string {
 	titles := []string{}
@@ -199,11 +199,11 @@ func textProviderLipSyncUnsupported(provider string) string {
 }
 
 func textSpeechWindowTooLong(seconds, provider string, max float64) string {
-	return "Речевой план: окно плана " + seconds + " с длиннее, чем " + provider + " принимает звук (до " + jscompat.NumberToString(max) + " с). Разделите план на странице «Сценарий»."
+	return "Речевой план: окно плана " + seconds + " с длиннее, чем " + provider + " принимает звук (до " + dynvalue.NumberToString(max) + " с). Разделите план на странице «Сценарий»."
 }
 
 func textSpeechLengthOutOfRange(seconds string, min, max float64) string {
-	return "речевой план: WAV длится " + seconds + " с, а провайдер принимает звук от " + jscompat.NumberToString(min) + " до " + jscompat.NumberToString(max) + " с — обрежьте заново в блоке «Речь»"
+	return "речевой план: WAV длится " + seconds + " с, а провайдер принимает звук от " + dynvalue.NumberToString(min) + " до " + dynvalue.NumberToString(max) + " с — обрежьте заново в блоке «Речь»"
 }
 
 func textAcceptFrameFirstHint(frame string) string {
@@ -214,7 +214,8 @@ func textResolveSceneChangedPackageFirst(reason string) string {
 	return "Сначала решите судьбу попытки: " + reason + "."
 }
 
-// textProviderModelsFailed — providerModelsFailed: provider "" — undefined (провайдер не из реестра).
+// textProviderModelsFailed — providerModelsFailed (frontend/src/shared/texts/production.ts):
+// provider "" — провайдер не из реестра, тогда подставляется общее «провайдера видео».
 func textProviderModelsFailed(provider, problem string) string {
 	if provider == "" {
 		provider = "провайдера видео"
@@ -241,19 +242,19 @@ func textLinkOutsideProject(path string) string {
 }
 
 func textDurationRuleViolation(seconds float64, rule string, window float64) string {
-	return "Длительность " + jscompat.NumberToString(seconds) + " с нарушает правило " + rule + " для окна " + jscompat.NumberToString(window) + " с."
+	return "Длительность " + dynvalue.NumberToString(seconds) + " с нарушает правило " + rule + " для окна " + dynvalue.NumberToString(window) + " с."
 }
 
 func textFrameFileRequired(frame any) string {
-	return jscompat.ToString(frame) + ": нужен обычный файл изображения."
+	return dynvalue.ToString(frame) + ": нужен обычный файл изображения."
 }
 
 func textFrameFormatRequired(frame any) string {
-	return jscompat.ToString(frame) + ": требуется PNG, JPEG или WebP."
+	return dynvalue.ToString(frame) + ": требуется PNG, JPEG или WebP."
 }
 
 func textSpeechDurationRange(min, max float64) string {
-	return "Речевой план: длительность запроса должна быть от " + jscompat.NumberToString(min) + " до " + jscompat.NumberToString(max) + " с — столько звука принимает провайдер видео."
+	return "Речевой план: длительность запроса должна быть от " + dynvalue.NumberToString(min) + " до " + dynvalue.NumberToString(max) + " с — столько звука принимает провайдер видео."
 }
 
 func textVideoAdapterMissing(provider string) string {

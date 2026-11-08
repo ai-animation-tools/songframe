@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/golden"
+	"songframe/internal/golden"
 )
 
 // draftCase — случай testdata/golden/timing-draft/cases.json: вход сборки черновика и ожидаемый
-// результат (точные байты json.dumps или текст ValueError).
+// результат (точные байты черновика или текст ошибки).
 type draftCase struct {
 	Name  string `json:"name"`
 	Input struct {
@@ -40,7 +40,7 @@ type draftCase struct {
 }
 
 // TestBuildDraftMatchesGolden сверяет черновик с эталоном timing-draft побайтно: перенос
-// подтверждённых строк, заметки, кандидаты, очередь, части песни, ошибки и формат чисел Python.
+// подтверждённых строк, заметки, кандидаты, очередь, части песни, ошибки и запись чисел.
 func TestBuildDraftMatchesGolden(t *testing.T) {
 	root, err := golden.Root()
 	if err != nil {
@@ -91,33 +91,33 @@ func TestBuildDraftMatchesGolden(t *testing.T) {
 	}
 }
 
-// TestPyFloatRepr — repr(float) Python для чисел, которые встречаются в разметке.
-func TestPyFloatRepr(t *testing.T) {
+// TestFormatDraftFloat — запись дробных чисел, которые встречаются в разметке.
+func TestFormatDraftFloat(t *testing.T) {
 	for value, want := range map[float64]string{
 		0: "0.0", 1: "1.0", 0.1: "0.1", 12.5: "12.5", 1e16: "1e+16", 1e15: "1000000000000000.0", 1e-5: "1e-05", 0.0001: "0.0001",
 		123456789012345678: "1.2345678901234568e+17", 5e-324: "5e-324", -2.75: "-2.75", 1e22: "1e+22", 59.98725: "59.98725",
 	} {
-		if got, err := pyFloatRepr(value); err != nil || got != want {
+		if got, err := formatDraftFloat(value); err != nil || got != want {
 			t.Errorf("repr(%v) = %q, %v; ожидалось %q", value, got, err, want)
 		}
 	}
-	if got, _ := pyFloatRepr(math.Copysign(0, -1)); got != "-0.0" {
+	if got, _ := formatDraftFloat(math.Copysign(0, -1)); got != "-0.0" {
 		t.Errorf("-0.0: %q", got)
 	}
-	if _, err := pyFloatRepr(math.NaN()); err == nil {
+	if _, err := formatDraftFloat(math.NaN()); err == nil {
 		t.Error("NaN должен отклоняться")
 	}
 }
 
-// TestPyJSONRoundTrip — прежний файл в формате черновика перечитывается и записывается теми же
-// байтами: int и float, порядок ключей, экранирование и пустые коллекции сохраняются.
-func TestPyJSONRoundTrip(t *testing.T) {
+// TestDraftJSONRoundTrip — прежний файл в формате черновика перечитывается и записывается теми же
+// байтами: целые и дробные, порядок ключей, экранирование и пустые коллекции сохраняются.
+func TestDraftJSONRoundTrip(t *testing.T) {
 	text := "{\n  \"a\": 1,\n  \"b\": 1.0,\n  \"c\": [],\n  \"d\": {},\n  \"e\": \"«ё»\\n\\t\\u0001\\\"\\\\\",\n  \"f\": [\n    true,\n    null,\n    123456789012345678901234567890\n  ]\n}\n"
-	value, err := parsePyJSON([]byte(text))
+	value, err := parseDraftJSON([]byte(text))
 	if err != nil {
 		t.Fatal(err)
 	}
-	encoded, err := encodePyJSON(value)
+	encoded, err := encodeDraftJSON(value)
 	if err != nil || string(encoded) != text {
 		t.Fatalf("%v\n%s", err, encoded)
 	}
@@ -146,8 +146,8 @@ func TestFromAlignment(t *testing.T) {
 	}
 }
 
-// TestLyricLinesPython — splitlines и strip Python: \r, \v и U+2028 — переводы строк.
-func TestLyricLinesPython(t *testing.T) {
+// TestLyricLinesUnicodeBreaks — разбиение и обрезка строк черновика: \r, \v и U+2028 — переводы строк.
+func TestLyricLinesUnicodeBreaks(t *testing.T) {
 	lines, err := LyricLines("\ufeffА\rБ\r\nВ\vГ [Часть]\n  Д  \n")
 	if err != nil {
 		t.Fatal(err)

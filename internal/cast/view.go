@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/sources"
+	"songframe/internal/dynvalue"
+	"songframe/internal/sources"
 )
 
 // View — CastView контракта frontend/src/shared/types.ts, ответ cast.view.
@@ -21,9 +21,9 @@ type View struct {
 	Problems   []string          `json:"problems"`
 }
 
-// joinSource — путь project/source/path с проверкой аргумента path (jscompat.PathArg).
+// joinSource — путь project/source/path с проверкой аргумента path (dynvalue.PathArg).
 func joinSource(project string, value any) (string, error) {
-	path, err := jscompat.PathArg("path", value)
+	path, err := dynvalue.PathArg("path", value)
 	if err != nil {
 		return "", err
 	}
@@ -32,7 +32,7 @@ func joinSource(project string, value any) (string, error) {
 
 // ViewProject — кастинг для страницы «Кастинг» и выбора изображений на «Исходниках».
 // Ничего не пишет. Проблемы: повреждённый файл, ошибки Validate, описание из исходников, которое
-// разошлось с сохранённой копией, и референсы без сущности. Ошибка — исключение JS-семантики на
+// разошлось с сохранённой копией, и референсы без сущности. Ошибка — TypeError dynvalue на
 // документе другой формы.
 func ViewProject(project string) (View, error) {
 	problems := []string{}
@@ -41,15 +41,15 @@ func ViewProject(project string) (View, error) {
 	var current any
 	if read.Damaged {
 		problems = append(problems, textFileDamaged)
-	} else if jscompat.Truthy(read.Value) {
+	} else if dynvalue.Truthy(read.Value) {
 		found, err := Validate(read.Value)
 		if err != nil {
 			return View{}, err
 		}
 		problems = append(problems, found...)
-		stored, ok := jscompat.ReadJSONFile(Path(project))
+		stored, ok := dynvalue.ReadJSONFile(Path(project))
 		if !ok {
-			return View{}, &jscompat.TypeError{Message: "plan/cast.json недоступен для повторного чтения"}
+			return View{}, &dynvalue.TypeError{Message: "plan/cast.json недоступен для повторного чтения"}
 		}
 		drift, err := descriptionDrifts(stored, manifest)
 		if err != nil {
@@ -63,19 +63,19 @@ func ViewProject(project string) (View, error) {
 			return View{}, err
 		}
 		current = ensured
-		entities, _ := jscompat.AsArray(ensured.Value("entities"))
-		// `new Set(manifest?.references.map((r) => r.id) ?? [])`: у описи без массива references — TypeError.
+		entities, _ := dynvalue.AsArray(ensured.Value("entities"))
+		// Коды референсов описи; у описи без массива references — TypeError.
 		known := &valueSet{}
 		var references []any
 		if manifest != nil {
-			list, ok := jscompat.AsArray(jscompat.Get(manifest, "references"))
+			list, ok := dynvalue.AsArray(dynvalue.Get(manifest, "references"))
 			if !ok {
-				return View{}, &jscompat.TypeError{Message: "manifest.references.map is not a function"}
+				return View{}, &dynvalue.TypeError{Message: "manifest.references.map is not a function"}
 			}
 			references = list
 		}
 		for _, ref := range references {
-			id, err := jscompat.Prop(ref, "id")
+			id, err := dynvalue.Prop(ref, "id")
 			if err != nil {
 				return View{}, err
 			}
@@ -85,13 +85,13 @@ func ViewProject(project string) (View, error) {
 		for _, id := range known.items {
 			present := false
 			for _, entity := range entities {
-				if jscompat.StrictEqual(jscompat.Get(entity, "id"), id) {
+				if dynvalue.StrictEqual(dynvalue.Get(entity, "id"), id) {
 					present = true
 					break
 				}
 			}
 			if !present {
-				fresh = append(fresh, jscompat.ToString(id))
+				fresh = append(fresh, dynvalue.ToString(id))
 			}
 		}
 		if len(fresh) > 0 {
@@ -100,16 +100,16 @@ func ViewProject(project string) (View, error) {
 	}
 	images := map[string]string{}
 	if current != nil {
-		entities, err := jscompat.Iterate(jscompat.Coalesce(jscompat.Get(current, "entities"), &jscompat.Array{}))
+		entities, err := dynvalue.Iterate(dynvalue.Coalesce(dynvalue.Get(current, "entities"), &dynvalue.Array{}))
 		if err != nil {
 			return View{}, err
 		}
 		for _, entity := range entities {
-			list, err := jscompat.Prop(entity, "images")
+			list, err := dynvalue.Prop(entity, "images")
 			if err != nil {
 				return View{}, err
 			}
-			items, err := jscompat.Iterate(list)
+			items, err := dynvalue.Iterate(list)
 			if err != nil {
 				return View{}, err
 			}
@@ -118,25 +118,25 @@ func ViewProject(project string) (View, error) {
 				if err != nil {
 					return View{}, err
 				}
-				images[jscompat.ToString(image)] = path
+				images[dynvalue.ToString(image)] = path
 			}
 		}
 	}
-	references, err := jscompat.Iterate(jscompat.Coalesce(jscompat.Get(manifest, "references"), &jscompat.Array{}))
+	references, err := dynvalue.Iterate(dynvalue.Coalesce(dynvalue.Get(manifest, "references"), &dynvalue.Array{}))
 	if err != nil {
 		return View{}, err
 	}
 	for _, ref := range references {
-		files, err := jscompat.Prop(ref, "files")
+		files, err := dynvalue.Prop(ref, "files")
 		if err != nil {
 			return View{}, err
 		}
-		items, err := jscompat.Iterate(files)
+		items, err := dynvalue.Iterate(files)
 		if err != nil {
 			return View{}, err
 		}
 		for _, file := range items {
-			value, err := jscompat.Prop(file, "path")
+			value, err := dynvalue.Prop(file, "path")
 			if err != nil {
 				return View{}, err
 			}
@@ -144,16 +144,16 @@ func ViewProject(project string) (View, error) {
 			if err != nil {
 				return View{}, err
 			}
-			images[jscompat.ToString(value)] = path
+			images[dynvalue.ToString(value)] = path
 		}
 	}
 	castValue := json.RawMessage("null")
 	if current != nil {
-		castValue = jscompat.Raw(current)
+		castValue = dynvalue.Raw(current)
 	}
 	manifestValue := json.RawMessage("null")
 	if manifest != nil {
-		manifestValue = jscompat.Raw(manifest)
+		manifestValue = dynvalue.Raw(manifest)
 	}
 	return View{Cast: castValue, Manifest: manifestValue, ImagePaths: images, Problems: problems}, nil
 }
@@ -161,19 +161,19 @@ func ViewProject(project string) (View, error) {
 // descriptionDrifts — коды сущностей, чьё сохранённое описание отличается
 // от описания связанного референса описи. Без массива entities или описи — пусто.
 func descriptionDrifts(stored, manifest any) ([]string, error) {
-	entities, ok := jscompat.AsArray(jscompat.Get(stored, "entities"))
-	if !ok || !jscompat.Truthy(manifest) {
+	entities, ok := dynvalue.AsArray(dynvalue.Get(stored, "entities"))
+	if !ok || !dynvalue.Truthy(manifest) {
 		return nil, nil
 	}
 	projected, err := ProjectDescriptions(stored, manifest)
 	if err != nil {
 		return nil, err
 	}
-	current, _ := jscompat.AsArray(jscompat.Get(projected, "entities"))
+	current, _ := dynvalue.AsArray(dynvalue.Get(projected, "entities"))
 	ids := []string{}
 	for index, entity := range entities {
-		if !jscompat.StrictEqual(jscompat.Get(entity, "appearance"), jscompat.Get(current[index], "appearance")) {
-			ids = append(ids, jscompat.ToString(jscompat.Get(entity, "id")))
+		if !dynvalue.StrictEqual(dynvalue.Get(entity, "appearance"), dynvalue.Get(current[index], "appearance")) {
+			ids = append(ids, dynvalue.ToString(dynvalue.Get(entity, "id")))
 		}
 	}
 	return ids, nil

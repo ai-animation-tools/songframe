@@ -4,7 +4,7 @@
 // Каждый инструмент сам составляет текст ошибки из хвоста stderr, и тексты различаются, поэтому
 // пакет отдаёт сырой исход (код, stdout, stderr), а формулировку оставляет инструменту. Общими
 // здесь являются только поиск программ (пара менеджера компонентов или имена из PATH), исход
-// незапустившейся программы (FileNotFoundError, как у subprocess) и параметры кодирования и probe
+// незапустившейся программы (исключение toolrt FileNotFoundError) и параметры кодирования и probe
 // build_animatic, которые использует и accept_shot.
 //
 // Запуск идёт через internal/process: без shell и окна консоли, с отменой через context и
@@ -16,8 +16,8 @@ import (
 	"errors"
 	"strconv"
 
-	"songframe-go/internal/process"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/process"
+	"songframe/internal/toolrt"
 )
 
 // Programs — пути FFmpeg и ffprobe. Приложение подставляет пару менеджера компонентов (main.go);
@@ -43,8 +43,8 @@ func FFprobe() string {
 // FPS — шкала монтажа приложения (FPS build_animatic/build_review).
 const FPS = 30
 
-// Encode — ENCODE build_animatic: параметры H.264 без звука на шкале 30 к/с, общие для сегментов
-// аниматика и рендера принятого участка. Изменение меняет байты результата и версию рецепта.
+// Encode — параметры кодирования build_animatic: H.264 без звука на шкале 30 к/с, общие для
+// сегментов аниматика и рендера принятого участка. Изменение меняет байты результата и версию рецепта.
 var Encode = []string{
 	"-an", "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-threads", "2", "-pix_fmt", "yuv420p",
 	"-r", strconv.Itoa(FPS), "-video_track_timescale", "15360", "-map_metadata", "-1",
@@ -62,16 +62,17 @@ const (
 	defaultStderr = 256 << 10
 )
 
-// Result — исход программы, как CompletedProcess(capture_output=True): код и полные потоки.
+// Result — исход программы: код завершения и захваченные потоки stdout и stderr (в пределах
+// Limits).
 type Result struct {
 	Code   int
 	Stdout []byte
 	Stderr []byte
 }
 
-// Run — subprocess.run([program, *args], capture_output=True) без check: ненулевой код — не
-// ошибка, а Result.Code. Ошибка — только незапустившаяся программа (FileNotFoundError с текстом
-// Python) и остановка через context (process.ErrCanceled/ErrTimeout). stdin пуст, как DEVNULL.
+// Run запускает program с аргументами и захватывает stdout и stderr. Ненулевой код — не
+// ошибка, а Result.Code. Ошибка — только незапустившаяся программа (NotFound) и остановка через
+// context (process.ErrCanceled/ErrTimeout). stdin программы пуст.
 func Run(ctx context.Context, program string, args ...string) (Result, error) {
 	return RunLimits(ctx, Limits{}, program, args...)
 }
@@ -96,7 +97,7 @@ func RunLimits(ctx context.Context, limits Limits, program string, args ...strin
 	var exit *process.ExitError
 	if errors.As(err, &exit) {
 		if out.Code == 0 {
-			// Посторонний сигнал: у subprocess код отрицательный, текст ошибки строит инструмент.
+			// Завершение сигналом: код отрицательный, текст ошибки строит инструмент.
 			out.Code = -1
 		}
 		return out, nil
@@ -104,37 +105,38 @@ func RunLimits(ctx context.Context, limits Limits, program string, args ...strin
 	return out, err
 }
 
-// NotFound — FileNotFoundError subprocess для программы, которой нет.
+// NotFound — исключение toolrt FileNotFoundError «[Errno 2] No such file or directory: '<путь>'»
+// для программы, которую не удалось запустить; текст зафиксирован эталонами инструментов.
 func NotFound(program string) error {
-	return pycompat.New(pycompat.FileNotFoundError, "[Errno 2] No such file or directory: "+pycompat.Repr(program))
+	return toolrt.New(toolrt.FileNotFoundError, "[Errno 2] No such file or directory: "+toolrt.Repr(program))
 }
 
-// Tail — stderr.decode(errors="replace")[-limit:]: последние limit кодовых точек хвоста вывода с
-// заменой неверного UTF-8 по правилам CPython.
+// Tail — последние limit кодовых точек вывода после декодирования UTF-8 с заменой неверных
+// последовательностей на U+FFFD (toolrt.DecodeReplace).
 func Tail(data []byte, limit int) string {
-	runes := []rune(pycompat.DecodeReplace(data))
+	runes := []rune(toolrt.DecodeReplace(data))
 	if len(runes) > limit {
 		runes = runes[len(runes)-limit:]
 	}
 	return string(runes)
 }
 
-// AnimaticRun — run(args) build_animatic: stdout программы; ненулевой код — ValueError с
-// последними 1200 знаками stderr. Его же зовёт accept_shot.
+// AnimaticRun — запуск для build_animatic: stdout программы; ненулевой код — исключение toolrt
+// ValueError с последними 1200 знаками stderr. Его же зовёт accept_shot.
 func AnimaticRun(ctx context.Context, program string, args ...string) ([]byte, error) {
 	result, err := Run(ctx, program, args...)
 	if err != nil {
 		return nil, err
 	}
 	if result.Code != 0 {
-		return nil, pycompat.New(pycompat.ValueError, "Команда обработки медиа завершилась с ошибкой: "+Tail(result.Stderr, 1200))
+		return nil, toolrt.New(toolrt.ValueError, "Команда обработки медиа завершилась с ошибкой: "+Tail(result.Stderr, 1200))
 	}
 	return result.Stdout, nil
 }
 
-// AnimaticProbe — probe(path) build_animatic: JSON ffprobe потоков, формата и глав как значение
-// pycompat (порядок ключей и int/float сохраняются, как у json.loads).
-func AnimaticProbe(ctx context.Context, path string) (*pycompat.Dict, error) {
+// AnimaticProbe — ffprobe файла для build_animatic: JSON потоков, формата и глав как словарь
+// toolrt.Dict (порядок ключей и различие int/float сохраняются).
+func AnimaticProbe(ctx context.Context, path string) (*toolrt.Dict, error) {
 	data, err := AnimaticRun(ctx, FFprobe(), "-v", "error", "-show_streams", "-show_format", "-show_chapters", "-of", "json", path)
 	if err != nil {
 		return nil, err
@@ -142,17 +144,17 @@ func AnimaticProbe(ctx context.Context, path string) (*pycompat.Dict, error) {
 	return LoadProbe(data)
 }
 
-// LoadProbe — json.loads(bytes) вывода ffprobe: строгий UTF-8 и JSON Python. Если JSON — не
+// LoadProbe разбирает вывод ffprobe: строгий UTF-8 и JSON toolrt.LoadsJSON. Если JSON — не
 // объект, возвращается nil без ошибки: какое исключение поднять, решает вызывающий.
-func LoadProbe(data []byte) (*pycompat.Dict, error) {
-	text, err := pycompat.DecodeUTF8(data)
+func LoadProbe(data []byte) (*toolrt.Dict, error) {
+	text, err := toolrt.DecodeUTF8(data)
 	if err != nil {
 		return nil, err
 	}
-	value, err := pycompat.LoadsJSON(text)
+	value, err := toolrt.LoadsJSON(text)
 	if err != nil {
 		return nil, err
 	}
-	result, _ := value.(*pycompat.Dict)
+	result, _ := value.(*toolrt.Dict)
 	return result, nil
 }

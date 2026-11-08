@@ -17,29 +17,29 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/golden"
+	"songframe/internal/toolrt"
 )
 
 // Эталоны kling-request: cases.json — чистые функции, traces.json — точные HTTP-запросы клиента на
-// сценарии ответов, callback.json — ответы колбэка входа. Значения записаны строками json.dumps
-// Python, исключения — {type, message}.
+// сценарии ответов, callback.json — ответы колбэка входа. Значения записаны JSON-строками,
+// исключения — {type, message}.
 
 const domain = "kling-request"
 
 // field — поле объекта эталона.
-func field(value any, key string) any { return value.(*pycompat.Dict).Value(key) }
+func field(value any, key string) any { return value.(*toolrt.Dict).Value(key) }
 
-// arg — аргумент случая, записанный строкой json.dumps.
+// arg — аргумент случая, записанный JSON-строкой.
 func arg(t *testing.T, entry any, key string) any {
 	t.Helper()
-	return golden.PyParse(t, golden.PyString(t, field(entry, "args"), key))
+	return golden.ParseValue(t, golden.ValueString(t, field(entry, "args"), key))
 }
 
-// dumps — json.dumps(value, ensure_ascii=False).
+// dumps — компактная JSON-запись value без экранирования не-ASCII (toolrt.DumpsJSON).
 func dumps(t *testing.T, value any) string {
 	t.Helper()
-	text, err := pycompat.DumpsJSON(value, pycompat.DumpOptions{})
+	text, err := toolrt.DumpsJSON(value, toolrt.DumpOptions{})
 	if err != nil {
 		t.Fatalf("сериализация: %v", err)
 	}
@@ -53,8 +53,8 @@ func assertOutcome(t *testing.T, label string, expected any, got any, err error,
 	if normalize == nil {
 		normalize = func(text string) string { return text }
 	}
-	want := expected.(*pycompat.Dict)
-	if failure, ok := want.Value("error").(*pycompat.Dict); ok {
+	want := expected.(*toolrt.Dict)
+	if failure, ok := want.Value("error").(*toolrt.Dict); ok {
 		wantType, wantMessage := failure.Value("type").(string), failure.Value("message").(string)
 		if err == nil {
 			t.Errorf("%s: ожидалось %s: %s, получено %s", label, wantType, wantMessage, dumps(t, got))
@@ -84,9 +84,9 @@ func fields(value any) []Field {
 	return result
 }
 
-// urlPartsDict — результат urlparse эталона.
-func urlPartsDict(parts URLParts) *pycompat.Dict {
-	result := pycompat.NewDict()
+// urlPartsDict — части адреса в форме объекта эталона.
+func urlPartsDict(parts URLParts) *toolrt.Dict {
+	result := toolrt.NewDict()
 	result.Set("scheme", parts.Scheme)
 	result.Set("netloc", parts.Netloc)
 	result.Set("path", parts.Path)
@@ -100,12 +100,12 @@ func urlPartsDict(parts URLParts) *pycompat.Dict {
 	port, has, err := parts.Port()
 	var portValue, portError any
 	if err != nil {
-		failure := pycompat.NewDict()
+		failure := toolrt.NewDict()
 		failure.Set("type", ErrorTypeName(err))
 		failure.Set("message", err.Error())
 		portError = failure
 	} else if has {
-		portValue = pycompat.NewInt(int64(port))
+		portValue = toolrt.NewInt(int64(port))
 	}
 	result.Set("port", portValue)
 	result.Set("port_error", portError)
@@ -114,10 +114,10 @@ func urlPartsDict(parts URLParts) *pycompat.Dict {
 
 // TestPureGolden — чистые функции клиента на cases.json.
 func TestPureGolden(t *testing.T) {
-	cases := golden.PyFile(t, domain, "cases.json").([]any)
+	cases := golden.ValueFile(t, domain, "cases.json").([]any)
 	count := 0
 	for _, entry := range cases {
-		name, call := golden.PyString(t, entry, "name"), golden.PyString(t, entry, "call")
+		name, call := golden.ValueString(t, entry, "name"), golden.ValueString(t, entry, "call")
 		expected := field(entry, "expected")
 		var got any
 		var err error
@@ -135,14 +135,14 @@ func TestPureGolden(t *testing.T) {
 		case "upload_type":
 			got, err = UploadType(arg(t, entry, "path").(string))
 		case "token_record":
-			now, _ := pycompat.Float(arg(t, entry, "now"))
-			got, err = TokenRecord(arg(t, entry, "previous").(*pycompat.Dict), arg(t, entry, "answer").(*pycompat.Dict), now)
+			now, _ := toolrt.Float(arg(t, entry, "now"))
+			got, err = TokenRecord(arg(t, entry, "previous").(*toolrt.Dict), arg(t, entry, "answer").(*toolrt.Dict), now)
 		case "multipart":
 			filename := arg(t, entry, "filename").(string)
 			data, _ := base64.StdEncoding.DecodeString(arg(t, entry, "data").(string))
 			contentType, _ := UploadType(filename)
 			body, multipartType := Multipart([]Field{{"ticket", "ticket-9"}}, "file", filename, contentType, data, arg(t, entry, "boundary").(string))
-			result := pycompat.NewDict()
+			result := toolrt.NewDict()
 			result.Set("body", base64.StdEncoding.EncodeToString(body))
 			result.Set("content_type", multipartType)
 			got = result
@@ -156,7 +156,7 @@ func TestPureGolden(t *testing.T) {
 			got = urlPartsDict(parts)
 		case "answer":
 			data, _ := base64.StdEncoding.DecodeString(arg(t, entry, "data").(string))
-			got, err = answerFor(arg(t, entry, "method").(string), pycompat.NewInt(0), arg(t, entry, "content_type").(string), data)
+			got, err = answerFor(arg(t, entry, "method").(string), toolrt.NewInt(0), arg(t, entry, "content_type").(string), data)
 		default:
 			continue
 		}
@@ -183,9 +183,9 @@ func (s *scripted) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	s.mu.Lock()
 	s.requests = append(s.requests, request)
 	s.bodies = append(s.bodies, body)
-	var answer *pycompat.Dict
+	var answer *toolrt.Dict
 	if len(s.responses) > 0 {
-		answer = s.responses[0].(*pycompat.Dict)
+		answer = s.responses[0].(*toolrt.Dict)
 		s.responses = s.responses[1:]
 	}
 	s.mu.Unlock()
@@ -206,7 +206,7 @@ func (s *scripted) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	} else if text, ok := answer.Value("body").(string); ok {
 		data = []byte(text)
 	} else {
-		encoded, _ := pycompat.DumpsJSON(answer.Value("body"), pycompat.DumpOptions{EnsureASCII: true})
+		encoded, _ := toolrt.DumpsJSON(answer.Value("body"), toolrt.DumpOptions{EnsureASCII: true})
 		data = []byte(encoded)
 	}
 	contentType, ok := answer.Value("type").(string)
@@ -214,7 +214,7 @@ func (s *scripted) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		contentType = "application/json"
 	}
 	writer.Header().Set("Content-Type", contentType)
-	status, _ := answer.Value("status").(pycompat.Int).Int64()
+	status, _ := answer.Value("status").(toolrt.Int).Int64()
 	writer.WriteHeader(int(status))
 	_, _ = writer.Write(data)
 }
@@ -246,18 +246,18 @@ func TestTracesGolden(t *testing.T) {
 	tokenHex = func(int) string { return strings.Repeat("0", 32) }
 	t.Cleanup(func() { tokenHex = previous })
 	now := time.Unix(1800000000, 250000000)
-	for _, entry := range golden.PyFile(t, domain, "traces.json").([]any) {
-		name := golden.PyString(t, entry, "name")
+	for _, entry := range golden.ValueFile(t, domain, "traces.json").([]any) {
+		name := golden.ValueString(t, entry, "name")
 		t.Run(name, func(t *testing.T) {
 			script := &scripted{}
 			server := httptest.NewServer(script)
 			defer server.Close()
 			in, out := replacer(traceBase, server.URL), replacer(server.URL, traceBase)
-			responses := golden.PyParse(t, in.Replace(golden.PyString(t, entry, "responses"))).([]any)
+			responses := golden.ParseValue(t, in.Replace(golden.ValueString(t, entry, "responses"))).([]any)
 			script.responses = responses
 			client := &Client{StateDir: t.TempDir(), BaseURL: server.URL, Now: func() time.Time { return now }}
-			if stored := golden.PyParse(t, in.Replace(golden.PyString(t, entry, "stored"))); stored != nil {
-				if err := client.WriteCredentials(stored.(*pycompat.Dict)); err != nil {
+			if stored := golden.ParseValue(t, in.Replace(golden.ValueString(t, entry, "stored"))); stored != nil {
+				if err := client.WriteCredentials(stored.(*toolrt.Dict)); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -265,17 +265,17 @@ func TestTracesGolden(t *testing.T) {
 			// Записи сервера читаются под его блокировкой: обрыв соединения не упорядочивает их для race.
 			script.mu.Lock()
 			defer script.mu.Unlock()
-			expected := field(entry, "expected").(*pycompat.Dict)
+			expected := field(entry, "expected").(*toolrt.Dict)
 			normalize := func(text string) string { return socketName.ReplaceAllString(out.Replace(text), "$1: <socket>.") }
 			assertOutcome(t, name, expected, result, err, normalize)
-			wantRequests := golden.PyParse(t, expected.Value("requests").(string)).([]any)
+			wantRequests := golden.ParseValue(t, expected.Value("requests").(string)).([]any)
 			if len(wantRequests) != len(script.requests) {
 				t.Fatalf("запросов %d, ожидалось %d", len(script.requests), len(wantRequests))
 			}
 			for index, want := range wantRequests {
-				compareRequest(t, index, want.(*pycompat.Dict), script.requests[index], script.bodies[index], in)
+				compareRequest(t, index, want.(*toolrt.Dict), script.requests[index], script.bodies[index], in)
 			}
-			if unused, _ := expected.Value("unused").(pycompat.Int).Int64(); int(unused) != len(script.responses) {
+			if unused, _ := expected.Value("unused").(toolrt.Int).Int64(); int(unused) != len(script.responses) {
 				t.Errorf("неиспользованных ответов %d, ожидалось %d", len(script.responses), unused)
 			}
 			stored, readErr := os.ReadFile(client.CredentialsPath())
@@ -294,7 +294,7 @@ func TestTracesGolden(t *testing.T) {
 var implicitHeaders = map[string]bool{"Host": true, "Accept-Encoding": true, "Content-Length": true, "Connection": true}
 
 // compareRequest сверяет запрос сценария с эталоном: метод, адрес, набор явных заголовков и тело.
-func compareRequest(t *testing.T, index int, want *pycompat.Dict, got *http.Request, body []byte, in *strings.Replacer) {
+func compareRequest(t *testing.T, index int, want *toolrt.Dict, got *http.Request, body []byte, in *strings.Replacer) {
 	t.Helper()
 	wantURL := in.Replace(want.Value("url").(string))
 	parsed, _ := url.Parse(wantURL)
@@ -327,14 +327,14 @@ func compareRequest(t *testing.T, index int, want *pycompat.Dict, got *http.Requ
 // traceAction — действие сценария трассы.
 func traceAction(t *testing.T, client *Client, name, upload string) (any, error) {
 	ctx := context.Background()
-	record := func() *pycompat.Dict { return client.ReadCredentials() }
+	record := func() *toolrt.Dict { return client.ReadCredentials() }
 	switch {
 	case strings.HasPrefix(name, "discover"):
 		endpoints, err := client.Discover(ctx)
 		if err != nil {
 			return nil, err
 		}
-		result := pycompat.NewDict()
+		result := toolrt.NewDict()
 		result.Set("authorize", endpoints.Authorize)
 		result.Set("token", endpoints.Token)
 		result.Set("register", endpoints.Register)
@@ -350,7 +350,7 @@ func traceAction(t *testing.T, client *Client, name, upload string) (any, error)
 		if err != nil {
 			return nil, err
 		}
-		arguments := pycompat.NewDict()
+		arguments := toolrt.NewDict()
 		arguments.Set("tools", []any{"x"})
 		arguments.Set("taskTraceId", "override")
 		who, err := session.Call(ctx, "who_am_i", arguments, 0, nil)
@@ -381,7 +381,7 @@ func traceAction(t *testing.T, client *Client, name, upload string) (any, error)
 	case strings.HasPrefix(name, "upload"):
 		return client.NewSession(0, "t").Upload(ctx, upload, nil)
 	case strings.HasPrefix(name, "revoke"):
-		value := pycompat.NewDict()
+		value := toolrt.NewDict()
 		switch name {
 		case "revoke-skip":
 			value.Set("refresh_token", "r")
@@ -398,13 +398,13 @@ func traceAction(t *testing.T, client *Client, name, upload string) (any, error)
 }
 
 // recordFor — запись входа сценария для отзыва.
-func recordFor(client *Client) *pycompat.Dict {
+func recordFor(client *Client) *toolrt.Dict {
 	base := client.baseURL()
-	record := pycompat.NewDict()
+	record := toolrt.NewDict()
 	record.Set("client_id", "client-1")
 	record.Set("access_token", "access-1")
 	record.Set("refresh_token", "refresh-1")
-	record.Set("expires_at", pycompat.NewInt(1800000000+3600))
+	record.Set("expires_at", toolrt.NewInt(1800000000+3600))
 	record.Set("token_endpoint", base+"/auth/token")
 	record.Set("revocation_endpoint", base+"/auth/revoke")
 	record.Set("resource", base+"/mcp")
@@ -424,10 +424,10 @@ func mustGoldenRoot(t *testing.T) string {
 
 // TestCallbackGolden — ответы колбэка входа: статус, страница, Content-Type и принятый результат.
 func TestCallbackGolden(t *testing.T) {
-	for _, entry := range golden.PyFile(t, domain, "callback.json").([]any) {
-		name := golden.PyString(t, entry, "name")
-		target := golden.PyString(t, entry, "target")
-		expected := field(entry, "expected").(*pycompat.Dict)
+	for _, entry := range golden.ValueFile(t, domain, "callback.json").([]any) {
+		name := golden.ValueString(t, entry, "name")
+		target := golden.ValueString(t, entry, "target")
+		expected := field(entry, "expected").(*toolrt.Dict)
 		t.Run(name, func(t *testing.T) {
 			client := &Client{LoginPorts: []int{0}}
 			server, err := client.Listen("expected")
@@ -441,13 +441,13 @@ func TestCallbackGolden(t *testing.T) {
 			}
 			body, _ := io.ReadAll(response.Body)
 			response.Body.Close()
-			status, _ := expected.Value("status").(pycompat.Int).Int64()
+			status, _ := expected.Value("status").(toolrt.Int).Int64()
 			if response.StatusCode != int(status) || string(body) != expected.Value("body") || response.Header.Get("Content-Type") != expected.Value("content_type") {
 				t.Errorf("ответ %d %q %q, ожидалось %d %q %q", response.StatusCode, body, response.Header.Get("Content-Type"), status, expected.Value("body"), expected.Value("content_type"))
 			}
 			var result any
 			if values := server.Result(); values != nil {
-				dict := pycompat.NewDict()
+				dict := toolrt.NewDict()
 				for _, key := range []string{"code", "error"} {
 					if value, ok := values[key]; ok {
 						dict.Set(key, value)

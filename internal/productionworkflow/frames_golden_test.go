@@ -14,17 +14,17 @@ import (
 	"sync"
 	"testing"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/mediatest"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/providers/agentexec"
-	"songframe-go/internal/providers/codex"
-	"songframe-go/internal/tools"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediafile"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/mediatest"
+	"songframe/internal/providers"
+	"songframe/internal/providers/agentexec"
+	"songframe/internal/providers/codex"
+	"songframe/internal/tools"
 )
 
 // Эталон testdata/golden/production-frames/cases.json (осознанные отличия — в README эталонов).
@@ -83,7 +83,7 @@ func (a *imageAgents) StartImages(input agents.StartInput, workDir string, confi
 	defer a.mu.Unlock()
 	a.images = append(a.images, imageStart{input: input, workDir: workDir, config: config})
 	job := &agents.Job{
-		SchemaVersion: 1, ID: "job-" + jscompat.NumberToString(float64(len(a.jobs)+1)), Sequence: 1, Project: input.Project, Provider: config.Provider,
+		SchemaVersion: 1, ID: "job-" + dynvalue.NumberToString(float64(len(a.jobs)+1)), Sequence: 1, Project: input.Project, Provider: config.Provider,
 		Task: input.Task, Permissions: "read-only", Status: "running",
 	}
 	a.jobs = append(a.jobs, job)
@@ -197,7 +197,7 @@ func (r *framesRun) runTool(ctx context.Context, project, name string, args []st
 	return tools.RunContext(ctx, project, name, args)
 }
 
-// normalize — маркеры путей, временной папки подготовки, времени, SHA запросов опор и UUID, как в скрипте.
+// normalize — маркеры путей, временной папки подготовки, времени, SHA запросов опор и UUID, как в эталоне.
 func (r *framesRun) normalize(text string) string {
 	for _, pair := range [][2]string{{r.local, "<local>"}, {r.project, "<project>"}, {r.service, "<service>"}, {r.temp, "<tmp>"}} {
 		text = strings.ReplaceAll(text, pair[0], pair[1])
@@ -210,7 +210,7 @@ func (r *framesRun) normalize(text string) string {
 	return uuidPattern.ReplaceAllString(text, "<id>")
 }
 
-// writeFile — writeData скрипта: symlink, copy (от проекта), base64, json или text.
+// writeFile — запись файла шага эталона: symlink, copy (от проекта), base64, json или text.
 func writeFile(t *testing.T, project, path string, step framesStep) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -238,7 +238,7 @@ func writeFile(t *testing.T, project, path string, step framesStep) {
 			t.Fatal(err)
 		}
 	case len(step.JSON) > 0:
-		data = []byte(jscompat.StringifyIndent(mustParse(t, step.JSON), "  ") + "\n")
+		data = []byte(dynvalue.StringifyIndent(mustParse(t, step.JSON), "  ") + "\n")
 	default:
 		data = []byte(*step.Text)
 	}
@@ -284,7 +284,7 @@ func (r *framesRun) execute(t *testing.T, step framesStep) (any, error) {
 			r.scenarioApproved = *flags.ScenarioApproved
 		}
 	case "service":
-		if err := os.WriteFile(filepath.Join(r.service, "service.json"), []byte(jscompat.StringifyIndent(mustParse(t, step.Config), "  ")+"\n"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(r.service, "service.json"), []byte(dynvalue.StringifyIndent(mustParse(t, step.Config), "  ")+"\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	case "view":
@@ -314,14 +314,14 @@ func (r *framesRun) execute(t *testing.T, step framesStep) (any, error) {
 			}
 		case step.Set != nil:
 			path := filepath.Join(r.jobDir(t), step.Path)
-			value, ok := jscompat.ReadJSONFile(path)
+			value, ok := dynvalue.ReadJSONFile(path)
 			if !ok {
 				t.Fatal("нет job.json")
 			}
 			for name, raw := range step.Set {
-				value.(*jscompat.Object).Set(name, mustParse(t, raw))
+				value.(*dynvalue.Object).Set(name, mustParse(t, raw))
 			}
-			writeFile(t, r.project, path, framesStep{JSON: json.RawMessage(jscompat.Stringify(value))})
+			writeFile(t, r.project, path, framesStep{JSON: json.RawMessage(dynvalue.Stringify(value))})
 		default:
 			writeFile(t, r.project, filepath.Join(r.jobDir(t), step.Path), step)
 		}
@@ -331,7 +331,7 @@ func (r *framesRun) execute(t *testing.T, step framesStep) (any, error) {
 		if text, ok := result.(string); ok {
 			job.Result = text
 		} else {
-			job.Result = jscompat.Stringify(result)
+			job.Result = dynvalue.Stringify(result)
 		}
 		job.Status = "completed"
 		if step.Status != "" {
@@ -339,7 +339,7 @@ func (r *framesRun) execute(t *testing.T, step framesStep) (any, error) {
 		}
 		code := 0
 		if len(step.ExitCode) > 0 {
-			code = int(jscompat.ToNumber(mustParse(t, step.ExitCode)))
+			code = int(dynvalue.ToNumber(mustParse(t, step.ExitCode)))
 		}
 		job.ExitCode = &code
 		job.Message = step.Message
@@ -347,8 +347,8 @@ func (r *framesRun) execute(t *testing.T, step framesStep) (any, error) {
 		id := step.ID
 		if id == "current" {
 			id = ""
-			if value, ok := jscompat.ReadJSONFile(filepath.Join(r.local, StoreFolder, FileName(r.project, step.Shot))); ok {
-				id, _ = jscompat.GetPath(value, "proposal", "id").(string)
+			if value, ok := dynvalue.ReadJSONFile(filepath.Join(r.local, StoreFolder, FileName(r.project, step.Shot))); ok {
+				id, _ = dynvalue.GetPath(value, "proposal", "id").(string)
 			}
 		}
 		return r.workflow.Discard(r.project, step.Shot, packageDir, id)
@@ -365,7 +365,7 @@ func (r *framesRun) execute(t *testing.T, step framesStep) (any, error) {
 // step исполняет шаг и сверяет его исход с эталоном.
 func (r *framesRun) step(t *testing.T, index int, step framesStep) {
 	t.Helper()
-	label := jscompat.NumberToString(float64(index)) + " " + step.Op
+	label := dynvalue.NumberToString(float64(index)) + " " + step.Op
 	startsBefore, callsBefore := len(r.agents.images), len(r.calls)
 	result, err := r.execute(t, step)
 	// Сначала рабочие папки: SHA запросов опор из job.json нужны нормализации остального.
@@ -389,7 +389,7 @@ func (r *framesRun) step(t *testing.T, index int, step framesStep) {
 
 	starts := []any{}
 	for _, start := range r.agents.images[startsBefore:] {
-		entry := jscompat.NewObject()
+		entry := dynvalue.NewObject()
 		entry.Set("project", r.normalize(start.input.Project))
 		entry.Set("task", start.input.Task)
 		entry.Set("prompt", remember(r.normalize(start.input.Prompt)))
@@ -417,28 +417,28 @@ func (r *framesRun) step(t *testing.T, index int, step framesStep) {
 	r.compareList(t, label, "service", step.Service, service)
 }
 
-// compareResult сверяет результат шага (вид, сводку) в форме JSON.stringify.
+// compareResult сверяет результат шага (вид, сводку) в форме компактного JSON.
 func (r *framesRun) compareResult(t *testing.T, label string, want json.RawMessage, got any) {
 	t.Helper()
-	data, err := json.Marshal(originalFields(got))
+	data, err := json.Marshal(goldenFields(got))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if summaries, ok := got.(map[string]Summary); ok {
-		expected := mustParse(t, want).(*jscompat.Object)
+		expected := mustParse(t, want).(*dynvalue.Object)
 		if len(expected.Keys()) != len(summaries) {
 			t.Fatalf("%s: сводка %s, ожидалась %s", label, data, want)
 		}
 		for _, shot := range expected.Keys() {
 			summary, found := summaries[shot]
-			if !found || r.normalize(string(summary.Value)) != jscompat.Stringify(expected.Value(shot)) {
-				t.Fatalf("%s: сводка %s: %s, ожидалась %s", label, shot, summary.Value, jscompat.Stringify(expected.Value(shot)))
+			if !found || r.normalize(string(summary.Value)) != dynvalue.Stringify(expected.Value(shot)) {
+				t.Fatalf("%s: сводка %s: %s, ожидалась %s", label, shot, summary.Value, dynvalue.Stringify(expected.Value(shot)))
 			}
 		}
 		return
 	}
-	gotText := jscompat.Stringify(mustParse(t, []byte(r.normalize(jscompat.Stringify(mustParse(t, data))))))
-	if wantText := jscompat.Stringify(mustParse(t, want)); gotText != wantText {
+	gotText := dynvalue.Stringify(mustParse(t, []byte(r.normalize(dynvalue.Stringify(mustParse(t, data))))))
+	if wantText := dynvalue.Stringify(mustParse(t, want)); gotText != wantText {
 		t.Fatalf("%s: результат отличается\n%s", label, firstDifference(gotText, wantText))
 	}
 }
@@ -448,9 +448,9 @@ func (r *framesRun) compareList(t *testing.T, label, name string, want json.RawM
 	t.Helper()
 	wantText := "[]"
 	if len(want) > 0 {
-		wantText = jscompat.Stringify(mustParse(t, want))
+		wantText = dynvalue.Stringify(mustParse(t, want))
 	}
-	if gotText := jscompat.Stringify(&jscompat.Array{Items: got}); gotText != wantText {
+	if gotText := dynvalue.Stringify(&dynvalue.Array{Items: got}); gotText != wantText {
 		t.Fatalf("%s: %s отличаются\n%s", label, name, firstDifference(gotText, wantText))
 	}
 }
@@ -463,14 +463,14 @@ func (r *framesRun) compareState(t *testing.T, label, name string, want json.Raw
 		r.expected[name] = want
 	}
 	expected := sortDeep(mustParse(t, r.expected[name]))
-	gotValue := sortDeep(mustParse(t, []byte(jscompat.Stringify(mapObject(got)))))
-	if jscompat.Stringify(gotValue) == jscompat.Stringify(expected) {
+	gotValue := sortDeep(mustParse(t, []byte(dynvalue.Stringify(mapObject(got)))))
+	if dynvalue.Stringify(gotValue) == dynvalue.Stringify(expected) {
 		return
 	}
-	wantObject := expected.(*jscompat.Object)
-	gotObject := gotValue.(*jscompat.Object)
+	wantObject := expected.(*dynvalue.Object)
+	gotObject := gotValue.(*dynvalue.Object)
 	for _, key := range append(wantObject.Keys(), gotObject.Keys()...) {
-		left, right := jscompat.Stringify(gotObject.Value(key)), jscompat.Stringify(wantObject.Value(key))
+		left, right := dynvalue.Stringify(gotObject.Value(key)), dynvalue.Stringify(wantObject.Value(key))
 		if left == right {
 			continue
 		}
@@ -480,7 +480,7 @@ func (r *framesRun) compareState(t *testing.T, label, name string, want json.Raw
 		}
 		t.Fatalf("%s: %s %s отличается\n%s", label, name, key, detail)
 	}
-	t.Fatalf("%s: %s отличается\n got %s\nwant %s", label, name, jscompat.Stringify(gotValue), jscompat.Stringify(expected))
+	t.Fatalf("%s: %s отличается\n got %s\nwant %s", label, name, dynvalue.Stringify(gotValue), dynvalue.Stringify(expected))
 }
 
 // textOf — текст эталона записи {text: sha} либо SHA записи каталога состояния.
@@ -488,7 +488,7 @@ func (r *framesRun) textOf(value any) string {
 	if sha, ok := value.(string); ok {
 		return r.blobs[sha]
 	}
-	if sha, ok := jscompat.Get(value, "text").(string); ok {
+	if sha, ok := dynvalue.Get(value, "text").(string); ok {
 		return r.blobs[sha]
 	}
 	return ""
@@ -502,7 +502,7 @@ func (r *framesRun) pendingText(value any) string {
 	if sha, ok := value.(string); ok {
 		return pendingTexts[sha]
 	}
-	if sha, ok := jscompat.Get(value, "text").(string); ok {
+	if sha, ok := dynvalue.Get(value, "text").(string); ok {
 		return pendingTexts[sha]
 	}
 	return ""
@@ -516,14 +516,14 @@ func remember(text string) string {
 	return key
 }
 
-// mapObject — объект с ключами в порядке сортировки (как readdirSync().sort() скрипта).
-func mapObject(values map[string]any) *jscompat.Object {
+// mapObject — объект с ключами в порядке сортировки, как в записях эталона.
+func mapObject(values map[string]any) *dynvalue.Object {
 	keys := make([]string, 0, len(values))
 	for key := range values {
 		keys = append(keys, key)
 	}
 	slices.Sort(keys)
-	object := jscompat.NewObject()
+	object := dynvalue.NewObject()
 	for _, key := range keys {
 		object.Set(key, values[key])
 	}
@@ -532,7 +532,7 @@ func mapObject(values map[string]any) *jscompat.Object {
 
 // sortDeep — объекты дерева с отсортированными ключами: порядок обхода папок не сравнивается.
 func sortDeep(value any) any {
-	object, ok := value.(*jscompat.Object)
+	object, ok := value.(*dynvalue.Object)
 	if !ok {
 		return value
 	}
@@ -566,7 +566,7 @@ func (r *framesRun) localFiles(t *testing.T) map[string]any {
 	return result
 }
 
-// tree — дерево папки, как tree скрипта: каталог — `путь/`, текст — SHA нормализованного
+// tree — дерево папки в форме эталона: каталог — `путь/`, текст — SHA нормализованного
 // содержимого, иначе SHA-256 и размер; файлы без прав записи помечены readonly, ссылки — symlink.
 func (r *framesRun) tree(t *testing.T, directory string) map[string]any {
 	t.Helper()
@@ -587,7 +587,7 @@ func (r *framesRun) tree(t *testing.T, directory string) map[string]any {
 			if err != nil {
 				t.Fatal(err)
 			}
-			item := jscompat.NewObject()
+			item := dynvalue.NewObject()
 			switch {
 			case info.Mode()&os.ModeSymlink != 0:
 				item.Set("symlink", true)
@@ -614,7 +614,7 @@ func (r *framesRun) tree(t *testing.T, directory string) map[string]any {
 			}
 		}
 	}
-	if jscompat.Exists(directory) {
+	if dynvalue.Exists(directory) {
 		walk(directory, "")
 	}
 	return result
@@ -628,11 +628,11 @@ func (r *framesRun) jobFolders(t *testing.T) map[string]any {
 	entries, _ := os.ReadDir(folder)
 	for _, entry := range entries {
 		id := entry.Name()
-		if value, ok := jscompat.ReadJSONFile(filepath.Join(folder, entry.Name(), "job.json")); ok {
-			if jobID, ok := jscompat.Get(value, "jobId").(string); ok {
+		if value, ok := dynvalue.ReadJSONFile(filepath.Join(folder, entry.Name(), "job.json")); ok {
+			if jobID, ok := dynvalue.Get(value, "jobId").(string); ok {
 				id = jobID
 			}
-			if request, ok := jscompat.Get(value, "requestSha").(string); ok && requestHash.MatchString(request) && !slices.Contains(r.requests, request) {
+			if request, ok := dynvalue.Get(value, "requestSha").(string); ok && requestHash.MatchString(request) && !slices.Contains(r.requests, request) {
 				r.requests = append(r.requests, request)
 			}
 		}

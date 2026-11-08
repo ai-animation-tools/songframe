@@ -1,5 +1,5 @@
 {
-  "description": "visual_direction числом: TypeError re.finditer — трассировка.",
+  "description": "visual_direction числом: TypeError поиска по шаблону — трассировка.",
   "call": "lint_registry",
   "project": "project",
   "base": "checks-base",

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"syscall"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/shotstatus"
+	"songframe/internal/shotstatus"
+	"songframe/internal/toolrt"
 )
 
 // hints — подсказка «Дальше» таблицы для каждого этапа.
@@ -34,7 +34,7 @@ var hints = map[string]string{
 // problems — проблемы пакета: изменённая постановка, отсутствующие или изменённые
 // принятые опоры и промпт, папка запроса без request.json, ошибка запроса изображения.
 // Ошибки чтения реестра (OSError) не перехватываются: это сбой проекта, а не проблема пакета.
-func (t *workflowTool) problems(directory string, data *pycompat.Dict) ([]string, error) {
+func (t *workflowTool) problems(directory string, data *toolrt.Dict) ([]string, error) {
 	issues := []string{}
 	shot, err := item(data, "shot")
 	if err != nil {
@@ -45,12 +45,12 @@ func (t *workflowTool) problems(directory string, data *pycompat.Dict) ([]string
 		digest, ferr := t.fingerprint(registry, shot.(string))
 		if ferr != nil {
 			err = ferr
-		} else if !pycompat.Equal(digest, data.Value("scene_sha256")) {
+		} else if !toolrt.Equal(digest, data.Value("scene_sha256")) {
 			issues = append(issues, "постановка или унаследованное состояние изменились после подготовки: пересогласуйте пакет")
 		}
 	}
 	if err != nil {
-		if !pycompat.Is(err, pycompat.ValueError) {
+		if !toolrt.Is(err, toolrt.ValueError) {
 			return nil, err
 		}
 		issues = append(issues, err.Error())
@@ -64,10 +64,10 @@ func (t *workflowTool) problems(directory string, data *pycompat.Dict) ([]string
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Truthy(approved) {
+		if !toolrt.Truthy(approved) {
 			continue
 		}
-		keyframe := entry.(*pycompat.Dict)
+		keyframe := entry.(*toolrt.Dict)
 		name, err := item(keyframe, "path")
 		if err != nil {
 			return nil, err
@@ -76,16 +76,16 @@ func (t *workflowTool) problems(directory string, data *pycompat.Dict) ([]string
 		if err != nil {
 			return nil, err
 		}
-		id := pycompat.Str(keyframe.Value("id"))
-		if !pycompat.IsFile(path) {
+		id := toolrt.Str(keyframe.Value("id"))
+		if !toolrt.IsFile(path) {
 			issues = append(issues, id+": файл опоры отсутствует")
 		} else if digest, err := sha(path); err != nil {
 			return nil, err
-		} else if !pycompat.Equal(digest, keyframe.Value("sha256")) {
+		} else if !toolrt.Equal(digest, keyframe.Value("sha256")) {
 			issues = append(issues, id+": байты опоры изменились после принятия")
 		}
 	}
-	prompt, err := get(data, "prompt", pycompat.NewDict())
+	prompt, err := get(data, "prompt", toolrt.NewDict())
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (t *workflowTool) problems(directory string, data *pycompat.Dict) ([]string
 	if err != nil {
 		return nil, err
 	}
-	if pycompat.Truthy(approved) {
+	if toolrt.Truthy(approved) {
 		name, err := item(prompt, "path")
 		if err != nil {
 			return nil, err
@@ -110,16 +110,16 @@ func (t *workflowTool) problems(directory string, data *pycompat.Dict) ([]string
 			issues = append(issues, "промпт изменён или удалён после принятия")
 		}
 	}
-	if request := data.Value("request_dir"); pycompat.Truthy(request) {
+	if request := data.Value("request_dir"); toolrt.Truthy(request) {
 		path, err := pathPart(directory, request)
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.IsFile(pycompat.JoinPath(path, "request.json")) {
+		if !toolrt.IsFile(toolrt.JoinPath(path, "request.json")) {
 			issues = append(issues, "папка запроса не содержит request.json")
 		}
 	}
-	if pycompat.Truthy(data.Value("image_request_dir")) {
+	if toolrt.Truthy(data.Value("image_request_dir")) {
 		if _, _, _, err := imageAttempt(directory, data, nil); err != nil {
 			if !expected(err) {
 				return nil, err
@@ -130,17 +130,17 @@ func (t *workflowTool) problems(directory string, data *pycompat.Dict) ([]string
 	return issues, nil
 }
 
-// expected — except (ValueError, OSError, KeyError, TypeError); ошибки Go вне модели — OSError.
+// expected — ожидаемый отказ: ValueError, OSError, KeyError или TypeError; ошибки Go вне модели — OSError.
 func expected(err error) bool {
-	if _, isPython := err.(*pycompat.Exception); !isPython {
+	if _, isToolError := err.(*toolrt.Exception); !isToolError {
 		return true
 	}
-	return pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError, pycompat.TypeError)
+	return toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError, toolrt.TypeError)
 }
 
 // reportInfo — результат report: словарь для --json и проблемы для check.
 type reportInfo struct {
-	dict     *pycompat.Dict
+	dict     *toolrt.Dict
 	problems []string
 }
 
@@ -155,33 +155,33 @@ func (t *workflowTool) report(dirArg string) (reportInfo, error) {
 		return reportInfo{}, err
 	}
 	var attempt any
-	if request := data.Value("request_dir"); pycompat.Truthy(request) {
+	if request := data.Value("request_dir"); toolrt.Truthy(request) {
 		folder, err := pathPart(directory, request)
 		if err != nil {
 			return reportInfo{}, err
 		}
-		path := pycompat.JoinPath(folder, "attempt.json")
-		if pycompat.IsFile(path) {
-			if attempt, err = pycompat.LoadJSONFile(path); err != nil {
+		path := toolrt.JoinPath(folder, "attempt.json")
+		if toolrt.IsFile(path) {
+			if attempt, err = toolrt.LoadJSONFile(path); err != nil {
 				return reportInfo{}, err
 			}
 		}
 	}
 	var imageStatus any
-	if pycompat.Truthy(data.Value("image_request_dir")) {
+	if toolrt.Truthy(data.Value("image_request_dir")) {
 		if _, _, state, err := imageAttempt(directory, data, nil); err == nil {
 			imageStatus = state.Value("status")
 		} else if !expected(err) {
 			return reportInfo{}, err
 		}
 	}
-	stage := pycompat.Str(data.Value("stage"))
+	stage := toolrt.Str(data.Value("stage"))
 	label, ok := shotstatus.StageLabel(stage)
 	if !ok {
 		label = stage
 	}
 	var attemptStatus any
-	if dict, ok := attempt.(*pycompat.Dict); ok {
+	if dict, ok := attempt.(*toolrt.Dict); ok {
 		attemptStatus = dict.Value("status")
 	}
 	history, _ := get(data, "image_requests", []any{})
@@ -248,21 +248,21 @@ func (t *workflowTool) park(dirArg, waitReason string) (string, error) {
 	if len(issues) > 0 {
 		return "", valueError("Пакет не готов к переносу: " + strings.Join(issues, "; "))
 	}
-	stage := pycompat.Str(data.Value("stage"))
-	imageOnly := stage == "image_request_choice" && pycompat.Truthy(data.Value("image_request_dir"))
+	stage := toolrt.Str(data.Value("stage"))
+	imageOnly := stage == "image_request_choice" && toolrt.Truthy(data.Value("image_request_dir"))
 	if imageOnly {
 		_, _, attempt, err := imageAttempt(directory, data, nil)
 		if err != nil {
 			return "", err
 		}
-		if !is(attempt.Value("status"), "prepared") || pycompat.Truthy(attempt.Value("generation_id")) {
+		if !is(attempt.Value("status"), "prepared") || toolrt.Truthy(attempt.Value("generation_id")) {
 			return "", valueError("Отправленную image-попытку продолжайте через resume.")
 		}
-	} else if !pycompat.Truthy(data.Value("request_dir")) {
+	} else if !toolrt.Truthy(data.Value("request_dir")) {
 		return "", valueError("В очередь переносится пакет с подготовленным запросом: укажите request_dir через set-stage.")
 	}
-	shot := pycompat.Str(data.Value("shot"))
-	target := pycompat.JoinPath(pycompat.ResolvePath(t.root), "plan/awaiting", shot)
+	shot := toolrt.Str(data.Value("shot"))
+	target := toolrt.JoinPath(toolrt.ResolvePath(t.root), "plan/awaiting", shot)
 	if _, err := os.Lstat(target); err == nil {
 		return "", valueError("Пакет " + shot + " уже есть в очереди; сначала прочитайте и решите его судьбу.")
 	}
@@ -274,7 +274,7 @@ func (t *workflowTool) park(dirArg, waitReason string) (string, error) {
 		return "", err
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o777); err != nil {
-		return "", pycompat.OSErrorFrom(err, filepath.Dir(target))
+		return "", toolrt.OSErrorFrom(err, filepath.Dir(target))
 	}
 	if err := move(directory, target); err != nil {
 		return "", err
@@ -282,7 +282,7 @@ func (t *workflowTool) park(dirArg, waitReason string) (string, error) {
 	return target, nil
 }
 
-// move — shutil.move каталога: переименование, а между файловыми системами — копия с правами и
+// move — перемещение каталога: переименование, а между файловыми системами — копия с правами и
 // удаление источника.
 func move(source, target string) error {
 	err := os.Rename(source, target)
@@ -291,7 +291,7 @@ func move(source, target string) error {
 	}
 	var linkErr *os.LinkError
 	if !errors.As(err, &linkErr) || !errors.Is(linkErr.Err, syscall.EXDEV) {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	err = filepath.WalkDir(source, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -316,22 +316,23 @@ func move(source, target string) error {
 		return os.Chtimes(destination, info.ModTime(), info.ModTime())
 	})
 	if err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	if err := os.RemoveAll(source); err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	return nil
 }
 
-// formatG — format(value, "g") Python для числа (int и bool приводятся к float).
+// formatG — запись числа в формате «g» (6 значащих цифр, без хвостовых нулей; целые и bool
+// приводятся к float); строка — ValueError, прочие типы — TypeError.
 func formatG(value any) (string, error) {
 	var number float64
 	switch item := value.(type) {
 	case float64:
 		number = item
-	case pycompat.Int, bool:
-		converted, err := pycompat.Float(item)
+	case toolrt.Int, bool:
+		converted, err := toolrt.Float(item)
 		if err != nil {
 			return "", err
 		}
@@ -339,7 +340,7 @@ func formatG(value any) (string, error) {
 	case string:
 		return "", valueError("Unknown format code 'g' for object of type 'str'")
 	default:
-		return "", pycompat.Raise(pycompat.TypeError, "unsupported format string passed to %s.__format__", pycompat.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "unsupported format string passed to %s.__format__", toolrt.TypeName(value))
 	}
 	switch {
 	case math.IsNaN(number):
@@ -355,13 +356,13 @@ func formatG(value any) (string, error) {
 // table — таблица пакета для человека.
 func table(info reportInfo) (string, error) {
 	data := info.dict
-	header := "План " + pycompat.Str(data.Value("shot")) + " · режим " + pycompat.Str(data.Value("mode")) + " · этап: " + pycompat.Str(data.Value("stage_label")) + " (`" + pycompat.Str(data.Value("stage")) + "`)"
-	if batch := data.Value("batch"); pycompat.Truthy(batch) {
-		header += " · партия " + pycompat.Str(batch)
+	header := "План " + toolrt.Str(data.Value("shot")) + " · режим " + toolrt.Str(data.Value("mode")) + " · этап: " + toolrt.Str(data.Value("stage_label")) + " (`" + toolrt.Str(data.Value("stage")) + "`)"
+	if batch := data.Value("batch"); toolrt.Truthy(batch) {
+		header += " · партия " + toolrt.Str(batch)
 	}
 	lines := []string{header}
-	if reason := data.Value("wait_reason"); pycompat.Truthy(reason) {
-		label := pycompat.Str(reason)
+	if reason := data.Value("wait_reason"); toolrt.Truthy(reason) {
+		label := toolrt.Str(reason)
 		if text, ok := reason.(string); ok {
 			if found, ok := shotstatus.WaitLabel(text); ok {
 				label = found
@@ -370,8 +371,8 @@ func table(info reportInfo) (string, error) {
 		lines = append(lines, "Причина ожидания: "+label)
 	}
 	timing := data.Value("timing")
-	if !pycompat.Truthy(timing) {
-		timing = pycompat.NewDict()
+	if !toolrt.Truthy(timing) {
+		timing = toolrt.NewDict()
 	}
 	window, err := get(timing, "window_seconds", nil)
 	if err != nil {
@@ -380,11 +381,11 @@ func table(info reportInfo) (string, error) {
 	frames, _ := get(timing, "frames", nil)
 	request, _ := get(timing, "request_seconds", nil)
 	requestText := "не задан"
-	if pycompat.Truthy(request) {
-		requestText = pycompat.Str(request)
+	if toolrt.Truthy(request) {
+		requestText = toolrt.Str(request)
 	}
-	lines = append(lines, "Окно "+pycompat.Str(window)+" с ("+pycompat.Str(frames)+" кадров), запрос "+requestText+" с")
-	items, err := pycompat.Iter(data.Value("keyframes"))
+	lines = append(lines, "Окно "+toolrt.Str(window)+" с ("+toolrt.Str(frames)+" кадров), запрос "+requestText+" с")
+	items, err := toolrt.Iter(data.Value("keyframes"))
 	if err != nil {
 		return "", err
 	}
@@ -412,21 +413,21 @@ func table(info reportInfo) (string, error) {
 				return "", err
 			}
 			approved := "нет"
-			if pycompat.Truthy(keyframe.Value("approved")) {
+			if toolrt.Truthy(keyframe.Value("approved")) {
 				approved = "да"
 			}
 			path := "—"
-			if value := keyframe.Value("path"); pycompat.Truthy(value) {
-				path = pycompat.Str(value)
+			if value := keyframe.Value("path"); toolrt.Truthy(value) {
+				path = toolrt.Str(value)
 			}
-			lines = append(lines, "| "+pycompat.Str(id)+" | "+pycompat.Str(role)+" | "+time+" | "+approved+" | "+path+" |")
+			lines = append(lines, "| "+toolrt.Str(id)+" | "+toolrt.Str(role)+" | "+time+" | "+approved+" | "+path+" |")
 		}
 	}
-	notes := []*pycompat.Dict{}
+	notes := []*toolrt.Dict{}
 	allNotes, _ := data.Value("keyframe_notes").([]any)
 	for _, entry := range allNotes {
-		note := entry.(*pycompat.Dict)
-		if pycompat.Truthy(note.Value("active")) {
+		note := entry.(*toolrt.Dict)
+		if toolrt.Truthy(note.Value("active")) {
 			notes = append(notes, note)
 		}
 	}
@@ -434,15 +435,15 @@ func table(info reportInfo) (string, error) {
 		scopes := map[string]string{"frame": "только эта опора", "following": "эта и следующие"}
 		lines = append(lines, "", "Активные замечания к опорам:")
 		for _, note := range notes {
-			scope := pycompat.Str(note.Value("scope"))
+			scope := toolrt.Str(note.Value("scope"))
 			if text, ok := note.Value("scope").(string); ok {
 				if found, ok := scopes[text]; ok {
 					scope = found
 				}
 			}
 			frame := "все опоры"
-			if value := note.Value("frame"); pycompat.Truthy(value) {
-				frame = pycompat.Str(value)
+			if value := note.Value("frame"); toolrt.Truthy(value) {
+				frame = toolrt.Str(value)
 			}
 			id, err := item(note, "id")
 			if err != nil {
@@ -452,38 +453,38 @@ func table(info reportInfo) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			lines = append(lines, "- №"+pycompat.Str(id)+" "+frame+" ("+scope+"): "+pycompat.Str(text))
+			lines = append(lines, "- №"+toolrt.Str(id)+" "+frame+" ("+scope+"): "+toolrt.Str(text))
 		}
 	}
 	prompt := data.Value("prompt")
-	if !pycompat.Truthy(prompt) {
-		prompt = pycompat.NewDict()
+	if !toolrt.Truthy(prompt) {
+		prompt = toolrt.NewDict()
 	}
 	promptApproved, err := get(prompt, "approved", nil)
 	if err != nil {
 		return "", err
 	}
 	promptLine := "Промпт: не принят"
-	if pycompat.Truthy(promptApproved) {
+	if toolrt.Truthy(promptApproved) {
 		promptLine = "Промпт: принят"
 	}
-	if chars, _ := get(prompt, "chars", nil); pycompat.Truthy(chars) {
-		promptLine += ", " + pycompat.Str(chars) + " символов"
+	if chars, _ := get(prompt, "chars", nil); toolrt.Truthy(chars) {
+		promptLine += ", " + toolrt.Str(chars) + " символов"
 	}
 	lines = append(lines, "", promptLine)
-	if request := data.Value("request_dir"); pycompat.Truthy(request) {
-		line := "Запрос: " + pycompat.Str(request)
-		if status := data.Value("attempt_status"); pycompat.Truthy(status) {
-			line += ", состояние попытки " + pycompat.Str(status)
+	if request := data.Value("request_dir"); toolrt.Truthy(request) {
+		line := "Запрос: " + toolrt.Str(request)
+		if status := data.Value("attempt_status"); toolrt.Truthy(status) {
+			line += ", состояние попытки " + toolrt.Str(status)
 		}
 		lines = append(lines, line)
 	}
-	if image := data.Value("image_request_dir"); pycompat.Truthy(image) {
-		lines = append(lines, "Запрос опоры "+pycompat.Str(data.Value("image_frame_id"))+": "+pycompat.Str(image)+", состояние "+pycompat.Str(data.Value("image_attempt_status")))
+	if image := data.Value("image_request_dir"); toolrt.Truthy(image) {
+		lines = append(lines, "Запрос опоры "+toolrt.Str(data.Value("image_frame_id"))+": "+toolrt.Str(image)+", состояние "+toolrt.Str(data.Value("image_attempt_status")))
 	}
 	for _, issue := range info.problems {
 		lines = append(lines, "Проблема: "+issue)
 	}
-	lines = append(lines, "Дальше: "+pycompat.Str(data.Value("next_action")))
+	lines = append(lines, "Дальше: "+toolrt.Str(data.Value("next_action")))
 	return strings.Join(lines, "\n"), nil
 }

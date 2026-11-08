@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"songframe-go/internal/referenceimage"
-	"songframe-go/internal/sourceedit"
-	"songframe-go/internal/wire"
+	"songframe/internal/referenceimage"
+	"songframe/internal/sourceedit"
+	"songframe/internal/wire"
 )
 
 // SourcesService реализует группу window.api.sources: просмотр, проверку и сохранение

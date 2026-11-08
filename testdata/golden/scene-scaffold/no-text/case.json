@@ -1,5 +1,5 @@
 {
-  "description": "Нет source/text.md: оригиналы — инструментал.",
+  "description": "Нет source/text.md: строк текста нет, все строки — инструментал.",
   "call": "scene_scaffold",
   "project": "project",
   "covers": [

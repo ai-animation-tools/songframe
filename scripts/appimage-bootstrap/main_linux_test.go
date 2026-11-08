@@ -191,7 +191,7 @@ func TestAppRunForwarding(t *testing.T) {
 		"AppRun":                         wrapper,
 		"usr/libexec/songframe-appimage": []byte("#!/bin/sh\nexit \"$HELPER_STATUS\"\n"),
 		"AppRun.wails":                   []byte("#!/bin/sh\nprintf '%s\\n' inner \"$@\" > \"$CAPTURE\"\n"),
-		"image":                          []byte("#!/bin/sh\nprintf '%s\\n' \"$SONGFRAME_GO_APPIMAGE_SETUP_RETRY\" \"$@\" > \"$CAPTURE\"\n"),
+		"image":                          []byte("#!/bin/sh\nprintf '%s\\n' \"$SONGFRAME_APPIMAGE_SETUP_RETRY\" \"$@\" > \"$CAPTURE\"\n"),
 	}
 	for name, body := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), body, 0700); err != nil {
@@ -272,7 +272,7 @@ func TestNoPromptWithoutDialogOrAfterRetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, retry := range []string{"", "1"} {
-		t.Setenv("SONGFRAME_GO_APPIMAGE_SETUP_RETRY", retry)
+		t.Setenv("SONGFRAME_APPIMAGE_SETUP_RETRY", retry)
 		if got := prepare(nil, func() bool { return true }, func() error { return errors.New("userns запрещены") }); got != 1 {
 			t.Fatalf("код %d при retry=%q, ожидался 1", got, retry)
 		}

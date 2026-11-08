@@ -3,7 +3,7 @@ package agents
 import (
 	"strings"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Тексты, которые Go отдаёт renderer через ошибки, результаты диагностики и задания.
@@ -169,13 +169,13 @@ func textUsageRestricted(name string) string {
 func textLimitLabel(name, kind string, windowMinutes *float64) string {
 	label := name + " · " + kind
 	if windowMinutes != nil {
-		label += " · " + jscompat.NumberToString(*windowMinutes) + " мин"
+		label += " · " + dynvalue.NumberToString(*windowMinutes) + " мин"
 	}
 	return label
 }
 
 func textLimitWithWindow(name string, windowMinutes int) string {
-	return name + " · " + jscompat.NumberToString(float64(windowMinutes)) + " мин"
+	return name + " · " + dynvalue.NumberToString(float64(windowMinutes)) + " мин"
 }
 
 func textModelsEmpty(name string) string {

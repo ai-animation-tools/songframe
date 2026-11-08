@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
-// makeDirs — mkdir(parents=True, exist_ok=True) с правами по умолчанию (0o777 и umask).
+// makeDirs — папка вместе с недостающими родителями; существующая папка не ошибка. Права — 0o777
+// с учётом umask.
 func makeDirs(path string) error {
 	if err := os.MkdirAll(path, 0o777); err != nil {
-		return pycompat.OSErrorFrom(err, path)
+		return toolrt.OSErrorFrom(err, path)
 	}
 	return nil
 }
@@ -33,25 +34,25 @@ func (r contextReader) Read(buffer []byte) (int, error) {
 	return r.source.Read(buffer)
 }
 
-// copyFile — shutil.copyfile(source, destination): содержимое потоком (ссылка на файл разыменована),
-// права цели — по умолчанию. Копия файла на самого себя — ошибка SameFileError (подкласс OSError):
-// иначе открытие цели обнулило бы исходник.
+// copyFile — копия содержимого потоком (ссылка на файл разыменована), права цели — по умолчанию.
+// Копия файла на самого себя — исключение toolrt OSError «are the same file»: иначе открытие цели
+// обнулило бы исходник.
 func copyFile(ctx context.Context, source, destination string) error {
 	input, err := os.Open(source)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	defer input.Close()
 	from, err := input.Stat()
 	if err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	if to, err := os.Stat(destination); err == nil && os.SameFile(from, to) {
-		return pycompat.New(pycompat.OSError, pycompat.Repr(source)+" and "+pycompat.Repr(destination)+" are the same file")
+		return toolrt.New(toolrt.OSError, toolrt.Repr(source)+" and "+toolrt.Repr(destination)+" are the same file")
 	}
 	output, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, destination)
+		return toolrt.OSErrorFrom(err, destination)
 	}
 	_, err = io.Copy(output, contextReader{ctx, input})
 	if closed := output.Close(); err == nil {
@@ -61,33 +62,33 @@ func copyFile(ctx context.Context, source, destination string) error {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		}
-		return pycompat.OSErrorFrom(err, destination)
+		return toolrt.OSErrorFrom(err, destination)
 	}
 	return nil
 }
 
-// copier — состояние copy_media: уже скопированные пути проекта и их пути в пакете.
+// copier — состояние копирования медиа: уже скопированные пути проекта и их пути в пакете.
 type copier struct {
 	ctx          context.Context
 	root, target string
 	copied       map[string]any
 }
 
-// parentOf — Path.parent: строкой, без разбора «..», который filepath.Dir схлопнул бы лексически
-// и тогда папка media/ при пути «../x» не создавалась бы.
+// parentOf — родитель пути отсечением последнего компонента, без разбора «..»: filepath.Dir
+// схлопнул бы его лексически, и тогда папка media/ при пути «../x» не создавалась бы.
 func parentOf(path string) string {
-	return strings.TrimSuffix(strings.TrimSuffix(path, pycompat.PathName(path)), string(filepath.Separator))
+	return strings.TrimSuffix(strings.TrimSuffix(path, toolrt.PathName(path)), string(filepath.Separator))
 }
 
-// take — take(path): копирует файл проекта в media/ и возвращает путь внутри пакета. Повтор того же
+// take копирует файл проекта в media/ и возвращает путь внутри пакета. Повтор того же
 // пути не копирует заново, пустой путь возвращается как есть. Путь пишется через «/» на любой ОС:
 // пакет передают между машинами монтажёра.
 func (c *copier) take(path any) (any, error) {
-	key, err := pycompat.HashKey(path)
+	key, err := toolrt.HashKey(path)
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Truthy(path) {
+	if !toolrt.Truthy(path) {
 		return path, nil
 	}
 	if known, ok := c.copied[key]; ok {
@@ -98,18 +99,18 @@ func (c *copier) take(path any) (any, error) {
 		_, err := pathJoin(c.root, path)
 		return nil, err
 	}
-	source := pycompat.JoinPath(c.root, text)
-	if !pycompat.IsFile(source) {
-		return nil, pycompat.New(pycompat.ValueError, textFileMissing+text)
+	source := toolrt.JoinPath(c.root, text)
+	if !toolrt.IsFile(source) {
+		return nil, toolrt.New(toolrt.ValueError, textFileMissing+text)
 	}
-	destination := pycompat.JoinPath(c.target, "media", text)
+	destination := toolrt.JoinPath(c.target, "media", text)
 	if err := makeDirs(parentOf(destination)); err != nil {
 		return nil, err
 	}
 	if err := copyFile(c.ctx, source, destination); err != nil {
 		return nil, err
 	}
-	relative, err := pycompat.RelativeTo(destination, c.target)
+	relative, err := toolrt.RelativeTo(destination, c.target)
 	if err != nil {
 		return nil, err
 	}
@@ -118,22 +119,22 @@ func (c *copier) take(path any) (any, error) {
 	return result, nil
 }
 
-// copyAll — copy_media: песня, референсы и файлы планов копируются в media/, пути в bundle
+// copyAll — песня, референсы и файлы планов копируются в media/, пути в bundle
 // переписываются на относительные к пакету. Возвращает число разных скопированных файлов.
-func copyAll(ctx context.Context, bundle *pycompat.Dict, root, target string) (int, error) {
+func copyAll(ctx context.Context, bundle *toolrt.Dict, root, target string) (int, error) {
 	c := &copier{ctx: ctx, root: root, target: target, copied: map[string]any{}}
 	song, err := c.take(bundle.Value("song"))
 	if err != nil {
 		return 0, err
 	}
 	bundle.Set("song", song)
-	references, ok := bundle.Value("references").(*pycompat.Dict)
+	references, ok := bundle.Value("references").(*toolrt.Dict)
 	if !ok {
-		return 0, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'items'", pycompat.TypeName(bundle.Value("references")))
+		return 0, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(bundle.Value("references")))
 	}
 	for _, key := range references.Keys() {
 		reference := references.Value(key)
-		path, err := pycompat.GetItem(reference, "path")
+		path, err := toolrt.GetItem(reference, "path")
 		if err != nil {
 			return 0, err
 		}
@@ -141,11 +142,11 @@ func copyAll(ctx context.Context, bundle *pycompat.Dict, root, target string) (i
 		if err != nil {
 			return 0, err
 		}
-		reference.(*pycompat.Dict).Set("path", taken)
+		reference.(*toolrt.Dict).Set("path", taken)
 	}
 	for _, row := range rowsOf(bundle) {
 		for _, key := range []string{"original", "accepted_clip", "rebuild_input", "prompt", "request", "speech_wav", "audio_recipe", "card"} {
-			if value := row.Value(key); pycompat.Truthy(value) {
+			if value := row.Value(key); toolrt.Truthy(value) {
 				taken, err := c.take(value)
 				if err != nil {
 					return 0, err

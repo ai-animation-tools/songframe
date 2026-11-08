@@ -2,7 +2,7 @@
 
 Страница «Производство» ведёт один выбранный план `Mxx` и одну его попытку. Агент готовит предложения, приложение показывает их до записи, пользователь применяет предложение и отдельно согласует сохранённые материалы. Описание, опоры, видеопромпт, платный запрос, полученный ролик и принятый монтаж имеют отдельные решения.
 
-В интерфейсе рабочий пакет плана называется **попыткой**. На диске это прежняя папка `plan/batches/Mxx-attempt-NN` (в очереди — `plan/awaiting/Mxx`) с `workflow.json`. Формат папки, тексты вопросов в `workflow.json` и правила согласования платной отправки остались прежними. Раскладка проекта описана в [plan](../resources/templates/project/plan/README.md) и [assets](../resources/templates/project/assets/README.md) шаблона.
+В интерфейсе рабочий пакет плана называется **попыткой**. На диске это папка `plan/batches/Mxx-attempt-NN` (в очереди — `plan/awaiting/Mxx`) с `workflow.json`. Раскладка проекта описана в [plan](../resources/templates/project/plan/README.md) и [assets](../resources/templates/project/assets/README.md) шаблона.
 
 ## Владельцы
 
@@ -24,7 +24,7 @@
 | Производные планы | [internal/derivedworkflow](../internal/derivedworkflow/workflow.go), [internal/deriveshot](../internal/deriveshot/deriveshot.go) |
 | Провайдеры медиа | реестр [media-providers.ts](../frontend/src/shared/media-providers.ts) и [internal/mediaproviders](../internal/mediaproviders/mediaproviders.go), слой адаптеров [internal/providers](../internal/providers/providers.go), [документы провайдеров](../resources/providers/README.md) |
 
-Инструменты комплекса (`shot_workflow`, `media_request`, `cost_check`, `accept_shot`, `cut_speech`, `regenerate_shot`, `contact_sheet`, `derive_shot` и др.) перенесены на Go и выполняются в процессе приложения через реестр [internal/tools](../internal/tools/tools.go) с прежними аргументами, кодами и текстами. Их имена видны в журнале заданий. Длительные операции идут через общий менеджер заданий, ход и результаты — на странице «Журнал заданий»; задания агентов описаны в [agents.md](agents.md).
+Инструменты комплекса (`shot_workflow`, `media_request`, `cost_check`, `accept_shot`, `cut_speech`, `regenerate_shot`, `contact_sheet`, `derive_shot` и др.) выполняются в процессе приложения через реестр [internal/tools](../internal/tools/tools.go); их аргументы, коды завершения и тексты закреплены эталонами `testdata/golden`. Их имена видны в журнале заданий. Длительные операции идут через общий менеджер заданий, ход и результаты — на странице «Журнал заданий»; задания агентов описаны в [agents.md](agents.md).
 
 ## Перед началом
 

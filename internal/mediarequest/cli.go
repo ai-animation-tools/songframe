@@ -4,63 +4,64 @@ import (
 	"context"
 	"errors"
 
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/pyargparse"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
+	"songframe/internal/toolsubcmd"
 )
 
-// Parser — аргументы инструмента media_request в модели argparse.
-var Parser = pyargparse.Parser{
-	Prog:        "media_request.py",
+// Parser — подкоманды и опции инструмента media_request (разбор и тексты справки и ошибок —
+// toolsubcmd).
+var Parser = toolsubcmd.Parser{
+	Prog:        "media_request",
 	Description: "Попытка генерации у выбранного провайдера: возможности, подготовка, отправка и получение; @link README.md",
 	Dest:        "action",
-	Commands: []pyargparse.Command{
-		{Name: "capabilities", Options: []pyargparse.Option{
+	Commands: []toolsubcmd.Command{
+		{Name: "capabilities", Options: []toolsubcmd.Option{
 			{Name: "--provider", Required: true},
 			{Name: "--kind", Required: true, Choices: []string{"image", "video"}},
 			{Name: "--json", Flag: true},
 			{Name: "--timeout", Float: true},
 		}},
-		{Name: "login", Options: []pyargparse.Option{
+		{Name: "login", Options: []toolsubcmd.Option{
 			{Name: "--provider", Required: true},
 			{Name: "--no-browser", Flag: true},
 			{Name: "--timeout", Float: true},
 		}},
-		{Name: "auth-status", Options: []pyargparse.Option{
+		{Name: "auth-status", Options: []toolsubcmd.Option{
 			{Name: "--provider", Required: true},
 			{Name: "--json", Flag: true},
 			{Name: "--timeout", Float: true},
 		}},
-		{Name: "prepare", Options: []pyargparse.Option{
+		{Name: "prepare", Options: []toolsubcmd.Option{
 			{Name: "--request", Required: true},
 			{Name: "--work-dir", Required: true},
 		}},
-		{Name: "watch", Options: []pyargparse.Option{
+		{Name: "watch", Options: []toolsubcmd.Option{
 			{Name: "--work-dir", Required: true, Plus: true},
 			{Name: "--max-minutes", Float: true},
 			{Name: "--interval", Float: true},
 			{Name: "--timeout", Float: true},
 		}},
-		{Name: "attach", Options: []pyargparse.Option{
+		{Name: "attach", Options: []toolsubcmd.Option{
 			{Name: "--work-dir", Required: true},
 			{Name: "--file", Required: true, Plus: true},
 		}},
-		{Name: "submit", Options: []pyargparse.Option{
+		{Name: "submit", Options: []toolsubcmd.Option{
 			{Name: "--work-dir", Required: true},
 			{Name: "--timeout", Float: true},
 			{Name: "--confirm", Required: true},
 		}},
-		{Name: "resume", Options: []pyargparse.Option{
+		{Name: "resume", Options: []toolsubcmd.Option{
 			{Name: "--work-dir", Required: true},
 			{Name: "--timeout", Float: true},
 			{Name: "--generation-id"},
 			{Name: "--wait-seconds", Float: true},
 			{Name: "--interval", Float: true},
 		}},
-		{Name: "status", Options: []pyargparse.Option{{Name: "--work-dir", Required: true}}},
-		{Name: "not-created", Options: []pyargparse.Option{{Name: "--work-dir", Required: true}}},
+		{Name: "status", Options: []toolsubcmd.Option{{Name: "--work-dir", Required: true}}},
+		{Name: "not-created", Options: []toolsubcmd.Option{{Name: "--work-dir", Required: true}}},
 	},
 }
 
@@ -74,44 +75,46 @@ const textHidden = "Ошибка локальных данных или файл
 // Run выполняет media_request на проекте root: разбор аргументов, действие и вывод JSON.
 // Ошибка — код 1 и одна строка в stderr: текст ValueError/NotSubmitted как есть, прочие
 // ожидаемые отказы (KeyError, TypeError, OSError и подклассы ValueError) — общий текст без
-// сырого вывода; неожиданное исключение — трассировка, как у Python. report получает строки
-// watch по мере смены статусов (nil — только в stdout результата); строки попадают и в stdout.
-func Run(ctx context.Context, root string, args []string, report func(string)) pytool.Output {
+// сырого вывода; неожиданное исключение toolrt — трассировка (toolcli.Printer.Crash). report
+// получает строки watch по мере смены статусов (nil — только в stdout результата); строки
+// попадают и в stdout.
+func Run(ctx context.Context, root string, args []string, report func(string)) toolcli.Output {
 	parsed, exit := Parser.Parse(args)
 	if exit != nil {
-		return pytool.Output{Code: exit.Code, Stdout: pycompat.TextMode(exit.Stdout), Stderr: pycompat.TextMode(exit.Stderr)}
+		return toolcli.Output{Code: exit.Code, Stdout: toolrt.TextMode(exit.Stdout), Stderr: toolrt.TextMode(exit.Stderr)}
 	}
-	printer := &pytool.Printer{}
+	printer := &toolcli.Printer{}
 	output, err := run(ctx, root, parsed, printer, report)
 	if err != nil {
 		if ctx.Err() != nil && errors.Is(err, ctx.Err()) {
-			return pytool.Output{Code: 1, Stdout: printer.String(), Stderr: pycompat.TextMode(err.Error() + "\n")}
+			return toolcli.Output{Code: 1, Stdout: printer.String(), Stderr: toolrt.TextMode(err.Error() + "\n")}
 		}
 		return failure(printer, err)
 	}
 	return output
 }
 
-// failure — ответ на ожидаемые отказы (модель ValueError, KeyError, TypeError, OSError).
-func failure(printer *pytool.Printer, err error) pytool.Output {
-	var exception *pycompat.Exception
+// failure — ответ на ожидаемые отказы (исключения toolrt ValueError, KeyError, TypeError, OSError).
+func failure(printer *toolcli.Printer, err error) toolcli.Output {
+	var exception *toolrt.Exception
 	switch {
 	case mediaapi.IsNotSubmitted(err):
 		return printer.Fail(err.Error())
-	case errors.As(err, &exception) && exception.Type == pycompat.ValueError:
+	case errors.As(err, &exception) && exception.Type == toolrt.ValueError:
 		return printer.Fail(err.Error())
-	case pycompat.IsAny(err, pycompat.ValueError, pycompat.KeyError, pycompat.TypeError, pycompat.OSError):
+	case toolrt.IsAny(err, toolrt.ValueError, toolrt.KeyError, toolrt.TypeError, toolrt.OSError):
 		return printer.Fail(textHidden)
 	case errors.As(err, &exception):
 		return printer.Crash(err)
 	}
-	// Ошибка Go вне модели Python (например, адаптера): сырой текст может содержать секреты.
+	// Ошибка вне модели исключений toolrt (например, адаптера): сырой текст может содержать секреты.
 	return printer.Fail(textHidden)
 }
 
-// printJSON — print(json.dumps(value, ensure_ascii=False, indent=2)).
-func printJSON(printer *pytool.Printer, value any) error {
-	text, err := pytool.JSON(value)
+// printJSON печатает значение строкой JSON toolcli.JSON: отступ два пробела, не-ASCII символы
+// без экранирования.
+func printJSON(printer *toolcli.Printer, value any) error {
+	text, err := toolcli.JSON(value)
 	if err != nil {
 		return err
 	}
@@ -124,19 +127,19 @@ func adapterFunction(provider string) (mediaadapters.Adapter, error) {
 }
 
 // run — действие и печать результата; ошибки разбирает Run.
-func run(ctx context.Context, root string, args pyargparse.Result, printer *pytool.Printer, report func(string)) (pytool.Output, error) {
+func run(ctx context.Context, root string, args toolsubcmd.Result, printer *toolcli.Printer, report func(string)) (toolcli.Output, error) {
 	value := func(name string) string { text, _ := args.Value(name); return text }
-	var result *pycompat.Dict
+	var result *toolrt.Dict
 	var err error
 	switch args.Action {
 	case "capabilities":
 		reportValue, err := Capabilities(ctx, value("--provider"), value("--kind"), args.Float("--timeout", 60))
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		if args.Bools["--json"] {
 			if err := printJSON(printer, reportValue); err != nil {
-				return pytool.Output{}, err
+				return toolcli.Output{}, err
 			}
 			return printer.Exit(0), nil
 		}
@@ -144,19 +147,19 @@ func run(ctx context.Context, root string, args pyargparse.Result, printer *pyto
 	case "login":
 		service, err := adapterFunction(value("--provider"))
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		loginer, ok := service.(mediaapi.Loginer)
 		if !ok {
-			return pytool.Output{}, unsupported(value("--provider"))
+			return toolcli.Output{}, unsupported(value("--provider"))
 		}
 		answer := loginer.Login(ctx, mediaapi.LoginOptions{OpenBrowser: !args.Bools["--no-browser"], Timeout: mediaapi.Seconds(args.Float("--timeout", 300))})
-		text, err := pycompat.DumpsJSON(pytool.Record("ok", answer.OK, "message", answer.Message), pycompat.DumpOptions{})
+		text, err := toolrt.DumpsJSON(toolcli.Record("ok", answer.OK, "message", answer.Message), toolrt.DumpOptions{})
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		if err := printer.Print(text); err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		if !answer.OK {
 			return printer.Exit(1), nil
@@ -165,27 +168,27 @@ func run(ctx context.Context, root string, args pyargparse.Result, printer *pyto
 	case "auth-status":
 		service, err := adapterFunction(value("--provider"))
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		reader, ok := service.(mediaapi.AuthStatusReader)
 		if !ok {
-			return pytool.Output{}, unsupported(value("--provider"))
+			return toolcli.Output{}, unsupported(value("--provider"))
 		}
 		answer := reader.AuthStatus(ctx, mediaapi.Seconds(args.Float("--timeout", 30)))
 		text := answer.Status
 		if args.Bools["--json"] {
-			record := pytool.Record("status", answer.Status)
+			record := toolcli.Record("status", answer.Status)
 			if answer.Message != "" {
 				record.Set("message", answer.Message)
 			}
-			if text, err = pycompat.DumpsJSON(record, pycompat.DumpOptions{}); err != nil {
-				return pytool.Output{}, err
+			if text, err = toolrt.DumpsJSON(record, toolrt.DumpOptions{}); err != nil {
+				return toolcli.Output{}, err
 			}
 		} else if answer.Message != "" {
 			text = answer.Message
 		}
 		if err := printer.Print(text); err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		return printer.Exit(0), nil
 	case "watch":
@@ -197,9 +200,9 @@ func run(ctx context.Context, root string, args pyargparse.Result, printer *pyto
 		}
 		entries, err := Watch(ctx, root, args.Values["--work-dir"], args.Float("--max-minutes", 15), args.Float("--interval", 20), args.Float("--timeout", 60), lines)
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
-		document := pycompat.NewDict()
+		document := toolrt.NewDict()
 		unfinished := false
 		for _, entry := range entries {
 			document.Set(entry.Path, entry.State)
@@ -207,7 +210,7 @@ func run(ctx context.Context, root string, args pyargparse.Result, printer *pyto
 			unfinished = unfinished || !Terminal[status]
 		}
 		if err := printJSON(printer, document); err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		if unfinished {
 			return printer.Exit(2), nil
@@ -227,42 +230,42 @@ func run(ctx context.Context, root string, args pyargparse.Result, printer *pyto
 		result, err = Status(root, value("--work-dir"))
 	}
 	if err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
 	if err := printJSON(printer, result); err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
 	return printer.Exit(0), nil
 }
 
 // printCapabilities — текстовый вывод capabilities: «команда: модели» и «команда: проблема».
-func printCapabilities(printer *pytool.Printer, report *pycompat.Dict) (pytool.Output, error) {
+func printCapabilities(printer *toolcli.Printer, report *toolrt.Dict) (toolcli.Output, error) {
 	reports, err := item(report, "reports")
 	if err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
-	entries, err := pycompat.Iter(reports)
+	entries, err := toolrt.Iter(reports)
 	if err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
 	for _, entry := range entries {
 		command, err := item(entry, "command")
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		models, err := item(entry, "models")
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
-		names, err := pycompat.Iter(models)
+		names, err := toolrt.Iter(models)
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		joined := ""
 		for index, name := range names {
 			text, ok := name.(string)
 			if !ok {
-				return pytool.Output{}, pycompat.Raise(pycompat.TypeError, "sequence item %d: expected str instance, %s found", index, pycompat.TypeName(name))
+				return toolcli.Output{}, toolrt.Raise(toolrt.TypeError, "sequence item %d: expected str instance, %s found", index, toolrt.TypeName(name))
 			}
 			if index > 0 {
 				joined += ", "
@@ -272,29 +275,29 @@ func printCapabilities(printer *pytool.Printer, report *pycompat.Dict) (pytool.O
 		if joined == "" {
 			joined = "—"
 		}
-		if err := printer.Print(pycompat.Str(command) + ": " + joined); err != nil {
-			return pytool.Output{}, err
+		if err := printer.Print(toolrt.Str(command) + ": " + joined); err != nil {
+			return toolcli.Output{}, err
 		}
 	}
 	problems, err := item(report, "problems")
 	if err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
-	entries, err = pycompat.Iter(problems)
+	entries, err = toolrt.Iter(problems)
 	if err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
 	for _, entry := range entries {
 		command, err := item(entry, "command")
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		message, err := item(entry, "message")
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
-		if err := printer.Print(pycompat.Str(command) + ": " + pycompat.Str(message)); err != nil {
-			return pytool.Output{}, err
+		if err := printer.Print(toolrt.Str(command) + ": " + toolrt.Str(message)); err != nil {
+			return toolcli.Output{}, err
 		}
 	}
 	return printer.Exit(0), nil

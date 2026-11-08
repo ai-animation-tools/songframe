@@ -150,7 +150,7 @@ export function useProductionPage() {
     };
   }, [load, project, projectScope, notify, describeError]);
 
-  // Успешный IPC означает запуск, а не результат: уведомляем о завершении по состоянию задания.
+  // Успешный вызов API означает запуск, а не результат: уведомляем о завершении по состоянию задания.
   useEffect(() => {
     for (const [key, operation] of Object.entries(operations)) {
       if (key.split('\0')[0] !== project) continue;
@@ -331,7 +331,7 @@ export function useProductionPage() {
     );
   };
 
-  /** Возврат утверждённой опоры: главный процесс откажет, если видеопромпт или запрос видео уже построены на ней. */
+  /** Возврат утверждённой опоры: Go откажет, если видеопромпт или запрос видео уже построены на ней. */
   const reopenFrame = (pkg: PackageView, frame: string, note: string, scope: KeyframeNoteScope): void => {
     void act(
       productionTexts.useProductionPage.frameReopened({ frame }),

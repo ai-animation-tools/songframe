@@ -3,7 +3,7 @@
   "scenarios": [
     {
       "name": "view-base",
-      "description": "Каталог fixture montage.test.ts: сцены, источники, карточка, нет разметки.",
+      "description": "Каталог-образец монтажа: сцены, источники, карточка, нет разметки.",
       "covers": [
         "scenes title",
         "sources original/accepted",

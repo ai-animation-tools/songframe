@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
+	"songframe/internal/golden"
 )
 
 // expectation — expected.json статуса: либо ProjectStatus, либо {"throws": …}.

@@ -8,7 +8,7 @@
 // ссылками. Проба не меняет assets, исходники и аниматик. Prepare зовёт и приёмка участка
 // accept_shot (internal/acceptshot): рецепт одного плана даёт ей фильтр рендера.
 //
-// Ошибки — исключения pycompat, тексты зафиксированы эталоном build-review: Run печатает текст
+// Ошибки — исключения toolrt, тексты зафиксированы эталоном build-review: Run печатает текст
 // ValueError, остальные
 // ожидаемые ошибки (KeyError, TypeError, OSError, InvalidOperation…) — общим текстом без сырого
 // вывода, прочее — трассировкой. FFmpeg и ffprobe запускаются через internal/mediacmd.
@@ -23,11 +23,11 @@ import (
 	"strconv"
 	"strings"
 
-	"songframe-go/internal/assetpackage"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/assetpackage"
+	"songframe/internal/mediacmd"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // FPS — монтажная сетка пробы.
@@ -73,12 +73,12 @@ const (
 	textTransform    = "Масштаб с сохранением пропорций и полями; все временные преобразования записаны по кадрам при 30 FPS."
 )
 
-func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
+func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
 
-// TempDir — tempfile.gettempdir(): временная папка ОС, куда тоже разрешено сохранять пробу.
+// TempDir — временная папка ОС, куда тоже разрешено сохранять пробу (подменяется в тестах).
 var TempDir = os.TempDir
 
-// pathClass — имя класса пути для текста TypeError оператора `/`.
+// pathClass — имя типа пути ОС для текста TypeError склейки пути (зафиксировано эталоном).
 func pathClass() string {
 	if os.PathSeparator == '\\' {
 		return "WindowsPath"
@@ -86,62 +86,62 @@ func pathClass() string {
 	return "PosixPath"
 }
 
-// joinTyped — root / name: не строка — TypeError оператора `/`, как у pathlib.
+// joinTyped склеивает root и name; не строка — TypeError склейки пути.
 func joinTyped(root string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), pycompat.TypeName(name))
+		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(name))
 	}
-	return pycompat.JoinPath(root, text), nil
+	return toolrt.JoinPath(root, text), nil
 }
 
-// source — source(root, name): существующий файл относительно корня проекта (абсолютный путь
+// source — существующий файл name относительно корня проекта (абсолютный путь
 // допустим), разрешённый до реального.
 func source(root string, name any) (string, error) {
 	joined, err := joinTyped(root, name)
 	if err != nil {
 		return "", err
 	}
-	path := pycompat.ResolvePath(joined)
-	if !pycompat.IsFile(path) {
+	path := toolrt.ResolvePath(joined)
+	if !toolrt.IsFile(path) {
 		return "", valueError(textNoInput)
 	}
 	return path, nil
 }
 
-// localFile — local_file(directory, name) asset_package: путь внутри папки комплекта.
+// localFile — путь файла name внутри папки комплекта, как assetpackage.LocalFile.
 func localFile(directory string, name any) (string, error) {
 	joined, err := joinTyped(directory, name)
 	if err != nil {
 		return "", err
 	}
-	path := pycompat.ResolvePath(joined)
-	if !pycompat.IsRelativeTo(path, pycompat.ResolvePath(directory)) {
+	path := toolrt.ResolvePath(joined)
+	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(directory)) {
 		return "", valueError(textOutsideAsset)
 	}
 	return path, nil
 }
 
-// destination — destination(root, name): выход только в plan/batches или во временной папке ОС,
+// destination проверяет выход name: только в plan/batches или во временной папке ОС,
 // не внутри assets, source и plan/animatic, с расширением .mp4.
 func destination(root, name string) (string, error) {
-	path := pycompat.ResolvePath(name)
-	if !pycompat.IsRelativeTo(path, pycompat.ResolvePath(pycompat.JoinPath(root, "plan", "batches"))) &&
-		!pycompat.IsRelativeTo(path, pycompat.ResolvePath(TempDir())) {
+	path := toolrt.ResolvePath(name)
+	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(toolrt.JoinPath(root, "plan", "batches"))) &&
+		!toolrt.IsRelativeTo(path, toolrt.ResolvePath(TempDir())) {
 		return "", valueError(textDestination)
 	}
 	for _, folder := range []string{"assets", "source", "plan/animatic"} {
-		if pycompat.IsRelativeTo(path, pycompat.ResolvePath(pycompat.JoinPath(root, filepath.FromSlash(folder)))) {
+		if toolrt.IsRelativeTo(path, toolrt.ResolvePath(toolrt.JoinPath(root, filepath.FromSlash(folder)))) {
 			return "", valueError(textProtected)
 		}
 	}
-	if strings.ToLower(pycompat.PathSuffix(path)) != ".mp4" {
+	if strings.ToLower(toolrt.PathSuffix(path)) != ".mp4" {
 		return "", valueError(textNotMP4)
 	}
 	return path, nil
 }
 
-// run — run(argv) build_review: stdout программы; ненулевой код — ValueError без сырого вывода.
+// run запускает медиапрограмму: stdout программы; ненулевой код — ValueError без сырого вывода.
 // Незапустившаяся программа — FileNotFoundError (общий текст в Run).
 func run(ctx context.Context, program string, args ...string) ([]byte, error) {
 	result, err := mediacmd.Run(ctx, program, args...)
@@ -154,71 +154,71 @@ func run(ctx context.Context, program string, args ...string) ([]byte, error) {
 	return result.Stdout, nil
 }
 
-// probe — probe(path) build_review: JSON ffprobe потоков и формата (без глав, в отличие от
-// build_animatic) значением pycompat.
+// probe — JSON ffprobe потоков и формата файла path (без глав, в отличие от
+// build_animatic) значением toolrt.
 func probe(ctx context.Context, path string) (any, error) {
 	data, err := run(ctx, mediacmd.FFprobe(), "-v", "error", "-show_streams", "-show_format", "-of", "json", path)
 	if err != nil {
 		return nil, err
 	}
-	text, err := pycompat.DecodeUTF8(data)
+	text, err := toolrt.DecodeUTF8(data)
 	if err != nil {
 		return nil, err
 	}
-	return pycompat.LoadsJSON(text)
+	return toolrt.LoadsJSON(text)
 }
 
-// streams — meta["streams"] списком.
+// streams — список потоков из сводки ffprobe meta.
 func streams(meta any) ([]any, error) {
-	value, err := pycompat.Item(meta, "streams")
+	value, err := toolrt.Item(meta, "streams")
 	if err != nil {
 		return nil, err
 	}
-	return pycompat.Iter(value)
+	return toolrt.Iter(value)
 }
 
-// firstVideo — next(s for s in streams if s["codec_type"] == "video"); нет — StopIteration.
+// firstStream — первый поток с codec_type, равным kind; нет — StopIteration.
 func firstStream(items []any, kind string) (any, error) {
 	for _, stream := range items {
-		codec, err := pycompat.Item(stream, "codec_type")
+		codec, err := toolrt.Item(stream, "codec_type")
 		if err != nil {
 			return nil, err
 		}
-		if pycompat.Equal(codec, kind) {
+		if toolrt.Equal(codec, kind) {
 			return stream, nil
 		}
 	}
-	return nil, pycompat.New("StopIteration", "")
+	return nil, toolrt.New("StopIteration", "")
 }
 
 // decodedAudioDuration — длительность декодированного звука (моно 16 кГц s16le) в секундах
-// Decimal; начальная метка MP3 не вычитается. Ошибка
+// (toolrt.Decimal); начальная метка MP3 не вычитается. Ошибка
 // декодирования — ValueError с хвостом stderr (его Run печатает как текст ошибки).
-func decodedAudioDuration(ctx context.Context, path string) (pycompat.Decimal, error) {
+func decodedAudioDuration(ctx context.Context, path string) (toolrt.Decimal, error) {
 	result, err := mediacmd.Run(ctx, mediacmd.FFmpeg(), "-v", "error", "-i", path, "-map", "0:a:0", "-ac", "1", "-ar", "16000", "-f", "s16le", "-")
 	if err != nil {
-		return pycompat.Decimal{}, err
+		return toolrt.Decimal{}, err
 	}
 	if result.Code != 0 {
-		return pycompat.Decimal{}, valueError("Не удалось декодировать трек: " + mediacmd.Tail(result.Stderr, 1200))
+		return toolrt.Decimal{}, valueError("Не удалось декодировать трек: " + mediacmd.Tail(result.Stderr, 1200))
 	}
-	return pycompat.DecimalInt(int64(len(result.Stdout))).Div(pycompat.DecimalInt(32000))
+	return toolrt.DecimalInt(int64(len(result.Stdout))).Div(toolrt.DecimalInt(32000))
 }
 
 // integer — точное целое JSON (не bool и не float) не меньше
 // minimum, иначе ValueError «Неверное целое поле …».
 func integer(value any, name string, minimum int64) (*big.Int, error) {
-	number, ok := value.(pycompat.Int)
+	number, ok := value.(toolrt.Int)
 	if !ok || bigInt(number).Cmp(big.NewInt(minimum)) < 0 {
 		return nil, valueError("Неверное целое поле " + name + ".")
 	}
 	return bigInt(number), nil
 }
 
-// unknownKeys — set(value) - allowed не пусто: ключи словаря, элементы списка или символы
-// строки; нехешируемый элемент — TypeError, неитерируемое значение — TypeError.
+// unknownKeys — есть ли среди элементов value не входящие в allowed: элементы — ключи словаря,
+// элементы списка или символы строки; нехешируемый элемент и неитерируемое значение — TypeError.
 func unknownKeys(value any, allowed ...string) (bool, error) {
-	items, err := pycompat.Iter(value)
+	items, err := toolrt.Iter(value)
 	if err != nil {
 		return false, err
 	}
@@ -228,7 +228,7 @@ func unknownKeys(value any, allowed ...string) (bool, error) {
 	}
 	extra := false
 	for _, item := range items {
-		if _, err := pycompat.HashKey(item); err != nil {
+		if _, err := toolrt.HashKey(item); err != nil {
 			return false, err
 		}
 		if text, ok := item.(string); !ok || !known[text] {
@@ -238,12 +238,12 @@ func unknownKeys(value any, allowed ...string) (bool, error) {
 	return extra, nil
 }
 
-// contains — key in container с исключениями Python.
-func contains(container any, key string) (bool, error) { return pycompat.Contains(container, key) }
+// contains — есть ли key в container (toolrt.Contains); неверный тип контейнера — исключение.
+func contains(container any, key string) (bool, error) { return toolrt.Contains(container, key) }
 
-// get — container.get(key, fallback) для словаря участка, аудио и перехода.
+// get — значение по ключу или fallback для словаря участка, аудио и перехода.
 func get(container any, key string, fallback any) (any, error) {
-	return pycompat.DictGet(container, key, fallback)
+	return toolrt.DictGet(container, key, fallback)
 }
 
 // sha — SHA-256 файла.
@@ -251,7 +251,7 @@ func sha(path string) (string, error) { return assetpackage.FileSHA256(path) }
 
 // registryShot — план реестра с его позицией для проверки последовательности.
 type registryShot struct {
-	shot     *pycompat.Dict
+	shot     *toolrt.Dict
 	position int
 }
 
@@ -260,9 +260,9 @@ type registryShot struct {
 // эталоном (порядок важен для байтов JSON), пути входов — абсолютные. ffprobe читает видео и
 // песню, FFmpeg декодирует песню для
 // проверки длины; ctx прерывает их.
-func Prepare(ctx context.Context, spec any, root string) (*pycompat.Dict, error) {
-	root = pycompat.ResolvePath(root)
-	scenesPath := pycompat.JoinPath(root, "plan", "scenes.json")
+func Prepare(ctx context.Context, spec any, root string) (*toolrt.Dict, error) {
+	root = toolrt.ResolvePath(root)
+	scenesPath := toolrt.JoinPath(root, "plan", "scenes.json")
 	registryDigest, err := sha(scenesPath)
 	if err != nil {
 		return nil, err
@@ -290,21 +290,21 @@ func Prepare(ctx context.Context, spec any, root string) (*pycompat.Dict, error)
 		return nil, err
 	}
 	shotsValue, _ := get(spec, "shots", nil)
-	if !pycompat.Equal(schema, pycompat.NewInt(1)) || !pycompat.Truthy(shotsValue) {
+	if !toolrt.Equal(schema, toolrt.NewInt(1)) || !toolrt.Truthy(shotsValue) {
 		return nil, valueError(textSchema)
 	}
 	if extra, err := unknownKeys(spec, "schema_version", "shots", "audio", "transitions"); err != nil || extra {
 		return nil, firstError(err, textFields)
 	}
-	audioValue, _ := get(spec, "audio", pycompat.NewDict())
+	audioValue, _ := get(spec, "audio", toolrt.NewDict())
 	if extra, err := unknownKeys(audioValue, "path", "start_frame"); err != nil || extra {
 		return nil, firstError(err, textAudioFields)
 	}
-	configs, err := pycompat.Iter(shotsValue)
+	configs, err := toolrt.Iter(shotsValue)
 	if err != nil {
 		return nil, err
 	}
-	items := []*pycompat.Dict{}
+	items := []*toolrt.Dict{}
 	seen := map[string]bool{}
 	var receipt any
 	for _, config := range configs {
@@ -326,14 +326,14 @@ func Prepare(ctx context.Context, spec any, root string) (*pycompat.Dict, error)
 		if index > 0 {
 			left = overlap(joins, items[index-1])
 		}
-		length := bigInt(item.Value("frames").(pycompat.Int))
+		length := bigInt(item.Value("frames").(toolrt.Int))
 		if addInt(left, overlap(joins, item)).Cmp(length) >= 0 {
 			return nil, valueError(textSwallow)
 		}
 		total.Add(total, length)
 	}
 	for _, key := range joins.Keys() {
-		total.Sub(total, bigInt(joins.Value(key).(*pycompat.Dict).Value("frames").(pycompat.Int)))
+		total.Sub(total, bigInt(joins.Value(key).(*toolrt.Dict).Value("frames").(toolrt.Int)))
 	}
 	positions := make([]int, len(items))
 	for index, item := range items {
@@ -376,7 +376,7 @@ func Prepare(ctx context.Context, spec any, root string) (*pycompat.Dict, error)
 		return nil, err
 	}
 	if _, err := firstStream(list, "audio"); err != nil {
-		if pycompat.Is(err, "StopIteration") {
+		if toolrt.Is(err, "StopIteration") {
 			return nil, valueError(textNoAudio)
 		}
 		return nil, err
@@ -414,16 +414,16 @@ func Prepare(ctx context.Context, spec any, root string) (*pycompat.Dict, error)
 	if err != nil {
 		return nil, err
 	}
-	return pytool.Record(
-		"schema_version", pycompat.NewInt(1),
+	return toolcli.Record(
+		"schema_version", toolrt.NewInt(1),
 		"scene_registry_sha256", registryDigest,
-		"fps", pycompat.NewInt(FPS),
-		"resolution", []any{pycompat.NewInt(1920), pycompat.NewInt(1080)},
+		"fps", toolrt.NewInt(FPS),
+		"resolution", []any{toolrt.NewInt(1920), toolrt.NewInt(1080)},
 		"shots", shotList,
 		"transitions", joins,
 		"total_frames", newInt(total),
 		"duration_seconds", durationSeconds,
-		"audio", pytool.Record(
+		"audio", toolcli.Record(
 			"path", track,
 			"sha256", trackDigest,
 			"start_frame", newInt(audioStart),
@@ -442,18 +442,18 @@ func firstError(err error, message string) error {
 	return valueError(message)
 }
 
-// overlap — by_after.get(item["id"], {}).get("frames", 0): перекрытие стыка после плана.
-func overlap(joins *pycompat.Dict, item *pycompat.Dict) *big.Int {
+// overlap — перекрытие стыка после плана item в кадрах (0, если стыка нет).
+func overlap(joins *toolrt.Dict, item *toolrt.Dict) *big.Int {
 	join, ok := joins.Get(item.Value("id").(string))
 	if !ok {
 		return big.NewInt(0)
 	}
-	return bigInt(join.(*pycompat.Dict).Value("frames").(pycompat.Int))
+	return bigInt(join.(*toolrt.Dict).Value("frames").(toolrt.Int))
 }
 
-// prepareShot — тело цикла по участкам prepare: выбор материала (явный path, принятый монтаж
+// prepareShot — тело цикла по участкам Prepare: выбор материала (явный path, принятый монтаж
 // или карточка реестра), проверка окна, скорости и удержаний и цепочка фильтров участка.
-func prepareShot(ctx context.Context, root string, config any, byID map[string]registryShot, seen map[string]bool, receipt *any, scenesPath string) (*pycompat.Dict, error) {
+func prepareShot(ctx context.Context, root string, config any, byID map[string]registryShot, seen map[string]bool, receipt *any, scenesPath string) (*toolrt.Dict, error) {
 	if extra, err := unknownKeys(config, "scene", "path", "kind", "source_start_frame", "source_end_frame_exclusive", "speed", "hold_first_frames", "hold_last_frames"); err != nil || extra {
 		return nil, firstError(err, textShotFields)
 	}
@@ -468,11 +468,11 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	if hasKind && !hasPath {
 		return nil, valueError(textKindPath)
 	}
-	sidValue, err := pycompat.Item(config, "scene")
+	sidValue, err := toolrt.Item(config, "scene")
 	if err != nil {
 		return nil, err
 	}
-	if _, err := pycompat.HashKey(sidValue); err != nil {
+	if _, err := toolrt.HashKey(sidValue); err != nil {
 		return nil, err
 	}
 	sid, isString := sidValue.(string)
@@ -482,8 +482,8 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	}
 	seen[sid] = true
 	scene := registered.shot
-	sceneFrames := bigInt(scene.Value("frames").(pycompat.Int))
-	packagePath := pycompat.JoinPath(root, "assets", "shots", sid, "manifest.json")
+	sceneFrames := bigInt(scene.Value("frames").(toolrt.Int))
+	packagePath := toolrt.JoinPath(root, "assets", "shots", sid, "manifest.json")
 	var kind, origin, path string
 	switch {
 	case hasPath:
@@ -491,18 +491,18 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(kindValue, "video") && !pycompat.Equal(kindValue, "card") {
+		if !toolrt.Equal(kindValue, "video") && !toolrt.Equal(kindValue, "card") {
 			return nil, valueError(textKind)
 		}
 		kind, origin = kindValue.(string), "explicit"
-		pathValue, err := pycompat.Item(config, "path")
+		pathValue, err := toolrt.Item(config, "path")
 		if err != nil {
 			return nil, err
 		}
 		if path, err = source(root, pathValue); err != nil {
 			return nil, err
 		}
-	case pycompat.IsFile(packagePath):
+	case toolrt.IsFile(packagePath):
 		kind, origin = "video", "accepted_edit"
 		if path, err = acceptedEdit(packagePath, sid, sceneFrames); err != nil {
 			return nil, err
@@ -516,7 +516,7 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 			return nil, err
 		}
 	}
-	startValue, err := get(config, "source_start_frame", pycompat.NewInt(0))
+	startValue, err := get(config, "source_start_frame", toolrt.NewInt(0))
 	if err != nil {
 		return nil, err
 	}
@@ -539,19 +539,19 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	if err != nil {
 		return nil, err
 	}
-	speedText := pycompat.Str(speedValue)
-	speed, err := pycompat.NewDecimal(speedText)
+	speedText := toolrt.Str(speedValue)
+	speed, err := toolrt.NewDecimal(speedText)
 	if err != nil {
 		return nil, err
 	}
 	if !isFinite(speed) {
 		return nil, valueError(textSpeed)
 	}
-	if sign, _ := speed.Cmp(pycompat.DecimalInt(0)); sign <= 0 {
+	if sign, _ := speed.Cmp(toolrt.DecimalInt(0)); sign <= 0 {
 		return nil, valueError(textSpeed)
 	}
 	speedString, _ := DecimalText(speedText)
-	firstValue, err := get(config, "hold_first_frames", pycompat.NewInt(0))
+	firstValue, err := get(config, "hold_first_frames", toolrt.NewInt(0))
 	if err != nil {
 		return nil, err
 	}
@@ -559,7 +559,7 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	if err != nil {
 		return nil, err
 	}
-	lastValue, err := get(config, "hold_last_frames", pycompat.NewInt(0))
+	lastValue, err := get(config, "hold_last_frames", toolrt.NewInt(0))
 	if err != nil {
 		return nil, err
 	}
@@ -567,7 +567,7 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	if err != nil {
 		return nil, err
 	}
-	unit, _ := speed.Cmp(pycompat.DecimalInt(1))
+	unit, _ := speed.Cmp(toolrt.DecimalInt(1))
 	if kind == "card" && (start.Sign() != 0 || unit != 0) {
 		return nil, valueError(textCard)
 	}
@@ -631,7 +631,7 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 	if err != nil {
 		return nil, err
 	}
-	return pytool.Record(
+	return toolcli.Record(
 		"id", sid,
 		"kind", kind,
 		"origin", origin,
@@ -653,19 +653,19 @@ func prepareShot(ctx context.Context, root string, config any, byID map[string]r
 // acceptedEdit — принятый монтаж готовой сцены из её манифеста; повреждённый или чужой монтаж
 // карточкой не заменяется.
 func acceptedEdit(packagePath, sid string, sceneFrames *big.Int) (string, error) {
-	pkg, err := pycompat.LoadJSONFile(packagePath)
+	pkg, err := toolrt.LoadJSONFile(packagePath)
 	if err != nil {
 		return "", err
 	}
-	edit, err := pycompat.Item(pkg, "accepted_edit")
+	edit, err := toolrt.Item(pkg, "accepted_edit")
 	if err != nil {
 		return "", err
 	}
-	videoValue, err := pycompat.Item(edit, "video")
+	videoValue, err := toolrt.Item(edit, "video")
 	if err != nil {
 		return "", err
 	}
-	name, err := pycompat.Item(videoValue, "path")
+	name, err := toolrt.Item(videoValue, "path")
 	if err != nil {
 		return "", err
 	}
@@ -674,36 +674,36 @@ func acceptedEdit(packagePath, sid string, sceneFrames *big.Int) (string, error)
 		return "", err
 	}
 	mismatch := valueError(sid + ": принятый монтаж не совпадает с реестром или хешем.")
-	shot, err := pycompat.Item(pkg, "shot")
+	shot, err := toolrt.Item(pkg, "shot")
 	if err != nil {
 		return "", err
 	}
-	if !pycompat.Equal(shot, sid) {
+	if !toolrt.Equal(shot, sid) {
 		return "", mismatch
 	}
 	digest, err := sha(path)
 	if err != nil {
 		return "", err
 	}
-	expected, err := pycompat.Item(videoValue, "sha256")
+	expected, err := toolrt.Item(videoValue, "sha256")
 	if err != nil {
 		return "", err
 	}
-	if !pycompat.Equal(digest, expected) {
+	if !toolrt.Equal(digest, expected) {
 		return "", mismatch
 	}
-	fps, err := pycompat.Item(edit, "fps")
+	fps, err := toolrt.Item(edit, "fps")
 	if err != nil {
 		return "", err
 	}
-	if !pycompat.Equal(fps, pycompat.NewInt(FPS)) {
+	if !toolrt.Equal(fps, toolrt.NewInt(FPS)) {
 		return "", mismatch
 	}
-	count, err := pycompat.Item(edit, "frames")
+	count, err := toolrt.Item(edit, "frames")
 	if err != nil {
 		return "", err
 	}
-	if !pycompat.Equal(count, newInt(sceneFrames)) {
+	if !toolrt.Equal(count, newInt(sceneFrames)) {
 		return "", mismatch
 	}
 	return path, nil
@@ -713,12 +713,12 @@ func acceptedEdit(packagePath, sid string, sceneFrames *big.Int) (string, error)
 // раз на пробу и сверяется с реестром и референсами, затем хеш самой карточки.
 func checkCard(root, sid, path string, receipt *any, scenesPath string) error {
 	if *receipt == nil {
-		value, err := pycompat.LoadJSONFile(pycompat.JoinPath(root, "plan", "animatic", "cards", "manifest.json"))
+		value, err := toolrt.LoadJSONFile(toolrt.JoinPath(root, "plan", "animatic", "cards", "manifest.json"))
 		if err != nil {
 			return err
 		}
 		*receipt = value
-		registered, err := pycompat.Item(value, "registry_sha256")
+		registered, err := toolrt.Item(value, "registry_sha256")
 		if err != nil {
 			return err
 		}
@@ -726,15 +726,15 @@ func checkCard(root, sid, path string, receipt *any, scenesPath string) error {
 		if err != nil {
 			return err
 		}
-		stale := !pycompat.Equal(registered, current)
+		stale := !toolrt.Equal(registered, current)
 		if !stale {
-			hashes, err := get(value, "reference_hashes", pycompat.NewDict())
+			hashes, err := get(value, "reference_hashes", toolrt.NewDict())
 			if err != nil {
 				return err
 			}
-			table, ok := hashes.(*pycompat.Dict)
+			table, ok := hashes.(*toolrt.Dict)
 			if !ok {
-				return pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'items'", pycompat.TypeName(hashes))
+				return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(hashes))
 			}
 			for _, key := range table.Keys() {
 				reference, err := source(root, key)
@@ -745,7 +745,7 @@ func checkCard(root, sid, path string, receipt *any, scenesPath string) error {
 				if err != nil {
 					return err
 				}
-				if !pycompat.Equal(digest, table.Value(key)) {
+				if !toolrt.Equal(digest, table.Value(key)) {
 					stale = true
 					break
 				}
@@ -755,15 +755,15 @@ func checkCard(root, sid, path string, receipt *any, scenesPath string) error {
 			return valueError(textStaleCards)
 		}
 	}
-	cards, err := pycompat.Item(*receipt, "cards")
+	cards, err := toolrt.Item(*receipt, "cards")
 	if err != nil {
 		return err
 	}
-	card, err := pycompat.Item(cards, sid)
+	card, err := toolrt.Item(cards, sid)
 	if err != nil {
 		return err
 	}
-	expected, err := pycompat.Item(card, "sha256")
+	expected, err := toolrt.Item(card, "sha256")
 	if err != nil {
 		return err
 	}
@@ -771,7 +771,7 @@ func checkCard(root, sid, path string, receipt *any, scenesPath string) error {
 	if err != nil {
 		return err
 	}
-	if !pycompat.Equal(expected, digest) {
+	if !toolrt.Equal(expected, digest) {
 		return valueError(textCardChanged)
 	}
 	return nil
@@ -797,23 +797,23 @@ func availableFrames(ctx context.Context, path string) (*big.Int, error) {
 		return nil, err
 	}
 	count, _ := get(video, "nb_frames", "")
-	text := pycompat.Str(count)
+	text := toolrt.Str(count)
 	digits := text != ""
 	for _, r := range text {
-		digits = digits && pycompat.DigitValue(r) >= 0
+		digits = digits && toolrt.DigitValue(r) >= 0
 	}
-	if pycompat.Equal(rate, "30/1") && digits {
-		value, ok := pycompat.ParseIntText(text)
+	if toolrt.Equal(rate, "30/1") && digits {
+		value, ok := toolrt.ParseIntText(text)
 		if !ok {
-			return nil, pycompat.Raise(pycompat.ValueError, "invalid literal for int() with base 10: %s", pycompat.Repr(text))
+			return nil, toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(text))
 		}
 		return bigInt(value), nil
 	}
-	durationValue, err := pycompat.Item(video, "duration")
+	durationValue, err := toolrt.Item(video, "duration")
 	if err != nil {
 		return nil, err
 	}
-	duration, err := pycompat.NewDecimal(durationValue)
+	duration, err := toolrt.NewDecimal(durationValue)
 	if err != nil {
 		return nil, err
 	}
@@ -822,8 +822,8 @@ func availableFrames(ctx context.Context, path string) (*big.Int, error) {
 
 // prepareTransitions — переходы по стыкам: after — план (не последний), тип из TRANSITIONS,
 // frames ≥ 1; один переход на стык. Результат — by_after в порядке спецификации.
-func prepareTransitions(value any, items []*pycompat.Dict) (*pycompat.Dict, error) {
-	list, err := pycompat.Iter(value)
+func prepareTransitions(value any, items []*toolrt.Dict) (*toolrt.Dict, error) {
+	list, err := toolrt.Iter(value)
 	if err != nil {
 		return nil, err
 	}
@@ -831,16 +831,16 @@ func prepareTransitions(value any, items []*pycompat.Dict) (*pycompat.Dict, erro
 	for _, item := range items[:len(items)-1] {
 		joinable = append(joinable, item.Value("id"))
 	}
-	joins := pycompat.NewDict()
+	joins := toolrt.NewDict()
 	for _, transition := range list {
 		if extra, err := unknownKeys(transition, "after", "type", "frames"); err != nil || extra {
 			return nil, firstError(err, textTransition)
 		}
-		after, err := pycompat.Item(transition, "after")
+		after, err := toolrt.Item(transition, "after")
 		if err != nil {
 			return nil, err
 		}
-		countValue, err := pycompat.Item(transition, "frames")
+		countValue, err := toolrt.Item(transition, "frames")
 		if err != nil {
 			return nil, err
 		}
@@ -848,62 +848,62 @@ func prepareTransitions(value any, items []*pycompat.Dict) (*pycompat.Dict, erro
 		if err != nil {
 			return nil, err
 		}
-		if _, err := pycompat.HashKey(after); err != nil {
+		if _, err := toolrt.HashKey(after); err != nil {
 			return nil, err
 		}
 		name, isString := after.(string)
 		if isString && joins.Has(name) {
 			return nil, valueError(textJoin)
 		}
-		if found, _ := pycompat.Contains(joinable, after); !found {
+		if found, _ := toolrt.Contains(joinable, after); !found {
 			return nil, valueError(textJoin)
 		}
-		kind, err := pycompat.Item(transition, "type")
+		kind, err := toolrt.Item(transition, "type")
 		if err != nil {
 			return nil, err
 		}
-		if _, err := pycompat.HashKey(kind); err != nil {
+		if _, err := toolrt.HashKey(kind); err != nil {
 			return nil, err
 		}
 		kindName, _ := kind.(string)
 		if !transitions[kindName] {
 			return nil, valueError(textJoin)
 		}
-		joins.Set(name, pytool.Record("type", kindName, "frames", newInt(count)))
+		joins.Set(name, toolcli.Record("type", kindName, "frames", newInt(count)))
 	}
 	return joins, nil
 }
 
 // encoding — поле encoding рецепта: параметры кодирования пробы.
-func encoding() *pycompat.Dict {
-	return pytool.Record(
+func encoding() *toolrt.Dict {
+	return toolcli.Record(
 		"video_codec", "libx264",
 		"preset", "fast",
-		"crf", pycompat.NewInt(18),
-		"threads", pycompat.NewInt(2),
-		"filter_complex_threads", pycompat.NewInt(1),
+		"crf", toolrt.NewInt(18),
+		"threads", toolrt.NewInt(2),
+		"filter_complex_threads", toolrt.NewInt(1),
 		"pixel_format", "yuv420p",
-		"video_track_timescale", pycompat.NewInt(15360),
+		"video_track_timescale", toolrt.NewInt(15360),
 		"audio_codec", "aac",
 		"audio_bitrate", "192k",
-		"sample_rate", pycompat.NewInt(44100),
-		"channels", pycompat.NewInt(2),
+		"sample_rate", toolrt.NewInt(44100),
+		"channels", toolrt.NewInt(2),
 	)
 }
 
-// Build — build(spec, output, root, plan_only): проверка выхода и рецепт Prepare; без planOnly —
+// Build — проверка выхода и рецепт Prepare; без planOnly —
 // кодирование MP4 во временной папке рядом с выходом, проверка длины, формата и звука, повторная
 // сверка входов и публикация MP4 и JSON рецепта жёсткими ссылками (существующий результат не
 // перезаписывается, частичная публикация откатывается). Возвращает рецепт, дополненный стыками,
 // SHA видео, путём, статусом и версией FFmpeg.
-func Build(ctx context.Context, spec any, output, root string, planOnly bool) (*pycompat.Dict, error) {
-	root = pycompat.ResolvePath(root)
+func Build(ctx context.Context, spec any, output, root string, planOnly bool) (*toolrt.Dict, error) {
+	root = toolrt.ResolvePath(root)
 	target, err := destination(root, output)
 	if err != nil {
 		return nil, err
 	}
-	manifest := pycompat.WithSuffix(target, ".json")
-	if pycompat.Exists(target) || pycompat.Exists(manifest) {
+	manifest := toolrt.WithSuffix(target, ".json")
+	if toolrt.Exists(target) || toolrt.Exists(manifest) {
 		return nil, valueError(textExists)
 	}
 	plan, err := Prepare(ctx, spec, root)
@@ -915,11 +915,11 @@ func Build(ctx context.Context, spec any, output, root string, planOnly bool) (*
 	}
 	parent := filepath.Dir(target)
 	if err := os.MkdirAll(parent, 0o755); err != nil {
-		return nil, pycompat.OSErrorFrom(err, parent)
+		return nil, toolrt.OSErrorFrom(err, parent)
 	}
 	temporary, err := os.MkdirTemp(parent, ".review-")
 	if err != nil {
-		return nil, pycompat.OSErrorFrom(err, parent)
+		return nil, toolrt.OSErrorFrom(err, parent)
 	}
 	defer os.RemoveAll(temporary)
 	if err := render(ctx, plan, root, temporary); err != nil {
@@ -931,46 +931,46 @@ func Build(ctx context.Context, spec any, output, root string, planOnly bool) (*
 	if err != nil {
 		return nil, err
 	}
-	versionText, err := pycompat.DecodeUTF8(versionOutput)
+	versionText, err := toolrt.DecodeUTF8(versionOutput)
 	if err != nil {
 		return nil, err
 	}
-	lines := pycompat.SplitLines(versionText)
+	lines := toolrt.SplitLines(versionText)
 	if len(lines) == 0 {
-		return nil, pycompat.New(pycompat.IndexError, "list index out of range")
+		return nil, toolrt.New(toolrt.IndexError, "list index out of range")
 	}
 	plan.Set("ffmpeg_version", lines[0])
 	plan.Set("encoding", encoding())
 	// Публикация через link не перезапишет результат параллельного запуска.
 	metadata := filepath.Join(temporary, "review.json")
-	data, err := pycompat.EncodeIndented(plan)
+	data, err := toolrt.EncodeIndented(plan)
 	if err != nil {
 		return nil, err
 	}
 	if err := os.WriteFile(metadata, data, 0o644); err != nil {
-		return nil, pycompat.OSErrorFrom(err, metadata)
+		return nil, toolrt.OSErrorFrom(err, metadata)
 	}
 	if err := os.Link(filepath.Join(temporary, "review.mp4"), target); err != nil {
-		return nil, pycompat.OSErrorFrom(err, target)
+		return nil, toolrt.OSErrorFrom(err, target)
 	}
 	if err := os.Link(metadata, manifest); err != nil {
 		_ = os.Remove(target)
-		return nil, pycompat.OSErrorFrom(err, manifest)
+		return nil, toolrt.OSErrorFrom(err, manifest)
 	}
 	return plan, nil
 }
 
 // render — тело сборки: граф фильтров (участки, склейки concat или xfade, звук), кодирование
 // review.mp4 в temporary и проверки результата. Дописывает в plan cuts и video_sha256.
-func render(ctx context.Context, plan *pycompat.Dict, root, temporary string) error {
+func render(ctx context.Context, plan *toolrt.Dict, root, temporary string) error {
 	shots := plan.Value("shots").([]any)
-	joins := plan.Value("transitions").(*pycompat.Dict)
-	audio := plan.Value("audio").(*pycompat.Dict)
-	total := bigInt(plan.Value("total_frames").(pycompat.Int))
+	joins := plan.Value("transitions").(*toolrt.Dict)
+	audio := plan.Value("audio").(*toolrt.Dict)
+	total := bigInt(plan.Value("total_frames").(toolrt.Int))
 	argv := []string{"-v", "error", "-nostdin", "-n"}
 	graph := []string{}
 	for index, raw := range shots {
-		item := raw.(*pycompat.Dict)
+		item := raw.(*toolrt.Dict)
 		if item.Value("kind") == "card" {
 			argv = append(argv, "-loop", "1", "-framerate", "30")
 		}
@@ -979,18 +979,18 @@ func render(ctx context.Context, plan *pycompat.Dict, root, temporary string) er
 	}
 	argv = append(argv, "-i", audio.Value("path").(string))
 	current := "s0"
-	length := bigInt(shots[0].(*pycompat.Dict).Value("frames").(pycompat.Int))
-	songStart := bigInt(audio.Value("start_frame").(pycompat.Int))
+	length := bigInt(shots[0].(*toolrt.Dict).Value("frames").(toolrt.Int))
+	songStart := bigInt(audio.Value("start_frame").(toolrt.Int))
 	cuts := []any{}
 	for index := 1; index < len(shots); index++ {
-		previous := shots[index-1].(*pycompat.Dict).Value("id").(string)
+		previous := shots[index-1].(*toolrt.Dict).Value("id").(string)
 		label := "join" + strconv.Itoa(index)
 		kind := "cut"
 		overlapFrames := big.NewInt(0)
 		if raw, ok := joins.Get(previous); ok {
-			join := raw.(*pycompat.Dict)
+			join := raw.(*toolrt.Dict)
 			kind = join.Value("type").(string)
-			overlapFrames = bigInt(join.Value("frames").(pycompat.Int))
+			overlapFrames = bigInt(join.Value("frames").(toolrt.Int))
 		}
 		cut := subInt(length, overlapFrames)
 		if kind != "cut" {
@@ -1006,7 +1006,7 @@ func render(ctx context.Context, plan *pycompat.Dict, root, temporary string) er
 		} else {
 			graph = append(graph, "["+current+"][s"+strconv.Itoa(index)+"]concat=n=2:v=1:a=0,settb=1/30["+label+"]")
 		}
-		cuts = append(cuts, pytool.Record(
+		cuts = append(cuts, toolcli.Record(
 			"after", previous,
 			"start_frame", newInt(cut),
 			"end_frame_exclusive", newInt(length),
@@ -1014,7 +1014,7 @@ func render(ctx context.Context, plan *pycompat.Dict, root, temporary string) er
 			"type", kind,
 		))
 		current = label
-		length = addInt(length, subInt(bigInt(shots[index].(*pycompat.Dict).Value("frames").(pycompat.Int)), overlapFrames))
+		length = addInt(length, subInt(bigInt(shots[index].(*toolrt.Dict).Value("frames").(toolrt.Int)), overlapFrames))
 	}
 	graph = append(graph, "["+strconv.Itoa(len(shots))+":a]"+audio.Value("filter").(string)+"[music]")
 	target := filepath.Join(temporary, "review.mp4")
@@ -1046,7 +1046,7 @@ func render(ctx context.Context, plan *pycompat.Dict, root, temporary string) er
 		return err
 	}
 	for _, raw := range append(append([]any{}, shots...), audio) {
-		item := raw.(*pycompat.Dict)
+		item := raw.(*toolrt.Dict)
 		digest, err := sha(item.Value("path").(string))
 		if err != nil {
 			return err
@@ -1055,7 +1055,7 @@ func render(ctx context.Context, plan *pycompat.Dict, root, temporary string) er
 			return valueError(textInputChanged)
 		}
 	}
-	if digest, err := sha(pycompat.JoinPath(root, "plan", "scenes.json")); err != nil {
+	if digest, err := sha(toolrt.JoinPath(root, "plan", "scenes.json")); err != nil {
 		return err
 	} else if digest != plan.Value("scene_registry_sha256") {
 		return valueError(textRegistryRun)
@@ -1089,26 +1089,26 @@ func checkResult(ctx context.Context, target string, total *big.Int) error {
 	}
 	values := make([]any, 4)
 	for index, key := range []string{"nb_frames", "r_frame_rate", "width", "height"} {
-		if values[index], err = pycompat.Item(video, key); err != nil {
+		if values[index], err = toolrt.Item(video, key); err != nil {
 			return err
 		}
 	}
-	count, ok := pycompat.ParseIntText(pycompat.Str(values[0]))
+	count, ok := toolrt.ParseIntText(toolrt.Str(values[0]))
 	if !ok {
-		return pycompat.Raise(pycompat.ValueError, "invalid literal for int() with base 10: %s", pycompat.Repr(values[0]))
+		return toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(values[0]))
 	}
-	if bigInt(count).Cmp(total) != 0 || !pycompat.Equal(values[1], "30/1") || !pycompat.Equal(values[2], pycompat.NewInt(1920)) || !pycompat.Equal(values[3], pycompat.NewInt(1080)) {
+	if bigInt(count).Cmp(total) != 0 || !toolrt.Equal(values[1], "30/1") || !toolrt.Equal(values[2], toolrt.NewInt(1920)) || !toolrt.Equal(values[3], toolrt.NewInt(1080)) {
 		return valueError(textBadFormat)
 	}
-	durationValue, err := pycompat.Item(music, "duration")
+	durationValue, err := toolrt.Item(music, "duration")
 	if err != nil {
 		return err
 	}
-	duration, err := pycompat.NewDecimal(durationValue)
+	duration, err := toolrt.NewDecimal(durationValue)
 	if err != nil {
 		return err
 	}
-	expected, err := decimalOf(total).Div(pycompat.DecimalInt(FPS))
+	expected, err := decimalOf(total).Div(toolrt.DecimalInt(FPS))
 	if err != nil {
 		return err
 	}
@@ -1116,7 +1116,7 @@ func checkResult(ctx context.Context, target string, total *big.Int) error {
 	if err != nil {
 		return err
 	}
-	tolerance, _ := pycompat.NewDecimal(".003")
+	tolerance, _ := toolrt.NewDecimal(".003")
 	if sign, err := difference.Abs().Cmp(tolerance); err != nil {
 		return err
 	} else if sign > 0 {
@@ -1128,10 +1128,10 @@ func checkResult(ctx context.Context, target string, total *big.Int) error {
 // Parser — разбор аргументов build_review. Обязательные --output и группа --shots/--spec
 // проверяются в Run (у общего ArgParser нет обязательных опций); usage и справка зафиксированы
 // эталоном.
-var Parser = pycompat.ArgParser{
-	Prog:        "build_review.py",
+var Parser = toolrt.ArgParser{
+	Prog:        "build_review",
 	Description: "Сборка временной пробы по параметрам; @link README.md",
-	Flags: []pycompat.Flag{
+	Flags: []toolrt.Flag{
 		{Name: "--shots", Plus: true},
 		{Name: "--spec", Value: true},
 		{Name: "--output", Value: true},
@@ -1141,25 +1141,25 @@ var Parser = pycompat.ArgParser{
 }
 
 // usage — строка использования: обязательная группа в круглых скобках, --output без скобок.
-const usage = "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n" +
-	"                       OUTPUT [--plan-only]\n"
+const usage = "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n" +
+	"                    OUTPUT [--plan-only]\n"
 
 // fixUsage заменяет usage общего парсера на usage в справке и ошибках разбора.
 func fixUsage(text string) string {
-	return pycompat.TextMode(strings.Replace(text, Parser.Usage(), usage, 1))
+	return toolrt.TextMode(strings.Replace(text, Parser.Usage(), usage, 1))
 }
 
 // argError — ошибка разбора аргументов (код 2) с usage.
-func argError(message string) pytool.Output {
-	return pytool.Output{Code: 2, Stderr: pycompat.TextMode(usage + "build_review.py: error: " + message + "\n")}
+func argError(message string) toolcli.Output {
+	return toolcli.Output{Code: 2, Stderr: toolrt.TextMode(usage + "build_review: error: " + message + "\n")}
 }
 
 // Run — инструмент build_review на разрешённом корне проекта: спецификация из --spec или
 // --shots, сборка или --plan-only и печать рецепта JSON.
-func Run(ctx context.Context, root string, args []string) pytool.Output {
+func Run(ctx context.Context, root string, args []string) toolcli.Output {
 	parsed, exit := Parser.ParseArgs(args)
 	if exit != nil {
-		return pytool.Output{Code: exit.Code, Stdout: fixUsage(exit.Stdout), Stderr: fixUsage(exit.Stderr)}
+		return toolcli.Output{Code: exit.Code, Stdout: fixUsage(exit.Stdout), Stderr: fixUsage(exit.Stderr)}
 	}
 	outputs, hasOutput := parsed.Values["--output"]
 	if !hasOutput {
@@ -1170,11 +1170,11 @@ func Run(ctx context.Context, root string, args []string) pytool.Output {
 	if !hasShots && !hasSpec {
 		return argError("one of the arguments --shots --spec is required")
 	}
-	printer := &pytool.Printer{}
-	result, err := func() (*pycompat.Dict, error) {
+	printer := &toolcli.Printer{}
+	result, err := func() (*toolrt.Dict, error) {
 		var spec any
 		if hasSpec {
-			value, err := pycompat.LoadJSONFile(specs[0])
+			value, err := toolrt.LoadJSONFile(specs[0])
 			if err != nil {
 				return nil, err
 			}
@@ -1182,14 +1182,14 @@ func Run(ctx context.Context, root string, args []string) pytool.Output {
 		} else {
 			list := []any{}
 			for _, sid := range shots {
-				list = append(list, pytool.Record("scene", sid))
+				list = append(list, toolcli.Record("scene", sid))
 			}
-			spec = pytool.Record("schema_version", pycompat.NewInt(1), "shots", list)
+			spec = toolcli.Record("schema_version", toolrt.NewInt(1), "shots", list)
 		}
 		return Build(ctx, spec, outputs[0], root, parsed.Bools["--plan-only"])
 	}()
 	if err == nil {
-		text, err := pytool.JSON(result)
+		text, err := toolcli.JSON(result)
 		if err == nil {
 			err = printer.Print(text)
 		}
@@ -1197,11 +1197,11 @@ func Run(ctx context.Context, root string, args []string) pytool.Output {
 			return printer.Exit(0)
 		}
 	}
-	var exception *pycompat.Exception
+	var exception *toolrt.Exception
 	switch {
-	case errors.As(err, &exception) && exception.Type == pycompat.ValueError:
+	case errors.As(err, &exception) && exception.Type == toolrt.ValueError:
 		return printer.Fail(err.Error())
-	case pycompat.IsAny(err, pycompat.ValueError, pycompat.KeyError, pycompat.TypeError, pycompat.OSError, "StopIteration", pycompat.InvalidOperation):
+	case toolrt.IsAny(err, toolrt.ValueError, toolrt.KeyError, toolrt.TypeError, toolrt.OSError, "StopIteration", toolrt.InvalidOperation):
 		return printer.Fail(textHidden)
 	}
 	return printer.Crash(err)

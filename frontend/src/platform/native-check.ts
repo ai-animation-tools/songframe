@@ -1,10 +1,10 @@
 import { Events } from '@wailsio/runtime';
-import * as checkService from '../../bindings/songframe-go/internal/app/nativecheckservice';
-import * as native from '../../bindings/songframe-go/internal/app/nativeservice';
-import * as montageWindow from '../../bindings/songframe-go/internal/app/montagewindowservice';
+import * as checkService from '../../bindings/songframe/internal/app/nativecheckservice';
+import * as native from '../../bindings/songframe/internal/app/nativeservice';
+import * as montageWindow from '../../bindings/songframe/internal/app/montagewindowservice';
 import type { MontageWindowMessage, MontageWindowState } from '@shared/montage-window';
-import * as projects from '../../bindings/songframe-go/internal/app/projectservice';
-import * as timingService from '../../bindings/songframe-go/internal/app/timingservice';
+import * as projects from '../../bindings/songframe/internal/app/projectservice';
+import * as timingService from '../../bindings/songframe/internal/app/timingservice';
 
 /** Результат одного независимого наблюдения WebView, без вывода о физическом звуке. */
 export interface NativeObservation {

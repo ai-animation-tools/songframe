@@ -9,10 +9,10 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/deriveshot"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/montage"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/deriveshot"
+	"songframe/internal/dynvalue"
+	"songframe/internal/montage"
+	"songframe/internal/projectfs"
 )
 
 // Восстановление прерванной приёмки без инструмента: журнал
@@ -59,8 +59,8 @@ func localPath(value any) bool {
 
 // descriptorMap — before_files/after_files: относительный путь → SHA-256; иначе nil.
 func descriptorMap(value any) map[string]string {
-	object, ok := jscompat.AsObject(value)
-	if !ok || !jscompat.IsRecord(value) {
+	object, ok := dynvalue.AsObject(value)
+	if !ok || !dynvalue.IsRecord(value) {
 		return nil
 	}
 	result := map[string]string{}
@@ -74,21 +74,21 @@ func descriptorMap(value any) map[string]string {
 	return result
 }
 
-// treeHashes — files(path): путь → SHA-256 содержимого папки или nil, если её нет. Ссылка внутри
+// treeHashes — путь → SHA-256 содержимого папки или nil, если её нет. Ссылка внутри
 // или сам путь не-папка — отказ: резерв восстановления обязан быть обычным деревом файлов.
 func treeHashes(path string) (map[string]string, error) {
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return nil, nil
 	}
 	if info, err := os.Lstat(path); err != nil {
-		return nil, jscompat.FsError("lstat", path, err)
+		return nil, dynvalue.FsError("lstat", path, err)
 	} else if !info.IsDir() {
 		return nil, errors.New(textRecoveryFailed(path))
 	}
 	result := map[string]string{}
 	var walk func(directory, prefix string) error
 	walk = func(directory, prefix string) error {
-		entries, err := jscompat.ReadDir(directory)
+		entries, err := dynvalue.ReadDir(directory)
 		if err != nil {
 			return err
 		}
@@ -118,7 +118,7 @@ func treeHashes(path string) (map[string]string, error) {
 	return result, walk(path, "")
 }
 
-// sameTree — same(a, b): nil равно только nil.
+// sameTree — снимки папок совпадают по составу и SHA-256; nil (папки нет) равно только nil.
 func sameTree(left, right map[string]string) bool {
 	if left == nil || right == nil {
 		return left == nil && right == nil
@@ -144,13 +144,13 @@ type recoveryFile struct {
 func checkedFiles(files []any) bool {
 	seen := map[string]bool{}
 	for _, file := range files {
-		path := jscompat.Get(file, "path")
-		if !jscompat.Truthy(file) || !localPath(path) || !publicationFile(path.(string)) || seen[path.(string)] {
+		path := dynvalue.Get(file, "path")
+		if !dynvalue.Truthy(file) || !localPath(path) || !publicationFile(path.(string)) || seen[path.(string)] {
 			return false
 		}
 		seen[path.(string)] = true
 		for _, key := range []string{"before", "after"} {
-			value := jscompat.Get(file, key)
+			value := dynvalue.Get(file, key)
 			if text, ok := value.(string); value != nil && (!ok || !shaPattern.MatchString(text)) {
 				return false
 			}
@@ -159,30 +159,30 @@ func checkedFiles(files []any) bool {
 	return true
 }
 
-// shaEqual — current === file.before/after: SHA или null.
+// shaEqual — current совпадает с SHA журнала (before/after): строка SHA или null (файла нет).
 func shaEqual(current *string, value any) bool {
 	if current == nil {
 		return value == nil
 	}
-	return jscompat.StrictEqual(*current, value)
+	return dynvalue.StrictEqual(*current, value)
 }
 
 // rollback возвращает один журнал publishing: проверки, затем комплект, файлы, журнал и staging.
-func rollback(project, name, directory, path string, journal *jscompat.Object) error {
+func rollback(project, name, directory, path string, journal *dynvalue.Object) error {
 	fail := errors.New(textRecoveryFailed(path))
 	shot := journal.Value("shot")
-	files, filesOK := jscompat.AsArray(journal.Value("files"))
-	if !jscompat.StrictEqual(journal.Value("schema_version"), 1.0) || !jscompat.StrictEqual(journal.Value("id"), name) ||
-		!shotPattern.MatchString(jscompat.ToString(shot)) || !filesOK || !jscompat.IsRecord(journal.Value("directory")) {
+	files, filesOK := dynvalue.AsArray(journal.Value("files"))
+	if !dynvalue.StrictEqual(journal.Value("schema_version"), 1.0) || !dynvalue.StrictEqual(journal.Value("id"), name) ||
+		!shotPattern.MatchString(dynvalue.ToString(shot)) || !filesOK || !dynvalue.IsRecord(journal.Value("directory")) {
 		return fail
 	}
-	kit, _ := jscompat.AsObject(journal.Value("directory"))
+	kit, _ := dynvalue.AsObject(journal.Value("directory"))
 	beforeValue, afterValue := kit.Value("before_files"), kit.Value("after_files")
 	before, after := descriptorMap(beforeValue), descriptorMap(afterValue)
-	shotName := jscompat.ToString(shot)
-	if !jscompat.StrictEqual(kit.Value("path"), "assets/shots/"+shotName) ||
-		!jscompat.StrictEqual(kit.Value("backup"), "plan/derived-history/"+name+"/before-kit") ||
-		!jscompat.StrictEqual(kit.Value("retired"), "assets/replaced/"+shotName+"/"+name) ||
+	shotName := dynvalue.ToString(shot)
+	if !dynvalue.StrictEqual(kit.Value("path"), "assets/shots/"+shotName) ||
+		!dynvalue.StrictEqual(kit.Value("backup"), "plan/derived-history/"+name+"/before-kit") ||
+		!dynvalue.StrictEqual(kit.Value("retired"), "assets/replaced/"+shotName+"/"+name) ||
 		(beforeValue != nil && before == nil) || after == nil {
 		return fail
 	}
@@ -208,7 +208,7 @@ func rollback(project, name, directory, path string, journal *jscompat.Object) e
 			return fail
 		}
 	}
-	if jscompat.Exists(retired) {
+	if dynvalue.Exists(retired) {
 		saved, err := treeHashes(retired)
 		if err != nil {
 			return err
@@ -219,13 +219,13 @@ func rollback(project, name, directory, path string, journal *jscompat.Object) e
 	}
 	backups := make([]recoveryFile, len(files))
 	for index, file := range files {
-		name := jscompat.Get(file, "path").(string)
+		name := dynvalue.Get(file, "path").(string)
 		live, err := montage.Digest(filepath.Join(project, filepath.FromSlash(name)))
 		if err != nil {
 			return err
 		}
-		fileBefore := jscompat.Get(file, "before")
-		if !shaEqual(live, fileBefore) && !shaEqual(live, jscompat.Get(file, "after")) {
+		fileBefore := dynvalue.Get(file, "before")
+		if !shaEqual(live, fileBefore) && !shaEqual(live, dynvalue.Get(file, "after")) {
 			return fail
 		}
 		backups[index].path = name
@@ -287,15 +287,15 @@ func rollback(project, name, directory, path string, journal *jscompat.Object) e
 	return os.RemoveAll(filepath.Join(directory, "staging"))
 }
 
-// RecoverApplications — recoverDerivedApplications(project): откатывает журналы publishing. Запись
+// RecoverApplications — откатывает журналы publishing. Запись
 // идёт мимо шлюза проекта: шлюз как раз запрещает запись, пока журнал publishing. Изменённый после
 // сбоя файл останавливает откат, данные и журнал сохраняются. Повторный вызов ничего не меняет.
 func RecoverApplications(project string) error {
 	history := filepath.Join(project, "plan", "derived-history")
-	if !jscompat.Exists(history) {
+	if !dynvalue.Exists(history) {
 		return nil
 	}
-	entries, err := jscompat.ReadDir(history)
+	entries, err := dynvalue.ReadDir(history)
 	if err != nil {
 		return err
 	}
@@ -309,8 +309,8 @@ func RecoverApplications(project string) error {
 		if err != nil {
 			return err
 		}
-		journal, isObject := jscompat.AsObject(value)
-		if !isObject || !jscompat.StrictEqual(journal.Value("state"), "publishing") {
+		journal, isObject := dynvalue.AsObject(value)
+		if !isObject || !dynvalue.StrictEqual(journal.Value("state"), "publishing") {
 			continue
 		}
 		if err := rollback(project, entry.Name(), directory, path, journal); err != nil {

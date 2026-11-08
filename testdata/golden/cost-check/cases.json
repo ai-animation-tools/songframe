@@ -2480,9 +2480,9 @@
   },
   {
     "name": "argparse",
-    "description": "argparse cost_check: группа, обязательные опции, тип float, справка.",
+    "description": "Разбор аргументов cost_check: группа, обязательные опции, тип float, справка.",
     "covers": [
-      "argparse"
+      "разбор аргументов"
     ],
     "files": {
       "project/plan/project.json": {
@@ -2587,7 +2587,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check.py [-h] {check,learn} ...\ncost_check.py: error: the following arguments are required: action\n",
+        "stderr": "usage: cost_check [-h] {check,learn} ...\ncost_check: error: the following arguments are required: action\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -2607,7 +2607,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check.py check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                           [--balance BALANCE] [--no-account]\n                           [--pricing PRICING] [--timeout TIMEOUT] [--json]\ncost_check.py check: error: one of the arguments --work-dir --request is required\n",
+        "stderr": "usage: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                        [--balance BALANCE] [--no-account] [--pricing PRICING]\n                        [--timeout TIMEOUT] [--json]\ncost_check check: error: one of the arguments --work-dir --request is required\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -2627,7 +2627,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check.py check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                           [--balance BALANCE] [--no-account]\n                           [--pricing PRICING] [--timeout TIMEOUT] [--json]\ncost_check.py check: error: argument --request: not allowed with argument --work-dir\n",
+        "stderr": "usage: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                        [--balance BALANCE] [--no-account] [--pricing PRICING]\n                        [--timeout TIMEOUT] [--json]\ncost_check check: error: argument --request: not allowed with argument --work-dir\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -2647,7 +2647,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check.py learn [-h] --work-dir WORK_DIR [--pricing PRICING]\ncost_check.py learn: error: the following arguments are required: --work-dir\n",
+        "stderr": "usage: cost_check learn [-h] --work-dir WORK_DIR [--pricing PRICING]\ncost_check learn: error: the following arguments are required: --work-dir\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -2666,7 +2666,7 @@
       },
       {
         "code": 0,
-        "stdout": "usage: cost_check.py check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                           [--balance BALANCE] [--no-account]\n                           [--pricing PRICING] [--timeout TIMEOUT] [--json]\n\noptions:\n  -h, --help           show this help message and exit\n  --work-dir WORK_DIR\n  --request REQUEST\n  --balance BALANCE    Остаток из кабинета, если account недоступен.\n  --no-account         Не обращаться к аккаунту.\n  --pricing PRICING    Файл тарифов вместо базовой таблицы адаптера\n                       провайдера.\n  --timeout TIMEOUT\n  --json\n",
+        "stdout": "usage: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                        [--balance BALANCE] [--no-account] [--pricing PRICING]\n                        [--timeout TIMEOUT] [--json]\n\noptions:\n  -h, --help           show this help message and exit\n  --work-dir WORK_DIR\n  --request REQUEST\n  --balance BALANCE    Остаток из кабинета, если account недоступен.\n  --no-account         Не обращаться к аккаунту.\n  --pricing PRICING    Файл тарифов вместо базовой таблицы адаптера\n                       провайдера.\n  --timeout TIMEOUT\n  --json\n",
         "stderr": "",
         "traceback": false,
         "interrupted": false,
@@ -2686,7 +2686,7 @@
       },
       {
         "code": 0,
-        "stdout": "usage: cost_check.py [-h] {check,learn} ...\n\nОценка стоимости запроса и остатка кредитов перед таблицей; @link README.md\n\npositional arguments:\n  {check,learn}\n\noptions:\n  -h, --help     show this help message and exit\n",
+        "stdout": "usage: cost_check [-h] {check,learn} ...\n\nОценка стоимости запроса и остатка кредитов перед таблицей; @link README.md\n\npositional arguments:\n  {check,learn}\n\noptions:\n  -h, --help     show this help message and exit\n",
         "stderr": "",
         "traceback": false,
         "interrupted": false,
@@ -2707,7 +2707,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check.py check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                           [--balance BALANCE] [--no-account]\n                           [--pricing PRICING] [--timeout TIMEOUT] [--json]\ncost_check.py check: error: argument --balance: invalid float value: 'zz'\n",
+        "stderr": "usage: cost_check check [-h] (--work-dir WORK_DIR | --request REQUEST)\n                        [--balance BALANCE] [--no-account] [--pricing PRICING]\n                        [--timeout TIMEOUT] [--json]\ncost_check check: error: argument --balance: invalid float value: 'zz'\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -2727,7 +2727,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: cost_check.py [-h] {check,learn} ...\ncost_check.py: error: unrecognized arguments: --json\n",
+        "stderr": "usage: cost_check [-h] {check,learn} ...\ncost_check: error: unrecognized arguments: --json\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],

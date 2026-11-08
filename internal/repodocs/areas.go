@@ -57,7 +57,7 @@ var Areas = []Area{
 	},
 	{
 		Title: "Проект и исходники",
-		Docs:  []string{"dev-skills/songframe-go-project-contract/SKILL.md", "resources/templates/project/README.md"},
+		Docs:  []string{"dev-skills/songframe-project-contract/SKILL.md", "resources/templates/project/README.md"},
 		Packages: []string{
 			"internal/project", "internal/projectfile", "internal/newproject", "internal/status",
 			"internal/sources", "internal/sourceedit", "internal/sourceinputs",
@@ -138,14 +138,14 @@ var Areas = []Area{
 		Title: "Семантика форматов и эталоны",
 		Docs:  []string{"testdata/golden/README.md", "testdata/README.md"},
 		Packages: []string{
-			"internal/pycompat", "internal/pyre", "internal/pyargparse", "internal/pytool",
-			"internal/jscompat", "internal/golden", "internal/repodocs",
+			"internal/toolrt", "internal/toolregex", "internal/toolsubcmd", "internal/toolcli",
+			"internal/dynvalue", "internal/golden", "internal/repodocs",
 		},
 		Paths: []string{"testdata"},
 	},
 	{
 		Title:    "Сборка и поставки",
-		Docs:     []string{"packaging/README.md", "packaging/windows/README.md", "dev-skills/songframe-go-build/SKILL.md", "dev-skills/songframe-go-release/SKILL.md"},
+		Docs:     []string{"packaging/README.md", "packaging/windows/README.md", "dev-skills/songframe-build/SKILL.md", "dev-skills/songframe-release/SKILL.md"},
 		Packages: []string{"scripts/appimage-bootstrap"},
 		Paths:    []string{"packaging", "scripts", "Taskfile.yml", ".github/workflows", "www"},
 	},

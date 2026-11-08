@@ -7,11 +7,11 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/montage"
-	"songframe-go/internal/scenarioworkflow"
-	"songframe-go/internal/wire"
+	"songframe/internal/dynvalue"
+	"songframe/internal/jobs"
+	"songframe/internal/montage"
+	"songframe/internal/scenarioworkflow"
+	"songframe/internal/wire"
 )
 
 // MontageService реализует window.api.montage страницы ручного монтажа (маршруты montage:*):
@@ -61,7 +61,7 @@ func (s *MontageService) Load(project, id string) (json.RawMessage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return wire.Done(jscompat.Raw(value), nil)
+	return wire.Done(dynvalue.Raw(value), nil)
 }
 
 // Remove удаляет сохранённый черновик; принятые сцены и история применения остаются.

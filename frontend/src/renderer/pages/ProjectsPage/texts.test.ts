@@ -33,7 +33,7 @@ describe('Тексты создания и выбора проекта', () => {
     expect(projectsTexts.historyDetails({ path: '', exists: true, openedAt: '0' })).toBe(' · открыт 0');
   });
 
-  it('показывает прежнее пустое состояние и значения формы без вызова API', () => {
+  it('показывает пустое состояние и значения формы без вызова API', () => {
     const history = renderToStaticMarkup(
       createElement(ProjectHistory, { history: [], states: {}, currentPath: null, busy: false, onOpen: () => undefined, onForget: () => undefined })
     );

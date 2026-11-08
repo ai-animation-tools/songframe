@@ -3,25 +3,25 @@ package productionworkflow
 import (
 	"testing"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Предложение заменяет кандидата только той опоры, о которой открыт вопрос, и только одним файлом:
 // вопрос о другой опоре и пакетная подстановка по-прежнему ждут решения пользователя.
 func TestReplacesAskedFrame(t *testing.T) {
-	workflow := jscompat.NewObject()
-	question := jscompat.NewObject()
+	workflow := dynvalue.NewObject()
+	question := dynvalue.NewObject()
 	question.Set("frame", "K01")
 	workflow.Set("pending_decision", question)
 	context := &Context{Workflow: workflow}
-	after := func(ids ...string) *jscompat.Object {
-		images := &jscompat.Array{}
+	after := func(ids ...string) *dynvalue.Object {
+		images := &dynvalue.Array{}
 		for _, id := range ids {
-			image := jscompat.NewObject()
+			image := dynvalue.NewObject()
 			image.Set("id", id)
 			images.Items = append(images.Items, image)
 		}
-		tree := jscompat.NewObject()
+		tree := dynvalue.NewObject()
 		tree.Set("stage", "frames")
 		tree.Set("images", images)
 		return tree

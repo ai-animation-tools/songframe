@@ -3,7 +3,8 @@
 // Эталон состоит из случаев testdata/golden/<домен>/<случай>/: case.json с описанием и именем
 // проверяемой операции, входной мини-проект project/ и ожидаемые JSON. Пакет только загружает
 // случаи, нормализует абсолютные пути в маркер <project> и сравнивает деревья JSON; сами функции
-// домена вызывает тест соответствующего пакета. Все эталоны лежат в Git; тесты не зависят от файлов вне репозитория.
+// домена вызывает тест соответствующего пакета. Все эталоны лежат в Git; тесты не зависят от
+// файлов вне репозитория.
 package golden
 
 import (
@@ -27,14 +28,14 @@ import (
 // ProjectMarker заменяет корень проекта в путях ожидаемых JSON, чтобы эталон не зависел от временной папки.
 const ProjectMarker = "<project>"
 
-// projectDir — имя каталога входного проекта внутри случая. Оригинал выводит basename(path) для
-// не-проекта, поэтому копия для записи создаётся под тем же именем.
+// projectDir — имя каталога входного проекта внутри случая. Результат для не-проекта содержит имя
+// каталога (basename пути), поэтому копия для записи создаётся под тем же именем.
 const projectDir = "project"
 
 // maxDiff ограничивает число различий в сообщении теста: дальше обычно повторяется одна причина.
 const maxDiff = 40
 
-// Case — один снятый случай домена. Поля повторяют case.json, а Dir указывает на каталог случая.
+// Case — один случай домена. Поля повторяют case.json, а Dir указывает на каталог случая.
 type Case struct {
 	// Domain — домен эталонов: status, timing-view, timing-save.
 	Domain string `json:"-"`
@@ -54,7 +55,7 @@ type Case struct {
 	StubbedMedia []string `json:"stubbedMedia"`
 }
 
-// Root находит testdata/golden модуля songframe-go, поднимаясь от рабочего каталога теста к go.mod.
+// Root находит testdata/golden модуля, поднимаясь от рабочего каталога теста к go.mod.
 // Поиск от рабочего каталога, а не от пути исходника, работает и при сборке с -trimpath.
 func Root() (string, error) {
 	dir, err := os.Getwd()
@@ -116,7 +117,7 @@ func Load(t testing.TB, domain string) []Case {
 }
 
 // ProjectPath — путь входного проекта для функций только чтения. Для случая без проекта путь
-// указывает на несуществующий каталог с тем же basename, что и при съёмке.
+// указывает на несуществующий каталог с тем же basename, что и в эталоне.
 func (c Case) ProjectPath() string {
 	return filepath.Join(c.Dir, projectDir)
 }
@@ -175,7 +176,8 @@ func ReadFile(t testing.TB, domain, name string) []byte {
 }
 
 // ValidationCase — синтетический вход validateTiming с ожидаемым списком проблем. Тот же файл
-// timing-validation/cases.json читает TS-тест, поэтому timing и lyrics оставлены сырыми JSON.
+// timing-validation/cases.json читает и тест интерфейса на TypeScript, поэтому timing и lyrics
+// оставлены сырыми JSON.
 type ValidationCase struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -207,7 +209,7 @@ func ValidationCases(t testing.TB) []ValidationCase {
 var projectTail = regexp.MustCompile(`<project>[^\s"«»]*`)
 
 // NormalizePaths заменяет корень root во всех строках JSON маркером <project> и приводит разделители
-// хвоста пути к «/», как при съёмке на Linux. Ключи и числа не меняются; результат — заново
+// хвоста пути к «/», как в эталонах, записанных на Linux. Ключи и числа не меняются; результат — заново
 // сериализованный JSON для семантического сравнения, а не исходные байты.
 func NormalizePaths(data []byte, root string) ([]byte, error) {
 	value, err := decode(data)
@@ -265,7 +267,7 @@ func AssertJSON(t testing.TB, want, got []byte) {
 		t.Fatal(err)
 	}
 	if len(diffs) > 0 {
-		t.Fatalf("результат отличается от эталона оригинала (%d):\n%s", len(diffs), strings.Join(diffs, "\n"))
+		t.Fatalf("результат отличается от эталона (%d):\n%s", len(diffs), strings.Join(diffs, "\n"))
 	}
 }
 
@@ -453,7 +455,7 @@ func appendLimited(diffs []string, text string) []string {
 	return append(diffs, text)
 }
 
-// sameNumber сравнивает числа JSON точно по значению: «8», «8.0» и «8e0» равны, как после JSON.parse.
+// sameNumber сравнивает числа JSON точно по значению: «8», «8.0» и «8e0» равны.
 func sameNumber(left, right json.Number) bool {
 	if left == right {
 		return true

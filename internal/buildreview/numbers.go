@@ -5,18 +5,18 @@ import (
 	"strconv"
 	"strings"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // Числовые помощники build_review. Кадры — целые произвольной длины (*big.Int), секунды —
-// Decimal, а округления и строки повторяют decimal.Decimal Python: от записи
-// скорости и секунд зависят фильтры FFmpeg и байты рецепта.
+// точные десятичные числа toolrt.Decimal с явными правилами округления и записи: от записи
+// скорости и секунд зависят фильтры FFmpeg и байты рецепта, зафиксированные эталоном build-review.
 
-// bigInt — значение pycompat.Int как *big.Int.
-func bigInt(value pycompat.Int) *big.Int { return value.Big() }
+// bigInt — значение toolrt.Int как *big.Int.
+func bigInt(value toolrt.Int) *big.Int { return value.Big() }
 
-// newInt — *big.Int как pycompat.Int для JSON.
-func newInt(value *big.Int) pycompat.Int { return pycompat.IntFromBig(value) }
+// newInt — *big.Int как toolrt.Int для JSON.
+func newInt(value *big.Int) toolrt.Int { return toolrt.IntFromBig(value) }
 
 // mulInt — value * factor.
 func mulInt(value *big.Int, factor int64) *big.Int {
@@ -29,18 +29,18 @@ func addInt(a, b *big.Int) *big.Int { return new(big.Int).Add(a, b) }
 // subInt — a - b.
 func subInt(a, b *big.Int) *big.Int { return new(big.Int).Sub(a, b) }
 
-// isFinite — Decimal.is_finite().
-func isFinite(value pycompat.Decimal) bool {
+// isFinite — конечно ли десятичное значение (не NaN и не бесконечность).
+func isFinite(value toolrt.Decimal) bool {
 	return !value.IsNaN() && !strings.HasSuffix(value.FormatF(), "Infinity")
 }
 
-// rational — точное значение конечного Decimal.
-func rational(value pycompat.Decimal) *big.Rat {
+// rational — точное рациональное значение конечного десятичного числа.
+func rational(value toolrt.Decimal) *big.Rat {
 	result, _ := new(big.Rat).SetString(value.FormatF())
 	return result
 }
 
-// roundHalfUp — округление рационального числа до целого, половина — от нуля (ROUND_HALF_UP).
+// roundHalfUp — округление рационального числа до целого, половина — от нуля.
 func roundHalfUp(value *big.Rat) *big.Int {
 	numerator := new(big.Int).Abs(value.Num())
 	// floor(|x| + 1/2) = (2·|num| + den) div (2·den).
@@ -53,9 +53,9 @@ func roundHalfUp(value *big.Rat) *big.Int {
 	return result
 }
 
-// frames — секунды в кадры: int(value.to_integral_value(ROUND_HALF_UP)). У NaN и
-// бесконечности — ошибки int(): ValueError «cannot convert NaN to integer» и OverflowError.
-func frames(value pycompat.Decimal) (*big.Int, error) {
+// frames — секунды в кадры с округлением половины от нуля. У NaN и бесконечности — ошибки
+// toolrt.Decimal.ToInt: ValueError «cannot convert NaN to integer» и OverflowError.
+func frames(value toolrt.Decimal) (*big.Int, error) {
 	if !isFinite(value) {
 		_, err := value.ToInt()
 		return nil, err
@@ -65,7 +65,7 @@ func frames(value pycompat.Decimal) (*big.Int, error) {
 
 // framesTimesFPS — frames(value * FPS): произведение с длительностью ffprobe или песни точное
 // (значения короче 28 значащих цифр), поэтому считается рационально без потери.
-func framesTimesFPS(value pycompat.Decimal) (*big.Int, error) {
+func framesTimesFPS(value toolrt.Decimal) (*big.Int, error) {
 	if !isFinite(value) {
 		_, err := value.ToInt()
 		return nil, err
@@ -74,9 +74,10 @@ func framesTimesFPS(value pycompat.Decimal) (*big.Int, error) {
 	return roundHalfUp(product), nil
 }
 
-// seconds — кадры в секунды строкой format(Decimal/30, "f") с 9 знаками.
+// seconds — кадры в секунды: точное частное на 30, квантованное до 9 знаков после точки, в
+// записи без экспоненты.
 func seconds(value *big.Int) (string, error) {
-	divided, err := decimalOf(value).Div(pycompat.DecimalInt(FPS))
+	divided, err := decimalOf(value).Div(toolrt.DecimalInt(FPS))
 	if err != nil {
 		return "", err
 	}
@@ -87,7 +88,7 @@ func seconds(value *big.Int) (string, error) {
 	return quantized.FormatF(), nil
 }
 
-// secondsFloat — float(seconds(value)).
+// secondsFloat — строка seconds(value), разобранная как float64.
 func secondsFloat(value *big.Int) (float64, error) {
 	text, err := seconds(value)
 	if err != nil {
@@ -96,25 +97,27 @@ func secondsFloat(value *big.Int) (float64, error) {
 	return strconv.ParseFloat(text, 64)
 }
 
-// decimalOf — Decimal(int) для целого произвольной длины.
-func decimalOf(value *big.Int) pycompat.Decimal {
-	result, _ := pycompat.NewDecimal(pycompat.IntFromBig(value))
+// decimalOf — целое произвольной длины как toolrt.Decimal.
+func decimalOf(value *big.Int) toolrt.Decimal {
+	result, _ := toolrt.NewDecimal(toolrt.IntFromBig(value))
 	return result
 }
 
-// DecimalText — str(Decimal(text)) для конечного значения: to_sci_string, как печатает Python
-// (Decimal("1E+1") → «1E+1», Decimal("0.50") → «0.50», Decimal("5E-1") → «0.5»). Разбор строки
-// повторяет конструктор Decimal (пробелы по краям, подчёркивания, цифры Unicode); ok=false — не
-// конечное число. Нужна для строки скорости в фильтре setpts и в рецепте пробы.
+// DecimalText — каноническая запись конечного десятичного числа text: значащие цифры и нули
+// дробной части сохраняются, запись без экспоненты — при неположительном показателе и порядке
+// не ниже −6, иначе научная с одной цифрой до точки и «E±n» («1E+1» → «1E+1», «0.50» → «0.50»,
+// «5E-1» → «0.5», «1e-7» → «1E-7»). Разбор допускает пробелы по краям, подчёркивания между
+// цифрами и десятичные цифры Unicode; ok=false — не конечное число. Нужна для строки скорости в
+// фильтре setpts и в рецепте пробы.
 func DecimalText(text string) (string, bool) {
 	var builder strings.Builder
-	for _, r := range pycompat.Runes(text) {
+	for _, r := range toolrt.Runes(text) {
 		switch {
 		case r == '_':
-		case pycompat.IsSpace(r):
+		case toolrt.IsSpace(r):
 			builder.WriteByte(' ')
-		case pycompat.DigitValue(r) >= 0:
-			builder.WriteByte(byte('0' + pycompat.DigitValue(r)))
+		case toolrt.DigitValue(r) >= 0:
+			builder.WriteByte(byte('0' + toolrt.DigitValue(r)))
 		case r < 0x80:
 			builder.WriteRune(r)
 		default:

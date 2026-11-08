@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
+	"songframe/internal/golden"
 )
 
 // TestValidateGolden — Validate на эталонах testdata/golden/project-validate-new.

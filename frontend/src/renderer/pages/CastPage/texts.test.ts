@@ -1,4 +1,4 @@
-/** Полные фразы и SSR фиксируют прежний текст кастинга без зависимости ожиданий от словаря. */
+/** Полные фразы и SSR фиксируют текст кастинга без зависимости ожиданий от словаря. */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
@@ -23,7 +23,7 @@ describe('целые фразы кастинга', () => {
     [21, '21', ' Сейчас значение записано в начальном состоянии у 21 сущности этого типа.'],
     [-2, '-2', ' Сейчас значение записано в начальном состоянии у -2 сущностей этого типа.'],
     [1.5, '1.5', ' Сейчас значение записано в начальном состоянии у 1.5 сущностей этого типа.']
-  ] as const)('сохраняет исходную грамматику количества %s', (count, written, suffix) => {
+  ] as const)('сохраняет грамматику количества %s', (count, written, suffix) => {
     expect(castTexts.removePropertyDescription({ kind: 'Персонаж', key: 'pose', usage: count })).toBe(removal + suffix);
     expect(castTexts.stateCount({ count })).toBe(`состояние: ${written}`);
     expect(castTexts.valuesCount({ count })).toBe(`вариантов: ${written}`);
@@ -93,7 +93,7 @@ describe('текст форм кастинга', () => {
       expect(html).toContain(text);
   });
 
-  it('оставляет исходники и сценарий ссылками с прежними маршрутами', () => {
+  it('оставляет исходники и сценарий ссылками на их страницы', () => {
     const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(LinkedText, { text: castTexts.empty })));
     expect(html).toContain('href="/project/scenario"');
     const sources = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(LinkedText, { text: castTexts.sourcesMissing })));

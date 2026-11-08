@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/production"
-	"songframe-go/internal/tools"
+	"songframe/internal/jobs"
+	"songframe/internal/mediacmd"
+	"songframe/internal/production"
+	"songframe/internal/tools"
 )
 
 // realMedia подставляет настоящие FFmpeg/ffprobe из PATH; без них тест пропускается.

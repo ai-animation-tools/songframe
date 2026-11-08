@@ -13,7 +13,7 @@ source /etc/os-release
 version=$(cat packaging/VERSION)
 [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo 'Некорректная packaging/VERSION.' >&2; exit 1; }
 # В версии Debian дефис отделяет ревизию пакета, а «~» сортируется раньше выпуска:
-# 1.0.0-dev.47 становится 1.0.0~dev.47 и остаётся старше 0.x, но младше 1.0.0.
+# 1.0.0-dev.47 становится 1.0.0~dev.47 и сортируется раньше выпуска 1.0.0.
 debian_version=${version/-/\~}
 work="$root/build/packaging/deb"
 out="$root/build/release"

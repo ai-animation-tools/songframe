@@ -120,7 +120,7 @@ func (s *Session) run(ctx context.Context, data []float32, shape []int64, ctc bo
 	return append([]float32(nil), values...), tensor.Shape(), nil
 }
 
-// Separate — выделение вокала Voc FT (mdx.separate): полный стерео-сигнал 44,1 кГц режется на
+// Separate — выделение вокала Voc FT (MDX-Net): полный стерео-сигнал 44,1 кГц режется на
 // блоки Chunk с отбрасываемым контекстом FFT/2 с каждой стороны; длина и временная шкала выхода
 // совпадают с входом, вступление и хвост не обрезаются. progress получает номер блока и их число.
 func (s *Session) Separate(ctx context.Context, signal [2][]float32, progress func(done, total int)) ([2][]float32, error) {

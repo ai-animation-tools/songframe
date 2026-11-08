@@ -22,9 +22,9 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/songml"
+	"songframe/internal/filedigest"
+	"songframe/internal/projectfs"
+	"songframe/internal/songml"
 )
 
 // Тексты vocalTexts (frontend/src/shared/texts/vocals.ts): Go возвращает их в ошибках как есть.
@@ -281,7 +281,7 @@ func (s *Store) View(project string, models []VocalModelStatus) VocalPreparation
 		}
 		view.Results = append(view.Results, result)
 	}
-	// localeCompare строк ISO-времени совпадает с побайтовым сравнением.
+	// Строки ISO-времени сравниваются побайтно: так порядок совпадает с хронологическим.
 	sort.SliceStable(view.Results, func(i, j int) bool { return view.Results[i].CreatedAt > view.Results[j].CreatedAt })
 	var selection selectionFile
 	if _, err := projectfs.ReadJSON(filepath.Join(directory, "selection.json"), &selection); err != nil {

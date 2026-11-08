@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Model — AgentModel: id передаётся в --model, подпись показывается в настройках.
@@ -50,13 +50,13 @@ func ReadModels(ctx context.Context, adapter Adapter, config Settings, options C
 // Agent SDK; формат экспериментальный). Псевдоним default означает выбор самого CLI и совпадает
 // с пустым полем, поэтому не показывается.
 func readClaudeModels(ctx context.Context, executable string, options ProcessOptions) ([]Model, error) {
-	initialize := jscompat.NewObject()
+	initialize := dynvalue.NewObject()
 	initialize.Set("subtype", "initialize")
-	responses, err := claudeControl(ctx, executable, options, []*jscompat.Object{initialize})
+	responses, err := claudeControl(ctx, executable, options, []*dynvalue.Object{initialize})
 	if err != nil {
 		return nil, err
 	}
-	rows, ok := jscompat.AsArray(jscompat.Get(responses[0], "models"))
+	rows, ok := dynvalue.AsArray(dynvalue.Get(responses[0], "models"))
 	if !ok {
 		return nil, errors.New("Claude не вернул список моделей.")
 	}
@@ -65,23 +65,23 @@ func readClaudeModels(ctx context.Context, executable string, options ProcessOpt
 	}
 	models := []Model{}
 	for _, raw := range rows {
-		row, ok := raw.(*jscompat.Object)
+		row, ok := raw.(*dynvalue.Object)
 		if !ok {
 			continue
 		}
 		id := ""
 		if value, ok := row.Value("value").(string); ok {
-			id = jscompat.Trim(value)
+			id = dynvalue.Trim(value)
 		}
 		if id == "" || id == "default" || utf16Len(id) > 128 || spaces.MatchString(id) {
 			continue
 		}
 		model := Model{ID: id, Label: id}
-		if label, ok := row.Value("displayName").(string); ok && jscompat.Trim(label) != "" {
-			model.Label = utf16Slice(jscompat.Trim(label), 128)
+		if label, ok := row.Value("displayName").(string); ok && dynvalue.Trim(label) != "" {
+			model.Label = utf16Slice(dynvalue.Trim(label), 128)
 		}
-		if description, ok := row.Value("description").(string); ok && jscompat.Trim(description) != "" {
-			model.Description = utf16Slice(jscompat.Trim(description), 200)
+		if description, ok := row.Value("description").(string); ok && dynvalue.Trim(description) != "" {
+			model.Description = utf16Slice(dynvalue.Trim(description), 200)
 		}
 		models = append(models, model)
 	}
@@ -99,13 +99,13 @@ type CodexModel struct {
 // CodexModels читает все страницы видимых моделей Codex штатным model/list app-server. Он нужен
 // и текстовому агенту (настройки), и провайдеру изображений, который исполняет Codex.
 func CodexModels(ctx context.Context, executable string, options ProcessOptions) ([]CodexModel, error) {
-	return codexRPC(ctx, executable, options, func(request func(string, *jscompat.Object) (any, error)) ([]CodexModel, error) {
+	return codexRPC(ctx, executable, options, func(request func(string, *dynvalue.Object) (any, error)) ([]CodexModel, error) {
 		order := []string{}
 		models := map[string]CodexModel{}
 		cursors := map[string]bool{}
 		cursor := ""
 		for {
-			params := jscompat.NewObject()
+			params := dynvalue.NewObject()
 			params.Set("limit", float64(100))
 			params.Set("includeHidden", false)
 			if cursor != "" {
@@ -115,20 +115,20 @@ func CodexModels(ctx context.Context, executable string, options ProcessOptions)
 			if err != nil {
 				return nil, err
 			}
-			result, ok := value.(*jscompat.Object)
-			next := jscompat.Undefined
+			result, ok := value.(*dynvalue.Object)
+			next := dynvalue.Undefined
 			var data []any
 			if ok {
 				next = result.Value("nextCursor")
-				data, ok = jscompat.AsArray(result.Value("data"))
+				data, ok = dynvalue.AsArray(result.Value("data"))
 			}
-			if _, isString := next.(string); !ok || !(jscompat.IsNullish(next) || isString) {
+			if _, isString := next.(string); !ok || !(dynvalue.IsNullish(next) || isString) {
 				return nil, errors.New("Codex вернул неизвестный формат каталога моделей.")
 			}
 			for _, raw := range data {
-				item, isObject := raw.(*jscompat.Object)
-				name, isString := jscompat.Get(raw, "model").(string)
-				if !isObject || !isString || jscompat.Trim(name) == "" {
+				item, isObject := raw.(*dynvalue.Object)
+				name, isString := dynvalue.Get(raw, "model").(string)
+				if !isObject || !isString || dynvalue.Trim(name) == "" {
 					return nil, errors.New("Codex вернул модель без точного имени.")
 				}
 				if item.Value("hidden") == true {
@@ -136,8 +136,8 @@ func CodexModels(ctx context.Context, executable string, options ProcessOptions)
 				}
 				// В exec передаётся именно model из объявления; displayName не идентификатор CLI.
 				model := CodexModel{Model: name, IsDefault: item.Value("isDefault") == true}
-				if label, ok := item.Value("displayName").(string); ok && jscompat.Trim(label) != "" {
-					model.DisplayName = utf16Slice(jscompat.Trim(label), 128)
+				if label, ok := item.Value("displayName").(string); ok && dynvalue.Trim(label) != "" {
+					model.DisplayName = utf16Slice(dynvalue.Trim(label), 128)
 				}
 				if _, seen := models[name]; !seen {
 					order = append(order, name)

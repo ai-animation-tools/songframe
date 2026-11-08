@@ -1,8 +1,8 @@
 package app
 
 import (
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/wire"
+	"songframe/internal/jobs"
+	"songframe/internal/wire"
 )
 
 // JobsService реализует группу window.api.jobs поверх общего менеджера заданий.

@@ -1,4 +1,4 @@
-/** Общий редактор проверяется с отдельными снимками формы и файла, без IPC и настоящего проекта. */
+/** Общий редактор проверяется с отдельными снимками формы и файла, без API приложения и настоящего проекта. */
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Box, Stack, Typography } from '@mui/material';

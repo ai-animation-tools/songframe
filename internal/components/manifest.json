@@ -43,7 +43,7 @@
       "checks": [
         "Явный абсолютный путь к entrypoint, соседние библиотеки, CPU provider и GetApi(27).",
         "Создание/закрытие сессии каждого закреплённого ONNX; короткий реальный CPU inference с конечным выходом правильной формы.",
-        "Начало без ORT, установка и первый Init в том же сеансе, отмена/повтор; переключение после успешного Init требует перезапуска. Реализация в 41.2–41.4."
+        "Начало без ORT, установка и первый Init в том же сеансе, отмена/повтор; переключение после успешного Init требует перезапуска."
       ]
     },
     {
@@ -51,7 +51,7 @@
       "command": "",
       "checks": [
         "SHA/байты, отсутствие external initializers, имена input/output и float32 [1,4,3072,256].",
-        "Короткий синтетический STFT-блок → конечный выход той же формы; параметры MDX строго по recipe. Реализация в 41.4/42."
+        "Короткий синтетический STFT-блок → конечный выход той же формы; параметры MDX строго по recipe."
       ]
     },
     {
@@ -60,7 +60,7 @@
       "checks": [
         "Совпадают SHA модели и vocab; 39 непрерывных ID, blank=0, separator | =4, ё=6.",
         "input_values float32 [1,N], logits float32 [1,T,39]; attention_mask в этом графе отсутствует.",
-        "16 kHz mono, короткий сигнал → T>0 и конечные logits. Ручные секунды и Whisper не передаются. Реализация в 41.4/42."
+        "16 kHz mono, короткий сигнал → T>0 и конечные logits. Ручные секунды и Whisper не передаются."
       ]
     }
   ],
@@ -69,11 +69,9 @@
       "id": "audio-pcm",
       "purpose": "Чтение трека, длительности и PCM для вокала/CTC/липсинка",
       "consumers": [
-        "tools/common.py:decoded_audio_duration",
-        "tools/cut_speech/cut_speech.py:decode",
-        "tools/song_timing/mdx.py",
-        "tools/song_timing/vocal_result.py",
-        "src/main/sources.ts"
+        "internal/songtiming",
+        "internal/cutspeech",
+        "internal/sourceedit"
       ],
       "requires": [
         "ffmpeg"
@@ -119,9 +117,9 @@
       "id": "video-frames",
       "purpose": "Метаданные, реальные PTS, PNG-кадры и аудит пикселей",
       "consumers": [
-        "tools/contact_sheet/contact_sheet.py",
-        "tools/video_review/video_review.py",
-        "tools/verify_asset_replay/verify_asset_replay.py"
+        "internal/contactsheet",
+        "internal/videoreview",
+        "internal/verifyassetreplay"
       ],
       "requires": [
         "ffmpeg"
@@ -160,11 +158,11 @@
       "id": "montage-export",
       "purpose": "Принятие/монтаж/производные планы и экспорт H.264/AAC MP4",
       "consumers": [
-        "tools/build_review/build_review.py",
-        "tools/accept_shot/accept_shot.py",
-        "tools/apply_montage/apply_montage.py",
-        "tools/derive_shot/derive_shot.py",
-        "tools/asset_package/asset_package.py"
+        "internal/buildreview",
+        "internal/acceptshot",
+        "internal/applymontage",
+        "internal/deriveshot",
+        "internal/assetpackage"
       ],
       "requires": [
         "ffmpeg"
@@ -211,7 +209,7 @@
       "id": "animatic",
       "purpose": "Карточки и опоры, склейка, главы и полное декодирование MP4",
       "consumers": [
-        "tools/build_animatic/build_animatic.py"
+        "internal/buildanimatic"
       ],
       "requires": [
         "ffmpeg"
@@ -248,9 +246,9 @@
       "id": "development-smoke",
       "purpose": "Отдельные зависимости синтетической проверки, без расширения пользовательского экспорта",
       "consumers": [
-        "src/main/runtime-smoke.ts",
-        "src/main/linux-smoke.ts",
-        "scripts/check-media-capabilities.sh"
+        "internal/components/media.go",
+        "scripts/check-media-capabilities.sh",
+        "scripts/make-media-fixtures.sh"
       ],
       "requires": [
         "ffmpeg"
@@ -278,7 +276,7 @@
       "id": "known-text-ctc",
       "purpose": "Принятый путь известный текст → Voc FT → CTC margin/adaptive",
       "consumers": [
-        "Принятый эксперимент Go CTC; реализация домена в этапе 42"
+        "internal/songtiming"
       ],
       "requires": [
         "ffmpeg",

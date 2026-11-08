@@ -17,7 +17,7 @@ export async function sendConfirmedRequest(
 ): Promise<JobInfo | void> {
   if (!pkg.request?.sha256) throw new Error(productionTexts.decisions.requestHashMissing);
   if (!quoteToken) throw new Error(productionTexts.decisions.quoteRequired);
-  // Главный процесс атомарно связывает разрешение и отправку с этим снимком запроса.
+  // Go атомарно связывает разрешение и отправку с этим снимком запроса.
   if (unknownCostConsentToken) {
     // Согласие относится к показанной оценке; новая подготовка или обновление цены потребуют другого токена.
     if (unknownCostConsentToken !== quoteToken) throw new Error(productionTexts.decisions.consentMismatch);

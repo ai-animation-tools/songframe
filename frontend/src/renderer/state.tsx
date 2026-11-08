@@ -45,7 +45,7 @@ export interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-/** Управляемое значение для изолированных компонентов: без IPC, опроса заданий и работы с проектом. */
+/** Управляемое значение для изолированных компонентов: без вызовов Go, опроса заданий и работы с проектом. */
 export function AppValueProvider({ value, children }: { value: AppContextValue; children: ReactNode }): ReactElement {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
@@ -73,7 +73,7 @@ export function AppProvider({ children, onReady }: { children: ReactNode; onRead
   );
   const online = useOnline();
 
-  // Главный процесс отдаёт сведения об аварийном прошлом сеансе один раз за запуск.
+  // Go отдаёт сведения об аварийном прошлом сеансе один раз за запуск.
   useEffect(() => {
     window.api.diagnostics
       .crashNotice()
@@ -102,7 +102,7 @@ export function AppProvider({ children, onReady }: { children: ReactNode; onRead
     return () => window.removeEventListener('focus', onFocus);
   }, [refreshStatus]);
 
-  // Задания идут в главном процессе и переживают уход со страницы: об итоге сообщаем и там, где пользователь сейчас.
+  // Задания выполняются в Go и переживают уход со страницы: об итоге сообщаем и там, где пользователь сейчас.
   useEffect(() => {
     let known = new Map<string, string>();
     let first = true;

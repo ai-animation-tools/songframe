@@ -4,9 +4,9 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/resources"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
+	"songframe/resources"
 )
 
 // GuideHeading — заголовок раздела документа провайдера, который входит в промпт агента.
@@ -38,7 +38,7 @@ func Guide(kind string, provider any) (string, bool) {
 	if end := nextSection.FindStringIndex(body); end != nil {
 		body = body[:end[0]]
 	}
-	section := jscompat.Trim(body)
+	section := dynvalue.Trim(body)
 	if section == "" {
 		return "", false
 	}

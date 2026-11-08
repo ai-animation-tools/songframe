@@ -30,8 +30,8 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/status"
+	"songframe/internal/projectfs"
+	"songframe/internal/status"
 )
 
 // fixedViews — производные виды с постоянными путями.

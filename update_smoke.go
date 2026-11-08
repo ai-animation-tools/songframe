@@ -14,8 +14,8 @@ import (
 	"runtime"
 	"strings"
 
-	"songframe-go/internal/appversion"
-	"songframe-go/internal/updates"
+	"songframe/internal/appversion"
+	"songframe/internal/updates"
 )
 
 // updateSmokeRequest — проверка обновления готовой поставки без GitHub: подставной выпуск

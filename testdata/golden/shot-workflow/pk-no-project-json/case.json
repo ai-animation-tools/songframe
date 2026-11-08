@@ -1,5 +1,5 @@
 {
-  "description": "Нет plan/project.json: generation_settings(None).",
+  "description": "Нет plan/project.json: настройки генерации без проекта.",
   "call": "shot_workflow",
   "project": "project",
   "base": "checks-base",

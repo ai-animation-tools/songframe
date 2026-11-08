@@ -1,7 +1,7 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: verify_asset_replay.py [-h] --report REPORT [--preserved PRESERVED]\nverify_asset_replay.py: error: the following arguments are required: --report\n",
+  "stderr": "usage: verify_asset_replay [-h] --report REPORT [--preserved PRESERVED]\nverify_asset_replay: error: the following arguments are required: --report\n",
   "traceback": false,
   "files": {},
   "dirs": {},

@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers/kling"
-	"songframe-go/internal/tools"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers/kling"
+	"songframe/internal/tools"
 )
 
 // goldenCases — эталон testdata/golden/media-providers/cases.json.
@@ -95,38 +95,38 @@ func png(width, height int) []byte {
 // paidInput — PaidInput из JSON случая.
 func paidInput(t *testing.T, raw json.RawMessage, project string) PaidInput {
 	t.Helper()
-	value, err := jscompat.Parse(raw)
+	value, err := dynvalue.Parse(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	object := value.(*jscompat.Object)
+	object := value.(*dynvalue.Object)
 	text := func(key string) string { value, _ := object.Value(key).(string); return value }
-	objectOf := func(key string) *jscompat.Object { value, _ := object.Value(key).(*jscompat.Object); return value }
+	objectOf := func(key string) *dynvalue.Object { value, _ := object.Value(key).(*dynvalue.Object); return value }
 	input := PaidInput{
 		Project: project, WorkDir: text("workDir"), Shot: text("shot"), Kind: text("kind"), Command: text("command"), Model: text("model"),
 		Prompt: text("prompt"), Parameters: objectOf("parameters"), ProjectOptions: objectOf("projectOptions"),
-		RequiredParameters: objectOf("requiredParameters"), Outputs: int(jscompat.ToNumber(object.Value("outputs"))), FrameID: text("frameId"),
+		RequiredParameters: objectOf("requiredParameters"), Outputs: int(dynvalue.ToNumber(object.Value("outputs"))), FrameID: text("frameId"),
 	}
 	if object.Has("preferredModel") {
 		preferred, _ := object.Value("preferredModel").(string)
 		input.PreferredModel = &preferred
 	}
-	if selection, ok := object.Value("modelSelection").(*jscompat.Object); ok {
-		input.ModelSelection = &ModelSelection{SelectedModel: jscompat.ToString(selection.Value("selectedModel")), Reason: jscompat.ToString(selection.Value("reason"))}
+	if selection, ok := object.Value("modelSelection").(*dynvalue.Object); ok {
+		input.ModelSelection = &ModelSelection{SelectedModel: dynvalue.ToString(selection.Value("selectedModel")), Reason: dynvalue.ToString(selection.Value("reason"))}
 		if preferred, ok := selection.Value("preferredModel").(string); ok {
 			input.ModelSelection.PreferredModel = &preferred
 		}
 	}
-	if constraint, ok := object.Value("durationConstraint").(*jscompat.Object); ok {
-		input.DurationConstraint = &DurationConstraint{WindowSeconds: jscompat.ToNumber(constraint.Value("windowSeconds")), Rule: jscompat.ToString(constraint.Value("rule"))}
+	if constraint, ok := object.Value("durationConstraint").(*dynvalue.Object); ok {
+		input.DurationConstraint = &DurationConstraint{WindowSeconds: dynvalue.ToNumber(constraint.Value("windowSeconds")), Rule: dynvalue.ToString(constraint.Value("rule"))}
 		if constraint.Has("minSeconds") {
-			minimum := jscompat.ToNumber(constraint.Value("minSeconds"))
+			minimum := dynvalue.ToNumber(constraint.Value("minSeconds"))
 			input.DurationConstraint.MinSeconds = &minimum
 		}
 	}
-	items, _ := jscompat.AsArray(object.Value("inputs"))
+	items, _ := dynvalue.AsArray(object.Value("inputs"))
 	for _, item := range items {
-		get := func(key string) string { value, _ := jscompat.Get(item, key).(string); return value }
+		get := func(key string) string { value, _ := dynvalue.Get(item, key).(string); return value }
 		input.Inputs = append(input.Inputs, PaidInputItem{Flag: get("flag"), Slot: get("slot"), Path: get("path"), Role: get("role")})
 	}
 	return input
@@ -149,7 +149,7 @@ func TestSelectPaidRequestGolden(t *testing.T) {
 				if err := os.MkdirAll(filepath.Dir(file), 0o777); err != nil {
 					t.Fatal(err)
 				}
-				data := []byte(jscompat.ToString(spec["text"]))
+				data := []byte(dynvalue.ToString(spec["text"]))
 				if size, ok := spec["png"].([]any); ok {
 					data = png(int(size[0].(float64)), int(size[1].(float64)))
 				}
@@ -163,12 +163,12 @@ func TestSelectPaidRequestGolden(t *testing.T) {
 			}
 			var candidate CandidateParameters
 			if item.Candidate != nil {
-				candidate = func(model mediaapi.Model) *jscompat.Object {
-					value, err := jscompat.Parse(item.Candidate[model.ID])
+				candidate = func(model mediaapi.Model) *dynvalue.Object {
+					value, err := dynvalue.Parse(item.Candidate[model.ID])
 					if err != nil {
 						t.Fatal(err)
 					}
-					return value.(*jscompat.Object)
+					return value.(*dynvalue.Object)
 				}
 			}
 			result, err := SelectPaidRequest(paid, paidInput(t, item.Input, project), item.Caps, candidate)
@@ -195,9 +195,9 @@ func TestSelectPaidRequestGolden(t *testing.T) {
 			if err := json.Unmarshal(item.Result, &expected); err != nil {
 				t.Fatal(err)
 			}
-			wantParameters, _ := jscompat.Parse(expected.Parameters)
-			if result.Model != expected.Model || jscompat.Stringify(result.Parameters) != jscompat.Stringify(wantParameters) || result.Outputs != expected.Outputs {
-				t.Fatalf("модель %s параметры %s, ожидались %s %s", result.Model, jscompat.Stringify(result.Parameters), expected.Model, jscompat.Stringify(wantParameters))
+			wantParameters, _ := dynvalue.Parse(expected.Parameters)
+			if result.Model != expected.Model || dynvalue.Stringify(result.Parameters) != dynvalue.Stringify(wantParameters) || result.Outputs != expected.Outputs {
+				t.Fatalf("модель %s параметры %s, ожидались %s %s", result.Model, dynvalue.Stringify(result.Parameters), expected.Model, dynvalue.Stringify(wantParameters))
 			}
 			gotSelection, _ := json.Marshal(result.ModelSelection)
 			wantSelection, _ := json.Marshal(expected.ModelSelection)

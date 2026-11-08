@@ -6,11 +6,11 @@ import (
 	"slices"
 	"strings"
 
-	"songframe-go/internal/derivedshot"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/mediaproviders"
+	"songframe/internal/derivedshot"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
+	"songframe/internal/mediaproviders"
 )
 
 // framesPlan — проверенный запуск следующей опоры: контекст плана, описание опоры из плана
@@ -20,7 +20,7 @@ type framesPlan struct {
 	prompt  any
 	notes   []string
 	info    mediaproviders.Info
-	hashes  *jscompat.Object
+	hashes  *dynvalue.Object
 }
 
 // ensureFramesAvailable — общие проверки GenerateFrames и ImportFrames: план не
@@ -80,7 +80,7 @@ func (w *Workflow) planFrames(project, shot, packageDir string) (*framesPlan, er
 	target := c.NextFrame()
 	var prompt any
 	for _, item := range c.FramePrompts.Items {
-		if jscompat.Get(item, "id") == target {
+		if dynvalue.Get(item, "id") == target {
 			prompt = item
 			break
 		}
@@ -95,22 +95,22 @@ func (w *Workflow) planFrames(project, shot, packageDir string) (*framesPlan, er
 	if err != nil {
 		return nil, err
 	}
-	provider := jscompat.Get(jscompat.Get(generation, "image"), "provider")
+	provider := dynvalue.Get(dynvalue.Get(generation, "image"), "provider")
 	if !mediaproviders.Supports(provider, mediaproviders.Image) {
 		return nil, errors.New(textImageProviderRequired(providerTitles(mediaproviders.Image)))
 	}
 	info, _ := mediaproviders.Lookup(provider.(string))
-	return &framesPlan{context: c, prompt: prompt, notes: c.FrameNotes(jscompat.Get(prompt, "id")), info: info, hashes: hashes}, nil
+	return &framesPlan{context: c, prompt: prompt, notes: c.FrameNotes(dynvalue.Get(prompt, "id")), info: info, hashes: hashes}, nil
 }
 
 // framePrompt — ProductionFramePrompt из плана опор пакета для запроса провайдеру.
 func framePrompt(value any) mediaapi.FramePrompt {
 	frame := mediaapi.FramePrompt{ReferencePaths: []string{}}
-	frame.ID, _ = jscompat.Get(value, "id").(string)
-	frame.Role, _ = jscompat.Get(value, "role").(string)
-	frame.TimeSeconds, _ = jscompat.Get(value, "timeSeconds").(float64)
-	frame.Prompt, _ = jscompat.Get(value, "prompt").(string)
-	if paths, ok := jscompat.AsArray(jscompat.Get(value, "referencePaths")); ok {
+	frame.ID, _ = dynvalue.Get(value, "id").(string)
+	frame.Role, _ = dynvalue.Get(value, "role").(string)
+	frame.TimeSeconds, _ = dynvalue.Get(value, "timeSeconds").(float64)
+	frame.Prompt, _ = dynvalue.Get(value, "prompt").(string)
+	if paths, ok := dynvalue.AsArray(dynvalue.Get(value, "referencePaths")); ok {
 		for _, path := range paths {
 			text, _ := path.(string)
 			frame.ReferencePaths = append(frame.ReferencePaths, text)
@@ -160,15 +160,15 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 	// расстановка следующего кадра.
 	approved := []mediaapi.ApprovedFrame{}
 	for _, item := range keyframes(c.Workflow) {
-		if !jscompat.Truthy(jscompat.Get(item, "approved")) || !jscompat.Truthy(jscompat.Get(item, "path")) {
+		if !dynvalue.Truthy(dynvalue.Get(item, "approved")) || !dynvalue.Truthy(dynvalue.Get(item, "path")) {
 			continue
 		}
-		path, err := packageFile(c, jscompat.Get(item, "path"))
+		path, err := packageFile(c, dynvalue.Get(item, "path"))
 		if err != nil {
 			return View{}, err
 		}
-		id, _ := jscompat.Get(item, "id").(string)
-		role, _ := jscompat.Get(item, "role").(string)
+		id, _ := dynvalue.Get(item, "id").(string)
+		role, _ := dynvalue.Get(item, "role").(string)
 		approved = append(approved, mediaapi.ApprovedFrame{ID: id, Role: role, Path: path})
 	}
 	notes := slices.Clone(plan.notes)
@@ -179,8 +179,8 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 		return View{}, err
 	}
 	rules := c.RulesFor("frames")
-	rules.FramePrompts = &jscompat.Array{Items: []any{plan.prompt}}
-	stored := &Stored{Tree: jscompat.NewObject()}
+	rules.FramePrompts = &dynvalue.Array{Items: []any{plan.prompt}}
+	stored := &Stored{Tree: dynvalue.NewObject()}
 	stored.Tree.Set("proposal", proposalTree(randomUUID(), job.ID, "frames", keyframesBefore(c)))
 	stored.Tree.Set("packageDir", c.PackageDir)
 	stored.Tree.Set("target", c.PackageDir)
@@ -193,13 +193,13 @@ func (w *Workflow) GenerateFrames(ctx context.Context, project, shot, packageDir
 	return w.view(c.Project, shot, packageDir)
 }
 
-// keyframesBefore — before предложения опор: JSON.stringify(workflow.keyframes ?? []).
+// keyframesBefore — before предложения опор: сериализованный JSON поля keyframes пакета, «[]» без него.
 func keyframesBefore(c *Context) string {
 	value := c.workflowValue("keyframes")
-	if jscompat.IsNullish(value) {
+	if dynvalue.IsNullish(value) {
 		return "[]"
 	}
-	return jscompat.Stringify(value)
+	return dynvalue.Stringify(value)
 }
 
 // CheckImportImages — проверка входа импорта опор: каждый
@@ -231,14 +231,14 @@ func (w *Workflow) ImportFrames(project, shot, packageDir string, images []Frame
 	}
 	open := []any{}
 	for _, prompt := range c.FramePrompts.Items {
-		id := jscompat.Get(prompt, "id")
+		id := dynvalue.Get(prompt, "id")
 		if !slices.ContainsFunc(keyframes(c.Workflow), func(frame any) bool {
-			return jscompat.Get(frame, "id") == id && jscompat.Truthy(jscompat.Get(frame, "approved"))
+			return dynvalue.Get(frame, "id") == id && dynvalue.Truthy(dynvalue.Get(frame, "approved"))
 		}) {
 			open = append(open, prompt)
 		}
 	}
-	checked, err := CheckFrameCandidates(candidatesTree(images), &jscompat.Array{Items: open})
+	checked, err := CheckFrameCandidates(candidatesTree(images), &dynvalue.Array{Items: open})
 	if err != nil {
 		return View{}, err
 	}
@@ -246,7 +246,7 @@ func (w *Workflow) ImportFrames(project, shot, packageDir string, images []Frame
 	if err != nil {
 		return View{}, err
 	}
-	imageHashes := jscompat.NewObject()
+	imageHashes := dynvalue.NewObject()
 	for _, image := range checked {
 		hash, err := requiredFileDigest(image.Path)
 		if err != nil {
@@ -254,14 +254,14 @@ func (w *Workflow) ImportFrames(project, shot, packageDir string, images []Frame
 		}
 		imageHashes.Set(image.Path, hash)
 	}
-	after := jscompat.NewObject()
+	after := dynvalue.NewObject()
 	after.Set("schemaVersion", float64(1))
 	after.Set("stage", "frames")
 	after.Set("images", candidatesTree(checked))
 	proposal := proposalTree(randomUUID(), "", "frames", keyframesBefore(c))
 	proposal.Set("status", "ready")
 	proposal.Set("after", after)
-	stored := &Stored{Tree: jscompat.NewObject()}
+	stored := &Stored{Tree: dynvalue.NewObject()}
 	stored.Tree.Set("proposal", proposal)
 	stored.Tree.Set("packageDir", c.PackageDir)
 	stored.Tree.Set("target", c.PackageDir)

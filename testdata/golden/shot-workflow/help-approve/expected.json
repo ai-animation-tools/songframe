@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow.py approve [-h] --dir DIR keyframe path\n\npositional arguments:\n  keyframe\n  path\n\noptions:\n  -h, --help  show this help message and exit\n  --dir DIR\n",
+  "stdout": "usage: shot_workflow approve [-h] --dir DIR keyframe path\n\npositional arguments:\n  keyframe\n  path\n\noptions:\n  -h, --help  show this help message and exit\n  --dir DIR\n",
   "stderr": "",
   "traceback": false,
   "files": {},

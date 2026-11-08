@@ -34,7 +34,7 @@ describe('тексты настроек', () => {
     [21, '21 мин'],
     [-2, '-2 мин'],
     [1.5, '1.5 мин']
-  ] as const)('сохраняет прежний формат окна %s минут', (value, expected) => {
+  ] as const)('сохраняет формат окна %s минут', (value, expected) => {
     expect(settingsTexts.minutes(value)).toBe(expected);
   });
 

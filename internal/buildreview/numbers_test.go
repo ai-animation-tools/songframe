@@ -3,10 +3,10 @@ package buildreview
 import (
 	"testing"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
-// TestDecimalText — str(Decimal(text)) Python 3: значения сняты интерпретатором Python.
+// TestDecimalText — каноническая запись DecimalText на краевых значениях.
 // Строка скорости попадает в фильтр setpts и в рецепт; эталоны build-review таких записей не
 // различают, поэтому формат закреплён здесь.
 func TestDecimalText(t *testing.T) {
@@ -27,11 +27,11 @@ func TestDecimalText(t *testing.T) {
 	}
 }
 
-// TestFramesHalfUp — frames(): ROUND_HALF_UP от нуля, как to_integral_value Decimal.
+// TestFramesHalfUp — frames(): половина кадра округляется от нуля.
 func TestFramesHalfUp(t *testing.T) {
 	cases := map[string]int64{"0.5": 1, "1.5": 2, "2.5": 3, "-0.5": -1, "-1.5": -2, "1.49999": 1, "2.5000001": 3}
 	for input, want := range cases {
-		value, err := pycompat.NewDecimal(input)
+		value, err := toolrt.NewDecimal(input)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -40,7 +40,7 @@ func TestFramesHalfUp(t *testing.T) {
 			t.Errorf("frames(%s) = %v, %v; ожидалось %d", input, got, err, want)
 		}
 	}
-	nan, _ := pycompat.NewDecimal("NaN")
+	nan, _ := toolrt.NewDecimal("NaN")
 	if _, err := frames(nan); err == nil {
 		t.Error("frames(NaN) без ошибки")
 	}

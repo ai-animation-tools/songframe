@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/process"
-	"songframe-go/internal/providers/agentexec"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/process"
+	"songframe/internal/providers/agentexec"
 )
 
 // Тексты строк «Среды» и проверки команд.
@@ -26,7 +26,7 @@ const (
 )
 
 func textCommandTimedOut(timeout time.Duration) string {
-	return "Превышено время выполнения (" + jscompat.NumberToString(float64(timeout.Milliseconds())) + " мс)."
+	return "Превышено время выполнения (" + dynvalue.NumberToString(float64(timeout.Milliseconds())) + " мс)."
 }
 
 func textCommandNotFound(command string) string {
@@ -524,7 +524,7 @@ func (l *Layer) versionProbe() (bool, string, int) {
 		if output == "" {
 			output = stderr
 		}
-		return true, jscompat.Trim(output), elapsed
+		return true, dynvalue.Trim(output), elapsed
 	}
 	var start *process.StartError
 	switch {
@@ -533,7 +533,7 @@ func (l *Layer) versionProbe() (bool, string, int) {
 	case errors.As(err, &start) && (errors.Is(start.Err, exec.ErrNotFound) || errors.Is(start.Err, fs.ErrNotExist)):
 		return false, textCommandNotFound(command), elapsed
 	}
-	if message := jscompat.Trim(stderr); message != "" {
+	if message := dynvalue.Trim(stderr); message != "" {
 		return false, message, elapsed
 	}
 	// Текст ошибки без stderr: «Command failed: <команда>» и пустой stderr с новой строки

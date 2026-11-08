@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: verify_asset_replay.py [-h] --report REPORT [--preserved PRESERVED]\n\nПроверяет воспроизведение принятых комплектов; @link README.md\n\noptions:\n  -h, --help            show this help message and exit\n  --report REPORT\n  --preserved PRESERVED\n",
+  "stdout": "usage: verify_asset_replay [-h] --report REPORT [--preserved PRESERVED]\n\nПроверяет воспроизведение принятых комплектов; @link README.md\n\noptions:\n  -h, --help            show this help message and exit\n  --report REPORT\n  --preserved PRESERVED\n",
   "stderr": "",
   "traceback": false,
   "files": {},

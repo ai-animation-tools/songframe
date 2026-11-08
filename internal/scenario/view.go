@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/sources"
-	"songframe-go/internal/timing"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/sources"
+	"songframe/internal/timing"
 )
 
 // FPS — кадровая сетка реестра, кадров в секунду.
@@ -49,15 +49,15 @@ type View struct {
 // (`value || null`).
 func readDocument(project, relative string, problems *[]string) any {
 	path := filepath.Join(project, filepath.FromSlash(relative))
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return nil
 	}
-	value, ok := jscompat.ReadJSONFile(path)
+	value, ok := dynvalue.ReadJSONFile(path)
 	if !ok {
 		*problems = append(*problems, textDamagedDocument(relative))
 		return nil
 	}
-	if !jscompat.Truthy(value) {
+	if !dynvalue.Truthy(value) {
 		return nil
 	}
 	return value
@@ -68,7 +68,7 @@ func rawOrNull(value any) json.RawMessage {
 	if value == nil {
 		return json.RawMessage("null")
 	}
-	return jscompat.Raw(value)
+	return dynvalue.Raw(value)
 }
 
 // ViewProject — реестр, трактовка, кастинг и разметка для страницы «Сценарий» с проблемами
@@ -89,7 +89,7 @@ func ViewProject(project string) (View, error) {
 	manifest := sources.ReadManifest(project)
 	lyrics := []timing.LyricsLine{}
 	if text, err := os.ReadFile(filepath.Join(project, "source", "text.md")); err == nil {
-		lyrics = timing.ParseLyricsLines(jscompat.DecodeUTF8(text))
+		lyrics = timing.ParseLyricsLines(dynvalue.DecodeUTF8(text))
 	}
 	if scenes != nil {
 		found, err := ValidateScenes(scenes, castValue)
@@ -97,22 +97,22 @@ func ViewProject(project string) (View, error) {
 			return View{}, err
 		}
 		problems = append(problems, found...)
-		if jscompat.Truthy(castValue) {
+		if dynvalue.Truthy(castValue) {
 			references, err := cast.References(castValue)
 			if err != nil {
 				return View{}, err
 			}
-			if jscompat.Stringify(jscompat.Get(scenes, "references")) != jscompat.Stringify(references) {
+			if dynvalue.Stringify(dynvalue.Get(scenes, "references")) != dynvalue.Stringify(references) {
 				problems = append(problems, textReferencesRefresh)
 				stale = true
 			}
 		}
 	}
-	duration := jscompat.Coalesce(jscompat.Get(timingDocument, "duration_decoded"),
-		jscompat.Coalesce(jscompat.GetPath(manifest, "track", "duration_seconds"),
-			jscompat.Coalesce(jscompat.Get(timingDocument, "duration_container"), nil)))
+	duration := dynvalue.Coalesce(dynvalue.Get(timingDocument, "duration_decoded"),
+		dynvalue.Coalesce(dynvalue.GetPath(manifest, "track", "duration_seconds"),
+			dynvalue.Coalesce(dynvalue.Get(timingDocument, "duration_container"), nil)))
 	var trackPath *string
-	if track := filepath.Join(project, "source", "track.mp3"); jscompat.Exists(track) {
+	if track := filepath.Join(project, "source", "track.mp3"); dynvalue.Exists(track) {
 		trackPath = &track
 	}
 	return View{
@@ -129,38 +129,38 @@ func ViewProject(project string) (View, error) {
 	}, nil
 }
 
-// ValidateScenes — структурная проверка реестра как в scene_registry.validate с сообщениями для
+// ValidateScenes — структурная проверка реестра, как sceneregistry.Validate, с сообщениями для
 // редактора. castValue — кастинг проекта (его начальное состояние входит в проверку
 // наследования) или nil. Ошибка — реестр другой формы (части не массив,
 // камера не строка и т. п.); исключение вычисления состояния, напротив, становится проблемой.
 func ValidateScenes(data, castValue any) ([]string, error) {
-	scenes, isArray := jscompat.AsArray(jscompat.Get(data, "scenes"))
-	if !jscompat.StrictEqual(jscompat.Get(data, "schema_version"), 1.0) || !jscompat.StrictEqual(jscompat.Get(data, "fps"), float64(FPS)) ||
+	scenes, isArray := dynvalue.AsArray(dynvalue.Get(data, "scenes"))
+	if !dynvalue.StrictEqual(dynvalue.Get(data, "schema_version"), 1.0) || !dynvalue.StrictEqual(dynvalue.Get(data, "fps"), float64(FPS)) ||
 		!isArray || len(scenes) == 0 {
 		return []string{textRegistryRequiresScenes}, nil
 	}
-	sequences, ok := jscompat.AsArray(jscompat.Get(data, "sequences"))
+	sequences, ok := dynvalue.AsArray(dynvalue.Get(data, "sequences"))
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "data.sequences.map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "data.sequences.map is not a function"}
 	}
 	groups := &valueSet{}
 	for _, sequence := range sequences {
-		id, err := jscompat.Prop(sequence, "id")
+		id, err := dynvalue.Prop(sequence, "id")
 		if err != nil {
 			return nil, err
 		}
 		groups.add(id)
 	}
-	references := jscompat.Get(data, "references")
+	references := dynvalue.Get(data, "references")
 	problems := []string{}
 	seen := &valueSet{}
 	end := 0.0
 	for _, scene := range scenes {
-		rawID, err := jscompat.Prop(scene, "id")
+		rawID, err := dynvalue.Prop(scene, "id")
 		if err != nil {
 			return nil, err
 		}
-		sid := jscompat.ToString(rawID)
+		sid := dynvalue.ToString(rawID)
 		if !sceneID.MatchString(sid) {
 			problems = append(problems, textShotCodeInvalid(sid))
 		}
@@ -168,30 +168,30 @@ func ValidateScenes(data, castValue any) ([]string, error) {
 			problems = append(problems, textDuplicateShotCode(sid))
 		}
 		seen.add(rawID)
-		start := jscompat.Get(scene, "start_frame")
-		finish := jscompat.Get(scene, "end_frame_exclusive")
-		if !jscompat.IsInteger(start) || !jscompat.IsInteger(finish) {
+		start := dynvalue.Get(scene, "start_frame")
+		finish := dynvalue.Get(scene, "end_frame_exclusive")
+		if !dynvalue.IsInteger(start) || !dynvalue.IsInteger(finish) {
 			problems = append(problems, textShotFramesInteger(sid))
 		} else {
 			if start.(float64) != end {
-				problems = append(problems, textShotStartMismatch(sid, jscompat.NumberToString(start.(float64)), jscompat.NumberToString(end)))
+				problems = append(problems, textShotStartMismatch(sid, dynvalue.NumberToString(start.(float64)), dynvalue.NumberToString(end)))
 			}
 			if finish.(float64) <= start.(float64) {
 				problems = append(problems, textShotEndsBeforeStart(sid))
 			}
 			end = finish.(float64)
 		}
-		part := jscompat.Get(scene, "sequence")
+		part := dynvalue.Get(scene, "sequence")
 		if !groups.has(part) {
-			problems = append(problems, textShotUnknownPart(sid, jscompat.ToString(part)))
+			problems = append(problems, textShotUnknownPart(sid, dynvalue.ToString(part)))
 		}
 		for _, field := range []struct {
 			key     string
 			problem func(string) string
 		}{{"camera", textShotCameraMissing}, {"action", textShotActionMissing}} {
-			// `!scene.camera?.trim()`: null/undefined — пустое поле, иное нестроковое значение — TypeError.
-			value := jscompat.Get(scene, field.key)
-			if jscompat.IsNullish(value) {
+			// Отсутствие или null — пустое поле; иное нестроковое значение — TypeError обрезки.
+			value := dynvalue.Get(scene, field.key)
+			if dynvalue.IsNullish(value) {
 				problems = append(problems, field.problem(sid))
 				continue
 			}
@@ -203,12 +203,12 @@ func ValidateScenes(data, castValue any) ([]string, error) {
 				problems = append(problems, field.problem(sid))
 			}
 		}
-		list, err := jscompat.Iterate(jscompat.Get(scene, "references"))
+		list, err := dynvalue.Iterate(dynvalue.Get(scene, "references"))
 		if err != nil {
 			return nil, err
 		}
 		for _, ref := range list {
-			if jscompat.StrictEqual(ref, "—") {
+			if dynvalue.StrictEqual(ref, "—") {
 				continue
 			}
 			known, err := referenceKnown(references, ref)
@@ -216,10 +216,10 @@ func ValidateScenes(data, castValue any) ([]string, error) {
 				return nil, err
 			}
 			if !known {
-				problems = append(problems, textShotUnknownReference(sid, jscompat.ToString(ref)))
+				problems = append(problems, textShotUnknownReference(sid, dynvalue.ToString(ref)))
 			}
 		}
-		known, err := referenceKnown(references, jscompat.GetPath(scene, "card", "primary_reference"))
+		known, err := referenceKnown(references, dynvalue.GetPath(scene, "card", "primary_reference"))
 		if err != nil {
 			return nil, err
 		}
@@ -232,10 +232,10 @@ func ValidateScenes(data, castValue any) ([]string, error) {
 		return nil, err
 	}
 	problems = append(problems, derived...)
-	audio := jscompat.Get(data, "audio")
-	endSeconds := jscompat.ToNumber(jscompat.Get(audio, "end_seconds"))
+	audio := dynvalue.Get(data, "audio")
+	endSeconds := dynvalue.ToNumber(dynvalue.Get(audio, "end_seconds"))
 	if math.IsNaN(endSeconds) || math.IsInf(endSeconds, 0) || math.Abs(end/FPS-endSeconds) >= 1.0/FPS {
-		problems = append(problems, textRegistryDurationMismatch(jscompat.ToFixed(end/FPS, 3), jscompat.ToString(jscompat.Get(audio, "end_seconds"))))
+		problems = append(problems, textRegistryDurationMismatch(dynvalue.ToFixed(end/FPS, 3), dynvalue.ToString(dynvalue.Get(audio, "end_seconds"))))
 	}
 	if initial, err := cast.InitialStates(castValue); err != nil {
 		problems = append(problems, err.Error())
@@ -245,32 +245,32 @@ func ValidateScenes(data, castValue any) ([]string, error) {
 	return problems, nil
 }
 
-// referenceKnown — `!!data.references[ref]`: обращение к свойству null/undefined — TypeError.
+// referenceKnown — истинна ли запись references[ref]; references, равное null или отсутствующее, — TypeError.
 func referenceKnown(references, key any) (bool, error) {
-	if jscompat.IsNullish(references) {
-		_, err := jscompat.Prop(references, jscompat.ToString(key))
+	if dynvalue.IsNullish(references) {
+		_, err := dynvalue.Prop(references, dynvalue.ToString(key))
 		return false, err
 	}
-	return jscompat.Truthy(jscompat.GetKey(references, key)), nil
+	return dynvalue.Truthy(dynvalue.GetKey(references, key)), nil
 }
 
-// trimmedText — `value.trim()` с TypeError для нестроки.
+// trimmedText — строка без крайних пробелов; не-строка — TypeError.
 func trimmedText(value any, name string) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", &jscompat.TypeError{Message: name + ".trim is not a function"}
+		return "", &dynvalue.TypeError{Message: name + ".trim is not a function"}
 	}
-	return jscompat.Trim(text), nil
+	return dynvalue.Trim(text), nil
 }
 
-// DerivedFromProblems — проверка derived_from (derived_from_problems инструментов): производный план
+// DerivedFromProblems — проверка derived_from (то же правило, что sceneregistry.DerivedFromProblems): производный план
 // ссылается объектом {"shot": "Mxx"} на существующий план с собственной генерацией. Отсутствующее
 // поле означает обычный план.
 func DerivedFromProblems(scenes []any) ([]string, error) {
-	// `new Map(scenes.map((s) => [s.id, s]))`: при повторе кода побеждает последний план.
+	// Поиск плана по коду: при повторе кода побеждает последний план.
 	find := func(id any) (any, bool) {
 		for index := len(scenes) - 1; index >= 0; index-- {
-			if jscompat.StrictEqual(jscompat.Get(scenes[index], "id"), id) {
+			if dynvalue.StrictEqual(dynvalue.Get(scenes[index], "id"), id) {
 				return scenes[index], true
 			}
 		}
@@ -278,13 +278,13 @@ func DerivedFromProblems(scenes []any) ([]string, error) {
 	}
 	problems := []string{}
 	for _, scene := range scenes {
-		value := jscompat.Get(scene, "derived_from")
-		if value == jscompat.Undefined {
+		value := dynvalue.Get(scene, "derived_from")
+		if value == dynvalue.Undefined {
 			continue
 		}
-		sid := jscompat.ToString(jscompat.Get(scene, "id"))
+		sid := dynvalue.ToString(dynvalue.Get(scene, "id"))
 		var source any
-		if object, ok := jscompat.AsObject(value); ok {
+		if object, ok := dynvalue.AsObject(value); ok {
 			keys := object.Keys()
 			if len(keys) == 1 && keys[0] == "shot" {
 				source = object.Value("shot")
@@ -294,13 +294,13 @@ func DerivedFromProblems(scenes []any) ([]string, error) {
 		switch {
 		case !isString || !sceneID.MatchString(text):
 			problems = append(problems, textDerivedInvalidShape(sid))
-		case jscompat.StrictEqual(source, jscompat.Get(scene, "id")):
+		case dynvalue.StrictEqual(source, dynvalue.Get(scene, "id")):
 			problems = append(problems, textDerivedSelfReference(sid))
 		default:
 			origin, found := find(source)
 			if !found {
 				problems = append(problems, textDerivedUnknownSource(sid, text))
-			} else if jscompat.Get(origin, "derived_from") != jscompat.Undefined {
+			} else if dynvalue.Get(origin, "derived_from") != dynvalue.Undefined {
 				problems = append(problems, textDerivedChainedSource(sid, text))
 			}
 		}
@@ -308,12 +308,12 @@ func DerivedFromProblems(scenes []any) ([]string, error) {
 	return problems, nil
 }
 
-// valueSet — Set JS для значений из JSON (SameValueZero; NaN в JSON не встречается).
+// valueSet — множество значений из JSON (сравнение SameValueZero; NaN в JSON не встречается).
 type valueSet struct{ items []any }
 
 func (s *valueSet) has(value any) bool {
 	for _, item := range s.items {
-		if jscompat.StrictEqual(item, value) {
+		if dynvalue.StrictEqual(item, value) {
 			return true
 		}
 	}

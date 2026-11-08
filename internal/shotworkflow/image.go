@@ -18,8 +18,8 @@ import (
 	"golang.org/x/image/tiff"
 	"golang.org/x/image/webp"
 
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/toolrt"
 )
 
 // Image-ветка: платная опора готовится зафиксированной попыткой media_request (request.json,
@@ -33,33 +33,33 @@ func is(value any, text string) bool {
 	return ok && s == text
 }
 
-// asDict — значение-словарь; иначе AttributeError метода Python (get/update).
-func asDict(value any, method string) (*pycompat.Dict, error) {
-	dict, ok := value.(*pycompat.Dict)
+// asDict — значение-словарь; иначе AttributeError с именем вызванного метода (get/update).
+func asDict(value any, method string) (*toolrt.Dict, error) {
+	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute '%s'", pycompat.TypeName(value), method)
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute '%s'", toolrt.TypeName(value), method)
 	}
 	return dict, nil
 }
 
-// encoded — канонические байты JSON попытки, как requestsnapshot.Encoded (sort_keys, indent=2,
-// allow_nan=False, перевод строки в конце), по которым считается request_sha256.
+// encoded — канонические байты JSON попытки, как requestsnapshot.Encoded (ключи по возрастанию,
+// отступ два пробела, без NaN, перевод строки в конце), по которым считается request_sha256.
 func encoded(value any) ([]byte, error) {
-	text, err := pycompat.DumpsJSON(value, pycompat.DumpOptions{Indent: 2, Pretty: true, SortKeys: true, RejectNaN: true})
+	text, err := toolrt.DumpsJSON(value, toolrt.DumpOptions{Indent: 2, Pretty: true, SortKeys: true, RejectNaN: true})
 	if err != nil {
 		return nil, err
 	}
-	return pycompat.EncodeUTF8(text + "\n")
+	return toolrt.EncodeUTF8(text + "\n")
 }
 
-// inside — обычный файл внутри папки попытки после resolve().
+// inside — обычный файл внутри папки попытки после разыменования ссылок.
 func inside(directory string, name any) (string, error) {
 	joined, err := pathPart(directory, name)
 	if err != nil {
 		return "", err
 	}
-	path := pycompat.ResolvePath(joined)
-	if !pycompat.IsRelativeTo(path, pycompat.ResolvePath(directory)) || !pycompat.IsFile(path) {
+	path := toolrt.ResolvePath(joined)
+	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(directory)) || !toolrt.IsFile(path) {
 		return "", valueError("Нет локального файла подготовленной попытки.")
 	}
 	return path, nil
@@ -69,12 +69,12 @@ func inside(directory string, name any) (string, error) {
 // SHA канонических байтов запроса и неизменные промпт и входы. Узкая локальная копия чтения
 // попытки: запись и отправка принадлежат media_request. Файлы читаются как UTF-8 на любой ОС:
 // с кодировкой локали на Windows SHA запроса с кириллицей не совпал бы.
-func loadAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
+func loadAttempt(directory string) (*toolrt.Dict, *toolrt.Dict, error) {
 	path, err := inside(directory, "request.json")
 	if err != nil {
 		return nil, nil, err
 	}
-	value, err := pycompat.LoadJSONFile(path)
+	value, err := toolrt.LoadJSONFile(path)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,7 +88,7 @@ func loadAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
 	if path, err = inside(directory, "attempt.json"); err != nil {
 		return nil, nil, err
 	}
-	stateValue, err := pycompat.LoadJSONFile(path)
+	stateValue, err := toolrt.LoadJSONFile(path)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -112,9 +112,9 @@ func loadAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	rest, err := pycompat.Iter(inputs)
+	rest, err := toolrt.Iter(inputs)
 	if err != nil {
-		return nil, nil, pycompat.Raise(pycompat.TypeError, "Value after * must be an iterable, not %s", pycompat.TypeName(inputs))
+		return nil, nil, toolrt.Raise(toolrt.TypeError, "Value after * must be an iterable, not %s", toolrt.TypeName(inputs))
 	}
 	for _, entry := range append([]any{prompt}, rest...) {
 		name, err := item(entry, "path")
@@ -146,26 +146,26 @@ func loadAttempt(directory string) (*pycompat.Dict, *pycompat.Dict, error) {
 
 var sha256Text = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
-// imageHistory — data.get("image_requests", []): список словарей, иначе ValueError.
-func imageHistory(data *pycompat.Dict) ([]any, error) {
+// imageHistory — image_requests попытки (по умолчанию пустой список): список словарей, иначе ValueError.
+func imageHistory(data *toolrt.Dict) ([]any, error) {
 	value, _ := get(data, "image_requests", []any{})
 	history, ok := value.([]any)
 	if !ok {
 		return nil, valueError("Повреждена история запросов изображений.")
 	}
 	for _, entry := range history {
-		if _, isDict := entry.(*pycompat.Dict); !isDict {
+		if _, isDict := entry.(*toolrt.Dict); !isDict {
 			return nil, valueError("Повреждена история запросов изображений.")
 		}
 	}
 	return history, nil
 }
 
-// historyEntry — next((item for item in history if item.get("request_dir") == name), None).
-func historyEntry(history []any, name any) *pycompat.Dict {
+// historyEntry — первая запись истории с request_dir, равным name; нет — nil.
+func historyEntry(history []any, name any) *toolrt.Dict {
 	for _, entry := range history {
-		dict := entry.(*pycompat.Dict)
-		if pycompat.Equal(dict.Value("request_dir"), name) {
+		dict := entry.(*toolrt.Dict)
+		if toolrt.Equal(dict.Value("request_dir"), name) {
 			return dict
 		}
 	}
@@ -175,7 +175,7 @@ func historyEntry(history []any, name any) *pycompat.Dict {
 // imageAttempt — зафиксированная попытка kind=image
 // этого плана внутри пакета. Без requestDir — активная попытка, которая обязана совпасть с
 // записью истории (SHA запроса, опора, провайдер).
-func imageAttempt(directory string, data *pycompat.Dict, requestDir *string) (string, *pycompat.Dict, *pycompat.Dict, error) {
+func imageAttempt(directory string, data *toolrt.Dict, requestDir *string) (string, *toolrt.Dict, *toolrt.Dict, error) {
 	var name any
 	if requestDir != nil {
 		name = *requestDir
@@ -186,8 +186,8 @@ func imageAttempt(directory string, data *pycompat.Dict, requestDir *string) (st
 	if !ok || text == "" || filepath.IsAbs(text) || strings.HasPrefix(text, "/") {
 		return "", nil, nil, valueError("Для изображения нужен относительный путь подготовленного запроса.")
 	}
-	path := pycompat.ResolvePath(pycompat.JoinPath(directory, text))
-	if path == directory || !pycompat.IsRelativeTo(path, directory) {
+	path := toolrt.ResolvePath(toolrt.JoinPath(directory, text))
+	if path == directory || !toolrt.IsRelativeTo(path, directory) {
 		return "", nil, nil, valueError("Запрос изображения должен лежать внутри рабочего пакета.")
 	}
 	request, attempt, err := loadAttempt(path)
@@ -197,14 +197,14 @@ func imageAttempt(directory string, data *pycompat.Dict, requestDir *string) (st
 	if !is(request.Value("kind"), "image") {
 		return "", nil, nil, valueError("Нужен подготовленный запрос kind=image.")
 	}
-	if shot := request.Value("shot"); shot != nil && !pycompat.Equal(shot, data.Value("shot")) {
+	if shot := request.Value("shot"); shot != nil && !toolrt.Equal(shot, data.Value("shot")) {
 		return "", nil, nil, valueError("Запрос изображения относится к другому плану.")
 	}
 	expected := attempt.Value("request_sha256")
 	if !attempt.Has("request_sha256") {
 		expected = ""
 	}
-	if !sha256Text.MatchString(pycompat.Str(expected)) {
+	if !sha256Text.MatchString(toolrt.Str(expected)) {
 		return "", nil, nil, valueError("Нет SHA подготовленного запроса изображения.")
 	}
 	history, err := imageHistory(data)
@@ -217,8 +217,8 @@ func imageAttempt(directory string, data *pycompat.Dict, requestDir *string) (st
 		if err != nil {
 			return "", nil, nil, err
 		}
-		if entry == nil || entry.Len() == 0 || !pycompat.Equal(entry.Value("request_sha256"), expected) ||
-			!pycompat.Equal(entry.Value("frame_id"), data.Value("image_frame_id")) || !pycompat.Equal(entry.Value("provider"), provider) {
+		if entry == nil || entry.Len() == 0 || !toolrt.Equal(entry.Value("request_sha256"), expected) ||
+			!toolrt.Equal(entry.Value("frame_id"), data.Value("image_frame_id")) || !toolrt.Equal(entry.Value("provider"), provider) {
 			return "", nil, nil, valueError("Активный запрос не совпадает с историей изображений.")
 		}
 	}
@@ -227,21 +227,21 @@ func imageAttempt(directory string, data *pycompat.Dict, requestDir *string) (st
 
 // imageDownloads — только зарегистрированные оригиналы
 // попытки с тем же размером; посторонний файл кандидатом не становится.
-func imageDownloads(directory string, attempt *pycompat.Dict) ([]string, error) {
+func imageDownloads(directory string, attempt *toolrt.Dict) ([]string, error) {
 	downloads, ok := attempt.Value("downloads").([]any)
 	if !ok || len(downloads) == 0 {
 		return nil, valueError("У изображения нет сохранённых результатов.")
 	}
 	paths := []string{}
 	for _, entry := range downloads {
-		dict, isDict := entry.(*pycompat.Dict)
+		dict, isDict := entry.(*toolrt.Dict)
 		name, isString := dict.Value("path").(string)
 		if !isDict || !isString || filepath.IsAbs(name) || strings.HasPrefix(name, "/") {
 			return nil, valueError("Повреждён список результатов изображения.")
 		}
-		path := pycompat.ResolvePath(pycompat.JoinPath(directory, name))
+		path := toolrt.ResolvePath(toolrt.JoinPath(directory, name))
 		info, err := os.Stat(path)
-		if !pycompat.IsRelativeTo(path, directory) || err != nil || !info.Mode().IsRegular() || !pycompat.Equal(pycompat.NewInt(info.Size()), dict.Value("bytes")) {
+		if !toolrt.IsRelativeTo(path, directory) || err != nil || !info.Mode().IsRegular() || !toolrt.Equal(toolrt.NewInt(info.Size()), dict.Value("bytes")) {
 			return nil, valueError("Сохранённый оригинал отсутствует или изменён.")
 		}
 		paths = append(paths, path)
@@ -249,7 +249,7 @@ func imageDownloads(directory string, attempt *pycompat.Dict) ([]string, error) 
 	return paths, nil
 }
 
-// frameCode — re.fullmatch(r"K\d{2}", value): \d Python — любые десятичные цифры Unicode.
+// frameCode — код опоры «K» и ровно две десятичные цифры (любые цифры Unicode).
 func frameCode(value string) bool {
 	runes := []rune(value)
 	return len(runes) == 3 && runes[0] == 'K' && unicode.Is(unicode.Nd, runes[1]) && unicode.Is(unicode.Nd, runes[2])
@@ -258,7 +258,7 @@ func frameCode(value string) bool {
 // setImageRequest назначает prepared-попытку kind=image
 // непринятой опоре, дополняет историю и выставляет вопрос send/park/revise. Неизвестная или
 // невыбранная прежняя отправка блокирует переключение: продолжение — resume той же попытки.
-func (t *workflowTool) setImageRequest(dirArg, frameID, requestDir string) (*pycompat.Dict, error) {
+func (t *workflowTool) setImageRequest(dirArg, frameID, requestDir string) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
 		return nil, err
@@ -282,16 +282,16 @@ func (t *workflowTool) setImageRequest(dirArg, frameID, requestDir string) (*pyc
 	if err != nil {
 		return nil, err
 	}
-	if !frameCode(frameID) || frame == nil || pycompat.Truthy(frame.Value("approved")) {
+	if !frameCode(frameID) || frame == nil || toolrt.Truthy(frame.Value("approved")) {
 		return nil, valueError("Нужна существующая непринятая опора Kxx.")
 	}
-	if approved, err := pycompat.Contains(frames, frameID); err != nil || approved {
+	if approved, err := toolrt.Contains(frames, frameID); err != nil || approved {
 		if err != nil {
 			return nil, err
 		}
 		return nil, valueError("Нужна существующая непринятая опора Kxx.")
 	}
-	if pending := data.Value("pending_decision"); pycompat.Truthy(pending) {
+	if pending := data.Value("pending_decision"); toolrt.Truthy(pending) {
 		stage, err := get(pending, "stage", nil)
 		if err != nil {
 			return nil, err
@@ -301,12 +301,12 @@ func (t *workflowTool) setImageRequest(dirArg, frameID, requestDir string) (*pyc
 		}
 	}
 	// Не теряем оплаченную или неизвестную отправку при выборе следующей опоры.
-	if active := data.Value("image_request_dir"); pycompat.Truthy(active) {
+	if active := data.Value("image_request_dir"); toolrt.Truthy(active) {
 		previousDir, _, previous, err := imageAttempt(directory, data, nil)
 		if err != nil {
 			return nil, err
 		}
-		if !is(previous.Value("status"), "prepared") || pycompat.Truthy(previous.Value("generation_id")) {
+		if !is(previous.Value("status"), "prepared") || toolrt.Truthy(previous.Value("generation_id")) {
 			if !is(previous.Value("status"), "downloaded") {
 				return nil, valueError("Предыдущая отправка не выбрана; продолжите её без повторного submit.")
 			}
@@ -340,8 +340,8 @@ func (t *workflowTool) setImageRequest(dirArg, frameID, requestDir string) (*pyc
 	if err != nil {
 		return nil, err
 	}
-	name, _ := pycompat.RelativeTo(path, directory)
-	if !is(attempt.Value("status"), "prepared") || pycompat.Truthy(attempt.Value("generation_id")) || pycompat.Truthy(attempt.Value("downloads")) {
+	name, _ := toolrt.RelativeTo(path, directory)
+	if !is(attempt.Value("status"), "prepared") || toolrt.Truthy(attempt.Value("generation_id")) || toolrt.Truthy(attempt.Value("downloads")) {
 		return nil, valueError("Запрос уже отправлялся: используйте resume, не новую отправку.")
 	}
 	history, err := imageHistory(data)
@@ -356,7 +356,7 @@ func (t *workflowTool) setImageRequest(dirArg, frameID, requestDir string) (*pyc
 	previousEntry := historyEntry(history, name)
 	if previousEntry != nil && previousEntry.Len() > 0 {
 		for _, key := range entry.Keys() {
-			if !pycompat.Equal(previousEntry.Value(key), entry.Value(key)) {
+			if !toolrt.Equal(previousEntry.Value(key), entry.Value(key)) {
 				return nil, valueError("Историю запроса изображения нельзя переписать.")
 			}
 		}
@@ -375,11 +375,10 @@ func (t *workflowTool) setImageRequest(dirArg, frameID, requestDir string) (*pyc
 	return t.ask(dirArg, "image_request_choice", nil, nil, nil)
 }
 
-// imageFormat — формат, который определил бы Image.open Pillow, после полного декодирования
-// (image.load()). Ошибка — файл не изображение известного формата или повреждён. Кроме PNG, JPEG
-// и WebP распознаются GIF, BMP и TIFF, чтобы на них, как у Pillow, срабатывала проверка
-// расширения; остальные форматы Pillow здесь считаются нераспознанными (текст отказа другой,
-// файлы не меняются в обоих случаях).
+// imageFormat — формат изображения по сигнатуре после полного декодирования. Ошибка — файл не
+// изображение известного формата или повреждён. Кроме PNG, JPEG и WebP распознаются GIF, BMP и
+// TIFF, чтобы на них срабатывала проверка расширения; остальные форматы считаются
+// нераспознанными (текст отказа другой, файлы не меняются в обоих случаях).
 func imageFormat(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -416,7 +415,7 @@ func imageFormat(path string) (string, error) {
 // selectImage — выбранный пользователем оригинал активной downloaded-попытки
 // копируется без перекодировки в keyframes/Kxx.ext непринятым кандидатом; запись истории получает
 // selected_sha256 и selected_at. Оригиналы и принятые опоры не перезаписываются.
-func (t *workflowTool) selectImage(dirArg, file string) (*pycompat.Dict, error) {
+func (t *workflowTool) selectImage(dirArg, file string) (*toolrt.Dict, error) {
 	directory, err := t.packageDir(dirArg, true)
 	if err != nil {
 		return nil, err
@@ -435,9 +434,9 @@ func (t *workflowTool) selectImage(dirArg, file string) (*pycompat.Dict, error) 
 	if !is(attempt.Value("status"), "downloaded") {
 		return nil, valueError("Попытка изображения ещё не downloaded.")
 	}
-	source := pycompat.ResolvePath(file)
+	source := toolrt.ResolvePath(file)
 	if !filepath.IsAbs(file) {
-		source = pycompat.ResolvePath(pycompat.JoinPath(directory, file))
+		source = toolrt.ResolvePath(toolrt.JoinPath(directory, file))
 	}
 	downloads, err := imageDownloads(requestDir, attempt)
 	if err != nil {
@@ -450,7 +449,7 @@ func (t *workflowTool) selectImage(dirArg, file string) (*pycompat.Dict, error) 
 	if err != nil {
 		return nil, valueError("Нужен настоящий PNG, JPEG или WebP; для проверки требуется Pillow.")
 	}
-	suffix := strings.ToLower(pycompat.PathSuffix(source))
+	suffix := strings.ToLower(toolrt.PathSuffix(source))
 	allowed := map[string][]string{"PNG": {".png"}, "JPEG": {".jpg", ".jpeg"}, "WEBP": {".webp"}}
 	if !contains(allowed[format], suffix) {
 		return nil, valueError("Расширение оригинала не соответствует формату PNG, JPEG или WebP.")
@@ -463,47 +462,47 @@ func (t *workflowTool) selectImage(dirArg, file string) (*pycompat.Dict, error) 
 	if err != nil {
 		return nil, err
 	}
-	if frame == nil || pycompat.Truthy(frame.Value("approved")) || frames.Has(pycompat.Str(frame.Value("id"))) {
+	if frame == nil || toolrt.Truthy(frame.Value("approved")) || frames.Has(toolrt.Str(frame.Value("id"))) {
 		return nil, valueError("Принятую или отсутствующую опору нельзя заменять.")
 	}
-	folder := pycompat.JoinPath(directory, "keyframes")
-	target := pycompat.JoinPath(folder, pycompat.Str(frame.Value("id"))+suffix)
+	folder := toolrt.JoinPath(directory, "keyframes")
+	target := toolrt.JoinPath(folder, toolrt.Str(frame.Value("id"))+suffix)
 	if err := mkdir(folder); err != nil {
 		return nil, err
 	}
-	destination := pycompat.ResolvePath(target)
+	destination := toolrt.ResolvePath(target)
 	history, _ := imageHistory(data)
 	requestDirs := []string{}
 	for _, entry := range history {
-		path, err := pathPart(directory, entry.(*pycompat.Dict).Value("request_dir"))
+		path, err := pathPart(directory, entry.(*toolrt.Dict).Value("request_dir"))
 		if err != nil {
 			return nil, err
 		}
 		requestDirs = append(requestDirs, path)
 	}
-	if video := data.Value("request_dir"); pycompat.Truthy(video) {
+	if video := data.Value("request_dir"); toolrt.Truthy(video) {
 		path, err := pathPart(directory, video)
 		if err != nil {
 			return nil, err
 		}
 		requestDirs = append(requestDirs, path)
 	}
-	protected := !pycompat.IsRelativeTo(destination, directory)
+	protected := !toolrt.IsRelativeTo(destination, directory)
 	for _, path := range requestDirs {
-		protected = protected || pycompat.IsRelativeTo(destination, pycompat.ResolvePath(path))
+		protected = protected || toolrt.IsRelativeTo(destination, toolrt.ResolvePath(path))
 	}
 	if protected {
 		return nil, valueError("Копия кандидата не должна заменять оригиналы запросов.")
 	}
 	items, _ := keyframes(data)
 	for _, entry := range items {
-		keyframe := entry.(*pycompat.Dict)
-		if pycompat.Truthy(keyframe.Value("approved")) && pycompat.Truthy(keyframe.Value("path")) {
+		keyframe := entry.(*toolrt.Dict)
+		if toolrt.Truthy(keyframe.Value("approved")) && toolrt.Truthy(keyframe.Value("path")) {
 			path, err := pathPart(directory, keyframe.Value("path"))
 			if err != nil {
 				return nil, err
 			}
-			if pycompat.ResolvePath(path) == destination {
+			if toolrt.ResolvePath(path) == destination {
 				return nil, valueError("Путь кандидата занят принятой опорой.")
 			}
 		}
@@ -530,11 +529,11 @@ func (t *workflowTool) selectImage(dirArg, file string) (*pycompat.Dict, error) 
 	selected := historyEntry(history, data.Value("image_request_dir"))
 	selected.Set("selected_sha256", digest)
 	selected.Set("selected_at", Now())
-	relative, _ := pycompat.RelativeTo(target, directory)
+	relative, _ := toolrt.RelativeTo(target, directory)
 	frame.Set("path", relative)
 	frame.Set("sha256", digest)
 	frame.Set("approved", false)
-	frames.Delete(pycompat.Str(frame.Value("id")))
+	frames.Delete(toolrt.Str(frame.Value("id")))
 	data.Set("stage", "keyframes_review")
 	data.Set("pending_decision", nil)
 	data.Set("decision", nil)

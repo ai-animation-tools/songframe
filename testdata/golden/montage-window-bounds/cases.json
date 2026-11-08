@@ -4,7 +4,7 @@
   "cases": [
     {
       "name": "visible",
-      "description": "Окно на доступном мониторе (тест оригинала).",
+      "description": "Окно на доступном мониторе.",
       "covers": [
         "восстановление"
       ],
@@ -26,7 +26,7 @@
     },
     {
       "name": "right-of-screens",
-      "description": "Окно правее всех экранов (тест оригинала).",
+      "description": "Окно правее всех экранов.",
       "covers": [
         "пересечение по ширине < 100"
       ],
@@ -43,7 +43,7 @@
     },
     {
       "name": "above-screen",
-      "description": "Верх окна выше экрана (тест оригинала).",
+      "description": "Верх окна выше экрана.",
       "covers": [
         "y < area.y"
       ],
@@ -60,7 +60,7 @@
     },
     {
       "name": "zero-width",
-      "description": "Нулевая ширина (тест оригинала).",
+      "description": "Нулевая ширина.",
       "covers": [
         "width < 480"
       ],
@@ -321,7 +321,7 @@
       "name": "fractional",
       "description": "Дробные координаты и размер.",
       "covers": [
-        "Number.isFinite дробных"
+        "дробные конечные числа"
       ],
       "text": "{\"x\":700.5,\"y\":200.25,\"width\":800.75,\"height\":500.5}",
       "displays": [
@@ -500,7 +500,7 @@
     },
     {
       "name": "huge-number",
-      "description": "Число вне double: JSON.parse даёт Infinity.",
+      "description": "Число вне double: разбор JSON даёт Infinity.",
       "covers": [
         "не конечное число"
       ],
@@ -519,7 +519,7 @@
       "name": "broken-json",
       "description": "Повреждённый JSON.",
       "covers": [
-        "JSON.parse бросает"
+        "строгий разбор JSON отказывает"
       ],
       "text": "{\"x\":700,",
       "displays": [
@@ -536,7 +536,7 @@
       "name": "empty-file",
       "description": "Пустой файл.",
       "covers": [
-        "JSON.parse бросает"
+        "строгий разбор JSON отказывает"
       ],
       "text": "",
       "displays": [

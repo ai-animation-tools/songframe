@@ -3,9 +3,9 @@ package exportbundle
 import (
 	"math/big"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // reader — последовательное чтение полей значений проекта: первая ошибка запоминается,
@@ -21,37 +21,37 @@ func keep[T any](r *reader, value T, err error) T {
 	return value
 }
 
-// item — container[key][key2]…
+// item — значение по цепочке ключей (toolrt.GetItem): отсутствующий ключ — KeyError.
 func (r *reader) item(container any, keys ...string) any {
 	for _, key := range keys {
 		if r.err != nil {
 			return nil
 		}
-		value, err := pycompat.GetItem(container, key)
+		value, err := toolrt.GetItem(container, key)
 		container = keep(r, value, err)
 	}
 	return container
 }
 
-// get — container.get(key, fallback).
+// get — значение ключа словаря или fallback, если ключа нет (toolrt.DictGet).
 func (r *reader) get(container any, key string, fallback any) any {
 	if r.err != nil {
 		return nil
 	}
-	value, err := pycompat.DictGet(container, key, fallback)
+	value, err := toolrt.DictGet(container, key, fallback)
 	return keep(r, value, err)
 }
 
-// float — float(value) как значение строки пакета.
+// float — значение, приведённое к float (toolrt.Float), для строки пакета.
 func (r *reader) float(value any) any {
 	if r.err != nil {
 		return nil
 	}
-	number, err := pycompat.Float(value)
+	number, err := toolrt.Float(value)
 	return keep(r, any(number), err)
 }
 
-// timecode — timecode(value).
+// timecode — таймкод значения (функция timecode пакета).
 func (r *reader) timecode(value any) string {
 	if r.err != nil {
 		return ""
@@ -60,7 +60,7 @@ func (r *reader) timecode(value any) string {
 	return keep(r, text, err)
 }
 
-// frames — frames_at(value, rate) как значение строки пакета.
+// frames — число кадров значения на частоте rate (framesAt) целым toolrt; без частоты — nil.
 func (r *reader) frames(value any, rate *big.Rat) any {
 	if r.err != nil || rate == nil {
 		return nil
@@ -69,33 +69,34 @@ func (r *reader) frames(value any, rate *big.Rat) any {
 	if err != nil {
 		return keep[any](r, nil, err)
 	}
-	return pycompat.IntFromBig(frames)
+	return toolrt.IntFromBig(frames)
 }
 
-// orEmpty — `value or {}`.
+// orEmpty — само значение, если оно истинно, иначе пустой словарь.
 func orEmpty(value any) any {
-	if pycompat.Truthy(value) {
+	if toolrt.Truthy(value) {
 		return value
 	}
-	return pycompat.NewDict()
+	return toolrt.NewDict()
 }
 
-// unpackPair — `a, b = value` с текстами исключений Python.
+// unpackPair — два элемента списка, словаря или строки. Иной тип — TypeError, другое число
+// элементов — ValueError; тексты исключений зафиксированы эталоном.
 func unpackPair(value any) (any, any, error) {
 	switch value.(type) {
-	case []any, *pycompat.Dict, string:
+	case []any, *toolrt.Dict, string:
 	default:
-		return nil, nil, pycompat.Raise(pycompat.TypeError, "cannot unpack non-iterable %s object", pycompat.TypeName(value))
+		return nil, nil, toolrt.Raise(toolrt.TypeError, "cannot unpack non-iterable %s object", toolrt.TypeName(value))
 	}
-	items, err := pycompat.Iter(value)
+	items, err := toolrt.Iter(value)
 	if err != nil {
 		return nil, nil, err
 	}
 	switch {
 	case len(items) < 2:
-		return nil, nil, pycompat.Raise(pycompat.ValueError, "not enough values to unpack (expected 2, got %d)", len(items))
+		return nil, nil, toolrt.Raise(toolrt.ValueError, "not enough values to unpack (expected 2, got %d)", len(items))
 	case len(items) > 2:
-		return nil, nil, pycompat.New(pycompat.ValueError, "too many values to unpack (expected 2)")
+		return nil, nil, toolrt.New(toolrt.ValueError, "too many values to unpack (expected 2)")
 	}
 	return items[0], items[1], nil
 }
@@ -105,15 +106,15 @@ func unpackPair(value any) (any, any, error) {
 func nativeFPS(edit, media any) (*big.Rat, error) {
 	var r reader
 	rate := r.get(edit, "source_fps", nil)
-	if !pycompat.Truthy(rate) {
+	if !toolrt.Truthy(rate) {
 		rate = r.get(orEmpty(media), "r_frame_rate", nil)
 	}
 	if r.err != nil {
 		return nil, r.err
 	}
 	original := false
-	if pycompat.Truthy(rate) {
-		original = pycompat.Equal(stageValue(&r, edit, "input"), "original.mp4")
+	if toolrt.Truthy(rate) {
+		original = toolrt.Equal(stageValue(&r, edit, "input"), "original.mp4")
 		if r.err != nil {
 			return nil, r.err
 		}
@@ -123,27 +124,27 @@ func nativeFPS(edit, media any) (*big.Rat, error) {
 		if r.err != nil {
 			return nil, r.err
 		}
-		if !pycompat.Truthy(grid) {
-			grid = pycompat.NewInt(fps)
+		if !toolrt.Truthy(grid) {
+			grid = toolrt.NewInt(fps)
 		}
 		return fractionOf(grid)
 	}
-	return parseFraction(pycompat.Str(rate))
+	return parseFraction(toolrt.Str(rate))
 }
 
-// stageValue — edit["rebuild"]["stages"][0][key].
+// stageValue — поле key первого этапа rebuild.stages рецепта монтажа.
 func stageValue(r *reader, edit any, key string) any {
 	stages := r.item(edit, "rebuild", "stages")
 	if r.err != nil {
 		return nil
 	}
-	first, err := pycompat.GetItem(stages, pycompat.NewInt(0))
+	first, err := toolrt.GetItem(stages, toolrt.NewInt(0))
 	return r.item(keep(r, first, err), key)
 }
 
-// shotPath — f"assets/shots/{sid}/{name}".
+// shotPath — путь файла комплекта плана от корня проекта: assets/shots/<план>/<имя>.
 func shotPath(sid string, name any) string {
-	return "assets/shots/" + sid + "/" + pycompat.Str(name)
+	return "assets/shots/" + sid + "/" + toolrt.Str(name)
 }
 
 // inputPaths — столбец inputs: пути входов генерации от корня проекта.
@@ -152,7 +153,7 @@ func inputPaths(r *reader, sid string, generation any) []any {
 	if r.err != nil {
 		return nil
 	}
-	items, err := pycompat.Iter(listed)
+	items, err := toolrt.Iter(listed)
 	keep(r, items, err)
 	paths := []any{}
 	for _, input := range items {
@@ -161,10 +162,10 @@ func inputPaths(r *reader, sid string, generation any) []any {
 		if r.err != nil {
 			return nil
 		}
-		if pycompat.Equal(root, "asset") {
+		if toolrt.Equal(root, "asset") {
 			paths = append(paths, shotPath(sid, name))
 		} else {
-			paths = append(paths, "source/"+pycompat.Str(name))
+			paths = append(paths, "source/"+toolrt.Str(name))
 		}
 	}
 	return paths
@@ -172,7 +173,7 @@ func inputPaths(r *reader, sid string, generation any) []any {
 
 // addVideo дополняет строку плана с манифестом полями оригинала генерации и принятого монтажа.
 // Значения вычисляются в порядке полей строки: он определяет, какая ошибка возникнет первой.
-func addVideo(row *pycompat.Dict, sid, folder string, kit any) error {
+func addVideo(row *toolrt.Dict, sid, folder string, kit any) error {
 	var r reader
 	generation := r.item(kit, "generation")
 	edit := r.item(kit, "accepted_edit")
@@ -207,11 +208,11 @@ func addVideo(row *pycompat.Dict, sid, folder string, kit any) error {
 	details := orEmpty(r.get(generation, "original_media", nil))
 	set("original_fps", r.get(details, "r_frame_rate", ""))
 	duration := r.get(details, "duration", nil)
-	if !pycompat.Truthy(duration) {
-		duration = pycompat.NewInt(0)
+	if !toolrt.Truthy(duration) {
+		duration = toolrt.NewInt(0)
 	}
 	seconds := r.float(duration)
-	if !pycompat.Truthy(seconds) {
+	if !toolrt.Truthy(seconds) {
 		seconds = ""
 	}
 	set("original_duration_s", seconds)
@@ -229,8 +230,8 @@ func addVideo(row *pycompat.Dict, sid, folder string, kit any) error {
 	set("source_out_frame_native", r.frames(sourceOut, rate))
 	set("speed", r.float(r.item(edit, "speed", "factor")))
 	set("speed_ratio", r.item(edit, "speed", "ratio"))
-	set("hold_first_s", r.float(r.get(edit, "hold_first_seconds", pycompat.NewInt(0))))
-	set("hold_last_s", r.float(r.get(edit, "hold_last_seconds", pycompat.NewInt(0))))
+	set("hold_first_s", r.float(r.get(edit, "hold_first_seconds", toolrt.NewInt(0))))
+	set("hold_last_s", r.float(r.get(edit, "hold_last_seconds", toolrt.NewInt(0))))
 	if still != nil {
 		set("still_time_s", r.float(still))
 	} else {
@@ -241,18 +242,18 @@ func addVideo(row *pycompat.Dict, sid, folder string, kit any) error {
 	set("repeat_tail_frames", r.get(repeat, "tail_frames", ""))
 	set("repeat_cycle_frames", r.get(repeat, "cycle_frames", ""))
 	set("prompt", shotPath(sid, r.item(generation, "prompt", "path")))
-	if pycompat.Truthy(r.get(generation, "request", nil)) {
+	if toolrt.Truthy(r.get(generation, "request", nil)) {
 		set("request", shotPath(sid, r.item(generation, "request", "path")))
 	} else {
 		set("request", "")
 	}
 	set("inputs", inputPaths(&r, sid, generation))
-	if pycompat.Truthy(r.get(generation, "audio", nil)) {
+	if toolrt.Truthy(r.get(generation, "audio", nil)) {
 		set("speech_wav", shotPath(sid, r.item(generation, "audio", "path")))
 	} else {
 		set("speech_wav", "")
 	}
-	if pycompat.IsFile(pycompat.JoinPath(folder, "audio-recipe.json")) {
+	if toolrt.IsFile(toolrt.JoinPath(folder, "audio-recipe.json")) {
 		set("audio_recipe", shotPath(sid, "audio-recipe.json"))
 	} else {
 		set("audio_recipe", "")
@@ -262,11 +263,11 @@ func addVideo(row *pycompat.Dict, sid, folder string, kit any) error {
 }
 
 // shotRow — строка плана: карточка, а при наличии манифеста комплекта — принятое видео.
-func shotRow(root string, scene *pycompat.Dict) (*pycompat.Dict, error) {
+func shotRow(root string, scene *toolrt.Dict) (*toolrt.Dict, error) {
 	var r reader
 	sid, _ := scene.Value("id").(string)
-	folder := pycompat.JoinPath(root, "assets/shots", sid)
-	row := pycompat.NewDict()
+	folder := toolrt.JoinPath(root, "assets/shots", sid)
+	row := toolrt.NewDict()
 	set := func(key string, value any) {
 		if r.err == nil {
 			row.Set(key, value)
@@ -284,15 +285,15 @@ func shotRow(root string, scene *pycompat.Dict) (*pycompat.Dict, error) {
 	set("camera", r.item(scene, "camera"))
 	set("action", r.item(scene, "action"))
 	set("continuity", r.item(scene, "continuity"))
-	set("lipsync", pycompat.Truthy(r.get(scene, "lipsync", nil)))
+	set("lipsync", toolrt.Truthy(r.get(scene, "lipsync", nil)))
 	set("status", "card")
 	set("card", "plan/animatic/cards/"+sid+".png")
 	if r.err != nil {
 		return nil, r.err
 	}
-	manifest := pycompat.JoinPath(folder, "manifest.json")
-	if pycompat.IsFile(manifest) {
-		kit, err := pycompat.LoadJSONFile(manifest)
+	manifest := toolrt.JoinPath(folder, "manifest.json")
+	if toolrt.IsFile(manifest) {
+		kit, err := toolrt.LoadJSONFile(manifest)
 		if err != nil {
 			return nil, err
 		}
@@ -303,28 +304,28 @@ func shotRow(root string, scene *pycompat.Dict) (*pycompat.Dict, error) {
 	return row, nil
 }
 
-// sourceText — строка песни с номером number: isinstance(number, int), включая bool, в пределах
-// текста; иначе пусто.
+// sourceText — строка песни с номером number (с единицы), если номер — целое toolrt (bool тоже
+// считается целым) в пределах текста; иначе пусто.
 func sourceText(lines []string, number any) string {
-	if !pycompat.IsInt(number) {
+	if !toolrt.IsInt(number) {
 		return ""
 	}
-	value, err := pycompat.Sub(number, pycompat.NewInt(0))
+	value, err := toolrt.Sub(number, toolrt.NewInt(0))
 	if err != nil {
 		return ""
 	}
-	index, ok := value.(pycompat.Int).Int64()
+	index, ok := value.(toolrt.Int).Int64()
 	if !ok || index <= 0 || index > int64(len(lines)) {
 		return ""
 	}
-	return pycompat.Strip(lines[index-1])
+	return toolrt.Strip(lines[index-1])
 }
 
 // lyricRow — строка песни с оценками времени из разметки проекта.
-func lyricRow(line any, text []string) (*pycompat.Dict, error) {
+func lyricRow(line any, text []string) (*toolrt.Dict, error) {
 	var r reader
 	number := r.get(line, "source_line", nil)
-	row := pycompat.NewDict()
+	row := toolrt.NewDict()
 	row.Set("id", r.item(line, "id"))
 	row.Set("source_line", number)
 	row.Set("text", sourceText(text, number))
@@ -345,7 +346,7 @@ func lyricRows(timing any, text []string) ([]any, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
-	lines, err := pycompat.Iter(listed)
+	lines, err := toolrt.Iter(listed)
 	if err != nil {
 		return nil, err
 	}
@@ -360,8 +361,8 @@ func lyricRows(timing any, text []string) ([]any, error) {
 	return rows, nil
 }
 
-// collect — collect(root): все данные пакета из реестра, проекта, манифестов и разметки.
-func collect(root string) (*pycompat.Dict, error) {
+// collect — все данные пакета из реестра, проекта, манифестов и разметки.
+func collect(root string) (*toolrt.Dict, error) {
 	registry, err := sceneregistry.Load(root)
 	if err != nil {
 		return nil, err
@@ -378,19 +379,19 @@ func collect(root string) (*pycompat.Dict, error) {
 	if err != nil {
 		return nil, err
 	}
-	var timing any = pytool.Record("lines", []any{})
-	if path := pycompat.JoinPath(root, "plan/audio/timing.json"); pycompat.IsFile(path) {
-		if timing, err = pycompat.LoadJSONFile(path); err != nil {
+	var timing any = toolcli.Record("lines", []any{})
+	if path := toolrt.JoinPath(root, "plan/audio/timing.json"); toolrt.IsFile(path) {
+		if timing, err = toolrt.LoadJSONFile(path); err != nil {
 			return nil, err
 		}
 	}
 	text := []string{}
-	if path := pycompat.JoinPath(root, "source/text.md"); pycompat.IsFile(path) {
-		content, err := pycompat.ReadText(path)
+	if path := toolrt.JoinPath(root, "source/text.md"); toolrt.IsFile(path) {
+		content, err := toolrt.ReadText(path)
 		if err != nil {
 			return nil, err
 		}
-		text = pycompat.SplitLines(content)
+		text = toolrt.SplitLines(content)
 	}
 	rows := make([]any, 0, len(scenes))
 	for _, scene := range scenes {
@@ -412,9 +413,9 @@ func collect(root string) (*pycompat.Dict, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
-	return pytool.Record(
+	return toolcli.Record(
 		"project", project,
-		"fps", pycompat.NewInt(fps),
+		"fps", toolrt.NewInt(fps),
 		"song", song,
 		"song_end_s", end,
 		"references", references,

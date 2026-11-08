@@ -1,6 +1,6 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_status.py [-h]\n                      [--filter {all,planned,progress,completed,stale,unknown}]\n                      [--json] [--next] [--independent Mxx [Mxx ...]]\nshot_status.py: error: argument --filter: invalid choice: 'bad' (choose from 'all', 'planned', 'progress', 'completed', 'stale', 'unknown')\n",
+  "stderr": "usage: shot_status [-h]\n                   [--filter {all,planned,progress,completed,stale,unknown}]\n                   [--json] [--next] [--independent Mxx [Mxx ...]]\nshot_status: error: argument --filter: invalid choice: 'bad' (choose from 'all', 'planned', 'progress', 'completed', 'stale', 'unknown')\n",
   "traceback": false
 }

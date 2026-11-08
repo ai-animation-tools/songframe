@@ -1,9 +1,9 @@
 package app
 
 import (
-	"songframe-go/internal/checks"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/wire"
+	"songframe/internal/checks"
+	"songframe/internal/jobs"
+	"songframe/internal/wire"
 )
 
 // ChecksService реализует window.api.checks: список проверок, их запуск, пересборку карточек и

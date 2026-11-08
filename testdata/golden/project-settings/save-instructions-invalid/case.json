@@ -3,7 +3,7 @@
   "call": "writeProjectSettings",
   "project": "project",
   "covers": [
-    "agentInstructions undefined: проверка сохранённого"
+    "без agentInstructions: проверка сохранённого"
   ],
   "stubbedMedia": []
 }

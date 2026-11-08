@@ -1,5 +1,5 @@
 {
-  "description": "Папки проекта нет: код 2 до argparse.",
+  "description": "Папки проекта нет: код 2 до разбора аргументов.",
   "call": "scene_scaffold",
   "project": null,
   "covers": [

@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
+	"songframe/internal/filedigest"
 )
 
 // Тексты applicationTexts и scenarioTexts.main, участвующие в проверке актуальности сценария.
@@ -71,7 +71,7 @@ var shotDirectory = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 // Не воспроизведено: пути изображений из нормализованного кастинга тоже входят в хешируемый
 // набор сценарного прохода; каталог на их месте дал бы там ту же ошибку.
 func reviewInputs(path string) error {
-	project, err := jscompat.Realpath(path)
+	project, err := dynvalue.Realpath(path)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func fileStat(path string) (fs.FileInfo, error) {
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
-	return nil, jscompat.FsError("lstat", path, err)
+	return nil, dynvalue.FsError("lstat", path, err)
 }
 
 // scenarioOutputPaths — выходы сценария: фиксированные представления, карточки *.png и README
@@ -140,7 +140,7 @@ func scenarioOutputPaths(project string) ([]string, error) {
 		if !info.IsDir() || info.Mode()&fs.ModeSymlink != 0 {
 			return nil, errors.New(cardsDirectoryRequired)
 		}
-		entries, err := jscompat.ReadDir(cards)
+		entries, err := dynvalue.ReadDir(cards)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func scenarioOutputPaths(project string) ([]string, error) {
 		if !info.IsDir() || info.Mode()&fs.ModeSymlink != 0 {
 			return nil, errors.New(shotsDirectoryRequired)
 		}
-		entries, err := jscompat.ReadDir(shots)
+		entries, err := dynvalue.ReadDir(shots)
 		if err != nil {
 			return nil, err
 		}
@@ -177,7 +177,7 @@ func scenarioOutputPaths(project string) ([]string, error) {
 		}
 	}
 	items := append([]string(nil), outputs.items...)
-	sort.SliceStable(items, func(i, j int) bool { return jscompat.LessUTF16(items[i], items[j]) })
+	sort.SliceStable(items, func(i, j int) bool { return dynvalue.LessUTF16(items[i], items[j]) })
 	return items, nil
 }
 
@@ -187,28 +187,28 @@ func scenarioOutputPaths(project string) ([]string, error) {
 // сверки его хеша, поэтому и нечитаемый файл попадает в набор.
 func manifestSourcePaths(project string) []string {
 	var paths []string
-	if !jscompat.Exists(filepath.Join(project, "plan", "project.json")) {
+	if !dynvalue.Exists(filepath.Join(project, "plan", "project.json")) {
 		return nil
 	}
 	manifestFile := filepath.Join(project, "source", "manifest.json")
-	if !jscompat.Exists(manifestFile) {
+	if !dynvalue.Exists(manifestFile) {
 		return nil
 	}
-	raw, ok := jscompat.ReadJSONFile(manifestFile)
+	raw, ok := dynvalue.ReadJSONFile(manifestFile)
 	if !ok {
 		return nil
 	}
-	references, isArray := jscompat.AsArray(jscompat.Get(raw, "references"))
-	if !jscompat.IsRecord(raw) || !jscompat.StrictEqual(jscompat.Get(raw, "schema_version"), 1.0) || !isArray {
+	references, isArray := dynvalue.AsArray(dynvalue.Get(raw, "references"))
+	if !dynvalue.IsRecord(raw) || !dynvalue.StrictEqual(dynvalue.Get(raw, "schema_version"), 1.0) || !isArray {
 		return nil
 	}
 	// accept добавляет путь и сообщает, продолжается ли проверка описи после сверки хеша.
 	accept := func(entry any) bool {
-		sha, isString := jscompat.Get(entry, "sha256").(string)
-		if !jscompat.IsRecord(entry) || !isString {
+		sha, isString := dynvalue.Get(entry, "sha256").(string)
+		if !dynvalue.IsRecord(entry) || !isString {
 			return false
 		}
-		path, ok := sourcePath(project, jscompat.Get(entry, "path"))
+		path, ok := sourcePath(project, dynvalue.Get(entry, "path"))
 		if !ok {
 			return false
 		}
@@ -217,17 +217,17 @@ func manifestSourcePaths(project string) []string {
 		return err == nil && digest == any(sha)
 	}
 	for _, key := range []string{"track", "lyrics", "idea"} {
-		if !accept(jscompat.Get(raw, key)) {
+		if !accept(dynvalue.Get(raw, key)) {
 			return paths
 		}
 	}
 	for _, reference := range references {
-		files, isArray := jscompat.AsArray(jscompat.Get(reference, "files"))
-		if !jscompat.IsRecord(reference) || !isArray {
+		files, isArray := dynvalue.AsArray(dynvalue.Get(reference, "files"))
+		if !dynvalue.IsRecord(reference) || !isArray {
 			return paths
 		}
 		for _, key := range []string{"id", "kind", "name", "short_name", "description"} {
-			if jscompat.TypeOf(jscompat.Get(reference, key)) != "string" {
+			if dynvalue.TypeOf(dynvalue.Get(reference, key)) != "string" {
 				return paths
 			}
 		}
@@ -243,12 +243,12 @@ func manifestSourcePaths(project string) []string {
 // sourcePath — путь исходника относительно source/ в виде «source/<путь>» или отказ.
 func sourcePath(project string, value any) (string, bool) {
 	path, ok := value.(string)
-	if !ok || path == "" || jscompat.IsAbs(path) {
+	if !ok || path == "" || dynvalue.IsAbs(path) {
 		return "", false
 	}
 	base := filepath.Join(project, "source")
-	local := jscompat.Relative(base, jscompat.Resolve(project, "source", path))
-	if strings.HasPrefix(local, "..") || jscompat.IsAbs(local) {
+	local := dynvalue.Relative(base, dynvalue.Resolve(project, "source", path))
+	if strings.HasPrefix(local, "..") || dynvalue.IsAbs(local) {
 		return "", false
 	}
 	return "source/" + strings.ReplaceAll(local, `\`, "/"), true
@@ -259,10 +259,10 @@ func sourcePath(project string, value any) (string, bool) {
 // сравнивается только с хешами файлов исходников, поэтому достаточно отказа чтения.
 func hashValue(project, path string) (any, error) {
 	full := filepath.Join(project, filepath.FromSlash(path))
-	if !jscompat.Exists(full) {
+	if !dynvalue.Exists(full) {
 		return nil, nil
 	}
-	if err := jscompat.ReadFileCheck(full); err != nil {
+	if err := dynvalue.ReadFileCheck(full); err != nil {
 		return nil, err
 	}
 	if path == "source/manifest.json" {
@@ -271,14 +271,14 @@ func hashValue(project, path string) (any, error) {
 	if digest, ok := filedigest.File(full); ok {
 		return digest, nil
 	}
-	return nil, jscompat.FsError("read", "", errors.New("read failed"))
+	return nil, dynvalue.FsError("read", "", errors.New("read failed"))
 }
 
 // hashCheck — отказ hash() вне try: каталог или недоступный файл на месте входа.
 func hashCheck(project, path string) error {
 	full := filepath.Join(project, filepath.FromSlash(path))
-	if !jscompat.Exists(full) {
+	if !dynvalue.Exists(full) {
 		return nil
 	}
-	return jscompat.ReadFileCheck(full)
+	return dynvalue.ReadFileCheck(full)
 }

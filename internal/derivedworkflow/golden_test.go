@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/assetpackage"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/montage"
+	"songframe/internal/assetpackage"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/jobs"
+	"songframe/internal/montage"
 )
 
 // goldenStep — шаг эталона: вход (write/append/remove/rmtree/copy), управление окружением или
@@ -132,7 +132,7 @@ func tree(t *testing.T, folder string) map[string]string {
 			return err
 		}
 		if textName.MatchString(info.Name()) && len(data) < 20000 {
-			result[filepath.ToSlash(name)] = jscompat.DecodeUTF8(data)
+			result[filepath.ToSlash(name)] = dynvalue.DecodeUTF8(data)
 			return nil
 		}
 		digest, err := assetpackage.FileSHA256(path)
@@ -246,8 +246,8 @@ func diffTrees(before, after map[string]string) (map[string]string, []string) {
 
 // TestDerivedWorkflowGolden проходит все сценарии эталона на копии образца с подставным
 // менеджером заданий: результат или текст ошибки, изменённые файлы побайтно, запущенные задания и
-// дерево после восстановления. Текст отказа oldTools в эталоне тест заменяет текущим
-// textToolsUnavailable.
+// дерево после восстановления. Текст отказа о недоступных инструментах, записанный в эталоне
+// (goldenToolsUnavailable), тест заменяет текстом приложения textToolsUnavailable.
 func TestDerivedWorkflowGolden(t *testing.T) {
 	var file goldenFile
 	if err := json.Unmarshal(golden.ReadFile(t, "derived-workflow", "cases.json"), &file); err != nil {
@@ -257,7 +257,7 @@ func TestDerivedWorkflowGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	const oldTools = "Для сборки нужны доступные Python и FFmpeg. Проверьте страницу «Среда»."
+	const goldenToolsUnavailable = "Для сборки нужны доступные Python и FFmpeg. Проверьте страницу «Среда»."
 	for _, item := range file.Scenarios {
 		t.Run(item.Name, func(t *testing.T) {
 			parent, err := filepath.EvalSymlinks(t.TempDir())
@@ -329,9 +329,9 @@ func TestDerivedWorkflowGolden(t *testing.T) {
 				}
 				label := fmt.Sprintf("шаг %d %s", index, step.Op)
 				if failure != nil {
-					want := oldTools
+					want := goldenToolsUnavailable
 					if step.Error != nil {
-						want = strings.ReplaceAll(*step.Error, oldTools, textToolsUnavailable)
+						want = strings.ReplaceAll(*step.Error, goldenToolsUnavailable, textToolsUnavailable)
 					}
 					if got := sameParse(names.text(failure.Error())); got != sameParse(want) {
 						t.Fatalf("%s: ошибка %q, ожидалась %q", label, got, want)
@@ -343,7 +343,7 @@ func TestDerivedWorkflowGolden(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					sameJSON(t, label, []byte(strings.ReplaceAll(string(step.Result), oldTools, textToolsUnavailable)), []byte(names.text(string(data))))
+					sameJSON(t, label, []byte(strings.ReplaceAll(string(step.Result), goldenToolsUnavailable, textToolsUnavailable)), []byte(names.text(string(data))))
 				}
 				after := tree(t, project)
 				changed, removed := diffTrees(before, after)
@@ -393,8 +393,8 @@ func TestDerivedWorkflowGolden(t *testing.T) {
 	}
 }
 
-// parseReason — причина в тексте readLocalJson: сообщения разбора JSON у Node и Go разные (правило
-// эталона agents-settings), поэтому сравниваются начало и окончание текста SongFrame.
+// parseReason — причина разбора JSON в тексте ошибки чтения журнала: эталон её не фиксирует
+// (правило эталона agents-settings), поэтому сравниваются начало и окончание текста SongFrame.
 var parseReason = regexp.MustCompile(`journal\.json: (EOF|Expected [^.]*)\. Файл сохранён`)
 
 // sameParse убирает из текста ошибки причину разбора JSON.

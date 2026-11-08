@@ -26,19 +26,19 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/applymontage"
-	"songframe-go/internal/assetpackage"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/applymontage"
+	"songframe/internal/assetpackage"
+	"songframe/internal/mediacmd"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // History — папка журналов приёмок производных планов от корня проекта.
 const History = "plan/derived-history"
 
 // fps — кадровая сетка производных планов.
-var fps = pycompat.NewInt(30)
+var fps = toolrt.NewInt(30)
 
 // Тексты отказов (ValueError, печатаются как есть).
 const (
@@ -60,7 +60,7 @@ const (
 	textChangedFile   = "Файл результата изменился после пробы: "
 )
 
-func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
+func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
 
 // Точки подмены для тестов сбоев: рендер кандидата,
 // публикация папки и файла, итоговая проверка комплекта, откат. В работе не меняются.
@@ -85,8 +85,8 @@ func randomHex() string {
 	return hex.EncodeToString(data)
 }
 
-// active — число выполняющихся команд инструмента по разрешённому корню проекта. Оригинал не
-// откатывал журнал при открытии проекта, пока идёт задание этого проекта: живая публикация не
+// active — число выполняющихся команд инструмента по разрешённому корню проекта. Пока идёт
+// задание этого проекта, журнал при открытии проекта не откатывается: живая публикация не
 // является прерванной. Инструмент работает в процессе приложения, поэтому признак ведёт сам пакет.
 var active struct {
 	sync.Mutex
@@ -96,7 +96,7 @@ var active struct {
 // Active сообщает, выполняется ли сейчас команда инструмента над проектом root в этом процессе.
 // Тогда восстановление при открытии проекта (internal/derivedworkflow) пропускается.
 func Active(root string) bool {
-	root = pycompat.ResolvePath(root)
+	root = toolrt.ResolvePath(root)
 	active.Lock()
 	defer active.Unlock()
 	return active.counts[root] > 0
@@ -119,11 +119,11 @@ func enter(root string) func() {
 	}
 }
 
-// pathText — Path(value): только строка, иначе TypeError (скрытый текст CLI).
+// pathText — путь из значения JSON: только строка, иначе TypeError (скрытый текст CLI).
 func pathText(value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "expected str, bytes or os.PathLike object, not %s", pycompat.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "expected str, bytes or os.PathLike object, not %s", toolrt.TypeName(value))
 	}
 	return text, nil
 }
@@ -135,59 +135,59 @@ func projectPath(root string, value any, prefix string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	path := pycompat.ResolvePath(pycompat.JoinPath(root, name))
+	path := toolrt.ResolvePath(toolrt.JoinPath(root, name))
 	escape := false
 	for _, part := range strings.Split(filepath.ToSlash(name), "/") {
 		escape = escape || part == ".."
 	}
-	if filepath.IsAbs(name) || strings.HasPrefix(name, "/") || escape || !pycompat.IsRelativeTo(path, root) {
+	if filepath.IsAbs(name) || strings.HasPrefix(name, "/") || escape || !toolrt.IsRelativeTo(path, root) {
 		return "", valueError(textRelative)
 	}
-	if prefix != "" && !pycompat.IsRelativeTo(path, pycompat.JoinPath(root, prefix)) {
+	if prefix != "" && !toolrt.IsRelativeTo(path, toolrt.JoinPath(root, prefix)) {
 		return "", valueError("Рабочая папка должна находиться в " + prefix + ".")
 	}
 	return path, nil
 }
 
-// readJSON — json.loads(path.read_text(encoding="utf-8")).
+// readJSON — JSON-документ файла в UTF-8 (строгий разбор toolrt.LoadsJSON).
 func readJSON(path string) (any, error) {
-	text, err := pycompat.ReadText(path)
+	text, err := toolrt.ReadText(path)
 	if err != nil {
 		return nil, err
 	}
-	return pycompat.LoadsJSON(text)
+	return toolrt.LoadsJSON(text)
 }
 
-// relative — path.relative_to(root).as_posix().
+// relative — путь path относительно root через «/»; путь вне root — ValueError.
 func relative(path, root string) (string, error) {
-	name, err := pycompat.RelativeTo(path, root)
+	name, err := toolrt.RelativeTo(path, root)
 	if err != nil {
 		return "", err
 	}
 	return filepath.ToSlash(name), nil
 }
 
-// attributeError — AttributeError вызова метода dict у значения другого типа: необработанное
+// attributeError — AttributeError вызова метода словаря у значения другого типа: необработанное
 // исключение (трассировка, код 1).
 func attributeError(value any, method string) error {
-	return pycompat.New("AttributeError", "'"+pycompat.TypeName(value)+"' object has no attribute '"+method+"'")
+	return toolrt.New("AttributeError", "'"+toolrt.TypeName(value)+"' object has no attribute '"+method+"'")
 }
 
 // dictOf — значение как словарь для вызова метода method.
-func dictOf(value any, method string) (*pycompat.Dict, error) {
-	if dict, ok := value.(*pycompat.Dict); ok {
+func dictOf(value any, method string) (*toolrt.Dict, error) {
+	if dict, ok := value.(*toolrt.Dict); ok {
 		return dict, nil
 	}
 	return nil, attributeError(value, method)
 }
 
-// wholeNumber — значение как целое Python для кадровых формул; другие типы рецепт и реестр не
+// wholeNumber — значение как целое toolrt.Int для кадровых формул; другие типы рецепт и реестр не
 // пропускают, поэтому отказ — TypeError.
-func wholeNumber(value any) (pycompat.Int, error) {
-	if number, ok := value.(pycompat.Int); ok {
+func wholeNumber(value any) (toolrt.Int, error) {
+	if number, ok := value.(toolrt.Int); ok {
 		return number, nil
 	}
-	return pycompat.Int{}, pycompat.Raise(pycompat.TypeError, "expected int, not %s", pycompat.TypeName(value))
+	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "expected int, not %s", toolrt.TypeName(value))
 }
 
 // recipeFields — обязательный набор полей каждого режима рецепта.
@@ -198,8 +198,8 @@ var recipeFields = map[string][]string{
 	"repeat": {"mode", "start_frame", "end_frame_exclusive"},
 }
 
-// sameKeys — set(recipe) == fields.
-func sameKeys(recipe *pycompat.Dict, fields []string) bool {
+// sameKeys — множество ключей рецепта совпадает с fields.
+func sameKeys(recipe *toolrt.Dict, fields []string) bool {
 	if recipe.Len() != len(fields) {
 		return false
 	}
@@ -211,11 +211,11 @@ func sameKeys(recipe *pycompat.Dict, fields []string) bool {
 	return true
 }
 
-// cutPlan — итог recipe_plan: фильтр FFmpeg, выбранный полуоткрытый интервал кадров источника и
+// cutPlan — итог recipePlan: фильтр FFmpeg, выбранный полуоткрытый интервал кадров источника и
 // отношение скорости.
 type cutPlan struct {
 	filter      string
-	first, last pycompat.Int
+	first, last toolrt.Int
 	factor      *big.Rat
 }
 
@@ -223,12 +223,12 @@ type cutPlan struct {
 // repeat повторяет только заданный цикл. Порядок проверок зафиксирован эталоном: он задаёт,
 // какое сообщение увидит пользователь при нескольких ошибках сразу.
 func recipePlan(recipe, framesValue, sourceFrames any) (*cutPlan, error) {
-	data, ok := recipe.(*pycompat.Dict)
+	data, ok := recipe.(*toolrt.Dict)
 	if !ok {
 		return nil, valueError(textRecipeObject)
 	}
 	modeValue := data.Value("mode")
-	if _, err := pycompat.HashKey(modeValue); err != nil {
+	if _, err := toolrt.HashKey(modeValue); err != nil {
 		return nil, err // `mode in fields` для списка или словаря — TypeError.
 	}
 	mode, _ := modeValue.(string)
@@ -237,7 +237,7 @@ func recipePlan(recipe, framesValue, sourceFrames any) (*cutPlan, error) {
 		return nil, valueError(textRecipeFields)
 	}
 	for _, key := range data.Keys() {
-		if number, whole := data.Value(key).(pycompat.Int); key != "mode" && (!whole || number.Sign() < 0) {
+		if number, whole := data.Value(key).(toolrt.Int); key != "mode" && (!whole || number.Sign() < 0) {
 			return nil, valueError(key + " должен быть целым неотрицательным числом кадров.")
 		}
 	}
@@ -246,30 +246,30 @@ func recipePlan(recipe, framesValue, sourceFrames any) (*cutPlan, error) {
 		return nil, err
 	}
 	still := mode == "still"
-	var first, last pycompat.Int
+	var first, last toolrt.Int
 	if still {
-		first = data.Value("frame").(pycompat.Int)
+		first = data.Value("frame").(toolrt.Int)
 	} else {
-		first = data.Value("start_frame").(pycompat.Int)
+		first = data.Value("start_frame").(toolrt.Int)
 	}
 	switch mode {
 	case "still":
-		last = pycompat.IntFromBig(new(big.Int).Add(first.Big(), big.NewInt(1)))
+		last = toolrt.IntFromBig(new(big.Int).Add(first.Big(), big.NewInt(1)))
 	case "trim":
-		last = pycompat.IntFromBig(new(big.Int).Add(first.Big(), frames.Big()))
+		last = toolrt.IntFromBig(new(big.Int).Add(first.Big(), frames.Big()))
 	default:
-		last = data.Value("end_frame_exclusive").(pycompat.Int)
+		last = data.Value("end_frame_exclusive").(toolrt.Int)
 	}
 	inside := first.Big().Cmp(last.Big()) < 0
 	if inside {
-		if inside, err = pycompat.LessEqual(last, sourceFrames); err != nil {
+		if inside, err = toolrt.LessEqual(last, sourceFrames); err != nil {
 			return nil, err
 		}
 	}
 	if !inside {
 		return nil, valueError(textRecipeBounds)
 	}
-	length := pycompat.IntFromBig(new(big.Int).Sub(last.Big(), first.Big()))
+	length := toolrt.IntFromBig(new(big.Int).Sub(last.Big(), first.Big()))
 	stages := []string{"fps=30", "trim=start_frame=" + first.String() + ":end_frame=" + last.String(), "setpts=PTS-STARTPTS"}
 	factor := big.NewRat(1, 1)
 	switch mode {
@@ -289,55 +289,55 @@ func recipePlan(recipe, framesValue, sourceFrames any) (*cutPlan, error) {
 // sourceContext — итог snapshot: контекст пробы current и прочитанные вместе с ним реестр, сцена,
 // комплект источника и путь его текущего принятого клипа.
 type sourceContext struct {
-	current  *pycompat.Dict
-	registry *pycompat.Dict
-	scene    *pycompat.Dict
-	pkg      *pycompat.Dict
+	current  *toolrt.Dict
+	registry *toolrt.Dict
+	scene    *toolrt.Dict
+	pkg      *toolrt.Dict
 	source   string
 }
 
-// lookup — scenes.get(key): непривязываемый ключ — TypeError, неизвестный — nil.
-func lookup(scenes map[string]*pycompat.Dict, key any) (*pycompat.Dict, error) {
-	if _, err := pycompat.HashKey(key); err != nil {
+// lookup — сцена по коду key: нехешируемый ключ — TypeError, неизвестный — nil.
+func lookup(scenes map[string]*toolrt.Dict, key any) (*toolrt.Dict, error) {
+	if _, err := toolrt.HashKey(key); err != nil {
 		return nil, err
 	}
 	name, _ := key.(string)
 	return scenes[name], nil
 }
 
-// snapshot — snapshot(shot, root): источник — только актуальный accepted_edit обычного плана из
+// snapshot — контекст источника плана shot: только актуальный accepted_edit обычного плана из
 // derived_from. Значение current сравнивается целиком при сборке и приёмке.
 func snapshot(shot any, root string) (*sourceContext, error) {
 	registry, err := sceneregistry.Load(root)
 	if err != nil {
 		return nil, err
 	}
-	list, err := pycompat.Iter(registry.Value("scenes"))
+	list, err := toolrt.Iter(registry.Value("scenes"))
 	if err != nil {
 		return nil, err
 	}
-	scenes := map[string]*pycompat.Dict{}
+	scenes := map[string]*toolrt.Dict{}
 	for _, item := range list {
-		id, err := pycompat.Item(item, "id")
+		id, err := toolrt.Item(item, "id")
 		if err != nil {
 			return nil, err
 		}
 		if name, ok := id.(string); ok {
-			scenes[name], _ = item.(*pycompat.Dict)
+			scenes[name], _ = item.(*toolrt.Dict)
 		}
 	}
 	scene, err := lookup(scenes, shot)
 	if err != nil {
 		return nil, err
 	}
-	var origin *pycompat.Dict
+	var origin *toolrt.Dict
 	if scene != nil {
-		origin, _ = scene.Value("derived_from").(*pycompat.Dict)
+		origin, _ = scene.Value("derived_from").(*toolrt.Dict)
 	}
 	if origin == nil {
 		return nil, valueError(textNotDerived)
 	}
-	if pycompat.Truthy(scene.Value("lipsync")) {
+	if toolrt.Truthy(scene.Value("lipsync")) {
 		return nil, valueError(textLipsync)
 	}
 	sourceShot := origin.Value("shot")
@@ -345,10 +345,10 @@ func snapshot(shot any, root string) (*sourceContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	if sourceScene == nil || pycompat.Truthy(sourceScene.Value("derived_from")) {
+	if sourceScene == nil || toolrt.Truthy(sourceScene.Value("derived_from")) {
 		return nil, valueError(textBadSource)
 	}
-	if !pycompat.Equal(registry.Value("fps"), fps) {
+	if !toolrt.Equal(registry.Value("fps"), fps) {
 		return nil, valueError(textAcceptSource)
 	}
 	acceptance, err := sceneregistry.ProjectShotAcceptance(root, registry)
@@ -359,16 +359,16 @@ func snapshot(shot any, root string) (*sourceContext, error) {
 	if acceptance.States.Value(sourceName) != sceneregistry.Completed {
 		return nil, valueError(textAcceptSource)
 	}
-	manifest := pycompat.JoinPath(root, "assets/shots", sourceName, "manifest.json")
+	manifest := toolrt.JoinPath(root, "assets/shots", sourceName, "manifest.json")
 	pkg, err := assetpackage.ValidatePackage(manifest, sourceName, root)
 	if err != nil {
 		return nil, err
 	}
-	edit, err := pycompat.Item(pkg, "accepted_edit")
+	edit, err := toolrt.Item(pkg, "accepted_edit")
 	if err != nil {
 		return nil, err
 	}
-	video, err := pycompat.Item(edit, "video")
+	video, err := toolrt.Item(edit, "video")
 	if err != nil {
 		return nil, err
 	}
@@ -390,7 +390,7 @@ func snapshot(shot any, root string) (*sourceContext, error) {
 	}
 	// Музыка относится к показанной пробе: замена трека не меняет постановку, но прежнее
 	// подтверждение уже не описывает актуальный музыкальный контекст.
-	track, err := pycompat.GetItem(registry.Value("audio"), "path")
+	track, err := toolrt.GetItem(registry.Value("audio"), "path")
 	if err != nil {
 		return nil, err
 	}
@@ -402,15 +402,15 @@ func snapshot(shot any, root string) (*sourceContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	sourceFingerprint, err := pycompat.Item(fingerprints, sourceName)
+	sourceFingerprint, err := toolrt.Item(fingerprints, sourceName)
 	if err != nil {
 		return nil, err
 	}
-	targetFingerprint, err := pycompat.Item(fingerprints, shot.(string))
+	targetFingerprint, err := toolrt.Item(fingerprints, shot.(string))
 	if err != nil {
 		return nil, err
 	}
-	frames, err := pycompat.Sub(scene.Value("end_frame_exclusive"), scene.Value("start_frame"))
+	frames, err := toolrt.Sub(scene.Value("end_frame_exclusive"), scene.Value("start_frame"))
 	if err != nil {
 		return nil, err
 	}
@@ -418,28 +418,28 @@ func snapshot(shot any, root string) (*sourceContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	current := pytool.Record(
+	current := toolcli.Record(
 		"shot", shot,
 		"source_shot", sourceShot,
 		"source_scene_sha256", sourceFingerprint,
 		"source_accepted_video_sha256", sourceDigest,
 		"target_scene_sha256", targetFingerprint,
 		"target_frames", frames,
-		"audio_source", pytool.Record("path", track, "sha256", songDigest),
+		"audio_source", toolcli.Record("path", track, "sha256", songDigest),
 	)
 	return &sourceContext{current: current, registry: registry, scene: scene, pkg: pkg, source: source}, nil
 }
 
-// tokenFor — token_for(preview, build): SHA-256 канонического JSON связывает контекст, рецепт и
-// точные принятые и показанные байты.
-func tokenFor(preview *pycompat.Dict, receipt any) (string, error) {
+// tokenFor — result_token пробы: SHA-256 канонического JSON (preview без токена и build.json)
+// связывает контекст, рецепт и точные принятые и показанные байты.
+func tokenFor(preview *toolrt.Dict, receipt any) (string, error) {
 	shown := preview.Clone()
 	shown.Delete("result_token")
-	text, err := pycompat.DumpsJSON(pytool.Record("preview", shown, "build", receipt), pycompat.DumpOptions{SortKeys: true, Compact: true})
+	text, err := toolrt.DumpsJSON(toolcli.Record("preview", shown, "build", receipt), toolrt.DumpOptions{SortKeys: true, Compact: true})
 	if err != nil {
 		return "", err
 	}
-	data, err := pycompat.EncodeUTF8(text)
+	data, err := toolrt.EncodeUTF8(text)
 	if err != nil {
 		return "", err
 	}
@@ -453,29 +453,29 @@ func ffmpegVersion(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	text, err := pycompat.DecodeUTF8(output)
+	text, err := toolrt.DecodeUTF8(output)
 	if err != nil {
 		return "", err
 	}
-	lines := pycompat.SplitLines(text)
+	lines := toolrt.SplitLines(text)
 	if len(lines) == 0 {
-		return "", pycompat.New("IndexError", "list index out of range")
+		return "", toolrt.New("IndexError", "list index out of range")
 	}
 	return lines[0], nil
 }
 
-// seconds — str(frames / FPS) аргумента времени FFmpeg.
+// seconds — время frames / FPS строкой (toolrt.Str) для аргумента FFmpeg.
 func seconds(frames any) (string, error) {
-	value, err := pycompat.TrueDiv(frames, fps)
+	value, err := toolrt.TrueDiv(frames, fps)
 	if err != nil {
 		return "", err
 	}
-	return pycompat.FloatRepr(value), nil
+	return toolrt.FloatRepr(value), nil
 }
 
 // buildPreview — кандидат с участком песни; без файла песни предпросмотр равен кандидату.
 func buildPreview(ctx context.Context, root string, state *sourceContext, temporary string) error {
-	track, err := pycompat.GetItem(state.registry.Value("audio"), "path")
+	track, err := toolrt.GetItem(state.registry.Value("audio"), "path")
 	if err != nil {
 		return err
 	}
@@ -484,7 +484,7 @@ func buildPreview(ctx context.Context, root string, state *sourceContext, tempor
 		return err
 	}
 	candidate, preview := filepath.Join(temporary, "candidate.mp4"), filepath.Join(temporary, "preview.mp4")
-	if !pycompat.IsFile(song) {
+	if !toolrt.IsFile(song) {
 		return applymontage.CopyFile(candidate, preview)
 	}
 	start, err := seconds(state.scene.Value("start_frame"))
@@ -500,10 +500,10 @@ func buildPreview(ctx context.Context, root string, state *sourceContext, tempor
 	return err
 }
 
-// build — build(shot, recipe, work_dir, root): собирает пробу во временной папке рядом с целью и
+// build — собирает пробу плана shot во временной папке рядом с целью workDir и
 // публикует её одним rename. Опубликованная папка больше не меняется, даже при приёмке. Контекст
 // сверяется после рендера: пока шло кодирование, источник, музыка или рецепт могли измениться.
-func build(ctx context.Context, shot, recipe, workDir, root string) (*pycompat.Dict, error) {
+func build(ctx context.Context, shot, recipe, workDir, root string) (*toolrt.Dict, error) {
 	state, err := snapshot(shot, root)
 	if err != nil {
 		return nil, err
@@ -517,7 +517,7 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*pycompat.D
 	if err != nil {
 		return nil, err
 	}
-	if filepath.Dir(directory) != pycompat.JoinPath(root, base) || pycompat.Exists(directory) {
+	if filepath.Dir(directory) != toolrt.JoinPath(root, base) || toolrt.Exists(directory) {
 		return nil, valueError(textNewWorkDir)
 	}
 	selected, err := readJSON(recipePath)
@@ -541,7 +541,7 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*pycompat.D
 		return nil, err
 	}
 	sourceName := state.current.Value("source_shot").(string)
-	manifestDigest, err := assetpackage.FileSHA256(pycompat.JoinPath(root, "assets/shots", sourceName, "manifest.json"))
+	manifestDigest, err := assetpackage.FileSHA256(toolrt.JoinPath(root, "assets/shots", sourceName, "manifest.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -549,7 +549,7 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*pycompat.D
 	if err != nil {
 		return nil, err
 	}
-	receipt := pytool.Record(
+	receipt := toolcli.Record(
 		"recipe_path", recipeName,
 		"recipe_sha256", recipeDigest,
 		"filter", plan.filter,
@@ -559,11 +559,11 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*pycompat.D
 		"ffmpeg_version", version,
 	)
 	if err := os.MkdirAll(filepath.Dir(directory), 0o777); err != nil {
-		return nil, pycompat.OSErrorFrom(err, filepath.Dir(directory))
+		return nil, toolrt.OSErrorFrom(err, filepath.Dir(directory))
 	}
 	temporary := filepath.Join(filepath.Dir(directory), "."+filepath.Base(directory)+".building-"+randomHex())
 	if err := os.Mkdir(temporary, 0o777); err != nil {
-		return nil, pycompat.OSErrorFrom(err, temporary)
+		return nil, toolrt.OSErrorFrom(err, temporary)
 	}
 	defer os.RemoveAll(temporary)
 	frames, err := wholeNumber(state.current.Value("target_frames"))
@@ -584,7 +584,7 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*pycompat.D
 	if err != nil {
 		return nil, err
 	}
-	preview := pytool.Record("schema_version", pycompat.NewInt(1))
+	preview := toolcli.Record("schema_version", toolrt.NewInt(1))
 	for _, key := range state.current.Keys() {
 		preview.Set(key, state.current.Value(key))
 	}
@@ -604,7 +604,7 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*pycompat.D
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Equal(again.current, state.current) || digest != recipeDigest {
+	if !toolrt.Equal(again.current, state.current) || digest != recipeDigest {
 		return nil, valueError(textChangedBuild)
 	}
 	for _, item := range []struct {
@@ -620,7 +620,7 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*pycompat.D
 		}
 	}
 	if err := os.Rename(temporary, directory); err != nil {
-		return nil, pycompat.OSErrorFrom(err, temporary)
+		return nil, toolrt.OSErrorFrom(err, temporary)
 	}
 	name, err := relative(directory, root)
 	if err != nil {
@@ -632,24 +632,24 @@ func build(ctx context.Context, shot, recipe, workDir, root string) (*pycompat.D
 	return result, nil
 }
 
-// acceptedFrames — package["accepted_edit"]["frames"].
-func acceptedFrames(pkg *pycompat.Dict) (any, error) {
-	edit, err := pycompat.Item(pkg, "accepted_edit")
+// acceptedFrames — поле accepted_edit.frames комплекта; без поля — KeyError.
+func acceptedFrames(pkg *toolrt.Dict) (any, error) {
+	edit, err := toolrt.Item(pkg, "accepted_edit")
 	if err != nil {
 		return nil, err
 	}
-	return pycompat.Item(edit, "frames")
+	return toolrt.Item(edit, "frames")
 }
 
-// checkedResult — итог checked_result: показанная проба и её актуальный контекст.
+// checkedResult — итог checkResult: показанная проба и её актуальный контекст.
 type checkedResult struct {
-	preview *pycompat.Dict
+	preview *toolrt.Dict
 	receipt any
 	state   *sourceContext
 	plan    *cutPlan
 }
 
-// checkResult — checked_result(directory, confirm, root): подтверждение действует только для тех
+// checkResult — проверка пробы directory перед приёмкой: подтверждение confirm действует только для тех
 // же контекста, рецепта, параметров, комплекта источника и файлов результата, что показаны.
 func checkResult(directory, confirm, root string) (*checkedResult, error) {
 	previewValue, err := readJSON(filepath.Join(directory, "preview.json"))
@@ -664,7 +664,7 @@ func checkResult(directory, confirm, root string) (*checkedResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Equal(preview.Value("schema_version"), pycompat.NewInt(1)) || !pycompat.Equal(preview.Value("result_token"), confirm) {
+	if !toolrt.Equal(preview.Value("schema_version"), toolrt.NewInt(1)) || !toolrt.Equal(preview.Value("result_token"), confirm) {
 		return nil, valueError(textBadConfirm)
 	}
 	token, err := tokenFor(preview, receipt)
@@ -674,7 +674,7 @@ func checkResult(directory, confirm, root string) (*checkedResult, error) {
 	if token != confirm {
 		return nil, valueError(textBadConfirm)
 	}
-	shot, err := pycompat.Item(preview, "shot")
+	shot, err := toolrt.Item(preview, "shot")
 	if err != nil {
 		return nil, err
 	}
@@ -683,11 +683,11 @@ func checkResult(directory, confirm, root string) (*checkedResult, error) {
 		return nil, err
 	}
 	for _, key := range state.current.Keys() {
-		if !pycompat.Equal(preview.Value(key), state.current.Value(key)) {
+		if !toolrt.Equal(preview.Value(key), state.current.Value(key)) {
 			return nil, valueError(textChangedResult)
 		}
 	}
-	recipeName, err := pycompat.Item(receipt, "recipe_path")
+	recipeName, err := toolrt.Item(receipt, "recipe_path")
 	if err != nil {
 		return nil, err
 	}
@@ -699,22 +699,22 @@ func checkResult(directory, confirm, root string) (*checkedResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	recorded, err := pycompat.Item(receipt, "recipe_sha256")
+	recorded, err := toolrt.Item(receipt, "recipe_sha256")
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Equal(digest, recorded) {
+	if !toolrt.Equal(digest, recorded) {
 		return nil, valueError(textChangedRecipe)
 	}
 	saved, err := readJSON(filepath.Join(directory, "recipe.json"))
 	if err != nil {
 		return nil, err
 	}
-	recipe, err := pycompat.Item(preview, "recipe")
+	recipe, err := toolrt.Item(preview, "recipe")
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Equal(saved, recipe) {
+	if !toolrt.Equal(saved, recipe) {
 		return nil, valueError(textChangedRecipe)
 	}
 	sourceFrames, err := acceptedFrames(state.pkg)
@@ -729,26 +729,26 @@ func checkResult(directory, confirm, root string) (*checkedResult, error) {
 		key   string
 		value any
 	}{{"filter", plan.filter}, {"target_start_frame", state.scene.Value("start_frame")}, {"target_end_frame_exclusive", state.scene.Value("end_frame_exclusive")}} {
-		value, err := pycompat.Item(receipt, item.key)
+		value, err := toolrt.Item(receipt, item.key)
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(value, item.value) {
+		if !toolrt.Equal(value, item.value) {
 			return nil, valueError(textChangedParams)
 		}
 	}
-	manifest := pycompat.JoinPath(root, "assets/shots", state.current.Value("source_shot").(string), "manifest.json")
+	manifest := toolrt.JoinPath(root, "assets/shots", state.current.Value("source_shot").(string), "manifest.json")
 	if digest, err = assetpackage.FileSHA256(manifest); err != nil {
 		return nil, err
 	}
-	if recorded, err = pycompat.Item(receipt, "source_manifest_sha256"); err != nil {
+	if recorded, err = toolrt.Item(receipt, "source_manifest_sha256"); err != nil {
 		return nil, err
 	}
-	if !pycompat.Equal(digest, recorded) {
+	if !toolrt.Equal(digest, recorded) {
 		return nil, valueError(textChangedKit)
 	}
 	for _, item := range [][2]string{{"video", "candidate.mp4"}, {"preview", "preview.mp4"}} {
-		shown, err := pycompat.Item(preview, item[0])
+		shown, err := toolrt.Item(preview, item[0])
 		if err != nil {
 			return nil, err
 		}
@@ -756,7 +756,7 @@ func checkResult(directory, confirm, root string) (*checkedResult, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(shown, actual) {
+		if !toolrt.Equal(shown, actual) {
 			return nil, valueError(textChangedFile + item[1])
 		}
 	}

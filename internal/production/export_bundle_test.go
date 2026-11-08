@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/production"
-	"songframe-go/internal/tools"
+	"songframe/internal/golden"
+	"songframe/internal/jobs"
+	"songframe/internal/production"
+	"songframe/internal/tools"
 )
 
 // bundleStep — шаг домена export-bundle-job: подготовка, вызов exportBundle или removeBundle,

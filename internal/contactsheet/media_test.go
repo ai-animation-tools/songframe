@@ -3,14 +3,14 @@ package contactsheet
 import (
 	"testing"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
-// TestRoundedProduct — int((duration * rate).to_integral_value()) Decimal Python: 28 значащих
-// цифр произведения, затем округление половины к чётному (значения сверены с CPython 3.12).
+// TestRoundedProduct — 28 значащих цифр произведения, затем округление половины к чётному
+// до целого; ожидаемые значения посчитаны точной десятичной арифметикой.
 func TestRoundedProduct(t *testing.T) {
-	decimal := func(text string) pycompat.Decimal {
-		value, err := pycompat.NewDecimal(text)
+	decimal := func(text string) toolrt.Decimal {
+		value, err := toolrt.NewDecimal(text)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -22,7 +22,7 @@ func TestRoundedProduct(t *testing.T) {
 	}
 	for _, item := range []struct {
 		duration string
-		rate     pycompat.Decimal
+		rate     toolrt.Decimal
 		want     string
 	}{
 		{"2.5", decimal("1"), "2"},
@@ -42,22 +42,22 @@ func TestRoundedProduct(t *testing.T) {
 	if _, err := roundedProduct(decimal("NaN"), decimal("1")); err == nil || err.Error() != "cannot convert NaN to integer" {
 		t.Errorf("NaN: %v", err)
 	}
-	if _, err := roundedProduct(decimal("Infinity"), decimal("0")); !pycompat.Is(err, pycompat.InvalidOperation) {
+	if _, err := roundedProduct(decimal("Infinity"), decimal("0")); !toolrt.Is(err, toolrt.InvalidOperation) {
 		t.Errorf("inf × 0: %v", err)
 	}
-	if _, err := roundedProduct(decimal("Infinity"), decimal("2")); !pycompat.Is(err, pycompat.OverflowError) {
+	if _, err := roundedProduct(decimal("Infinity"), decimal("2")); !toolrt.Is(err, toolrt.OverflowError) {
 		t.Errorf("inf: %v", err)
 	}
 }
 
-// TestToInt — int() значений JSON ffprobe.
+// TestToInt — приведение к целому значений JSON ffprobe.
 func TestToInt(t *testing.T) {
 	for _, item := range []struct {
 		value any
 		want  string
 		fails bool
 	}{
-		{"640", "640", false}, {" 1_000 ", "1000", false}, {"-7", "-7", false}, {pycompat.NewInt(5), "5", false},
+		{"640", "640", false}, {" 1_000 ", "1000", false}, {"-7", "-7", false}, {toolrt.NewInt(5), "5", false},
 		{12.9, "12", false}, {true, "1", false}, {"1__0", "", true}, {"_1", "", true}, {"", "", true}, {"N/A", "", true}, {nil, "", true},
 	} {
 		got, err := toInt(item.value)

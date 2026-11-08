@@ -7,13 +7,13 @@ import (
 )
 
 // TestContractProfileUsesSeparateApplicationDirectory закрепляет собственный каталог состояния
-// приложения ProfileName.
+// приложения ProfileName: без явного пути профиль не берёт каталог из окружения и не трогает его.
 func TestContractProfileUsesSeparateApplicationDirectory(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", base)
 	t.Setenv("APPDATA", base)
-	old := filepath.Join(base, "electron-profile")
-	t.Setenv("SONGFRAME_LOCAL_DIR", old)
+	envDir := filepath.Join(base, "env-profile")
+	t.Setenv("SONGFRAME_LOCAL_DIR", envDir)
 	path, err := NewProfile("").Path()
 	if err != nil {
 		t.Fatal(err)
@@ -26,8 +26,8 @@ func TestContractProfileUsesSeparateApplicationDirectory(t *testing.T) {
 	if path != expected {
 		t.Fatalf("профиль не изолирован: %q", path)
 	}
-	if _, err := os.Stat(old); !os.IsNotExist(err) {
-		t.Fatalf("старый профиль затронут: %v", err)
+	if _, err := os.Stat(envDir); !os.IsNotExist(err) {
+		t.Fatalf("каталог из окружения затронут: %v", err)
 	}
 }
 

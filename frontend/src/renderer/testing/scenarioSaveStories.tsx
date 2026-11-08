@@ -158,7 +158,7 @@ export function ScenesSaveStory({ mode = 'production', stale = false, longList =
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Stack spacing={2}>
         <Typography variant="caption" color="text.secondary">
-          Модель последствий сохранения. Реестр затронутых планов задан заранее; файловые расчёты, IPC и производство не выполняются.
+          Модель последствий сохранения. Реестр затронутых планов задан заранее; файловые расчёты, вызовы Go и производство не выполняются.
         </Typography>
         <TextField
           label="Черновик постановки"

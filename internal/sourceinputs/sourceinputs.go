@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // ManifestPath — опись исходников относительно папки проекта.
@@ -28,20 +28,20 @@ func digest(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// canonical — канонический вид значения: ключи объектов по возрастанию (сравнение строк JS по кодовым
+// canonical — канонический вид значения: ключи объектов по возрастанию (сравнение строк по кодовым
 // единицам UTF-16), массивы поэлементно; остальные значения без изменений.
 func canonical(value any) any {
 	switch typed := value.(type) {
-	case *jscompat.Array:
+	case *dynvalue.Array:
 		items := make([]any, len(typed.Items))
 		for index, item := range typed.Items {
 			items[index] = canonical(item)
 		}
-		return &jscompat.Array{Items: items}
-	case *jscompat.Object:
+		return &dynvalue.Array{Items: items}
+	case *dynvalue.Object:
 		keys := typed.Keys()
-		sort.SliceStable(keys, func(i, j int) bool { return jscompat.LessUTF16(keys[i], keys[j]) })
-		result := jscompat.NewObject()
+		sort.SliceStable(keys, func(i, j int) bool { return dynvalue.LessUTF16(keys[i], keys[j]) })
+		result := dynvalue.NewObject()
 		for _, key := range keys {
 			result.Set(key, canonical(typed.Value(key)))
 		}
@@ -54,15 +54,15 @@ func canonical(value any) any {
 // updated_at. Повреждённый JSON или не-объект — SHA-256 самих байтов, чтобы порча не
 // маскировалась под прежний корректный набор входов.
 func DigestBytes(data []byte) string {
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
-	record, ok := jscompat.AsObject(value)
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
+	record, ok := dynvalue.AsObject(value)
 	if err != nil || !ok {
 		return digest(data)
 	}
 	inputs := record.Clone()
 	inputs.Delete("cover")
 	inputs.Delete("updated_at")
-	return digest([]byte(jscompat.Stringify(canonical(inputs))))
+	return digest([]byte(dynvalue.Stringify(canonical(inputs))))
 }
 
 // Digest — отпечаток описи проекта; ok=false — файла нет. Ошибка — опись есть, но не читается.
@@ -73,7 +73,7 @@ func Digest(project string) (value string, ok bool, err error) {
 		return "", false, nil
 	}
 	if readErr != nil {
-		return "", false, jscompat.FsError("open", path, readErr)
+		return "", false, dynvalue.FsError("open", path, readErr)
 	}
 	return DigestBytes(data), true, nil
 }

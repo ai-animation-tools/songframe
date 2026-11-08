@@ -12,10 +12,10 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/scenario"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/filedigest"
+	"songframe/internal/scenario"
 )
 
 // Состояние принятого комплекта.
@@ -41,7 +41,7 @@ var sha256Pattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
 // Result — итог shotAcceptance. Поля сериализуются как expected-acceptance.json эталонов.
 type Result struct {
-	// Fingerprints — отпечатки текущей постановки по String(id) плана; nil, если состояние
+	// Fingerprints — отпечатки текущей постановки по строковому id плана (dynvalue.ToString); nil, если состояние
 	// реестра не вычисляется (тогда все комплекты устарели по scene_changed).
 	Fingerprints map[string]string `json:"fingerprints"`
 	// Accepted — только планы с комплектом: completed или stale.
@@ -57,31 +57,31 @@ func sceneComparisonFailed(reason string) string {
 	return "Постановку планов не удалось сверить с принятыми комплектами: " + reason
 }
 
-// readJSON читает JSON-файл; при любой ошибке чтения или разбора — undefined, чтобы
+// readJSON читает JSON-файл; при любой ошибке чтения или разбора — dynvalue.Undefined, чтобы
 // повреждённый файл принятия считался отсутствующим.
 func readJSON(path string) any {
-	value, ok := jscompat.ReadJSONFile(path)
+	value, ok := dynvalue.ReadJSONFile(path)
 	if !ok {
-		return jscompat.Undefined
+		return dynvalue.Undefined
 	}
 	return value
 }
 
 // acceptedEntries — shots из файла принятия или пустой объект.
-func acceptedEntries(project string) *jscompat.Object {
+func acceptedEntries(project string) *dynvalue.Object {
 	status := readJSON(filepath.Join(project, filepath.FromSlash(ProductionStatus)))
-	if shots, ok := jscompat.AsObject(jscompat.Get(status, "shots")); ok && jscompat.IsRecord(status) {
+	if shots, ok := dynvalue.AsObject(dynvalue.Get(status, "shots")); ok && dynvalue.IsRecord(status) {
 		return shots
 	}
-	return jscompat.NewObject()
+	return dynvalue.NewObject()
 }
 
 // ProjectFingerprints — отпечатки по кастингу проекта: initial_state сущностей входит в
 // унаследованное состояние плана. Повреждённый кастинг даёт пустое начальное состояние.
-func ProjectFingerprints(project string, scenes any) (*jscompat.Object, error) {
+func ProjectFingerprints(project string, scenes any) (*dynvalue.Object, error) {
 	read := cast.Read(project)
 	var value any
-	if jscompat.Truthy(read.Value) {
+	if dynvalue.Truthy(read.Value) {
 		value = read.Value
 	}
 	initial, err := cast.InitialStates(value)
@@ -105,7 +105,7 @@ func Compute(project string, scenes any) (Result, error) {
 	entries := acceptedEntries(project)
 	stored := map[string]string{}
 	for _, id := range entries.Keys() {
-		if sha, ok := jscompat.Get(entries.Value(id), "scene_sha256").(string); ok && jscompat.IsRecord(entries.Value(id)) {
+		if sha, ok := dynvalue.Get(entries.Value(id), "scene_sha256").(string); ok && dynvalue.IsRecord(entries.Value(id)) {
 			stored[id] = sha
 		}
 	}
@@ -116,21 +116,21 @@ func Compute(project string, scenes any) (Result, error) {
 		accepted[shot] = Stale
 		reasons[shot] = reason
 	}
-	list, err := jscompat.Iterate(jscompat.Get(scenes, "scenes"))
+	list, err := dynvalue.Iterate(dynvalue.Get(scenes, "scenes"))
 	if err != nil {
 		return Result{}, err
 	}
 	for _, scene := range list {
-		rawID, err := jscompat.Prop(scene, "id")
+		rawID, err := dynvalue.Prop(scene, "id")
 		if err != nil {
 			return Result{}, err
 		}
-		id, err := jscompat.PathArg("path", rawID)
+		id, err := dynvalue.PathArg("path", rawID)
 		if err != nil {
 			return Result{}, err
 		}
 		path := filepath.Join(project, "assets", "shots", id, "manifest.json")
-		if !jscompat.Exists(path) {
+		if !dynvalue.Exists(path) {
 			continue
 		}
 		manifests[id] = readJSON(path)
@@ -143,28 +143,28 @@ func Compute(project string, scenes any) (Result, error) {
 	}
 	// Все собственные отпечатки уже вычислены: источник может стоять позже на монтажной шкале.
 	for _, scene := range list {
-		id := jscompat.Get(scene, "id").(string)
+		id := dynvalue.Get(scene, "id").(string)
 		if accepted[id] != Completed {
 			continue
 		}
 		entry := entries.Value(id)
-		source := jscompat.GetPath(scene, "derived_from", "shot")
+		source := dynvalue.GetPath(scene, "derived_from", "shot")
 		manifest := manifests[id]
-		storedDerived := jscompat.IsRecord(manifest) && jscompat.StrictEqual(jscompat.Get(manifest, "kind"), "derived_video")
-		if !jscompat.Truthy(source) && !storedDerived {
+		storedDerived := dynvalue.IsRecord(manifest) && dynvalue.StrictEqual(dynvalue.Get(manifest, "kind"), "derived_video")
+		if !dynvalue.Truthy(source) && !storedDerived {
 			continue
 		}
-		generation, hasGeneration := jscompat.AsObject(jscompat.Get(manifest, "generation"))
-		if !jscompat.IsRecord(manifest) {
+		generation, hasGeneration := dynvalue.AsObject(dynvalue.Get(manifest, "generation"))
+		if !dynvalue.IsRecord(manifest) {
 			hasGeneration = false
 		}
-		if !jscompat.Truthy(source) || !storedDerived || !hasGeneration || !jscompat.StrictEqual(generation.Value("source_shot"), source) {
+		if !dynvalue.Truthy(source) || !storedDerived || !hasGeneration || !dynvalue.StrictEqual(generation.Value("source_shot"), source) {
 			stale(id, DerivedLinkChanged)
 			continue
 		}
 		var sourceScene any
 		for _, item := range list {
-			if jscompat.StrictEqual(jscompat.Get(item, "id"), source) {
+			if dynvalue.StrictEqual(dynvalue.Get(item, "id"), source) {
 				sourceScene = item
 				break
 			}
@@ -174,14 +174,14 @@ func Compute(project string, scenes any) (Result, error) {
 		if sourceIsString {
 			snapshot = ReadSourceVideo(project, sourceName)
 		}
-		sourceFingerprint := jscompat.Undefined
+		sourceFingerprint := dynvalue.Undefined
 		if fingerprints != nil {
-			sourceFingerprint = fingerprints.Value(jscompat.ToString(source))
+			sourceFingerprint = fingerprints.Value(dynvalue.ToString(source))
 		}
-		reviewEntry, entryIsRecord := jscompat.AsObject(entry)
+		reviewEntry, entryIsRecord := dynvalue.AsObject(entry)
 		switch {
-		case sourceScene == nil || jscompat.Truthy(jscompat.Get(sourceScene, "derived_from")) ||
-			accepted[jscompat.ToString(source)] != Completed || !sourceIsString || snapshot == nil:
+		case sourceScene == nil || dynvalue.Truthy(dynvalue.Get(sourceScene, "derived_from")) ||
+			accepted[dynvalue.ToString(source)] != Completed || !sourceIsString || snapshot == nil:
 			stale(id, SourceUnavailable)
 		case entryIsRecord && reviewEntry.Has("source_review"):
 			review := reviewEntry.Value("source_review")
@@ -191,19 +191,19 @@ func Compute(project string, scenes any) (Result, error) {
 				own = ReadAcceptedVideo(project, id)
 			}
 			switch {
-			case valid && !jscompat.StrictEqual(jscompat.Get(review, "source_shot"), source):
+			case valid && !dynvalue.StrictEqual(dynvalue.Get(review, "source_shot"), source):
 				stale(id, DerivedLinkChanged)
-			case !valid || own == nil || !jscompat.StrictEqual(own.AcceptedVideoSha256, jscompat.Get(review, "accepted_video_sha256")):
+			case !valid || own == nil || !dynvalue.StrictEqual(own.AcceptedVideoSha256, dynvalue.Get(review, "accepted_video_sha256")):
 				stale(id, SourceReceiptMissing)
-			case !jscompat.StrictEqual(jscompat.Get(review, "source_scene_sha256"), sourceFingerprint) ||
-				!jscompat.StrictEqual(jscompat.Get(review, "source_accepted_video_sha256"), snapshot.AcceptedVideoSha256):
+			case !dynvalue.StrictEqual(dynvalue.Get(review, "source_scene_sha256"), sourceFingerprint) ||
+				!dynvalue.StrictEqual(dynvalue.Get(review, "source_accepted_video_sha256"), snapshot.AcceptedVideoSha256):
 				stale(id, SourceChanged)
 			}
-		case jscompat.TypeOf(generation.Value("source_scene_sha256")) != "string" ||
-			jscompat.TypeOf(generation.Value("source_accepted_video_sha256")) != "string":
+		case dynvalue.TypeOf(generation.Value("source_scene_sha256")) != "string" ||
+			dynvalue.TypeOf(generation.Value("source_accepted_video_sha256")) != "string":
 			stale(id, SourceReceiptMissing)
-		case !jscompat.StrictEqual(generation.Value("source_scene_sha256"), sourceFingerprint) ||
-			!jscompat.StrictEqual(generation.Value("source_accepted_video_sha256"), snapshot.AcceptedVideoSha256):
+		case !dynvalue.StrictEqual(generation.Value("source_scene_sha256"), sourceFingerprint) ||
+			!dynvalue.StrictEqual(generation.Value("source_accepted_video_sha256"), snapshot.AcceptedVideoSha256):
 			stale(id, SourceChanged)
 		}
 	}
@@ -220,7 +220,7 @@ func Compute(project string, scenes any) (Result, error) {
 // validReview — подтверждение source_review ровно с четырьмя полями: непустым source_shot и
 // тремя SHA-256.
 func validReview(review any) bool {
-	object, ok := jscompat.AsObject(review)
+	object, ok := dynvalue.AsObject(review)
 	if !ok || object.Len() != 4 {
 		return false
 	}
@@ -231,7 +231,7 @@ func validReview(review any) bool {
 		}
 	}
 	shot, ok := object.Value("source_shot").(string)
-	if !ok || jscompat.Trim(shot) == "" {
+	if !ok || dynvalue.Trim(shot) == "" {
 		return false
 	}
 	for _, key := range []string{"source_scene_sha256", "source_accepted_video_sha256", "accepted_video_sha256"} {
@@ -259,36 +259,36 @@ func ReadSourceVideo(project, shot string) *Snapshot { return readVideo(project,
 // readVideo проверяет манифест комплекта и сам файл ролика: путь внутри комплекта, обычный файл,
 // хеш байтов равен записанному. Любой отказ — nil: непроверяемый ролик не считается принятым.
 func readVideo(project, shot string, allowDerived bool) *Snapshot {
-	directory, err := jscompat.Realpath(filepath.Join(project, "assets", "shots", shot))
+	directory, err := dynvalue.Realpath(filepath.Join(project, "assets", "shots", shot))
 	if err != nil {
 		return nil
 	}
-	manifest, ok := jscompat.ReadJSONFile(filepath.Join(directory, "manifest.json"))
+	manifest, ok := dynvalue.ReadJSONFile(filepath.Join(directory, "manifest.json"))
 	if !ok {
 		return nil
 	}
-	object, isRecord := jscompat.AsObject(manifest)
-	if !isRecord || !jscompat.StrictEqual(object.Value("schema_version"), 1.0) || !jscompat.StrictEqual(object.Value("shot"), shot) ||
-		(!allowDerived && jscompat.StrictEqual(object.Value("kind"), "derived_video")) || !jscompat.IsRecord(object.Value("accepted_edit")) {
+	object, isRecord := dynvalue.AsObject(manifest)
+	if !isRecord || !dynvalue.StrictEqual(object.Value("schema_version"), 1.0) || !dynvalue.StrictEqual(object.Value("shot"), shot) ||
+		(!allowDerived && dynvalue.StrictEqual(object.Value("kind"), "derived_video")) || !dynvalue.IsRecord(object.Value("accepted_edit")) {
 		return nil
 	}
-	video, isRecord := jscompat.AsObject(jscompat.Get(object.Value("accepted_edit"), "video"))
+	video, isRecord := dynvalue.AsObject(dynvalue.Get(object.Value("accepted_edit"), "video"))
 	if !isRecord {
 		return nil
 	}
 	path, isString := video.Value("path").(string)
 	root := video.Value("root")
 	sha, shaIsString := video.Value("sha256").(string)
-	if !isString || path == "" || jscompat.IsAbs(path) || (root != jscompat.Undefined && !jscompat.StrictEqual(root, "asset")) ||
+	if !isString || path == "" || dynvalue.IsAbs(path) || (root != dynvalue.Undefined && !dynvalue.StrictEqual(root, "asset")) ||
 		!shaIsString || !sha256Pattern.MatchString(sha) {
 		return nil
 	}
-	videoPath, err := jscompat.Realpath(jscompat.Resolve(directory, path))
+	videoPath, err := dynvalue.Realpath(dynvalue.Resolve(directory, path))
 	if err != nil {
 		return nil
 	}
-	local := jscompat.Relative(directory, videoPath)
-	if local == ".." || strings.HasPrefix(local, ".."+string(filepath.Separator)) || jscompat.IsAbs(local) {
+	local := dynvalue.Relative(directory, videoPath)
+	if local == ".." || strings.HasPrefix(local, ".."+string(filepath.Separator)) || dynvalue.IsAbs(local) {
 		return nil
 	}
 	digest, ok := filedigest.File(videoPath)

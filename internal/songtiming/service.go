@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/components"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/timing"
+	"songframe/internal/components"
+	"songframe/internal/jobs"
+	"songframe/internal/timing"
 )
 
 // Тексты songTimingTexts (frontend/src/shared/texts/song-timing.ts).

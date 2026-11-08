@@ -1,8 +1,8 @@
 package app
 
 import (
-	"songframe-go/internal/tools"
-	"songframe-go/internal/wire"
+	"songframe/internal/tools"
+	"songframe/internal/wire"
 )
 
 // ToolsService реализует window.api.tools: запуск инструмента комплекса по имени на папке проекта.

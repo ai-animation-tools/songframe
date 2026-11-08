@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/project"
-	"songframe-go/internal/wire"
+	"songframe/internal/project"
+	"songframe/internal/wire"
 )
 
 // NativeCheckConfig задаётся только явными CLI-флагами разработчика. Медиа уже

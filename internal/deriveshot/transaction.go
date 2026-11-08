@@ -10,12 +10,12 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/applymontage"
-	"songframe-go/internal/assetpackage"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/sceneregistry"
-	"songframe-go/internal/sceneviews"
+	"songframe/internal/applymontage"
+	"songframe/internal/assetpackage"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/sceneviews"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // Тексты отказов транзакции приёмки (ValueError).
@@ -32,32 +32,32 @@ const (
 )
 
 // descriptorKey — кортеж (root, path) множества зарегистрированных файлов.
-func descriptorKey(item *pycompat.Dict) (string, error) {
-	path, err := pycompat.Item(item, "path")
+func descriptorKey(item *toolrt.Dict) (string, error) {
+	path, err := toolrt.Item(item, "path")
 	if err != nil {
 		return "", err
 	}
-	scope, err := pycompat.HashKey(descriptorRoot(item))
+	scope, err := toolrt.HashKey(descriptorRoot(item))
 	if err != nil {
 		return "", err
 	}
-	name, err := pycompat.HashKey(path)
+	name, err := toolrt.HashKey(path)
 	if err != nil {
 		return "", err
 	}
 	return scope + "\x00" + name, nil
 }
 
-// descriptorRoot — item.get("root", "asset").
-func descriptorRoot(item *pycompat.Dict) any {
+// descriptorRoot — поле root дескриптора; без поля — "asset".
+func descriptorRoot(item *toolrt.Dict) any {
 	if value, found := item.Get("root"); found {
 		return value
 	}
 	return "asset"
 }
 
-// extendList — dict.setdefault(key, []).extend(items).
-func extendList(owner *pycompat.Dict, key string, items []any) error {
+// extendList — дописывает items в список owner[key], создавая пустой список, если ключа нет.
+func extendList(owner *toolrt.Dict, key string, items []any) error {
 	value, found := owner.Get(key)
 	if !found {
 		value = []any{}
@@ -70,18 +70,18 @@ func extendList(owner *pycompat.Dict, key string, items []any) error {
 	return nil
 }
 
-// copyGeneration — copy_generation: копирует достижимые исходники в новый комплект, сохраняя JSON и
+// copyGeneration копирует достижимые исходники в новый комплект, сохраняя JSON и
 // файлы root:source без чужой истории и README. Файлы, достижимые только через JSON, регистрируются
 // в манифесте и остаются под штатной проверкой хешей, а не становятся бесхозными копиями.
-func copyGeneration(pkg *pycompat.Dict, sourceDirectory, target, root string) (*pycompat.Dict, error) {
-	value, err := pycompat.Item(pkg, "generation")
+func copyGeneration(pkg *toolrt.Dict, sourceDirectory, target, root string) (*toolrt.Dict, error) {
+	value, err := toolrt.Item(pkg, "generation")
 	if err != nil {
 		return nil, err
 	}
-	copied := pycompat.DeepCopy(value)
-	queue := []*pycompat.Dict{}
-	collect := func(item *pycompat.Dict) error {
-		queue = append(queue, pycompat.DeepCopy(item).(*pycompat.Dict))
+	copied := toolrt.DeepCopy(value)
+	queue := []*toolrt.Dict{}
+	collect := func(item *toolrt.Dict) error {
+		queue = append(queue, toolrt.DeepCopy(item).(*toolrt.Dict))
 		return nil
 	}
 	if err := assetpackage.Descriptors(copied, collect); err != nil {
@@ -104,7 +104,7 @@ func copyGeneration(pkg *pycompat.Dict, sourceDirectory, target, root string) (*
 		if err != nil {
 			return nil, err
 		}
-		pathValue, err := pycompat.Item(item, "path")
+		pathValue, err := toolrt.Item(item, "path")
 		if err != nil {
 			return nil, err
 		}
@@ -116,11 +116,11 @@ func copyGeneration(pkg *pycompat.Dict, sourceDirectory, target, root string) (*
 		if err != nil {
 			return nil, err
 		}
-		recorded, err := pycompat.Item(item, "sha256")
+		recorded, err := toolrt.Item(item, "sha256")
 		if err != nil {
 			return nil, err
 		}
-		if digest == nil || !pycompat.Equal(digest, recorded) {
+		if digest == nil || !toolrt.Equal(digest, recorded) {
 			return nil, valueError(textGenerationChanged + name)
 		}
 		key, err := descriptorKey(item)
@@ -129,9 +129,9 @@ func copyGeneration(pkg *pycompat.Dict, sourceDirectory, target, root string) (*
 		}
 		if !registered[key] {
 			registered[key] = true
-			discovered = append(discovered, pycompat.DeepCopy(item))
+			discovered = append(discovered, toolrt.DeepCopy(item))
 		}
-		if pycompat.Equal(descriptorRoot(item), "source") || done[name] {
+		if toolrt.Equal(descriptorRoot(item), "source") || done[name] {
 			continue
 		}
 		destination, err := assetpackage.LocalFile(target, name)
@@ -139,13 +139,13 @@ func copyGeneration(pkg *pycompat.Dict, sourceDirectory, target, root string) (*
 			return nil, err
 		}
 		if err := os.MkdirAll(filepath.Dir(destination), 0o777); err != nil {
-			return nil, pycompat.OSErrorFrom(err, filepath.Dir(destination))
+			return nil, toolrt.OSErrorFrom(err, filepath.Dir(destination))
 		}
 		if err := applymontage.CopyFile(source, destination); err != nil {
 			return nil, err
 		}
 		done[name] = true
-		if strings.ToLower(pycompat.PathSuffix(source)) == ".json" {
+		if strings.ToLower(toolrt.PathSuffix(source)) == ".json" {
 			document, err := readJSON(source)
 			if err != nil {
 				return nil, err
@@ -160,7 +160,7 @@ func copyGeneration(pkg *pycompat.Dict, sourceDirectory, target, root string) (*
 		return nil, err
 	}
 	if len(discovered) > 0 {
-		if preparation := generation.Value("preparation"); pycompat.Truthy(preparation) {
+		if preparation := generation.Value("preparation"); toolrt.Truthy(preparation) {
 			owner, err := dictOf(preparation, "setdefault")
 			if err != nil {
 				return nil, err
@@ -177,20 +177,20 @@ func copyGeneration(pkg *pycompat.Dict, sourceDirectory, target, root string) (*
 }
 
 // divided — value / 30 числом с плавающей точкой.
-func divided(value pycompat.Int) (float64, error) { return pycompat.TrueDiv(value, fps) }
+func divided(value toolrt.Int) (float64, error) { return toolrt.TrueDiv(value, fps) }
 
-// ratioFloat — float(Fraction): ближайшее число двойной точности.
+// ratioFloat — ближайшее к дроби число двойной точности.
 func ratioFloat(value *big.Rat) float64 {
 	result, _ := value.Float64()
 	return result
 }
 
-// makeManifest — make_manifest: манифест нового комплекта. Пути исходной генерации сохраняются:
+// makeManifest — манифест нового комплекта. Пути исходной генерации сохраняются:
 // неизменяемый JSON может ссылаться на video.mp4 или edit-source.mp4, поэтому свои файлы занимают
 // отдельное свободное имя derived-output[-N].
-func makeManifest(result *checkedResult, target, candidate, root string) (*pycompat.Dict, error) {
+func makeManifest(result *checkedResult, target, candidate, root string) (*toolrt.Dict, error) {
 	preview, plan := result.preview, result.plan
-	sourceDirectory := pycompat.JoinPath(root, "assets/shots", preview.Value("source_shot").(string))
+	sourceDirectory := toolrt.JoinPath(root, "assets/shots", preview.Value("source_shot").(string))
 	generation, err := copyGeneration(result.state.pkg, sourceDirectory, target, root)
 	if err != nil {
 		return nil, err
@@ -199,12 +199,12 @@ func makeManifest(result *checkedResult, target, candidate, root string) (*pycom
 		generation.Set(key, preview.Value(key))
 	}
 	folder := "derived-output"
-	for suffix := 0; pycompat.Exists(filepath.Join(sourceDirectory, folder)) || pycompat.Exists(filepath.Join(target, folder)); {
+	for suffix := 0; toolrt.Exists(filepath.Join(sourceDirectory, folder)) || toolrt.Exists(filepath.Join(target, folder)); {
 		suffix++
-		folder = "derived-output-" + pycompat.Str(pycompat.NewInt(int64(suffix)))
+		folder = "derived-output-" + toolrt.Str(toolrt.NewInt(int64(suffix)))
 	}
 	if err := os.Mkdir(filepath.Join(target, folder), 0o777); err != nil {
-		return nil, pycompat.OSErrorFrom(err, filepath.Join(target, folder))
+		return nil, toolrt.OSErrorFrom(err, filepath.Join(target, folder))
 	}
 	sourceName, videoName := folder+"/edit-source.mp4", folder+"/video.mp4"
 	if err := applymontage.CopyFile(result.state.source, filepath.Join(target, sourceName)); err != nil {
@@ -217,7 +217,7 @@ func makeManifest(result *checkedResult, target, candidate, root string) (*pycom
 	if err != nil {
 		return nil, err
 	}
-	length := pycompat.IntFromBig(new(big.Int).Sub(plan.last.Big(), plan.first.Big()))
+	length := toolrt.IntFromBig(new(big.Int).Sub(plan.last.Big(), plan.first.Big()))
 	duration, err := divided(frames)
 	if err != nil {
 		return nil, err
@@ -242,25 +242,25 @@ func makeManifest(result *checkedResult, target, candidate, root string) (*pycom
 	if err != nil {
 		return nil, err
 	}
-	filter, err := pycompat.Item(result.receipt, "filter")
+	filter, err := toolrt.Item(result.receipt, "filter")
 	if err != nil {
 		return nil, err
 	}
-	version, err := pycompat.Item(result.receipt, "ffmpeg_version")
+	version, err := toolrt.Item(result.receipt, "ffmpeg_version")
 	if err != nil {
 		return nil, err
 	}
-	recipe, err := pycompat.Item(preview, "recipe")
+	recipe, err := toolrt.Item(preview, "recipe")
 	if err != nil {
 		return nil, err
 	}
-	mode := recipe.(*pycompat.Dict).Value("mode")
+	mode := recipe.(*toolrt.Dict).Value("mode")
 	var stillTime any
 	motion := duration
 	if mode == "still" {
 		stillTime, motion = firstTime, 0.0
 	}
-	edit := pytool.Record(
+	edit := toolcli.Record(
 		"video", video,
 		"fps", fps,
 		"frames", frames,
@@ -270,7 +270,7 @@ func makeManifest(result *checkedResult, target, candidate, root string) (*pycom
 		"source_frame_grid_fps", fps,
 		"source_frame_interval_exclusive", []any{plan.first, plan.last},
 		"still_source_time_seconds", stillTime,
-		"speed", pytool.Record(
+		"speed", toolcli.Record(
 			"factor", ratioFloat(plan.factor),
 			"ratio", plan.factor.RatString(),
 			"selected_source_seconds", selected,
@@ -283,23 +283,23 @@ func makeManifest(result *checkedResult, target, candidate, root string) (*pycom
 		"montage_source", video,
 		"source_fps", "30/1",
 		"fps_conversion", applymontage.FPSConversion,
-		"rebuild", pytool.Record(
+		"rebuild", toolcli.Record(
 			"source", rebuildSource,
-			"stages", []any{pytool.Record("input", sourceName, "filter", filter, "frames", frames)},
+			"stages", []any{toolcli.Record("input", sourceName, "filter", filter, "frames", frames)},
 			"ffmpeg_version", version,
 			"note", applymontage.RebuildNote,
 		),
 	)
 	if mode == "repeat" {
 		cycles, tail := new(big.Int).QuoRem(frames.Big(), length.Big(), new(big.Int))
-		edit.Set("repeat", pytool.Record(
-			"full_cycles", pycompat.IntFromBig(cycles),
-			"tail_frames", pycompat.IntFromBig(tail),
+		edit.Set("repeat", toolcli.Record(
+			"full_cycles", toolrt.IntFromBig(cycles),
+			"tail_frames", toolrt.IntFromBig(tail),
 			"cycle_frames", length,
 		))
 	}
-	return pytool.Record(
-		"schema_version", pycompat.NewInt(1),
+	return toolcli.Record(
+		"schema_version", toolrt.NewInt(1),
 		"shot", preview.Value("shot"),
 		"kind", "derived_video",
 		"generation", generation,
@@ -307,8 +307,8 @@ func makeManifest(result *checkedResult, target, candidate, root string) (*pycom
 	), nil
 }
 
-// walkFiles — rglob("*") с is_file(): в каталоги-ссылки не заходит, ссылка на файл считается
-// файлом. Нечитаемый каталог пропускается, как у pathlib.
+// walkFiles — рекурсивный список файлов directory: в каталоги-ссылки не заходит, ссылка на файл
+// считается файлом. Нечитаемый каталог пропускается без ошибки.
 func walkFiles(directory string, paths *[]string) {
 	entries, err := os.ReadDir(directory)
 	if err != nil {
@@ -318,22 +318,22 @@ func walkFiles(directory string, paths *[]string) {
 		path := filepath.Join(directory, entry.Name())
 		if entry.IsDir() {
 			walkFiles(path, paths)
-		} else if pycompat.IsFile(path) {
+		} else if toolrt.IsFile(path) {
 			*paths = append(*paths, path)
 		}
 	}
 }
 
-// treeFiles — tree_files(directory): относительный путь → SHA-256 в порядке sorted(pathlib);
+// treeFiles — относительный путь → SHA-256 файлов directory в порядке toolrt.SortPaths;
 // отсутствующая папка — nil.
 func treeFiles(directory string) (any, error) {
-	if !pycompat.Exists(directory) {
+	if !toolrt.Exists(directory) {
 		return nil, nil
 	}
 	paths := []string{}
 	walkFiles(directory, &paths)
-	pycompat.SortPaths(paths)
-	files := pycompat.NewDict()
+	toolrt.SortPaths(paths)
+	files := toolrt.NewDict()
 	for _, path := range paths {
 		digest, err := assetpackage.FileSHA256(path)
 		if err != nil {
@@ -348,14 +348,14 @@ func treeFiles(directory string) (any, error) {
 	return files, nil
 }
 
-// treeDigest — tree_digest(directory): отпечаток целой папки нужен журналу для безопасного
+// treeDigest — отпечаток целой папки directory: он нужен журналу для безопасного
 // повторяемого rename и отката.
 func treeDigest(directory string) (any, error) {
 	entries, err := treeFiles(directory)
 	if err != nil || entries == nil {
 		return nil, err
 	}
-	files := entries.(*pycompat.Dict)
+	files := entries.(*toolrt.Dict)
 	list := []any{}
 	for _, key := range files.Keys() {
 		list = append(list, []any{key, files.Value(key)})
@@ -368,8 +368,8 @@ func treeDigest(directory string) (any, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// saveJournal — save_journal: журнал заменяется одним rename.
-func saveJournal(directory string, journal *pycompat.Dict) error {
+// saveJournal — запись журнала: файл заменяется одним rename.
+func saveJournal(directory string, journal *toolrt.Dict) error {
 	data, err := applymontage.JSONBytes(journal)
 	if err != nil {
 		return err
@@ -384,12 +384,12 @@ type journalFile struct {
 }
 
 // journalFiles — journal["files"] как записи с проверенными типами.
-func journalFiles(journal *pycompat.Dict) ([]journalFile, error) {
-	value, err := pycompat.Item(journal, "files")
+func journalFiles(journal *toolrt.Dict) ([]journalFile, error) {
+	value, err := toolrt.Item(journal, "files")
 	if err != nil {
 		return nil, err
 	}
-	list, err := pycompat.Iter(value)
+	list, err := toolrt.Iter(value)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +397,7 @@ func journalFiles(journal *pycompat.Dict) ([]journalFile, error) {
 	for _, item := range list {
 		fields := [3]any{}
 		for index, key := range []string{"path", "before", "after"} {
-			if fields[index], err = pycompat.Item(item, key); err != nil {
+			if fields[index], err = toolrt.Item(item, key); err != nil {
 				return nil, err
 			}
 		}
@@ -412,7 +412,7 @@ func journalFiles(journal *pycompat.Dict) ([]journalFile, error) {
 
 // kitField — путь из journal["directory"] относительно корня проекта.
 func kitField(kit any, key, root string) (string, error) {
-	value, err := pycompat.Item(kit, key)
+	value, err := toolrt.Item(kit, key)
 	if err != nil {
 		return "", err
 	}
@@ -420,24 +420,24 @@ func kitField(kit any, key, root string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return pycompat.JoinPath(root, name), nil
+	return toolrt.JoinPath(root, name), nil
 }
 
-// matches — value in (candidates…) по равенству Python.
+// matches — value равно (toolrt.Equal) одному из candidates.
 func matches(value any, candidates ...any) bool {
 	for _, candidate := range candidates {
-		if pycompat.Equal(value, candidate) {
+		if toolrt.Equal(value, candidate) {
 			return true
 		}
 	}
 	return false
 }
 
-// restore — restore(directory, journal, root): сначала сверяет весь набор и только затем
+// restore — сначала сверяет весь набор и только затем
 // восстанавливает комплект и документы; повтор безопасен. Копия комплекта возвращается отдельным
 // rename, поэтому авария во время копирования не оставляет наполовину восстановленный комплект.
-func restore(directory string, journal *pycompat.Dict, root string) error {
-	kit, err := pycompat.Item(journal, "directory")
+func restore(directory string, journal *toolrt.Dict, root string) error {
+	kit, err := toolrt.Item(journal, "directory")
 	if err != nil {
 		return err
 	}
@@ -453,11 +453,11 @@ func restore(directory string, journal *pycompat.Dict, root string) error {
 	if err != nil {
 		return err
 	}
-	before, err := pycompat.Item(kit, "before")
+	before, err := toolrt.Item(kit, "before")
 	if err != nil {
 		return err
 	}
-	after, err := pycompat.Item(kit, "after")
+	after, err := toolrt.Item(kit, "after")
 	if err != nil {
 		return err
 	}
@@ -473,16 +473,16 @@ func restore(directory string, journal *pycompat.Dict, root string) error {
 		if err != nil {
 			return err
 		}
-		if !pycompat.Equal(digest, before) {
+		if !toolrt.Equal(digest, before) {
 			return valueError(textKitBackupBroken + directory)
 		}
 	}
-	if pycompat.Exists(retired) {
+	if toolrt.Exists(retired) {
 		digest, err := treeDigest(retired)
 		if err != nil {
 			return err
 		}
-		if !pycompat.Equal(digest, before) {
+		if !toolrt.Equal(digest, before) {
 			return valueError(textRetiredAfterCrash + directory)
 		}
 	}
@@ -491,7 +491,7 @@ func restore(directory string, journal *pycompat.Dict, root string) error {
 		return err
 	}
 	for _, entry := range files {
-		digest, err := applymontage.DigestOrNone(pycompat.JoinPath(root, entry.path))
+		digest, err := applymontage.DigestOrNone(toolrt.JoinPath(root, entry.path))
 		if err != nil {
 			return err
 		}
@@ -499,16 +499,16 @@ func restore(directory string, journal *pycompat.Dict, root string) error {
 			return valueError("После аварии изменён файл " + entry.path + "; журнал: " + directory)
 		}
 		if entry.before != nil {
-			saved, err := applymontage.DigestOrNone(pycompat.JoinPath(directory, "before", entry.path))
+			saved, err := applymontage.DigestOrNone(toolrt.JoinPath(directory, "before", entry.path))
 			if err != nil {
 				return err
 			}
-			if !pycompat.Equal(saved, entry.before) {
+			if !toolrt.Equal(saved, entry.before) {
 				return valueError(textBackupBroken + entry.path)
 			}
 		}
 	}
-	if !pycompat.Equal(current, before) {
+	if !toolrt.Equal(current, before) {
 		pending := filepath.Join(directory, "restore-kit")
 		_ = os.RemoveAll(pending)
 		if before != nil {
@@ -519,26 +519,26 @@ func restore(directory string, journal *pycompat.Dict, root string) error {
 		_ = os.RemoveAll(target)
 		if before != nil {
 			if err := os.MkdirAll(filepath.Dir(target), 0o777); err != nil {
-				return pycompat.OSErrorFrom(err, filepath.Dir(target))
+				return toolrt.OSErrorFrom(err, filepath.Dir(target))
 			}
 			if err := os.Rename(pending, target); err != nil {
-				return pycompat.OSErrorFrom(err, pending)
+				return toolrt.OSErrorFrom(err, pending)
 			}
 		}
 	}
 	for index := len(files) - 1; index >= 0; index-- {
 		entry := files[index]
-		path := pycompat.JoinPath(root, entry.path)
+		path := toolrt.JoinPath(root, entry.path)
 		if entry.before == nil {
 			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-				return pycompat.OSErrorFrom(err, path)
+				return toolrt.OSErrorFrom(err, path)
 			}
 			continue
 		}
-		saved := pycompat.JoinPath(directory, "before", entry.path)
+		saved := toolrt.JoinPath(directory, "before", entry.path)
 		data, err := os.ReadFile(saved)
 		if err != nil {
-			return pycompat.OSErrorFrom(err, saved)
+			return toolrt.OSErrorFrom(err, saved)
 		}
 		if err := applymontage.ReplaceBytes(path, data); err != nil {
 			return err
@@ -549,40 +549,40 @@ func restore(directory string, journal *pycompat.Dict, root string) error {
 	return saveJournal(directory, journal)
 }
 
-// journals — sorted((root / HISTORY).glob("*/journal.json")).
+// journals — журналы транзакций History/*/journal.json проекта в порядке toolrt.SortPaths.
 func journals(root string) []string {
-	paths := pycompat.Glob(pycompat.JoinPath(root, History), "*/journal.json")
-	pycompat.SortPaths(paths)
+	paths := toolrt.Glob(toolrt.JoinPath(root, History), "*/journal.json")
+	toolrt.SortPaths(paths)
 	return paths
 }
 
-// Recover — recover(root): откатывает все журналы в состоянии publishing и возвращает ответ CLI.
-func Recover(root string) (*pycompat.Dict, error) {
+// Recover — откатывает все журналы в состоянии publishing и возвращает ответ CLI.
+func Recover(root string) (*toolrt.Dict, error) {
 	recovered := []any{}
 	for _, path := range journals(root) {
 		value, err := readJSON(path)
 		if err != nil {
 			return nil, err
 		}
-		state, err := pycompat.Item(value, "state")
+		state, err := toolrt.Item(value, "state")
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(state, "publishing") {
+		if !toolrt.Equal(state, "publishing") {
 			continue
 		}
-		journal := value.(*pycompat.Dict)
+		journal := value.(*toolrt.Dict)
 		if err := restoreHook(filepath.Dir(path), journal, root); err != nil {
 			return nil, err
 		}
 		_ = os.RemoveAll(filepath.Join(filepath.Dir(path), "staging"))
-		id, err := pycompat.Item(journal, "id")
+		id, err := toolrt.Item(journal, "id")
 		if err != nil {
 			return nil, err
 		}
 		recovered = append(recovered, id)
 	}
-	return pytool.Record("status", "recovered", "transactions", recovered), nil
+	return toolcli.Record("status", "recovered", "transactions", recovered), nil
 }
 
 // stageExclusions — служебные папки, не входящие в staging. Исключения принадлежат конкретным
@@ -599,14 +599,14 @@ var stageExclusions = map[string]map[string]bool{
 func copyTree(source, target, name string, copyFile func(from, to string) error) error {
 	info, err := os.Stat(source)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	if err := os.MkdirAll(target, 0o777); err != nil {
-		return pycompat.OSErrorFrom(err, target)
+		return toolrt.OSErrorFrom(err, target)
 	}
 	entries, err := os.ReadDir(source)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	for _, entry := range entries {
 		if stageExclusions[name][entry.Name()] {
@@ -615,7 +615,7 @@ func copyTree(source, target, name string, copyFile func(from, to string) error)
 		from, to := filepath.Join(source, entry.Name()), filepath.Join(target, entry.Name())
 		stat, err := os.Stat(from)
 		if err != nil {
-			return pycompat.OSErrorFrom(err, from)
+			return toolrt.OSErrorFrom(err, from)
 		}
 		if stat.IsDir() {
 			child := ""
@@ -640,18 +640,18 @@ func CopyKit(source, target string) error {
 	return copyTree(source, target, "", applymontage.CopyWithStat)
 }
 
-// stageProject — stage_project(root, stage): копия plan, assets и source без служебных папок и
+// stageProject — копия plan, assets и source проекта root в stage без служебных папок и
 // ROADMAP.md, если они есть. Большие медиа связываются жёсткими ссылками (CopyInput).
 func stageProject(root, stage string) error {
 	for _, folder := range []string{"plan", "assets", "source"} {
-		if !pycompat.IsDir(filepath.Join(root, folder)) {
+		if !toolrt.IsDir(filepath.Join(root, folder)) {
 			continue
 		}
 		if err := copyTree(filepath.Join(root, folder), filepath.Join(stage, folder), folder, applymontage.CopyInput); err != nil {
 			return err
 		}
 	}
-	if roadmap := filepath.Join(root, "ROADMAP.md"); pycompat.IsFile(roadmap) {
+	if roadmap := filepath.Join(root, "ROADMAP.md"); toolrt.IsFile(roadmap) {
 		return applymontage.CopyFile(roadmap, filepath.Join(stage, "ROADMAP.md"))
 	}
 	return nil
@@ -660,26 +660,26 @@ func stageProject(root, stage string) error {
 // moveDirectory публикует папку: прежний комплект уходит в архив,
 // новый занимает его место. Отдельная точка для проверки сбоя между двумя переносами.
 func moveDirectory(source, target, retired string) error {
-	if pycompat.Exists(target) {
+	if toolrt.Exists(target) {
 		if err := os.MkdirAll(filepath.Dir(retired), 0o777); err != nil {
-			return pycompat.OSErrorFrom(err, filepath.Dir(retired))
+			return toolrt.OSErrorFrom(err, filepath.Dir(retired))
 		}
 		if err := os.Rename(target, retired); err != nil {
-			return pycompat.OSErrorFrom(err, target)
+			return toolrt.OSErrorFrom(err, target)
 		}
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o777); err != nil {
-		return pycompat.OSErrorFrom(err, filepath.Dir(target))
+		return toolrt.OSErrorFrom(err, filepath.Dir(target))
 	}
 	if err := os.Rename(source, target); err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	return nil
 }
 
 // idempotent — ответ на повтор подтверждения после успешной публикации: ничего не пишет. Проверяется
 // и выбранный комплект, чтобы старый токен не принял чужую замену. nil — такого журнала нет.
-func idempotent(root, shot, confirm string) (*pycompat.Dict, error) {
+func idempotent(root, shot, confirm string) (*toolrt.Dict, error) {
 	for _, path := range journals(root) {
 		value, err := readJSON(path)
 		if err != nil {
@@ -689,17 +689,17 @@ func idempotent(root, shot, confirm string) (*pycompat.Dict, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(previous.Value("result_token"), confirm) {
+		if !toolrt.Equal(previous.Value("result_token"), confirm) {
 			continue
 		}
-		state, err := pycompat.Item(previous, "state")
+		state, err := toolrt.Item(previous, "state")
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(state, "committed") {
+		if !toolrt.Equal(state, "committed") {
 			continue
 		}
-		kit, err := pycompat.Item(previous, "directory")
+		kit, err := toolrt.Item(previous, "directory")
 		if err != nil {
 			return nil, err
 		}
@@ -714,33 +714,33 @@ func idempotent(root, shot, confirm string) (*pycompat.Dict, error) {
 		if err != nil {
 			return nil, err
 		}
-		after, err := pycompat.Item(kit, "after")
+		after, err := toolrt.Item(kit, "after")
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(digest, after) {
+		if !toolrt.Equal(digest, after) {
 			return nil, valueError(textAcceptedChanged)
 		}
 		history, err := relative(filepath.Dir(path), root)
 		if err != nil {
 			return nil, err
 		}
-		return pytool.Record("status", "accepted", "shot", shot, "result_token", confirm, "history", history, "idempotent", true), nil
+		return toolcli.Record("status", "accepted", "shot", shot, "result_token", confirm, "history", history, "idempotent", true), nil
 	}
 	return nil, nil
 }
 
 // prepareStage наполняет staging новым комплектом, статусом и представлениями и заполняет в журнале
 // список файлов и сведения о папке комплекта. Прежний комплект и документы сохраняются в резервах.
-func prepareStage(result *checkedResult, status *pycompat.Dict, journal *pycompat.Dict, history, stage, target, retired, directory, root string) (any, error) {
+func prepareStage(result *checkedResult, status *toolrt.Dict, journal *toolrt.Dict, history, stage, target, retired, directory, root string) (any, error) {
 	shot := result.preview.Value("shot").(string)
 	if err := stageProject(root, stage); err != nil {
 		return nil, err
 	}
-	stagedKit := pycompat.JoinPath(stage, "assets/shots", shot)
+	stagedKit := toolrt.JoinPath(stage, "assets/shots", shot)
 	_ = os.RemoveAll(stagedKit)
 	if err := os.MkdirAll(stagedKit, 0o777); err != nil {
-		return nil, pycompat.OSErrorFrom(err, stagedKit)
+		return nil, toolrt.OSErrorFrom(err, stagedKit)
 	}
 	manifest, err := makeManifest(result, stagedKit, filepath.Join(directory, "candidate.mp4"), root)
 	if err != nil {
@@ -756,16 +756,16 @@ func prepareStage(result *checkedResult, status *pycompat.Dict, journal *pycompa
 	if data, err = applymontage.JSONBytes(status); err != nil {
 		return nil, err
 	}
-	if err := applymontage.ReplaceBytes(pycompat.JoinPath(stage, sceneregistry.ProductionStatus), data); err != nil {
+	if err := applymontage.ReplaceBytes(toolrt.JoinPath(stage, sceneregistry.ProductionStatus), data); err != nil {
 		return nil, err
 	}
 	if _, err := assetpackage.ValidatePackage(filepath.Join(stagedKit, "manifest.json"), shot, stage); err != nil {
 		return nil, err
 	}
-	// Ненулевой код update_scene_views — CalledProcessError: CLI показывает его скрытым общим
-	// текстом.
+	// Ненулевой код update_scene_views — исключение CalledProcessError: CLI показывает его скрытым
+	// общим текстом.
 	if output := sceneviews.Run(stage, []string{}); output.Code != 0 {
-		return nil, pycompat.New("CalledProcessError", "update_scene_views returned non-zero exit status")
+		return nil, toolrt.New("CalledProcessError", "update_scene_views returned non-zero exit status")
 	}
 	names := map[string]bool{sceneregistry.ProductionStatus: true}
 	applymontage.ViewPaths(stage, root, names)
@@ -779,28 +779,28 @@ func prepareStage(result *checkedResult, status *pycompat.Dict, journal *pycompa
 	sort.Strings(sorted)
 	files := []any{}
 	for _, name := range sorted {
-		live := pycompat.JoinPath(root, name)
+		live := toolrt.JoinPath(root, name)
 		before, err := applymontage.DigestOrNone(live)
 		if err != nil {
 			return nil, err
 		}
-		after, err := applymontage.DigestOrNone(pycompat.JoinPath(stage, name))
+		after, err := applymontage.DigestOrNone(toolrt.JoinPath(stage, name))
 		if err != nil {
 			return nil, err
 		}
-		if pycompat.Equal(before, after) {
+		if toolrt.Equal(before, after) {
 			continue
 		}
 		if before != nil {
-			backup := pycompat.JoinPath(history, "before", name)
+			backup := toolrt.JoinPath(history, "before", name)
 			if err := os.MkdirAll(filepath.Dir(backup), 0o777); err != nil {
-				return nil, pycompat.OSErrorFrom(err, filepath.Dir(backup))
+				return nil, toolrt.OSErrorFrom(err, filepath.Dir(backup))
 			}
 			if err := applymontage.CopyFile(live, backup); err != nil {
 				return nil, err
 			}
 		}
-		files = append(files, pytool.Record("path", name, "before", before, "after", after))
+		files = append(files, toolcli.Record("path", name, "before", before, "after", after))
 	}
 	journal.Set("files", files)
 	backup := filepath.Join(history, "before-kit")
@@ -837,7 +837,7 @@ func prepareStage(result *checkedResult, status *pycompat.Dict, journal *pycompa
 	if err != nil {
 		return nil, err
 	}
-	journal.Set("directory", pytool.Record(
+	journal.Set("directory", toolcli.Record(
 		"path", targetName,
 		"before", before,
 		"after", after,
@@ -849,10 +849,10 @@ func prepareStage(result *checkedResult, status *pycompat.Dict, journal *pycompa
 	return before, nil
 }
 
-// accept — accept(work_dir, confirm, replace, root): публикует показанные байты транзакцией.
+// accept публикует показанные байты пробы workDir транзакцией.
 // Отмена задания действует до начала публикации и оставляет журнал failed; начатая публикация
 // завершается (несколько rename) либо откатывается по журналу.
-func accept(ctx context.Context, workDir, confirm string, replace bool, root string) (*pycompat.Dict, error) {
+func accept(ctx context.Context, workDir, confirm string, replace bool, root string) (*toolrt.Dict, error) {
 	if _, err := Recover(root); err != nil {
 		return nil, err
 	}
@@ -865,18 +865,18 @@ func accept(ctx context.Context, workDir, confirm string, replace bool, root str
 		return nil, err
 	}
 	shot := result.preview.Value("shot").(string)
-	if filepath.Dir(directory) != pycompat.JoinPath(root, "plan/derived", shot) {
+	if filepath.Dir(directory) != toolrt.JoinPath(root, "plan/derived", shot) {
 		return nil, valueError(textOtherShot)
 	}
 	repeated, err := idempotent(root, shot, confirm)
 	if err != nil || repeated != nil {
 		return repeated, err
 	}
-	target := pycompat.JoinPath(root, "assets/shots", shot)
-	if pycompat.Exists(target) && !replace {
+	target := toolrt.JoinPath(root, "assets/shots", shot)
+	if toolrt.Exists(target) && !replace {
 		return nil, valueError(textReplaceRequired)
 	}
-	statusPath := pycompat.JoinPath(root, sceneregistry.ProductionStatus)
+	statusPath := toolrt.JoinPath(root, sceneregistry.ProductionStatus)
 	statusDigest, err := applymontage.DigestOrNone(statusPath)
 	if err != nil {
 		return nil, err
@@ -885,23 +885,23 @@ func accept(ctx context.Context, workDir, confirm string, replace bool, root str
 	if err != nil {
 		return nil, err
 	}
-	status, err := sceneregistry.WithAcceptedFingerprints(current, pytool.Record(shot, result.preview.Value("target_scene_sha256")), true)
+	status, err := sceneregistry.WithAcceptedFingerprints(current, toolcli.Record(shot, result.preview.Value("target_scene_sha256")), true)
 	if err != nil {
 		return nil, err
 	}
 	transaction := NewID()
-	history := pycompat.JoinPath(root, History, transaction)
+	history := toolrt.JoinPath(root, History, transaction)
 	if err := os.MkdirAll(history, 0o777); err != nil {
-		return nil, pycompat.OSErrorFrom(err, history)
+		return nil, toolrt.OSErrorFrom(err, history)
 	}
 	stage := filepath.Join(history, "staging")
-	retired := pycompat.JoinPath(root, "assets/replaced", shot, transaction)
+	retired := toolrt.JoinPath(root, "assets/replaced", shot, transaction)
 	workName, err := relative(directory, root)
 	if err != nil {
 		return nil, err
 	}
-	journal := pytool.Record(
-		"schema_version", pycompat.NewInt(1),
+	journal := toolcli.Record(
+		"schema_version", toolrt.NewInt(1),
 		"id", transaction,
 		"shot", shot,
 		"state", "preparing",
@@ -929,7 +929,7 @@ func accept(ctx context.Context, workDir, confirm string, replace bool, root str
 		if err != nil {
 			return err
 		}
-		if !pycompat.Equal(digest, statusDigest) || !pycompat.Equal(tree, before) {
+		if !toolrt.Equal(digest, statusDigest) || !toolrt.Equal(tree, before) {
 			return valueError(textRaceChanged)
 		}
 		if err := ctx.Err(); err != nil {
@@ -940,7 +940,7 @@ func accept(ctx context.Context, workDir, confirm string, replace bool, root str
 			return err
 		}
 		publishing = true
-		stagedKit := pycompat.JoinPath(stage, "assets/shots", shot)
+		stagedKit := toolrt.JoinPath(stage, "assets/shots", shot)
 		if err := publishDirectory(stagedKit, target, retired); err != nil {
 			return err
 		}
@@ -949,7 +949,7 @@ func accept(ctx context.Context, workDir, confirm string, replace bool, root str
 			return err
 		}
 		for _, entry := range files {
-			if err := publishFile(pycompat.JoinPath(stage, entry.path), pycompat.JoinPath(root, entry.path)); err != nil {
+			if err := publishFile(toolrt.JoinPath(stage, entry.path), toolrt.JoinPath(root, entry.path)); err != nil {
 				return err
 			}
 		}
@@ -981,5 +981,5 @@ func accept(ctx context.Context, workDir, confirm string, replace bool, root str
 	if err != nil {
 		return nil, err
 	}
-	return pytool.Record("status", "accepted", "shot", shot, "result_token", confirm, "history", name, "idempotent", false, "views_updated", true), nil
+	return toolcli.Record("status", "accepted", "shot", shot, "result_token", confirm, "history", name, "idempotent", false, "views_updated", true), nil
 }

@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"songframe-go/internal/animaticcards"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/animaticcards"
+	"songframe/internal/toolrt"
 )
 
 // Макет сводки: 12 кадров сеткой в 4 столбца, ячейка 480×270 и полоса подписи 26 px; сравнение
@@ -35,16 +35,16 @@ type report struct {
 	video, outputDir string
 	media            media
 	sampled          []int64
-	files            *pycompat.Dict
+	files            *toolrt.Dict
 }
 
 // dict — словарь отчёта для --json.
-func (r report) dict() *pycompat.Dict {
+func (r report) dict() *toolrt.Dict {
 	sampled := make([]any, len(r.sampled))
 	for index, value := range r.sampled {
-		sampled[index] = pycompat.NewInt(value)
+		sampled[index] = toolrt.NewInt(value)
 	}
-	result := pycompat.NewDict()
+	result := toolrt.NewDict()
 	result.Set("video", r.video)
 	result.Set("output_dir", r.outputDir)
 	result.Set("media", r.media.dict())
@@ -79,11 +79,11 @@ func (r report) table() string {
 		"| Параметр | Значение |",
 		"| --- | --- |",
 		"| Файл | " + r.video + " |",
-		"| Кадр | " + m.width.String() + "×" + m.height.String() + ", " + pycompat.Str(m.codec) + ", " + pycompat.Str(m.pixFmt) + " |",
-		"| Частота | " + pycompat.Str(m.rFrameRate) + " (" + pycompat.FormatFixed(m.fps, 3) + " кадр/с) |",
-		"| Длительность | " + pycompat.FormatFixed(m.duration, 3) + " с, " + m.frames.String() + " кадров |",
+		"| Кадр | " + m.width.String() + "×" + m.height.String() + ", " + toolrt.Str(m.codec) + ", " + toolrt.Str(m.pixFmt) + " |",
+		"| Частота | " + toolrt.Str(m.rFrameRate) + " (" + toolrt.FormatFixed(m.fps, 3) + " кадр/с) |",
+		"| Длительность | " + toolrt.FormatFixed(m.duration, 3) + " с, " + m.frames.String() + " кадров |",
 		"| Звук | " + audio + " |",
-		"| Размер | " + pycompat.FormatFixed(size/1e6, 1) + " МБ |",
+		"| Размер | " + toolrt.FormatFixed(size/1e6, 1) + " МБ |",
 		"| Сводка | " + r.outputDir + ": " + strings.Join(names, ", ") + " |",
 	}
 	return strings.Join(lines, "\n") + "\n\n" + textStatus
@@ -94,19 +94,19 @@ func (r report) table() string {
 // которая удаляется и при ошибке; уже записанные файлы сводки при ошибке остаются.
 func summarize(ctx context.Context, video, out string, keyframes []keyframe, withPreview bool) (report, error) {
 	if err := os.MkdirAll(out, 0o777); err != nil {
-		return report{}, pycompat.OSErrorFrom(err, out)
+		return report{}, toolrt.OSErrorFrom(err, out)
 	}
 	info, err := probe(ctx, video)
 	if err != nil {
 		return report{}, err
 	}
 	if info.frames.Sign() < 1 {
-		return report{}, pycompat.New(pycompat.ValueError, textNoFrames)
+		return report{}, toolrt.New(toolrt.ValueError, textNoFrames)
 	}
 	total, ok := info.frames.Int64()
 	if !ok {
-		// Число кадров вне int64 ffprobe не сообщает; range() Python на таком значении тоже отказал бы.
-		return report{}, pycompat.New(pycompat.OverflowError, "Python int too large to convert to C ssize_t")
+		// Число кадров вне int64 ffprobe не сообщает; такое значение — OverflowError с текстом эталона.
+		return report{}, toolrt.New(toolrt.OverflowError, "Python int too large to convert to C ssize_t")
 	}
 	last := total - 1
 	indices := []int64{0}
@@ -119,12 +119,12 @@ func summarize(ctx context.Context, video, out string, keyframes []keyframe, wit
 	}
 	temporary, err := os.MkdirTemp("", "contact-")
 	if err != nil {
-		return report{}, pycompat.OSErrorFrom(err, os.TempDir())
+		return report{}, toolrt.OSErrorFrom(err, os.TempDir())
 	}
 	defer os.RemoveAll(temporary)
-	small := pycompat.JoinPath(temporary, "small")
+	small := toolrt.JoinPath(temporary, "small")
 	if err := os.Mkdir(small, 0o777); err != nil {
-		return report{}, pycompat.OSErrorFrom(err, small)
+		return report{}, toolrt.OSErrorFrom(err, small)
 	}
 	smallFrames, err := extract(ctx, video, indices, small, true)
 	if err != nil {
@@ -136,12 +136,12 @@ func summarize(ctx context.Context, video, out string, keyframes []keyframe, wit
 			return report{}, err
 		}
 	}
-	if err := sheet(indices, cells, info.fps, pycompat.JoinPath(out, "contact-sheet.png")); err != nil {
+	if err := sheet(indices, cells, info.fps, toolrt.JoinPath(out, "contact-sheet.png")); err != nil {
 		return report{}, err
 	}
-	full := pycompat.JoinPath(temporary, "full")
+	full := toolrt.JoinPath(temporary, "full")
 	if err := os.Mkdir(full, 0o777); err != nil {
-		return report{}, pycompat.OSErrorFrom(err, full)
+		return report{}, toolrt.OSErrorFrom(err, full)
 	}
 	fullFrames, err := extract(ctx, video, []int64{0, last}, full, false)
 	if err != nil {
@@ -155,28 +155,28 @@ func summarize(ctx context.Context, video, out string, keyframes []keyframe, wit
 		if err != nil {
 			return report{}, err
 		}
-		if err := resave(source, pycompat.JoinPath(out, edge.name)); err != nil {
+		if err := resave(source, toolrt.JoinPath(out, edge.name)); err != nil {
 			return report{}, err
 		}
 	}
-	files := pycompat.NewDict()
+	files := toolrt.NewDict()
 	files.Set("contact_sheet", "contact-sheet.png")
 	files.Set("first_frame", "first-frame.png")
 	files.Set("last_frame", "last-frame.png")
 	comparisons := []any{}
 	for _, item := range keyframes {
 		role := item.record.Value("role")
-		if !pycompat.Equal(role, "first") && !pycompat.Equal(role, "last") || !pycompat.IsFile(item.file) {
+		if !toolrt.Equal(role, "first") && !toolrt.Equal(role, "last") || !toolrt.IsFile(item.file) {
 			continue
 		}
 		name := "compare-" + role.(string) + ".png"
-		id, _ := pycompat.DictGet(item.record, "id", role)
+		id, _ := toolrt.DictGet(item.record, "id", role)
 		actual := "last-frame.png"
 		if role == "first" {
 			actual = "first-frame.png"
 		}
-		caption := pycompat.Str(id) + " (" + role.(string) + ")"
-		if err := compare(item.file, pycompat.JoinPath(out, actual), caption, pycompat.JoinPath(out, name)); err != nil {
+		caption := toolrt.Str(id) + " (" + role.(string) + ")"
+		if err := compare(item.file, toolrt.JoinPath(out, actual), caption, toolrt.JoinPath(out, name)); err != nil {
 			return report{}, err
 		}
 		comparisons = append(comparisons, name)
@@ -185,7 +185,7 @@ func summarize(ctx context.Context, video, out string, keyframes []keyframe, wit
 		files.Set("comparisons", comparisons)
 	}
 	if withPreview {
-		if err := preview(ctx, video, pycompat.JoinPath(out, "preview-2x.mp4")); err != nil {
+		if err := preview(ctx, video, toolrt.JoinPath(out, "preview-2x.mp4")); err != nil {
 			return report{}, err
 		}
 		files.Set("preview_2x", "preview-2x.mp4")
@@ -193,7 +193,7 @@ func summarize(ctx context.Context, video, out string, keyframes []keyframe, wit
 	return report{video: video, outputDir: out, media: info, sampled: indices, files: files}, nil
 }
 
-// floorDiv — целочисленное деление Python (к минус бесконечности).
+// floorDiv — целочисленное деление с округлением к минус бесконечности.
 func floorDiv(a, b int) int {
 	quotient := a / b
 	if (a%b != 0) && ((a < 0) != (b < 0)) {
@@ -202,8 +202,9 @@ func floorDiv(a, b int) int {
 	return quotient
 }
 
-// thumbnailSize — размер Image.thumbnail(box) Pillow 10: пропорции сохраняются с выбором
-// ближайшего по отношению сторон округления, без увеличения; ok=false — изображение уже в рамке.
+// thumbnailSize — размер изображения, вписанного в рамку box: пропорции сохраняются, из двух
+// округлений (вниз и вверх) выбирается более близкое по отношению сторон, без увеличения;
+// ok=false — изображение уже в рамке.
 func thumbnailSize(width, height, boxW, boxH int) (int, int, bool) {
 	if boxW >= width && boxH >= height {
 		return width, height, false
@@ -233,8 +234,8 @@ func thumbnailSize(width, height, boxW, boxH int) (int, int, bool) {
 
 // sheet — лист кадров: холст 4 столбца × ceil(n/4) строк, кадр в ячейке по центру
 // по горизонтали и прижат к верху, под ним подпись «кадр N · T с». Кадры FFmpeg уже вписаны в
-// ячейку (force_original_aspect_ratio=decrease), поэтому thumbnail Pillow их не меняет; ветка
-// уменьшения оставлена бикубической без reduce() Pillow (недостижима с кадрами FFmpeg).
+// ячейку (force_original_aspect_ratio=decrease), поэтому thumbnailSize их не меняет; ветка
+// уменьшения — бикубическая без предварительного грубого уменьшения (недостижима с кадрами FFmpeg).
 func sheet(indices []int64, paths []string, fps float64, target string) error {
 	rows := (len(paths) + columns - 1) / columns
 	canvas := animaticcards.NewPicture(columns*cellWidth, rows*(cellHeight+labelBand), background)
@@ -258,7 +259,7 @@ func sheet(indices []int64, paths []string, fps float64, target string) error {
 		if fps != 0 {
 			seconds = float64(indices[position]) / fps
 		}
-		label := "кадр " + strconv.FormatInt(indices[position], 10) + " · " + pycompat.FormatFixed(seconds, 2) + " с"
+		label := "кадр " + strconv.FormatInt(indices[position], 10) + " · " + toolrt.FormatFixed(seconds, 2) + " с"
 		if err := canvas.DrawText(column*cellWidth+6, y+cellHeight+4, label, labelSize, labelColor); err != nil {
 			return err
 		}
@@ -267,7 +268,8 @@ func sheet(indices []int64, paths []string, fps float64, target string) error {
 }
 
 // compare — картинка сравнения: опора слева, фактический кадр справа,
-// обе высотой 540 (бикубический Image.resize, ширина round() Python), поля 10 px и подписи сверху.
+// обе высотой 540 (бикубическое масштабирование, ширина округляется половиной к чётному), поля 10 px
+// и подписи сверху.
 func compare(keyframePath, actualPath, caption, target string) error {
 	left, err := animaticcards.OpenPicture(keyframePath)
 	if err != nil {
@@ -301,7 +303,7 @@ func compare(keyframePath, actualPath, caption, target string) error {
 	return savePicture(canvas, target)
 }
 
-// savePicture — canvas.save(target) в PNG.
+// savePicture — запись картинки в target в формате PNG.
 func savePicture(picture animaticcards.Picture, target string) error {
 	data, err := picture.PNG()
 	if err != nil {
@@ -310,18 +312,17 @@ func savePicture(picture animaticcards.Picture, target string) error {
 	return writeFile(target, data)
 }
 
-// resave — Image.open(source).save(target) для кадра FFmpeg: те же пиксели в режиме, который
-// дал бы Pillow, без служебных фрагментов PNG FFmpeg (gAMA, cHRM, pHYs — Pillow их не переносит,
-// и просмотрщик показал бы кадр с другой гаммой). 16-битный RGB(A) Pillow открывает как 8-битный
-// (старший байт), остальные режимы сохраняются как есть.
+// resave — перезапись кадра FFmpeg в target: те же пиксели без служебных фрагментов PNG FFmpeg
+// (gAMA, cHRM, pHYs не переносятся, иначе просмотрщик показал бы кадр с другой гаммой, чем лист).
+// 16-битный RGB(A) сохраняется как 8-битный (старший байт), остальные режимы — как есть.
 func resave(source, target string) error {
 	data, err := os.ReadFile(source)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	decoded, err := png.Decode(bytes.NewReader(data))
 	if err != nil {
-		return pycompat.New(pycompat.OSError, err.Error())
+		return toolrt.New(toolrt.OSError, err.Error())
 	}
 	switch decoded.(type) {
 	case *image.RGBA64, *image.NRGBA64:
@@ -337,7 +338,7 @@ func resave(source, target string) error {
 	}
 	var buffer bytes.Buffer
 	if err := png.Encode(&buffer, decoded); err != nil {
-		return pycompat.New(pycompat.OSError, err.Error())
+		return toolrt.New(toolrt.OSError, err.Error())
 	}
 	return writeFile(target, buffer.Bytes())
 }

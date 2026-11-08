@@ -52,7 +52,7 @@ SongFrame — комплекс для производства музыкаль�
 - Новый пакет или страница получает содержательный комментарий и строку в `internal/repodocs/areas.go`, затем `wails3 task docs:map`. Карта генерируется: вручную её не править.
 - История проекта — только в последнем разделе README. В коде, комментариях и документах не упоминать прежние версии, их файлы, коммиты, этапы приватного плана и решения `spec`: текст описывает то, что есть сейчас, и почему.
 - Документы описывают назначение, правила, процессы и контракты, а не пересказывают код: подробности устройства живут в комментариях рядом с кодом, где их правят вместе с ним.
-- `wails3 task check:docs` (входит в `check:all` и отдельный CI `docs.yml`) сверяет ссылки и якоря, пути в `обратных кавычках`, переменные `SONGFRAME_*`, задачи Taskfile, скрипты yarn, актуальность карты и отсутствие упоминаний прежней версии вне раздела «История» README. Смысл текста она не проверяет: его сверяет ревизия документации перед выпуском ([songframe-go-release](dev-skills/songframe-go-release/SKILL.md)).
+- `wails3 task check:docs` (входит в `check:all` и отдельный CI `docs.yml`) сверяет ссылки и якоря, пути в `обратных кавычках`, переменные `SONGFRAME_*`, задачи Taskfile, скрипты yarn, актуальность карты и отсутствие упоминаний прежней версии вне раздела «История» README. Смысл текста она не проверяет: его сверяет ревизия документации перед выпуском ([songframe-release](dev-skills/songframe-release/SKILL.md)).
 
 ## Продукт
 
@@ -66,7 +66,7 @@ SongFrame — комплекс для производства музыкаль�
 
 ## Устройство
 
-- **Renderer.** Перенесённый исходный React/MUI-интерфейс; файловую систему не читает и процессы не запускает.
+- **Renderer.** React/MUI-интерфейс; файловую систему не читает и процессы не запускает.
 - **Связь с Go.** Единственный путь — контракт `window.api` (`frontend/src/shared/api.ts`): каждый метод отображается на сгенерированный binding Wails (`frontend/bindings`, вручную не править). Ручные валидаторы ответов Go не писать. Go отдаёт `[]` вместо `nil`, соответствие типов проверяет `typecheck`. Каждый метод контракта реализован в адаптере `frontend/src/platform/`; новый метод добавляется вместе с Go-реализацией, тест адаптера проверяет, что заготовок без реализации не осталось.
 - **Go.** Владеет файлами проектов, заданиями, процессами, состоянием провайдеров и медиасервером: `internal/app` — Wails-сервисы, `internal/<область>` — логика.
   - Внешние программы запускаются только через общий запуск процессов: без консоли в Windows, с отменой и завершением потомков.
@@ -77,7 +77,7 @@ SongFrame — комплекс для производства музыкаль�
 
 ## Интерфейс
 
-- Перед изменением UI применять [songframe-go-ui](dev-skills/songframe-go-ui/SKILL.md) и [правила UI](docs/ui/README.md).
+- Перед изменением UI применять [songframe-ui](dev-skills/songframe-ui/SKILL.md) и [правила UI](docs/ui/README.md).
 - Storybook поддерживается в том же изменении: истории затронутого компонента, родительской страницы и их локальные модели API. В результате перечислить обновлённые истории и браузерные проверки.
 - Русские тексты интерфейса централизованы в `frontend/src/shared/texts/` по [правилам текстов](docs/ui/texts.md).
 - Минимальное и стартовое окно — **1320×860**; на нём проверяются светлая и тёмная темы. Размеры меньше (960×640, 1280×720) в обязательную приёмку не входят. Геометрия окна — в `main.go`, размер браузерной проверки — в `frontend/playwright.config.ts`.
@@ -91,8 +91,8 @@ SongFrame — комплекс для производства музыкаль�
 
 Сейчас реализованы ранние AppImage и NSIS. Все поставки собираются локально на Linux; CI их не собирает.
 
-- Сборку и проверку поставки выполнять по [songframe-go-build](dev-skills/songframe-go-build/SKILL.md) и `packaging/README.md`.
-- Выпуск — по [songframe-go-release](dev-skills/songframe-go-release/SKILL.md).
+- Сборку и проверку поставки выполнять по [songframe-build](dev-skills/songframe-build/SKILL.md) и `packaging/README.md`.
+- Выпуск — по [songframe-release](dev-skills/songframe-release/SKILL.md).
 - Нативные Windows-прогоны в VM — только по явному поручению; сборка установщика не доказывает работу в Windows.
 - Не превращать правку рецепта в пересборку или запуск. Дорогие сборки и матрицы выполнять в порученном объёме.
 - SHA и build receipts — внутренние проверки: без запроса не выводить их пользователю и не класть в общую папку VM.
@@ -103,7 +103,7 @@ SongFrame — комплекс для производства музыкаль�
 - Commit, push, remote, релиз и платные запросы — только по поручению.
 - Не добавлять в Git приватные документы spec, клипы, веса, аудио, видео, токены, журналы, локальные отчёты и абсолютные машинные пути.
 - Разовые скрипты, отчёты и временные файлы хранить вне репозитория.
-- Проверки: `wails3 task check:all`; после правки только документации достаточно `wails3 task check:docs`. Адресно — по `Taskfile.yml` и `frontend/package.json`. Во время работы гонять тесты изменённой области; после сбоя исправить и перезапустить только упавшее (`go test ./pkg -run Имя`, `yarn test файл`, `yarn test:storybook --grep` после `yarn build-storybook`), а не весь `check:all`. Полный прогон — один раз в конце; при параллельной работе его выполняет основной агент после слияния. Контракты проектов и DTO — по [songframe-go-project-contract](dev-skills/songframe-go-project-contract/SKILL.md).
+- Проверки: `wails3 task check:all`; после правки только документации достаточно `wails3 task check:docs`. Адресно — по `Taskfile.yml` и `frontend/package.json`. Во время работы гонять тесты изменённой области; после сбоя исправить и перезапустить только упавшее (`go test ./pkg -run Имя`, `yarn test файл`, `yarn test:storybook --grep` после `yarn build-storybook`), а не весь `check:all`. Полный прогон — один раз в конце; при параллельной работе его выполняет основной агент после слияния. Контракты проектов и DTO — по [songframe-project-contract](dev-skills/songframe-project-contract/SKILL.md).
 
 ## Параллельная работа
 
@@ -115,9 +115,9 @@ SongFrame — комплекс для производства музыкаль�
 
 | Скилл | Когда применять |
 | --- | --- |
-| [songframe-go-ui](dev-skills/songframe-go-ui/SKILL.md) | Страницы, компоненты, тексты, Storybook и API, влияющий на UI |
-| [songframe-go-project-contract](dev-skills/songframe-go-project-contract/SKILL.md) | Форматы проектов, доменные данные, DTO Go/TS и общие fixtures |
-| [songframe-go-build](dev-skills/songframe-go-build/SKILL.md) | Локальная сборка и проверка поставок, prerequisites, GUI startup и CPU smoke |
-| [songframe-go-release](dev-skills/songframe-go-release/SKILL.md) | План, подготовка и выпуск Go-версии |
+| [songframe-ui](dev-skills/songframe-ui/SKILL.md) | Страницы, компоненты, тексты, Storybook и API, влияющий на UI |
+| [songframe-project-contract](dev-skills/songframe-project-contract/SKILL.md) | Форматы проектов, доменные данные, DTO Go/TS и общие fixtures |
+| [songframe-build](dev-skills/songframe-build/SKILL.md) | Локальная сборка и проверка поставок, prerequisites, GUI startup и CPU smoke |
+| [songframe-release](dev-skills/songframe-release/SKILL.md) | План, подготовка и выпуск приложения |
 
 Владельцы скиллов — `dev-skills/`. Каталоги `.agents/skills/` и `.claude/skills/` содержат только относительные ссылки на них; новый скилл добавляется папкой в `dev-skills/` и двумя ссылками. Индекс — [dev-skills/README.md](dev-skills/README.md). Промпты, которые приложение вкладывает в задания агента, — не dev-скиллы: они встроены в `resources/skills/`.

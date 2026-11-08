@@ -15,10 +15,10 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/assetpackage"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/assetpackage"
+	"songframe/internal/golden"
+	"songframe/internal/mediacmd"
+	"songframe/internal/toolrt"
 )
 
 // goldenFile — testdata/golden/apply-montage/cases.json: случаи CLI на копии общего образца
@@ -226,7 +226,7 @@ func expectedEntry(t *testing.T, raw json.RawMessage) treeEntry {
 	return entry
 }
 
-// sameEntry сравнивает записи; сводку ffprobe — через JSON (числа и строки как у Python).
+// sameEntry сравнивает записи; сводку ffprobe — через JSON (числа и строки как в эталоне).
 func sameEntry(want, got treeEntry) bool {
 	if want.Dir != got.Dir || want.SHA256 != got.SHA256 || want.IsNew != got.IsNew || want.Bytes != got.Bytes {
 		return false
@@ -329,7 +329,7 @@ func injectIDs(t *testing.T, ids []string) {
 // TestApplyMontageGolden запускает Run на каждом случае эталона и сверяет коды, потоки
 // и всё изменённое дерево проекта: тексты манифестов, журналов, реестра, статуса и представлений
 // побайтно, новые MP4 — SHA-256, размером и сводкой ffprobe. ID транзакций выдаются те же, что в
-// эталоне. Карточки аниматика (PNG Pillow) сверяются отдельным правилом: см. cardsDiffer.
+// эталоне. Карточки аниматика (PNG) сверяются отдельным правилом: см. cardsDiffer.
 // Без FFmpeg пропускаются случаи с медиа и с проверкой длины источника ffprobe; при другой версии
 // FFmpeg пропускаются случаи, публикующие новые MP4.
 func TestApplyMontageGolden(t *testing.T) {
@@ -394,7 +394,7 @@ func cardPNG(name string) bool {
 	return directory == "plan/animatic/cards" || (strings.HasPrefix(directory, History+"/") && strings.HasSuffix(directory, "/before/plan/animatic/cards"))
 }
 
-// checkPNG — перерисованная карточка Go остаётся PNG 1280×720.
+// checkPNG — перерисованная карточка остаётся PNG 1280×720.
 func checkPNG(t *testing.T, after map[string]treeEntry, name string) {
 	t.Helper()
 	file, err := os.Open(filepath.Join(pngRoot, filepath.FromSlash(name)))
@@ -411,31 +411,32 @@ func checkPNG(t *testing.T, after map[string]treeEntry, name string) {
 
 // maskCards — текст для сравнения без SHA-256 PNG карточек: в квитанции карточек — маркер вместо
 // SHA файла, в журнале монтажа — без строк карточек и с маркером SHA новой квитанции. Байты
-// карточек Go не совпадают с Pillow (как в эталоне scene-views); остальное сравнивается побайтно.
+// PNG карточек эталоном не фиксируются (как в эталоне scene-views); остальное сравнивается
+// побайтно.
 func maskCards(t *testing.T, name, text string) string {
 	t.Helper()
 	switch {
 	case name == "plan/animatic/cards/manifest.json":
-		value, err := pycompat.LoadsJSON(text)
+		value, err := toolrt.LoadsJSON(text)
 		if err != nil {
 			return text
 		}
-		if cards, ok := value.(*pycompat.Dict).Value("cards").(*pycompat.Dict); ok {
+		if cards, ok := value.(*toolrt.Dict).Value("cards").(*toolrt.Dict); ok {
 			for _, sid := range cards.Keys() {
-				cards.Value(sid).(*pycompat.Dict).Set("sha256", "<sha256>")
+				cards.Value(sid).(*toolrt.Dict).Set("sha256", "<sha256>")
 			}
 		}
-		masked, _ := pycompat.DumpsJSON(value, pycompat.Indented)
+		masked, _ := toolrt.DumpsJSON(value, toolrt.Indented)
 		return masked
 	case strings.HasPrefix(name, History+"/") && strings.HasSuffix(name, "/journal.json"):
-		value, err := pycompat.LoadsJSON(text)
+		value, err := toolrt.LoadsJSON(text)
 		if err != nil {
 			return text
 		}
-		journal := value.(*pycompat.Dict)
+		journal := value.(*toolrt.Dict)
 		files := []any{}
 		for _, raw := range journal.Value("files").([]any) {
-			entry := raw.(*pycompat.Dict)
+			entry := raw.(*toolrt.Dict)
 			path := entry.Value("path").(string)
 			if cardPNG(path) {
 				continue
@@ -446,7 +447,7 @@ func maskCards(t *testing.T, name, text string) string {
 			files = append(files, entry)
 		}
 		journal.Set("files", files)
-		masked, _ := pycompat.DumpsJSON(journal, pycompat.Indented)
+		masked, _ := toolrt.DumpsJSON(journal, toolrt.Indented)
 		return masked
 	}
 	return text
@@ -487,7 +488,7 @@ func compareTreesIn(t *testing.T, before, after map[string]treeEntry, item golde
 		raw, expected := item.Expected.Changed[name]
 		entry, changed := got[name]
 		if cardPNG(name) && changed && !expected {
-			// Перерисованная карточка Go: другие байты PNG при тех же входах (правило scene-views).
+			// Перерисованная карточка: байты PNG эталоном не фиксируются (правило scene-views).
 			checkPNG(t, after, name)
 			continue
 		}

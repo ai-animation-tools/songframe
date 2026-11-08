@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // WorldID — код единственной сущности типа world: общие условия сцены (время, погода, окружение).
@@ -22,24 +22,24 @@ var defaultProperties []byte
 // вставлять его части в документ без копирования.
 type Defaults struct {
 	// Default — тип сущности → массив свойств (CastProperty[]).
-	Default *jscompat.Object
+	Default *dynvalue.Object
 	// Generic — свойства для типа без собственного словаря.
-	Generic *jscompat.Array
+	Generic *dynvalue.Array
 	// World — сущность «Мир сцены» для нового кастинга.
-	World *jscompat.Object
+	World *dynvalue.Object
 }
 
 // LoadDefaults разбирает встроенный словарь. Ошибка означает повреждённую сборку, а не данные
 // пользователя, поэтому приводит к панике: без словаря кастинг не может работать вовсе.
 func LoadDefaults() Defaults {
-	value, err := jscompat.Parse(defaultProperties)
+	value, err := dynvalue.Parse(defaultProperties)
 	if err != nil {
 		panic(fmt.Sprintf("встроенный словарь кастинга повреждён: %v", err))
 	}
-	root, _ := jscompat.AsObject(value)
-	defaults, _ := jscompat.AsObject(root.Value("default"))
-	generic, _ := root.Value("generic").(*jscompat.Array)
-	world, _ := jscompat.AsObject(root.Value("world"))
+	root, _ := dynvalue.AsObject(value)
+	defaults, _ := dynvalue.AsObject(root.Value("default"))
+	generic, _ := root.Value("generic").(*dynvalue.Array)
+	world, _ := dynvalue.AsObject(root.Value("world"))
 	if defaults == nil || generic == nil || world == nil {
 		panic("встроенный словарь кастинга без default, generic или world")
 	}

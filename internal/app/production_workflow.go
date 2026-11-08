@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/productionworkflow"
-	"songframe-go/internal/wire"
+	"songframe/internal/agents"
+	"songframe/internal/productionworkflow"
+	"songframe/internal/wire"
 )
 
 // ProductionWorkflowService реализует группу window.api.productionWorkflow: проход агента

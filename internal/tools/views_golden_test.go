@@ -9,28 +9,28 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/projectviews"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/tools"
+	"songframe/internal/golden"
+	"songframe/internal/projectviews"
+	"songframe/internal/toolrt"
+	"songframe/internal/tools"
 )
 
 // checkStreams — сверка кода завершения и потоков результата tools.Run с эталоном
 // (`<project>` вместо пути копии; у трассировки — заголовок и последняя строка). compare
 // подменяет сравнение stdout/stderr, если оно не побайтное (список карточек scene-views).
-func checkStreams(t *testing.T, expected *pycompat.Dict, result tools.Result, root string, compare func(want, got string) bool) {
+func checkStreams(t *testing.T, expected *toolrt.Dict, result tools.Result, root string, compare func(want, got string) bool) {
 	t.Helper()
 	normalize := func(text string) string { return strings.ReplaceAll(text, root, golden.ProjectMarker) }
-	if want := expected.Value("code").(pycompat.Int).String(); result.Code == nil || want != pycompat.NewInt(int64(*result.Code)).String() {
+	if want := expected.Value("code").(toolrt.Int).String(); result.Code == nil || want != toolrt.NewInt(int64(*result.Code)).String() {
 		t.Errorf("код завершения: ожидалось %s, получено %v", want, result)
 	}
 	if compare == nil {
 		compare = func(want, got string) bool { return want == got }
 	}
-	if want, got := golden.PyString(t, expected, "stdout"), normalize(result.Stdout); !compare(want, got) {
+	if want, got := golden.ValueString(t, expected, "stdout"), normalize(result.Stdout); !compare(want, got) {
 		t.Errorf("stdout:\n--- ожидалось\n%s\n--- получено\n%s", want, got)
 	}
-	wantErr, gotErr := golden.PyString(t, expected, "stderr"), normalize(result.Stderr)
+	wantErr, gotErr := golden.ValueString(t, expected, "stderr"), normalize(result.Stderr)
 	if expected.Value("traceback") == true {
 		if !strings.HasPrefix(gotErr, tracebackHeader+"\n") || lastLine(gotErr) != lastLine(wantErr) {
 			t.Errorf("трассировка:\n--- ожидалось (последняя строка)\n%s\n--- получено\n%s", lastLine(wantErr), gotErr)
@@ -41,7 +41,7 @@ func checkStreams(t *testing.T, expected *pycompat.Dict, result tools.Result, ro
 }
 
 // caseArgs — аргументы случая после --project.
-func caseArgs(spec *pycompat.Dict) []string {
+func caseArgs(spec *toolrt.Dict) []string {
 	args := []string{}
 	for _, arg := range spec.Value("args").([]any) {
 		args = append(args, arg.(string))
@@ -55,14 +55,14 @@ func caseArgs(spec *pycompat.Dict) []string {
 func TestContinuityBriefGolden(t *testing.T) {
 	for _, c := range golden.Load(t, "continuity-brief") {
 		t.Run(c.Name, func(t *testing.T) {
-			spec := c.PyRead(t, "case.json")
+			spec := c.ReadValue(t, "case.json")
 			root := c.BuildProject(t)
 			before, beforeErr := golden.TreeDigest(root)
 			result, err := tools.Run(root, "continuity_brief", caseArgs(spec))
 			if err != nil {
 				t.Fatalf("tools.Run: %v", err)
 			}
-			checkStreams(t, c.PyRead(t, "expected.json"), result, root, nil)
+			checkStreams(t, c.ReadValue(t, "expected.json"), result, root, nil)
 			if beforeErr == nil {
 				if after, err := golden.TreeDigest(root); err != nil || after != before {
 					t.Errorf("инструмент изменил проект: %v", err)
@@ -135,23 +135,23 @@ func treeFiles(t *testing.T, root string) map[string][]byte {
 	return files
 }
 
-// normalizeReceipt — квитанция карточек с маркером вместо SHA-256 файлов карточек: байты PNG Go
-// не совпадают с Pillow, остальное содержимое квитанции сравнивается побайтно.
+// normalizeReceipt — квитанция карточек с маркером вместо SHA-256 файлов карточек: байты PNG
+// эталоном не фиксируются (кодек может меняться), остальное содержимое квитанции сравнивается побайтно.
 func normalizeReceipt(t *testing.T, data []byte) string {
 	t.Helper()
-	value, err := pycompat.LoadsJSON(string(data))
+	value, err := toolrt.LoadsJSON(string(data))
 	if err != nil {
 		t.Fatalf("квитанция карточек: %v", err)
 	}
-	cards := value.(*pycompat.Dict).Value("cards").(*pycompat.Dict)
+	cards := value.(*toolrt.Dict).Value("cards").(*toolrt.Dict)
 	for _, sid := range cards.Keys() {
-		entry := cards.Value(sid).(*pycompat.Dict)
+		entry := cards.Value(sid).(*toolrt.Dict)
 		entry.Set("sha256", "<sha256>")
-		if last, ok := entry.Value("last").(*pycompat.Dict); ok {
+		if last, ok := entry.Value("last").(*toolrt.Dict); ok {
 			last.Set("sha256", "<sha256>")
 		}
 	}
-	text, err := pycompat.DumpsJSON(value, pycompat.DumpOptions{Indent: 2, Pretty: true})
+	text, err := toolrt.DumpsJSON(value, toolrt.DumpOptions{Indent: 2, Pretty: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,8 +166,8 @@ func normalizeReceipt(t *testing.T, data []byte) string {
 func TestSceneViewsGolden(t *testing.T) {
 	for _, c := range golden.Load(t, "scene-views") {
 		t.Run(c.Name, func(t *testing.T) {
-			spec := c.PyRead(t, "case.json")
-			expected := c.PyRead(t, "expected.json")
+			spec := c.ReadValue(t, "case.json")
+			expected := c.ReadValue(t, "expected.json")
 			args := caseArgs(spec)
 			rule := cardRule{}
 			if cards, ok := expected.Value("cards").([]any); ok {
@@ -185,7 +185,7 @@ func TestSceneViewsGolden(t *testing.T) {
 			if err != nil {
 				t.Fatalf("tools.Run: %v", err)
 			}
-			states, writes := expected.Value("files").(*pycompat.Dict)
+			states, writes := expected.Value("files").(*toolrt.Dict)
 			if !writes {
 				checkStreams(t, expected, result, root, rule.compare)
 				if beforeErr == nil {
@@ -273,14 +273,14 @@ func TestSceneViewsGolden(t *testing.T) {
 			}
 			// Счёт «Обновлено представлений: N» отличается ровно на разницу списков карточек и
 			// лишнюю запись квитанции.
-			wantOut := golden.PyString(t, expected, "stdout")
+			wantOut := golden.ValueString(t, expected, "stdout")
 			if delta := len(gotCards) - len(wantCards) + extra; delta != 0 && strings.HasPrefix(wantOut, "Обновлено представлений: ") {
-				count, _ := pycompat.ParseInt(strings.TrimSuffix(strings.TrimPrefix(wantOut, "Обновлено представлений: "), ".\n"))
+				count, _ := toolrt.ParseInt(strings.TrimSuffix(strings.TrimPrefix(wantOut, "Обновлено представлений: "), ".\n"))
 				value, _ := count.Int64()
-				expected.Set("stdout", "Обновлено представлений: "+pycompat.NewInt(value+int64(delta)).String()+".\n")
+				expected.Set("stdout", "Обновлено представлений: "+toolrt.NewInt(value+int64(delta)).String()+".\n")
 			}
 			checkStreams(t, expected, result, root, nil)
-			recheck, ok := expected.Value("recheck").(*pycompat.Dict)
+			recheck, ok := expected.Value("recheck").(*toolrt.Dict)
 			if !ok {
 				return
 			}
@@ -290,7 +290,7 @@ func TestSceneViewsGolden(t *testing.T) {
 			}
 			if !rerendered {
 				// Карточки Go не рисовал: повторная проверка совпадает с эталоном.
-				recheck.Set("traceback", strings.HasPrefix(golden.PyString(t, recheck, "stderr"), tracebackHeader))
+				recheck.Set("traceback", strings.HasPrefix(golden.ValueString(t, recheck, "stderr"), tracebackHeader))
 				checkStreams(t, recheck, again, root, rule.compare)
 				return
 			}
@@ -306,12 +306,12 @@ func TestSceneViewsGolden(t *testing.T) {
 // checkReceiptDigests — SHA-256 карточек в квитанции Go совпадают с файлами на диске.
 func checkReceiptDigests(t *testing.T, root string, data []byte) {
 	t.Helper()
-	value, _ := pycompat.LoadsJSON(string(data))
-	cards := value.(*pycompat.Dict).Value("cards").(*pycompat.Dict)
+	value, _ := toolrt.LoadsJSON(string(data))
+	cards := value.(*toolrt.Dict).Value("cards").(*toolrt.Dict)
 	for _, sid := range cards.Keys() {
-		entry := cards.Value(sid).(*pycompat.Dict)
-		records := []*pycompat.Dict{entry}
-		if last, ok := entry.Value("last").(*pycompat.Dict); ok {
+		entry := cards.Value(sid).(*toolrt.Dict)
+		records := []*toolrt.Dict{entry}
+		if last, ok := entry.Value("last").(*toolrt.Dict); ok {
 			records = append(records, last)
 		}
 		for _, record := range records {
@@ -332,24 +332,4 @@ func contains(list []string, item string) bool {
 		}
 	}
 	return false
-}
-
-// TestSceneViewsSnapshotUnavailable: проверка снимка Git (--check --staged, --check --ref)
-// не поддерживается: код 1, пояснение в stderr,
-// проект не читается и не меняется. Без --check отказ argparse сверяет эталон scene-views.
-func TestSceneViewsSnapshotUnavailable(t *testing.T) {
-	root := t.TempDir()
-	for _, args := range [][]string{{"--check", "--staged"}, {"--check", "--ref", "HEAD"}, {"--ref=main", "--check"}} {
-		result, err := tools.Run(root, "update_scene_views", args)
-		if err != nil {
-			t.Fatal(err)
-		}
-		want := "Проверка снимка Git — инструмент разработчика; в Go-версии SongFrame не перенесена.\n"
-		if result.Code == nil || *result.Code != 1 || result.Stdout != "" || result.Stderr != want {
-			t.Errorf("%v: %+v", args, result)
-		}
-	}
-	if entries, err := os.ReadDir(root); err != nil || len(entries) != 0 {
-		t.Errorf("проект изменён: %v %v", entries, err)
-	}
 }

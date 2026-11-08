@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/sourceinputs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/filedigest"
+	"songframe/internal/sourceinputs"
 )
 
 // snapshotBase — входы, которые есть в снимке любого предложения: настройки, реестр, кастинг,
@@ -30,7 +30,7 @@ func requiredFileDigest(path string) (string, error) {
 // JSON отсортированного списка имён каталога, отпечаток описи исходников без обложки или null,
 // если пути нет. Обходит packageDir и target целиком; ссылка внутри пакета — ошибка packageLink.
 // packageDir "" — пакета нет.
-func Snapshot(project, packageDir, target string, allowed []string) (*jscompat.Object, error) {
+func Snapshot(project, packageDir, target string, allowed []string) (*dynvalue.Object, error) {
 	paths := map[string]bool{}
 	for _, path := range snapshotBase {
 		paths[path] = true
@@ -41,13 +41,13 @@ func Snapshot(project, packageDir, target string, allowed []string) (*jscompat.O
 	var walk func(path string) error
 	walk = func(path string) error {
 		local := rel(project, path)
-		if !jscompat.Exists(path) {
+		if !dynvalue.Exists(path) {
 			paths[local] = true
 			return nil
 		}
 		info, err := os.Lstat(path)
 		if err != nil {
-			return jscompat.FsError("lstat", path, err)
+			return dynvalue.FsError("lstat", path, err)
 		}
 		switch {
 		case info.Mode()&os.ModeSymlink != 0:
@@ -83,7 +83,7 @@ func Snapshot(project, packageDir, target string, allowed []string) (*jscompat.O
 		keys = append(keys, path)
 	}
 	slices.SortFunc(keys, compareUTF16)
-	result := jscompat.NewObject()
+	result := dynvalue.NewObject()
 	for _, path := range keys {
 		value, err := snapshotValue(project, path)
 		if err != nil {
@@ -108,7 +108,7 @@ func snapshotValue(project, path string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !jscompat.Exists(full) {
+	if !dynvalue.Exists(full) {
 		return nil, nil
 	}
 	if strings.HasSuffix(path, "/") {
@@ -120,14 +120,14 @@ func snapshotValue(project, path string) (any, error) {
 		for index, name := range names {
 			items[index] = name
 		}
-		return digestHex([]byte(jscompat.Stringify(&jscompat.Array{Items: items}))), nil
+		return digestHex([]byte(dynvalue.Stringify(&dynvalue.Array{Items: items}))), nil
 	}
 	return requiredFileDigest(full)
 }
 
-// sortedNames — readdirSync(path).sort(): имена каталога в порядке кодовых единиц UTF-16.
+// sortedNames — имена записей каталога в порядке кодовых единиц UTF-16.
 func sortedNames(path string) ([]string, error) {
-	entries, err := jscompat.ReadDir(path)
+	entries, err := dynvalue.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
@@ -139,19 +139,19 @@ func sortedNames(path string) ([]string, error) {
 	return names, nil
 }
 
-// compareUTF16 — сравнение Array.prototype.sort по умолчанию.
+// compareUTF16 — сравнение строк по кодовым единицам UTF-16 (порядок сортировки dynvalue).
 func compareUTF16(left, right string) int {
 	switch {
 	case left == right:
 		return 0
-	case jscompat.LessUTF16(left, right):
+	case dynvalue.LessUTF16(left, right):
 		return -1
 	}
 	return 1
 }
 
 // SameSnapshot сообщает, что текущий снимок входов записи совпадает с сохранённым
-// (сравнение JSON.stringify, то есть и порядка ключей). Ошибка снимка возвращается: вызывающий
+// (сравнение сериализованного JSON dynvalue, то есть и порядка ключей). Ошибка снимка возвращается: вызывающий
 // считает предложение устаревшим.
 func SameSnapshot(project string, stored *Stored) (bool, error) {
 	rules := stored.Rules()
@@ -159,7 +159,7 @@ func SameSnapshot(project string, stored *Stored) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return jscompat.Stringify(current) == jscompat.Stringify(stored.Tree.Value("hashes")), nil
+	return dynvalue.Stringify(current) == dynvalue.Stringify(stored.Tree.Value("hashes")), nil
 }
 
 // imagesChanged — изображение готового предложения опор пропало или изменилось.
@@ -170,7 +170,7 @@ func imagesChanged(stored *Stored) bool {
 	}
 	for _, path := range hashes.Keys() {
 		hash, ok := filedigest.File(path)
-		if !jscompat.Exists(path) || !ok || hash != hashes.Value(path) {
+		if !dynvalue.Exists(path) || !ok || hash != hashes.Value(path) {
 			return true
 		}
 	}

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/mediatest/scenario"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/mediatest/scenario"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // interrupt — обрыв процесса посреди действия: panic из точки сбоя.
@@ -22,7 +22,7 @@ func TestGolden(t *testing.T) {
 
 // runStep — один процесс media_request сценария: часы начинаются с 1000 с, sleep продвигает их
 // без паузы; сбой fault вносится через hooks или удерживаемый замок попытки.
-func runStep(t *testing.T, env *scenario.Env, step scenario.Step, args []string) (output pytool.Output, interrupted bool) {
+func runStep(t *testing.T, env *scenario.Env, step scenario.Step, args []string) (output toolcli.Output, interrupted bool) {
 	restore := env.Register()
 	defer restore()
 	savedMonotonic, savedSleep := monotonic, sleep
@@ -44,8 +44,8 @@ func runStep(t *testing.T, env *scenario.Env, step scenario.Step, args []string)
 		defer file.Close()
 		defer unlockFile(file)
 	case "interrupt_on_downloads":
-		hooks.journal = func(state *pycompat.Dict) {
-			if pycompat.Truthy(state.Value("downloads")) {
+		hooks.journal = func(state *toolrt.Dict) {
+			if toolrt.Truthy(state.Value("downloads")) {
 				panic(interrupt{})
 			}
 		}

@@ -163,7 +163,7 @@ describe('Генерация опор и результаты изображен
     expect(html).not.toContain('Сделать техническую сводку');
   });
 
-  it('сохраняет видеопредставление старого запроса без kind', () => {
+  it('показывает запрос без kind как видео', () => {
     const html = renderToStaticMarkup(createElement(PackageResult, { pkg: fixture(), busy: false, onContactSheet: unchanged, onSelectImage: unchanged }));
     expect(html).toContain('<video');
     expect(html).toContain('На весь экран');

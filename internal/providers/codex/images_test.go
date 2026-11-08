@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/mediaapi"
+	"songframe/internal/agents"
+	"songframe/internal/mediaapi"
 )
 
 // TestCapabilities — возможности по диагностике программы и каталогу моделей.

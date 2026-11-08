@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/providers/agentexec"
-	"songframe-go/internal/tools"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers"
+	"songframe/internal/providers/agentexec"
+	"songframe/internal/tools"
 )
 
 // watchTimeout — предел ожидания результата отправленной попытки (media_request watch).
@@ -68,7 +68,7 @@ func (p *paidAttempt) stopped(ctx context.Context, submitted bool) error {
 	return errors.New(p.texts.stoppedBeforeSubmit)
 }
 
-// aliasNames — rules.aliases.image[name] ?? [name].
+// aliasNames — синонимы имени из правил запроса изображений; без записи — само имя.
 func aliasNames(rules mediaapi.RequestRules, name string) []string {
 	for _, alias := range rules.Aliases[mediaproviders.Image] {
 		if alias.Name == name {
@@ -84,14 +84,14 @@ func aliasNames(rules mediaapi.RequestRules, name string) []string {
 // тем же значением (иное значение — конфликт), без явного разрешения подставляется разрешение
 // провайдера по умолчанию, если модель объявляет параметр. Включённая серия изображений —
 // отказ, объявленная серия выключается.
-func parametersForModel(rules mediaapi.RequestRules, defaultResolution string, model mediaapi.Model, options *jscompat.Object, resolution any, t texts, reference bool) (*jscompat.Object, error) {
-	parameters := jscompat.NewObject()
+func parametersForModel(rules mediaapi.RequestRules, defaultResolution string, model mediaapi.Model, options *dynvalue.Object, resolution any, t texts, reference bool) (*dynvalue.Object, error) {
+	parameters := dynvalue.NewObject()
 	if options != nil {
 		parameters = options.Clone()
 	}
-	arguments, _ := jscompat.Parse(model.Arguments)
+	arguments, _ := dynvalue.Parse(model.Arguments)
 	declared := func(name string) bool {
-		object, ok := arguments.(*jscompat.Object)
+		object, ok := arguments.(*dynvalue.Object)
 		return ok && object.Has(name)
 	}
 	for _, key := range rules.OutputCount {
@@ -113,16 +113,16 @@ func parametersForModel(rules mediaapi.RequestRules, defaultResolution string, m
 			supplied = append(supplied, key)
 		}
 	}
-	if resolution != jscompat.Undefined {
+	if resolution != dynvalue.Undefined {
 		for _, key := range supplied {
-			if !jscompat.StrictEqual(parameters.Value(key), resolution) {
+			if !dynvalue.StrictEqual(parameters.Value(key), resolution) {
 				return nil, errors.New(t.resolutionConflict)
 			}
 			parameters.Delete(key)
 		}
 		parameters.Set("resolution", resolution)
 	} else if len(supplied) == 0 && anyDeclared(declared, resolutionKeys) {
-		var value any = jscompat.Undefined
+		var value any = dynvalue.Undefined
 		if defaultResolution != "" {
 			value = defaultResolution
 		}
@@ -147,7 +147,7 @@ func parametersForModel(rules mediaapi.RequestRules, defaultResolution string, m
 }
 
 // anyKey — хотя бы один из ключей есть в объекте (key in parameters).
-func anyKey(object *jscompat.Object, keys []string) bool {
+func anyKey(object *dynvalue.Object, keys []string) bool {
 	for _, key := range keys {
 		if object.Has(key) {
 			return true
@@ -190,8 +190,8 @@ func PreparePaid(ctx context.Context, input CandidateInput, options PaidOptions)
 	if err != nil {
 		return nil, err
 	}
-	object, isObject := settings.(*jscompat.Object)
-	provider, _ := jscompat.Get(settings, "provider").(string)
+	object, isObject := settings.(*dynvalue.Object)
+	provider, _ := dynvalue.Get(settings, "provider").(string)
 	if !isObject || !sameMediaProvider(provider, paid.ID) {
 		return nil, errors.New(t.providerRequired(info.Title))
 	}
@@ -215,11 +215,11 @@ func PreparePaid(ctx context.Context, input CandidateInput, options PaidOptions)
 	request := providers.PaidInput{
 		Project: input.Project, WorkDir: filepath.Join(input.WorkDir, "request"), Shot: "M00", Kind: mediaproviders.Image,
 		Command: paid.Rules.Image.Command(len(references)), Model: model, PreferredModel: &preferred, Prompt: input.Prompt,
-		Parameters: jscompat.NewObject(), Inputs: inputs, Outputs: 1,
+		Parameters: dynvalue.NewObject(), Inputs: inputs, Outputs: 1,
 	}
-	projectOptions, _ := object.Value("options").(*jscompat.Object)
+	projectOptions, _ := object.Value("options").(*dynvalue.Object)
 	resolution := object.Value("resolution")
-	selected, err := providers.SelectCheckedPaidRequest(paid, request, caps, func(item mediaapi.Model) (*jscompat.Object, error) {
+	selected, err := providers.SelectCheckedPaidRequest(paid, request, caps, func(item mediaapi.Model) (*dynvalue.Object, error) {
 		return parametersForModel(paid.Rules, info.DefaultImageResolution, item, projectOptions, resolution, t, reference)
 	})
 	if err != nil {
@@ -264,8 +264,8 @@ func (p *paidAttempt) price(ctx context.Context) (Quote, error) {
 		if err != nil || ctx.Err() != nil {
 			return Quote{}, false
 		}
-		parsed, err := jscompat.Parse([]byte(result.Stdout))
-		value, isObject := parsed.(*jscompat.Object)
+		parsed, err := dynvalue.Parse([]byte(result.Stdout))
+		value, isObject := parsed.(*dynvalue.Object)
 		if err != nil || !isObject {
 			return Quote{}, false
 		}
@@ -273,7 +273,7 @@ func (p *paidAttempt) price(ctx context.Context) (Quote, error) {
 		if result.Code != nil {
 			code = *result.Code
 		}
-		verdict := jscompat.ToString(value.Value("verdict"))
+		verdict := dynvalue.ToString(value.Value("verdict"))
 		if (code != 0 && code != 2) || (verdict != VerdictOK && verdict != VerdictInsufficientBalance && verdict != VerdictCostOrBalanceUnknown) {
 			return Quote{}, false
 		}
@@ -285,7 +285,7 @@ func (p *paidAttempt) price(ctx context.Context) (Quote, error) {
 			return Quote{}, false
 		}
 		reasons := []string{}
-		if list, ok := value.Value("reasons").(*jscompat.Array); ok {
+		if list, ok := value.Value("reasons").(*dynvalue.Array); ok {
 			for _, item := range list.Items {
 				if text, ok := item.(string); ok {
 					reasons = append(reasons, text)
@@ -304,7 +304,7 @@ func (p *paidAttempt) price(ctx context.Context) (Quote, error) {
 	return quote, nil
 }
 
-// sameNumber — равенство необязательных чисел (=== с null).
+// sameNumber — равенство необязательных чисел: два отсутствующих равны, отсутствующее и число — нет.
 func sameNumber(left, right *float64) bool {
 	if left == nil || right == nil {
 		return left == nil && right == nil
@@ -409,13 +409,13 @@ func (p *paidAttempt) generate(ctx context.Context, allowUnknownCost bool) (stri
 // sameMediaProvider — непустые id совпадают без учёта регистра и
 // пробелов по краям.
 func sameMediaProvider(left, right string) bool {
-	left, right = jscompat.Trim(left), jscompat.Trim(right)
+	left, right = dynvalue.Trim(left), dynvalue.Trim(right)
 	return left != "" && right != "" && strings.ToLower(left) == strings.ToLower(right)
 }
 
-// failure — stderr.trim() || fallback.
+// failure — stderr без пробелов по краям, а если он пуст — fallback.
 func failure(stderr, fallback string) error {
-	if text := jscompat.Trim(stderr); text != "" {
+	if text := dynvalue.Trim(stderr); text != "" {
 		return errors.New(text)
 	}
 	return errors.New(fallback)

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/mediatest"
-	"songframe-go/internal/tools"
+	"songframe/internal/mediatest"
+	"songframe/internal/tools"
 )
 
 // TestPaidAttemptTools — media_request и cost_check подключены к реестру; вход к провайдеру

@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/components"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/songml"
+	"songframe/internal/components"
+	"songframe/internal/jobs"
+	"songframe/internal/songml"
 )
 
 // fakeComponents — менеджер компонентов без файлов: статусы задаются тестом, Check ждёт release.

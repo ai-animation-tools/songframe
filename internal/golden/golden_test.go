@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-// TestCasesAreComplete проверяет целостность снятых эталонов: у каждого случая есть описание,
+// TestCasesAreComplete проверяет целостность эталонов: у каждого случая есть описание,
 // проверяемая операция, ожидаемый JSON и вход, наличие которого совпадает с case.json.
 func TestCasesAreComplete(t *testing.T) {
 	calls := map[string]string{"status": "computeStatus", "timing-view": "viewTiming", "timing-save": "saveTiming"}
@@ -149,7 +149,8 @@ func TestCopyProject(t *testing.T) {
 	}
 }
 
-// TestTreeDigest фиксирует формат дайджеста дерева, общий со скриптом съёмки.
+// TestTreeDigest фиксирует формат дайджеста дерева (тот же, что у команды find … | sha256sum из
+// описания TreeDigest).
 func TestTreeDigest(t *testing.T) {
 	root := t.TempDir()
 	write := func(name, text string) {

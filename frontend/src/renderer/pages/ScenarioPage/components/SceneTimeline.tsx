@@ -37,7 +37,7 @@ export function SceneTimeline({
   const [mode, setMode] = useState<Mode>('parts');
   const [states, setStates] = useState<Record<string, ShotProductionState> | null>(null);
 
-  // Статус считает главный процесс по сохранённому реестру; после сохранения оболочка обновляет state, и статусы перечитываются.
+  // Статус считает Go по сохранённому реестру; после сохранения оболочка обновляет state, и статусы перечитываются.
   useEffect(() => {
     if (mode !== 'status' || !project) return;
     let cancelled = false;

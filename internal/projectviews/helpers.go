@@ -3,21 +3,21 @@ package projectviews
 import (
 	"strings"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
-// Операции над значениями из JSON с семантикой Python: представления строятся из полей реестра и
-// манифестов без предварительной проверки типов, поэтому неверные данные дают исключение Python
-// (KeyError, TypeError, AttributeError): его текст входит в вывод, проверяемый эталонами scene-views.
+// Операции над значениями toolrt из JSON: представления строятся из полей реестра и манифестов
+// без предварительной проверки типов, поэтому неверные данные дают исключение toolrt (KeyError,
+// TypeError, AttributeError): его текст входит в вывод, проверяемый эталонами scene-views.
 
-// get — container[key].
-func get(container any, key string) (any, error) { return pycompat.GetItem(container, key) }
+// get — значение ключа (toolrt.GetItem): отсутствующий ключ — KeyError, не-контейнер — TypeError.
+func get(container any, key string) (any, error) { return toolrt.GetItem(container, key) }
 
-// getPath — container[k1][k2]…: первая отсутствующая ступень даёт исключение.
+// getPath — значение по цепочке ключей: первая отсутствующая ступень даёт исключение.
 func getPath(container any, keys ...string) (any, error) {
 	current := container
 	for _, key := range keys {
-		value, err := pycompat.GetItem(current, key)
+		value, err := toolrt.GetItem(current, key)
 		if err != nil {
 			return nil, err
 		}
@@ -26,11 +26,11 @@ func getPath(container any, keys ...string) (any, error) {
 	return current, nil
 }
 
-// concat — левоассоциативное a + b + … строк: нестроковый операнд — TypeError конкатенации.
+// concat — сложение строк слева направо (toolrt.Add): нестроковый операнд — TypeError конкатенации.
 func concat(parts ...any) (string, error) {
 	var result any = ""
 	for _, part := range parts {
-		value, err := pycompat.Add(result, part)
+		value, err := toolrt.Add(result, part)
 		if err != nil {
 			return "", err
 		}
@@ -39,36 +39,36 @@ func concat(parts ...any) (string, error) {
 	return result.(string), nil
 }
 
-// join — sep.join(items): нестроковый элемент — TypeError с номером элемента, как у str.join.
+// join — строки items через separator: нестроковый элемент — TypeError с номером элемента.
 func join(separator string, items []any) (string, error) {
 	parts := make([]string, len(items))
 	for index, item := range items {
 		text, ok := item.(string)
 		if !ok {
-			return "", pycompat.Raise(pycompat.TypeError, "sequence item %d: expected str instance, %s found", index, pycompat.TypeName(item))
+			return "", toolrt.Raise(toolrt.TypeError, "sequence item %d: expected str instance, %s found", index, toolrt.TypeName(item))
 		}
 		parts[index] = text
 	}
 	return strings.Join(parts, separator), nil
 }
 
-// lower — str.lower() значения: у не-строки нет метода (AttributeError).
+// lower — строка в нижнем регистре; не-строка — AttributeError «нет атрибута lower».
 func lower(value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'lower'", pycompat.TypeName(value))
+		return "", toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'lower'", toolrt.TypeName(value))
 	}
 	return strings.ToLower(text), nil
 }
 
-// Cell — cell(text): значение строкой str(), последовательности пробельных символов Unicode
-// (\s+ регулярного выражения Python) — один пробел, «|» экранирована, края без пробелов. Ячейка
-// таблицы Markdown не разрывается текстом поля.
+// Cell — значение ячейкой таблицы Markdown: строковая запись toolrt.Str, каждая серия пробельных
+// символов Unicode (toolrt.IsSpace) — один пробел, «|» экранирована, края без пробелов. Ячейка
+// не разрывается текстом поля.
 func Cell(value any) string {
 	var builder strings.Builder
 	space := false
-	for _, r := range pycompat.Runes(pycompat.Str(value)) {
-		if pycompat.IsSpace(r) {
+	for _, r := range toolrt.Runes(toolrt.Str(value)) {
+		if toolrt.IsSpace(r) {
 			space = true
 			continue
 		}
@@ -76,48 +76,49 @@ func Cell(value any) string {
 			builder.WriteByte(' ')
 			space = false
 		}
-		builder.WriteString(pycompat.FromRunes([]rune{r}))
+		builder.WriteString(toolrt.FromRunes([]rune{r}))
 	}
 	if space {
 		builder.WriteByte(' ')
 	}
-	return pycompat.Strip(strings.ReplaceAll(builder.String(), "|", "\\|"))
+	return toolrt.Strip(strings.ReplaceAll(builder.String(), "|", "\\|"))
 }
 
-// DerivedLabel — derived_label(scene, separator): пометка «из Mxx» у плана из материала другого
-// плана; у обычного плана пусто.
-func DerivedLabel(scene *pycompat.Dict, separator string) (string, error) {
+// DerivedLabel — пометка «из Mxx» после separator у плана из материала другого плана; у
+// обычного плана пусто.
+func DerivedLabel(scene *toolrt.Dict, separator string) (string, error) {
 	source := scene.Value("derived_from")
-	if !pycompat.Truthy(source) {
+	if !toolrt.Truthy(source) {
 		return "", nil
 	}
 	shot, err := get(source, "shot")
 	if err != nil {
 		return "", err
 	}
-	return separator + "из " + pycompat.Str(shot), nil
+	return separator + "из " + toolrt.Str(shot), nil
 }
 
-// dictGet — value.get(key, fallback) (AttributeError у не-словаря).
+// dictGet — значение ключа словаря или fallback (toolrt.DictGet); не-словарь — AttributeError.
 func dictGet(value any, key string, fallback any) (any, error) {
-	return pycompat.DictGet(value, key, fallback)
+	return toolrt.DictGet(value, key, fallback)
 }
 
-// items — value.items() словаря: у не-словаря нет метода (AttributeError).
-func items(value any) (*pycompat.Dict, error) {
-	dict, ok := value.(*pycompat.Dict)
+// items — значение как словарь для обхода пар; не-словарь — AttributeError «нет атрибута items».
+func items(value any) (*toolrt.Dict, error) {
+	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'items'", pycompat.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(value))
 	}
 	return dict, nil
 }
 
-// rstripLines — "\n".join(line.rstrip() for line in text.splitlines()).rstrip() + "\n": обрезка
-// пробелов в конце строк по всем разделителям строк Python и один перевод строки в конце.
+// rstripLines — текст без пробельных символов в конце каждой строки и в конце текста, строки
+// разделены по всем разделителям строк Unicode (toolrt.SplitLines) и соединены «\n», в конце —
+// один перевод строки.
 func rstripLines(text string) string {
-	lines := pycompat.SplitLines(text)
+	lines := toolrt.SplitLines(text)
 	for index, line := range lines {
-		lines[index] = strings.TrimRightFunc(line, pycompat.IsSpace)
+		lines[index] = strings.TrimRightFunc(line, toolrt.IsSpace)
 	}
-	return strings.TrimRightFunc(strings.Join(lines, "\n"), pycompat.IsSpace) + "\n"
+	return strings.TrimRightFunc(strings.Join(lines, "\n"), toolrt.IsSpace) + "\n"
 }

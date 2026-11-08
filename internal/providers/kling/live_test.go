@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"songframe-go/internal/providers/kling/mcp"
+	"songframe/internal/providers/kling/mcp"
 )
 
 // TestLiveFree — ручная живая проверка бесплатных операций против настоящего сервиса; по

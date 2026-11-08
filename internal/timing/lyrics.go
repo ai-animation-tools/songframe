@@ -5,8 +5,8 @@
 // Правила разбора текста и проверки совпадают с frontend/src/shared/lyrics.ts и
 // timing-validation.ts, которыми редактор проверяет разметку до сохранения. Сохранённый
 // timing.json отдаётся редактору как прочитанный документ — с неизвестными полями, различием
-// отсутствующего ключа и null, без округления секунд. Проверки работают с деревом jscompat,
-// потому что вход — недоверенный JSON, а правила заданы в семантике JS.
+// отсутствующего ключа и null, без округления секунд. Проверки работают с деревом dynvalue,
+// потому что вход — недоверенный JSON, а правила заданы редактором.
 package timing
 
 import (
@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // LyricsLine — LyricsLine контракта: физическая строка source/text.md.
@@ -37,15 +37,16 @@ type Lyrics struct {
 	Problems []string
 }
 
-// Грамматика заголовков. \s JS шире \s RE2, поэтому класс пробелов задан явно. Флаг i JS без u не
-// сопоставляет «ſ» и знак Кельвина с латиницей, а (?i) RE2 сопоставляет: латиница перечислена
+// Грамматика заголовков. Пробел редактора (\s с Unicode-пробелами) шире \s RE2, поэтому класс
+// пробелов задан явно. Регистр в редакторе не сопоставляет «ſ» и знак Кельвина с латиницей, а
+// (?i) RE2 сопоставляет: латиница перечислена
 // в обоих регистрах, без учёта регистра сравниваются только кириллические слова.
 var (
 	lineBreak    = regexp.MustCompile(`\r\n?|\n`)
 	header       = regexp.MustCompile(`^\[([^\[\]]+)\]$`)
-	markdown     = regexp.MustCompile(`^(?:#{1,6}[` + jscompat.SpaceClass + `]|[-*+][` + jscompat.SpaceClass + `]|\d+[.)][` + jscompat.SpaceClass + `]|` + "```" + `|~~~)`)
+	markdown     = regexp.MustCompile(`^(?:#{1,6}[` + dynvalue.SpaceClass + `]|[-*+][` + dynvalue.SpaceClass + `]|\d+[.)][` + dynvalue.SpaceClass + `]|` + "```" + `|~~~)`)
 	letter       = `(?:[a-zA-Z]|(?i:[а-яё]))`
-	space        = `[` + jscompat.SpaceClass + `]`
+	space        = `[` + dynvalue.SpaceClass + `]`
 	sectionTitle = regexp.MustCompile(`^(?:` + letter + `+` + space + `+){0,2}(?i:припев|куплет|бридж|интро|вступление|аутро|проигрыш|кода|финал|запев)(?:` +
 		space + `+(?:` + letter + `+|\d+)){0,2}[:.]?$`)
 	trailingPunct = regexp.MustCompile(`[:.]$`)
@@ -85,11 +86,11 @@ func AnalyzeLyrics(text string) Lyrics {
 	}
 	var unmarked []unmarkedRow
 	for index, raw := range lineBreak.Split(text, -1) {
-		line := jscompat.Trim(raw)
+		line := dynvalue.Trim(raw)
 		number := index + 1
 		isHeader := false
-		if match := header.FindStringSubmatch(line); match != nil && jscompat.Trim(match[1]) != "" {
-			result.Sections = append(result.Sections, jscompat.Trim(match[1]))
+		if match := header.FindStringSubmatch(line); match != nil && dynvalue.Trim(match[1]) != "" {
+			result.Sections = append(result.Sections, dynvalue.Trim(match[1]))
 			isHeader = true
 		} else if strings.ContainsAny(line, "[]") {
 			// Ошибочный заголовок не превращаем в строку песни даже при чтении старого файла.

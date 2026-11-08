@@ -28,30 +28,30 @@ import type {
   TimingFile
 } from '@shared/types';
 import type { ScenarioStatus } from '@shared/scenario-status';
-import type * as status from '../../bindings/songframe-go/internal/status/models';
-import type * as jobs from '../../bindings/songframe-go/internal/jobs/models';
-import type * as checks from '../../bindings/songframe-go/internal/checks/models';
-import type * as songtiming from '../../bindings/songframe-go/internal/songtiming/models';
-import type * as agentModels from '../../bindings/songframe-go/internal/agents/models';
+import type * as status from '../../bindings/songframe/internal/status/models';
+import type * as jobs from '../../bindings/songframe/internal/jobs/models';
+import type * as checks from '../../bindings/songframe/internal/checks/models';
+import type * as songtiming from '../../bindings/songframe/internal/songtiming/models';
+import type * as agentModels from '../../bindings/songframe/internal/agents/models';
 import type { AgentCheckResult, AgentDiagnosticCode, AgentEvent, AgentJob, AgentSettings } from '@shared/agents';
-import type * as videoReviewModels from '../../bindings/songframe-go/internal/videoreview/models';
+import type * as videoReviewModels from '../../bindings/songframe/internal/videoreview/models';
 import type { VideoReviewFinding, VideoReviewView } from '@shared/video-review';
-import type * as covergen from '../../bindings/songframe-go/internal/covergen/models';
-import type * as referenceimage from '../../bindings/songframe-go/internal/referenceimage/models';
+import type * as covergen from '../../bindings/songframe/internal/covergen/models';
+import type * as referenceimage from '../../bindings/songframe/internal/referenceimage/models';
 import type { CoverGenerationSession } from '@shared/cover-generation';
 import type { ReferenceImageGenerationInput } from '@shared/reference-image-generation';
 import type { AiAccess } from '@shared/ai-access';
 import type { UpdateView } from '@shared/updates';
-import type * as scenarioworkflow from '../../bindings/songframe-go/internal/scenarioworkflow/models';
+import type * as scenarioworkflow from '../../bindings/songframe/internal/scenarioworkflow/models';
 import type { ScenarioDocuments, ScenarioProposal, ScenarioWorkflowView } from '@shared/scenario-workflow';
-import type * as productionworkflow from '../../bindings/songframe-go/internal/productionworkflow/models';
+import type * as productionworkflow from '../../bindings/songframe/internal/productionworkflow/models';
 import type { ProductionFramePrompt, ProductionPass, ProductionProposal, ProductionWorkflowView } from '@shared/production-workflow';
 import type { VocalModelId, VocalPreparationView } from '@shared/vocals';
 import type { NotificationTarget } from '@shared/notifications';
 import type { MontageWindowEvent } from '@shared/montage-window';
 import type { MontageDraft, MontageView } from '@shared/montage';
 import type { DerivedShotView } from '@shared/derived-shot';
-import type * as mediaapi from '../../bindings/songframe-go/internal/mediaapi/models';
+import type * as mediaapi from '../../bindings/songframe/internal/mediaapi/models';
 import type { MediaCapabilities, MediaKind, ProviderAuth } from '@shared/media-providers';
 import { componentTexts } from '@shared/texts/component-manager';
 import { platformTexts } from '@shared/texts/platform';
@@ -130,66 +130,66 @@ export function subscribe<T>(events: EventSource, name: string, listener: (value
 
 /** Модули bindings загружаются при первом вызове: Storybook и unit-тесты не запускают Wails runtime. */
 export interface Bindings {
-  app: () => Promise<typeof import('../../bindings/songframe-go/internal/app/appservice')>;
-  shell: () => Promise<typeof import('../../bindings/songframe-go/internal/app/shellservice')>;
-  native: () => Promise<typeof import('../../bindings/songframe-go/internal/app/nativeservice')>;
-  components: () => Promise<typeof import('../../bindings/songframe-go/internal/app/componentsservice')>;
-  jobs: () => Promise<typeof import('../../bindings/songframe-go/internal/app/jobsservice')>;
-  projects: () => Promise<typeof import('../../bindings/songframe-go/internal/app/projectservice')>;
-  timing: () => Promise<typeof import('../../bindings/songframe-go/internal/app/timingservice')>;
-  sources: () => Promise<typeof import('../../bindings/songframe-go/internal/app/sourcesservice')>;
-  cast: () => Promise<typeof import('../../bindings/songframe-go/internal/app/castservice')>;
-  scenario: () => Promise<typeof import('../../bindings/songframe-go/internal/app/scenarioservice')>;
-  tools: () => Promise<typeof import('../../bindings/songframe-go/internal/app/toolsservice')>;
-  checks: () => Promise<typeof import('../../bindings/songframe-go/internal/app/checksservice')>;
-  agents: () => Promise<typeof import('../../bindings/songframe-go/internal/app/agentsservice')>;
-  ai: () => Promise<typeof import('../../bindings/songframe-go/internal/app/aiservice')>;
-  scenarioWorkflow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/scenarioworkflowservice')>;
-  productionWorkflow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/productionworkflowservice')>;
-  videoReview: () => Promise<typeof import('../../bindings/songframe-go/internal/app/videoreviewservice')>;
-  cover: () => Promise<typeof import('../../bindings/songframe-go/internal/app/coverservice')>;
-  referenceImages: () => Promise<typeof import('../../bindings/songframe-go/internal/app/referenceimagesservice')>;
-  environment: () => Promise<typeof import('../../bindings/songframe-go/internal/app/environmentservice')>;
-  media: () => Promise<typeof import('../../bindings/songframe-go/internal/app/mediaservice')>;
-  production: () => Promise<typeof import('../../bindings/songframe-go/internal/app/productionservice')>;
-  dashboard: () => Promise<typeof import('../../bindings/songframe-go/internal/app/dashboardservice')>;
-  animatic: () => Promise<typeof import('../../bindings/songframe-go/internal/app/animaticservice')>;
-  montage: () => Promise<typeof import('../../bindings/songframe-go/internal/app/montageservice')>;
-  montageWindow: () => Promise<typeof import('../../bindings/songframe-go/internal/app/montagewindowservice')>;
-  derivedShots: () => Promise<typeof import('../../bindings/songframe-go/internal/app/derivedshotservice')>;
-  updates: () => Promise<typeof import('../../bindings/songframe-go/internal/app/updatesservice')>;
+  app: () => Promise<typeof import('../../bindings/songframe/internal/app/appservice')>;
+  shell: () => Promise<typeof import('../../bindings/songframe/internal/app/shellservice')>;
+  native: () => Promise<typeof import('../../bindings/songframe/internal/app/nativeservice')>;
+  components: () => Promise<typeof import('../../bindings/songframe/internal/app/componentsservice')>;
+  jobs: () => Promise<typeof import('../../bindings/songframe/internal/app/jobsservice')>;
+  projects: () => Promise<typeof import('../../bindings/songframe/internal/app/projectservice')>;
+  timing: () => Promise<typeof import('../../bindings/songframe/internal/app/timingservice')>;
+  sources: () => Promise<typeof import('../../bindings/songframe/internal/app/sourcesservice')>;
+  cast: () => Promise<typeof import('../../bindings/songframe/internal/app/castservice')>;
+  scenario: () => Promise<typeof import('../../bindings/songframe/internal/app/scenarioservice')>;
+  tools: () => Promise<typeof import('../../bindings/songframe/internal/app/toolsservice')>;
+  checks: () => Promise<typeof import('../../bindings/songframe/internal/app/checksservice')>;
+  agents: () => Promise<typeof import('../../bindings/songframe/internal/app/agentsservice')>;
+  ai: () => Promise<typeof import('../../bindings/songframe/internal/app/aiservice')>;
+  scenarioWorkflow: () => Promise<typeof import('../../bindings/songframe/internal/app/scenarioworkflowservice')>;
+  productionWorkflow: () => Promise<typeof import('../../bindings/songframe/internal/app/productionworkflowservice')>;
+  videoReview: () => Promise<typeof import('../../bindings/songframe/internal/app/videoreviewservice')>;
+  cover: () => Promise<typeof import('../../bindings/songframe/internal/app/coverservice')>;
+  referenceImages: () => Promise<typeof import('../../bindings/songframe/internal/app/referenceimagesservice')>;
+  environment: () => Promise<typeof import('../../bindings/songframe/internal/app/environmentservice')>;
+  media: () => Promise<typeof import('../../bindings/songframe/internal/app/mediaservice')>;
+  production: () => Promise<typeof import('../../bindings/songframe/internal/app/productionservice')>;
+  dashboard: () => Promise<typeof import('../../bindings/songframe/internal/app/dashboardservice')>;
+  animatic: () => Promise<typeof import('../../bindings/songframe/internal/app/animaticservice')>;
+  montage: () => Promise<typeof import('../../bindings/songframe/internal/app/montageservice')>;
+  montageWindow: () => Promise<typeof import('../../bindings/songframe/internal/app/montagewindowservice')>;
+  derivedShots: () => Promise<typeof import('../../bindings/songframe/internal/app/derivedshotservice')>;
+  updates: () => Promise<typeof import('../../bindings/songframe/internal/app/updatesservice')>;
   events: EventSource;
 }
 
 export const nativeBindings: Bindings = {
-  app: () => import('../../bindings/songframe-go/internal/app/appservice'),
-  shell: () => import('../../bindings/songframe-go/internal/app/shellservice'),
-  native: () => import('../../bindings/songframe-go/internal/app/nativeservice'),
-  components: () => import('../../bindings/songframe-go/internal/app/componentsservice'),
-  jobs: () => import('../../bindings/songframe-go/internal/app/jobsservice'),
-  projects: () => import('../../bindings/songframe-go/internal/app/projectservice'),
-  timing: () => import('../../bindings/songframe-go/internal/app/timingservice'),
-  sources: () => import('../../bindings/songframe-go/internal/app/sourcesservice'),
-  cast: () => import('../../bindings/songframe-go/internal/app/castservice'),
-  scenario: () => import('../../bindings/songframe-go/internal/app/scenarioservice'),
-  tools: () => import('../../bindings/songframe-go/internal/app/toolsservice'),
-  checks: () => import('../../bindings/songframe-go/internal/app/checksservice'),
-  agents: () => import('../../bindings/songframe-go/internal/app/agentsservice'),
-  ai: () => import('../../bindings/songframe-go/internal/app/aiservice'),
-  scenarioWorkflow: () => import('../../bindings/songframe-go/internal/app/scenarioworkflowservice'),
-  productionWorkflow: () => import('../../bindings/songframe-go/internal/app/productionworkflowservice'),
-  videoReview: () => import('../../bindings/songframe-go/internal/app/videoreviewservice'),
-  cover: () => import('../../bindings/songframe-go/internal/app/coverservice'),
-  referenceImages: () => import('../../bindings/songframe-go/internal/app/referenceimagesservice'),
-  environment: () => import('../../bindings/songframe-go/internal/app/environmentservice'),
-  media: () => import('../../bindings/songframe-go/internal/app/mediaservice'),
-  production: () => import('../../bindings/songframe-go/internal/app/productionservice'),
-  dashboard: () => import('../../bindings/songframe-go/internal/app/dashboardservice'),
-  animatic: () => import('../../bindings/songframe-go/internal/app/animaticservice'),
-  montage: () => import('../../bindings/songframe-go/internal/app/montageservice'),
-  montageWindow: () => import('../../bindings/songframe-go/internal/app/montagewindowservice'),
-  derivedShots: () => import('../../bindings/songframe-go/internal/app/derivedshotservice'),
-  updates: () => import('../../bindings/songframe-go/internal/app/updatesservice'),
+  app: () => import('../../bindings/songframe/internal/app/appservice'),
+  shell: () => import('../../bindings/songframe/internal/app/shellservice'),
+  native: () => import('../../bindings/songframe/internal/app/nativeservice'),
+  components: () => import('../../bindings/songframe/internal/app/componentsservice'),
+  jobs: () => import('../../bindings/songframe/internal/app/jobsservice'),
+  projects: () => import('../../bindings/songframe/internal/app/projectservice'),
+  timing: () => import('../../bindings/songframe/internal/app/timingservice'),
+  sources: () => import('../../bindings/songframe/internal/app/sourcesservice'),
+  cast: () => import('../../bindings/songframe/internal/app/castservice'),
+  scenario: () => import('../../bindings/songframe/internal/app/scenarioservice'),
+  tools: () => import('../../bindings/songframe/internal/app/toolsservice'),
+  checks: () => import('../../bindings/songframe/internal/app/checksservice'),
+  agents: () => import('../../bindings/songframe/internal/app/agentsservice'),
+  ai: () => import('../../bindings/songframe/internal/app/aiservice'),
+  scenarioWorkflow: () => import('../../bindings/songframe/internal/app/scenarioworkflowservice'),
+  productionWorkflow: () => import('../../bindings/songframe/internal/app/productionworkflowservice'),
+  videoReview: () => import('../../bindings/songframe/internal/app/videoreviewservice'),
+  cover: () => import('../../bindings/songframe/internal/app/coverservice'),
+  referenceImages: () => import('../../bindings/songframe/internal/app/referenceimagesservice'),
+  environment: () => import('../../bindings/songframe/internal/app/environmentservice'),
+  media: () => import('../../bindings/songframe/internal/app/mediaservice'),
+  production: () => import('../../bindings/songframe/internal/app/productionservice'),
+  dashboard: () => import('../../bindings/songframe/internal/app/dashboardservice'),
+  animatic: () => import('../../bindings/songframe/internal/app/animaticservice'),
+  montage: () => import('../../bindings/songframe/internal/app/montageservice'),
+  montageWindow: () => import('../../bindings/songframe/internal/app/montagewindowservice'),
+  derivedShots: () => import('../../bindings/songframe/internal/app/derivedshotservice'),
+  updates: () => import('../../bindings/songframe/internal/app/updatesservice'),
   events: async () => {
     const { Events } = await import('@wailsio/runtime');
     return { on: Events.On };

@@ -396,7 +396,7 @@ func TestDetectKind(t *testing.T) {
 		{"windows", "", `C:\Users\u\AppData\Local\Programs\SongFrame Desktop\songframe.exe`, KindWindows},
 		{"linux", "/home/u/SongFrame.AppImage", "/tmp/.mount_x/usr/bin/songframe", KindAppImage},
 		{"linux", "", "/usr/bin/songframe", KindDeb},
-		{"linux", "", "/home/u/songframe-go/build/bin/songframe", KindManual},
+		{"linux", "", "/home/u/songframe/build/bin/songframe", KindManual},
 	} {
 		if got := DetectKind(item.goos, item.appImage, item.executable); got != item.want {
 			t.Errorf("%+v: %s", item, got)

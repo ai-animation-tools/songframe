@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<capture>/run_shot_workflow.py\", line 22, in <module>\n    tool.main()\n  File \"<songframe>/tools/shot_workflow/shot_workflow.py\", line 1018, in main\n    info = report(args.dir)\n           ^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/shot_workflow/shot_workflow.py\", line 767, in report\n    data = load_workflow(directory)\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/shot_workflow/shot_workflow.py\", line 92, in load_workflow\n    if data.get(\"schema_version\") != 1 or not isinstance(data.get(\"shot\"), str):\n       ^^^^^^^^\nAttributeError: 'list' object has no attribute 'get'\n",
+  "stderr": "Traceback (most recent call last):\nAttributeError: 'list' object has no attribute 'get'\n",
   "traceback": true,
   "files": {},
   "dirs": {},

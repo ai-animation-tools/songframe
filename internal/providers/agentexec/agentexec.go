@@ -7,8 +7,8 @@ package agentexec
 import (
 	"context"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/mediaapi"
+	"songframe/internal/agents"
+	"songframe/internal/mediaapi"
 )
 
 // ImagesRequest — согласованный запуск опор — провайдер, SHA

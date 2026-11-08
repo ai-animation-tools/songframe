@@ -14,7 +14,7 @@ interface NewProjectFormProps {
   touched: boolean;
 }
 
-/** Форма объединяет параметры проекта и показывает результат проверки перед созданием через IPC. */
+/** Форма объединяет параметры проекта и показывает результат проверки перед созданием через API. */
 export function NewProjectForm({ values, changeField, pickParent, problems, touched }: NewProjectFormProps): ReactElement {
   const { name, path, video } = values;
   const slug = slugify(name);

@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/sourceedit"
-	"songframe-go/internal/sources"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediafile"
+	"songframe/internal/projectfs"
+	"songframe/internal/sourceedit"
+	"songframe/internal/sources"
 )
 
 // Тексты публикации принятого референса (referenceImageTexts,
@@ -65,22 +65,22 @@ var kindDirPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
 // только созданные этим вызовом файлы.
 func Attach(project, entityID string, result Result) error {
 	manifestValue := sources.ReadManifest(project)
-	manifest, ok := manifestValue.(*jscompat.Object)
+	manifest, ok := manifestValue.(*dynvalue.Object)
 	if !ok {
 		return errors.New(textManifestMissing)
 	}
 	read := cast.Read(project)
-	if read.Damaged || !jscompat.Truthy(read.Value) {
+	if read.Damaged || !dynvalue.Truthy(read.Value) {
 		return errors.New(textCastInvalid)
 	}
 	document, err := cast.Normalize(read.Value, cast.LoadDefaults())
 	if err != nil {
 		return err
 	}
-	entities, _ := jscompat.AsArray(document.Value("entities"))
-	var entity *jscompat.Object
+	entities, _ := dynvalue.AsArray(document.Value("entities"))
+	var entity *dynvalue.Object
 	for _, item := range entities {
-		if candidate, _ := item.(*jscompat.Object); candidate != nil && jscompat.StrictEqual(candidate.Value("id"), entityID) {
+		if candidate, _ := item.(*dynvalue.Object); candidate != nil && dynvalue.StrictEqual(candidate.Value("id"), entityID) {
 			entity = candidate
 			break
 		}
@@ -91,19 +91,19 @@ func Attach(project, entityID string, result Result) error {
 	if !mediafile.ExtensionMatches(result.Path) {
 		return errors.New(textImageInvalid)
 	}
-	kinds, ok := manifest.Value("kinds").(*jscompat.Array)
+	kinds, ok := manifest.Value("kinds").(*dynvalue.Array)
 	if !ok || len(kinds.Items) == 0 {
 		kinds = defaultKinds()
 	}
 	manifest.Set("kinds", kinds)
-	references, ok := manifest.Value("references").(*jscompat.Array)
+	references, ok := manifest.Value("references").(*dynvalue.Array)
 	if !ok {
-		return &jscompat.TypeError{Message: "manifest.references.find is not a function"}
+		return &dynvalue.TypeError{Message: "manifest.references.find is not a function"}
 	}
-	var ref *jscompat.Object
+	var ref *dynvalue.Object
 	for _, item := range references.Items {
-		if jscompat.StrictEqual(jscompat.Get(item, "id"), entityID) {
-			ref, _ = item.(*jscompat.Object)
+		if dynvalue.StrictEqual(dynvalue.Get(item, "id"), entityID) {
+			ref, _ = item.(*dynvalue.Object)
 			break
 		}
 	}
@@ -113,16 +113,16 @@ func Attach(project, entityID string, result Result) error {
 			kindID = "style"
 		}
 		if findKind(kinds, kindID) == nil {
-			addKind(kinds, jscompat.ToString(kindID))
+			addKind(kinds, dynvalue.ToString(kindID))
 		}
-		ref = jscompat.NewObject()
+		ref = dynvalue.NewObject()
 		ref.Set("id", entity.Value("id"))
 		ref.Set("kind", kindID)
 		ref.Set("name", entity.Value("name"))
 		ref.Set("short_name", entity.Value("short_name"))
 		ref.Set("description", entity.Value("appearance"))
 		ref.Set("prompt", nil)
-		ref.Set("files", &jscompat.Array{Items: []any{}})
+		ref.Set("files", &dynvalue.Array{Items: []any{}})
 		references.Items = append(references.Items, ref)
 	}
 	typed, err := typedKinds(kinds)
@@ -133,16 +133,16 @@ func Attach(project, entityID string, result Result) error {
 		return errors.New(strings.Join(problems, " "))
 	}
 	kind := findKind(kinds, ref.Value("kind"))
-	dir, _ := jscompat.Get(kind, "dir").(string)
+	dir, _ := dynvalue.Get(kind, "dir").(string)
 	if kind == nil || !kindDirPattern.MatchString(dir) {
 		return errors.New(textCastInvalid)
 	}
-	files, ok := ref.Value("files").(*jscompat.Array)
+	files, ok := ref.Value("files").(*dynvalue.Array)
 	if !ok {
-		return &jscompat.TypeError{Message: "ref.files.some is not a function"}
+		return &dynvalue.TypeError{Message: "ref.files.some is not a function"}
 	}
-	images, _ := entity.Value("images").(*jscompat.Array)
-	relative := dir + "/" + jscompat.ToString(entity.Value("id")) + "-generated-" + result.ID + strings.ToLower(filepath.Ext(result.Path))
+	images, _ := entity.Value("images").(*dynvalue.Array)
+	relative := dir + "/" + dynvalue.ToString(entity.Value("id")) + "-generated-" + result.ID + strings.ToLower(filepath.Ext(result.Path))
 	source := filepath.Join(project, "source")
 	imagePath := filepath.Join(source, filepath.FromSlash(relative))
 	prompt := relative + ".prompt.txt"
@@ -157,14 +157,14 @@ func Attach(project, entityID string, result Result) error {
 	manifestPath := sources.ManifestPath(project)
 	oldManifest, err := os.ReadFile(manifestPath)
 	if err != nil {
-		return jscompat.FsError("open", manifestPath, err)
+		return dynvalue.FsError("open", manifestPath, err)
 	}
 	oldCast, err := os.ReadFile(cast.Path(project))
 	if err != nil {
-		return jscompat.FsError("open", cast.Path(project), err)
+		return dynvalue.FsError("open", cast.Path(project), err)
 	}
-	imageExisted := jscompat.Exists(imagePath)
-	promptExisted := jscompat.Exists(promptPath)
+	imageExisted := dynvalue.Exists(imagePath)
+	promptExisted := dynvalue.Exists(promptPath)
 	err = func() error {
 		if err := os.MkdirAll(filepath.Dir(imagePath), 0o777); err != nil {
 			return err
@@ -182,14 +182,14 @@ func Attach(project, entityID string, result Result) error {
 		if !listed {
 			data, err := os.ReadFile(imagePath)
 			if err != nil {
-				return jscompat.FsError("open", imagePath, err)
+				return dynvalue.FsError("open", imagePath, err)
 			}
 			sum := sha256.Sum256(data)
 			view := "full"
 			if len(files.Items) > 0 {
 				view = "other"
 			}
-			file := jscompat.NewObject()
+			file := dynvalue.NewObject()
 			file.Set("path", relative)
 			file.Set("sha256", hex.EncodeToString(sum[:]))
 			file.Set("bytes", float64(len(data)))
@@ -202,7 +202,7 @@ func Attach(project, entityID string, result Result) error {
 			images.Items = append(images.Items, relative)
 		}
 		manifest.Set("updated_at", now().UTC().Format("2006-01-02T15:04:05.000Z"))
-		if err := projectfs.WriteFile(manifestPath, []byte(jscompat.StringifyIndent(manifest, "  ")+"\n"), 0); err != nil {
+		if err := projectfs.WriteFile(manifestPath, []byte(dynvalue.StringifyIndent(manifest, "  ")+"\n"), 0); err != nil {
 			return err
 		}
 		return saveAttachedCast(project, document)
@@ -227,27 +227,27 @@ func Attach(project, entityID string, result Result) error {
 }
 
 // defaultKinds — копия DEFAULT_SOURCE_KINDS в виде значений описи.
-func defaultKinds() *jscompat.Array {
+func defaultKinds() *dynvalue.Array {
 	items := make([]any, len(sourceedit.DefaultKinds))
 	for index, kind := range sourceedit.DefaultKinds {
 		items[index] = kindObject(kind.ID, kind.Label, kind.Dir)
 	}
-	return &jscompat.Array{Items: items}
+	return &dynvalue.Array{Items: items}
 }
 
 // kindObject — тип исходника {id, label, dir}; порядок ключей входит в байты описи.
-func kindObject(id, label, dir string) *jscompat.Object {
-	object := jscompat.NewObject()
+func kindObject(id, label, dir string) *dynvalue.Object {
+	object := dynvalue.NewObject()
 	object.Set("id", id)
 	object.Set("label", label)
 	object.Set("dir", dir)
 	return object
 }
 
-// findKind — kinds.find((kind) => kind.id === id).
-func findKind(kinds *jscompat.Array, id any) any {
+// findKind — первый тип описи с кодом id.
+func findKind(kinds *dynvalue.Array, id any) any {
 	for _, kind := range kinds.Items {
-		if jscompat.StrictEqual(jscompat.Get(kind, "id"), id) {
+		if dynvalue.StrictEqual(dynvalue.Get(kind, "id"), id) {
 			return kind
 		}
 	}
@@ -256,7 +256,7 @@ func findKind(kinds *jscompat.Array, id any) any {
 
 // addKind добавляет тип для кода кастинга. Тип кастинга открыт: его код или штатная папка уже
 // могут принадлежать другому типу исходника, поэтому выбирается свободная папка base, base-2, …
-func addKind(kinds *jscompat.Array, id string) {
+func addKind(kinds *dynvalue.Array, id string) {
 	var fallback *sourceedit.Kind
 	for index := range sourceedit.DefaultKinds {
 		if sourceedit.DefaultKinds[index].ID == id {
@@ -270,7 +270,7 @@ func addKind(kinds *jscompat.Array, id string) {
 	dir := base
 	taken := func(dir string) bool {
 		for _, kind := range kinds.Items {
-			if jscompat.StrictEqual(jscompat.Get(kind, "dir"), dir) {
+			if dynvalue.StrictEqual(dynvalue.Get(kind, "dir"), dir) {
 				return true
 			}
 		}
@@ -287,23 +287,23 @@ func addKind(kinds *jscompat.Array, id string) {
 }
 
 // typedKinds — типы описи для sourceedit.ValidateKinds. Код и папка приводятся к строке перед
-// проверкой регулярным выражением; нестроковая подпись — TypeError (kind.label.trim).
-func typedKinds(kinds *jscompat.Array) ([]sourceedit.Kind, error) {
+// проверкой регулярным выражением; нестроковая подпись — TypeError.
+func typedKinds(kinds *dynvalue.Array) ([]sourceedit.Kind, error) {
 	result := make([]sourceedit.Kind, 0, len(kinds.Items))
 	for _, item := range kinds.Items {
-		label, ok := jscompat.Get(item, "label").(string)
+		label, ok := dynvalue.Get(item, "label").(string)
 		if !ok {
-			return nil, &jscompat.TypeError{Message: "kind.label.trim is not a function"}
+			return nil, &dynvalue.TypeError{Message: "kind.label.trim is not a function"}
 		}
-		result = append(result, sourceedit.Kind{ID: jscompat.ToString(jscompat.Get(item, "id")), Label: label, Dir: jscompat.ToString(jscompat.Get(item, "dir"))})
+		result = append(result, sourceedit.Kind{ID: dynvalue.ToString(dynvalue.Get(item, "id")), Label: label, Dir: dynvalue.ToString(dynvalue.Get(item, "dir"))})
 	}
 	return result, nil
 }
 
-// hasPath — files.some((file) => file.path === path).
-func hasPath(files *jscompat.Array, path string) bool {
+// hasPath — у одного из файлов path равен path.
+func hasPath(files *dynvalue.Array, path string) bool {
 	for _, file := range files.Items {
-		if jscompat.StrictEqual(jscompat.Get(file, "path"), path) {
+		if dynvalue.StrictEqual(dynvalue.Get(file, "path"), path) {
 			return true
 		}
 	}

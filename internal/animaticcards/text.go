@@ -9,23 +9,24 @@ import (
 	"golang.org/x/image/math/fixed"
 	"golang.org/x/image/vector"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // Текстовые поля карточки: выбор кегля, перенос по словам и сокращение многоточием. Раскладка
-// (кегль, строки, их координаты) совпадает с Pillow, потому что ширины строк считает face.length
-// (см. shaping.go). Начертание глифов не побайтное: Pillow растеризует контуры FreeType с
-// TrueType-хинтингом, здесь — те же контуры без хинтинга растеризатором x/image/vector в тех
-// же целопиксельных позициях глифов; отличие — горизонтальные края штрихов не притянуты к
-// сетке пикселей и выглядят чуть мягче (доли пикселя по вертикали).
+// (кегль, строки, их координаты) совпадает с эталоном, потому что ширины строк считает
+// face.length (см. shaping.go). Начертание глифов эталоном побайтно не фиксируется: контуры
+// растеризуются без хинтинга растеризатором x/image/vector в целопиксельных позициях глифов,
+// поэтому горизонтальные края штрихов не притянуты к сетке пикселей и выглядят чуть мягче, чем
+// при TrueType-хинтинге (доли пикселя по вертикали).
 
-// textLine — строка, нарисованная draw.text: левый верхний угол (якорь «la») и текст.
+// textLine — нарисованная строка: левый верхний угол (по восходящей линии шрифта) и текст.
 type textLine struct {
 	X, Y int
 	Text string
 }
 
-// textCall — один вызов text_box для трассировки эталона: аргументы, выбранный кегль и строки.
+// textCall — один вызов textBox для трассировки эталона (text_box): аргументы, выбранный кегль
+// и строки.
 type textCall struct {
 	Text                      string
 	X, Y, Width, Height, Size int
@@ -35,13 +36,14 @@ type textCall struct {
 	Lines                     []textLine
 }
 
-// splitWords — str.split() без аргументов: разделители — пробельные символы Python.
+// splitWords делит текст на слова по любым пробельным символам toolrt.IsSpace; пустые слова
+// отбрасываются.
 func splitWords(text string) []string {
-	return strings.FieldsFunc(text, pycompat.IsSpace)
+	return strings.FieldsFunc(text, toolrt.IsSpace)
 }
 
-// fits — draw.textlength(text) <= width: длина в 1/64 пикселя сравнивается точно, как float
-// Pillow (сумма продвижений 26.6, делённая на 64).
+// fits — помещается ли строка в ширину width: длина в 1/64 пикселя (сумма продвижений 26.6)
+// сравнивается с width·64 точно, без округления.
 func fits(f *face, text string, width int) bool {
 	return f.length(text) <= width*64
 }
@@ -51,13 +53,13 @@ func fits(f *face, text string, width int) bool {
 func wrapped(f *face, text string, width int) ([]string, error) {
 	lines := []string{""}
 	for _, word := range splitWords(text) {
-		candidate := pycompat.Strip(lines[len(lines)-1] + " " + word)
+		candidate := toolrt.Strip(lines[len(lines)-1] + " " + word)
 		if fits(f, candidate, width) {
 			lines[len(lines)-1] = candidate
 			continue
 		}
 		if !fits(f, word, width) {
-			return nil, pycompat.New("AssertionError", word)
+			return nil, toolrt.New("AssertionError", word)
 		}
 		lines = append(lines, word)
 	}
@@ -76,9 +78,9 @@ func shortened(f *face, lines []string, width, count int) []string {
 	return kept
 }
 
-// layoutTextBox — раскладка text_box без рисования: кегль от size вниз до 16, пока строки с
+// layoutTextBox — раскладка textBox без рисования: кегль от size вниз до 16, пока строки с
 // интерлиньяжем point+7 не войдут по высоте; если не вошли и при 16 — сокращение многоточием
-// до height//23 строк (не меньше одной). Возвращает кегль, строки и шрифт для рисования.
+// до height/23 строк с округлением вниз (не меньше одной). Возвращает кегль, строки и шрифт для рисования.
 func layoutTextBox(text string, width, height, size int, isBold bool) (int, []string, *face, error) {
 	var (
 		f       *face
@@ -109,11 +111,11 @@ func layoutTextBox(text string, width, height, size int, isBold bool) (int, []st
 }
 
 // textBox рисует текстовое поле с подбором кегля и возвращает
-// выбранный кегль. Нестроковый текст — AttributeError, как у text.split() в Python.
+// выбранный кегль. Нестроковый текст — AttributeError (текст зафиксирован эталоном).
 func (c *card) textBox(value any, x, y, width, height, size int, color string, isBold bool) (int, error) {
 	text, ok := value.(string)
 	if !ok {
-		return 0, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'split'", pycompat.TypeName(value))
+		return 0, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'split'", toolrt.TypeName(value))
 	}
 	point, lines, f, err := layoutTextBox(text, width, height, size, isBold)
 	if err != nil {
@@ -131,9 +133,9 @@ func (c *card) textBox(value any, x, y, width, height, size int, color string, i
 	return point, nil
 }
 
-// drawText — draw.text((x, y), line, font, fill): базовая линия на ascent ниже y, каждый глиф —
-// в целом пикселе PIXEL(pen) = (pen+32)>>6 своей позиции раскладки, как font_render Pillow. Покрытия перекрывающихся глифов объединяются максимумом (так Pillow
-// собирает маску строки), затем маска смешивается с холстом формулой fill_mask_L.
+// drawText рисует строку line: базовая линия на ascent ниже y, каждый глиф — в целом пикселе
+// PIXEL(pen) = (pen+32)>>6 своей позиции раскладки. Покрытия перекрывающихся глифов
+// объединяются максимумом в общую маску строки, затем маска смешивается с холстом (blendMask).
 func (c *card) drawText(f *face, x, y int, line string, ink [3]byte) {
 	glyphs := f.shape(line)
 	if len(glyphs) == 0 {

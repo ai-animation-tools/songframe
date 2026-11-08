@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/verify_asset_replay/verify_asset_replay.py\", line 106, in <module>\n    raise ValueError(\"Отчёт проверки нужно сохранить вне папки проекта.\")\nValueError: Отчёт проверки нужно сохранить вне папки проекта.\n",
+  "stderr": "Traceback (most recent call last):\nValueError: Отчёт проверки нужно сохранить вне папки проекта.\n",
   "traceback": true,
   "files": {},
   "dirs": {},

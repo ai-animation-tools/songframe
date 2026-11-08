@@ -15,7 +15,7 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // Warning — предупреждение адаптера о снимке запроса: поле и текст.
@@ -29,9 +29,9 @@ type Warning struct {
 type Adapter interface{}
 
 // SnapshotWarner — адаптер, который знает модельные предупреждения снимка принятого комплекта.
-// Ошибка — исключение модели Python на данных неожиданной формы.
+// Ошибка — исключение toolrt на данных неожиданной формы.
 type SnapshotWarner interface {
-	SnapshotWarnings(snapshot *pycompat.Dict) ([]Warning, error)
+	SnapshotWarnings(snapshot *toolrt.Dict) ([]Warning, error)
 }
 
 var (
@@ -42,14 +42,15 @@ var (
 	}
 )
 
-// normalized — id провайдера без учёта регистра и пробелов по краям (strip().casefold());
-// не строка — пустой id. Свёртка регистра — Unicode lower, для латинских id совпадает с casefold.
+// normalized — id провайдера без учёта регистра и пробельных символов по краям (toolrt.Strip,
+// затем Unicode lower); не строка — пустой id. Для латинских id lower равносилен полной свёртке
+// регистра.
 func normalized(provider any) string {
 	text, ok := provider.(string)
 	if !ok {
 		return ""
 	}
-	return strings.ToLower(pycompat.Strip(text))
+	return strings.ToLower(toolrt.Strip(text))
 }
 
 // Known — у провайдера есть адаптер.
@@ -64,12 +65,12 @@ func Known(provider any) bool {
 	return ok
 }
 
-// Lookup — адаптер провайдера либо ValueError с текстом, зафиксированным эталонами
-// (id печатается как repr Python: строка в кавычках, None, число).
+// Lookup — адаптер провайдера либо исключение toolrt ValueError с текстом, зафиксированным
+// эталонами (id печатается через toolrt.Repr: строка в кавычках, None, число).
 func Lookup(provider any) (Adapter, error) {
 	adapter, ok := Get(provider)
 	if !ok {
-		return nil, pycompat.New(pycompat.ValueError, "Для провайдера генерации "+pycompat.Repr(provider)+
+		return nil, toolrt.New(toolrt.ValueError, "Для провайдера генерации "+toolrt.Repr(provider)+
 			" нет адаптера: укажите provider подключённого сервиса.")
 	}
 	return adapter, nil

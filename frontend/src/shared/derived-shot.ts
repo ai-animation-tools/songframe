@@ -42,7 +42,7 @@ export interface DerivedShotApi {
   accept(project: string, shot: string, previewId: string, resultToken: string, replace: boolean): Promise<DerivedShotView>;
 }
 
-/** На границе IPC проверяем форму до доступа к полям; дробные кадры и лишние параметры не исполняются. */
+/** На границе API проверяем форму до доступа к полям; дробные кадры и лишние параметры не исполняются. */
 export function checkedDerivedRecipe(value: unknown): DerivedShotRecipe {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(texts.recipeInvalid);
   const recipe = value as Record<string, unknown>;

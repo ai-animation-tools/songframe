@@ -10,25 +10,25 @@ package derivedshot
 import (
 	"regexp"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // shotID — код плана: Mxx или Mxx.N.
 var shotID = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 
-// Source — derivedShotSource(project, scene): ID плана-источника из scene.derived_from.shot или "".
+// Source — ID плана-источника из scene.derived_from.shot или "".
 // Источник должен быть строкой формата Mxx и не совпадать с самим планом; scene — значение плана
-// реестра в представлении jscompat (объект). Не объект или нестроковый id — "".
+// реестра в представлении dynvalue (объект). Не объект или нестроковый id — "".
 func Source(scene any) string {
-	if !jscompat.IsRecord(scene) {
+	if !dynvalue.IsRecord(scene) {
 		return ""
 	}
-	id, ok := jscompat.Get(scene, "id").(string)
-	derived := jscompat.Get(scene, "derived_from")
-	if !ok || !jscompat.IsRecord(derived) {
+	id, ok := dynvalue.Get(scene, "id").(string)
+	derived := dynvalue.Get(scene, "derived_from")
+	if !ok || !dynvalue.IsRecord(derived) {
 		return ""
 	}
-	source, ok := jscompat.Get(derived, "shot").(string)
+	source, ok := dynvalue.Get(derived, "shot").(string)
 	if !ok || !shotID.MatchString(source) || source == id {
 		return ""
 	}

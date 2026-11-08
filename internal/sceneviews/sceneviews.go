@@ -24,9 +24,6 @@
 // Поэтому на актуальном проекте вывод и файлы не меняются («Представления актуальны.»,
 // «Обновлено представлений: 0.»), а после правки реестра (другой registry_sha256) перерисовываются
 // и перечисляются все карточки, а не только те, чьи пиксели изменились.
-//
-// Проверка снимков Git (--staged, --ref) не поддерживается: без --check остаётся отказ разбора
-// аргументов, с --check — код 1 и пояснение textSnapshotNotMigrated.
 package sceneviews
 
 import (
@@ -36,31 +33,26 @@ import (
 	"strings"
 	"syscall"
 
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/projectviews"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/projectfs"
+	"songframe/internal/projectviews"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
-// Parser — разбор аргументов в семантике argparse: --check и взаимоисключающие --staged/--ref.
-var Parser = pycompat.ArgParser{
-	Prog:        "update_scene_views.py",
+// Parser — разбор аргументов toolrt.ArgParser: единственный флаг --check.
+var Parser = toolrt.ArgParser{
+	Prog:        "update_scene_views",
 	Description: "Обновляет производные представления единого реестра; @link README.md",
-	Flags: []pycompat.Flag{
+	Flags: []toolrt.Flag{
 		{Name: "--check"},
-		{Name: "--staged"},
-		{Name: "--ref", Value: true},
 	},
-	Exclusive: []string{"--staged", "--ref"},
 }
 
 // Тексты вывода; меняются только вместе с эталоном testdata/golden/scene-views.
 const (
-	textSnapshotCheckOnly   = "Снимок Git доступен только для проверки."
-	textSnapshotNotMigrated = "Проверка снимка Git — инструмент разработчика; в Go-версии SongFrame не перенесена."
-	textActual              = "Представления актуальны."
-	cardsDir                = "plan/animatic/cards"
-	cardsManifest           = cardsDir + "/manifest.json"
+	textActual    = "Представления актуальны."
+	cardsDir      = "plan/animatic/cards"
+	cardsManifest = cardsDir + "/manifest.json"
 )
 
 // requiredInputs — обязательные источники require_inputs в порядке проверки.
@@ -86,21 +78,14 @@ func requireInputs(sources *projectviews.Sources) error {
 	return nil
 }
 
-// Run — main() инструмента на разрешённом корне проекта.
-func Run(root string, args []string) pytool.Output {
-	parsed, exit := pytool.Args(Parser, args)
+// Run — запуск инструмента на разрешённом корне проекта.
+func Run(root string, args []string) toolcli.Output {
+	parsed, exit := toolcli.Args(Parser, args)
 	if exit != nil {
 		return *exit
 	}
-	printer := &pytool.Printer{}
+	printer := &toolcli.Printer{}
 	check := parsed.Bools["--check"]
-	ref := parsed.Values["--ref"]
-	if parsed.Bools["--staged"] || len(ref) > 0 && ref[0] != "" {
-		if !check {
-			return pytool.Output{Code: 2, Stderr: pycompat.TextMode(Parser.Usage() + Parser.Prog + ": error: " + textSnapshotCheckOnly + "\n")}
-		}
-		return printer.Fail(textSnapshotNotMigrated)
-	}
 	changed, err := Update(root, check)
 	if err != nil {
 		var missing *MissingInputError
@@ -114,7 +99,7 @@ func Run(root string, args []string) pytool.Output {
 	}
 	message := textActual
 	if !check {
-		message = "Обновлено представлений: " + pycompat.NewInt(int64(len(changed))).String() + "."
+		message = "Обновлено представлений: " + toolrt.NewInt(int64(len(changed))).String() + "."
 	}
 	if err := printer.Print(message); err != nil {
 		return printer.Crash(err)
@@ -142,7 +127,7 @@ type expectedFile struct {
 // Update — обновляет (check=false) или проверяет производные представления проекта
 // root и возвращает список устаревших в порядке вывода: карточки и их .last.png, лишние PNG
 // папки карточек, документы (projectviews.Documents) и квитанция карточек. Отсутствующий
-// обязательный источник — *MissingInputError; прочие ошибки — исключения pycompat (трассировка
+// обязательный источник — *MissingInputError; прочие ошибки — исключения toolrt (трассировка
 // у CLI) или отказ шлюза записи. Вызывать можно из другого Go-кода без CLI.
 func Update(root string, check bool) ([]string, error) {
 	sources := projectviews.NewSources(root)
@@ -172,9 +157,9 @@ func Update(root string, check bool) ([]string, error) {
 	expected := map[string]bool{}
 	for _, file := range files {
 		expected[file.path] = true
-		target := pycompat.JoinPath(root, file.path)
+		target := toolrt.JoinPath(root, file.path)
 		same := false
-		if pycompat.IsFile(target) {
+		if toolrt.IsFile(target) {
 			digest, err := projectviews.FileSHA(target)
 			if err != nil {
 				return nil, err
@@ -190,10 +175,10 @@ func Update(root string, check bool) ([]string, error) {
 		}
 	}
 	// Папка карточек производная: PNG принятого плана или ушедшей опоры удаляется тем же запуском.
-	stale := pycompat.Glob(pycompat.JoinPath(root, cardsDir), "*.png")
-	pycompat.SortPaths(stale)
+	stale := toolrt.Glob(toolrt.JoinPath(root, cardsDir), "*.png")
+	toolrt.SortPaths(stale)
 	for _, path := range stale {
-		name := cardsDir + "/" + pycompat.PathName(path)
+		name := cardsDir + "/" + toolrt.PathName(path)
 		if expected[name] {
 			continue
 		}
@@ -203,9 +188,9 @@ func Update(root string, check bool) ([]string, error) {
 		}
 	}
 	for _, document := range documents {
-		path := pycompat.JoinPath(root, document.Path)
-		if pycompat.Exists(path) {
-			current, err := pycompat.ReadText(path)
+		path := toolrt.JoinPath(root, document.Path)
+		if toolrt.Exists(path) {
+			current, err := toolrt.ReadText(path)
 			if err != nil {
 				return nil, err
 			}
@@ -217,8 +202,8 @@ func Update(root string, check bool) ([]string, error) {
 		if check {
 			continue
 		}
-		// write_text: текстовый режим ОС и UTF-8 (одиночный суррогат — UnicodeEncodeError).
-		data, err := pycompat.EncodeUTF8(pycompat.TextMode(document.Text))
+		// Текстовый режим ОС и UTF-8 (одиночный суррогат — UnicodeEncodeError).
+		data, err := toolrt.EncodeUTF8(toolrt.TextMode(document.Text))
 		if err != nil {
 			return nil, err
 		}
@@ -250,7 +235,7 @@ func (w *writer) gate() error {
 	return nil
 }
 
-// write — path.write_bytes/write_text(data) атомарно: родительские каталоги создаются, права
+// write — атомарная запись data в path: родительские каталоги создаются, права
 // существующего файла сохраняются, новый получает 0666 с учётом umask.
 func (w *writer) write(path string, data []byte) error {
 	if w.check {
@@ -264,7 +249,7 @@ func (w *writer) write(path string, data []byte) error {
 	existing := err == nil
 	if existing {
 		if info.IsDir() {
-			return pycompat.OSErrorFrom(syscall.EISDIR, path)
+			return toolrt.OSErrorFrom(syscall.EISDIR, path)
 		}
 		perm = info.Mode().Perm()
 	}
@@ -274,13 +259,13 @@ func (w *writer) write(path string, data []byte) error {
 	if existing {
 		// WriteFile создаёт временный файл с правами под umask; прежние права возвращаются явно.
 		if err := os.Chmod(path, perm); err != nil {
-			return pycompat.OSErrorFrom(err, path)
+			return toolrt.OSErrorFrom(err, path)
 		}
 	}
 	return nil
 }
 
-// remove — stale.unlink(): каталог с именем *.png — IsADirectoryError, как у Path.unlink.
+// remove — удаление устаревшего файла: каталог с именем *.png — IsADirectoryError.
 func (w *writer) remove(path string) error {
 	if w.check {
 		return nil
@@ -288,11 +273,11 @@ func (w *writer) remove(path string) error {
 	if err := w.gate(); err != nil {
 		return err
 	}
-	if pycompat.IsDir(path) {
-		return pycompat.OSErrorFrom(syscall.EISDIR, path)
+	if toolrt.IsDir(path) {
+		return toolrt.OSErrorFrom(syscall.EISDIR, path)
 	}
 	if err := os.Remove(path); err != nil {
-		return pycompat.OSErrorFrom(err, path)
+		return toolrt.OSErrorFrom(err, path)
 	}
 	return nil
 }

@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/tools"
+	"songframe/internal/golden"
+	"songframe/internal/toolrt"
+	"songframe/internal/tools"
 )
 
-// tracebackHeader — первая строка трассировки Python; кадры стека Go-инструменты не воспроизводят,
+// tracebackHeader — первая строка трассировки инструмента; кадры стека инструменты не печатают,
 // поэтому у таких случаев сверяются заголовок и последняя строка (тип и текст исключения).
 const tracebackHeader = "Traceback (most recent call last):"
 
@@ -20,7 +20,7 @@ const tracebackHeader = "Traceback (most recent call last):"
 func TestSceneScaffoldGolden(t *testing.T) {
 	for _, c := range golden.Load(t, "scene-scaffold") {
 		t.Run(c.Name, func(t *testing.T) {
-			spec := c.PyRead(t, "case.json")
+			spec := c.ReadValue(t, "case.json")
 			args := []string{}
 			for _, arg := range spec.Value("args").([]any) {
 				args = append(args, arg.(string))
@@ -32,15 +32,15 @@ func TestSceneScaffoldGolden(t *testing.T) {
 			if err != nil {
 				t.Fatalf("tools.Run: %v", err)
 			}
-			expected := c.PyRead(t, "expected.json")
+			expected := c.ReadValue(t, "expected.json")
 			normalize := func(text string) string { return strings.ReplaceAll(text, root, golden.ProjectMarker) }
-			if want := expected.Value("code").(pycompat.Int).String(); result.Code == nil || want != pycompat.NewInt(int64(*result.Code)).String() {
+			if want := expected.Value("code").(toolrt.Int).String(); result.Code == nil || want != toolrt.NewInt(int64(*result.Code)).String() {
 				t.Errorf("код завершения: ожидалось %s, получено %v", want, result)
 			}
-			if want := golden.PyString(t, expected, "stdout"); normalize(result.Stdout) != want {
+			if want := golden.ValueString(t, expected, "stdout"); normalize(result.Stdout) != want {
 				t.Errorf("stdout:\n--- ожидалось\n%s\n--- получено\n%s", want, normalize(result.Stdout))
 			}
-			wantErr, gotErr := golden.PyString(t, expected, "stderr"), normalize(result.Stderr)
+			wantErr, gotErr := golden.ValueString(t, expected, "stderr"), normalize(result.Stderr)
 			if expected.Value("traceback") == true {
 				if !strings.HasPrefix(gotErr, tracebackHeader+"\n") || lastLine(gotErr) != lastLine(wantErr) {
 					t.Errorf("трассировка:\n--- ожидалось (последняя строка)\n%s\n--- получено\n%s", lastLine(wantErr), gotErr)
@@ -49,7 +49,7 @@ func TestSceneScaffoldGolden(t *testing.T) {
 				t.Errorf("stderr:\n--- ожидалось\n%s\n--- получено\n%s", wantErr, gotErr)
 			}
 			after, afterErr := os.ReadFile(path)
-			switch state := item(expected, "files").(*pycompat.Dict).Value("plan/scenes.json"); state {
+			switch state := item(expected, "files").(*toolrt.Dict).Value("plan/scenes.json"); state {
 			case "absent":
 				if afterErr == nil {
 					t.Errorf("plan/scenes.json не должен появляться")
@@ -70,7 +70,7 @@ func TestSceneScaffoldGolden(t *testing.T) {
 	}
 }
 
-func item(value any, key string) any { return value.(*pycompat.Dict).Value(key) }
+func item(value any, key string) any { return value.(*toolrt.Dict).Value(key) }
 
 // lastLine — последняя непустая строка текста.
 func lastLine(text string) string {

@@ -1,5 +1,5 @@
 {
-  "description": "Код типа с переводом строки в конце: `$` Python его допускает.",
+  "description": "Код типа с переводом строки в конце: `$` его допускает.",
   "call": "project_battery",
   "project": "project",
   "covers": [

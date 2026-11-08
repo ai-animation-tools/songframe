@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/scenario"
+	"songframe/internal/projectfs"
+	"songframe/internal/scenario"
 )
 
 // Проверки A-11 для публикации сценария: сбой до, между и после замен, повторный запуск,

@@ -1,6 +1,5 @@
 {
   "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
-  "pillow": "10.2.0",
   "cases": [
     {
       "name": "basic",

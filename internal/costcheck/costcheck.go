@@ -19,13 +19,13 @@ import (
 	"strconv"
 	"strings"
 
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediarequest"
-	"songframe-go/internal/pyargparse"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/requestsnapshot"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediarequest"
+	"songframe/internal/requestsnapshot"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
+	"songframe/internal/toolsubcmd"
 )
 
 // ObservationsFile — файл наблюдений расхода в папке провайдера каталога состояния.
@@ -38,15 +38,15 @@ var verdictLabels = map[string]string{
 	"cost_or_balance_unknown": "стоимость или баланс неизвестны",
 }
 
-func valueError(message string) error { return pycompat.New(pycompat.ValueError, message) }
+func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
 
 // PricingPath — явный файл тарифов (прогоны без расхода) либо
 // базовая таблица адаптера провайдера запроса.
-func PricingPath(request *pycompat.Dict, path string) (string, error) {
+func PricingPath(request *toolrt.Dict, path string) (string, error) {
 	if path != "" {
 		return path, nil
 	}
-	provider, err := pycompat.Item(request, "provider")
+	provider, err := toolrt.Item(request, "provider")
 	if err != nil {
 		return "", err
 	}
@@ -56,11 +56,11 @@ func PricingPath(request *pycompat.Dict, path string) (string, error) {
 	}
 	filer, ok := service.(mediaapi.PricingFiler)
 	if !ok {
-		return "", valueError("Провайдер " + pycompat.Repr(provider) + " не поддерживает это действие.")
+		return "", valueError("Провайдер " + toolrt.Repr(provider) + " не поддерживает это действие.")
 	}
 	file, err := filer.PricingFile()
 	if err != nil {
-		return "", pycompat.OSErrorFrom(err, file)
+		return "", toolrt.OSErrorFrom(err, file)
 	}
 	return file, nil
 }
@@ -69,10 +69,10 @@ func PricingPath(request *pycompat.Dict, path string) (string, error) {
 // состояния localDir. Id провайдера — одно имя папки.
 func ObservationsPath(localDir string, provider any) (string, error) {
 	text, ok := provider.(string)
-	if !ok || text == "" || pycompat.PathName(text) != text || text == "." || text == ".." {
+	if !ok || text == "" || toolrt.PathName(text) != text || text == "." || text == ".." {
 		return "", valueError("Некорректный идентификатор провайдера.")
 	}
-	return filepath.Join(pycompat.ResolvePath(localDir), "providers", text, ObservationsFile), nil
+	return filepath.Join(toolrt.ResolvePath(localDir), "providers", text, ObservationsFile), nil
 }
 
 // LoadObservations — отсутствующий файл — пустой список, повреждённый —
@@ -82,13 +82,13 @@ func LoadObservations(localDir string, provider any) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	data, damaged := pycompat.ReadJSON(path)
+	data, damaged := toolrt.ReadJSON(path)
 	if data == nil && !damaged {
 		return []any{}, nil
 	}
-	dict, ok := data.(*pycompat.Dict)
+	dict, ok := data.(*toolrt.Dict)
 	observed, isList := dict.Value("observed").([]any)
-	if damaged || !ok || !pycompat.Equal(dict.Value("schema_version"), pycompat.NewInt(1)) || !isList {
+	if damaged || !ok || !toolrt.Equal(dict.Value("schema_version"), toolrt.NewInt(1)) || !isList {
 		return nil, valueError("Файл наблюдений цен повреждён: " + path + ". Исправьте или удалите его.")
 	}
 	return observed, nil
@@ -97,8 +97,8 @@ func LoadObservations(localDir string, provider any) ([]any, error) {
 // LoadPricing — базовая таблица; с провайдером к её наблюдениям
 // добавляются наблюдения каталога состояния. Они идут после базовых, а оценка берёт последнее
 // подходящее, поэтому наблюдения состояния в приоритете.
-func LoadPricing(path, localDir string, provider any) (*pycompat.Dict, error) {
-	value, err := pycompat.LoadJSONFile(path)
+func LoadPricing(path, localDir string, provider any) (*toolrt.Dict, error) {
+	value, err := toolrt.LoadJSONFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -106,20 +106,20 @@ func LoadPricing(path, localDir string, provider any) (*pycompat.Dict, error) {
 }
 
 // pricingTable проверяет схему прочитанной таблицы цен и добавляет наблюдения каталога состояния.
-func pricingTable(value any, localDir string, provider any) (*pycompat.Dict, error) {
-	schema, err := pycompat.DictGet(value, "schema_version", nil)
+func pricingTable(value any, localDir string, provider any) (*toolrt.Dict, error) {
+	schema, err := toolrt.DictGet(value, "schema_version", nil)
 	if err != nil {
 		return nil, err
 	}
-	data := value.(*pycompat.Dict)
-	if _, ok := data.Value("models").(*pycompat.Dict); !pycompat.Equal(schema, pycompat.NewInt(1)) || !ok {
+	data := value.(*toolrt.Dict)
+	if _, ok := data.Value("models").(*toolrt.Dict); !toolrt.Equal(schema, toolrt.NewInt(1)) || !ok {
 		return nil, valueError("Неизвестная схема таблицы цен.")
 	}
 	if !data.Has("observed") {
 		data.Set("observed", []any{})
 	}
 	if provider != nil {
-		base, err := pycompat.Iter(data.Value("observed"))
+		base, err := toolrt.Iter(data.Value("observed"))
 		if err != nil {
 			return nil, err
 		}
@@ -133,12 +133,12 @@ func pricingTable(value any, localDir string, provider any) (*pycompat.Dict, err
 }
 
 // PricingFor — таблица цен запроса вместе с наблюдениями.
-func PricingFor(request *pycompat.Dict, path, localDir string) (*pycompat.Dict, error) {
+func PricingFor(request *toolrt.Dict, path, localDir string) (*toolrt.Dict, error) {
 	if path == "" {
-		// Таблица, встроенная в адаптер (Go-поставка без файлов tools), читается из памяти.
+		// Таблица, встроенная в адаптер (в поставке нет отдельного файла), читается из памяти.
 		if service, ok := mediaadapters.Get(request.Value("provider")); ok {
 			if embedded, ok := service.(mediaapi.PricingDataer); ok {
-				value, err := pycompat.LoadsJSON(string(embedded.PricingData()))
+				value, err := toolrt.LoadsJSON(string(embedded.PricingData()))
 				if err != nil {
 					return nil, err
 				}
@@ -155,7 +155,7 @@ func PricingFor(request *pycompat.Dict, path, localDir string) (*pycompat.Dict, 
 
 // LoadRequest — зафиксированный request.json попытки либо
 // спецификация до подготовки (её проверяют общая форма и адаптер провайдера).
-func LoadRequest(root, workDir, request string) (*pycompat.Dict, error) {
+func LoadRequest(root, workDir, request string) (*toolrt.Dict, error) {
 	if workDir != "" {
 		directory, err := mediarequest.WorkPath(root, workDir)
 		if err != nil {
@@ -163,14 +163,14 @@ func LoadRequest(root, workDir, request string) (*pycompat.Dict, error) {
 		}
 		return loadDict(filepath.Join(directory, "request.json"))
 	}
-	value, err := pycompat.LoadJSONFile(request)
+	value, err := toolrt.LoadJSONFile(request)
 	if err != nil {
 		return nil, err
 	}
 	if err := requestsnapshot.ValidateSpec(value); err != nil {
 		return nil, err
 	}
-	spec := value.(*pycompat.Dict)
+	spec := value.(*toolrt.Dict)
 	service, err := mediaadapters.Lookup(spec.Value("provider"))
 	if err != nil {
 		return nil, err
@@ -184,35 +184,35 @@ func LoadRequest(root, workDir, request string) (*pycompat.Dict, error) {
 }
 
 // loadDict — JSON-документ файла как объект; иное значение — AttributeError первого обращения
-// .get (модель Python, от неё зависит текст ошибки).
-func loadDict(path string) (*pycompat.Dict, error) {
-	value, err := pycompat.LoadJSONFile(path)
+// к полю (текст ошибки зафиксирован эталоном).
+func loadDict(path string) (*toolrt.Dict, error) {
+	value, err := toolrt.LoadJSONFile(path)
 	if err != nil {
 		return nil, err
 	}
-	dict, ok := value.(*pycompat.Dict)
+	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'get'", pycompat.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(value))
 	}
 	return dict, nil
 }
 
-// number — number(value): float(value) либо None (nil) при TypeError/ValueError.
+// number — значение как float (toolrt.Float) либо nil, если оно не приводится к числу.
 func number(value any) *float64 {
-	result, err := pycompat.Float(value)
+	result, err := toolrt.Float(value)
 	if err != nil {
 		return nil
 	}
 	return &result
 }
 
-// toInt — int(value) Python для outputs: целое, bool, float (отбрасывание дроби), строка цифр.
+// toInt — целое для outputs: целое, bool, float (отбрасывание дроби), строка цифр.
 func toInt(value any) (int64, error) {
 	switch item := value.(type) {
-	case pycompat.Int:
+	case toolrt.Int:
 		result, ok := item.Int64()
 		if !ok {
-			return 0, pycompat.New(pycompat.OverflowError, "int too large")
+			return 0, toolrt.New(toolrt.OverflowError, "int too large")
 		}
 		return result, nil
 	case bool:
@@ -221,19 +221,19 @@ func toInt(value any) (int64, error) {
 		}
 		return 0, nil
 	case float64:
-		return pycompat.FloatToInt(item, false)
+		return toolrt.FloatToInt(item, false)
 	case string:
-		result, err := strconv.ParseInt(pycompat.Strip(item), 10, 64)
+		result, err := strconv.ParseInt(toolrt.Strip(item), 10, 64)
 		if err != nil {
-			return 0, pycompat.Raise(pycompat.ValueError, "invalid literal for int() with base 10: %s", pycompat.Repr(item))
+			return 0, toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(item))
 		}
 		return result, nil
 	}
-	return 0, pycompat.Raise(pycompat.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", pycompat.TypeName(value))
+	return 0, toolrt.Raise(toolrt.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", toolrt.TypeName(value))
 }
 
-// get — d.get(key, fallback) для словаря запроса.
-func get(dict *pycompat.Dict, key string, fallback any) any {
+// get — поле key словаря запроса или fallback, если поля нет.
+func get(dict *toolrt.Dict, key string, fallback any) any {
 	if value, has := dict.Get(key); has {
 		return value
 	}
@@ -246,8 +246,8 @@ var secretKey = regexp.MustCompile(`(?i)credential|token|password|authorization|
 // parametersOnly — параметры без текста промпта и полей авторизации (рекурсивно).
 func parametersOnly(value any) any {
 	switch item := value.(type) {
-	case *pycompat.Dict:
-		result := pycompat.NewDict()
+	case *toolrt.Dict:
+		result := toolrt.NewDict()
 		for _, key := range item.Keys() {
 			switch strings.ToLower(key) {
 			case "prompt", "prompt_text", "prompt_file", "negative_prompt":
@@ -272,19 +272,19 @@ func parametersOnly(value any) any {
 // ImageSignature — тариф изображения связан со всей конфигурацией
 // запроса (команда, параметры без промпта и секретов, число результатов, flag/slot входов) в
 // canonical JSON; содержимое и подпись role входов тариф не задают.
-func ImageSignature(request *pycompat.Dict) (string, error) {
+func ImageSignature(request *toolrt.Dict) (string, error) {
 	inputs := []any{}
-	list, err := pycompat.Iter(get(request, "inputs", []any{}))
+	list, err := toolrt.Iter(get(request, "inputs", []any{}))
 	if err != nil {
 		return "", err
 	}
 	for _, element := range list {
-		entry := pycompat.NewDict()
+		entry := toolrt.NewDict()
 		for _, key := range []string{"flag", "slot"} {
-			if contained, err := pycompat.Contains(element, key); err != nil {
+			if contained, err := toolrt.Contains(element, key); err != nil {
 				return "", err
 			} else if contained {
-				value, err := pycompat.Item(element, key)
+				value, err := toolrt.Item(element, key)
 				if err != nil {
 					return "", err
 				}
@@ -293,12 +293,12 @@ func ImageSignature(request *pycompat.Dict) (string, error) {
 		}
 		inputs = append(inputs, entry)
 	}
-	configuration := pycompat.NewDict()
+	configuration := toolrt.NewDict()
 	configuration.Set("command", request.Value("command"))
-	configuration.Set("parameters", parametersOnly(get(request, "parameters", pycompat.NewDict())))
-	configuration.Set("outputs", get(request, "outputs", pycompat.NewInt(1)))
+	configuration.Set("parameters", parametersOnly(get(request, "parameters", toolrt.NewDict())))
+	configuration.Set("outputs", get(request, "outputs", toolrt.NewInt(1)))
 	configuration.Set("inputs", inputs)
-	return pycompat.DumpsJSON(configuration, pycompat.DumpOptions{SortKeys: true, Compact: true, RejectNaN: true})
+	return toolrt.DumpsJSON(configuration, toolrt.DumpOptions{SortKeys: true, Compact: true, RejectNaN: true})
 }
 
 // Estimate — итог оценки: кредиты (nil — неизвестно), источник и недостающие сведения.
@@ -308,50 +308,50 @@ type Estimate struct {
 	Missing []string
 }
 
-// field — o.get(key) элемента списка наблюдений (AttributeError у не-словаря).
+// field — поле key элемента списка наблюдений или fallback (AttributeError у не-словаря).
 func field(entry any, key string, fallback any) (any, error) {
-	return pycompat.DictGet(entry, key, fallback)
+	return toolrt.DictGet(entry, key, fallback)
 }
 
-// matches — все пары ключ/значение совпадают (==) у словаря наблюдения.
+// matches — все пары ключ/значение совпадают (toolrt.Equal) у словаря наблюдения.
 func matches(entry any, pairs ...any) (bool, error) {
 	for index := 0; index+1 < len(pairs); index += 2 {
 		value, err := field(entry, pairs[index].(string), nil)
 		if err != nil {
 			return false, err
 		}
-		if !pycompat.Equal(value, pairs[index+1]) {
+		if !toolrt.Equal(value, pairs[index+1]) {
 			return false, nil
 		}
 	}
 	return true, nil
 }
 
-// modelEntry — pricing["models"].get(model).
-func modelEntry(pricing *pycompat.Dict, model any) (any, error) {
-	models, err := pycompat.Item(pricing, "models")
+// modelEntry — запись модели в pricing["models"] или nil; без раздела models — KeyError.
+func modelEntry(pricing *toolrt.Dict, model any) (any, error) {
+	models, err := toolrt.Item(pricing, "models")
 	if err != nil {
 		return nil, err
 	}
 	text, ok := model.(string)
 	if !ok {
-		if _, err := pycompat.HashKey(model); err != nil {
+		if _, err := toolrt.HashKey(model); err != nil {
 			return nil, err
 		}
 		return nil, nil
 	}
-	return pycompat.DictGet(models, text, nil)
+	return toolrt.DictGet(models, text, nil)
 }
 
 // estimateImage — наблюдение не переносится на другую команду, разрешение,
 // quality, число результатов или референсов; ручной per_image — явное решение владельца таблицы.
-func estimateImage(pricing, request *pycompat.Dict) (Estimate, error) {
+func estimateImage(pricing, request *toolrt.Dict) (Estimate, error) {
 	model := request.Value("model")
 	signature, err := ImageSignature(request)
 	if err != nil {
 		return Estimate{}, err
 	}
-	observed, err := pycompat.Iter(pricing.Value("observed"))
+	observed, err := toolrt.Iter(pricing.Value("observed"))
 	if err != nil {
 		return Estimate{}, err
 	}
@@ -376,48 +376,48 @@ func estimateImage(pricing, request *pycompat.Dict) (Estimate, error) {
 	if err != nil {
 		return Estimate{}, err
 	}
-	if !pycompat.Truthy(entry) {
-		entry = pycompat.NewDict()
+	if !toolrt.Truthy(entry) {
+		entry = toolrt.NewDict()
 	}
 	perImageValue, err := field(entry, "per_image", nil)
 	if err != nil {
 		return Estimate{}, err
 	}
 	if perImage := number(perImageValue); perImage != nil {
-		outputs, err := toInt(get(request, "outputs", pycompat.NewInt(1)))
+		outputs, err := toInt(get(request, "outputs", toolrt.NewInt(1)))
 		if err != nil {
 			return Estimate{}, err
 		}
 		credits := *perImage * float64(outputs)
 		return Estimate{Credits: &credits, Source: "таблица цен", Missing: []string{}}, nil
 	}
-	return Estimate{Missing: []string{"цена изображения " + pycompat.Str(model) + " не задана и точная конфигурация запроса не наблюдалась"}}, nil
+	return Estimate{Missing: []string{"цена изображения " + toolrt.Str(model) + " не задана и точная конфигурация запроса не наблюдалась"}}, nil
 }
 
 // EstimateCost — оценка в кредитах по таблице цен, при пробеле — по
 // наблюдениям того же тарифа (точная по длительности либо пересчёт по секундам).
-func EstimateCost(pricing, request *pycompat.Dict) (Estimate, error) {
+func EstimateCost(pricing, request *toolrt.Dict) (Estimate, error) {
 	model, kind := request.Value("model"), request.Value("kind")
-	if pycompat.Equal(kind, "image") {
+	if toolrt.Equal(kind, "image") {
 		return estimateImage(pricing, request)
 	}
-	parameters := get(request, "parameters", pycompat.NewDict())
-	outputs, err := toInt(get(request, "outputs", pycompat.NewInt(1)))
+	parameters := get(request, "parameters", toolrt.NewDict())
+	outputs, err := toInt(get(request, "outputs", toolrt.NewInt(1)))
 	if err != nil {
 		return Estimate{}, err
 	}
 	var resolution *string
-	if contained, err := pycompat.Contains(parameters, "resolution"); err != nil {
+	if contained, err := toolrt.Contains(parameters, "resolution"); err != nil {
 		return Estimate{}, err
 	} else if contained {
-		value, err := pycompat.Item(parameters, "resolution")
+		value, err := toolrt.Item(parameters, "resolution")
 		if err != nil {
 			return Estimate{}, err
 		}
-		text := pycompat.Str(value)
+		text := toolrt.Str(value)
 		resolution = &text
 	}
-	durationValue, err := pycompat.DictGet(parameters, "duration", nil)
+	durationValue, err := toolrt.DictGet(parameters, "duration", nil)
 	if err != nil {
 		return Estimate{}, err
 	}
@@ -427,9 +427,9 @@ func EstimateCost(pricing, request *pycompat.Dict) (Estimate, error) {
 		return Estimate{}, err
 	}
 	if entry == nil {
-		return Estimate{Missing: []string{"модель " + pycompat.Str(model) + " отсутствует в таблице цен"}}, nil
+		return Estimate{Missing: []string{"модель " + toolrt.Str(model) + " отсутствует в таблице цен"}}, nil
 	}
-	if !pycompat.Equal(kind, "video") {
+	if !toolrt.Equal(kind, "video") {
 		return Estimate{Missing: []string{"неизвестный вид результата"}}, nil
 	}
 	missing := []string{}
@@ -446,8 +446,8 @@ func EstimateCost(pricing, request *pycompat.Dict) (Estimate, error) {
 	if err != nil {
 		return Estimate{}, err
 	}
-	if !pycompat.Truthy(perSecondTable) {
-		perSecondTable = pycompat.NewDict()
+	if !toolrt.Truthy(perSecondTable) {
+		perSecondTable = toolrt.NewDict()
 	}
 	perSecondValue, err := field(perSecondTable, *resolution, nil)
 	if err != nil {
@@ -462,7 +462,7 @@ func EstimateCost(pricing, request *pycompat.Dict) (Estimate, error) {
 		credits := (base + *perSecond**duration) * float64(outputs)
 		return Estimate{Credits: &credits, Source: "таблица цен", Missing: []string{}}, nil
 	}
-	all, err := pycompat.Iter(pricing.Value("observed"))
+	all, err := toolrt.Iter(pricing.Value("observed"))
 	if err != nil {
 		return Estimate{}, err
 	}
@@ -475,7 +475,7 @@ func EstimateCost(pricing, request *pycompat.Dict) (Estimate, error) {
 		itemKind, _ := field(item, "kind", "video")
 		itemResolution, _ := field(item, "resolution", nil)
 		credits, _ := field(item, "credits", nil)
-		if ok && pycompat.Equal(itemKind, "video") && pycompat.Str(itemResolution) == *resolution && number(credits) != nil {
+		if ok && toolrt.Equal(itemKind, "video") && toolrt.Str(itemResolution) == *resolution && number(credits) != nil {
 			observed = append(observed, item)
 		}
 	}
@@ -485,7 +485,7 @@ func EstimateCost(pricing, request *pycompat.Dict) (Estimate, error) {
 		if itemDuration := number(durationItem); itemDuration == nil || *itemDuration != *duration {
 			continue
 		}
-		outputsItem, _ := field(item, "outputs", pycompat.NewInt(1))
+		outputsItem, _ := field(item, "outputs", toolrt.NewInt(1))
 		count, err := toInt(outputsItem)
 		if err != nil {
 			return Estimate{}, err
@@ -503,28 +503,28 @@ func EstimateCost(pricing, request *pycompat.Dict) (Estimate, error) {
 		last := observed[len(observed)-1]
 		creditsValue, _ := field(last, "credits", nil)
 		durationItem, _ := field(last, "duration", nil)
-		outputsItem, _ := field(last, "outputs", pycompat.NewInt(1))
+		outputsItem, _ := field(last, "outputs", toolrt.NewInt(1))
 		lastDuration := number(durationItem)
 		if lastDuration == nil {
-			return Estimate{}, pycompat.New(pycompat.TypeError, "unsupported operand type(s) for /: 'float' and 'NoneType'")
+			return Estimate{}, toolrt.New(toolrt.TypeError, "unsupported operand type(s) for /: 'float' and 'NoneType'")
 		}
 		count, err := toInt(outputsItem)
 		if err != nil {
 			return Estimate{}, err
 		}
 		if *lastDuration == 0 || count == 0 {
-			return Estimate{}, pycompat.New(pycompat.ZeroDivisionError, "float division by zero")
+			return Estimate{}, toolrt.New(toolrt.ZeroDivisionError, "float division by zero")
 		}
 		perSecond := *number(creditsValue) / *lastDuration / float64(count)
 		credits := perSecond * *duration * float64(outputs)
 		return Estimate{Credits: &credits, Source: "наблюдение, пересчёт по секундам", Missing: []string{}}, nil
 	}
-	return Estimate{Missing: []string{"цена " + pycompat.Str(model) + " при " + *resolution + " не задана и не наблюдалась"}}, nil
+	return Estimate{Missing: []string{"цена " + toolrt.Str(model) + " при " + *resolution + " не задана и не наблюдалась"}}, nil
 }
 
 // Check — отчёт с
 // вердиктом. balance — остаток вручную (nil — спросить адаптер, если useAccount).
-func Check(ctx context.Context, request, pricing *pycompat.Dict, balance *float64, useAccount bool, timeout float64) (*pycompat.Dict, error) {
+func Check(ctx context.Context, request, pricing *toolrt.Dict, balance *float64, useAccount bool, timeout float64) (*toolrt.Dict, error) {
 	estimated, err := EstimateCost(pricing, request)
 	if err != nil {
 		return nil, err
@@ -533,7 +533,7 @@ func Check(ctx context.Context, request, pricing *pycompat.Dict, balance *float6
 	switch {
 	case balance == nil && useAccount:
 		// Единственное обращение к сервису — информационный остаток через адаптер провайдера.
-		provider, err := pycompat.Item(request, "provider")
+		provider, err := toolrt.Item(request, "provider")
 		if err != nil {
 			return nil, err
 		}
@@ -543,7 +543,7 @@ func Check(ctx context.Context, request, pricing *pycompat.Dict, balance *float6
 		}
 		reader, ok := service.(mediaapi.AccountReader)
 		if !ok {
-			return nil, valueError("Провайдер " + pycompat.Repr(provider) + " не поддерживает это действие.")
+			return nil, valueError("Провайдер " + toolrt.Repr(provider) + " не поддерживает это действие.")
 		}
 		account, err := reader.Account(ctx, mediaapi.Seconds(timeout))
 		if err != nil {
@@ -569,12 +569,12 @@ func Check(ctx context.Context, request, pricing *pycompat.Dict, balance *float6
 	if balance == nil {
 		reasons = append(reasons, "остаток неизвестен: "+source)
 	}
-	report := pycompat.NewDict()
+	report := toolrt.NewDict()
 	report.Set("model", request.Value("model"))
 	report.Set("kind", request.Value("kind"))
 	report.Set("command", request.Value("command"))
-	report.Set("parameters", get(request, "parameters", pycompat.NewDict()))
-	report.Set("outputs", get(request, "outputs", pycompat.NewInt(1)))
+	report.Set("parameters", get(request, "parameters", toolrt.NewDict()))
+	report.Set("outputs", get(request, "outputs", toolrt.NewInt(1)))
 	report.Set("estimate_credits", floatOrNone(estimated.Credits))
 	report.Set("estimate_source", estimated.Source)
 	report.Set("balance_credits", floatOrNone(balance))
@@ -595,7 +595,7 @@ func floatOrNone(value *float64) any {
 // Learn — фактический credits_consumed отправленной попытки
 // наблюдением в каталоге состояния. Таблица поставки не меняется; совпадающее с таблицей или
 // состоянием наблюдение повторно не добавляется.
-func Learn(root, workDir, pricing, localDir string) (*pycompat.Dict, error) {
+func Learn(root, workDir, pricing, localDir string) (*toolrt.Dict, error) {
 	directory, err := mediarequest.WorkPath(root, workDir)
 	if err != nil {
 		return nil, err
@@ -612,19 +612,19 @@ func Learn(root, workDir, pricing, localDir string) (*pycompat.Dict, error) {
 	if credits == nil {
 		return nil, valueError("В attempt.json нет credits_consumed; наблюдение не записано.")
 	}
-	parameters := get(request, "parameters", pycompat.NewDict())
-	parameter := func(key string) (any, error) { return pycompat.DictGet(parameters, key, nil) }
-	kind, err := pycompat.Item(request, "kind")
+	parameters := get(request, "parameters", toolrt.NewDict())
+	parameter := func(key string) (any, error) { return toolrt.DictGet(parameters, key, nil) }
+	kind, err := toolrt.Item(request, "kind")
 	if err != nil {
 		return nil, err
 	}
-	model, err := pycompat.Item(request, "model")
+	model, err := toolrt.Item(request, "model")
 	if err != nil {
 		return nil, err
 	}
-	observation := pycompat.NewDict()
+	observation := toolrt.NewDict()
 	observation.Set("model", model)
-	if pycompat.Equal(kind, "image") {
+	if toolrt.Equal(kind, "image") {
 		resolution, err := parameter("img_resolution")
 		if err != nil {
 			return nil, err
@@ -655,13 +655,13 @@ func Learn(root, workDir, pricing, localDir string) (*pycompat.Dict, error) {
 		observation.Set("resolution", resolution)
 		observation.Set("duration", duration)
 	}
-	observation.Set("outputs", get(request, "outputs", pycompat.NewInt(1)))
+	observation.Set("outputs", get(request, "outputs", toolrt.NewInt(1)))
 	observation.Set("credits", *credits)
 	table, err := PricingFor(request, pricing, localDir)
 	if err != nil {
 		return nil, err
 	}
-	known, err := pycompat.Contains(table.Value("observed"), observation)
+	known, err := toolrt.Contains(table.Value("observed"), observation)
 	if err != nil {
 		return nil, err
 	}
@@ -675,7 +675,7 @@ func Learn(root, workDir, pricing, localDir string) (*pycompat.Dict, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err := pycompat.WriteJSONAtomic(path, pytool.Record("schema_version", pycompat.NewInt(1), "observed", append(observed, observation))); err != nil {
+		if err := toolrt.WriteJSONAtomic(path, toolcli.Record("schema_version", toolrt.NewInt(1), "observed", append(observed, observation))); err != nil {
 			return nil, err
 		}
 	}
@@ -705,20 +705,20 @@ func formatCredits(value any) string {
 }
 
 // Table — таблица Markdown для человека.
-func Table(report *pycompat.Dict) (string, error) {
+func Table(report *toolrt.Dict) (string, error) {
 	parameters := report.Value("parameters")
 	parameter := func(key string) (string, error) {
-		value, err := pycompat.DictGet(parameters, key, "—")
+		value, err := toolrt.DictGet(parameters, key, "—")
 		if err != nil {
 			return "", err
 		}
-		return pycompat.Str(value), nil
+		return toolrt.Str(value), nil
 	}
 	keys := []string{"duration", "resolution"}
 	prefix := ""
-	if pycompat.Equal(report.Value("kind"), "image") {
+	if toolrt.Equal(report.Value("kind"), "image") {
 		keys = []string{"img_resolution", "quality"}
-		prefix = "command=" + pycompat.Str(report.Value("command")) + ", "
+		prefix = "command=" + toolrt.Str(report.Value("command")) + ", "
 	}
 	first, err := parameter(keys[0])
 	if err != nil {
@@ -728,34 +728,34 @@ func Table(report *pycompat.Dict) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	details := prefix + keys[0] + "=" + first + ", " + keys[1] + "=" + second + ", результатов " + pycompat.Str(report.Value("outputs"))
+	details := prefix + keys[0] + "=" + first + ", " + keys[1] + "=" + second + ", результатов " + toolrt.Str(report.Value("outputs"))
 	source := "нет данных"
-	if value := report.Value("estimate_source"); pycompat.Truthy(value) {
-		source = pycompat.Str(value)
+	if value := report.Value("estimate_source"); toolrt.Truthy(value) {
+		source = toolrt.Str(value)
 	}
 	lines := []string{
 		"| Параметр | Значение |",
 		"| --- | --- |",
-		"| Модель | " + pycompat.Str(report.Value("model")) + " (" + pycompat.Str(report.Value("kind")) + ") |",
+		"| Модель | " + toolrt.Str(report.Value("model")) + " (" + toolrt.Str(report.Value("kind")) + ") |",
 		"| Параметры | " + details + " |",
 		"| Оценка | " + formatCredits(report.Value("estimate_credits")) + " (" + source + ") |",
-		"| Остаток | " + formatCredits(report.Value("balance_credits")) + " (" + pycompat.Str(report.Value("balance_source")) + ") |",
-		"| Вердикт | " + pycompat.Str(report.Value("verdict_label")) + " (`" + pycompat.Str(report.Value("verdict")) + "`) |",
+		"| Остаток | " + formatCredits(report.Value("balance_credits")) + " (" + toolrt.Str(report.Value("balance_source")) + ") |",
+		"| Вердикт | " + toolrt.Str(report.Value("verdict_label")) + " (`" + toolrt.Str(report.Value("verdict")) + "`) |",
 	}
 	reasons, _ := report.Value("reasons").([]any)
 	for _, reason := range reasons {
-		lines = append(lines, "| Причина | "+pycompat.Str(reason)+" |")
+		lines = append(lines, "| Причина | "+toolrt.Str(reason)+" |")
 	}
 	return strings.Join(lines, "\n"), nil
 }
 
-// Parser — аргументы инструмента cost_check в модели argparse.
-var Parser = pyargparse.Parser{
-	Prog:        "cost_check.py",
+// Parser — аргументы инструмента cost_check.
+var Parser = toolsubcmd.Parser{
+	Prog:        "cost_check",
 	Description: "Оценка стоимости запроса и остатка кредитов перед таблицей; @link README.md",
 	Dest:        "action",
-	Commands: []pyargparse.Command{
-		{Name: "check", Exclusive: []string{"--work-dir", "--request"}, ExclusiveRequired: true, Options: []pyargparse.Option{
+	Commands: []toolsubcmd.Command{
+		{Name: "check", Exclusive: []string{"--work-dir", "--request"}, ExclusiveRequired: true, Options: []toolsubcmd.Option{
 			{Name: "--work-dir"},
 			{Name: "--request"},
 			{Name: "--balance", Float: true, Help: "Остаток из кабинета, если account недоступен."},
@@ -764,7 +764,7 @@ var Parser = pyargparse.Parser{
 			{Name: "--timeout", Float: true},
 			{Name: "--json", Flag: true},
 		}},
-		{Name: "learn", Options: []pyargparse.Option{
+		{Name: "learn", Options: []toolsubcmd.Option{
 			{Name: "--work-dir", Required: true},
 			{Name: "--pricing", Help: "Файл тарифов вместо базовой таблицы адаптера провайдера."},
 		}},
@@ -777,12 +777,12 @@ const textHidden = "Ошибка локальных данных; сырой в�
 // Run выполняет cost_check на проекте root с каталогом состояния localDir. Код 2 — любой
 // вердикт кроме ok (вызывающий код не может пропустить проверку молча), 1 — ошибка: текст
 // ValueError (кроме ошибки разбора JSON) либо общий текст для OSError/KeyError/TypeError.
-func Run(ctx context.Context, root string, args []string, localDir string) pytool.Output {
+func Run(ctx context.Context, root string, args []string, localDir string) toolcli.Output {
 	parsed, exit := Parser.Parse(args)
 	if exit != nil {
-		return pytool.Output{Code: exit.Code, Stdout: pycompat.TextMode(exit.Stdout), Stderr: pycompat.TextMode(exit.Stderr)}
+		return toolcli.Output{Code: exit.Code, Stdout: toolrt.TextMode(exit.Stdout), Stderr: toolrt.TextMode(exit.Stderr)}
 	}
-	printer := &pytool.Printer{}
+	printer := &toolcli.Printer{}
 	output, err := run(ctx, root, parsed, localDir, printer)
 	if err != nil {
 		return failure(printer, err)
@@ -790,12 +790,12 @@ func Run(ctx context.Context, root string, args []string, localDir string) pytoo
 	return output
 }
 
-func failure(printer *pytool.Printer, err error) pytool.Output {
-	var exception *pycompat.Exception
+func failure(printer *toolcli.Printer, err error) toolcli.Output {
+	var exception *toolrt.Exception
 	switch {
-	case pycompat.Is(err, pycompat.ValueError) && !pycompat.Is(err, pycompat.JSONDecodeError):
+	case toolrt.Is(err, toolrt.ValueError) && !toolrt.Is(err, toolrt.JSONDecodeError):
 		return printer.Fail(err.Error())
-	case pycompat.IsAny(err, pycompat.OSError, pycompat.KeyError, pycompat.TypeError, pycompat.JSONDecodeError):
+	case toolrt.IsAny(err, toolrt.OSError, toolrt.KeyError, toolrt.TypeError, toolrt.JSONDecodeError):
 		return printer.Fail(textHidden)
 	case errors.As(err, &exception):
 		return printer.Crash(err)
@@ -803,31 +803,31 @@ func failure(printer *pytool.Printer, err error) pytool.Output {
 	return printer.Fail(textHidden)
 }
 
-func run(ctx context.Context, root string, args pyargparse.Result, localDir string, printer *pytool.Printer) (pytool.Output, error) {
+func run(ctx context.Context, root string, args toolsubcmd.Result, localDir string, printer *toolcli.Printer) (toolcli.Output, error) {
 	pricing, _ := args.Value("--pricing")
 	workDir, _ := args.Value("--work-dir")
 	if args.Action == "learn" {
 		observation, err := Learn(root, workDir, pricing, localDir)
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
-		text, err := pycompat.DumpsJSON(observation, pycompat.DumpOptions{})
+		text, err := toolrt.DumpsJSON(observation, toolrt.DumpOptions{})
 		if err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		if err := printer.Print("Наблюдение записано: " + text); err != nil {
-			return pytool.Output{}, err
+			return toolcli.Output{}, err
 		}
 		return printer.Exit(0), nil
 	}
 	requestPath, _ := args.Value("--request")
 	request, err := LoadRequest(root, workDir, requestPath)
 	if err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
 	table, err := PricingFor(request, pricing, localDir)
 	if err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
 	var balance *float64
 	if value, ok := args.Floats["--balance"]; ok {
@@ -835,19 +835,19 @@ func run(ctx context.Context, root string, args pyargparse.Result, localDir stri
 	}
 	report, err := Check(ctx, request, table, balance, !args.Bools["--no-account"], args.Float("--timeout", 60))
 	if err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
 	var text string
 	if args.Bools["--json"] {
-		text, err = pytool.JSON(report)
+		text, err = toolcli.JSON(report)
 	} else {
 		text, err = Table(report)
 	}
 	if err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
 	if err := printer.Print(text); err != nil {
-		return pytool.Output{}, err
+		return toolcli.Output{}, err
 	}
 	if report.Value("verdict") != "ok" {
 		return printer.Exit(2), nil

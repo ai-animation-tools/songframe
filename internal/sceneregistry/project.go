@@ -4,9 +4,9 @@
 // свежесть принятых комплектов и монтажное время планов.
 //
 // Пакет — общая основа инструментов scene_scaffold, lint_registry, check_assets, check_workspace и
-// shot_status. Их вывод зафиксирован эталонами в семантике Python, поэтому значения — модель
-// pycompat, а ошибки — исключения Python (*pycompat.Exception): инструмент печатает str(error) и
-// выбирает код завершения по типу исключения.
+// shot_status. Их вывод зафиксирован эталонами, поэтому значения — модель toolrt (различие
+// целых и дробных, порядок ключей), а ошибки — исключения *toolrt.Exception: инструмент печатает
+// текст исключения и выбирает код завершения по его типу.
 //
 // Устройство:
 //   - начальное состояние сущностей передаётся явно (initial): вызывающий получает его через
@@ -15,7 +15,7 @@
 //   - хеши роликов кэширует internal/filedigest по идентичности файла.
 //
 // Страницы приложения используют internal/scenario и internal/acceptance: они принимают и
-// проверяют данные по правилам JS, которые в краевых случаях отличаются от Python (см.
+// проверяют данные в модели dynvalue, которая в краевых случаях отличается от toolrt (см.
 // testdata/golden/README.md, домен scene-registry).
 package sceneregistry
 
@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // Пути внутри проекта.
@@ -34,7 +34,7 @@ const (
 	ProductionStatus = "plan/production-status.json"
 )
 
-// Регулярные выражения проверок. \d и \w Python для str — классы Unicode, поэтому здесь \p{Nd}.
+// Регулярные выражения проверок. Цифры кодов — любые десятичные цифры Unicode, поэтому \p{Nd}.
 var (
 	// ShotID — код плана Mxx или Mxx.n.
 	ShotID = regexp.MustCompile(`^M\p{Nd}{2}(?:\.\p{Nd}+)?$`)
@@ -46,18 +46,18 @@ var (
 	newlineChars = "\r\n"
 )
 
-// fullmatch — re.fullmatch(pattern, value): не-строка — TypeError, как у модуля re.
+// fullmatch — совпадение pattern со всей строкой value; не-строка — TypeError.
 func fullmatch(pattern *regexp.Regexp, value any) (bool, error) {
 	text, ok := value.(string)
 	if !ok {
-		return false, pycompat.Raise(pycompat.TypeError, "expected string or bytes-like object, got '%s'", pycompat.TypeName(value))
+		return false, toolrt.Raise(toolrt.TypeError, "expected string or bytes-like object, got '%s'", toolrt.TypeName(value))
 	}
 	return pattern.MatchString(text), nil
 }
 
 // valueError — ValueError с форматированным текстом.
 func valueError(format string, args ...any) error {
-	return pycompat.Raise(pycompat.ValueError, format, args...)
+	return toolrt.Raise(toolrt.ValueError, format, args...)
 }
 
 // GenerationFields — обязательные поля generation.video и их типы.
@@ -69,11 +69,11 @@ var DurationRules = []string{"min_supported_strictly_greater_than_window", "min_
 // ValidateProject — схема, название без переводов строк, имя MP4 аниматика,
 // строковые agent_instructions и, если validateGeneration, независимые блоки generation.video и
 // generation.image (GenerationSettings). Возвращает тот же документ.
-func ValidateProject(data any, validateGeneration bool) (*pycompat.Dict, error) {
-	document, ok := data.(*pycompat.Dict)
+func ValidateProject(data any, validateGeneration bool) (*toolrt.Dict, error) {
+	document, ok := data.(*toolrt.Dict)
 	name, isString := document.Value("name").(string)
-	if !ok || !pycompat.Equal(document.Value("schema_version"), pycompat.NewInt(1)) || !isString ||
-		pycompat.Strip(name) == "" || strings.ContainsAny(name, newlineChars) {
+	if !ok || !toolrt.Equal(document.Value("schema_version"), toolrt.NewInt(1)) || !isString ||
+		toolrt.Strip(name) == "" || strings.ContainsAny(name, newlineChars) {
 		return nil, valueError("В plan/project.json нужны схема и непустое название проекта.")
 	}
 	filename, isString := document.Value("animatic_video").(string)
@@ -87,7 +87,7 @@ func ValidateProject(data any, validateGeneration bool) (*pycompat.Dict, error) 
 	}
 	generation := document.Value("generation")
 	if validateGeneration && generation != nil {
-		block, ok := generation.(*pycompat.Dict)
+		block, ok := generation.(*toolrt.Dict)
 		if !ok {
 			return nil, valueError("generation должен быть объектом настроек.")
 		}
@@ -107,18 +107,18 @@ func ValidateProject(data any, validateGeneration bool) (*pycompat.Dict, error) 
 
 // GenerationSettings — копия проверенного блока generation.video
 // или generation.image без изменения данных проекта.
-func GenerationSettings(data any, kind string) (*pycompat.Dict, error) {
+func GenerationSettings(data any, kind string) (*toolrt.Dict, error) {
 	if kind != "video" && kind != "image" {
 		return nil, valueError("Вид генерации должен быть video или image.")
 	}
-	var generation *pycompat.Dict
-	if document, ok := data.(*pycompat.Dict); ok {
-		generation, _ = document.Value("generation").(*pycompat.Dict)
+	var generation *toolrt.Dict
+	if document, ok := data.(*toolrt.Dict); ok {
+		generation, _ = document.Value("generation").(*toolrt.Dict)
 	}
 	if generation == nil {
 		return nil, valueError("В plan/project.json нет блока generation.%s.", kind)
 	}
-	block, ok := generation.Value(kind).(*pycompat.Dict)
+	block, ok := generation.Value(kind).(*toolrt.Dict)
 	if !ok {
 		return nil, valueError("В plan/project.json нет корректного блока generation.%s.", kind)
 	}
@@ -135,7 +135,7 @@ func GenerationSettings(data any, kind string) (*pycompat.Dict, error) {
 			}
 			continue
 		}
-		if text, isString := value.(string); !isString || pycompat.Strip(text) == "" {
+		if text, isString := value.(string); !isString || toolrt.Strip(text) == "" {
 			missing = append(missing, key)
 		}
 	}
@@ -154,7 +154,7 @@ func GenerationSettings(data any, kind string) (*pycompat.Dict, error) {
 	}
 	for _, field := range []string{"resolution", "aspect_ratio", "model"} {
 		if value, ok := block.Get(field); ok {
-			if text, isString := value.(string); !isString || pycompat.Strip(text) == "" {
+			if text, isString := value.(string); !isString || toolrt.Strip(text) == "" {
 				return nil, valueError("generation.%s.%s должен быть непустой строкой.", kind, field)
 			}
 		}
@@ -174,22 +174,22 @@ func GenerationSettings(data any, kind string) (*pycompat.Dict, error) {
 		}
 	}
 	if value, ok := block.Get("options"); ok {
-		if _, isDict := value.(*pycompat.Dict); !isDict {
+		if _, isDict := value.(*toolrt.Dict); !isDict {
 			return nil, valueError("generation.%s.options должен быть объектом.", kind)
 		}
 	}
 	if value, ok := block.Get("outputs"); ok && kind == "image" {
-		if number, isInt := value.(pycompat.Int); !isInt || number.Sign() < 1 {
+		if number, isInt := value.(toolrt.Int); !isInt || number.Sign() < 1 {
 			return nil, valueError("generation.image.outputs должен быть положительным целым числом.")
 		}
 	}
-	return pycompat.DeepCopy(block).(*pycompat.Dict), nil
+	return toolrt.DeepCopy(block).(*toolrt.Dict), nil
 }
 
 // LoadProject — plan/project.json, проверенный ValidateProject. Ошибки чтения
-// и разбора — OSError, UnicodeDecodeError или JSONDecodeError Python.
-func LoadProject(root string, validateGeneration bool) (*pycompat.Dict, error) {
-	value, err := pycompat.LoadJSONFile(filepath.Join(root, filepath.FromSlash(ProjectPath)))
+// и разбора — OSError, UnicodeDecodeError или JSONDecodeError toolrt.
+func LoadProject(root string, validateGeneration bool) (*toolrt.Dict, error) {
+	value, err := toolrt.LoadJSONFile(filepath.Join(root, filepath.FromSlash(ProjectPath)))
 	if err != nil {
 		return nil, err
 	}

@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/tools"
+	"songframe/internal/jobs"
+	"songframe/internal/tools"
 )
 
 // TestBuildJobSteps — задание через настоящий менеджер: шаги запускают инструменты по порядку с

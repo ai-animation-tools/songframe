@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow.py approve-prompt [-h] --dir DIR [--file FILE]\n\noptions:\n  -h, --help   show this help message and exit\n  --dir DIR\n  --file FILE\n",
+  "stdout": "usage: shot_workflow approve-prompt [-h] --dir DIR [--file FILE]\n\noptions:\n  -h, --help   show this help message and exit\n  --dir DIR\n  --file FILE\n",
   "stderr": "",
   "traceback": false,
   "files": {},

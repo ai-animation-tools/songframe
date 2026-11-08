@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/providers/agentexec"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
+	"songframe/internal/providers/agentexec"
 )
 
 // Инструкция встроенному image_gen — протокол этого адаптера, а не текст интерфейса; строки
@@ -76,8 +76,8 @@ func textsFor(input CoverInput) coverTexts {
 // referencePath — путь опоры для агента относительно рабочей папки: файл внутри неё остаётся на
 // месте, внешний получает имя references/NN<расширение>.
 func referencePath(workDir string, image mediaapi.ReferenceImage, index int) string {
-	local := jscompat.Relative(workDir, image.Path)
-	if jscompat.IsAbs(local) || local == ".." || strings.HasPrefix(local, "../") || strings.HasPrefix(local, `..\`) {
+	local := dynvalue.Relative(workDir, image.Path)
+	if dynvalue.IsAbs(local) || local == ".." || strings.HasPrefix(local, "../") || strings.HasPrefix(local, `..\`) {
 		return fmt.Sprintf("references/%02d%s", index+1, strings.ToLower(filepath.Ext(image.Path)))
 	}
 	return strings.ReplaceAll(local, `\`, "/")
@@ -86,21 +86,21 @@ func referencePath(workDir string, image mediaapi.ReferenceImage, index int) str
 // encodeContext — JSON дополнительного контекста {userPrompt, referenceImages?}; предел
 // TextLimit проверяется именно для stdin-JSON: экранирование и подписи тоже занимают бюджет.
 func encodeContext(prompt string, images []mediaapi.ReferenceImage) (string, error) {
-	context := jscompat.NewObject()
+	context := dynvalue.NewObject()
 	context.Set("userPrompt", prompt)
 	if len(images) > 0 {
 		items := make([]any, len(images))
 		for index, image := range images {
-			item := jscompat.NewObject()
+			item := dynvalue.NewObject()
 			item.Set("path", image.Path)
 			item.Set("label", image.Label)
 			item.Set("sha256", image.SHA256)
 			item.Set("bytes", float64(image.Bytes))
 			items[index] = item
 		}
-		context.Set("referenceImages", &jscompat.Array{Items: items})
+		context.Set("referenceImages", &dynvalue.Array{Items: items})
 	}
-	text := jscompat.Stringify(context)
+	text := dynvalue.Stringify(context)
 	if len(text) > agents.TextLimit {
 		return "", errors.New(textContextTooLarge)
 	}
@@ -227,12 +227,12 @@ func (r CoverRunner) Run(ctx context.Context, input CoverInput) (string, error) 
 		}
 		return "", errors.New(textImageGenUnavailable)
 	}
-	value, err := jscompat.Parse([]byte(completed.Result))
+	value, err := dynvalue.Parse([]byte(completed.Result))
 	if err != nil {
 		return "", errors.New(texts.pathMissing)
 	}
-	response, ok := value.(*jscompat.Object)
-	path, isString := jscompat.Get(value, "path").(string)
+	response, ok := value.(*dynvalue.Object)
+	path, isString := dynvalue.Get(value, "path").(string)
 	if !ok || response.Len() != 1 || !isString {
 		return "", errors.New(texts.resultInvalid)
 	}

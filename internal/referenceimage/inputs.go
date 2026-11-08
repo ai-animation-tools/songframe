@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
 )
 
 // InputImage — опора, явно выбранная пользователем: абсолютный путь, нейтральная подпись и, если
@@ -42,7 +42,7 @@ func Inspect(input GenerationInput) ([]mediaapi.ReferenceImage, error) {
 	}
 	images := make([]mediaapi.ReferenceImage, 0, len(input.Images))
 	for _, image := range input.Images {
-		if !jscompat.IsAbs(image.Path) || strings.ContainsRune(image.Path, 0) || jscompat.Trim(image.Label) == "" ||
+		if !dynvalue.IsAbs(image.Path) || strings.ContainsRune(image.Path, 0) || dynvalue.Trim(image.Label) == "" ||
 			strings.ContainsRune(image.Label, 0) || (image.SHA256 != nil && !sha256Pattern.MatchString(*image.SHA256)) {
 			return nil, errors.New(mediafile.TextReferenceInputsInvalid)
 		}
@@ -58,7 +58,7 @@ func Inspect(input GenerationInput) ([]mediaapi.ReferenceImage, error) {
 		if !mediafile.ExtensionMatches(image.Path) || !mediafile.IsImage(image.Path) {
 			return nil, errors.New(mediafile.TextReferenceInputsInvalid)
 		}
-		images = append(images, mediaapi.ReferenceImage{Path: image.Path, Label: jscompat.Trim(image.Label), SHA256: digest, Bytes: int64(len(data))})
+		images = append(images, mediaapi.ReferenceImage{Path: image.Path, Label: dynvalue.Trim(image.Label), SHA256: digest, Bytes: int64(len(data))})
 	}
 	return mediafile.CheckedReferences(images)
 }

@@ -14,7 +14,7 @@
 | Node.js и Yarn 4.18.1 (`frontend/package.json`, `packageManager`) | Frontend, Vitest, Storybook; скрипт bindings тоже вызывает `node` |
 | Chromium для Playwright (`cd frontend && yarn playwright install chromium`) | Браузерная проверка витрины |
 
-Python для работы приложения и его тестов не нужен (см. [«Python»](#python)). FFmpeg/ffprobe нужны только тестам медиаинструментов: без программы в `PATH` такие тесты пропускаются. Требования к сборке поставок перечислены в [packaging](../packaging/README.md).
+Инструменты комплекса выполняются внутри приложения (см. [«Инструменты комплекса»](#инструменты-комплекса)). FFmpeg/ffprobe нужны только тестам медиаинструментов: без программы в `PATH` такие тесты пропускаются. Требования к сборке поставок перечислены в [packaging](../packaging/README.md).
 
 ## Устройство
 
@@ -61,7 +61,7 @@ Renderer не читает файловую систему и не запуск�
 - [`frontend/src/platform/api-skeleton.ts`](../frontend/src/platform/api-skeleton.ts) задаёт типизированную заготовку всех методов, которую `createApi` заполняет вызовами bindings. Тест адаптера проверяет, что ни один метод не остался заготовкой: новый метод контракта добавляется вместе с Go-реализацией.
 - `frontend/bindings/` создаёт `wails3 task bindings` ([`scripts/bindings.sh`](../scripts/bindings.sh)): `wails3 generate bindings`, затем скрипт убирает хвостовые пробелы и сужает `T[] | null` до `T[]`, что честно благодаря `wire.Fill`. Файлы хранятся в Git и вручную не правятся; после изменения Go-сервиса bindings перегенерируются.
 
-Новая возможность — это метод предметного пакета, метод Wails-сервиса в `internal/app`, перегенерированный binding, метод в `shared/api.ts` и его реализация в `platform/api.ts` с тестом рядом (`frontend/src/platform/*-api.test.ts` подменяют generated-вызовы). Контракты DTO и форматов проекта меняются по [songframe-go-project-contract](../dev-skills/songframe-go-project-contract/SKILL.md).
+Новая возможность — это метод предметного пакета, метод Wails-сервиса в `internal/app`, перегенерированный binding, метод в `shared/api.ts` и его реализация в `platform/api.ts` с тестом рядом (`frontend/src/platform/*-api.test.ts` подменяют generated-вызовы). Контракты DTO и форматов проекта меняются по [songframe-project-contract](../dev-skills/songframe-project-contract/SKILL.md).
 
 `frontend/dist` встраивается в бинарник через `go:embed`. В чистом checkout его ещё нет, поэтому `scripts/bindings.sh` создаёт временный `index.html` только для запуска генератора; Vite заменяет его настоящей сборкой. Бинарник, собранный вручную поверх временного index, — не приложение: штатный `wails3 task build` всегда собирает frontend.
 
@@ -81,10 +81,10 @@ Renderer не читает файловую систему и не запуск�
 | --- | --- |
 | App ID | `tools.songframe.desktop` (`internal/app/app.go`) |
 | Каталог состояния | `songframe-desktop` внутри `os.UserConfigDir()` (`internal/store/profile.go`) |
-| Подмена каталога | `SONGFRAME_GO_LOCAL_DIR`; относительный путь отсчитывается от текущего каталога запуска |
-| Ключ темы renderer | `songframe-go.theme` в `localStorage` |
+| Подмена каталога | `SONGFRAME_LOCAL_DIR`; относительный путь отсчитывается от текущего каталога запуска |
+| Ключ темы renderer | `songframe.theme` в `localStorage` |
 
-В каталоге состояния лежат текущий проект и история (`current-project.json`, `projects.json`), настройки агента (`settings.json`), задания (`jobs/`), журналы (`logs/app.log`, `logs/session.json`), вход и наблюдения цен провайдеров (`providers/<id>/`), управляемая установка компонентов (`components/` по умолчанию), журналы публикации сценария и применения предложений производства, а в Windows — данные WebView2 (`webview/`). Для проверок задавайте отдельный `SONGFRAME_GO_LOCAL_DIR`.
+В каталоге состояния лежат текущий проект и история (`current-project.json`, `projects.json`), настройки агента (`settings.json`), задания (`jobs/`), журналы (`logs/app.log`, `logs/session.json`), вход и наблюдения цен провайдеров (`providers/<id>/`), управляемая установка компонентов (`components/` по умолчанию), журналы публикации сценария и применения предложений производства, а в Windows — данные WebView2 (`webview/`). Для проверок задавайте отдельный `SONGFRAME_LOCAL_DIR`.
 
 ## Встроенные ресурсы
 
@@ -123,15 +123,15 @@ FFmpeg/ffprobe, ONNX Runtime CPU и модели (выделение вокал�
 
 Общая логика платной попытки, оценки цены, производства и проверок тестируется на вымышленном провайдере `test` из [`internal/mediatest`](../internal/mediatest/mediatest.go): без сети и платных запросов. Поведение задаёт `service.json` в рабочей папке теста, каждый вызов дописывается в `calls.jsonl`; в таблицу адаптеров провайдер попадает только через `Register`. В TS реестр дополняет `registerMediaProviderForTests`. Проект-образец использует `test` в `plan/project.json`.
 
-## Python
+## Инструменты комплекса
 
-Приложение не запускает Python ни в работе, ни в тестах. Инструменты комплекса (`scene_registry`, `shot_workflow`, `accept_shot` и другие) — Go-пакеты, которые выполняются в процессе приложения; метод `tools.run` (`internal/tools`) отдаёт код завершения, stdout и stderr инструмента. Файлы проекта и вывод инструментов записаны в семантике Python 3.12 (JSON-вывод, различие `1`/`1.0`, регулярные выражения, сообщения argparse и исключений) — её воспроизводят пакеты `pycompat`, `pyre`, `pyargparse` и `pytool`, чтобы байты совпадали с эталонами. Часть эталонов записана в нотации `json.dumps` Python и читается разбором `pycompat`.
+Инструменты комплекса (`scene_registry`, `shot_workflow`, `accept_shot` и другие) — Go-пакеты, которые выполняются в процессе приложения: внешних интерпретаторов приложение не запускает ни в работе, ни в тестах. Метод `tools.run` (`internal/tools`) отдаёт код завершения, stdout и stderr инструмента. Байты файлов проекта и вывода инструментов — JSON-вывод, различие `1`/`1.0`, регулярные выражения, сообщения о разборе аргументов и ошибках — закреплены эталонами `testdata/golden`; их формируют общие пакеты `toolrt`, `toolregex`, `toolsubcmd` и `toolcli`. Часть эталонов хранит JSON в той записи, в какой его печатают инструменты, и читается разбором `toolrt`.
 
-Python 3 нужен только сборщику поставок и отдельным проверкам разработчика: `scripts/package-notices.py`, `scripts/package-metadata.py`, `scripts/linux_runtime_policy.py` (и его тест `scripts/test_linux_runtime_policy.py`), `scripts/check-windows-package.py`, а также `scripts/check-media-capabilities.sh`. В поставку Python не входит.
+Сборщику поставок и отдельным проверкам разработчика нужен Python 3: `scripts/package-notices.py`, `scripts/package-metadata.py`, `scripts/linux_runtime_policy.py` (и его тест `scripts/test_linux_runtime_policy.py`), `scripts/check-windows-package.py` и `scripts/check-media-capabilities.sh` (рецепты обработки на выбранной паре FFmpeg/ffprobe). В поставку эти скрипты не входят.
 
 ## Тестовые данные
 
-Обзор — [testdata/README.md](../testdata/README.md). Все данные синтетические; настоящих клипов, профиля, Python и платных сервисов проверкам не нужно.
+Обзор — [testdata/README.md](../testdata/README.md). Все данные синтетические; настоящих клипов, профиля и платных сервисов проверкам не нужно.
 
 ### Эталоны
 
@@ -152,7 +152,7 @@ Python 3 нужен только сборщику поставок и отдел
 
 ## Интерфейс
 
-Перед изменением UI применять [songframe-go-ui](../dev-skills/songframe-go-ui/SKILL.md) и [правила UI](ui/README.md): [компоновка](ui/layout.md), [тема](ui/theme.md), [структура страниц](ui/structure.md).
+Перед изменением UI применять [songframe-ui](../dev-skills/songframe-ui/SKILL.md) и [правила UI](ui/README.md): [компоновка](ui/layout.md), [тема](ui/theme.md), [структура страниц](ui/structure.md).
 
 - **Тексты.** Русские подписи renderer и адаптеров живут в чистых доменных словарях `frontend/src/shared/texts/` — [правила текстов](ui/texts.md). Тексты, которые Go отдаёт renderer, совпадают со словарями; пакеты агентов, провайдеров и обложки сверяют их тестами `TestTextsMatchFrontend`.
 - **Storybook.** Истории `*.stories.tsx` показывают рабочие компоненты с моделями API из `frontend/src/renderer/testing/`, без Wails, профиля и клипа. Витрина обновляется в том же изменении, что и интерфейс или API — [порядок и критерий готовности](ui/storybook.md).
@@ -195,7 +195,7 @@ Python 3 нужен только сборщику поставок и отдел
   ```
 
 - `go test ./...` в корне компилирует и `main.go`, которому нужен `frontend/dist`: в чистом checkout сначала `wails3 task bindings` или `build`. Пакеты `./internal/...` этого не требуют.
-- На ограниченном окружении кэш Go можно задать явно, например `GOCACHE=/tmp/songframe-go-build-cache`; профиль приложения от этого не меняется.
+- На ограниченном окружении кэш Go можно задать явно, например `GOCACHE=/tmp/songframe-build-cache`; профиль приложения от этого не меняется.
 - Тесты, которым нужны FFmpeg/ffprobe, ONNX Runtime или модели, без них пропускаются; необязательные inference-сверки включаются переменными окружения, описанными в самих тестах.
 
 ## Нативные проверки окна
@@ -204,13 +204,13 @@ Python 3 нужен только сборщику поставок и отдел
 
 ```sh
 # Запуск интерфейса: успешный вызов State из frontend и монтирование страницы.
-SONGFRAME_GO_LOCAL_DIR=/tmp/songframe-smoke-profile \
+SONGFRAME_LOCAL_DIR=/tmp/songframe-smoke-profile \
   ./build/bin/songframe --smoke \
   --smoke-report /tmp/songframe-smoke.json --smoke-timeout 30s
 
 # Медиа WebView, HTTP-сервер и второе окно на синтетических файлах (FFmpeg нужен только для подготовки).
 sh scripts/make-media-fixtures.sh /tmp/songframe-media-fixtures
-SONGFRAME_GO_LOCAL_DIR=/tmp/songframe-native-profile ./build/bin/songframe \
+SONGFRAME_LOCAL_DIR=/tmp/songframe-native-profile ./build/bin/songframe \
   --native-check-dir /tmp/songframe-media-fixtures \
   --native-check-report /tmp/songframe-native-report.json --smoke-timeout 90s
 ```
@@ -219,7 +219,7 @@ SONGFRAME_GO_LOCAL_DIR=/tmp/songframe-native-profile ./build/bin/songframe \
 
 ## Поставки
 
-Целевые поставки — Linux x86_64 AppImage и deb-пакет, Windows amd64 установщик NSIS. Все поставки собираются локально на Linux (`wails3 task package:linux`, `package:deb`, `package:windows`), CI их не собирает. Состав, prerequisites, проверки на хосте и в чистой системе — [packaging/README.md](../packaging/README.md) и [рецепт Windows](../packaging/windows/README.md); порядок сборки — скилл [songframe-go-build](../dev-skills/songframe-go-build/SKILL.md), выпуск — [songframe-go-release](../dev-skills/songframe-go-release/SKILL.md). Сборка установщика не доказывает работу в Windows: нативный прогон выполняется отдельно. Обновление из приложения (`internal/updates`, страница «Настройки») берёт выпуски публичного songframe; публикация выпусков описана в скилле выпуска.
+Целевые поставки — Linux x86_64 AppImage и deb-пакет, Windows amd64 установщик NSIS. Все поставки собираются локально на Linux (`wails3 task package:linux`, `package:deb`, `package:windows`), CI их не собирает. Состав, prerequisites, проверки на хосте и в чистой системе — [packaging/README.md](../packaging/README.md) и [рецепт Windows](../packaging/windows/README.md); порядок сборки — скилл [songframe-build](../dev-skills/songframe-build/SKILL.md), выпуск — [songframe-release](../dev-skills/songframe-release/SKILL.md). Сборка установщика не доказывает работу в Windows: нативный прогон выполняется отдельно. Обновление из приложения (`internal/updates`, страница «Настройки») берёт выпуски публичного songframe; публикация выпусков описана в скилле выпуска.
 
 ## Скиллы разработки
 

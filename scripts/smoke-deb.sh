@@ -23,7 +23,7 @@ docker run --rm --network=none --cap-drop=ALL \
       if command -v "$command" >/dev/null; then echo "Лишняя зависимость: $command" >&2; exit 1; fi
     done
     test -x /usr/bin/songframe && test -f /etc/apparmor.d/songframe && test -f /usr/share/applications/songframe.desktop
-    export SONGFRAME_GO_LOCAL_DIR=/result/profile
+    export SONGFRAME_LOCAL_DIR=/result/profile
     timeout 90s xvfb-run -a dbus-run-session -- songframe --smoke --smoke-report /result/startup.json --smoke-timeout 60s
     grep -q '\''"passed": true'\'' /result/startup.json
   ' > "$output/run.log" 2>&1

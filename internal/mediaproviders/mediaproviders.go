@@ -1,6 +1,6 @@
 // Package mediaproviders — Go-часть реестра провайдеров медиа (frontend/src/shared/media-providers.ts).
 // Общий код Go узнаёт о провайдере только отсюда: виды медиа, программу-исполнитель и платность.
-// Здесь лишь поля, нужные главному процессу; подписи и параметры интерфейса остаются в реестре
+// Здесь лишь поля, нужные Go-стороне приложения; подписи и параметры интерфейса остаются в реестре
 // renderer. Совпадение с ним проверяет TestRegistryMatchesFrontend.
 package mediaproviders
 
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Виды медиа.
@@ -87,7 +87,7 @@ func Normalize(value any) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	id := strings.ToLower(jscompat.Trim(text))
+	id := strings.ToLower(dynvalue.Trim(text))
 	_, known := Lookup(id)
 	return id, known
 }

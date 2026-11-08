@@ -10,12 +10,12 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/scenario"
-	"songframe-go/internal/scenarioapply"
-	"songframe-go/internal/sources"
-	"songframe-go/internal/tools"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/scenario"
+	"songframe/internal/scenarioapply"
+	"songframe/internal/sources"
+	"songframe/internal/tools"
 )
 
 // Публикация сценарного предложения.
@@ -53,8 +53,8 @@ var (
 	beforePublish = func(string) error { return nil }
 )
 
-// nodeExt — path.extname Node: у имени, начинающегося с точки и без другой точки, расширения нет.
-func nodeExt(name string) string {
+// extName — расширение имени с точкой: у имени, начинающегося с точки и без другой точки, расширения нет.
+func extName(name string) string {
 	index := strings.LastIndex(name, ".")
 	if index <= 0 {
 		return ""
@@ -113,7 +113,7 @@ func stageInputs(project string) ([]string, error) {
 		}
 		entries, err := os.ReadDir(directory)
 		if err != nil {
-			return jscompat.FsError("scandir", directory, err)
+			return dynvalue.FsError("scandir", directory, err)
 		}
 		for _, entry := range entries {
 			if skipDirectories[entry.Name()] {
@@ -127,7 +127,7 @@ func stageInputs(project string) ([]string, error) {
 				if err := visit(child); err != nil {
 					return err
 				}
-			case entry.Type().IsRegular() && copyExtensions[strings.ToLower(nodeExt(entry.Name()))]:
+			case entry.Type().IsRegular() && copyExtensions[strings.ToLower(extName(entry.Name()))]:
 				files[child] = true
 			}
 		}
@@ -155,11 +155,11 @@ func stageInputs(project string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+		value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 		if err != nil {
 			return nil, err
 		}
-		video, ok := jscompat.GetPath(value, "accepted_edit", "video", "path").(string)
+		video, ok := dynvalue.GetPath(value, "accepted_edit", "video", "path").(string)
 		if !ok || !scenarioapply.RelativePath(video) {
 			return nil, errors.New(textAcceptedVideoPathRequired(path))
 		}
@@ -179,7 +179,7 @@ func stageInputs(project string) ([]string, error) {
 	for path := range files {
 		result = append(result, path)
 	}
-	sort.Slice(result, func(i, j int) bool { return jscompat.LessUTF16(result[i], result[j]) })
+	sort.Slice(result, func(i, j int) bool { return dynvalue.LessUTF16(result[i], result[j]) })
 	return result, nil
 }
 
@@ -199,7 +199,7 @@ func sameNames(left, right []string) bool {
 // jsonBytes — JSON с отступом в два пробела и переводом строки: формат записи документов сценария.
 func jsonBytes(value any) []byte { return scenario.Encode(value) }
 
-// sliceTail — String.prototype.slice(-limit) по кодовым единицам UTF-16.
+// sliceTail — последние limit кодовых единиц UTF-16 текста.
 func sliceTail(text string, limit int) string {
 	units := 0
 	for index := len(text); index > 0; {
@@ -266,8 +266,8 @@ func (p publisher) publish(input Publication) error {
 
 // publishPair — первый проход: кастинг, трактовка и, если изменились, описания в описи.
 func (p publisher) publishPair(project string, input Publication) error {
-	castDocument, castOK := jscompat.AsObject(input.After.Cast)
-	treatment, treatmentOK := jscompat.AsObject(input.After.Treatment)
+	castDocument, castOK := dynvalue.AsObject(input.After.Cast)
+	treatment, treatmentOK := dynvalue.AsObject(input.After.Treatment)
 	if !castOK || !treatmentOK {
 		return errors.New(textApplyPairRequired)
 	}
@@ -277,11 +277,11 @@ func (p publisher) publishPair(project string, input Publication) error {
 	}
 	var duration any
 	if timingBytes != nil {
-		value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(timingBytes)))
+		value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(timingBytes)))
 		if err != nil {
 			return err
 		}
-		duration = jscompat.ToNumber(jscompat.Get(value, "duration_decoded"))
+		duration = dynvalue.ToNumber(dynvalue.Get(value, "duration_decoded"))
 	}
 	problems, err := cast.Validate(input.After.Cast)
 	if err != nil {
@@ -310,7 +310,7 @@ func (p publisher) publishPair(project string, input Publication) error {
 		{Path: "plan/cast.json", Next: jsonBytes(plan.Cast)},
 		{Path: "plan/treatment.json", Next: jsonBytes(treatment)},
 	}
-	if plan.Manifest != nil && jscompat.Stringify(plan.Manifest) != jscompat.Stringify(manifest) {
+	if plan.Manifest != nil && dynvalue.Stringify(plan.Manifest) != dynvalue.Stringify(manifest) {
 		candidates = append(candidates, scenarioapply.Change{Path: "source/manifest.json", Next: jsonBytes(plan.Manifest)})
 	}
 	if err := verifyHashes(project, input.ExpectedHashes); err != nil {
@@ -434,15 +434,15 @@ func (p publisher) publishScenes(project string, input Publication) error {
 			if details == "" {
 				details = textValidationExitCode(result.Code)
 			}
-			return errors.New(textValidationFailed(name, sliceTail(jscompat.Trim(details), 1200)))
+			return errors.New(textValidationFailed(name, sliceTail(dynvalue.Trim(details), 1200)))
 		}
 		return nil
 	}
 	if err := run("lint_registry"); err != nil {
 		return err
 	}
-	for _, scene := range arrayItems(jscompat.Get(input.After.Scenes, "scenes")) {
-		id := jscompat.ToString(jscompat.Get(scene, "id"))
+	for _, scene := range arrayItems(dynvalue.Get(input.After.Scenes, "scenes")) {
+		id := dynvalue.ToString(dynvalue.Get(scene, "id"))
 		for _, phase := range []string{"before", "after"} {
 			if err := run("continuity_brief", id, "--phase", phase, "--json"); err != nil {
 				return err

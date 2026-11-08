@@ -13,11 +13,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"songframe-go/internal/projectfs"
+	"songframe/internal/projectfs"
 )
 
 // jobFile — имя файла сведений задания; agent-<uuid>.json принадлежит заданиям агента
-// и этим менеджером не читается. \d в RE2 — только ASCII-цифры, как в JS.
+// и этим менеджером не читается. \d в RE2 — только ASCII-цифры.
 var jobFile = regexp.MustCompile(`^([0-9a-z]+-\d+)\.json$`)
 
 // record — содержимое <id>.json: сведения без журнала и признака прошлого сеанса.
@@ -188,7 +188,8 @@ func nullableString(raw json.RawMessage) (*string, bool) {
 	return &value, true
 }
 
-// nullableInt принимает null или целое число (Number.isInteger: 3.0 — тоже целое).
+// nullableInt принимает null или целое число в пределах 2^53; запись с нулевой дробной частью
+// (3.0) — тоже целое.
 func nullableInt(raw json.RawMessage) (*int, bool) {
 	if len(raw) == 0 {
 		return nil, false

@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
+	"songframe/internal/golden"
 )
 
 // domain — каталог эталона CLI build_animatic (см. testdata/golden/README.md).
@@ -277,7 +277,7 @@ func snapshot(t *testing.T, root string) map[string]string {
 	return result
 }
 
-// copyTree — копия входного клипа во временной папке с разрешённым путём (как Path.resolve CLI).
+// copyTree — копия входного клипа во временной папке с разрешённым путём (как его разрешает CLI).
 func copyTree(t *testing.T, source string) string {
 	t.Helper()
 	base, err := filepath.EvalSymlinks(t.TempDir())

@@ -3,7 +3,7 @@ import { countLabel } from '../plural';
 
 /** Тексты сценария; правила владения описаны в @link ../../../docs/ui/texts.md. */
 export const scenarioTexts = {
-  // Сообщения главного процесса сохраняют прежние Error.message и порядок проверок.
+  // Готовые сообщения Go в Error.message; порядок проверок задаёт Go.
   main: {
     damagedDocument: ({ label }: { label: string }) => `${label} повреждён.`,
     damagedCast: commonTexts.project.castDamaged,

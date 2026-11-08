@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
 )
 
 // Settings — AgentSettings контракта: исполнитель и необязательная модель. Путь к программе не
@@ -34,15 +34,15 @@ func Normalize(value *Settings) (*Settings, error) {
 	if strings.ContainsRune(value.Model, 0) {
 		return nil, errors.New(textInvalidModel)
 	}
-	return &Settings{Provider: value.Provider, Model: jscompat.Trim(value.Model)}, nil
+	return &Settings{Provider: value.Provider, Model: dynvalue.Trim(value.Model)}, nil
 }
 
-// normalizeValue нормализует выбор агента из значения settings.json со строгими типами JS.
+// normalizeValue нормализует выбор агента из значения settings.json со строгими типами полей JSON.
 func normalizeValue(value any) (*Settings, error) {
-	if jscompat.IsNullish(value) {
+	if dynvalue.IsNullish(value) {
 		return nil, nil
 	}
-	object, ok := value.(*jscompat.Object)
+	object, ok := value.(*dynvalue.Object)
 	if !ok {
 		return nil, errors.New(textInvalidAgentSettings)
 	}
@@ -51,19 +51,19 @@ func normalizeValue(value any) (*Settings, error) {
 		return nil, errors.New(textSelectAgent)
 	}
 	model := ""
-	if raw := object.Value("model"); raw != jscompat.Undefined {
+	if raw := object.Value("model"); raw != dynvalue.Undefined {
 		text, ok := raw.(string)
 		if !ok || strings.ContainsRune(text, 0) {
 			return nil, errors.New(textInvalidModel)
 		}
-		model = jscompat.Trim(text)
+		model = dynvalue.Trim(text)
 	}
 	return &Settings{Provider: provider, Model: model}, nil
 }
 
 // object — запись настроек в порядке ключей формата: provider, затем model при наличии.
-func (s Settings) object() *jscompat.Object {
-	object := jscompat.NewObject()
+func (s Settings) object() *dynvalue.Object {
+	object := dynvalue.NewObject()
 	object.Set("provider", s.Provider)
 	if s.Model != "" {
 		object.Set("model", s.Model)
@@ -73,12 +73,12 @@ func (s Settings) object() *jscompat.Object {
 
 // normalizeProfiles — профили по исполнителям: ключ — id реестра, значение — его же настройки.
 // Undefined — профилей нет; иное не-объектное значение, чужой или неизвестный агент — ошибка.
-func normalizeProfiles(value any) (*jscompat.Object, error) {
-	result := jscompat.NewObject()
-	if value == jscompat.Undefined {
+func normalizeProfiles(value any) (*dynvalue.Object, error) {
+	result := dynvalue.NewObject()
+	if value == dynvalue.Undefined {
 		return result, nil
 	}
-	object, ok := value.(*jscompat.Object)
+	object, ok := value.(*dynvalue.Object)
 	if !ok {
 		return nil, errors.New(textInvalidProfiles)
 	}
@@ -118,19 +118,19 @@ func (s *SettingsStore) LocalDir() string { return s.dir }
 func (s *SettingsStore) file() string { return filepath.Join(s.dir, SettingsFile) }
 
 // read — SettingsStore.read: снимок файла с нормализованными agent и agentProfiles на их местах.
-func (s *SettingsStore) read() (*jscompat.Object, error) {
+func (s *SettingsStore) read() (*dynvalue.Object, error) {
 	value, err := readLocal(s.file())
 	if err != nil {
 		return nil, err
 	}
 	if value == nil {
-		return jscompat.NewObject(), nil
+		return dynvalue.NewObject(), nil
 	}
-	object, ok := value.(*jscompat.Object)
+	object, ok := value.(*dynvalue.Object)
 	if !ok {
 		return nil, errors.New(textInvalidSettingsFile(s.file()))
 	}
-	if root := object.Value("toolsRootOverride"); !jscompat.IsNullish(root) {
+	if root := object.Value("toolsRootOverride"); !dynvalue.IsNullish(root) {
 		if _, isString := root.(string); !isString {
 			return nil, errors.New(textInvalidSettingsFile(s.file()))
 		}
@@ -145,19 +145,20 @@ func (s *SettingsStore) read() (*jscompat.Object, error) {
 	if agent != nil {
 		result.Set("agent", agent.object())
 	}
-	if jscompat.Truthy(object.Value("agentProfiles")) {
+	if dynvalue.Truthy(object.Value("agentProfiles")) {
 		result.Set("agentProfiles", profiles)
 	}
 	return result, nil
 }
 
-// field — пара ключ/значение изменения; jscompat.Undefined удаляет ключ при записи.
+// field — пара ключ/значение изменения; dynvalue.Undefined удаляет ключ при записи.
 type field struct {
 	key   string
 	value any
 }
 
-// write — SettingsStore.write: {...read(), ...patch} с повторной нормализацией и атомарной записью.
+// write накладывает поля patch поверх прочитанных настроек, заново нормализует результат и
+// записывает его атомарно.
 func (s *SettingsStore) write(patch ...field) error {
 	merged, err := s.read()
 	if err != nil {
@@ -175,14 +176,14 @@ func (s *SettingsStore) write(patch ...field) error {
 	} else {
 		merged.Delete("agent")
 	}
-	if profiles := merged.Value("agentProfiles"); jscompat.Truthy(profiles) {
+	if profiles := merged.Value("agentProfiles"); dynvalue.Truthy(profiles) {
 		normalized, err := normalizeProfiles(profiles)
 		if err != nil {
 			return err
 		}
 		merged.Set("agentProfiles", normalized)
 	}
-	return projectfs.WriteFile(s.file(), []byte(jscompat.StringifyIndent(merged, "  ")+"\n"), 0)
+	return projectfs.WriteFile(s.file(), []byte(dynvalue.StringifyIndent(merged, "  ")+"\n"), 0)
 }
 
 // Agent — сохранённый текстовый агент или nil, если выбор не сделан.
@@ -211,13 +212,14 @@ func (s *SettingsStore) ProviderAgent(provider string) (*Settings, error) {
 	if agent, _ := normalizeValue(saved.Value("agent")); agent != nil && agent.Provider == provider {
 		return agent, nil
 	}
-	return normalizeValue(jscompat.Get(saved.Value("agentProfiles"), provider))
+	return normalizeValue(dynvalue.Get(saved.Value("agentProfiles"), provider))
 }
 
-// withProfile — {...saved.agentProfiles, [provider]: agent}: прежние профили на своих местах.
-func withProfile(saved *jscompat.Object, agent Settings) *jscompat.Object {
-	profiles := jscompat.NewObject()
-	if existing, ok := saved.Value("agentProfiles").(*jscompat.Object); ok {
+// withProfile — копия agentProfiles с профилем agent под ключом его провайдера: остальные
+// профили и их порядок сохраняются.
+func withProfile(saved *dynvalue.Object, agent Settings) *dynvalue.Object {
+	profiles := dynvalue.NewObject()
+	if existing, ok := saved.Value("agentProfiles").(*dynvalue.Object); ok {
 		profiles = existing.Clone()
 	}
 	profiles.Set(agent.Provider, agent.object())
@@ -261,7 +263,7 @@ func (s *SettingsStore) SaveAgent(value *Settings) (*Settings, error) {
 		return nil, err
 	}
 	if agent == nil {
-		return nil, s.write(field{"agent", jscompat.Undefined})
+		return nil, s.write(field{"agent", dynvalue.Undefined})
 	}
 	return agent, s.write(field{"agent", agent.object()}, field{"agentProfiles", withProfile(saved, *agent)})
 }
@@ -273,7 +275,7 @@ func ImageAgent(executor, model string) (Settings, error) {
 	if !IsProvider(executor) {
 		return Settings{}, errors.New(textImageAgentRequired)
 	}
-	return Settings{Provider: executor, Model: jscompat.Trim(model)}, nil
+	return Settings{Provider: executor, Model: dynvalue.Trim(model)}, nil
 }
 
 // readLocal читает локальный JSON: отсутствие файла — (nil, nil); повреждённый или
@@ -284,13 +286,13 @@ func readLocal(path string) (any, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, readFailed(path, jscompat.FsError("open", path, err).Error())
+		return nil, readFailed(path, dynvalue.FsError("open", path, err).Error())
 	}
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 	if err != nil {
 		return nil, readFailed(path, err.Error())
 	}
-	if _, isObject := value.(*jscompat.Object); !isObject && !jscompat.IsArray(value) {
+	if _, isObject := value.(*dynvalue.Object); !isObject && !dynvalue.IsArray(value) {
 		return nil, readFailed(path, "ожидался JSON-объект")
 	}
 	return value, nil

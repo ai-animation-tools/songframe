@@ -2,11 +2,11 @@ package animaticcards
 
 import "image"
 
-// Перевод YCbCr в RGB так, как это делают декодеры Pillow: libjpeg-turbo для JPEG и libwebp для
+// Перевод YCbCr в RGB по правилам эталонных декодеров: libjpeg-turbo для JPEG и libwebp для
 // WebP с потерями. Стандартные декодеры Go отдают те же плоскости Y/Cb/Cr, но image/color
 // растягивает цветоразностные каналы повтором отсчёта и считает WebP полным диапазоном JFIF,
 // а libwebp — ограниченным BT.601: без этого пересчёта WebP-референс выглядел бы бледнее. Обратное
-// DCT остаётся декодера Go, поэтому JPEG отличается от Pillow на единицы уровня.
+// DCT остаётся декодера Go, поэтому пиксели JPEG отличаются от эталона на единицы уровня.
 
 // planeAt — отсчёт плоскости по её координатам.
 func planeAt(plane []byte, stride, x, y int) int { return int(plane[y*stride+x]) }
@@ -105,7 +105,8 @@ func jpegRGB(y, cb, cr int) (byte, byte, byte) {
 	return byte(clamp255(r)), byte(clamp255(g)), byte(clamp255(b))
 }
 
-// jpegToRGB — JPEG YCbCr как convert("RGB") Pillow поверх libjpeg-turbo.
+// jpegToRGB переводит JPEG YCbCr в RGB по правилам libjpeg-turbo (повышающая интерполяция
+// цветоразностных каналов и целочисленная матрица).
 func jpegToRGB(m *image.YCbCr) rgbImage {
 	width, height := m.Rect.Dx(), m.Rect.Dy()
 	cb, cr := upsampleJPEG(m, m.Cb), upsampleJPEG(m, m.Cr)

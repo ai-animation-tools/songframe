@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 227, in <module>\n    main()\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 180, in main\n    duration = float(timing.get(\"duration_decoded\") or timing.get(\"duration_container\") or 0)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: float() argument must be a string or a real number, not 'list'\n",
+  "stderr": "Traceback (most recent call last):\nTypeError: float() argument must be a string or a real number, not 'list'\n",
   "traceback": true,
   "files": {
     "plan/scenes.json": "unchanged"

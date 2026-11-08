@@ -2,7 +2,7 @@
 // общий код обращается к ним через таблицу internal/mediaadapters.
 package kling
 
-import "songframe-go/internal/pycompat"
+import "songframe/internal/toolrt"
 
 // multiShotModels — модели с авто-раскадровкой, у которых сервис по умолчанию
 // включает prefer_multi_shots.
@@ -13,19 +13,19 @@ const textMultiShot = "запрос к модели с авто-раскадро
 	"у сервиса значение по умолчанию true"
 
 // SnapshotWarnings — пары (поле, текст) о снимке принятого комплекта.
-// Ошибка — TypeError Python, если model нехешируемый (список, объект) и не проверяется по множеству.
-func SnapshotWarnings(snapshot *pycompat.Dict) ([][2]string, error) {
-	arguments, _ := pycompat.DictGet(snapshot, "arguments", pycompat.NewDict())
-	parameters, _ := pycompat.DictGet(snapshot, "parameters", arguments)
+// Ошибка — TypeError, если model нехешируемый (список, объект) и не проверяется по множеству.
+func SnapshotWarnings(snapshot *toolrt.Dict) ([][2]string, error) {
+	arguments, _ := toolrt.DictGet(snapshot, "arguments", toolrt.NewDict())
+	parameters, _ := toolrt.DictGet(snapshot, "parameters", arguments)
 	model := snapshot.Value("model")
-	if _, err := pycompat.HashKey(model); err != nil {
+	if _, err := toolrt.HashKey(model); err != nil {
 		return nil, err
 	}
 	name, isString := model.(string)
 	if !isString || !multiShotModels[name] {
 		return [][2]string{}, nil
 	}
-	if values, ok := parameters.(*pycompat.Dict); ok && !values.Has("prefer_multi_shots") && !snapshot.Has("prefer_multi_shots") {
+	if values, ok := parameters.(*toolrt.Dict); ok && !values.Has("prefer_multi_shots") && !snapshot.Has("prefer_multi_shots") {
 		return [][2]string{{"parameters", textMultiShot}}, nil
 	}
 	return [][2]string{}, nil

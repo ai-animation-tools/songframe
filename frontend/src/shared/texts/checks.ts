@@ -1,6 +1,6 @@
 import { commonTexts } from './common';
 
-/** Тексты проверок общие для заданий главного процесса и панели результатов; правила — @link ../../../docs/ui/texts.md. */
+/** Тексты проверок общие для заданий Go и панели результатов; правила — @link ../../../docs/ui/texts.md. */
 const REVIEW_PLAN_ONLY_SUFFIX = ' (проверка без видео)';
 
 export const checksTexts = {

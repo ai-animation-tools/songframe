@@ -4,84 +4,84 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"songframe-go/internal/animaticcards"
-	"songframe-go/internal/projectviews"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/animaticcards"
+	"songframe/internal/projectviews"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // approvedKeyframes — опоры пакета плана, если все они приняты и
 // их файлы на месте; очередь plan/awaiting/<план> приоритетнее рабочих папок plan/batches/*
 // (по имени), принятые пакеты (stage accepted) не считаются. Нечитаемый как UTF-8 или JSON
 // workflow.json пропускается (ValueError), прочие ошибки чтения и неверная форма — исключения
-// Python. nil — подходящего пакета нет.
-func approvedKeyframes(root, sid string) ([]*pycompat.Dict, error) {
-	batches := pycompat.Glob(pycompat.JoinPath(root, "plan/batches"), "*/workflow.json")
-	pycompat.SortPaths(batches)
-	candidates := append([]string{pycompat.JoinPath(root, "plan/awaiting", sid, "workflow.json")}, batches...)
+// toolrt. nil — подходящего пакета нет.
+func approvedKeyframes(root, sid string) ([]*toolrt.Dict, error) {
+	batches := toolrt.Glob(toolrt.JoinPath(root, "plan/batches"), "*/workflow.json")
+	toolrt.SortPaths(batches)
+	candidates := append([]string{toolrt.JoinPath(root, "plan/awaiting", sid, "workflow.json")}, batches...)
 	for _, path := range candidates {
-		if !pycompat.IsFile(path) {
+		if !toolrt.IsFile(path) {
 			continue
 		}
-		text, err := pycompat.ReadText(path)
+		text, err := toolrt.ReadText(path)
 		if err != nil {
-			if pycompat.Is(err, pycompat.ValueError) {
+			if toolrt.Is(err, toolrt.ValueError) {
 				continue
 			}
 			return nil, err
 		}
-		data, err := pycompat.LoadsJSON(text)
+		data, err := toolrt.LoadsJSON(text)
 		if err != nil {
-			if pycompat.Is(err, pycompat.ValueError) {
+			if toolrt.Is(err, toolrt.ValueError) {
 				continue
 			}
 			return nil, err
 		}
-		shot, err := pycompat.DictGet(data, "shot", nil)
+		shot, err := toolrt.DictGet(data, "shot", nil)
 		if err != nil {
 			return nil, err
 		}
-		stage, _ := pycompat.DictGet(data, "stage", nil)
-		if !pycompat.Equal(shot, sid) || pycompat.Equal(stage, "accepted") {
+		stage, _ := toolrt.DictGet(data, "stage", nil)
+		if !toolrt.Equal(shot, sid) || toolrt.Equal(stage, "accepted") {
 			continue
 		}
-		framesValue, _ := pycompat.DictGet(data, "keyframes", nil)
-		if !pycompat.Truthy(framesValue) {
+		framesValue, _ := toolrt.DictGet(data, "keyframes", nil)
+		if !toolrt.Truthy(framesValue) {
 			framesValue = []any{}
 		}
-		frames, err := pycompat.Iter(framesValue)
+		frames, err := toolrt.Iter(framesValue)
 		if err != nil {
 			return nil, err
 		}
 		parent := filepath.Dir(path)
 		files := make([]string, len(frames))
 		for index, frame := range frames {
-			value, err := pycompat.DictGet(frame, "path", nil)
+			value, err := toolrt.DictGet(frame, "path", nil)
 			if err != nil {
 				return nil, err
 			}
-			if !pycompat.Truthy(value) {
+			if !toolrt.Truthy(value) {
 				value = ""
 			}
 			name, ok := value.(string)
 			if !ok {
-				return nil, pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), pycompat.TypeName(value))
+				return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(value))
 			}
-			files[index] = pycompat.JoinPath(parent, name)
+			files[index] = toolrt.JoinPath(parent, name)
 		}
 		if len(frames) == 0 || !allApproved(frames) || !allFiles(files) {
 			continue
 		}
-		result := []*pycompat.Dict{}
+		result := []*toolrt.Dict{}
 		for index, frame := range frames {
-			id, err := pycompat.GetItem(frame, "id")
+			id, err := toolrt.GetItem(frame, "id")
 			if err != nil {
 				return nil, err
 			}
-			role, _ := pycompat.DictGet(frame, "role", nil)
-			seconds, _ := pycompat.DictGet(frame, "time_seconds", nil)
-			relative, err := pycompat.RelativeTo(files[index], root)
+			role, _ := toolrt.DictGet(frame, "role", nil)
+			seconds, _ := toolrt.DictGet(frame, "time_seconds", nil)
+			relative, err := toolrt.RelativeTo(files[index], root)
 			if err != nil {
 				return nil, err
 			}
@@ -89,28 +89,28 @@ func approvedKeyframes(root, sid string) ([]*pycompat.Dict, error) {
 			if err != nil {
 				return nil, err
 			}
-			result = append(result, pytoolRecord("id", id, "role", role, "time_seconds", seconds, "path", relative, "sha256", digest))
+			result = append(result, orderedRecord("id", id, "role", role, "time_seconds", seconds, "path", relative, "sha256", digest))
 		}
 		return result, nil
 	}
 	return nil, nil
 }
 
-// allApproved — all(k.get("approved") and k.get("path") for k in frames).
+// allApproved — у каждой опоры истинны approved и path.
 func allApproved(frames []any) bool {
 	for _, frame := range frames {
-		dict := frame.(*pycompat.Dict)
-		if !pycompat.Truthy(dict.Value("approved")) || !pycompat.Truthy(dict.Value("path")) {
+		dict := frame.(*toolrt.Dict)
+		if !toolrt.Truthy(dict.Value("approved")) || !toolrt.Truthy(dict.Value("path")) {
 			return false
 		}
 	}
 	return true
 }
 
-// allFiles — all(f.is_file() for f in files).
+// allFiles — все пути — существующие обычные файлы.
 func allFiles(files []string) bool {
 	for _, file := range files {
-		if !pycompat.IsFile(file) {
+		if !toolrt.IsFile(file) {
 			return false
 		}
 	}
@@ -119,7 +119,7 @@ func allFiles(files []string) bool {
 
 // receipt — пригодная квитанция карточек на диске (cards — её записи по плану) или nil.
 type receipt struct {
-	cards *pycompat.Dict
+	cards *toolrt.Dict
 }
 
 // loadReceipt — существующая plan/animatic/cards/manifest.json, если она подтверждает входы
@@ -127,20 +127,20 @@ type receipt struct {
 // референсов, cards — объект. Любая ошибка чтения или вычисления означает «квитанции нет»: тогда
 // карточки перерисовываются, а исключение, если оно есть, возникнет при перерисовке.
 func loadReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared) *receipt {
-	text, err := pycompat.ReadText(pycompat.JoinPath(sources.Root, cardsManifest))
+	text, err := toolrt.ReadText(toolrt.JoinPath(sources.Root, cardsManifest))
 	if err != nil {
 		return nil
 	}
-	value, err := pycompat.LoadsJSON(text)
+	value, err := toolrt.LoadsJSON(text)
 	if err != nil {
 		return nil
 	}
-	document, ok := value.(*pycompat.Dict)
+	document, ok := value.(*toolrt.Dict)
 	if !ok {
 		return nil
 	}
 	registry, err := sources.TextSHA("plan/scenes.json")
-	if err != nil || !pycompat.Equal(document.Value("registry_sha256"), registry) {
+	if err != nil || !toolrt.Equal(document.Value("registry_sha256"), registry) {
 		return nil
 	}
 	project, err := sources.JSON("plan/project.json")
@@ -151,10 +151,10 @@ func loadReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared)
 		return nil
 	}
 	hashes, err := referenceHashes(sources, prepared)
-	if err != nil || !pycompat.Equal(document.Value("reference_hashes"), hashes) {
+	if err != nil || !toolrt.Equal(document.Value("reference_hashes"), hashes) {
 		return nil
 	}
-	cards, ok := document.Value("cards").(*pycompat.Dict)
+	cards, ok := document.Value("cards").(*toolrt.Dict)
 	if !ok {
 		return nil
 	}
@@ -164,13 +164,13 @@ func loadReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared)
 // confirmedFile — запись {path, sha256} квитанции совпадает с ожидаемым путём, и файл на диске
 // имеет записанный SHA-256; возвращается этот SHA-256.
 func confirmedFile(root string, entry any, path string) (string, bool) {
-	record, ok := entry.(*pycompat.Dict)
-	if !ok || !pycompat.Equal(record.Value("path"), path) {
+	record, ok := entry.(*toolrt.Dict)
+	if !ok || !toolrt.Equal(record.Value("path"), path) {
 		return "", false
 	}
 	digest, ok := record.Value("sha256").(string)
-	target := pycompat.JoinPath(root, path)
-	if !ok || !pycompat.IsFile(target) {
+	target := toolrt.JoinPath(root, path)
+	if !ok || !toolrt.IsFile(target) {
 		return "", false
 	}
 	actual, err := projectviews.FileSHA(target)
@@ -183,11 +183,11 @@ func confirmedFile(root string, entry any, path string) (string, bool) {
 // confirmed — запись карточки плана sid в квитанции, если она подтверждает файлы на диске при
 // текущих опорах (nil у текстовой карточки): та же ссылка, тот же список опор, то же наличие
 // .last.png и совпадающие SHA-256. Возвращается новая запись карточки и её ожидаемые файлы.
-func (r *receipt) confirmed(root, sid string, keyframes []*pycompat.Dict) (*pycompat.Dict, []expectedFile, bool) {
+func (r *receipt) confirmed(root, sid string, keyframes []*toolrt.Dict) (*toolrt.Dict, []expectedFile, bool) {
 	if r == nil {
 		return nil, nil, false
 	}
-	entry, ok := r.cards.Value(sid).(*pycompat.Dict)
+	entry, ok := r.cards.Value(sid).(*toolrt.Dict)
 	if !ok {
 		return nil, nil, false
 	}
@@ -196,7 +196,7 @@ func (r *receipt) confirmed(root, sid string, keyframes []*pycompat.Dict) (*pyco
 	if !ok {
 		return nil, nil, false
 	}
-	result := pytoolRecord("path", path, "sha256", digest)
+	result := orderedRecord("path", path, "sha256", digest)
 	files := []expectedFile{{path: path, digest: digest}}
 	if keyframes == nil {
 		if entry.Has("keyframes") || entry.Has("last") {
@@ -205,7 +205,7 @@ func (r *receipt) confirmed(root, sid string, keyframes []*pycompat.Dict) (*pyco
 		return result, files, true
 	}
 	list := keyframeList(keyframes)
-	if !entry.Has("keyframes") || !pycompat.Equal(entry.Value("keyframes"), list) {
+	if !entry.Has("keyframes") || !toolrt.Equal(entry.Value("keyframes"), list) {
 		return nil, nil, false
 	}
 	result.Set("keyframes", list)
@@ -219,14 +219,14 @@ func (r *receipt) confirmed(root, sid string, keyframes []*pycompat.Dict) (*pyco
 		if !ok {
 			return nil, nil, false
 		}
-		result.Set("last", pytoolRecord("path", lastPath, "sha256", lastDigest))
+		result.Set("last", orderedRecord("path", lastPath, "sha256", lastDigest))
 		files = append(files, expectedFile{path: lastPath, digest: lastDigest})
 	}
 	return result, files, true
 }
 
-// keyframeList — список опор значением Python для квитанции и сравнения.
-func keyframeList(keyframes []*pycompat.Dict) []any {
+// keyframeList — список опор значением toolrt для квитанции и сравнения.
+func keyframeList(keyframes []*toolrt.Dict) []any {
 	list := make([]any, len(keyframes))
 	for index, keyframe := range keyframes {
 		list[index] = keyframe
@@ -239,7 +239,7 @@ func keyframeList(keyframes []*pycompat.Dict) []any {
 // записи квитанции по плану и ожидаемые файлы в порядке планов. Карточка, подтверждённая
 // квитанцией (см. комментарий пакета), не перерисовывается; остальные рисует animaticcards в
 // память.
-func expectedCards(sources *projectviews.Sources, prepared *projectviews.Prepared) (*pycompat.Dict, []expectedFile, error) {
+func expectedCards(sources *projectviews.Sources, prepared *projectviews.Prepared) (*toolrt.Dict, []expectedFile, error) {
 	root := sources.Root
 	raw, err := sources.JSON("plan/project.json")
 	if err != nil {
@@ -251,7 +251,7 @@ func expectedCards(sources *projectviews.Sources, prepared *projectviews.Prepare
 		return nil, nil, err
 	}
 	saved := loadReceipt(sources, prepared)
-	cards := pycompat.NewDict()
+	cards := toolrt.NewDict()
 	files := []expectedFile{}
 	for _, scene := range prepared.Items {
 		sid := scene.Value("id").(string)
@@ -274,50 +274,50 @@ func expectedCards(sources *projectviews.Sources, prepared *projectviews.Prepare
 			if err != nil {
 				return nil, nil, err
 			}
-			entry := pytoolRecord("path", path, "sha256", digestBytes(card), "keyframes", keyframeList(keyframes))
+			entry := orderedRecord("path", path, "sha256", digestBytes(card), "keyframes", keyframeList(keyframes))
 			files = append(files, expectedFile{path: path, digest: digestBytes(card), data: card})
 			if last != nil {
 				lastPath := cardPath(sid, ".last.png")
-				entry.Set("last", pytoolRecord("path", lastPath, "sha256", digestBytes(last)))
+				entry.Set("last", orderedRecord("path", lastPath, "sha256", digestBytes(last)))
 				files = append(files, expectedFile{path: lastPath, digest: digestBytes(last), data: last})
 			}
 			cards.Set(sid, entry)
 			continue
 		}
-		references, ok := prepared.Data.Value("references").(*pycompat.Dict)
+		references, ok := prepared.Data.Value("references").(*toolrt.Dict)
 		if !ok {
-			return nil, nil, pycompat.Raise(pycompat.TypeError, "%s indices must be integers or slices, not str", pycompat.TypeName(prepared.Data.Value("references")))
+			return nil, nil, toolrt.Raise(toolrt.TypeError, "%s indices must be integers or slices, not str", toolrt.TypeName(prepared.Data.Value("references")))
 		}
 		card, err := animaticcards.RenderCard(scene, project, references, root)
 		if err != nil {
 			return nil, nil, err
 		}
-		cards.Set(sid, pytoolRecord("path", path, "sha256", digestBytes(card)))
+		cards.Set(sid, orderedRecord("path", path, "sha256", digestBytes(card)))
 		files = append(files, expectedFile{path: path, digest: digestBytes(card), data: card})
 	}
 	return cards, files, nil
 }
 
-// referenceHashes — {v["path"]: sources.digest(v["path"]) for v in data["references"].values()}:
+// referenceHashes — путь → SHA-256 для каждого референса data["references"]:
 // SHA-256 байтов исходных референсов, от которых зависят карточки.
-func referenceHashes(sources *projectviews.Sources, prepared *projectviews.Prepared) (*pycompat.Dict, error) {
+func referenceHashes(sources *projectviews.Sources, prepared *projectviews.Prepared) (*toolrt.Dict, error) {
 	value := prepared.Data.Value("references")
-	references, ok := value.(*pycompat.Dict)
+	references, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'values'", pycompat.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'values'", toolrt.TypeName(value))
 	}
-	result := pycompat.NewDict()
+	result := toolrt.NewDict()
 	for _, key := range references.Keys() {
-		pathValue, err := pycompat.GetItem(references.Value(key), "path")
+		pathValue, err := toolrt.GetItem(references.Value(key), "path")
 		if err != nil {
 			return nil, err
 		}
 		path, ok := pathValue.(string)
 		if !ok {
-			if _, err := pycompat.HashKey(pathValue); err != nil {
+			if _, err := toolrt.HashKey(pathValue); err != nil {
 				return nil, err
 			}
-			return nil, pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), pycompat.TypeName(pathValue))
+			return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(pathValue))
 		}
 		digest, err := sources.Digest(path)
 		if err != nil {
@@ -329,8 +329,9 @@ func referenceHashes(sources *projectviews.Sources, prepared *projectviews.Prepa
 }
 
 // cardsReceipt — текст plan/animatic/cards/manifest.json: отпечаток текста реестра, поля проекта
-// для карточек, хеши референсов и записи карточек; json.dumps(ensure_ascii=False, indent=2) + "\n".
-func cardsReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared, cards *pycompat.Dict) (string, error) {
+// для карточек, хеши референсов и записи карточек; JSON с отступом два пробела, не-ASCII без
+// экранирования и перевод строки в конце.
+func cardsReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared, cards *toolrt.Dict) (string, error) {
 	registry, err := sources.TextSHA("plan/scenes.json")
 	if err != nil {
 		return "", err
@@ -347,25 +348,25 @@ func cardsReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared
 	if err != nil {
 		return "", err
 	}
-	document := pytoolRecord(
-		"schema_version", pycompat.NewInt(1),
+	document := orderedRecord(
+		"schema_version", toolrt.NewInt(1),
 		"generated_from", "plan/scenes.json",
 		"registry_sha256", registry,
 		"project_inputs", inputs,
 		"reference_hashes", hashes,
 		"cards", cards,
 	)
-	text, err := pycompat.DumpsJSON(document, pycompat.DumpOptions{Indent: 2, Pretty: true})
+	text, err := toolrt.DumpsJSON(document, toolrt.DumpOptions{Indent: 2, Pretty: true})
 	if err != nil {
 		return "", err
 	}
 	return text + "\n", nil
 }
 
-// pytoolRecord — упорядоченный словарь Python из пар ключ-значение.
-func pytoolRecord(pairs ...any) *pycompat.Dict { return pytool.Record(pairs...) }
+// orderedRecord — упорядоченный словарь из пар ключ-значение.
+func orderedRecord(pairs ...any) *toolrt.Dict { return toolcli.Record(pairs...) }
 
-// pathClass — имя класса Path в тексте TypeError оператора «/» pathlib.
+// pathClass — имя класса пути в тексте TypeError соединения пути с не-строкой (зависит от ОС).
 func pathClass() string {
 	if runtime.GOOS == "windows" {
 		return "WindowsPath"

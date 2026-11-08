@@ -1,10 +1,9 @@
 {
   "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
-  "python": "3.12.3",
   "cases": [
     {
       "name": "help",
-      "description": "Справка и ошибки разбора аргументов argparse.",
+      "description": "Справка и ошибки разбора аргументов.",
       "covers": [
         "-h",
         "cut -h",
@@ -24,7 +23,7 @@
             "-h"
           ],
           "code": 0,
-          "stdout": "usage: cut_speech.py [-h] {cut,verify} ...\n\nТочный WAV липсинка и его рецепт из исходной песни по разметке или заданным\nграницам; @link README.md\n\npositional arguments:\n  {cut,verify}\n\noptions:\n  -h, --help    show this help message and exit\n",
+          "stdout": "usage: cut_speech [-h] {cut,verify} ...\n\nТочный WAV липсинка и его рецепт из исходной песни по разметке или заданным\nграницам; @link README.md\n\npositional arguments:\n  {cut,verify}\n\noptions:\n  -h, --help    show this help message and exit\n",
           "stderr": ""
         },
         {
@@ -33,7 +32,7 @@
             "-h"
           ],
           "code": 0,
-          "stdout": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\n\npositional arguments:\n  shot\n\noptions:\n  -h, --help            show this help message and exit\n  --out OUT             Папка для speech.wav и audio-recipe.json\n  --start START         Начало среза, с; по умолчанию по разметке\n  --end END             Конец среза, с, исключительно\n  --lead LEAD           Запас до первой строки при выборе по разметке\n  --tail TAIL           Запас после последней строки\n  --min-seconds MIN_SECONDS\n                        Минимальная длина среза, например под длительность\n                        запроса\n  --json\n",
+          "stdout": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\n\npositional arguments:\n  shot\n\noptions:\n  -h, --help            show this help message and exit\n  --out OUT             Папка для speech.wav и audio-recipe.json\n  --start START         Начало среза, с; по умолчанию по разметке\n  --end END             Конец среза, с, исключительно\n  --lead LEAD           Запас до первой строки при выборе по разметке\n  --tail TAIL           Запас после последней строки\n  --min-seconds MIN_SECONDS\n                        Минимальная длина среза, например под длительность\n                        запроса\n  --json\n",
           "stderr": ""
         },
         {
@@ -42,14 +41,14 @@
             "-h"
           ],
           "code": 0,
-          "stdout": "usage: cut_speech.py verify [-h] recipe\n\npositional arguments:\n  recipe\n\noptions:\n  -h, --help  show this help message and exit\n",
+          "stdout": "usage: cut_speech verify [-h] recipe\n\npositional arguments:\n  recipe\n\noptions:\n  -h, --help  show this help message and exit\n",
           "stderr": ""
         },
         {
           "run": [],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py [-h] {cut,verify} ...\ncut_speech.py: error: the following arguments are required: action\n"
+          "stderr": "usage: cut_speech [-h] {cut,verify} ...\ncut_speech: error: the following arguments are required: action\n"
         },
         {
           "run": [
@@ -57,7 +56,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py [-h] {cut,verify} ...\ncut_speech.py: error: argument action: invalid choice: 'bogus' (choose from 'cut', 'verify')\n"
+          "stderr": "usage: cut_speech [-h] {cut,verify} ...\ncut_speech: error: argument action: invalid choice: 'bogus' (choose from 'cut', 'verify')\n"
         },
         {
           "run": [
@@ -65,7 +64,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: the following arguments are required: shot, --out\n"
+          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: the following arguments are required: shot, --out\n"
         },
         {
           "run": [
@@ -74,7 +73,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: the following arguments are required: --out\n"
+          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: the following arguments are required: --out\n"
         },
         {
           "run": [
@@ -82,7 +81,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py verify [-h] recipe\ncut_speech.py verify: error: the following arguments are required: recipe\n"
+          "stderr": "usage: cut_speech verify [-h] recipe\ncut_speech verify: error: the following arguments are required: recipe\n"
         },
         {
           "run": [
@@ -95,7 +94,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: invalid float value: 'abc'\n"
+          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: invalid float value: 'abc'\n"
         },
         {
           "run": [
@@ -108,7 +107,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --lead: invalid float value: '1e'\n"
+          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --lead: invalid float value: '1e'\n"
         },
         {
           "run": [
@@ -120,7 +119,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --min-seconds: expected one argument\n"
+          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --min-seconds: expected one argument\n"
         },
         {
           "run": [
@@ -134,7 +133,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: invalid float value: 'x'\n"
+          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: invalid float value: 'x'\n"
         },
         {
           "run": [
@@ -145,7 +144,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: invalid float value: 'x'\n"
+          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: invalid float value: 'x'\n"
         },
         {
           "run": [
@@ -155,7 +154,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py [-h] {cut,verify} ...\ncut_speech.py: error: unrecognized arguments: b\n"
+          "stderr": "usage: cut_speech [-h] {cut,verify} ...\ncut_speech: error: unrecognized arguments: b\n"
         },
         {
           "run": [
@@ -167,7 +166,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: invalid float value: '-0x?'\n"
+          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: invalid float value: '-0x?'\n"
         }
       ],
       "files": {}
@@ -177,7 +176,7 @@
       "description": "Предложение по разметке с запасами 0,1/0,05: окно M02, строки 2–4 (строка 9 вне текста), текстовый вывод.",
       "covers": [
         "speech_lines",
-        "propose round(…,3)",
+        "propose: округление до 3 знаков",
         "text output",
         "source_line вне текста",
         "CRLF и strip текста",
@@ -287,10 +286,10 @@
     },
     {
       "name": "explicit-half-up",
-      "description": "Явные границы 0,005–0,015 с: 220,5 и 661,5 сэмпла округляются вверх (ROUND_HALF_UP); M03 без строк — без timing_lines.",
+      "description": "Явные границы 0,005–0,015 с: 220,5 и 661,5 сэмпла округляются вверх (половина вверх); M03 без строк — без timing_lines.",
       "covers": [
         "explicit bounds",
-        "ROUND_HALF_UP",
+        "половина вверх",
         "no timing_lines"
       ],
       "overlay": {},
@@ -325,7 +324,7 @@
     },
     {
       "name": "explicit-text",
-      "description": "Явные границы с текстовым выводом и подчёркиванием в числе (float('0_0.2')); M03 без строк.",
+      "description": "Явные границы с текстовым выводом и подчёркиванием в числе ('0_0.2'); M03 без строк.",
       "covers": [
         "explicit bounds text",
         "float underscore"
@@ -603,7 +602,7 @@
     },
     {
       "name": "nan-inf",
-      "description": "NaN — ValueError int(); бесконечность — OverflowError с трассировкой; начало переводится раньше конца.",
+      "description": "NaN — ValueError приведения к целому; бесконечность — OverflowError с трассировкой; начало переводится раньше конца.",
       "covers": [
         "NaN",
         "Infinity",
@@ -655,7 +654,7 @@
           ],
           "code": 2,
           "stdout": "",
-          "stderr": "usage: cut_speech.py cut [-h] --out OUT [--start START] [--end END]\n                         [--lead LEAD] [--tail TAIL]\n                         [--min-seconds MIN_SECONDS] [--json]\n                         shot\ncut_speech.py cut: error: argument --start: expected one argument\n"
+          "stderr": "usage: cut_speech cut [-h] --out OUT [--start START] [--end END] [--lead LEAD]\n                      [--tail TAIL] [--min-seconds MIN_SECONDS] [--json]\n                      shot\ncut_speech cut: error: argument --start: expected one argument\n"
         }
       ],
       "files": {}
@@ -1170,9 +1169,9 @@
     },
     {
       "name": "negative-start",
-      "description": "Отрицательное начало: оригинал режет срезом Python с конца PCM (пустой WAV, start_sample < 0); Go отказывает.",
+      "description": "Отрицательное начало (start_sample < 0): отказ без записи WAV.",
       "covers": [
-        "negative start (исправлено в Go)"
+        "отрицательное начало отклоняется"
       ],
       "overlay": {},
       "remove": [],
@@ -1653,8 +1652,8 @@
       "covers": [
         "wave.Error",
         "struct.error",
-        "slice TypeError",
-        "Python slice clamp",
+        "TypeError среза",
+        "срез с ограничением индексов",
         "framerate round"
       ],
       "overlay": {},

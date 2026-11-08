@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow.py set-stage [-h] --dir DIR\n                                  [--wait-reason {cost_or_balance_unknown,insufficient_balance,user_saved}]\n                                  [--request-dir REQUEST_DIR]\n                                  stage\n\npositional arguments:\n  stage\n\noptions:\n  -h, --help            show this help message and exit\n  --dir DIR\n  --wait-reason {cost_or_balance_unknown,insufficient_balance,user_saved}\n  --request-dir REQUEST_DIR\n",
+  "stdout": "usage: shot_workflow set-stage [-h] --dir DIR\n                               [--wait-reason {cost_or_balance_unknown,insufficient_balance,user_saved}]\n                               [--request-dir REQUEST_DIR]\n                               stage\n\npositional arguments:\n  stage\n\noptions:\n  -h, --help            show this help message and exit\n  --dir DIR\n  --wait-reason {cost_or_balance_unknown,insufficient_balance,user_saved}\n  --request-dir REQUEST_DIR\n",
   "stderr": "",
   "traceback": false,
   "files": {},

@@ -325,7 +325,7 @@
   {
     "domain": "status",
     "name": "mini-scene-ids-non-string",
-    "description": "Реестр содержит не-объект среди планов: оригинал бросает исключение.",
+    "description": "Реестр содержит не-объект среди планов: расчёт статуса завершается исключением.",
     "covers": [
       "computeStatus бросает TypeError на не-объекте в scenes (projects.open тоже)"
     ]
@@ -448,7 +448,7 @@
     "name": "timing-sections-not-number",
     "description": "Секция со строковой границей.",
     "covers": [
-      "unreadableTiming (Number.isFinite строки)"
+      "unreadableTiming (строка вместо числа)"
     ]
   },
   {
@@ -570,7 +570,7 @@
     "name": "latin",
     "description": "Латинское название с пробелом: имя MP4 аниматика выводится из названия, проект открывается.",
     "covers": [
-      "copyTemplate",
+      "копирование шаблона",
       "defaultAnimaticName slug",
       "git init",
       "open: history/current"
@@ -610,7 +610,7 @@
     "description": "Папка уже существует и имя MP4 неверно: проблемы через пробел, ничего не создаётся.",
     "covers": [
       "create: validateNewProject",
-      "problems.join"
+      "склейка проблем"
     ]
   },
   {
@@ -639,7 +639,7 @@
   {
     "domain": "project-rename",
     "name": "order-and-numbers",
-    "description": "Порядок ключей JS (индексы первыми), числа после JSON.parse/stringify, неизвестные поля и запись в историю.",
+    "description": "Порядок ключей (ключи-индексы первыми), запись чисел, неизвестные поля и запись в историю.",
     "covers": [
       "rename",
       "renameHistory",
@@ -698,7 +698,7 @@
   {
     "domain": "project-rename",
     "name": "broken-json",
-    "description": "Битый JSON: ошибка readLocalJson с путём; текст разбора Node не сравнивается.",
+    "description": "Битый JSON: ошибка чтения с путём; текст разбора не сравнивается.",
     "covers": [
       "readLocalJson: readFailed"
     ]
@@ -767,7 +767,7 @@
   {
     "domain": "project-settings",
     "name": "read-missing",
-    "description": "Нет plan/project.json: текст Node не сравнивается.",
+    "description": "Нет plan/project.json: текст системной ошибки не сравнивается.",
     "covers": [
       "projectReadFailed"
     ]
@@ -775,7 +775,7 @@
   {
     "domain": "project-settings",
     "name": "read-broken",
-    "description": "Битый JSON: текст Node не сравнивается.",
+    "description": "Битый JSON: текст разбора не сравнивается.",
     "covers": [
       "projectReadFailed (JSON)"
     ]
@@ -798,25 +798,25 @@
     "covers": [
       "mergeSettings вложенный",
       "неизвестные поля файла",
-      "agentInstructions undefined не трогает поле"
+      "без agentInstructions поле не меняется"
     ]
   },
   {
     "domain": "project-settings",
     "name": "save-unset",
-    "description": "Поля со значением undefined (так IPC передаёт сброс модели и разрешения) удаляются из файла.",
+    "description": "Сброшенные поля (unset: сброс модели и разрешения) удаляются из файла.",
     "covers": [
-      "undefined удаляет поле",
+      "сброс удаляет поле",
       "unset вложенного options"
     ]
   },
   {
     "domain": "project-settings",
     "name": "save-invalid",
-    "description": "Все проблемы проверки в порядке оригинала; файл не меняется.",
+    "description": "Все проблемы проверки в порядке проверки полей; файл не меняется.",
     "covers": [
       "validateProjectSettings",
-      "problems.join"
+      "склейка проблем"
     ]
   },
   {
@@ -865,7 +865,7 @@
     "name": "save-instructions-invalid",
     "description": "Нестроковые сохранённые инструкции блокируют запись, если поле не меняют.",
     "covers": [
-      "agentInstructions undefined: проверка сохранённого"
+      "без agentInstructions: проверка сохранённого"
     ]
   },
   {
@@ -991,7 +991,7 @@
   {
     "domain": "sources-validate",
     "name": "kinds-and-references",
-    "description": "Ошибки типов и референсов в порядке оригинала.",
+    "description": "Ошибки типов и референсов в порядке проверки.",
     "covers": [
       "validateKinds",
       "validateReferences"
@@ -1026,7 +1026,7 @@
     "description": "Повторное сохранение: изменение промптов, удаление изображения, обложки и референса, новый вид с занятым именем.",
     "covers": [
       "existingPath",
-      "prompt undefined сохраняет",
+      "без prompt промпт сохраняется",
       "пустой промпт удаляет",
       "удаление файлов прежней описи",
       "cover remove",
@@ -1609,7 +1609,7 @@
   {
     "domain": "scenario-treatment",
     "name": "validation-problems",
-    "description": "Код, повтор, название, стык, конец раньше начала, длительность. Отличие от 634fd94: оригинал отказывал (originalError), Go сохраняет черновик, а validateTreatment возвращает те же проблемы.",
+    "description": "Код, повтор, название, стык, конец раньше начала, длительность: черновик сохраняется, validateTreatment возвращает эти проблемы.",
     "covers": [
       "partCodeLatin",
       "duplicatePartCode",
@@ -1623,7 +1623,7 @@
   {
     "domain": "scenario-treatment",
     "name": "no-parts",
-    "description": "Пустой список частей. Отличие от 634fd94: оригинал отказывал (originalError), Go сохраняет черновик, а validateTreatment возвращает ту же проблему.",
+    "description": "Пустой список частей: черновик сохраняется, validateTreatment возвращает проблему.",
     "covers": [
       "treatmentRequiresParts",
       "черновик записывается"
@@ -1870,11 +1870,11 @@
   {
     "domain": "python-json",
     "name": "cases.json",
-    "description": "78 случаев json.loads/dumps, decode, float, repr.",
+    "description": "78 случаев модели значений: строгий разбор и запись JSON, декодирование UTF-8, float, repr.",
     "covers": [
       "JSONDecodeError",
       "UnicodeDecodeError",
-      "float()",
+      "приведение к float",
       "repr"
     ]
   },
@@ -2025,7 +2025,7 @@
   {
     "domain": "scene-registry",
     "name": "cast-kind-newline",
-    "description": "Код типа с переводом строки в конце: `$` Python его допускает.",
+    "description": "Код типа с переводом строки в конце: `$` его допускает.",
     "covers": [
       "KIND_PATTERN"
     ]
@@ -2230,7 +2230,7 @@
     "name": "treatment-start-string",
     "description": "start строкой «8.0» и «восемь».",
     "covers": [
-      "float(str)"
+      "float из строки"
     ]
   },
   {
@@ -2295,7 +2295,7 @@
     "name": "timing-duration-string",
     "description": "Длительность строкой «30».",
     "covers": [
-      "float(str)"
+      "float из строки"
     ]
   },
   {
@@ -2349,7 +2349,7 @@
   {
     "domain": "scene-scaffold",
     "name": "no-text",
-    "description": "Нет source/text.md: оригиналы — инструментал.",
+    "description": "Нет source/text.md: строк текста нет, все строки — инструментал.",
     "covers": [
       "text_lines пусто"
     ]
@@ -2359,7 +2359,7 @@
     "name": "text-crlf",
     "description": "Текст с CRLF и пробелами по краям.",
     "covers": [
-      "splitlines",
+      "разбиение на строки",
       "strip"
     ]
   },
@@ -2440,7 +2440,7 @@
     "name": "max-shot-string",
     "description": "max_shot_seconds строкой «abc».",
     "covers": [
-      "float(str)"
+      "float из строки"
     ]
   },
   {
@@ -2478,9 +2478,9 @@
   {
     "domain": "scene-scaffold",
     "name": "args-unknown",
-    "description": "Неизвестный аргумент: ошибка argparse, код 2.",
+    "description": "Неизвестный аргумент: отказ разбора аргументов, код 2.",
     "covers": [
-      "argparse unrecognized"
+      "неизвестный аргумент"
     ]
   },
   {
@@ -2518,7 +2518,7 @@
   {
     "domain": "scene-scaffold",
     "name": "project-missing",
-    "description": "Папки проекта нет: код 2 до argparse.",
+    "description": "Папки проекта нет: код 2 до разбора аргументов.",
     "covers": [
       "Папка проекта не найдена"
     ]
@@ -2532,7 +2532,7 @@
       "match",
       "fullmatch",
       "finditer",
-      "re.I",
+      "без учёта регистра",
       "lookbehind",
       "Unicode \\w \\d \\s \\b",
       "$ перед \\n"
@@ -2697,7 +2697,7 @@
   {
     "domain": "lint-registry",
     "name": "visual-direction-type",
-    "description": "visual_direction числом: TypeError re.finditer — трассировка.",
+    "description": "visual_direction числом: TypeError поиска по шаблону — трассировка.",
     "covers": [
       "TypeError"
     ]
@@ -2817,7 +2817,7 @@
     "name": "description-mentions",
     "description": "Описание упоминает героев: предупреждений нет.",
     "covers": [
-      "name.split()[0] in text"
+      "первое слово имени в тексте"
     ]
   },
   {
@@ -2976,7 +2976,7 @@
     "name": "args-ignored",
     "description": "Аргументы после --project не разбираются.",
     "covers": [
-      "без argparse"
+      "без разбора аргументов"
     ]
   },
   {
@@ -3629,7 +3629,7 @@
     "description": "Партия с наследованием изменений.",
     "covers": [
       "independence conflicts",
-      "parser.exit"
+      "выход с сообщением"
     ]
   },
   {
@@ -3880,7 +3880,7 @@
   {
     "domain": "animatic-cards",
     "name": "cases.json",
-    "description": "43 вызовов render_card/render_keyframe_card с трассировкой text_box и paste.",
+    "description": "43 вызовов render_card/render_keyframe_card с трассировкой text_box и вставки изображений.",
     "covers": [
       "render_card",
       "кегль по умолчанию",
@@ -3907,8 +3907,8 @@
       "заголовок",
       "shortened заголовка",
       "пустой текст",
-      "upper SpecialCasing",
-      "str.split",
+      "верхний регистр по SpecialCasing",
+      "разбиение по пробелам",
       "AssertionError",
       "FileNotFoundError",
       "UnidentifiedImageError",
@@ -3934,7 +3934,7 @@
   {
     "domain": "animatic-cards",
     "name": "textlength.json",
-    "description": "1416 строк draw.textlength DejaVu Sans/Bold кеглей 16–32.",
+    "description": "1416 строк: ширина текста DejaVu Sans/Bold кеглей 16–32.",
     "covers": [
       "ширина строки Raqm/HarfBuzz",
       "кернинг GPOS",
@@ -4047,8 +4047,8 @@
     "name": "checklist-templates",
     "description": "Шаблоны чек-листа: !r, выравнивание, скобки, точность, ноль; label с регистром.",
     "covers": [
-      "str.format",
-      "label.lower"
+      "подстановка полей шаблона",
+      "подпись в нижнем регистре"
     ]
   },
   {
@@ -4691,10 +4691,9 @@
   {
     "domain": "scene-views",
     "name": "args-help",
-    "description": "-h: справка с группой --staged | --ref.",
+    "description": "-h: справка.",
     "covers": [
-      "help",
-      "mutually exclusive usage"
+      "help"
     ]
   },
   {
@@ -4703,54 +4702,6 @@
     "description": "Неизвестный аргумент.",
     "covers": [
       "unrecognized"
-    ]
-  },
-  {
-    "domain": "scene-views",
-    "name": "args-staged",
-    "description": "--staged без --check: parser.error.",
-    "covers": [
-      "Снимок Git доступен только для проверки."
-    ]
-  },
-  {
-    "domain": "scene-views",
-    "name": "args-ref",
-    "description": "--ref без --check: parser.error.",
-    "covers": [
-      "Снимок Git доступен только для проверки."
-    ]
-  },
-  {
-    "domain": "scene-views",
-    "name": "args-conflict",
-    "description": "--staged и --ref вместе.",
-    "covers": [
-      "not allowed with argument"
-    ]
-  },
-  {
-    "domain": "scene-views",
-    "name": "args-conflict-reverse",
-    "description": "--ref и --staged вместе, с --check.",
-    "covers": [
-      "not allowed with argument"
-    ]
-  },
-  {
-    "domain": "scene-views",
-    "name": "args-ref-missing",
-    "description": "--ref без значения.",
-    "covers": [
-      "expected one argument"
-    ]
-  },
-  {
-    "domain": "scene-views",
-    "name": "args-ref-empty",
-    "description": "--ref с пустым значением: обычная проверка рабочего дерева.",
-    "covers": [
-      "ref falsy"
     ]
   },
   {
@@ -4934,7 +4885,7 @@
   {
     "domain": "video-review-frames",
     "name": "cases.json",
-    "description": "Подготовка кадров tools/video_review (Python + Pillow) на синтетических клипах FFmpeg: выборка кадров, опоры, бюджет изображений, отказы.",
+    "description": "Подготовка кадров video_review на синтетических клипах FFmpeg: выборка кадров, опоры, бюджет изображений, отказы.",
     "covers": [
       "probe/PTS",
       "VFR",
@@ -4954,7 +4905,7 @@
   {
     "domain": "video-review",
     "name": "cases.json",
-    "description": "Разбор отчёта агента и сценарии videoReview view/start/cancel оригинала на поддельных агенте, подготовке кадров и continuity_brief.",
+    "description": "Разбор отчёта агента и сценарии videoReview view/start/cancel на поддельных агенте, подготовке кадров и continuity_brief.",
     "covers": [
       "parseVideoReviewReport",
       "latest.json",
@@ -5003,7 +4954,7 @@
   {
     "domain": "request-snapshot",
     "name": "schema-true",
-    "description": "True == 1 в Python.",
+    "description": "true равно 1.",
     "covers": [
       "validate_spec"
     ]
@@ -5826,9 +5777,9 @@
   {
     "domain": "media-request",
     "name": "argparse",
-    "description": "Ошибки и справка argparse: подкоманды, обязательные опции, типы, choices, nargs, префиксы, лишние аргументы.",
+    "description": "Ошибки и справка разбора аргументов: подкоманды, обязательные опции, типы, choices, nargs, префиксы, лишние аргументы.",
     "covers": [
-      "argparse"
+      "разбор аргументов"
     ]
   },
   {
@@ -5990,9 +5941,9 @@
   {
     "domain": "cost-check",
     "name": "argparse",
-    "description": "argparse cost_check: группа, обязательные опции, тип float, справка.",
+    "description": "Разбор аргументов cost_check: группа, обязательные опции, тип float, справка.",
     "covers": [
-      "argparse"
+      "разбор аргументов"
     ]
   },
   {
@@ -6253,7 +6204,7 @@
     "name": "args-int-spaces",
     "description": "--request-seconds с пробелами и знаком.",
     "covers": [
-      "int()"
+      "приведение к целому"
     ]
   },
   {
@@ -6613,7 +6564,7 @@
   {
     "domain": "shot-workflow",
     "name": "pk-no-project-json",
-    "description": "Нет plan/project.json: generation_settings(None).",
+    "description": "Нет plan/project.json: настройки генерации без проекта.",
     "covers": [
       "read_json None"
     ]
@@ -7898,7 +7849,7 @@
     "name": "si-not-image",
     "description": "Не изображение.",
     "covers": [
-      "Pillow"
+      "распознавание изображения"
     ]
   },
   {
@@ -8349,7 +8300,7 @@
   {
     "domain": "production-tools",
     "name": "accept-edit/help",
-    "description": "Справка argparse.",
+    "description": "Справка разбора аргументов.",
     "covers": [
       "--help"
     ]
@@ -8475,7 +8426,7 @@
     "name": "accept-edit/cut-text",
     "description": "Участок не числами.",
     "covers": [
-      "int()"
+      "приведение к целому"
     ]
   },
   {
@@ -8540,7 +8491,7 @@
   {
     "domain": "production-workflow",
     "name": "revise-stages",
-    "description": "Доработка с замечанием возвращает к доступному этапу по решению пакета (таблица теста оригинала).",
+    "description": "Доработка с замечанием возвращает к доступному этапу по решению пакета (таблица переходов).",
     "covers": [
       "stageFor при revise",
       "approvedFrames",
@@ -8859,7 +8810,7 @@
   {
     "domain": "contact-sheet",
     "name": "cases.json",
-    "description": "CLI tools/contact_sheet (Python + Pillow 10.2) на синтетических проектах FFmpeg: сводка пакета, папки попытки и файла видео, отказы и разбор ffprobe.",
+    "description": "Инструмент contact_sheet на синтетических проектах FFmpeg: сводка пакета, папки попытки и файла видео, отказы и разбор ffprobe.",
     "covers": [
       "--package с опорами first/last и сравнениями",
       "--work-dir",
@@ -8867,7 +8818,7 @@
       "--out абсолютная и относительная",
       "--json и таблица",
       "превью 2×",
-      "nb_frames и длительность × частота Decimal",
+      "nb_frames и длительность × частота в десятичной арифметике",
       "1, 7, 10, 12 и 49 кадров",
       "не скачано / нет downloads / нет файла",
       "скрытый текст OSError, KeyError, JSONDecodeError, UnidentifiedImageError",
@@ -8875,13 +8826,13 @@
       "трассировка AttributeError, TypeError, InvalidOperation",
       "ошибка ffprobe с хвостом stderr",
       "поддельный ffprobe",
-      "argparse: справка, обязательная группа, not allowed with, expected one argument, unrecognized arguments"
+      "разбор аргументов: справка, обязательная группа, not allowed with, expected one argument, unrecognized arguments"
     ]
   },
   {
     "domain": "cut-speech",
     "name": "help",
-    "description": "Справка и ошибки разбора аргументов argparse.",
+    "description": "Справка и ошибки разбора аргументов.",
     "covers": [
       "-h",
       "cut -h",
@@ -8900,7 +8851,7 @@
     "description": "Предложение по разметке с запасами 0,1/0,05: окно M02, строки 2–4 (строка 9 вне текста), текстовый вывод.",
     "covers": [
       "speech_lines",
-      "propose round(…,3)",
+      "propose: округление до 3 знаков",
       "text output",
       "source_line вне текста",
       "CRLF и strip текста",
@@ -8929,17 +8880,17 @@
   {
     "domain": "cut-speech",
     "name": "explicit-half-up",
-    "description": "Явные границы 0,005–0,015 с: 220,5 и 661,5 сэмпла округляются вверх (ROUND_HALF_UP); M03 без строк — без timing_lines.",
+    "description": "Явные границы 0,005–0,015 с: 220,5 и 661,5 сэмпла округляются вверх (половина вверх); M03 без строк — без timing_lines.",
     "covers": [
       "explicit bounds",
-      "ROUND_HALF_UP",
+      "половина вверх",
       "no timing_lines"
     ]
   },
   {
     "domain": "cut-speech",
     "name": "explicit-text",
-    "description": "Явные границы с текстовым выводом и подчёркиванием в числе (float('0_0.2')); M03 без строк.",
+    "description": "Явные границы с текстовым выводом и подчёркиванием в числе ('0_0.2'); M03 без строк.",
     "covers": [
       "explicit bounds text",
       "float underscore"
@@ -8998,7 +8949,7 @@
   {
     "domain": "cut-speech",
     "name": "nan-inf",
-    "description": "NaN — ValueError int(); бесконечность — OverflowError с трассировкой; начало переводится раньше конца.",
+    "description": "NaN — ValueError приведения к целому; бесконечность — OverflowError с трассировкой; начало переводится раньше конца.",
     "covers": [
       "NaN",
       "Infinity",
@@ -9140,9 +9091,9 @@
   {
     "domain": "cut-speech",
     "name": "negative-start",
-    "description": "Отрицательное начало: оригинал режет срезом Python с конца PCM (пустой WAV, start_sample < 0); Go отказывает.",
+    "description": "Отрицательное начало (start_sample < 0): отказ без записи WAV.",
     "covers": [
-      "negative start (исправлено в Go)"
+      "отрицательное начало отклоняется"
     ]
   },
   {
@@ -9214,8 +9165,8 @@
     "covers": [
       "wave.Error",
       "struct.error",
-      "slice TypeError",
-      "Python slice clamp",
+      "TypeError среза",
+      "срез с ограничением индексов",
       "framerate round"
     ]
   },
@@ -9238,7 +9189,7 @@
   {
     "domain": "build-review",
     "name": "help",
-    "description": "Справка argparse.",
+    "description": "Справка разбора аргументов.",
     "covers": [
       "--help"
     ]
@@ -9359,7 +9310,7 @@
     "name": "speed-sci",
     "description": "Скорость в экспоненциальной записи.",
     "covers": [
-      "str(Decimal)"
+      "текст десятичного числа"
     ]
   },
   {
@@ -9717,7 +9668,7 @@
   {
     "domain": "build-review",
     "name": "checks/cases.json",
-    "description": "Сценарий checks.buildReview, listReviews и removeReview из src/main/checks.ts с подставным менеджером заданий: аргументы и название задания, отказы кодов, фильтр рецептов, порядок по времени, отказы и удаление пробы.",
+    "description": "Сценарий checks.buildReview, listReviews и removeReview с подставным менеджером заданий: аргументы и название задания, отказы кодов, фильтр рецептов, порядок по времени, отказы и удаление пробы.",
     "covers": [
       "buildReview: trim, пустой набор, неверные коды, planOnly",
       "reviewOutput: больше трёх планов",
@@ -9832,7 +9783,7 @@
     "name": "args-help",
     "description": "--help.",
     "covers": [
-      "argparse --help"
+      "справка --help"
     ]
   },
   {
@@ -9840,7 +9791,7 @@
     "name": "args-unknown",
     "description": "Неизвестный аргумент.",
     "covers": [
-      "argparse unrecognized"
+      "неизвестный аргумент"
     ]
   },
   {
@@ -10133,7 +10084,7 @@
   {
     "domain": "animatic-view",
     "name": "video-file-missing",
-    "description": "Нет MP4 сборки (video_file undefined): полный текст проблемы.",
+    "description": "Нет MP4 сборки (video_file отсутствует): полный текст проблемы.",
     "covers": [
       "videoMissing",
       "videoPath=null"
@@ -10445,7 +10396,7 @@
     "name": "shot-defaults",
     "description": "Значения планов по умолчанию: title из id, числа из строк, lipsync, media по умолчанию card, пути карточек.",
     "covers": [
-      "shots: ?? и Number",
+      "shots: значения по умолчанию и числа из строк",
       "cardPath/lastCardPath",
       "reference path missing",
       "shotInputMissing"
@@ -10454,7 +10405,7 @@
   {
     "domain": "animatic-view",
     "name": "shot-null",
-    "description": "План null в манифесте: исключение оригинала при построении списка.",
+    "description": "План null в манифесте: исключение при построении списка.",
     "covers": [
       "TypeError s.id"
     ]
@@ -10462,7 +10413,7 @@
   {
     "domain": "animatic-view",
     "name": "shot-path-number",
-    "description": "Нестроковый путь карточки: исключение join оригинала.",
+    "description": "Нестроковый путь карточки: исключение при сборке пути.",
     "covers": [
       "TypeError path"
     ]
@@ -10481,7 +10432,7 @@
   {
     "domain": "montage-window-bounds",
     "name": "visible",
-    "description": "Окно на доступном мониторе (тест оригинала).",
+    "description": "Окно на доступном мониторе.",
     "covers": [
       "восстановление"
     ]
@@ -10489,7 +10440,7 @@
   {
     "domain": "montage-window-bounds",
     "name": "right-of-screens",
-    "description": "Окно правее всех экранов (тест оригинала).",
+    "description": "Окно правее всех экранов.",
     "covers": [
       "пересечение по ширине < 100"
     ]
@@ -10497,7 +10448,7 @@
   {
     "domain": "montage-window-bounds",
     "name": "above-screen",
-    "description": "Верх окна выше экрана (тест оригинала).",
+    "description": "Верх окна выше экрана.",
     "covers": [
       "y < area.y"
     ]
@@ -10505,7 +10456,7 @@
   {
     "domain": "montage-window-bounds",
     "name": "zero-width",
-    "description": "Нулевая ширина (тест оригинала).",
+    "description": "Нулевая ширина.",
     "covers": [
       "width < 480"
     ]
@@ -10614,7 +10565,7 @@
     "name": "fractional",
     "description": "Дробные координаты и размер.",
     "covers": [
-      "Number.isFinite дробных"
+      "дробные конечные числа"
     ]
   },
   {
@@ -10692,7 +10643,7 @@
   {
     "domain": "montage-window-bounds",
     "name": "huge-number",
-    "description": "Число вне double: JSON.parse даёт Infinity.",
+    "description": "Число вне double: разбор JSON даёт Infinity.",
     "covers": [
       "не конечное число"
     ]
@@ -10702,7 +10653,7 @@
     "name": "broken-json",
     "description": "Повреждённый JSON.",
     "covers": [
-      "JSON.parse бросает"
+      "строгий разбор JSON отказывает"
     ]
   },
   {
@@ -10710,7 +10661,7 @@
     "name": "empty-file",
     "description": "Пустой файл.",
     "covers": [
-      "JSON.parse бросает"
+      "строгий разбор JSON отказывает"
     ]
   },
   {
@@ -10732,7 +10683,7 @@
   {
     "domain": "apply-montage",
     "name": "help",
-    "description": "Справка argparse.",
+    "description": "Справка разбора аргументов.",
     "covers": [
       "--help"
     ]
@@ -10966,7 +10917,7 @@
   {
     "domain": "apply-montage",
     "name": "schema-bool",
-    "description": "schema_version true (== 1 в Python).",
+    "description": "schema_version true (равно 1).",
     "covers": [
       "True == 1"
     ]
@@ -11128,7 +11079,7 @@
     "name": "draft-list",
     "description": "Черновик — список.",
     "covers": [
-      "isinstance dict"
+      "проверка объекта"
     ]
   },
   {
@@ -11166,7 +11117,7 @@
   {
     "domain": "montage",
     "name": "view-base",
-    "description": "Каталог fixture montage.test.ts: сцены, источники, карточка, нет разметки.",
+    "description": "Каталог-образец монтажа: сцены, источники, карточка, нет разметки.",
     "covers": [
       "scenes title",
       "sources original/accepted",
@@ -11368,7 +11319,7 @@
   {
     "domain": "export-edit-bundle",
     "name": "cases.json",
-    "description": "CLI tools/export_edit_bundle на копиях образца checks-base: 144 случая, разность с образцом, код, stdout, stderr, тексты пакета побайтно, копии медиа SHA-256 и размером.",
+    "description": "Инструмент export_edit_bundle на копиях образца checks-base: 144 случая, разность с образцом, код, stdout, stderr, тексты пакета побайтно, копии медиа SHA-256 и размером.",
     "covers": [
       "только карточки",
       "24 FPS и NTSC, native frames",
@@ -11378,20 +11329,20 @@
       "repeat с хвостом и без, крайние счётчики",
       "производный source_shot и edit-source.mp4",
       "липсинк с WAV и audio-recipe.json",
-      "кириллица и спецсимволы, quoteattr, as_uri, QUOTE_MINIMAL",
-      "разметка: ROUND_HALF_UP, Fraction(str), 28 цифр Decimal, splitlines",
+      "кириллица и спецсимволы, кавычки атрибутов XML, file URI, минимальные кавычки CSV",
+      "разметка: половина вверх, дробь из строки, 28 десятичных цифр, разбиение на строки",
       "--copy: байты копий, дедупликация, нормализация путей, символические ссылки, частичная папка",
       "папка не пустая, путь внутри проекта, файл вместо папки, ссылка внутрь проекта",
       "скрытый текст OSError, KeyError, JSONDecodeError",
       "ValueError и UnicodeDecodeError/EncodeError текстом",
       "трассировка TypeError, AttributeError, IndexError, ZeroDivisionError",
-      "argparse: required --out, справка, префиксы, лишние аргументы"
+      "разбор аргументов: обязательный --out, справка, префиксы, лишние аргументы"
     ]
   },
   {
     "domain": "export-edit-bundle",
     "name": "numbers.json",
-    "description": "frames_at, timecode, rational, round(v, 6), :g, :05.1f, :.4f модуля оригинала на случайных значениях, половинах кадра и дробях.",
+    "description": "frames_at, timecode, rational, округление до 6 знаков, форматы g, 05.1f и .4f на случайных значениях, половинах кадра и дробях.",
     "covers": [
       "частоты 30, 24, NTSC, 23.976, 1/3",
       "половина кадра вверх",
@@ -11402,13 +11353,13 @@
   {
     "domain": "export-bundle-job",
     "name": "steps.json",
-    "description": "Production.exportBundle и removeBundle из src/main/production.ts: 27 шагов над копией checks-base с заглушкой Jobs.",
+    "description": "Production.exportBundle и removeBundle: 27 шагов над копией checks-base с заглушкой Jobs.",
     "covers": [
       "неабсолютный путь",
       "plan вне batches",
       "корень проекта",
       "папка не пуста",
-      "ENOTDIR scandir и mkdir",
+      "ENOTDIR при чтении и создании папки",
       "вид, название и шаги задания",
       "необязательный update_scene_views при копировании",
       "нормализация цели",
@@ -11556,7 +11507,7 @@
     "description": "fit: множитель 7/12.",
     "covers": [
       "fit",
-      "Fraction"
+      "рациональная дробь"
     ]
   },
   {
@@ -11864,7 +11815,7 @@
     "name": "build-error-text",
     "description": "Ошибка без --json — текст в stderr.",
     "covers": [
-      "parser.exit"
+      "выход с сообщением"
     ]
   },
   {
@@ -11872,7 +11823,7 @@
     "name": "build-error-hidden-text",
     "description": "Скрытая ошибка без --json.",
     "covers": [
-      "parser.exit hidden"
+      "скрытый выход с сообщением"
     ]
   },
   {
@@ -13248,7 +13199,7 @@
   {
     "domain": "derived-workflow",
     "name": "recover-corrupt",
-    "description": "Нечитаемый журнал: текст readLocalJson.",
+    "description": "Нечитаемый журнал: текст ошибки чтения.",
     "covers": [
       "readFailed"
     ]

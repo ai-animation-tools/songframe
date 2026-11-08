@@ -3,15 +3,15 @@ package app
 import (
 	"encoding/json"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/scenario"
-	"songframe-go/internal/scenesave"
-	"songframe-go/internal/wire"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/scenario"
+	"songframe/internal/scenesave"
+	"songframe/internal/wire"
 )
 
 // Документы сценария (кастинг, трактовка, реестр) передаются как json.RawMessage: Go разбирает
-// их в упорядоченное дерево jscompat, чтобы проверки и записанные байты совпадали с эталонами
+// их в упорядоченное дерево dynvalue, чтобы проверки и записанные байты совпадали с эталонами
 // (порядок ключей, лишние поля, числа), и возвращает записанный документ тем же JSON.
 
 // parseDocument — документ из renderer; пустое тело — null, как отсутствующий аргумент.
@@ -19,7 +19,7 @@ func parseDocument(raw json.RawMessage) (any, error) {
 	if len(raw) == 0 {
 		return nil, nil
 	}
-	return jscompat.Parse(raw)
+	return dynvalue.Parse(raw)
 }
 
 // document — записанный документ для ответа. Срез json.RawMessage всегда непустой («null» при
@@ -28,7 +28,7 @@ func document(value any, err error) (json.RawMessage, error) {
 	if err != nil {
 		return json.RawMessage("null"), err
 	}
-	return jscompat.Raw(value), nil
+	return dynvalue.Raw(value), nil
 }
 
 // CastService реализует группу window.api.cast: просмотр, создание из исходников и сохранение

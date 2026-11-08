@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/acceptshot"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/mediatest"
-	"songframe-go/internal/production"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/tools"
+	"songframe/internal/acceptshot"
+	"songframe/internal/jobs"
+	"songframe/internal/mediacmd"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/mediatest"
+	"songframe/internal/production"
+	"songframe/internal/toolrt"
+	"songframe/internal/tools"
 )
 
 // Тесты общей логики производства на тестовом провайдере test (internal/mediatest): платные
@@ -91,7 +91,7 @@ func newEnv(t *testing.T, model string) *env {
 	}
 	t.Cleanup(mediaproviders.Register("test", mediaproviders.Info{Title: "Тестовый сервис", Kinds: []string{"image", "video"}, Paid: true}))
 	serviceDir := filepath.Join(root, "service")
-	service, err := mediatest.New(serviceDir, pycompat.NewDict())
+	service, err := mediatest.New(serviceDir, toolrt.NewDict())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,11 +141,11 @@ func newEnv(t *testing.T, model string) *env {
 
 func configure(t *testing.T, service *mediatest.Service, text string) {
 	t.Helper()
-	value, err := pycompat.LoadsJSON(text)
+	value, err := toolrt.LoadsJSON(text)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := service.Configure(value.(*pycompat.Dict)); err != nil {
+	if err := service.Configure(value.(*toolrt.Dict)); err != nil {
 		t.Fatal(err)
 	}
 }

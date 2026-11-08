@@ -8,8 +8,8 @@
 // проходит sceneregistry.Validate.
 //
 // Байты файла, вывод --json и текстовый, тексты ошибок и коды завершения (Run) зафиксированы
-// эталоном testdata/golden/scene-scaffold в семантике Python. Значения — модель pycompat: числа
-// трактовки и разметки читаются с различием int/float, а сообщения повторяют repr Python.
+// эталоном testdata/golden/scene-scaffold. Значения — модель toolrt: числа трактовки и разметки
+// читаются с различием целых и дробных, а сообщения содержат repr-запись значений toolrt.
 // Трактовка может быть сохранена редактором черновиком с проблемами (scenario.SaveTreatment),
 // поэтому каркас проверяет её сам (ValidateTreatment) и отказывает текстом проблемы.
 package scenescaffold
@@ -17,9 +17,9 @@ package scenescaffold
 import (
 	"math/big"
 
-	"songframe-go/internal/castregistry"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/castregistry"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolrt"
 )
 
 // Кадровая сетка и пути документов каркаса.
@@ -40,19 +40,19 @@ const (
 // MemoryError.
 const maxPieces = 100_000_000
 
-// frame — frame(seconds): int(round(float(seconds) * 30)) с половиной к чётному.
+// frame — номер кадра: seconds как дробное × 30, округлённое до целого с половиной к чётному.
 func frame(seconds any) (int64, error) {
-	value, err := pycompat.Float(seconds)
+	value, err := toolrt.Float(seconds)
 	if err != nil {
 		return 0, err
 	}
-	return pycompat.FloatToInt(value*FPS, true)
+	return toolrt.FloatToInt(value*FPS, true)
 }
 
-// trueDiv — a / b целых Python: корректно округлённое частное.
+// trueDiv — частное a / b целых как корректно округлённое float64; деление на ноль — ZeroDivisionError.
 func trueDiv(a, b int64) (float64, error) {
 	if b == 0 {
-		return 0, pycompat.Raise(pycompat.ZeroDivisionError, "division by zero")
+		return 0, toolrt.Raise(toolrt.ZeroDivisionError, "division by zero")
 	}
 	value, _ := new(big.Rat).SetFrac(big.NewInt(a), big.NewInt(b)).Float64()
 	return value, nil
@@ -61,22 +61,22 @@ func trueDiv(a, b int64) (float64, error) {
 // ValidateTreatment — части трактовки покрывают трек без
 // разрывов и наложений (допуск 0,06 с); возвращает части, отсортированные по началу.
 func ValidateTreatment(data any, duration float64) ([]any, error) {
-	document, ok := data.(*pycompat.Dict)
+	document, ok := data.(*toolrt.Dict)
 	parts, isList := document.Value("sequences").([]any)
-	if !ok || !pycompat.Equal(document.Value("schema_version"), pycompat.NewInt(1)) || !isList || len(parts) == 0 {
-		return nil, pycompat.Raise(pycompat.ValueError, "plan/treatment.json: нужны schema_version 1 и непустой список sequences.")
+	if !ok || !toolrt.Equal(document.Value("schema_version"), toolrt.NewInt(1)) || !isList || len(parts) == 0 {
+		return nil, toolrt.Raise(toolrt.ValueError, "plan/treatment.json: нужны schema_version 1 и непустой список sequences.")
 	}
 	keys := make([]any, len(parts))
 	for index, part := range parts {
-		start, err := pycompat.GetItem(part, "start")
+		start, err := toolrt.GetItem(part, "start")
 		if err != nil {
 			return nil, err
 		}
-		if keys[index], err = pycompat.Float(start); err != nil {
+		if keys[index], err = toolrt.Float(start); err != nil {
 			return nil, err
 		}
 	}
-	sorted, err := pycompat.SortByKeys(parts, keys)
+	sorted, err := toolrt.SortByKeys(parts, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -89,37 +89,37 @@ func ValidateTreatment(data any, duration float64) ([]any, error) {
 		}
 		id, isString := part.Value("id").(string)
 		if !isString || id == "" || seen[id] {
-			return nil, pycompat.Raise(pycompat.ValueError, "Часть без уникального id: %s", pycompat.Repr(part))
+			return nil, toolrt.Raise(toolrt.ValueError, "Часть без уникального id: %s", toolrt.Repr(part))
 		}
 		seen[id] = true
-		startValue, err := pycompat.GetItem(part, "start")
+		startValue, err := toolrt.GetItem(part, "start")
 		if err != nil {
 			return nil, err
 		}
-		start, err := pycompat.Float(startValue)
+		start, err := toolrt.Float(startValue)
 		if err != nil {
 			return nil, err
 		}
-		endValue, err := pycompat.GetItem(part, "end")
+		endValue, err := toolrt.GetItem(part, "end")
 		if err != nil {
 			return nil, err
 		}
-		end, err := pycompat.Float(endValue)
+		end, err := toolrt.Float(endValue)
 		if err != nil {
 			return nil, err
 		}
 		if abs(start-cursor) > 0.06 || end <= start {
-			return nil, pycompat.Raise(pycompat.ValueError, "Часть %s: начало %s не стыкуется с %s или конец раньше начала.", id, pycompat.FloatRepr(start), pycompat.FormatFixed(cursor, 2))
+			return nil, toolrt.Raise(toolrt.ValueError, "Часть %s: начало %s не стыкуется с %s или конец раньше начала.", id, toolrt.FloatRepr(start), toolrt.FormatFixed(cursor, 2))
 		}
 		cursor = end
 	}
 	if abs(cursor-duration) > 0.06 {
-		return nil, pycompat.Raise(pycompat.ValueError, "Части заканчиваются на %s, а трек длится %s.", pycompat.FormatFixed(cursor, 2), pycompat.FormatFixed(duration, 2))
+		return nil, toolrt.Raise(toolrt.ValueError, "Части заканчиваются на %s, а трек длится %s.", toolrt.FormatFixed(cursor, 2), toolrt.FormatFixed(duration, 2))
 	}
 	return sorted, nil
 }
 
-// abs — abs(float) с сохранением NaN (сравнение с NaN ложно, как в Python).
+// abs — модуль дробного числа с сохранением NaN (сравнение с NaN ложно).
 func abs(value float64) float64 {
 	if value < 0 {
 		return -value
@@ -128,29 +128,29 @@ func abs(value float64) float64 {
 }
 
 // asDict — часть трактовки как словарь: не-словарь — AttributeError (текст зафиксирован эталоном).
-func asDict(value any) (*pycompat.Dict, error) {
-	dict, ok := value.(*pycompat.Dict)
+func asDict(value any) (*toolrt.Dict, error) {
+	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'get'", pycompat.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(value))
 	}
 	return dict, nil
 }
 
 // midpointFrame — frame((line["start"] + line["end"]) / 2): кадр середины строки песни.
 func midpointFrame(line any) (int64, error) {
-	start, err := pycompat.GetItem(line, "start")
+	start, err := toolrt.GetItem(line, "start")
 	if err != nil {
 		return 0, err
 	}
-	end, err := pycompat.GetItem(line, "end")
+	end, err := toolrt.GetItem(line, "end")
 	if err != nil {
 		return 0, err
 	}
-	sum, err := pycompat.Add(start, end)
+	sum, err := toolrt.Add(start, end)
 	if err != nil {
 		return 0, err
 	}
-	middle, err := pycompat.TrueDiv(sum, pycompat.NewInt(2))
+	middle, err := toolrt.TrueDiv(sum, toolrt.NewInt(2))
 	if err != nil {
 		return 0, err
 	}
@@ -159,23 +159,23 @@ func midpointFrame(line any) (int64, error) {
 
 // lineFrame — frame(line[key]).
 func lineFrame(line any, key string) (int64, error) {
-	value, err := pycompat.GetItem(line, key)
+	value, err := toolrt.GetItem(line, key)
 	if err != nil {
 		return 0, err
 	}
 	return frame(value)
 }
 
-// maxShotSeconds — float(part.get("max_shot_seconds", 6.0)).
-func maxShotSeconds(part *pycompat.Dict) (float64, error) {
-	value, _ := pycompat.DictGet(part, "max_shot_seconds", DefaultMaxShot)
-	return pycompat.Float(value)
+// maxShotSeconds — max_shot_seconds части как дробное, по умолчанию 6.0.
+func maxShotSeconds(part *toolrt.Dict) (float64, error) {
+	value, _ := toolrt.DictGet(part, "max_shot_seconds", DefaultMaxShot)
+	return toolrt.Float(value)
 }
 
 // pieces — start + round(length * index / count) для index от 1 до count-1.
 func pieces(start, length, count int64) ([]int64, error) {
 	if count > maxPieces {
-		return nil, pycompat.New("MemoryError", "")
+		return nil, toolrt.New("MemoryError", "")
 	}
 	result := []int64{}
 	for index := int64(1); index < count; index++ {
@@ -183,7 +183,7 @@ func pieces(start, length, count int64) ([]int64, error) {
 		if err != nil {
 			return nil, err
 		}
-		rounded, err := pycompat.FloatToInt(offset, true)
+		rounded, err := toolrt.FloatToInt(offset, true)
 		if err != nil {
 			return nil, err
 		}
@@ -197,7 +197,7 @@ func pieces(start, length, count int64) ([]int64, error) {
 // последней строки длиннее 2,5 с — отдельный план), часть без строк делится на равные куски по
 // max_shot_seconds; планы короче 15 кадров сливаются, длинный кусок без строки делится на равные
 // планы не длиннее шага.
-func ShotBoundaries(part *pycompat.Dict, lines []any, endFrame int64) ([]int64, []any, error) {
+func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame int64) ([]int64, []any, error) {
 	start, err := lineFrame(part, "start")
 	if err != nil {
 		return nil, nil, err
@@ -246,9 +246,9 @@ func ShotBoundaries(part *pycompat.Dict, lines []any, endFrame int64) ([]int64, 
 			return nil, nil, err
 		}
 		if step == 0 {
-			return nil, nil, pycompat.Raise(pycompat.ZeroDivisionError, "float division by zero")
+			return nil, nil, toolrt.Raise(toolrt.ZeroDivisionError, "float division by zero")
 		}
-		rounded, err := pycompat.FloatToInt(seconds/step, true)
+		rounded, err := toolrt.FloatToInt(seconds/step, true)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -268,7 +268,7 @@ func ShotBoundaries(part *pycompat.Dict, lines []any, endFrame int64) ([]int64, 
 	if err != nil {
 		return nil, nil, err
 	}
-	stepFrames, err := pycompat.FloatToInt(step*FPS, false)
+	stepFrames, err := toolrt.FloatToInt(step*FPS, false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -292,7 +292,7 @@ func ShotBoundaries(part *pycompat.Dict, lines []any, endFrame int64) ([]int64, 
 			if err != nil {
 				return nil, nil, err
 			}
-			count, err := pycompat.FloatToInt(ratio, true)
+			count, err := toolrt.FloatToInt(ratio, true)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -306,9 +306,9 @@ func ShotBoundaries(part *pycompat.Dict, lines []any, endFrame int64) ([]int64, 
 	return result, inside, nil
 }
 
-// FormatSeconds — f"{float(value):.6f}" без хвостовых нулей и точки.
+// FormatSeconds — запись с шестью знаками после точки без хвостовых нулей и точки.
 func FormatSeconds(value float64) string {
-	text := pycompat.FormatFixed(value, 6)
+	text := toolrt.FormatFixed(value, 6)
 	for len(text) > 0 && text[len(text)-1] == '0' {
 		text = text[:len(text)-1]
 	}
@@ -322,41 +322,41 @@ func FormatSeconds(value float64) string {
 }
 
 // originalText — строки песни плана через « / » или «Инструментал: <часть>».
-func originalText(part *pycompat.Dict, covering []any, textLines []string) (string, error) {
+func originalText(part *toolrt.Dict, covering []any, textLines []string) (string, error) {
 	pieces := []string{}
-	count := pycompat.NewInt(int64(len(textLines)))
+	count := toolrt.NewInt(int64(len(textLines)))
 	items := make([]any, len(textLines))
 	for position, text := range textLines {
 		items[position] = text
 	}
 	for _, line := range covering {
-		number, err := pycompat.GetItem(line, "source_line")
+		number, err := toolrt.GetItem(line, "source_line")
 		if err != nil {
 			return "", err
 		}
-		positive, err := pycompat.Less(pycompat.NewInt(0), number)
+		positive, err := toolrt.Less(toolrt.NewInt(0), number)
 		if err != nil {
 			return "", err
 		}
 		if !positive {
 			continue
 		}
-		within, err := pycompat.LessEqual(number, count)
+		within, err := toolrt.LessEqual(number, count)
 		if err != nil {
 			return "", err
 		}
 		if !within {
 			continue
 		}
-		index, err := pycompat.Sub(number, pycompat.NewInt(1))
+		index, err := toolrt.Sub(number, toolrt.NewInt(1))
 		if err != nil {
 			return "", err
 		}
-		text, err := pycompat.GetItem(items, index)
+		text, err := toolrt.GetItem(items, index)
 		if err != nil {
 			return "", err
 		}
-		pieces = append(pieces, pycompat.Strip(text.(string)))
+		pieces = append(pieces, toolrt.Strip(text.(string)))
 	}
 	joined := ""
 	for index, piece := range pieces {
@@ -372,45 +372,45 @@ func originalText(part *pycompat.Dict, covering []any, textLines []string) (stri
 	if err != nil {
 		return "", err
 	}
-	return "Инструментал: " + pycompat.Str(title), nil
+	return "Инструментал: " + toolrt.Str(title), nil
 }
 
-// partTitle — part.get("title", part["id"]): id вычисляется заранее, как аргумент get.
-func partTitle(part *pycompat.Dict) (any, error) {
-	id, err := pycompat.GetItem(part, "id")
+// partTitle — title части, иначе её id; id читается заранее (без id — KeyError даже при наличии title).
+func partTitle(part *toolrt.Dict) (any, error) {
+	id, err := toolrt.GetItem(part, "id")
 	if err != nil {
 		return nil, err
 	}
-	return pycompat.DictGet(part, "title", id)
+	return toolrt.DictGet(part, "title", id)
 }
 
 // BuildScenes — реестр сцен —
 // последовательности из частей трактовки, планы по ShotBoundaries, заготовки полей постановки,
 // references из кастинга и visual_direction из прежнего реестра (existing, может быть nil) или
 // заготовка. initial — начальное состояние кастинга для итоговой проверки Validate.
-func BuildScenes(treatment any, timing *pycompat.Dict, textLines []string, cast *pycompat.Dict, duration float64, existing *pycompat.Dict, initial *pycompat.Dict) (*pycompat.Dict, error) {
+func BuildScenes(treatment any, timing *toolrt.Dict, textLines []string, cast *toolrt.Dict, duration float64, existing *toolrt.Dict, initial *toolrt.Dict) (*toolrt.Dict, error) {
 	parts, err := ValidateTreatment(treatment, duration)
 	if err != nil {
 		return nil, err
 	}
-	refs := pycompat.NewDict()
+	refs := toolrt.NewDict()
 	if cast.Len() > 0 {
 		if refs, err = castregistry.References(cast); err != nil {
 			return nil, err
 		}
 	}
-	lineList, _ := pycompat.DictGet(timing, "lines", []any{})
-	lineItems, err := pycompat.Iter(lineList)
+	lineList, _ := toolrt.DictGet(timing, "lines", []any{})
+	lineItems, err := toolrt.Iter(lineList)
 	if err != nil {
 		return nil, err
 	}
 	keys := make([]any, len(lineItems))
 	for index, line := range lineItems {
-		if keys[index], err = pycompat.GetItem(line, "start"); err != nil {
+		if keys[index], err = toolrt.GetItem(line, "start"); err != nil {
 			return nil, err
 		}
 	}
-	lines, err := pycompat.SortByKeys(lineItems, keys)
+	lines, err := toolrt.SortByKeys(lineItems, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -420,13 +420,13 @@ func BuildScenes(treatment any, timing *pycompat.Dict, textLines []string, cast 
 	}
 	sequences := make([]any, 0, len(parts))
 	for _, item := range parts {
-		part := item.(*pycompat.Dict)
+		part := item.(*toolrt.Dict)
 		title, err := partTitle(part)
 		if err != nil {
 			return nil, err
 		}
-		direction, _ := pycompat.DictGet(part, "direction", "")
-		sequence := pycompat.NewDict()
+		direction, _ := toolrt.DictGet(part, "direction", "")
+		sequence := toolrt.NewDict()
 		sequence.Set("id", part.Value("id"))
 		sequence.Set("title", title)
 		sequence.Set("direction", direction)
@@ -435,7 +435,7 @@ func BuildScenes(treatment any, timing *pycompat.Dict, textLines []string, cast 
 	scenes := []any{}
 	var previous any
 	for index, item := range parts {
-		part := item.(*pycompat.Dict)
+		part := item.(*toolrt.Dict)
 		endFrame := totalEnd
 		if index != len(parts)-1 {
 			if endFrame, err = lineFrame(parts[index+1], "start"); err != nil {
@@ -446,14 +446,14 @@ func BuildScenes(treatment any, timing *pycompat.Dict, textLines []string, cast 
 		if err != nil {
 			return nil, err
 		}
-		entityList, _ := pycompat.DictGet(part, "entities", []any{})
-		entityItems, err := pycompat.Iter(entityList)
+		entityList, _ := toolrt.DictGet(part, "entities", []any{})
+		entityItems, err := toolrt.Iter(entityList)
 		if err != nil {
 			return nil, err
 		}
 		entities := []any{}
 		for _, entity := range entityItems {
-			found, err := pycompat.Contains(refs, entity)
+			found, err := toolrt.Contains(refs, entity)
 			if err != nil {
 				return nil, err
 			}
@@ -479,15 +479,15 @@ func BuildScenes(treatment any, timing *pycompat.Dict, textLines []string, cast 
 			}
 			number := len(scenes) + 1
 			if number > 99 {
-				return nil, pycompat.Raise(pycompat.ValueError, "Больше 99 планов: укрупните части или увеличьте max_shot_seconds.")
+				return nil, toolrt.Raise(toolrt.ValueError, "Больше 99 планов: укрупните части или увеличьте max_shot_seconds.")
 			}
 			sid := "M" + leftPad(number)
-			scene := pycompat.NewDict()
+			scene := toolrt.NewDict()
 			scene.Set("id", sid)
 			scene.Set("original", original)
 			scene.Set("sequence", part.Value("id"))
-			scene.Set("start_frame", pycompat.NewInt(start))
-			scene.Set("end_frame_exclusive", pycompat.NewInt(end))
+			scene.Set("start_frame", toolrt.NewInt(start))
+			scene.Set("end_frame_exclusive", toolrt.NewInt(end))
 			scene.Set("camera", Placeholder)
 			scene.Set("action", Placeholder+": "+original)
 			scene.Set("continuity", "")
@@ -496,9 +496,9 @@ func BuildScenes(treatment any, timing *pycompat.Dict, textLines []string, cast 
 			} else {
 				scene.Set("references", []any{"—"})
 			}
-			lipsync, _ := pycompat.DictGet(part, "lipsync", false)
-			scene.Set("lipsync", pycompat.Truthy(lipsync) && len(covering) > 0)
-			card := pycompat.NewDict()
+			lipsync, _ := toolrt.DictGet(part, "lipsync", false)
+			scene.Set("lipsync", toolrt.Truthy(lipsync) && len(covering) > 0)
+			card := toolrt.NewDict()
 			switch {
 			case len(entities) > 0:
 				card.Set("primary_reference", entities[0])
@@ -509,28 +509,28 @@ func BuildScenes(treatment any, timing *pycompat.Dict, textLines []string, cast 
 			}
 			scene.Set("card", card)
 			scene.Set("state_from", previous)
-			scene.Set("state_changes", pycompat.NewDict())
+			scene.Set("state_changes", toolrt.NewDict())
 			scenes = append(scenes, scene)
 			previous = sid
 		}
 	}
-	audio := pycompat.NewDict()
+	audio := toolrt.NewDict()
 	audio.Set("path", "source/track.mp3")
 	audio.Set("end_seconds", FormatSeconds(duration))
 	visual := existing.Value("visual_direction")
-	if !pycompat.Truthy(visual) {
+	if !toolrt.Truthy(visual) {
 		visual = Placeholder + ": общие визуальные правила клипа (стиль, формат, возраст героев, сезон, свет)."
 	}
-	data := pycompat.NewDict()
-	data.Set("schema_version", pycompat.NewInt(1))
-	data.Set("fps", pycompat.NewInt(FPS))
+	data := toolrt.NewDict()
+	data.Set("schema_version", toolrt.NewInt(1))
+	data.Set("fps", toolrt.NewInt(FPS))
 	data.Set("audio", audio)
 	data.Set("references", refs)
 	data.Set("visual_direction", visual)
 	data.Set("sequences", sequences)
 	data.Set("scenes", scenes)
 	if refs.Len() == 0 {
-		return nil, pycompat.Raise(pycompat.ValueError, "В кастинге нет сущностей с изображениями: карточкам планов нужен хотя бы один референс.")
+		return nil, toolrt.Raise(toolrt.ValueError, "В кастинге нет сущностей с изображениями: карточкам планов нужен хотя бы один референс.")
 	}
 	if _, err := sceneregistry.Validate(data, initial); err != nil {
 		return nil, err
@@ -538,7 +538,7 @@ func BuildScenes(treatment any, timing *pycompat.Dict, textLines []string, cast 
 	return data, nil
 }
 
-// leftPad — f"{number:02d}" для положительного номера плана.
+// leftPad — двузначная запись положительного номера плана (с ведущим нулём).
 func leftPad(number int) string {
 	if number < 10 {
 		return "0" + string(rune('0'+number))

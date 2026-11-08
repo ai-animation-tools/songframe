@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"songframe-go/internal/acceptance"
-	"songframe-go/internal/animatic"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/acceptance"
+	"songframe/internal/animatic"
+	"songframe/internal/dynvalue"
 )
 
 // Состояния проекта (ProjectState контракта).
@@ -91,8 +91,8 @@ type Marker struct {
 
 // ReadMarker — readProjectMarker: plan/project.json — объект с непустым строковым name.
 func ReadMarker(path string) *Marker {
-	data, ok := jscompat.ReadJSONFile(filepath.Join(path, "plan", "project.json"))
-	object, isRecord := jscompat.AsObject(data)
+	data, ok := dynvalue.ReadJSONFile(filepath.Join(path, "plan", "project.json"))
+	object, isRecord := dynvalue.AsObject(data)
 	if !ok || !isRecord {
 		return nil
 	}
@@ -109,7 +109,7 @@ func ReadMarker(path string) *Marker {
 
 // readJSON — (значение, true) или (nil, false) при отсутствии файла и ошибке разбора.
 func readJSON(path string) (any, bool) {
-	return jscompat.ReadJSONFile(path)
+	return dynvalue.ReadJSONFile(path)
 }
 
 // Compute — статус с проверкой только входов сценария (reviewProblem без сценарного
@@ -142,12 +142,12 @@ func ComputeWith(path string, review func(string) string) (ProjectStatus, error)
 func ComputeBase(path string) (ProjectStatus, error) {
 	result := ProjectStatus{Path: path, Problems: []string{}}
 	var marker *Marker
-	if jscompat.Exists(path) {
+	if dynvalue.Exists(path) {
 		marker = ReadMarker(path)
 	}
 	if marker == nil {
 		result.State = StateInvalid
-		result.Name = jscompat.Basename(path)
+		result.Name = dynvalue.Basename(path)
 		result.Problems = append(result.Problems, markerMissing)
 		return result, nil
 	}
@@ -157,21 +157,21 @@ func ComputeBase(path string) (ProjectStatus, error) {
 
 	manifestPath := filepath.Join(path, "source", "manifest.json")
 	if manifest, ok := readJSON(manifestPath); ok {
-		if jscompat.IsRecord(manifest) && jscompat.IsRecord(jscompat.Get(manifest, "track")) &&
-			jscompat.IsRecord(jscompat.Get(manifest, "lyrics")) && jscompat.IsRecord(jscompat.Get(manifest, "idea")) {
+		if dynvalue.IsRecord(manifest) && dynvalue.IsRecord(dynvalue.Get(manifest, "track")) &&
+			dynvalue.IsRecord(dynvalue.Get(manifest, "lyrics")) && dynvalue.IsRecord(dynvalue.Get(manifest, "idea")) {
 			checks.Sources = true
 		} else {
 			*problems = append(*problems, incompleteSources)
 		}
-	} else if jscompat.Exists(manifestPath) {
+	} else if dynvalue.Exists(manifestPath) {
 		*problems = append(*problems, damagedSources)
 	}
 
 	timingPath := filepath.Join(path, "plan", "audio", "timing.json")
-	if jscompat.Exists(timingPath) {
+	if dynvalue.Exists(timingPath) {
 		timing, _ := readJSON(timingPath)
-		lines, isArray := jscompat.AsArray(jscompat.Get(timing, "lines"))
-		if jscompat.IsRecord(timing) && isArray && len(lines) > 0 {
+		lines, isArray := dynvalue.AsArray(dynvalue.Get(timing, "lines"))
+		if dynvalue.IsRecord(timing) && isArray && len(lines) > 0 {
 			checks.Timing = true
 		} else {
 			*problems = append(*problems, timingLinesMissing)
@@ -180,37 +180,37 @@ func ComputeBase(path string) (ProjectStatus, error) {
 
 	castPath := filepath.Join(path, "plan", "cast.json")
 	cast, _ := readJSON(castPath)
-	if jscompat.IsRecord(cast) && jscompat.IsArray(jscompat.Get(cast, "entities")) {
+	if dynvalue.IsRecord(cast) && dynvalue.IsArray(dynvalue.Get(cast, "entities")) {
 		checks.Cast = true
-	} else if jscompat.Exists(castPath) {
+	} else if dynvalue.Exists(castPath) {
 		*problems = append(*problems, damagedCast)
 	}
 	treatmentPath := filepath.Join(path, "plan", "treatment.json")
 	treatment, _ := readJSON(treatmentPath)
-	if sequences, ok := jscompat.AsArray(jscompat.Get(treatment, "sequences")); jscompat.IsRecord(treatment) && ok && len(sequences) > 0 {
+	if sequences, ok := dynvalue.AsArray(dynvalue.Get(treatment, "sequences")); dynvalue.IsRecord(treatment) && ok && len(sequences) > 0 {
 		checks.Treatment = true
-	} else if jscompat.Exists(treatmentPath) {
+	} else if dynvalue.Exists(treatmentPath) {
 		*problems = append(*problems, damagedTreatment)
 	}
 
 	scenesPath := filepath.Join(path, "plan", "scenes.json")
 	var sceneIDs []string
 	var registry any
-	if jscompat.Exists(scenesPath) {
+	if dynvalue.Exists(scenesPath) {
 		data, err := os.ReadFile(scenesPath)
 		if err != nil {
-			// readFileSync вне try: например, scenes.json — каталог.
-			return ProjectStatus{}, jscompat.FsError("read", "", err)
+			// Ошибка чтения существующего пути (например, scenes.json — каталог) — отказ статуса, а не проблема.
+			return ProjectStatus{}, dynvalue.FsError("read", "", err)
 		}
-		scenes, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+		scenes, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 		if err != nil {
-			scenes = jscompat.Undefined
+			scenes = dynvalue.Undefined
 		}
-		if list, ok := jscompat.AsArray(jscompat.Get(scenes, "scenes")); jscompat.IsRecord(scenes) && ok && len(list) > 0 {
+		if list, ok := dynvalue.AsArray(dynvalue.Get(scenes, "scenes")); dynvalue.IsRecord(scenes) && ok && len(list) > 0 {
 			sceneIDs = []string{}
 			for _, scene := range list {
-				if jscompat.IsRecord(scene) {
-					sceneIDs = append(sceneIDs, jscompat.ToString(jscompat.Get(scene, "id")))
+				if dynvalue.IsRecord(scene) {
+					sceneIDs = append(sceneIDs, dynvalue.ToString(dynvalue.Get(scene, "id")))
 				}
 			}
 			registry = scenes
@@ -223,15 +223,15 @@ func ComputeBase(path string) (ProjectStatus, error) {
 
 	shotsDir := filepath.Join(path, "assets", "shots")
 	kits := 0
-	if jscompat.Exists(shotsDir) {
-		entries, err := jscompat.ReadDir(shotsDir)
+	if dynvalue.Exists(shotsDir) {
+		entries, err := dynvalue.ReadDir(shotsDir)
 		if err != nil {
 			return ProjectStatus{}, err
 		}
 		done := map[string]bool{}
 		var doneOrder []string
 		for _, entry := range entries {
-			if entry.IsDir() && jscompat.Exists(filepath.Join(shotsDir, entry.Name(), "manifest.json")) {
+			if entry.IsDir() && dynvalue.Exists(filepath.Join(shotsDir, entry.Name(), "manifest.json")) {
 				done[entry.Name()] = true
 				doneOrder = append(doneOrder, entry.Name())
 			}

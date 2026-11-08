@@ -5,11 +5,11 @@
 //
 // Документы строятся только из файлов рабочего дерева проекта (Sources): реестр plan/scenes.json,
 // plan/project.json, plan/production-status.json, разметка, манифесты комплектов и пакеты
-// производства. Байты текстов зафиксированы эталонами scene-views (Decimal с ROUND_HALF_UP,
-// проценты с запятой, диаграмма Mermaid, часы clock, обрезка пробелов в конце строк). Ошибки
-// данных — исключения pycompat с типом и текстом Python: вызывающий инструмент (internal/sceneviews)
-// печатает их последней строкой трассировки. Пакет только читает проект; записью владеет
-// вызывающий.
+// производства. Байты текстов зафиксированы эталонами scene-views (десятичное округление
+// половины вверх, проценты с запятой, диаграмма Mermaid, время «ММ:СС.d», обрезка пробелов в
+// конце строк). Ошибки данных — исключения toolrt с типом и текстом, зафиксированными теми же
+// эталонами: вызывающий инструмент (internal/sceneviews) печатает их последней строкой
+// трассировки. Пакет только читает проект; записью владеет вызывающий.
 //
 // Снимки Git (--staged/--ref, LFS-указатели) не читаются: проверка снимка — инструмент
 // разработчика, приложению она не нужна.
@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // skipped — каталоги, которые обход рабочего дерева не посещает на любой глубине.
@@ -37,9 +37,9 @@ type Sources struct {
 	files map[string]bool
 }
 
-// NewSources — os.walk(ROOT) без .git, .local, __pycache__ и node_modules. Как у os.walk: ссылка
-// на каталог считается каталогом, но не обходится; битая ссылка и ссылка на файл — файлы;
-// нечитаемые каталоги пропускаются молча.
+// NewSources обходит рабочее дерево root, пропуская каталоги из skipped. Ссылка на каталог
+// считается каталогом, но не обходится; битая ссылка и ссылка на файл — файлы; нечитаемые
+// каталоги пропускаются молча.
 func NewSources(root string) *Sources {
 	sources := &Sources{Root: root, files: map[string]bool{}}
 	var walk func(directory, prefix string)
@@ -70,13 +70,13 @@ func NewSources(root string) *Sources {
 	return sources
 }
 
-// Has — `path in sources.files` для строкового пути.
+// Has — входит ли строковый путь в множество файлов.
 func (s *Sources) Has(path string) bool { return s.files[path] }
 
-// Contains — `value in sources.files` для значения из JSON: нестроковое хешируемое значение не
-// входит в множество, список и словарь — TypeError unhashable type, как у set.
+// Contains — входит ли значение из JSON в множество файлов: нестроковое хешируемое значение не
+// входит, список и словарь — исключение toolrt TypeError unhashable type (toolrt.HashKey).
 func (s *Sources) Contains(value any) (bool, error) {
-	if _, err := pycompat.HashKey(value); err != nil {
+	if _, err := toolrt.HashKey(value); err != nil {
 		return false, err
 	}
 	text, ok := value.(string)
@@ -94,35 +94,35 @@ func (s *Sources) Files() []string {
 	return result
 }
 
-// path — ROOT / path как его печатает Python в тексте OSError.
-func (s *Sources) path(path string) string { return pycompat.JoinPath(s.Root, path) }
+// path — путь файла от корня Root (toolrt.JoinPath) в той записи, что попадает в текст OSError.
+func (s *Sources) path(path string) string { return toolrt.JoinPath(s.Root, path) }
 
-// Text — sources.text(path): текст файла из множества (UTF-8, универсальные переводы строк);
-// путь вне множества — ValueError «Нет обязательного файла: …» без точки в конце.
+// Text — текст файла из множества (UTF-8, универсальные переводы строк); путь вне множества —
+// ValueError «Нет обязательного файла: …» без точки в конце.
 func (s *Sources) Text(path string) (string, error) {
 	if !s.files[path] {
-		return "", pycompat.Raise(pycompat.ValueError, "Нет обязательного файла: %s", path)
+		return "", toolrt.Raise(toolrt.ValueError, "Нет обязательного файла: %s", path)
 	}
-	return pycompat.ReadText(s.path(path))
+	return toolrt.ReadText(s.path(path))
 }
 
-// JSON — sources.json(path): json.loads(text).
+// JSON — разобранный JSON текста файла из множества (toolrt.LoadsJSON).
 func (s *Sources) JSON(path string) (any, error) {
 	text, err := s.Text(path)
 	if err != nil {
 		return nil, err
 	}
-	return pycompat.LoadsJSON(text)
+	return toolrt.LoadsJSON(text)
 }
 
-// TextSHA — hashlib.sha256(sources.text(path).encode()).hexdigest(): отпечаток текста после
+// TextSHA — SHA-256 (hex) текста файла, снова закодированного в UTF-8: отпечаток после
 // декодирования и перевода строк (не байтов файла), как его записывают квитанции.
 func (s *Sources) TextSHA(path string) (string, error) {
 	text, err := s.Text(path)
 	if err != nil {
 		return "", err
 	}
-	data, err := pycompat.EncodeUTF8(text)
+	data, err := toolrt.EncodeUTF8(text)
 	if err != nil {
 		return "", err
 	}
@@ -130,30 +130,30 @@ func (s *Sources) TextSHA(path string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// Require — sources.require(path): ValueError «Нет материала: …», если файла нет в множестве.
+// Require — ValueError «Нет материала: …», если файла нет в множестве.
 func (s *Sources) Require(path string) error {
 	if !s.files[path] {
-		return pycompat.Raise(pycompat.ValueError, "Нет материала: %s", path)
+		return toolrt.Raise(toolrt.ValueError, "Нет материала: %s", path)
 	}
 	return nil
 }
 
-// Digest — sources.digest(path): SHA-256 байтов файла ROOT/path (множество не проверяется);
-// ошибка чтения — OSError Python.
+// Digest — SHA-256 байтов файла Root/path (множество не проверяется); ошибка чтения — исключение
+// toolrt OSError.
 func (s *Sources) Digest(path string) (string, error) {
 	return FileSHA(s.path(path))
 }
 
-// FileSHA — SHA-256 файла потоком; ошибка — OSError Python.
+// FileSHA — SHA-256 файла потоком; ошибка — исключение toolrt OSError.
 func FileSHA(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return "", pycompat.OSErrorFrom(err, path)
+		return "", toolrt.OSErrorFrom(err, path)
 	}
 	defer file.Close()
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		return "", pycompat.OSErrorFrom(err, path)
+		return "", toolrt.OSErrorFrom(err, path)
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }

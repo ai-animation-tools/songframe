@@ -12,8 +12,8 @@ import (
 	"strings"
 	"syscall"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/timing"
+	"songframe/internal/dynvalue"
+	"songframe/internal/timing"
 )
 
 // Scene — MontageScene: план реестра с окном на абсолютной кадровой оси песни.
@@ -80,8 +80,8 @@ type View struct {
 // бы захватить другую версию).
 type registry struct {
 	status string
-	value  *jscompat.Object
-	scenes []*jscompat.Object
+	value  *dynvalue.Object
+	scenes []*dynvalue.Object
 	sha256 string
 }
 
@@ -95,19 +95,19 @@ func readRegistry(project string) registry {
 		}
 		return registry{status: "invalid"}
 	}
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(raw)))
-	object, ok := jscompat.AsObject(value)
-	if err != nil || !ok || !jscompat.StrictEqual(object.Value("schema_version"), 1.0) || !jscompat.StrictEqual(object.Value("fps"), float64(fps)) {
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(raw)))
+	object, ok := dynvalue.AsObject(value)
+	if err != nil || !ok || !dynvalue.StrictEqual(object.Value("schema_version"), 1.0) || !dynvalue.StrictEqual(object.Value("fps"), float64(fps)) {
 		return registry{status: "invalid"}
 	}
-	items, ok := jscompat.AsArray(object.Value("scenes"))
+	items, ok := dynvalue.AsArray(object.Value("scenes"))
 	if !ok {
 		return registry{status: "invalid"}
 	}
 	ids := map[string]bool{}
-	scenes := []*jscompat.Object{}
+	scenes := []*dynvalue.Object{}
 	for _, item := range items {
-		scene, ok := jscompat.AsObject(item)
+		scene, ok := dynvalue.AsObject(item)
 		if !ok {
 			return registry{status: "invalid"}
 		}
@@ -133,28 +133,28 @@ func readRegistry(project string) registry {
 // originalFrames — длина оригинала видео (original_media) в кадрах 30 к/с по duration,
 // иначе по nb_frames и r_frame_rate ffprobe; неизвестная — nil.
 func originalFrames(value any) *float64 {
-	media, ok := jscompat.AsObject(value)
+	media, ok := dynvalue.AsObject(value)
 	if !ok {
 		return nil
 	}
-	if duration := jscompat.ToNumber(media.Value("duration")); jscompat.IsFinite(duration) && duration > 0 {
+	if duration := dynvalue.ToNumber(media.Value("duration")); dynvalue.IsFinite(duration) && duration > 0 {
 		frames := secondsToFrames(duration)
 		return &frames
 	}
 	rate := []float64{}
 	if text, ok := media.Value("r_frame_rate").(string); ok {
 		for _, part := range strings.Split(text, "/") {
-			rate = append(rate, jscompat.ToNumber(part))
+			rate = append(rate, dynvalue.ToNumber(part))
 		}
 	}
-	speed := jscompat.ToNumber(jscompat.Undefined)
+	speed := dynvalue.ToNumber(dynvalue.Undefined)
 	if len(rate) == 1 {
 		speed = rate[0]
 	} else if len(rate) == 2 && rate[1] > 0 {
 		speed = rate[0] / rate[1]
 	}
-	count := jscompat.ToNumber(media.Value("nb_frames"))
-	if jscompat.IsFinite(speed) && speed > 0 && jscompat.IsFinite(count) && count > 0 {
+	count := dynvalue.ToNumber(media.Value("nb_frames"))
+	if dynvalue.IsFinite(speed) && speed > 0 && dynvalue.IsFinite(count) && count > 0 {
 		frames := secondsToFrames(count / speed)
 		return &frames
 	}
@@ -190,11 +190,11 @@ func ViewProject(project string) (*View, error) {
 		view.Problems = append(view.Problems, textInvalidScenario)
 		return view, nil
 	}
-	// new Map(sequences.map((s) => [s.id, s.title])): более поздний id заменяет значение.
+	// Словарь «id последовательности → название»: при повторе id побеждает более поздняя запись.
 	sequences := map[string]any{}
-	if items, ok := jscompat.AsArray(scenario.value.Value("sequences")); ok {
+	if items, ok := dynvalue.AsArray(scenario.value.Value("sequences")); ok {
 		for _, item := range items {
-			if sequence, ok := jscompat.AsObject(item); ok {
+			if sequence, ok := dynvalue.AsObject(item); ok {
 				if key, ok := mapKey(sequence.Value("id")); ok {
 					sequences[key] = sequence.Value("title")
 				}
@@ -205,26 +205,26 @@ func ViewProject(project string) (*View, error) {
 	for _, scene := range scenario.scenes {
 		id := scene.Value("id").(string)
 		title := scene.Value("title")
-		if jscompat.IsNullish(title) {
-			title = jscompat.Undefined
+		if dynvalue.IsNullish(title) {
+			title = dynvalue.Undefined
 			if key, ok := mapKey(scene.Value("sequence")); ok {
 				if value, found := sequences[key]; found {
 					title = value
 				}
 			}
 		}
-		title = jscompat.Coalesce(jscompat.Coalesce(title, scene.Value("original")), id)
+		title = dynvalue.Coalesce(dynvalue.Coalesce(title, scene.Value("original")), id)
 		view.Scenes = append(view.Scenes, Scene{
-			ID: id, Title: jscompat.ToString(title),
+			ID: id, Title: dynvalue.ToString(title),
 			StartFrame: scene.Value("start_frame").(float64), EndFrame: scene.Value("end_frame_exclusive").(float64),
 		})
 	}
 	if err := viewLyrics(project, view); err != nil {
 		return nil, err
 	}
-	manifests := jscompat.NewObject()
+	manifests := dynvalue.NewObject()
 	addSource := func(scene, title, label, dir string, descriptor any, frames *float64, original, attempt bool) {
-		object, ok := jscompat.AsObject(descriptor)
+		object, ok := dynvalue.AsObject(descriptor)
 		if !ok {
 			return
 		}
@@ -233,7 +233,7 @@ func ViewProject(project string) (*View, error) {
 			return
 		}
 		base := dir
-		if jscompat.StrictEqual(object.Value("root"), "source") {
+		if dynvalue.StrictEqual(object.Value("root"), "source") {
 			base = filepath.Join(project, "source")
 		}
 		path := portable(project, join(base, name))
@@ -254,7 +254,7 @@ func ViewProject(project string) (*View, error) {
 	for _, scene := range view.Scenes {
 		dir := filepath.Join(project, "assets", "shots", scene.ID)
 		manifestPath := filepath.Join(dir, "manifest.json")
-		if !jscompat.Exists(manifestPath) {
+		if !dynvalue.Exists(manifestPath) {
 			continue
 		}
 		// Ошибка отдельного комплекта не меняет доступность самого сценария.
@@ -282,15 +282,15 @@ func ViewProject(project string) (*View, error) {
 			view.Problems = append(view.Problems, scene.ID+": "+err.Error())
 		}
 	}
-	view.ManifestSha256 = jscompat.Raw(manifests)
+	view.ManifestSha256 = dynvalue.Raw(manifests)
 
 	// Не читаем пакет целиком: его токены решений хешируют полные платные оригиналы.
 	for _, base := range []string{"plan/batches", "plan/awaiting"} {
 		folder := filepath.Join(project, filepath.FromSlash(base))
-		if !jscompat.Exists(folder) {
+		if !dynvalue.Exists(folder) {
 			continue
 		}
-		entries, err := jscompat.ReadDir(folder)
+		entries, err := dynvalue.ReadDir(folder)
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +299,7 @@ func ViewProject(project string) (*View, error) {
 				continue
 			}
 			dir := filepath.Join(folder, entry.Name())
-			if !jscompat.Exists(filepath.Join(dir, "workflow.json")) {
+			if !dynvalue.Exists(filepath.Join(dir, "workflow.json")) {
 				continue
 			}
 			if err := attemptSources(project, view, entry.Name(), dir, addSource); err != nil {
@@ -316,7 +316,7 @@ func ViewProject(project string) (*View, error) {
 			continue
 		}
 		path := "plan/animatic/cards/" + scene.ID + ".png"
-		if jscompat.Exists(filepath.Join(project, filepath.FromSlash(path))) {
+		if dynvalue.Exists(filepath.Join(project, filepath.FromSlash(path))) {
 			view.Sources = append(view.Sources, Source{
 				ID: scene.ID + ":" + path, Scene: scene.ID, Title: scene.Title, Label: textSceneCard, Path: path, Kind: "card",
 			})
@@ -325,8 +325,8 @@ func ViewProject(project string) (*View, error) {
 		}
 	}
 	folder := filepath.Join(project, "plan", "montage")
-	if jscompat.Exists(folder) {
-		entries, err := jscompat.ReadDir(folder)
+	if dynvalue.Exists(folder) {
+		entries, err := dynvalue.ReadDir(folder)
 		if err != nil {
 			return nil, err
 		}
@@ -340,10 +340,10 @@ func ViewProject(project string) (*View, error) {
 			if err == nil {
 				var info os.FileInfo
 				if info, err = os.Stat(filepath.Join(folder, file)); err == nil {
-					view.Saved = append(view.Saved, Saved{ID: id, Name: jscompat.Get(draft, "name").(string), UpdatedAt: isoTime(info)})
+					view.Saved = append(view.Saved, Saved{ID: id, Name: dynvalue.Get(draft, "name").(string), UpdatedAt: isoTime(info)})
 					continue
 				}
-				err = jscompat.FsError("stat", filepath.Join(folder, file), err)
+				err = dynvalue.FsError("stat", filepath.Join(folder, file), err)
 			}
 			view.Problems = append(view.Problems, textDraftReadFailed(file, err.Error()))
 		}
@@ -352,31 +352,32 @@ func ViewProject(project string) (*View, error) {
 	return view, nil
 }
 
-// mapKey — ключ Map по SameValueZero для примитивов; объекты и массивы из разных мест JSON
-// никогда не совпадают (ok=false).
+// mapKey — ключ словаря для примитива с различением типов: строка «1» и число 1 — разные ключи,
+// null и отсутствующее значение — тоже; NaN равен NaN, 0 и −0 совпадают. Объекты и массивы из
+// разных мест JSON никогда не совпадают (ok=false).
 func mapKey(value any) (string, bool) {
 	switch item := value.(type) {
 	case string:
 		return "s" + item, true
 	case float64:
-		return "n" + jscompat.NumberToString(item), true
+		return "n" + dynvalue.NumberToString(item), true
 	case bool:
-		return "b" + jscompat.ToString(item), true
+		return "b" + dynvalue.ToString(item), true
 	case nil:
 		return "null", true
 	}
-	if value == jscompat.Undefined {
+	if value == dynvalue.Undefined {
 		return "undefined", true
 	}
 	return "", false
 }
 
-// section — `object(manifest.key) ? manifest.key : {}`.
-func section(manifest *jscompat.Object, key string) *jscompat.Object {
-	if object, ok := jscompat.AsObject(manifest.Value(key)); ok {
+// section — раздел манифеста key, если это объект, иначе пустой объект.
+func section(manifest *dynvalue.Object, key string) *dynvalue.Object {
+	if object, ok := dynvalue.AsObject(manifest.Value(key)); ok {
 		return object
 	}
-	return jscompat.NewObject()
+	return dynvalue.NewObject()
 }
 
 // attemptSources — видео одной папки рабочего пакета или очереди: скачанные MP4 из attempt.json и
@@ -389,7 +390,7 @@ func attemptSources(project string, view *View, name, dir string, addSource func
 	}
 	var scene *Scene
 	for index := range view.Scenes {
-		if jscompat.StrictEqual(view.Scenes[index].ID, workflow.Value("shot")) {
+		if dynvalue.StrictEqual(view.Scenes[index].ID, workflow.Value("shot")) {
 			scene = &view.Scenes[index]
 			break
 		}
@@ -406,19 +407,19 @@ func attemptSources(project string, view *View, name, dir string, addSource func
 	if err != nil {
 		return err
 	}
-	if jscompat.StrictEqual(request.Value("kind"), "image") {
+	if dynvalue.StrictEqual(request.Value("kind"), "image") {
 		return nil
 	}
-	attempt := jscompat.NewObject()
-	if attemptPath := filepath.Join(requestDir, "attempt.json"); jscompat.Exists(attemptPath) {
+	attempt := dynvalue.NewObject()
+	if attemptPath := filepath.Join(requestDir, "attempt.json"); dynvalue.Exists(attemptPath) {
 		if attempt, err = readObject(attemptPath, labelAttempt); err != nil {
 			return err
 		}
 	}
 	downloads := []string{}
-	if items, ok := jscompat.AsArray(attempt.Value("downloads")); ok {
+	if items, ok := dynvalue.AsArray(attempt.Value("downloads")); ok {
 		for _, item := range items {
-			if object, ok := jscompat.AsObject(item); ok {
+			if object, ok := dynvalue.AsObject(item); ok {
 				if path, ok := object.Value("path").(string); ok && attemptVideo.MatchString(path) {
 					downloads = append(downloads, path)
 				}
@@ -427,7 +428,7 @@ func attemptSources(project string, view *View, name, dir string, addSource func
 	}
 	entries, err := os.ReadDir(requestDir)
 	if err != nil {
-		return jscompat.FsError("scandir", requestDir, err)
+		return dynvalue.FsError("scandir", requestDir, err)
 	}
 	for _, entry := range entries {
 		if originalVideo.MatchString(entry.Name()) {
@@ -440,7 +441,7 @@ func attemptSources(project string, view *View, name, dir string, addSource func
 			continue
 		}
 		seen[file] = true
-		descriptor := jscompat.NewObject()
+		descriptor := dynvalue.NewObject()
 		descriptor.Set("path", file)
 		addSource(scene.ID, scene.Title, textAttemptSource(name), requestDir, descriptor, nil, true, true)
 	}
@@ -461,16 +462,16 @@ func viewLyrics(project string, view *View) error {
 	view.TrackSha256 = timingView.TrackSha256
 	view.Duration = timingView.Duration
 	view.Problems = append(view.Problems, timingView.Problems...)
-	saved, err := jscompat.Parse(timingView.Timing)
+	saved, err := dynvalue.Parse(timingView.Timing)
 	if err != nil {
 		return err
 	}
 	problem := func(text string) { view.LyricProblem = &text }
-	sha, track := jscompat.Get(saved, "sha256"), timingView.TrackSha256
+	sha, track := dynvalue.Get(saved, "sha256"), timingView.TrackSha256
 	switch {
-	case !jscompat.Truthy(saved):
+	case !dynvalue.Truthy(saved):
 		problem(textLyricTimingMissing)
-	case jscompat.Truthy(sha) && track != nil && *track != "" && !jscompat.StrictEqual(sha, *track):
+	case dynvalue.Truthy(sha) && track != nil && *track != "" && !dynvalue.StrictEqual(sha, *track):
 		problem(textLyricTrackChanged)
 	default:
 		numbers := map[float64]bool{}
@@ -481,11 +482,11 @@ func viewLyrics(project string, view *View) error {
 				numbers[float64(line.Number)] = true
 			}
 		}
-		lines, _ := jscompat.AsArray(jscompat.Get(saved, "lines"))
+		lines, _ := dynvalue.AsArray(dynvalue.Get(saved, "lines"))
 		selected := []any{}
 		invalid := false
 		for _, line := range lines {
-			source, ok := number(jscompat.Get(line, "source_line"))
+			source, ok := number(dynvalue.Get(line, "source_line"))
 			if ok && numbers[source] {
 				selected = append(selected, line)
 			} else {
@@ -493,9 +494,9 @@ func viewLyrics(project string, view *View) error {
 			}
 		}
 		for _, line := range selected {
-			start, startOK := number(jscompat.Get(line, "start"))
-			end, endOK := number(jscompat.Get(line, "end"))
-			if !startOK || !endOK || !jscompat.IsFinite(start) || !jscompat.IsFinite(end) || start < 0 || end <= start {
+			start, startOK := number(dynvalue.Get(line, "start"))
+			end, endOK := number(dynvalue.Get(line, "end"))
+			if !startOK || !endOK || !dynvalue.IsFinite(start) || !dynvalue.IsFinite(end) || start < 0 || end <= start {
 				invalid = true
 			}
 		}
@@ -505,11 +506,11 @@ func viewLyrics(project string, view *View) error {
 		}
 		// Строки и склейки используют одну сетку 30 к/с и абсолютную ось исходного трека.
 		for _, line := range selected {
-			source, _ := number(jscompat.Get(line, "source_line"))
-			start, _ := number(jscompat.Get(line, "start"))
-			end, _ := number(jscompat.Get(line, "end"))
+			source, _ := number(dynvalue.Get(line, "source_line"))
+			start, _ := number(dynvalue.Get(line, "start"))
+			end, _ := number(dynvalue.Get(line, "end"))
 			view.LyricLines = append(view.LyricLines, LyricLine{
-				ID: jscompat.Raw(jscompat.Get(line, "id")), Text: texts[source],
+				ID: dynvalue.Raw(dynvalue.Get(line, "id")), Text: texts[source],
 				StartFrame: secondsToFrames(start), EndFrame: secondsToFrames(end),
 			})
 		}

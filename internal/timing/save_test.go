@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/projectfs"
 )
 
 // TestSaveProjectMatchesGolden выполняет SaveProject на копии каждого эталона timing-save:
@@ -31,7 +31,7 @@ func TestSaveProjectMatchesGolden(t *testing.T) {
 			path := item.CopyProject(t)
 			target := filepath.Join(path, filepath.FromSlash(TimingPath))
 			before, beforeErr := os.ReadFile(target)
-			input, err := jscompat.Parse(item.Read(t, "timing-input.json"))
+			input, err := dynvalue.Parse(item.Read(t, "timing-input.json"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -90,7 +90,7 @@ func TestSaveProjectRespectsWriteGate(t *testing.T) {
 	}
 	target := filepath.Join(path, filepath.FromSlash(TimingPath))
 	before, _ := os.ReadFile(target)
-	input, err := jscompat.Parse(item.Read(t, "timing-input.json"))
+	input, err := dynvalue.Parse(item.Read(t, "timing-input.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

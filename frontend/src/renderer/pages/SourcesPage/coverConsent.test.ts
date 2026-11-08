@@ -22,7 +22,7 @@ const fixture = vi.hoisted(() => ({
   accept: vi.fn()
 }));
 
-// Проверяем обработчики самого диалога без DOM и IPC; эффекты и транспорт здесь заменены заглушками.
+// Проверяем обработчики самого диалога без DOM и API; эффекты и транспорт здесь заменены заглушками.
 vi.mock('react', async (original) => ({
   ...(await original<typeof React>()),
   useEffect: vi.fn(),
@@ -101,7 +101,7 @@ function click(node: Node): void {
 }
 
 /** Изменение подписей не должно объединять согласие с ценой и окончательное подтверждение промпта. */
-describe('согласование обложки после переноса текстов', () => {
+describe('согласование обложки с текстами словаря', () => {
   beforeEach(() => {
     fixture.contextReady = true;
     fixture.values = [];

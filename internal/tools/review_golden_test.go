@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/buildreview"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/tools"
+	"songframe/internal/buildreview"
+	"songframe/internal/golden"
+	"songframe/internal/tools"
 )
 
 // Эталоны build-review и production-tools/accept-edit: build_review и приёмка участка

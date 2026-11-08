@@ -8,7 +8,7 @@
 // first/last и превью на скорости 2×. Отчёт печатается таблицей или JSON (--json). Ничего не
 // оценивает и не принимает, хеши не считает, assets и реестр не меняет.
 //
-// Эталон testdata/golden/contact-sheet фиксирует аргументы и тексты argparse, тексты и коды отказов
+// Эталон testdata/golden/contact-sheet фиксирует аргументы и тексты разбора аргументов, тексты и коды отказов
 // (ValueError печатается, ошибки файлов, ключей и JSON скрываются общей фразой, прочие исключения —
 // трассировка), отчёт и таблицу побайтно, состав и размеры файлов, пиксели кадров (их декодирует
 // FFmpeg) и фона. Байты PNG, сглаживание букв подписей (растеризатор x/image без хинтинга FreeType,
@@ -16,7 +16,7 @@
 // недетерминирован между машинами.
 //
 // Внешние программы запускаются через mediacmd (пути менеджера компонентов, отмена задания);
-// рисование — примитивами animaticcards.Picture с семантикой Pillow.
+// рисование — примитивами animaticcards.Picture (те же правила пикселей, что у карточек аниматика).
 package contactsheet
 
 import (
@@ -26,8 +26,8 @@ import (
 	"runtime"
 	"strings"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // Тексты отказов, примечание отчёта и последняя строка таблицы; зафиксированы эталоном.
@@ -43,17 +43,17 @@ const (
 	textStatus        = "Статус: ожидает просмотра пользователем."
 )
 
-// unidentifiedImage — PIL.UnidentifiedImageError (подкласс OSError) битой опоры: pycompat не знает
-// классов Pillow, поэтому ветка except OSError проверяет его отдельно.
+// unidentifiedImage — вид исключения нераспознанного изображения опоры (animaticcards). Он относится
+// к ошибкам файлов, но не входит в иерархию OSError toolrt, поэтому run перехватывает его отдельно.
 const unidentifiedImage = "PIL.UnidentifiedImageError"
 
-// parser — аргументы инструмента в стиле argparse. Группа источников обязательная (required=True), а
-// pycompat.ArgParser знает только необязательную группу: разница (скобки в usage и ошибка
+// parser — аргументы инструмента. Группа источников обязательная (одна из опций должна быть задана), а
+// toolrt.ArgParser знает только необязательную группу: разница (скобки в usage и ошибка
 // «one of the arguments … is required») достраивается в parseArgs.
-var parser = pycompat.ArgParser{
-	Prog:        "contact_sheet.py",
+var parser = toolrt.ArgParser{
+	Prog:        "contact_sheet",
 	Description: "Техническая сводка полученного видео: параметры, контактный лист, границы, превью; @link README.md",
-	Flags: []pycompat.Flag{
+	Flags: []toolrt.Flag{
 		{Name: "--package", Value: true, Help: "Папка shot_workflow: видео из попытки, опоры для сравнения"},
 		{Name: "--work-dir", Value: true, Help: "Папка попытки media_request"},
 		{Name: "--video", Value: true, Help: "Любой видеофайл"},
@@ -67,41 +67,40 @@ var parser = pycompat.ArgParser{
 // sources — опции обязательной группы в порядке объявления.
 var sources = []string{"--package", "--work-dir", "--video"}
 
-// optionalGroup и requiredGroup — запись группы в usage: необязательная у pycompat, обязательная
+// optionalGroup и requiredGroup — запись группы в usage: необязательная у toolrt, обязательная
 // (в круглых скобках) у этого инструмента. Длина одинакова, поэтому перенос строк usage не меняется.
 const (
 	optionalGroup = "[--package PACKAGE | --work-dir WORK_DIR | --video VIDEO]"
 	requiredGroup = "(--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)"
 )
 
-// parseArgs — разбор аргументов как parse_args argparse: результат либо готовое завершение
-// (справка, код 2).
-func parseArgs(args []string) (pycompat.Args, *pytool.Output) {
-	parsed, exit := pytool.Args(parser, args)
-	required := func() *pytool.Output {
+// parseArgs — разбор аргументов: результат либо готовое завершение (справка, код 2).
+func parseArgs(args []string) (toolrt.Args, *toolcli.Output) {
+	parsed, exit := toolcli.Args(parser, args)
+	required := func() *toolcli.Output {
 		usage := strings.Replace(parser.Usage(), optionalGroup, requiredGroup, 1)
 		message := usage + parser.Prog + ": error: one of the arguments " + strings.Join(sources, " ") + " is required\n"
-		return &pytool.Output{Code: 2, Stderr: pycompat.TextMode(message)}
+		return &toolcli.Output{Code: 2, Stderr: toolrt.TextMode(message)}
 	}
 	if exit != nil {
-		// Обязательную группу argparse проверяет в конце parse_known_args, раньше лишних аргументов.
+		// Обязательная группа проверяется в конце разбора, но раньше отказа лишними аргументами.
 		if exit.Code == 2 && strings.Contains(exit.Stderr, ": error: unrecognized arguments: ") && !namesSource(args) {
-			return pycompat.Args{}, required()
+			return toolrt.Args{}, required()
 		}
 		exit.Stdout = strings.Replace(exit.Stdout, optionalGroup, requiredGroup, 1)
 		exit.Stderr = strings.Replace(exit.Stderr, optionalGroup, requiredGroup, 1)
-		return pycompat.Args{}, exit
+		return toolrt.Args{}, exit
 	}
 	for _, name := range sources {
 		if _, ok := parsed.Values[name]; ok {
 			return parsed, nil
 		}
 	}
-	return pycompat.Args{}, required()
+	return toolrt.Args{}, required()
 }
 
 // namesSource — встречается ли среди аргументов (до «--») опция группы источников: полное имя,
-// «имя=значение» или однозначный префикс длинной опции, как _parse_optional argparse. Нужна только
+// «имя=значение» или однозначный префикс длинной опции, как при разборе опций. Нужна только
 // для порядка ошибок: когда разбор отказал лишними аргументами, источник мог быть задан.
 func namesSource(args []string) bool {
 	options := []string{"--help", "--package", "--work-dir", "--video", "--out", "--no-preview", "--json"}
@@ -136,26 +135,26 @@ func namesSource(args []string) bool {
 
 // Run — инструмент contact_sheet на разрешённом корне проекта root. Контекст отменяет запущенные
 // FFmpeg/ffprobe (остановка задания). Результат — код, stdout и stderr процесса инструмента.
-func Run(ctx context.Context, root string, args []string) pytool.Output {
+func Run(ctx context.Context, root string, args []string) toolcli.Output {
 	parsed, exit := parseArgs(args)
 	if exit != nil {
 		return *exit
 	}
-	var printer pytool.Printer
+	var printer toolcli.Printer
 	err := run(ctx, root, parsed, &printer)
 	switch {
 	case err == nil:
 		return printer.Exit(0)
-	case pycompat.Is(err, pycompat.ValueError) && !pycompat.Is(err, pycompat.JSONDecodeError):
+	case toolrt.Is(err, toolrt.ValueError) && !toolrt.Is(err, toolrt.JSONDecodeError):
 		return printer.Fail(err.Error())
-	case pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError, unidentifiedImage):
+	case toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError, unidentifiedImage):
 		return printer.Fail(textHidden)
 	}
 	return printer.Crash(err)
 }
 
 // value — значение опции или nil, если её нет.
-func value(parsed pycompat.Args, name string) *string {
+func value(parsed toolrt.Args, name string) *string {
 	values, ok := parsed.Values[name]
 	if !ok || len(values) == 0 {
 		return nil
@@ -165,22 +164,22 @@ func value(parsed pycompat.Args, name string) *string {
 
 // run — работа инструмента под перехватом ожидаемых исключений: источник, папка сводки, сводка и
 // печать отчёта.
-func run(ctx context.Context, root string, parsed pycompat.Args, printer *pytool.Printer) error {
+func run(ctx context.Context, root string, parsed toolrt.Args, printer *toolcli.Printer) error {
 	video, base, keyframes, err := resolve(root, value(parsed, "--package"), value(parsed, "--work-dir"), value(parsed, "--video"))
 	if err != nil {
 		return err
 	}
-	out := pycompat.JoinPath(base, "preview")
+	out := toolrt.JoinPath(base, "preview")
 	if custom := value(parsed, "--out"); custom != nil && *custom != "" {
-		// Path(args.out): относительная папка считается от текущей папки процесса и печатается как есть.
-		out = pycompat.JoinPath(*custom)
+		// Относительная папка --out считается от текущей папки процесса и печатается как есть.
+		out = toolrt.JoinPath(*custom)
 	}
 	report, err := summarize(ctx, video, out, keyframes, !parsed.Bools["--no-preview"])
 	if err != nil {
 		return err
 	}
 	if parsed.Bools["--json"] {
-		text, err := pytool.JSON(report.dict())
+		text, err := toolcli.JSON(report.dict())
 		if err != nil {
 			return err
 		}
@@ -191,24 +190,24 @@ func run(ctx context.Context, root string, parsed pycompat.Args, printer *pytool
 
 // keyframe — принятая опора пакета: исходная запись workflow.json и путь файла (package / path).
 type keyframe struct {
-	record *pycompat.Dict
+	record *toolrt.Dict
 	file   string
 }
 
 // resolve — файл видео, папка по умолчанию для сводки
 // (пакет, папка попытки или папка видео) и принятые опоры с путём. Пакет и папка попытки
-// относительно корня проекта, --video — относительно текущей папки процесса, как Path.resolve().
+// относительно корня проекта, --video — относительно текущей папки процесса.
 func resolve(root string, packageDir, workDir, video *string) (string, string, []keyframe, error) {
-	root = pycompat.ResolvePath(root)
+	root = toolrt.ResolvePath(root)
 	var keyframes []keyframe
 	base := ""
 	if packageDir != nil {
-		folder := pycompat.ResolvePath(underRoot(root, *packageDir))
-		workflow, err := pycompat.LoadJSONFile(pycompat.JoinPath(folder, "workflow.json"))
+		folder := toolrt.ResolvePath(underRoot(root, *packageDir))
+		workflow, err := toolrt.LoadJSONFile(toolrt.JoinPath(folder, "workflow.json"))
 		if err != nil {
 			return "", "", nil, err
 		}
-		requestDir, err := pycompat.DictGet(workflow, "request_dir", "request")
+		requestDir, err := toolrt.DictGet(workflow, "request_dir", "request")
 		if err != nil {
 			return "", "", nil, err
 		}
@@ -217,29 +216,29 @@ func resolve(root string, packageDir, workDir, video *string) (string, string, [
 			return "", "", nil, err
 		}
 		workDir = &request
-		listed, err := pycompat.DictGet(workflow, "keyframes", []any{})
+		listed, err := toolrt.DictGet(workflow, "keyframes", []any{})
 		if err != nil {
 			return "", "", nil, err
 		}
-		items, err := pycompat.Iter(listed)
+		items, err := toolrt.Iter(listed)
 		if err != nil {
 			return "", "", nil, err
 		}
-		approved := []*pycompat.Dict{}
+		approved := []*toolrt.Dict{}
 		for _, item := range items {
-			flag, err := pycompat.DictGet(item, "approved", nil)
+			flag, err := toolrt.DictGet(item, "approved", nil)
 			if err != nil {
 				return "", "", nil, err
 			}
-			if !pycompat.Truthy(flag) {
+			if !toolrt.Truthy(flag) {
 				continue
 			}
-			path, err := pycompat.DictGet(item, "path", nil)
+			path, err := toolrt.DictGet(item, "path", nil)
 			if err != nil {
 				return "", "", nil, err
 			}
-			if pycompat.Truthy(path) {
-				approved = append(approved, item.(*pycompat.Dict))
+			if toolrt.Truthy(path) {
+				approved = append(approved, item.(*toolrt.Dict))
 			}
 		}
 		for _, record := range approved {
@@ -254,32 +253,32 @@ func resolve(root string, packageDir, workDir, video *string) (string, string, [
 	var path string
 	if video == nil {
 		if workDir == nil {
-			return "", "", nil, pycompat.New(pycompat.ValueError, textNoSource)
+			return "", "", nil, toolrt.New(toolrt.ValueError, textNoSource)
 		}
-		folder := pycompat.ResolvePath(underRoot(root, *workDir))
-		attempt, err := pycompat.LoadJSONFile(pycompat.JoinPath(folder, "attempt.json"))
+		folder := toolrt.ResolvePath(underRoot(root, *workDir))
+		attempt, err := toolrt.LoadJSONFile(toolrt.JoinPath(folder, "attempt.json"))
 		if err != nil {
 			return "", "", nil, err
 		}
-		status, err := pycompat.DictGet(attempt, "status", nil)
+		status, err := toolrt.DictGet(attempt, "status", nil)
 		if err != nil {
 			return "", "", nil, err
 		}
-		downloaded := pycompat.Equal(status, "downloaded")
+		downloaded := toolrt.Equal(status, "downloaded")
 		var downloads any
 		if downloaded {
-			if downloads, err = pycompat.DictGet(attempt, "downloads", nil); err != nil {
+			if downloads, err = toolrt.DictGet(attempt, "downloads", nil); err != nil {
 				return "", "", nil, err
 			}
 		}
-		if !downloaded || !pycompat.Truthy(downloads) {
-			return "", "", nil, pycompat.New(pycompat.ValueError, textNotDownloaded)
+		if !downloaded || !toolrt.Truthy(downloads) {
+			return "", "", nil, toolrt.New(toolrt.ValueError, textNotDownloaded)
 		}
-		first, err := pycompat.GetItem(downloads, pycompat.NewInt(0))
+		first, err := toolrt.GetItem(downloads, toolrt.NewInt(0))
 		if err != nil {
 			return "", "", nil, err
 		}
-		name, err := pycompat.Item(first, "path")
+		name, err := toolrt.Item(first, "path")
 		if err != nil {
 			return "", "", nil, err
 		}
@@ -290,24 +289,24 @@ func resolve(root string, packageDir, workDir, video *string) (string, string, [
 			base = folder
 		}
 	} else {
-		path = pycompat.ResolvePath(*video)
+		path = toolrt.ResolvePath(*video)
 		base = filepath.Dir(path)
 	}
-	if !pycompat.IsFile(path) {
-		return "", "", nil, pycompat.New(pycompat.ValueError, textVideoMissing)
+	if !toolrt.IsFile(path) {
+		return "", "", nil, toolrt.New(toolrt.ValueError, textVideoMissing)
 	}
 	return path, base, keyframes, nil
 }
 
-// underRoot — `path if path.is_absolute() else root / path`.
+// underRoot — абсолютный path как есть, относительный — от корня root.
 func underRoot(root, path string) string {
 	if filepath.IsAbs(path) {
-		return pycompat.JoinPath(path)
+		return toolrt.JoinPath(path)
 	}
-	return pycompat.JoinPath(root, path)
+	return toolrt.JoinPath(root, path)
 }
 
-// joinPath — Path(base) / part для значения из JSON: нестроковая часть — TypeError деления пути.
+// joinPath — base/part для значения из JSON: нестроковая часть — TypeError с именем класса пути ОС.
 func joinPath(base string, part any) (string, error) {
 	text, ok := part.(string)
 	if !ok {
@@ -315,15 +314,15 @@ func joinPath(base string, part any) (string, error) {
 		if runtime.GOOS == "windows" {
 			name = "WindowsPath"
 		}
-		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", name, pycompat.TypeName(part))
+		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", name, toolrt.TypeName(part))
 	}
-	return pycompat.JoinPath(base, text), nil
+	return toolrt.JoinPath(base, text), nil
 }
 
-// writeFile — запись файла результата с правами по умолчанию (Pillow и open() Python: 0o666 и umask).
+// writeFile — запись файла результата с правами по умолчанию (0o666 с учётом umask).
 func writeFile(path string, data []byte) error {
 	if err := os.WriteFile(path, data, 0o666); err != nil {
-		return pycompat.OSErrorFrom(err, path)
+		return toolrt.OSErrorFrom(err, path)
 	}
 	return nil
 }

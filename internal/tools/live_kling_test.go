@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/mediaadapters"
+	"songframe/internal/mediaadapters"
 )
 
 // TestLiveKlingFree — ручная живая проверка цепочки media_request → таблица адаптеров → клиент

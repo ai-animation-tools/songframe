@@ -9,7 +9,7 @@ import (
 	"os"
 
 	// Декодеры PNG, JPEG и WebP регистрирует mediafile.
-	_ "songframe-go/internal/mediafile"
+	_ "songframe/internal/mediafile"
 )
 
 // textCropFailed — applicationTexts.coverCropFailed.

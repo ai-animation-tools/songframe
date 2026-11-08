@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/builtoutput"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/tools"
+	"songframe/internal/builtoutput"
+	"songframe/internal/dynvalue"
+	"songframe/internal/jobs"
+	"songframe/internal/projectfs"
+	"songframe/internal/tools"
 )
 
 // Пробы стыков (checks.buildReview, listReviews, removeReview):
@@ -50,7 +50,7 @@ var Now = time.Now
 // stamp — метка папки пробы: ГГГГММДД-ЧЧММСС местного времени.
 func stamp() string { return Now().Format("20060102-150405") }
 
-// ReviewOutput — reviewOutput(project, shots, now): plan/batches/review-<планы>-<время>/review.mp4;
+// ReviewOutput — путь новой пробы plan/batches/review-<планы>-<время>/review.mp4;
 // для больше чем трёх планов в имени первый и последний. build_review принимает выход только
 // в plan/batches и существующий результат не перезаписывает.
 func ReviewOutput(project string, shots []string, now string) string {
@@ -74,7 +74,7 @@ type reviews struct {
 func (s *Service) BuildReview(project string, options ReviewOptions) (jobs.Info, error) {
 	shots := []string{}
 	for _, shot := range options.Shots {
-		if trimmed := jscompat.Trim(shot); trimmed != "" {
+		if trimmed := dynvalue.Trim(shot); trimmed != "" {
 			shots = append(shots, trimmed)
 		}
 	}
@@ -112,9 +112,9 @@ func (s *Service) BuildReview(project string, options ReviewOptions) (jobs.Info,
 			if *result.Code == 0 {
 				return nil
 			}
-			message := jsTrim(result.Stderr)
+			message := trimReason(result.Stderr)
 			if message == "" {
-				message = jsTrim(result.Stdout)
+				message = trimReason(result.Stdout)
 			}
 			return &jobs.StepError{Code: *result.Code, Message: message}
 		},
@@ -124,7 +124,7 @@ func (s *Service) BuildReview(project string, options ReviewOptions) (jobs.Info,
 		return jobs.Info{}, err
 	}
 	s.reviews.mu.Lock()
-	s.reviews.jobs[jscompat.Resolve(output)] = info.ID
+	s.reviews.jobs[dynvalue.Resolve(output)] = info.ID
 	s.reviews.mu.Unlock()
 	return info, nil
 }
@@ -147,7 +147,7 @@ func (s *Service) RemoveReview(project, path string) error {
 	if err != nil {
 		return err
 	}
-	index := slices.IndexFunc(list, func(item ReviewInfo) bool { return jscompat.Resolve(item.Video) == video })
+	index := slices.IndexFunc(list, func(item ReviewInfo) bool { return dynvalue.Resolve(item.Video) == video })
 	if index < 0 {
 		return errors.New(textReviewNotFound)
 	}
@@ -161,34 +161,34 @@ func (s *Service) RemoveReview(project, path string) error {
 	}
 	for _, file := range []string{video, manifest} {
 		if err := os.Remove(file); err != nil {
-			return jscompat.FsError("unlink", file, err)
+			return dynvalue.FsError("unlink", file, err)
 		}
 	}
 	// Пустой каталог пробы мешает check_workspace; папки с соседними результатами и рабочими
 	// материалами сохраняются.
 	directory := filepath.Dir(video)
-	entries, err := jscompat.ReadDir(directory)
+	entries, err := dynvalue.ReadDir(directory)
 	if err != nil {
 		return err
 	}
 	if len(entries) == 0 {
 		if err := os.Remove(directory); err != nil {
-			return jscompat.FsError("rmdir", directory, err)
+			return dynvalue.FsError("rmdir", directory, err)
 		}
 	}
 	return nil
 }
 
-// ListReviews — listReviews(project): пробы в папках plan/batches — MP4 рядом с одноимённым JSON,
+// ListReviews — пробы в папках plan/batches — MP4 рядом с одноимённым JSON,
 // в котором video_sha256 — строка, а shots — список (рецепт build_review). Новые первыми. Нет
 // plan/batches — пустой список.
 func ListReviews(project string) ([]ReviewInfo, error) {
 	folder := filepath.Join(project, "plan", "batches")
 	result := []ReviewInfo{}
-	if !jscompat.Exists(folder) {
+	if !dynvalue.Exists(folder) {
 		return result, nil
 	}
-	entries, err := jscompat.ReadDir(folder)
+	entries, err := dynvalue.ReadDir(folder)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func ListReviews(project string) ([]ReviewInfo, error) {
 			continue
 		}
 		dir := filepath.Join(folder, entry.Name())
-		files, err := jscompat.ReadDir(dir)
+		files, err := dynvalue.ReadDir(dir)
 		if err != nil {
 			return nil, err
 		}
@@ -207,28 +207,28 @@ func ListReviews(project string) ([]ReviewInfo, error) {
 				continue
 			}
 			video := filepath.Join(dir, strings.TrimSuffix(name, ".json")+".mp4")
-			if !jscompat.Exists(video) {
+			if !dynvalue.Exists(video) {
 				continue
 			}
-			data, ok := jscompat.ReadJSONFile(filepath.Join(dir, name))
-			shots, isList := jscompat.AsArray(jscompat.Get(data, "shots"))
-			_, isString := jscompat.Get(data, "video_sha256").(string)
-			if !ok || !jscompat.Truthy(data) || !isString || !isList {
+			data, ok := dynvalue.ReadJSONFile(filepath.Join(dir, name))
+			shots, isList := dynvalue.AsArray(dynvalue.Get(data, "shots"))
+			_, isString := dynvalue.Get(data, "video_sha256").(string)
+			if !ok || !dynvalue.Truthy(data) || !isString || !isList {
 				continue
 			}
 			ids := []string{}
 			for _, shot := range shots {
-				id, err := jscompat.Prop(shot, "id")
+				id, err := dynvalue.Prop(shot, "id")
 				if err != nil {
 					return nil, err
 				}
-				ids = append(ids, jscompat.ToString(jscompat.Coalesce(id, "")))
+				ids = append(ids, dynvalue.ToString(dynvalue.Coalesce(id, "")))
 			}
 			info, err := os.Stat(video)
 			if err != nil {
-				return nil, jscompat.FsError("stat", video, err)
+				return nil, dynvalue.FsError("stat", video, err)
 			}
-			total := jscompat.ToNumber(jscompat.Coalesce(jscompat.Get(data, "total_frames"), 0.0))
+			total := dynvalue.ToNumber(dynvalue.Coalesce(dynvalue.Get(data, "total_frames"), 0.0))
 			// NaN и бесконечность JSON Wails не передаёт; такой рецепт показывается с нулём кадров.
 			if math.IsNaN(total) || math.IsInf(total, 0) {
 				total = 0
@@ -239,10 +239,9 @@ func ListReviews(project string) ([]ReviewInfo, error) {
 			})
 		}
 	}
-	// Оригинал сортирует компаратором `a < b ? 1 : -1`, который у равных времён всегда отвечает
-	// «первый аргумент раньше»; TimSort V8 передаёт первым элемент с правой позиции, поэтому
-	// пробы с одинаковым временем идут в обратном порядке обхода. Здесь тот же итог задан явно:
-	// разворот, затем устойчивая сортировка по убыванию строки времени (не зависит от алгоритма).
+	// Порядок списка: новые пробы первыми, пробы с одинаковым временем — в обратном порядке
+	// обхода папок. Он задан явно и не зависит от алгоритма сортировки: разворот, затем устойчивая
+	// сортировка по убыванию строки времени.
 	slices.Reverse(result)
 	slices.SortStableFunc(result, func(a, b ReviewInfo) int { return strings.Compare(b.CreatedAt, a.CreatedAt) })
 	return result, nil

@@ -4,10 +4,10 @@ import (
 	"os"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers"
-	"songframe-go/resources"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers"
+	"songframe/resources"
 )
 
 // promptContract — инструкция и JSON-контракт задания агента производства после текста скилла.
@@ -52,24 +52,24 @@ func agentPrompt(stage string, videoProvider, imageProvider any) string {
 
 // readText — содержимое файла или "" без файла; ошибка чтения возвращается.
 func readText(path string) (string, error) {
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return "", nil
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", jscompat.FsError("open", path, err)
+		return "", dynvalue.FsError("open", path, err)
 	}
-	return jscompat.DecodeUTF8(data), nil
+	return dynvalue.DecodeUTF8(data), nil
 }
 
 // contextInput — сведения задания, которых нет в Context: этап, врезки непрерывности, объявления
 // моделей и замечание.
 type contextInput struct {
 	stage               string
-	briefs              *jscompat.Object
+	briefs              *dynvalue.Object
 	description, prompt any
 	lipSync             *mediaproviders.LipSync
-	capabilities        *jscompat.Array
+	capabilities        *dynvalue.Array
 	capabilitiesProblem string
 	inputFlags          []string
 	note                any
@@ -78,7 +78,7 @@ type contextInput struct {
 // agentContext — JSON контекста задания (порядок ключей зафиксирован эталоном): план, кастинг, врезки,
 // настройки, текущий пакет, допустимые пути, возможности моделей и замечание.
 func agentContext(c *Context, input contextInput) string {
-	value := jscompat.NewObject()
+	value := dynvalue.NewObject()
 	value.Set("stage", input.stage)
 	value.Set("scene", c.Scene)
 	value.Set("shot", c.Scene)
@@ -98,7 +98,7 @@ func agentContext(c *Context, input contextInput) string {
 	if input.lipSync == nil {
 		value.Set("lipSync", nil)
 	} else {
-		limits := jscompat.NewObject()
+		limits := dynvalue.NewObject()
 		limits.Set("min", input.lipSync.Min)
 		limits.Set("max", input.lipSync.Max)
 		value.Set("lipSync", limits)
@@ -109,14 +109,14 @@ func agentContext(c *Context, input contextInput) string {
 	value.Set("capabilitiesProblem", input.capabilitiesProblem)
 	value.Set("inputFlags", stringsArray(input.inputFlags))
 	value.Set("note", input.note)
-	return jscompat.Stringify(value)
+	return dynvalue.Stringify(value)
 }
 
-// stringsArray — массив строк JS.
-func stringsArray(items []string) *jscompat.Array {
+// stringsArray — список строк как массив dynvalue для сериализации входов промпта.
+func stringsArray(items []string) *dynvalue.Array {
 	values := make([]any, len(items))
 	for index, item := range items {
 		values[index] = item
 	}
-	return &jscompat.Array{Items: values}
+	return &dynvalue.Array{Items: values}
 }

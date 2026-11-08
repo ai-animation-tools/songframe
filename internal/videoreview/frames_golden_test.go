@@ -18,7 +18,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
+	"songframe/internal/golden"
 )
 
 // Эталон video-review-frames построен на синтетических клипах FFmpeg: тот же FFmpeg воспроизводит
@@ -125,7 +125,7 @@ func fileSHA(t *testing.T, path string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// imageGrid — размеры и средний RGB 16 ячеек, как поле grid эталона (Pillow convert("RGB")).
+// imageGrid — размеры и средний RGB 16 ячеек изображения, декодированного в RGB, как поле grid эталона.
 func imageGrid(t *testing.T, path string) (int, int, [][3]float64) {
 	file, err := os.Open(path)
 	if err != nil {

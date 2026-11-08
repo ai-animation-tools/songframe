@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/tools"
+	"songframe/internal/golden"
+	"songframe/internal/jobs"
+	"songframe/internal/tools"
 )
 
 // Эталон build-review/checks: сценарий checks.buildReview/listReviews/removeReview с ожидаемыми
@@ -114,8 +114,8 @@ func TestReviewsGolden(t *testing.T) {
 			var got, want any
 			_ = json.Unmarshal([]byte(mark(string(encoded))), &got)
 			_ = json.Unmarshal(step.Result, &want)
-			// Нечисловой total_frames даёт в эталоне totalFrames null (NaN не сериализуется
-			// в JSON); Go отдаёт для него 0.
+			// Нечисловой total_frames записан в эталоне как totalFrames null; ReviewInfo.TotalFrames —
+			// число, поэтому список отдаёт для него 0.
 			for _, item := range want.([]any) {
 				if entry := item.(map[string]any); entry["totalFrames"] == nil {
 					entry["totalFrames"] = 0.0
@@ -165,7 +165,7 @@ func TestReviewsGolden(t *testing.T) {
 			}
 			args := want.Steps[0].Args
 			output := mark(args[slicesIndex(args, "--output")+1])
-			// Настоящая метка папки — из журнала Go-задания.
+			// Настоящая метка папки — из журнала задания.
 			for _, line := range strings.Split(manager.ReadLog(info.ID, 1<<20), "\n") {
 				if fields := strings.Fields(line); len(fields) > 0 && fields[0] == "$" {
 					outputs = append(outputs, fields[slicesIndex(fields, "--output")+1])

@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"songframe-go/internal/derivedworkflow"
-	"songframe-go/internal/montage"
-	"songframe-go/internal/project"
-	"songframe-go/internal/scenarioapply"
-	"songframe-go/internal/scenarioworkflow"
-	"songframe-go/internal/status"
-	"songframe-go/internal/store"
-	"songframe-go/internal/wire"
+	"songframe/internal/derivedworkflow"
+	"songframe/internal/montage"
+	"songframe/internal/project"
+	"songframe/internal/scenarioapply"
+	"songframe/internal/scenarioworkflow"
+	"songframe/internal/status"
+	"songframe/internal/store"
+	"songframe/internal/wire"
 )
 
 // MediaRegistry отдаёт URL только выбранного приложением файла; сервер владеет потоковой выдачей.

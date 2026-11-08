@@ -1,6 +1,6 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: lint_registry.py [-h] [--json] [--strict]\nlint_registry.py: error: unrecognized arguments: --bogus\n",
+  "stderr": "usage: lint_registry [-h] [--json] [--strict]\nlint_registry: error: unrecognized arguments: --bogus\n",
   "traceback": false
 }

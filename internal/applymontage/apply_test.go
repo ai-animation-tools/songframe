@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/mediacmd"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // Сбои транзакции через точки подмены: ошибка второго рендера,
@@ -41,14 +41,14 @@ type interval struct {
 
 // makeDraft — draft() test_apply_montage: original (или принятый клип) выбранных сцен с SHA
 // текущих реестра и манифестов.
-func makeDraft(t *testing.T, root string, intervals ...interval) *pycompat.Dict {
+func makeDraft(t *testing.T, root string, intervals ...interval) *toolrt.Dict {
 	t.Helper()
-	load := func(name string) *pycompat.Dict {
-		value, err := pycompat.LoadJSONFile(filepath.Join(root, filepath.FromSlash(name)))
+	load := func(name string) *toolrt.Dict {
+		value, err := toolrt.LoadJSONFile(filepath.Join(root, filepath.FromSlash(name)))
 		if err != nil {
 			t.Fatal(err)
 		}
-		return value.(*pycompat.Dict)
+		return value.(*toolrt.Dict)
 	}
 	digest := func(name string) string {
 		value, err := sha(filepath.Join(root, filepath.FromSlash(name)))
@@ -57,27 +57,27 @@ func makeDraft(t *testing.T, root string, intervals ...interval) *pycompat.Dict 
 		}
 		return value
 	}
-	scenes := map[string]*pycompat.Dict{}
+	scenes := map[string]*toolrt.Dict{}
 	for _, scene := range load("plan/scenes.json").Value("scenes").([]any) {
-		scenes[scene.(*pycompat.Dict).Value("id").(string)] = scene.(*pycompat.Dict)
+		scenes[scene.(*toolrt.Dict).Value("id").(string)] = scene.(*toolrt.Dict)
 	}
 	clips := []any{}
-	hashes := pycompat.NewDict()
+	hashes := toolrt.NewDict()
 	for _, item := range intervals {
 		name := "assets/shots/" + item.scene + "/manifest.json"
-		original := load(name).Value("generation").(*pycompat.Dict).Value("original").(*pycompat.Dict)
-		clips = append(clips, pytool.Record(
+		original := load(name).Value("generation").(*toolrt.Dict).Value("original").(*toolrt.Dict)
+		clips = append(clips, toolcli.Record(
 			"id", "clip-"+item.scene, "scene", item.scene,
 			"path", "assets/shots/"+item.scene+"/"+original.Value("path").(string), "kind", "video",
-			"source_start_frame", pycompat.NewInt(item.start), "source_end_frame_exclusive", pycompat.NewInt(item.end),
+			"source_start_frame", toolrt.NewInt(item.start), "source_end_frame_exclusive", toolrt.NewInt(item.end),
 			"source_frames", nil,
 		))
 		hashes.Set(item.scene, digest(name))
 	}
 	first, last := intervals[0].scene, intervals[len(intervals)-1].scene
-	return pytool.Record(
-		"schema_version", pycompat.NewInt(1), "name", "Ручной монтаж", "clips", clips,
-		"audio", pytool.Record("path", "source/track.mp3", "start_frame", scenes[first].Value("start_frame"),
+	return toolcli.Record(
+		"schema_version", toolrt.NewInt(1), "name", "Ручной монтаж", "clips", clips,
+		"audio", toolcli.Record("path", "source/track.mp3", "start_frame", scenes[first].Value("start_frame"),
 			"end_frame_exclusive", scenes[last].Value("end_frame_exclusive")),
 		"base_scenes_sha256", digest("plan/scenes.json"), "base_manifest_sha256", hashes,
 	)
@@ -132,7 +132,7 @@ func TestRenderFailureHasNoPartialMutation(t *testing.T) {
 	before := projectFiles(t, root)
 	draft := makeDraft(t, root, boundary...)
 	calls := 0
-	renderEditHook = func(ctx context.Context, original, filter string, frames pycompat.Int, target string) error {
+	renderEditHook = func(ctx context.Context, original, filter string, frames toolrt.Int, target string) error {
 		calls++
 		if calls == 2 {
 			return valueError("Сбой второго рендера")
@@ -140,7 +140,7 @@ func TestRenderFailureHasNoPartialMutation(t *testing.T) {
 		return RenderEdit(ctx, original, filter, frames, target)
 	}
 	t.Cleanup(func() { renderEditHook = RenderEdit })
-	if _, err := Apply(context.Background(), draft, root, false); !pycompat.Is(err, pycompat.ValueError) {
+	if _, err := Apply(context.Background(), draft, root, false); !toolrt.Is(err, toolrt.ValueError) {
 		t.Fatalf("ожидался ValueError: %v", err)
 	}
 	if calls != 2 {
@@ -159,7 +159,7 @@ func TestChangeDuringRenderIsRejectedBeforePublication(t *testing.T) {
 	draft := makeDraft(t, root, interval{"M02", 5, 125})
 	before := projectFiles(t, root)
 	registry := filepath.Join(root, "plan", "scenes.json")
-	renderEditHook = func(ctx context.Context, original, filter string, frames pycompat.Int, target string) error {
+	renderEditHook = func(ctx context.Context, original, filter string, frames toolrt.Int, target string) error {
 		if !Active() {
 			t.Error("во время рендера применение не отмечено")
 		}
@@ -191,25 +191,25 @@ func TestPublicationErrorRollsBack(t *testing.T) {
 			return err
 		}
 		if target == registry {
-			return pycompat.New(pycompat.OSError, "Сбой после публикации реестра")
+			return toolrt.New(toolrt.OSError, "Сбой после публикации реестра")
 		}
 		return nil
 	}
 	t.Cleanup(func() { publishFileHook = PublishFile })
 	_, err := Apply(context.Background(), makeDraft(t, root, boundary...), root, true)
-	if !pycompat.Is(err, pycompat.OSError) {
+	if !toolrt.Is(err, toolrt.OSError) {
 		t.Fatalf("ожидался OSError: %v", err)
 	}
 	if calls <= 2 {
 		t.Fatalf("публикаций %d", calls)
 	}
 	sameFiles(t, before, projectFiles(t, root))
-	journals := pycompat.Glob(filepath.Join(root, filepath.FromSlash(History)), "*/journal.json")
+	journals := toolrt.Glob(filepath.Join(root, filepath.FromSlash(History)), "*/journal.json")
 	if len(journals) != 1 {
 		t.Fatalf("журналы %v", journals)
 	}
-	journal, err := pycompat.LoadJSONFile(journals[0])
-	if err != nil || journal.(*pycompat.Dict).Value("state") != "rolled_back" {
+	journal, err := toolrt.LoadJSONFile(journals[0])
+	if err != nil || journal.(*toolrt.Dict).Value("state") != "rolled_back" {
 		t.Fatalf("журнал %v: %v", journal, err)
 	}
 	if _, err := os.Stat(filepath.Join(filepath.Dir(journals[0]), "staging")); !os.IsNotExist(err) {
@@ -230,13 +230,13 @@ func TestNextLaunchRecoversInterruptedPublication(t *testing.T) {
 		return crash
 	}
 	// Остановка процесса не выполняет откат: подменённый restore оставляет журнал publishing.
-	restoreHook = func(string, *pycompat.Dict, string) error { return crash }
+	restoreHook = func(string, *toolrt.Dict, string) error { return crash }
 	_, err := Apply(context.Background(), makeDraft(t, root, interval{"M02", 5, 125}), root, false)
 	publishFileHook, restoreHook = PublishFile, restore
 	if !errors.Is(err, crash) {
 		t.Fatalf("ожидалась остановка: %v", err)
 	}
-	if len(pycompat.Glob(filepath.Join(root, filepath.FromSlash(History)), "*/staging")) != 1 {
+	if len(toolrt.Glob(filepath.Join(root, filepath.FromSlash(History)), "*/staging")) != 1 {
 		t.Fatal("staging прерванной публикации должен остаться для восстановления")
 	}
 	for range 2 {
@@ -245,7 +245,7 @@ func TestNextLaunchRecoversInterruptedPublication(t *testing.T) {
 		}
 		sameFiles(t, before, projectFiles(t, root))
 	}
-	if len(pycompat.Glob(filepath.Join(root, filepath.FromSlash(History)), "*/staging")) != 0 {
+	if len(toolrt.Glob(filepath.Join(root, filepath.FromSlash(History)), "*/staging")) != 0 {
 		t.Fatal("staging не удалён восстановлением")
 	}
 }
@@ -254,18 +254,18 @@ func TestNextLaunchRecoversInterruptedPublication(t *testing.T) {
 func TestInvalidDraftsNeverRender(t *testing.T) {
 	root := sampleProject(t)
 	before := projectFiles(t, root)
-	renderEditHook = func(context.Context, string, string, pycompat.Int, string) error {
+	renderEditHook = func(context.Context, string, string, toolrt.Int, string) error {
 		t.Error("рендер неверного черновика")
 		return nil
 	}
 	t.Cleanup(func() { renderEditHook = RenderEdit })
 	stale := makeDraft(t, root, interval{"M02", 5, 125})
-	stale.Value("base_manifest_sha256").(*pycompat.Dict).Set("M02", strings.Repeat("0", 64))
+	stale.Value("base_manifest_sha256").(*toolrt.Dict).Set("M02", strings.Repeat("0", 64))
 	staleRegistry := makeDraft(t, root, interval{"M02", 5, 125})
 	staleRegistry.Set("base_scenes_sha256", strings.Repeat("0", 64))
 	reversed := makeDraft(t, root, interval{"M02", 0, 120}, interval{"M01", 0, 240})
-	for _, draft := range []*pycompat.Dict{stale, staleRegistry, reversed} {
-		if _, err := Apply(context.Background(), draft, root, false); !pycompat.Is(err, pycompat.ValueError) {
+	for _, draft := range []*toolrt.Dict{stale, staleRegistry, reversed} {
+		if _, err := Apply(context.Background(), draft, root, false); !toolrt.Is(err, toolrt.ValueError) {
 			t.Errorf("ожидался ValueError: %v", err)
 		}
 	}

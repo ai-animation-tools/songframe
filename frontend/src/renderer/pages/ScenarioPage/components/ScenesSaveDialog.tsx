@@ -54,7 +54,7 @@ export function ScenesSaveDialog({
       closeDisabled={busy}
       contentLabel={scenarioTexts.save.affectedShotsRegion}
     >
-      {/* Список берётся только из расчёта главного процесса: формальные связи постановки, без догадок о смысле правки. */}
+      {/* Список берётся только из расчёта Go: формальные связи постановки, без догадок о смысле правки. */}
       <Typography variant="subtitle2" sx={{ mt: 2 }}>
         {scenarioTexts.save.affectedShots({ count: request?.shots.length ?? 0 })}
       </Typography>

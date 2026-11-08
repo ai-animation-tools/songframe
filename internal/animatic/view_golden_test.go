@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jobs"
+	"songframe/internal/golden"
+	"songframe/internal/jobs"
 )
 
 // viewStep — шаг сценария эталона animatic-view: запись/удаление файла, fixture или вызов

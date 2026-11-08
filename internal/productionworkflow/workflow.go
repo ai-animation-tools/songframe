@@ -27,13 +27,13 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/derivedshot"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/tools"
+	"songframe/internal/agents"
+	"songframe/internal/derivedshot"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediafile"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers"
+	"songframe/internal/tools"
 )
 
 // Agents — узкая часть менеджера внешних агентов (Pick<AgentManager, 'start' | 'get' | 'list'>).
@@ -79,7 +79,8 @@ type Options struct {
 	// VideoMedia — платный адаптер видео провайдера проекта для подготовки request-NN при Apply
 	// запроса; nil — подготовка невозможна (textChooseVideoProvider).
 	VideoMedia VideoMedia
-	// RequireVideoAccess — ai.requireAccess(project, 'video') перед подготовкой запроса: выбранный
+	// RequireVideoAccess — проверка доступа вида video (agents.AccessChecker.RequireAccess) перед
+	// подготовкой запроса: выбранный
 	// провайдер и вход в него; nil — без проверки (тесты).
 	RequireVideoAccess func(ctx context.Context, project string) error
 }
@@ -132,7 +133,7 @@ func (noAgents) List(string) []agents.Job      { return []agents.Job{} }
 // key — ключ плана в множестве busy.
 func key(project, shot string) string { return project + "\x00" + shot }
 
-// randomUUID — crypto.randomUUID: UUID версии 4 для ID предложения.
+// randomUUID — случайный UUID версии 4 (RFC 4122) для ID предложения.
 func randomUUID() string {
 	value := make([]byte, 16)
 	if _, err := rand.Read(value); err != nil {
@@ -207,7 +208,7 @@ func (w *Workflow) View(project, shot, packageDir string) (View, error) {
 
 // view — View под мьютексом.
 func (w *Workflow) view(project, shot, packageDir string) (View, error) {
-	canonical, err := jscompat.Realpath(project)
+	canonical, err := dynvalue.Realpath(project)
 	if err != nil {
 		return View{}, err
 	}
@@ -231,10 +232,10 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 	}
 	busy := w.busy[key(canonical, shot)] || slices.ContainsFunc(w.options.Agents.List(canonical), func(job agents.Job) bool { return job.Status == "running" }) ||
 		(c.PackageDir != "" && w.options.IsPackageBusy != nil && w.options.IsPackageBusy(canonical, c.PackageDir))
-	pending := jscompat.Truthy(c.workflowValue("pending_decision"))
+	pending := dynvalue.Truthy(c.workflowValue("pending_decision"))
 	descriptionApproved := c.workflowValue("description_approved") == true
 	decision := c.workflowValue("decision")
-	frameRevision := jscompat.Get(decision, "stage") == "keyframes_review" && jscompat.Get(decision, "verdict") == "revise"
+	frameRevision := dynvalue.Get(decision, "stage") == "keyframes_review" && dynvalue.Get(decision, "verdict") == "revise"
 	proposalPending := relevant.active()
 	enabled := !busy && !proposalPending && len(c.Problems) == 0 && !pending && !c.Paid
 	stage, _ := c.workflowValue("stage").(string)
@@ -267,7 +268,7 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 	if provider, ok := videoProvider(c.Settings); ok && c.Scene.Value("lipsync") == true && provider.LipSync != nil && c.Speech != nil {
 		length := c.Speech.length()
 		if length < provider.LipSync.Min-1e-6 || length > provider.LipSync.Max+1e-6 {
-			speechMismatch = textSpeechLengthOutOfRange(jscompat.ToFixed(length, 2), provider.LipSync.Min, provider.LipSync.Max)
+			speechMismatch = textSpeechLengthOutOfRange(dynvalue.ToFixed(length, 2), provider.LipSync.Min, provider.LipSync.Max)
 		}
 	}
 	// Производный план собирается из чужого материала: эта причина постоянна и важнее временной
@@ -281,7 +282,7 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 	// Кандидата опоры на открытом вопросе можно заменить своим файлом без замечания: остальные
 	// условия те же, что у импорта опор.
 	replaceFrame := ""
-	if frame, ok := jscompat.Get(c.workflowValue("pending_decision"), "frame").(string); ok && derived == "" && !c.SceneChanged && !busy && !proposalPending && !c.Paid && !imagePhase {
+	if frame, ok := dynvalue.Get(c.workflowValue("pending_decision"), "frame").(string); ok && derived == "" && !c.SceneChanged && !busy && !proposalPending && !c.Paid && !imagePhase {
 		replaceFrame = frame
 	}
 	view := View{
@@ -298,23 +299,23 @@ func (w *Workflow) view(project, shot, packageDir string) (View, error) {
 		// Пока у пакета есть вопрос, замечание вводится в его карточке; панель подхватывает
 		// сохранённый ответ «вернуть».
 		CanRevise: derived == "" && !busy && !proposalPending && !imagePhase && c.PackageDir != "" && len(c.Problems) == 0 && !pending,
-		CanGenerateFrames: derived == "" && !c.SceneChanged && imageEnabled && c.PackageDir != "" && !framesApproved && jscompat.Truthy(nextFrame) &&
+		CanGenerateFrames: derived == "" && !c.SceneChanged && imageEnabled && c.PackageDir != "" && !framesApproved && dynvalue.Truthy(nextFrame) &&
 			(descriptionApproved || frameRevision),
-		Paid: c.Paid, FramePrompts: jscompat.Raw(c.FramePrompts), NextFrame: jscompat.Raw(nextFrame),
-		ApprovedFrameIDs: jscompat.Raw(&jscompat.Array{Items: c.ApprovedFrameIDs()}), Problems: c.Problems, Proposal: json.RawMessage("null"), Job: job,
+		Paid: c.Paid, FramePrompts: dynvalue.Raw(c.FramePrompts), NextFrame: dynvalue.Raw(nextFrame),
+		ApprovedFrameIDs: dynvalue.Raw(&dynvalue.Array{Items: c.ApprovedFrameIDs()}), Problems: c.Problems, Proposal: json.RawMessage("null"), Job: job,
 	}
 	generation, err := projectGeneration(canonical)
 	if err != nil {
 		return View{}, err
 	}
-	if value := jscompat.Get(jscompat.Get(generation, "image"), "provider"); value != jscompat.Undefined {
-		view.ImageProvider = jscompat.Raw(value)
+	if value := dynvalue.Get(dynvalue.Get(generation, "image"), "provider"); value != dynvalue.Undefined {
+		view.ImageProvider = dynvalue.Raw(value)
 	}
-	if value := jscompat.Get(jscompat.Get(generation, "video"), "provider"); value != jscompat.Undefined {
-		view.VideoProvider = jscompat.Raw(value)
+	if value := dynvalue.Get(dynvalue.Get(generation, "video"), "provider"); value != dynvalue.Undefined {
+		view.VideoProvider = dynvalue.Raw(value)
 	}
 	if relevant != nil {
-		view.Proposal = jscompat.Raw(relevant.Proposal())
+		view.Proposal = dynvalue.Raw(relevant.Proposal())
 	}
 	return view, nil
 }
@@ -384,8 +385,8 @@ func framesReason(c *Context, derived, common string, imagePhase, framesApproved
 		return textAttemptAlreadySent
 	case framesApproved:
 		return textFramesAlreadyAccepted
-	case jscompat.Truthy(undecided):
-		return textAcceptFrameFirstHint(jscompat.ToString(undecided))
+	case dynvalue.Truthy(undecided):
+		return textAcceptFrameFirstHint(dynvalue.ToString(undecided))
 	case len(c.FramePrompts.Items) == 0:
 		return textFramePlanMissing
 	case !descriptionReady:
@@ -467,11 +468,11 @@ func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 		if err != nil {
 			return err
 		}
-		document := jscompat.NewObject()
+		document := dynvalue.NewObject()
 		document.Set("schemaVersion", float64(1))
 		document.Set("stage", "frames")
 		document.Set("images", candidatesTree(images))
-		raw = jscompat.Stringify(document)
+		raw = dynvalue.Stringify(document)
 	}
 	rules := stored.Rules()
 	after, err := ParseProposal(raw, rules)
@@ -483,10 +484,10 @@ func (w *Workflow) accept(c *Context, stored *Stored, job agents.Job) error {
 		return err
 	}
 	if after.Value("stage") == "frames" {
-		hashes := jscompat.NewObject()
-		images, _ := jscompat.AsArray(after.Value("images"))
+		hashes := dynvalue.NewObject()
+		images, _ := dynvalue.AsArray(after.Value("images"))
 		for _, image := range images {
-			path, _ := jscompat.Get(image, "path").(string)
+			path, _ := dynvalue.Get(image, "path").(string)
 			hash, err := requiredFileDigest(path)
 			if err != nil {
 				return err
@@ -542,7 +543,7 @@ type preparedStart struct {
 	stage      string
 	newPackage bool
 	target     string
-	hashes     *jscompat.Object
+	hashes     *dynvalue.Object
 }
 
 // prepare — синхронная часть start до первого ожидания: проверки этапа и снимок входов.
@@ -595,7 +596,7 @@ func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) 
 		}
 		return "", errors.New(textPackageUnavailable)
 	}
-	if jscompat.Truthy(c.workflowValue("pending_decision")) {
+	if dynvalue.Truthy(c.workflowValue("pending_decision")) {
 		return "", errors.New(textResolveQuestionFirst)
 	}
 	next, err := c.StageFor()
@@ -652,7 +653,7 @@ func (w *Workflow) continuedStage(c *Context, input StartInput) (string, error) 
 // задания и запись предложения. Вызывается без мьютекса; запись предложения — под ним.
 func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *preparedStart) error {
 	c, stage := prepared.context, prepared.stage
-	briefs := jscompat.NewObject()
+	briefs := dynvalue.NewObject()
 	for _, phase := range []string{"before", "after"} {
 		result, err := w.options.Run(ctx, c.Project, "continuity_brief", []string{input.Shot, "--phase", phase, "--json"})
 		if err != nil {
@@ -663,12 +664,12 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 			if details == "" {
 				details = result.Stdout
 			}
-			if details = jscompat.Trim(details); details == "" {
+			if details = dynvalue.Trim(details); details == "" {
 				details = textContinuityFailed
 			}
 			return errors.New(details)
 		}
-		brief, err := jscompat.Parse([]byte(result.Stdout))
+		brief, err := dynvalue.Parse([]byte(result.Stdout))
 		if err != nil {
 			return err
 		}
@@ -692,9 +693,9 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 			return errors.New(textProviderAudioUnsupported(title))
 		}
 	}
-	capabilities := &jscompat.Array{Items: []any{}}
+	capabilities := &dynvalue.Array{Items: []any{}}
 	for _, report := range reports {
-		object := jscompat.NewObject()
+		object := dynvalue.NewObject()
 		object.Set("command", report.Command)
 		object.Set("models", report.Models)
 		capabilities.Items = append(capabilities.Items, object)
@@ -704,7 +705,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	if err != nil {
 		return err
 	}
-	prompt := agentPrompt(stage, c.Settings.Value("provider"), jscompat.Get(jscompat.Get(generation, "image"), "provider"))
+	prompt := agentPrompt(stage, c.Settings.Value("provider"), dynvalue.Get(dynvalue.Get(generation, "image"), "provider"))
 	contextInput := contextInput{stage: stage, briefs: briefs, description: nil, prompt: nil, lipSync: rules.LipSync, capabilities: capabilities,
 		capabilitiesProblem: capabilitiesProblem, inputFlags: []string{}}
 	before := ""
@@ -726,7 +727,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 		}
 	}
 	if stage == "request" {
-		before = jscompat.Stringify(c.Workflow)
+		before = dynvalue.Stringify(c.Workflow)
 	}
 	if adapter, ok := providers.PaidAdapter(c.Settings.Value("provider")); ok {
 		for _, flag := range adapter.Rules.InputFlags {
@@ -735,7 +736,7 @@ func (w *Workflow) launch(ctx context.Context, input StartInput, prepared *prepa
 	}
 	contextInput.note = noteFor(c, input.Note)
 	task := agents.StartInput{Project: c.Project, Task: "ai-clip-scene:" + input.Shot + ":" + stage, Prompt: prompt, Context: agentContext(c, contextInput)}
-	stored := &Stored{Tree: jscompat.NewObject()}
+	stored := &Stored{Tree: dynvalue.NewObject()}
 	stored.Tree.Set("proposal", proposalTree("", "", stage, ""))
 	if c.PackageDir == "" {
 		stored.Tree.Set("packageDir", nil)
@@ -798,19 +799,19 @@ func (w *Workflow) capabilities(ctx context.Context, c *Context, stage string) (
 // noteFor — note контекста: замечание запуска без крайних пробелов или замечание решения пакета.
 func noteFor(c *Context, note *string) any {
 	if note != nil {
-		if text := jscompat.Trim(*note); text != "" {
+		if text := dynvalue.Trim(*note); text != "" {
 			return text
 		}
 	}
-	if value := jscompat.Get(c.workflowValue("decision"), "note"); jscompat.Truthy(value) {
+	if value := dynvalue.Get(c.workflowValue("decision"), "note"); dynvalue.Truthy(value) {
 		return value
 	}
 	return ""
 }
 
 // proposalTree — proposal новой записи: running, не устаревшее, after ещё нет.
-func proposalTree(id, jobID, stage, before string) *jscompat.Object {
-	proposal := jscompat.NewObject()
+func proposalTree(id, jobID, stage, before string) *dynvalue.Object {
+	proposal := dynvalue.NewObject()
 	proposal.Set("id", id)
 	proposal.Set("jobId", jobID)
 	proposal.Set("stage", stage)
@@ -842,8 +843,8 @@ func (w *Workflow) Discard(project, shot, packageDir, id string) (View, error) {
 	if stored == nil || stored.ID() != id || stored.PackageDir() != c.PackageDir || stored.Status() == "running" || stored.Status() == "applied" {
 		return View{}, errors.New(textDiscardUnavailable)
 	}
-	// Оригинал сначала записывал статус interrupted с сообщением «отклонено», а затем сразу
-	// заменял запись отметкой; итоговый файл тот же, промежуточная запись не нужна.
+	// Запись сразу заменяется отметкой отклонения, без промежуточного статуса: читатели видят
+	// только итоговый файл.
 	if err := w.store.WriteDiscarded(c.Project, shot, id); err != nil {
 		return View{}, err
 	}
@@ -880,18 +881,18 @@ func (w *Workflow) PendingProposals(path string) map[string]Summary {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	result := map[string]Summary{}
-	project, err := jscompat.Realpath(path)
+	project, err := dynvalue.Realpath(path)
 	if err != nil {
 		return result
 	}
 	registry, err := readJSON(filepath.Join(project, "plan", "scenes.json"))
-	scenes, ok := jscompat.AsArray(jscompat.Get(registry, "scenes"))
-	if err != nil || !jscompat.IsRecord(registry) || !ok {
+	scenes, ok := dynvalue.AsArray(dynvalue.Get(registry, "scenes"))
+	if err != nil || !dynvalue.IsRecord(registry) || !ok {
 		return result
 	}
-	byFile := map[string]*jscompat.Object{}
+	byFile := map[string]*dynvalue.Object{}
 	for _, item := range scenes {
-		if scene, isObject := item.(*jscompat.Object); isObject {
+		if scene, isObject := item.(*dynvalue.Object); isObject {
 			if id, isString := scene.Value("id").(string); isString {
 				byFile[FileName(project, id)] = scene
 			}
@@ -910,31 +911,31 @@ func (w *Workflow) PendingProposals(path string) map[string]Summary {
 			continue
 		}
 		// Записи других проектов не трогаем: проект указан в правилах предложения.
-		if !jscompat.IsRecord(value) || !jscompat.IsRecord(jscompat.Get(value, "rules")) || jscompat.GetPath(value, "rules", "project") != project ||
-			!jscompat.IsRecord(jscompat.Get(value, "proposal")) {
+		if !dynvalue.IsRecord(value) || !dynvalue.IsRecord(dynvalue.Get(value, "rules")) || dynvalue.GetPath(value, "rules", "project") != project ||
+			!dynvalue.IsRecord(dynvalue.Get(value, "proposal")) {
 			continue
 		}
 		scene := byFile[name]
 		// Завершённое задание переводит предложение в итоговый статус только при чтении вида плана:
 		// иначе ответ агента по плану, на который пользователь не возвращался, не попал бы в сводку.
-		if scene != nil && jscompat.GetPath(value, "proposal", "status") == "running" {
-			packageDir, _ := jscompat.Get(value, "packageDir").(string)
+		if scene != nil && dynvalue.GetPath(value, "proposal", "status") == "running" {
+			packageDir, _ := dynvalue.Get(value, "packageDir").(string)
 			if _, err := w.view(project, scene.Value("id").(string), packageDir); err == nil {
 				// Ошибка повторного чтения оставляет прежнее значение.
 				if updated, err := readJSON(file); err == nil {
 					value = updated
 				}
 			}
-			if !jscompat.IsRecord(value) || !jscompat.IsRecord(jscompat.Get(value, "proposal")) {
+			if !dynvalue.IsRecord(value) || !dynvalue.IsRecord(dynvalue.Get(value, "proposal")) {
 				continue
 			}
 		}
-		proposal := jscompat.Get(value, "proposal")
-		status := jscompat.ToString(jscompat.Get(proposal, "status"))
-		packageDir, hasPackage := jscompat.Get(value, "packageDir").(string)
-		target, _ := jscompat.Get(value, "target").(string)
-		orphan := scene == nil || derivedshot.Source(scene) != "" || (hasPackage && !jscompat.Exists(packageDir)) ||
-			(status == "applied" && (target == "" || !jscompat.Exists(target)))
+		proposal := dynvalue.Get(value, "proposal")
+		status := dynvalue.ToString(dynvalue.Get(proposal, "status"))
+		packageDir, hasPackage := dynvalue.Get(value, "packageDir").(string)
+		target, _ := dynvalue.Get(value, "target").(string)
+		orphan := scene == nil || derivedshot.Source(scene) != "" || (hasPackage && !dynvalue.Exists(packageDir)) ||
+			(status == "applied" && (target == "" || !dynvalue.Exists(target)))
 		if orphan {
 			if status != "running" {
 				_ = os.Remove(file)
@@ -942,9 +943,9 @@ func (w *Workflow) PendingProposals(path string) map[string]Summary {
 			continue
 		}
 		if status == "ready" || status == "invalid" || status == "failed" {
-			stale := jscompat.Get(proposal, "stale") == true
-			summary := jscompat.NewObject()
-			summary.Set("stage", jscompat.Get(proposal, "stage"))
+			stale := dynvalue.Get(proposal, "stale") == true
+			summary := dynvalue.NewObject()
+			summary.Set("stage", dynvalue.Get(proposal, "stage"))
 			summary.Set("status", status)
 			summary.Set("stale", stale)
 			if hasPackage {
@@ -952,13 +953,14 @@ func (w *Workflow) PendingProposals(path string) map[string]Summary {
 			} else {
 				summary.Set("packageDir", nil)
 			}
-			result[scene.Value("id").(string)] = Summary{Value: jscompat.Raw(summary), Attention: attention(status, stale)}
+			result[scene.Value("id").(string)] = Summary{Value: dynvalue.Raw(summary), Attention: attention(status, stale)}
 		}
 	}
 	return result
 }
 
-// Busy — занятость плана для маршрутов производства (productionIdle, повтор): view(...).busy.
+// Busy — занятость плана (поле busy вида) для действий производства, которые не должны
+// пересекаться с проходом.
 // Вид, который не читается (нет плана, неверный пакет), занятостью не считается: маршрут
 // сообщит свою ошибку сам.
 func (w *Workflow) Busy(project, shot, packageDir string) bool {

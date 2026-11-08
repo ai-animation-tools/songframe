@@ -1,4 +1,4 @@
-/** Управляемые родители опор повторяют решения приложения, не вызывая IPC или генератор. */
+/** Управляемые родители опор повторяют решения приложения, не вызывая API приложения или генератор. */
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Paper, Stack, Typography } from '@mui/material';
 import type { KeyframeNoteScope, PackageView } from '@shared/types';

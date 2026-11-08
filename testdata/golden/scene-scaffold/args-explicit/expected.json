@@ -1,7 +1,7 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: scene_scaffold.py [-h] [--force] [--dry-run] [--json]\nscene_scaffold.py: error: argument --force: ignored explicit argument '1'\n",
+  "stderr": "usage: scene_scaffold [-h] [--force] [--dry-run] [--json]\nscene_scaffold: error: argument --force: ignored explicit argument '1'\n",
   "traceback": false,
   "files": {
     "plan/scenes.json": "unchanged"

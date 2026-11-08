@@ -12,14 +12,14 @@ import (
 	"unicode/utf8"
 )
 
-// Сборка черновика plan/audio/timing.json после автоматической разметки (семантика Python
-// зафиксирована эталоном testdata/golden/timing-draft): подтверждённые строки прежней разметки
+// Сборка черновика plan/audio/timing.json после автоматической разметки (результат
+// зафиксирован эталоном testdata/golden/timing-draft): подтверждённые строки прежней разметки
 // переносятся без изменений, ручные заметки сохраняются, сомнительные пути становятся кандидатами,
 // части песни пересчитываются только в автоматической части карты. Новые границы не публикуются,
 // если они пересекаются между собой или с подтверждёнными строками.
 //
 // Акустику (выделение вокала и CTC) выполняет internal/songml; сюда приходит готовый Recognition.
-// Значения прежнего файла читаются с различием int/float (pyjson.go), чтобы перенесённые строки и
+// Значения прежнего файла читаются с различием целых и дробных (draftjson.go), чтобы перенесённые строки и
 // числа записывались байт в байт в формате черновика.
 
 // AlignmentModel — подпись акустической модели в recognition.alignment и в статусе черновика:
@@ -74,14 +74,15 @@ type Recognition struct {
 	DecodedDuration float64
 }
 
-// pySpace — str.isspace() Python: пробелы Unicode и разделители \x1c–\x1f.
-func pySpace(r rune) bool { return unicode.IsSpace(r) || (r >= 0x1c && r <= 0x1f) }
+// isDraftSpace — пробельный символ черновика: пробелы Unicode и разделители \x1c–\x1f.
+func isDraftSpace(r rune) bool { return unicode.IsSpace(r) || (r >= 0x1c && r <= 0x1f) }
 
-// pyStrip — str.strip() без аргументов.
-func pyStrip(text string) string { return strings.TrimFunc(text, pySpace) }
+// stripDraft — текст без крайних пробельных символов isDraftSpace.
+func stripDraft(text string) string { return strings.TrimFunc(text, isDraftSpace) }
 
-// pySplitLines — str.splitlines(): все переводы строк Python, \r\n как один, без пустого хвоста.
-func pySplitLines(text string) []string {
+// splitDraftLines — строки текста: перевод строки — \n, \r, \r\n (как один), \v, \f, \x1c–\x1e,
+// U+0085, U+2028 и U+2029; пустого хвоста после последнего перевода нет.
+func splitDraftLines(text string) []string {
 	var lines []string
 	start := 0
 	for index := 0; index < len(text); {
@@ -105,17 +106,18 @@ func pySplitLines(text string) []string {
 	return lines
 }
 
-// Регулярные выражения разбора текста для черновика; \s и \d Python для str — Unicode-классы.
+// Регулярные выражения разбора текста для черновика; пробелы и цифры — Unicode-классы
+// (\p{Z}, \p{Nd}), а не ASCII-классы RE2.
 var (
-	pyHeader       = regexp.MustCompile(`^\[([^\[\]]+)\]$`)
-	pyMarkdown     = regexp.MustCompile(`^(?:#{1,6}[\s\p{Z}\x1c-\x1f\x85]|[-*+][\s\p{Z}\x1c-\x1f\x85]|\p{Nd}+[.)][\s\p{Z}\x1c-\x1f\x85]|` + "```" + `|~~~)`)
-	pySectionTitle = regexp.MustCompile(`(?i)^(?:[а-яёa-z]+[\s\p{Z}\x1c-\x1f\x85]+){0,2}(?:припев|куплет|бридж|интро|вступление|аутро|проигрыш|кода|финал|запев)(?:[\s\p{Z}\x1c-\x1f\x85]+(?:[а-яёa-z]+|\p{Nd}+)){0,2}[:.]?$`)
-	pyAutoNote     = regexp.MustCompile(`^(?:(?:Совпало [0-9]+ из [0-9]+ слов|Совпали все [0-9]+ слов|Слова не распознаны, оценка по соседним строкам|Границы уточнены по выделенному вокалу и исходному тексту); ` + regexp.QuoteMeta(unverified) + `\.)$`)
-	pyLinesNote    = regexp.MustCompile(`^(?:строки [1-9]\p{Nd}*–[1-9]\p{Nd}*)$`)
-	pyInterlude    = regexp.MustCompile(`^(?:Проигрыш после «.+»)$`)
+	draftHeader       = regexp.MustCompile(`^\[([^\[\]]+)\]$`)
+	draftMarkdown     = regexp.MustCompile(`^(?:#{1,6}[\s\p{Z}\x1c-\x1f\x85]|[-*+][\s\p{Z}\x1c-\x1f\x85]|\p{Nd}+[.)][\s\p{Z}\x1c-\x1f\x85]|` + "```" + `|~~~)`)
+	draftSectionTitle = regexp.MustCompile(`(?i)^(?:[а-яёa-z]+[\s\p{Z}\x1c-\x1f\x85]+){0,2}(?:припев|куплет|бридж|интро|вступление|аутро|проигрыш|кода|финал|запев)(?:[\s\p{Z}\x1c-\x1f\x85]+(?:[а-яёa-z]+|\p{Nd}+)){0,2}[:.]?$`)
+	draftAutoNote     = regexp.MustCompile(`^(?:(?:Совпало [0-9]+ из [0-9]+ слов|Совпали все [0-9]+ слов|Слова не распознаны, оценка по соседним строкам|Границы уточнены по выделенному вокалу и исходному тексту); ` + regexp.QuoteMeta(unverified) + `\.)$`)
+	draftLinesNote    = regexp.MustCompile(`^(?:строки [1-9]\p{Nd}*–[1-9]\p{Nd}*)$`)
+	draftInterlude    = regexp.MustCompile(`^(?:Проигрыш после «.+»)$`)
 )
 
-// LyricLine — строка песни align_lyrics: физический номер (1-based) и текст без крайних пробелов.
+// LyricLine — строка песни для разметки: физический номер (1-based) и текст без крайних пробелов.
 type LyricLine struct {
 	Number int
 	Text   string
@@ -125,14 +127,14 @@ type LyricLine struct {
 // заголовка или Markdown останавливает разметку до долгого вычисления.
 func LyricLines(text string) ([]LyricLine, error) {
 	var lines []LyricLine
-	for index, raw := range pySplitLines(strings.TrimLeft(text, "\ufeff")) {
+	for index, raw := range splitDraftLines(strings.TrimLeft(text, "\ufeff")) {
 		number := index + 1
-		line := pyStrip(raw)
-		section := pyHeader.FindStringSubmatch(line)
-		if strings.ContainsAny(line, "[]") && (section == nil || pyStrip(section[1]) == "") {
+		line := stripDraft(raw)
+		section := draftHeader.FindStringSubmatch(line)
+		if strings.ContainsAny(line, "[]") && (section == nil || stripDraft(section[1]) == "") {
 			return nil, fmt.Errorf("Строка %d: заголовок секции должен быть отдельной строкой вида [Припев], с непустым названием и обеими скобками.", number)
 		}
-		if pyMarkdown.MatchString(line) || pySectionTitle.MatchString(line) {
+		if draftMarkdown.MatchString(line) || draftSectionTitle.MatchString(line) {
 			return nil, fmt.Errorf("Строка %d: слова песни пишутся обычным текстом, секции — как [Припев], без Markdown и нумерации.", number)
 		}
 		if line != "" && section == nil {
@@ -148,14 +150,14 @@ type textPart struct {
 	first, last int
 }
 
-// textSections — text_sections: строки до первого заголовка идут в «Без названия».
+// textSections — части песни по заголовкам: строки до первого заголовка идут в «Без названия».
 func textSections(text string) []textPart {
 	var parts []*textPart
 	var current *textPart
-	for index, raw := range pySplitLines(strings.TrimLeft(text, "\ufeff")) {
-		line := pyStrip(raw)
-		if header := pyHeader.FindStringSubmatch(line); header != nil {
-			current = &textPart{name: pyStrip(header[1])}
+	for index, raw := range splitDraftLines(strings.TrimLeft(text, "\ufeff")) {
+		line := stripDraft(raw)
+		if header := draftHeader.FindStringSubmatch(line); header != nil {
+			current = &textPart{name: stripDraft(header[1])}
 			parts = append(parts, current)
 		} else if line != "" {
 			if current == nil {
@@ -177,9 +179,9 @@ func textSections(text string) []textPart {
 	return result
 }
 
-// pyKey — ключ dict Python для значения: равные числа (3, 3.0, True и 1) дают один ключ.
-// ok=false — значение не хешируется (список или объект), Python остановился бы с TypeError.
-func pyKey(value any) (string, bool) {
+// valueKey — ключ значения для сравнения по равенству: равные числа (3, 3.0, true и 1) дают один ключ.
+// ok=false — значение не сравнивается как ключ (список или объект): структура прежнего файла неверна.
+func valueKey(value any) (string, bool) {
 	switch item := value.(type) {
 	case nil:
 		return "n", true
@@ -188,13 +190,13 @@ func pyKey(value any) (string, bool) {
 			return "1", true
 		}
 		return "0", true
-	case pyInt:
+	case exactInt:
 		return item.text, true
 	case float64:
 		if !math.IsInf(item, 0) && !math.IsNaN(item) && item == math.Trunc(item) {
 			return strconv.FormatFloat(item, 'f', -1, 64), true
 		}
-		text, _ := pyFloatRepr(item)
+		text, _ := formatDraftFloat(item)
 		return "f:" + text, true
 	case string:
 		return "s:" + item, true
@@ -205,17 +207,17 @@ func pyKey(value any) (string, bool) {
 // lineKey — ключ номера строки исходного текста.
 func lineKey(number int) string { return strconv.Itoa(number) }
 
-// asObject — элемент как dict; иное значение означает неожиданную структуру прежнего файла.
-func asObject(value any) (*pyObject, error) {
-	object, ok := value.(*pyObject)
+// asObject — элемент как объект; иное значение означает неожиданную структуру прежнего файла.
+func asObject(value any) (*draftObject, error) {
+	object, ok := value.(*draftObject)
 	if !ok {
 		return nil, errPrevious
 	}
 	return object, nil
 }
 
-// previousList — (previous or {}).get(key, []): отсутствие ключа — пустой список, иное не-список — ошибка.
-func previousList(previous *pyObject, key string) ([]any, error) {
+// previousList — список прежнего файла по ключу: нет файла или ключа — пустой список, иное не-список — ошибка.
+func previousList(previous *draftObject, key string) ([]any, error) {
 	if previous == nil {
 		return nil, nil
 	}
@@ -231,9 +233,9 @@ func previousList(previous *pyObject, key string) ([]any, error) {
 }
 
 // BuildDraft собирает черновик разметки по акустическому выравниванию. previous — прежний
-// timing.json в модели pyjson (nil — нет файла, повреждён или выбран сброс). duration —
+// timing.json в модели draftjson.go (nil — нет файла, повреждён или выбран сброс). duration —
 // длительность контейнера по ffprobe, округлённая до миллисекунд. sha256 — SHA исходного трека.
-func BuildDraft(text string, recognition Recognition, duration float64, previous any, sha256 string) (*pyObject, error) {
+func BuildDraft(text string, recognition Recognition, duration float64, previous any, sha256 string) (*draftObject, error) {
 	decoded := recognition.DecodedDuration
 	for _, value := range []float64{duration, decoded} {
 		if math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 {
@@ -247,7 +249,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 	if len(lines) == 0 {
 		return nil, errNoLyrics
 	}
-	old, _ := previous.(*pyObject)
+	old, _ := previous.(*draftObject)
 	segments := map[int]Segment{}
 	for _, segment := range recognition.Segments {
 		segments[segment.SourceLine] = segment
@@ -257,7 +259,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 	if err != nil {
 		return nil, err
 	}
-	kept := map[string]*pyObject{}
+	kept := map[string]*draftObject{}
 	for _, value := range previousLines {
 		line, err := asObject(value)
 		if err != nil {
@@ -265,8 +267,8 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		}
 		verified, _ := line.get("verified")
 		number, _ := line.get("source_line")
-		if pyTruthy(verified) && pyIsInt(number) {
-			key, _ := pyKey(number)
+		if truthy(verified) && isIntegerValue(number) {
+			key, _ := valueKey(number)
 			kept[key] = line
 		}
 	}
@@ -283,7 +285,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		}
 		if note, ok := item.values["note"].(string); ok {
 			number, exists := item.get("source_line")
-			key, hashable := pyKey(number)
+			key, hashable := valueKey(number)
 			if !exists || !hashable {
 				return nil, errPrevious
 			}
@@ -291,10 +293,10 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		}
 	}
 	for _, value := range previousLines {
-		item, _ := value.(*pyObject)
-		if note, ok := item.values["note"].(string); ok && pyStrip(note) != "" && !pyAutoNote.MatchString(note) {
+		item, _ := value.(*draftObject)
+		if note, ok := item.values["note"].(string); ok && stripDraft(note) != "" && !draftAutoNote.MatchString(note) {
 			number, exists := item.get("source_line")
-			key, hashable := pyKey(number)
+			key, hashable := valueKey(number)
 			if !exists || !hashable {
 				return nil, errPrevious
 			}
@@ -302,11 +304,11 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		}
 	}
 
-	resultLines := []*pyObject{}
+	resultLines := []*draftObject{}
 	for index, line := range lines {
 		if previousLine, ok := kept[lineKey(line.Number)]; ok {
 			copied := previousLine.clone()
-			copied.set("id", newPyInt(index+1))
+			copied.set("id", newExactInt(index+1))
 			resultLines = append(resultLines, copied)
 			continue
 		}
@@ -318,11 +320,11 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		if value, ok := retained[lineKey(line.Number)]; ok {
 			note = value
 		}
-		entry := newPyObject()
-		entry.set("id", newPyInt(index+1))
-		entry.set("source_line", newPyInt(line.Number))
-		entry.set("start", pyRound(segment.Start))
-		entry.set("end", pyRound(segment.End))
+		entry := newDraftObject()
+		entry.set("id", newExactInt(index+1))
+		entry.set("source_line", newExactInt(line.Number))
+		entry.set("start", roundMillis(segment.Start))
+		entry.set("end", roundMillis(segment.End))
 		entry.set("verified", false)
 		entry.set("note", note)
 		resultLines = append(resultLines, entry)
@@ -330,7 +332,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 
 	assigned := map[string]bool{}
 	for _, line := range resultLines {
-		key, hashable := pyKey(line.values["source_line"])
+		key, hashable := valueKey(line.values["source_line"])
 		if !hashable {
 			return nil, errPrevious
 		}
@@ -340,7 +342,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 	for index, line := range lines {
 		numbers[line.Number] = index + 1
 	}
-	candidates := []*pyObject{}
+	candidates := []*draftObject{}
 	seen := map[int]bool{}
 	for _, item := range recognition.Candidates {
 		if _, known := numbers[item.SourceLine]; !known || seen[item.SourceLine] {
@@ -348,14 +350,14 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		}
 		seen[item.SourceLine] = true
 		if !finite(item.Start) || !finite(item.End) || item.Start < 0 || item.End <= item.Start || item.End > duration+0.5 ||
-			pyStrip(item.Reason) == "" || !finite(item.AcousticScore) || item.AcousticScore < 0 || item.AcousticScore > 1 {
+			stripDraft(item.Reason) == "" || !finite(item.AcousticScore) || item.AcousticScore < 0 || item.AcousticScore > 1 {
 			return nil, errCandidate
 		}
 		if assigned[lineKey(item.SourceLine)] {
 			continue
 		}
-		entry := newPyObject()
-		entry.set("source_line", newPyInt(item.SourceLine))
+		entry := newDraftObject()
+		entry.set("source_line", newExactInt(item.SourceLine))
 		entry.set("start", item.Start)
 		entry.set("end", item.End)
 		entry.set("reason", item.Reason)
@@ -369,23 +371,23 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 		return nil, errNoMatch
 	}
 	// После пропусков номера плотные, физические source_line не меняются.
-	members := map[string]*pyObject{}
+	members := map[string]*draftObject{}
 	for index, line := range resultLines {
-		line.set("id", newPyInt(index+1))
-		key, _ := pyKey(line.values["source_line"])
+		line.set("id", newExactInt(index+1))
+		key, _ := valueKey(line.values["source_line"])
 		members[key] = line
 	}
 	for _, candidate := range candidates {
-		number, _ := candidate.values["source_line"].(pyInt).int()
+		number, _ := candidate.values["source_line"].(exactInt).int()
 		member := candidate.clone()
-		member.set("id", newPyInt(numbers[number]))
+		member.set("id", newExactInt(numbers[number]))
 		members[lineKey(number)] = member
 	}
 	previousSections, err := sectionsOf(old)
 	if err != nil {
 		return nil, err
 	}
-	sections, err := pyResolveSections(previousSections, textSections(text), members, duration, len(candidates) > 0 || len(resultLines) < len(lines))
+	sections, err := resolveDraftSections(previousSections, textSections(text), members, duration, len(candidates) > 0 || len(resultLines) < len(lines))
 	if err != nil {
 		return nil, err
 	}
@@ -395,7 +397,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 
 	verified := 0
 	for _, line := range resultLines {
-		if value, _ := line.get("verified"); pyTruthy(value) {
+		if value, _ := line.get("verified"); truthy(value) {
 			verified++
 		}
 	}
@@ -414,8 +416,8 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 	if err != nil {
 		return nil, err
 	}
-	result := newPyObject()
-	result.set("version", newPyInt(2))
+	result := newDraftObject()
+	result.set("version", newExactInt(2))
 	result.set("status", status)
 	result.set("source", sourceTrack)
 	result.set("sha256", sha256)
@@ -427,7 +429,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 	result.set("line_order", order)
 	result.set("sections", sections)
 	// Ручная карта тоже входит в публикацию: нечисловые значения не портят прежний файл.
-	if _, err := encodePyJSON(result); err != nil {
+	if _, err := encodeDraftJSON(result); err != nil {
 		return nil, errNotNumeric
 	}
 	return result, nil
@@ -435,7 +437,7 @@ func BuildDraft(text string, recognition Recognition, duration float64, previous
 
 func finite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
 
-func objectList(items []*pyObject) []any {
+func objectList(items []*draftObject) []any {
 	result := make([]any, len(items))
 	for index, item := range items {
 		result[index] = item
@@ -445,7 +447,7 @@ func objectList(items []*pyObject) []any {
 
 // checkLines — итоговая проверка align_lyrics: конечные границы в пределах трека, длина не
 // меньше 300 мс (допуск только на двоичную погрешность) и отсутствие пересечений.
-func checkLines(lines []*pyObject, duration float64) error {
+func checkLines(lines []*draftObject, duration float64) error {
 	type bounds struct{ start, end float64 }
 	ordered := make([]bounds, 0, len(lines))
 	for _, line := range lines {
@@ -454,8 +456,8 @@ func checkLines(lines []*pyObject, duration float64) error {
 		if !okStart || !okEnd {
 			return errPrevious
 		}
-		startValue, isNumber := pyNumber(start)
-		endValue, isEndNumber := pyNumber(end)
+		startValue, isNumber := numberOf(start)
+		endValue, isEndNumber := numberOf(end)
 		if !isNumber || !isEndNumber {
 			return errPrevious
 		}
@@ -473,8 +475,8 @@ func checkLines(lines []*pyObject, duration float64) error {
 	return nil
 }
 
-// lineOrder — timing_line_order: ручная очередь по физическим номерам и новые строки в конце.
-func lineOrder(lines []LyricLine, previous *pyObject) ([]any, error) {
+// lineOrder — очередь строк: ручная очередь по физическим номерам и новые строки в конце.
+func lineOrder(lines []LyricLine, previous *draftObject) ([]any, error) {
 	present := map[int]bool{}
 	for _, line := range lines {
 		present[line.Number] = true
@@ -485,15 +487,15 @@ func lineOrder(lines []LyricLine, previous *pyObject) ([]any, error) {
 		if value, ok := previous.get("line_order"); ok {
 			if items, isList := value.([]any); isList {
 				for _, item := range items {
-					// type(number) is int: bool сюда не входит.
-					number, isInt := item.(pyInt)
+					// Номер — только целое: bool сюда не входит.
+					number, isInt := item.(exactInt)
 					if !isInt {
 						continue
 					}
 					value, fits := number.int()
 					if fits && present[value] && !added[value] {
 						added[value] = true
-						result = append(result, newPyInt(value))
+						result = append(result, newExactInt(value))
 					}
 				}
 			}
@@ -501,19 +503,19 @@ func lineOrder(lines []LyricLine, previous *pyObject) ([]any, error) {
 	}
 	for _, line := range lines {
 		if !added[line.Number] {
-			result = append(result, newPyInt(line.Number))
+			result = append(result, newExactInt(line.Number))
 		}
 	}
 	return result, nil
 }
 
-// sectionsOf — (previous or {}).get("sections"): ложное значение — нет карты, иной не-список — ошибка.
-func sectionsOf(previous *pyObject) ([]any, error) {
+// sectionsOf — карта частей прежнего файла: ложное значение — нет карты, иной не-список — ошибка.
+func sectionsOf(previous *draftObject) ([]any, error) {
 	if previous == nil {
 		return nil, nil
 	}
 	value, _ := previous.get("sections")
-	if !pyTruthy(value) {
+	if !truthy(value) {
 		return nil, nil
 	}
 	items, ok := value.([]any)
@@ -523,8 +525,8 @@ func sectionsOf(previous *pyObject) ([]any, error) {
 	return items, nil
 }
 
-// pyIsAutoSection — is_auto_section: автоматическую часть узнаём по origin или полной системной подписи.
-func pyIsAutoSection(section *pyObject, names map[string]bool) (bool, error) {
+// isDraftAutoSection — автоматическую часть узнаём по origin или полной системной подписи.
+func isDraftAutoSection(section *draftObject, names map[string]bool) (bool, error) {
 	if origin, ok := section.get("origin"); ok {
 		text, isText := origin.(string)
 		return isText && text == "auto", nil
@@ -539,7 +541,7 @@ func pyIsAutoSection(section *pyObject, names map[string]bool) (bool, error) {
 	}
 	name, nameText := nameValue.(string)
 	if !nameText {
-		// name in set для нехешируемого значения и re.fullmatch для не-строки — TypeError в Python.
+		// Нестроковое имя — неверная структура прежнего файла.
 		return false, errPrevious
 	}
 	note, noteText := noteValue.(string)
@@ -547,30 +549,30 @@ func pyIsAutoSection(section *pyObject, names map[string]bool) (bool, error) {
 		if !noteText {
 			return false, errPrevious
 		}
-		if pyLinesNote.MatchString(note) {
+		if draftLinesNote.MatchString(note) {
 			return true, nil
 		}
 	}
-	if (name == "Вступление" || pyInterlude.MatchString(name)) && noteText && note == "без вокала" {
+	if (name == "Вступление" || draftInterlude.MatchString(name)) && noteText && note == "без вокала" {
 		return true, nil
 	}
 	return name == "Финал без вокала" && noteText && note == "до конца трека", nil
 }
 
-// pyResolveSections — resolve_sections: полностью ручная карта остаётся как есть, у смешанной
+// resolveDraftSections — карта частей черновика: полностью ручная карта остаётся как есть, у смешанной
 // пересчитываются только автоматические части; ручные имеют приоритет по имени.
-func pyResolveSections(previous []any, parts []textPart, members map[string]*pyObject, duration float64, uncertain bool) ([]any, error) {
+func resolveDraftSections(previous []any, parts []textPart, members map[string]*draftObject, duration float64, uncertain bool) ([]any, error) {
 	names := map[string]bool{}
 	for _, part := range parts {
 		names[part.name] = true
 	}
-	var manual []*pyObject
+	var manual []*draftObject
 	for _, value := range previous {
 		section, err := asObject(value)
 		if err != nil {
 			return nil, err
 		}
-		auto, err := pyIsAutoSection(section, names)
+		auto, err := isDraftAutoSection(section, names)
 		if err != nil {
 			return nil, err
 		}
@@ -581,19 +583,19 @@ func pyResolveSections(previous []any, parts []textPart, members map[string]*pyO
 	if len(previous) > 0 && len(manual) == len(previous) {
 		return previous, nil
 	}
-	generated := pyBuildSections(parts, members, duration, uncertain)
+	generated := buildDraftSections(parts, members, duration, uncertain)
 	manualNames := map[string]bool{}
 	for _, section := range manual {
 		name, exists := section.get("name")
-		key, hashable := pyKey(name)
+		key, hashable := valueKey(name)
 		if !exists || !hashable {
 			return nil, errPrevious
 		}
 		manualNames[key] = true
 	}
-	combined := append([]*pyObject{}, manual...)
+	combined := append([]*draftObject{}, manual...)
 	for _, section := range generated {
-		key, _ := pyKey(section.values["name"])
+		key, _ := valueKey(section.values["name"])
 		if !manualNames[key] {
 			combined = append(combined, section)
 		}
@@ -601,7 +603,7 @@ func pyResolveSections(previous []any, parts []textPart, members map[string]*pyO
 	starts := make([]float64, len(combined))
 	for index, section := range combined {
 		value, exists := section.get("start")
-		number, isNumber := pyNumber(value)
+		number, isNumber := numberOf(value)
 		if !exists || !isNumber {
 			return nil, errPrevious
 		}
@@ -619,24 +621,24 @@ func pyResolveSections(previous []any, parts []textPart, members map[string]*pyO
 	return result, nil
 }
 
-// pyLess — a < b для чисел Python (int/float/bool сравниваются по значению).
-func pyLess(a, b any) bool {
-	left, _ := pyNumber(a)
-	right, _ := pyNumber(b)
+// numberLess — a < b для чисел модели (целые, дробные и bool сравниваются по значению).
+func numberLess(a, b any) bool {
+	left, _ := numberOf(a)
+	right, _ := numberOf(b)
 	return left < right
 }
 
-// pyBuildSections — части песни по строкам и кандидатам; промежутки от 2 с без вокала
-// называются только при полной карте, иначе — «Не размечено». Сохраняется тип чисел Python
-// (min/max возвращают сам элемент, round(int) остаётся int).
-func pyBuildSections(parts []textPart, members map[string]*pyObject, duration float64, uncertain bool) []*pyObject {
+// buildDraftSections — части песни по строкам и кандидатам; промежутки от 2 с без вокала
+// называются только при полной карте, иначе — «Не размечено». Сохраняется тип чисел модели
+// (min/max возвращают сам элемент, округление целого остаётся целым).
+func buildDraftSections(parts []textPart, members map[string]*draftObject, duration float64, uncertain bool) []*draftObject {
 	type named struct {
 		name, note string
 		start, end any
 	}
 	var groups []named
 	for _, part := range parts {
-		var list []*pyObject
+		var list []*draftObject
 		for number := part.first; number <= part.last; number++ {
 			if member, ok := members[lineKey(number)]; ok {
 				list = append(list, member)
@@ -645,37 +647,37 @@ func pyBuildSections(parts []textPart, members map[string]*pyObject, duration fl
 		if len(list) == 0 {
 			continue
 		}
-		sort.SliceStable(list, func(i, j int) bool { return pyLess(list[i].values["start"], list[j].values["start"]) })
+		sort.SliceStable(list, func(i, j int) bool { return numberLess(list[i].values["start"], list[j].values["start"]) })
 		start, end := list[0].values["start"], list[0].values["end"]
 		for _, member := range list[1:] {
-			if pyLess(member.values["start"], start) {
+			if numberLess(member.values["start"], start) {
 				start = member.values["start"]
 			}
-			if pyLess(end, member.values["end"]) {
+			if numberLess(end, member.values["end"]) {
 				end = member.values["end"]
 			}
 		}
-		first, _ := list[0].values["id"].(pyInt)
-		last, _ := list[len(list)-1].values["id"].(pyInt)
+		first, _ := list[0].values["id"].(exactInt)
+		last, _ := list[len(list)-1].values["id"].(exactInt)
 		groups = append(groups, named{part.name, "строки " + first.text + "–" + last.text, start, end})
 	}
-	sections := []*pyObject{}
-	gap := func(name, note string, start, end any) *pyObject {
+	sections := []*draftObject{}
+	gap := func(name, note string, start, end any) *draftObject {
 		if uncertain {
 			name, note = "Не размечено", "границы вокала не подтверждены"
 		}
-		section := newPyObject()
+		section := newDraftObject()
 		section.set("name", name)
-		section.set("start", pyRound(start))
-		section.set("end", pyRound(end))
+		section.set("start", roundMillis(start))
+		section.set("end", roundMillis(end))
 		section.set("note", note)
 		section.set("origin", "auto")
 		return section
 	}
 	var cursor any = 0.0
 	for index, group := range groups {
-		startValue, _ := pyNumber(group.start)
-		cursorValue, _ := pyNumber(cursor)
+		startValue, _ := numberOf(group.start)
+		cursorValue, _ := numberOf(cursor)
 		if startValue-cursorValue >= gapMinimum {
 			name := "Вступление"
 			if index > 0 {
@@ -683,18 +685,18 @@ func pyBuildSections(parts []textPart, members map[string]*pyObject, duration fl
 			}
 			sections = append(sections, gap(name, "без вокала", cursor, group.start))
 		}
-		section := newPyObject()
+		section := newDraftObject()
 		section.set("name", group.name)
-		section.set("start", pyRound(group.start))
-		section.set("end", pyRound(group.end))
+		section.set("start", roundMillis(group.start))
+		section.set("end", roundMillis(group.end))
 		section.set("note", group.note)
 		section.set("origin", "auto")
 		sections = append(sections, section)
-		if pyLess(cursor, group.end) {
+		if numberLess(cursor, group.end) {
 			cursor = group.end
 		}
 	}
-	cursorValue, _ := pyNumber(cursor)
+	cursorValue, _ := numberOf(cursor)
 	if duration != 0 && duration-cursorValue >= gapMinimum {
 		sections = append(sections, gap("Финал без вокала", "до конца трека", cursor, duration))
 	}
@@ -717,7 +719,7 @@ func FromAlignment(lines []AlignedLine, decodedDuration float64) Recognition {
 			reason = line.Reason
 		}
 		if end-start < minLength-timeEpsilon {
-			reason = pyStrip(reason + " Акустический интервал слишком короткий; укажите границы вручную.")
+			reason = stripDraft(reason + " Акустический интервал слишком короткий; укажите границы вручную.")
 		}
 		if reason != "" {
 			if line.AcousticScore >= 0.45 && end > start {
@@ -739,9 +741,9 @@ type AlignedLine struct {
 	Reason         string
 }
 
-// EncodeDraft — байты timing.json в формате черновика (json.dumps indent=2 + перевод строки).
-func EncodeDraft(draft *pyObject) ([]byte, error) {
-	data, err := encodePyJSON(draft)
+// EncodeDraft — байты timing.json в формате черновика (encodeDraftJSON: отступ два пробела, перевод строки в конце).
+func EncodeDraft(draft *draftObject) ([]byte, error) {
+	data, err := encodeDraftJSON(draft)
 	if err != nil {
 		return nil, errNotNumeric
 	}
@@ -754,11 +756,11 @@ func ParsePrevious(data []byte) any {
 	if !utf8.Valid(data) {
 		return nil
 	}
-	value, err := parsePyJSON(data)
+	value, err := parseDraftJSON(data)
 	if err != nil {
 		return nil
 	}
-	if _, ok := value.(*pyObject); !ok {
+	if _, ok := value.(*draftObject); !ok {
 		return nil
 	}
 	return value

@@ -15,8 +15,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"songframe-go/internal/process"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/process"
+	"songframe/internal/toolrt"
 )
 
 // Пределы подготовки кадров; от них зависят выборка и отказы, проверяемые эталоном video-review-frames.
@@ -26,7 +26,7 @@ const (
 	maxFrames        = 32
 	commandTimeout   = 120 * time.Second
 	imageFileBudget  = 1024 * 1024
-	// stderrTail — хвост stderr FFmpeg в сообщении, в символах (срез [-1200:] Python).
+	// stderrTail — хвост stderr FFmpeg в сообщении, в символах (последние 1200).
 	stderrTail = 1200
 	// probeOutput — предел stdout ffprobe: список PTS 72 000 кадров занимает несколько мегабайт.
 	probeOutput = 64 * 1024 * 1024
@@ -95,7 +95,7 @@ func Extract(ctx context.Context, input ExtractInput) (Manifest, error) {
 	return manifest, nil
 }
 
-// resolvePath — Path.resolve() без strict: ссылки разыменованы в существующей части пути.
+// resolvePath — абсолютный путь, ссылки разыменованы в существующей части пути.
 func resolvePath(path string) string {
 	absolute := filepath.Clean(path)
 	rest := []string{}
@@ -110,13 +110,13 @@ func resolvePath(path string) string {
 	}
 }
 
-// isFile — Path.is_file(): обычный файл после разыменования ссылок.
+// isFile — обычный файл после разыменования ссылок.
 func isFile(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.Mode().IsRegular()
 }
 
-// isDir — Path.is_dir().
+// isDir — каталог после разыменования ссылок.
 func isDir(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
@@ -230,13 +230,13 @@ func extract(ctx context.Context, input ExtractInput) (Manifest, error) {
 	return manifest, nil
 }
 
-// manifestJSON — json.dumps(report, ensure_ascii=False, indent=2) + "\n" в UTF-8 по семантике
-// Python: порядок ключей и запись чисел (float 0.0, 2.5; schema_version — int) зафиксированы
-// эталоном video-review-frames.
+// manifestJSON — байты manifest.json в модели toolrt (отступ два пробела, не-ASCII без экранирования,
+// перевод строки в конце, UTF-8): порядок ключей и запись чисел (дробные 0.0, 2.5; schema_version —
+// целое) зафиксированы эталоном video-review-frames.
 func manifestJSON(manifest Manifest) ([]byte, error) {
 	references := []any{}
 	for _, item := range manifest.References {
-		entry := pycompat.NewDict()
+		entry := toolrt.NewDict()
 		entry.Set("id", item.ID)
 		entry.Set("source_path", item.SourcePath)
 		entry.Set("path", item.Path)
@@ -244,29 +244,29 @@ func manifestJSON(manifest Manifest) ([]byte, error) {
 	}
 	frames := []any{}
 	for _, item := range manifest.Frames {
-		entry := pycompat.NewDict()
+		entry := toolrt.NewDict()
 		entry.Set("id", item.ID)
 		entry.Set("time_seconds", item.TimeSeconds)
 		entry.Set("path", item.Path)
 		frames = append(frames, entry)
 	}
-	report := pycompat.NewDict()
-	report.Set("schema_version", pycompat.NewInt(int64(manifest.SchemaVersion)))
+	report := toolrt.NewDict()
+	report.Set("schema_version", toolrt.NewInt(int64(manifest.SchemaVersion)))
 	report.Set("duration_seconds", manifest.DurationSeconds)
 	report.Set("references", references)
 	report.Set("frames", frames)
-	return pycompat.EncodeIndented(report)
+	return toolrt.EncodeIndented(report)
 }
 
-// osError — OSError Python для сообщения: системная ошибка без пути Go.
+// osError — OSError с системным текстом и repr-записью пути, без обёртки ошибки Go.
 func osError(err error) error {
 	var pathErr *os.PathError
 	if errors.As(err, &pathErr) {
-		return fail(pathErr.Err.Error() + ": " + pycompat.Repr(pathErr.Path))
+		return fail(pathErr.Err.Error() + ": " + toolrt.Repr(pathErr.Path))
 	}
 	var linkErr *os.LinkError
 	if errors.As(err, &linkErr) {
-		return fail(linkErr.Err.Error() + ": " + pycompat.Repr(linkErr.Old) + " -> " + pycompat.Repr(linkErr.New))
+		return fail(linkErr.Err.Error() + ": " + toolrt.Repr(linkErr.Old) + " -> " + toolrt.Repr(linkErr.New))
 	}
 	return fail(err.Error())
 }
@@ -297,18 +297,18 @@ func (r *mediaRunner) run(path, name string, args ...string) ([]byte, error) {
 	case errors.Is(err, process.ErrTimeout):
 		quoted := make([]string, 0, len(args)+1)
 		for _, part := range append([]string{name}, args...) {
-			quoted = append(quoted, pycompat.Repr(part))
+			quoted = append(quoted, toolrt.Repr(part))
 		}
 		return nil, fail(fmt.Sprintf("Command '[%s]' timed out after 120 seconds", strings.Join(quoted, ", ")))
 	}
 	var start *process.StartError
 	if errors.As(err, &start) {
-		return nil, fail("[Errno 2] No such file or directory: " + pycompat.Repr(name))
+		return nil, fail("[Errno 2] No such file or directory: " + toolrt.Repr(name))
 	}
 	return nil, fail(err.Error())
 }
 
-// decodeReplace — bytes.decode(errors="replace").
+// decodeReplace — байты как UTF-8 с заменой неверных последовательностей на U+FFFD.
 func decodeReplace(data []byte) string { return strings.ToValidUTF8(string(data), "�") }
 
 // lastRunes — text[-limit:] по символам Unicode.
@@ -366,7 +366,7 @@ func (r *mediaRunner) probe(video string) (float64, []float64, error) {
 	}
 	timestamps := make([]float64, len(data.Frames))
 	for index, frame := range data.Frames {
-		value, ok := pyFloat(frame["best_effort_timestamp_time"])
+		value, ok := floatOf(frame["best_effort_timestamp_time"])
 		if !ok {
 			return 0, nil, fail(textTimestampsMissing)
 		}
@@ -392,28 +392,28 @@ func (r *mediaRunner) probe(video string) (float64, []float64, error) {
 	return duration, timestamps, nil
 }
 
-// decodeJSON разбирает вывод ffprobe; числа сохраняются как json.Number для точного int().
+// decodeJSON разбирает вывод ffprobe; числа сохраняются как json.Number для точного разбора целых.
 func decodeJSON(data []byte, target any) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
 	return decoder.Decode(target)
 }
 
-// pyFloat — float(x) Python для строки или числа JSON; отсутствие ключа и прочие типы — отказ.
-func pyFloat(value any) (float64, bool) {
+// floatOf — дробное из строки или числа JSON (toolrt.FloatFromString); отсутствие ключа и прочие типы — отказ.
+func floatOf(value any) (float64, bool) {
 	switch item := value.(type) {
 	case string:
-		result, err := pycompat.FloatFromString(item)
+		result, err := toolrt.FloatFromString(item)
 		return result, err == nil
 	case json.Number:
-		result, err := pycompat.FloatFromString(item.String())
+		result, err := toolrt.FloatFromString(item.String())
 		return result, err == nil
 	}
 	return 0, false
 }
 
-// pyInt — int(x) Python для целого JSON.
-func pyInt(value any) (int, bool) {
+// intOf — целое из числа JSON или строки с целым (крайние пробелы допускаются); прочее — отказ.
+func intOf(value any) (int, bool) {
 	switch item := value.(type) {
 	case json.Number:
 		result, err := item.Int64()
@@ -426,8 +426,8 @@ func pyInt(value any) (int, bool) {
 	return 0, false
 }
 
-// pyTruthy — истинность значения JSON по правилам Python (`a or b`).
-func pyTruthy(value any) bool {
+// truthy — истинность значения JSON: ложны null, пустая строка, ноль и false (для выбора запасного поля).
+func truthy(value any) bool {
 	switch item := value.(type) {
 	case nil:
 		return false
@@ -442,11 +442,11 @@ func pyTruthy(value any) bool {
 	return true
 }
 
-// streamParameters — длительность, частота и размер потока: float(stream.duration or
-// format.duration), float(Fraction(avg_frame_rate or r_frame_rate)), int(width), int(height).
+// streamParameters — длительность, частота и размер потока: duration потока (если ложно — формата)
+// как дробное, avg_frame_rate (если ложно — r_frame_rate) как дробь, целые width и height.
 func streamParameters(stream, format map[string]any) (float64, float64, int, int, bool) {
 	durationValue := stream["duration"]
-	if !pyTruthy(durationValue) {
+	if !truthy(durationValue) {
 		if format == nil {
 			return 0, 0, 0, 0, false
 		}
@@ -455,12 +455,12 @@ func streamParameters(stream, format map[string]any) (float64, float64, int, int
 			return 0, 0, 0, 0, false
 		}
 	}
-	duration, ok := pyFloat(durationValue)
+	duration, ok := floatOf(durationValue)
 	if !ok {
 		return 0, 0, 0, 0, false
 	}
 	rate := stream["avg_frame_rate"]
-	if !pyTruthy(rate) {
+	if !truthy(rate) {
 		var present bool
 		if rate, present = stream["r_frame_rate"]; !present {
 			return 0, 0, 0, 0, false
@@ -470,16 +470,16 @@ func streamParameters(stream, format map[string]any) (float64, float64, int, int
 	if !ok {
 		return 0, 0, 0, 0, false
 	}
-	width, widthOK := pyInt(stream["width"])
-	height, heightOK := pyInt(stream["height"])
+	width, widthOK := intOf(stream["width"])
+	height, heightOK := intOf(stream["height"])
 	if !widthOK || !heightOK {
 		return 0, 0, 0, 0, false
 	}
 	return duration, fps, width, height, true
 }
 
-// fraction — float(Fraction(value)): «num/den» или десятичная запись, точное округление до double.
-// Нулевой знаменатель («0/0» у потока без частоты) — отказ, как ZeroDivisionError.
+// fraction — значение «num/den» или десятичной записи как точная дробь с одним округлением до
+// float64. Нулевой знаменатель («0/0» у потока без частоты) — отказ.
 func fraction(value any) (float64, bool) {
 	var text string
 	switch item := value.(type) {
@@ -507,7 +507,7 @@ func fraction(value any) (float64, bool) {
 	return result, true
 }
 
-// selectFrames — select_frames инструмента: реальные кадры, ближайшие к шагу 0,5 с, плюс первый и
+// selectFrames — выбор кадров: реальные кадры, ближайшие к шагу 0,5 с, плюс первый и
 // последний; если точек больше 32, они распределяются равномерно между первым и последним кадром.
 // При равном расстоянии выбирается более ранний кадр. Повторы удаляются.
 func selectFrames(timestamps []float64) []int {

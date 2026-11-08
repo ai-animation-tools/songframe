@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"slices"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
 )
 
 // Statuses — допустимые статусы записанного предложения (ProductionProposal.status):
@@ -18,18 +18,18 @@ var Statuses = []string{"running", "ready", "invalid", "failed", "cancelled", "i
 const StoreFolder = "production-workflow"
 
 // Stored — локальная запись предложения одного плана в представлении
-// jscompat: { proposal, packageDir, target, hashes, rules, capabilities?, imageJob?, imageHashes? }.
+// dynvalue: { proposal, packageDir, target, hashes, rules, capabilities?, imageJob?, imageHashes? }.
 // Дерево сохраняет порядок ключей, поэтому запись после изменения статуса пишется тем же
 // JSON, что зафиксирован эталоном. Владелец — Workflow; Apply, восстановление после перезапуска
 // и опоры читают и дополняют её через эти методы.
 type Stored struct {
-	Tree *jscompat.Object
+	Tree *dynvalue.Object
 }
 
 // Proposal — объект proposal записи (ProductionProposal): id, jobId, stage, status, stale,
 // before, after и необязательные message, agentText, refused.
-func (s *Stored) Proposal() *jscompat.Object {
-	proposal, _ := s.Tree.Value("proposal").(*jscompat.Object)
+func (s *Stored) Proposal() *dynvalue.Object {
+	proposal, _ := s.Tree.Value("proposal").(*dynvalue.Object)
 	return proposal
 }
 
@@ -43,7 +43,7 @@ func (s *Stored) JobID() string { value, _ := s.Proposal().Value("jobId").(strin
 func (s *Stored) Stage() string { value, _ := s.Proposal().Value("stage").(string); return value }
 
 // Status — proposal.status.
-func (s *Stored) Status() string { return jscompat.ToString(s.Proposal().Value("status")) }
+func (s *Stored) Status() string { return dynvalue.ToString(s.Proposal().Value("status")) }
 
 // PackageDir — packageDir записи: пакет, из которого готовилось предложение; "" — null, новая
 // подготовка без пакета.
@@ -53,8 +53,8 @@ func (s *Stored) PackageDir() string { value, _ := s.Tree.Value("packageDir").(s
 func (s *Stored) Target() string { value, _ := s.Tree.Value("target").(string); return value }
 
 // Hashes — снимок входов на момент подготовки (см. Snapshot).
-func (s *Stored) Hashes() *jscompat.Object {
-	hashes, _ := s.Tree.Value("hashes").(*jscompat.Object)
+func (s *Stored) Hashes() *dynvalue.Object {
+	hashes, _ := s.Tree.Value("hashes").(*dynvalue.Object)
 	return hashes
 }
 
@@ -68,8 +68,8 @@ func (s *Stored) Capabilities() any { return s.Tree.Value("capabilities") }
 func (s *Stored) ImageJob() bool { return s.Tree.Value("imageJob") == true }
 
 // ImageHashes — SHA-256 изображений готового предложения опор по абсолютным путям; nil — нет.
-func (s *Stored) ImageHashes() *jscompat.Object {
-	hashes, _ := s.Tree.Value("imageHashes").(*jscompat.Object)
+func (s *Stored) ImageHashes() *dynvalue.Object {
+	hashes, _ := s.Tree.Value("imageHashes").(*dynvalue.Object)
 	return hashes
 }
 
@@ -82,13 +82,13 @@ func (s *Stored) active() bool {
 // пакетов внутри проекта. nil — форма записи не та (её не показывают); ошибка — пакет записи вне
 // plan/batches|awaiting. project — реальный путь проекта.
 func CheckStored(project string, value any) (*Stored, error) {
-	tree, ok := value.(*jscompat.Object)
+	tree, ok := value.(*dynvalue.Object)
 	if !ok {
 		return nil, nil
 	}
-	proposal, proposalOK := tree.Value("proposal").(*jscompat.Object)
-	_, hashesOK := tree.Value("hashes").(*jscompat.Object)
-	rules, rulesOK := tree.Value("rules").(*jscompat.Object)
+	proposal, proposalOK := tree.Value("proposal").(*dynvalue.Object)
+	_, hashesOK := tree.Value("hashes").(*dynvalue.Object)
+	rules, rulesOK := tree.Value("rules").(*dynvalue.Object)
 	target, targetOK := tree.Value("target").(string)
 	packageDir := tree.Value("packageDir")
 	_, packageOK := packageDir.(string)
@@ -96,7 +96,7 @@ func CheckStored(project string, value any) (*Stored, error) {
 		rules.Value("project") != project {
 		return nil, nil
 	}
-	if _, isString := proposal.Value("id").(string); !isString || !slices.Contains(Statuses, jscompat.ToString(proposal.Value("status"))) {
+	if _, isString := proposal.Value("id").(string); !isString || !slices.Contains(Statuses, dynvalue.ToString(proposal.Value("status"))) {
 		return nil, nil
 	}
 	if _, err := PackagePath(project, target); err != nil {
@@ -145,7 +145,8 @@ func (s Store) Read(project, shot string) *Stored {
 	return stored
 }
 
-// Write — writeProductionJson: атомарная запись `JSON.stringify(value, null, 2) + '\n'`.
+// Write — атомарная запись предложения: JSON с отступом в два пробела, порядком ключей
+// документа и переводом строки в конце (dynvalue).
 func (s Store) Write(project, shot string, stored *Stored) error {
 	return writeJSON(s.Path(project, shot), stored.Tree)
 }
@@ -153,28 +154,29 @@ func (s Store) Write(project, shot string, stored *Stored) error {
 // WriteDiscarded заменяет запись отметкой { schemaVersion: 1, discarded: id }: отклонённое
 // предложение больше не читается, а история самого задания агента сохраняется.
 func (s Store) WriteDiscarded(project, shot, id string) error {
-	marker := jscompat.NewObject()
+	marker := dynvalue.NewObject()
 	marker.Set("schemaVersion", float64(1))
 	marker.Set("discarded", id)
 	return writeJSON(s.Path(project, shot), marker)
 }
 
-// writeJSON — writeProjectJSON для любого дерева jscompat.
+// writeJSON — атомарная запись дерева dynvalue в формате writeProjectJSON; права существующего
+// файла сохраняются, новый получает 0600.
 func writeJSON(path string, value any) error {
-	return projectfs.WriteFile(path, []byte(jscompat.StringifyIndent(value, "  ")+"\n"), 0)
+	return projectfs.WriteFile(path, []byte(dynvalue.StringifyIndent(value, "  ")+"\n"), 0)
 }
 
 // readJSON — null (nil) при отсутствии файла; ошибка чтения или разбора возвращается.
 func readJSON(path string) (any, error) {
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return nil, nil
 	}
-	if err := jscompat.ReadFileCheck(path); err != nil {
+	if err := dynvalue.ReadFileCheck(path); err != nil {
 		return nil, err
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, jscompat.FsError("open", path, err)
+		return nil, dynvalue.FsError("open", path, err)
 	}
-	return jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+	return dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 }

@@ -1,6 +1,6 @@
 package scenarioworkflow
 
-import "songframe-go/internal/agents"
+import "songframe/internal/agents"
 
 // AgentStartInput — задание агенту в режиме предложения (StartInput менеджера internal/agents).
 // Сценарный проход заполняет Project (реальный путь проекта), Task («ai-clip-scenario:<pass>»),

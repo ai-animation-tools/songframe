@@ -25,8 +25,8 @@ import (
 
 	_ "golang.org/x/image/webp"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
 )
 
 var pngSignature = []byte{137, 80, 78, 71, 13, 10, 26, 10}
@@ -117,7 +117,7 @@ func dimensions(data []byte) (int, int) {
 	return 0, 0
 }
 
-// uint24 — беззнаковое 24-битное число little-endian (readUIntLE(offset, 3)).
+// uint24 — беззнаковое 24-битное число little-endian из трёх байт.
 func uint24(data []byte) int { return int(data[0]) | int(data[1])<<8 | int(data[2])<<16 }
 
 // IsImage — файл читается как изображение с ненулевыми размерами.
@@ -129,31 +129,32 @@ func IsImage(path string) bool {
 // TextLocalFileRequired — отказ LocalFile для пути вне папки, ссылки или не обычного файла.
 const TextLocalFileRequired = "Нужен локальный файл внутри рабочей папки."
 
-// LocalFile — path.resolve(directory, path) при условии, что это обычный файл внутри directory
-// (после разыменования ссылок у папки и файла), а сам путь — не символическая ссылка. Нарушение —
-// ошибка TextLocalFileRequired; отсутствующий файл или папка — ошибка realpath/lstat в форме
-// node:fs (её текст видит пользователь).
+// LocalFile — абсолютный путь path относительно directory (dynvalue.Resolve) при условии, что это
+// обычный файл внутри directory (после разыменования ссылок у папки и файла), а сам путь — не
+// символическая ссылка. Нарушение — ошибка TextLocalFileRequired; отсутствующий файл или папка —
+// ошибка realpath/lstat в форме dynvalue.FsError («ENOENT: …, realpath '<путь>'»; её текст видит
+// пользователь).
 func LocalFile(directory, path string) (string, error) {
-	file := jscompat.Resolve(directory, path)
-	root, err := jscompat.Realpath(directory)
+	file := dynvalue.Resolve(directory, path)
+	root, err := dynvalue.Realpath(directory)
 	if err != nil {
 		return "", err
 	}
-	target, err := jscompat.Realpath(file)
+	target, err := dynvalue.Realpath(file)
 	if err != nil {
 		return "", err
 	}
-	inside := jscompat.Relative(root, target)
+	inside := dynvalue.Relative(root, target)
 	separator := "/"
 	if runtime.GOOS == "windows" {
 		separator = "\\"
 	}
-	if jscompat.IsAbs(inside) || inside == ".." || strings.HasPrefix(inside, ".."+separator) {
+	if dynvalue.IsAbs(inside) || inside == ".." || strings.HasPrefix(inside, ".."+separator) {
 		return "", errors.New(TextLocalFileRequired)
 	}
 	info, err := os.Lstat(file)
 	if err != nil {
-		return "", jscompat.FsError("lstat", file, err)
+		return "", dynvalue.FsError("lstat", file, err)
 	}
 	if !info.Mode().IsRegular() {
 		return "", errors.New(TextLocalFileRequired)

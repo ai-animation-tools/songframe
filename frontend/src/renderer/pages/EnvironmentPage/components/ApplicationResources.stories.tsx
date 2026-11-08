@@ -9,7 +9,7 @@ const state = (overrides: Partial<AppState> = {}): AppState =>
   ({
     packaged: false,
     problems: [],
-    localDir: '~/.local/state/songframe-go',
+    localDir: '~/.local/state/songframe-desktop',
     current: null,
     history: [],
     platform: 'linux',
@@ -25,7 +25,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Embedded: Story = {
-  name: 'Встроенные ресурсы Go-версии',
+  name: 'Встроенные ресурсы приложения',
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(environmentTexts.resourcesEmbedded)).toBeVisible();

@@ -11,7 +11,7 @@
 // утверждением типа, поэтому адаптер объявляет только то, что умеет. Сетевые методы принимают
 // context.Context: отмена задания приложения прерывает вызов сервиса, а не только ожидание.
 //
-// Данные запроса и состояния попытки — *pycompat.Dict: так сохраняются порядок ключей, различие
+// Данные запроса и состояния попытки — *toolrt.Dict: так сохраняются порядок ключей, различие
 // int/float и прочие значения файла request.json/attempt.json, а SHA зафиксированного запроса
 // не зависит от разбора и повторной записи.
 package mediaapi
@@ -21,17 +21,17 @@ import (
 	"errors"
 	"time"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
-// NotSubmitted — attempt.NotSubmitted: отправка не начиналась (нет входа, соединения,
+// NotSubmitted — отправка не начиналась (нет входа, соединения,
 // незавершённая загрузка входов). Попытка остаётся prepared, текст ошибки показывается
 // пользователю как есть, поэтому в нём не должно быть секретов.
 type NotSubmitted struct{ Message string }
 
 func (e *NotSubmitted) Error() string { return e.Message }
 
-// RejectedRequest — attempt.RejectedRequest: сервис явно отклонил запрос без создания задания
+// RejectedRequest — сервис явно отклонил запрос без создания задания
 // (до оплаты). Message — краткая причина без секретов; общий код сохраняет её в last_rejection.
 type RejectedRequest struct{ Message string }
 
@@ -50,7 +50,7 @@ type SubmitResult struct {
 	// GenerationID — ID задания сервиса. Общий код проверяет его:
 	// пустой или недопустимый ID — неизвестный исход отправки, а не повтор.
 	GenerationID string
-	// CreditsConsumed — фактический расход: pycompat.Int (целое JSON) или float64; nil — сервис
+	// CreditsConsumed — фактический расход: toolrt.Int (целое JSON) или float64; nil — сервис
 	// не сообщил. Тип важен: в attempt.json 12 и 12.0 пишутся по-разному.
 	CreditsConsumed any
 }
@@ -95,7 +95,7 @@ type AuthStatus struct {
 // (requestsnapshot.ValidateSpec). Нарушение — ошибка с текстом для пользователя (ValueError).
 // Адаптер без метода ничего не ограничивает.
 type SpecValidator interface {
-	ValidateSpec(spec *pycompat.Dict) error
+	ValidateSpec(spec *toolrt.Dict) error
 }
 
 // PromptValidator — недопустимый промпт — ошибка, иначе предупреждения.
@@ -106,7 +106,7 @@ type PromptValidator interface {
 // FrozenFielder — поля, добавляемые в зафиксированный request.json и его SHA
 // (может быть пустым). Возвращается новый словарь на каждый вызов.
 type FrozenFielder interface {
-	FrozenFields() *pycompat.Dict
+	FrozenFields() *toolrt.Dict
 }
 
 // TaskTracer — true: общий код записывает UUID v7 попытки task_trace_id в
@@ -128,13 +128,13 @@ type PromptWarningLimiter interface {
 // любая другая ошибка — неизвестный исход (кредиты могли быть списаны). Отмена ctx до отправки
 // адаптер возвращает как *NotSubmitted, после — как обычную ошибку.
 type Submitter interface {
-	Submit(ctx context.Context, directory string, request, state *pycompat.Dict, timeout time.Duration) (SubmitResult, error)
+	Submit(ctx context.Context, directory string, request, state *toolrt.Dict, timeout time.Duration) (SubmitResult, error)
 }
 
 // Poller — состояние задания по сохранённому
 // generation_id из state. Любая ошибка — «ID сохранён, повторите resume».
 type Poller interface {
-	Poll(ctx context.Context, directory string, request, state *pycompat.Dict, timeout time.Duration) (PollResult, error)
+	Poll(ctx context.Context, directory string, request, state *toolrt.Dict, timeout time.Duration) (PollResult, error)
 }
 
 // Fetcher — записывает полные байты одного результата в новый файл
@@ -145,9 +145,9 @@ type Fetcher interface {
 
 // CapabilitiesReporter — {"reports": [{"command", "models"}],
 // "problems": [{"command", "message"}]} для команд вида медиа. Ошибка — отказ discovery целиком.
-// Словарь печатается как есть (json.dumps), поэтому порядок ключей — порядок адаптера.
+// Словарь печатается в JSON как есть, поэтому порядок ключей — порядок адаптера.
 type CapabilitiesReporter interface {
-	Capabilities(ctx context.Context, kind string, timeout time.Duration) (*pycompat.Dict, error)
+	Capabilities(ctx context.Context, kind string, timeout time.Duration) (*toolrt.Dict, error)
 }
 
 // AccountReader — информационный остаток для cost_check. Ошибка сервиса
@@ -171,7 +171,7 @@ type PricingDataer interface {
 // InputNormalizer — приводит входы спецификации оплаченной отправки с короткими флагами к
 // именованным слотам перед повтором (regenerate_shot); меняет spec на месте.
 type InputNormalizer interface {
-	NormalizeInputs(ctx context.Context, spec *pycompat.Dict, timeout time.Duration) error
+	NormalizeInputs(ctx context.Context, spec *toolrt.Dict, timeout time.Duration) error
 }
 
 // Loginer — вход к провайдеру. Строки адреса авторизации адаптер
@@ -186,7 +186,7 @@ type AuthStatusReader interface {
 	AuthStatus(ctx context.Context, timeout time.Duration) AuthStatus
 }
 
-// Seconds — время в секундах Python (float) как time.Duration для вызова адаптера. NaN и
+// Seconds — время в секундах (float64) как time.Duration для вызова адаптера. NaN и
 // отрицательные значения дают 0: общий код проверяет таймауты до вызова там, где это нужно,
 // а остальные адаптер трактует сам.
 func Seconds(value float64) time.Duration {

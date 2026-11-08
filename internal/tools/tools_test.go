@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/tools"
+	"songframe/internal/tools"
 )
 
 // TestRunRejectsName — неверное и неизвестное имя отклоняются до запуска (renderer получает

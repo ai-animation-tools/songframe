@@ -7,9 +7,9 @@ import (
 	"slices"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/scenarioworkflow"
-	"songframe-go/internal/status"
+	"songframe/internal/golden"
+	"songframe/internal/scenarioworkflow"
+	"songframe/internal/status"
 )
 
 // noAgents — менеджер агентов без заданий: проверка свежести сценария агента не запускает.

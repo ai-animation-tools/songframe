@@ -48,7 +48,7 @@ export function AcceptResultStory({
   const backend = useRef({ token: pkg.resultToken, running: false, failed: false, changed: false, epoch: 0 });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [session] = useState(() => {
-    // Проверки снимка и согласия принадлежат mock production.accept, как и в главном процессе.
+    // Проверки снимка и согласия принадлежат mock production.accept, как и в Go.
     const accept: Api['production']['accept'] = async (project, shot, dir, incoming) => {
       setCalls((count) => count + 1);
       if (project !== DELIVERY_PROJECT || shot !== pkg.shot || dir !== pkg.dir) throw new Error('Пакет не относится к показанному плану.');

@@ -4,7 +4,7 @@
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "name.split()[0] in text"
+    "первое слово имени в тексте"
   ],
   "stubbedMedia": [],
   "args": [],

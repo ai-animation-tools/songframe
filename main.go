@@ -12,27 +12,27 @@ import (
 	"runtime"
 	"time"
 
-	"songframe-go/internal/agents"
-	shell "songframe-go/internal/app"
-	"songframe-go/internal/appversion"
-	"songframe-go/internal/components"
-	"songframe-go/internal/derivedworkflow"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/media"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/montage"
-	"songframe-go/internal/production"
-	"songframe-go/internal/productionworkflow"
-	"songframe-go/internal/project"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/providers/agentexec"
-	"songframe-go/internal/scenarioapply"
-	"songframe-go/internal/scenarioworkflow"
-	"songframe-go/internal/store"
-	"songframe-go/internal/updates"
-	"songframe-go/internal/videoreview"
+	"songframe/internal/agents"
+	shell "songframe/internal/app"
+	"songframe/internal/appversion"
+	"songframe/internal/components"
+	"songframe/internal/derivedworkflow"
+	"songframe/internal/jobs"
+	"songframe/internal/media"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediacmd"
+	"songframe/internal/mediafile"
+	"songframe/internal/montage"
+	"songframe/internal/production"
+	"songframe/internal/productionworkflow"
+	"songframe/internal/project"
+	"songframe/internal/providers"
+	"songframe/internal/providers/agentexec"
+	"songframe/internal/scenarioapply"
+	"songframe/internal/scenarioworkflow"
+	"songframe/internal/store"
+	"songframe/internal/updates"
+	"songframe/internal/videoreview"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -66,7 +66,8 @@ func run() error {
 	updateReport := flag.String("update-smoke-report", "", "JSON-отчёт проверки обновления до перезапуска")
 	flag.Parse()
 	// Проверка поставки использует тот же менеджер, но не создаёт WebView и не читает профиль GUI.
-	// Это позволяет проверить CGO/ORT именно из AppImage, без Go, Node и Python на целевой машине.
+	// Это позволяет проверить CGO/ORT именно из AppImage, без инструментов сборки (Go, Node, Python)
+	// на целевой машине.
 	if *componentInput != "" || *componentReport != "" {
 		if *componentInput == "" || *componentReport == "" || *timeout <= 0 || *smoke || *checkDir != "" || *checkProject != "" || *checkReport != "" || *report != "" {
 			return fmt.Errorf("component-smoke требует input, report, положительный timeout и отдельный запуск без GUI smoke")
@@ -91,7 +92,7 @@ func run() error {
 	if *smoke && (*report == "" || *timeout <= 0) {
 		return fmt.Errorf("для --smoke нужны --smoke-report и положительный --smoke-timeout")
 	}
-	profile := store.NewProfile(os.Getenv("SONGFRAME_GO_LOCAL_DIR"))
+	profile := store.NewProfile(os.Getenv("SONGFRAME_LOCAL_DIR"))
 	profilePath, pathErr := profile.Path()
 	if pathErr != nil {
 		return pathErr

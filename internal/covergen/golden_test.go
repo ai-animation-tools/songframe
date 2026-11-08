@@ -19,21 +19,21 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/covergen"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/mediatest"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/providers/agentexec"
-	"songframe-go/internal/providers/kling"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/referenceimage"
-	"songframe-go/internal/tools"
+	"songframe/internal/agents"
+	"songframe/internal/covergen"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/mediatest"
+	"songframe/internal/providers"
+	"songframe/internal/providers/agentexec"
+	"songframe/internal/providers/kling"
+	"songframe/internal/referenceimage"
+	"songframe/internal/toolrt"
+	"songframe/internal/tools"
 )
 
 // Эталон cover-generation/cases.json описывает шаги генератора, подготовки провайдером проекта и
@@ -457,12 +457,12 @@ func (s rulesService) Account(ctx context.Context, timeout time.Duration) (media
 	return s.Service.Account(ctx, timeout)
 }
 
-func (s rulesService) Submit(ctx context.Context, directory string, request, state *pycompat.Dict, timeout time.Duration) (mediaapi.SubmitResult, error) {
+func (s rulesService) Submit(ctx context.Context, directory string, request, state *toolrt.Dict, timeout time.Duration) (mediaapi.SubmitResult, error) {
 	s.gate.wait(ctx)
 	return s.Service.Submit(ctx, directory, request, state, timeout)
 }
 
-func (s rulesService) Poll(ctx context.Context, directory string, request, state *pycompat.Dict, timeout time.Duration) (mediaapi.PollResult, error) {
+func (s rulesService) Poll(ctx context.Context, directory string, request, state *toolrt.Dict, timeout time.Duration) (mediaapi.PollResult, error) {
 	s.gate.wait(ctx)
 	return s.Service.Poll(ctx, directory, request, state, timeout)
 }
@@ -655,15 +655,15 @@ func runScenario(t *testing.T, scenario goldenScenario) []byte {
 		var stepErr error
 		switch step.Op {
 		case "writeProject":
-			generation, err := jscompat.Parse(step.Generation)
+			generation, err := dynvalue.Parse(step.Generation)
 			if err != nil {
 				t.Fatal(err)
 			}
-			document := jscompat.NewObject()
+			document := dynvalue.NewObject()
 			document.Set("name", "Клип")
 			document.Set("animatic_video", "animatic.mp4")
 			document.Set("generation", generation)
-			if err := os.WriteFile(filepath.Join(project, "plan", "project.json"), []byte(jscompat.StringifyIndent(document, "  ")+"\n"), 0o666); err != nil {
+			if err := os.WriteFile(filepath.Join(project, "plan", "project.json"), []byte(dynvalue.StringifyIndent(document, "  ")+"\n"), 0o666); err != nil {
 				t.Fatal(err)
 			}
 		case "files":
@@ -985,7 +985,7 @@ func TestGoldenContext(t *testing.T) {
 	}
 }
 
-// assertOutcome сверяет случай эталона с исходом Go: вход случая сохраняется, result или error
+// assertOutcome сверяет случай эталона с полученным исходом: вход случая сохраняется, result или error
 // (и after, если передан) заменяются полученными значениями.
 func assertOutcome(t *testing.T, raw json.RawMessage, result any, err error, after json.RawMessage, dir string) {
 	t.Helper()

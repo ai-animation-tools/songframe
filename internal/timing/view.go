@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/sources"
+	"songframe/internal/dynvalue"
+	"songframe/internal/sources"
 )
 
 // Тексты timingTexts.main для просмотра разметки.
@@ -35,10 +35,10 @@ type View struct {
 
 // readTiming читает timing.json: Undefined для отсутствующего файла, false для битого JSON.
 func readTiming(path string) any {
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return nil
 	}
-	value, ok := jscompat.ReadJSONFile(path)
+	value, ok := dynvalue.ReadJSONFile(path)
 	if !ok {
 		return false
 	}
@@ -49,40 +49,40 @@ func readTiming(path string) any {
 // редактора и секции допустимы. Повреждённый формат не прерывает открытие страниц, а делает файл
 // «нечитаемым» (false).
 func usableTiming(timing any) bool {
-	lines, ok := jscompat.AsArray(jscompat.Get(timing, "lines"))
+	lines, ok := dynvalue.AsArray(dynvalue.Get(timing, "lines"))
 	if !ok {
 		return false
 	}
 	for _, line := range lines {
-		if !jscompat.Truthy(line) || jscompat.TypeOf(line) != "object" {
+		if !dynvalue.Truthy(line) || dynvalue.TypeOf(line) != "object" {
 			return false
 		}
 	}
-	if candidates := jscompat.Get(timing, "candidates"); candidates != jscompat.Undefined && !ValidTimingCandidates(candidates) {
+	if candidates := dynvalue.Get(timing, "candidates"); candidates != dynvalue.Undefined && !ValidTimingCandidates(candidates) {
 		return false
 	}
-	if order := jscompat.Get(timing, "line_order"); order != jscompat.Undefined {
-		items, ok := jscompat.AsArray(order)
+	if order := dynvalue.Get(timing, "line_order"); order != dynvalue.Undefined {
+		items, ok := dynvalue.AsArray(order)
 		if !ok {
 			return false
 		}
 		for _, number := range items {
-			if !jscompat.IsSafeInteger(number) {
+			if !dynvalue.IsSafeInteger(number) {
 				return false
 			}
 		}
 	}
-	if sections := jscompat.Get(timing, "sections"); sections != jscompat.Undefined {
-		items, ok := jscompat.AsArray(sections)
+	if sections := dynvalue.Get(timing, "sections"); sections != dynvalue.Undefined {
+		items, ok := dynvalue.AsArray(sections)
 		if !ok {
 			return false
 		}
 		for _, section := range items {
-			origin := jscompat.Get(section, "origin")
-			if !jscompat.Truthy(section) || jscompat.TypeOf(section) != "object" ||
-				jscompat.TypeOf(jscompat.Get(section, "name")) != "string" ||
-				!jscompat.IsFinite(jscompat.Get(section, "start")) || !jscompat.IsFinite(jscompat.Get(section, "end")) ||
-				(origin != jscompat.Undefined && !jscompat.StrictEqual(origin, "auto") && !jscompat.StrictEqual(origin, "manual")) {
+			origin := dynvalue.Get(section, "origin")
+			if !dynvalue.Truthy(section) || dynvalue.TypeOf(section) != "object" ||
+				dynvalue.TypeOf(dynvalue.Get(section, "name")) != "string" ||
+				!dynvalue.IsFinite(dynvalue.Get(section, "start")) || !dynvalue.IsFinite(dynvalue.Get(section, "end")) ||
+				(origin != dynvalue.Undefined && !dynvalue.StrictEqual(origin, "auto") && !dynvalue.StrictEqual(origin, "manual")) {
 				return false
 			}
 		}
@@ -96,14 +96,14 @@ func usableTiming(timing any) bool {
 func ViewProject(project string) (View, error) {
 	view := View{Timing: json.RawMessage("null"), Lyrics: []LyricsLine{}, Problems: []string{}}
 	textPath := filepath.Join(project, "source", "text.md")
-	hasText := jscompat.Exists(textPath)
+	hasText := dynvalue.Exists(textPath)
 	text := ""
 	if hasText {
 		data, err := os.ReadFile(textPath)
 		if err != nil {
-			return View{}, jscompat.FsError("read", "", err)
+			return View{}, dynvalue.FsError("read", "", err)
 		}
-		text = jscompat.DecodeUTF8(data)
+		text = dynvalue.DecodeUTF8(data)
 	}
 	parsed := AnalyzeLyrics(text)
 	if hasText {
@@ -115,33 +115,33 @@ func ViewProject(project string) (View, error) {
 	trackPath := filepath.Join(project, "source", "track.mp3")
 	manifest := sources.ReadManifest(project)
 	timing := readTiming(filepath.Join(project, "plan", "audio", "timing.json"))
-	if jscompat.Truthy(timing) && !usableTiming(timing) {
+	if dynvalue.Truthy(timing) && !usableTiming(timing) {
 		timing = false
 	}
 	if timing == false {
 		view.Problems = append(view.Problems, unreadableTiming)
 	}
-	track := jscompat.Get(manifest, "track")
-	if jscompat.Truthy(timing) && jscompat.Truthy(track) {
-		if sha := jscompat.Get(timing, "sha256"); jscompat.Truthy(sha) && !jscompat.StrictEqual(sha, jscompat.Get(track, "sha256")) {
+	track := dynvalue.Get(manifest, "track")
+	if dynvalue.Truthy(timing) && dynvalue.Truthy(track) {
+		if sha := dynvalue.Get(timing, "sha256"); dynvalue.Truthy(sha) && !dynvalue.StrictEqual(sha, dynvalue.Get(track, "sha256")) {
 			view.Problems = append(view.Problems, trackChanged)
 		}
 	}
-	if jscompat.Truthy(timing) && hasInvalidLines(timing, view.Lyrics) {
+	if dynvalue.Truthy(timing) && hasInvalidLines(timing, view.Lyrics) {
 		view.Problems = append(view.Problems, lyricsChanged)
 	}
-	if jscompat.Truthy(timing) {
-		view.Timing = jscompat.Raw(timing)
+	if dynvalue.Truthy(timing) {
+		view.Timing = dynvalue.Raw(timing)
 	}
-	if jscompat.Exists(trackPath) {
+	if dynvalue.Exists(trackPath) {
 		view.TrackPath = &trackPath
 	}
 	// Опись пишет только приложение: sha256 — строка, duration_seconds — число. Значение другого
 	// типа контракт TimingView не допускает и отдаётся как null.
-	if sha, ok := jscompat.Get(track, "sha256").(string); ok {
+	if sha, ok := dynvalue.Get(track, "sha256").(string); ok {
 		view.TrackSha256 = &sha
 	}
-	if duration, ok := jscompat.Get(track, "duration_seconds").(float64); ok {
+	if duration, ok := dynvalue.Get(track, "duration_seconds").(float64); ok {
 		view.Duration = &duration
 	}
 	return view, nil
@@ -156,9 +156,9 @@ func hasInvalidLines(timing any, lyrics []LyricsLine) bool {
 			numbers[float64(lyric.Number)] = true
 		}
 	}
-	lines, _ := jscompat.AsArray(jscompat.Get(timing, "lines"))
+	lines, _ := dynvalue.AsArray(dynvalue.Get(timing, "lines"))
 	for _, line := range lines {
-		number, ok := jscompat.Get(line, "source_line").(float64)
+		number, ok := dynvalue.Get(line, "source_line").(float64)
 		if !ok || !numbers[number] {
 			return true
 		}

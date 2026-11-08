@@ -1,7 +1,7 @@
 {
   "code": 2,
   "stdout": "",
-  "stderr": "usage: shot_workflow.py init [-h] --dir DIR [--mode {shot,frame}]\n                             [--batch BATCH] [--retry-of RETRY_OF]\n                             shot\nshot_workflow.py init: error: argument --mode: invalid choice: 'x' (choose from 'shot', 'frame')\n",
+  "stderr": "usage: shot_workflow init [-h] --dir DIR [--mode {shot,frame}] [--batch BATCH]\n                          [--retry-of RETRY_OF]\n                          shot\nshot_workflow init: error: argument --mode: invalid choice: 'x' (choose from 'shot', 'frame')\n",
   "traceback": false,
   "files": {},
   "dirs": {},

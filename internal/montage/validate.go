@@ -4,15 +4,15 @@ import (
 	"errors"
 	"path/filepath"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // checkedDraft — черновик после validate: сам объект, имя, музыка и участки по порядку.
 type checkedDraft struct {
-	object *jscompat.Object
+	object *dynvalue.Object
 	name   string
-	audio  *jscompat.Object
-	clips  []*jscompat.Object
+	audio  *dynvalue.Object
+	clips  []*dynvalue.Object
 }
 
 // validate проверяет черновик монтажа. Незавершённый черновик
@@ -22,18 +22,18 @@ type checkedDraft struct {
 // видеодорожки участку музыки, текущий трек и участок внутри песни. Возвращается первая ошибка;
 // порядок проверок зафиксирован эталоном.
 func validate(project string, value any, complete bool, view *View, checkFiles bool) (checkedDraft, error) {
-	object, ok := jscompat.AsObject(value)
+	object, ok := dynvalue.AsObject(value)
 	if !ok {
 		return checkedDraft{}, errors.New(textInvalidDraft)
 	}
 	name, nameOK := object.Value("name").(string)
-	audio, audioOK := jscompat.AsObject(object.Value("audio"))
-	clips, clipsOK := jscompat.AsArray(object.Value("clips"))
-	if !jscompat.StrictEqual(object.Value("schema_version"), 1.0) || !nameOK || !audioOK || !clipsOK {
+	audio, audioOK := dynvalue.AsObject(object.Value("audio"))
+	clips, clipsOK := dynvalue.AsArray(object.Value("clips"))
+	if !dynvalue.StrictEqual(object.Value("schema_version"), 1.0) || !nameOK || !audioOK || !clipsOK {
 		return checkedDraft{}, errors.New(textInvalidDraft)
 	}
 	scenesSha, shaOK := object.Value("base_scenes_sha256").(string)
-	snapshot, snapshotOK := jscompat.AsObject(object.Value("base_manifest_sha256"))
+	snapshot, snapshotOK := dynvalue.AsObject(object.Value("base_manifest_sha256"))
 	if !shaOK || !sha256Pattern.MatchString(scenesSha) || !snapshotOK {
 		return checkedDraft{}, errors.New(textSnapshotMissing)
 	}
@@ -54,20 +54,20 @@ func validate(project string, value any, complete bool, view *View, checkFiles b
 	scenes, ids := map[string]bool{}, map[string]bool{}
 	total := 0.0
 	for _, item := range clips {
-		clip, ok := jscompat.AsObject(item)
+		clip, ok := dynvalue.AsObject(item)
 		var id, scene string
 		if ok {
 			id, _ = clip.Value("id").(string)
 			scene, _ = clip.Value("scene").(string)
 		}
-		_, idString := jscompat.Get(item, "id").(string)
-		_, sceneString := jscompat.Get(item, "scene").(string)
+		_, idString := dynvalue.Get(item, "id").(string)
+		_, sceneString := dynvalue.Get(item, "scene").(string)
 		if !ok || !idString || id == "" || ids[id] || !sceneString || !shotPattern.MatchString(scene) || scenes[scene] {
 			return checkedDraft{}, errors.New(textDuplicateClip)
 		}
 		ids[id], scenes[scene] = true, true
 		kind := clip.Value("kind")
-		if !jscompat.StrictEqual(kind, "video") && !jscompat.StrictEqual(kind, "card") {
+		if !dynvalue.StrictEqual(kind, "video") && !dynvalue.StrictEqual(kind, "card") {
 			return checkedDraft{}, errors.New(textUnknownClipKind(scene))
 		}
 		if _, err := projectPath(project, clip.Value("path"), checkFiles); err != nil {
@@ -88,7 +88,7 @@ func validate(project string, value any, complete bool, view *View, checkFiles b
 		limit := frames
 		if view != nil {
 			for _, source := range view.Sources {
-				if jscompat.StrictEqual(path, source.Path) && source.Scene == scene && jscompat.StrictEqual(kind, source.Kind) {
+				if dynvalue.StrictEqual(path, source.Path) && source.Scene == scene && dynvalue.StrictEqual(kind, source.Kind) {
 					if source.Frames != nil {
 						limit = *source.Frames
 					}
@@ -120,7 +120,7 @@ func validate(project string, value any, complete bool, view *View, checkFiles b
 			}
 		}
 		total += last.(float64) - first.(float64)
-		if !jscompat.IsSafeInteger(total) {
+		if !dynvalue.IsSafeInteger(total) {
 			return checkedDraft{}, errors.New(textTotalLengthExceeded)
 		}
 		result.clips = append(result.clips, clip)
@@ -129,10 +129,10 @@ func validate(project string, value any, complete bool, view *View, checkFiles b
 		if len(clips) == 0 || total != end.(float64)-start.(float64) {
 			return checkedDraft{}, errors.New(textLengthMismatch)
 		}
-		if view.TrackPath == nil || !jscompat.StrictEqual(audio.Value("path"), *view.TrackPath) {
+		if view.TrackPath == nil || !dynvalue.StrictEqual(audio.Value("path"), *view.TrackPath) {
 			return checkedDraft{}, errors.New(textAudioChanged)
 		}
-		if view.Duration != nil && jscompat.IsFinite(*view.Duration) && end.(float64) > secondsToFrames(*view.Duration) {
+		if view.Duration != nil && dynvalue.IsFinite(*view.Duration) && end.(float64) > secondsToFrames(*view.Duration) {
 			return checkedDraft{}, errors.New(textAudioBoundsExceeded)
 		}
 	}
@@ -141,17 +141,17 @@ func validate(project string, value any, complete bool, view *View, checkFiles b
 
 // manifestLimit — известная длина выбранного видео по текущему манифесту сцены, если снимок
 // черновика совпадает с ним: original (по original_media) или принятый клип (frames). Иначе nil.
-func manifestLimit(project, scene string, path any, snapshot *jscompat.Object) (*float64, error) {
+func manifestLimit(project, scene string, path any, snapshot *dynvalue.Object) (*float64, error) {
 	dir := filepath.Join(project, "assets", "shots", scene)
 	manifestPath := filepath.Join(dir, "manifest.json")
-	if !jscompat.Exists(manifestPath) {
+	if !dynvalue.Exists(manifestPath) {
 		return nil, nil
 	}
 	digest, err := fileHash(manifestPath)
 	if err != nil {
 		return nil, err
 	}
-	if !jscompat.StrictEqual(snapshot.Value(scene), digest) {
+	if !dynvalue.StrictEqual(snapshot.Value(scene), digest) {
 		return nil, nil
 	}
 	manifest, err := readObject(manifestPath, labelSceneMaterials)
@@ -168,7 +168,7 @@ func manifestLimit(project, scene string, path any, snapshot *jscompat.Object) (
 		descriptor any
 		frames     *float64
 	}{{generation.Value("original"), originalFrames(generation.Value("original_media"))}, {edit.Value("video"), editFrames}} {
-		descriptor, ok := jscompat.AsObject(candidate.descriptor)
+		descriptor, ok := dynvalue.AsObject(candidate.descriptor)
 		if !ok {
 			continue
 		}
@@ -177,10 +177,10 @@ func manifestLimit(project, scene string, path any, snapshot *jscompat.Object) (
 			continue
 		}
 		base := dir
-		if jscompat.StrictEqual(descriptor.Value("root"), "source") {
+		if dynvalue.StrictEqual(descriptor.Value("root"), "source") {
 			base = filepath.Join(project, "source")
 		}
-		if jscompat.StrictEqual(path, portable(project, join(base, name))) && candidate.frames != nil {
+		if dynvalue.StrictEqual(path, portable(project, join(base, name))) && candidate.frames != nil {
 			limit = candidate.frames
 		}
 	}

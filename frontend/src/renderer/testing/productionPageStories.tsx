@@ -1,6 +1,6 @@
 /**
  * Локальная модель целой страницы «Производство»: снимок производства, задания и переходы ответов существуют только в памяти.
- * Выбор image original, утверждение опоры и приёмка комплекта остаются отдельными методами API, как в главном процессе.
+ * Выбор image original, утверждение опоры и приёмка комплекта остаются отдельными методами API, как в Go.
  */
 import { useSyncExternalStore, type ReactElement } from 'react';
 import { Button, Paper, Stack, Typography } from '@mui/material';
@@ -155,7 +155,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
         }
         throw new Error('Пакет не найден: обновите страницу.');
       };
-      // Как хеш workflow в главном процессе: токен есть у каждого пакета и меняется при любой записи.
+      // Как хеш workflow в Go: токен есть у каждого пакета и меняется при любой записи.
       let writes = 0;
       const touch = (pkg: PackageView): void => {
         pkg.decisionToken = `workflow-${++writes}`;
@@ -331,7 +331,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
             model.reviewStarts++;
             entry.view = { ...reviewView('preparing'), report: null, frames: [], durationSeconds: null, canStart: false };
             publish();
-            // Таймеры принадлежат сессии истории и отменяются вместе с анализом; настоящий IPC не используется.
+            // Таймеры принадлежат сессии истории и отменяются вместе с анализом; настоящий API не используется.
             entry.timer = later(200, () => {
               entry.view = { ...entry.view, status: 'running' };
               entry.timer = later(options.videoReview?.runMs ?? 1800, () => {

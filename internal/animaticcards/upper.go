@@ -3,20 +3,20 @@ package animaticcards
 import (
 	"strings"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
-// pythonUpper — str.upper() CPython 3.12 для строки модели pycompat. Заголовок карточки — это
-// project["name"].upper(), а от букв зависят ширина и переносы. strings.ToUpper Go применяет
-// только простые соответствия UnicodeData, Python — ещё и безусловные правила SpecialCasing
-// (ß → SS, лигатуры ﬁ → FI, греческая йота-подписная и т.п.): их перечисляет upperSpecial.
-// Одиночные суррогаты (WTF-8) Python не меняет; они проходят без изменения.
-func pythonUpper(text string) string {
+// toUpper — полное преобразование строки модели toolrt в прописные. Заголовок карточки — имя
+// проекта прописными, а от букв зависят ширина и переносы, зафиксированные эталоном.
+// strings.ToUpper Go применяет только простые соответствия UnicodeData, а здесь действуют ещё и
+// безусловные правила SpecialCasing (ß → SS, лигатуры ﬁ → FI, греческая йота-подписная и т.п.):
+// их перечисляет upperSpecial. Одиночные суррогаты (WTF-8) проходят без изменения.
+func toUpper(text string) string {
 	var builder strings.Builder
-	for _, r := range pycompat.Runes(text) {
+	for _, r := range toolrt.Runes(text) {
 		switch {
 		case r >= 0xD800 && r <= 0xDFFF:
-			builder.WriteString(pycompat.FromRunes([]rune{r}))
+			builder.WriteString(toolrt.FromRunes([]rune{r}))
 		case upperSpecial[r] != "":
 			builder.WriteString(upperSpecial[r])
 		default:
@@ -26,8 +26,9 @@ func pythonUpper(text string) string {
 	return builder.String()
 }
 
-// upperSpecial — символы, у которых chr(c).upper() Python 3.12 отличается от strings.ToUpper Go
-// (снято перебором всех кодовых точек; совпадает с безусловной частью SpecialCasing.txt).
+// upperSpecial — символы, у которых полное преобразование в прописные отличается от
+// strings.ToUpper Go: безусловная часть SpecialCasing.txt Unicode 15 (сверено перебором всех
+// кодовых точек).
 var upperSpecial = map[rune]string{
 	0x00DF: "SS", 0x0149: "\u02bcN", 0x01F0: "J\u030c", 0x0390: "\u0399\u0308\u0301",
 	0x03B0: "\u03a5\u0308\u0301", 0x0587: "\u0535\u0552", 0x1E96: "H\u0331", 0x1E97: "T\u0308",

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/components"
+	"songframe/internal/components"
 )
 
 // TestComponentSmokeRejectsAmbiguousInput не позволяет принять часть JSON как отдельный запуск.

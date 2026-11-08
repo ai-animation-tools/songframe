@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/process"
+	"songframe/internal/process"
 )
 
 // FFmpegPair содержит только явно выбранные абсолютные пути. Проверка не ищет

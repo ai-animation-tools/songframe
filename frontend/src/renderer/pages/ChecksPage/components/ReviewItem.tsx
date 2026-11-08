@@ -26,7 +26,7 @@ export function ReviewItem({ review, openReview, deletingReview, setOpenReview, 
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const remove = (): void => {
-    // Освобождаем MP4 до IPC, чтобы Windows могла удалить файл ещё до размонтирования плеера.
+    // Освобождаем MP4 до вызова Go, чтобы Windows могла удалить файл ещё до размонтирования плеера.
     const video = videoRef.current;
     if (video) {
       video.pause();

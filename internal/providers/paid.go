@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
 )
 
 // Тексты общего платного адаптера. TestTextsMatchFrontend сверяет
@@ -117,12 +117,12 @@ func textUnsupportedParameter(name, value, allowed string) string {
 }
 func textDurationMismatch(duration, rule string, windowSeconds float64, minSeconds *float64, supported []float64) string {
 	text := "Длительность duration=" + duration + " должна быть ближайшей поддерживаемой по правилу " + rule +
-		" для окна " + jscompat.NumberToString(windowSeconds) + " с"
+		" для окна " + dynvalue.NumberToString(windowSeconds) + " с"
 	if minSeconds != nil && *minSeconds != 0 && !math.IsNaN(*minSeconds) {
-		text += " и не короче " + jscompat.NumberToString(*minSeconds) + " с"
+		text += " и не короче " + dynvalue.NumberToString(*minSeconds) + " с"
 	}
 	if len(supported) > 0 {
-		return text + ": " + jscompat.NumberToString(slices.Min(supported)) + " с."
+		return text + ": " + dynvalue.NumberToString(slices.Min(supported)) + " с."
 	}
 	return text + "; подходящие длительности не объявлены."
 }
@@ -177,8 +177,8 @@ type ModelSelection struct {
 }
 
 // object — model_selection снимка в порядке ключей, зафиксированном эталонами.
-func (s ModelSelection) object() *jscompat.Object {
-	object := jscompat.NewObject()
+func (s ModelSelection) object() *dynvalue.Object {
+	object := dynvalue.NewObject()
 	if s.PreferredModel == nil {
 		object.Set("preferredModel", nil)
 	} else {
@@ -189,8 +189,8 @@ func (s ModelSelection) object() *jscompat.Object {
 	return object
 }
 
-// PaidInput — черновик платного запроса до фиксации SHA. Значения параметров — значения JS
-// (internal/jscompat): от их сравнения и печати зависят тексты ошибок, проверяемые эталонами.
+// PaidInput — черновик платного запроса до фиксации SHA. Значения параметров — значения dynvalue
+// (internal/dynvalue): от их сравнения и печати зависят тексты ошибок, проверяемые эталонами.
 type PaidInput struct {
 	Project string
 	WorkDir string
@@ -207,11 +207,11 @@ type PaidInput struct {
 	DurationConstraint *DurationConstraint
 	// RequiredParameters — настройки проекта, которые проверяются для объявленных параметров;
 	// неподдерживаемые поля не дописываются в запрос. nil — нет.
-	RequiredParameters *jscompat.Object
+	RequiredParameters *dynvalue.Object
 	// ProjectOptions — явные options проекта: обязательны, черновик может только повторить их.
-	ProjectOptions *jscompat.Object
+	ProjectOptions *dynvalue.Object
 	Prompt         string
-	Parameters     *jscompat.Object
+	Parameters     *dynvalue.Object
 	Inputs         []PaidInputItem
 	Outputs        int
 	FrameID        string
@@ -220,23 +220,23 @@ type PaidInput struct {
 // model — объявление модели, разобранное для проверки запроса.
 type model struct {
 	id, command              string
-	arguments, slots, limits *jscompat.Object
+	arguments, slots, limits *dynvalue.Object
 }
 
-// parseModel разбирает mediaapi.Model в значения JS; повреждённое поле — пустой объект.
+// parseModel разбирает mediaapi.Model в значения dynvalue; повреждённое поле — пустой объект.
 func parseModel(source mediaapi.Model) model {
-	object := func(raw []byte) *jscompat.Object {
-		value, err := jscompat.Parse(raw)
-		if result, ok := value.(*jscompat.Object); err == nil && ok {
+	object := func(raw []byte) *dynvalue.Object {
+		value, err := dynvalue.Parse(raw)
+		if result, ok := value.(*dynvalue.Object); err == nil && ok {
 			return result
 		}
-		return jscompat.NewObject()
+		return dynvalue.NewObject()
 	}
 	return model{id: source.ID, command: source.Command, arguments: object(source.Arguments), slots: object(source.Slots), limits: object(source.Limits)}
 }
 
 // declared — объявление параметра или слота: Undefined, если его нет.
-func declared(declarations *jscompat.Object, name string) any { return declarations.Value(name) }
+func declared(declarations *dynvalue.Object, name string) any { return declarations.Value(name) }
 
 var underscoreLetter = regexp.MustCompile(`_([a-z])`)
 
@@ -247,7 +247,7 @@ func camel(name string) string {
 
 // ArgumentName — объявленное имя параметра и его camelCase-написание
 // равнозначны; в снимок попадает точное имя объявления. "" — параметр не объявлен.
-func ArgumentName(arguments *jscompat.Object, supplied string) string {
+func ArgumentName(arguments *dynvalue.Object, supplied string) string {
 	if arguments.Has(supplied) {
 		return supplied
 	}
@@ -289,7 +289,7 @@ func orName(name, supplied string) string {
 
 // withProjectOptions — явные options проекта обязательны: черновик может только повторить их, но не
 // заменить другим значением; отсутствующие дописываются под именем настройки.
-func withProjectOptions(rules mediaapi.RequestRules, input PaidInput, item model, parameters *jscompat.Object) (*jscompat.Object, error) {
+func withProjectOptions(rules mediaapi.RequestRules, input PaidInput, item model, parameters *dynvalue.Object) (*dynvalue.Object, error) {
 	merged := cloneObject(parameters)
 	if input.ProjectOptions == nil {
 		return merged, nil
@@ -303,8 +303,8 @@ func withProjectOptions(rules mediaapi.RequestRules, input PaidInput, item model
 				continue
 			}
 			matched = true
-			if !jscompat.DeepStrictEqual(merged.Value(key), expected) {
-				return nil, errors.New(textProjectOptionConflict(name, jscompat.JSONText(merged.Value(key)), jscompat.JSONText(expected)))
+			if !dynvalue.DeepStrictEqual(merged.Value(key), expected) {
+				return nil, errors.New(textProjectOptionConflict(name, dynvalue.JSONText(merged.Value(key)), dynvalue.JSONText(expected)))
 			}
 		}
 		if !matched {
@@ -315,9 +315,9 @@ func withProjectOptions(rules mediaapi.RequestRules, input PaidInput, item model
 }
 
 // cloneObject — поверхностная копия ({...value}); nil — пустой объект.
-func cloneObject(value *jscompat.Object) *jscompat.Object {
+func cloneObject(value *dynvalue.Object) *dynvalue.Object {
 	if value == nil {
-		return jscompat.NewObject()
+		return dynvalue.NewObject()
 	}
 	return value.Clone()
 }
@@ -386,7 +386,7 @@ func frameMatchesProject(path, name string, expected any) error {
 	if !ok {
 		return nil
 	}
-	ratio := projectRatio.FindStringSubmatch(jscompat.Trim(text))
+	ratio := projectRatio.FindStringSubmatch(dynvalue.Trim(text))
 	if ratio == nil {
 		return nil
 	}
@@ -403,9 +403,9 @@ func frameMatchesProject(path, name string, expected any) error {
 	return nil
 }
 
-// arrayItems — элементы массива или одно значение (Array.isArray(value) ? value : [value]).
+// arrayItems — элементы массива или одно значение как список из одного элемента.
 func arrayItems(value any) []any {
-	if items, ok := jscompat.AsArray(value); ok {
+	if items, ok := dynvalue.AsArray(value); ok {
 		return items
 	}
 	return []any{value}
@@ -413,24 +413,24 @@ func arrayItems(value any) []any {
 
 // stringList — строки массива allowed объявления (проверены при разборе возможностей).
 func stringList(value any) ([]string, bool) {
-	items, ok := jscompat.AsArray(value)
+	items, ok := dynvalue.AsArray(value)
 	if !ok {
 		return nil, false
 	}
 	result := make([]string, len(items))
 	for index, entry := range items {
-		result[index] = jscompat.ToString(entry)
+		result[index] = dynvalue.ToString(entry)
 	}
 	return result, true
 }
 
 // maxItems — declaration.max_items ?? fallback.
 func maxItems(declaration any, fallback float64) float64 {
-	value := jscompat.Get(declaration, "max_items")
-	if jscompat.IsNullish(value) {
+	value := dynvalue.Get(declaration, "max_items")
+	if dynvalue.IsNullish(value) {
 		return fallback
 	}
-	return jscompat.ToNumber(value)
+	return dynvalue.ToNumber(value)
 }
 
 // lstatFile — существующий обычный файл без перехода по символической ссылке.
@@ -443,7 +443,7 @@ var remoteInput = regexp.MustCompile(`(?i)^https?:`)
 
 // validatePaid проверяет запрос по снимку возможностей: значения ограничений берутся только из
 // переданного снимка, названия моделей не подменяются алиасами.
-func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Capabilities) (*jscompat.Object, []PaidInputItem, error) {
+func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Capabilities) (*dynvalue.Object, []PaidInputItem, error) {
 	index := slices.IndexFunc(caps.Models, func(item mediaapi.Model) bool { return item.Command == input.Command && item.ID == input.Model })
 	if index < 0 {
 		return nil, nil, errors.New(textModelNotDeclared)
@@ -453,17 +453,17 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 	if err != nil {
 		return nil, nil, err
 	}
-	if jscompat.Trim(input.Prompt) == "" || input.Outputs < 1 || input.Outputs > 9 {
+	if dynvalue.Trim(input.Prompt) == "" || input.Outputs < 1 || input.Outputs > 9 {
 		return nil, nil, errors.New(textInvalidRequest)
 	}
-	parameters := jscompat.NewObject()
+	parameters := dynvalue.NewObject()
 	if input.Parameters != nil {
 		for _, supplied := range input.Parameters.Keys() {
 			value := input.Parameters.Value(supplied)
 			// Синонимы провайдера обозначают одно требование; значение не меняем.
 			name := parameterName(rules, input.Kind, item, supplied)
 			if name == "" || name == "prompt" || name == "model" {
-				return nil, nil, errors.New(textUndeclaredParameter(supplied, jscompat.JSONText(value)))
+				return nil, nil, errors.New(textUndeclaredParameter(supplied, dynvalue.JSONText(value)))
 			}
 			if parameters.Has(name) {
 				return nil, nil, errors.New(textDuplicateParameter(name))
@@ -475,11 +475,11 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 	// старыми options.
 	for _, rule := range rules.Enforced {
 		for _, rejected := range rule.Rejected {
-			if jscompat.DeepStrictEqual(parameters.Value(rule.Name), rejected) {
+			if dynvalue.DeepStrictEqual(parameters.Value(rule.Name), rejected) {
 				return nil, nil, errors.New(rule.Message)
 			}
 		}
-		if jscompat.Truthy(declared(item.arguments, rule.Name)) {
+		if dynvalue.Truthy(declared(item.arguments, rule.Name)) {
 			parameters.Set(rule.Name, rule.Value)
 		}
 	}
@@ -500,7 +500,7 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 	values.Set("prompt", input.Prompt)
 	values.Set("model", input.Model)
 	for _, name := range parameters.Keys() {
-		if slices.Contains(rules.OutputCount, name) && jscompat.ToString(parameters.Value(name)) != strconv.Itoa(input.Outputs) {
+		if slices.Contains(rules.OutputCount, name) && dynvalue.ToString(parameters.Value(name)) != strconv.Itoa(input.Outputs) {
 			return nil, nil, errors.New(textOutputCountMismatch)
 		}
 	}
@@ -519,14 +519,14 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 			name := ArgumentName(item.arguments, supplied)
 			// Параметр, который задаёт переданный начальный кадр, можно опустить: тогда с настройкой
 			// сверяется сам кадр.
-			if name != "" && frame != nil && parameters.Value(name) == jscompat.Undefined && slices.Contains(rules.FrameDefined.Parameters, name) {
-				if err := frameMatchesProject(jscompat.Resolve(input.Project, frame.Path), name, expected); err != nil {
+			if name != "" && frame != nil && parameters.Value(name) == dynvalue.Undefined && slices.Contains(rules.FrameDefined.Parameters, name) {
+				if err := frameMatchesProject(dynvalue.Resolve(input.Project, frame.Path), name, expected); err != nil {
 					return nil, nil, err
 				}
 				continue
 			}
-			if name != "" && !jscompat.StrictEqual(parameters.Value(name), expected) {
-				return nil, nil, errors.New(textProjectParameterMismatch(name, jscompat.JSONText(parameters.Value(name)), jscompat.JSONText(expected)))
+			if name != "" && !dynvalue.StrictEqual(parameters.Value(name), expected) {
+				return nil, nil, errors.New(textProjectParameterMismatch(name, dynvalue.JSONText(parameters.Value(name)), dynvalue.JSONText(expected)))
 			}
 		}
 	}
@@ -544,7 +544,7 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 			declarations = item.arguments
 		}
 		declaration := declared(declarations, name)
-		if !jscompat.Truthy(declaration) {
+		if !dynvalue.Truthy(declaration) {
 			return nil, nil, errors.New(textInputNotDeclared(name))
 		}
 		assigned[name]++
@@ -554,47 +554,47 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 		if remoteInput.MatchString(entry.Path) {
 			return nil, nil, errors.New(textLocalInputsRequired)
 		}
-		if !lstatFile(jscompat.Resolve(input.Project, entry.Path)) {
+		if !lstatFile(dynvalue.Resolve(input.Project, entry.Path)) {
 			return nil, nil, errors.New(textInputUnavailable(entry.Path))
 		}
 	}
 	for _, name := range item.slots.Keys() {
-		if jscompat.Truthy(jscompat.Get(item.slots.Value(name), "required")) && assigned[name] == 0 {
+		if dynvalue.Truthy(dynvalue.Get(item.slots.Value(name), "required")) && assigned[name] == 0 {
 			return nil, nil, errors.New(textRequiredSlotMissing(name))
 		}
 	}
 	for _, name := range item.arguments.Keys() {
 		declaration := item.arguments.Value(name)
 		value := values.Value(name)
-		if jscompat.Truthy(jscompat.Get(declaration, "required")) && value == jscompat.Undefined && assigned[name] == 0 && jscompat.Get(declaration, "default") == jscompat.Undefined {
+		if dynvalue.Truthy(dynvalue.Get(declaration, "required")) && value == dynvalue.Undefined && assigned[name] == 0 && dynvalue.Get(declaration, "default") == dynvalue.Undefined {
 			return nil, nil, errors.New(textRequiredParameterMissing(name))
 		}
-		if value == jscompat.Undefined {
+		if value == dynvalue.Undefined {
 			continue
 		}
 		items := arrayItems(value)
-		if allowed, ok := stringList(jscompat.Get(declaration, "allowed")); ok {
+		if allowed, ok := stringList(dynvalue.Get(declaration, "allowed")); ok {
 			for _, entry := range items {
-				if !slices.Contains(allowed, jscompat.ToString(entry)) {
-					return nil, nil, errors.New(textUnsupportedParameter(name, jscompat.JSONText(value), strings.Join(allowed, ", ")))
+				if !slices.Contains(allowed, dynvalue.ToString(entry)) {
+					return nil, nil, errors.New(textUnsupportedParameter(name, dynvalue.JSONText(value), strings.Join(allowed, ", ")))
 				}
 			}
 		}
-		if limit := jscompat.Get(declaration, "max_items"); limit != jscompat.Undefined && float64(len(items)) > jscompat.ToNumber(limit) {
+		if limit := dynvalue.Get(declaration, "max_items"); limit != dynvalue.Undefined && float64(len(items)) > dynvalue.ToNumber(limit) {
 			return nil, nil, errors.New(textItemCountExceeded(name))
 		}
 	}
 	if constraint := input.DurationConstraint; constraint != nil {
 		var supported []float64
-		if allowed, ok := stringList(jscompat.Get(item.arguments.Value("duration"), "allowed")); ok {
+		if allowed, ok := stringList(dynvalue.Get(item.arguments.Value("duration"), "allowed")); ok {
 			minimum := 0.0
 			if constraint.MinSeconds != nil {
 				minimum = *constraint.MinSeconds
 			}
 			supported = []float64{}
 			for _, text := range allowed {
-				seconds := jscompat.ToNumber(text)
-				if !jscompat.IsInteger(seconds) || seconds < minimum {
+				seconds := dynvalue.ToNumber(text)
+				if !dynvalue.IsInteger(seconds) || seconds < minimum {
 					continue
 				}
 				var fits bool
@@ -612,8 +612,8 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 			}
 		}
 		// Согласованную длительность не уменьшаем ради модели; правило проверяем для каждого кандидата.
-		if len(supported) == 0 || jscompat.ToNumber(parameters.Value("duration")) != slices.Min(supported) {
-			return nil, nil, errors.New(textDurationMismatch(jscompat.JSONText(parameters.Value("duration")), constraint.Rule, constraint.WindowSeconds, constraint.MinSeconds, supported))
+		if len(supported) == 0 || dynvalue.ToNumber(parameters.Value("duration")) != slices.Min(supported) {
+			return nil, nil, errors.New(textDurationMismatch(dynvalue.JSONText(parameters.Value("duration")), constraint.Rule, constraint.WindowSeconds, constraint.MinSeconds, supported))
 		}
 	}
 	if err := combinedLimit(item.limits.Value("combined_item_cap"), values, assigned); err != nil {
@@ -624,27 +624,27 @@ func validatePaid(rules mediaapi.RequestRules, input PaidInput, caps mediaapi.Ca
 
 // combinedLimit проверяет общий лимит входных материалов модели: значения перечисленных
 // параметров и файловые входы, подходящие по имени или префиксу (один вход считается один раз).
-func combinedLimit(limit any, values *jscompat.Object, assigned map[string]int) error {
-	if limit == jscompat.Undefined {
+func combinedLimit(limit any, values *dynvalue.Object, assigned map[string]int) error {
+	if limit == dynvalue.Undefined {
 		return nil
 	}
-	maximum := jscompat.Get(limit, "maxItems")
-	if !jscompat.IsRecord(limit) || !jscompat.IsInteger(maximum) || jscompat.ToNumber(maximum) < 1 {
+	maximum := dynvalue.Get(limit, "maxItems")
+	if !dynvalue.IsRecord(limit) || !dynvalue.IsInteger(maximum) || dynvalue.ToNumber(maximum) < 1 {
 		return errors.New(textInvalidCombinedLimit)
 	}
-	names, _ := jscompat.AsArray(jscompat.Get(limit, "arguments"))
-	prefixes, _ := jscompat.AsArray(jscompat.Get(limit, "inputPrefixes"))
+	names, _ := dynvalue.AsArray(dynvalue.Get(limit, "arguments"))
+	prefixes, _ := dynvalue.AsArray(dynvalue.Get(limit, "inputPrefixes"))
 	argumentNames := map[string]bool{}
 	count := 0
 	for _, name := range names {
 		if text, ok := name.(string); ok {
 			argumentNames[text] = true
 		}
-		value := values.Value(jscompat.ToString(name))
+		value := values.Value(dynvalue.ToString(name))
 		switch {
-		case value == jscompat.Undefined:
-		case jscompat.IsArray(value):
-			items, _ := jscompat.AsArray(value)
+		case value == dynvalue.Undefined:
+		case dynvalue.IsArray(value):
+			items, _ := dynvalue.AsArray(value)
 			count += len(items)
 		default:
 			count++
@@ -661,19 +661,19 @@ func combinedLimit(limit any, values *jscompat.Object, assigned map[string]int) 
 			count += used
 		}
 	}
-	if float64(count) > jscompat.ToNumber(maximum) {
+	if float64(count) > dynvalue.ToNumber(maximum) {
 		return errors.New(textCombinedLimitExceeded)
 	}
 	return nil
 }
 
 // CandidateParameters — параметры черновика для конкретной модели (по умолчанию — input.Parameters).
-type CandidateParameters func(model mediaapi.Model) *jscompat.Object
+type CandidateParameters func(model mediaapi.Model) *dynvalue.Object
 
 // CheckedCandidateParameters — CandidateParameters, которые могут отказать для модели (обложка:
 // конфликт явного разрешения или включённая серия). Отказ — причина отклонения этой модели в
 // тексте «нет совместимой модели».
-type CheckedCandidateParameters func(model mediaapi.Model) (*jscompat.Object, error)
+type CheckedCandidateParameters func(model mediaapi.Model) (*dynvalue.Object, error)
 
 // SelectPaidRequest проверяет весь запрос для каждой модели до
 // записи попытки и возвращает нормализованный запрос с выбором модели. Сначала пробуется
@@ -682,7 +682,7 @@ type CheckedCandidateParameters func(model mediaapi.Model) (*jscompat.Object, er
 func SelectPaidRequest(paid Paid, input PaidInput, caps mediaapi.Capabilities, candidate CandidateParameters) (PaidInput, error) {
 	var checked CheckedCandidateParameters
 	if candidate != nil {
-		checked = func(model mediaapi.Model) (*jscompat.Object, error) { return candidate(model), nil }
+		checked = func(model mediaapi.Model) (*dynvalue.Object, error) { return candidate(model), nil }
 	}
 	return SelectCheckedPaidRequest(paid, input, caps, checked)
 }
@@ -697,7 +697,7 @@ func SelectCheckedPaidRequest(paid Paid, input PaidInput, caps mediaapi.Capabili
 	if input.PreferredModel != nil {
 		preferred = *input.PreferredModel
 	}
-	preferred = jscompat.Trim(preferred)
+	preferred = dynvalue.Trim(preferred)
 	models := []mediaapi.Model{}
 	for _, item := range caps.Models {
 		if item.Command == input.Command {
@@ -705,7 +705,7 @@ func SelectCheckedPaidRequest(paid Paid, input PaidInput, caps mediaapi.Capabili
 		}
 	}
 	ids := []string{}
-	for _, id := range append([]string{preferred, jscompat.Trim(input.Model)}, modelIDs(models)...) {
+	for _, id := range append([]string{preferred, dynvalue.Trim(input.Model)}, modelIDs(models)...) {
 		if id != "" && !slices.Contains(ids, id) {
 			ids = append(ids, id)
 		}
@@ -845,12 +845,12 @@ func (p *PaidMedia) title() string { return Title(p.Paid.ID, p.Paid.ID) }
 // argumentsOK проверяет объект объявлений, где required — bool, allowed — массив
 // строк, max_items — целое не меньше 1.
 func argumentsOK(value any) bool {
-	object, ok := value.(*jscompat.Object)
+	object, ok := value.(*dynvalue.Object)
 	if !ok {
 		return false
 	}
 	for _, name := range object.Keys() {
-		entry, ok := object.Value(name).(*jscompat.Object)
+		entry, ok := object.Value(name).(*dynvalue.Object)
 		if !ok {
 			return false
 		}
@@ -860,7 +860,7 @@ func argumentsOK(value any) bool {
 			}
 		}
 		if allowed, has := entry.Get("allowed"); has {
-			items, isArray := jscompat.AsArray(allowed)
+			items, isArray := dynvalue.AsArray(allowed)
 			if !isArray {
 				return false
 			}
@@ -870,14 +870,14 @@ func argumentsOK(value any) bool {
 				}
 			}
 		}
-		if limit, has := entry.Get("max_items"); has && (!jscompat.IsInteger(limit) || jscompat.ToNumber(limit) < 1) {
+		if limit, has := entry.Get("max_items"); has && (!dynvalue.IsInteger(limit) || dynvalue.ToNumber(limit) < 1) {
 			return false
 		}
 	}
 	return true
 }
 
-// checkedAt — new Date().toISOString().
+// checkedAt — время UTC в формате ISO 8601 с миллисекундами и «Z».
 func checkedAt(now time.Time) string { return now.UTC().Format("2006-01-02T15:04:05.000Z") }
 
 // Capabilities — объявления моделей провайдера для вида медиа по свежему каталогу аккаунта.
@@ -899,18 +899,18 @@ func (p *PaidMedia) Capabilities(ctx context.Context, project string) mediaapi.C
 			var failure string
 			for _, id := range report.Models.Keys() {
 				value := report.Models.Value(id)
-				limits, limitsOK := jscompat.Get(value, "limits").(*jscompat.Object)
-				if !jscompat.IsRecord(value) || !limitsOK {
+				limits, limitsOK := dynvalue.Get(value, "limits").(*dynvalue.Object)
+				if !dynvalue.IsRecord(value) || !limitsOK {
 					failure = textInvalidModel(p.title())
 					break
 				}
-				arguments, slots := jscompat.Get(value, "arguments"), jscompat.Get(value, "slots")
+				arguments, slots := dynvalue.Get(value, "arguments"), dynvalue.Get(value, "slots")
 				if !argumentsOK(arguments) || !argumentsOK(slots) {
 					failure = textInvalidArguments(p.title())
 					break
 				}
 				commandModels = append(commandModels, mediaapi.Model{
-					ID: id, Command: command, Arguments: jscompat.Raw(arguments), Slots: jscompat.Raw(slots), Limits: jscompat.Raw(limits),
+					ID: id, Command: command, Arguments: dynvalue.Raw(arguments), Slots: dynvalue.Raw(slots), Limits: dynvalue.Raw(limits),
 				})
 			}
 			if failure != "" {
@@ -934,13 +934,13 @@ func (p *PaidMedia) Capabilities(ctx context.Context, project string) mediaapi.C
 }
 
 // specInput — вход spec.json в порядке ключей формата с абсолютным путём.
-func specInput(project string, item PaidInputItem) *jscompat.Object {
-	object := jscompat.NewObject()
+func specInput(project string, item PaidInputItem) *dynvalue.Object {
+	object := dynvalue.NewObject()
 	object.Set("flag", item.Flag)
 	if item.Slot != "" {
 		object.Set("slot", item.Slot)
 	}
-	object.Set("path", jscompat.Resolve(project, item.Path))
+	object.Set("path", dynvalue.Resolve(project, item.Path))
 	if item.Role != "" {
 		object.Set("role", item.Role)
 	}
@@ -969,7 +969,7 @@ func (p *PaidMedia) Prepare(ctx context.Context, input PaidInput, caps mediaapi.
 	for index, item := range input.Inputs {
 		inputs[index] = specInput(input.Project, item)
 	}
-	spec := jscompat.NewObject()
+	spec := dynvalue.NewObject()
 	spec.Set("schema_version", float64(1))
 	spec.Set("provider", p.Paid.ID)
 	spec.Set("shot", input.Shot)
@@ -979,13 +979,13 @@ func (p *PaidMedia) Prepare(ctx context.Context, input PaidInput, caps mediaapi.
 	spec.Set("model_selection", input.ModelSelection.object())
 	spec.Set("parameters", input.Parameters)
 	spec.Set("outputs", float64(input.Outputs))
-	spec.Set("inputs", &jscompat.Array{Items: inputs})
+	spec.Set("inputs", &dynvalue.Array{Items: inputs})
 	spec.Set("prompt_file", "prompt.txt")
 	specPath := filepath.Join(directory, "spec.json")
-	if err := os.WriteFile(specPath, []byte(jscompat.Stringify(spec)), 0o666); err != nil {
+	if err := os.WriteFile(specPath, []byte(dynvalue.Stringify(spec)), 0o666); err != nil {
 		return PreparedRequest{}, err
 	}
-	requestDir := jscompat.Resolve(input.Project, input.WorkDir)
+	requestDir := dynvalue.Resolve(input.Project, input.WorkDir)
 	run := p.options.Run
 	if run == nil {
 		run = defaultRunner
@@ -995,20 +995,20 @@ func (p *PaidMedia) Prepare(ctx context.Context, input PaidInput, caps mediaapi.
 		return PreparedRequest{}, err
 	}
 	if result.Code == nil || *result.Code != 0 {
-		if message := jscompat.Trim(result.Stderr); message != "" {
+		if message := dynvalue.Trim(result.Stderr); message != "" {
 			return PreparedRequest{}, errors.New(message)
 		}
 		return PreparedRequest{}, errors.New(textPrepareFailed(p.title()))
 	}
-	prepared, err := jscompat.Parse([]byte(result.Stdout))
+	prepared, err := dynvalue.Parse([]byte(result.Stdout))
 	if err != nil {
 		return PreparedRequest{}, err
 	}
-	sha, ok := jscompat.Get(prepared, "request_sha256").(string)
-	if !jscompat.IsRecord(prepared) || !ok || !requestSha.MatchString(sha) {
+	sha, ok := dynvalue.Get(prepared, "request_sha256").(string)
+	if !dynvalue.IsRecord(prepared) || !ok || !requestSha.MatchString(sha) {
 		return PreparedRequest{}, errors.New(textRequestShaMissing)
 	}
-	project, err := jscompat.Realpath(input.Project)
+	project, err := dynvalue.Realpath(input.Project)
 	if err != nil {
 		return PreparedRequest{}, err
 	}
@@ -1022,16 +1022,16 @@ func (p *PaidMedia) Prepare(ctx context.Context, input PaidInput, caps mediaapi.
 var requestSha = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
 // readObject читает JSON-объект файла попытки.
-func readObject(path string) (*jscompat.Object, error) {
+func readObject(path string) (*dynvalue.Object, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, jscompat.FsError("open", path, err)
+		return nil, dynvalue.FsError("open", path, err)
 	}
-	value, err := jscompat.Parse(data)
+	value, err := dynvalue.Parse(data)
 	if err != nil {
 		return nil, err
 	}
-	object, ok := value.(*jscompat.Object)
+	object, ok := value.(*dynvalue.Object)
 	if !ok {
 		return nil, errors.New(textJSONObjectRequired)
 	}
@@ -1042,7 +1042,7 @@ func readObject(path string) (*jscompat.Object, error) {
 func fileHash(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", jscompat.FsError("open", path, err)
+		return "", dynvalue.FsError("open", path, err)
 	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:]), nil
@@ -1050,7 +1050,7 @@ func fileHash(path string) (string, error) {
 
 // verify сверяет зафиксированную попытку с подготовкой: SHA request.json, вид медиа и хеши промпта и
 // входов внутри папки попытки.
-func (p *PaidMedia) verify(reference PreparedRequest) (*jscompat.Object, *jscompat.Object, error) {
+func (p *PaidMedia) verify(reference PreparedRequest) (*dynvalue.Object, *dynvalue.Object, error) {
 	if reference.Provider != p.Paid.ID || reference.Kind != p.Kind {
 		return nil, nil, errors.New(textExecutorRequestMismach)
 	}
@@ -1067,17 +1067,17 @@ func (p *PaidMedia) verify(reference PreparedRequest) (*jscompat.Object, *jscomp
 	if err != nil {
 		return nil, nil, err
 	}
-	if !jscompat.StrictEqual(request.Value("kind"), p.Kind) || !jscompat.StrictEqual(attempt.Value("request_sha256"), reference.RequestSha) || hash != reference.RequestSha {
+	if !dynvalue.StrictEqual(request.Value("kind"), p.Kind) || !dynvalue.StrictEqual(attempt.Value("request_sha256"), reference.RequestSha) || hash != reference.RequestSha {
 		return nil, nil, errors.New(textRequestChanged)
 	}
-	inputs, ok := jscompat.AsArray(request.Value("inputs"))
-	if !jscompat.IsRecord(request.Value("prompt")) || !ok {
+	inputs, ok := dynvalue.AsArray(request.Value("inputs"))
+	if !dynvalue.IsRecord(request.Value("prompt")) || !ok {
 		return nil, nil, errors.New(textRequestInputsDamaged)
 	}
 	for _, item := range append([]any{request.Value("prompt")}, inputs...) {
-		path, pathOK := jscompat.Get(item, "path").(string)
-		expected, shaOK := jscompat.Get(item, "sha256").(string)
-		if !jscompat.IsRecord(item) || !pathOK || !shaOK {
+		path, pathOK := dynvalue.Get(item, "path").(string)
+		expected, shaOK := dynvalue.Get(item, "sha256").(string)
+		if !dynvalue.IsRecord(item) || !pathOK || !shaOK {
 			return nil, nil, errors.New(textRequestInputChanged)
 		}
 		file, err := mediafile.LocalFile(reference.RequestDir, path)
@@ -1106,7 +1106,7 @@ func (p *PaidMedia) Submit(ctx context.Context, reference PreparedRequest, execu
 	if err != nil {
 		return mediaapi.PaidExecutionRef{}, err
 	}
-	if !jscompat.StrictEqual(attempt.Value("status"), "prepared") || jscompat.Truthy(attempt.Value("generation_id")) {
+	if !dynvalue.StrictEqual(attempt.Value("status"), "prepared") || dynvalue.Truthy(attempt.Value("generation_id")) {
 		return mediaapi.PaidExecutionRef{}, errors.New(textAlreadySubmitted)
 	}
 	if err := execute(ctx, "submit", reference); err != nil {
@@ -1133,40 +1133,40 @@ func (p *PaidMedia) Collect(reference PreparedRequest) ([]mediaapi.Artifact, err
 	if err != nil {
 		return nil, err
 	}
-	downloads, ok := jscompat.AsArray(attempt.Value("downloads"))
-	outputs := jscompat.ToNumber(request.Value("outputs"))
-	if !jscompat.StrictEqual(attempt.Value("status"), "downloaded") || !ok || !jscompat.StrictEqual(float64(len(downloads)), request.Value("outputs")) {
+	downloads, ok := dynvalue.AsArray(attempt.Value("downloads"))
+	outputs := dynvalue.ToNumber(request.Value("outputs"))
+	if !dynvalue.StrictEqual(attempt.Value("status"), "downloaded") || !ok || !dynvalue.StrictEqual(float64(len(downloads)), request.Value("outputs")) {
 		return nil, errors.New(textOriginalsIncomplete)
 	}
 	seen := map[float64]bool{}
 	artifacts := make([]mediaapi.Artifact, 0, len(downloads))
 	for _, value := range downloads {
-		path, pathOK := jscompat.Get(value, "path").(string)
-		number := jscompat.Get(value, "number")
-		if !jscompat.IsRecord(value) || !pathOK || !jscompat.IsInteger(number) || jscompat.ToNumber(number) < 1 ||
-			jscompat.ToNumber(number) > outputs || seen[jscompat.ToNumber(number)] {
+		path, pathOK := dynvalue.Get(value, "path").(string)
+		number := dynvalue.Get(value, "number")
+		if !dynvalue.IsRecord(value) || !pathOK || !dynvalue.IsInteger(number) || dynvalue.ToNumber(number) < 1 ||
+			dynvalue.ToNumber(number) > outputs || seen[dynvalue.ToNumber(number)] {
 			return nil, errors.New(textOriginalListDamaged)
 		}
-		seen[jscompat.ToNumber(number)] = true
+		seen[dynvalue.ToNumber(number)] = true
 		file, err := mediafile.LocalFile(reference.RequestDir, path)
 		if err != nil {
 			return nil, err
 		}
 		info, err := os.Lstat(file)
 		if err != nil {
-			return nil, jscompat.FsError("lstat", file, err)
+			return nil, dynvalue.FsError("lstat", file, err)
 		}
-		if !jscompat.StrictEqual(float64(info.Size()), jscompat.Get(value, "bytes")) {
+		if !dynvalue.StrictEqual(float64(info.Size()), dynvalue.Get(value, "bytes")) {
 			return nil, errors.New(textOriginalChanged)
 		}
 		sha, err := fileHash(file)
 		if err != nil {
 			return nil, err
 		}
-		if expected, isString := jscompat.Get(value, "sha256").(string); isString && expected != sha {
+		if expected, isString := dynvalue.Get(value, "sha256").(string); isString && expected != sha {
 			return nil, errors.New(textOriginalHashMismatch)
 		}
-		artifact := mediaapi.Artifact{Path: file, Index: int(jscompat.ToNumber(number)), Kind: p.Kind, SHA256: sha, FrameID: reference.FrameID}
+		artifact := mediaapi.Artifact{Path: file, Index: int(dynvalue.ToNumber(number)), Kind: p.Kind, SHA256: sha, FrameID: reference.FrameID}
 		switch p.Kind {
 		case "image":
 			width, height, ok := mediafile.Dimensions(file)

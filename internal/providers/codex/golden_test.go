@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/mediaapi"
 )
 
 // codexCases — разделы codexPrepare и codexCover эталона media-providers.
@@ -95,7 +95,7 @@ func TestPrepareGolden(t *testing.T) {
 		t.Run(item.Name, func(t *testing.T) {
 			project := t.TempDir()
 			for path, spec := range files {
-				data := []byte(jscompat.ToString(spec["text"]))
+				data := []byte(dynvalue.ToString(spec["text"]))
 				if size, ok := spec["png"].([]any); ok {
 					data = png(int(size[0].(float64)), int(size[1].(float64)))
 				}
@@ -157,7 +157,7 @@ func TestCoverRunnerGolden(t *testing.T) {
 				}
 				data, _ := os.ReadFile(path)
 				sum := sha256.Sum256(data)
-				references = append(references, mediaapi.ReferenceImage{Path: path, Label: "Опора " + jscompat.NumberToString(float64(index+1)) + " «" + kind + "»", SHA256: hex.EncodeToString(sum[:]), Bytes: int64(len(data))})
+				references = append(references, mediaapi.ReferenceImage{Path: path, Label: "Опора " + dynvalue.NumberToString(float64(index+1)) + " «" + kind + "»", SHA256: hex.EncodeToString(sum[:]), Bytes: int64(len(data))})
 			}
 			code := item.Job.ExitCode
 			manager := &fakeManager{job: agents.Job{ID: "job-1", Status: item.Job.Status, ExitCode: &code, Result: item.Job.Result, Message: item.Job.Message}}

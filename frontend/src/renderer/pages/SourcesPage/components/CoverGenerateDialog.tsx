@@ -2,7 +2,7 @@ import type { ReferenceImageOption } from '@shared/reference-image-generation';
 import type { ReactElement } from 'react';
 import { ImageGenerateDialog } from '../../../components/ImageGenerateDialog';
 
-/** Обложка сохраняет прежний сценарий генерации и квадратного кадрирования. */
+/** Обложка генерируется общим диалогом изображений: тот же порядок генерации и квадратное кадрирование. */
 export function CoverGenerateDialog(props: {
   project: string;
   idea: string;

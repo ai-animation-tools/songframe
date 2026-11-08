@@ -52,7 +52,7 @@
 
 ## Проект и исходники
 
-Документы: [dev-skills/songframe-go-project-contract/SKILL.md](../dev-skills/songframe-go-project-contract/SKILL.md), [resources/templates/project/README.md](../resources/templates/project/README.md).
+Документы: [dev-skills/songframe-project-contract/SKILL.md](../dev-skills/songframe-project-contract/SKILL.md), [resources/templates/project/README.md](../resources/templates/project/README.md).
 
 | Пакет | Назначение |
 | --- | --- |
@@ -65,7 +65,7 @@
 | [`internal/sourceinputs`](../internal/sourceinputs) | Вычисляет отпечаток содержательных входов описи исходников. |
 | [`internal/referenceimage`](../internal/referenceimage) | Согласует запись референсов исходников и сущностей кастинга: они делят одни файлы в source/, поэтому их запись согласуется здесь, а не в internal/sourceedit (форма «Исходники») или internal/cast (документ кастинга). |
 | [`internal/cast`](../internal/cast) | Читает кастинг plan/cast.json для вычислений, которым нужны сущности проекта: начальное состояние сущностей входит в отпечаток постановки каждого плана. |
-| [`internal/castregistry`](../internal/castregistry) | Читает кастинг для инструментов tools.run (scene_registry, scene_scaffold, проверки): load_cast, validate_cast, проекция описаний из source/manifest.json, initial_states и references. |
+| [`internal/castregistry`](../internal/castregistry) | Читает кастинг для инструментов tools.run (scene_registry, scene_scaffold, проверки): загрузка (Load), проверка (Validate), проекция описаний из source/manifest.json, начальные состояния (InitialStates) и карта референсов (References). |
 | [`internal/covergen`](../internal/covergen) | Генерирует обложку проекта и изображения референсов. |
 | [`internal/projectviews`](../internal/projectviews) | Строит производные Markdown/JSON-представления реестра сцен и технических комплектов — монтажный список, раскадровка, индекс комплектов assets, ROADMAP с готовностью, справочник визуальных правил с речевыми планами, README комплектов и таблица разметки трека. |
 
@@ -218,11 +218,11 @@
 
 | Пакет | Назначение |
 | --- | --- |
-| [`internal/pycompat`](../internal/pycompat) | Воспроизводит семантику значений Python 3.12, в которой записаны файлы и вывод инструментов комплекса: разбор и запись JSON модулем json, repr/str, равенство и истинность, индексацию, приведение float()/round() и десятичную арифметику Decimal. |
-| [`internal/pyre`](../internal/pyre) | Регулярные выражения с семантикой модуля re CPython 3.12 для строковых шаблонов инструментов (lint_registry, shot_status, check_workspace и др.). |
-| [`internal/pyargparse`](../internal/pyargparse) | Argparse CPython 3.12 с подкомандами для CLI платной попытки (prog media_request.py, cost_check.py): parser.add_subparsers(dest=..., required=True), у подкоманд — опции store_true, с одним значением или nargs="+", required=True, choices, type=float и одна взаимоисключающая группа (в том числе required=True). |
-| [`internal/pytool`](../internal/pytool) | Общий каркас CLI-инструментов с семантикой Python: результат процесса (код, stdout, stderr), print() с кодированием UTF-8 и завершение необработанным исключением или parser.exit. |
-| [`internal/jscompat`](../internal/jscompat) | Воспроизводит семантику JavaScript/Node.js, в которой записаны проектные файлы и ответы приложения. |
+| [`internal/toolrt`](../internal/toolrt) | Модель значений инструментов комплекса, в которой зафиксированы их файлы и вывод: строгий разбор и запись JSON, текстовые записи значений (repr для сообщений, str для текста), равенство и истинность, индексация, приведение и округление чисел, десятичная арифметика и разбор аргументов командной строки. |
+| [`internal/toolregex`](../internal/toolregex) | Регулярные выражения с поиском с возвратом и классами Unicode для шаблонов инструментов (lint_registry, shot_status, check_workspace и др.). |
+| [`internal/toolsubcmd`](../internal/toolsubcmd) | Разбор аргументов с обязательной подкомандой для CLI платной попытки (prog media_request, cost_check): у подкоманд — логические флаги, опции с одним или несколькими значениями, обязательные опции, списки допустимых значений, дробные значения и одна взаимоисключающая группа (в том числе обязательная). |
+| [`internal/toolcli`](../internal/toolcli) | Общий каркас CLI-инструментов: результат запуска (код, stdout, stderr), печать строк со строгим кодированием UTF-8, завершение ошибкой аргументов, сообщением или необработанным исключением. |
+| [`internal/dynvalue`](../internal/dynvalue) | Динамическая модель значений проектных JSON-файлов и ответов приложения: документ читается без схемы, а доменный код работает с деревом значений по фиксированным правилам истинности, строгого равенства, текстового приведения, порядка свойств и записи JSON. |
 | [`internal/golden`](../internal/golden) | Читает эталоны поведения testdata/golden и сравнивает с ними результаты. |
 | [`internal/repodocs`](../internal/repodocs) | Проверяет, что документация репозитория не разошлась с кодом, и генерирует карту кода docs/code-map.md. |
 
@@ -230,7 +230,7 @@
 
 ## Сборка и поставки
 
-Документы: [packaging/README.md](../packaging/README.md), [packaging/windows/README.md](../packaging/windows/README.md), [dev-skills/songframe-go-build/SKILL.md](../dev-skills/songframe-go-build/SKILL.md), [dev-skills/songframe-go-release/SKILL.md](../dev-skills/songframe-go-release/SKILL.md).
+Документы: [packaging/README.md](../packaging/README.md), [packaging/windows/README.md](../packaging/windows/README.md), [dev-skills/songframe-build/SKILL.md](../dev-skills/songframe-build/SKILL.md), [dev-skills/songframe-release/SKILL.md](../dev-skills/songframe-release/SKILL.md).
 
 | Пакет | Назначение |
 | --- | --- |

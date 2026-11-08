@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Шаблоны: UUID черновика (без учёта регистра), SHA-256 снимка и код сцены.
@@ -22,26 +22,26 @@ var (
 	shotPattern   = regexp.MustCompile(`^M\d{2}(?:\.\d+)?$`)
 )
 
-// fps — шкала монтажа (FPS из shared/video).
+// fps — шкала монтажа (FPS из frontend/src/shared/video.ts).
 const fps = 30
 
-// secondsToFrames — secondsToFrames(seconds) shared/video: округление до ближайшего кадра 30 к/с
-// с запасом на погрешность двоичной дроби (4 эпсилона масштаба).
+// secondsToFrames — та же формула, что secondsToFrames в frontend/src/shared/video.ts: округление
+// до ближайшего кадра 30 к/с с запасом на погрешность двоичной дроби (4 эпсилона масштаба).
 func secondsToFrames(seconds float64) float64 {
 	scaled := seconds * fps
 	return math.Floor(scaled + 0.5 + 2.220446049250313e-16*math.Max(1, math.Abs(scaled))*4)
 }
 
-// isObject — object(value): объект JSON, не массив и не null.
+// isObject сообщает, что значение — объект JSON, а не массив и не null.
 func isObject(value any) bool {
-	_, ok := jscompat.AsObject(value)
+	_, ok := dynvalue.AsObject(value)
 	return ok
 }
 
-// isFrame — frame(value): неотрицательное безопасное целое.
+// isFrame сообщает, что значение — номер кадра: неотрицательное безопасное целое.
 func isFrame(value any) bool {
 	number, ok := value.(float64)
-	return ok && jscompat.IsSafeInteger(value) && number >= 0
+	return ok && dynvalue.IsSafeInteger(value) && number >= 0
 }
 
 // number — значение как число; для не-числа ok=false.
@@ -50,7 +50,7 @@ func number(value any) (float64, bool) {
 	return result, ok
 }
 
-// fileHash — hash(path): SHA-256 содержимого; ошибка чтения — текст node:fs.
+// fileHash — SHA-256 содержимого файла (hex); ошибка чтения — ReadError.
 func fileHash(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -60,15 +60,17 @@ func fileHash(path string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// ReadError — ошибка readFileSync: каталог даёт EISDIR без пути, остальное — open '<путь>'.
+// ReadError — текст ошибки чтения файла (dynvalue.FsError): каталог даёт EISDIR без пути,
+// остальное — «open '<путь>'».
 func ReadError(path string, err error) error {
 	if info, statErr := os.Stat(path); statErr == nil && info.IsDir() {
-		return jscompat.FsError("read", "", err)
+		return dynvalue.FsError("read", "", err)
 	}
-	return jscompat.FsError("open", path, err)
+	return dynvalue.FsError("open", path, err)
 }
 
-// win32Absolute — path.win32.isAbsolute: от корня («/», «\») или с буквой диска и разделителем.
+// win32Absolute сообщает, что путь абсолютен по правилам Windows: от корня («/», «\») или с буквой
+// диска и разделителем.
 func win32Absolute(value string) bool {
 	if value == "" {
 		return false
@@ -85,7 +87,7 @@ func win32Absolute(value string) bool {
 // requireFile путь обязан указывать на существующий обычный файл. Возвращает абсолютный путь.
 func projectPath(project string, value any, requireFile bool) (string, error) {
 	text, ok := value.(string)
-	if !ok || text == "" || strings.Contains(text, `\`) || jscompat.IsAbs(text) || strings.HasPrefix(text, "/") || win32Absolute(text) {
+	if !ok || text == "" || strings.Contains(text, `\`) || dynvalue.IsAbs(text) || strings.HasPrefix(text, "/") || win32Absolute(text) {
 		return "", errors.New(textRelativePathRequired)
 	}
 	for _, part := range strings.Split(text, "/") {
@@ -93,7 +95,7 @@ func projectPath(project string, value any, requireFile bool) (string, error) {
 			return "", errors.New(textInvalidProjectPath(text))
 		}
 	}
-	full := jscompat.Resolve(project, filepath.FromSlash(text))
+	full := dynvalue.Resolve(project, filepath.FromSlash(text))
 	if requireFile {
 		if info, err := os.Stat(full); err != nil || !info.Mode().IsRegular() {
 			return "", errors.New(textProjectFileMissing(text))
@@ -102,21 +104,21 @@ func projectPath(project string, value any, requireFile bool) (string, error) {
 	return full, nil
 }
 
-// portable — portable(project, path): путь от корня проекта с «/» вместо «\».
+// portable — путь от корня проекта с «/» вместо «\».
 func portable(project, path string) string {
-	return strings.ReplaceAll(filepath.ToSlash(jscompat.Relative(project, path)), `\`, "/")
+	return strings.ReplaceAll(filepath.ToSlash(dynvalue.Relative(project, path)), `\`, "/")
 }
 
-// join — path.join(base, name): склейка с нормализацией (абсолютное name не сбрасывает base).
+// join склеивает base и name с нормализацией; абсолютное name не сбрасывает base.
 func join(base, name string) string { return filepath.Join(base, filepath.FromSlash(name)) }
 
-// readObject — readObject(path, label): JSON-объект или ошибка readFailed с подписью. Отсутствие,
+// readObject читает JSON-объект файла или возвращает ошибку textReadFailed с подписью. Отсутствие,
 // повреждение, массив и примитив файла дают одну и ту же ошибку; файл не меняется.
-func readObject(path, label string) (*jscompat.Object, error) {
+func readObject(path, label string) (*dynvalue.Object, error) {
 	data, err := os.ReadFile(path)
 	if err == nil {
-		if value, parseErr := jscompat.Parse([]byte(jscompat.DecodeUTF8(data))); parseErr == nil {
-			if object, ok := jscompat.AsObject(value); ok {
+		if value, parseErr := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data))); parseErr == nil {
+			if object, ok := dynvalue.AsObject(value); ok {
 				return object, nil
 			}
 		}
@@ -124,7 +126,7 @@ func readObject(path, label string) (*jscompat.Object, error) {
 	return nil, errors.New(textReadFailed(label))
 }
 
-// RandomUUID — crypto.RandomUUID (версия 4, строчные): имена черновиков и папок проб.
+// RandomUUID — случайный UUID версии 4 строчными буквами: имена черновиков и папок проб.
 var RandomUUID = func() string {
 	value := make([]byte, 16)
 	if _, err := rand.Read(value); err != nil {
@@ -135,10 +137,11 @@ var RandomUUID = func() string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", value[0:4], value[4:6], value[6:8], value[8:10], value[10:16])
 }
 
-// isoTime — Date.toISOString времени изменения файла: UTC с миллисекундами.
+// isoTime — время изменения файла в ISO 8601: UTC с миллисекундами и суффиксом Z.
 func isoTime(info os.FileInfo) string {
 	return info.ModTime().UTC().Format("2006-01-02T15:04:05.000Z")
 }
 
-// encode — JSON.stringify(value, null, 2) + '\n', формат writeLocalJson.
-func encode(value any) []byte { return []byte(jscompat.StringifyIndent(value, "  ") + "\n") }
+// encode — формат JSON-файлов монтажа: отступ в два пробела, порядок ключей значения
+// (dynvalue.StringifyIndent) и перевод строки в конце.
+func encode(value any) []byte { return []byte(dynvalue.StringifyIndent(value, "  ") + "\n") }

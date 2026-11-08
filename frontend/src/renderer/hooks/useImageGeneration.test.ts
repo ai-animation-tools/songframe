@@ -18,7 +18,7 @@ const fixture = vi.hoisted(() => ({
   describeError: (error: unknown) => (error instanceof Error ? error.message : String(error))
 }));
 
-// Минимальный стенд исполняет реальные обработчики hook и очистку эффектов; IPC заменён управляемыми promise.
+// Минимальный стенд исполняет реальные обработчики hook и очистку эффектов; API заменён управляемыми promise.
 vi.mock('react', async (original) => ({
   ...(await original<typeof React>()),
   useState: (initial: unknown) => {

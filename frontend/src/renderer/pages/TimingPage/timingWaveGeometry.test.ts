@@ -113,7 +113,7 @@ describe('перетаскивание ручного черновика', () =>
     expect(timingDragPatch(inverse, 'move', 17, 1, [inverse], 30, true)).toEqual({ start: 16, end: 12 });
   });
 
-  it('сохраняет прежние ограничения обычного режима', () => {
+  it('в обычном режиме ограничивает границы соседями и минимальной длиной', () => {
     expect(timingDragPatch(first, 'move', 13, 1, lines, 30)).toEqual({ start: 2, end: 6 });
     expect(timingDragPatch(first, 'end', 16, 0, lines, 30)).toEqual({ end: 6 });
     expect(timingDragPatch(first, 'start', 8, 0, lines, 30)).toEqual({ start: 4.7 });

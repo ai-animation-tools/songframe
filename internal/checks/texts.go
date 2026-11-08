@@ -23,7 +23,8 @@ const (
 	textBuildReviewStep      = "Сборка пробы стыков"
 	textReviewStillBuilding  = "Проба ещё собирается. Дождитесь завершения задания."
 	textReviewNotFound       = "Собранная проба не найдена. Обновите список."
-	// textReviewPlanOnlySuffix — REVIEW_PLAN_ONLY_SUFFIX: по нему уведомления renderer узнают режим.
+	// textReviewPlanOnlySuffix — суффикс режима «только план» (REVIEW_PLAN_ONLY_SUFFIX в
+	// frontend/src/shared/texts/checks.ts): по нему уведомления renderer узнают режим.
 	textReviewPlanOnlySuffix = " (проверка без видео)"
 )
 

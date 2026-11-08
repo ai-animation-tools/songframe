@@ -29,7 +29,7 @@ describe('Результат операции у действия', () => {
     expect(render()).toBe('');
   });
 
-  it('показывает ожидание ответа IPC до получения задания', () => {
+  it('показывает ожидание ответа API до получения задания', () => {
     const html = render({ running: true, label: 'Подготовка повтора M44' });
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('Подготовка повтора M44');
@@ -60,7 +60,7 @@ describe('Результат операции у действия', () => {
     expect(html).not.toContain('Открыть журнал');
   });
 
-  it('показывает ошибку IPC без созданного задания', () => {
+  it('показывает ошибку вызова API без созданного задания', () => {
     const html = render({ error: 'Папка проекта недоступна.' });
     expect(html).toContain('Действие не выполнено');
     expect(html).toContain('Папка проекта недоступна.');

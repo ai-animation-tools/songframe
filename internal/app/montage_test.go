@@ -11,8 +11,8 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"songframe-go/internal/montage"
-	"songframe-go/internal/store"
+	"songframe/internal/montage"
+	"songframe/internal/store"
 )
 
 // writeFiles создаёт файлы проекта по относительным путям.

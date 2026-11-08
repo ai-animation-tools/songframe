@@ -6,19 +6,19 @@ import (
 	"os"
 	"time"
 
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers/kling"
-	"songframe-go/internal/providers/kling/mcp"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/store"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers/kling"
+	"songframe/internal/providers/kling/mcp"
+	"songframe/internal/store"
+	"songframe/internal/toolrt"
 )
 
 // StateDir — каталог состояния, в котором провайдеры хранят вход (`providers/<id>/`). По
-// умолчанию — профиль Go-версии (SONGFRAME_GO_LOCAL_DIR либо папка ОС); приложение подменяет
+// умолчанию — профиль приложения (SONGFRAME_LOCAL_DIR либо папка ОС); приложение подменяет
 // его своим профилем при старте. Читается при каждом обращении: смена профиля не требует
 // пересоздания таблицы.
-var StateDir = func() (string, error) { return store.NewProfile(os.Getenv("SONGFRAME_GO_LOCAL_DIR")).Path() }
+var StateDir = func() (string, error) { return store.NewProfile(os.Getenv("SONGFRAME_LOCAL_DIR")).Path() }
 
 // LoginBrowser открывает адрес авторизации для входа с OpenBrowser (CLI media_request login без
 // --no-browser); nil — браузер не открывается. Приложение входит с OpenBrowser=false и открывает
@@ -26,7 +26,7 @@ var StateDir = func() (string, error) { return store.NewProfile(os.Getenv("SONGF
 var LoginBrowser func(url string) error
 
 // klingAdapter связывает таблицу с пакетом провайдера, не давая ему зависеть от таблицы, и
-// приводит его ответы (dict Python) к типам контракта mediaapi. Клиент создаётся на каждый вызов
+// приводит его ответы (словари toolrt.Dict) к типам контракта mediaapi. Клиент создаётся на каждый вызов
 // по текущему StateDir: состояние входа живёт в файле, а не в памяти.
 type klingAdapter struct{}
 
@@ -81,7 +81,7 @@ func failure(err error) error {
 	return err
 }
 
-func (klingAdapter) ValidateSpec(spec *pycompat.Dict) error {
+func (klingAdapter) ValidateSpec(spec *toolrt.Dict) error {
 	return (&kling.Adapter{}).ValidateSpec(spec)
 }
 
@@ -89,7 +89,7 @@ func (klingAdapter) ValidatePrompt(prompt string) ([]string, error) {
 	return (&kling.Adapter{}).ValidatePrompt(prompt), nil
 }
 
-func (klingAdapter) FrozenFields() *pycompat.Dict { return (&kling.Adapter{}).FrozenFields() }
+func (klingAdapter) FrozenFields() *toolrt.Dict { return (&kling.Adapter{}).FrozenFields() }
 
 func (klingAdapter) TaskTraceID() bool { return (&kling.Adapter{}).TaskTraceID() }
 
@@ -98,7 +98,7 @@ func (klingAdapter) PromptWarningChars() int { return kling.PromptWarningChars }
 
 func (klingAdapter) PricingData() []byte { return (&kling.Adapter{}).PricingFile() }
 
-func (k klingAdapter) Submit(ctx context.Context, directory string, request, state *pycompat.Dict, timeout time.Duration) (mediaapi.SubmitResult, error) {
+func (k klingAdapter) Submit(ctx context.Context, directory string, request, state *toolrt.Dict, timeout time.Duration) (mediaapi.SubmitResult, error) {
 	adapter, err := k.client()
 	if err != nil {
 		return mediaapi.SubmitResult{}, err
@@ -111,7 +111,7 @@ func (k klingAdapter) Submit(ctx context.Context, directory string, request, sta
 	return mediaapi.SubmitResult{GenerationID: id, CreditsConsumed: answer.Value("credits_consumed")}, nil
 }
 
-func (k klingAdapter) Poll(ctx context.Context, directory string, request, state *pycompat.Dict, timeout time.Duration) (mediaapi.PollResult, error) {
+func (k klingAdapter) Poll(ctx context.Context, directory string, request, state *toolrt.Dict, timeout time.Duration) (mediaapi.PollResult, error) {
 	adapter, err := k.client()
 	if err != nil {
 		return mediaapi.PollResult{}, err
@@ -140,7 +140,7 @@ func (k klingAdapter) Fetch(ctx context.Context, output, destination string) err
 	return adapter.Fetch(ctx, output, destination)
 }
 
-func (k klingAdapter) Capabilities(ctx context.Context, kind string, timeout time.Duration) (*pycompat.Dict, error) {
+func (k klingAdapter) Capabilities(ctx context.Context, kind string, timeout time.Duration) (*toolrt.Dict, error) {
 	adapter, err := k.client()
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (k klingAdapter) Account(ctx context.Context, timeout time.Duration) (media
 	switch balance := answer.Value("balance").(type) {
 	case float64:
 		result.Balance = &balance
-	case pycompat.Int:
+	case toolrt.Int:
 		if value, err := balance.Float(); err == nil {
 			result.Balance = &value
 		}
@@ -171,7 +171,7 @@ func (k klingAdapter) Account(ctx context.Context, timeout time.Duration) (media
 }
 
 // NormalizeInputs раскрывает короткие флаги входов спецификации в слоты на месте.
-func (k klingAdapter) NormalizeInputs(ctx context.Context, spec *pycompat.Dict, timeout time.Duration) error {
+func (k klingAdapter) NormalizeInputs(ctx context.Context, spec *toolrt.Dict, timeout time.Duration) error {
 	adapter, err := k.client()
 	if err != nil {
 		return err
@@ -207,7 +207,7 @@ func (k klingAdapter) AuthStatus(ctx context.Context, timeout time.Duration) med
 }
 
 // SnapshotWarnings — модельные предупреждения снимка принятого комплекта (lint_registry).
-func (klingAdapter) SnapshotWarnings(snapshot *pycompat.Dict) ([]Warning, error) {
+func (klingAdapter) SnapshotWarnings(snapshot *toolrt.Dict) ([]Warning, error) {
 	items, err := kling.SnapshotWarnings(snapshot)
 	if err != nil {
 		return nil, err

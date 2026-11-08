@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
 )
 
 // TestViewMatchesGolden сверяет ViewProject с эталонами timing-view и неизменность входа.
@@ -32,7 +32,7 @@ func TestViewMatchesGolden(t *testing.T) {
 func TestValidateMatchesGolden(t *testing.T) {
 	for _, item := range golden.ValidationCases(t) {
 		t.Run(item.Name, func(t *testing.T) {
-			timing, err := jscompat.Parse(item.Input.Timing)
+			timing, err := dynvalue.Parse(item.Input.Timing)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -65,7 +65,7 @@ func TestValidateSaveInputs(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			input, err := jscompat.Parse(item.Read(t, "timing-input.json"))
+			input, err := dynvalue.Parse(item.Read(t, "timing-input.json"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -90,16 +90,16 @@ func TestValidateSaveInputs(t *testing.T) {
 	}
 }
 
-// TestAnalyzeLyricsEdges — пустой текст и JS-правила пробелов и регистра.
+// TestAnalyzeLyricsEdges — пустой текст и правила редактора для пробелов и регистра.
 func TestAnalyzeLyricsEdges(t *testing.T) {
 	if rows := ParseLyricsLines(""); len(rows) != 1 || rows[0].Text != "" {
 		t.Fatalf("пустой текст: %+v", rows)
 	}
-	// NBSP — пробел \s в JS, поэтому строка — Markdown-список.
+	// NBSP — пробел для правил редактора, поэтому строка — Markdown-список.
 	if rows := ParseLyricsLines("- пункт"); !rows[0].Header {
 		t.Fatal("NBSP после маркера списка не распознан")
 	}
-	// Флаг i JS без u не сопоставляет «ſ» латинской s: строка остаётся строкой песни.
+	// Сравнение без учёта регистра не сопоставляет «ſ» латинской s: строка остаётся строкой песни.
 	if rows := ParseLyricsLines("ſolo припев"); rows[0].Header {
 		t.Fatal("«ſ» сопоставлен латинице")
 	}
@@ -139,7 +139,7 @@ func TestPrepareMatchesGolden(t *testing.T) {
 			}
 			path := item.ProjectPath()
 			before := digestIfExists(t, path)
-			input, err := jscompat.Parse(item.Read(t, "timing-input.json"))
+			input, err := dynvalue.Parse(item.Read(t, "timing-input.json"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -170,7 +170,7 @@ func TestPrepareIsStable(t *testing.T) {
 	for _, item := range golden.Load(t, "timing-save") {
 		t.Run(item.Name, func(t *testing.T) {
 			path := item.CopyProject(t)
-			input, err := jscompat.Parse(item.Read(t, "timing-input.json"))
+			input, err := dynvalue.Parse(item.Read(t, "timing-input.json"))
 			if err != nil {
 				t.Fatal(err)
 			}

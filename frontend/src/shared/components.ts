@@ -1,5 +1,5 @@
 /** Контракт группы window.api.components: DTO принадлежат Go (internal/components), TS берёт их из bindings. */
-import type * as dto from '../../bindings/songframe-go/internal/components/models';
+import type * as dto from '../../bindings/songframe/internal/components/models';
 
 export type ComponentsSelection = dto.Selection;
 export type ComponentState = dto.ComponentState;

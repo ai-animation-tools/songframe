@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 454, in <module>\n    main()\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 444, in main\n    report = lint(ROOT)\n             ^^^^^^^^^^\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 419, in lint\n    lint_description(root, data, report)\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 303, in lint_description\n    text = path.read_text(encoding=\"utf-8\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1030, in read_text\n    return f.read()\n           ^^^^^^^^\n  File \"<frozen codecs>\", line 322, in decode\nUnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n",
+  "stderr": "Traceback (most recent call last):\nUnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte\n",
   "traceback": true
 }

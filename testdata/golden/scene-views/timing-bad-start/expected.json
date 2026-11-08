@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 214, in <module>\n    main()\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 204, in main\n    changed = update(args.check)\n              ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/update_scene_views/update_scene_views.py\", line 99, in update\n    output = documents(sources)\n             ^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/project_views/project_views.py\", line 495, in documents\n    for x in [item[\"name\"], clock(str(item[\"start\"])), clock(str(item[\"end\"])), item.get(\"note\", \"\")]\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/scene_registry/scene_registry.py\", line 536, in clock\n    value = Decimal(value)\n            ^^^^^^^^^^^^^^\ndecimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]\n",
+  "stderr": "Traceback (most recent call last):\ndecimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]\n",
   "traceback": true,
   "cards": null
 }

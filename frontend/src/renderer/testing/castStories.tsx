@@ -1,4 +1,4 @@
-/** Управляемая модель кастинга: черновик и сохранённый снимок живут отдельно, IPC и генератор не вызываются. */
+/** Управляемая модель кастинга: черновик и сохранённый снимок живут отдельно, API приложения и генератор не вызываются. */
 import { useRef, useState, type ReactElement } from 'react';
 import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
@@ -151,7 +151,7 @@ export function CastStory({ variant = 'regular', mode = 'entities', collapsed = 
               setNotice({ error: true, text: 'Не удалось сохранить кастинг. Черновик сохранён в форме; повторите сохранение.' });
               return;
             }
-            // Сохранение обрезает поля как страница с главным процессом, сохраняя свободные свойства состояния.
+            // Сохранение обрезает поля как страница с настоящим API, сохраняя свободные свойства состояния.
             const next: CastFile = {
               ...structuredClone(draft),
               entities: draft.entities.map((entity) => ({

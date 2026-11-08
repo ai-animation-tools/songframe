@@ -4,8 +4,8 @@
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "str.format",
-    "label.lower"
+    "подстановка полей шаблона",
+    "подпись в нижнем регистре"
   ],
   "stubbedMedia": [],
   "args": [

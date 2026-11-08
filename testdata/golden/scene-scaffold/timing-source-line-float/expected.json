@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 227, in <module>\n    main()\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 193, in main\n    data = build_scenes(\n           ^^^^^^^^^^^^^\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 114, in build_scenes\n    \" / \".join(\n  File \"<songframe>/tools/scene_scaffold/scene_scaffold.py\", line 115, in <genexpr>\n    text_lines[line[\"source_line\"] - 1].strip()\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: list indices must be integers or slices, not float\n",
+  "stderr": "Traceback (most recent call last):\nTypeError: list indices must be integers or slices, not float\n",
   "traceback": true,
   "files": {
     "plan/scenes.json": "unchanged"

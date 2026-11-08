@@ -1,6 +1,6 @@
 // Package checks запускает проверки проекта (checks.list/run/runAll) заданиями общего менеджера
 // с журналом и кодом завершения. Каждая проверка — один шаг с инструментом комплекса; инструменты
-// (internal/tools) выполняются в процессе приложения, поэтому проверкам не нужны Python и FFmpeg.
+// (internal/tools) выполняются в процессе приложения, поэтому проверкам не нужны внешние программы и FFmpeg.
 //
 // Журнал: строка «$ <подпись> <аргументы>» (пишет менеджер), затем stdout и
 // stderr инструмента; причина сбоя шага — stderr, иначе stdout (после trim), иначе «Шаг … завершился
@@ -15,8 +15,8 @@ import (
 	"strings"
 	"unicode"
 
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/tools"
+	"songframe/internal/jobs"
+	"songframe/internal/tools"
 )
 
 // ID — CheckId контракта (frontend/src/shared/types.ts).
@@ -99,9 +99,9 @@ func step(project string, info Info, options Options, continueOnFailure bool) jo
 			if result.Code == nil || *result.Code == 0 {
 				return nil
 			}
-			message := jsTrim(result.Stderr)
+			message := trimReason(result.Stderr)
 			if message == "" {
-				message = jsTrim(result.Stdout)
+				message = trimReason(result.Stdout)
 			}
 			return &jobs.StepError{Code: *result.Code, Message: message}
 		},
@@ -149,8 +149,8 @@ func (s *Service) UpdateViews(project string) (jobs.Info, error) {
 		Steps: []jobs.Step{step(project, info, Options{}, false)}})
 }
 
-// jsTrim — обрезка причины сбоя по правилам String.prototype.trim: пробельные символы Unicode
-// и BOM, кроме U+0085; от неё зависит текст причины задания.
-func jsTrim(text string) string {
+// trimReason — обрезка причины сбоя по краям: пробельные символы Unicode и BOM, кроме U+0085;
+// от неё зависит текст причины задания.
+func trimReason(text string) string {
 	return strings.TrimFunc(text, func(r rune) bool { return r == 0xFEFF || (r != '\u0085' && unicode.IsSpace(r)) })
 }

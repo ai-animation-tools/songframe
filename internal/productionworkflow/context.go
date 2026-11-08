@@ -9,14 +9,14 @@ import (
 	"slices"
 	"strings"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/derivedshot"
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/production"
-	"songframe-go/internal/projectfile"
-	"songframe-go/internal/speech"
+	"songframe/internal/cast"
+	"songframe/internal/derivedshot"
+	"songframe/internal/dynvalue"
+	"songframe/internal/filedigest"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/production"
+	"songframe/internal/projectfile"
+	"songframe/internal/speech"
 )
 
 // shotID — один явный ID плана Mxx или Mxx.N.
@@ -36,9 +36,9 @@ func (s *Speech) tree() any {
 	if s == nil {
 		return nil
 	}
-	value := jscompat.NewObject()
+	value := dynvalue.NewObject()
 	value.Set("path", s.Path)
-	value.Set("sourceSeconds", &jscompat.Array{Items: []any{s.SourceSeconds[0], s.SourceSeconds[1]}})
+	value.Set("sourceSeconds", &dynvalue.Array{Items: []any{s.SourceSeconds[0], s.SourceSeconds[1]}})
 	return value
 }
 
@@ -46,7 +46,7 @@ func (s *Speech) tree() any {
 func (s *Speech) length() float64 { return s.SourceSeconds[1] - s.SourceSeconds[0] }
 
 // Context — всё, что проход знает о плане и выбранном пакете на момент
-// вызова. Документы проекта хранятся деревьями jscompat как есть: они уходят агенту в контекст и
+// вызова. Документы проекта хранятся деревьями dynvalue как есть: они уходят агенту в контекст и
 // в снимок без схемы. Значение не кэшируется между вызовами Workflow и не делится между потоками.
 type Context struct {
 	// Project — реальный путь проекта; Shot — ID плана.
@@ -55,21 +55,21 @@ type Context struct {
 	// PackageDir — абсолютный путь выбранного пакета; "" — новая подготовка (null).
 	PackageDir string
 	// Workflow — workflow.json пакета; nil — пакета нет.
-	Workflow *jscompat.Object
+	Workflow *dynvalue.Object
 	// Scene — план реестра с visual_direction и sequence_direction.
-	Scene *jscompat.Object
+	Scene *dynvalue.Object
 	// Cast — сущности кастинга плана: мир и упомянутые в его references.
-	Cast *jscompat.Array
+	Cast *dynvalue.Array
 	// References — референсы плана из реестра по ID.
-	References *jscompat.Object
+	References *dynvalue.Object
 	// Settings — generation.video проекта ({} — блока нет).
-	Settings *jscompat.Object
+	Settings *dynvalue.Object
 	// Window — длина кадрового окна плана в секундах.
 	Window float64
 	// DurationRule — settings.duration_rule как есть (Undefined — нет поля).
 	DurationRule any
 	// FramePrompts — keyframe-prompts.json пакета (пустой массив, если файла нет или он не массив).
-	FramePrompts *jscompat.Array
+	FramePrompts *dynvalue.Array
 	// Speech — подготовленный WAV речевого плана; nil — нет.
 	Speech *Speech
 	// AllowedPaths — пути от проекта, которые агент может назвать входами (сортированы).
@@ -93,7 +93,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	if !shotID.MatchString(shot) {
 		return nil, errors.New(textShotIDRequired)
 	}
-	project, err := jscompat.Realpath(path)
+	project, err := dynvalue.Realpath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -101,14 +101,14 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	registry, ok := scenes.(*jscompat.Object)
-	list, listOK := jscompat.AsArray(jscompat.Get(scenes, "scenes"))
+	registry, ok := scenes.(*dynvalue.Object)
+	list, listOK := dynvalue.AsArray(dynvalue.Get(scenes, "scenes"))
 	if !ok || !listOK {
 		return nil, errors.New(textSceneRegistryInvalid)
 	}
-	var scene *jscompat.Object
+	var scene *dynvalue.Object
 	for _, item := range list {
-		if object, isObject := item.(*jscompat.Object); isObject && object.Value("id") == shot {
+		if object, isObject := item.(*dynvalue.Object); isObject && object.Value("id") == shot {
 			scene = object
 			break
 		}
@@ -116,8 +116,8 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	if scene == nil {
 		return nil, errors.New(textShotMissing(shot))
 	}
-	fps := jscompat.ToNumber(registry.Value("fps"))
-	window := (jscompat.ToNumber(scene.Value("end_frame_exclusive")) - jscompat.ToNumber(scene.Value("start_frame"))) / fps
+	fps := dynvalue.ToNumber(registry.Value("fps"))
+	window := (dynvalue.ToNumber(scene.Value("end_frame_exclusive")) - dynvalue.ToNumber(scene.Value("start_frame"))) / fps
 	if math.IsNaN(window) || math.IsInf(window, 0) || window <= 0 {
 		return nil, errors.New(textShotWindowInvalid)
 	}
@@ -131,7 +131,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	_, resolutionString := settings.Value("resolution").(string)
 	_, aspectString := settings.Value("aspect_ratio").(string)
 	_, watermarkBool := settings.Value("watermark").(bool)
-	if !slices.Contains(durationRules, jscompat.ToString(durationRule)) || !providerString || !resolutionString || !aspectString || !watermarkBool ||
+	if !slices.Contains(durationRules, dynvalue.ToString(durationRule)) || !providerString || !resolutionString || !aspectString || !watermarkBool ||
 		!mediaproviders.Supports(settings.Value("provider"), mediaproviders.Video) {
 		problems = append(problems, textVideoSettingsRequired())
 	}
@@ -142,12 +142,12 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		if provider.LipSync == nil {
 			problems = append(problems, textProviderLipSyncUnsupported(provider.Title))
 		} else if window > provider.LipSync.Max {
-			problems = append(problems, textSpeechWindowTooLong(jscompat.ToFixed(window, 2), provider.Title, provider.LipSync.Max))
+			problems = append(problems, textSpeechWindowTooLong(dynvalue.ToFixed(window, 2), provider.Title, provider.LipSync.Max))
 		}
 	}
 	context := &Context{
 		Project: project, Shot: shot, Settings: settings, Window: window, DurationRule: durationRule, Problems: problems,
-		FramePrompts: &jscompat.Array{Items: []any{}}, References: jscompat.NewObject(),
+		FramePrompts: &dynvalue.Array{Items: []any{}}, References: dynvalue.NewObject(),
 	}
 	if requested != "" {
 		if context.PackageDir, err = PackagePath(project, requested); err != nil {
@@ -157,7 +157,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		if err != nil {
 			return nil, err
 		}
-		workflow, isObject := value.(*jscompat.Object)
+		workflow, isObject := value.(*dynvalue.Object)
 		if !isObject || workflow.Value("shot") != shot {
 			return nil, errors.New(textPackageMissingOrWrongShot)
 		}
@@ -177,7 +177,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	allowed := map[string]bool{}
 	addSource := func(path any) error {
 		text, ok := path.(string)
-		if !ok || text == "" || jscompat.IsAbs(text) {
+		if !ok || text == "" || dynvalue.IsAbs(text) {
 			return nil
 		}
 		local := text
@@ -188,21 +188,21 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		if err != nil {
 			return err
 		}
-		if jscompat.Exists(full) {
+		if dynvalue.Exists(full) {
 			if info, err := os.Lstat(full); err == nil && info.Mode().IsRegular() {
 				allowed[rel(project, full)] = true
 			}
 		}
 		return nil
 	}
-	sceneReferences, referencesOK := jscompat.AsArray(scene.Value("references"))
-	if catalog, ok := registry.Value("references").(*jscompat.Object); referencesOK && ok {
+	sceneReferences, referencesOK := dynvalue.AsArray(scene.Value("references"))
+	if catalog, ok := registry.Value("references").(*dynvalue.Object); referencesOK && ok {
 		for _, id := range sceneReferences {
 			key, isString := id.(string)
 			if !isString {
 				continue
 			}
-			if reference, isObject := catalog.Value(key).(*jscompat.Object); isObject {
+			if reference, isObject := catalog.Value(key).(*dynvalue.Object); isObject {
 				context.References.Set(key, reference)
 				if err := addSource(reference.Value("path")); err != nil {
 					return nil, err
@@ -210,17 +210,17 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 			}
 		}
 	}
-	context.Cast = &jscompat.Array{Items: []any{}}
-	if entities, ok := jscompat.AsArray(jscompat.Get(castFile.Value, "entities")); ok && jscompat.IsRecord(castFile.Value) {
+	context.Cast = &dynvalue.Array{Items: []any{}}
+	if entities, ok := dynvalue.AsArray(dynvalue.Get(castFile.Value, "entities")); ok && dynvalue.IsRecord(castFile.Value) {
 		for _, entity := range entities {
-			object, isObject := entity.(*jscompat.Object)
+			object, isObject := entity.(*dynvalue.Object)
 			if isObject && (object.Value("kind") == "world" || (referencesOK && slices.Contains(sceneReferences, object.Value("id")))) {
 				context.Cast.Items = append(context.Cast.Items, entity)
 			}
 		}
 	}
 	for _, entity := range context.Cast.Items {
-		if images, ok := jscompat.AsArray(jscompat.Get(entity, "images")); ok {
+		if images, ok := dynvalue.AsArray(dynvalue.Get(entity, "images")); ok {
 			for _, image := range images {
 				if err := addSource(image); err != nil {
 					return nil, err
@@ -232,10 +232,10 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	if jscompat.IsRecord(manifest) {
+	if dynvalue.IsRecord(manifest) {
 		for _, key := range []string{"track", "lyrics", "idea"} {
-			if entry := jscompat.Get(manifest, key); jscompat.IsRecord(entry) {
-				if err := addSource(jscompat.Get(entry, "path")); err != nil {
+			if entry := dynvalue.Get(manifest, key); dynvalue.IsRecord(entry) {
+				if err := addSource(dynvalue.Get(entry, "path")); err != nil {
 					return nil, err
 				}
 			}
@@ -248,14 +248,14 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 			context.Speech = &Speech{Path: rel(project, prepared.Path), SourceSeconds: [2]float64{prepared.Start, prepared.End}}
 		}
 		for _, frame := range keyframes(context.Workflow) {
-			if !jscompat.Truthy(jscompat.Get(frame, "approved")) || !jscompat.Truthy(jscompat.Get(frame, "path")) {
+			if !dynvalue.Truthy(dynvalue.Get(frame, "approved")) || !dynvalue.Truthy(dynvalue.Get(frame, "path")) {
 				continue
 			}
-			full, err := packageFile(context, jscompat.Get(frame, "path"))
+			full, err := packageFile(context, dynvalue.Get(frame, "path"))
 			if err != nil {
 				return nil, err
 			}
-			if jscompat.Exists(full) {
+			if dynvalue.Exists(full) {
 				allowed[rel(project, full)] = true
 			}
 		}
@@ -263,7 +263,7 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		if err != nil {
 			return nil, err
 		}
-		if prompts, ok := raw.(*jscompat.Array); ok {
+		if prompts, ok := raw.(*dynvalue.Array); ok {
 			context.FramePrompts = prompts
 		}
 	}
@@ -272,13 +272,13 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 		context.AllowedPaths = append(context.AllowedPaths, path)
 	}
 	slices.SortFunc(context.AllowedPaths, compareUTF16)
-	scene = jscompat.Spread(scene)
+	scene = dynvalue.Spread(scene)
 	scene.Set("visual_direction", registry.Value("visual_direction"))
 	var sequence any = nil
-	if sequences, ok := jscompat.AsArray(registry.Value("sequences")); ok {
-		sequence = jscompat.Undefined
+	if sequences, ok := dynvalue.AsArray(registry.Value("sequences")); ok {
+		sequence = dynvalue.Undefined
 		for _, item := range sequences {
-			if jscompat.IsRecord(item) && jscompat.Get(item, "id") == scene.Value("sequence") {
+			if dynvalue.IsRecord(item) && dynvalue.Get(item, "id") == scene.Value("sequence") {
 				sequence = item
 				break
 			}
@@ -293,16 +293,16 @@ func ReadContext(path, shot, requested string) (*Context, error) {
 	return context, nil
 }
 
-// videoSettings — readProjectSettings(project).generation?.video ?? {}.
-func videoSettings(project string) (*jscompat.Object, error) {
+// videoSettings — блок generation.video настроек проекта; пустой объект, если его нет или он не объект.
+func videoSettings(project string) (*dynvalue.Object, error) {
 	generation, err := projectGeneration(project)
 	if err != nil {
 		return nil, err
 	}
-	if video, ok := jscompat.Get(generation, "video").(*jscompat.Object); ok {
+	if video, ok := dynvalue.Get(generation, "video").(*dynvalue.Object); ok {
 		return video, nil
 	}
-	return jscompat.NewObject(), nil
+	return dynvalue.NewObject(), nil
 }
 
 // projectGeneration — блок generation настроек проекта (Undefined — нет блока).
@@ -311,15 +311,15 @@ func projectGeneration(project string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	value, err := jscompat.Parse(settings.Generation)
+	value, err := dynvalue.Parse(settings.Generation)
 	if err != nil || value == nil {
-		return jscompat.Undefined, err
+		return dynvalue.Undefined, err
 	}
 	return value, nil
 }
 
-// videoProvider — mediaProviderInfo(settings.provider, 'video'): запись реестра или false.
-func videoProvider(settings *jscompat.Object) (mediaproviders.Info, bool) {
+// videoProvider — запись реестра для settings.provider, если провайдер поддерживает видео; иначе false.
+func videoProvider(settings *dynvalue.Object) (mediaproviders.Info, bool) {
 	id := settings.Value("provider")
 	if !mediaproviders.Supports(id, mediaproviders.Video) {
 		return mediaproviders.Info{}, false
@@ -328,27 +328,27 @@ func videoProvider(settings *jscompat.Object) (mediaproviders.Info, bool) {
 }
 
 // keyframes — workflow.keyframes как массив (не массив — пусто).
-func keyframes(workflow *jscompat.Object) []any {
+func keyframes(workflow *dynvalue.Object) []any {
 	if workflow == nil {
 		return nil
 	}
-	items, _ := jscompat.AsArray(workflow.Value("keyframes"))
+	items, _ := dynvalue.AsArray(workflow.Value("keyframes"))
 	return items
 }
 
-// packageFile — productionPath(project, join(packageDir, path)) для пути из workflow.json пакета.
+// packageFile — ProductionPath пути из workflow.json пакета, отсчитанного от папки пакета.
 func packageFile(context *Context, path any) (string, error) {
-	text, err := jscompat.PathArg("path", path)
+	text, err := dynvalue.PathArg("path", path)
 	if err != nil {
 		return "", err
 	}
 	return ProductionPath(context.Project, filepath.Join(context.PackageDir, text))
 }
 
-// matchesDigest — файл есть и его SHA-256 равен expected (cachedFileDigest(path) === expected).
+// matchesDigest — файл есть и его SHA-256 из кэша filedigest строго равен expected.
 func matchesDigest(path string, expected any) bool {
 	hash, ok := filedigest.File(path)
-	return jscompat.Exists(path) && ok && expected == hash
+	return dynvalue.Exists(path) && ok && expected == hash
 }
 
 // FramesApproved сообщает, что в пакете не меньше двух опор, все утверждены, файлы
@@ -363,15 +363,15 @@ func (c *Context) FramesApproved() (bool, error) {
 		if !result {
 			break
 		}
-		if !jscompat.Truthy(jscompat.Get(frame, "approved")) || !jscompat.Truthy(jscompat.Get(frame, "path")) || !jscompat.Truthy(jscompat.Get(frame, "sha256")) {
+		if !dynvalue.Truthy(dynvalue.Get(frame, "approved")) || !dynvalue.Truthy(dynvalue.Get(frame, "path")) || !dynvalue.Truthy(dynvalue.Get(frame, "sha256")) {
 			result = false
 			break
 		}
-		full, err := packageFile(c, jscompat.Get(frame, "path"))
+		full, err := packageFile(c, dynvalue.Get(frame, "path"))
 		if err != nil {
 			return false, err
 		}
-		result = matchesDigest(full, jscompat.Get(frame, "sha256"))
+		result = matchesDigest(full, dynvalue.Get(frame, "sha256"))
 	}
 	c.framesApproved = &result
 	return result, nil
@@ -385,9 +385,9 @@ func (c *Context) PromptApproved() (bool, error) {
 	}
 	result := false
 	prompt := c.workflowValue("prompt")
-	if c.Workflow != nil && jscompat.Truthy(jscompat.Get(prompt, "approved")) && jscompat.Truthy(jscompat.Get(prompt, "path")) &&
-		jscompat.Truthy(c.Workflow.Value("approved_prompt_sha256")) && c.PackageDir != "" {
-		full, err := packageFile(c, jscompat.Get(prompt, "path"))
+	if c.Workflow != nil && dynvalue.Truthy(dynvalue.Get(prompt, "approved")) && dynvalue.Truthy(dynvalue.Get(prompt, "path")) &&
+		dynvalue.Truthy(c.Workflow.Value("approved_prompt_sha256")) && c.PackageDir != "" {
+		full, err := packageFile(c, dynvalue.Get(prompt, "path"))
 		if err != nil {
 			return false, err
 		}
@@ -406,12 +406,12 @@ func (c *Context) StageFor() (string, error) {
 	if workflow == nil {
 		return "description", nil
 	}
-	if jscompat.Truthy(workflow.Value("pending_decision")) {
+	if dynvalue.Truthy(workflow.Value("pending_decision")) {
 		return "", nil
 	}
 	decision := workflow.Value("decision")
-	if jscompat.Get(decision, "verdict") == "revise" {
-		switch jscompat.Get(decision, "stage") {
+	if dynvalue.Get(decision, "verdict") == "revise" {
+		switch dynvalue.Get(decision, "stage") {
 		case "description_review", "keyframes_review", "image_request_choice":
 			return "description", nil
 		case "prompt_review":
@@ -438,7 +438,7 @@ func (c *Context) StageFor() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if prompt && !jscompat.Truthy(workflow.Value("request_dir")) {
+	if prompt && !dynvalue.Truthy(workflow.Value("request_dir")) {
 		return "request", nil
 	}
 	frames, err := c.FramesApproved()
@@ -455,8 +455,8 @@ func (c *Context) StageFor() (string, error) {
 // нет утверждения); nil — такого нет. Пока он есть, следующая опора не создаётся.
 func (c *Context) UndecidedFrame() any {
 	for _, frame := range keyframes(c.Workflow) {
-		if jscompat.Truthy(jscompat.Get(frame, "path")) && !jscompat.Truthy(jscompat.Get(frame, "approved")) {
-			return orNull(jscompat.Get(frame, "id"))
+		if dynvalue.Truthy(dynvalue.Get(frame, "path")) && !dynvalue.Truthy(dynvalue.Get(frame, "approved")) {
+			return orNull(dynvalue.Get(frame, "id"))
 		}
 	}
 	return nil
@@ -469,10 +469,10 @@ func (c *Context) NextFrame() any {
 		return nil
 	}
 	for _, prompt := range c.FramePrompts.Items {
-		id := jscompat.Get(prompt, "id")
+		id := dynvalue.Get(prompt, "id")
 		approved := false
 		for _, frame := range keyframes(c.Workflow) {
-			if jscompat.Get(frame, "id") == id && jscompat.Truthy(jscompat.Get(frame, "approved")) {
+			if dynvalue.Get(frame, "id") == id && dynvalue.Truthy(dynvalue.Get(frame, "approved")) {
 				approved = true
 				break
 			}
@@ -491,12 +491,12 @@ func (c *Context) FrameNotes(frame any) []string {
 	if c.Workflow == nil {
 		return notes
 	}
-	items, _ := jscompat.AsArray(c.Workflow.Value("keyframe_notes"))
+	items, _ := dynvalue.AsArray(c.Workflow.Value("keyframe_notes"))
 	for _, note := range items {
-		text, _ := jscompat.Get(note, "note").(string)
-		scope := jscompat.Get(note, "scope")
-		if jscompat.Truthy(jscompat.Get(note, "active")) && jscompat.Trim(text) != "" && (scope == "following" || jscompat.Get(note, "frame") == frame) {
-			notes = append(notes, jscompat.Trim(text))
+		text, _ := dynvalue.Get(note, "note").(string)
+		scope := dynvalue.Get(note, "scope")
+		if dynvalue.Truthy(dynvalue.Get(note, "active")) && dynvalue.Trim(text) != "" && (scope == "following" || dynvalue.Get(note, "frame") == frame) {
+			notes = append(notes, dynvalue.Trim(text))
 		}
 	}
 	return notes
@@ -506,24 +506,24 @@ func (c *Context) FrameNotes(frame any) []string {
 func (c *Context) ApprovedFrameIDs() []any {
 	ids := []any{}
 	for _, frame := range keyframes(c.Workflow) {
-		if jscompat.Truthy(jscompat.Get(frame, "approved")) {
-			ids = append(ids, jscompat.Get(frame, "id"))
+		if dynvalue.Truthy(dynvalue.Get(frame, "approved")) {
+			ids = append(ids, dynvalue.Get(frame, "id"))
 		}
 	}
 	return ids
 }
 
-// workflowValue — workflow?.[key]: Undefined без пакета.
+// workflowValue — поле key документа workflow.json пакета; Undefined без пакета.
 func (c *Context) workflowValue(key string) any {
 	if c.Workflow == nil {
-		return jscompat.Undefined
+		return dynvalue.Undefined
 	}
 	return c.Workflow.Value(key)
 }
 
-// orNull — `value ?? null`.
+// orNull — значение, а вместо null или Undefined — null.
 func orNull(value any) any {
-	if jscompat.IsNullish(value) {
+	if dynvalue.IsNullish(value) {
 		return nil
 	}
 	return value
@@ -533,7 +533,7 @@ func orNull(value any) any {
 func (c *Context) RulesFor(stage string) Rules {
 	rules := Rules{
 		Project: c.Project, Stage: stage, WindowSeconds: c.Window, DurationRule: c.DurationRule,
-		RequestSeconds: orNull(jscompat.Get(c.workflowValue("timing"), "request_seconds")), AllowedPaths: c.AllowedPaths,
+		RequestSeconds: orNull(dynvalue.Get(c.workflowValue("timing"), "request_seconds")), AllowedPaths: c.AllowedPaths,
 		FramePrompts: c.FramePrompts,
 	}
 	if c.Scene.Value("lipsync") == true {

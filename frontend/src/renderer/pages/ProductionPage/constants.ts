@@ -1,7 +1,7 @@
 import { productionTexts } from '@shared/texts/production';
 import { commonTexts } from '@shared/texts/common';
 
-/** Таблицы принадлежат словарю; прежние экспорты сохраняют контракт страницы без второго источника подписей. */
+/** Таблицы принадлежат словарю; эти экспорты дают странице подписи без второго источника. */
 export const VERDICT_LABELS: Record<string, { label: string; color: 'primary' | 'warning' | 'success' | 'inherit' | 'error' }> = {
   approve: { label: productionTexts.verdictLabels.approve, color: 'success' },
   revise: { label: productionTexts.verdictLabels.revise, color: 'warning' },

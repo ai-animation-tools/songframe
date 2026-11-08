@@ -1,4 +1,4 @@
-module songframe-go
+module songframe
 
 go 1.26.0
 

@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
 )
 
 // Эталон video-review задан на подставных инструментах и модели: поддельный video_review пишет
@@ -84,7 +84,7 @@ func TestParseReportGolden(t *testing.T) {
 			if json.Unmarshal(item.Input, &text) == nil {
 				input = text
 			} else {
-				parsed, err := jscompat.Parse(item.Input)
+				parsed, err := dynvalue.Parse(item.Input)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -100,7 +100,7 @@ func TestParseReportGolden(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := jscompat.Stringify(report); !sameJSON(t, []byte(got), item.Result) {
+			if got := dynvalue.Stringify(report); !sameJSON(t, []byte(got), item.Result) {
 				t.Fatalf("отчёт %s, ожидался %s", got, item.Result)
 			}
 		})
@@ -430,14 +430,14 @@ func reportJSON() string {
 	return `{"schemaVersion":1,"summary":"Лодка видна у причала.","findings":[{"verdict":"match","timeSeconds":0.5,"description":"Лодка остаётся у причала.","frameIds":["F002"]}],"limitations":["Проверена выборка кадров; звук и движение между ними не оценены."]}`
 }
 
-// changeJSON — JSON.parse → изменение → JSON.stringify без отступов, как changeJson теста.
-func changeJSON(t *testing.T, path string, change func(value *jscompat.Object)) {
-	value, err := jscompat.Parse(readFile(t, path))
+// changeJSON — разбор JSON → изменение → запись без отступов.
+func changeJSON(t *testing.T, path string, change func(value *dynvalue.Object)) {
+	value, err := dynvalue.Parse(readFile(t, path))
 	if err != nil {
 		t.Fatal(err)
 	}
-	change(value.(*jscompat.Object))
-	writeFile(t, path, []byte(jscompat.Stringify(value)))
+	change(value.(*dynvalue.Object))
+	writeFile(t, path, []byte(dynvalue.Stringify(value)))
 }
 
 func complete(h *harness, index int, result string) {
@@ -570,10 +570,10 @@ var scenarios = map[string]func(h *harness, s *steps){
 		h.wait(review, StatusRunning)
 		complete(h, 0, reportJSON())
 		_, _ = review.View(h.project, h.directory)
-		changeJSON(h.t, filepath.Join(h.directory, "video-review", "latest.json"), func(value *jscompat.Object) {
-			frames, _ := jscompat.AsArray(value.Value("frames"))
-			path, _ := jscompat.Get(frames[0], "path").(string)
-			value.Value("imageHashes").(*jscompat.Object).Delete(path)
+		changeJSON(h.t, filepath.Join(h.directory, "video-review", "latest.json"), func(value *dynvalue.Object) {
+			frames, _ := dynvalue.AsArray(value.Value("frames"))
+			path, _ := dynvalue.Get(frames[0], "path").(string)
+			value.Value("imageHashes").(*dynvalue.Object).Delete(path)
 		})
 		s.do("view", func() (View, error) { return review.View(h.project, h.directory) })
 		s.do("cancel", func() (View, error) { return review.Cancel(h.project, h.directory) })
@@ -610,17 +610,17 @@ var scenarios = map[string]func(h *harness, s *steps){
 		_, _ = review.View(h.project, h.directory)
 		file := filepath.Join(h.directory, "video-review", "latest.json")
 		saved := readFile(h.t, file)
-		changeJSON(h.t, file, func(value *jscompat.Object) {
+		changeJSON(h.t, file, func(value *dynvalue.Object) {
 			value.Set("status", "preparing")
 			value.Set("report", nil)
 			value.Set("jobId", nil)
-			value.Set("frames", &jscompat.Array{})
+			value.Set("frames", &dynvalue.Array{})
 			value.Set("durationSeconds", nil)
-			value.Set("imageHashes", jscompat.NewObject())
+			value.Set("imageHashes", dynvalue.NewObject())
 		})
 		s.do("view-preparing", func() (View, error) { return h.service(nil).View(h.project, h.directory) })
 		writeFile(h.t, file, saved)
-		changeJSON(h.t, file, func(value *jscompat.Object) {
+		changeJSON(h.t, file, func(value *dynvalue.Object) {
 			value.Set("status", "running")
 			value.Set("report", nil)
 			value.Set("jobId", "потерянное-задание")
@@ -654,25 +654,25 @@ var scenarios = map[string]func(h *harness, s *steps){
 		h.agents.mu.Unlock()
 		workflow := filepath.Join(h.directory, "workflow.json")
 		saved := readFile(h.t, workflow)
-		changeJSON(h.t, workflow, func(value *jscompat.Object) { value.Set("stage", "submitted") })
+		changeJSON(h.t, workflow, func(value *dynvalue.Object) { value.Set("stage", "submitted") })
 		s.do("stage-submitted", view)
 		writeFile(h.t, workflow, saved)
-		changeJSON(h.t, workflow, func(value *jscompat.Object) { value.Set("stage", "edit_review") })
+		changeJSON(h.t, workflow, func(value *dynvalue.Object) { value.Set("stage", "edit_review") })
 		s.do("stage-edit-review", view)
 		writeFile(h.t, workflow, saved)
-		changeJSON(h.t, workflow, func(value *jscompat.Object) {
-			frames, _ := jscompat.AsArray(value.Value("keyframes"))
+		changeJSON(h.t, workflow, func(value *dynvalue.Object) {
+			frames, _ := dynvalue.AsArray(value.Value("keyframes"))
 			for _, frame := range frames {
-				frame.(*jscompat.Object).Set("approved", false)
+				frame.(*dynvalue.Object).Set("approved", false)
 			}
 		})
 		s.do("no-approved", view)
 		s.do("no-approved-start", start)
 		writeFile(h.t, workflow, saved)
-		changeJSON(h.t, workflow, func(value *jscompat.Object) { value.Set("shot", "M99") })
+		changeJSON(h.t, workflow, func(value *dynvalue.Object) { value.Set("shot", "M99") })
 		s.do("unknown-shot", view)
 		writeFile(h.t, workflow, saved)
-		changeJSON(h.t, workflow, func(value *jscompat.Object) { value.Set("stage", 7.0) })
+		changeJSON(h.t, workflow, func(value *dynvalue.Object) { value.Set("stage", 7.0) })
 		s.do("stage-number", view)
 		writeFile(h.t, workflow, saved)
 		request := filepath.Join(h.directory, "requests", "one")
@@ -680,7 +680,7 @@ var scenarios = map[string]func(h *harness, s *steps){
 		s.do("two-downloads", view)
 		_ = os.Remove(filepath.Join(request, "original-2.mp4"))
 		frozen := readFile(h.t, filepath.Join(request, "request.json"))
-		changeJSON(h.t, filepath.Join(request, "request.json"), func(value *jscompat.Object) { value.Set("kind", "image") })
+		changeJSON(h.t, filepath.Join(request, "request.json"), func(value *dynvalue.Object) { value.Set("kind", "image") })
 		s.do("image-request", view)
 		writeFile(h.t, filepath.Join(request, "request.json"), frozen)
 		attempt := readFile(h.t, filepath.Join(request, "attempt.json"))
@@ -694,7 +694,7 @@ var scenarios = map[string]func(h *harness, s *steps){
 		writeFile(h.t, castFile, castBytes)
 		scenesFile := filepath.Join(h.project, "plan", "scenes.json")
 		scenes := readFile(h.t, scenesFile)
-		changeJSON(h.t, scenesFile, func(value *jscompat.Object) { value.Set("fps", 25.0) })
+		changeJSON(h.t, scenesFile, func(value *dynvalue.Object) { value.Set("fps", 25.0) })
 		s.do("registry-invalid", view)
 		writeFile(h.t, scenesFile, scenes)
 		writeFile(h.t, filepath.Join(h.directory, "video-review", "latest.json"), []byte(`{"schemaVersion":1`))
@@ -707,7 +707,7 @@ var scenarios = map[string]func(h *harness, s *steps){
 	"prompt-fallback": func(h *harness, s *steps) {
 		_ = os.Remove(filepath.Join(h.directory, "requests", "one", "prompt.txt"))
 		_ = os.Remove(filepath.Join(h.directory, "description.md"))
-		changeJSON(h.t, filepath.Join(h.directory, "workflow.json"), func(value *jscompat.Object) { value.Delete("timing") })
+		changeJSON(h.t, filepath.Join(h.directory, "workflow.json"), func(value *dynvalue.Object) { value.Delete("timing") })
 		review := h.service(nil)
 		s.do("start", func() (View, error) { return review.Start(h.project, h.directory) })
 		h.wait(review, StatusRunning)
@@ -730,14 +730,14 @@ func init() {
 			case "reference":
 				writeFile(h.t, h.references[0], changed)
 			case "scenario":
-				changeJSON(h.t, filepath.Join(h.project, "plan", "scenes.json"), func(value *jscompat.Object) {
-					scenes, _ := jscompat.AsArray(value.Value("scenes"))
-					scenes[0].(*jscompat.Object).Set("action", "Лодка уходит от причала.")
+				changeJSON(h.t, filepath.Join(h.project, "plan", "scenes.json"), func(value *dynvalue.Object) {
+					scenes, _ := dynvalue.AsArray(value.Value("scenes"))
+					scenes[0].(*dynvalue.Object).Set("action", "Лодка уходит от причала.")
 				})
 			case "cast":
-				changeJSON(h.t, filepath.Join(h.project, "plan", "cast.json"), func(value *jscompat.Object) {
-					entities, _ := jscompat.AsArray(value.Value("entities"))
-					entities[0].(*jscompat.Object).Set("appearance", "Новый облик")
+				changeJSON(h.t, filepath.Join(h.project, "plan", "cast.json"), func(value *dynvalue.Object) {
+					entities, _ := dynvalue.AsArray(value.Value("entities"))
+					entities[0].(*dynvalue.Object).Set("appearance", "Новый облик")
 				})
 			case "frame":
 				writeFile(h.t, done.Frames[0].Path, append(append([]byte{}, pixel...), []byte("Другой кадр")...))
@@ -750,7 +750,7 @@ func init() {
 	}
 }
 
-// copyTree — cpSync(recursive) для пакета сценария.
+// copyTree — рекурсивная копия пакета сценария.
 func copyTree(t *testing.T, from, to string) {
 	err := filepath.Walk(from, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

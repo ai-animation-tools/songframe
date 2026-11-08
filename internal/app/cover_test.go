@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/covergen"
+	"songframe/internal/covergen"
 )
 
 // newCoverSession создаёт сессию обложки на провайдере-агенте реестра без проверки выбора.

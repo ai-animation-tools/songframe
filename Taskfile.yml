@@ -24,7 +24,7 @@ tasks:
       - mkdir -p build/bin
       # Исходный архив не обязан содержать .git; версия раннего пакета задаётся в packaging/VERSION.
       # Версия из packaging/VERSION попадает в бинарник: по ней обновление сравнивает выпуски.
-      - go build -buildvcs=false -tags production -trimpath -ldflags "-s -w -X songframe-go/internal/appversion.Version=$(cat packaging/VERSION)" -o build/bin/songframe .
+      - go build -buildvcs=false -tags production -trimpath -ldflags "-s -w -X songframe/internal/appversion.Version=$(cat packaging/VERSION)" -o build/bin/songframe .
   package:linux:
     desc: Собрать ранний Linux AppImage с GTK/WebKit, bootstrap и метаданными
     cmds:

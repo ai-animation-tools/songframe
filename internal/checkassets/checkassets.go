@@ -9,55 +9,55 @@ package checkassets
 import (
 	"path/filepath"
 
-	"songframe-go/internal/assetpackage"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/assetpackage"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
-// Motion — элемент load_motion(): путь принятого монтажа от корня проекта и число кадров.
+// Motion — элемент LoadMotion: путь принятого монтажа от корня проекта и число кадров.
 type Motion struct {
 	Path   string
 	Frames any
 }
 
-// LoadMotion — load_motion(): готовность выводится из локального комплекта; общий индекс —
+// LoadMotion — готовность выводится из локального комплекта; общий индекс —
 // производное представление и не подменяет рецепт или монтажное время плана.
 func LoadMotion(root string) (map[string]Motion, error) {
 	data, err := sceneregistry.Load(root)
 	if err != nil {
 		return nil, err
 	}
-	scenes := pycompat.NewSet()
-	items, _ := pycompat.Iter(data.Value("scenes"))
+	scenes := toolrt.NewSet()
+	items, _ := toolrt.Iter(data.Value("scenes"))
 	for _, item := range items {
-		if err := scenes.Add(item.(*pycompat.Dict).Value("id")); err != nil {
+		if err := scenes.Add(item.(*toolrt.Dict).Value("id")); err != nil {
 			return nil, err
 		}
 	}
 	result := map[string]Motion{}
-	manifests := pycompat.Glob(pycompat.JoinPath(root, "assets", "shots"), "M*/manifest.json")
-	pycompat.SortPaths(manifests)
+	manifests := toolrt.Glob(toolrt.JoinPath(root, "assets", "shots"), "M*/manifest.json")
+	toolrt.SortPaths(manifests)
 	for _, path := range manifests {
-		sid := pycompat.PathName(filepath.Dir(path))
+		sid := toolrt.PathName(filepath.Dir(path))
 		if !scenes.Contains(sid) {
-			return nil, pycompat.New(pycompat.ValueError, sid+": ассет отсутствует в реестре сцен.")
+			return nil, toolrt.New(toolrt.ValueError, sid+": ассет отсутствует в реестре сцен.")
 		}
 		document, err := assetpackage.ValidatePackage(path, sid, root)
 		if err != nil {
 			return nil, err
 		}
-		edit := document.Value("accepted_edit").(*pycompat.Dict)
+		edit := document.Value("accepted_edit").(*toolrt.Dict)
 		video := edit.Value("video")
-		location, err := pycompat.Item(video, "path")
+		location, err := toolrt.Item(video, "path")
 		if err != nil {
 			return nil, err
 		}
 		name, isString := location.(string)
 		if !isString {
-			return nil, pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", pycompat.TypeName(location))
+			return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(location))
 		}
-		relative, err := pycompat.RelativeTo(pycompat.JoinPath(filepath.Dir(path), name), root)
+		relative, err := toolrt.RelativeTo(toolrt.JoinPath(filepath.Dir(path), name), root)
 		if err != nil {
 			return nil, err
 		}
@@ -67,13 +67,13 @@ func LoadMotion(root string) (map[string]Motion, error) {
 }
 
 // Run запускает check_assets на разрешённом корне проекта; args не разбираются.
-func Run(root string, _ []string) pytool.Output {
-	printer := &pytool.Printer{}
+func Run(root string, _ []string) toolcli.Output {
+	printer := &toolcli.Printer{}
 	motion, err := LoadMotion(root)
 	if err != nil {
 		return printer.Crash(err)
 	}
-	if err := printer.Print("Проверены все файлы " + pycompat.NewInt(int64(len(motion))).String() + " выбранных сцен; хеши и монтажные длительности совпадают."); err != nil {
+	if err := printer.Print("Проверены все файлы " + toolrt.NewInt(int64(len(motion))).String() + " выбранных сцен; хеши и монтажные длительности совпадают."); err != nil {
 		return printer.Crash(err)
 	}
 	return printer.Exit(0)

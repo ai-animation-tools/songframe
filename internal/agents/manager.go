@@ -18,9 +18,9 @@ import (
 	"time"
 	"unicode/utf16"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/process"
-	"songframe-go/internal/projectfile"
+	"songframe/internal/dynvalue"
+	"songframe/internal/process"
+	"songframe/internal/projectfile"
 )
 
 // Пределы задания агента; значения входят в поведение, проверяемое эталонами.
@@ -254,11 +254,11 @@ func (m *Manager) Start(input StartInput) (Job, error) {
 // проекта текстовому агенту сюда не вкладываются.
 func (m *Manager) StartImages(input StartInput, workDir string, config Settings) (Job, error) {
 	defer m.deliver()
-	directory, err := jscompat.Realpath(workDir)
+	directory, err := dynvalue.Realpath(workDir)
 	if err != nil {
 		return Job{}, err
 	}
-	base, err := jscompat.Realpath(filepath.Join(m.settings.LocalDir(), "image-jobs"))
+	base, err := dynvalue.Realpath(filepath.Join(m.settings.LocalDir(), "image-jobs"))
 	if err != nil {
 		return Job{}, err
 	}
@@ -286,7 +286,7 @@ func (m *Manager) begin(input StartInput, workDir string, imageConfig *Settings)
 	if workDir != "" && len(images) > 0 {
 		return Job{}, agentError(CodeInvalidInput, textImageAttachmentsReadOnly)
 	}
-	project, err := jscompat.Realpath(input.Project)
+	project, err := dynvalue.Realpath(input.Project)
 	if err != nil {
 		return Job{}, agentError(CodeInvalidInput, textProjectNotFound)
 	}
@@ -301,7 +301,7 @@ func (m *Manager) begin(input StartInput, workDir string, imageConfig *Settings)
 	var config Settings
 	if imageConfig != nil {
 		// Пустая модель изображений оставляет выбор самой программе.
-		config = Settings{Provider: imageConfig.Provider, Model: jscompat.Trim(imageConfig.Model)}
+		config = Settings{Provider: imageConfig.Provider, Model: dynvalue.Trim(imageConfig.Model)}
 	} else {
 		agent, err := m.settings.Agent()
 		if err != nil {
@@ -317,7 +317,7 @@ func (m *Manager) begin(input StartInput, workDir string, imageConfig *Settings)
 		previousProject := ""
 		if ok {
 			// Перемещённый проект нужно выбрать заново.
-			previousProject, _ = jscompat.Realpath(previous.Project)
+			previousProject, _ = dynvalue.Realpath(previous.Project)
 		}
 		if !ok || previousProject != project || previous.Status == StatusRunning {
 			return Job{}, agentError(CodeInvalidInput, textRetryUnavailable)
@@ -339,9 +339,9 @@ func (m *Manager) begin(input StartInput, workDir string, imageConfig *Settings)
 	job := &Job{
 		SchemaVersion: 1,
 		ID:            randomUUID(),
-		Project:       jscompat.Resolve(input.Project),
+		Project:       dynvalue.Resolve(input.Project),
 		Provider:      config.Provider,
-		Task:          Redact(jscompat.Trim(input.Task)),
+		Task:          Redact(dynvalue.Trim(input.Task)),
 		Model:         config.Model,
 		RetryOf:       input.RetryOf,
 		Permissions:   permissions,
@@ -435,7 +435,7 @@ func (m *Manager) launch(run *running, config Settings, prompt string, images []
 	m.mu.Unlock()
 	m.deliver()
 
-	parser := NewJSONLines(func(value *jscompat.Object) error {
+	parser := NewJSONLines(func(value *dynvalue.Object) error {
 		updates, err := adapter.Parse(value)
 		if err != nil {
 			return err
@@ -462,7 +462,7 @@ func (m *Manager) launch(run *running, config Settings, prompt string, images []
 			return
 		}
 		if isStderr {
-			stderr = utf16Tail(stderr+jscompat.DecodeUTF8(data), stderrTail)
+			stderr = utf16Tail(stderr+dynvalue.DecodeUTF8(data), stderrTail)
 			return
 		}
 		if err := parser.Push(data); err != nil {
@@ -626,12 +626,12 @@ func (m *Manager) update(run *running, update Update) error {
 
 // limitResult обрезает слишком большой результат и сообщает OUTPUT_LIMIT: ошибочная запись
 // тоже не раздувает историю. Обрезка по байтам UTF-8; разрезанный символ становится U+FFFD,
-// как у Buffer.toString('utf8').
+// как при декодировании UTF-8 с заменой.
 func limitResult(run *running) error {
 	if len(run.job.Result) <= TextLimit {
 		return nil
 	}
-	run.job.Result = jscompat.DecodeUTF8([]byte(run.job.Result[:TextLimit-4]))
+	run.job.Result = dynvalue.DecodeUTF8([]byte(run.job.Result[:TextLimit-4]))
 	return agentError(CodeOutputLimit, textResultTooLarge)
 }
 
@@ -744,11 +744,11 @@ func (m *Manager) finish(run *running, status string, err *Error) {
 // до 120 кодовых единиц UTF-16, промпт и контекст до TextLimit байт.
 func validate(input StartInput) error {
 	for _, value := range []string{input.Project, input.Task, input.Prompt} {
-		if jscompat.Trim(value) == "" || strings.ContainsRune(value, 0) {
+		if dynvalue.Trim(value) == "" || strings.ContainsRune(value, 0) {
 			return agentError(CodeInvalidInput, textInputRequired)
 		}
 	}
-	if !jscompat.IsAbs(input.Project) || utf16Len(input.Task) > 120 || len(input.Prompt) > TextLimit || len(input.Context) > TextLimit {
+	if !dynvalue.IsAbs(input.Project) || utf16Len(input.Task) > 120 || len(input.Prompt) > TextLimit || len(input.Context) > TextLimit {
 		return agentError(CodeInvalidInput, textInvalidInputSize)
 	}
 	return nil
@@ -771,7 +771,7 @@ func readImages(paths []string) ([]Image, error) {
 	images := make([]Image, 0, len(paths))
 	total := int64(0)
 	for _, path := range paths {
-		if jscompat.Trim(path) == "" || strings.ContainsRune(path, 0) || !jscompat.IsAbs(path) || !imageName.MatchString(path) {
+		if dynvalue.Trim(path) == "" || strings.ContainsRune(path, 0) || !dynvalue.IsAbs(path) || !imageName.MatchString(path) {
 			return nil, invalid
 		}
 		info, err := os.Stat(path)
@@ -822,23 +822,23 @@ func hashText(data string) string {
 }
 
 // contextHash — хеш контекста; с вложениями значимы их содержимое и порядок, а не имя
-// временного файла: JSON.stringify({context, images: [sha256 байтов]}).
+// временного файла: хеш компактного JSON {context, images: [sha256 байтов]} (dynvalue.Stringify).
 func contextHash(context string, images []Image) string {
 	if len(images) == 0 {
 		return hashText(context)
 	}
-	hashes := &jscompat.Array{}
+	hashes := &dynvalue.Array{}
 	for _, image := range images {
 		sum := sha256.Sum256(image.Data)
 		hashes.Items = append(hashes.Items, hex.EncodeToString(sum[:]))
 	}
-	value := jscompat.NewObject()
+	value := dynvalue.NewObject()
 	value.Set("context", context)
 	value.Set("images", hashes)
-	return hashText(jscompat.Stringify(value))
+	return hashText(dynvalue.Stringify(value))
 }
 
-// utf16Tail — text.slice(-limit) по кодовым единицам UTF-16; отрезанная половина суррогатной
+// utf16Tail — последние limit кодовых единиц UTF-16 текста; отрезанная половина суррогатной
 // пары отбрасывается.
 func utf16Tail(text string, limit int) string {
 	units := utf16.Encode([]rune(text))

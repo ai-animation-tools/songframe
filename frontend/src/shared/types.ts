@@ -1,5 +1,5 @@
 import type { VocalModelId } from './vocals';
-/** Общие типы главного процесса и рендерера: состояние приложения, проект, исходники, среда. */
+/** Общие типы API и renderer: состояние приложения, проект, исходники, среда. */
 import type { MediaModelSelection } from './media-providers';
 import type { ProductionProposalSummary } from './production-workflow';
 import type { FPS } from './video';
@@ -43,7 +43,7 @@ export interface ProjectHistoryEntry {
 export interface AppState {
   packaged: boolean;
   problems: string[];
-  /** Постоянная папка состояния: изолированный профиль Go либо явно выбранная SONGFRAME_GO_LOCAL_DIR. */
+  /** Постоянная папка состояния: изолированный профиль Go либо явно выбранная SONGFRAME_LOCAL_DIR. */
   localDir: string;
   current: string | null;
   history: ProjectHistoryEntry[];
@@ -394,7 +394,7 @@ export interface ScenarioView {
 export type StateSource = { kind: 'cast' } | { kind: 'plan'; shot: string; phase: 'before' | 'after' };
 
 /** Префикс формата вычисленной врезки: Go создаёт строку, renderer распознаёт отсутствие состояния. */
-// eslint-disable-next-line no-restricted-syntax -- Служебный маркер данных BriefResult сохраняет прежнюю фильтрацию, это не редактируемая UI-подпись.
+// eslint-disable-next-line no-restricted-syntax -- Служебный маркер данных BriefResult нужен для фильтрации, это не редактируемая UI-подпись.
 export const BRIEF_STATE_UNSET_PREFIX = 'Состояние не задано';
 
 export interface BriefResult {

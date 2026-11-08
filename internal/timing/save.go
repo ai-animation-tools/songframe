@@ -10,9 +10,9 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/sources"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
+	"songframe/internal/sources"
 )
 
 // clock — описание часов разметки; принадлежит формату timing.json, а не текстам интерфейса.
@@ -21,7 +21,7 @@ const clock = "Секунды от начала декодированного �
 // gapThreshold — промежуток без вокала, с которого в музыкальной карте появляется отдельная часть.
 const gapThreshold = 2.0
 
-// round — Math.round(value * 1000) / 1000: половина округляется к +∞.
+// round — округление до тысячных: половина округляется к +∞.
 func round(value float64) float64 {
 	scaled := value * 1000
 	result := math.Floor(scaled)
@@ -37,7 +37,7 @@ func round(value float64) float64 {
 // автоматическая музыкальная карта пересчитывается, ручные части сохраняются. Файл не пишется:
 // запись (атомарная, с сохранением прав существующего файла; новый — 0600) выполняет вызывающий,
 // байты даёт Encode. Отказ сохранения — ошибка с текстом проблем через пробел.
-func Prepare(project string, input any) (*jscompat.Object, error) {
+func Prepare(project string, input any) (*dynvalue.Object, error) {
 	view, err := ViewProject(project)
 	if err != nil {
 		return nil, err
@@ -50,38 +50,38 @@ func Prepare(project string, input any) (*jscompat.Object, error) {
 		return nil, errors.New(strings.Join(problems, " "))
 	}
 	manifest := sources.ReadManifest(project)
-	rawLines, _ := jscompat.AsArray(jscompat.Get(input, "lines"))
+	rawLines, _ := dynvalue.AsArray(dynvalue.Get(input, "lines"))
 	sorted := append([]any(nil), rawLines...)
 	sort.SliceStable(sorted, func(i, j int) bool {
-		return jscompat.ToNumber(jscompat.Get(sorted[i], "start"))-jscompat.ToNumber(jscompat.Get(sorted[j], "start")) < 0
+		return dynvalue.ToNumber(dynvalue.Get(sorted[i], "start"))-dynvalue.ToNumber(dynvalue.Get(sorted[j], "start")) < 0
 	})
 	lines := make([]any, len(sorted))
 	for index, raw := range sorted {
-		line := jscompat.Spread(raw)
+		line := dynvalue.Spread(raw)
 		line.Set("id", float64(index+1))
-		line.Set("start", round(jscompat.Get(raw, "start").(float64)))
-		line.Set("end", round(jscompat.Get(raw, "end").(float64)))
-		note, ok := jscompat.Coalesce(jscompat.Get(raw, "note"), "").(string)
+		line.Set("start", round(dynvalue.Get(raw, "start").(float64)))
+		line.Set("end", round(dynvalue.Get(raw, "end").(float64)))
+		note, ok := dynvalue.Coalesce(dynvalue.Get(raw, "note"), "").(string)
 		if !ok {
-			return nil, &jscompat.TypeError{Message: "(line.note ?? \"\").trim is not a function"}
+			return nil, &dynvalue.TypeError{Message: "(line.note ?? \"\").trim is not a function"}
 		}
-		line.Set("note", jscompat.Trim(note))
+		line.Set("note", dynvalue.Trim(note))
 		lines[index] = withTimingVerification(line)
 	}
-	var duration any = jscompat.Get(input, "duration_container")
-	if jscompat.IsNullish(duration) {
+	var duration any = dynvalue.Get(input, "duration_container")
+	if dynvalue.IsNullish(duration) {
 		duration = nil
 		if view.Duration != nil {
 			duration = *view.Duration
 		}
 	}
 	var candidates []any
-	if items, ok := jscompat.AsArray(jscompat.Coalesce(jscompat.Get(input, "candidates"), &jscompat.Array{})); ok {
+	if items, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(input, "candidates"), &dynvalue.Array{})); ok {
 		for _, candidate := range items {
-			source := jscompat.Get(candidate, "source_line")
+			source := dynvalue.Get(candidate, "source_line")
 			accepted := false
 			for _, line := range lines {
-				if jscompat.StrictEqual(jscompat.Get(line, "source_line"), source) && jscompat.Truthy(jscompat.Get(line, "verified")) {
+				if dynvalue.StrictEqual(dynvalue.Get(line, "source_line"), source) && dynvalue.Truthy(dynvalue.Get(line, "verified")) {
 					accepted = true
 					break
 				}
@@ -93,48 +93,48 @@ func Prepare(project string, input any) (*jscompat.Object, error) {
 	}
 	sourceCount := 0
 	order := newValueSet()
-	if items, ok := jscompat.AsArray(jscompat.Coalesce(jscompat.Get(input, "line_order"), &jscompat.Array{})); ok {
+	if items, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(input, "line_order"), &dynvalue.Array{})); ok {
 		for _, number := range items {
 			order.add(number)
 		}
 	}
 	for _, lyric := range view.Lyrics {
-		if !lyric.Header && jscompat.Trim(lyric.Text) != "" {
+		if !lyric.Header && dynvalue.Trim(lyric.Text) != "" {
 			sourceCount++
 			order.add(float64(lyric.Number))
 		}
 	}
-	previous, ok := jscompat.Get(input, "status").(string)
+	previous, ok := dynvalue.Get(input, "status").(string)
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "previous.replace is not a function"}
+		return nil, &dynvalue.TypeError{Message: "previous.replace is not a function"}
 	}
-	sections, err := resolveSections(jscompat.Get(input, "sections"), view.Lyrics, lines, duration, candidates)
+	sections, err := resolveSections(dynvalue.Get(input, "sections"), view.Lyrics, lines, duration, candidates)
 	if err != nil {
 		return nil, err
 	}
-	sha := jscompat.Coalesce(jscompat.Coalesce(jscompat.GetPath(manifest, "track", "sha256"), jscompat.Get(input, "sha256")), nil)
-	result := jscompat.NewObject()
+	sha := dynvalue.Coalesce(dynvalue.Coalesce(dynvalue.GetPath(manifest, "track", "sha256"), dynvalue.Get(input, "sha256")), nil)
+	result := dynvalue.NewObject()
 	result.Set("version", 2.0)
 	result.Set("status", timingStatus(lines, previous, sourceCount))
 	result.Set("source", "source/track.mp3")
 	result.Set("sha256", sha)
-	result.Set("duration_decoded", jscompat.Coalesce(jscompat.Get(input, "duration_decoded"), duration))
+	result.Set("duration_decoded", dynvalue.Coalesce(dynvalue.Get(input, "duration_decoded"), duration))
 	result.Set("duration_container", duration)
 	result.Set("clock", clock)
-	result.Set("lines", &jscompat.Array{Items: lines})
-	result.Set("sections", &jscompat.Array{Items: sections})
-	result.Set("candidates", &jscompat.Array{Items: append([]any{}, candidates...)})
-	result.Set("line_order", &jscompat.Array{Items: order.items})
+	result.Set("lines", &dynvalue.Array{Items: lines})
+	result.Set("sections", &dynvalue.Array{Items: sections})
+	result.Set("candidates", &dynvalue.Array{Items: append([]any{}, candidates...)})
+	result.Set("line_order", &dynvalue.Array{Items: order.items})
 	return result, nil
 }
 
-// Encode — байты сохраняемого файла: JSON.stringify(result, null, 2) и перевод строки (формат
+// Encode — байты сохраняемого файла: JSON с отступом два пробела и перевод строки (формат
 // зафиксирован эталоном timing-save).
 func Encode(result any) []byte {
-	return []byte(jscompat.StringifyIndent(result, "  ") + "\n")
+	return []byte(dynvalue.StringifyIndent(result, "  ") + "\n")
 }
 
-// valueSet — Set значений с порядком вставки (`[...new Set(...)]`).
+// valueSet — множество значений с порядком первой вставки (повторы отбрасываются).
 type valueSet struct {
 	items []any
 	seen  map[any]bool
@@ -154,18 +154,18 @@ func (s *valueSet) add(value any) {
 // произвольного комментария не заменяется. Опережающую проверку RE2 не поддерживает, поэтому
 // хвост проверяется отдельно.
 var (
-	verificationPhrase = regexp.MustCompile(`^([` + jscompat.SpaceClass + `]*)(?i:(сверка на слух не выполнена|сверка на слух выполнена))`)
-	verificationTail   = regexp.MustCompile(`^[` + jscompat.SpaceClass + `]*(?:[.;]|$)`)
+	verificationPhrase = regexp.MustCompile(`^([` + dynvalue.SpaceClass + `]*)(?i:(сверка на слух не выполнена|сверка на слух выполнена))`)
+	verificationTail   = regexp.MustCompile(`^[` + dynvalue.SpaceClass + `]*(?:[.;]|$)`)
 )
 
 // withTimingVerification обновляет verified и служебную фразу заметки, не трогая остальной текст.
-func withTimingVerification(line *jscompat.Object) *jscompat.Object {
-	verified := jscompat.Truthy(line.Value("verified"))
+func withTimingVerification(line *dynvalue.Object) *dynvalue.Object {
+	verified := dynvalue.Truthy(line.Value("verified"))
 	result := line.Clone()
 	result.Set("verified", verified)
 	note, ok := line.Value("note").(string)
 	if !ok {
-		result.Set("note", jscompat.Undefined)
+		result.Set("note", dynvalue.Undefined)
 		return result
 	}
 	replacement := "сверка на слух не выполнена"
@@ -192,7 +192,7 @@ func withTimingVerification(line *jscompat.Object) *jscompat.Object {
 	return result
 }
 
-// matchVerification пробует совпадение с позиции start в порядке альтернатив JS: сначала «^»
+// matchVerification пробует совпадение с позиции start в порядке альтернатив шаблона: сначала «^»
 // (только в начале строки), затем граница «.»/«;». Возвращает конец границы с пробелами (до
 // фразы) и конец фразы. Пробелы \s* жадны, а фраза начинается не с пробела, поэтому возврат
 // внутрь них ничего не даёт; две формы фразы не совпадают на одной позиции.
@@ -216,10 +216,10 @@ func matchVerification(note string, start int) (int, int, bool) {
 	return 0, 0, false
 }
 
-// Шаблоны status разметки: регулярные выражения JS без флага s — «.» не пересекает переводы строк.
+// Шаблоны status разметки: «.» не пересекает переводы строк (\n, \r, U+2028, U+2029).
 var (
 	statusConfirmed = regexp.MustCompile(`^Разметка подтверждена на слух\.?$`)
-	statusPartial   = regexp.MustCompile(`;[` + jscompat.SpaceClass + `]*подтверждено на слух[^\n\r\x{2028}\x{2029}]*$`)
+	statusPartial   = regexp.MustCompile(`;[` + dynvalue.SpaceClass + `]*подтверждено на слух[^\n\r\x{2028}\x{2029}]*$`)
 	statusDot       = regexp.MustCompile(`\.$`)
 )
 
@@ -237,7 +237,7 @@ func replaceFirst(pattern *regexp.Regexp, text, replacement string) string {
 func timingStatus(lines []any, previous string, expected int) string {
 	verified := 0
 	for _, line := range lines {
-		if jscompat.Truthy(jscompat.Get(line, "verified")) {
+		if dynvalue.Truthy(dynvalue.Get(line, "verified")) {
 			verified++
 		}
 	}
@@ -250,7 +250,7 @@ func timingStatus(lines []any, previous string, expected int) string {
 	if base == "" {
 		base = "Разметка"
 	}
-	return base + "; подтверждено на слух " + jscompat.NumberToString(float64(verified)) + " из " + jscompat.NumberToString(float64(expected)) + " строк."
+	return base + "; подтверждено на слух " + dynvalue.NumberToString(float64(verified)) + " из " + dynvalue.NumberToString(float64(expected)) + " строк."
 }
 
 var (
@@ -260,33 +260,33 @@ var (
 
 // isAutoSection — часть старой или новой автоматики: явный origin либо полная системная подпись
 // (`строки N–M` у части текста, «Вступление»/«Проигрыш после «…»» без вокала, финал до конца
-// трека). Нестроковые name/note дают TypeError вызова .match: сохранение отклоняется.
+// трека). Нестроковые name/note — ошибка данных: сохранение отклоняется.
 func isAutoSection(section any, partNames map[string]bool) (bool, error) {
-	if origin := jscompat.Get(section, "origin"); origin != jscompat.Undefined {
-		return jscompat.StrictEqual(origin, "auto"), nil
+	if origin := dynvalue.Get(section, "origin"); origin != dynvalue.Undefined {
+		return dynvalue.StrictEqual(origin, "auto"), nil
 	}
-	name := jscompat.Get(section, "name")
-	note := jscompat.Get(section, "note")
-	if note == jscompat.Undefined {
+	name := dynvalue.Get(section, "name")
+	note := dynvalue.Get(section, "note")
+	if note == dynvalue.Undefined {
 		note = ""
 	}
 	nameText, nameIsString := name.(string)
 	if nameIsString && partNames[nameText] {
 		noteText, ok := note.(string)
 		if !ok {
-			return false, &jscompat.TypeError{Message: "note.match is not a function"}
+			return false, &dynvalue.TypeError{Message: "note.match is not a function"}
 		}
 		if autoNote.MatchString(noteText) {
 			return true, nil
 		}
 	}
 	if !nameIsString {
-		return false, &jscompat.TypeError{Message: "name.match is not a function"}
+		return false, &dynvalue.TypeError{Message: "name.match is not a function"}
 	}
-	if (nameText == "Вступление" || interludeName.MatchString(nameText)) && jscompat.StrictEqual(note, "без вокала") {
+	if (nameText == "Вступление" || interludeName.MatchString(nameText)) && dynvalue.StrictEqual(note, "без вокала") {
 		return true, nil
 	}
-	return nameText == "Финал без вокала" && jscompat.StrictEqual(note, "до конца трека"), nil
+	return nameText == "Финал без вокала" && dynvalue.StrictEqual(note, "до конца трека"), nil
 }
 
 // sectionPart — часть текста песни с найденными строками разметки.
@@ -307,7 +307,7 @@ func groupParts(lyrics []LyricsLine, byNumber map[float64]any) []sectionPart {
 			if len(units) > 2 {
 				name = string(utf16.Decode(units[1 : len(units)-1]))
 			}
-			current = &sectionPart{name: jscompat.Trim(name)}
+			current = &sectionPart{name: dynvalue.Trim(name)}
 			parts = append(parts, current)
 		} else if lyric.Text != "" {
 			if current == nil {
@@ -332,9 +332,9 @@ func groupParts(lyrics []LyricsLine, byNumber map[float64]any) []sectionPart {
 // resolveSections — resolveTimingSections: полностью ручная карта сохраняется как есть, у
 // смешанной пересчитываются только автоматические части, итог сортируется по началу.
 func resolveSections(sections any, lyrics []LyricsLine, lines []any, duration any, candidates []any) ([]any, error) {
-	saved, ok := jscompat.AsArray(jscompat.Coalesce(sections, &jscompat.Array{}))
+	saved, ok := dynvalue.AsArray(dynvalue.Coalesce(sections, &dynvalue.Array{}))
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "saved.filter is not a function"}
+		return nil, &dynvalue.TypeError{Message: "saved.filter is not a function"}
 	}
 	partNames := map[string]bool{}
 	for _, part := range groupParts(lyrics, map[float64]any{}) {
@@ -355,7 +355,7 @@ func resolveSections(sections any, lyrics []LyricsLine, lines []any, duration an
 	}
 	manualNames := map[any]bool{}
 	for _, section := range manual {
-		manualNames[jscompat.Get(section, "name")] = true
+		manualNames[dynvalue.Get(section, "name")] = true
 	}
 	result := append([]any{}, manual...)
 	for _, section := range buildSections(lyrics, lines, duration, candidates) {
@@ -364,14 +364,14 @@ func resolveSections(sections any, lyrics []LyricsLine, lines []any, duration an
 		}
 	}
 	sort.SliceStable(result, func(i, j int) bool {
-		return jscompat.ToNumber(jscompat.Get(result[i], "start"))-jscompat.ToNumber(jscompat.Get(result[j], "start")) < 0
+		return dynvalue.ToNumber(dynvalue.Get(result[i], "start"))-dynvalue.ToNumber(dynvalue.Get(result[j], "start")) < 0
 	})
 	return result, nil
 }
 
 // section строит автоматическую часть; порядок ключей зафиксирован эталоном.
-func section(name string, start, end float64, note string) *jscompat.Object {
-	object := jscompat.NewObject()
+func section(name string, start, end float64, note string) *dynvalue.Object {
+	object := dynvalue.NewObject()
 	object.Set("name", name)
 	object.Set("start", start)
 	object.Set("end", end)
@@ -383,10 +383,10 @@ func section(name string, start, end float64, note string) *jscompat.Object {
 // buildSections — автоматическая музыкальная карта (общая с align_lyrics): части текста по
 // границам строк и кандидатов, промежутки от 2 с — вступление, проигрыши и финал. Если есть
 // кандидаты или неразмеченные строки, промежутки не объявляются инструменталом («Не размечено»).
-func buildSections(lyrics []LyricsLine, lines []any, duration any, candidates []any) []*jscompat.Object {
+func buildSections(lyrics []LyricsLine, lines []any, duration any, candidates []any) []*dynvalue.Object {
 	byNumber := map[float64]any{}
 	for _, line := range lines {
-		if number, ok := jscompat.Get(line, "source_line").(float64); ok {
+		if number, ok := dynvalue.Get(line, "source_line").(float64); ok {
 			byNumber[number] = line
 		}
 	}
@@ -399,9 +399,9 @@ func buildSections(lyrics []LyricsLine, lines []any, duration any, candidates []
 	for index, lyric := range sourceLines {
 		number := float64(lyric.Number)
 		for _, candidate := range candidates {
-			if jscompat.StrictEqual(jscompat.Get(candidate, "source_line"), number) {
+			if dynvalue.StrictEqual(dynvalue.Get(candidate, "source_line"), number) {
 				if _, exists := byNumber[number]; !exists {
-					member := jscompat.Spread(candidate)
+					member := dynvalue.Spread(candidate)
 					member.Set("id", float64(index+1))
 					byNumber[number] = member
 				}
@@ -413,7 +413,7 @@ func buildSections(lyrics []LyricsLine, lines []any, duration any, candidates []
 	for _, lyric := range sourceLines {
 		covered := false
 		for _, line := range lines {
-			if jscompat.StrictEqual(jscompat.Get(line, "source_line"), float64(lyric.Number)) {
+			if dynvalue.StrictEqual(dynvalue.Get(line, "source_line"), float64(lyric.Number)) {
 				covered = true
 				break
 			}
@@ -434,18 +434,18 @@ func buildSections(lyrics []LyricsLine, lines []any, duration any, candidates []
 		}
 		members := append([]any(nil), part.members...)
 		sort.SliceStable(members, func(i, j int) bool {
-			return jscompat.ToNumber(jscompat.Get(members[i], "start"))-jscompat.ToNumber(jscompat.Get(members[j], "start")) < 0
+			return dynvalue.ToNumber(dynvalue.Get(members[i], "start"))-dynvalue.ToNumber(dynvalue.Get(members[j], "start")) < 0
 		})
 		end := math.Inf(-1)
 		for _, member := range members {
-			end = jsMax(end, jscompat.ToNumber(jscompat.Get(member, "end")))
+			end = maxNaN(end, dynvalue.ToNumber(dynvalue.Get(member, "end")))
 		}
 		named = append(named, namedPart{
-			name: part.name, start: jscompat.ToNumber(jscompat.Get(members[0], "start")), end: end,
-			first: jscompat.Get(members[0], "id"), last: jscompat.Get(members[len(members)-1], "id"),
+			name: part.name, start: dynvalue.ToNumber(dynvalue.Get(members[0], "start")), end: end,
+			first: dynvalue.Get(members[0], "id"), last: dynvalue.Get(members[len(members)-1], "id"),
 		})
 	}
-	var result []*jscompat.Object
+	var result []*dynvalue.Object
 	cursor := 0.0
 	for index, part := range named {
 		if part.start-cursor >= gapThreshold {
@@ -460,10 +460,10 @@ func buildSections(lyrics []LyricsLine, lines []any, duration any, candidates []
 			result = append(result, section(name, round(cursor), round(part.start), note))
 		}
 		result = append(result, section(part.name, round(part.start), round(part.end),
-			"строки "+jscompat.ToString(part.first)+"–"+jscompat.ToString(part.last)))
-		cursor = jsMax(cursor, part.end)
+			"строки "+dynvalue.ToString(part.first)+"–"+dynvalue.ToString(part.last)))
+		cursor = maxNaN(cursor, part.end)
 	}
-	if total, ok := duration.(float64); ok && jscompat.Truthy(total) && total-cursor >= gapThreshold {
+	if total, ok := duration.(float64); ok && dynvalue.Truthy(total) && total-cursor >= gapThreshold {
 		name, note := "Финал без вокала", "до конца трека"
 		if uncertain {
 			name, note = "Не размечено", "границы вокала не подтверждены"
@@ -473,8 +473,8 @@ func buildSections(lyrics []LyricsLine, lines []any, duration any, candidates []
 	return result
 }
 
-// jsMax — Math.max для двух чисел: NaN заразен.
-func jsMax(left, right float64) float64 {
+// maxNaN — максимум двух чисел: NaN заразен.
+func maxNaN(left, right float64) float64 {
 	if math.IsNaN(left) || math.IsNaN(right) {
 		return math.NaN()
 	}
@@ -488,7 +488,7 @@ const TimingPath = "plan/audio/timing.json"
 // проверяет отсутствие незавершённых многофайловых публикаций (montage/derived), и байты Encode
 // атомарно заменяют plan/audio/timing.json (права существующего файла сохраняются, новый — 0600).
 // Отказ проверки или записи оставляет прежний файл нетронутым. Возвращает записанный документ.
-func SaveProject(project string, input any) (*jscompat.Object, error) {
+func SaveProject(project string, input any) (*dynvalue.Object, error) {
 	result, err := Prepare(project, input)
 	if err != nil {
 		return nil, err

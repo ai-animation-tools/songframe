@@ -20,8 +20,8 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/golden"
+	"songframe/internal/toolrt"
 )
 
 // Эталон export-edit-bundle — случаи CLI export_edit_bundle на копиях образца
@@ -462,18 +462,18 @@ func TestNumbersGolden(t *testing.T) {
 			t.Errorf("round6(%v) = %v, ожидалось %v", item.Value, rounded, item.Round6)
 		}
 		if got := formatG(item.Value); got != item.G {
-			t.Errorf(":g %v = %q, ожидалось %q", item.Value, got, item.G)
+			t.Errorf("formatG(%v) = %q, ожидалось %q", item.Value, got, item.G)
 		}
 		if got := speedField(item.Value); got != item.Speed {
-			t.Errorf(":05.1f %v = %q, ожидалось %q", item.Value, got, item.Speed)
+			t.Errorf("speedField(%v) = %q, ожидалось %q", item.Value, got, item.Speed)
 		}
-		if got := pycompat.FormatFixed(item.Value, 4); got != item.Fixed4 {
-			t.Errorf(":.4f %v = %q, ожидалось %q", item.Value, got, item.Fixed4)
+		if got := toolrt.FormatFixed(item.Value, 4); got != item.Fixed4 {
+			t.Errorf("FormatFixed(%v, 4) = %q, ожидалось %q", item.Value, got, item.Fixed4)
 		}
 	}
 }
 
-// TestFileURIWindows — Path.as_uri на Windows: диск (двоеточие тома не кодируется) и сетевой путь.
+// TestFileURIWindows — URI файла на Windows: диск (двоеточие тома не кодируется) и сетевой путь.
 func TestFileURIWindows(t *testing.T) {
 	if got, want := fileURI("C:/клип/a b.mp4", "C:"), "file:///C:/%D0%BA%D0%BB%D0%B8%D0%BF/a%20b.mp4"; got != want {
 		t.Errorf("диск: %q, ожидалось %q", got, want)

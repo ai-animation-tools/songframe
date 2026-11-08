@@ -5,17 +5,17 @@ import (
 	"strconv"
 	"strings"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
-// Разбор адресов и форм urllib.parse CPython 3.12 в том объёме, в котором им пользуется клиент:
-// схема результата (поле urlparse(...).scheme решает, скачивать ли оригинал без логотипа), хост
+// Разбор адресов и форм в том объёме, в котором им пользуется клиент: схема результата (поле
+// Scheme решает, скачивать ли оригинал без логотипа), хост
 // и путь issuer при discovery, кодирование форм OAuth и разбор строки колбэка. net/url Go
 // отличается в краевых случаях (регистр схемы, пробелы, порядок полей формы, пустые значения),
 // поэтому правила реализованы отдельно.
 
-// URLParts — urlparse(url): части адреса. Path — без параметров «;…» последнего сегмента, как у
-// urlparse (не urlsplit).
+// URLParts — части адреса: схема, netloc, путь, параметры, запрос и фрагмент. Path — без
+// параметров «;…» последнего сегмента (они отделяются для схем usesParams).
 type URLParts struct {
 	Scheme   string
 	Netloc   string
@@ -24,11 +24,11 @@ type URLParts struct {
 	Fragment string
 }
 
-// schemeChars — urllib.parse.scheme_chars.
+// schemeChars — символы, допустимые в схеме адреса (кроме первого, который должен быть буквой).
 const schemeChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-."
 
-// ParseURL — urlparse(url) для строки. Ошибка — ValueError("Invalid IPv6 URL") при непарной
-// квадратной скобке в netloc, как у Python.
+// ParseURL — разбор адреса на части. Ошибка — ValueError("Invalid IPv6 URL") при непарной
+// квадратной скобке в netloc.
 func ParseURL(raw string) (URLParts, error) {
 	// WHATWG: ведущие управляющие символы и пробел отбрасываются, \t \r \n удаляются везде.
 	raw = strings.TrimLeftFunc(raw, func(r rune) bool { return r <= ' ' })
@@ -61,7 +61,7 @@ func ParseURL(raw string) (URLParts, error) {
 		parts.Netloc, raw = raw[2:end], raw[end:]
 		open, closed := strings.Contains(parts.Netloc, "["), strings.Contains(parts.Netloc, "]")
 		if open != closed {
-			return URLParts{}, pycompat.New(pycompat.ValueError, "Invalid IPv6 URL")
+			return URLParts{}, toolrt.New(toolrt.ValueError, "Invalid IPv6 URL")
 		}
 	}
 	if index := strings.IndexByte(raw, '#'); index >= 0 {
@@ -74,14 +74,14 @@ func ParseURL(raw string) (URLParts, error) {
 	return parts, nil
 }
 
-// usesParams — urllib.parse.uses_params: схемы, у которых urlparse отделяет «;params».
+// usesParams — схемы, у которых от последнего сегмента пути отделяются параметры «;params».
 var usesParams = map[string]bool{
 	"": true, "ftp": true, "hdl": true, "prospero": true, "http": true, "imap": true, "https": true,
 	"shttp": true, "rtsp": true, "rtsps": true, "rtspu": true, "sip": true, "sips": true, "mms": true,
 	"sftp": true, "tel": true,
 }
 
-// withoutParams — путь без «;params» (_splitparams): точка с запятой ищется в последнем сегменте.
+// withoutParams — путь без «;params»: точка с запятой ищется в последнем сегменте.
 func withoutParams(scheme, path string) string {
 	if !usesParams[scheme] || !strings.Contains(path, ";") {
 		return path
@@ -99,14 +99,14 @@ func withoutParams(scheme, path string) string {
 	return path[:index]
 }
 
-// URLScheme — urlparse(value).scheme; ошибка разбора — ValueError Python.
+// URLScheme — схема адреса value; ошибка разбора — ValueError.
 func URLScheme(value string) (string, error) {
 	parts, err := ParseURL(value)
 	return parts.Scheme, err
 }
 
-// Hostname — urlparse(...).hostname: хост без учётных данных и порта в нижнем регистре; пусто —
-// None. IPv6 возвращается без скобок.
+// Hostname — хост без учётных данных и порта в нижнем регистре; нет хоста — пустая строка.
+// IPv6 возвращается без скобок.
 func (p URLParts) Hostname() string {
 	host := p.Netloc
 	if index := strings.LastIndexByte(host, '@'); index >= 0 {
@@ -125,8 +125,8 @@ func (p URLParts) Hostname() string {
 	return strings.ToLower(host)
 }
 
-// Port — urlparse(...).port: (порт, задан ли). Нечисловой порт или вне 0–65535 — ValueError
-// с текстом Python.
+// Port — (порт, задан ли). Нечисловой порт или вне 0–65535 — ValueError с текстом,
+// зафиксированным эталоном.
 func (p URLParts) Port() (int, bool, error) {
 	host := p.Netloc
 	if index := strings.LastIndexByte(host, '@'); index >= 0 {
@@ -153,20 +153,20 @@ func (p URLParts) Port() (int, bool, error) {
 		}
 	}
 	if !valid {
-		return 0, false, pycompat.Raise(pycompat.ValueError, "Port could not be cast to integer value as %s", pycompat.Repr(text))
+		return 0, false, toolrt.Raise(toolrt.ValueError, "Port could not be cast to integer value as %s", toolrt.Repr(text))
 	}
 	value, err := strconv.Atoi(text)
 	if err != nil || value > 65535 {
-		return 0, false, pycompat.New(pycompat.ValueError, "Port out of range 0-65535")
+		return 0, false, toolrt.New(toolrt.ValueError, "Port out of range 0-65535")
 	}
 	return value, true, nil
 }
 
-// Field — пара формы в порядке передачи: urlencode сохраняет порядок полей, а
+// Field — пара формы в порядке передачи: форма OAuth кодируется в порядке полей, а
 // url.Values.Encode Go сортирует ключи.
 type Field struct{ Name, Value string }
 
-// URLEncode — urllib.parse.urlencode(fields) для строковых значений (quote_plus: безопасны буквы,
+// URLEncode — форма application/x-www-form-urlencoded для строковых значений (безопасны буквы,
 // цифры и «_.-~», пробел — «+»). url.QueryEscape кодирует по тому же правилу.
 func URLEncode(fields []Field) string {
 	parts := make([]string, len(fields))
@@ -176,12 +176,12 @@ func URLEncode(fields []Field) string {
 	return strings.Join(parts, "&")
 }
 
-// ParseQueryFirst — {key: values[0] for key, values in parse_qs(query).items()}: пары по «&»,
-// пустые значения отбрасываются (keep_blank_values=False), пара без «=» пропускается, неверные
-// %-последовательности остаются как есть (errors="replace"). Ключи — в порядке первого появления,
+// ParseQueryFirst — первое значение каждого ключа строки запроса: пары по «&»,
+// пустые значения отбрасываются, пара без «=» пропускается, неверные
+// %-последовательности остаются как есть (невалидный UTF-8 — U+FFFD). Ключи — в порядке первого появления,
 // значения — строки.
-func ParseQueryFirst(query string) *pycompat.Dict {
-	result := pycompat.NewDict()
+func ParseQueryFirst(query string) *toolrt.Dict {
+	result := toolrt.NewDict()
 	if query == "" {
 		return result
 	}
@@ -198,7 +198,7 @@ func ParseQueryFirst(query string) *pycompat.Dict {
 	return result
 }
 
-// unquotePlus — urllib.parse.unquote_plus: «+» — пробел, %XX — байт; неполные и неверные
+// unquotePlus — декодирование значения формы: «+» — пробел, %XX — байт; неполные и неверные
 // последовательности сохраняются, невалидный UTF-8 заменяется U+FFFD.
 func unquotePlus(text string) string {
 	text = strings.ReplaceAll(text, "+", " ")
@@ -222,9 +222,9 @@ func isHex(b byte) bool {
 	return (b >= '0' && b <= '9') || (b >= 'a' && b <= 'f') || (b >= 'A' && b <= 'F')
 }
 
-// DecodeReplace — bytes.decode("utf-8", "replace"): каждая максимальная неверная
-// подпоследовательность заменяется одним U+FFFD по правилам декодера CPython (strings.ToValidUTF8
-// Go сворачивает серию ошибок в одну замену).
+// DecodeReplace — байты как UTF-8 с заменой ошибок: каждая максимальная неверная
+// подпоследовательность заменяется одним U+FFFD (правило Unicode «maximal subpart»;
+// strings.ToValidUTF8 Go сворачивает серию ошибок в одну замену).
 func DecodeReplace(data []byte) string {
 	var builder strings.Builder
 	for index := 0; index < len(data); {

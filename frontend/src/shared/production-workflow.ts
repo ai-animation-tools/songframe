@@ -1,5 +1,5 @@
 import { productionTexts } from './texts/production';
-/** Предметные задания производства; вопросы и решения по-прежнему принадлежат workflow.json пакета. */
+/** Предметные задания производства; вопросы и решения принадлежат workflow.json пакета. */
 import type { AgentJob } from './agents';
 
 export type ProductionPass = 'description' | 'frames' | 'prompt' | 'request';

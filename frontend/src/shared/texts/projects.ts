@@ -24,7 +24,7 @@ export const projectsTexts = {
   opening: 'Дождитесь открытия проекта.',
   forgetConfirm: 'Убрать из истории',
   current: 'текущий',
-  // Дата уже отформатирована владельцем; пустая дата сохраняет прежнее отсутствие суффикса.
+  // Дата уже отформатирована владельцем; без даты суффикс «открыт …» не добавляется.
   historyDetails: ({ path, exists, openedAt }: { path: string; exists: boolean; openedAt: string | null | undefined }) =>
     `${path}${exists ? '' : ' (папка не найдена)'}${openedAt ? ` · открыт ${openedAt}` : ''}`
 } as const;

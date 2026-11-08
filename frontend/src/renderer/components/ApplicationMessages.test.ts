@@ -9,8 +9,8 @@ import { LinkedText } from './LinkedText';
 const renderMessage = (text: string): string =>
   renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: ['/project/production'] }, createElement(LinkedText, { text })));
 
-describe('сообщения IPC в интерфейсе', () => {
-  it('оставляет прежний маршрут предупреждения о сценарии', () => {
+describe('сообщения приложения в интерфейсе', () => {
+  it('ведёт предупреждение о сценарии на страницу сценария', () => {
     const scenario = renderMessage(applicationTexts.scenarioReviewRequired);
     expect(scenario).toContain('href="/project/scenario"');
     expect(scenario).toContain('«Сценарий»</a>.');

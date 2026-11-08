@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"songframe-go/internal/projectfs"
+	"songframe/internal/projectfs"
 )
 
 // CurrentFile и HistoryFile — текущий проект и история открытых проектов в каталоге состояния

@@ -32,14 +32,14 @@ import (
 	"sync"
 	"syscall"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/projectfile"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/providers/agentexec"
-	"songframe-go/internal/referenceimage"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/projectfile"
+	"songframe/internal/projectfs"
+	"songframe/internal/providers/agentexec"
+	"songframe/internal/referenceimage"
 )
 
 // Статусы сессии (CoverGenerationSession.status контракта).
@@ -97,7 +97,7 @@ type Session struct {
 	Quote         *Quote  `json:"quote"`
 }
 
-// clone — structuredClone сессии: ответ renderer не делит срезы и указатели с состоянием.
+// clone — глубокая копия сессии: ответ renderer не делит срезы и указатели с состоянием.
 func (s Session) clone() Session {
 	result := s
 	result.ReferenceImages = append([]mediaapi.ReferenceImage{}, s.ReferenceImages...)
@@ -221,31 +221,32 @@ func randomUUID() string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", data[0:4], data[4:6], data[6:8], data[8:10], data[10:16])
 }
 
-// imageSettings — generation.image настроек проекта как значение JS: nil — блока нет или он не
+// imageSettings — generation.image настроек проекта как значение dynvalue: nil — блока нет или он не
 // объект, Undefined — нет блока generation. Ошибка чтения plan/project.json — projectReadFailed.
 func imageSettings(project string) (any, error) {
 	settings, err := projectfile.ReadSettings(project)
 	if err != nil {
 		return nil, err
 	}
-	generation, err := jscompat.Parse(settings.Generation)
+	generation, err := dynvalue.Parse(settings.Generation)
 	if err != nil {
 		return nil, err
 	}
-	return jscompat.Get(generation, "image"), nil
+	return dynvalue.Get(generation, "image"), nil
 }
 
-// trimmedModel — model?.trim() настроек изображения: nil и undefined — "", не строка — TypeError.
+// trimmedModel — model настроек изображения без пробелов по краям: null и отсутствие — "", не
+// строка — TypeError.
 func trimmedModel(settings any) (string, error) {
-	value := jscompat.Get(settings, "model")
-	if jscompat.IsNullish(value) {
+	value := dynvalue.Get(settings, "model")
+	if dynvalue.IsNullish(value) {
 		return "", nil
 	}
 	text, ok := value.(string)
 	if !ok {
-		return "", &jscompat.TypeError{Message: "imageSettings.model?.trim is not a function"}
+		return "", &dynvalue.TypeError{Message: "imageSettings.model?.trim is not a function"}
 	}
-	return jscompat.Trim(text), nil
+	return dynvalue.Trim(text), nil
 }
 
 // copyReferences фиксирует опоры: проверенные копии R001<расширение>, R002… в directory. Пустой
@@ -255,7 +256,7 @@ func copyReferences(images []mediaapi.ReferenceImage, directory string) ([]media
 		return []mediaapi.ReferenceImage{}, nil
 	}
 	if err := os.MkdirAll(directory, 0o777); err != nil {
-		return nil, jscompat.FsError("mkdir", directory, err)
+		return nil, dynvalue.FsError("mkdir", directory, err)
 	}
 	checked, err := mediafile.CheckedReferences(images)
 	if err != nil {
@@ -277,14 +278,14 @@ func copyReferences(images []mediaapi.ReferenceImage, directory string) ([]media
 func copyFile(from, to string) error {
 	data, err := os.ReadFile(from)
 	if err != nil {
-		return jscompat.FsError("copyfile", from, err)
+		return dynvalue.FsError("copyfile", from, err)
 	}
 	info, err := os.Stat(from)
 	if err != nil {
-		return jscompat.FsError("copyfile", from, err)
+		return dynvalue.FsError("copyfile", from, err)
 	}
 	if err := os.WriteFile(to, data, info.Mode().Perm()); err != nil {
-		return jscompat.FsError("copyfile", to, err)
+		return dynvalue.FsError("copyfile", to, err)
 	}
 	return nil
 }
@@ -301,28 +302,28 @@ func (g *Generator) Create(project, prompt string, input *referenceimage.Generat
 	if stopping {
 		return Session{}, errors.New(t.applicationStopping)
 	}
-	if !jscompat.IsAbs(project) || strings.ContainsRune(project, 0) {
+	if !dynvalue.IsAbs(project) || strings.ContainsRune(project, 0) {
 		return Session{}, errors.New(t.projectRequired)
 	}
-	canonical, err := jscompat.Realpath(project)
+	canonical, err := dynvalue.Realpath(project)
 	if err != nil {
 		return Session{}, errors.New(t.projectMissing)
 	}
-	if !jscompat.Exists(filepath.Join(canonical, "plan", "project.json")) {
+	if !dynvalue.Exists(filepath.Join(canonical, "plan", "project.json")) {
 		return Session{}, errors.New(t.projectPlanMissing)
 	}
 	settings, err := imageSettings(canonical)
 	if err != nil {
 		return Session{}, err
 	}
-	provider := jscompat.Get(settings, "provider")
+	provider := dynvalue.Get(settings, "provider")
 	if !mediaproviders.Supports(provider, mediaproviders.Image) {
 		return Session{}, errors.New(imageProviderRequired())
 	}
 	if err := g.options.AssertSelection(canonical); err != nil {
 		return Session{}, err
 	}
-	if jscompat.Trim(prompt) == "" || strings.ContainsRune(prompt, 0) || len(prompt) > promptLimit {
+	if dynvalue.Trim(prompt) == "" || strings.ContainsRune(prompt, 0) || len(prompt) > promptLimit {
 		return Session{}, errors.New(t.promptInvalid)
 	}
 	inputs, err := referenceimage.Inputs(input)
@@ -338,17 +339,17 @@ func (g *Generator) Create(project, prompt string, input *referenceimage.Generat
 	if g.options.Reference {
 		archive := filepath.Join(canonical, "plan", "reference-images", id)
 		if err := os.MkdirAll(archive, 0o777); err != nil {
-			return Session{}, jscompat.FsError("mkdir", archive, err)
+			return Session{}, dynvalue.FsError("mkdir", archive, err)
 		}
-		if root, err = jscompat.Realpath(archive); err != nil {
+		if root, err = dynvalue.Realpath(archive); err != nil {
 			return Session{}, err
 		}
 	} else {
 		temporary, err := os.MkdirTemp(g.options.TempDir(), "songframe-cover-")
 		if err != nil {
-			return Session{}, jscompat.FsError("mkdtemp", filepath.Join(g.options.TempDir(), "songframe-cover-XXXXXX"), err)
+			return Session{}, dynvalue.FsError("mkdtemp", filepath.Join(g.options.TempDir(), "songframe-cover-XXXXXX"), err)
 		}
-		if root, err = jscompat.Realpath(temporary); err != nil {
+		if root, err = dynvalue.Realpath(temporary); err != nil {
 			return Session{}, err
 		}
 	}
@@ -442,7 +443,7 @@ func (g *Generator) Prepare(id string) (Session, error) {
 func (g *Generator) runPrepare(ctx context.Context, item *record, workDir, prompt string, references []mediaapi.ReferenceImage) {
 	candidate, copies, err := func() (*Candidate, []mediaapi.ReferenceImage, error) {
 		if err := os.MkdirAll(workDir, 0o777); err != nil {
-			return nil, nil, jscompat.FsError("mkdir", workDir, err)
+			return nil, nil, dynvalue.FsError("mkdir", workDir, err)
 		}
 		copies, err := copyReferences(references, filepath.Join(workDir, "references"))
 		if err != nil {
@@ -503,7 +504,7 @@ func currentProvider(project string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return jscompat.Get(settings, "provider"), nil
+	return dynvalue.Get(settings, "provider"), nil
 }
 
 // Generate — cover.generate: запуск подготовленной попытки по явному согласию. Запрос должен
@@ -679,18 +680,18 @@ func (g *Generator) run(ctx context.Context, item *record, attempt *prepared, al
 // реальный формат PNG/JPEG/WebP с расширением этого формата и читаемыми размерами.
 func (g *Generator) checkedResult(workDir, output string) (*Image, error) {
 	t := g.texts
-	path := jscompat.Resolve(workDir, output)
-	local := jscompat.Relative(workDir, path)
-	if local == "" || jscompat.IsAbs(local) || local == ".." || strings.HasPrefix(local, "../") || strings.HasPrefix(local, `..\`) {
+	path := dynvalue.Resolve(workDir, output)
+	local := dynvalue.Relative(workDir, path)
+	if local == "" || dynvalue.IsAbs(local) || local == ".." || strings.HasPrefix(local, "../") || strings.HasPrefix(local, `..\`) {
 		return nil, errors.New(t.fileInvalid)
 	}
-	real, err := jscompat.Realpath(path)
+	real, err := dynvalue.Realpath(path)
 	if err != nil {
 		return nil, err
 	}
 	info, err := os.Lstat(path)
 	if err != nil {
-		return nil, jscompat.FsError("lstat", path, err)
+		return nil, dynvalue.FsError("lstat", path, err)
 	}
 	if real != path || info.Mode()&os.ModeSymlink != 0 || !mediafile.IsImage(path) || !mediafile.ExtensionMatches(path) {
 		return nil, errors.New(t.fileInvalid)
@@ -702,10 +703,10 @@ func (g *Generator) checkedResult(workDir, output string) (*Image, error) {
 	return &Image{Path: path, Width: width, Height: height}, nil
 }
 
-// hasCode — файловая ошибка (jscompat.NodeError) или ошибка системного вызова: пользователю
+// hasCode — файловая ошибка (dynvalue.FileError) или ошибка системного вызова: пользователю
 // вместо её текста показывается общее «не удалось прочитать файл».
 func hasCode(err error) bool {
-	var node *jscompat.NodeError
+	var node *dynvalue.FileError
 	var path *fs.PathError
 	var link *os.LinkError
 	var errno syscall.Errno
@@ -725,7 +726,7 @@ func (g *Generator) View(id string) (Session, error) {
 
 // isSafeInteger — целое по модулю не больше 2^53−1 (точно представимое в JSON-числе).
 func isSafeInteger(value float64) bool {
-	return jscompat.IsSafeInteger(value)
+	return dynvalue.IsSafeInteger(value)
 }
 
 // Accept — cover.accept: вырезает выбранный квадрат готовой обложки в собственный новый
@@ -757,13 +758,13 @@ func (g *Generator) Accept(id string, crop *Crop) (Accepted, error) {
 			return err
 		}
 		width, height, ok := g.options.ReadImage(path)
-		real, err := jscompat.Realpath(path)
+		real, err := dynvalue.Realpath(path)
 		if err != nil {
 			return err
 		}
 		info, err := os.Lstat(path)
 		if err != nil {
-			return jscompat.FsError("lstat", path, err)
+			return dynvalue.FsError("lstat", path, err)
 		}
 		if real != path || info.Mode()&os.ModeSymlink != 0 || !mediafile.IsImage(path) || !mediafile.ExtensionMatches(path) ||
 			!ok || float64(width) != crop.Size || float64(height) != crop.Size {
@@ -820,7 +821,7 @@ func (g *Generator) Project(id string) (string, error) {
 // archivePath — путь внутри архива в квитанции: относительный, через «/», чтобы архив
 // переносился вместе с проектом.
 func archivePath(root, path string) string {
-	return strings.ReplaceAll(jscompat.Relative(root, path), `\`, "/")
+	return strings.ReplaceAll(dynvalue.Relative(root, path), `\`, "/")
 }
 
 // archive пишет квитанцию session.json референса (у обложки — ничего). Вызывается под g.mu.

@@ -8,11 +8,11 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/acceptance"
-	"songframe-go/internal/derivedshot"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfile"
-	"songframe-go/internal/providers"
+	"songframe/internal/acceptance"
+	"songframe/internal/derivedshot"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfile"
+	"songframe/internal/providers"
 )
 
 // FPS — частота кадров шкалы клипа; реестр сцен хранит свою и её же требует.
@@ -88,7 +88,7 @@ func toolsAvailability() Tools {
 // existingAssetFile — утрата файла не отменяет приёмку, но путь для проигрывателя должен вести к
 // существующему файлу комплекта.
 func existingAssetFile(assetDir string, path any) (*string, error) {
-	if !jscompat.Truthy(path) {
+	if !dynvalue.Truthy(path) {
 		return nil, nil
 	}
 	full, err := joinArg(assetDir, path)
@@ -107,10 +107,10 @@ func listPackages(project string, fingerprint fingerprintFunc) ([]*PackageView, 
 	broken := []Broken{}
 	for _, base := range []string{"plan/batches", "plan/awaiting"} {
 		folder := filepath.Join(project, filepath.FromSlash(base))
-		if !jscompat.Exists(folder) {
+		if !dynvalue.Exists(folder) {
 			continue
 		}
-		entries, err := jscompat.ReadDir(folder)
+		entries, err := dynvalue.ReadDir(folder)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -131,8 +131,8 @@ func listPackages(project string, fingerprint fingerprintFunc) ([]*PackageView, 
 			// Очередь состоит только из пакетов; в batches недописанной считается лишь папка
 			// попытки плана без workflow.json (не проба стыков и не монтаж).
 			packageLike := base == "plan/awaiting" ||
-				(match != nil && !jscompat.Exists(filepath.Join(dir, "montage.json")) && !jscompat.Exists(filepath.Join(dir, "review.json")))
-			if packageLike && !jscompat.Exists(filepath.Join(dir, "workflow.json")) {
+				(match != nil && !dynvalue.Exists(filepath.Join(dir, "montage.json")) && !dynvalue.Exists(filepath.Join(dir, "review.json")))
+			if packageLike && !dynvalue.Exists(filepath.Join(dir, "workflow.json")) {
 				item := Broken{Dir: dir, Relative: base + "/" + entry.Name(), Reason: textBrokenWorkflowMissing}
 				if match != nil {
 					item.Shot = &match[1]
@@ -145,7 +145,7 @@ func listPackages(project string, fingerprint fingerprintFunc) ([]*PackageView, 
 	for _, view := range packages {
 		info, err := os.Stat(filepath.Join(view.Dir, "workflow.json"))
 		if err != nil {
-			return nil, nil, jscompat.FsError("stat", filepath.Join(view.Dir, "workflow.json"), err)
+			return nil, nil, dynvalue.FsError("stat", filepath.Join(view.Dir, "workflow.json"), err)
 		}
 		modified[view] = info.ModTime().UnixNano()
 	}
@@ -179,7 +179,7 @@ func attention(pkg *PackageView) string {
 
 // sameProvider — sameMediaProvider: непустые строки равны без учёта регистра и крайних пробелов.
 func sameProvider(left, right string) bool {
-	l, r := jscompat.Trim(left), jscompat.Trim(right)
+	l, r := dynvalue.Trim(left), dynvalue.Trim(right)
 	return l != "" && r != "" && strings.ToLower(l) == strings.ToLower(r)
 }
 
@@ -193,7 +193,7 @@ func regenerateProblem(project, shot string, packages []*PackageView, selected s
 	}
 	compare := func(value any) string {
 		provider, _ := value.(string)
-		provider = jscompat.Trim(provider)
+		provider = dynvalue.Trim(provider)
 		if provider == "" {
 			return textRetryOriginalProviderMissing(shot)
 		}
@@ -210,18 +210,18 @@ func regenerateProblem(project, shot string, packages []*PackageView, selected s
 	var requests []candidate
 	for _, pkg := range packages {
 		workflow := readJSON(filepath.Join(pkg.Dir, "workflow.json"))
-		requestDir, ok := jscompat.Get(workflow, "request_dir").(string)
+		requestDir, ok := dynvalue.Get(workflow, "request_dir").(string)
 		if !ok || requestDir == "" {
 			continue
 		}
 		// Как и инструмент, выбираем последний request.json; порядок workflow.json может отличаться.
-		path := jscompat.Resolve(pkg.Dir, requestDir, "request.json")
+		path := dynvalue.Resolve(pkg.Dir, requestDir, "request.json")
 		info, err := os.Stat(path)
 		if err != nil || !info.Mode().IsRegular() {
 			continue
 		}
-		var provider any = jscompat.Undefined
-		if text, ok := jscompat.Get(readJSON(path), "provider").(string); ok {
+		var provider any = dynvalue.Undefined
+		if text, ok := dynvalue.Get(readJSON(path), "provider").(string); ok {
 			provider = text
 		}
 		requests = append(requests, candidate{modified: info.ModTime().UnixNano(), path: path, provider: provider})
@@ -230,20 +230,20 @@ func regenerateProblem(project, shot string, packages []*PackageView, selected s
 		if requests[i].modified != requests[j].modified {
 			return requests[i].modified < requests[j].modified
 		}
-		return jscompat.LessUTF16(requests[i].path, requests[j].path)
+		return dynvalue.LessUTF16(requests[i].path, requests[j].path)
 	})
 	if len(requests) > 0 {
 		return compare(requests[len(requests)-1].provider)
 	}
 	snapshotPath := filepath.Join(project, "assets", "shots", shot, "generation-request.json")
-	if !jscompat.Exists(snapshotPath) {
+	if !dynvalue.Exists(snapshotPath) {
 		return textRetryRequestMissing(shot)
 	}
 	snapshot := readJSON(snapshotPath)
-	if !jscompat.Truthy(snapshot) || !(jscompat.IsRecord(snapshot) || jscompat.IsArray(snapshot)) {
+	if !dynvalue.Truthy(snapshot) || !(dynvalue.IsRecord(snapshot) || dynvalue.IsArray(snapshot)) {
 		return textRetrySnapshotUnreadable(shot)
 	}
-	return compare(jscompat.Get(snapshot, "provider"))
+	return compare(dynvalue.Get(snapshot, "provider"))
 }
 
 // optional — непустая строка как указатель, "" — nil.
@@ -261,22 +261,22 @@ func selectedVideoProvider(project string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	generation, _ := jscompat.Parse(settings.Generation)
-	video := jscompat.Get(generation, "video")
-	provider, ok := jscompat.Get(video, "provider").(string)
-	if !jscompat.StrictEqual(jscompat.Get(video, "provider_selected"), true) || !ok {
+	generation, _ := dynvalue.Parse(settings.Generation)
+	video := dynvalue.Get(generation, "video")
+	provider, ok := dynvalue.Get(video, "provider").(string)
+	if !dynvalue.StrictEqual(dynvalue.Get(video, "provider_selected"), true) || !ok {
 		return "", nil
 	}
-	return jscompat.Trim(provider), nil
+	return dynvalue.Trim(provider), nil
 }
 
-// ViewProduction — viewProduction(project): состояние планов по файлам проекта. Без реестра —
+// ViewProduction — состояние планов по файлам проекта. Без реестра —
 // пустой вид с просьбой создать сценарий. Ошибка отклоняет весь вызов (повреждённый
 // workflow.json, нечитаемый plan/project.json при непустом реестре). Ничего не пишет.
 func ViewProduction(project string) (View, error) {
 	view := View{Shots: []*ShotProduction{}, Broken: []Broken{}, Problems: []string{}, Tools: toolsAvailability()}
 	scenes := readJSON(filepath.Join(project, "plan", "scenes.json"))
-	if !jscompat.Truthy(scenes) {
+	if !dynvalue.Truthy(scenes) {
 		view.Problems = append(view.Problems, TextScenarioRequired)
 		return view, nil
 	}
@@ -286,19 +286,19 @@ func ViewProduction(project string) (View, error) {
 		return View{}, err
 	}
 	view.Broken = broken
-	sequences, ok := jscompat.AsArray(jscompat.Get(scenes, "sequences"))
+	sequences, ok := dynvalue.AsArray(dynvalue.Get(scenes, "sequences"))
 	if !ok {
-		return View{}, &jscompat.TypeError{Message: "scenes.sequences.map is not a function"}
+		return View{}, &dynvalue.TypeError{Message: "scenes.sequences.map is not a function"}
 	}
 	titles := map[string]any{}
 	for _, sequence := range sequences {
-		if jscompat.IsNullish(sequence) {
-			return View{}, &jscompat.TypeError{Message: "Cannot read properties of " + jscompat.TypeOf(sequence) + " (reading 'id')"}
+		if dynvalue.IsNullish(sequence) {
+			return View{}, &dynvalue.TypeError{Message: "Cannot read properties of " + dynvalue.TypeOf(sequence) + " (reading 'id')"}
 		}
 		// Повтор ID заменяет прежнее название.
-		titles[jscompat.ToString(jscompat.Get(sequence, "id"))] = jscompat.Get(sequence, "title")
+		titles[dynvalue.ToString(dynvalue.Get(sequence, "id"))] = dynvalue.Get(sequence, "title")
 	}
-	list, err := jscompat.Iterate(jscompat.Get(scenes, "scenes"))
+	list, err := dynvalue.Iterate(dynvalue.Get(scenes, "scenes"))
 	if err != nil {
 		return View{}, err
 	}
@@ -308,7 +308,7 @@ func ViewProduction(project string) (View, error) {
 			return View{}, err
 		}
 	}
-	fps := jscompat.ToNumber(jscompat.Get(scenes, "fps"))
+	fps := dynvalue.ToNumber(dynvalue.Get(scenes, "fps"))
 	if fps == 0 || fps != fps {
 		fps = FPS
 	}
@@ -321,11 +321,11 @@ func ViewProduction(project string) (View, error) {
 	}
 	known := map[string]bool{}
 	for _, scene := range list {
-		rawID, err := jscompat.Prop(scene, "id")
+		rawID, err := dynvalue.Prop(scene, "id")
 		if err != nil {
 			return View{}, err
 		}
-		id, err := jscompat.PathArg("path", rawID)
+		id, err := dynvalue.PathArg("path", rawID)
 		if err != nil {
 			return View{}, err
 		}
@@ -356,8 +356,8 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 	accepted acceptance.Result, selected string) (*ShotProduction, error) {
 	assetDir := filepath.Join(project, "assets", "shots", id)
 	manifest := readJSON(filepath.Join(assetDir, "manifest.json"))
-	hasManifest := jscompat.Truthy(manifest)
-	video, err := existingAssetFile(assetDir, jscompat.GetPath(manifest, "accepted_edit", "video", "path"))
+	hasManifest := dynvalue.Truthy(manifest)
+	video, err := existingAssetFile(assetDir, dynvalue.GetPath(manifest, "accepted_edit", "video", "path"))
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +413,7 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 	}
 	for _, pkg := range mine {
 		if pending := pkg.Pending(); pending != nil {
-			question := jscompat.ToString(jscompat.Get(jscompat.Get(pkg.workflow, "pending_decision"), "question"))
+			question := dynvalue.ToString(dynvalue.Get(dynvalue.Get(pkg.workflow, "pending_decision"), "question"))
 			if hasManifest {
 				stageLabel = textAcceptedDecisionPending(question)
 			} else {
@@ -434,18 +434,18 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 			break
 		}
 	}
-	sequence := jscompat.Get(scene, "sequence")
-	title := jscompat.Get(scene, "title")
-	if jscompat.IsNullish(title) {
-		title = titles[jscompat.ToString(sequence)]
-		if jscompat.IsNullish(title) {
+	sequence := dynvalue.Get(scene, "sequence")
+	title := dynvalue.Get(scene, "title")
+	if dynvalue.IsNullish(title) {
+		title = titles[dynvalue.ToString(sequence)]
+		if dynvalue.IsNullish(title) {
 			title = sequence
 		}
 	}
 	shot := &ShotProduction{
-		ID: id, Title: rawOrNull(title), Original: rawOptional(jscompat.Get(scene, "original")),
-		Start: jscompat.ToNumber(jscompat.Get(scene, "start_frame")) / fps, End: jscompat.ToNumber(jscompat.Get(scene, "end_frame_exclusive")) / fps,
-		Lipsync: rawOptional(jscompat.Get(scene, "lipsync")), State: state, StageLabel: stageLabel, StaleReason: staleReason,
+		ID: id, Title: rawOrNull(title), Original: rawOptional(dynvalue.Get(scene, "original")),
+		Start: dynvalue.ToNumber(dynvalue.Get(scene, "start_frame")) / fps, End: dynvalue.ToNumber(dynvalue.Get(scene, "end_frame_exclusive")) / fps,
+		Lipsync: rawOptional(dynvalue.Get(scene, "lipsync")), State: state, StageLabel: stageLabel, StaleReason: staleReason,
 		Attention: attentionText, Packages: mine,
 	}
 	// Производный план собирается из чужого материала: повтор генерации для него не нужен.
@@ -456,7 +456,7 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 		shot.RegenerateProblem = optional(regenerateProblem(project, id, mine, selected))
 	}
 	if hasManifest {
-		original, err := existingAssetFile(assetDir, jscompat.GetPath(manifest, "generation", "original", "path"))
+		original, err := existingAssetFile(assetDir, dynvalue.GetPath(manifest, "generation", "original", "path"))
 		if err != nil {
 			return nil, err
 		}

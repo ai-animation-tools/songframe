@@ -1,10 +1,9 @@
 {
   "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
-  "python": "3.12.3",
   "cases": [
     {
       "name": "help",
-      "description": "Справка argparse.",
+      "description": "Справка разбора аргументов.",
       "covers": [
         "--help"
       ],
@@ -20,7 +19,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                       OUTPUT [--plan-only]\n\nСборка временной пробы по параметрам; @link README.md\n\noptions:\n  -h, --help            show this help message and exit\n  --shots SHOTS [SHOTS ...]\n  --spec SPEC\n  --output OUTPUT\n  --plan-only\n",
+            "stdout": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\n\nСборка временной пробы по параметрам; @link README.md\n\noptions:\n  -h, --help            show this help message and exit\n  --shots SHOTS [SHOTS ...]\n  --spec SPEC\n  --output OUTPUT\n  --plan-only\n",
             "stderr": ""
           }
         ],
@@ -46,7 +45,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                       OUTPUT [--plan-only]\nbuild_review.py: error: the following arguments are required: --output\n"
+            "stderr": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\nbuild_review: error: the following arguments are required: --output\n"
           }
         ],
         "changed": {},
@@ -74,7 +73,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                       OUTPUT [--plan-only]\nbuild_review.py: error: one of the arguments --shots --spec is required\n"
+            "stderr": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\nbuild_review: error: one of the arguments --shots --spec is required\n"
           }
         ],
         "changed": {},
@@ -106,7 +105,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: build_review.py [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                       OUTPUT [--plan-only]\nbuild_review.py: error: argument --spec: not allowed with argument --shots\n"
+            "stderr": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\nbuild_review: error: argument --spec: not allowed with argument --shots\n"
           }
         ],
         "changed": {},
@@ -712,7 +711,7 @@
       "name": "speed-sci",
       "description": "Скорость в экспоненциальной записи.",
       "covers": [
-        "str(Decimal)"
+        "текст десятичного числа"
       ],
       "setup": [
         {
@@ -1925,7 +1924,7 @@
           {
             "code": 1,
             "stdout": "",
-            "stderr": "Traceback (most recent call last):\n  File \"<archive>/tools/build_review/build_review.py\", line 438, in <module>\n    main()\n  File \"<archive>/tools/build_review/build_review.py\", line 420, in main\n    result = build(spec, args.output, plan_only=args.plan_only)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<archive>/tools/build_review/build_review.py\", line 274, in build\n    plan = prepare(spec, root)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"<archive>/tools/build_review/build_review.py\", line 79, in prepare\n    if spec.get(\"schema_version\") != 1 or not spec.get(\"shots\"):\n       ^^^^^^^^\nAttributeError: 'list' object has no attribute 'get'\n"
+            "stderr": "Traceback (most recent call last):\nAttributeError: 'list' object has no attribute 'get'\n"
           }
         ],
         "changed": {},

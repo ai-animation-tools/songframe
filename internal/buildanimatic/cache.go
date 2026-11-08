@@ -5,9 +5,9 @@ import (
 	"encoding/hex"
 	"os"
 
-	"songframe-go/internal/projectviews"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/projectviews"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // artifactCache — кэш проверенных производных plan/animatic/.cache/<kind>/<ключ><suffix> с
@@ -33,54 +33,54 @@ type cacheEvent struct {
 	path string
 }
 
-// paths — paths(kind, recipe, suffix): ключ, путь производной и путь квитанции. Ключ — SHA-256
-// json.dumps({"schema": 1, "kind": kind, "recipe": recipe}, sort_keys=True, ensure_ascii=False,
-// separators=(",", ":")).
-func (c *artifactCache) paths(kind string, recipe *pycompat.Dict, suffix string) (key, artifact, receipt string, err error) {
-	raw, err := pycompat.DumpsJSON(pytool.Record("schema", pycompat.NewInt(1), "kind", kind, "recipe", recipe),
-		pycompat.DumpOptions{SortKeys: true, Compact: true})
+// paths — ключ, путь производной и путь квитанции фрагмента kind с рецептом recipe. Ключ —
+// SHA-256 компактного JSON {"schema": 1, "kind": kind, "recipe": recipe}: ключи по возрастанию
+// кодовых точек, не-ASCII без экранирования, без пробелов после «,» и «:».
+func (c *artifactCache) paths(kind string, recipe *toolrt.Dict, suffix string) (key, artifact, receipt string, err error) {
+	raw, err := toolrt.DumpsJSON(toolcli.Record("schema", toolrt.NewInt(1), "kind", kind, "recipe", recipe),
+		toolrt.DumpOptions{SortKeys: true, Compact: true})
 	if err != nil {
 		return "", "", "", err
 	}
-	data, err := pycompat.EncodeUTF8(raw)
+	data, err := toolrt.EncodeUTF8(raw)
 	if err != nil {
 		return "", "", "", err
 	}
 	sum := sha256.Sum256(data)
 	key = hex.EncodeToString(sum[:])
-	folder := pycompat.JoinPath(c.directory, kind)
-	return key, pycompat.JoinPath(folder, key+suffix), pycompat.JoinPath(folder, key+".json"), nil
+	folder := toolrt.JoinPath(c.directory, kind)
+	return key, toolrt.JoinPath(folder, key+suffix), toolrt.JoinPath(folder, key+".json"), nil
 }
 
 // lookup — готовая производная и её details, если квитанция читается и совпадает по ключу,
 // размеру и SHA-256 файла. Любая ошибка чтения или неверный тип поля (OSError, ValueError,
 // KeyError, TypeError) означает промах, а не отказ сборки.
 func (c *artifactCache) lookup(key, artifact, receipt string) (any, bool) {
-	value, err := pycompat.LoadJSONFile(receipt)
+	value, err := toolrt.LoadJSONFile(receipt)
 	if err != nil {
 		return nil, false
 	}
-	stored, err := pycompat.GetItem(value, "key")
-	if err != nil || !pycompat.Equal(stored, key) {
+	stored, err := toolrt.GetItem(value, "key")
+	if err != nil || !toolrt.Equal(stored, key) {
 		return nil, false
 	}
-	size, err := pycompat.GetItem(value, "bytes")
+	size, err := toolrt.GetItem(value, "bytes")
 	if err != nil {
 		return nil, false
 	}
 	info, err := os.Stat(artifact)
-	if err != nil || !pycompat.Equal(size, pycompat.NewInt(info.Size())) {
+	if err != nil || !toolrt.Equal(size, toolrt.NewInt(info.Size())) {
 		return nil, false
 	}
-	digest, err := pycompat.GetItem(value, "sha256")
+	digest, err := toolrt.GetItem(value, "sha256")
 	if err != nil {
 		return nil, false
 	}
 	actual, err := projectviews.FileSHA(artifact)
-	if err != nil || !pycompat.Equal(digest, actual) {
+	if err != nil || !toolrt.Equal(digest, actual) {
 		return nil, false
 	}
-	details, err := pycompat.GetItem(value, "details")
+	details, err := toolrt.GetItem(value, "details")
 	if err != nil {
 		return nil, false
 	}
@@ -90,7 +90,7 @@ func (c *artifactCache) lookup(key, artifact, receipt string) (any, bool) {
 // obtain — производная из кэша или новая. producer пишет
 // файл по переданному пути внутри .pending-* и возвращает details; его ошибка прерывает запись,
 // временная папка удаляется, прежнее содержимое кэша остаётся. Возвращает путь производной.
-func (c *artifactCache) obtain(kind string, recipe *pycompat.Dict, suffix string, producer func(path string) (any, error)) (string, error) {
+func (c *artifactCache) obtain(kind string, recipe *toolrt.Dict, suffix string, producer func(path string) (any, error)) (string, error) {
 	key, artifact, receipt, err := c.paths(kind, recipe, suffix)
 	if err != nil {
 		return "", err
@@ -109,41 +109,41 @@ func (c *artifactCache) obtain(kind string, recipe *pycompat.Dict, suffix string
 // перенос файла и квитанции на место (сначала производная, затем квитанция: обрыв между ними
 // оставляет запись без квитанции, которую следующий lookup пересоздаст).
 func (c *artifactCache) produce(kind, key, artifact, receipt, suffix string, producer func(path string) (any, error)) error {
-	folder := pycompat.JoinPath(c.directory, kind)
+	folder := toolrt.JoinPath(c.directory, kind)
 	if err := os.MkdirAll(folder, 0o777); err != nil {
-		return pycompat.OSErrorFrom(err, folder)
+		return toolrt.OSErrorFrom(err, folder)
 	}
 	temporary, err := os.MkdirTemp(folder, ".pending-")
 	if err != nil {
-		return pycompat.OSErrorFrom(err, folder)
+		return toolrt.OSErrorFrom(err, folder)
 	}
 	defer os.RemoveAll(temporary)
-	pending := pycompat.JoinPath(temporary, "artifact"+suffix)
+	pending := toolrt.JoinPath(temporary, "artifact"+suffix)
 	details, err := producer(pending)
 	if err != nil {
 		return err
 	}
 	info, err := os.Stat(pending)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, pending)
+		return toolrt.OSErrorFrom(err, pending)
 	}
 	digest, err := projectviews.FileSHA(pending)
 	if err != nil {
 		return err
 	}
-	text, err := pycompat.DumpsJSON(pytool.Record("key", key, "bytes", pycompat.NewInt(info.Size()), "sha256", digest, "details", details), pycompat.Indented)
+	text, err := toolrt.DumpsJSON(toolcli.Record("key", key, "bytes", toolrt.NewInt(info.Size()), "sha256", digest, "details", details), toolrt.Indented)
 	if err != nil {
 		return err
 	}
-	note := pycompat.JoinPath(temporary, "receipt.json")
+	note := toolrt.JoinPath(temporary, "receipt.json")
 	if err := writeText(note, text+"\n"); err != nil {
 		return err
 	}
 	if err := os.Rename(pending, artifact); err != nil {
-		return pycompat.OSErrorFrom(err, pending)
+		return toolrt.OSErrorFrom(err, pending)
 	}
 	if err := os.Rename(note, receipt); err != nil {
-		return pycompat.OSErrorFrom(err, note)
+		return toolrt.OSErrorFrom(err, note)
 	}
 	return nil
 }

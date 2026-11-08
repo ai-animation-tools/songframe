@@ -3,10 +3,10 @@ package app
 import (
 	"encoding/json"
 
-	"songframe-go/internal/derivedworkflow"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/montage"
-	"songframe-go/internal/wire"
+	"songframe/internal/derivedworkflow"
+	"songframe/internal/jobs"
+	"songframe/internal/montage"
+	"songframe/internal/wire"
 )
 
 // DerivedShotService реализует window.api.derivedShots (маршруты derivedShots:*):

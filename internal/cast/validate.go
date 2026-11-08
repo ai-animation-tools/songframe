@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Сообщения castTexts.main (frontend/src/shared/texts/cast.ts): показываются пользователю и
@@ -59,20 +59,22 @@ var (
 	slug = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 	// imagePath — путь изображения внутри source: одна папка вида и файл PNG/JPEG/WebP.
 	// Регистронезависимость записана явными классами: (?i) Go сопоставил бы «K» (знак кельвина) и «ſ»
-	// латинице, а регулярное выражение JS без флага u этого не делает.
+	// латинице, а расширение должно состоять только из ASCII-букв.
 	imagePath = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*/[^/]+\.([pP][nN][gG]|[jJ][pP][eE]?[gG]|[wW][eE][bB][pP])$`)
 )
 
-// slugTest — SLUG.test(value): RegExp.prototype.test приводит аргумент к строке.
-func slugTest(value any) bool { return slug.MatchString(jscompat.ToString(value)) }
+// slugTest — значение, приведённое к строке (dynvalue.ToString), — допустимый код slug; число
+// тоже проверяется по своей записи.
+func slugTest(value any) bool { return slug.MatchString(dynvalue.ToString(value)) }
 
-// valueSet — Set JS для значений из JSON: строки и числа сравниваются по значению, объекты — по
-// ссылке (SameValueZero; NaN в JSON не встречается). Размер наборов кастинга мал, поэтому линейный поиск.
+// valueSet — множество значений из JSON: строки и числа сравниваются по значению, объекты — по
+// ссылке (dynvalue.StrictEqual; NaN в JSON не встречается). Размер наборов кастинга мал, поэтому
+// линейный поиск.
 type valueSet struct{ items []any }
 
 func (s *valueSet) has(value any) bool {
 	for _, item := range s.items {
-		if jscompat.StrictEqual(item, value) {
+		if dynvalue.StrictEqual(item, value) {
 			return true
 		}
 	}
@@ -84,50 +86,50 @@ func (s *valueSet) add(value any) {
 	}
 }
 
-// trimmed — `value.trim()`: вызов на нестроке даёт TypeError.
+// trimmed — строка без пробелов по краям; нестрока даёт TypeError с именем поля name.
 func trimmed(value any, name string) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", &jscompat.TypeError{Message: name + ".trim is not a function"}
+		return "", &dynvalue.TypeError{Message: name + ".trim is not a function"}
 	}
-	return jscompat.Trim(text), nil
+	return dynvalue.Trim(text), nil
 }
 
 // Validate — проблемы кастинга для показа на странице и отказа сохранения. Порядок
-// сообщений зафиксирован эталонами testdata/golden. Ошибка — исключение JS на документе другой формы
+// сообщений зафиксирован эталонами testdata/golden. Ошибка — TypeError dynvalue на документе другой формы
 // (сущность null, название не строка и т. п.): такой документ отклоняется целиком.
 func Validate(cast any) ([]string, error) {
 	problems := []string{}
-	properties := jscompat.Get(cast, "properties")
-	entities, isArray := jscompat.AsArray(jscompat.Get(cast, "entities"))
-	if !jscompat.StrictEqual(jscompat.Get(cast, "schema_version"), 1.0) || !isArray ||
-		jscompat.TypeOf(properties) != "object" || !jscompat.Truthy(properties) {
+	properties := dynvalue.Get(cast, "properties")
+	entities, isArray := dynvalue.AsArray(dynvalue.Get(cast, "entities"))
+	if !dynvalue.StrictEqual(dynvalue.Get(cast, "schema_version"), 1.0) || !isArray ||
+		dynvalue.TypeOf(properties) != "object" || !dynvalue.Truthy(properties) {
 		return []string{textStructureRequired}, nil
 	}
 	seen := &valueSet{}
 	worlds := 0
 	for _, entity := range entities {
-		name, err := jscompat.Prop(entity, "name")
+		name, err := dynvalue.Prop(entity, "name")
 		if err != nil {
 			return nil, err
 		}
-		id := jscompat.Get(entity, "id")
+		id := dynvalue.Get(entity, "id")
 		label := name
-		if !jscompat.Truthy(label) {
+		if !dynvalue.Truthy(label) {
 			label = id
 		}
-		if !jscompat.Truthy(label) {
+		if !dynvalue.Truthy(label) {
 			label = textUnnamedEntity
 		}
-		labelText := jscompat.ToString(label)
+		labelText := dynvalue.ToString(label)
 		if !slugTest(id) {
 			problems = append(problems, textEntityCodeInvalid(labelText))
 		}
 		if seen.has(id) {
-			problems = append(problems, textEntityCodeDuplicate(jscompat.ToString(id)))
+			problems = append(problems, textEntityCodeDuplicate(dynvalue.ToString(id)))
 		}
 		seen.add(id)
-		kind := jscompat.Get(entity, "kind")
+		kind := dynvalue.Get(entity, "kind")
 		if !slugTest(kind) {
 			problems = append(problems, textEntityKindInvalid(labelText))
 		}
@@ -136,21 +138,21 @@ func Validate(cast any) ([]string, error) {
 			return nil, err
 		}
 		if trimmedName == "" {
-			problems = append(problems, textEntityNameMissing(jscompat.ToString(id)))
+			problems = append(problems, textEntityNameMissing(dynvalue.ToString(id)))
 		}
-		if jscompat.StrictEqual(kind, "world") {
+		if dynvalue.StrictEqual(kind, "world") {
 			worlds++
 		}
-		images, err := jscompat.Iterate(jscompat.Get(entity, "images"))
+		images, err := dynvalue.Iterate(dynvalue.Get(entity, "images"))
 		if err != nil {
 			return nil, err
 		}
 		for _, image := range images {
-			if !imagePath.MatchString(jscompat.ToString(image)) {
-				problems = append(problems, textImagePathInvalid(labelText, jscompat.ToString(image)))
+			if !imagePath.MatchString(dynvalue.ToString(image)) {
+				problems = append(problems, textImagePathInvalid(labelText, dynvalue.ToString(image)))
 			}
 		}
-		state, err := jscompat.Entries(jscompat.Get(entity, "initial_state"))
+		state, err := dynvalue.Entries(dynvalue.Get(entity, "initial_state"))
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +160,7 @@ func Validate(cast any) ([]string, error) {
 			if !slug.MatchString(entry.Key) {
 				problems = append(problems, textPropertyCodeInvalid(labelText, entry.Key))
 			}
-			if text, ok := entry.Value.(string); !ok || jscompat.Trim(text) == "" {
+			if text, ok := entry.Value.(string); !ok || dynvalue.Trim(text) == "" {
 				problems = append(problems, textPropertyEmpty(labelText, entry.Key))
 			}
 		}
@@ -171,33 +173,34 @@ func Validate(cast any) ([]string, error) {
 
 // EnsureProperties дополняет словари свойств: каждому типу сущности без словаря добавляется
 // копия словаря по умолчанию (известному типу — свой набор, прочим — общий). Возвращает новый объект кастинга
-// `{ ...cast, properties }`: ключ properties остаётся на своём месте, а при отсутствии встаёт в конец.
-func EnsureProperties(cast any, defaults Defaults) (*jscompat.Object, error) {
-	properties := jscompat.Spread(jscompat.Get(cast, "properties"))
-	entities, err := jscompat.Iterate(jscompat.Get(cast, "entities"))
+// (поверхностная копия с новым properties): ключ properties остаётся на своём месте, а при отсутствии
+// встаёт в конец.
+func EnsureProperties(cast any, defaults Defaults) (*dynvalue.Object, error) {
+	properties := dynvalue.Spread(dynvalue.Get(cast, "properties"))
+	entities, err := dynvalue.Iterate(dynvalue.Get(cast, "entities"))
 	if err != nil {
 		return nil, err
 	}
 	for _, entity := range entities {
-		kind, err := jscompat.Prop(entity, "kind")
+		kind, err := dynvalue.Prop(entity, "kind")
 		if err != nil {
 			return nil, err
 		}
-		key := jscompat.ToString(kind)
-		if jscompat.Truthy(properties.Value(key)) {
+		key := dynvalue.ToString(kind)
+		if dynvalue.Truthy(properties.Value(key)) {
 			continue
 		}
-		source := jscompat.Coalesce(defaults.Default.Value(key), defaults.Generic)
-		properties.Set(key, jscompat.DeepClone(source))
+		source := dynvalue.Coalesce(defaults.Default.Value(key), defaults.Generic)
+		properties.Set(key, dynvalue.DeepClone(source))
 	}
-	result := jscompat.Spread(cast)
+	result := dynvalue.Spread(cast)
 	result.Set("properties", properties)
 	return result, nil
 }
 
-// isStrings — массив строк (`Array.isArray(v) && v.every(s => typeof s === 'string')`).
+// isStrings — значение — массив, все элементы которого строки (пустой массив подходит).
 func isStrings(value any) bool {
-	items, ok := jscompat.AsArray(value)
+	items, ok := dynvalue.AsArray(value)
 	if !ok {
 		return false
 	}
@@ -211,40 +214,40 @@ func isStrings(value any) bool {
 
 // validProperty — элемент словаря свойств: код, непустая подпись и необязательные hint, values, checklist.
 func validProperty(value any) bool {
-	property, ok := jscompat.AsObject(value)
+	property, ok := dynvalue.AsObject(value)
 	if !ok {
 		return false
 	}
 	key, keyOK := property.Value("key").(string)
 	label, labelOK := property.Value("label").(string)
-	if !keyOK || !slug.MatchString(key) || !labelOK || jscompat.Trim(label) == "" {
+	if !keyOK || !slug.MatchString(key) || !labelOK || dynvalue.Trim(label) == "" {
 		return false
 	}
 	optionalString := func(name string) bool {
 		item := property.Value(name)
 		_, isString := item.(string)
-		return item == jscompat.Undefined || isString
+		return item == dynvalue.Undefined || isString
 	}
 	values := property.Value("values")
-	return optionalString("hint") && (values == jscompat.Undefined || isStrings(values)) && optionalString("checklist")
+	return optionalString("hint") && (values == dynvalue.Undefined || isStrings(values)) && optionalString("checklist")
 }
 
 // Normalize — строгая проверка типов документа (ответ агента и ручной JSON),
 // затем нормализация полей и проверка Validate. Записываемый документ содержит только
 // schema_version, entities (с восемью полями сущности) и properties — лишние поля отбрасываются.
 // Ошибка — сообщение отказа сохранения (проблемы через пробел).
-func Normalize(value any, defaults Defaults) (*jscompat.Object, error) {
-	document, ok := jscompat.AsObject(value)
-	if !ok || !jscompat.StrictEqual(document.Value("schema_version"), 1.0) {
+func Normalize(value any, defaults Defaults) (*dynvalue.Object, error) {
+	document, ok := dynvalue.AsObject(value)
+	if !ok || !dynvalue.StrictEqual(document.Value("schema_version"), 1.0) {
 		return nil, errors.New(textStructureRequired)
 	}
-	entities, entitiesOK := jscompat.AsArray(document.Value("entities"))
-	properties, propertiesOK := jscompat.AsObject(document.Value("properties"))
+	entities, entitiesOK := dynvalue.AsArray(document.Value("entities"))
+	properties, propertiesOK := dynvalue.AsObject(document.Value("properties"))
 	if !entitiesOK || !propertiesOK {
 		return nil, errors.New(textStructureRequired)
 	}
 	for _, item := range entities {
-		entity, ok := jscompat.AsObject(item)
+		entity, ok := dynvalue.AsObject(item)
 		valid := ok
 		if valid {
 			for _, key := range []string{"id", "kind", "name", "short_name", "role", "appearance"} {
@@ -254,7 +257,7 @@ func Normalize(value any, defaults Defaults) (*jscompat.Object, error) {
 			}
 		}
 		if valid {
-			state, stateOK := jscompat.AsObject(entity.Value("initial_state"))
+			state, stateOK := dynvalue.AsObject(entity.Value("initial_state"))
 			valid = isStrings(entity.Value("images")) && stateOK
 			for _, key := range keysOf(state) {
 				if _, isString := state.Value(key).(string); !isString {
@@ -267,7 +270,7 @@ func Normalize(value any, defaults Defaults) (*jscompat.Object, error) {
 		}
 	}
 	for _, kind := range properties.Keys() {
-		list, ok := jscompat.AsArray(properties.Value(kind))
+		list, ok := dynvalue.AsArray(properties.Value(kind))
 		valid := slug.MatchString(kind) && ok
 		for _, property := range list {
 			valid = valid && validProperty(property)
@@ -278,7 +281,7 @@ func Normalize(value any, defaults Defaults) (*jscompat.Object, error) {
 		// Код — адрес значения в состоянии: повтор внутри типа сделал бы одно из полей недостижимым.
 		seen := map[string]bool{}
 		for _, property := range list {
-			key := property.(*jscompat.Object).Value("key").(string)
+			key := property.(*dynvalue.Object).Value("key").(string)
 			if seen[key] {
 				return nil, errors.New(textPropertyDuplicate(key, kind))
 			}
@@ -287,35 +290,35 @@ func Normalize(value any, defaults Defaults) (*jscompat.Object, error) {
 	}
 	normalized := make([]any, len(entities))
 	for index, item := range entities {
-		entity := item.(*jscompat.Object)
+		entity := item.(*dynvalue.Object)
 		text := func(key string) string { return entity.Value(key).(string) }
-		name := jscompat.Trim(text("name"))
-		short := jscompat.Trim(text("short_name"))
+		name := dynvalue.Trim(text("name"))
+		short := dynvalue.Trim(text("short_name"))
 		if short == "" {
 			short = name
 		}
-		state := jscompat.NewObject()
-		source := entity.Value("initial_state").(*jscompat.Object)
+		state := dynvalue.NewObject()
+		source := entity.Value("initial_state").(*dynvalue.Object)
 		for _, key := range source.Keys() {
-			if value := jscompat.Trim(source.Value(key).(string)); value != "" {
+			if value := dynvalue.Trim(source.Value(key).(string)); value != "" {
 				state.Set(key, value)
 			}
 		}
-		result := jscompat.NewObject()
-		result.Set("id", jscompat.Trim(text("id")))
-		result.Set("kind", jscompat.Trim(text("kind")))
+		result := dynvalue.NewObject()
+		result.Set("id", dynvalue.Trim(text("id")))
+		result.Set("kind", dynvalue.Trim(text("kind")))
 		result.Set("name", name)
 		result.Set("short_name", short)
-		result.Set("role", jscompat.Trim(text("role")))
+		result.Set("role", dynvalue.Trim(text("role")))
 		// Общее описание переносится дословно: правка другого поля не должна менять canonical source.
 		result.Set("appearance", text("appearance"))
 		result.Set("images", entity.Value("images"))
 		result.Set("initial_state", state)
 		normalized[index] = result
 	}
-	draft := jscompat.NewObject()
+	draft := dynvalue.NewObject()
 	draft.Set("schema_version", 1.0)
-	draft.Set("entities", &jscompat.Array{Items: normalized})
+	draft.Set("entities", &dynvalue.Array{Items: normalized})
 	draft.Set("properties", properties)
 	result, err := EnsureProperties(draft, defaults)
 	if err != nil {
@@ -332,7 +335,7 @@ func Normalize(value any, defaults Defaults) (*jscompat.Object, error) {
 }
 
 // keysOf — ключи объекта или пустой список для nil.
-func keysOf(object *jscompat.Object) []string {
+func keysOf(object *dynvalue.Object) []string {
 	if object == nil {
 		return nil
 	}
@@ -342,31 +345,31 @@ func keysOf(object *jscompat.Object) []string {
 // References — карта references реестра сцен из сущностей с изображениями —
 // название, путь первого изображения в source и короткое имя, если оно отличается от названия.
 // Порядок ключей — порядок сущностей; он входит в байты plan/scenes.json.
-func References(cast any) (*jscompat.Object, error) {
-	result := jscompat.NewObject()
-	entities, err := jscompat.Iterate(jscompat.Get(cast, "entities"))
+func References(cast any) (*dynvalue.Object, error) {
+	result := dynvalue.NewObject()
+	entities, err := dynvalue.Iterate(dynvalue.Get(cast, "entities"))
 	if err != nil {
 		return nil, err
 	}
 	for _, entity := range entities {
-		images, err := jscompat.Prop(entity, "images")
+		images, err := dynvalue.Prop(entity, "images")
 		if err != nil {
 			return nil, err
 		}
-		length, err := jscompat.Prop(images, "length")
+		length, err := dynvalue.Prop(images, "length")
 		if err != nil {
 			return nil, err
 		}
-		if !jscompat.Truthy(length) {
+		if !dynvalue.Truthy(length) {
 			continue
 		}
-		id := jscompat.ToString(jscompat.Get(entity, "id"))
-		reference := jscompat.NewObject()
-		reference.Set("name", jscompat.Get(entity, "name"))
-		reference.Set("path", "source/"+jscompat.ToString(jscompat.Get(images, "0")))
+		id := dynvalue.ToString(dynvalue.Get(entity, "id"))
+		reference := dynvalue.NewObject()
+		reference.Set("name", dynvalue.Get(entity, "name"))
+		reference.Set("path", "source/"+dynvalue.ToString(dynvalue.Get(images, "0")))
 		result.Set(id, reference)
-		short := jscompat.Get(entity, "short_name")
-		if jscompat.Truthy(short) && !jscompat.StrictEqual(short, jscompat.Get(entity, "name")) {
+		short := dynvalue.Get(entity, "short_name")
+		if dynvalue.Truthy(short) && !dynvalue.StrictEqual(short, dynvalue.Get(entity, "name")) {
 			reference.Set("short_name", short)
 		}
 	}

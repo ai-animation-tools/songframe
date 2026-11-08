@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
 )
 
 // Состояния задания агента (AgentJob.status).
@@ -104,7 +104,7 @@ func (h *History) Read() []Job {
 	return jobs
 }
 
-// readJob проверяет запись по правилам формата истории (типы JS и закрытые наборы значений), затем
+// readJob проверяет запись по правилам формата истории (строгие типы полей JSON и закрытые наборы значений), затем
 // декодирует её в Job.
 func readJob(path, name string) (Job, bool) {
 	info, err := os.Stat(path)
@@ -115,8 +115,8 @@ func readJob(path, name string) (Job, bool) {
 	if err != nil {
 		return Job{}, false
 	}
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
-	record, ok := value.(*jscompat.Object)
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
+	record, ok := value.(*dynvalue.Object)
 	if err != nil || !ok {
 		return Job{}, false
 	}
@@ -130,16 +130,16 @@ func readJob(path, name string) (Job, bool) {
 	provider, _ := record.Value("provider").(string)
 	_, finishedString := finished.(string)
 	valid := record.Value("schemaVersion") == float64(1) &&
-		name == "agent-"+jscompat.ToString(record.Value("id"))+".json" &&
+		name == "agent-"+dynvalue.ToString(record.Value("id"))+".json" &&
 		IsProvider(provider) &&
 		(status == StatusRunning || status == StatusCompleted || status == StatusFailed || status == StatusCancelled || status == StatusInterrupted) &&
-		jscompat.IsSafeInteger(record.Value("sequence")) && sequence >= 0 &&
+		dynvalue.IsSafeInteger(record.Value("sequence")) && sequence >= 0 &&
 		isString("project") && isString("task") && isString("phase") && isString("result") && isString("log") && isString("startedAt") &&
 		(finished == nil || finishedString) &&
-		(exitCode == nil || jscompat.IsInteger(exitCode)) &&
+		(exitCode == nil || dynvalue.IsInteger(exitCode)) &&
 		(permissions == PermissionsReadOnly || permissions == PermissionsWorkspaceWrite) &&
-		sha256Hex.MatchString(text(jscompat.Get(hashes, "prompt"))) &&
-		sha256Hex.MatchString(text(jscompat.Get(hashes, "context")))
+		sha256Hex.MatchString(text(dynvalue.Get(hashes, "prompt"))) &&
+		sha256Hex.MatchString(text(dynvalue.Get(hashes, "context")))
 	if !valid {
 		return Job{}, false
 	}
@@ -150,7 +150,8 @@ func readJob(path, name string) (Job, bool) {
 	return job, true
 }
 
-// Write атомарно сохраняет запись задания в формате JSON.stringify(job, null, 2) + "\n".
+// Write атомарно сохраняет запись задания JSON с отступом 2 и переводом строки в конце
+// (projectfs.WriteJSON).
 func (h *History) Write(job Job) error {
 	return projectfs.WriteJSON(filepath.Join(h.directory, "agent-"+job.ID+".json"), job)
 }

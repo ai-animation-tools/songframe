@@ -71,7 +71,7 @@ describe('подтверждение запроса производства', (
     expect(decide).not.toHaveBeenCalled();
   });
 
-  it('сохраняет ошибку IPC отправки без автоматического повтора и повторного согласования', async () => {
+  it('сохраняет ошибку вызова отправки без автоматического повтора и повторного согласования', async () => {
     const { api, submit, decide } = fakeApi();
     const failure = new Error('Не удалось отправить запрос.');
     submit.mockRejectedValueOnce(failure);
@@ -164,7 +164,7 @@ describe('выбор пакета после сохранения в очере�
 });
 
 describe('замена принятого комплекта и папка новой попытки', () => {
-  it('приёмка сцены с комплектом требует явного согласия и передаёт его в главный процесс', async () => {
+  it('приёмка сцены с комплектом требует явного согласия и передаёт его в API', async () => {
     const accept = vi.fn().mockResolvedValue({ id: 'job' } as JobInfo);
     const api = { production: { accept } } as unknown as Api;
     const target = { shot: 'M45', dir: '/p/plan/batches/M45-attempt-02', resultToken: 'token', hasAsset: true };

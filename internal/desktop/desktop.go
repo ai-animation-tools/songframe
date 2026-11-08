@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/process"
+	"songframe/internal/process"
 )
 
 // TextLimit — предел ReadText: текст песни или идея, а не произвольный документ.

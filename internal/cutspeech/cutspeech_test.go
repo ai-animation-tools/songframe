@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/cutspeech"
-	"songframe-go/internal/golden"
+	"songframe/internal/cutspeech"
+	"songframe/internal/golden"
 )
 
 // TestCanceledCutWritesNothing — отменённое задание останавливает декодирование: код 1, текст

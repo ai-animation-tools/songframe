@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/mediaapi"
+	"songframe/internal/toolrt"
 )
 
 // TestUUID7 — формат RFC 9562 (версия 7, вариант 10) и время в первых 48 битах.
@@ -37,7 +37,7 @@ func TestUUID7(t *testing.T) {
 // cancellingAdapter — адаптер, у которого задание отменяют посреди отправки.
 type cancellingAdapter struct{ cancel context.CancelFunc }
 
-func (a cancellingAdapter) Submit(ctx context.Context, _ string, _, _ *pycompat.Dict, _ time.Duration) (mediaapi.SubmitResult, error) {
+func (a cancellingAdapter) Submit(ctx context.Context, _ string, _, _ *toolrt.Dict, _ time.Duration) (mediaapi.SubmitResult, error) {
 	a.cancel()
 	return mediaapi.SubmitResult{}, ctx.Err()
 }

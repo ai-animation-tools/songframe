@@ -19,7 +19,7 @@ import (
 // до двух часов.
 const DefaultStepTimeout = 2 * time.Hour
 
-// logEventInterval прореживает события «изменился журнал»: поток вывода ffmpeg/Python
+// logEventInterval прореживает события «изменился журнал»: поток вывода ffmpeg и инструментов
 // не должен превращаться в тысячи событий Wails в секунду.
 const logEventInterval = 250 * time.Millisecond
 
@@ -139,7 +139,7 @@ func New(localDir string, options Options) *Manager {
 	return m
 }
 
-// timestamp — момент в формате Date.toISOString(): UTC с миллисекундами.
+// timestamp — момент в ISO 8601: UTC с миллисекундами и суффиксом Z.
 func (m *Manager) timestamp() string {
 	return m.now().UTC().Format("2006-01-02T15:04:05.000Z")
 }
@@ -303,7 +303,7 @@ func (m *Manager) runStep(ctx context.Context, j *job, step Step) (int, string) 
 		message = timeoutText(timeout)
 		m.write(j, "\n"+message+"\n")
 	default:
-		message = jsTrim(err.Error())
+		message = trimSpace(err.Error())
 		m.write(j, "\nОшибка: "+message+"\n")
 	}
 	if message == "" {

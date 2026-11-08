@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
 )
 
 // promptDigest — закреплённый SHA-256 встроенного скилла проверки видео.
@@ -49,8 +49,8 @@ func TestTextsMatchGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var python map[string]string
-	if err := json.Unmarshal(data, &python); err != nil {
+	var golden map[string]string
+	if err := json.Unmarshal(data, &golden); err != nil {
 		t.Fatal(err)
 	}
 	file, err := parser.ParseFile(token.NewFileSet(), "texts.go", nil, 0)
@@ -74,12 +74,12 @@ func TestTextsMatchGolden(t *testing.T) {
 		}
 		name := spec.Names[0].Name
 		seen[name] = true
-		if !strings.Contains(python[name], value) {
-			t.Errorf("%s = %q нет ни в текстах renderer, ни в строке video_review.py %q", name, value, python[name])
+		if !strings.Contains(golden[name], value) {
+			t.Errorf("%s = %q нет ни в текстах renderer, ни в эталоне texts.json %q", name, value, golden[name])
 		}
 		return true
 	})
-	for name := range python {
+	for name := range golden {
 		if !seen[name] {
 			t.Errorf("в texts.json лишний текст %s", name)
 		}
@@ -146,8 +146,8 @@ func TestInvalidAnswerKeepsReportEmpty(t *testing.T) {
 		if err != nil || view.Status != StatusFailed || view.Report != nil || deref(view.Error) != textInvalidReport {
 			t.Fatalf("%q: %+v %v", answer, view, err)
 		}
-		value, err := jscompat.Parse(readFile(t, filepath.Join(h.directory, "video-review", "latest.json")))
-		if err != nil || jscompat.Get(value, "report") != nil {
+		value, err := dynvalue.Parse(readFile(t, filepath.Join(h.directory, "video-review", "latest.json")))
+		if err != nil || dynvalue.Get(value, "report") != nil {
 			t.Fatalf("%q: отчёт записан: %v", answer, err)
 		}
 	}

@@ -1,6 +1,6 @@
 package scenario
 
-import "songframe-go/internal/jscompat"
+import "songframe/internal/dynvalue"
 
 // Сообщения scenarioTexts.main (frontend/src/shared/texts) для просмотра и сохранения сценария.
 // Они показываются пользователю дословно и входят в отказ сохранения, поэтому меняются только
@@ -28,7 +28,7 @@ func textDuplicatePartCode(id string) string {
 }
 func textPartTitleMissing(id string) string { return "Часть " + id + ": нет названия." }
 func textPartStartMismatch(id string, start float64, previousEnd string) string {
-	return "Часть " + id + ": начало " + jscompat.NumberToString(start) + " не стыкуется с " + previousEnd + "."
+	return "Часть " + id + ": начало " + dynvalue.NumberToString(start) + " не стыкуется с " + previousEnd + "."
 }
 func textPartEndsBeforeStart(id string) string {
 	return "Часть " + id + ": конец раньше начала."

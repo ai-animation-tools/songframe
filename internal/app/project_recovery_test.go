@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/store"
+	"songframe/internal/store"
 )
 
 // interruptedScenario оставляет в каталоге состояния журнал прерванной публикации сценария:

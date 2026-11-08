@@ -8,7 +8,7 @@ import (
 	"image"
 	"image/color"
 	"image/gif"
-	_ "image/jpeg" // форматы референсов, которые открывал Pillow
+	_ "image/jpeg" // поддерживаемые форматы референсов
 	_ "image/png"
 	"io"
 	"math"
@@ -18,12 +18,12 @@ import (
 	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
-// rgbImage — изображение режима «RGB» Pillow: 3 байта на пиксель построчно без выравнивания.
-// Карточка, референсы после convert("RGB") и результат ресэмплинга хранятся в этом виде, чтобы
-// арифметика смешивания и свёртки совпадала с C-кодом Pillow побайтно.
+// rgbImage — 8-битное RGB-изображение: 3 байта на пиксель построчно без выравнивания.
+// Карточка, референсы после приведения к RGB и результат ресэмплинга хранятся в этом виде, чтобы
+// целочисленная арифметика смешивания и свёртки совпадала с эталоном побайтно.
 type rgbImage struct {
 	width, height int
 	pix           []byte
@@ -37,28 +37,30 @@ func newRGB(width, height int, fill [3]byte) rgbImage {
 	return result
 }
 
-// digest — SHA-256 пикселей (im.tobytes() режима RGB): им эталон сверяет вставленные изображения.
+// digest — SHA-256 сырых байтов пикселей RGB: им эталон сверяет вставленные изображения.
 func (m rgbImage) digest() string {
 	sum := sha256.Sum256(m.pix)
 	return hex.EncodeToString(sum[:])
 }
 
-// unidentifiedImage — PIL.UnidentifiedImageError с текстом Image.open. Тип записан полным
-// именем: так его печатает последняя строка трассировки Python (класс не встроенный).
+// unidentifiedImage — ошибка нераспознанного формата изображения. Тип записан полным именем с
+// пакетом: так его печатает последняя строка трассировки инструмента (тип не встроенный); имя и
+// текст зафиксированы эталоном.
 func unidentifiedImage(filename string) error {
-	return pycompat.New("PIL.UnidentifiedImageError", "cannot identify image file "+pycompat.Repr(filename))
+	return toolrt.New("PIL.UnidentifiedImageError", "cannot identify image file "+toolrt.Repr(filename))
 }
 
-// openRGB — Image.open(path).convert("RGB"). Pillow открывает str(path.resolve()), поэтому и
-// тексты ошибок (FileNotFoundError, IsADirectoryError, UnidentifiedImageError) содержат
-// разрешённый абсолютный путь. Формат определяется по содержимому, не по расширению:
-// PNG, JPEG, GIF, WebP, BMP и TIFF; прочие форматы Pillow (ICO, TGA, PPM…) дают
-// UnidentifiedImageError. Повреждённые данные после распознанного заголовка — OSError.
+// openRGB открывает изображение и приводит его к RGB (toRGB). Файл открывается по разрешённому
+// абсолютному пути (toolrt.ResolvePath), поэтому и тексты ошибок (FileNotFoundError,
+// IsADirectoryError, нераспознанный формат) содержат этот путь. Формат определяется по
+// содержимому, не по расширению: PNG, JPEG, GIF, WebP, BMP и TIFF; прочие форматы (ICO, TGA,
+// PPM…) дают ошибку нераспознанного формата. Повреждённые данные после распознанного заголовка —
+// OSError.
 func openRGB(path string) (rgbImage, error) {
-	filename := pycompat.ResolvePath(path)
+	filename := toolrt.ResolvePath(path)
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return rgbImage{}, pycompat.OSErrorFrom(err, filename)
+		return rgbImage{}, toolrt.OSErrorFrom(err, filename)
 	}
 	if _, _, err := image.DecodeConfig(bytes.NewReader(data)); err != nil {
 		return rgbImage{}, unidentifiedImage(filename)
@@ -66,9 +68,9 @@ func openRGB(path string) (rgbImage, error) {
 	decoded, format, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
-			return rgbImage{}, pycompat.New(pycompat.OSError, "image file is truncated")
+			return rgbImage{}, toolrt.New(toolrt.OSError, "image file is truncated")
 		}
-		return rgbImage{}, pycompat.New(pycompat.OSError, err.Error())
+		return rgbImage{}, toolrt.New(toolrt.OSError, err.Error())
 	}
 	switch typed := decoded.(type) {
 	case *image.YCbCr:
@@ -89,8 +91,8 @@ func openRGB(path string) (rgbImage, error) {
 	return toRGB(decoded), nil
 }
 
-// gifScreen — первый кадр GIF на логическом экране: Pillow отдаёт изображение размера экрана,
-// а image/gif — кадр в его собственных границах. Непокрытая часть заполняется цветом фона
+// gifScreen — первый кадр GIF на логическом экране: референс имеет размер экрана, а image/gif
+// отдаёт кадр в его собственных границах. Непокрытая часть заполняется цветом фона
 // палитры (индекс фона вне палитры — чёрный).
 func gifScreen(data []byte, frame image.Image) image.Image {
 	all, err := gif.DecodeAll(bytes.NewReader(data))
@@ -121,11 +123,12 @@ func gifScreen(data []byte, frame image.Image) image.Image {
 	return canvas
 }
 
-// toRGB — convert("RGB") Pillow: альфа отбрасывается без смешивания с фоном (у прозрачных
-// пикселей остаётся их цвет), палитра раскрывается в RGB, оттенки серого повторяются в трёх
-// каналах, 16-битные каналы берут старший байт, а 16-битный серый (режим «I» Pillow)
-// насыщается на 255. YCbCr JPEG и WebP переводят jpegToRGB/webpToRGB (ycbcr.go) по правилам
-// libjpeg-turbo и libwebp; формула image/color остаётся для прочих источников YCbCr.
+// toRGB приводит изображение к 8-битному RGB: альфа отбрасывается без смешивания с фоном (у
+// прозрачных пикселей остаётся их цвет), палитра раскрывается в RGB, оттенки серого повторяются
+// в трёх каналах, 16-битные цветные каналы берут старший байт, а значение 16-битного серого
+// насыщается на 255 (старший байт не берётся; так зафиксировано эталоном). YCbCr JPEG и WebP
+// переводят jpegToRGB/webpToRGB (ycbcr.go) по правилам libjpeg-turbo и libwebp; формула
+// image/color остаётся для прочих источников YCbCr.
 func toRGB(source image.Image) rgbImage {
 	bounds := source.Bounds()
 	result := rgbImage{width: bounds.Dx(), height: bounds.Dy(), pix: make([]byte, 3*bounds.Dx()*bounds.Dy())}
@@ -163,7 +166,7 @@ func toRGB(source image.Image) rgbImage {
 				r, g, b := color.YCbCrToRGB(c.Y, c.Cb, c.Cr)
 				set(x, y, r, g, b)
 			case *image.CMYK:
-				// cmyk2rgb Pillow: nk = 255-k, канал = nk - c·nk/255 (MULDIV255).
+				// CMYK → RGB: nk = 255-k, канал = nk - c·nk/255 (muldiv255).
 				c := typed.CMYKAt(x, y)
 				nk := 255 - int(c.K)
 				channel := func(v uint8) uint8 { return uint8(clamp255(nk - muldiv255(int(v), nk))) }
@@ -194,7 +197,7 @@ func paletteRGB(palette color.Palette, index uint8) (r, g, b uint8) {
 	return uint8(c.R >> 8), uint8(c.G >> 8), uint8(c.B >> 8)
 }
 
-// muldiv255 — MULDIV255 Pillow: a·b/255 с округлением через (t>>8 + t)>>8.
+// muldiv255 — a·b/255 с округлением через t = a·b + 128 и (t>>8 + t)>>8.
 func muldiv255(a, b int) int {
 	t := a*b + 128
 	return ((t >> 8) + t) >> 8
@@ -210,9 +213,9 @@ func clamp255(v int) int {
 	return v
 }
 
-// containSize — размер ImageOps.contain(image, (width, height)): пропорции сохраняются, по
-// длинной стороне — ровно рамка, по другой — round() Python (к чётному) от float-выражения в
-// том же порядке операций, что и в Pillow.
+// containSize — размер изображения, вписанного в рамку width×height: пропорции сохраняются, по
+// длинной стороне — ровно рамка, по другой — округление к чётному от float-выражения в
+// показанном порядке операций (размеры зафиксированы эталоном).
 func containSize(sourceWidth, sourceHeight, width, height int) (int, int) {
 	imageRatio := float64(sourceWidth) / float64(sourceHeight)
 	destRatio := float64(width) / float64(height)
@@ -228,18 +231,18 @@ func containSize(sourceWidth, sourceHeight, width, height int) (int, int) {
 	return width, height
 }
 
-// contain — ImageOps.contain(image, size, LANCZOS) для RGB: вписывание без обрезки и растяжения.
-// Ширина или высота меньше 1 — ValueError изображения Pillow.
+// contain вписывает RGB-изображение в рамку фильтром Ланцоша без обрезки и растяжения.
+// Ширина или высота меньше 1 — ValueError.
 func contain(source rgbImage, width, height int) (rgbImage, error) {
 	width, height = containSize(source.width, source.height, width, height)
 	return resizeLanczos(source, width, height)
 }
 
-// Ресэмплинг LANCZOS повторяет ImagingResample Pillow 10 (libImaging/Resample.c): фильтр
+// Ресэмплинг Ланцоша — свёртка с фильтром
 // sinc(x)·sinc(x/3) с опорой 3, коэффициенты окна нормируются и переводятся в целые с 22
 // дробными битами, свёртка идёт двумя проходами (горизонтальный, затем вертикальный) с
 // начальным значением 1<<21 и отсечением в 0..255. Проход пропускается, если размер по его оси
-// не меняется. Поэтому вписанный PNG-референс совпадает с Pillow побайтно.
+// не меняется. Поэтому вписанный PNG-референс совпадает с эталоном побайтно.
 const resamplePrecision = 32 - 8 - 2
 
 func sincFilter(x float64) float64 {
@@ -257,8 +260,8 @@ func lanczosFilter(x float64) float64 {
 	return 0
 }
 
-// bicubicFilter — bicubic_filter Pillow (a = -0.5, опора 2): фильтр Image.resize по умолчанию,
-// которым масштабируются опоры и кадры сравнения.
+// bicubicFilter — бикубический фильтр (a = -0.5, опора 2), которым масштабируются опоры и кадры
+// сравнения.
 func bicubicFilter(x float64) float64 {
 	const a = -0.5
 	if x < 0 {
@@ -273,7 +276,7 @@ func bicubicFilter(x float64) float64 {
 	return 0
 }
 
-// resampleFilter — фильтр ресэмплинга Pillow: опора (support) и функция окна.
+// resampleFilter — фильтр ресэмплинга: опора (support) и функция окна.
 type resampleFilter struct {
 	support float64
 	weight  func(float64) float64
@@ -284,7 +287,7 @@ var (
 	bicubic = resampleFilter{2, bicubicFilter}
 )
 
-// resampleCoefficients — precompute_coeffs + normalize_coeffs_8bpc: для каждой выходной
+// resampleCoefficients рассчитывает и нормирует веса свёртки 8-битных каналов: для каждой выходной
 // позиции первая входная позиция, число весов и целые веса (ksize на позицию).
 func resampleCoefficients(inSize, outSize int, filter resampleFilter) (bounds []int, weights []int32, ksize int) {
 	scale := float64(inSize) / float64(outSize)
@@ -334,7 +337,7 @@ func resampleCoefficients(inSize, outSize int, filter resampleFilter) (bounds []
 	return bounds, weights, ksize
 }
 
-// clip8 — отсечение суммы свёртки, как clip8 Pillow (арифметический сдвиг и таблица 0..255).
+// clip8 — отсечение суммы свёртки: арифметический сдвиг на 22 дробных бита и предел 0..255.
 func clip8(value int64) byte {
 	shifted := value >> resamplePrecision
 	if shifted < 0 {
@@ -346,15 +349,16 @@ func clip8(value int64) byte {
 	return byte(shifted)
 }
 
-// resizeLanczos — image.resize((width, height), LANCZOS) для RGB; тот же размер — копия.
+// resizeLanczos меняет размер RGB-изображения фильтром Ланцоша; тот же размер — копия.
 func resizeLanczos(source rgbImage, width, height int) (rgbImage, error) {
 	return resize(source, width, height, lanczos)
 }
 
-// resize — image.resize((width, height), filter) для RGB без reducing_gap; тот же размер — копия.
+// resize меняет размер RGB-изображения фильтром filter за одну свёртку на ось (без
+// предварительного уменьшения); тот же размер — копия.
 func resize(source rgbImage, width, height int, filter resampleFilter) (rgbImage, error) {
 	if width < 1 || height < 1 {
-		return rgbImage{}, pycompat.New(pycompat.ValueError, "height and width must be > 0")
+		return rgbImage{}, toolrt.New(toolrt.ValueError, "height and width must be > 0")
 	}
 	if width == source.width && height == source.height {
 		return rgbImage{width: width, height: height, pix: append([]byte(nil), source.pix...)}, nil
@@ -404,7 +408,7 @@ func resize(source rgbImage, width, height int, filter resampleFilter) (rgbImage
 	return current, nil
 }
 
-// paste — card.paste(image, (x, y)) без маски: прямоугольник копируется с отсечением по
+// paste вставляет изображение в точку (x, y) без маски: прямоугольник копируется с отсечением по
 // границам холста.
 func (m rgbImage) paste(source rgbImage, x, y int) {
 	for row := 0; row < source.height; row++ {

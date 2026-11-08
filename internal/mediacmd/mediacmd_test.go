@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // TestTail — хвост считается в кодовых точках после замены неверного UTF-8.
@@ -18,12 +18,12 @@ func TestTail(t *testing.T) {
 	}
 }
 
-// TestRunMissingProgram — незапустившаяся программа даёт FileNotFoundError subprocess, а
+// TestRunMissingProgram — незапустившаяся программа даёт исключение FileNotFoundError, а
 // AnimaticRun не превращает её в ValueError.
 func TestRunMissingProgram(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "ffmpeg")
 	_, err := AnimaticRun(context.Background(), missing, "-version")
-	if !pycompat.Is(err, pycompat.FileNotFoundError) || err.Error() != "[Errno 2] No such file or directory: "+pycompat.Repr(missing) {
+	if !toolrt.Is(err, toolrt.FileNotFoundError) || err.Error() != "[Errno 2] No such file or directory: "+toolrt.Repr(missing) {
 		t.Fatalf("ошибка %v", err)
 	}
 }

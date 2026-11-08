@@ -7,14 +7,16 @@ import (
 	"strings"
 )
 
-// jsSpaceClass — содержимое класса \s JavaScript для RE2 (в Go \s только ASCII).
-const jsSpaceClass = `\t\n\v\f\r \x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\x{feff}`
+// spaceClass — содержимое класса пробельных символов Unicode для RE2 (в Go \s только ASCII):
+// табуляции и переводы строк, пробелы категории Zs, разделители строк и абзацев U+2028/U+2029
+// и BOM. Шаблоны скрытия секретов находят токен и при неразрывном или широком пробеле.
+const spaceClass = `\t\n\v\f\r \x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\x{feff}`
 
 // Шаблоны скрытия секретов: ключи API, Bearer-токены и значения полей
 // с секретами заменяются служебным маркером «[скрыто]».
 var (
-	secretToken = regexp.MustCompile(`(?i)\b(?:sk-[A-Za-z0-9_-]{8,}|Bearer[` + jsSpaceClass + `]+[A-Za-z0-9._~-]+)`)
-	secretField = regexp.MustCompile(`(?i)((?:api[_-]?key|access[_-]?token|refresh[_-]?token|authorization)[` + jsSpaceClass + `]*[=:][` + jsSpaceClass + `]*["']?)[^` + jsSpaceClass + `,"'}]+`)
+	secretToken = regexp.MustCompile(`(?i)\b(?:sk-[A-Za-z0-9_-]{8,}|Bearer[` + spaceClass + `]+[A-Za-z0-9._~-]+)`)
+	secretField = regexp.MustCompile(`(?i)((?:api[_-]?key|access[_-]?token|refresh[_-]?token|authorization)[` + spaceClass + `]*[=:][` + spaceClass + `]*["']?)[^` + spaceClass + `,"'}]+`)
 )
 
 // Sanitize готовит текст для буфера обмена и отчёта: домашний каталог заменяется на «~»
@@ -47,7 +49,7 @@ func (m *Manager) CopyText(id string) (string, error) {
 
 // JobText собирает текст копирования задания; отдельно от CopyText ради отчёта разработчика.
 func JobText(info Info, log, home string) string {
-	trimmed := jsTrim(log)
+	trimmed := trimSpace(log)
 	if trimmed == "" {
 		trimmed = "Журнал пуст."
 	}

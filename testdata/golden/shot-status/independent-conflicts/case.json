@@ -5,7 +5,7 @@
   "base": "checks-base",
   "covers": [
     "independence conflicts",
-    "parser.exit"
+    "выход с сообщением"
   ],
   "stubbedMedia": [],
   "args": [

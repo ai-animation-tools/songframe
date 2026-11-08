@@ -25,7 +25,7 @@ docker run --rm --network=none --cap-drop=ALL \
     if test -e /usr/lib/x86_64-linux-gnu/libwebkitgtk-6.0.so.4; then
       echo "В системе неожиданно есть WebKitGTK" >&2; exit 1
     fi
-    export SONGFRAME_GO_LOCAL_DIR=/result/profile
+    export SONGFRAME_LOCAL_DIR=/result/profile
     timeout 90s xvfb-run -a dbus-run-session -- /package/SongFrame.AppImage --appimage-extract-and-run \
       --smoke --smoke-report /result/startup.json --smoke-timeout 60s
     grep -q '\''"passed": true'\'' /result/startup.json

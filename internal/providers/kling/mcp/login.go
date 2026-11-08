@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // CallbackServer — loopback-сервер одного входа на 127.0.0.1: ждёт GET /callback с тем же state
@@ -61,7 +61,7 @@ func reply(writer http.ResponseWriter, status int, text string) {
 func (s *CallbackServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodGet {
 		// BaseHTTPRequestHandler без do_<метод> отвечал 501.
-		reply(writer, http.StatusNotImplemented, "Unsupported method ("+pycompat.Repr(request.Method)+")")
+		reply(writer, http.StatusNotImplemented, "Unsupported method ("+toolrt.Repr(request.Method)+")")
 		return
 	}
 	parts, _ := ParseURL(request.RequestURI)
@@ -132,7 +132,7 @@ type LoginOptions struct {
 // и замена сохранённой записи под блокировкой; прежний refresh token после замены отзывается без
 // влияния на результат. Отмена ctx прекращает ожидание: ошибка тогда errors.Is(context.Canceled),
 // сохранённая запись не меняется.
-func (c *Client) Login(ctx context.Context, options LoginOptions) (*pycompat.Dict, error) {
+func (c *Client) Login(ctx context.Context, options LoginOptions) (*toolrt.Dict, error) {
 	timeout := options.Timeout
 	if timeout <= 0 {
 		timeout = LoginTimeout
@@ -210,7 +210,7 @@ func (c *Client) Login(ctx context.Context, options LoginOptions) (*pycompat.Dic
 	if status != 200 || answer == nil {
 		return nil, &TransportError{Status: status, Text: Title + " не обменял код авторизации на токен."}
 	}
-	client := pycompat.NewDict()
+	client := toolrt.NewDict()
 	client.Set("client_id", clientID)
 	client.Set("token_endpoint", endpoints.Token)
 	client.Set("revocation_endpoint", endpoints.Revoke)
@@ -220,14 +220,14 @@ func (c *Client) Login(ctx context.Context, options LoginOptions) (*pycompat.Dic
 	if err != nil {
 		return nil, err
 	}
-	var previous *pycompat.Dict
+	var previous *toolrt.Dict
 	if err := c.withCredentialsLock(func() error {
 		previous = c.ReadCredentials()
 		return c.WriteCredentials(record)
 	}); err != nil {
 		return nil, err
 	}
-	if previous != nil && !pycompat.Equal(previous.Value("refresh_token"), record.Value("refresh_token")) {
+	if previous != nil && !toolrt.Equal(previous.Value("refresh_token"), record.Value("refresh_token")) {
 		if err := c.revoke(ctx, previous); err != nil {
 			return nil, err
 		}

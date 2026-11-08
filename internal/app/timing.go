@@ -3,13 +3,13 @@ package app
 import (
 	"encoding/json"
 
-	"songframe-go/internal/components"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/songtiming"
-	"songframe-go/internal/timing"
-	"songframe-go/internal/trash"
-	"songframe-go/internal/wire"
+	"songframe/internal/components"
+	"songframe/internal/dynvalue"
+	"songframe/internal/jobs"
+	"songframe/internal/songtiming"
+	"songframe/internal/timing"
+	"songframe/internal/trash"
+	"songframe/internal/wire"
 )
 
 // TimingService реализует группу window.api.timing: просмотр и сохранение разметки
@@ -39,7 +39,7 @@ func (s *TimingService) View(project string) (timing.View, error) {
 // Save — saveTiming: проверка и нормализация разметки (internal/timing), затем атомарная запись
 // plan/audio/timing.json через барьер записи проекта. Возвращает сохранённый документ.
 func (s *TimingService) Save(project string, input json.RawMessage) (json.RawMessage, error) {
-	value, err := jscompat.Parse(input)
+	value, err := dynvalue.Parse(input)
 	if err != nil {
 		return nil, err
 	}

@@ -17,7 +17,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"songframe-go/internal/process"
+	"songframe/internal/process"
 )
 
 // TestMain скрывает служебные предупреждения менеджера (пропуск повреждённых файлов,

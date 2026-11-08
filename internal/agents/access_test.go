@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/mediaproviders"
+	"songframe/internal/mediaproviders"
 )
 
 // ai.access: явный выбор до диагностики, независимость агента и провайдеров медиа, повторная

@@ -1,11 +1,10 @@
 {
   "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5+esm15 Copyright (c) 2000-2023 the FFmpeg developers",
-  "python": "3.12.3",
   "base": "build-review",
   "cases": [
     {
       "name": "help",
-      "description": "Справка argparse.",
+      "description": "Справка разбора аргументов.",
       "covers": [
         "--help"
       ],
@@ -22,7 +21,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: accept_shot.py [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                      (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                      [--speed SPEED] [--hold-first HOLD_FIRST]\n                      [--hold-last HOLD_LAST] [--audio AUDIO]\n                      [--audio-recipe AUDIO_RECIPE]\n                      [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                      [--replace]\n                      shot\n\nПеренос принятой генерации в комплект assets по контракту; @link README.md\n\npositional arguments:\n  shot\n\noptions:\n  -h, --help            show this help message and exit\n  --package PACKAGE     Папка пакета shot_workflow с workflow.json\n  --work-dir WORK_DIR   Папка попытки media_request с request.json и\n                        attempt.json\n  --review REVIEW       JSON рецепта пробы build_review с этим планом\n  --cut НАЧАЛО:КОНЕЦ    Участок оригинала на сетке 30 кадров/с, конец\n                        исключительно\n  --full                Оригинал уже совпадает с окном и FPS: побайтовая копия\n  --speed SPEED\n  --hold-first HOLD_FIRST\n  --hold-last HOLD_LAST\n  --audio AUDIO         speech.wav для речевого плана\n  --audio-recipe AUDIO_RECIPE\n                        audio-recipe.json к WAV\n  --preparation [PREPARATION ...]\n                        Дополнительные файлы подготовки: промпты кадров,\n                        промежуточные изображения\n  --clean               После проверки удалить все пакеты плана в\n                        plan/batches, переданный пакет очереди, пробу и пустые\n                        папки проб\n  --no-views            Не обновлять представления\n  --replace             Заменить уже принятый комплект: прежний переезжает в\n                        assets/replaced/Mxx/<время>\n",
+            "stdout": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\n\nПеренос принятой генерации в комплект assets по контракту; @link README.md\n\npositional arguments:\n  shot\n\noptions:\n  -h, --help            show this help message and exit\n  --package PACKAGE     Папка пакета shot_workflow с workflow.json\n  --work-dir WORK_DIR   Папка попытки media_request с request.json и\n                        attempt.json\n  --review REVIEW       JSON рецепта пробы build_review с этим планом\n  --cut НАЧАЛО:КОНЕЦ    Участок оригинала на сетке 30 кадров/с, конец\n                        исключительно\n  --full                Оригинал уже совпадает с окном и FPS: побайтовая копия\n  --speed SPEED\n  --hold-first HOLD_FIRST\n  --hold-last HOLD_LAST\n  --audio AUDIO         speech.wav для речевого плана\n  --audio-recipe AUDIO_RECIPE\n                        audio-recipe.json к WAV\n  --preparation [PREPARATION ...]\n                        Дополнительные файлы подготовки: промпты кадров,\n                        промежуточные изображения\n  --clean               После проверки удалить все пакеты плана в\n                        plan/batches, переданный пакет очереди, пробу и пустые\n                        папки проб\n  --no-views            Не обновлять представления\n  --replace             Заменить уже принятый комплект: прежний переезжает в\n                        assets/replaced/Mxx/<время>\n",
             "stderr": ""
           }
         ],
@@ -53,7 +52,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: accept_shot.py [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                      (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                      [--speed SPEED] [--hold-first HOLD_FIRST]\n                      [--hold-last HOLD_LAST] [--audio AUDIO]\n                      [--audio-recipe AUDIO_RECIPE]\n                      [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                      [--replace]\n                      shot\naccept_shot.py: error: one of the arguments --package --work-dir is required\n"
+            "stderr": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\naccept_shot: error: one of the arguments --package --work-dir is required\n"
           }
         ],
         "changed": {},
@@ -83,7 +82,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: accept_shot.py [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                      (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                      [--speed SPEED] [--hold-first HOLD_FIRST]\n                      [--hold-last HOLD_LAST] [--audio AUDIO]\n                      [--audio-recipe AUDIO_RECIPE]\n                      [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                      [--replace]\n                      shot\naccept_shot.py: error: one of the arguments --review --cut --full is required\n"
+            "stderr": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\naccept_shot: error: one of the arguments --review --cut --full is required\n"
           }
         ],
         "changed": {},
@@ -116,7 +115,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: accept_shot.py [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                      (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                      [--speed SPEED] [--hold-first HOLD_FIRST]\n                      [--hold-last HOLD_LAST] [--audio AUDIO]\n                      [--audio-recipe AUDIO_RECIPE]\n                      [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                      [--replace]\n                      shot\naccept_shot.py: error: argument --full: not allowed with argument --cut\n"
+            "stderr": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\naccept_shot: error: argument --full: not allowed with argument --cut\n"
           }
         ],
         "changed": {},
@@ -151,7 +150,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: accept_shot.py [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                      (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                      [--speed SPEED] [--hold-first HOLD_FIRST]\n                      [--hold-last HOLD_LAST] [--audio AUDIO]\n                      [--audio-recipe AUDIO_RECIPE]\n                      [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                      [--replace]\n                      shot\naccept_shot.py: error: argument --hold-first: invalid int value: 'x'\n"
+            "stderr": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\naccept_shot: error: argument --hold-first: invalid int value: 'x'\n"
           }
         ],
         "changed": {},
@@ -791,7 +790,7 @@
       "name": "cut-text",
       "description": "Участок не числами.",
       "covers": [
-        "int()"
+        "приведение к целому"
       ],
       "setup": [],
       "steps": [
@@ -847,7 +846,7 @@
           {
             "code": 1,
             "stdout": "",
-            "stderr": "Traceback (most recent call last):\n  File \"<archive>/tools/accept_shot/accept_shot.py\", line 613, in <module>\n    main()\n  File \"<archive>/tools/accept_shot/accept_shot.py\", line 582, in main\n    result = accept(\n             ^^^^^^^\n  File \"<archive>/tools/accept_shot/accept_shot.py\", line 291, in accept\n    plan = edit_plan(shot, staging / \"original.mp4\", frames, root, review, cut, speed, hold_first, hold_last)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<archive>/tools/accept_shot/accept_shot.py\", line 174, in edit_plan\n    plan = review_prepare(spec, root)[\"shots\"][0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<archive>/tools/build_review/build_review.py\", line 145, in prepare\n    speed = Decimal(str(config.get(\"speed\", \"1\")))\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ndecimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]\n"
+            "stderr": "Traceback (most recent call last):\ndecimal.InvalidOperation: [<class 'decimal.ConversionSyntax'>]\n"
           }
         ],
         "changed": {},

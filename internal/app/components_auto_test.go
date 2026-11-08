@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/components"
+	"songframe/internal/components"
 )
 
 // autoComponentsService создаёт настоящий Manager с управляемой границей проверки.

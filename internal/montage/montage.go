@@ -4,7 +4,7 @@
 // копия готовой пробы (VideoPath/CopyVideo) и восстановление прерванной публикации журнала
 // plan/montage-history без инструмента (RecoverApplications/RecoverProjects).
 //
-// Черновик хранится деревом jscompat: неизвестные поля, порядок ключей и форма чисел сохраняются,
+// Черновик хранится деревом dynvalue: неизвестные поля, порядок ключей и форма чисел сохраняются,
 // а записанный JSON совпадает с эталоном testdata/golden/montage байт в байт.
 // Применение черновика к файлам сцен выполняет internal/applymontage.
 package montage
@@ -16,10 +16,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/tools"
+	"songframe/internal/dynvalue"
+	"songframe/internal/jobs"
+	"songframe/internal/projectfs"
+	"songframe/internal/tools"
 )
 
 // Starter — запуск задания общим менеджером (jobs.Manager.Start); тесты подменяют его записью
@@ -41,7 +41,7 @@ type Export struct {
 	Video string    `json:"video"`
 }
 
-// draftPath — idPath(project, id): plan/montage/<uuid>.json; не-UUID — ошибка.
+// draftPath — путь черновика plan/montage/<uuid>.json; id не в форме UUID — ошибка.
 func draftPath(project, id string) (string, error) {
 	if !uuidPattern.MatchString(id) {
 		return "", errors.New(textInvalidDraftID)
@@ -52,12 +52,12 @@ func draftPath(project, id string) (string, error) {
 // ParseDraft разбирает черновик из JSON renderer с порядком ключей и неизвестными полями.
 func ParseDraft(data json.RawMessage) (any, error) {
 	if len(data) == 0 {
-		return jscompat.Undefined, nil
+		return dynvalue.Undefined, nil
 	}
-	return jscompat.Parse(data)
+	return dynvalue.Parse(data)
 }
 
-// Load — Montage.load(project, id): сохранённый черновик после проверки структуры и файлов.
+// Load читает сохранённый черновик и возвращает его после проверки структуры и файлов.
 func Load(project, id string) (any, error) {
 	path, err := draftPath(project, id)
 	if err != nil {
@@ -73,7 +73,7 @@ func Load(project, id string) (any, error) {
 	return value, nil
 }
 
-// writeDraft — writeLocalJson(join(project, rel), value) через шлюз записи проекта: при
+// writeDraft атомарно записывает JSON черновика (encode) по пути rel через шлюз записи проекта: при
 // незавершённой многофайловой публикации черновик не пишется поверх смешанных версий файлов.
 func writeDraft(project, rel string, value any) error {
 	if err := projectfs.CheckWrite(project); err != nil {
@@ -97,7 +97,7 @@ func Save(project string, draft any, id *string) (Saved, error) {
 	if _, err := validate(project, draft, false, nil, true); err != nil {
 		return Saved{}, err
 	}
-	if jscompat.Exists(path) {
+	if dynvalue.Exists(path) {
 		previous, err := readObject(path, labelDraft)
 		if err != nil {
 			return Saved{}, err
@@ -111,9 +111,9 @@ func Save(project string, draft any, id *string) (Saved, error) {
 	}
 	info, err := os.Stat(path)
 	if err != nil {
-		return Saved{}, jscompat.FsError("stat", path, err)
+		return Saved{}, dynvalue.FsError("stat", path, err)
 	}
-	return Saved{ID: name, Name: jscompat.Get(draft, "name").(string), UpdatedAt: isoTime(info)}, nil
+	return Saved{ID: name, Name: dynvalue.Get(draft, "name").(string), UpdatedAt: isoTime(info)}, nil
 }
 
 // RemoveDraft удаляет сохранённый черновик plan/montage/<id>.json. Применённые сцены от файла не
@@ -129,12 +129,12 @@ func RemoveDraft(project, id string) error {
 		return err
 	}
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		return jscompat.FsError("unlink", path, err)
+		return dynvalue.FsError("unlink", path, err)
 	}
 	return nil
 }
 
-// Export — Montage.export(project, draft): полный черновик (длины, сцены, трек) записывается в
+// Export — экспорт пробы: полный черновик (длины, сцены, трек) записывается в
 // plan/batches/review-manual-<uuid>/montage.json вместе с рецептом review-spec.json, и запускается
 // задание review с шагом build_review. Пути рецепта остаются от корня проекта; инструменту
 // передаются абсолютные --spec и --output.
@@ -153,18 +153,18 @@ func (s *Service) Export(project string, draft any) (Export, error) {
 	if err := writeDraft(project, folder+"/montage.json", draft); err != nil {
 		return Export{}, err
 	}
-	shots := &jscompat.Array{Items: []any{}}
+	shots := &dynvalue.Array{Items: []any{}}
 	for _, clip := range checked.clips {
-		shot := jscompat.NewObject()
+		shot := dynvalue.NewObject()
 		for _, key := range []string{"scene", "path", "kind", "source_start_frame", "source_end_frame_exclusive"} {
 			shot.Set(key, clip.Value(key))
 		}
 		shots.Items = append(shots.Items, shot)
 	}
-	audio := jscompat.NewObject()
+	audio := dynvalue.NewObject()
 	audio.Set("path", checked.audio.Value("path"))
 	audio.Set("start_frame", checked.audio.Value("start_frame"))
-	recipe := jscompat.NewObject()
+	recipe := dynvalue.NewObject()
 	recipe.Set("schema_version", 1.0)
 	recipe.Set("shots", shots)
 	recipe.Set("audio", audio)
@@ -182,7 +182,7 @@ func (s *Service) Export(project string, draft any) (Export, error) {
 	return Export{Job: job, Video: video}, nil
 }
 
-// Apply — Montage.apply(project, draft): полный черновик со снимком текущих реестра и манифестов
+// Apply — применение монтажа: полный черновик со снимком текущих реестра и манифестов
 // выбранных сцен записывается в plan/batches/apply-manual-<uuid>/montage.json, и запускается
 // задание tool с шагом apply_montage --spec <относительный путь>. Устаревший снимок — ошибка до
 // записи. Проверку сценария (reviewProblem) выполняет сервис приложения.
@@ -195,14 +195,14 @@ func (s *Service) Apply(project string, draft any) (jobs.Info, error) {
 	if err != nil {
 		return jobs.Info{}, err
 	}
-	if !jscompat.StrictEqual(checked.object.Value("base_scenes_sha256"), view.ScenesSha256) {
+	if !dynvalue.StrictEqual(checked.object.Value("base_scenes_sha256"), view.ScenesSha256) {
 		return jobs.Info{}, errors.New(textRegistryChanged)
 	}
-	snapshot, _ := jscompat.AsObject(checked.object.Value("base_manifest_sha256"))
+	snapshot, _ := dynvalue.AsObject(checked.object.Value("base_manifest_sha256"))
 	for _, clip := range checked.clips {
 		scene := clip.Value("scene").(string)
 		current, ok := view.manifests[scene]
-		if !ok || current == "" || !jscompat.StrictEqual(snapshot.Value(scene), current) {
+		if !ok || current == "" || !dynvalue.StrictEqual(snapshot.Value(scene), current) {
 			return jobs.Info{}, errors.New(textManifestsChanged)
 		}
 	}
@@ -234,9 +234,9 @@ func ToolStep(project, tool, label string, args []string) jobs.Step {
 			if *result.Code == 0 {
 				return nil
 			}
-			message := jscompat.Trim(result.Stderr)
+			message := dynvalue.Trim(result.Stderr)
 			if message == "" {
-				message = jscompat.Trim(result.Stdout)
+				message = dynvalue.Trim(result.Stdout)
 			}
 			return &jobs.StepError{Code: *result.Code, Message: message}
 		},

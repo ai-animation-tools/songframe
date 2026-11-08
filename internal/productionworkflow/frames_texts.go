@@ -3,7 +3,7 @@ package productionworkflow
 import (
 	"strings"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Тексты создания и импорта опор: проверок генерации, задания опор провайдера-агента, платного
@@ -31,7 +31,7 @@ const (
 	// провайдеров медиа.
 	textImageExecutorMissing = "Нет исполнителя опор для программы-агента этого задания."
 	textImageConsentFailed   = "Не удалось записать согласование изображения."
-	// TextActualImagesRequired — applicationTexts.actualImagesRequired: маршрут importFrames получил не
+	// TextActualImagesRequired — импорт опор (ImportFrames) получил не
 	// изображения (нет файла, ссылка, не PNG/JPEG/WebP, не декодируется).
 	TextActualImagesRequired = "Выберите настоящие изображения PNG, JPG или WebP."
 
@@ -43,7 +43,7 @@ const (
 )
 
 func textAcceptFrameFirst(frame any) string {
-	return "Сначала утвердите опору " + jscompat.ToString(frame) + " или отправьте её на доработку."
+	return "Сначала утвердите опору " + dynvalue.ToString(frame) + " или отправьте её на доработку."
 }
 
 func textImageProviderRequired(providers string) string {

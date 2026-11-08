@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/sourceedit"
+	"songframe/internal/golden"
+	"songframe/internal/sourceedit"
 )
 
 // caseByName — случай эталона домена по имени каталога.

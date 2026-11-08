@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"regexp"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // Коды диагностики задания (AgentDiagnosticCode контракта). Код сохраняется в истории
@@ -46,13 +46,13 @@ const DefaultLineBytes = 256 * 1024
 // Ошибка строки (не JSON, не объект, слишком длинная) не включает её текст: CLI может печатать
 // секреты. Не потокобезопасен: менеджер вызывает его из сериализованного обработчика вывода.
 type JSONLines struct {
-	onValue   func(value *jscompat.Object) error
+	onValue   func(value *dynvalue.Object) error
 	lineBytes int
 	pending   []byte
 }
 
 // NewJSONLines создаёт разборщик; lineBytes <= 0 означает DefaultLineBytes.
-func NewJSONLines(onValue func(value *jscompat.Object) error, lineBytes int) *JSONLines {
+func NewJSONLines(onValue func(value *dynvalue.Object) error, lineBytes int) *JSONLines {
 	if lineBytes <= 0 {
 		lineBytes = DefaultLineBytes
 	}
@@ -81,7 +81,7 @@ func (p *JSONLines) Push(chunk []byte) error {
 func (p *JSONLines) Finish() error {
 	line := p.pending
 	p.pending = nil
-	if jscompat.Trim(jscompat.DecodeUTF8(line)) == "" {
+	if dynvalue.Trim(dynvalue.DecodeUTF8(line)) == "" {
 		return nil
 	}
 	return p.parse(line)
@@ -98,15 +98,15 @@ func (p *JSONLines) parse(raw []byte) error {
 	if err := p.checkSize(raw); err != nil {
 		return err
 	}
-	line := jscompat.DecodeUTF8(raw)
-	if jscompat.Trim(line) == "" {
+	line := dynvalue.DecodeUTF8(raw)
+	if dynvalue.Trim(line) == "" {
 		return nil
 	}
-	value, err := jscompat.Parse([]byte(line))
+	value, err := dynvalue.Parse([]byte(line))
 	if err != nil {
 		return agentError(CodeProtocolError, textInvalidJSONLines)
 	}
-	object, ok := value.(*jscompat.Object)
+	object, ok := value.(*dynvalue.Object)
 	if !ok {
 		return agentError(CodeProtocolError, textEventObjectRequired)
 	}
@@ -115,9 +115,9 @@ func (p *JSONLines) parse(raw []byte) error {
 
 // Маркер «[скрыто]» входит в очищенные результаты и журналы; это не подпись интерфейса.
 var (
-	redactTokens = mustJS(`\b(?:sk-[A-Za-z0-9_-]{8,}|Bearer\s+[A-Za-z0-9._~-]+)`, true)
-	redactFields = mustJS(`((?:api[_-]?key|access[_-]?token|refresh[_-]?token|authorization)\s*[=:]\s*["']?)[^\s,"'}]+`, true)
-	spaces       = mustJS(`\s+`, false)
+	redactTokens = mustPattern(`\b(?:sk-[A-Za-z0-9_-]{8,}|Bearer\s+[A-Za-z0-9._~-]+)`, true)
+	redactFields = mustPattern(`((?:api[_-]?key|access[_-]?token|refresh[_-]?token|authorization)\s*[=:]\s*["']?)[^\s,"'}]+`, true)
+	spaces       = mustPattern(`\s+`, false)
 )
 
 // Redact убирает распознаваемые секреты из текста результата, задачи и журнала: в историю не
@@ -127,14 +127,14 @@ func Redact(text string) string {
 	return redactFields.ReplaceAllString(text, "${1}[скрыто]")
 }
 
-// detailLimit — длина причины от CLI для показа (в кодовых единицах UTF-16, как length JS).
+// detailLimit — длина причины от CLI для показа (в кодовых единицах UTF-16, как считает эталон).
 const detailLimit = 400
 
 // providerDetail — текст причины от CLI: без секретов, в одну строку и ограниченной длины.
 // Не строка — пустая причина.
 func providerDetail(value any) string {
 	text, _ := value.(string)
-	text = jscompat.Trim(spaces.ReplaceAllString(Redact(text), " "))
+	text = dynvalue.Trim(spaces.ReplaceAllString(Redact(text), " "))
 	if utf16Len(text) > detailLimit {
 		return utf16Slice(text, detailLimit) + "…"
 	}
@@ -142,8 +142,8 @@ func providerDetail(value any) string {
 }
 
 var (
-	authPattern = mustJS(`auth|not logged|login|unauthorized|invalid`+jsDot+`?api`+jsDot+`?key|\b401\b`, true)
-	ratePattern = mustJS(`rate`+jsDot+`?limit|quota|usage`+jsDot+`?limit|budget|\b429\b`, true)
+	authPattern = mustPattern(`auth|not logged|login|unauthorized|invalid`+lineDot+`?api`+lineDot+`?key|\b401\b`, true)
+	ratePattern = mustPattern(`rate`+lineDot+`?limit|quota|usage`+lineDot+`?limit|budget|\b429\b`, true)
 )
 
 // providerFailure классифицирует сбой задания. value служит только классификации (в нём может
@@ -161,5 +161,5 @@ func providerFailure(value, detail any) *Error {
 	return agentError(CodeCLIError, textTaskFailed(reason))
 }
 
-// sessionPattern — допустимый идентификатор сеанса CLI (\w JS — ASCII).
+// sessionPattern — допустимый идентификатор сеанса CLI: только ASCII-буквы, цифры, «_», «.» и «-».
 var sessionPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,128}$`)

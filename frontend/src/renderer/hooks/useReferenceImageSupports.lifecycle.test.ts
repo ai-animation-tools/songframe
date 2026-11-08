@@ -1,4 +1,4 @@
-/** Жизненный цикл чтения опор проверяется без DOM, файловой системы и настоящего IPC. */
+/** Жизненный цикл чтения опор проверяется без DOM, файловой системы и настоящего API. */
 import type * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GenerationReferenceImage } from '@shared/cover-generation';

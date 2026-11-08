@@ -101,7 +101,7 @@ describe('mergeChecklist', () => {
     expect(mergeChecklist([], [])).toEqual([]);
   });
 
-  it('берёт подпись свойства из врезки главного процесса: она учитывает набор по умолчанию', () => {
+  it('берёт подпись свойства из врезки Go: она учитывает набор по умолчанию', () => {
     const start = brief('before', { oleg: { scar: 'есть' } }, { oleg: { scar: { kind: 'cast' } } }, { oleg: { scar: 'Шрам' } });
     const end = brief('after', { oleg: { scar: 'есть' } }, { oleg: { scar: { kind: 'cast' } } }, { oleg: { scar: 'Шрам' } });
     expect(compareBrief(start, end, cast)[0].rows.find((row) => row.key === 'scar')?.label).toBe('Шрам');

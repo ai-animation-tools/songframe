@@ -38,7 +38,7 @@ describe('Тексты сценария с числами', () => {
     expect(scenarioTexts.save.affectedShots({ count })).toBe(`Затронутые планы: ${count}`);
   });
 
-  it('различает отсутствие реестра, нулевой счётчик и прежнее строковое undefined', () => {
+  it('различает отсутствие реестра, нулевой счётчик и строковое undefined', () => {
     expect(scenarioTexts.toolbar.treatmentTab({ count: null })).toBe('Трактовка');
     expect(scenarioTexts.toolbar.scenesTab({ count: null })).toBe('Реестр сцен');
     expect(scenarioTexts.timeline.statusCount({ label: 'Запланирован', count: undefined })).toBe('Запланирован: undefined');

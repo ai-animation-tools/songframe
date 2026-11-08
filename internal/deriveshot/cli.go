@@ -3,8 +3,8 @@ package deriveshot
 import (
 	"context"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // textHidden — текст CLI для ошибок, кроме ValueError: журнал транзакции остаётся в проекте, сырой
@@ -12,26 +12,26 @@ import (
 const textHidden = "Ошибка файлов или медиа производного плана."
 
 // Parser — разбор аргументов derive_shot: подкоманды build, accept и recover, у всех --json.
-func Parser() *pycompat.Command {
-	jsonFlag := pycompat.Action{Name: "--json", Kind: pycompat.StoreTrue}
-	return &pycompat.Command{
-		Prog:        "derive_shot.py",
+func Parser() *toolrt.Command {
+	jsonFlag := toolrt.Action{Name: "--json", Kind: toolrt.StoreTrue}
+	return &toolrt.Command{
+		Prog:        "derive_shot",
 		Description: "Локально собирает производный план и принимает подтверждённые байты; @link README.md.",
 		Dest:        "command",
-		Subcommands: []*pycompat.Command{
-			{Name: "build", Actions: []pycompat.Action{
+		Subcommands: []*toolrt.Command{
+			{Name: "build", Actions: []toolrt.Action{
 				{Name: "--shot", Required: true},
 				{Name: "--recipe", Required: true},
 				{Name: "--work-dir", Required: true},
 				jsonFlag,
 			}},
-			{Name: "accept", Actions: []pycompat.Action{
+			{Name: "accept", Actions: []toolrt.Action{
 				{Name: "--work-dir", Required: true},
 				{Name: "--confirm", Required: true},
-				{Name: "--replace", Kind: pycompat.StoreTrue},
+				{Name: "--replace", Kind: toolrt.StoreTrue},
 				jsonFlag,
 			}},
-			{Name: "recover", Actions: []pycompat.Action{jsonFlag}},
+			{Name: "recover", Actions: []toolrt.Action{jsonFlag}},
 		},
 	}
 }
@@ -39,15 +39,15 @@ func Parser() *pycompat.Command {
 // Run — инструмент derive_shot на корне проекта. ValueError печатается своим текстом, остальные
 // ожидаемые ошибки — скрытым textHidden, прочие — трассировкой; --json превращает отказ в
 // {"status": "error", "message": …} на stdout.
-func Run(ctx context.Context, root string, argv []string) pytool.Output {
+func Run(ctx context.Context, root string, argv []string) toolcli.Output {
 	args, exit := Parser().ParseArgs(argv)
 	if exit != nil {
-		return pytool.Output{Code: exit.Code, Stdout: pycompat.TextMode(exit.Stdout), Stderr: pycompat.TextMode(exit.Stderr)}
+		return toolcli.Output{Code: exit.Code, Stdout: toolrt.TextMode(exit.Stdout), Stderr: toolrt.TextMode(exit.Stderr)}
 	}
-	root = pycompat.ResolvePath(root)
+	root = toolrt.ResolvePath(root)
 	defer enter(root)()
-	printer := &pytool.Printer{}
-	result, err := func() (*pycompat.Dict, error) {
+	printer := &toolcli.Printer{}
+	result, err := func() (*toolrt.Dict, error) {
 		switch args["command"] {
 		case "build":
 			return build(ctx, args["shot"].(string), args["recipe"].(string), args["work_dir"].(string), root)
@@ -58,7 +58,7 @@ func Run(ctx context.Context, root string, argv []string) pytool.Output {
 		return Recover(root)
 	}()
 	if err == nil {
-		text, failure := pytool.JSON(result)
+		text, failure := toolcli.JSON(result)
 		if failure == nil {
 			failure = printer.Print(text)
 		}
@@ -67,17 +67,17 @@ func Run(ctx context.Context, root string, argv []string) pytool.Output {
 		}
 		err = failure
 	}
-	if !pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError, pycompat.TypeError, "StopIteration", "CalledProcessError") {
+	if !toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError, toolrt.TypeError, "StopIteration", "CalledProcessError") {
 		return printer.Crash(err)
 	}
 	message := textHidden
-	if pycompat.Is(err, pycompat.ValueError) {
+	if toolrt.Is(err, toolrt.ValueError) {
 		message = err.Error()
 	}
 	if asJSON, _ := args["json"].(bool); !asJSON {
 		return printer.Fail(message)
 	}
-	text, failure := pycompat.DumpsJSON(pytool.Record("status", "error", "message", message), pycompat.DumpOptions{})
+	text, failure := toolrt.DumpsJSON(toolcli.Record("status", "error", "message", message), toolrt.DumpOptions{})
 	if failure == nil {
 		failure = printer.Print(text)
 	}

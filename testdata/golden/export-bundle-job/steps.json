@@ -51,7 +51,7 @@
       "exists": {
         "<tmp>/project/plan/batches-x": true
       },
-      "goDiffers": "Проверка префикса без разделителя: оригинал создавал пустую папку и отказ давал только инструмент."
+      "goDiffers": "Проверка префикса без разделителя: папка plan/batches-x не создаётся, отказ даёт проверка цели до запуска."
     },
     {
       "label": "not-empty",
@@ -214,7 +214,7 @@
       "exists": {}
     },
     {
-      "label": "copy-undefined",
+      "label": "copy-absent",
       "setup": {
         "restoreBatches": true
       },

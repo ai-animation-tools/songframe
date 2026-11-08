@@ -4,8 +4,9 @@
 //
 // Вывод зафиксирован эталоном testdata/golden/lint-registry: строки «ОШИБКА/предупреждение  файл · место: текст»
 // и итог, либо JSON {errors, warnings} с --json; код 1 при ошибках (и предупреждениях с --strict).
-// Данные неожиданной формы дают те же исключения Python (трассировка, код 1). Пакет только читает
-// файлы проекта; схемы встроены в бинарник, регулярные выражения — internal/pyre (семантика re).
+// Данные неожиданной формы дают исключение toolrt (трассировка, код 1), зафиксированное тем же
+// эталоном. Пакет только читает файлы проекта; схемы встроены в бинарник, регулярные выражения —
+// internal/toolregex.
 package lintregistry
 
 import (
@@ -15,60 +16,61 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/castregistry"
-	"songframe-go/internal/mediaadapters"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pyre"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/castregistry"
+	"songframe/internal/mediaadapters"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolregex"
+	"songframe/internal/toolrt"
 )
 
 //go:embed schemas/*.schema.json
 var schemaFiles embed.FS
 
 // Parser — разбор аргументов lint_registry; Prog и описание видны в справке и ошибках разбора.
-var Parser = pycompat.ArgParser{
-	Prog:        "lint_registry.py",
+var Parser = toolrt.ArgParser{
+	Prog:        "lint_registry",
 	Description: "Проверка реестра, комплектов и пакетов по схемам и правилам владения сведениями; @link README.md",
-	Flags: []pycompat.Flag{
+	Flags: []toolrt.Flag{
 		{Name: "--json"},
 		{Name: "--strict", Help: "Предупреждения тоже считать ошибками"},
 	},
 }
 
-// productionWords — PRODUCTION_WORDS: слова производства в постановке.
+// productionWords — основы слов производства, признак хроники в тексте постановки.
 const productionWords = `(проб|участ|клип|генерац|склейк|переход|видео|кадр|монтаж|обрезк|включ|версия|v\d)`
 
-// historyPattern — шаблон HISTORY_PATTERNS и подпись найденного.
+// historyPattern — шаблон признака хроники и подпись найденного в отчёте.
 type historyPattern struct {
-	pattern *pyre.Regexp
+	pattern *toolregex.Regexp
 	label   string
 }
 
-// historyPatterns — HISTORY_PATTERNS (re.I): хроника принятий и технические рецепты.
+// historyPatterns — признаки хроники принятий и технических рецептов в постановке (без учёта
+// регистра); проверяются по порядку, на каждый шаблон — первое совпадение.
 var historyPatterns = []historyPattern{
-	{pyre.MustCompile(`(?:`+productionWords+`[^.;]{0,60}\bприняты?\b)|(?:\bприняты?\b[^.;]{0,60}`+productionWords+`)|\bпринята (новая|генерация|обрезка)`, pyre.IgnoreCase), "факт принятия"},
-	{pyre.MustCompile(`\bвключен[аоы]? в v\d+`, pyre.IgnoreCase), "ссылка на версию аниматика"},
-	{pyre.MustCompile(`(?<![\w_-])v\d{2}\b`, pyre.IgnoreCase), "номер версии"},
-	{pyre.MustCompile(`\bв пробе\b|\bпроба [A-ZМ]\d`, pyre.IgnoreCase), "упоминание пробы"},
-	{pyre.MustCompile(`assets/shots/`, pyre.IgnoreCase), "путь в assets"},
-	{pyre.MustCompile(`manifest\.json`, pyre.IgnoreCase), "ссылка на технический файл"},
-	{pyre.MustCompile(`\bархив`, pyre.IgnoreCase), "упоминание архива"},
-	{pyre.MustCompile(`\bпрежн(яя|ий|ие|его|ей) верси`, pyre.IgnoreCase), "прежняя версия"},
-	{pyre.MustCompile(`\bоригинал[а-я]* \d|\bучаст(ок|ка) \d|\d[,.]\d+\s*×|\bна 1×|\bускорен[а-я]* на|\bзамедлен[а-я]* до|\d+/\d+\s*≈|\b\d+ кадр(а|ов)? (на|при) \d`, pyre.IgnoreCase), "технический рецепт монтажа"},
-	{pyre.MustCompile(`\b(оригинал|клип|видео|версия|кандидат)[^.;]{0,40}\bсохран(ён|ены|ена|ено)\b`, pyre.IgnoreCase), "факт сохранения"},
+	{toolregex.MustCompile(`(?:`+productionWords+`[^.;]{0,60}\bприняты?\b)|(?:\bприняты?\b[^.;]{0,60}`+productionWords+`)|\bпринята (новая|генерация|обрезка)`, toolregex.IgnoreCase), "факт принятия"},
+	{toolregex.MustCompile(`\bвключен[аоы]? в v\d+`, toolregex.IgnoreCase), "ссылка на версию аниматика"},
+	{toolregex.MustCompile(`(?<![\w_-])v\d{2}\b`, toolregex.IgnoreCase), "номер версии"},
+	{toolregex.MustCompile(`\bв пробе\b|\bпроба [A-ZМ]\d`, toolregex.IgnoreCase), "упоминание пробы"},
+	{toolregex.MustCompile(`assets/shots/`, toolregex.IgnoreCase), "путь в assets"},
+	{toolregex.MustCompile(`manifest\.json`, toolregex.IgnoreCase), "ссылка на технический файл"},
+	{toolregex.MustCompile(`\bархив`, toolregex.IgnoreCase), "упоминание архива"},
+	{toolregex.MustCompile(`\bпрежн(яя|ий|ие|его|ей) верси`, toolregex.IgnoreCase), "прежняя версия"},
+	{toolregex.MustCompile(`\bоригинал[а-я]* \d|\bучаст(ок|ка) \d|\d[,.]\d+\s*×|\bна 1×|\bускорен[а-я]* на|\bзамедлен[а-я]* до|\d+/\d+\s*≈|\b\d+ кадр(а|ов)? (на|при) \d`, toolregex.IgnoreCase), "технический рецепт монтажа"},
+	{toolregex.MustCompile(`\b(оригинал|клип|видео|версия|кандидат)[^.;]{0,40}\bсохран(ён|ены|ена|ено)\b`, toolregex.IgnoreCase), "факт сохранения"},
 }
 
 var (
-	// markdownLink — r"\]\(([^)]+)\)": цель ссылки Markdown.
-	markdownLink = pyre.MustCompile(`\]\(([^)]+)\)`, 0)
-	// imageLink — r"\.(png|jpe?g|webp)$" (re.I).
-	imageLink = pyre.MustCompile(`\.(png|jpe?g|webp)$`, pyre.IgnoreCase)
-	// derivedLinks — DERIVED_LINKS: производные представления.
-	derivedLinks = pyre.MustCompile(`edit-list\.md|production-status\.json|storyboard\.md|ROADMAP\.md`, 0)
+	// markdownLink — цель ссылки Markdown «](цель)» в группе 1.
+	markdownLink = toolregex.MustCompile(`\]\(([^)]+)\)`, 0)
+	// imageLink — путь изображения по расширению png, jpg, jpeg или webp без учёта регистра.
+	imageLink = toolregex.MustCompile(`\.(png|jpe?g|webp)$`, toolregex.IgnoreCase)
+	// derivedLinks — имена производных представлений, на которые постановка не ссылается.
+	derivedLinks = toolregex.MustCompile(`edit-list\.md|production-status\.json|storyboard\.md|ROADMAP\.md`, 0)
 )
 
-// snapshotForbidden — SNAPSHOT_FORBIDDEN: служебные поля, которые не хранятся в снимке assets.
+// snapshotForbidden — служебные поля, которые не хранятся в снимке assets.
 var snapshotForbidden = map[string]bool{
 	"prepared_at": true, "account_checked_at": true, "cost": true, "available_credits": true, "video_submitted": true,
 	"result_saved": true, "status": true, "notes": true, "revision": true, "revision_reason": true, "stage": true,
@@ -78,7 +80,8 @@ var snapshotForbidden = map[string]bool{
 	"download_status": true, "service_statuses": true, "submitted": true, "uploaded": true,
 }
 
-// snapshotAliases — SNAPSHOT_ALIASES в порядке объявления: каноническое имя и устаревшие формы.
+// snapshotAliases — каноническое имя поля снимка и его устаревшие формы; порядок групп задаёт
+// порядок предупреждений.
 var snapshotAliases = [][]string{
 	{"generation_id", "generationId"},
 	{"parameters", "arguments"},
@@ -100,7 +103,7 @@ const (
 	textSnapshotReason   = "ID задания отсутствует, но причина не записана"
 	textStatusObject     = "файл должен быть объектом"
 	textNoWorld          = "нет сущности world: время суток, погода и стороны дороги негде хранить"
-	textReferencesDrift  = "карта references расходится с кастингом: python3 -B tools/cast_registry/cast_registry.py sync"
+	textReferencesDrift  = "карта references расходится с кастингом: её пересобирает каркас на странице «Сценарий»."
 	textCardReference    = "главный референс карточки не объявлен"
 	textAcceptedNoScene  = "отпечаток принятия плана, которого нет в реестре"
 	textAcceptedNoKit    = "отпечаток принятия плана без комплекта в assets"
@@ -129,38 +132,39 @@ func (r *Report) schemaError(file, message string) {
 	r.error(file, where, text)
 }
 
-// readJSON — read_json(root, name, report): отсутствующий файл — nil; ValueError (JSON, UTF-8)
+// readJSON — JSON файла проекта name: отсутствующий файл — nil; ValueError (JSON, UTF-8)
 // — ошибка отчёта и nil; прочие ошибки чтения (каталог, права) — исключение.
 func readJSON(root, name string, r *Report) (any, error) {
-	value, err := pycompat.LoadJSONFile(pycompat.JoinPath(root, name))
+	value, err := toolrt.LoadJSONFile(toolrt.JoinPath(root, name))
 	switch {
 	case err == nil:
 		return value, nil
-	case pycompat.Is(err, pycompat.FileNotFoundError):
+	case toolrt.Is(err, toolrt.FileNotFoundError):
 		return nil, nil
-	case pycompat.Is(err, pycompat.ValueError):
+	case toolrt.Is(err, toolrt.ValueError):
 		r.error(name, "$", "JSON не разбирается: "+err.Error())
 		return nil, nil
 	}
 	return nil, err
 }
 
-// expectString — аргумент re.* должен быть строкой, иначе TypeError, как в Python.
+// expectString — текст для поиска регулярным выражением; нестроковое значение — исключение
+// toolrt TypeError.
 func expectString(value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "expected string or bytes-like object, got '%s'", pycompat.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "expected string or bytes-like object, got '%s'", toolrt.TypeName(value))
 	}
 	return text, nil
 }
 
-// historyHits — history_hits(text): найденные признаки хроники с контекстом ±30 символов.
+// historyHits — найденные признаки хроники с контекстом ±30 символов.
 func historyHits(value any) ([]string, error) {
 	text, err := expectString(value)
 	if err != nil {
 		return nil, err
 	}
-	runes := pycompat.Runes(text)
+	runes := toolrt.Runes(text)
 	hits := []string{}
 	for _, entry := range historyPatterns {
 		match, ok := entry.pattern.Search(text)
@@ -169,12 +173,12 @@ func historyHits(value any) ([]string, error) {
 		}
 		start := max(0, match.Start()-30)
 		end := min(len(runes), match.End()+30)
-		hits = append(hits, entry.label+": «…"+pycompat.Strip(pycompat.FromRunes(runes[start:end]))+"…»")
+		hits = append(hits, entry.label+": «…"+toolrt.Strip(toolrt.FromRunes(runes[start:end]))+"…»")
 	}
 	return hits, nil
 }
 
-// links — цели ссылок Markdown (group(1) re.finditer).
+// links — цели всех ссылок Markdown текста по порядку.
 func links(value any) ([]string, error) {
 	text, err := expectString(value)
 	if err != nil {
@@ -188,12 +192,12 @@ func links(value any) ([]string, error) {
 	return result, nil
 }
 
-// get — value.get(key, fallback) с AttributeError для не-словаря.
+// get — значение ключа словаря или fallback (toolrt.DictGet); не-словарь — AttributeError.
 func get(value any, key string, fallback any) (any, error) {
-	return pycompat.DictGet(value, key, fallback)
+	return toolrt.DictGet(value, key, fallback)
 }
 
-// lintScenes — lint_scenes: схема, ссылки и хроника в постановке, референсы и derived_from.
+// lintScenes — plan/scenes.json: схема, ссылки и хроника в постановке, референсы и derived_from.
 func lintScenes(root string, r *Report) (any, error) {
 	data, err := readJSON(root, sceneregistry.ScenesPath, r)
 	if err != nil {
@@ -206,7 +210,7 @@ func lintScenes(root string, r *Report) (any, error) {
 	for _, message := range validateSchema(data, "scenes") {
 		r.schemaError(sceneregistry.ScenesPath, message)
 	}
-	document, ok := data.(*pycompat.Dict)
+	document, ok := data.(*toolrt.Dict)
 	if !ok {
 		return data, nil
 	}
@@ -231,7 +235,7 @@ func lintScenes(root string, r *Report) (any, error) {
 		r.warning(sceneregistry.ScenesPath, "visual_direction", hit)
 	}
 	sequencesValue, _ := get(document, "sequences", []any{})
-	sequences, err := pycompat.Iter(sequencesValue)
+	sequences, err := toolrt.Iter(sequencesValue)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +244,7 @@ func lintScenes(root string, r *Report) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		where := "sequences[" + pycompat.Str(id) + "].direction"
+		where := "sequences[" + toolrt.Str(id) + "].direction"
 		text, _ := get(sequence, "direction", "")
 		hits, err := historyHits(text)
 		if err != nil {
@@ -261,13 +265,13 @@ func lintScenes(root string, r *Report) (any, error) {
 			}
 		}
 	}
-	referencesValue, _ := get(document, "references", pycompat.NewDict())
-	referenceKeys, err := pycompat.SetOf(referencesValue)
+	referencesValue, _ := get(document, "references", toolrt.NewDict())
+	referenceKeys, err := toolrt.SetOf(referencesValue)
 	if err != nil {
 		return nil, err
 	}
 	scenesValue, _ := get(document, "scenes", []any{})
-	scenes, err := pycompat.Iter(scenesValue)
+	scenes, err := toolrt.Iter(scenesValue)
 	if err != nil {
 		return nil, err
 	}
@@ -276,10 +280,10 @@ func lintScenes(root string, r *Report) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		sid := pycompat.Str(sidValue)
+		sid := toolrt.Str(sidValue)
 		for _, field := range []string{"action", "continuity", "notes"} {
 			text, _ := get(scene, field, "")
-			if !pycompat.Truthy(text) {
+			if !toolrt.Truthy(text) {
 				text = ""
 			}
 			hits, err := historyHits(text)
@@ -291,12 +295,12 @@ func lintScenes(root string, r *Report) (any, error) {
 			}
 		}
 		keysValue, _ := get(scene, "references", []any{})
-		keys, err := pycompat.Iter(keysValue)
+		keys, err := toolrt.Iter(keysValue)
 		if err != nil {
 			return nil, err
 		}
 		for _, key := range keys {
-			if pycompat.Equal(key, "—") {
+			if toolrt.Equal(key, "—") {
 				continue
 			}
 			found, err := referenceKeys.Has(key)
@@ -304,10 +308,10 @@ func lintScenes(root string, r *Report) (any, error) {
 				return nil, err
 			}
 			if !found {
-				r.error(sceneregistry.ScenesPath, sid+".references", "неизвестный референс "+pycompat.Str(key))
+				r.error(sceneregistry.ScenesPath, sid+".references", "неизвестный референс "+toolrt.Str(key))
 			}
 		}
-		card, _ := get(scene, "card", pycompat.NewDict())
+		card, _ := get(scene, "card", toolrt.NewDict())
 		primary, err := get(card, "primary_reference", nil)
 		if err != nil {
 			return nil, err
@@ -332,20 +336,21 @@ func lintScenes(root string, r *Report) (any, error) {
 	for _, problem := range problems {
 		if problem.Message != sceneregistry.DerivedFormat {
 			message := strings.TrimRight(strings.TrimPrefix(problem.Message, "derived_from "), ".")
-			r.error(sceneregistry.ScenesPath, pycompat.Str(problem.Shot)+".derived_from", message)
+			r.error(sceneregistry.ScenesPath, toolrt.Str(problem.Shot)+".derived_from", message)
 		}
 	}
 	return data, nil
 }
 
-// castReferences — references(cast) для сверки с реестром. KeyError и TypeError перехватываются
+// castReferences — референсы кастинга по id сущности (имя, путь первого изображения в source/,
+// краткое имя) для сверки с реестром. KeyError и TypeError перехватываются
 // (ok=false — сверка пропускается), AttributeError (сущность не словарь) — нет.
 // nonString — у сущности с изображением нестроковый id: такой ключ не совпадёт с JSON-картой.
-func castReferences(cast *pycompat.Dict) (result *pycompat.Dict, nonString, ok bool, err error) {
-	result = pycompat.NewDict()
+func castReferences(cast *toolrt.Dict) (result *toolrt.Dict, nonString, ok bool, err error) {
+	result = toolrt.NewDict()
 	entities, _ := cast.Value("entities").([]any)
-	caught := func(err error) (*pycompat.Dict, bool, bool, error) {
-		if pycompat.IsAny(err, pycompat.KeyError, pycompat.TypeError) {
+	caught := func(err error) (*toolrt.Dict, bool, bool, error) {
+		if toolrt.IsAny(err, toolrt.KeyError, toolrt.TypeError) {
 			return nil, false, false, nil
 		}
 		return nil, false, false, err
@@ -355,33 +360,33 @@ func castReferences(cast *pycompat.Dict) (result *pycompat.Dict, nonString, ok b
 		if err != nil {
 			return caught(err)
 		}
-		if !pycompat.Truthy(images) {
+		if !toolrt.Truthy(images) {
 			continue
 		}
-		entity := value.(*pycompat.Dict)
-		name, err := pycompat.Item(entity, "name")
+		entity := value.(*toolrt.Dict)
+		name, err := toolrt.Item(entity, "name")
 		if err != nil {
 			return caught(err)
 		}
-		first, err := pycompat.GetItem(images, pycompat.NewInt(0))
+		first, err := toolrt.GetItem(images, toolrt.NewInt(0))
 		if err != nil {
 			return caught(err)
 		}
-		path, err := pycompat.Add("source/", first)
+		path, err := toolrt.Add("source/", first)
 		if err != nil {
 			return caught(err)
 		}
-		reference := pycompat.NewDict()
+		reference := toolrt.NewDict()
 		reference.Set("name", name)
 		reference.Set("path", path)
-		if short := entity.Value("short_name"); pycompat.Truthy(short) && !pycompat.Equal(short, name) {
+		if short := entity.Value("short_name"); toolrt.Truthy(short) && !toolrt.Equal(short, name) {
 			reference.Set("short_name", short)
 		}
-		id, err := pycompat.Item(entity, "id")
+		id, err := toolrt.Item(entity, "id")
 		if err != nil {
 			return caught(err)
 		}
-		if _, err := pycompat.HashKey(id); err != nil {
+		if _, err := toolrt.HashKey(id); err != nil {
 			return caught(err)
 		}
 		if text, isString := id.(string); isString {
@@ -393,9 +398,9 @@ func castReferences(cast *pycompat.Dict) (result *pycompat.Dict, nonString, ok b
 	return result, nonString, true, nil
 }
 
-// lintCast — lint_cast: необязательный plan/cast.json валиден и согласован с references реестра.
+// lintCast — необязательный plan/cast.json валиден и согласован с references реестра.
 func lintCast(root string, scenes any, r *Report) error {
-	if !pycompat.IsFile(pycompat.JoinPath(root, castregistry.CastPath)) {
+	if !toolrt.IsFile(toolrt.JoinPath(root, castregistry.CastPath)) {
 		return nil
 	}
 	data, err := readJSON(root, castregistry.CastPath, r)
@@ -412,7 +417,7 @@ func lintCast(root string, scenes any, r *Report) error {
 	for _, problem := range problems {
 		r.error(castregistry.CastPath, "$", problem)
 	}
-	cast, isDict := data.(*pycompat.Dict)
+	cast, isDict := data.(*toolrt.Dict)
 	if !isDict {
 		return nil
 	}
@@ -422,26 +427,26 @@ func lintCast(root string, scenes any, r *Report) error {
 	}
 	world := false
 	for _, value := range entities {
-		entity, ok := value.(*pycompat.Dict)
+		entity, ok := value.(*toolrt.Dict)
 		if !ok {
 			continue
 		}
 		imagesValue, _ := get(entity, "images", []any{})
-		if !pycompat.Truthy(imagesValue) {
+		if !toolrt.Truthy(imagesValue) {
 			imagesValue = []any{}
 		}
-		images, err := pycompat.Iter(imagesValue)
+		images, err := toolrt.Iter(imagesValue)
 		if err != nil {
 			return err
 		}
 		for _, image := range images {
-			if text, isString := image.(string); isString && !pycompat.IsFile(pycompat.JoinPath(root, "source", text)) {
-				r.error(castregistry.CastPath, pycompat.Str(entity.Value("id"))+".images", "нет файла source/"+text)
+			if text, isString := image.(string); isString && !toolrt.IsFile(toolrt.JoinPath(root, "source", text)) {
+				r.error(castregistry.CastPath, toolrt.Str(entity.Value("id"))+".images", "нет файла source/"+text)
 			}
 		}
 	}
 	for _, value := range entities {
-		if entity, ok := value.(*pycompat.Dict); ok && pycompat.Equal(entity.Value("kind"), "world") {
+		if entity, ok := value.(*toolrt.Dict); ok && toolrt.Equal(entity.Value("kind"), "world") {
 			world = true
 			break
 		}
@@ -453,30 +458,30 @@ func lintCast(root string, scenes any, r *Report) error {
 	if err != nil || !ok {
 		return err
 	}
-	if registry, isDict := scenes.(*pycompat.Dict); isDict {
+	if registry, isDict := scenes.(*toolrt.Dict); isDict {
 		current := registry.Value("references")
-		if nonString || !pycompat.Equal(current, derived) {
+		if nonString || !toolrt.Equal(current, derived) {
 			r.error(sceneregistry.ScenesPath, "references", textReferencesDrift)
 		}
 	}
 	return nil
 }
 
-// lintDescription — lint_description: герои реестра упомянуты в source/description.md.
+// lintDescription — герои реестра упомянуты в source/description.md.
 func lintDescription(root string, data any, r *Report) error {
-	path := pycompat.JoinPath(root, "source", "description.md")
-	document, isDict := data.(*pycompat.Dict)
-	if !pycompat.IsFile(path) || !isDict {
+	path := toolrt.JoinPath(root, "source", "description.md")
+	document, isDict := data.(*toolrt.Dict)
+	if !toolrt.IsFile(path) || !isDict {
 		return nil
 	}
-	text, err := pycompat.ReadText(path)
+	text, err := toolrt.ReadText(path)
 	if err != nil {
 		return err
 	}
-	referencesValue, _ := get(document, "references", pycompat.NewDict())
-	references, ok := referencesValue.(*pycompat.Dict)
+	referencesValue, _ := get(document, "references", toolrt.NewDict())
+	references, ok := referencesValue.(*toolrt.Dict)
 	if !ok {
-		return pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'items'", pycompat.TypeName(referencesValue))
+		return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(referencesValue))
 	}
 	for _, key := range references.Keys() {
 		reference := references.Value(key)
@@ -487,18 +492,18 @@ func lintDescription(root string, data any, r *Report) error {
 		pathValue, _ := get(reference, "path", "")
 		location, isString := pathValue.(string)
 		if !isString {
-			return pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'startswith'", pycompat.TypeName(pathValue))
+			return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'startswith'", toolrt.TypeName(pathValue))
 		}
-		if !strings.HasPrefix(location, "source/heroes/") || !pycompat.Truthy(name) {
+		if !strings.HasPrefix(location, "source/heroes/") || !toolrt.Truthy(name) {
 			continue
 		}
 		title, isString := name.(string)
 		if !isString {
-			return pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'split'", pycompat.TypeName(name))
+			return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'split'", toolrt.TypeName(name))
 		}
-		words := strings.FieldsFunc(title, pycompat.IsSpace)
+		words := strings.FieldsFunc(title, toolrt.IsSpace)
 		if len(words) == 0 {
-			return pycompat.Raise(pycompat.IndexError, "list index out of range")
+			return toolrt.Raise(toolrt.IndexError, "list index out of range")
 		}
 		if !strings.Contains(text, words[0]) {
 			r.warning("source/description.md", key, "персонаж «"+title+"» из реестра не упомянут в сценарии")
@@ -507,13 +512,13 @@ func lintDescription(root string, data any, r *Report) error {
 	return nil
 }
 
-// lintSnapshot — lint_snapshot: технический снимок запроса принятого комплекта.
+// lintSnapshot — технический снимок запроса принятого комплекта.
 func lintSnapshot(root, name string, r *Report) error {
 	snapshot, err := readJSON(root, name, r)
 	if err != nil || snapshot == nil {
 		return err
 	}
-	keys, err := pycompat.SetOf(snapshot)
+	keys, err := toolrt.SetOf(snapshot)
 	if err != nil {
 		return err
 	}
@@ -530,7 +535,7 @@ func lintSnapshot(root, name string, r *Report) error {
 	present := map[string]string{}
 	for _, names := range snapshotAliases {
 		for _, candidate := range names {
-			found, err := pycompat.Contains(snapshot, candidate)
+			found, err := toolrt.Contains(snapshot, candidate)
 			if err != nil {
 				return err
 			}
@@ -543,7 +548,7 @@ func lintSnapshot(root, name string, r *Report) error {
 			}
 		}
 	}
-	model, err := pycompat.Contains(snapshot, "model")
+	model, err := toolrt.Contains(snapshot, "model")
 	if err != nil {
 		return err
 	}
@@ -556,7 +561,7 @@ func lintSnapshot(root, name string, r *Report) error {
 	if key, ok := present["generation_id"]; !ok {
 		r.error(name, "generation_id", textSnapshotID)
 	} else {
-		value, err := pycompat.GetItem(snapshot, key)
+		value, err := toolrt.GetItem(snapshot, key)
 		if err != nil {
 			return err
 		}
@@ -565,7 +570,7 @@ func lintSnapshot(root, name string, r *Report) error {
 			if err != nil {
 				return err
 			}
-			if !pycompat.Truthy(provenance) {
+			if !toolrt.Truthy(provenance) {
 				r.error(name, "provenance", textSnapshotReason)
 			}
 		}
@@ -584,7 +589,7 @@ func lintSnapshot(root, name string, r *Report) error {
 	}
 	adapter, _ := mediaadapters.Get(provider)
 	if warner, ok := adapter.(mediaadapters.SnapshotWarner); ok {
-		warnings, err := warner.SnapshotWarnings(snapshot.(*pycompat.Dict))
+		warnings, err := warner.SnapshotWarnings(snapshot.(*toolrt.Dict))
 		if err != nil {
 			return err
 		}
@@ -595,21 +600,22 @@ func lintSnapshot(root, name string, r *Report) error {
 	return nil
 }
 
-// pathOperandError — TypeError оператора `/` pathlib для нестрокового компонента.
+// pathOperandError — исключение toolrt TypeError соединения пути с нестроковым компонентом; в
+// тексте — имя класса пути ОС.
 func pathOperandError(value any) error {
 	class := "PosixPath"
 	if runtime.GOOS == "windows" {
 		class = "WindowsPath"
 	}
-	return pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", class, pycompat.TypeName(value))
+	return toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", class, toolrt.TypeName(value))
 }
 
-// lintAssets — lint_assets: манифесты assets/shots/M*/manifest.json и их снимки запроса.
+// lintAssets — манифесты assets/shots/M*/manifest.json и их снимки запроса.
 func lintAssets(root string, r *Report) error {
-	manifests := pycompat.Glob(pycompat.JoinPath(root, "assets", "shots"), "M*/manifest.json")
-	pycompat.SortPaths(manifests)
+	manifests := toolrt.Glob(toolrt.JoinPath(root, "assets", "shots"), "M*/manifest.json")
+	toolrt.SortPaths(manifests)
 	for _, manifest := range manifests {
-		name, err := pycompat.RelativeTo(manifest, root)
+		name, err := toolrt.RelativeTo(manifest, root)
 		if err != nil {
 			return err
 		}
@@ -624,21 +630,21 @@ func lintAssets(root string, r *Report) error {
 			r.schemaError(name, message)
 		}
 		var request any
-		if document, ok := packageValue.(*pycompat.Dict); ok {
-			generation, _ := get(document, "generation", pycompat.NewDict())
+		if document, ok := packageValue.(*toolrt.Dict); ok {
+			generation, _ := get(document, "generation", toolrt.NewDict())
 			if request, err = get(generation, "request", nil); err != nil {
 				return err
 			}
 		}
-		requestDict, ok := request.(*pycompat.Dict)
-		if !ok || !pycompat.Truthy(requestDict.Value("path")) {
+		requestDict, ok := request.(*toolrt.Dict)
+		if !ok || !toolrt.Truthy(requestDict.Value("path")) {
 			continue
 		}
 		location, isString := requestDict.Value("path").(string)
 		if !isString {
 			return pathOperandError(requestDict.Value("path"))
 		}
-		snapshot, err := pycompat.RelativeTo(pycompat.JoinPath(filepath.Dir(manifest), location), root)
+		snapshot, err := toolrt.RelativeTo(toolrt.JoinPath(filepath.Dir(manifest), location), root)
 		if err != nil {
 			return err
 		}
@@ -649,22 +655,22 @@ func lintAssets(root string, r *Report) error {
 	return nil
 }
 
-// lintPackages — lint_packages: workflow.json и request.json пакетов plan/awaiting и plan/batches.
+// lintPackages — workflow.json и request.json пакетов plan/awaiting и plan/batches.
 func lintPackages(root string, r *Report) error {
 	folders := []string{}
 	for _, base := range []string{"awaiting", "batches"} {
-		entries := pycompat.Glob(pycompat.JoinPath(root, "plan", base), "*")
-		pycompat.SortPaths(entries)
+		entries := toolrt.Glob(toolrt.JoinPath(root, "plan", base), "*")
+		toolrt.SortPaths(entries)
 		for _, entry := range entries {
-			if pycompat.IsDir(entry) {
+			if toolrt.IsDir(entry) {
 				folders = append(folders, entry)
 			}
 		}
 	}
 	for _, folder := range folders {
-		workflow := pycompat.JoinPath(folder, "workflow.json")
-		if pycompat.IsFile(workflow) {
-			name, err := pycompat.RelativeTo(workflow, root)
+		workflow := toolrt.JoinPath(folder, "workflow.json")
+		if toolrt.IsFile(workflow) {
+			name, err := toolrt.RelativeTo(workflow, root)
 			if err != nil {
 				return err
 			}
@@ -676,17 +682,17 @@ func lintPackages(root string, r *Report) error {
 				for _, message := range validateSchema(data, "workflow") {
 					r.schemaError(name, message)
 				}
-				if document, ok := data.(*pycompat.Dict); ok && pycompat.PathName(filepath.Dir(folder)) == "awaiting" {
-					found, _ := pycompat.Contains(awaitingStages, document.Value("stage"))
+				if document, ok := data.(*toolrt.Dict); ok && toolrt.PathName(filepath.Dir(folder)) == "awaiting" {
+					found, _ := toolrt.Contains(awaitingStages, document.Value("stage"))
 					if !found {
 						r.error(name, "stage", textAwaitingStage)
 					}
 				}
 			}
 		}
-		requests := append(pycompat.Glob(folder, "request.json"), pycompat.Glob(folder, "*/request.json")...)
+		requests := append(toolrt.Glob(folder, "request.json"), toolrt.Glob(folder, "*/request.json")...)
 		for _, request := range requests {
-			name, err := pycompat.RelativeTo(request, root)
+			name, err := toolrt.RelativeTo(request, root)
 			if err != nil {
 				return err
 			}
@@ -704,13 +710,13 @@ func lintPackages(root string, r *Report) error {
 	return nil
 }
 
-// lintProductionStatus — lint_production_status: форма отпечатков принятия и их планы.
+// lintProductionStatus — форма отпечатков принятия и их планы.
 func lintProductionStatus(root string, data any, r *Report) error {
 	value, err := readJSON(root, sceneregistry.ProductionStatus, r)
 	if err != nil {
 		return err
 	}
-	status, ok := value.(*pycompat.Dict)
+	status, ok := value.(*toolrt.Dict)
 	if !ok {
 		if value != nil {
 			r.error(sceneregistry.ProductionStatus, "$", textStatusObject)
@@ -718,22 +724,22 @@ func lintProductionStatus(root string, data any, r *Report) error {
 		return nil
 	}
 	accepted, err := sceneregistry.AcceptedFingerprints(status)
-	if pycompat.Is(err, pycompat.ValueError) {
+	if toolrt.Is(err, toolrt.ValueError) {
 		r.error(sceneregistry.ProductionStatus, "shots", strings.TrimPrefix(err.Error(), sceneregistry.ProductionStatus+": "))
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	ids := pycompat.NewSet()
-	if document, isDict := data.(*pycompat.Dict); isDict {
+	ids := toolrt.NewSet()
+	if document, isDict := data.(*toolrt.Dict); isDict {
 		scenesValue, _ := get(document, "scenes", []any{})
-		scenes, err := pycompat.Iter(scenesValue)
+		scenes, err := toolrt.Iter(scenesValue)
 		if err != nil {
 			return err
 		}
 		for _, scene := range scenes {
-			if entry, ok := scene.(*pycompat.Dict); ok {
+			if entry, ok := scene.(*toolrt.Dict); ok {
 				if err := ids.Add(entry.Value("id")); err != nil {
 					return err
 				}
@@ -743,15 +749,15 @@ func lintProductionStatus(root string, data any, r *Report) error {
 	for _, sid := range accepted.Keys() {
 		if !ids.Contains(sid) {
 			r.warning(sceneregistry.ProductionStatus, "shots."+sid, textAcceptedNoScene)
-		} else if !pycompat.IsFile(pycompat.JoinPath(root, "assets", "shots", sid, "manifest.json")) {
+		} else if !toolrt.IsFile(toolrt.JoinPath(root, "assets", "shots", sid, "manifest.json")) {
 			r.warning(sceneregistry.ProductionStatus, "shots."+sid, textAcceptedNoKit)
 		}
 	}
 	return nil
 }
 
-// Lint — полный отчёт проекта. Ошибка соответствует необработанному исключению Python
-// (трассировка и код 1 в выводе инструмента).
+// Lint — полный отчёт проекта. Ошибка — необработанное исключение toolrt (трассировка и код 1 в
+// выводе инструмента).
 func Lint(root string) (*Report, error) {
 	r := &Report{}
 	data, err := lintScenes(root, r)
@@ -790,31 +796,32 @@ func render(r *Report) string {
 	return strings.Join(lines, "\n")
 }
 
-func itoa(value int) string { return pycompat.NewInt(int64(value)).String() }
+func itoa(value int) string { return toolrt.NewInt(int64(value)).String() }
 
 // records — записи отчёта как словари {level, file, where, message}.
 func records(items []item) []any {
 	result := make([]any, len(items))
 	for index, entry := range items {
-		result[index] = pytool.Record("level", entry.level, "file", entry.file, "where", entry.where, "message", entry.message)
+		result[index] = toolcli.Record("level", entry.level, "file", entry.file, "where", entry.where, "message", entry.message)
 	}
 	return result
 }
 
-// Run — main() инструмента на разрешённом корне проекта.
-func Run(root string, args []string) pytool.Output {
-	parsed, exit := pytool.Args(Parser, args)
+// Run — запуск инструмента на разрешённом корне проекта: отчёт текстом или JSON, код 1 при
+// ошибках (и предупреждениях с --strict).
+func Run(root string, args []string) toolcli.Output {
+	parsed, exit := toolcli.Args(Parser, args)
 	if exit != nil {
 		return *exit
 	}
-	printer := &pytool.Printer{}
+	printer := &toolcli.Printer{}
 	report, err := Lint(root)
 	if err != nil {
 		return printer.Crash(err)
 	}
 	text := render(report)
 	if parsed.Bools["--json"] {
-		if text, err = pytool.JSON(pytool.Record("errors", records(report.Errors), "warnings", records(report.Warnings))); err != nil {
+		if text, err = toolcli.JSON(toolcli.Record("errors", records(report.Errors), "warnings", records(report.Warnings))); err != nil {
 			return printer.Crash(err)
 		}
 	}

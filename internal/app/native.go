@@ -10,8 +10,8 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
-	"songframe-go/internal/diagnostics"
-	"songframe-go/internal/wire"
+	"songframe/internal/diagnostics"
+	"songframe/internal/wire"
 )
 
 // PickFilter сохраняет фильтры существующего диалога; расширения передаются без точки.

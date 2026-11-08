@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 37, in <module>\n    motion = load_motion()\n             ^^^^^^^^^^^^^\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 19, in load_motion\n    data = load(ROOT)\n           ^^^^^^^^^^\n  File \"<songframe>/tools/scene_registry/scene_registry.py\", line 528, in load\n    return validate(json.loads((Path(root) / \"plan/scenes.json\").read_text()))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/scene_registry/scene_registry.py\", line 150, in validate\n    raise ValueError(\"Неизвестная схема или пустой реестр сцен.\")\nValueError: Неизвестная схема или пустой реестр сцен.\n",
+  "stderr": "Traceback (most recent call last):\nValueError: Неизвестная схема или пустой реестр сцен.\n",
   "traceback": true
 }

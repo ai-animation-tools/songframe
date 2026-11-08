@@ -9,10 +9,10 @@ import (
 	"regexp"
 	"syscall"
 
-	"songframe-go/internal/applymontage"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/store"
+	"songframe/internal/applymontage"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
+	"songframe/internal/store"
 )
 
 // Восстановление прерванной публикации ручного монтажа без инструмента: журнал
@@ -46,9 +46,9 @@ func targetAllowed(path string) bool {
 	return fixedTargets[path] || shotTarget.MatchString(path) || cardTarget.MatchString(path)
 }
 
-// Digest — SHA-256 файла или nil, если пути нет; каталог — ошибка чтения node:fs.
+// Digest — SHA-256 файла или nil, если пути нет; каталог — ошибка чтения ReadError.
 func Digest(path string) (*string, error) {
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return nil, nil
 	}
 	value, err := fileHash(path)
@@ -58,8 +58,9 @@ func Digest(path string) (*string, error) {
 	return &value, nil
 }
 
-// ReadJournal — readLocalJson(path): nil без ошибки для отсутствующего файла; повреждённый JSON и
-// примитив — ошибка «Не удалось прочитать <путь>: <причина>…». Массив допускается (typeof object).
+// ReadJournal читает JSON журнала: nil без ошибки для отсутствующего файла; повреждённый JSON и
+// примитив — ошибка «Не удалось прочитать <путь>: <причина>…». Массив допускается наравне с
+// объектом.
 func ReadJournal(path string) (any, error) {
 	data, err := os.ReadFile(path)
 	if errors.Is(err, syscall.ENOENT) {
@@ -68,11 +69,11 @@ func ReadJournal(path string) (any, error) {
 	if err != nil {
 		return nil, errors.New(textLocalReadFailed(path, ReadError(path, err).Error()))
 	}
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 	if err != nil {
 		return nil, errors.New(textLocalReadFailed(path, err.Error()))
 	}
-	if _, isObject := jscompat.AsObject(value); !isObject && !jscompat.IsArray(value) {
+	if _, isObject := dynvalue.AsObject(value); !isObject && !dynvalue.IsArray(value) {
 		return nil, errors.New(textLocalReadFailed(path, objectExpected))
 	}
 	return value, nil
@@ -98,23 +99,23 @@ func shaField(value any) (*string, bool) {
 
 // journalFiles — проверка журнала: схема 1, id равен имени папки, files — массив записей с
 // разрешёнными неповторяющимися путями и корректными SHA. Иначе errNotJournal.
-func journalFiles(journal *jscompat.Object, name string) ([]journalEntry, error) {
-	files, ok := jscompat.AsArray(journal.Value("files"))
-	if !jscompat.StrictEqual(journal.Value("schema_version"), 1.0) || !jscompat.StrictEqual(journal.Value("id"), name) || !ok {
+func journalFiles(journal *dynvalue.Object, name string) ([]journalEntry, error) {
+	files, ok := dynvalue.AsArray(journal.Value("files"))
+	if !dynvalue.StrictEqual(journal.Value("schema_version"), 1.0) || !dynvalue.StrictEqual(journal.Value("id"), name) || !ok {
 		return nil, errNotJournal
 	}
 	entries := []journalEntry{}
 	seen := map[string]bool{}
 	for _, item := range files {
-		if !jscompat.Truthy(item) {
+		if !dynvalue.Truthy(item) {
 			return nil, errNotJournal
 		}
-		path, ok := jscompat.Get(item, "path").(string)
+		path, ok := dynvalue.Get(item, "path").(string)
 		if !ok || !targetAllowed(path) {
 			return nil, errNotJournal
 		}
-		before, beforeOK := shaField(jscompat.Get(item, "before"))
-		after, afterOK := shaField(jscompat.Get(item, "after"))
+		before, beforeOK := shaField(dynvalue.Get(item, "before"))
+		after, afterOK := shaField(dynvalue.Get(item, "after"))
 		if !beforeOK || !afterOK {
 			return nil, errNotJournal
 		}
@@ -129,7 +130,7 @@ func journalFiles(journal *jscompat.Object, name string) ([]journalEntry, error)
 	return entries, nil
 }
 
-// sameDigest — current === expected для SHA или null.
+// sameDigest сравнивает SHA-256 или их отсутствие (nil): два nil равны, nil и SHA — нет.
 func sameDigest(current, expected *string) bool {
 	if current == nil || expected == nil {
 		return current == nil && expected == nil
@@ -137,18 +138,18 @@ func sameDigest(current, expected *string) bool {
 	return *current == *expected
 }
 
-// RecoverApplications — recoverMontageApplications(project): каждый журнал (папка с именем из 32
-// строчных hex) в состоянии publishing откатывается. Весь набор файлов проверяется до первой
+// RecoverApplications откатывает незавершённые применения монтажа: каждый журнал (папка с именем
+// из 32 строчных hex) в состоянии publishing откатывается. Весь набор файлов проверяется до первой
 // записи: файл, изменённый после сбоя, или повреждённый резерв останавливает восстановление, и
 // последующая ручная правка не теряется. Затем файлы возвращаются в обратном порядке (новые —
 // удаляются), журнал получает state rolled_back, staging удаляется. Запись идёт мимо шлюза
 // проекта: шлюз как раз запрещает запись, пока журнал publishing. Повторный вызов ничего не меняет.
 func RecoverApplications(project string) error {
 	history := filepath.Join(project, "plan", "montage-history")
-	if !jscompat.Exists(history) {
+	if !dynvalue.Exists(history) {
 		return nil
 	}
-	entries, err := jscompat.ReadDir(history)
+	entries, err := dynvalue.ReadDir(history)
 	if err != nil {
 		return err
 	}
@@ -162,10 +163,10 @@ func RecoverApplications(project string) error {
 		if err != nil {
 			return err
 		}
-		if value == nil || !jscompat.StrictEqual(jscompat.Get(value, "state"), "publishing") {
+		if value == nil || !dynvalue.StrictEqual(dynvalue.Get(value, "state"), "publishing") {
 			continue
 		}
-		journal, _ := jscompat.AsObject(value)
+		journal, _ := dynvalue.AsObject(value)
 		files, err := journalFiles(journal, entry.Name())
 		if err != nil {
 			return errors.New(textUnknownJournal(path))
@@ -196,9 +197,9 @@ func RecoverApplications(project string) error {
 		for index := len(files) - 1; index >= 0; index-- {
 			target := filepath.Join(project, filepath.FromSlash(files[index].path))
 			if files[index].before == nil {
-				// rmSync(path, { force: true }): отсутствующий файл — не ошибка.
+				// Удаление созданного файла: отсутствующий файл — не ошибка.
 				if err := os.Remove(target); err != nil && !errors.Is(err, syscall.ENOENT) {
-					return jscompat.FsError("rm", target, err)
+					return dynvalue.FsError("rm", target, err)
 				}
 				continue
 			}
@@ -206,7 +207,7 @@ func RecoverApplications(project string) error {
 				return err
 			}
 		}
-		// { ...journal, state: 'rolled_back' }: ключ state остаётся на своём месте.
+		// Копия журнала с state rolled_back: ключ state остаётся на своём месте среди прочих.
 		rolled := journal.Clone()
 		rolled.Set("state", "rolled_back")
 		if err := projectfs.WriteFile(path, encode(rolled), 0); err != nil {

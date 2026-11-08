@@ -6,7 +6,7 @@
 // нужен разбор текста песни из internal/timing, а timing сам зависит от sources.
 //
 // Файлы, имена изображений, промпты, порядок полей описи и тексты проблем зафиксированы эталонами
-// testdata/golden/sources-*. Прежняя опись читается деревом jscompat, поэтому неизвестные поля
+// testdata/golden/sources-*. Прежняя опись читается деревом dynvalue, поэтому неизвестные поля
 // трека, текста, идеи, обложки и типов сохраняются как есть. Каждый файл заменяется атомарно
 // (временный файл и rename), запись проходит шлюз projectfs, а удаление по путям прежней описи
 // не выходит за пределы source/.
@@ -30,11 +30,11 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/process"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/sources"
-	"songframe-go/internal/timing"
+	"songframe/internal/dynvalue"
+	"songframe/internal/process"
+	"songframe/internal/projectfs"
+	"songframe/internal/sources"
+	"songframe/internal/timing"
 )
 
 // Фиксированные имена в source/.
@@ -155,9 +155,9 @@ var (
 
 var imageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".webp": true}
 
-// extname — path.extname: последняя точка имени, если она не первая.
+// extname — расширение имени файла от последней точки, если она не первая; иначе "".
 func extname(path string) string {
-	name := jscompat.Basename(path)
+	name := dynvalue.Basename(path)
 	index := strings.LastIndex(name, ".")
 	if index <= 0 {
 		return ""
@@ -167,16 +167,16 @@ func extname(path string) string {
 
 // manifestKinds превращает kinds прежней описи в список; nil — поля нет (действует набор по умолчанию).
 func manifestKinds(previous any) ([]Kind, bool) {
-	list, ok := jscompat.AsArray(jscompat.Get(previous, "kinds"))
+	list, ok := dynvalue.AsArray(dynvalue.Get(previous, "kinds"))
 	if !ok {
 		return nil, false
 	}
 	kinds := make([]Kind, 0, len(list))
 	for _, item := range list {
 		kind := Kind{}
-		kind.ID, _ = jscompat.Get(item, "id").(string)
-		kind.Label, _ = jscompat.Get(item, "label").(string)
-		kind.Dir, _ = jscompat.Get(item, "dir").(string)
+		kind.ID, _ = dynvalue.Get(item, "id").(string)
+		kind.Label, _ = dynvalue.Get(item, "label").(string)
+		kind.Dir, _ = dynvalue.Get(item, "dir").(string)
 		kinds = append(kinds, kind)
 	}
 	return kinds, true
@@ -189,21 +189,21 @@ func resolveKinds(input *Input, previous any) ([]Kind, any) {
 		return *input.Kinds, kindsValue(*input.Kinds)
 	}
 	if kinds, ok := manifestKinds(previous); ok {
-		return kinds, jscompat.Get(previous, "kinds")
+		return kinds, dynvalue.Get(previous, "kinds")
 	}
 	return DefaultKinds, kindsValue(DefaultKinds)
 }
 
-func kindsValue(kinds []Kind) *jscompat.Array {
+func kindsValue(kinds []Kind) *dynvalue.Array {
 	items := make([]any, 0, len(kinds))
 	for _, kind := range kinds {
-		object := jscompat.NewObject()
+		object := dynvalue.NewObject()
 		object.Set("id", kind.ID)
 		object.Set("label", kind.Label)
 		object.Set("dir", kind.Dir)
 		items = append(items, object)
 	}
-	return &jscompat.Array{Items: items}
+	return &dynvalue.Array{Items: items}
 }
 
 // ValidateKinds проверяет коды, подписи и папки типов, без повторов; world зарезервирован.
@@ -221,7 +221,7 @@ func ValidateKinds(kinds []Kind) []string {
 		if kind.ID == reservedKind {
 			problems = append(problems, kindReserved)
 		}
-		if jscompat.Trim(kind.Label) == "" {
+		if dynvalue.Trim(kind.Label) == "" {
 			problems = append(problems, "У типа "+kind.ID+" нет подписи.")
 		}
 		if !dirSlugPattern.MatchString(kind.Dir) {
@@ -261,7 +261,7 @@ func ValidateReferences(references []ReferenceInput, kinds []Kind) []string {
 			problems = append(problems, "Код референса повторяется: "+ref.ID+".")
 		}
 		seen[ref.ID] = true
-		if jscompat.Trim(ref.Name) == "" {
+		if dynvalue.Trim(ref.Name) == "" {
 			problems = append(problems, "У референса "+ref.ID+" нет названия.")
 		}
 		if !known[ref.Kind] {
@@ -280,8 +280,8 @@ func ValidateReferences(references []ReferenceInput, kinds []Kind) []string {
 			case source == nil || *source == "":
 				problems = append(problems, "У референса "+ref.ID+" файл без пути.")
 			case file.SourcePath != nil && *file.SourcePath != "" && !imageExtensions[strings.ToLower(extname(*file.SourcePath))]:
-				problems = append(problems, "Референс "+ref.ID+": допустимы PNG, JPG и WebP, получен "+jscompat.Basename(*file.SourcePath)+".")
-			case file.SourcePath != nil && *file.SourcePath != "" && !jscompat.Exists(*file.SourcePath):
+				problems = append(problems, "Референс "+ref.ID+": допустимы PNG, JPG и WebP, получен "+dynvalue.Basename(*file.SourcePath)+".")
+			case file.SourcePath != nil && *file.SourcePath != "" && !dynvalue.Exists(*file.SourcePath):
 				problems = append(problems, "Референс "+ref.ID+": файл не найден: "+*file.SourcePath+".")
 			}
 		}
@@ -291,19 +291,19 @@ func ValidateReferences(references []ReferenceInput, kinds []Kind) []string {
 
 // readText — содержимое текстового файла или "", если его нет.
 func readText(path string) (string, error) {
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return "", nil
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", jscompat.FsError("open", path, err)
+		return "", dynvalue.FsError("open", path, err)
 	}
-	return jscompat.DecodeUTF8(data), nil
+	return dynvalue.DecodeUTF8(data), nil
 }
 
-// pathOf — строковое поле path описи или ошибка, как TypeError join(…) на нестроковом пути.
+// pathOf — строковое поле path описи или TypeError dynvalue.PathArg на нестроковом пути.
 func pathOf(file any) (string, error) {
-	return jscompat.PathArg("path", jscompat.Get(file, "path"))
+	return dynvalue.PathArg("path", dynvalue.Get(file, "path"))
 }
 
 // ViewProject — sources.view: опись, тексты и абсолютные пути изображений. Ничего не пишет.
@@ -314,36 +314,36 @@ func ViewProject(project string) (View, error) {
 	view := View{Manifest: json.RawMessage("null"), ReferenceFilePaths: map[string]string{}, Problems: []string{},
 		PinnedReferences: map[string][]string{}, EntityKinds: map[string]string{}}
 	if manifest != nil {
-		view.Manifest = jscompat.Raw(manifest)
+		view.Manifest = dynvalue.Raw(manifest)
 		check := func(file any, label string) error {
-			if !jscompat.Truthy(file) {
+			if !dynvalue.Truthy(file) {
 				return nil
 			}
 			path, err := pathOf(file)
 			if err != nil {
 				return err
 			}
-			if !jscompat.Exists(filepath.Join(source, path)) {
+			if !dynvalue.Exists(filepath.Join(source, path)) {
 				view.Problems = append(view.Problems, fmt.Sprintf(manifestFileMissingFn, label, path))
 			}
 			return nil
 		}
 		for _, part := range []struct{ key, label string }{{"track", trackLabel}, {"lyrics", lyricsLabel}, {"idea", ideaLabel}, {"cover", coverLabel}} {
-			if err := check(jscompat.Get(manifest, part.key), part.label); err != nil {
+			if err := check(dynvalue.Get(manifest, part.key), part.label); err != nil {
 				return View{}, err
 			}
 		}
-		references, err := jscompat.Iterate(jscompat.Get(manifest, "references"))
+		references, err := dynvalue.Iterate(dynvalue.Get(manifest, "references"))
 		if err != nil {
 			return View{}, err
 		}
 		for _, ref := range references {
-			files, err := jscompat.Iterate(jscompat.Get(ref, "files"))
+			files, err := dynvalue.Iterate(dynvalue.Get(ref, "files"))
 			if err != nil {
 				return View{}, err
 			}
 			for _, file := range files {
-				if err := check(file, referenceLabelPrefix+jscompat.ToString(jscompat.Get(ref, "id"))); err != nil {
+				if err := check(file, referenceLabelPrefix+dynvalue.ToString(dynvalue.Get(ref, "id"))); err != nil {
 					return View{}, err
 				}
 				path, err := pathOf(file)
@@ -353,7 +353,7 @@ func ViewProject(project string) (View, error) {
 				view.ReferenceFilePaths[path] = filepath.Join(source, path)
 			}
 		}
-	} else if jscompat.Exists(filepath.Join(source, manifestName)) {
+	} else if dynvalue.Exists(filepath.Join(source, manifestName)) {
 		view.Problems = append(view.Problems, sources.ManifestInvalid)
 	}
 	var err error
@@ -363,7 +363,7 @@ func ViewProject(project string) (View, error) {
 	if view.IdeaText, err = readText(filepath.Join(source, manifestPath(manifest, "idea", ideaName))); err != nil {
 		return View{}, err
 	}
-	if cover := jscompat.Get(manifest, "cover"); jscompat.Truthy(cover) {
+	if cover := dynvalue.Get(manifest, "cover"); dynvalue.Truthy(cover) {
 		path, err := pathOf(cover)
 		if err != nil {
 			return View{}, err
@@ -374,9 +374,9 @@ func ViewProject(project string) (View, error) {
 	return view, nil
 }
 
-// manifestPath — manifest?.[key]?.path ?? fallback.
+// manifestPath — строковый путь manifest[key].path или fallback.
 func manifestPath(manifest any, key, fallback string) string {
-	if path, ok := jscompat.GetPath(manifest, key, "path").(string); ok {
+	if path, ok := dynvalue.GetPath(manifest, key, "path").(string); ok {
 		return path
 	}
 	return fallback
@@ -387,29 +387,29 @@ func manifestPath(manifest any, key, fallback string) string {
 func Validate(project string, input Input) ([]string, error) {
 	existing := sources.ReadManifest(project)
 	problems := []string{}
-	if input.Track == nil && !jscompat.Truthy(jscompat.Get(existing, "track")) {
+	if input.Track == nil && !dynvalue.Truthy(dynvalue.Get(existing, "track")) {
 		problems = append(problems, trackRequired)
 	}
 	if input.Track != nil {
-		if !jscompat.Exists(input.Track.Path) {
+		if !dynvalue.Exists(input.Track.Path) {
 			problems = append(problems, "Файл трека не найден: "+input.Track.Path)
 		} else if strings.ToLower(extname(input.Track.Path)) != ".mp3" {
 			problems = append(problems, trackFormatInvalid)
 		}
 	}
 	textProblem := func(value *TextInput, saved any, label, required string) {
-		if value == nil && !jscompat.Truthy(saved) {
+		if value == nil && !dynvalue.Truthy(saved) {
 			problems = append(problems, required)
 		}
-		if value != nil && value.Path != nil && !jscompat.Exists(*value.Path) {
+		if value != nil && value.Path != nil && !dynvalue.Exists(*value.Path) {
 			problems = append(problems, label+": файл не найден: "+*value.Path)
 		}
-		if value != nil && value.Text != nil && jscompat.Trim(*value.Text) == "" {
+		if value != nil && value.Text != nil && dynvalue.Trim(*value.Text) == "" {
 			problems = append(problems, label+": пустой текст.")
 		}
 	}
-	textProblem(input.Lyrics, jscompat.Get(existing, "lyrics"), lyricsLabel, lyricsRequired)
-	textProblem(input.Idea, jscompat.Get(existing, "idea"), clipIdeaLabel, ideaRequired)
+	textProblem(input.Lyrics, dynvalue.Get(existing, "lyrics"), lyricsLabel, lyricsRequired)
+	textProblem(input.Idea, dynvalue.Get(existing, "idea"), clipIdeaLabel, ideaRequired)
 	lyricsText, hasLyrics, err := lyricsForCheck(project, input.Lyrics, existing)
 	if err != nil {
 		return nil, err
@@ -418,7 +418,7 @@ func Validate(project string, input Input) ([]string, error) {
 		problems = append(problems, timing.AnalyzeLyrics(lyricsText).Problems...)
 	}
 	if input.Cover != nil && input.Cover.Path != nil {
-		if !jscompat.Exists(*input.Cover.Path) {
+		if !dynvalue.Exists(*input.Cover.Path) {
 			problems = append(problems, "Файл обложки не найден: "+*input.Cover.Path)
 		} else if !imageExtensions[strings.ToLower(extname(*input.Cover.Path))] {
 			problems = append(problems, coverFormatInvalid)
@@ -439,27 +439,27 @@ func lyricsForCheck(project string, input *TextInput, existing any) (string, boo
 	path := ""
 	if input != nil && input.Path != nil {
 		path = *input.Path
-	} else if saved := jscompat.Get(existing, "lyrics"); jscompat.Truthy(saved) {
+	} else if saved := dynvalue.Get(existing, "lyrics"); dynvalue.Truthy(saved) {
 		relative, err := pathOf(saved)
 		if err != nil {
 			return "", false, err
 		}
 		path = filepath.Join(project, sourceDir, relative)
 	}
-	if path == "" || !jscompat.Exists(path) {
+	if path == "" || !dynvalue.Exists(path) {
 		return "", false, nil
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", false, jscompat.FsError("open", path, err)
+		return "", false, dynvalue.FsError("open", path, err)
 	}
-	return jscompat.DecodeUTF8(data), true, nil
+	return dynvalue.DecodeUTF8(data), true, nil
 }
 
 // normalizeText — переносы строк LF, без пробелов в конце, ровно один перевод строки в конце.
 func normalizeText(text string) string {
 	text = strings.ReplaceAll(text, "\r\n", "\n")
-	return strings.TrimRightFunc(text, func(char rune) bool { return jscompat.Trim(string(char)) == "" }) + "\n"
+	return strings.TrimRightFunc(text, func(char rune) bool { return dynvalue.Trim(string(char)) == "" }) + "\n"
 }
 
 // textFrom — содержимое файла или введённый текст.
@@ -467,9 +467,9 @@ func textFrom(value *TextInput) (string, error) {
 	if value.Path != nil {
 		data, err := os.ReadFile(*value.Path)
 		if err != nil {
-			return "", jscompat.FsError("open", *value.Path, err)
+			return "", dynvalue.FsError("open", *value.Path, err)
 		}
-		return jscompat.DecodeUTF8(data), nil
+		return dynvalue.DecodeUTF8(data), nil
 	}
 	return *value.Text, nil
 }
@@ -494,11 +494,11 @@ func (p DurationProbe) probe(ctx context.Context, path string) any {
 	if !ok || math.IsInf(value, 0) {
 		return nil
 	}
-	// Math.round(value * 1000) / 1000: половина округляется вверх.
+	// Округление до тысячных: половина округляется вверх.
 	return math.Floor(value*1000+0.5) / 1000
 }
 
-// floatPrefix — числовой префикс, который принимает Number.parseFloat.
+// floatPrefix — числовой префикс строки (знак, цифры с точкой, экспонента); хвост после него игнорируется.
 var floatPrefix = regexp.MustCompile(`^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?`)
 
 func parseFloat(text string) (float64, bool) {
@@ -511,11 +511,11 @@ func parseFloat(text string) (float64, bool) {
 }
 
 // describe — {path, sha256, bytes} файла внутри source; путь всегда через «/».
-func describe(source, relative string) (*jscompat.Object, error) {
+func describe(source, relative string) (*dynvalue.Object, error) {
 	full := filepath.Join(source, filepath.FromSlash(relative))
 	file, err := os.Open(full)
 	if err != nil {
-		return nil, jscompat.FsError("open", full, err)
+		return nil, dynvalue.FsError("open", full, err)
 	}
 	defer file.Close()
 	hash := sha256.New()
@@ -523,7 +523,7 @@ func describe(source, relative string) (*jscompat.Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	object := jscompat.NewObject()
+	object := dynvalue.NewObject()
 	object.Set("path", strings.ReplaceAll(relative, "\\", "/"))
 	object.Set("sha256", hex.EncodeToString(hash.Sum(nil)))
 	object.Set("bytes", float64(size))
@@ -551,7 +551,7 @@ func writeText(path, text string) error {
 func copyFile(from, to string) error {
 	source, err := os.Open(from)
 	if err != nil {
-		return jscompat.FsError("copyfile", from, err)
+		return dynvalue.FsError("copyfile", from, err)
 	}
 	defer source.Close()
 	mode := os.FileMode(0o666)
@@ -606,7 +606,7 @@ func removeLocal(source, relative string) error {
 	return nil
 }
 
-// stringValue — значение, если это непустая строка (истинная строка в JS), иначе "".
+// stringValue — значение, если это строка, иначе "".
 func stringValue(value any) string {
 	text, _ := value.(string)
 	return text
@@ -614,7 +614,7 @@ func stringValue(value any) string {
 
 // orNull — `value ?? null` для полей описи.
 func orNull(value any) any {
-	if jscompat.IsNullish(value) {
+	if dynvalue.IsNullish(value) {
 		return nil
 	}
 	return value
@@ -633,7 +633,7 @@ func Save(ctx context.Context, project string, input Input, ffprobe DurationProb
 	if err != nil {
 		return nil, err
 	}
-	return jscompat.Raw(manifest), nil
+	return dynvalue.Raw(manifest), nil
 }
 
 // SaveOptions — необязательные параметры SaveManifest.
@@ -647,14 +647,14 @@ type SaveOptions struct {
 	Pinned map[string]bool
 }
 
-// SaveManifest — Save, возвращающий записанную опись деревом jscompat (её читает синхронизация
+// SaveManifest — Save, возвращающий записанную опись деревом dynvalue (её читает синхронизация
 // кастинга без повторного разбора файла) и перенесённые файлы: прежний путь → новый, оба внутри
 // source/. Кастинг ссылается на изображения этими путями, поэтому вызывающий заменяет их у себя.
 //
 // Все записи Save заменяют файлы через rename (replaceFile) или удаляют их, но никогда не пишут в
 // существующий файл на месте: на этом держится резерв жёсткими ссылками в internal/referenceimage.
 // Перенос тоже копирует файл на новое место, а прежний удаляет cleanup.
-func SaveManifest(ctx context.Context, project string, input Input, ffprobe DurationProbe, options SaveOptions) (*jscompat.Object, map[string]string, error) {
+func SaveManifest(ctx context.Context, project string, input Input, ffprobe DurationProbe, options SaveOptions) (*dynvalue.Object, map[string]string, error) {
 	problems, err := Validate(project, input)
 	if err != nil {
 		return nil, nil, err
@@ -682,7 +682,7 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 	}
 	s := &saver{ctx: ctx, source: source, keep: map[string]bool{}, pinned: options.Pinned, moves: map[string]string{}}
 
-	track := orNull(jscompat.Get(previous, "track"))
+	track := orNull(dynvalue.Get(previous, "track"))
 	if input.Track != nil {
 		if err := copyFile(input.Track.Path, filepath.Join(source, trackName)); err != nil {
 			return nil, nil, err
@@ -691,11 +691,11 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 		if err != nil {
 			return nil, nil, err
 		}
-		described.Set("original_name", jscompat.Basename(input.Track.Path))
+		described.Set("original_name", dynvalue.Basename(input.Track.Path))
 		described.Set("duration_seconds", ffprobe.probe(ctx, filepath.Join(source, trackName)))
 		track = described
 	}
-	lyrics := orNull(jscompat.Get(previous, "lyrics"))
+	lyrics := orNull(dynvalue.Get(previous, "lyrics"))
 	if input.Lyrics != nil {
 		text, err := textFrom(input.Lyrics)
 		if err != nil {
@@ -715,10 +715,10 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 		for _, section := range parsed.Sections {
 			sections = append(sections, section)
 		}
-		described.Set("sections", &jscompat.Array{Items: sections})
+		described.Set("sections", &dynvalue.Array{Items: sections})
 		lyrics = described
 	}
-	idea := orNull(jscompat.Get(previous, "idea"))
+	idea := orNull(dynvalue.Get(previous, "idea"))
 	if input.Idea != nil {
 		text, err := textFrom(input.Idea)
 		if err != nil {
@@ -731,7 +731,7 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 			return nil, nil, err
 		}
 	}
-	cover := orNull(jscompat.Get(previous, "cover"))
+	cover := orNull(dynvalue.Get(previous, "cover"))
 	if input.Cover != nil && (input.Cover.Remove != nil || input.Cover.Path != nil) {
 		if cover != nil {
 			path, err := pathOf(cover)
@@ -762,7 +762,7 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 		return nil, nil, err
 	}
 
-	manifest := jscompat.NewObject()
+	manifest := dynvalue.NewObject()
 	manifest.Set("schema_version", 1.0)
 	manifest.Set("kinds", kindsJSON)
 	manifest.Set("track", track)
@@ -771,7 +771,7 @@ func SaveManifest(ctx context.Context, project string, input Input, ffprobe Dura
 	manifest.Set("cover", cover)
 	manifest.Set("references", references)
 	manifest.Set("updated_at", time.Now().UTC().Format("2006-01-02T15:04:05.000Z"))
-	if err := writeText(filepath.Join(source, manifestName), jscompat.StringifyIndent(manifest, "  ")+"\n"); err != nil {
+	if err := writeText(filepath.Join(source, manifestName), dynvalue.StringifyIndent(manifest, "  ")+"\n"); err != nil {
 		return nil, nil, err
 	}
 	return manifest, s.moves, nil
@@ -797,7 +797,7 @@ func (s *saver) savePrompt(relative, text string) error {
 	if err != nil {
 		return err
 	}
-	if !jscompat.Exists(path) || normalizeText(current) != normalizeText(text) {
+	if !dynvalue.Exists(path) || normalizeText(current) != normalizeText(text) {
 		if err := writeText(path, normalizeText(text)); err != nil {
 			return err
 		}
@@ -812,18 +812,18 @@ type fileKey struct{ ref, file int }
 // references строит референсы новой описи. Порядок шагов важен: сначала имена
 // новых изображений (без занятых путей), затем пути промптов, которые перезапишутся, и только
 // потом запись — общий старый путь промпта может требоваться другому виду без изменений.
-func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[string]string) (*jscompat.Array, error) {
-	previousRefs, _ := jscompat.AsArray(jscompat.Get(previous, "references"))
+func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[string]string) (*dynvalue.Array, error) {
+	previousRefs, _ := dynvalue.AsArray(dynvalue.Get(previous, "references"))
 	previousFiles := map[string]any{}
 	for _, ref := range previousRefs {
-		files, _ := jscompat.AsArray(jscompat.Get(ref, "files"))
+		files, _ := dynvalue.AsArray(dynvalue.Get(ref, "files"))
 		for _, file := range files {
-			previousFiles[jscompat.ToString(jscompat.Get(file, "path"))] = file
+			previousFiles[dynvalue.ToString(dynvalue.Get(file, "path"))] = file
 		}
 	}
 	previousFilePrompts := map[string]string{}
 	for _, file := range previousFiles {
-		if prompt := stringValue(jscompat.Get(file, "prompt")); prompt != "" {
+		if prompt := stringValue(dynvalue.Get(file, "prompt")); prompt != "" {
 			text, err := readText(filepath.Join(s.source, filepath.FromSlash(prompt)))
 			if err != nil {
 				return nil, err
@@ -835,7 +835,7 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 		if file.ExistingPath == nil || *file.ExistingPath == "" {
 			return ""
 		}
-		return stringValue(jscompat.Get(previousFiles[*file.ExistingPath], "prompt"))
+		return stringValue(dynvalue.Get(previousFiles[*file.ExistingPath], "prompt"))
 	}
 
 	imagePaths := map[fileKey]string{}
@@ -877,7 +877,7 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 	changedPromptPaths := map[string]bool{}
 	for r, ref := range inputs {
 		for f, file := range ref.Files {
-			if file.Prompt == nil || jscompat.Trim(*file.Prompt) == "" {
+			if file.Prompt == nil || dynvalue.Trim(*file.Prompt) == "" {
 				continue
 			}
 			old := promptOf(file)
@@ -893,7 +893,7 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 	}
 	previousPrompts := map[string]commonPrompt{}
 	for _, ref := range previousRefs {
-		path := stringValue(jscompat.Get(ref, "prompt"))
+		path := stringValue(dynvalue.Get(ref, "prompt"))
 		text := ""
 		if path != "" {
 			var err error
@@ -901,10 +901,10 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 				return nil, err
 			}
 		}
-		previousPrompts[jscompat.ToString(jscompat.Get(ref, "id"))] = commonPrompt{path: path, text: text}
+		previousPrompts[dynvalue.ToString(dynvalue.Get(ref, "id"))] = commonPrompt{path: path, text: text}
 	}
 
-	result := make([]*jscompat.Object, 0, len(inputs))
+	result := make([]*dynvalue.Object, 0, len(inputs))
 	for r, ref := range inputs {
 		dir := dirOf[ref.Kind]
 		if err := os.MkdirAll(filepath.Join(s.source, filepath.FromSlash(dir)), 0o777); err != nil {
@@ -916,7 +916,7 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 			moved := false
 			if file.ExistingPath == nil || *file.ExistingPath == "" {
 				target := filepath.Join(s.source, filepath.FromSlash(relative))
-				if jscompat.Resolve("", *file.SourcePath) != jscompat.Resolve("", target) {
+				if dynvalue.Resolve("", *file.SourcePath) != dynvalue.Resolve("", target) {
 					if err := copyFile(*file.SourcePath, target); err != nil {
 						return nil, err
 					}
@@ -931,12 +931,12 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 			previousPrompt := promptOf(file)
 			// Старый клиент не знает поле prompt и не должен удалять уже сохранённый промпт изображения.
 			unchanged := previousPrompt != "" && (file.Prompt == nil ||
-				(jscompat.Trim(*file.Prompt) != "" && normalizeText(*file.Prompt) == normalizeText(previousFilePrompts[previousPrompt])))
+				(dynvalue.Trim(*file.Prompt) != "" && normalizeText(*file.Prompt) == normalizeText(previousFilePrompts[previousPrompt])))
 			var prompt any
 			switch {
 			case unchanged:
 				prompt = previousPrompt
-			case file.Prompt != nil && jscompat.Trim(*file.Prompt) != "":
+			case file.Prompt != nil && dynvalue.Trim(*file.Prompt) != "":
 				prompt = relative + ".prompt.txt"
 			}
 			if path, ok := prompt.(string); ok {
@@ -962,29 +962,29 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 			if file.View != nil {
 				described.Set("view", *file.View)
 			}
-			described.Set("note", jscompat.Trim(file.Note))
+			described.Set("note", dynvalue.Trim(file.Note))
 			described.Set("prompt", prompt)
 			files = append(files, described)
 		}
-		name := jscompat.Trim(ref.Name)
-		short := jscompat.Trim(ref.ShortName)
+		name := dynvalue.Trim(ref.Name)
+		short := dynvalue.Trim(ref.ShortName)
 		if short == "" {
 			short = name
 		}
-		object := jscompat.NewObject()
+		object := dynvalue.NewObject()
 		object.Set("id", ref.ID)
 		object.Set("kind", ref.Kind)
 		object.Set("name", name)
 		object.Set("short_name", short)
-		object.Set("description", jscompat.Trim(ref.Description))
-		object.Set("files", &jscompat.Array{Items: files})
+		object.Set("description", dynvalue.Trim(ref.Description))
+		object.Set("files", &dynvalue.Array{Items: files})
 		object.Set("prompt", nil)
 		result = append(result, object)
 	}
 	// Общий промпт остаётся отдельным документом и не назначается изображениям.
 	for index, object := range result {
 		text := inputs[index].Prompt
-		if jscompat.Trim(text) == "" {
+		if dynvalue.Trim(text) == "" {
 			continue
 		}
 		ref := inputs[index]
@@ -1015,7 +1015,7 @@ func (s *saver) references(inputs []ReferenceInput, previous any, dirOf map[stri
 	for _, object := range result {
 		items = append(items, object)
 	}
-	return &jscompat.Array{Items: items}, nil
+	return &dynvalue.Array{Items: items}, nil
 }
 
 // placeExisting — путь сохранённого изображения в новой описи. Файл переносится в папку типа
@@ -1031,7 +1031,7 @@ func (s *saver) placeExisting(ref ReferenceInput, existing, dir string, occupied
 	extension := path.Ext(base)
 	stem := strings.TrimSuffix(base, extension)
 	relative := dir + "/" + base
-	for suffix := 2; occupied[relative] || jscompat.Exists(filepath.Join(s.source, filepath.FromSlash(relative))); suffix++ {
+	for suffix := 2; occupied[relative] || dynvalue.Exists(filepath.Join(s.source, filepath.FromSlash(relative))); suffix++ {
 		relative = dir + "/" + stem + "-" + strconv.Itoa(suffix) + extension
 	}
 	occupied[relative] = true
@@ -1042,22 +1042,22 @@ func (s *saver) placeExisting(ref ReferenceInput, existing, dir string, occupied
 // cleanup удаляет изображения и промпты прежней описи, которых нет в новой, и пустые папки
 // типов без .gitkeep (папки шаблона с меткой остаются).
 func (s *saver) cleanup(previous any, kinds []Kind) error {
-	previousRefs, _ := jscompat.AsArray(jscompat.Get(previous, "references"))
+	previousRefs, _ := dynvalue.AsArray(dynvalue.Get(previous, "references"))
 	for _, ref := range previousRefs {
-		files, _ := jscompat.AsArray(jscompat.Get(ref, "files"))
+		files, _ := dynvalue.AsArray(dynvalue.Get(ref, "files"))
 		for _, file := range files {
-			if path := stringValue(jscompat.Get(file, "path")); !s.keep[path] {
+			if path := stringValue(dynvalue.Get(file, "path")); !s.keep[path] {
 				if err := removeLocal(s.source, path); err != nil {
 					return err
 				}
 			}
-			if prompt := stringValue(jscompat.Get(file, "prompt")); prompt != "" && !s.keep[prompt] {
+			if prompt := stringValue(dynvalue.Get(file, "prompt")); prompt != "" && !s.keep[prompt] {
 				if err := removeLocal(s.source, prompt); err != nil {
 					return err
 				}
 			}
 		}
-		if prompt := stringValue(jscompat.Get(ref, "prompt")); prompt != "" && !s.keep[prompt] {
+		if prompt := stringValue(dynvalue.Get(ref, "prompt")); prompt != "" && !s.keep[prompt] {
 			if err := removeLocal(s.source, prompt); err != nil {
 				return err
 			}

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"sync"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/covergen"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/referenceimage"
-	"songframe-go/internal/wire"
+	"songframe/internal/agents"
+	"songframe/internal/covergen"
+	"songframe/internal/mediaapi"
+	"songframe/internal/referenceimage"
+	"songframe/internal/wire"
 )
 
 // textTargetChanged — referenceImageTexts.targetChanged.

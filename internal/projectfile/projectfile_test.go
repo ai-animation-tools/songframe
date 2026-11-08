@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
+	"songframe/internal/golden"
 )
 
 // TestSettingsGolden — чтение и запись настроек на эталонах testdata/golden/project-settings:

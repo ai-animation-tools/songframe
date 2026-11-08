@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-// TestMarshalJSONMatchesStringify сравнивает с результатом
-// JSON.stringify(value, null, 2) + "\n" Node.js для того же значения (снят один раз).
-func TestMarshalJSONMatchesStringify(t *testing.T) {
+// TestMarshalJSONProjectFormat сверяет байты MarshalJSON с образцом формата проекта: порядок
+// полей, пустые коллекции, неэкранированные HTML-символы и U+2028/U+2029, короткие \b и \f, числа.
+func TestMarshalJSONProjectFormat(t *testing.T) {
 	value := struct {
 		B int               `json:"b"`
 		A []int             `json:"a"`

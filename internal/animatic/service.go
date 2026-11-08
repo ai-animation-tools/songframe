@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/tools"
+	"songframe/internal/dynvalue"
+	"songframe/internal/jobs"
+	"songframe/internal/tools"
 )
 
 // Тексты задания сборки и уведомления о проверке аниматика.
@@ -84,9 +84,9 @@ func (s *Service) toolStep(project, tool string, args []string, label string) jo
 			if *result.Code == 0 {
 				return nil
 			}
-			message := jscompat.Trim(result.Stderr)
+			message := dynvalue.Trim(result.Stderr)
 			if message == "" {
-				message = jscompat.Trim(result.Stdout)
+				message = dynvalue.Trim(result.Stdout)
 			}
 			return &jobs.StepError{Code: *result.Code, Message: message}
 		},

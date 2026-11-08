@@ -11,12 +11,12 @@ import (
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
 
-	"songframe-go/resources"
+	"songframe/resources"
 )
 
-// Раскладка строки повторяет то, что делает Pillow 10.2 с движком Raqm 0.10 и HarfBuzz поверх
-// FreeType: от суммы продвижений глифов зависят переносы и выбор кегля карточки, поэтому
-// ширина строки должна совпадать с draw.textlength эталона с точностью до 1/64 пикселя.
+// Раскладка строки следует алгоритмам Raqm 0.10 и HarfBuzz поверх метрик FreeType: от суммы
+// продвижений глифов зависят переносы и выбор кегля карточки, поэтому ширина строки должна
+// совпадать с шириной textlength.json эталона с точностью до 1/64 пикселя.
 //
 // Что воспроизводится (проверено эталоном testdata/golden/animatic-cards/textlength.json):
 //   - продвижения глифов без хинтинга (hb-ft по умолчанию грузит их с FT_LOAD_NO_HINTING),
@@ -648,7 +648,7 @@ type shapedGlyph struct {
 	hidden  bool
 }
 
-// face — шрифт заданного кегля в пикселях (как ImageFont.truetype(path, point)).
+// face — встроенный шрифт заданного кегля в пикселях на em.
 type face struct {
 	file *fontFile
 	size int
@@ -672,8 +672,8 @@ func (f *face) emScale(value int) int {
 	return int((int64(value)*mult + 32768) >> 16)
 }
 
-// ascent — font.getmetrics()[0] FreeType: восходящая hhea, округлённая вверх до пикселя. Якорь
-// «la» draw.text ставит базовую линию на это расстояние ниже верхней координаты строки.
+// ascent — восходящая hhea в пикселях, округлённая вверх (метрика FreeType). drawText ставит
+// базовую линию на это расстояние ниже верхней координаты строки.
 func (f *face) ascent() int {
 	metrics, err := f.file.font.Metrics(&f.buf, fixed.I(f.size), font.HintingNone)
 	if err != nil {
@@ -813,7 +813,7 @@ func (f *face) applyKerning(lookup pairLookup, glyphs []shapedGlyph) {
 	}
 }
 
-// length — draw.textlength(text, font) в 1/64 пикселя: сумма продвижений после раскладки.
+// length — ширина строки в 1/64 пикселя: сумма продвижений после раскладки.
 func (f *face) length(text string) int {
 	total := 0
 	for _, glyph := range f.shape(text) {

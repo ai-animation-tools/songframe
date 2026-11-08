@@ -1,5 +1,5 @@
 {
-  "description": "Битый JSON: текст Node не сравнивается.",
+  "description": "Битый JSON: текст разбора не сравнивается.",
   "call": "readProjectSettings",
   "project": "project",
   "covers": [

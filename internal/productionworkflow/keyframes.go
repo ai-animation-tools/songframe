@@ -10,13 +10,13 @@ import (
 	"slices"
 	"strings"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/providers/agentexec"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers"
+	"songframe/internal/providers/agentexec"
 )
 
 // frameID — ID опоры K01…K99.
@@ -74,10 +74,10 @@ func (k *KeyframeImages) base(create bool) (string, error) {
 		if err := os.MkdirAll(base, 0o777); err != nil {
 			return "", err
 		}
-	} else if !jscompat.Exists(base) {
+	} else if !dynvalue.Exists(base) {
 		return "", nil
 	}
-	return jscompat.Realpath(base)
+	return dynvalue.Realpath(base)
 }
 
 // Start готовит рабочую папку задания (копии референсов и утверждённых опор
@@ -85,12 +85,12 @@ func (k *KeyframeImages) base(create bool) (string, error) {
 // изображений внутри проекта (каждый копируется один раз), утверждённые опоры — изображения пакета.
 // Ошибка запуска оставляет рабочую папку без job.json: собрать её нельзя.
 func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.ImagesRequest) (agents.Job, error) {
-	project, err := jscompat.Realpath(input.Project)
+	project, err := dynvalue.Realpath(input.Project)
 	if err != nil {
 		return agents.Job{}, err
 	}
 	if len(input.Frames) == 0 || slices.ContainsFunc(input.Frames, func(frame mediaapi.FramePrompt) bool {
-		return !frameID.MatchString(frame.ID) || jscompat.Trim(frame.Prompt) == ""
+		return !frameID.MatchString(frame.ID) || dynvalue.Trim(frame.Prompt) == ""
 	}) {
 		return agents.Job{}, errors.New(textFrameDescriptionsRequired)
 	}
@@ -108,13 +108,13 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	for index, frame := range input.Frames {
 		references := make([]any, len(frame.ReferencePaths))
 		for position, path := range frame.ReferencePaths {
-			source := jscompat.Resolve(project, path)
-			real, err := jscompat.Realpath(source)
+			source := dynvalue.Resolve(project, path)
+			real, err := dynvalue.Realpath(source)
 			if err != nil {
 				return agents.Job{}, err
 			}
-			local := jscompat.Relative(project, real)
-			if jscompat.IsAbs(local) || strings.HasPrefix(local, "..") || !mediafile.IsImage(source) {
+			local := dynvalue.Relative(project, real)
+			if dynvalue.IsAbs(local) || strings.HasPrefix(local, "..") || !mediafile.IsImage(source) {
 				return agents.Job{}, errors.New(textReferenceUnavailable(path))
 			}
 			name, seen := copies[source]
@@ -129,12 +129,12 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 			}
 			references[position] = name
 		}
-		item := jscompat.NewObject()
+		item := dynvalue.NewObject()
 		item.Set("id", frame.ID)
 		item.Set("role", frame.Role)
 		item.Set("timeSeconds", frame.TimeSeconds)
 		item.Set("prompt", frame.Prompt)
-		item.Set("referencePaths", &jscompat.Array{Items: references})
+		item.Set("referencePaths", &dynvalue.Array{Items: references})
 		frames[index] = item
 	}
 	// Утверждённые опоры пакета копируются рядом с референсами: следующий кадр согласуется с ними.
@@ -150,7 +150,7 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 				return agents.Job{}, err
 			}
 			inputs = append(inputs, imagesInput{Path: frame.Path, Copy: name, SHA256: digest})
-			item := jscompat.NewObject()
+			item := dynvalue.NewObject()
 			item.Set("id", frame.ID)
 			item.Set("role", frame.Role)
 			item.Set("path", name)
@@ -160,7 +160,7 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	notes := []any{}
 	if input.Notes != nil {
 		for _, note := range *input.Notes {
-			if text := jscompat.Trim(note); text != "" {
+			if text := dynvalue.Trim(note); text != "" {
 				notes = append(notes, text)
 			}
 		}
@@ -169,26 +169,26 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	for index, frame := range input.Frames {
 		ids[index] = frame.ID
 	}
-	context := jscompat.NewObject()
+	context := dynvalue.NewObject()
 	context.Set("stage", "frames")
 	context.Set("shot", input.Shot)
-	context.Set("frames", &jscompat.Array{Items: frames})
+	context.Set("frames", &dynvalue.Array{Items: frames})
 	if len(approved) > 0 {
-		context.Set("approvedFrames", &jscompat.Array{Items: approved})
+		context.Set("approvedFrames", &dynvalue.Array{Items: approved})
 	}
 	if len(notes) > 0 {
-		context.Set("notes", &jscompat.Array{Items: notes})
+		context.Set("notes", &dynvalue.Array{Items: notes})
 	}
 	job, err := k.Agents.StartImages(agents.StartInput{
 		Project: project,
 		Task:    textImagesJobTitle(input.Shot, strings.Join(ids, ", "), providers.Title(request.Provider, generationProviderFallback)),
 		Prompt:  textImagesPrompt(len(approved) > 0, len(notes) > 0),
-		Context: jscompat.Stringify(context),
+		Context: dynvalue.Stringify(context),
 	}, directory, request.Agent)
 	if err != nil {
 		return agents.Job{}, err
 	}
-	record := jscompat.NewObject()
+	record := dynvalue.NewObject()
 	record.Set("schemaVersion", float64(1))
 	record.Set("jobId", job.ID)
 	record.Set("project", project)
@@ -197,13 +197,13 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 	record.Set("ids", stringsArray(ids))
 	items := make([]any, len(inputs))
 	for index, item := range inputs {
-		object := jscompat.NewObject()
+		object := dynvalue.NewObject()
 		object.Set("path", item.Path)
 		object.Set("copy", item.Copy)
 		object.Set("sha256", item.SHA256)
 		items[index] = object
 	}
-	record.Set("inputs", &jscompat.Array{Items: items})
+	record.Set("inputs", &dynvalue.Array{Items: items})
 	return job, writeJSON(filepath.Join(directory, "job.json"), record)
 }
 
@@ -212,7 +212,7 @@ func (k *KeyframeImages) Start(input mediaapi.ImagesInput, request agentexec.Ima
 func pinCopy(source, target string) (string, error) {
 	data, err := os.ReadFile(source)
 	if err != nil {
-		return "", jscompat.FsError("open", source, err)
+		return "", dynvalue.FsError("open", source, err)
 	}
 	if err := os.WriteFile(target, data, 0o666); err != nil {
 		return "", err
@@ -227,7 +227,7 @@ func pinCopy(source, target string) (string, error) {
 func fileSHA(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", jscompat.FsError("open", path, err)
+		return "", dynvalue.FsError("open", path, err)
 	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:]), nil
@@ -261,10 +261,10 @@ func (k *KeyframeImages) jobRecord(job agents.Job) (directory string, record any
 		}
 		directory := filepath.Join(base, entry.Name())
 		value, err := readJSON(filepath.Join(directory, "job.json"))
-		if err != nil || !jscompat.IsRecord(value) && !jscompat.IsArray(value) {
+		if err != nil || !dynvalue.IsRecord(value) && !dynvalue.IsArray(value) {
 			continue
 		}
-		if jscompat.Get(value, "jobId") != job.ID {
+		if dynvalue.Get(value, "jobId") != job.ID {
 			continue
 		}
 		return directory, value, true, nil
@@ -290,41 +290,41 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 	if !found {
 		return nil, errors.New(textImagesWorkDirUnavailable)
 	}
-	provider, _ := jscompat.Get(record, "provider").(string)
+	provider, _ := dynvalue.Get(record, "provider").(string)
 	info, known := mediaproviders.Lookup(provider)
-	ids, idsOK := jscompat.AsArray(jscompat.Get(record, "ids"))
-	inputs, inputsOK := jscompat.AsArray(jscompat.Get(record, "inputs"))
+	ids, idsOK := dynvalue.AsArray(dynvalue.Get(record, "ids"))
+	inputs, inputsOK := dynvalue.AsArray(dynvalue.Get(record, "inputs"))
 	// Задание выполнила программа-агент провайдера из записи: её название и показывается в ошибках.
-	if jscompat.Get(record, "schemaVersion") != float64(1) || jscompat.Get(record, "project") != job.Project ||
+	if dynvalue.Get(record, "schemaVersion") != float64(1) || dynvalue.Get(record, "project") != job.Project ||
 		!known || !slices.Contains(info.Kinds, mediaproviders.Image) || info.Executor != job.Provider || !idsOK || !inputsOK {
 		return nil, errors.New(textImagesJobRecordCorrupt)
 	}
 	title := providers.Title(provider, generationProviderFallback)
 	copies := []string{}
 	for _, item := range inputs {
-		path, _ := jscompat.Get(item, "path").(string)
-		copy, _ := jscompat.Get(item, "copy").(string)
-		expected := jscompat.Get(item, "sha256")
+		path, _ := dynvalue.Get(item, "path").(string)
+		copy, _ := dynvalue.Get(item, "copy").(string)
+		expected := dynvalue.Get(item, "sha256")
 		copies = append(copies, copy)
 		if !matchesFile(path, expected) || !matchesFile(filepath.Join(directory, copy), expected) {
 			return nil, errors.New(textImagesReferencesChanged)
 		}
 	}
-	parsed, err := jscompat.Parse([]byte(job.Result))
+	parsed, err := dynvalue.Parse([]byte(job.Result))
 	if err != nil {
 		return nil, errors.New(textImagesFileListMissing(title))
 	}
-	response, ok := parsed.(*jscompat.Object)
+	response, ok := parsed.(*dynvalue.Object)
 	if !ok {
 		return nil, errors.New(textImagesFileListMissing(title))
 	}
-	images, imagesOK := jscompat.AsArray(response.Value("images"))
+	images, imagesOK := dynvalue.AsArray(response.Value("images"))
 	if response.Value("schemaVersion") != float64(1) || response.Value("stage") != "frames" || keys(response, "schemaVersion", "stage", "images") != nil || !imagesOK {
 		return nil, errors.New(textImagesResultInvalid)
 	}
 	candidates := make([]mediaapi.FrameCandidate, 0, len(images))
 	for _, value := range images {
-		item, isObject := value.(*jscompat.Object)
+		item, isObject := value.(*dynvalue.Object)
 		if !isObject {
 			return nil, errors.New(textImagesFrameEntryInvalid)
 		}
@@ -333,7 +333,7 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 		if !idOK || !pathOK || keys(item, "id", "path") != nil {
 			return nil, errors.New(textImagesFramePathInvalid)
 		}
-		file := jscompat.Resolve(directory, path)
+		file := dynvalue.Resolve(directory, path)
 		if !k.candidateFile(directory, file, path, copies) {
 			return nil, errors.New(textImagesFrameImageRequired(id))
 		}
@@ -367,15 +367,15 @@ func (k *KeyframeImages) Collect(job agents.Job) ([]mediaapi.FrameCandidate, err
 // candidateFile — кандидат file (path из ответа) — обычный файл изображения прямо в рабочей папке:
 // не копия входа, не абсолютный путь и не выход наружу, не ссылка и не путь через ссылку.
 func (k *KeyframeImages) candidateFile(directory, file, path string, copies []string) bool {
-	local := jscompat.Relative(directory, file)
-	if slices.Contains(copies, local) || jscompat.IsAbs(path) || strings.HasPrefix(local, "..") || jscompat.IsAbs(local) {
+	local := dynvalue.Relative(directory, file)
+	if slices.Contains(copies, local) || dynvalue.IsAbs(path) || strings.HasPrefix(local, "..") || dynvalue.IsAbs(local) {
 		return false
 	}
 	info, err := os.Lstat(file)
 	if err != nil || info.Mode()&os.ModeSymlink != 0 {
 		return false
 	}
-	if real, err := jscompat.Realpath(file); err != nil || real != file {
+	if real, err := dynvalue.Realpath(file); err != nil || real != file {
 		return false
 	}
 	return mediafile.IsImage(file) && (k.ValidateImage == nil || k.ValidateImage(file))
@@ -383,7 +383,7 @@ func (k *KeyframeImages) candidateFile(directory, file, path string, copies []st
 
 // matchesFile — файл есть и его SHA-256 равен expected.
 func matchesFile(path string, expected any) bool {
-	if path == "" || !jscompat.Exists(path) {
+	if path == "" || !dynvalue.Exists(path) {
 		return false
 	}
 	digest, err := fileSHA(path)
@@ -400,10 +400,10 @@ func (k *KeyframeImages) RequestSha(job agents.Job) (string, error) {
 	if !found {
 		return "", errors.New(textImagesWorkDirUnavailable)
 	}
-	if jscompat.Get(record, "schemaVersion") != float64(1) || jscompat.Get(record, "project") != job.Project {
+	if dynvalue.Get(record, "schemaVersion") != float64(1) || dynvalue.Get(record, "project") != job.Project {
 		return "", errors.New(textImagesJobRecordCorrupt)
 	}
-	sha, ok := jscompat.Get(record, "requestSha").(string)
+	sha, ok := dynvalue.Get(record, "requestSha").(string)
 	if !ok || !sha256Hex.MatchString(sha) {
 		return "", errors.New(textImagesRequestHashCorrupt)
 	}

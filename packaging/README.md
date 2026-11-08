@@ -1,8 +1,8 @@
 # Поставки
 
-Сборка выполняется только в этом репозитории, соседние каталоги ей не нужны. [Скилл сборки](../dev-skills/songframe-go-build/SKILL.md) хранится здесь и подключён ссылками `.agents/skills` и `.claude/skills`.
+Сборка выполняется только в этом репозитории, соседние каталоги ей не нужны. [Скилл сборки](../dev-skills/songframe-build/SKILL.md) хранится здесь и подключён ссылками `.agents/skills` и `.claude/skills`.
 
-Linux AppImage и deb-пакет описаны ниже; для Windows amd64 NSIS использовать [отдельный рецепт](windows/README.md) и `wails3 task package:windows`. macOS в первый выпуск не входит.
+Linux AppImage и deb-пакет описаны ниже; для Windows amd64 NSIS использовать [отдельный рецепт](windows/README.md) и `wails3 task package:windows`. macOS не поддерживается.
 
 Версия поставки находится в [VERSION](VERSION) и вшивается в бинарник (`internal/appversion`): по ней обновление из приложения сравнивает выпуски. Выпуск требует версии `X.Y.Z` без суффикса. Commit, push и публикация в эту процедуру не входят.
 
@@ -60,7 +60,7 @@ wails3 task smoke:appimage \
 
 Сценарий [smoke-appimage.sh](../scripts/smoke-appimage.sh) собирает окружение из [smoke.Dockerfile](linux/smoke.Dockerfile), затем запускает конечный файл непривилегированным пользователем, без сети и без системных GTK/WebKit, Node, Python, Go, Git, FFmpeg/ORT/моделей. Новый профиль и `startup.json` сохраняются в выбранной папке. Успех — настоящий React frontend вызвал Wails State и подтвердил монтирование страницы. Сборка образа может требовать сеть; само приложение проверяется offline.
 
-В Docker разрешены user namespaces и mount `/proc` внутренней sandbox через container security options (`seccomp`/`systempaths`), иначе внешние seccomp/AppArmor блокируют внутреннюю песочницу. Песочница WebKit остаётся включённой; эта проверка не подтверждает desktop AppArmor setup или FUSE mount. Если Ubuntu запрещает uid mapping даже для container unconfined, можно задать `SONGFRAME_SMOKE_APPARMOR_PROFILE` с именем уже установленного профиля, разрешающего userns. В среде агента проверен существующий профиль `chatgpt`; сценарий не создаёт и не изменяет политику хоста. Это свойство тестовой среды, а не зависимость распространяемого приложения. При read-only Docker config можно задать отдельный `DOCKER_CONFIG=/tmp/songframe-go-docker-config`; Go cache аналогично задаётся через `GOCACHE`.
+В Docker разрешены user namespaces и mount `/proc` внутренней sandbox через container security options (`seccomp`/`systempaths`), иначе внешние seccomp/AppArmor блокируют внутреннюю песочницу. Песочница WebKit остаётся включённой; эта проверка не подтверждает desktop AppArmor setup или FUSE mount. Если Ubuntu запрещает uid mapping даже для container unconfined, можно задать `SONGFRAME_SMOKE_APPARMOR_PROFILE` с именем уже установленного профиля, разрешающего userns. В среде агента проверен существующий профиль `chatgpt`; сценарий не создаёт и не изменяет политику хоста. Это свойство тестовой среды, а не зависимость распространяемого приложения. При read-only Docker config можно задать отдельный `DOCKER_CONFIG=/tmp/songframe-docker-config`; Go cache аналогично задаётся через `GOCACHE`.
 
 В среде без FUSE используется `--appimage-extract-and-run`; ручное извлечение описано в [документации AppImage](https://docs.appimage.org/user-guide/run-appimages.html). Обычный desktop mount проверяется отдельно, если доступен `/dev/fuse`.
 
@@ -76,7 +76,7 @@ wails3 task smoke:appimage \
 
 ```json
 {
-  "profileDirectory": "/tmp/songframe-go-component-new-profile",
+  "profileDirectory": "/tmp/songframe-component-new-profile",
   "localFiles": {
     "ffmpeg": "/absolute/ffmpeg-linux.tar.xz",
     "ort-cpu": "/absolute/onnxruntime-linux-x64.tgz",

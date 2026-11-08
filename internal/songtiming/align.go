@@ -17,13 +17,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"songframe-go/internal/components"
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/process"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/songml"
-	"songframe-go/internal/timing"
+	"songframe/internal/components"
+	"songframe/internal/filedigest"
+	"songframe/internal/jobs"
+	"songframe/internal/process"
+	"songframe/internal/projectfs"
+	"songframe/internal/songml"
+	"songframe/internal/timing"
 )
 
 // alignRequest — снимок запуска разметки: выбранный вокал и SHA трека на момент Start.

@@ -10,8 +10,8 @@ import (
 	"reflect"
 	"testing"
 
-	"songframe-go/internal/media"
-	"songframe-go/internal/store"
+	"songframe/internal/media"
+	"songframe/internal/store"
 )
 
 // fakeProfile проверяет поведение сервиса на границе хранения без обращения к профилю пользователя.

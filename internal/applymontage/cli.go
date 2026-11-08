@@ -6,17 +6,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // Parser — разбор аргументов apply_montage. Группа --spec/--recover обязательна;
-// pycompat.ArgParser знает только необязательные группы, поэтому обязательность и скобки usage
+// toolrt.ArgParser знает только необязательные группы, поэтому обязательность и скобки usage
 // проверяет Run.
-var Parser = pycompat.ArgParser{
-	Prog:        "apply_montage.py",
+var Parser = toolrt.ArgParser{
+	Prog:        "apply_montage",
 	Description: "Применяет явный ручной монтаж к принятым сценам; @link README.md.",
-	Flags: []pycompat.Flag{
+	Flags: []toolrt.Flag{
 		{Name: "--spec", Value: true, Help: "MontageDraft JSON с относительными путями проекта"},
 		{Name: "--recover", Help: "Только восстановить прерванную публикацию"},
 		{Name: "--no-views", Help: "Не обновлять производные представления"},
@@ -25,7 +25,7 @@ var Parser = pycompat.ArgParser{
 }
 
 // usage — строка использования с обязательной группой в круглых скобках.
-const usage = "usage: apply_montage.py [-h] (--spec SPEC | --recover) [--no-views]\n"
+const usage = "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\n"
 
 // help — текст справки --help.
 const help = usage + `
@@ -42,62 +42,63 @@ options:
 // в plan/montage-history, сырой вывод FFmpeg и пути ОС не показываются.
 const textHidden = "Ошибка файлов монтажа или медиа; журнал в plan/montage-history."
 
-// isAbsolute — Path.is_absolute() для пути --spec.
+// isAbsolute — абсолютен ли путь --spec по правилам ОС.
 func isAbsolute(path string) bool { return filepath.IsAbs(path) }
 
-// asException — errors.As для исключения Python (точный тип для `type(error) is ValueError`).
-func asException(err error, target **pycompat.Exception) bool { return errors.As(err, target) }
+// asException извлекает исключение toolrt из цепочки ошибок: по его точному типу Run отличает
+// ValueError, который печатается своим текстом.
+func asException(err error, target **toolrt.Exception) bool { return errors.As(err, target) }
 
-func argError(message string) pytool.Output {
-	return pytool.Output{Code: 2, Stderr: pycompat.TextMode(usage + "apply_montage.py: error: " + message + "\n")}
+func argError(message string) toolcli.Output {
+	return toolcli.Output{Code: 2, Stderr: toolrt.TextMode(usage + "apply_montage: error: " + message + "\n")}
 }
 
 // Run — инструмент apply_montage на разрешённом корне проекта: --recover откатывает прерванные
 // публикации и печатает {"status": "recovered"}; --spec читает MontageDraft (относительный путь —
 // от корня проекта) и применяет его. Точный ValueError печатается своим текстом, остальные
 // ожидаемые ошибки — скрытым textHidden, прочие — трассировкой.
-func Run(ctx context.Context, root string, args []string) pytool.Output {
+func Run(ctx context.Context, root string, args []string) toolcli.Output {
 	parsed, exit := Parser.ParseArgs(args)
 	if exit != nil {
 		if exit.Code == 0 {
-			return pytool.Output{Code: 0, Stdout: pycompat.TextMode(help)}
+			return toolcli.Output{Code: 0, Stdout: toolrt.TextMode(help)}
 		}
-		return pytool.Output{Code: exit.Code, Stderr: pycompat.TextMode(strings.Replace(exit.Stderr, Parser.Usage(), usage, 1))}
+		return toolcli.Output{Code: exit.Code, Stderr: toolrt.TextMode(strings.Replace(exit.Stderr, Parser.Usage(), usage, 1))}
 	}
 	spec, hasSpec := parsed.Values["--spec"]
 	if !hasSpec && !parsed.Bools["--recover"] {
 		return argError("one of the arguments --spec --recover is required")
 	}
-	printer := &pytool.Printer{}
-	result, err := func() (*pycompat.Dict, error) {
+	printer := &toolcli.Printer{}
+	result, err := func() (*toolrt.Dict, error) {
 		if parsed.Bools["--recover"] {
 			if err := Recover(root); err != nil {
 				return nil, err
 			}
-			return pytool.Record("status", "recovered"), nil
+			return toolcli.Record("status", "recovered"), nil
 		}
 		path := spec[0]
 		if !isAbsolute(path) {
 			path = join(root, path)
 		}
-		draft, err := pycompat.LoadJSONFile(path)
+		draft, err := toolrt.LoadJSONFile(path)
 		if err != nil {
 			return nil, err
 		}
 		return Apply(ctx, draft, root, !parsed.Bools["--no-views"])
 	}()
 	if err != nil {
-		var exception *pycompat.Exception
+		var exception *toolrt.Exception
 		switch {
-		case asException(err, &exception) && exception.Type == pycompat.ValueError:
+		case asException(err, &exception) && exception.Type == toolrt.ValueError:
 			return printer.Fail(err.Error())
-		case pycompat.IsAny(err, pycompat.ValueError, pycompat.OSError, pycompat.KeyError, pycompat.TypeError, "StopIteration", "CalledProcessError"):
+		case toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError, toolrt.TypeError, "StopIteration", "CalledProcessError"):
 			return printer.Fail(textHidden)
 		default:
 			return printer.Crash(err)
 		}
 	}
-	text, err := pytool.JSON(result)
+	text, err := toolcli.JSON(result)
 	if err != nil {
 		return printer.Crash(err)
 	}

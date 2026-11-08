@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 454, in <module>\n    main()\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 444, in main\n    report = lint(ROOT)\n             ^^^^^^^^^^\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 417, in lint\n    data = lint_scenes(root, report)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<songframe>/tools/lint_registry/lint_registry.py\", line 216, in lint_scenes\n    for match in re.finditer(r\"\\]\\(([^)]+)\\)\", data.get(\"visual_direction\", \"\")):\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/re/__init__.py\", line 224, in finditer\n    return _compile(pattern, flags).finditer(string)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: expected string or bytes-like object, got 'int'\n",
+  "stderr": "Traceback (most recent call last):\nTypeError: expected string or bytes-like object, got 'int'\n",
   "traceback": true
 }

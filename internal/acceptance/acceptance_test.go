@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
 )
 
 // TestComputeMatchesGolden сверяет итог Compute (отпечатки, состояние и причины) с
@@ -22,7 +22,7 @@ func TestComputeMatchesGolden(t *testing.T) {
 		checked++
 		t.Run(item.Name, func(t *testing.T) {
 			path := item.ProjectPath()
-			scenes, ok := jscompat.ReadJSONFile(filepath.Join(path, "plan", "scenes.json"))
+			scenes, ok := dynvalue.ReadJSONFile(filepath.Join(path, "plan", "scenes.json"))
 			if !ok {
 				t.Fatal("эталон есть, а scenes.json не читается")
 			}

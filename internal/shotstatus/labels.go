@@ -2,7 +2,7 @@ package shotstatus
 
 // WaitReasons — причины ожидания отложенного пакета (ключи waitLabels) в фиксированном порядке.
 // Порядок виден пользователю: shot_workflow перечисляет причины в тексте ошибки через «, », а
-// argparse — в choices (по алфавиту).
+// разбор аргументов (toolrt.ArgParser) — в choices (по алфавиту).
 var WaitReasons = []string{"user_saved", "insufficient_balance", "cost_or_balance_unknown"}
 
 // StageLabel — подпись этапа workflow.json для таблиц shot_workflow

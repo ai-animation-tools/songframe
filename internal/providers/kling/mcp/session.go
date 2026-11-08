@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // UploadTypes — допустимые расширения загрузки и их Content-Type.
@@ -43,7 +43,7 @@ func (c *Client) NewSession(timeout time.Duration, traceID any) *Session {
 	if timeout <= 0 {
 		timeout = CallTimeout
 	}
-	if !pycompat.Truthy(traceID) {
+	if !toolrt.Truthy(traceID) {
 		traceID = UUID7()
 	}
 	return &Session{client: c, timeout: timeout, TraceID: traceID, url: c.baseURL() + "/mcp"}
@@ -62,11 +62,11 @@ func (s *Session) headers(token string) []Field {
 	return headers
 }
 
-// bearer — "Bearer " + token: нестроковый токен из повреждённой записи — TypeError Python.
-func bearer(record *pycompat.Dict) (string, error) {
+// bearer — "Bearer " + token: нестроковый токен из повреждённой записи — TypeError.
+func bearer(record *toolrt.Dict) (string, error) {
 	token, ok := record.Value("access_token").(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "can only concatenate str (not \"%s\") to str", pycompat.TypeName(record.Value("access_token")))
+		return "", toolrt.Raise(toolrt.TypeError, "can only concatenate str (not \"%s\") to str", toolrt.TypeName(record.Value("access_token")))
 	}
 	return token, nil
 }
@@ -74,7 +74,7 @@ func bearer(record *pycompat.Dict) (string, error) {
 // post — POST JSON-RPC с одним обновлением токена при 401: такой ответ означает, что запрос не
 // принят. Нет записи входа или повторный 401 — AuthRequired; не-2xx — TransportError(статус,
 // первые 500 символов тела).
-func (s *Session) post(ctx context.Context, payload *pycompat.Dict, timeout time.Duration) (string, []byte, error) {
+func (s *Session) post(ctx context.Context, payload *toolrt.Dict, timeout time.Duration) (string, []byte, error) {
 	record := s.client.ReadCredentials()
 	if record == nil {
 		return "", nil, &AuthRequiredError{LoginRequired}
@@ -88,11 +88,11 @@ func (s *Session) post(ctx context.Context, payload *pycompat.Dict, timeout time
 			return "", nil, err
 		}
 	}
-	text, err := pycompat.DumpsJSON(payload, pycompat.DumpOptions{})
+	text, err := toolrt.DumpsJSON(payload, toolrt.DumpOptions{})
 	if err != nil {
 		return "", nil, err
 	}
-	body, err := pycompat.EncodeUTF8(text)
+	body, err := toolrt.EncodeUTF8(text)
 	if err != nil {
 		return "", nil, err
 	}
@@ -117,35 +117,35 @@ func (s *Session) post(ctx context.Context, payload *pycompat.Dict, timeout time
 		}
 	}
 	if answer.status < 200 || answer.status >= 300 {
-		return "", nil, &TransportError{Status: answer.status, Text: firstRunes(pycompat.Strip(DecodeReplace(answer.data)), 500)}
+		return "", nil, &TransportError{Status: answer.status, Text: firstRunes(toolrt.Strip(DecodeReplace(answer.data)), 500)}
 	}
 	return answer.contentType, answer.data, nil
 }
 
 // firstRunes — text[:limit] по кодовым точкам.
 func firstRunes(text string, limit int) string {
-	runes := pycompat.Runes(text)
+	runes := toolrt.Runes(text)
 	if len(runes) <= limit {
 		return text
 	}
-	return pycompat.FromRunes(runes[:limit])
+	return toolrt.FromRunes(runes[:limit])
 }
 
 // Request — запрос JSON-RPC method с params; перед первым запросом сеанс выполняет initialize.
 // Ответ ищется по id среди сообщений JSON или потока text/event-stream; нет ответа или поле
 // error — ProtocolError. timeout 0 — таймаут сеанса.
-func (s *Session) Request(ctx context.Context, method string, params *pycompat.Dict, timeout time.Duration) (any, error) {
+func (s *Session) Request(ctx context.Context, method string, params *toolrt.Dict, timeout time.Duration) (any, error) {
 	if s.protocol == "" && method != "initialize" {
 		if _, err := s.Initialize(ctx); err != nil {
 			return nil, err
 		}
 	}
-	identifier := pycompat.NewInt(s.nextID)
+	identifier := toolrt.NewInt(s.nextID)
 	s.nextID++
 	if params.Len() == 0 {
-		params = pycompat.NewDict()
+		params = toolrt.NewDict()
 	}
-	payload := pycompat.NewDict()
+	payload := toolrt.NewDict()
 	payload.Set("jsonrpc", "2.0")
 	payload.Set("id", identifier)
 	payload.Set("method", method)
@@ -164,7 +164,7 @@ func (s *Session) Request(ctx context.Context, method string, params *pycompat.D
 func answerFor(method string, identifier any, contentType string, data []byte) (any, error) {
 	var messages []any
 	kind, _, _ := strings.Cut(contentType, ";")
-	if strings.ToLower(pycompat.Strip(kind)) == "text/event-stream" {
+	if strings.ToLower(toolrt.Strip(kind)) == "text/event-stream" {
 		messages = SSEMessages(DecodeReplace(data))
 	} else {
 		value := jsonBody(data)
@@ -174,9 +174,9 @@ func answerFor(method string, identifier any, contentType string, data []byte) (
 			messages = []any{value}
 		}
 	}
-	var answer *pycompat.Dict
+	var answer *toolrt.Dict
 	for _, message := range messages {
-		if item, ok := message.(*pycompat.Dict); ok && pycompat.Equal(item.Value("id"), identifier) {
+		if item, ok := message.(*toolrt.Dict); ok && toolrt.Equal(item.Value("id"), identifier) {
 			answer = item
 			break
 		}
@@ -185,15 +185,15 @@ func answerFor(method string, identifier any, contentType string, data []byte) (
 		return nil, &ProtocolError{fmt.Sprintf("%s не вернул ответ JSON-RPC на запрос %s.", Title, method)}
 	}
 	if answer.Has("error") {
-		failure, ok := answer.Value("error").(*pycompat.Dict)
+		failure, ok := answer.Value("error").(*toolrt.Dict)
 		if !ok {
-			failure = pycompat.NewDict()
+			failure = toolrt.NewDict()
 		}
 		message, found := failure.Get("message")
 		if !found {
 			message = "ошибка JSON-RPC"
 		}
-		return nil, &ProtocolError{fmt.Sprintf("%s: %s: %s (%s).", Title, method, pycompat.Str(message), pycompat.Str(failure.Value("code")))}
+		return nil, &ProtocolError{fmt.Sprintf("%s: %s: %s (%s).", Title, method, toolrt.Str(message), toolrt.Str(failure.Value("code")))}
 	}
 	return answer.Value("result"), nil
 }
@@ -201,24 +201,24 @@ func answerFor(method string, identifier any, contentType string, data []byte) (
 // Initialize — initialize с версией ProtocolVersion и notifications/initialized. Версия ответа
 // сервера (непустая строка) становится заголовком mcp-protocol-version.
 func (s *Session) Initialize(ctx context.Context) (any, error) {
-	client := pycompat.NewDict()
+	client := toolrt.NewDict()
 	client.Set("name", ClientName)
 	client.Set("version", ClientName)
-	params := pycompat.NewDict()
+	params := toolrt.NewDict()
 	params.Set("protocolVersion", ProtocolVersion)
-	params.Set("capabilities", pycompat.NewDict())
+	params.Set("capabilities", toolrt.NewDict())
 	params.Set("clientInfo", client)
 	result, err := s.Request(ctx, "initialize", params, 0)
 	if err != nil {
 		return nil, err
 	}
 	s.protocol = ProtocolVersion
-	if values, ok := result.(*pycompat.Dict); ok {
+	if values, ok := result.(*toolrt.Dict); ok {
 		if version, ok := values.Value("protocolVersion").(string); ok && version != "" {
 			s.protocol = version
 		}
 	}
-	notification := pycompat.NewDict()
+	notification := toolrt.NewDict()
 	notification.Set("jsonrpc", "2.0")
 	notification.Set("method", "notifications/initialized")
 	if _, _, err := s.post(ctx, notification, s.timeout); err != nil {
@@ -233,7 +233,7 @@ func (s *Session) Tools(ctx context.Context) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	values, _ := result.(*pycompat.Dict)
+	values, _ := result.(*toolrt.Dict)
 	tools, ok := values.Value("tools").([]any)
 	if !ok {
 		return nil, &ProtocolError{Title + " вернул неверный список инструментов."}
@@ -243,16 +243,16 @@ func (s *Session) Tools(ctx context.Context) ([]any, error) {
 
 // Call — tools/call name с аргументами и taskTraceId (traceID или TraceID сеанса). Результат —
 // тело инструмента (ToolBody). timeout 0 — таймаут сеанса.
-func (s *Session) Call(ctx context.Context, name string, arguments *pycompat.Dict, timeout time.Duration, traceID any) (any, error) {
-	values := pycompat.NewDict()
+func (s *Session) Call(ctx context.Context, name string, arguments *toolrt.Dict, timeout time.Duration, traceID any) (any, error) {
+	values := toolrt.NewDict()
 	if arguments != nil {
 		values = arguments.Clone()
 	}
-	if !pycompat.Truthy(traceID) {
+	if !toolrt.Truthy(traceID) {
 		traceID = s.TraceID
 	}
 	values.Set("taskTraceId", traceID)
-	params := pycompat.NewDict()
+	params := toolrt.NewDict()
 	params.Set("name", name)
 	params.Set("arguments", values)
 	result, err := s.Request(ctx, "tools/call", params, timeout)
@@ -272,21 +272,21 @@ func (s *Session) Upload(ctx context.Context, path string, traceID any) (string,
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", pycompat.OSErrorFrom(err, path)
+		return "", toolrt.OSErrorFrom(err, path)
 	}
-	name := pycompat.PathName(path)
-	request := pycompat.NewDict()
+	name := toolrt.PathName(path)
+	request := toolrt.NewDict()
 	request.Set("filename", name)
 	request.Set("contentType", contentType)
-	request.Set("size", pycompat.NewInt(int64(len(data))))
+	request.Set("size", toolrt.NewInt(int64(len(data))))
 	value, err := s.Call(ctx, "file_upload", request, 0, traceID)
 	if err != nil {
 		return "", err
 	}
-	ticket, isDict := value.(*pycompat.Dict)
+	ticket, isDict := value.(*toolrt.Dict)
 	var target any
 	if isDict {
-		target, _ = pycompat.DictGet(ticket, "uploadUrl", ticket.Value("upload_url"))
+		target, _ = toolrt.DictGet(ticket, "uploadUrl", ticket.Value("upload_url"))
 	}
 	ticketID, ticketOK := ticket.Value("ticket").(string)
 	targetURL, targetOK := target.(string)
@@ -315,7 +315,7 @@ func (s *Session) Upload(ctx context.Context, path string, traceID any) (string,
 func SSEMessages(text string) []any {
 	messages := []any{}
 	lines := []string{}
-	for _, line := range append(pycompat.SplitLines(text), "") {
+	for _, line := range append(toolrt.SplitLines(text), "") {
 		if strings.HasPrefix(line, "data:") {
 			lines = append(lines, strings.TrimPrefix(line[5:], " "))
 		} else if line == "" && len(lines) > 0 {
@@ -331,22 +331,22 @@ func SSEMessages(text string) []any {
 // ToolBody — structuredContent, иначе JSON из content[0].text, иначе сам
 // текст. isError: true — ToolError с первыми 500 символами текста.
 func ToolBody(result any) (any, error) {
-	values, ok := result.(*pycompat.Dict)
+	values, ok := result.(*toolrt.Dict)
 	if !ok {
 		return nil, &ProtocolError{Title + " вернул неверный результат инструмента."}
 	}
 	var text any
 	if content, ok := values.Value("content").([]any); ok && len(content) > 0 {
-		if first, ok := content[0].(*pycompat.Dict); ok {
+		if first, ok := content[0].(*toolrt.Dict); ok {
 			text = first.Value("text")
 		}
 	}
 	if values.Value("isError") == true {
 		message := "отказ без пояснения"
 		if text != nil {
-			message = pycompat.Str(text)
+			message = toolrt.Str(text)
 		}
-		return nil, &ToolError{firstRunes(pycompat.Strip(message), 500)}
+		return nil, &ToolError{firstRunes(toolrt.Strip(message), 500)}
 	}
 	if values.Has("structuredContent") {
 		return values.Value("structuredContent"), nil
@@ -355,14 +355,14 @@ func ToolBody(result any) (any, error) {
 	if !ok {
 		return nil, &ProtocolError{Title + " вернул результат инструмента без текста."}
 	}
-	data, err := pycompat.EncodeUTF8(body)
+	data, err := toolrt.EncodeUTF8(body)
 	if err != nil {
 		return nil, err
 	}
 	if value := jsonBody(data); value != nil {
 		return value, nil
 	}
-	// json_body различает None (не разобрано) и разобранный JSON null; null — тоже None.
+	// jsonBody не различает неразобранное тело и разобранный JSON null: оба — nil, тогда возвращается текст.
 	return body, nil
 }
 
@@ -371,7 +371,7 @@ func ToolBody(result any) (any, error) {
 func FindUploadURL(value any) (string, error) {
 	var values []any
 	switch item := value.(type) {
-	case *pycompat.Dict:
+	case *toolrt.Dict:
 		for _, key := range uploadURLKeys {
 			if text, ok := item.Value(key).(string); ok {
 				scheme, err := URLScheme(text)
@@ -402,9 +402,9 @@ func FindUploadURL(value any) (string, error) {
 
 // UploadType — Content-Type загрузки по расширению; прочие — ValueError до сети.
 func UploadType(path string) (string, error) {
-	contentType, ok := UploadTypes[strings.ToLower(pycompat.PathSuffix(path))]
+	contentType, ok := UploadTypes[strings.ToLower(toolrt.PathSuffix(path))]
 	if !ok {
-		return "", pycompat.Raise(pycompat.ValueError, "%s принимает загрузку только PNG, JPEG, MP4, WAV и MP3: %s.", Title, pycompat.PathName(path))
+		return "", toolrt.Raise(toolrt.ValueError, "%s принимает загрузку только PNG, JPEG, MP4, WAV и MP3: %s.", Title, toolrt.PathName(path))
 	}
 	return contentType, nil
 }
@@ -451,5 +451,5 @@ func (c *Client) Debug(event string, err error, status *int, body *string) {
 	if body != nil {
 		text += "body: " + *body + "\n"
 	}
-	_, _ = stream.WriteString(pycompat.TextMode(text))
+	_, _ = stream.WriteString(toolrt.TextMode(text))
 }

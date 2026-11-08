@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 37, in <module>\n    motion = load_motion()\n             ^^^^^^^^^^^^^\n  File \"<songframe>/tools/check_assets/check_assets.py\", line 25, in load_motion\n    raise ValueError(f\"{sid}: ассет отсутствует в реестре сцен.\")\nValueError: M77: ассет отсутствует в реестре сцен.\n",
+  "stderr": "Traceback (most recent call last):\nValueError: M77: ассет отсутствует в реестре сцен.\n",
   "traceback": true
 }

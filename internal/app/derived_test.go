@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/store"
+	"songframe/internal/golden"
+	"songframe/internal/jobs"
+	"songframe/internal/mediacmd"
+	"songframe/internal/store"
 )
 
 // hashText — SHA-256 текста.

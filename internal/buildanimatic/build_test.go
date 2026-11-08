@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
+	"songframe/internal/golden"
+	"songframe/internal/mediacmd"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // baseProject — копия входного клипа эталона (два плана: принятый монтаж и карточка).
@@ -73,7 +73,7 @@ func TestFailedEncodingPreservesLatest(t *testing.T) {
 		return func(ctx context.Context, program string, args ...string) ([]byte, error) {
 			for _, arg := range args {
 				if arg == "concat" {
-					return nil, pycompat.New(pycompat.ValueError, "Ошибка финального кодирования")
+					return nil, toolrt.New(toolrt.ValueError, "Ошибка финального кодирования")
 				}
 			}
 			return next(ctx, program, args...)
@@ -211,9 +211,9 @@ func TestCachePartialAndCorrupted(t *testing.T) {
 		if err := os.WriteFile(path, []byte("готовая производная"), 0o644); err != nil {
 			return nil, err
 		}
-		return pytool.Record("valid", true), nil
+		return toolcli.Record("valid", true), nil
 	}
-	recipe := pytool.Record("input", "one")
+	recipe := toolcli.Record("input", "one")
 	first, err := cache.obtain("sample", recipe, ".bin", producer)
 	if err != nil {
 		t.Fatal(err)
@@ -238,7 +238,7 @@ func TestCachePartialAndCorrupted(t *testing.T) {
 	if _, hit := cache.lookup(key, artifact, receipt); !hit {
 		t.Fatal("готовая запись не найдена")
 	}
-	interrupted := pytool.Record("input", "two")
+	interrupted := toolcli.Record("input", "two")
 	_, err = cache.obtain("sample", interrupted, ".bin", func(path string) (any, error) {
 		_ = os.WriteFile(path, []byte("partial"), 0o644)
 		return nil, errors.New("Прервано")
@@ -255,7 +255,7 @@ func TestCachePartialAndCorrupted(t *testing.T) {
 	}
 }
 
-// TestFrameRounding — frame(): половина кадра округляется вверх, как ROUND_HALF_UP.
+// TestFrameRounding — frame(): половина кадра округляется от нуля.
 func TestFrameRounding(t *testing.T) {
 	for text, want := range map[string]string{"0": "0", "0.4": "12", "0.0166666": "0", "0.0166667": "1", "1.05": "32", "-0.05": "-2"} {
 		got, err := frame(text)

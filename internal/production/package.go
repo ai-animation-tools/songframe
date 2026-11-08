@@ -11,11 +11,11 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/acceptance"
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/sourceinputs"
-	"songframe-go/internal/speech"
+	"songframe/internal/acceptance"
+	"songframe/internal/dynvalue"
+	"songframe/internal/filedigest"
+	"songframe/internal/sourceinputs"
+	"songframe/internal/speech"
 )
 
 // Keyframe — PackageKeyframe: опора пакета из workflow.json. ImagePath — абсолютный путь
@@ -101,7 +101,7 @@ type PackageView struct {
 	Problems     []string `json:"problems"`
 
 	// workflow — разобранный workflow.json: внутренние проверки читают из него вопрос и ответ.
-	workflow *jscompat.Object
+	workflow *dynvalue.Object
 }
 
 // Pending — ожидающий вопрос пакета (pending_decision) для проверок сервиса.
@@ -113,45 +113,45 @@ type Pending struct {
 	Frame string
 }
 
-// Pending — вопрос пакета или nil, если pending_decision ложен по правилам истинности JS:
+// Pending — вопрос пакета или nil, если pending_decision ложен по правилам истинности dynvalue:
 // пустая строка, 0 и null вопроса не означают.
 func (p *PackageView) Pending() *Pending {
-	value := jscompat.Get(p.workflow, "pending_decision")
-	if !jscompat.Truthy(value) {
+	value := dynvalue.Get(p.workflow, "pending_decision")
+	if !dynvalue.Truthy(value) {
 		return nil
 	}
 	pending := &Pending{}
-	pending.Stage, _ = jscompat.Get(value, "stage").(string)
-	pending.Question, _ = jscompat.Get(value, "question").(string)
-	if options, ok := jscompat.AsArray(jscompat.Get(value, "options")); ok {
+	pending.Stage, _ = dynvalue.Get(value, "stage").(string)
+	pending.Question, _ = dynvalue.Get(value, "question").(string)
+	if options, ok := dynvalue.AsArray(dynvalue.Get(value, "options")); ok {
 		for _, option := range options {
 			if text, ok := option.(string); ok {
 				pending.Options = append(pending.Options, text)
 			}
 		}
 	}
-	if frame := jscompat.Get(value, "frame"); jscompat.Truthy(frame) {
-		pending.Frame = jscompat.ToString(frame)
+	if frame := dynvalue.Get(value, "frame"); dynvalue.Truthy(frame) {
+		pending.Frame = dynvalue.ToString(frame)
 	}
 	return pending
 }
 
 // DecisionVerdict — decision.verdict ответа пакета или "".
 func (p *PackageView) DecisionVerdict() string {
-	verdict, _ := jscompat.GetPath(p.workflow, "decision", "verdict").(string)
+	verdict, _ := dynvalue.GetPath(p.workflow, "decision", "verdict").(string)
 	return verdict
 }
 
 // RequestSeconds — timing.request_seconds пакета (длительность запроса) или nil.
 func (p *PackageView) RequestSeconds() *float64 {
-	if value, ok := jscompat.GetPath(p.workflow, "timing", "request_seconds").(float64); ok {
+	if value, ok := dynvalue.GetPath(p.workflow, "timing", "request_seconds").(float64); ok {
 		return &value
 	}
 	return nil
 }
 
 // Workflow — разобранный workflow.json пакета (только чтение).
-func (p *PackageView) Workflow() *jscompat.Object { return p.workflow }
+func (p *PackageView) Workflow() *dynvalue.Object { return p.workflow }
 
 // attemptStatus — request.attemptStatus или "".
 func (p *PackageView) attemptStatus() string {
@@ -169,7 +169,7 @@ var previewName = regexp.MustCompile(`(?i)\.(png|jpg|webp)$`)
 
 // readJSON — разобранный JSON файла; nil при отсутствии файла и любой ошибке.
 func readJSON(path string) any {
-	value, ok := jscompat.ReadJSONFile(path)
+	value, ok := dynvalue.ReadJSONFile(path)
 	if !ok {
 		return nil
 	}
@@ -180,21 +180,23 @@ func readJSON(path string) any {
 func readText(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", jscompat.FsError("open", path, err)
+		return "", dynvalue.FsError("open", path, err)
 	}
-	return jscompat.DecodeUTF8(data), nil
+	return dynvalue.DecodeUTF8(data), nil
 }
 
-// joinArg — path.join(base, value): нестроковый аргумент — ERR_INVALID_ARG_TYPE.
+// joinArg — путь value из документа пакета относительно base; нестроковое значение — ошибка
+// ERR_INVALID_ARG_TYPE dynvalue.PathArg, которая отклоняет весь вызов.
 func joinArg(base string, value any) (string, error) {
-	path, err := jscompat.PathArg("path", value)
+	path, err := dynvalue.PathArg("path", value)
 	if err != nil {
 		return "", err
 	}
 	return filepath.Join(base, filepath.FromSlash(path)), nil
 }
 
-// within — `file.startsWith(resolve(root) + sep)`: путь материала внутри папки пакета или запроса.
+// within — нормализованный путь материала лежит строго внутри папки пакета или запроса
+// (сама папка не считается).
 func within(root, file string) bool {
 	return strings.HasPrefix(filepath.Clean(file), filepath.Clean(root)+string(filepath.Separator))
 }
@@ -207,29 +209,29 @@ func optionalString(value any) *string {
 	return nil
 }
 
-// rawOrNull — `value ?? null` как JSON.
+// rawOrNull — значение как JSON; null и отсутствующее свойство дают null.
 func rawOrNull(value any) json.RawMessage {
-	if jscompat.IsNullish(value) {
+	if dynvalue.IsNullish(value) {
 		return json.RawMessage("null")
 	}
-	return jscompat.Raw(value)
+	return dynvalue.Raw(value)
 }
 
-// rawOptional — значение как JSON; отсутствующее свойство (undefined) опускается.
+// rawOptional — значение как JSON; отсутствующее свойство (dynvalue.Undefined) опускается.
 func rawOptional(value any) json.RawMessage {
-	if value == jscompat.Undefined {
+	if value == dynvalue.Undefined {
 		return nil
 	}
-	return jscompat.Raw(value)
+	return dynvalue.Raw(value)
 }
 
-// fingerprintFunc — currentShotFingerprint: отпечаток текущей постановки плана или "".
+// fingerprintFunc — отпечаток текущей постановки плана или "" (см. CurrentShotFingerprint).
 type fingerprintFunc func(shot string) string
 
-// CurrentShotFingerprint — currentShotFingerprint(project, shot): отпечаток текущей постановки плана
+// CurrentShotFingerprint — отпечаток текущей постановки плана shot
 // по сохранённому реестру и кастингу проекта; "" — реестр не разбирается или плана нет.
 func CurrentShotFingerprint(project, shot string) string {
-	scenes, ok := jscompat.ReadJSONFile(filepath.Join(project, "plan", "scenes.json"))
+	scenes, ok := dynvalue.ReadJSONFile(filepath.Join(project, "plan", "scenes.json"))
 	if !ok {
 		return ""
 	}
@@ -243,12 +245,12 @@ func CurrentShotFingerprint(project, shot string) string {
 
 // projectFingerprint — отпечатки проекта, вычисляемые один раз за вызов вида производства.
 func projectFingerprint(project string) fingerprintFunc {
-	var fingerprints *jscompat.Object
+	var fingerprints *dynvalue.Object
 	computed := false
 	return func(shot string) string {
 		if !computed {
 			computed = true
-			if scenes, ok := jscompat.ReadJSONFile(filepath.Join(project, "plan", "scenes.json")); ok {
+			if scenes, ok := dynvalue.ReadJSONFile(filepath.Join(project, "plan", "scenes.json")); ok {
 				fingerprints, _ = acceptance.ProjectFingerprints(project, scenes)
 			}
 		}
@@ -269,66 +271,66 @@ func ReadPackage(project, dir string) (*PackageView, error) {
 
 func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView, error) {
 	parsed := readJSON(filepath.Join(dir, "workflow.json"))
-	shot, ok := jscompat.Get(parsed, "shot").(string)
-	if !jscompat.Truthy(parsed) || !ok {
+	shot, ok := dynvalue.Get(parsed, "shot").(string)
+	if !dynvalue.Truthy(parsed) || !ok {
 		return nil, nil
 	}
-	workflow, _ := jscompat.AsObject(parsed)
+	workflow, _ := dynvalue.AsObject(parsed)
 	problems := []string{}
-	list, ok := jscompat.AsArray(jscompat.Coalesce(jscompat.Get(parsed, "keyframes"), &jscompat.Array{}))
+	list, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(parsed, "keyframes"), &dynvalue.Array{}))
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "(workflow.keyframes ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "(workflow.keyframes ?? []).map is not a function"}
 	}
 	keyframes := make([]Keyframe, 0, len(list))
 	for _, frame := range list {
-		if jscompat.IsNullish(frame) {
-			return nil, &jscompat.TypeError{Message: "Cannot read properties of " + jscompat.TypeOf(frame) + " (reading 'id')"}
+		if dynvalue.IsNullish(frame) {
+			return nil, &dynvalue.TypeError{Message: "Cannot read properties of " + dynvalue.TypeOf(frame) + " (reading 'id')"}
 		}
-		item := Keyframe{Note: rawOptional(jscompat.Get(frame, "note")), Approved: jscompat.Truthy(jscompat.Get(frame, "approved"))}
-		item.ID = jscompat.ToString(jscompat.Coalesce(jscompat.Get(frame, "id"), ""))
-		item.Role = jscompat.ToString(jscompat.Coalesce(jscompat.Get(frame, "role"), ""))
-		item.TimeSeconds, _ = jscompat.Get(frame, "time_seconds").(float64)
-		if path := jscompat.Get(frame, "path"); jscompat.Truthy(path) {
+		item := Keyframe{Note: rawOptional(dynvalue.Get(frame, "note")), Approved: dynvalue.Truthy(dynvalue.Get(frame, "approved"))}
+		item.ID = dynvalue.ToString(dynvalue.Coalesce(dynvalue.Get(frame, "id"), ""))
+		item.Role = dynvalue.ToString(dynvalue.Coalesce(dynvalue.Get(frame, "role"), ""))
+		item.TimeSeconds, _ = dynvalue.Get(frame, "time_seconds").(float64)
+		if path := dynvalue.Get(frame, "path"); dynvalue.Truthy(path) {
 			file, err := joinArg(dir, path)
 			if err != nil {
 				return nil, err
 			}
-			if jscompat.Exists(file) {
+			if dynvalue.Exists(file) {
 				item.ImagePath = &file
 			}
 		}
 		keyframes = append(keyframes, item)
 	}
-	promptPath, err := joinArg(dir, jscompat.Coalesce(jscompat.GetPath(parsed, "prompt", "path"), "video-prompt.txt"))
+	promptPath, err := joinArg(dir, dynvalue.Coalesce(dynvalue.GetPath(parsed, "prompt", "path"), "video-prompt.txt"))
 	if err != nil {
 		return nil, err
 	}
 	var prompt *Prompt
-	if jscompat.Exists(promptPath) {
+	if dynvalue.Exists(promptPath) {
 		text, err := readText(promptPath)
 		if err != nil {
 			return nil, err
 		}
-		prompt = &Prompt{Path: promptPath, Approved: jscompat.Truthy(jscompat.GetPath(parsed, "prompt", "approved")), Text: text}
+		prompt = &Prompt{Path: promptPath, Approved: dynvalue.Truthy(dynvalue.GetPath(parsed, "prompt", "approved")), Text: text}
 	}
-	stage, ok := jscompat.Get(parsed, "stage").(string)
+	stage, ok := dynvalue.Get(parsed, "stage").(string)
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "workflow.stage.startsWith is not a function"}
+		return nil, &dynvalue.TypeError{Message: "workflow.stage.startsWith is not a function"}
 	}
 	imageRequest := strings.HasPrefix(stage, "image_")
-	active := jscompat.Get(parsed, "request_dir")
+	active := dynvalue.Get(parsed, "request_dir")
 	if imageRequest {
-		active = jscompat.Get(parsed, "image_request_dir")
+		active = dynvalue.Get(parsed, "image_request_dir")
 	}
 	var request *Request
-	if jscompat.Truthy(active) {
+	if dynvalue.Truthy(active) {
 		request, err = readRequest(dir, parsed, active, imageRequest, &problems)
 		if err != nil {
 			return nil, err
 		}
 	}
 	var description *string
-	if path := filepath.Join(dir, "description.md"); jscompat.Exists(path) {
+	if path := filepath.Join(dir, "description.md"); dynvalue.Exists(path) {
 		text, err := readText(path)
 		if err != nil {
 			return nil, err
@@ -336,8 +338,8 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 		description = &text
 	}
 	preview := []string{}
-	if folder := filepath.Join(dir, "preview"); jscompat.Exists(folder) {
-		entries, err := jscompat.ReadDir(folder)
+	if folder := filepath.Join(dir, "preview"); dynvalue.Exists(folder) {
+		entries, err := dynvalue.ReadDir(folder)
 		if err != nil {
 			return nil, err
 		}
@@ -352,7 +354,7 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 		stageLabel = stage
 	}
 	// Принятое описание не меняет этап до первой опоры, но вопрос по нему уже закрыт.
-	if stage == "description_review" && jscompat.Get(workflow, "description_approved") == true {
+	if stage == "description_review" && dynvalue.Get(workflow, "description_approved") == true {
 		stageLabel = textDescriptionAccepted
 	}
 	if stage == "submitted" && request != nil && request.AttemptStatus != nil && *request.AttemptStatus != "" {
@@ -363,14 +365,14 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 		stageLabel = stageLabels["submitted"] + ": " + label
 	}
 	view := &PackageView{
-		Dir: dir, Relative: jscompat.Relative(project, dir), Shot: shot, Stage: stage, StageLabel: stageLabel,
-		WaitReason: rawOrNull(jscompat.Get(parsed, "wait_reason")), Mode: rawOrNull(jscompat.Get(parsed, "mode")),
-		RetryOf: rawOrNull(jscompat.Get(parsed, "retry_of")), Batch: rawOrNull(jscompat.Get(parsed, "batch")),
-		Timing: rawOrNull(jscompat.Get(parsed, "timing")), Keyframes: keyframes, Description: description,
+		Dir: dir, Relative: dynvalue.Relative(project, dir), Shot: shot, Stage: stage, StageLabel: stageLabel,
+		WaitReason: rawOrNull(dynvalue.Get(parsed, "wait_reason")), Mode: rawOrNull(dynvalue.Get(parsed, "mode")),
+		RetryOf: rawOrNull(dynvalue.Get(parsed, "retry_of")), Batch: rawOrNull(dynvalue.Get(parsed, "batch")),
+		Timing: rawOrNull(dynvalue.Get(parsed, "timing")), Keyframes: keyframes, Description: description,
 		Prompt: prompt, Request: request, Speech: speech.ReadPackage(dir),
-		PendingDecision: rawOrNull(jscompat.Get(parsed, "pending_decision")),
-		Decision:        rawOrNull(jscompat.Get(parsed, "decision")),
-		KeyframeNotes:   jscompat.Raw(jscompat.Coalesce(jscompat.Get(parsed, "keyframe_notes"), &jscompat.Array{})),
+		PendingDecision: rawOrNull(dynvalue.Get(parsed, "pending_decision")),
+		Decision:        rawOrNull(dynvalue.Get(parsed, "decision")),
+		KeyframeNotes:   dynvalue.Raw(dynvalue.Coalesce(dynvalue.Get(parsed, "keyframe_notes"), &dynvalue.Array{})),
 		Preview:         preview, workflow: workflow,
 	}
 	// Сбой расчёта токенов результата и решения — проблема пакета с текстом ошибки, а не отказ вызова.
@@ -393,7 +395,7 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 	// Пакет подготовлен по отпечатку постановки: после её правки отправка и согласования ждут
 	// решения пользователя.
 	if stage != "accepted" {
-		if current := fingerprint(shot); current != "" && !jscompat.StrictEqual(jscompat.Get(parsed, "scene_sha256"), current) {
+		if current := fingerprint(shot); current != "" && !dynvalue.StrictEqual(dynvalue.Get(parsed, "scene_sha256"), current) {
 			view.SceneChanged = true
 			problems = append(problems, SceneChanged)
 		}
@@ -410,34 +412,34 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 	}
 	frozen := readJSON(filepath.Join(requestDir, "request.json"))
 	attempt := readJSON(filepath.Join(requestDir, "attempt.json"))
-	if !jscompat.Truthy(frozen) {
+	if !dynvalue.Truthy(frozen) {
 		*problems = append(*problems, textRequestFileMissing)
 		return nil, nil
 	}
-	providerValue := jscompat.Get(frozen, "provider")
-	if provider, ok := providerValue.(string); !ok || jscompat.Trim(provider) == "" {
+	providerValue := dynvalue.Get(frozen, "provider")
+	if provider, ok := providerValue.(string); !ok || dynvalue.Trim(provider) == "" {
 		*problems = append(*problems, textRequestProviderMissing)
 	}
-	kind := jscompat.Get(frozen, "kind")
-	if imageRequest && !jscompat.StrictEqual(kind, "image") {
+	kind := dynvalue.Get(frozen, "kind")
+	if imageRequest && !dynvalue.StrictEqual(kind, "image") {
 		*problems = append(*problems, textImageKindRequired)
 	}
-	if !imageRequest && jscompat.StrictEqual(kind, "image") {
+	if !imageRequest && dynvalue.StrictEqual(kind, "image") {
 		*problems = append(*problems, textVideoReferencesImage)
 	}
 	if imageRequest {
-		entries, ok := jscompat.AsArray(jscompat.Coalesce(jscompat.Get(workflow, "image_requests"), &jscompat.Array{}))
+		entries, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(workflow, "image_requests"), &dynvalue.Array{}))
 		if !ok {
-			return nil, &jscompat.TypeError{Message: "(workflow.image_requests ?? []).some is not a function"}
+			return nil, &dynvalue.TypeError{Message: "(workflow.image_requests ?? []).some is not a function"}
 		}
 		matched := false
 		for _, entry := range entries {
-			if jscompat.IsNullish(entry) {
-				return nil, &jscompat.TypeError{Message: "Cannot read properties of " + jscompat.TypeOf(entry) + " (reading 'request_dir')"}
+			if dynvalue.IsNullish(entry) {
+				return nil, &dynvalue.TypeError{Message: "Cannot read properties of " + dynvalue.TypeOf(entry) + " (reading 'request_dir')"}
 			}
-			if jscompat.StrictEqual(jscompat.Get(entry, "request_dir"), active) &&
-				jscompat.StrictEqual(jscompat.Get(entry, "frame_id"), jscompat.Get(workflow, "image_frame_id")) &&
-				jscompat.StrictEqual(jscompat.Get(entry, "request_sha256"), jscompat.Get(attempt, "request_sha256")) {
+			if dynvalue.StrictEqual(dynvalue.Get(entry, "request_dir"), active) &&
+				dynvalue.StrictEqual(dynvalue.Get(entry, "frame_id"), dynvalue.Get(workflow, "image_frame_id")) &&
+				dynvalue.StrictEqual(dynvalue.Get(entry, "request_sha256"), dynvalue.Get(attempt, "request_sha256")) {
 				matched = true
 				break
 			}
@@ -446,25 +448,25 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 			*problems = append(*problems, textImageHistoryMismatch)
 		}
 	}
-	promptValue := jscompat.Get(frozen, "prompt")
+	promptValue := dynvalue.Get(frozen, "prompt")
 	if _, isString := promptValue.(string); !isString {
-		promptValue = jscompat.Coalesce(jscompat.Get(promptValue, "path"), "prompt.txt")
+		promptValue = dynvalue.Coalesce(dynvalue.Get(promptValue, "path"), "prompt.txt")
 	}
 	frozenPrompt, err := joinArg(requestDir, promptValue)
 	if err != nil {
 		return nil, err
 	}
 	downloads := []string{}
-	list, ok := jscompat.AsArray(jscompat.Coalesce(jscompat.Get(attempt, "downloads"), &jscompat.Array{}))
+	list, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(attempt, "downloads"), &dynvalue.Array{}))
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "(attempt?.downloads ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "(attempt?.downloads ?? []).map is not a function"}
 	}
 	for _, item := range list {
-		path, err := jscompat.Prop(item, "path")
+		path, err := dynvalue.Prop(item, "path")
 		if err != nil {
 			return nil, err
 		}
-		if jscompat.Truthy(path) {
+		if dynvalue.Truthy(path) {
 			file, err := joinArg(requestDir, path)
 			if err != nil {
 				return nil, err
@@ -472,8 +474,8 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 			downloads = append(downloads, file)
 		}
 	}
-	if jscompat.Exists(requestDir) {
-		entries, err := jscompat.ReadDir(requestDir)
+	if dynvalue.Exists(requestDir) {
+		entries, err := dynvalue.ReadDir(requestDir)
 		if err != nil {
 			return nil, err
 		}
@@ -486,44 +488,44 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 	existing := []string{}
 	seen := map[string]bool{}
 	for _, file := range downloads {
-		if !seen[file] && jscompat.Exists(file) {
+		if !seen[file] && dynvalue.Exists(file) {
 			existing = append(existing, file)
 		}
 		seen[file] = true
 	}
 	request := &Request{
-		Dir: requestDir, Kind: "video", Command: rawOptional(jscompat.Get(frozen, "command")),
-		SHA256: optionalString(jscompat.Get(attempt, "request_sha256")), Model: rawOptional(jscompat.Get(frozen, "model")),
-		Parameters:    jscompat.Raw(jscompat.Coalesce(jscompat.Get(frozen, "parameters"), jscompat.NewObject())),
-		AttemptStatus: optionalString(jscompat.Get(attempt, "status")), GenerationID: optionalString(jscompat.Get(attempt, "generation_id")),
-		ManualResult: jscompat.StrictEqual(jscompat.Get(attempt, "manual_result"), true), Downloads: existing, Inputs: []RequestInput{},
+		Dir: requestDir, Kind: "video", Command: rawOptional(dynvalue.Get(frozen, "command")),
+		SHA256: optionalString(dynvalue.Get(attempt, "request_sha256")), Model: rawOptional(dynvalue.Get(frozen, "model")),
+		Parameters:    dynvalue.Raw(dynvalue.Coalesce(dynvalue.Get(frozen, "parameters"), dynvalue.NewObject())),
+		AttemptStatus: optionalString(dynvalue.Get(attempt, "status")), GenerationID: optionalString(dynvalue.Get(attempt, "generation_id")),
+		ManualResult: dynvalue.StrictEqual(dynvalue.Get(attempt, "manual_result"), true), Downloads: existing, Inputs: []RequestInput{},
 	}
 	if text, ok := kind.(string); ok {
 		request.Kind = text
 	}
 	if provider, ok := providerValue.(string); ok {
-		trimmed := jscompat.Trim(provider)
+		trimmed := dynvalue.Trim(provider)
 		request.Provider = &trimmed
 	}
-	if frame := jscompat.Get(workflow, "image_frame_id"); imageRequest && jscompat.Truthy(frame) {
-		request.FrameID = jscompat.ToString(frame)
+	if frame := dynvalue.Get(workflow, "image_frame_id"); imageRequest && dynvalue.Truthy(frame) {
+		request.FrameID = dynvalue.ToString(frame)
 	}
-	if selection := jscompat.Get(frozen, "model_selection"); jscompat.Truthy(selection) {
-		request.ModelSelection = jscompat.Raw(selection)
+	if selection := dynvalue.Get(frozen, "model_selection"); dynvalue.Truthy(selection) {
+		request.ModelSelection = dynvalue.Raw(selection)
 	}
-	if jscompat.Exists(frozenPrompt) {
+	if dynvalue.Exists(frozenPrompt) {
 		text, err := readText(frozenPrompt)
 		if err != nil {
 			return nil, err
 		}
 		request.PromptText = &text
 	}
-	inputs, ok := jscompat.AsArray(jscompat.Coalesce(jscompat.Get(frozen, "inputs"), &jscompat.Array{}))
+	inputs, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(frozen, "inputs"), &dynvalue.Array{}))
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "(frozen.inputs ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "(frozen.inputs ?? []).map is not a function"}
 	}
 	for _, input := range inputs {
-		value, err := jscompat.Prop(input, "path")
+		value, err := dynvalue.Prop(input, "path")
 		if err != nil {
 			return nil, err
 		}
@@ -532,11 +534,11 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 			return nil, err
 		}
 		request.Inputs = append(request.Inputs, RequestInput{
-			Slot: rawOptional(jscompat.Get(input, "slot")), Role: rawOptional(jscompat.Get(input, "role")),
+			Slot: rawOptional(dynvalue.Get(input, "slot")), Role: rawOptional(dynvalue.Get(input, "role")),
 			Path: value.(string), ImagePath: file,
 		})
 	}
-	if credits, ok := jscompat.Get(attempt, "credits_consumed").(float64); ok {
+	if credits, ok := dynvalue.Get(attempt, "credits_consumed").(float64); ok {
 		request.CreditsConsumed = &credits
 	}
 	return request, nil
@@ -548,7 +550,7 @@ func tokenDigest(path string) (string, error) {
 	if !ok {
 		// Файл есть, но не читается (например, это папка): проблема пакета, а не отказ вызова.
 		if _, err := os.ReadFile(path); err != nil {
-			return "", jscompat.FsError("read", path, err)
+			return "", dynvalue.FsError("read", path, err)
 		}
 		return "", errors.New("не удалось прочитать " + path)
 	}
@@ -571,7 +573,7 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 	seen := map[string]bool{}
 	paths := []string{}
 	add := func(value any) error {
-		text, err := jscompat.PathArg("path", value)
+		text, err := dynvalue.PathArg("path", value)
 		if err != nil {
 			return err
 		}
@@ -581,26 +583,26 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 		}
 		return nil
 	}
-	for _, value := range []any{"workflow.json", "description.md", jscompat.Coalesce(jscompat.GetPath(workflow, "prompt", "path"), "video-prompt.txt")} {
+	for _, value := range []any{"workflow.json", "description.md", dynvalue.Coalesce(dynvalue.GetPath(workflow, "prompt", "path"), "video-prompt.txt")} {
 		if err := add(value); err != nil {
 			return "", err
 		}
 	}
-	frames, _ := jscompat.AsArray(jscompat.Coalesce(jscompat.Get(workflow, "keyframes"), &jscompat.Array{}))
+	frames, _ := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(workflow, "keyframes"), &dynvalue.Array{}))
 	for _, frame := range frames {
-		if path := jscompat.Get(frame, "path"); jscompat.Truthy(path) {
+		if path := dynvalue.Get(frame, "path"); dynvalue.Truthy(path) {
 			if err := add(path); err != nil {
 				return "", err
 			}
 		}
 	}
-	requests := []any{jscompat.Get(workflow, "request_dir"), jscompat.Get(workflow, "image_request_dir")}
-	entries, ok := jscompat.AsArray(jscompat.Coalesce(jscompat.Get(workflow, "image_requests"), &jscompat.Array{}))
+	requests := []any{dynvalue.Get(workflow, "request_dir"), dynvalue.Get(workflow, "image_request_dir")}
+	entries, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(workflow, "image_requests"), &dynvalue.Array{}))
 	if !ok {
-		return "", &jscompat.TypeError{Message: "(workflow.image_requests ?? []).map is not a function"}
+		return "", &dynvalue.TypeError{Message: "(workflow.image_requests ?? []).map is not a function"}
 	}
 	for _, entry := range entries {
-		value, err := jscompat.Prop(entry, "request_dir")
+		value, err := dynvalue.Prop(entry, "request_dir")
 		if err != nil {
 			return "", err
 		}
@@ -610,15 +612,15 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 	for _, requestDir := range requests {
 		duplicate := false
 		for _, previous := range visited {
-			if jscompat.StrictEqual(previous, requestDir) {
+			if dynvalue.StrictEqual(previous, requestDir) {
 				duplicate = true
 			}
 		}
 		visited = append(visited, requestDir)
-		if duplicate || !jscompat.Truthy(requestDir) {
+		if duplicate || !dynvalue.Truthy(requestDir) {
 			continue
 		}
-		base, err := jscompat.PathArg("path", requestDir)
+		base, err := dynvalue.PathArg("path", requestDir)
 		if err != nil {
 			return "", err
 		}
@@ -626,30 +628,30 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 			return "", err
 		}
 		request := readJSON(filepath.Join(directory, base, "request.json"))
-		if !jscompat.Truthy(request) {
+		if !dynvalue.Truthy(request) {
 			continue
 		}
-		prompt := jscompat.Get(request, "prompt")
+		prompt := dynvalue.Get(request, "prompt")
 		if _, isString := prompt.(string); !isString {
-			prompt = jscompat.Coalesce(jscompat.Get(prompt, "path"), "prompt.txt")
+			prompt = dynvalue.Coalesce(dynvalue.Get(prompt, "path"), "prompt.txt")
 		}
-		path, err := jscompat.PathArg("path", prompt)
+		path, err := dynvalue.PathArg("path", prompt)
 		if err != nil {
 			return "", err
 		}
 		if err := add(joinRelative(base, path)); err != nil {
 			return "", err
 		}
-		inputs, err := jscompat.Iterate(jscompat.Coalesce(jscompat.Get(request, "inputs"), &jscompat.Array{}))
+		inputs, err := dynvalue.Iterate(dynvalue.Coalesce(dynvalue.Get(request, "inputs"), &dynvalue.Array{}))
 		if err != nil {
 			return "", err
 		}
 		for _, input := range inputs {
-			value, err := jscompat.Prop(input, "path")
+			value, err := dynvalue.Prop(input, "path")
 			if err != nil {
 				return "", err
 			}
-			path, err := jscompat.PathArg("path", value)
+			path, err := dynvalue.PathArg("path", value)
 			if err != nil {
 				return "", err
 			}
@@ -658,10 +660,10 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 			}
 		}
 	}
-	sort.SliceStable(paths, func(i, j int) bool { return jscompat.LessUTF16(paths[i], paths[j]) })
+	sort.SliceStable(paths, func(i, j int) bool { return dynvalue.LessUTF16(paths[i], paths[j]) })
 	hash := sha256.New()
 	for _, path := range paths {
-		file := jscompat.Resolve(directory, path)
+		file := dynvalue.Resolve(directory, path)
 		if !within(directory, file) {
 			return "", errors.New(textPackageMaterialsOutside)
 		}
@@ -687,7 +689,7 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 			if ok {
 				digest = value
 			}
-		} else if jscompat.Exists(file) {
+		} else if dynvalue.Exists(file) {
 			value, err := tokenDigest(file)
 			if err != nil {
 				return "", err
@@ -706,7 +708,7 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// joinRelative — path.join(base, name) для относительных путей токена: нормализация без
+// joinRelative — соединение base и name для относительных путей токена: нормализация без
 // превращения в абсолютный путь и с разделителем «/» на любой ОС: от него зависит токен.
 func joinRelative(base, name string) string {
 	return filepath.ToSlash(filepath.Join(filepath.FromSlash(base), filepath.FromSlash(name)))
@@ -723,16 +725,16 @@ func packageResultToken(requestDir string, downloads []string) (string, error) {
 			paths = append(paths, path)
 		}
 	}
-	sort.SliceStable(paths, func(i, j int) bool { return jscompat.LessUTF16(paths[i], paths[j]) })
+	sort.SliceStable(paths, func(i, j int) bool { return dynvalue.LessUTF16(paths[i], paths[j]) })
 	hash := sha256.New()
 	for _, path := range paths {
-		file := jscompat.Resolve(path)
+		file := dynvalue.Resolve(path)
 		if !within(requestDir, file) {
 			return "", errors.New(textResultFileRequired)
 		}
 		info, err := os.Lstat(file)
 		if err != nil {
-			return "", jscompat.FsError("lstat", file, err)
+			return "", dynvalue.FsError("lstat", file, err)
 		}
 		if !info.Mode().IsRegular() {
 			return "", errors.New(textResultFileRequired)
@@ -741,7 +743,7 @@ func packageResultToken(requestDir string, downloads []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		hash.Write([]byte(filepath.ToSlash(jscompat.Relative(requestDir, file)) + "\x00" + digest + "\x00"))
+		hash.Write([]byte(filepath.ToSlash(dynvalue.Relative(requestDir, file)) + "\x00" + digest + "\x00"))
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }

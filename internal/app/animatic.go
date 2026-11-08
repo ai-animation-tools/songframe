@@ -3,10 +3,10 @@ package app
 import (
 	"errors"
 
-	"songframe-go/internal/animatic"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/scenarioworkflow"
-	"songframe-go/internal/wire"
+	"songframe/internal/animatic"
+	"songframe/internal/jobs"
+	"songframe/internal/scenarioworkflow"
+	"songframe/internal/wire"
 )
 
 // AnimaticService реализует window.api.animatic страницы «Аниматик»: вид сборки latest, задание

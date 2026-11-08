@@ -1,4 +1,4 @@
-/** Deferred fake API воспроизводит запоздалые ответы без подмены React hooks или доступа к настоящему IPC. */
+/** Deferred fake API воспроизводит запоздалые ответы без подмены React hooks или доступа к настоящему API. */
 import { describe, expect, it, vi } from 'vitest';
 import { completeInScope, RequestScope } from './requestScope';
 

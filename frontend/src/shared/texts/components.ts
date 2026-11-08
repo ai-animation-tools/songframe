@@ -162,6 +162,6 @@ export const componentsTexts = {
 
 /**
  * Подписи менеджера компонентов (ComponentsPage) живут в component-manager.ts. Повторный экспорт
- * сохраняет прежний путь импорта platform/api.ts (заголовки системных диалогов компонентов).
+ * оставляет platform/api.ts этот путь импорта (заголовки системных диалогов компонентов).
  */
 export { componentTexts } from './component-manager';

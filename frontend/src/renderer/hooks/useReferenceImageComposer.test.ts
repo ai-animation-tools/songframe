@@ -13,7 +13,7 @@ const fixture = vi.hoisted(() => ({
   pending: [] as (() => void)[],
   describeError: (failure: unknown) => (failure instanceof Error ? failure.message : String(failure))
 }));
-// Стенд исполняет эффекты и поздние ответы чтения, не создавая DOM или настоящий IPC.
+// Стенд исполняет эффекты и поздние ответы чтения, не создавая DOM и не вызывая настоящий API.
 vi.mock('react', async (original) => ({
   ...(await original<typeof React>()),
   useState: (initial: unknown) => {

@@ -43,7 +43,7 @@
   },
   {
     "name": "schema-true",
-    "description": "True == 1 в Python.",
+    "description": "true равно 1.",
     "call": "validate_spec",
     "input": "{\"schema_version\": true, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
     "expected": {

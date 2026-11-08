@@ -6,10 +6,10 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/wire"
+	"songframe/internal/agents"
+	"songframe/internal/mediaapi"
+	"songframe/internal/providers"
+	"songframe/internal/wire"
 )
 
 // Имена событий Wails группы window.api.environment.

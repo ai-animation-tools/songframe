@@ -11,11 +11,11 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/scenario"
-	"songframe-go/internal/sourceinputs"
-	"songframe-go/internal/timing"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/scenario"
+	"songframe/internal/sourceinputs"
+	"songframe/internal/timing"
 )
 
 // Входы сценарного прохода: опись исходников, разметка и документы проекта
@@ -61,8 +61,8 @@ func (h *hashes) matches(other *hashes) bool {
 }
 
 // object — снимок как объект JSON (null для отсутствующего файла).
-func (h *hashes) object() *jscompat.Object {
-	result := jscompat.NewObject()
+func (h *hashes) object() *dynvalue.Object {
+	result := dynvalue.NewObject()
 	for _, key := range h.keys {
 		if value := h.values[key]; value != nil {
 			result.Set(key, *value)
@@ -76,7 +76,7 @@ func (h *hashes) object() *jscompat.Object {
 // hashesFrom — снимок из проверенной локальной записи (checkHashes).
 func hashesFrom(value any) *hashes {
 	result := newHashes()
-	record, _ := jscompat.AsObject(value)
+	record, _ := dynvalue.AsObject(value)
 	if record == nil {
 		return result
 	}
@@ -111,7 +111,7 @@ func fileHash(project, relative string) (*string, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, jscompat.FsError("open", filepath.Join(project, filepath.FromSlash(relative)), err)
+		return nil, dynvalue.FsError("open", filepath.Join(project, filepath.FromSlash(relative)), err)
 	}
 	var text string
 	if relative == "source/manifest.json" {
@@ -137,7 +137,7 @@ func snapshotMatches(project string, expected *hashes) (bool, error) {
 }
 
 // readJSON — документ проекта: null для отсутствующего файла, иначе разбор текста UTF-8 в дерево
-// jscompat. Ошибка разбора — текст разборщика jscompat.
+// dynvalue. Ошибка разбора — текст разборщика dynvalue.
 func readJSON(project, relative string) (any, error) {
 	path := filepath.Join(project, filepath.FromSlash(relative))
 	data, err := os.ReadFile(path)
@@ -145,9 +145,9 @@ func readJSON(project, relative string) (any, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, jscompat.FsError("open", path, err)
+		return nil, dynvalue.FsError("open", path, err)
 	}
-	return jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+	return dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 }
 
 var (
@@ -193,7 +193,7 @@ func scenarioOutputPaths(project string) ([]string, error) {
 		}
 		entries, err := os.ReadDir(cards)
 		if err != nil {
-			return nil, jscompat.FsError("scandir", cards, err)
+			return nil, dynvalue.FsError("scandir", cards, err)
 		}
 		for _, entry := range entries {
 			if strings.HasSuffix(entry.Name(), ".png") {
@@ -212,7 +212,7 @@ func scenarioOutputPaths(project string) ([]string, error) {
 		}
 		entries, err := os.ReadDir(shots)
 		if err != nil {
-			return nil, jscompat.FsError("scandir", shots, err)
+			return nil, dynvalue.FsError("scandir", shots, err)
 		}
 		for _, entry := range entries {
 			if shotFolder.MatchString(entry.Name()) {
@@ -226,8 +226,8 @@ func scenarioOutputPaths(project string) ([]string, error) {
 	for path := range outputs {
 		result = append(result, path)
 	}
-	// [...outputs].sort(): сравнение строк JS по кодовым единицам UTF-16.
-	sort.Slice(result, func(i, j int) bool { return jscompat.LessUTF16(result[i], result[j]) })
+	// Сортировка путей по кодовым единицам UTF-16.
+	sort.Slice(result, func(i, j int) bool { return dynvalue.LessUTF16(result[i], result[j]) })
 	return result, nil
 }
 
@@ -235,8 +235,8 @@ func scenarioOutputPaths(project string) ([]string, error) {
 type inputs struct {
 	project   string
 	documents Documents
-	manifest  *jscompat.Object
-	timing    *jscompat.Object
+	manifest  *dynvalue.Object
+	timing    *dynvalue.Object
 	// duration — duration_decoded разметки; nil, если разметка не прошла проверку.
 	duration *float64
 	hashes   *hashes
@@ -255,12 +255,12 @@ type inputs struct {
 // sourcePath — путь из описи или кастинга внутри source/ с прямыми слешами.
 func sourcePath(project string, value any) (string, error) {
 	path, ok := value.(string)
-	if !ok || path == "" || jscompat.IsAbs(path) {
+	if !ok || path == "" || dynvalue.IsAbs(path) {
 		return "", errors.New(textSourcePathUnreadable)
 	}
 	base := filepath.Join(project, "source")
-	local := jscompat.Relative(base, jscompat.Resolve(base, path))
-	if strings.HasPrefix(local, "..") || jscompat.IsAbs(local) {
+	local := dynvalue.Relative(base, dynvalue.Resolve(base, path))
+	if strings.HasPrefix(local, "..") || dynvalue.IsAbs(local) {
 		return "", errors.New(textSourceOutsideProject)
 	}
 	return "source/" + strings.ReplaceAll(local, "\\", "/"), nil
@@ -285,7 +285,7 @@ func (s *orderedSet) add(path string) {
 // readInputs — входы прохода для проекта. Ошибка — только исключение до сбора проблем (нет папки
 // проекта, повреждённая папка карточек); остальное — проблемы вида.
 func readInputs(path string) (*inputs, error) {
-	project, err := jscompat.Realpath(path)
+	project, err := dynvalue.Realpath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -308,13 +308,13 @@ func readInputs(path string) (*inputs, error) {
 	readDocuments(result)
 	castImagesValid := true
 	if result.documents.Cast != nil {
-		for _, entity := range arrayItems(jscompat.Get(result.documents.Cast, "entities")) {
-			for _, image := range arrayItems(jscompat.Get(entity, "images")) {
+		for _, entity := range arrayItems(dynvalue.Get(result.documents.Cast, "entities")) {
+			for _, image := range arrayItems(dynvalue.Get(entity, "images")) {
 				relative, err := sourcePath(project, image)
 				if err == nil {
 					paths.add(relative)
-					if !jscompat.Exists(filepath.Join(project, filepath.FromSlash(relative))) {
-						err = errors.New(textCastImageMissing(jscompat.ToString(jscompat.Get(entity, "name")), relative))
+					if !dynvalue.Exists(filepath.Join(project, filepath.FromSlash(relative))) {
+						err = errors.New(textCastImageMissing(dynvalue.ToString(dynvalue.Get(entity, "name")), relative))
 					}
 				}
 				if err != nil {
@@ -365,19 +365,19 @@ func readInputs(path string) (*inputs, error) {
 // разметка версии 2 и её согласованность с текстом и треком. Первая ошибка прерывает проверку.
 func readSources(result *inputs, paths *orderedSet) error {
 	project := result.project
-	if !jscompat.Exists(filepath.Join(project, "plan", "project.json")) {
+	if !dynvalue.Exists(filepath.Join(project, "plan", "project.json")) {
 		return errors.New(textProjectSettingsUnreadable)
 	}
 	raw, err := readJSON(project, "source/manifest.json")
 	if err != nil {
 		return err
 	}
-	manifest, ok := jscompat.AsObject(raw)
-	if !ok || !jscompat.StrictEqual(manifest.Value("schema_version"), 1.0) || !jscompat.IsArray(manifest.Value("references")) {
+	manifest, ok := dynvalue.AsObject(raw)
+	if !ok || !dynvalue.StrictEqual(manifest.Value("schema_version"), 1.0) || !dynvalue.IsArray(manifest.Value("references")) {
 		return errors.New(textSourcesMissing)
 	}
 	for _, key := range []string{"track", "lyrics", "idea"} {
-		source, ok := jscompat.AsObject(manifest.Value(key))
+		source, ok := dynvalue.AsObject(manifest.Value(key))
 		if !ok || !isString(source.Value("sha256")) {
 			return errors.New(textScenarioSourcesRequired)
 		}
@@ -395,8 +395,8 @@ func readSources(result *inputs, paths *orderedSet) error {
 		}
 	}
 	for _, item := range arrayItems(manifest.Value("references")) {
-		reference, ok := jscompat.AsObject(item)
-		valid := ok && jscompat.IsArray(reference.Value("files"))
+		reference, ok := dynvalue.AsObject(item)
+		valid := ok && dynvalue.IsArray(reference.Value("files"))
 		for _, key := range []string{"id", "kind", "name", "short_name", "description"} {
 			valid = valid && isString(reference.Value(key))
 		}
@@ -404,7 +404,7 @@ func readSources(result *inputs, paths *orderedSet) error {
 			return errors.New(textSourceReferenceInvalid)
 		}
 		for _, file := range arrayItems(reference.Value("files")) {
-			record, ok := jscompat.AsObject(file)
+			record, ok := dynvalue.AsObject(file)
 			if !ok || !isString(record.Value("sha256")) {
 				return errors.New(textSourceImageInvalid)
 			}
@@ -427,7 +427,7 @@ func readSources(result *inputs, paths *orderedSet) error {
 	if err != nil {
 		return err
 	}
-	timingDocument, ok := jscompat.AsObject(rawTiming)
+	timingDocument, ok := dynvalue.AsObject(rawTiming)
 	if !ok || !validTiming(timingDocument) {
 		return errors.New(textScenarioTimingRequired)
 	}
@@ -436,29 +436,29 @@ func readSources(result *inputs, paths *orderedSet) error {
 	result.duration = &duration
 	text, err := os.ReadFile(filepath.Join(project, "source", "text.md"))
 	if err != nil {
-		return jscompat.FsError("open", filepath.Join(project, "source", "text.md"), err)
+		return dynvalue.FsError("open", filepath.Join(project, "source", "text.md"), err)
 	}
-	lyrics := timing.ParseLyricsLines(jscompat.DecodeUTF8(text))
+	lyrics := timing.ParseLyricsLines(dynvalue.DecodeUTF8(text))
 	problems, err := timing.Validate(timingDocument, lyrics, &duration)
 	if err != nil {
 		return err
 	}
-	if !jscompat.StrictEqual(timingDocument.Value("sha256"), jscompat.GetPath(manifest, "track", "sha256")) {
+	if !dynvalue.StrictEqual(timingDocument.Value("sha256"), dynvalue.GetPath(manifest, "track", "sha256")) {
 		problems = append(problems, textTimingTrackMismatch)
 	}
 	covered := map[float64]bool{}
 	unverified := false
 	for _, line := range arrayItems(timingDocument.Value("lines")) {
-		if jscompat.Get(line, "verified") != true {
+		if dynvalue.Get(line, "verified") != true {
 			unverified = true
 		}
-		covered[jscompat.Get(line, "source_line").(float64)] = true
+		covered[dynvalue.Get(line, "source_line").(float64)] = true
 	}
 	if unverified {
 		problems = append(problems, textTimingUnverified)
 	}
 	for _, line := range lyrics {
-		if !line.Header && jscompat.Trim(line.Text) != "" && !covered[float64(line.Number)] {
+		if !line.Header && dynvalue.Trim(line.Text) != "" && !covered[float64(line.Number)] {
 			problems = append(problems, textTimingIncomplete)
 			break
 		}
@@ -472,28 +472,28 @@ func readSources(result *inputs, paths *orderedSet) error {
 // validTiming — проверка формы разметки: версия 2, непустые строки с целыми id и
 // source_line, числовыми границами и флагом verified, части с конечными границами и
 // положительная конечная duration_decoded.
-func validTiming(document *jscompat.Object) bool {
-	lines, linesOK := jscompat.AsArray(document.Value("lines"))
-	sections, sectionsOK := jscompat.AsArray(document.Value("sections"))
+func validTiming(document *dynvalue.Object) bool {
+	lines, linesOK := dynvalue.AsArray(document.Value("lines"))
+	sections, sectionsOK := dynvalue.AsArray(document.Value("sections"))
 	duration, durationOK := document.Value("duration_decoded").(float64)
-	if !jscompat.StrictEqual(document.Value("version"), 2.0) || !linesOK || len(lines) == 0 || !sectionsOK || !durationOK ||
-		!jscompat.IsFinite(duration) || duration <= 0 {
+	if !dynvalue.StrictEqual(document.Value("version"), 2.0) || !linesOK || len(lines) == 0 || !sectionsOK || !durationOK ||
+		!dynvalue.IsFinite(duration) || duration <= 0 {
 		return false
 	}
 	for _, item := range lines {
-		line, ok := jscompat.AsObject(item)
-		_, startOK := jscompat.Get(item, "start").(float64)
-		_, endOK := jscompat.Get(item, "end").(float64)
-		_, verifiedOK := jscompat.Get(item, "verified").(bool)
-		if !ok || !jscompat.IsInteger(line.Value("id")) || !jscompat.IsInteger(line.Value("source_line")) || !startOK || !endOK || !verifiedOK {
+		line, ok := dynvalue.AsObject(item)
+		_, startOK := dynvalue.Get(item, "start").(float64)
+		_, endOK := dynvalue.Get(item, "end").(float64)
+		_, verifiedOK := dynvalue.Get(item, "verified").(bool)
+		if !ok || !dynvalue.IsInteger(line.Value("id")) || !dynvalue.IsInteger(line.Value("source_line")) || !startOK || !endOK || !verifiedOK {
 			return false
 		}
 	}
 	for _, item := range sections {
-		part, ok := jscompat.AsObject(item)
-		start, startOK := jscompat.Get(item, "start").(float64)
-		end, endOK := jscompat.Get(item, "end").(float64)
-		if !ok || !isString(part.Value("name")) || !startOK || !jscompat.IsFinite(start) || !endOK || !jscompat.IsFinite(end) {
+		part, ok := dynvalue.AsObject(item)
+		start, startOK := dynvalue.Get(item, "start").(float64)
+		end, endOK := dynvalue.Get(item, "end").(float64)
+		if !ok || !isString(part.Value("name")) || !startOK || !dynvalue.IsFinite(start) || !endOK || !dynvalue.IsFinite(end) {
 			return false
 		}
 	}
@@ -513,7 +513,7 @@ func readDocuments(result *inputs) {
 		if err == nil && raw != nil {
 			switch key {
 			case "cast":
-				var normalized *jscompat.Object
+				var normalized *dynvalue.Object
 				normalized, err = cast.Normalize(raw, cast.LoadDefaults())
 				if err == nil {
 					var manifest any
@@ -523,7 +523,7 @@ func readDocuments(result *inputs) {
 					result.documents.Cast, err = cast.ProjectDescriptions(normalized, manifest)
 				}
 			case "treatment":
-				var draft *jscompat.Object
+				var draft *dynvalue.Object
 				draft, err = scenario.NormalizeTreatmentDraft(raw)
 				if err == nil {
 					result.documents.Treatment = draft

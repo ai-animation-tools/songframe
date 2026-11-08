@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"songframe-go/internal/providers/kling/mcp"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/providers/kling/mcp"
+	"songframe/internal/toolrt"
 )
 
 // successStatuses и failedStatuses — статусы query_tasks (в нижнем регистре).
@@ -21,7 +21,7 @@ var (
 	failedStatuses  = map[string]bool{"failed": true, "cancelled": true, "canceled": true, "rejected": true, "error": true}
 )
 
-// fetchTimeout — таймаут операции сокета при скачивании оригинала (urlopen(timeout=60)).
+// fetchTimeout — таймаут операции сокета при скачивании оригинала.
 const fetchTimeout = 60 * time.Second
 
 // argument — значение аргумента MCP: строка как есть, прочее — компактный JSON без NaN.
@@ -29,25 +29,25 @@ func argument(value any) (string, error) {
 	if text, ok := value.(string); ok {
 		return text, nil
 	}
-	return pycompat.DumpsJSON(value, pycompat.DumpOptions{Compact: true, RejectNaN: true})
+	return toolrt.DumpsJSON(value, toolrt.DumpOptions{Compact: true, RejectNaN: true})
 }
 
 // slotURL — именованный вход конверта: слот и адрес загруженного файла.
 type slotURL struct{ slot, url string }
 
 // envelope — конверт инструмента генерации: модель, промпт первым аргументом, остальные
-// аргументы по имени (sorted(items)), rationale и именованные входы по URL. У команд без входов
+// аргументы по имени (по возрастанию имени), rationale и именованные входы по URL. У команд без входов
 // поля inputs нет.
-func envelope(request *pycompat.Dict, prompt string, inputs []slotURL) (*pycompat.Dict, error) {
-	parameters, err := pycompat.GetItem(request, "parameters")
+func envelope(request *toolrt.Dict, prompt string, inputs []slotURL) (*toolrt.Dict, error) {
+	parameters, err := toolrt.GetItem(request, "parameters")
 	if err != nil {
 		return nil, err
 	}
-	values, ok := parameters.(*pycompat.Dict)
+	values, ok := parameters.(*toolrt.Dict)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'items'", pycompat.TypeName(parameters))
+		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(parameters))
 	}
-	first := pycompat.NewDict()
+	first := toolrt.NewDict()
 	first.Set("name", "prompt")
 	first.Set("value", prompt)
 	arguments := []any{first}
@@ -58,23 +58,23 @@ func envelope(request *pycompat.Dict, prompt string, inputs []slotURL) (*pycompa
 		if err != nil {
 			return nil, err
 		}
-		item := pycompat.NewDict()
+		item := toolrt.NewDict()
 		item.Set("name", name)
 		item.Set("value", text)
 		arguments = append(arguments, item)
 	}
-	model, err := pycompat.GetItem(request, "model")
+	model, err := toolrt.GetItem(request, "model")
 	if err != nil {
 		return nil, err
 	}
-	result := pycompat.NewDict()
+	result := toolrt.NewDict()
 	result.Set("model", model)
 	result.Set("arguments", arguments)
 	result.Set("rationale", "")
 	if len(inputs) > 0 {
 		list := make([]any, len(inputs))
 		for index, input := range inputs {
-			item := pycompat.NewDict()
+			item := toolrt.NewDict()
 			item.Set("name", input.slot)
 			item.Set("inputType", "URL")
 			item.Set("url", input.url)
@@ -90,10 +90,10 @@ func envelope(request *pycompat.Dict, prompt string, inputs []slotURL) (*pycompa
 func inside(directory string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", pycompat.TypeName(name))
+		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(name))
 	}
-	path := pycompat.ResolvePath(pycompat.JoinPath(directory, text))
-	if !pycompat.IsRelativeTo(path, pycompat.ResolvePath(directory)) || !pycompat.IsFile(path) {
+	path := toolrt.ResolvePath(toolrt.JoinPath(directory, text))
+	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(directory)) || !toolrt.IsFile(path) {
 		return "", valueError("Нет локального файла подготовленной попытки.")
 	}
 	return path, nil
@@ -102,7 +102,7 @@ func inside(directory string, name any) (string, error) {
 // notSubmittedCause — исключения, которые до вызова генерации переводятся в NotSubmitted:
 // (KlingError, OSError, ValueError).
 func notSubmittedCause(err error) bool {
-	return mcp.IsKlingError(err) || pycompat.IsAny(err, pycompat.OSError, pycompat.ValueError)
+	return mcp.IsKlingError(err) || toolrt.IsAny(err, toolrt.OSError, toolrt.ValueError)
 }
 
 // Submit — загрузка входов и единственный tools/call
@@ -111,12 +111,12 @@ func notSubmittedCause(err error) bool {
 // JSON-RPC, таймаут или обрыв после отправки и ответ без generationId — прочая ошибка
 // (неизвестный исход), с отладочной записью в DebugFile. Результат — {"generation_id",
 // "credits_consumed"?}.
-func (a *Adapter) Submit(ctx context.Context, directory string, request, state *pycompat.Dict, timeout time.Duration) (*pycompat.Dict, error) {
-	inputs, err := pycompat.GetItem(request, "inputs")
+func (a *Adapter) Submit(ctx context.Context, directory string, request, state *toolrt.Dict, timeout time.Duration) (*toolrt.Dict, error) {
+	inputs, err := toolrt.GetItem(request, "inputs")
 	if err != nil {
 		return nil, err
 	}
-	items, err := pycompat.Iter(inputs)
+	items, err := toolrt.Iter(inputs)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (a *Adapter) Submit(ctx context.Context, directory string, request, state *
 		if err != nil {
 			return nil, err
 		}
-		if !pycompat.Equal(values.Value("flag"), "input") || !pycompat.Truthy(values.Value("slot")) {
+		if !toolrt.Equal(values.Value("flag"), "input") || !toolrt.Truthy(values.Value("slot")) {
 			return nil, &NotSubmittedError{"Входы запроса передаются только именованными слотами; подготовьте новую попытку."}
 		}
 	}
@@ -136,11 +136,11 @@ func (a *Adapter) Submit(ctx context.Context, directory string, request, state *
 		}
 		return err
 	}
-	promptInfo, err := pycompat.GetItem(request, "prompt")
+	promptInfo, err := toolrt.GetItem(request, "prompt")
 	if err != nil {
 		return nil, err
 	}
-	promptName, err := pycompat.GetItem(promptInfo, "path")
+	promptName, err := toolrt.GetItem(promptInfo, "path")
 	if err != nil {
 		return nil, err
 	}
@@ -150,9 +150,9 @@ func (a *Adapter) Submit(ctx context.Context, directory string, request, state *
 	}
 	data, err := os.ReadFile(promptPath)
 	if err != nil {
-		return nil, notSubmitted(pycompat.OSErrorFrom(err, promptPath))
+		return nil, notSubmitted(toolrt.OSErrorFrom(err, promptPath))
 	}
-	prompt, err := pycompat.DecodeUTF8(data)
+	prompt, err := toolrt.DecodeUTF8(data)
 	if err != nil {
 		return nil, notSubmitted(err)
 	}
@@ -161,12 +161,12 @@ func (a *Adapter) Submit(ctx context.Context, directory string, request, state *
 	}
 	uploaded := []slotURL{}
 	for _, item := range items {
-		values := item.(*pycompat.Dict)
-		slot, err := pycompat.GetItem(values, "slot")
+		values := item.(*toolrt.Dict)
+		slot, err := toolrt.GetItem(values, "slot")
 		if err != nil {
 			return nil, err
 		}
-		name, err := pycompat.GetItem(values, "path")
+		name, err := toolrt.GetItem(values, "path")
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +178,7 @@ func (a *Adapter) Submit(ctx context.Context, directory string, request, state *
 		if err != nil {
 			return nil, notSubmitted(err)
 		}
-		uploaded = append(uploaded, slotURL{pycompat.Str(slot), url})
+		uploaded = append(uploaded, slotURL{toolrt.Str(slot), url})
 	}
 	unknown := func(err error) error {
 		var status *int
@@ -193,7 +193,7 @@ func (a *Adapter) Submit(ctx context.Context, directory string, request, state *
 		a.Client.Debug("submit", err, status, text)
 		return err
 	}
-	command, err := pycompat.GetItem(request, "command")
+	command, err := toolrt.GetItem(request, "command")
 	if err != nil {
 		return nil, unknown(err)
 	}
@@ -217,23 +217,23 @@ func (a *Adapter) Submit(ctx context.Context, directory string, request, state *
 	default:
 		return nil, unknown(err)
 	}
-	values, _ := body.(*pycompat.Dict)
+	values, _ := body.(*toolrt.Dict)
 	var generation any
 	if values != nil {
-		generation, _ = pycompat.DictGet(values, "generationId", values.Value("generation_id"))
+		generation, _ = toolrt.DictGet(values, "generationId", values.Value("generation_id"))
 	}
 	generationID, ok := generation.(string)
 	if !ok || generationID == "" {
 		failure := valueError("ответ без generationId")
 		status := 200
-		dumped, _ := pycompat.DumpsJSON(body, pycompat.DumpOptions{})
+		dumped, _ := toolrt.DumpsJSON(body, toolrt.DumpOptions{})
 		a.Client.Debug("submit", failure, &status, &dumped)
 		return nil, failure
 	}
-	answer := pycompat.NewDict()
+	answer := toolrt.NewDict()
 	answer.Set("generation_id", generationID)
 	switch credits := values.Value("creditsConsumed").(type) {
-	case pycompat.Int:
+	case toolrt.Int:
 		if _, err := credits.Float(); err != nil {
 			return nil, err
 		}
@@ -251,13 +251,13 @@ func (a *Adapter) Submit(ctx context.Context, directory string, request, state *
 // outputs_pending, watermark_free_pending или completed с адресами оригиналов. Явный адрес без
 // логотипа приоритетен у обоих медиа; видео без него ждёт (обычный url не скачивается), у
 // изображения допустим исходный url. Адреса в журнал попытки не попадают — это забота общего кода.
-func (a *Adapter) Poll(ctx context.Context, directory string, request, state *pycompat.Dict, timeout time.Duration) (*pycompat.Dict, error) {
+func (a *Adapter) Poll(ctx context.Context, directory string, request, state *toolrt.Dict, timeout time.Duration) (*toolrt.Dict, error) {
 	session := a.open(timeout, state.Value("task_trace_id"))
-	generationID, err := pycompat.GetItem(state, "generation_id")
+	generationID, err := toolrt.GetItem(state, "generation_id")
 	if err != nil {
 		return nil, err
 	}
-	arguments := pycompat.NewDict()
+	arguments := toolrt.NewDict()
 	arguments.Set("generationId", generationID)
 	value, err := session.Call(ctx, "query_tasks", arguments, 0, nil)
 	if err != nil {
@@ -267,8 +267,8 @@ func (a *Adapter) Poll(ctx context.Context, directory string, request, state *py
 }
 
 // pollAnswer — разбор ответа query_tasks (часть poll после вызова).
-func pollAnswer(value any, request *pycompat.Dict, generationID any) (*pycompat.Dict, error) {
-	body, ok := value.(*pycompat.Dict)
+func pollAnswer(value any, request *toolrt.Dict, generationID any) (*toolrt.Dict, error) {
+	body, ok := value.(*toolrt.Dict)
 	if !ok {
 		return nil, valueError("query_tasks вернул неверный ответ.")
 	}
@@ -279,15 +279,15 @@ func pollAnswer(value any, request *pycompat.Dict, generationID any) (*pycompat.
 			reported = generationID
 		}
 	}
-	if !pycompat.Equal(reported, generationID) {
+	if !toolrt.Equal(reported, generationID) {
 		return nil, valueError("query_tasks вернул состояние другого задания.")
 	}
 	status, found := body.Get("status")
 	if !found {
 		status = "unknown"
 	}
-	serviceStatus := strings.ToLower(pycompat.Str(status))
-	answer := pycompat.NewDict()
+	serviceStatus := strings.ToLower(toolrt.Str(status))
+	answer := toolrt.NewDict()
 	answer.Set("service_status", serviceStatus)
 	if failedStatuses[serviceStatus] {
 		answer.Set("status", "failed")
@@ -297,18 +297,18 @@ func pollAnswer(value any, request *pycompat.Dict, generationID any) (*pycompat.
 		answer.Set("status", "running")
 		return answer, nil
 	}
-	kind, err := pycompat.GetItem(request, "kind")
+	kind, err := toolrt.GetItem(request, "kind")
 	if err != nil {
 		return nil, err
 	}
-	worksValue, _ := pycompat.DictGet(body, "works", []any{})
-	all, err := pycompat.Iter(worksValue)
+	worksValue, _ := toolrt.DictGet(body, "works", []any{})
+	all, err := toolrt.Iter(worksValue)
 	if err != nil {
 		return nil, err
 	}
-	works := []*pycompat.Dict{}
+	works := []*toolrt.Dict{}
 	for _, item := range all {
-		work, ok := item.(*pycompat.Dict)
+		work, ok := item.(*toolrt.Dict)
 		if !ok {
 			continue
 		}
@@ -323,15 +323,15 @@ func pollAnswer(value any, request *pycompat.Dict, generationID any) (*pycompat.
 				contentType = kind
 			}
 		}
-		if successStatuses[strings.ToLower(pycompat.Str(workStatus))] && pycompat.Equal(contentType, kind) {
+		if successStatuses[strings.ToLower(toolrt.Str(workStatus))] && toolrt.Equal(contentType, kind) {
 			works = append(works, work)
 		}
 	}
-	outputs, err := pycompat.GetItem(request, "outputs")
+	outputs, err := toolrt.GetItem(request, "outputs")
 	if err != nil {
 		return nil, err
 	}
-	if !pycompat.Equal(pycompat.NewInt(int64(len(works))), outputs) {
+	if !toolrt.Equal(toolrt.NewInt(int64(len(works))), outputs) {
 		answer.Set("status", "outputs_pending")
 		return answer, nil
 	}
@@ -339,18 +339,18 @@ func pollAnswer(value any, request *pycompat.Dict, generationID any) (*pycompat.
 	complete := true
 	for _, work := range works {
 		url := work.Value("urlWithoutWatermark")
-		if !pycompat.Truthy(url) {
+		if !toolrt.Truthy(url) {
 			url = work.Value("url_without_watermark")
 		}
-		if !pycompat.Truthy(url) {
+		if !toolrt.Truthy(url) {
 			url = nil
-			if pycompat.Equal(kind, "image") {
+			if toolrt.Equal(kind, "image") {
 				url = work.Value("url")
 			}
 		}
 		urls = append(urls, url)
 	}
-	// all(...) останавливается на первом неподходящем адресе: дальше адреса не разбираются.
+	// Проверка останавливается на первом неподходящем адресе: дальше адреса не разбираются.
 	for _, url := range urls {
 		text, ok := url.(string)
 		if ok {
@@ -366,7 +366,7 @@ func pollAnswer(value any, request *pycompat.Dict, generationID any) (*pycompat.
 		}
 	}
 	if !complete {
-		if pycompat.Equal(kind, "video") {
+		if toolrt.Equal(kind, "video") {
 			answer.Set("status", "watermark_free_pending")
 		} else {
 			answer.Set("status", "outputs_pending")
@@ -378,7 +378,7 @@ func pollAnswer(value any, request *pycompat.Dict, generationID any) (*pycompat.
 	return answer, nil
 }
 
-// fetcher — HTTP-клиент скачивания: прокси окружения и перенаправления, как urlopen.
+// fetcher — HTTP-клиент скачивания: прокси окружения и перенаправления.
 func (a *Adapter) fetcher() *http.Client {
 	a.fetchOnce.Do(func() {
 		a.fetchClient = &http.Client{Transport: mcp.NewTransport(a.Client.TLSConfig, true)}
@@ -402,20 +402,20 @@ func (a *Adapter) Fetch(ctx context.Context, url, destination string) error {
 	if err != nil {
 		return valueError(err.Error())
 	}
-	// urlopen посылал Accept-Encoding: identity; сжатие сломало бы сверку с Content-Length.
+	// Без сжатия (Accept-Encoding: identity): сжатие сломало бы сверку с Content-Length.
 	request.Header.Set("Accept-Encoding", "identity")
 	request.Header.Set("User-Agent", "Python-urllib/3.12")
 	response, err := a.fetcher().Do(request)
 	if err != nil {
-		return pycompat.Raise(pycompat.OSError, "<urlopen error %s>", err.Error())
+		return toolrt.Raise(toolrt.OSError, "<urlopen error %s>", err.Error())
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return pycompat.Raise(pycompat.OSError, "HTTP Error %d: %s", response.StatusCode, http.StatusText(response.StatusCode))
+		return toolrt.Raise(toolrt.OSError, "HTTP Error %d: %s", response.StatusCode, http.StatusText(response.StatusCode))
 	}
 	target, err := os.Create(destination)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, destination)
+		return toolrt.OSErrorFrom(err, destination)
 	}
 	written, copyErr := io.Copy(target, response.Body)
 	closeErr := target.Close()
@@ -423,10 +423,10 @@ func (a *Adapter) Fetch(ctx context.Context, url, destination string) error {
 		return valueError("Загрузка не завершена.")
 	}
 	if copyErr != nil {
-		return pycompat.Raise(pycompat.OSError, "%s", copyErr.Error())
+		return toolrt.Raise(toolrt.OSError, "%s", copyErr.Error())
 	}
 	if closeErr != nil {
-		return pycompat.OSErrorFrom(closeErr, destination)
+		return toolrt.OSErrorFrom(closeErr, destination)
 	}
 	return nil
 }

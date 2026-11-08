@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/checks"
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/checks"
+	"songframe/internal/golden"
+	"songframe/internal/jobs"
+	"songframe/internal/toolrt"
 )
 
 // sample — вход и ожидаемый вывод эталонного случая домена проверок.
@@ -17,8 +17,8 @@ func sample(t *testing.T, domain, name string) (golden.Case, string, string) {
 	t.Helper()
 	for _, c := range golden.Load(t, domain) {
 		if c.Name == name {
-			expected := c.PyRead(t, "expected.json")
-			return c, golden.PyString(t, expected, "stdout"), golden.PyString(t, expected, "stderr")
+			expected := c.ReadValue(t, "expected.json")
+			return c, golden.ValueString(t, expected, "stdout"), golden.ValueString(t, expected, "stderr")
 		}
 	}
 	t.Fatalf("нет случая %s/%s", domain, name)
@@ -110,7 +110,7 @@ func TestRunFailure(t *testing.T) {
 	if want := "\n$ Статусы планов \n" + stderr + "\nШаг «Статусы планов» завершился с кодом 1; задание остановлено.\n"; done.Log != want {
 		t.Fatalf("журнал:\n%q\n%q", done.Log, want)
 	}
-	if code := pycompat.NewInt(int64(*done.Code)).String(); code != "1" {
+	if code := toolrt.NewInt(int64(*done.Code)).String(); code != "1" {
 		t.Fatalf("код %s", code)
 	}
 }

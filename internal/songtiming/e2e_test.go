@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"songframe-go/internal/components"
-	"songframe-go/internal/jobs"
+	"songframe/internal/components"
+	"songframe/internal/jobs"
 )
 
 // TestEndToEnd — ручная проверка полного пути на копии настоящего клипа (по умолчанию пропускается):

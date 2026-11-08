@@ -57,6 +57,22 @@ func TestManifestContract(t *testing.T) {
 	}
 }
 
+// TestManifestConsumersExist — consumers каждой операции называют существующие пакеты или файлы
+// репозитория (пути от корня): список владельцев не должен устаревать после переноса кода.
+func TestManifestConsumersExist(t *testing.T) {
+	m, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, capability := range m.Capabilities {
+		for _, consumer := range capability.Consumers {
+			if _, err := os.Stat(filepath.Join("..", "..", filepath.FromSlash(consumer))); err != nil {
+				t.Errorf("%s: нет потребителя %s", capability.ID, consumer)
+			}
+		}
+	}
+}
+
 // TestManifestRejectsBrokenContracts проверяет ошибки, опасные для будущей установки.
 // Успешное JSON-чтение само по себе не доказывает связность зависимостей или полноту комплекта.
 func TestManifestRejectsBrokenContracts(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"strings"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolrt"
 )
 
 // Состояния строк ROADMAP в порядке диаграммы и таблицы готовности.
@@ -19,12 +19,12 @@ const (
 // stateOrder — порядок ключей counts в progress.
 var stateOrder = []string{stateReady, stateStale, stateProgress, statePlanned}
 
-// mediaLabels — MEDIA_LABELS: подпись столбца «В полном монтаже» по виду кадра в сборке.
+// mediaLabels — подпись столбца «В полном монтаже» по виду кадра в сборке.
 var mediaLabels = map[string]string{"video": "Видео", "card": "Карточка", "keyframes": "Опоры"}
 
-// InProgress — in_progress(sources): планы с рабочим пакетом производства plan/batches/<папка> или
-// plan/awaiting/<папка> (поле shot строкой в workflow.json); неразбираемый workflow.json
-// пропускается (ValueError), ошибка чтения — исключение.
+// InProgress — планы с рабочим пакетом производства plan/batches/<папка> или plan/awaiting/<папка>
+// (поле shot строкой в workflow.json); неразбираемый workflow.json пропускается (ValueError),
+// ошибка чтения — исключение.
 func InProgress(sources *Sources) (map[string]bool, error) {
 	result := map[string]bool{}
 	for _, path := range sources.Files() {
@@ -34,12 +34,12 @@ func InProgress(sources *Sources) (map[string]bool, error) {
 		}
 		workflow, err := sources.JSON(path)
 		if err != nil {
-			if pycompat.Is(err, pycompat.ValueError) {
+			if toolrt.Is(err, toolrt.ValueError) {
 				continue
 			}
 			return nil, err
 		}
-		if dict, ok := workflow.(*pycompat.Dict); ok {
+		if dict, ok := workflow.(*toolrt.Dict); ok {
 			if shot, ok := dict.Value("shot").(string); ok {
 				result[shot] = true
 			}
@@ -48,9 +48,9 @@ func InProgress(sources *Sources) (map[string]bool, error) {
 	return result, nil
 }
 
-// quantizeHalfUp — format(d.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP), "f") для
-// неотрицательного конечного Decimal: одна цифра после точки, половина округляется вверх.
-func quantizeHalfUp(value pycompat.Decimal) string {
+// quantizeHalfUp — неотрицательное конечное toolrt.Decimal в записи без экспоненты с одной
+// цифрой после точки; половина округляется вверх.
+func quantizeHalfUp(value toolrt.Decimal) string {
 	text := value.FormatF()
 	whole, fraction, _ := strings.Cut(text, ".")
 	if len(fraction) <= 1 {
@@ -74,16 +74,16 @@ func quantizeHalfUp(value pycompat.Decimal) string {
 	return string(digits[:len(digits)-1]) + "." + string(digits[len(digits)-1:])
 }
 
-// percent — percent(value, total): доля в процентах с одной цифрой после запятой («37,5%»);
+// percent — доля value от total в процентах с одной цифрой после запятой («37,5%»);
 // при нулевом total — «0,0%».
 func percent(value, total *big.Int) (string, error) {
-	result := pycompat.DecimalInt(0)
+	result := toolrt.DecimalInt(0)
 	if total.Sign() != 0 {
-		numerator, err := pycompat.NewDecimal(pycompat.IntFromBig(new(big.Int).Mul(value, big.NewInt(100))))
+		numerator, err := toolrt.NewDecimal(toolrt.IntFromBig(new(big.Int).Mul(value, big.NewInt(100))))
 		if err != nil {
 			return "", err
 		}
-		divisor, err := pycompat.NewDecimal(pycompat.IntFromBig(total))
+		divisor, err := toolrt.NewDecimal(toolrt.IntFromBig(total))
 		if err != nil {
 			return "", err
 		}
@@ -94,13 +94,14 @@ func percent(value, total *big.Int) (string, error) {
 	return strings.ReplaceAll(quantizeHalfUp(result), ".", ",") + "%", nil
 }
 
-// clockFrames — clock((Decimal(frames) / fps).quantize(Decimal("0.1"), ROUND_HALF_UP)).
+// clockFrames — время frames кадров на частоте fps в записи «ММ:СС.d» (sceneregistry.Clock):
+// секунды — десятичное частное, округлённое до десятых половиной вверх.
 func clockFrames(frames *big.Int, fps any) (string, error) {
-	value, err := pycompat.NewDecimal(pycompat.IntFromBig(frames))
+	value, err := toolrt.NewDecimal(toolrt.IntFromBig(frames))
 	if err != nil {
 		return "", err
 	}
-	divisor, err := pycompat.DecimalOperand(fps, "/")
+	divisor, err := toolrt.DecimalOperand(fps, "/")
 	if err != nil {
 		return "", err
 	}
@@ -111,16 +112,15 @@ func clockFrames(frames *big.Int, fps any) (string, error) {
 	return sceneregistry.Clock(quantizeHalfUp(quotient))
 }
 
-// progress — progress(items, states, fps): раздел «Готовность проекта» — диаграмма Mermaid без
-// нулевых секторов, таблица состояний (строка изменённой постановки — только при таких планах) и
-// готовность по хронометражу.
-func progress(items []*pycompat.Dict, states map[string]string, fps any) ([]string, error) {
+// progress — раздел «Готовность проекта»: диаграмма Mermaid без нулевых секторов, таблица
+// состояний (строка изменённой постановки — только при таких планах) и готовность по хронометражу.
+func progress(items []*toolrt.Dict, states map[string]string, fps any) ([]string, error) {
 	counts := map[string]int64{}
 	for _, scene := range items {
 		counts[states[scene.Value("id").(string)]]++
 	}
 	total := sumFrames(items, nil)
-	ready := sumFrames(items, func(scene *pycompat.Dict) bool { return states[scene.Value("id").(string)] == stateReady })
+	ready := sumFrames(items, func(scene *toolrt.Dict) bool { return states[scene.Value("id").(string)] == stateReady })
 	planCount := big.NewInt(int64(len(items)))
 	lines := []string{"## Готовность проекта", ""}
 	if len(items) > 0 {
@@ -133,7 +133,7 @@ func progress(items []*pycompat.Dict, states map[string]string, fps any) ([]stri
 			if err != nil {
 				return nil, err
 			}
-			count := pycompat.NewInt(counts[state]).String()
+			count := toolrt.NewInt(counts[state]).String()
 			lines = append(lines, `    "`+state+" — "+share+`" : `+count)
 		}
 		lines = append(lines, "```", "")
@@ -147,7 +147,7 @@ func progress(items []*pycompat.Dict, states map[string]string, fps any) ([]stri
 		if err != nil {
 			return nil, err
 		}
-		lines = append(lines, "| "+state+" | "+pycompat.NewInt(counts[state]).String()+" | "+share+" |")
+		lines = append(lines, "| "+state+" | "+toolrt.NewInt(counts[state]).String()+" | "+share+" |")
 	}
 	readyTime, err := clockFrames(ready, fps)
 	if err != nil {
@@ -181,7 +181,7 @@ type animaticState struct {
 // readAnimatic — current_animatic из plan/production-status.json, его манифест и свежесть:
 // хеш реестра, поля проекта и все записанные хеши медиа совпадают с файлами; принятие —
 // approved_animatic с тем же video_sha256.
-func readAnimatic(sources *Sources, project *pycompat.Dict, work any) (animaticState, error) {
+func readAnimatic(sources *Sources, project *toolrt.Dict, work any) (animaticState, error) {
 	result := animaticState{compiled: map[string]any{}}
 	latest, err := get(work, "current_animatic")
 	if err != nil {
@@ -191,7 +191,7 @@ func readAnimatic(sources *Sources, project *pycompat.Dict, work any) (animaticS
 	if err != nil {
 		return result, err
 	}
-	var manifest any = pycompat.NewDict()
+	var manifest any = toolrt.NewDict()
 	if present {
 		path := latest.(string)
 		document, err := sources.JSON(path)
@@ -202,7 +202,7 @@ func readAnimatic(sources *Sources, project *pycompat.Dict, work any) (animaticS
 		if err != nil {
 			return result, err
 		}
-		list, err := pycompat.Iter(shots)
+		list, err := toolrt.Iter(shots)
 		if err != nil {
 			return result, err
 		}
@@ -211,7 +211,7 @@ func readAnimatic(sources *Sources, project *pycompat.Dict, work any) (animaticS
 			if err != nil {
 				return result, err
 			}
-			hash, err := pycompat.HashKey(id)
+			hash, err := toolrt.HashKey(id)
 			if err != nil {
 				return result, err
 			}
@@ -241,19 +241,19 @@ func readAnimatic(sources *Sources, project *pycompat.Dict, work any) (animaticS
 		if err != nil {
 			return result, err
 		}
-		if pycompat.Equal(status, "approved") && pycompat.Truthy(video) {
+		if toolrt.Equal(status, "approved") && toolrt.Truthy(video) {
 			approvedValue, err := dictGet(work, "approved_animatic", nil)
 			if err != nil {
 				return result, err
 			}
-			if !pycompat.Truthy(approvedValue) {
-				approvedValue = pycompat.NewDict()
+			if !toolrt.Truthy(approvedValue) {
+				approvedValue = toolrt.NewDict()
 			}
 			approvedSHA, err := dictGet(approvedValue, "video_sha256", nil)
 			if err != nil {
 				return result, err
 			}
-			result.approved = pycompat.Equal(approvedSHA, video)
+			result.approved = toolrt.Equal(approvedSHA, video)
 		}
 	}
 	return result, nil
@@ -261,7 +261,7 @@ func readAnimatic(sources *Sources, project *pycompat.Dict, work any) (animaticS
 
 // animaticFresh — свежесть аниматика после проверки наличия манифеста. Условия проверяются по
 // порядку с коротким замыканием: от порядка зависит, какое исключение чтения возникнет.
-func animaticFresh(sources *Sources, project *pycompat.Dict, latest string, hashes any) (bool, error) {
+func animaticFresh(sources *Sources, project *toolrt.Dict, latest string, hashes any) (bool, error) {
 	document, err := sources.JSON(latest)
 	if err != nil {
 		return false, err
@@ -274,7 +274,7 @@ func animaticFresh(sources *Sources, project *pycompat.Dict, latest string, hash
 	if err != nil {
 		return false, err
 	}
-	if !pycompat.Equal(saved, registry) {
+	if !toolrt.Equal(saved, registry) {
 		return false, nil
 	}
 	if document, err = sources.JSON(latest); err != nil {
@@ -284,7 +284,7 @@ func animaticFresh(sources *Sources, project *pycompat.Dict, latest string, hash
 	if err != nil || !match {
 		return false, err
 	}
-	dict, ok := hashes.(*pycompat.Dict)
+	dict, ok := hashes.(*toolrt.Dict)
 	if !ok || dict.Len() == 0 {
 		return false, nil
 	}
@@ -296,16 +296,16 @@ func animaticFresh(sources *Sources, project *pycompat.Dict, latest string, hash
 		if err != nil {
 			return false, err
 		}
-		if !pycompat.Equal(digest, dict.Value(name)) {
+		if !toolrt.Equal(digest, dict.Value(name)) {
 			return false, nil
 		}
 	}
 	return true, nil
 }
 
-// Render — render(sources): ROADMAP.md — текущее состояние клипа из реестра, комплектов assets,
-// рабочих пакетов и принятия (plan/production-status.json), без копий постановки из Markdown.
-// Принятие плана — общее правило shot_acceptance (sceneregistry.ShotAcceptance).
+// Render — ROADMAP.md: текущее состояние клипа из реестра, комплектов assets, рабочих пакетов и
+// принятия (plan/production-status.json), без копий постановки из Markdown.
+// Принятие плана — общее правило sceneregistry.ShotAcceptance.
 func Render(sources *Sources, prepared *Prepared) (string, error) {
 	project, err := projectFile(sources)
 	if err != nil {
@@ -330,17 +330,17 @@ func Render(sources *Sources, prepared *Prepared) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// readAnimatic уже взял work["current_animatic"], значит work — словарь.
-	work := workValue.(*pycompat.Dict)
+	// readAnimatic уже прочитал поле current_animatic из work, значит work — словарь.
+	work := workValue.(*toolrt.Dict)
 	accepted, err := sceneregistry.AcceptedFingerprints(work)
 	if err != nil {
 		return "", err
 	}
-	reviews := pycompat.NewDict()
-	shotsValue, _ := pycompat.DictGet(work, "shots", pycompat.NewDict())
-	if shots, ok := shotsValue.(*pycompat.Dict); ok {
+	reviews := toolrt.NewDict()
+	shotsValue, _ := toolrt.DictGet(work, "shots", toolrt.NewDict())
+	if shots, ok := shotsValue.(*toolrt.Dict); ok {
 		for _, sid := range shots.Keys() {
-			if entry, ok := shots.Value(sid).(*pycompat.Dict); ok && entry.Has("source_review") {
+			if entry, ok := shots.Value(sid).(*toolrt.Dict); ok && entry.Has("source_review") {
 				reviews.Set(sid, entry.Value("source_review"))
 			}
 		}
@@ -374,14 +374,14 @@ func Render(sources *Sources, prepared *Prepared) (string, error) {
 			}
 		}
 	}
-	name := pycompat.Str(project.Value("name"))
+	name := toolrt.Str(project.Value("name"))
 	lines := []string{
 		"# ROADMAP — состояние клипа «" + name + "»",
 		"",
 		"> Автоматическое представление plan/scenes.json, локальных " +
 			"ассетов и состояния работ. Вручную не редактировать.",
 		"",
-		"Всего " + pycompat.NewInt(int64(len(prepared.Items))).String() + " планов; готовы " + pycompat.NewInt(int64(ready)).String() +
+		"Всего " + toolrt.NewInt(int64(len(prepared.Items))).String() + " планов; готовы " + toolrt.NewInt(int64(ready)).String() +
 			". [Текущий полный монтаж](plan/animatic/latest/README.md). " + buildState,
 		"",
 	}
@@ -419,10 +419,10 @@ func Render(sources *Sources, prepared *Prepared) (string, error) {
 
 // roadmapRow — строка таблицы планов ROADMAP: тайминг, действие, состояние, ссылки на постановку,
 // манифест и видео комплекта и вид кадра в полном монтаже.
-func roadmapRow(sources *Sources, prepared *Prepared, scene *pycompat.Dict, states map[string]string, animatic animaticState) (string, error) {
+func roadmapRow(sources *Sources, prepared *Prepared, scene *toolrt.Dict, states map[string]string, animatic animaticState) (string, error) {
 	sid := scene.Value("id").(string)
 	link := "[Постановка](plan/storyboard.md#" + strings.ToLower(sid) + ")"
-	if pkg := prepared.Packages.Value(sid); pycompat.Truthy(pkg) {
+	if pkg := prepared.Packages.Value(sid); toolrt.Truthy(pkg) {
 		path, err := getPath(pkg, "accepted_edit", "video", "path")
 		if err != nil {
 			return "", err
@@ -438,8 +438,8 @@ func roadmapRow(sources *Sources, prepared *Prepared, scene *pycompat.Dict, stat
 	}
 	included := "Устаревшая сборка"
 	if animatic.fresh {
-		hash, _ := pycompat.HashKey(sid)
-		var compiled any = pycompat.NewDict()
+		hash, _ := toolrt.HashKey(sid)
+		var compiled any = toolrt.NewDict()
 		if found, ok := animatic.compiled[hash]; ok {
 			compiled = found
 		}
@@ -450,7 +450,7 @@ func roadmapRow(sources *Sources, prepared *Prepared, scene *pycompat.Dict, stat
 		included = "Карточка"
 		if text, ok := media.(string); ok && mediaLabels[text] != "" {
 			included = mediaLabels[text]
-		} else if _, err := pycompat.HashKey(media); err != nil {
+		} else if _, err := toolrt.HashKey(media); err != nil {
 			return "", err
 		}
 	}
@@ -464,7 +464,7 @@ func roadmapRow(sources *Sources, prepared *Prepared, scene *pycompat.Dict, stat
 		if err != nil {
 			return "", err
 		}
-		values = append(values, pycompat.Str(value))
+		values = append(values, toolrt.Str(value))
 	}
 	action, _ := get(scene, "action")
 	return "| **" + sid + "**" + label + " | " + values[0] + " · " + values[1] + " с | " +

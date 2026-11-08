@@ -1,7 +1,7 @@
 // Package cast читает кастинг plan/cast.json для вычислений, которым нужны сущности проекта:
 // начальное состояние сущностей входит в отпечаток постановки каждого плана.
 //
-// Чтение идёт по дереву jscompat: документ не проверяется
+// Чтение идёт по дереву dynvalue: документ не проверяется
 // по схеме, а описание (appearance) сущности, связанной со ссылкой исходников, заменяется
 // каноническим описанием из source/manifest.json. Пакет ничего не записывает.
 package cast
@@ -9,11 +9,11 @@ package cast
 import (
 	"path/filepath"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/sources"
+	"songframe/internal/dynvalue"
+	"songframe/internal/sources"
 )
 
-// Result различает три исхода readCast: файла нет, файл повреждён и прочитанный документ.
+// Result различает три исхода Read: файла нет, файл повреждён и прочитанный документ.
 type Result struct {
 	// Value — документ после проекции описаний; nil при Missing или Damaged, а также для JSON null.
 	Value any
@@ -29,13 +29,13 @@ func Path(project string) string {
 }
 
 // Read читает кастинг. Ошибка разбора, непригодная опись и исключение проекции (сущность null)
-// делают результат Damaged, как catch в readCast.
+// делают результат Damaged: страница показывает повреждение, а не ошибку вызова.
 func Read(project string) Result {
 	path := Path(project)
-	if !jscompat.Exists(path) {
+	if !dynvalue.Exists(path) {
 		return Result{Missing: true}
 	}
-	data, ok := jscompat.ReadJSONFile(path)
+	data, ok := dynvalue.ReadJSONFile(path)
 	if !ok {
 		return Result{Damaged: true}
 	}
@@ -52,27 +52,27 @@ func Read(project string) Result {
 
 // ProjectDescriptions проецирует описания: appearance сущности со ссылкой в описи заменяется
 // её description (отсутствующее — пустой строкой). Без описи или без массива entities документ
-// возвращается как есть. Сущность null/undefined даёт TypeError, как обращение entity.id.
+// возвращается как есть. Отсутствующая сущность (null) даёт TypeError обращения к её id.
 func ProjectDescriptions(cast, manifest any) (any, error) {
-	entities, ok := jscompat.AsArray(jscompat.Get(cast, "entities"))
-	if !ok || !jscompat.Truthy(manifest) {
+	entities, ok := dynvalue.AsArray(dynvalue.Get(cast, "entities"))
+	if !ok || !dynvalue.Truthy(manifest) {
 		return cast, nil
 	}
 	descriptions := map[string]string{}
-	references, _ := jscompat.AsArray(jscompat.Get(manifest, "references"))
+	references, _ := dynvalue.AsArray(dynvalue.Get(manifest, "references"))
 	for _, ref := range references {
-		id, err := jscompat.Prop(ref, "id")
+		id, err := dynvalue.Prop(ref, "id")
 		if err != nil {
 			return nil, err
 		}
-		text, _ := jscompat.Coalesce(jscompat.Get(ref, "description"), "").(string)
+		text, _ := dynvalue.Coalesce(dynvalue.Get(ref, "description"), "").(string)
 		if key, ok := id.(string); ok {
 			descriptions[key] = text
 		}
 	}
 	projected := make([]any, len(entities))
 	for index, entity := range entities {
-		id, err := jscompat.Prop(entity, "id")
+		id, err := dynvalue.Prop(entity, "id")
 		if err != nil {
 			return nil, err
 		}
@@ -82,36 +82,37 @@ func ProjectDescriptions(cast, manifest any) (any, error) {
 			projected[index] = entity
 			continue
 		}
-		copy := jscompat.Spread(entity)
+		copy := dynvalue.Spread(entity)
 		copy.Set("appearance", description)
 		projected[index] = copy
 	}
-	result := jscompat.Spread(cast)
-	result.Set("entities", &jscompat.Array{Items: projected})
+	result := dynvalue.Spread(cast)
+	result.Set("entities", &dynvalue.Array{Items: projected})
 	return result, nil
 }
 
 // InitialStates собирает начальные состояния: для каждой сущности с непустым initial_state —
-// его копия под ключом String(entity.id). Нестандартные значения обрабатываются по правилам JS: строка или массив
-// в initial_state дают индексные ключи, отсутствующий initial_state — TypeError Object.keys.
+// его копия под ключом id сущности, приведённым к строке (dynvalue.ToString). Нестандартные значения
+// не отклоняются: строка или массив в initial_state дают индексные ключи, отсутствующий
+// initial_state — TypeError перечисления ключей (dynvalue.Keys).
 // Ошибка поднимается вызывающему: при вычислении отпечатков её текст выводится в проблеме.
-func InitialStates(cast any) (*jscompat.Object, error) {
-	result := jscompat.NewObject()
-	entities, err := jscompat.Iterate(jscompat.Coalesce(jscompat.Get(cast, "entities"), &jscompat.Array{}))
+func InitialStates(cast any) (*dynvalue.Object, error) {
+	result := dynvalue.NewObject()
+	entities, err := dynvalue.Iterate(dynvalue.Coalesce(dynvalue.Get(cast, "entities"), &dynvalue.Array{}))
 	if err != nil {
 		return nil, err
 	}
 	for _, entity := range entities {
-		state, err := jscompat.Prop(entity, "initial_state")
+		state, err := dynvalue.Prop(entity, "initial_state")
 		if err != nil {
 			return nil, err
 		}
-		keys, err := jscompat.Keys(state)
+		keys, err := dynvalue.Keys(state)
 		if err != nil {
 			return nil, err
 		}
 		if len(keys) > 0 {
-			result.Set(jscompat.ToString(jscompat.Get(entity, "id")), jscompat.Spread(state))
+			result.Set(dynvalue.ToString(dynvalue.Get(entity, "id")), dynvalue.Spread(state))
 		}
 	}
 	return result, nil

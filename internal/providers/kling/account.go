@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"time"
 
-	"songframe-go/internal/providers/kling/mcp"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pyre"
+	"songframe/internal/providers/kling/mcp"
+	"songframe/internal/toolregex"
+	"songframe/internal/toolrt"
 )
 
 var (
-	balanceKey       = pyre.MustCompile(`credit|balance|remain|point`, pyre.IgnoreCase)
-	preferredBalance = pyre.MustCompile(`remain|available|balance|left`, pyre.IgnoreCase)
+	balanceKey       = toolregex.MustCompile(`credit|balance|remain|point`, toolregex.IgnoreCase)
+	preferredBalance = toolregex.MustCompile(`remain|available|balance|left`, toolregex.IgnoreCase)
 )
 
 // BalanceField — числовое поле остатка в ответе аккаунта: путь вида «credits.remaining» и
@@ -28,7 +28,7 @@ type BalanceField struct {
 func FindBalance(value any, path string) ([]BalanceField, error) {
 	found := []BalanceField{}
 	switch item := value.(type) {
-	case *pycompat.Dict:
+	case *toolrt.Dict:
 		for _, key := range item.Keys() {
 			name := key
 			if path != "" {
@@ -37,8 +37,8 @@ func FindBalance(value any, path string) ([]BalanceField, error) {
 			field := item.Value(key)
 			_, isBool := field.(bool)
 			_, matched := balanceKey.Search(key)
-			if pycompat.IsNumber(field) && !isBool && matched {
-				number, err := pycompat.Float(field)
+			if toolrt.IsNumber(field) && !isBool && matched {
+				number, err := toolrt.Float(field)
 				if err != nil {
 					return nil, err
 				}
@@ -64,8 +64,8 @@ func FindBalance(value any, path string) ([]BalanceField, error) {
 }
 
 // accountResult — {"balance", "source"} account().
-func accountResult(balance any, source string) *pycompat.Dict {
-	result := pycompat.NewDict()
+func accountResult(balance any, source string) *toolrt.Dict {
+	result := toolrt.NewDict()
 	result.Set("balance", balance)
 	result.Set("source", source)
 	return result
@@ -73,8 +73,8 @@ func accountResult(balance any, source string) *pycompat.Dict {
 
 // Account — остаток кредитов из query_membership_and_credits — только число и
 // имя поля (предпочтительно remain/available/balance/left). Нет входа, нет ответа или нет числа —
-// balance nil (None) с пояснением в source. Ошибка — только непредвиденное исключение.
-func (a *Adapter) Account(ctx context.Context, timeout time.Duration) (*pycompat.Dict, error) {
+// balance nil с пояснением в source. Ошибка — только непредвиденное исключение.
+func (a *Adapter) Account(ctx context.Context, timeout time.Duration) (*toolrt.Dict, error) {
 	body, err := a.open(timeout, nil).Call(ctx, "query_membership_and_credits", nil, 0, nil)
 	if err != nil {
 		if mcp.IsAuthRequired(err) {
@@ -89,7 +89,7 @@ func (a *Adapter) Account(ctx context.Context, timeout time.Duration) (*pycompat
 }
 
 // balanceOf — выбор поля остатка из ответа аккаунта.
-func balanceOf(body any) (*pycompat.Dict, error) {
+func balanceOf(body any) (*toolrt.Dict, error) {
 	found, err := FindBalance(body, "")
 	if err != nil {
 		return nil, err
@@ -116,8 +116,8 @@ var (
 )
 
 // loginResult — {"ok", "message"} login().
-func loginResult(ok bool, message string) *pycompat.Dict {
-	result := pycompat.NewDict()
+func loginResult(ok bool, message string) *toolrt.Dict {
+	result := toolrt.NewDict()
 	result.Set("ok", ok)
 	result.Set("message", message)
 	return result
@@ -128,7 +128,7 @@ func loginResult(ok bool, message string) *pycompat.Dict {
 // "Вход в Kling не завершён: <причина>"}. Адрес авторизации приходит в options.Report строкой
 // «AUTHORIZE_URL <адрес>». Отмена ctx — «Вход в Kling отменён.», непредвиденная ошибка — общий
 // текст незавершённого входа (loginIncomplete).
-func (a *Adapter) Login(ctx context.Context, options mcp.LoginOptions) *pycompat.Dict {
+func (a *Adapter) Login(ctx context.Context, options mcp.LoginOptions) *toolrt.Dict {
 	login := a.Client.Login
 	if a.clientLogin != nil {
 		login = a.clientLogin
@@ -145,9 +145,9 @@ func (a *Adapter) Login(ctx context.Context, options mcp.LoginOptions) *pycompat
 	return loginResult(false, loginIncomplete)
 }
 
-// authResult — {"status"[, "message"]} auth_status().
-func authResult(status, message string) *pycompat.Dict {
-	result := pycompat.NewDict()
+// authResult — {"status"[, "message"]} состояния входа.
+func authResult(status, message string) *toolrt.Dict {
+	result := toolrt.NewDict()
 	result.Set("status", status)
 	if message != "" {
 		result.Set("message", message)
@@ -158,7 +158,7 @@ func authResult(status, message string) *pycompat.Dict {
 // AuthStatus — authenticated только после успешного бесплатного who_am_i;
 // без сохранённого входа или с отвергнутым токеном — unauthenticated; без сети или при ошибке
 // сервера — unknown. Непредвиденная ошибка — unknown с общим текстом.
-func (a *Adapter) AuthStatus(ctx context.Context, timeout time.Duration) *pycompat.Dict {
+func (a *Adapter) AuthStatus(ctx context.Context, timeout time.Duration) *toolrt.Dict {
 	if a.Client.ReadCredentials() == nil {
 		return authResult("unauthenticated", mcp.LoginRequired)
 	}

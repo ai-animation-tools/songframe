@@ -61,8 +61,8 @@ type FrameDefined struct {
 }
 
 // RequestRules — правила нормализации зафиксированного запроса, которые общий платный адаптер
-// (internal/providers) получает из конфигурации провайдера. Значения параметров — значения JS
-// (internal/jscompat): от их сравнения и печати зависят тексты ошибок, проверяемые эталонами.
+// (internal/providers) получает из конфигурации провайдера. Значения параметров — значения
+// internal/dynvalue: от их сравнения и печати зависят тексты ошибок, проверяемые эталонами.
 type RequestRules struct {
 	// Aliases — синонимы параметров по виду медиа.
 	Aliases map[string][]Alias
@@ -184,7 +184,7 @@ type ApprovedFrame struct {
 }
 
 // ImagesInput — ProductionImagesInput контракта: запрос опор провайдеру-агенту. Notes и
-// ApprovedFrames — nil, если поля нет (undefined); пустой список и отсутствие различаются, потому
+// ApprovedFrames — nil, если поля нет; пустой список и отсутствие различаются, потому
 // что входят в SHA запроса.
 type ImagesInput struct {
 	Project        string           `json:"project"`

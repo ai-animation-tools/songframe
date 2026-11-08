@@ -2341,7 +2341,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request.py resume [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                               [--generation-id GENERATION_ID]\n                               [--wait-seconds WAIT_SECONDS]\n                               [--interval INTERVAL]\nmedia_request.py resume: error: argument --generation-id: expected one argument\n",
+        "stderr": "usage: media_request resume [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            [--generation-id GENERATION_ID]\n                            [--wait-seconds WAIT_SECONDS]\n                            [--interval INTERVAL]\nmedia_request resume: error: argument --generation-id: expected one argument\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -11071,9 +11071,9 @@
   },
   {
     "name": "argparse",
-    "description": "Ошибки и справка argparse: подкоманды, обязательные опции, типы, choices, nargs, префиксы, лишние аргументы.",
+    "description": "Ошибки и справка разбора аргументов: подкоманды, обязательные опции, типы, choices, nargs, префиксы, лишние аргументы.",
     "covers": [
-      "argparse"
+      "разбор аргументов"
     ],
     "files": {
       "project/plan/project.json": {
@@ -11307,7 +11307,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request.py [-h]\n                        {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                        ...\nmedia_request.py: error: the following arguments are required: action\n",
+        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: the following arguments are required: action\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -11326,7 +11326,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request.py [-h]\n                        {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                        ...\nmedia_request.py: error: argument action: invalid choice: 'bogus' (choose from 'capabilities', 'login', 'auth-status', 'prepare', 'watch', 'attach', 'submit', 'resume', 'status', 'not-created')\n",
+        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: argument action: invalid choice: 'bogus' (choose from 'capabilities', 'login', 'auth-status', 'prepare', 'watch', 'attach', 'submit', 'resume', 'status', 'not-created')\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -11344,7 +11344,7 @@
       },
       {
         "code": 0,
-        "stdout": "usage: media_request.py [-h]\n                        {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                        ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\npositional arguments:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\noptions:\n  -h, --help            show this help message and exit\n",
+        "stdout": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\npositional arguments:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\noptions:\n  -h, --help            show this help message and exit\n",
         "stderr": "",
         "traceback": false,
         "interrupted": false,
@@ -11363,216 +11363,7 @@
       },
       {
         "code": 0,
-        "stdout": "usage: media_request.py [-h]\n                        {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                        ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\npositional arguments:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\noptions:\n  -h, --help            show this help message and exit\n",
-        "stderr": "",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 2,
-        "stdout": "",
-        "stderr": "usage: media_request.py status [-h] --work-dir WORK_DIR\nmedia_request.py status: error: the following arguments are required: --work-dir\n",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 2,
-        "stdout": "",
-        "stderr": "usage: media_request.py submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                               --confirm CONFIRM\nmedia_request.py submit: error: the following arguments are required: --work-dir, --confirm\n",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 2,
-        "stdout": "",
-        "stderr": "usage: media_request.py submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                               --confirm CONFIRM\nmedia_request.py submit: error: the following arguments are required: --confirm\n",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 2,
-        "stdout": "",
-        "stderr": "usage: media_request.py submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                               --confirm CONFIRM\nmedia_request.py submit: error: argument --timeout: invalid float value: 'abc'\n",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 2,
-        "stdout": "",
-        "stderr": "usage: media_request.py capabilities [-h] --provider PROVIDER --kind\n                                     {image,video} [--json]\n                                     [--timeout TIMEOUT]\nmedia_request.py capabilities: error: argument --kind: invalid choice: 'z' (choose from 'image', 'video')\n",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 2,
-        "stdout": "",
-        "stderr": "usage: media_request.py watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                              [--max-minutes MAX_MINUTES]\n                              [--interval INTERVAL] [--timeout TIMEOUT]\nmedia_request.py watch: error: argument --work-dir: expected at least one argument\n",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 2,
-        "stdout": "",
-        "stderr": "usage: media_request.py [-h]\n                        {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                        ...\nmedia_request.py: error: unrecognized arguments: extra\n",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 0,
-        "stdout": "usage: media_request.py submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                               --confirm CONFIRM\n\noptions:\n  -h, --help           show this help message and exit\n  --work-dir WORK_DIR\n  --timeout TIMEOUT\n  --confirm CONFIRM\n",
-        "stderr": "",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 0,
-        "stdout": "usage: media_request.py attach [-h] --work-dir WORK_DIR --file FILE [FILE ...]\n\noptions:\n  -h, --help            show this help message and exit\n  --work-dir WORK_DIR\n  --file FILE [FILE ...]\n",
-        "stderr": "",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 0,
-        "stdout": "usage: media_request.py watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                              [--max-minutes MAX_MINUTES]\n                              [--interval INTERVAL] [--timeout TIMEOUT]\n\noptions:\n  -h, --help            show this help message and exit\n  --work-dir WORK_DIR [WORK_DIR ...]\n  --max-minutes MAX_MINUTES\n  --interval INTERVAL\n  --timeout TIMEOUT\n",
-        "stderr": "",
-        "traceback": false,
-        "interrupted": false,
-        "calls": [],
-        "tree": {
-          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
-          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
-          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
-          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
-          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
-        },
-        "dirs": [
-          "project/plan",
-          "project/request"
-        ]
-      },
-      {
-        "code": 0,
-        "stdout": "usage: media_request.py capabilities [-h] --provider PROVIDER --kind\n                                     {image,video} [--json]\n                                     [--timeout TIMEOUT]\n\noptions:\n  -h, --help            show this help message and exit\n  --provider PROVIDER\n  --kind {image,video}\n  --json\n  --timeout TIMEOUT\n",
+        "stdout": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\n\nПопытка генерации у выбранного провайдера: возможности, подготовка, отправка и\nполучение; @link README.md\n\npositional arguments:\n  {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n\noptions:\n  -h, --help            show this help message and exit\n",
         "stderr": "",
         "traceback": false,
         "interrupted": false,
@@ -11592,7 +11383,216 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request.py resume [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                               [--generation-id GENERATION_ID]\n                               [--wait-seconds WAIT_SECONDS]\n                               [--interval INTERVAL]\nmedia_request.py resume: error: ambiguous option: --w could match --work-dir, --wait-seconds\n",
+        "stderr": "usage: media_request status [-h] --work-dir WORK_DIR\nmedia_request status: error: the following arguments are required: --work-dir\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\nmedia_request submit: error: the following arguments are required: --work-dir, --confirm\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\nmedia_request submit: error: the following arguments are required: --confirm\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\nmedia_request submit: error: argument --timeout: invalid float value: 'abc'\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: media_request capabilities [-h] --provider PROVIDER --kind\n                                  {image,video} [--json] [--timeout TIMEOUT]\nmedia_request capabilities: error: argument --kind: invalid choice: 'z' (choose from 'image', 'video')\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: media_request watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                           [--max-minutes MAX_MINUTES] [--interval INTERVAL]\n                           [--timeout TIMEOUT]\nmedia_request watch: error: argument --work-dir: expected at least one argument\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: unrecognized arguments: extra\n",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\n\noptions:\n  -h, --help           show this help message and exit\n  --work-dir WORK_DIR\n  --timeout TIMEOUT\n  --confirm CONFIRM\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "usage: media_request attach [-h] --work-dir WORK_DIR --file FILE [FILE ...]\n\noptions:\n  -h, --help            show this help message and exit\n  --work-dir WORK_DIR\n  --file FILE [FILE ...]\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "usage: media_request watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                           [--max-minutes MAX_MINUTES] [--interval INTERVAL]\n                           [--timeout TIMEOUT]\n\noptions:\n  -h, --help            show this help message and exit\n  --work-dir WORK_DIR [WORK_DIR ...]\n  --max-minutes MAX_MINUTES\n  --interval INTERVAL\n  --timeout TIMEOUT\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 0,
+        "stdout": "usage: media_request capabilities [-h] --provider PROVIDER --kind\n                                  {image,video} [--json] [--timeout TIMEOUT]\n\noptions:\n  -h, --help            show this help message and exit\n  --provider PROVIDER\n  --kind {image,video}\n  --json\n  --timeout TIMEOUT\n",
+        "stderr": "",
+        "traceback": false,
+        "interrupted": false,
+        "calls": [],
+        "tree": {
+          "project/plan/project.json": "{\"schema_version\": 1, \"name\": \"Пробный клип\"}\n",
+          "project/request/frame.png": "sha256:21d7e8bedd6f0d5e8fd64271b54a2f666aa5df88a30fcef3c899e9a1a47b83a3",
+          "project/request/prompt.txt": "sha256:1a337eb1975099971ac3665ae93a65387b6992350853e2c662ae64b44576eed4",
+          "project/request/spec.json": "{\"schema_version\": 1, \"shot\": \"M32\", \"kind\": \"video\", \"provider\": \"test\", \"command\": \"image_to_video\", \"model\": \"test-video\", \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"enable_audio\": false}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"first_image\", \"path\": \"frame.png\", \"role\": \"first\"}], \"prompt_file\": \"prompt.txt\", \"outputs\": 1}",
+          "service/video.mp4": "sha256:fa5582447e985d7a6b50fe3ca9f8be2d49af190c4665d4d5ddf738cc9f37d1f2"
+        },
+        "dirs": [
+          "project/plan",
+          "project/request"
+        ]
+      },
+      {
+        "code": 2,
+        "stdout": "",
+        "stderr": "usage: media_request resume [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            [--generation-id GENERATION_ID]\n                            [--wait-seconds WAIT_SECONDS]\n                            [--interval INTERVAL]\nmedia_request resume: error: ambiguous option: --w could match --work-dir, --wait-seconds\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -11630,7 +11630,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request.py [-h]\n                        {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                        ...\nmedia_request.py: error: unrecognized arguments: --json\n",
+        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: unrecognized arguments: --json\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -11649,7 +11649,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request.py [-h]\n                        {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                        ...\nmedia_request.py: error: unrecognized arguments: --json=1\n",
+        "stderr": "usage: media_request [-h]\n                     {capabilities,login,auth-status,prepare,watch,attach,submit,resume,status,not-created}\n                     ...\nmedia_request: error: unrecognized arguments: --json=1\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -11668,7 +11668,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request.py status [-h] --work-dir WORK_DIR\nmedia_request.py status: error: argument --work-dir: expected one argument\n",
+        "stderr": "usage: media_request status [-h] --work-dir WORK_DIR\nmedia_request status: error: argument --work-dir: expected one argument\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -11708,7 +11708,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request.py submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                               --confirm CONFIRM\nmedia_request.py submit: error: the following arguments are required: --work-dir\n",
+        "stderr": "usage: media_request submit [-h] --work-dir WORK_DIR [--timeout TIMEOUT]\n                            --confirm CONFIRM\nmedia_request submit: error: the following arguments are required: --work-dir\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],
@@ -11727,7 +11727,7 @@
       {
         "code": 2,
         "stdout": "",
-        "stderr": "usage: media_request.py watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                              [--max-minutes MAX_MINUTES]\n                              [--interval INTERVAL] [--timeout TIMEOUT]\nmedia_request.py watch: error: argument --max-minutes: invalid float value: 'x'\n",
+        "stderr": "usage: media_request watch [-h] --work-dir WORK_DIR [WORK_DIR ...]\n                           [--max-minutes MAX_MINUTES] [--interval INTERVAL]\n                           [--timeout TIMEOUT]\nmedia_request watch: error: argument --max-minutes: invalid float value: 'x'\n",
         "traceback": false,
         "interrupted": false,
         "calls": [],

@@ -122,7 +122,7 @@ export const ConnectOnComputer: Story = {
     const ctc = within(canvas.getByRole('region', { name: text.names['ctc-vocab'] }));
     await userEvent.click(ctc.getByRole('button', { name: text.chooseOnComputer }));
     await expect(await ctc.findByText(text.statuses.ready)).toBeVisible();
-    await expect(connectionModel.counters().legacyInstalls).toBe(0);
+    await expect(connectionModel.counters().directInstalls).toBe(0);
     await noMaintenance(canvasElement);
   }
 };

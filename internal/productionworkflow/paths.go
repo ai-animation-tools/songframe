@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/jscompat"
+	"songframe/internal/dynvalue"
 )
 
 // packageFolder — отдельный пакет plan/batches/<имя> или plan/awaiting/<имя> относительно проекта.
@@ -23,19 +23,19 @@ func digestHex(data []byte) string {
 // isText сообщает, что value — непустая после trim строка без NUL.
 func isText(value any) bool {
 	text, ok := value.(string)
-	return ok && jscompat.Trim(text) != "" && !strings.Contains(text, "\x00")
+	return ok && dynvalue.Trim(text) != "" && !strings.Contains(text, "\x00")
 }
 
 // outside — относительный путь выходит из корня (`..`, `../…` или абсолютный).
 func outside(local string) bool {
 	local = filepath.ToSlash(local)
-	return local == ".." || strings.HasPrefix(local, "../") || jscompat.IsAbs(local)
+	return local == ".." || strings.HasPrefix(local, "../") || dynvalue.IsAbs(local)
 }
 
-// rel — relative(project, path) с прямыми разделителями: ключи снимка и allowedPaths одинаковы
+// rel — путь относительно проекта с прямыми разделителями: ключи снимка и allowedPaths одинаковы
 // в Linux и Windows.
 func rel(project, path string) string {
-	return filepath.ToSlash(jscompat.Relative(project, path))
+	return filepath.ToSlash(dynvalue.Relative(project, path))
 }
 
 // ProductionPath возвращает путь value внутри проекта root
@@ -46,27 +46,27 @@ func ProductionPath(root, value string) (string, error) {
 	if !isText(value) {
 		return "", errors.New(textPathRequired)
 	}
-	full := jscompat.Resolve(root, value)
-	if outside(jscompat.Relative(root, full)) {
+	full := dynvalue.Resolve(root, value)
+	if outside(dynvalue.Relative(root, full)) {
 		return "", errors.New(textPathOutsideProject(value))
 	}
 	parent := full
-	for !jscompat.Exists(parent) {
-		next := jscompat.Resolve(parent, "..")
+	for !dynvalue.Exists(parent) {
+		next := dynvalue.Resolve(parent, "..")
 		if next == parent {
 			return "", errors.New(textParentMissing)
 		}
 		parent = next
 	}
-	realRoot, err := jscompat.Realpath(root)
+	realRoot, err := dynvalue.Realpath(root)
 	if err != nil {
 		return "", err
 	}
-	realParent, err := jscompat.Realpath(parent)
+	realParent, err := dynvalue.Realpath(parent)
 	if err != nil {
 		return "", err
 	}
-	if outside(jscompat.Relative(realRoot, realParent)) {
+	if outside(dynvalue.Relative(realRoot, realParent)) {
 		return "", errors.New(textLinkOutsideProject(value))
 	}
 	return full, nil
@@ -89,15 +89,15 @@ func PackagePath(project, path string) (string, error) {
 func nextPackage(project, shot string) string {
 	for number := 1; ; number++ {
 		path := filepath.Join(project, "plan", "batches", shot+"-attempt-"+twoDigits(number))
-		if !jscompat.Exists(path) {
+		if !dynvalue.Exists(path) {
 			return path
 		}
 	}
 }
 
-// twoDigits — String(n).padStart(2, '0').
+// twoDigits — десятичная запись числа, дополненная нулём слева до двух знаков.
 func twoDigits(number int) string {
-	text := jscompat.NumberToString(float64(number))
+	text := dynvalue.NumberToString(float64(number))
 	if len(text) < 2 {
 		return "0" + text
 	}

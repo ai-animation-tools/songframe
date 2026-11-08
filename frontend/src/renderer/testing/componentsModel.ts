@@ -83,7 +83,7 @@ export function createComponentsModel(
     catalogFailures = options.failCatalogOnce ? 1 : 0;
   let connectFailures = options.failConnectOnce ? 1 : 0;
   let connections = 0,
-    legacyInstalls = 0;
+    directInstalls = 0;
   let lastRequest: string[] = [];
   let checks = 0,
     reads = 0,
@@ -259,7 +259,7 @@ export function createComponentsModel(
     },
     installation: async () => structuredClone(installation),
     install: async () => {
-      legacyInstalls++;
+      directInstalls++;
       throw new Error('UI должен использовать единый Download или Connect.');
     },
     cancelInstall: async () => {
@@ -279,7 +279,7 @@ export function createComponentsModel(
     installation: () => installation,
     installCalls: () => installs,
     lastRequest: () => [...lastRequest],
-    counters: () => ({ checks, reads, manualChecks, installs, connections, legacyInstalls })
+    counters: () => ({ checks, reads, manualChecks, installs, connections, directInstalls })
   };
 }
 

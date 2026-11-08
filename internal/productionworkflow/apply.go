@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/production"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/providers"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/production"
+	"songframe/internal/projectfs"
+	"songframe/internal/providers"
 )
 
 // Применение готового предложения к пакету. Проверки
@@ -27,7 +27,7 @@ type VideoMedia func(provider string) (*providers.PaidMedia, bool)
 // плана на момент проверки.
 type applyPlan struct {
 	stored  *Stored
-	after   *jscompat.Object
+	after   *dynvalue.Object
 	context *Context
 	shot    string
 }
@@ -66,9 +66,9 @@ func (w *Workflow) Apply(ctx context.Context, project, shot, packageDir, id stri
 // replacesAskedFrame сообщает, что предложение заменяет кандидата той опоры, о которой открыт
 // вопрос: тогда вопрос не мешает применению, применение задаст его заново о новом файле.
 func replacesAskedFrame(c *Context, after any) bool {
-	frame := jscompat.Get(c.workflowValue("pending_decision"), "frame")
-	images, _ := jscompat.AsArray(jscompat.Get(after, "images"))
-	return jscompat.Get(after, "stage") == "frames" && jscompat.Truthy(frame) && len(images) == 1 && jscompat.Get(images[0], "id") == frame
+	frame := dynvalue.Get(c.workflowValue("pending_decision"), "frame")
+	images, _ := dynvalue.AsArray(dynvalue.Get(after, "images"))
+	return dynvalue.Get(after, "stage") == "frames" && dynvalue.Truthy(frame) && len(images) == 1 && dynvalue.Get(images[0], "id") == frame
 }
 
 // checkApply — синхронная часть Apply до занятия плана: предложение готово, относится
@@ -84,9 +84,9 @@ func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan,
 	if view.PackageDir != nil {
 		viewPackage = *view.PackageDir
 	}
-	proposal, _ := jscompat.Parse(view.Proposal)
+	proposal, _ := dynvalue.Parse(view.Proposal)
 	if view.Busy || stored == nil || stored.ID() != id || stored.PackageDir() != viewPackage || stored.Status() != "ready" ||
-		jscompat.Get(proposal, "stale") == true || !jscompat.Truthy(stored.Proposal().Value("after")) {
+		dynvalue.Get(proposal, "stale") == true || !dynvalue.Truthy(stored.Proposal().Value("after")) {
 		return nil, errors.New(TextApplyUnavailable)
 	}
 	c, err := ReadContext(view.Project, shot, viewPackage)
@@ -94,7 +94,7 @@ func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan,
 		return nil, err
 	}
 	samePackage := stored.Target() == c.PackageDir
-	if samePackage && jscompat.Truthy(c.workflowValue("pending_decision")) && !replacesAskedFrame(c, stored.Proposal().Value("after")) {
+	if samePackage && dynvalue.Truthy(c.workflowValue("pending_decision")) && !replacesAskedFrame(c, stored.Proposal().Value("after")) {
 		return nil, errors.New(textResolveQuestionFirst)
 	}
 	if !samePackage && !w.options.IsScenarioApproved(view.Project) {
@@ -108,7 +108,7 @@ func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan,
 		}
 		job = &found
 	}
-	raw := jscompat.Stringify(stored.Proposal().Value("after"))
+	raw := dynvalue.Stringify(stored.Proposal().Value("after"))
 	if job != nil {
 		raw = job.Result
 		if stored.ImageJob() {
@@ -116,11 +116,11 @@ func (w *Workflow) checkApply(project, shot, packageDir, id string) (*applyPlan,
 			if err != nil {
 				return nil, err
 			}
-			document := jscompat.NewObject()
+			document := dynvalue.NewObject()
 			document.Set("schemaVersion", float64(1))
 			document.Set("stage", "frames")
 			document.Set("images", candidatesTree(images))
-			raw = jscompat.Stringify(document)
+			raw = dynvalue.Stringify(document)
 		}
 	}
 	rules := stored.Rules()
@@ -155,7 +155,7 @@ func (w *Workflow) run(ctx context.Context, project, tool string, args ...string
 		if text == "" {
 			text = result.Stdout
 		}
-		if text = jscompat.Trim(text); text == "" {
+		if text = dynvalue.Trim(text); text == "" {
 			text = textToolExitCode(tool, result.Code)
 		}
 		return errors.New(text)
@@ -176,10 +176,10 @@ func (w *Workflow) applyStage(ctx context.Context, plan *applyPlan) error {
 		}
 		return ask("description_review")
 	case "frames":
-		images, _ := jscompat.AsArray(plan.after.Value("images"))
+		images, _ := dynvalue.AsArray(plan.after.Value("images"))
 		for _, image := range images {
-			if err := w.run(ctx, project, "shot_workflow", "propose", "--dir", target, jscompat.ToString(jscompat.Get(image, "id")),
-				jscompat.ToString(jscompat.Get(image, "path"))); err != nil {
+			if err := w.run(ctx, project, "shot_workflow", "propose", "--dir", target, dynvalue.ToString(dynvalue.Get(image, "id")),
+				dynvalue.ToString(dynvalue.Get(image, "path"))); err != nil {
 				return err
 			}
 		}
@@ -190,12 +190,12 @@ func (w *Workflow) applyStage(ctx context.Context, plan *applyPlan) error {
 			return err
 		}
 		var frames []any
-		if jscompat.IsRecord(proposed) {
-			frames, _ = jscompat.AsArray(jscompat.Get(proposed, "keyframes"))
+		if dynvalue.IsRecord(proposed) {
+			frames, _ = dynvalue.AsArray(dynvalue.Get(proposed, "keyframes"))
 		}
 		for _, frame := range frames {
-			if jscompat.Truthy(jscompat.Get(frame, "path")) && !jscompat.Truthy(jscompat.Get(frame, "approved")) {
-				return ask("keyframes_review", "--frame", jscompat.ToString(jscompat.Get(frame, "id")))
+			if dynvalue.Truthy(dynvalue.Get(frame, "path")) && !dynvalue.Truthy(dynvalue.Get(frame, "approved")) {
+				return ask("keyframes_review", "--frame", dynvalue.ToString(dynvalue.Get(frame, "id")))
 			}
 		}
 		return nil
@@ -207,7 +207,7 @@ func (w *Workflow) applyStage(ctx context.Context, plan *applyPlan) error {
 		if !approved {
 			return errors.New(textAcceptedFramesChanged)
 		}
-		if err := writeProjectFile(filepath.Join(target, "video-prompt.txt"), []byte(jscompat.ToString(plan.after.Value("prompt")))); err != nil {
+		if err := writeProjectFile(filepath.Join(target, "video-prompt.txt"), []byte(dynvalue.ToString(plan.after.Value("prompt")))); err != nil {
 			return err
 		}
 		workflow, err := packageDocument(target, textWorkflowMissing)
@@ -251,15 +251,15 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 			return err
 		}
 	}
-	if err := writeProjectFile(filepath.Join(target, "description.md"), []byte(jscompat.ToString(after.Value("description"))+"\n")); err != nil {
+	if err := writeProjectFile(filepath.Join(target, "description.md"), []byte(dynvalue.ToString(after.Value("description"))+"\n")); err != nil {
 		return err
 	}
-	keyframes, _ := jscompat.AsArray(after.Value("keyframes"))
-	args := []string{"plan-keyframes", "--dir", target, "--request-seconds", jscompat.ToString(after.Value("requestSeconds"))}
+	keyframes, _ := dynvalue.AsArray(after.Value("keyframes"))
+	args := []string{"plan-keyframes", "--dir", target, "--request-seconds", dynvalue.ToString(after.Value("requestSeconds"))}
 	for _, frame := range keyframes {
-		if jscompat.Get(frame, "role") == "middle" {
+		if dynvalue.Get(frame, "role") == "middle" {
 			// Подпись опоры входит в данные аргумента --middle штатного инструмента.
-			args = append(args, "--middle", jscompat.ToString(jscompat.Get(frame, "timeSeconds"))+":опора "+jscompat.ToString(jscompat.Get(frame, "id")))
+			args = append(args, "--middle", dynvalue.ToString(dynvalue.Get(frame, "timeSeconds"))+":опора "+dynvalue.ToString(dynvalue.Get(frame, "id")))
 		}
 	}
 	if err := w.run(ctx, c.Project, "shot_workflow", args...); err != nil {
@@ -272,22 +272,22 @@ func (w *Workflow) applyDescription(ctx context.Context, plan *applyPlan) error 
 	if err != nil {
 		return err
 	}
-	frames, _ := jscompat.AsArray(workflow.Value("keyframes"))
-	approved, ok := workflow.Value("approved_frames").(*jscompat.Object)
-	if !ok || !jscompat.IsRecord(approved) {
-		approved = jscompat.NewObject()
+	frames, _ := dynvalue.AsArray(workflow.Value("keyframes"))
+	approved, ok := workflow.Value("approved_frames").(*dynvalue.Object)
+	if !ok || !dynvalue.IsRecord(approved) {
+		approved = dynvalue.NewObject()
 	}
 	for _, item := range frames {
-		frame, isObject := item.(*jscompat.Object)
+		frame, isObject := item.(*dynvalue.Object)
 		if !isObject {
 			return errors.New(textWorkflowFrameInvalid)
 		}
 		id := frame.Value("id")
-		if !jscompat.DeepStrictEqual(findByID(c.FramePrompts.Items, id), findByID(keyframes, id)) {
+		if !dynvalue.DeepStrictEqual(findByID(c.FramePrompts.Items, id), findByID(keyframes, id)) {
 			frame.Set("approved", false)
 			frame.Set("path", nil)
 			frame.Set("sha256", nil)
-			approved.Delete(jscompat.ToString(id))
+			approved.Delete(dynvalue.ToString(id))
 		}
 	}
 	workflow.Set("approved_frames", approved)
@@ -325,17 +325,17 @@ func (w *Workflow) applyRequest(ctx context.Context, plan *applyPlan) (string, e
 	if !prompt || !frames {
 		return "", errors.New(textFrameOrPromptApprovalStale)
 	}
-	request := plan.after.Value("request").(*jscompat.Object)
-	inputs, _ := jscompat.AsArray(request.Value("inputs"))
-	lipSync := jscompat.Truthy(c.Scene.Value("lipsync"))
+	request := plan.after.Value("request").(*dynvalue.Object)
+	inputs, _ := dynvalue.AsArray(request.Value("inputs"))
+	lipSync := dynvalue.Truthy(c.Scene.Value("lipsync"))
 	if lipSync {
 		// Звуковой вход — именно подготовленный WAV пакета: отдельным флагом audio или именованным
 		// слотом audio_N.
 		speechInput := false
 		for _, input := range inputs {
-			flag, slot := jscompat.Get(input, "flag"), jscompat.Get(input, "slot")
+			flag, slot := dynvalue.Get(input, "flag"), dynvalue.Get(input, "slot")
 			slotText, _ := slot.(string)
-			if (flag == "audio" || (flag == "input" && audioSlot.MatchString(slotText))) && c.Speech != nil && jscompat.Get(input, "path") == c.Speech.Path {
+			if (flag == "audio" || (flag == "input" && audioSlot.MatchString(slotText))) && c.Speech != nil && dynvalue.Get(input, "path") == c.Speech.Path {
 				speechInput = true
 				break
 			}
@@ -348,16 +348,16 @@ func (w *Workflow) applyRequest(ctx context.Context, plan *applyPlan) (string, e
 		if c.Speech != nil {
 			length = c.Speech.length()
 		}
-		if duration := jscompat.ToNumber(jscompat.Get(request.Value("parameters"), "duration")); duration < length-1e-6 {
-			return "", errors.New(textRequestShorterThanSpeech(jscompat.ToFixed(length, 2)))
+		if duration := dynvalue.ToNumber(dynvalue.Get(request.Value("parameters"), "duration")); duration < length-1e-6 {
+			return "", errors.New(textRequestShorterThanSpeech(dynvalue.ToFixed(length, 2)))
 		}
 	}
 	number := 1
-	for jscompat.Exists(filepath.Join(target, "request-"+twoDigits(number))) {
+	for dynvalue.Exists(filepath.Join(target, "request-"+twoDigits(number))) {
 		number++
 	}
 	requestName := "request-" + twoDigits(number)
-	promptPath, _ := jscompat.Get(c.workflowValue("prompt"), "path").(string)
+	promptPath, _ := dynvalue.Get(c.workflowValue("prompt"), "path").(string)
 	text, err := readText(filepath.Join(target, promptPath))
 	if err != nil {
 		return "", err
@@ -372,7 +372,7 @@ func (w *Workflow) applyRequest(ctx context.Context, plan *applyPlan) (string, e
 // его платный адаптер, свежие объявления моделей и локальная подготовка запроса по черновику
 // агента с ограничениями проекта (предпочтительная модель, разрешение, соотношение сторон,
 // options) и правилом длительности окна плана.
-func (w *Workflow) prepareVideo(ctx context.Context, plan *applyPlan, requestDir, prompt string, draft *jscompat.Object, inputs []any) error {
+func (w *Workflow) prepareVideo(ctx context.Context, plan *applyPlan, requestDir, prompt string, draft *dynvalue.Object, inputs []any) error {
 	c := plan.context
 	if w.options.RequireVideoAccess != nil {
 		if err := w.options.RequireVideoAccess(ctx, c.Project); err != nil {
@@ -393,63 +393,63 @@ func (w *Workflow) prepareVideo(ctx context.Context, plan *applyPlan, requestDir
 	}
 	items := make([]providers.PaidInputItem, 0, len(inputs))
 	for _, input := range inputs {
-		flag, _ := jscompat.Get(input, "flag").(string)
-		slot, _ := jscompat.Get(input, "slot").(string)
-		path, _ := jscompat.Get(input, "path").(string)
-		role, _ := jscompat.Get(input, "role").(string)
+		flag, _ := dynvalue.Get(input, "flag").(string)
+		slot, _ := dynvalue.Get(input, "slot").(string)
+		path, _ := dynvalue.Get(input, "path").(string)
+		role, _ := dynvalue.Get(input, "role").(string)
 		items = append(items, providers.PaidInputItem{Flag: flag, Slot: slot, Path: path, Role: role})
 	}
-	// settings.model?.trim() || null: пустая строка означает «предпочтения нет».
+	// Модель из настроек без краевых пробелов; пустая строка или нет поля — «предпочтения нет».
 	preferred := ""
 	if model, isString := settings.Value("model").(string); isString {
-		preferred = jscompat.Trim(model)
+		preferred = dynvalue.Trim(model)
 	}
-	constraint := &providers.DurationConstraint{WindowSeconds: c.Window, Rule: jscompat.ToString(c.DurationRule)}
+	constraint := &providers.DurationConstraint{WindowSeconds: c.Window, Rule: dynvalue.ToString(c.DurationRule)}
 	if limits := plan.stored.Rules().LipSync; limits != nil {
 		minimum := limits.Min
 		constraint.MinSeconds = &minimum
 	}
-	required := jscompat.NewObject()
+	required := dynvalue.NewObject()
 	required.Set("resolution", settings.Value("resolution"))
 	required.Set("aspect_ratio", settings.Value("aspect_ratio"))
-	options, _ := settings.Value("options").(*jscompat.Object)
-	parameters, _ := draft.Value("parameters").(*jscompat.Object)
+	options, _ := settings.Value("options").(*dynvalue.Object)
+	parameters, _ := draft.Value("parameters").(*dynvalue.Object)
 	command, _ := draft.Value("command").(string)
 	model, _ := draft.Value("model").(string)
 	caps := media.Capabilities(ctx, c.Project)
 	_, err = media.Prepare(ctx, providers.PaidInput{
 		Project: c.Project, WorkDir: requestDir, Shot: plan.shot, Kind: mediaproviders.Video, Command: command, Model: model,
 		PreferredModel: &preferred, DurationConstraint: constraint, RequiredParameters: required, ProjectOptions: options,
-		Prompt: prompt, Parameters: parameters, Inputs: items, Outputs: int(jscompat.ToNumber(draft.Value("outputs"))),
+		Prompt: prompt, Parameters: parameters, Inputs: items, Outputs: int(dynvalue.ToNumber(draft.Value("outputs"))),
 	}, caps)
 	return err
 }
 
-// findByID — find(item => item.id === id) по массиву документа; Undefined — не найдено.
+// findByID — первый элемент массива документа, чей id строго равен id; Undefined — не найдено.
 func findByID(items []any, id any) any {
 	for _, item := range items {
-		if jscompat.StrictEqual(jscompat.Get(item, "id"), id) {
+		if dynvalue.StrictEqual(dynvalue.Get(item, "id"), id) {
 			return item
 		}
 	}
-	return jscompat.Undefined
+	return dynvalue.Undefined
 }
 
 // promptRecord — { path: 'video-prompt.txt', approved: false }: промпт требует согласования.
-func promptRecord() *jscompat.Object {
-	prompt := jscompat.NewObject()
+func promptRecord() *dynvalue.Object {
+	prompt := dynvalue.NewObject()
 	prompt.Set("path", "video-prompt.txt")
 	prompt.Set("approved", false)
 	return prompt
 }
 
 // packageDocument — workflow.json пакета объектом; отсутствующий или не объект — ошибка missing.
-func packageDocument(target, missing string) (*jscompat.Object, error) {
+func packageDocument(target, missing string) (*dynvalue.Object, error) {
 	value, err := readJSON(filepath.Join(target, "workflow.json"))
 	if err != nil {
 		return nil, err
 	}
-	workflow, ok := value.(*jscompat.Object)
+	workflow, ok := value.(*dynvalue.Object)
 	if !ok {
 		return nil, errors.New(missing)
 	}
@@ -463,7 +463,7 @@ func writeProjectFile(path string, data []byte) error {
 }
 
 // writeProjectJSON — запись JSON файла проекта атомарной заменой: отступ в два пробела и
-// завершающий перевод строки (`JSON.stringify(value, null, 2) + '\n'`).
+// завершающий перевод строки, порядок ключей документа сохраняется (dynvalue).
 func writeProjectJSON(path string, value any) error {
-	return writeProjectFile(path, []byte(jscompat.StringifyIndent(value, "  ")+"\n"))
+	return writeProjectFile(path, []byte(dynvalue.StringifyIndent(value, "  ")+"\n"))
 }

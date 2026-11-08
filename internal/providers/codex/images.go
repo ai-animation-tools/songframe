@@ -21,12 +21,12 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/projectfile"
-	"songframe-go/internal/providers/agentexec"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
+	"songframe/internal/projectfile"
+	"songframe/internal/providers/agentexec"
 )
 
 var _ agentexec.Executor = (*ImageExecutor)(nil)
@@ -84,7 +84,7 @@ func NewImageExecutor(options ImageOptions) *ImageExecutor {
 // Provider — id провайдера, которого исполняет executor.
 func (e *ImageExecutor) Provider() string { return ID }
 
-// CheckedAt — время проверки в формате Date.toISOString.
+// CheckedAt — время проверки UTC в формате ISO 8601 с миллисекундами и «Z».
 func CheckedAt(now func() time.Time) string {
 	if now == nil {
 		now = time.Now
@@ -137,22 +137,22 @@ var frameID = regexp.MustCompile(`^K\d{2}$`)
 func fileHash(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", jscompat.FsError("open", path, err)
+		return "", dynvalue.FsError("open", path, err)
 	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// inputValue — ImagesInput как значение JS для JSON.stringify: порядок ключей — порядок полей
-// контракта, числа — запись Number JS (от неё зависит SHA).
-func inputValue(input mediaapi.ImagesInput) *jscompat.Object {
-	object := jscompat.NewObject()
+// inputValue — ImagesInput как значение dynvalue для компактной JSON-записи: порядок ключей —
+// порядок полей контракта, числа — кратчайшая запись dynvalue (от неё зависит SHA).
+func inputValue(input mediaapi.ImagesInput) *dynvalue.Object {
+	object := dynvalue.NewObject()
 	object.Set("project", input.Project)
 	object.Set("shot", input.Shot)
 	object.Set("packageDir", input.PackageDir)
 	frames := make([]any, len(input.Frames))
 	for index, frame := range input.Frames {
-		item := jscompat.NewObject()
+		item := dynvalue.NewObject()
 		item.Set("id", frame.ID)
 		item.Set("role", frame.Role)
 		item.Set("timeSeconds", frame.TimeSeconds)
@@ -161,27 +161,27 @@ func inputValue(input mediaapi.ImagesInput) *jscompat.Object {
 		for position, path := range frame.ReferencePaths {
 			paths[position] = path
 		}
-		item.Set("referencePaths", &jscompat.Array{Items: paths})
+		item.Set("referencePaths", &dynvalue.Array{Items: paths})
 		frames[index] = item
 	}
-	object.Set("frames", &jscompat.Array{Items: frames})
+	object.Set("frames", &dynvalue.Array{Items: frames})
 	if input.Notes != nil {
 		notes := make([]any, len(*input.Notes))
 		for index, note := range *input.Notes {
 			notes[index] = note
 		}
-		object.Set("notes", &jscompat.Array{Items: notes})
+		object.Set("notes", &dynvalue.Array{Items: notes})
 	}
 	if input.ApprovedFrames != nil {
 		approved := make([]any, len(*input.ApprovedFrames))
 		for index, frame := range *input.ApprovedFrames {
-			item := jscompat.NewObject()
+			item := dynvalue.NewObject()
 			item.Set("id", frame.ID)
 			item.Set("role", frame.Role)
 			item.Set("path", frame.Path)
 			approved[index] = item
 		}
-		object.Set("approvedFrames", &jscompat.Array{Items: approved})
+		object.Set("approvedFrames", &dynvalue.Array{Items: approved})
 	}
 	return object
 }
@@ -207,10 +207,10 @@ func clone(input mediaapi.ImagesInput) mediaapi.ImagesInput {
 
 // Prepare замораживает запрос: проект по настоящему пути, опоры K01…K99 с непустым описанием,
 // референсы — изображения внутри проекта (каждый один раз, в порядке первого упоминания).
-// SHA — sha256(JSON.stringify({input, references})).
+// SHA — SHA-256 компактной JSON-записи {input, references} (dynvalue.Stringify).
 func (e *ImageExecutor) Prepare(input mediaapi.ImagesInput) (*Prepared, error) {
 	frozen := clone(input)
-	project, err := jscompat.Realpath(input.Project)
+	project, err := dynvalue.Realpath(input.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (e *ImageExecutor) Prepare(input mediaapi.ImagesInput) (*Prepared, error) {
 		return nil, errors.New(textFramesRequired)
 	}
 	for _, frame := range frozen.Frames {
-		if !frameID.MatchString(frame.ID) || jscompat.Trim(frame.Prompt) == "" {
+		if !frameID.MatchString(frame.ID) || dynvalue.Trim(frame.Prompt) == "" {
 			return nil, errors.New(textFramesRequired)
 		}
 	}
@@ -247,15 +247,15 @@ func (e *ImageExecutor) Prepare(input mediaapi.ImagesInput) (*Prepared, error) {
 	}
 	items := make([]any, len(references))
 	for index, reference := range references {
-		item := jscompat.NewObject()
+		item := dynvalue.NewObject()
 		item.Set("path", reference.Path)
 		item.Set("sha256", reference.SHA256)
 		items[index] = item
 	}
-	document := jscompat.NewObject()
+	document := dynvalue.NewObject()
 	document.Set("input", inputValue(frozen))
-	document.Set("references", &jscompat.Array{Items: items})
-	sum := sha256.Sum256([]byte(jscompat.Stringify(document)))
+	document.Set("references", &dynvalue.Array{Items: items})
+	sum := sha256.Sum256([]byte(dynvalue.Stringify(document)))
 	return &Prepared{Provider: ID, Kind: Kind, RequestSha: hex.EncodeToString(sum[:]), Input: frozen, References: references}, nil
 }
 
@@ -310,22 +310,22 @@ func projectImageModel(project string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	generation, err := jscompat.Parse(settings.Generation)
+	generation, err := dynvalue.Parse(settings.Generation)
 	if err != nil {
 		return "", err
 	}
-	image := jscompat.Get(generation, "image")
-	provider, _ := jscompat.Get(image, "provider").(string)
+	image := dynvalue.Get(generation, "image")
+	provider, _ := dynvalue.Get(image, "provider").(string)
 	if !SameProvider(provider, ID) {
 		return "", nil
 	}
-	model, _ := jscompat.Get(image, "model").(string)
+	model, _ := dynvalue.Get(image, "model").(string)
 	return model, nil
 }
 
 // SameProvider — sameMediaProvider: непустые имена совпадают без учёта регистра и пробелов по краям.
 func SameProvider(left, right string) bool {
-	left, right = jscompat.Trim(left), jscompat.Trim(right)
+	left, right = dynvalue.Trim(left), dynvalue.Trim(right)
 	return left != "" && right != "" && lower(left) == lower(right)
 }
 

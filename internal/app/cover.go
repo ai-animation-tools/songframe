@@ -9,12 +9,12 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/covergen"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/referenceimage"
-	"songframe-go/internal/wire"
+	"songframe/internal/agents"
+	"songframe/internal/covergen"
+	"songframe/internal/mediaapi"
+	"songframe/internal/providers"
+	"songframe/internal/referenceimage"
+	"songframe/internal/wire"
 )
 
 // textCoverWindowClosed — applicationTexts.coverWindowClosed.
@@ -29,8 +29,8 @@ type CoverGenerators struct {
 
 // NewCoverGenerators связывает генераторы с явным выбором провайдера изображений (access), слоем
 // провайдеров (платная подготовка через общий адаптер изображений), медиасервером окна (media:
-// временная папка сессии обложки разрешается для превью) и декодированием Go вместо
-// nativeImage. Подготовка, проверка цены и отправка выполняются с отменой сессии.
+// временная папка сессии обложки разрешается для превью) и декодированием изображений
+// средствами Go. Подготовка, проверка цены и отправка выполняются с отменой сессии.
 func NewCoverGenerators(access *agents.AccessChecker, layer *providers.Layer, media interface{ AllowRoot(string) error }) CoverGenerators {
 	assert := func(project string) error { return access.AssertSelection(&project, agents.KindImage) }
 	options := covergen.Options{

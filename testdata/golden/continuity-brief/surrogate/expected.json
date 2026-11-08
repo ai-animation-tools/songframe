@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 108, in <module>\n    main()\n  File \"<songframe>/tools/continuity_brief/continuity_brief.py\", line 102, in main\n    print(result[\"paragraph\"])\nUnicodeEncodeError: 'utf-8' codec can't encode character '\\ud800' in position 186: surrogates not allowed\n",
+  "stderr": "Traceback (most recent call last):\nUnicodeEncodeError: 'utf-8' codec can't encode character '\\ud800' in position 186: surrogates not allowed\n",
   "traceback": true
 }

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
 )
 
 // Status — ScenarioStatus (frontend/src/shared/scenario-status.ts): готовность реестра для
@@ -25,7 +25,7 @@ const (
 // isFrame — неотрицательное безопасное целое (граница плана в кадрах).
 func isFrame(value any) bool {
 	number, ok := value.(float64)
-	return ok && jscompat.IsSafeInteger(value) && number >= 0
+	return ok && dynvalue.IsSafeInteger(value) && number >= 0
 }
 
 // RegistryStatus — статус реестра сцен проекта: проверяется только общий контракт
@@ -39,22 +39,22 @@ func RegistryStatus(project string) Status {
 	if err != nil {
 		return StatusInvalid
 	}
-	registry, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(raw)))
-	if err != nil || !jscompat.IsRecord(registry) || !jscompat.StrictEqual(jscompat.Get(registry, "schema_version"), 1.0) ||
-		!jscompat.StrictEqual(jscompat.Get(registry, "fps"), float64(FPS)) {
+	registry, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(raw)))
+	if err != nil || !dynvalue.IsRecord(registry) || !dynvalue.StrictEqual(dynvalue.Get(registry, "schema_version"), 1.0) ||
+		!dynvalue.StrictEqual(dynvalue.Get(registry, "fps"), float64(FPS)) {
 		return StatusInvalid
 	}
-	scenes, ok := jscompat.AsArray(jscompat.Get(registry, "scenes"))
+	scenes, ok := dynvalue.AsArray(dynvalue.Get(registry, "scenes"))
 	if !ok {
 		return StatusInvalid
 	}
 	ids := map[string]bool{}
 	for _, scene := range scenes {
-		id, isString := jscompat.Get(scene, "id").(string)
-		if !jscompat.IsRecord(scene) || !isString || !sceneID.MatchString(id) || ids[id] {
+		id, isString := dynvalue.Get(scene, "id").(string)
+		if !dynvalue.IsRecord(scene) || !isString || !sceneID.MatchString(id) || ids[id] {
 			return StatusInvalid
 		}
-		start, finish := jscompat.Get(scene, "start_frame"), jscompat.Get(scene, "end_frame_exclusive")
+		start, finish := dynvalue.Get(scene, "start_frame"), dynvalue.Get(scene, "end_frame_exclusive")
 		if !isFrame(start) || !isFrame(finish) || finish.(float64) <= start.(float64) {
 			return StatusInvalid
 		}
@@ -69,7 +69,7 @@ func RegistryStatus(project string) Status {
 // readCastValue — `readCast(project) || null`: повреждённый, отсутствующий и ложный кастинг — nil.
 func readCastValue(project string) any {
 	read := cast.Read(project)
-	if read.Damaged || read.Missing || !jscompat.Truthy(read.Value) {
+	if read.Damaged || read.Missing || !dynvalue.Truthy(read.Value) {
 		return nil
 	}
 	return read.Value
@@ -83,9 +83,9 @@ func ValidateProjectScenes(project string, data any) ([]string, error) {
 // SaveScenes — сохранение реестра: карта references заменяется картой из кастинга (без кастинга остаётся
 // из черновика), реестр проверяется ValidateScenes и записывается в plan/scenes.json. Отказ —
 // ошибка с проблемами через пробел, файл не меняется. Возвращает записанный реестр.
-func SaveScenes(project string, data any) (*jscompat.Object, error) {
+func SaveScenes(project string, data any) (*dynvalue.Object, error) {
 	castValue := readCastValue(project)
-	normalized := jscompat.Spread(data)
+	normalized := dynvalue.Spread(data)
 	if castValue != nil {
 		references, err := cast.References(castValue)
 		if err != nil {
@@ -93,7 +93,7 @@ func SaveScenes(project string, data any) (*jscompat.Object, error) {
 		}
 		normalized.Set("references", references)
 	} else {
-		normalized.Set("references", jscompat.Get(data, "references"))
+		normalized.Set("references", dynvalue.Get(data, "references"))
 	}
 	problems, err := ValidateScenes(normalized, castValue)
 	if err != nil {

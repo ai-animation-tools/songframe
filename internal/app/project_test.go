@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/store"
+	"songframe/internal/golden"
+	"songframe/internal/store"
 )
 
 // registrySpy проверяет, что сервис регистрирует только выбранный файл и передаёт ошибку пользователю.

@@ -3,7 +3,7 @@
 // проба и её свежесть), Save хранит настройки формы, Build и Accept запускают задания инструмента
 // derive_shot (internal/deriveshot), RecoverApplications откатывает прерванную приёмку.
 //
-// Файлы проекта читаются деревом jscompat: черновик и рецепт сохраняются с порядком ключей и формой
+// Файлы проекта читаются деревом dynvalue: черновик и рецепт сохраняются с порядком ключей и формой
 // чисел, а записанный JSON совпадает с эталоном testdata/golden/derived-workflow байт в байт.
 // Сам пакет платных запросов не делает и данные комплектов не меняет: это работа инструмента.
 package derivedworkflow
@@ -17,13 +17,13 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/acceptance"
-	"songframe-go/internal/filedigest"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/montage"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/acceptance"
+	"songframe/internal/dynvalue"
+	"songframe/internal/filedigest"
+	"songframe/internal/jobs"
+	"songframe/internal/mediacmd"
+	"songframe/internal/montage"
+	"songframe/internal/projectfs"
 )
 
 var (
@@ -91,10 +91,10 @@ type Workflow struct{ jobs Jobs }
 // New связывает страницу производного плана с менеджером заданий.
 func New(manager Jobs) *Workflow { return &Workflow{jobs: manager} }
 
-// encode — текст writeLocalJson.
-func encode(value any) []byte { return []byte(jscompat.StringifyIndent(value, "  ") + "\n") }
+// encode — байты локального JSON: отступ в два пробела и перевод строки в конце.
+func encode(value any) []byte { return []byte(dynvalue.StringifyIndent(value, "  ") + "\n") }
 
-// read — read<T>: readLocalJson с заменой любой ошибки на nil.
+// read — документ montage.ReadJournal с заменой любой ошибки на nil.
 func read(path string) any {
 	value, err := montage.ReadJournal(path)
 	if err != nil {
@@ -120,20 +120,20 @@ func finite(value float64) float64 {
 	return value
 }
 
-// artifact — artifact(directory, value): файл результата внутри папки с тем же SHA-256. Отказ — ok
+// artifact — файл результата внутри папки с тем же SHA-256. Отказ — ok
 // false: показанный ранее файл не заменяется другим, нужна новая сборка.
 func artifact(directory string, value any) (string, bool) {
-	name, nameOK := jscompat.Get(value, "path").(string)
-	digest, digestOK := jscompat.Get(value, "sha256").(string)
-	if !jscompat.IsRecord(value) || !nameOK || name == "" || jscompat.IsAbs(name) || !digestOK || !shaPattern.MatchString(digest) {
+	name, nameOK := dynvalue.Get(value, "path").(string)
+	digest, digestOK := dynvalue.Get(value, "sha256").(string)
+	if !dynvalue.IsRecord(value) || !nameOK || name == "" || dynvalue.IsAbs(name) || !digestOK || !shaPattern.MatchString(digest) {
 		return "", false
 	}
-	path, err := jscompat.Realpath(jscompat.Resolve(directory, name))
+	path, err := dynvalue.Realpath(dynvalue.Resolve(directory, name))
 	if err != nil {
 		return "", false
 	}
-	local := jscompat.Relative(directory, path)
-	if local == "" || local == ".." || strings.HasPrefix(local, ".."+string(filepath.Separator)) || jscompat.IsAbs(local) {
+	local := dynvalue.Relative(directory, path)
+	if local == "" || local == ".." || strings.HasPrefix(local, ".."+string(filepath.Separator)) || dynvalue.IsAbs(local) {
 		return "", false
 	}
 	if actual, ok := filedigest.File(path); !ok || actual != digest {
@@ -142,7 +142,7 @@ func artifact(directory string, value any) (string, bool) {
 	return path, true
 }
 
-// audioSource — audioSource(project, value): снимок трека {path, sha256}; даже без файла хранит
+// audioSource — снимок трека {path, sha256}; даже без файла хранит
 // объявленный путь, потому что появление файла меняет услышанную пользователем пробу. ok false —
 // путь вне source/ или вне проекта.
 func audioSource(project string, value any) (name string, sha any, ok bool) {
@@ -155,17 +155,17 @@ func audioSource(project string, value any) (name string, sha any, ok bool) {
 			return "", nil, false
 		}
 	}
-	path := jscompat.Resolve(project, name)
+	path := dynvalue.Resolve(project, name)
 	existing := path
-	for !jscompat.Exists(existing) && filepath.Dir(existing) != existing {
+	for !dynvalue.Exists(existing) && filepath.Dir(existing) != existing {
 		existing = filepath.Dir(existing)
 	}
-	canonical, err := jscompat.Realpath(existing)
+	canonical, err := dynvalue.Realpath(existing)
 	if err != nil {
 		return "", nil, false
 	}
-	local := jscompat.Relative(project, canonical)
-	if local == ".." || strings.HasPrefix(local, ".."+string(filepath.Separator)) || jscompat.IsAbs(local) {
+	local := dynvalue.Relative(project, canonical)
+	if local == ".." || strings.HasPrefix(local, ".."+string(filepath.Separator)) || dynvalue.IsAbs(local) {
 		return "", nil, false
 	}
 	if existing == path {
@@ -176,24 +176,24 @@ func audioSource(project string, value any) (name string, sha any, ok bool) {
 	return name, nil, true
 }
 
-// acceptedResult — acceptedResult(project, shot, receipt): принятие принадлежит проекту, журнал
+// acceptedResult — принятие принадлежит проекту, журнал
 // задания может исчезнуть. Выбранный комплект должен быть derived_video с тем же клипом, а
 // committed-журнал с этим токеном — описывать именно текущий манифест.
 func acceptedResult(project, shot string, receipt any) bool {
-	directory, err := jscompat.Realpath(filepath.Join(project, "assets", "shots", shot))
+	directory, err := dynvalue.Realpath(filepath.Join(project, "assets", "shots", shot))
 	if err != nil {
 		return false
 	}
 	manifestPath := filepath.Join(directory, "manifest.json")
 	manifest := read(manifestPath)
-	if !jscompat.StrictEqual(jscompat.Get(manifest, "schema_version"), 1.0) || !jscompat.StrictEqual(jscompat.Get(manifest, "shot"), shot) ||
-		!jscompat.StrictEqual(jscompat.Get(manifest, "kind"), "derived_video") || !jscompat.IsRecord(jscompat.Get(manifest, "accepted_edit")) {
+	if !dynvalue.StrictEqual(dynvalue.Get(manifest, "schema_version"), 1.0) || !dynvalue.StrictEqual(dynvalue.Get(manifest, "shot"), shot) ||
+		!dynvalue.StrictEqual(dynvalue.Get(manifest, "kind"), "derived_video") || !dynvalue.IsRecord(dynvalue.Get(manifest, "accepted_edit")) {
 		return false
 	}
-	video := jscompat.GetPath(manifest, "accepted_edit", "video")
-	root := jscompat.Get(video, "root")
-	if !jscompat.IsRecord(video) || (root != jscompat.Undefined && !jscompat.StrictEqual(root, "asset")) ||
-		!jscompat.StrictEqual(jscompat.Get(video, "sha256"), jscompat.GetPath(receipt, "video", "sha256")) {
+	video := dynvalue.GetPath(manifest, "accepted_edit", "video")
+	root := dynvalue.Get(video, "root")
+	if !dynvalue.IsRecord(video) || (root != dynvalue.Undefined && !dynvalue.StrictEqual(root, "asset")) ||
+		!dynvalue.StrictEqual(dynvalue.Get(video, "sha256"), dynvalue.GetPath(receipt, "video", "sha256")) {
 		return false
 	}
 	if _, ok := artifact(directory, video); !ok {
@@ -204,7 +204,7 @@ func acceptedResult(project, shot string, receipt any) bool {
 		return false
 	}
 	history := filepath.Join(project, "plan", "derived-history")
-	entries, err := jscompat.ReadDir(history)
+	entries, err := dynvalue.ReadDir(history)
 	if err != nil {
 		return false
 	}
@@ -213,32 +213,32 @@ func acceptedResult(project, shot string, receipt any) bool {
 			continue
 		}
 		journal := read(filepath.Join(history, entry.Name(), "journal.json"))
-		kit := jscompat.Get(journal, "directory")
-		if jscompat.StrictEqual(jscompat.Get(journal, "schema_version"), 1.0) &&
-			jscompat.StrictEqual(jscompat.Get(journal, "id"), entry.Name()) &&
-			jscompat.StrictEqual(jscompat.Get(journal, "shot"), shot) &&
-			jscompat.StrictEqual(jscompat.Get(journal, "state"), "committed") &&
-			jscompat.StrictEqual(jscompat.Get(journal, "result_token"), jscompat.Get(receipt, "result_token")) &&
-			jscompat.IsRecord(kit) && jscompat.StrictEqual(jscompat.Get(kit, "path"), "assets/shots/"+shot) &&
-			jscompat.IsRecord(jscompat.Get(kit, "after_files")) &&
-			jscompat.StrictEqual(jscompat.GetPath(kit, "after_files", "manifest.json"), manifestDigest) {
+		kit := dynvalue.Get(journal, "directory")
+		if dynvalue.StrictEqual(dynvalue.Get(journal, "schema_version"), 1.0) &&
+			dynvalue.StrictEqual(dynvalue.Get(journal, "id"), entry.Name()) &&
+			dynvalue.StrictEqual(dynvalue.Get(journal, "shot"), shot) &&
+			dynvalue.StrictEqual(dynvalue.Get(journal, "state"), "committed") &&
+			dynvalue.StrictEqual(dynvalue.Get(journal, "result_token"), dynvalue.Get(receipt, "result_token")) &&
+			dynvalue.IsRecord(kit) && dynvalue.StrictEqual(dynvalue.Get(kit, "path"), "assets/shots/"+shot) &&
+			dynvalue.IsRecord(dynvalue.Get(kit, "after_files")) &&
+			dynvalue.StrictEqual(dynvalue.GetPath(kit, "after_files", "manifest.json"), manifestDigest) {
 			return true
 		}
 	}
 	return false
 }
 
-// checkProject — project(project, shot): канонический путь существующего проекта и проверка кода
+// checkProject — канонический путь существующего проекта и проверка кода
 // плана.
 func checkProject(project, shot string) (string, error) {
-	if !jscompat.IsAbs(project) || !shotPattern.MatchString(shot) {
+	if !dynvalue.IsAbs(project) || !shotPattern.MatchString(shot) {
 		return "", errors.New(textProjectInvalid)
 	}
-	canonical, err := jscompat.Realpath(project)
+	canonical, err := dynvalue.Realpath(project)
 	if err != nil {
 		return "", err
 	}
-	if !jscompat.Exists(filepath.Join(canonical, "plan", "project.json")) {
+	if !dynvalue.Exists(filepath.Join(canonical, "plan", "project.json")) {
 		return "", errors.New(textProjectInvalid)
 	}
 	return canonical, nil
@@ -250,13 +250,13 @@ func directory(project, shot string) string { return filepath.Join(project, "pla
 // latestRun — latest.json: последняя запущенная операция плана.
 type latestRun struct{ id, jobID string }
 
-// latest — latest(project, shot): запись с проверенными полями либо nil.
+// latest — запись с проверенными полями либо nil.
 func latest(project, shot string) *latestRun {
 	value := read(filepath.Join(directory(project, shot), "latest.json"))
-	id, idOK := jscompat.Get(value, "id").(string)
-	job, jobOK := jscompat.Get(value, "jobId").(string)
-	operation := jscompat.Get(value, "operation")
-	if value == nil || !idOK || !idPattern.MatchString(id) || !jobOK || !(jscompat.StrictEqual(operation, "build") || jscompat.StrictEqual(operation, "accept")) {
+	id, idOK := dynvalue.Get(value, "id").(string)
+	job, jobOK := dynvalue.Get(value, "jobId").(string)
+	operation := dynvalue.Get(value, "operation")
+	if value == nil || !idOK || !idPattern.MatchString(id) || !jobOK || !(dynvalue.StrictEqual(operation, "build") || dynvalue.StrictEqual(operation, "accept")) {
 		return nil
 	}
 	return &latestRun{id: id, jobID: job}
@@ -278,28 +278,28 @@ func (w *Workflow) active(project string) *jobs.Info {
 	return nil
 }
 
-// findByID — первый элемент массива со значением id (Array.find по строгому равенству).
+// findByID — первый элемент массива, чей id строго равен (dynvalue.StrictEqual) значению id.
 func findByID(list []any, id any) any {
 	for _, item := range list {
-		if jscompat.StrictEqual(jscompat.Get(item, "id"), id) {
+		if dynvalue.StrictEqual(dynvalue.Get(item, "id"), id) {
 			return item
 		}
 	}
-	return jscompat.Undefined
+	return dynvalue.Undefined
 }
 
-// sequenceTitle — registry.sequences.find(…)?.title. Реестр без массива sequences не ломает
+// sequenceTitle — название последовательности sequence из реестра. Реестр без массива sequences не ломает
 // страницу: название просто не находится.
 func sequenceTitle(registry, sequence any) any {
-	list, _ := jscompat.AsArray(jscompat.Get(registry, "sequences"))
-	return jscompat.Get(findByID(list, sequence), "title")
+	list, _ := dynvalue.AsArray(dynvalue.Get(registry, "sequences"))
+	return dynvalue.Get(findByID(list, sequence), "title")
 }
 
-// displayText — цепочка `a ?? b ?? c` подписи DTO.
+// displayText — первое заданное (не null) значение строкой для подписи DTO, иначе "".
 func displayText(values ...any) string {
 	for _, value := range values {
-		if !jscompat.IsNullish(value) {
-			return jscompat.ToString(value)
+		if !dynvalue.IsNullish(value) {
+			return dynvalue.ToString(value)
 		}
 	}
 	return ""
@@ -310,7 +310,7 @@ func recipeRaw(value any) *json.RawMessage {
 	if value == nil {
 		return nil
 	}
-	raw := jscompat.Raw(value)
+	raw := dynvalue.Raw(value)
 	return &raw
 }
 
@@ -327,20 +327,20 @@ func viewPreview(canonical, shot string, run *latestRun, registry, recipe any, p
 	folder := filepath.Join(directory(canonical, shot), run.id)
 	receipt := read(filepath.Join(folder, "preview.json"))
 	build := read(filepath.Join(folder, "build.json"))
-	token, tokenOK := jscompat.Get(receipt, "result_token").(string)
-	if !jscompat.StrictEqual(jscompat.Get(receipt, "schema_version"), 1.0) || !jscompat.StrictEqual(jscompat.Get(receipt, "shot"), shot) ||
+	token, tokenOK := dynvalue.Get(receipt, "result_token").(string)
+	if !dynvalue.StrictEqual(dynvalue.Get(receipt, "schema_version"), 1.0) || !dynvalue.StrictEqual(dynvalue.Get(receipt, "shot"), shot) ||
 		!tokenOK || !shaPattern.MatchString(token) {
 		return nil
 	}
-	videoPath, ok := artifact(folder, jscompat.Get(receipt, "preview"))
+	videoPath, ok := artifact(folder, dynvalue.Get(receipt, "preview"))
 	if !ok {
 		return nil
 	}
-	candidatePath, ok := artifact(folder, jscompat.Get(receipt, "video"))
+	candidatePath, ok := artifact(folder, dynvalue.Get(receipt, "video"))
 	if !ok {
 		return nil
 	}
-	saved, err := CheckedRecipe(jscompat.Get(receipt, "recipe"))
+	saved, err := CheckedRecipe(dynvalue.Get(receipt, "recipe"))
 	if err != nil {
 		return nil
 	}
@@ -349,8 +349,8 @@ func viewPreview(canonical, shot string, run *latestRun, registry, recipe any, p
 		return nil
 	}
 	return &Preview{
-		ID: run.id, VideoPath: videoPath, CandidatePath: candidatePath, ResultToken: token, Recipe: jscompat.Raw(saved),
-		Frames: finite(jscompat.ToNumber(jscompat.Get(receipt, "target_frames"))), Fresh: fresh, Problem: staleProblem(fresh),
+		ID: run.id, VideoPath: videoPath, CandidatePath: candidatePath, ResultToken: token, Recipe: dynvalue.Raw(saved),
+		Frames: finite(dynvalue.ToNumber(dynvalue.Get(receipt, "target_frames"))), Fresh: fresh, Problem: staleProblem(fresh),
 		Accepted: acceptedResult(canonical, shot, receipt),
 	}
 }
@@ -363,31 +363,31 @@ func staleProblem(fresh bool) *string {
 	return optional(textPreviewStale)
 }
 
-// fingerprint — acceptance.fingerprints?.[shot]: отсутствие — undefined.
+// fingerprint — отпечаток плана shot из оценки приёмки: отсутствие — dynvalue.Undefined.
 func fingerprint(scores acceptance.Result, shot string) any {
 	if value, ok := scores.Fingerprints[shot]; ok {
 		return value
 	}
-	return jscompat.Undefined
+	return dynvalue.Undefined
 }
 
 // previewFresh — условие свежести пробы; порядок проверок зафиксирован эталоном. invalid —
 // манифест источника исчез между проверками: проба не показывается.
 func previewFresh(canonical, shot string, receipt, build, registry, recipe, saved any, problem string, target float64, source sourceState) (fresh, invalid bool) {
 	sourceName, _ := source.shot.(string)
-	field := func(key string) any { return jscompat.Get(receipt, key) }
-	var sourceVideo any = jscompat.Undefined
+	field := func(key string) any { return dynvalue.Get(receipt, key) }
+	var sourceVideo any = dynvalue.Undefined
 	if source.snapshot != nil {
 		sourceVideo = source.snapshot.AcceptedVideoSha256
 	}
-	if problem != "" || !jscompat.StrictEqual(field("source_shot"), source.shot) ||
-		jscompat.ToNumber(field("target_frames")) != target ||
-		!jscompat.StrictEqual(field("target_scene_sha256"), fingerprint(source.scores, shot)) ||
-		!jscompat.StrictEqual(field("source_scene_sha256"), fingerprint(source.scores, sourceName)) ||
-		!jscompat.StrictEqual(field("source_accepted_video_sha256"), sourceVideo) {
+	if problem != "" || !dynvalue.StrictEqual(field("source_shot"), source.shot) ||
+		dynvalue.ToNumber(field("target_frames")) != target ||
+		!dynvalue.StrictEqual(field("target_scene_sha256"), fingerprint(source.scores, shot)) ||
+		!dynvalue.StrictEqual(field("source_scene_sha256"), fingerprint(source.scores, sourceName)) ||
+		!dynvalue.StrictEqual(field("source_accepted_video_sha256"), sourceVideo) {
 		return false, false
 	}
-	manifest, ok := jscompat.Get(build, "source_manifest_sha256").(string)
+	manifest, ok := dynvalue.Get(build, "source_manifest_sha256").(string)
 	if !ok || !shaPattern.MatchString(manifest) {
 		return false, false
 	}
@@ -395,14 +395,14 @@ func previewFresh(canonical, shot string, receipt, build, registry, recipe, save
 	if !found {
 		return false, true
 	}
-	name, sha, audioOK := audioSource(canonical, jscompat.GetPath(registry, "audio", "path"))
+	name, sha, audioOK := audioSource(canonical, dynvalue.GetPath(registry, "audio", "path"))
 	audio := field("audio_source")
 	var wanted any = sha
-	return manifest == actual && audioOK && jscompat.IsRecord(audio) && jscompat.StrictEqual(jscompat.Get(audio, "path"), name) &&
-		jscompat.StrictEqual(jscompat.Get(audio, "sha256"), wanted) && jscompat.DeepStrictEqual(recipe, saved), false
+	return manifest == actual && audioOK && dynvalue.IsRecord(audio) && dynvalue.StrictEqual(dynvalue.Get(audio, "path"), name) &&
+		dynvalue.StrictEqual(dynvalue.Get(audio, "sha256"), wanted) && dynvalue.DeepStrictEqual(recipe, saved), false
 }
 
-// View — view(project, shot): контекст страницы без записи в проект. Отказы источника возвращаются
+// View — контекст страницы без записи в проект. Отказы источника возвращаются
 // полем Problem, потому что страница показывает их рядом с сохранённой формой.
 func (w *Workflow) View(project, shot string) (*View, error) {
 	canonical, err := checkProject(project, shot)
@@ -410,14 +410,14 @@ func (w *Workflow) View(project, shot string) (*View, error) {
 		return nil, err
 	}
 	registry := read(filepath.Join(canonical, "plan", "scenes.json"))
-	scenes, _ := jscompat.AsArray(jscompat.Get(registry, "scenes"))
+	scenes, _ := dynvalue.AsArray(dynvalue.Get(registry, "scenes"))
 	target := findByID(scenes, shot)
-	if !jscompat.Truthy(target) {
+	if !dynvalue.Truthy(target) {
 		return nil, errors.New(textSceneMissing)
 	}
-	sourceShot := jscompat.Coalesce(jscompat.GetPath(target, "derived_from", "shot"), nil)
+	sourceShot := dynvalue.Coalesce(dynvalue.GetPath(target, "derived_from", "shot"), nil)
 	source := findByID(scenes, sourceShot)
-	targetFrames := jscompat.ToNumber(jscompat.Get(target, "end_frame_exclusive")) - jscompat.ToNumber(jscompat.Get(target, "start_frame"))
+	targetFrames := dynvalue.ToNumber(dynvalue.Get(target, "end_frame_exclusive")) - dynvalue.ToNumber(dynvalue.Get(target, "start_frame"))
 	scores, err := acceptance.Compute(canonical, registry)
 	if err != nil {
 		return nil, err
@@ -429,20 +429,20 @@ func (w *Workflow) View(project, shot string) (*View, error) {
 		snapshot = acceptance.ReadSourceVideo(canonical, sourceName)
 		manifest = read(filepath.Join(canonical, "assets", "shots", sourceName, "manifest.json"))
 	}
-	edit := jscompat.Get(manifest, "accepted_edit")
+	edit := dynvalue.Get(manifest, "accepted_edit")
 	sourceFrames := 0.0
-	if frames := jscompat.Get(edit, "frames"); jscompat.IsRecord(edit) && jscompat.TypeOf(frames) == "number" &&
-		jscompat.StrictEqual(jscompat.Get(edit, "fps"), 30.0) && jscompat.IsSafeInteger(frames) {
-		sourceFrames = jscompat.ToNumber(frames)
+	if frames := dynvalue.Get(edit, "frames"); dynvalue.IsRecord(edit) && dynvalue.TypeOf(frames) == "number" &&
+		dynvalue.StrictEqual(dynvalue.Get(edit, "fps"), 30.0) && dynvalue.IsSafeInteger(frames) {
+		sourceFrames = dynvalue.ToNumber(frames)
 	}
 	state, accepted := scores.Accepted[sourceName]
 	problem := ""
 	switch {
-	case !jscompat.Truthy(sourceShot):
+	case !dynvalue.Truthy(sourceShot):
 		problem = textNotDerived
-	case !jscompat.Truthy(source) || jscompat.StrictEqual(sourceShot, shot) || jscompat.Truthy(jscompat.Get(source, "derived_from")):
+	case !dynvalue.Truthy(source) || dynvalue.StrictEqual(sourceShot, shot) || dynvalue.Truthy(dynvalue.Get(source, "derived_from")):
 		problem = textInvalidSource
-	case jscompat.Truthy(jscompat.Get(target, "lipsync")):
+	case dynvalue.Truthy(dynvalue.Get(target, "lipsync")):
 		problem = textLipsyncUnsupported
 	case snapshot == nil || sourceFrames == 0 || !accepted:
 		problem = textSourceUnavailable
@@ -455,8 +455,8 @@ func (w *Workflow) View(project, shot string) (*View, error) {
 	}
 	var recipe any
 	draft := read(filepath.Join(directory(canonical, shot), "draft.json"))
-	if jscompat.StrictEqual(jscompat.Get(draft, "schema_version"), 1.0) && jscompat.StrictEqual(jscompat.Get(draft, "shot"), shot) {
-		if checked, err := CheckedRecipe(jscompat.Get(draft, "recipe")); err == nil {
+	if dynvalue.StrictEqual(dynvalue.Get(draft, "schema_version"), 1.0) && dynvalue.StrictEqual(dynvalue.Get(draft, "shot"), shot) {
+		if checked, err := CheckedRecipe(dynvalue.Get(draft, "recipe")); err == nil {
 			recipe = checked // Повреждённые настройки можно заменить явным сохранением формы.
 		}
 	}
@@ -482,10 +482,10 @@ func (w *Workflow) View(project, shot string) (*View, error) {
 	return &View{
 		Project:      canonical,
 		Shot:         shot,
-		Title:        displayText(jscompat.Get(target, "title"), sequenceTitle(registry, jscompat.Get(target, "sequence")), shot),
-		Action:       displayText(jscompat.Get(target, "action")),
+		Title:        displayText(dynvalue.Get(target, "title"), sequenceTitle(registry, dynvalue.Get(target, "sequence")), shot),
+		Action:       displayText(dynvalue.Get(target, "action")),
 		SourceShot:   dtoSource,
-		SourceTitle:  displayText(jscompat.Get(source, "title"), sequenceTitle(registry, jscompat.Get(source, "sequence")), sourceShot),
+		SourceTitle:  displayText(dynvalue.Get(source, "title"), sequenceTitle(registry, dynvalue.Get(source, "sequence")), sourceShot),
 		SourcePath:   sourcePath,
 		SourceFrames: sourceFrames,
 		TargetFrames: finite(targetFrames),
@@ -494,11 +494,11 @@ func (w *Workflow) View(project, shot string) (*View, error) {
 		Job:          job,
 		Problem:      optional(problem),
 		ToolsProblem: optional(toolsProblem),
-		HasAsset:     jscompat.Exists(filepath.Join(canonical, "assets", "shots", shot, "manifest.json")),
+		HasAsset:     dynvalue.Exists(filepath.Join(canonical, "assets", "shots", shot, "manifest.json")),
 	}, nil
 }
 
-// Save — save(project, shot, recipe): настройки формы в plan/derived/<план>/draft.json.
+// Save — настройки формы в plan/derived/<план>/draft.json.
 func (w *Workflow) Save(project, shot string, value any) (*View, error) {
 	view, err := w.View(project, shot)
 	if err != nil {
@@ -517,7 +517,7 @@ func (w *Workflow) Save(project, shot string, value any) (*View, error) {
 	if err := projectfs.CheckWrite(view.Project); err != nil {
 		return nil, err
 	}
-	draft := jscompat.NewObject()
+	draft := dynvalue.NewObject()
 	draft.Set("schema_version", 1.0)
 	draft.Set("shot", shot)
 	draft.Set("source_shot", *view.SourceShot)
@@ -545,14 +545,14 @@ func (w *Workflow) blocked(view *View) error {
 // remember — запись latest.json после старта задания. Намеренно мимо шлюза записи: запущенная
 // приёмка могла уже завести журнал publishing, и шлюз ложно отказал бы при живой публикации.
 func remember(project, shot, id, jobID, operation string) error {
-	value := jscompat.NewObject()
+	value := dynvalue.NewObject()
 	value.Set("id", id)
 	value.Set("jobId", jobID)
 	value.Set("operation", operation)
 	return projectfs.WriteFile(filepath.Join(directory(project, shot), "latest.json"), encode(value), 0)
 }
 
-// Build — build(project, shot, recipe): сохраняет настройки и рецепт новой пробы и запускает
+// Build — сохраняет настройки и рецепт новой пробы и запускает
 // задание сборки. Рецепт пишется отдельным файлом: инструмент читает именно зафиксированные байты.
 func (w *Workflow) Build(project, shot string, value any) (*View, error) {
 	view, err := w.View(project, shot)
@@ -592,7 +592,7 @@ func (w *Workflow) Build(project, shot string, value any) (*View, error) {
 	return w.View(view.Project, shot)
 }
 
-// Accept — accept(project, shot, id, token, replace): запускает приёмку показанной свежей пробы.
+// Accept — запускает приёмку показанной свежей пробы.
 func (w *Workflow) Accept(project, shot, id, token string, replace bool) (*View, error) {
 	view, err := w.View(project, shot)
 	if err != nil {

@@ -7,18 +7,18 @@ import (
 	"strconv"
 )
 
-// Примитивы ImageDraw Pillow, которыми рисовалась карточка: заливка прямоугольника,
-// скруглённый прямоугольник поля референса, полупрозрачные полосы карточки опор через
-// Image.alpha_composite и смешивание маски текста. Арифметика повторяет libImaging, поэтому
+// Примитивы рисования карточки: заливка прямоугольника, скруглённый прямоугольник поля
+// референса, полупрозрачные полосы карточки опор (альфа-композиция поверх непрозрачного холста)
+// и смешивание маски текста. Арифметика целочисленная, с фиксированными округлениями, поэтому
 // фон, полосы и поля карточки совпадают с эталоном побайтно.
 
-// hexColor — цвет «#RRGGBB» (как ImageColor.getrgb для констант макета).
+// hexColor — цвет «#RRGGBB» констант макета как три байта RGB.
 func hexColor(text string) [3]byte {
 	value, _ := strconv.ParseUint(text[1:], 16, 32)
 	return [3]byte{byte(value >> 16), byte(value >> 8), byte(value)}
 }
 
-// fillRect — draw.rectangle((x0, y0, x1, y1), fill): обе границы включительно, с отсечением.
+// fillRect заливает прямоугольник (x0, y0)–(x1, y1): обе границы включительно, с отсечением.
 func (m rgbImage) fillRect(x0, y0, x1, y1 int, fill [3]byte) {
 	for y := max(y0, 0); y <= min(y1, m.height-1); y++ {
 		for x := max(x0, 0); x <= min(x1, m.width-1); x++ {
@@ -28,12 +28,12 @@ func (m rgbImage) fillRect(x0, y0, x1, y1 int, fill [3]byte) {
 }
 
 // roundedInsets — отступ заливки от края в строках 0..6 от верхней и нижней границы для
-// rounded_rectangle с radius=9 в Pillow 10.2 (углы рисует draw_pieslice с d=18, все четыре
-// угла симметричны; снято с Pillow). Карточка рисует только такой прямоугольник, поэтому
-// растеризация эллипса Pillow целиком не нужна.
+// скруглённого прямоугольника с радиусом 9 (углы — четверти круга диаметром 18, все четыре
+// угла симметричны; значения зафиксированы эталоном). Карточка рисует только такой
+// прямоугольник, поэтому общая растеризация эллипса не нужна.
 var roundedInsets = [...]int{7, 5, 3, 2, 2, 1, 1}
 
-// fillRoundedRect9 — draw.rounded_rectangle((x0, y0, x1, y1), radius=9, fill).
+// fillRoundedRect9 заливает скруглённый прямоугольник (x0, y0)–(x1, y1) с радиусом углов 9.
 func (m rgbImage) fillRoundedRect9(x0, y0, x1, y1 int, fill [3]byte) {
 	for y := y0; y <= y1; y++ {
 		inset := 0
@@ -46,9 +46,9 @@ func (m rgbImage) fillRoundedRect9(x0, y0, x1, y1 int, fill [3]byte) {
 	}
 }
 
-// shadeBand — полоса overlay (13, 18, 22, 190), наложенная Image.alpha_composite на
-// непрозрачную карточку (строки y0..y1 включительно). Формула AlphaComposite.c: коэффициенты с
-// 7 дробными битами и деление на 255 сдвигами; альфа результата 255 отбрасывается convert("RGB").
+// shadeBand — полоса цвета (13, 18, 22) с альфой 190, наложенная альфа-композицией на
+// непрозрачную карточку (строки y0..y1 включительно): коэффициенты с 7 дробными битами и деление
+// на 255 сдвигами; альфа результата всегда 255 и в RGB-холст не попадает.
 func (m rgbImage) shadeBand(y0, y1 int) {
 	const precision = 7
 	src := [3]uint32{13, 18, 22}
@@ -69,7 +69,7 @@ func (m rgbImage) shadeBand(y0, y1 int) {
 	}
 }
 
-// blendMask — draw_bitmap маски «L» цветом ink (fill_mask_L): канал = DIV255(фон·(255−a) +
+// blendMask смешивает 8-битную маску покрытия с холстом цветом ink: канал = DIV255(фон·(255−a) +
 // ink·a), где DIV255(v) = ((v+128)>>8 + v+128)>>8. Части маски вне холста отсекаются.
 func (m rgbImage) blendMask(mask *image.Alpha, ink [3]byte) {
 	bounds := mask.Rect.Intersect(image.Rect(0, 0, m.width, m.height))
@@ -88,8 +88,8 @@ func (m rgbImage) blendMask(mask *image.Alpha, ink [3]byte) {
 	}
 }
 
-// encodePNG — card.save(target) в PNG. Пиксели совпадают с эталоном там, где совпадает
-// растеризация, но байты файла другие: zlib Pillow и compress/flate сжимают по-разному.
+// encodePNG кодирует холст в PNG. Пиксели совпадают с эталоном там, где совпадает
+// растеризация, но сжатие compress/flate эталоном не фиксируется, поэтому байты файла другие.
 func (m rgbImage) encodePNG() ([]byte, error) {
 	rgba := image.NewRGBA(image.Rect(0, 0, m.width, m.height))
 	for index := 0; index < m.width*m.height; index++ {

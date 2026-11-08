@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // Постоянные клиента; от них зависят запросы, зафиксированные эталонами.
@@ -132,7 +132,7 @@ func (c *Client) httpClient() *http.Client {
 type timeoutKey struct{}
 
 // WithSocketTimeout — контекст запроса с таймаутом каждой операции сокета (подключение, каждое
-// чтение и запись), как timeout сокета Python. Общий срок запроса не ограничивается: большой
+// чтение и запись). Общий срок запроса не ограничивается: большой
 // оригинал скачивается сколько нужно, пока данные идут.
 func WithSocketTimeout(ctx context.Context, timeout time.Duration) context.Context {
 	return context.WithValue(ctx, timeoutKey{}, timeout)
@@ -232,7 +232,7 @@ func (c *Client) request(ctx context.Context, method, rawURL string, body []byte
 	}
 	hostname := parts.Hostname()
 	if (parts.Scheme != "http" && parts.Scheme != "https") || hostname == "" {
-		return response{}, pycompat.New(pycompat.ValueError, "Недопустимый адрес сервера.")
+		return response{}, toolrt.New(toolrt.ValueError, "Недопустимый адрес сервера.")
 	}
 	port, hasPort, err := parts.Port()
 	if err != nil {
@@ -251,7 +251,7 @@ func (c *Client) request(ctx context.Context, method, rawURL string, body []byte
 	}
 	request, err := http.NewRequestWithContext(WithSocketTimeout(ctx, timeout), method, parts.Scheme+"://"+host+"/", reader)
 	if err != nil {
-		return response{}, pycompat.New(pycompat.ValueError, "Недопустимый адрес сервера.")
+		return response{}, toolrt.New(toolrt.ValueError, "Недопустимый адрес сервера.")
 	}
 	path := parts.Path
 	if path == "" {
@@ -282,7 +282,7 @@ func (c *Client) request(ctx context.Context, method, rawURL string, body []byte
 	return response{status: answer.StatusCode, contentType: answer.Header.Get("Content-Type"), data: data}, nil
 }
 
-// socketErrorName — имя класса исключения Python для сбоя сокета: оно входит в текст ошибок
+// socketErrorName — имя типа сбоя сокета (TimeoutError, ConnectionRefusedError и т. п.): оно входит в текст ошибок
 // NotSent и TransportError. body — сбой при чтении тела ответа.
 func socketErrorName(err error, body bool) string {
 	var (
@@ -320,13 +320,13 @@ func socketErrorName(err error, body bool) string {
 	return "OSError"
 }
 
-// jsonBody — JSON из UTF-8 или nil (None), если байты не разбираются.
+// jsonBody — JSON из UTF-8 или nil, если байты не разбираются.
 func jsonBody(data []byte) any {
-	text, err := pycompat.DecodeUTF8(data)
+	text, err := toolrt.DecodeUTF8(data)
 	if err != nil {
 		return nil
 	}
-	value, err := pycompat.LoadsJSON(text)
+	value, err := toolrt.LoadsJSON(text)
 	if err != nil {
 		return nil
 	}
@@ -335,7 +335,7 @@ func jsonBody(data []byte) any {
 
 // getJSON — объект JSON ответа 200 или nil; ошибки клиента не мешают discovery,
 // а неверный адрес (ValueError) возвращается вызывающему.
-func (c *Client) getJSON(ctx context.Context, rawURL string, timeout time.Duration) (*pycompat.Dict, error) {
+func (c *Client) getJSON(ctx context.Context, rawURL string, timeout time.Duration) (*toolrt.Dict, error) {
 	answer, err := c.request(ctx, "GET", rawURL, nil, []Field{{"Accept", "application/json"}}, timeout)
 	if err != nil {
 		if IsKlingError(err) {
@@ -346,6 +346,6 @@ func (c *Client) getJSON(ctx context.Context, rawURL string, timeout time.Durati
 	if answer.status != 200 {
 		return nil, nil
 	}
-	value, _ := jsonBody(answer.data).(*pycompat.Dict)
+	value, _ := jsonBody(answer.data).(*toolrt.Dict)
 	return value, nil
 }

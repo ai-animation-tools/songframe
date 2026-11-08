@@ -10,11 +10,11 @@ import (
 	"os"
 	"strconv"
 
-	"songframe-go/internal/mediacmd"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/pytool"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/mediacmd"
+	"songframe/internal/projectfs"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolcli"
+	"songframe/internal/toolrt"
 )
 
 // speech — результат speechLines: путь песни из реестра (значение JSON как есть),
@@ -23,74 +23,74 @@ import (
 type speech struct {
 	source  any
 	window  [2]float64
-	lines   []*pycompat.Dict
+	lines   []*toolrt.Dict
 	lipsync bool
 }
 
 // speechLines — строки разметки, пересекающие окно плана. Реестр читается и проверяется
-// sceneregistry.Load; текст строки берётся из source/text.md по source_line (целое, включая bool,
-// как isinstance(…, int) Python) и очищается от пробелов по краям, иначе — None. Битые данные
-// дают KeyError/TypeError/AttributeError Python.
+// sceneregistry.Load; текст строки берётся из source/text.md по source_line (целое, bool тоже
+// считается целым) и очищается от пробелов по краям, иначе — null. Битые данные
+// дают KeyError/TypeError/AttributeError toolrt.
 func speechLines(root, shot string) (speech, error) {
 	registry, err := sceneregistry.Load(root)
 	if err != nil {
 		return speech{}, err
 	}
-	scenesValue, err := pycompat.Item(registry, "scenes")
+	scenesValue, err := toolrt.Item(registry, "scenes")
 	if err != nil {
 		return speech{}, err
 	}
-	scenes, err := pycompat.Iter(scenesValue)
+	scenes, err := toolrt.Iter(scenesValue)
 	if err != nil {
 		return speech{}, err
 	}
 	var scene any
 	for _, item := range scenes {
-		id, err := pycompat.Item(item, "id")
+		id, err := toolrt.Item(item, "id")
 		if err != nil {
 			return speech{}, err
 		}
-		if pycompat.Equal(id, shot) {
+		if toolrt.Equal(id, shot) {
 			scene = item
 			break
 		}
 	}
 	if scene == nil {
-		return speech{}, pycompat.New(pycompat.ValueError, shot+": план отсутствует в реестре сцен.")
+		return speech{}, toolrt.New(toolrt.ValueError, shot+": план отсутствует в реестре сцен.")
 	}
 	var window [2]float64
 	for index, key := range []string{"start_frame", "end_frame_exclusive"} {
-		frame, err := pycompat.Item(scene, key)
+		frame, err := toolrt.Item(scene, key)
 		if err != nil {
 			return speech{}, err
 		}
-		fps, err := pycompat.Item(registry, "fps")
+		fps, err := toolrt.Item(registry, "fps")
 		if err != nil {
 			return speech{}, err
 		}
-		if window[index], err = pycompat.TrueDiv(frame, fps); err != nil {
+		if window[index], err = toolrt.TrueDiv(frame, fps); err != nil {
 			return speech{}, err
 		}
 	}
-	text, err := pycompat.ReadText(pycompat.JoinPath(root, "plan/audio/timing.json"))
+	text, err := toolrt.ReadText(toolrt.JoinPath(root, "plan/audio/timing.json"))
 	if err != nil {
 		return speech{}, err
 	}
-	timing, err := pycompat.LoadsJSON(text)
+	timing, err := toolrt.LoadsJSON(text)
 	if err != nil {
 		return speech{}, err
 	}
-	linesValue, err := pycompat.DictGet(timing, "lines", []any{})
+	linesValue, err := toolrt.DictGet(timing, "lines", []any{})
 	if err != nil {
 		return speech{}, err
 	}
-	items, err := pycompat.Iter(linesValue)
+	items, err := toolrt.Iter(linesValue)
 	if err != nil {
 		return speech{}, err
 	}
-	lines := []*pycompat.Dict{}
+	lines := []*toolrt.Dict{}
 	for _, line := range items {
-		end, err := pycompat.Item(line, "end")
+		end, err := toolrt.Item(line, "end")
 		if err != nil {
 			return speech{}, err
 		}
@@ -101,55 +101,55 @@ func speechLines(root, shot string) (speech, error) {
 			}
 			continue
 		}
-		start, err := pycompat.Item(line, "start")
+		start, err := toolrt.Item(line, "start")
 		if err != nil {
 			return speech{}, err
 		}
-		before, err := pycompat.Less(start, window[1])
+		before, err := toolrt.Less(start, window[1])
 		if err != nil {
 			return speech{}, err
 		}
 		if before {
 			// Ключ «end» нашёлся по строке, значит line — словарь.
-			lines = append(lines, line.(*pycompat.Dict))
+			lines = append(lines, line.(*toolrt.Dict))
 		}
 	}
-	lyrics, err := pycompat.ReadText(pycompat.JoinPath(root, "source/text.md"))
+	lyrics, err := toolrt.ReadText(toolrt.JoinPath(root, "source/text.md"))
 	if err != nil {
 		return speech{}, err
 	}
-	rows := pycompat.SplitLines(lyrics)
+	rows := toolrt.SplitLines(lyrics)
 	for _, line := range lines {
 		var value any
 		if number, ok := index(line.Value("source_line")); ok && number.Sign() > 0 && number.Cmp(big.NewInt(int64(len(rows)))) <= 0 {
-			value = pycompat.Strip(rows[number.Int64()-1])
+			value = toolrt.Strip(rows[number.Int64()-1])
 		}
 		line.Set("text", value)
 	}
-	audio, err := pycompat.Item(registry, "audio")
+	audio, err := toolrt.Item(registry, "audio")
 	if err != nil {
 		return speech{}, err
 	}
-	source, err := pycompat.Item(audio, "path")
+	source, err := toolrt.Item(audio, "path")
 	if err != nil {
 		return speech{}, err
 	}
-	lipsync, _ := pycompat.DictGet(scene, "lipsync", nil)
-	return speech{source: source, window: window, lines: lines, lipsync: pycompat.Truthy(lipsync)}, nil
+	lipsync, _ := toolrt.DictGet(scene, "lipsync", nil)
+	return speech{source: source, window: window, lines: lines, lipsync: toolrt.Truthy(lipsync)}, nil
 }
 
 // propose — границы по строкам: от начала первой минус lead до конца последней плюс tail, не
-// короче minSeconds; round(…, 3) и начало не меньше 0.0. Значения — числа Python
-// (float или int), поэтому min/max/арифметика идут через pycompat с его текстами TypeError.
-func propose(lines []*pycompat.Dict, lead, tail, minSeconds any) (any, any, error) {
+// короче minSeconds; округление до 3 знаков (round3) и начало не меньше 0.0. Значения — числа
+// toolrt (float или целое), поэтому min/max/арифметика идут через toolrt с его текстами TypeError.
+func propose(lines []*toolrt.Dict, lead, tail, minSeconds any) (any, any, error) {
 	if len(lines) == 0 {
-		return nil, nil, pycompat.New(pycompat.ValueError, textNoLines)
+		return nil, nil, toolrt.New(toolrt.ValueError, textNoLines)
 	}
 	first, err := extreme(lines, "start", false)
 	if err != nil {
 		return nil, nil, err
 	}
-	start, err := pycompat.Sub(first, lead)
+	start, err := toolrt.Sub(first, lead)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -157,20 +157,20 @@ func propose(lines []*pycompat.Dict, lead, tail, minSeconds any) (any, any, erro
 	if err != nil {
 		return nil, nil, err
 	}
-	end, err := pycompat.Add(last, tail)
+	end, err := toolrt.Add(last, tail)
 	if err != nil {
 		return nil, nil, err
 	}
-	length, err := pycompat.Sub(end, start)
+	length, err := toolrt.Sub(end, start)
 	if err != nil {
 		return nil, nil, err
 	}
-	short, err := pycompat.Less(length, minSeconds)
+	short, err := toolrt.Less(length, minSeconds)
 	if err != nil {
 		return nil, nil, err
 	}
 	if short {
-		if end, err = pycompat.Add(start, minSeconds); err != nil {
+		if end, err = toolrt.Add(start, minSeconds); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -185,15 +185,15 @@ func propose(lines []*pycompat.Dict, lead, tail, minSeconds any) (any, any, erro
 	return rounded, round3(end), nil
 }
 
-// extreme — min() или max() значений key по строкам: как встроенные функции Python, текущий
-// элемент заменяется следующим, только если тот строго меньше (больше).
-func extreme(lines []*pycompat.Dict, key string, maximum bool) (any, error) {
-	current, err := pycompat.Item(lines[0], key)
+// extreme — наименьшее или наибольшее значение key по строкам: текущий элемент заменяется
+// следующим, только если тот строго меньше (больше), поэтому при равенстве остаётся первый.
+func extreme(lines []*toolrt.Dict, key string, maximum bool) (any, error) {
+	current, err := toolrt.Item(lines[0], key)
 	if err != nil {
 		return nil, err
 	}
 	for _, line := range lines[1:] {
-		value, err := pycompat.Item(line, key)
+		value, err := toolrt.Item(line, key)
 		if err != nil {
 			return nil, err
 		}
@@ -201,7 +201,7 @@ func extreme(lines []*pycompat.Dict, key string, maximum bool) (any, error) {
 		if maximum {
 			better, err = greater(value, current)
 		} else {
-			better, err = pycompat.Less(value, current)
+			better, err = toolrt.Less(value, current)
 		}
 		if err != nil {
 			return nil, err
@@ -213,17 +213,17 @@ func extreme(lines []*pycompat.Dict, key string, maximum bool) (any, error) {
 	return current, nil
 }
 
-// greater — left > right Python: сравнение через Less с тем же текстом TypeError (оператор «>»
-// и типы в исходном порядке).
+// greater — left > right через toolrt.Less; несравнимые типы дают TypeError с оператором «>»
+// и типами в исходном порядке.
 func greater(left, right any) (bool, error) {
-	result, err := pycompat.Less(right, left)
+	result, err := toolrt.Less(right, left)
 	if err != nil {
-		return false, pycompat.Raise(pycompat.TypeError, "'>' not supported between instances of '%s' and '%s'", pycompat.TypeName(left), pycompat.TypeName(right))
+		return false, toolrt.Raise(toolrt.TypeError, "'>' not supported between instances of '%s' and '%s'", toolrt.TypeName(left), toolrt.TypeName(right))
 	}
 	return result, nil
 }
 
-// round3 — round(value, 3) Python: float округляется по точному двоичному значению с половиной к
+// round3 — округление до 3 знаков: float округляется по точному двоичному значению с половиной к
 // чётному (корректно округлённая запись strconv), целое остаётся целым.
 func round3(value any) any {
 	number, ok := value.(float64)
@@ -234,10 +234,10 @@ func round3(value any) any {
 	return rounded
 }
 
-// index — целое значение для isinstance(value, int) Python: int и bool.
+// index — целое значение для целого или bool (true — 1, false — 0); иначе ok=false.
 func index(value any) (*big.Int, bool) {
 	switch item := value.(type) {
-	case pycompat.Int:
+	case toolrt.Int:
 		return item.Big(), true
 	case bool:
 		if item {
@@ -248,21 +248,21 @@ func index(value any) (*big.Int, bool) {
 	return nil, false
 }
 
-// sampleIndex — int((Decimal(str(seconds)) * 44100).to_integral_value(ROUND_HALF_UP)): точная
-// десятичная запись числа, умноженная на частоту, с округлением половины от нуля. Точность
-// контекста Decimal (28 знаков) не ограничивает результат: repr float — не больше 17 значащих
-// цифр. NaN — ValueError, бесконечность — OverflowError с текстами int(Decimal).
+// sampleIndex — номер сэмпла для времени seconds: кратчайшая десятичная запись числа (toolrt.Str),
+// умноженная на частоту точно, с округлением половины от нуля. Запись float — не больше 17 значащих
+// цифр, поэтому точность не теряется. NaN — ValueError, бесконечность — OverflowError (тексты
+// зафиксированы эталоном).
 func sampleIndex(seconds any) (*big.Int, error) {
-	text := pycompat.Str(seconds)
+	text := toolrt.Str(seconds)
 	switch text {
 	case "nan", "-nan":
-		return nil, pycompat.New(pycompat.ValueError, "cannot convert NaN to integer")
+		return nil, toolrt.New(toolrt.ValueError, "cannot convert NaN to integer")
 	case "inf", "-inf":
-		return nil, pycompat.New(pycompat.OverflowError, "cannot convert Infinity to integer")
+		return nil, toolrt.New(toolrt.OverflowError, "cannot convert Infinity to integer")
 	}
 	value, ok := new(big.Rat).SetString(text)
 	if !ok {
-		return nil, pycompat.Raise(pycompat.TypeError, "conversion from %s to Decimal is not supported", pycompat.TypeName(seconds))
+		return nil, toolrt.Raise(toolrt.TypeError, "conversion from %s to Decimal is not supported", toolrt.TypeName(seconds))
 	}
 	value.Mul(value, new(big.Rat).SetInt64(sampleRate))
 	negative := value.Sign() < 0
@@ -286,31 +286,31 @@ func decode(ctx context.Context, source string) ([]byte, error) {
 		return nil, err
 	}
 	if result.Code != 0 || len(result.Stdout) == 0 {
-		return nil, pycompat.New(pycompat.ValueError, textDecodeFailed+mediacmd.Tail(result.Stderr, 300))
+		return nil, toolrt.New(toolrt.ValueError, textDecodeFailed+mediacmd.Tail(result.Stderr, 300))
 	}
 	return result.Stdout, nil
 }
 
-// pathDiv — Path(base) / part: нестроковая часть — TypeError Python, как у pathlib.
+// pathDiv — base/part: нестроковая часть — TypeError с именем класса пути ОС (pathType).
 func pathDiv(base string, part any) (string, error) {
 	text, ok := part.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathType, pycompat.TypeName(part))
+		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathType, toolrt.TypeName(part))
 	}
-	return pycompat.JoinPath(base, text), nil
+	return toolrt.JoinPath(base, text), nil
 }
 
 // fileSHA — SHA-256 файла потоком и его размер.
 func fileSHA(path string) (string, int64, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return "", 0, pycompat.OSErrorFrom(err, path)
+		return "", 0, toolrt.OSErrorFrom(err, path)
 	}
 	defer file.Close()
 	hash := sha256.New()
 	size, err := io.Copy(hash, file)
 	if err != nil {
-		return "", 0, pycompat.OSErrorFrom(err, path)
+		return "", 0, toolrt.OSErrorFrom(err, path)
 	}
 	return hex.EncodeToString(hash.Sum(nil)), size, nil
 }
@@ -321,14 +321,14 @@ func fileSHA(path string) (string, int64, error) {
 // projectfs.WriteFile с правами нового файла 0666 (с umask): сбой не оставляет частичного WAV.
 // Порядок проверок и записи зафиксирован эталоном: песня, границы, декодирование, конец песни,
 // папка, отсутствие WAV, WAV, рецепт.
-func cut(ctx context.Context, root string, source, start, end any, out, shot string, lines []*pycompat.Dict) (*pycompat.Dict, error) {
+func cut(ctx context.Context, root string, source, start, end any, out, shot string, lines []*toolrt.Dict) (*toolrt.Dict, error) {
 	joined, err := pathDiv(root, source)
 	if err != nil {
 		return nil, err
 	}
-	sourcePath := pycompat.ResolvePath(joined)
-	if !pycompat.IsFile(sourcePath) {
-		return nil, pycompat.New(pycompat.ValueError, textSourceMissing+pycompat.Str(source))
+	sourcePath := toolrt.ResolvePath(joined)
+	if !toolrt.IsFile(sourcePath) {
+		return nil, toolrt.New(toolrt.ValueError, textSourceMissing+toolrt.Str(source))
 	}
 	first, err := sampleIndex(start)
 	if err != nil {
@@ -339,11 +339,11 @@ func cut(ctx context.Context, root string, source, start, end any, out, shot str
 		return nil, err
 	}
 	if last.Cmp(first) <= 0 {
-		return nil, pycompat.New(pycompat.ValueError, textEmptyInterval)
+		return nil, toolrt.New(toolrt.ValueError, textEmptyInterval)
 	}
 	// Отрицательное начало отклоняется: срез с отрицательным индексом отсчитывался бы от конца PCM.
 	if first.Sign() < 0 {
-		return nil, pycompat.New(pycompat.ValueError, textNegativeStart)
+		return nil, toolrt.New(toolrt.ValueError, textNegativeStart)
 	}
 	pcm, err := decode(ctx, sourcePath)
 	if err != nil {
@@ -352,39 +352,39 @@ func cut(ctx context.Context, root string, source, start, end any, out, shot str
 	frameBytes := channels * sampleWidth
 	total := int64(len(pcm) / frameBytes)
 	if last.Cmp(big.NewInt(total)) > 0 {
-		return nil, pycompat.New(pycompat.ValueError, "Срез выходит за конец песни: "+pycompat.FormatFixed(float64(total)/sampleRate, 3)+" с.")
+		return nil, toolrt.New(toolrt.ValueError, "Срез выходит за конец песни: "+toolrt.FormatFixed(float64(total)/sampleRate, 3)+" с.")
 	}
 	if err := os.MkdirAll(out, 0o777); err != nil {
-		return nil, pycompat.OSErrorFrom(err, out)
+		return nil, toolrt.OSErrorFrom(err, out)
 	}
-	target := pycompat.JoinPath(out, speechName)
-	if pycompat.Exists(target) {
-		return nil, pycompat.New(pycompat.ValueError, textTargetExists)
+	target := toolrt.JoinPath(out, speechName)
+	if toolrt.Exists(target) {
+		return nil, toolrt.New(toolrt.ValueError, textTargetExists)
 	}
-	data, err := waveBytes(pycompat.NewInt(channels), pycompat.NewInt(sampleWidth), pycompat.NewInt(sampleRate), nil,
+	data, err := waveBytes(toolrt.NewInt(channels), toolrt.NewInt(sampleWidth), toolrt.NewInt(sampleRate), nil,
 		pcm[first.Int64()*int64(frameBytes):last.Int64()*int64(frameBytes)])
 	if err != nil {
 		return nil, err
 	}
 	if err := projectfs.WriteFile(target, data, 0o666); err != nil {
-		return nil, pycompat.OSErrorFrom(err, target)
+		return nil, toolrt.OSErrorFrom(err, target)
 	}
 	sourceSHA, sourceSize, err := fileSHA(sourcePath)
 	if err != nil {
 		return nil, err
 	}
 	outputSHA := sha256.Sum256(data)
-	recipe := pytool.Record(
-		"schema_version", pycompat.NewInt(1),
-		"source", pytool.Record("path", pycompat.JoinPath(source.(string)), "sha256", sourceSHA, "bytes", pycompat.NewInt(sourceSize)),
+	recipe := toolcli.Record(
+		"schema_version", toolrt.NewInt(1),
+		"source", toolcli.Record("path", toolrt.JoinPath(source.(string)), "sha256", sourceSHA, "bytes", toolrt.NewInt(sourceSize)),
 		"source_interval_seconds", []any{float64(first.Int64()) / sampleRate, float64(last.Int64()) / sampleRate},
 		"interval_end_exclusive", true,
-		"sample_rate", pycompat.NewInt(sampleRate),
-		"channels", pycompat.NewInt(channels),
-		"sample_width_bytes", pycompat.NewInt(sampleWidth),
-		"start_sample", pycompat.IntFromBig(first),
-		"end_sample_exclusive", pycompat.IntFromBig(last),
-		"output", pytool.Record("path", speechName, "sha256", hex.EncodeToString(outputSHA[:]), "bytes", pycompat.NewInt(int64(len(data)))),
+		"sample_rate", toolrt.NewInt(sampleRate),
+		"channels", toolrt.NewInt(channels),
+		"sample_width_bytes", toolrt.NewInt(sampleWidth),
+		"start_sample", toolrt.IntFromBig(first),
+		"end_sample_exclusive", toolrt.IntFromBig(last),
+		"output", toolcli.Record("path", speechName, "sha256", hex.EncodeToString(outputSHA[:]), "bytes", toolrt.NewInt(int64(len(data)))),
 		"processing", processing,
 	)
 	if shot != "" {
@@ -393,24 +393,24 @@ func cut(ctx context.Context, root string, source, start, end any, out, shot str
 	if len(lines) > 0 {
 		entries := make([]any, 0, len(lines))
 		for _, line := range lines {
-			id, err := pycompat.Item(line, "id")
+			id, err := toolrt.Item(line, "id")
 			if err != nil {
 				return nil, err
 			}
-			entries = append(entries, pytool.Record(
+			entries = append(entries, toolcli.Record(
 				"id", id, "source_line", line.Value("source_line"), "text", line.Value("text"),
 				"start", line.Value("start"), "end", line.Value("end"), "note", line.Value("note"),
 			))
 		}
 		recipe.Set("timing_lines", entries)
 	}
-	encoded, err := pycompat.EncodeIndented(recipe)
+	encoded, err := toolrt.EncodeIndented(recipe)
 	if err != nil {
 		return nil, err
 	}
-	recipePath := pycompat.JoinPath(out, recipeName)
-	if err := projectfs.WriteFile(recipePath, []byte(pycompat.TextMode(string(encoded))), 0o666); err != nil {
-		return nil, pycompat.OSErrorFrom(err, recipePath)
+	recipePath := toolrt.JoinPath(out, recipeName)
+	if err := projectfs.WriteFile(recipePath, []byte(toolrt.TextMode(string(encoded))), 0o666); err != nil {
+		return nil, toolrt.OSErrorFrom(err, recipePath)
 	}
 	return recipe, nil
 }

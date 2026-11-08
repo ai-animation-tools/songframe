@@ -13,10 +13,10 @@ import (
 	"encoding/json"
 	"errors"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/sourceedit"
-	"songframe-go/internal/sources"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/sourceedit"
+	"songframe/internal/sources"
 )
 
 // Тексты referenceImageTexts, которые возвращает сохранение исходников.
@@ -59,12 +59,12 @@ func SaveSources(ctx context.Context, project string, input sourceedit.Input, ff
 		return nil, errors.New(textCastInvalid)
 	}
 	pinned := pinnedSet(project)
-	if !jscompat.Truthy(read.Value) {
+	if !dynvalue.Truthy(read.Value) {
 		manifest, _, err := sourceedit.SaveManifest(ctx, project, input, ffprobe, sourceedit.SaveOptions{Pinned: pinned})
 		if err != nil {
 			return nil, err
 		}
-		return jscompat.Raw(manifest), nil
+		return dynvalue.Raw(manifest), nil
 	}
 	// Результат нормализации не нужен: она только проверяет документ, а записывает его cast.Save.
 	if _, err := cast.Normalize(read.Value, cast.LoadDefaults()); err != nil {
@@ -104,7 +104,7 @@ func SaveSources(ctx context.Context, project string, input sourceedit.Input, ff
 		return nil, err
 	}
 	backup.remove()
-	return jscompat.Raw(manifest), nil
+	return dynvalue.Raw(manifest), nil
 }
 
 // removesSelectedImage сообщает, удаляет ли форма файл прежней описи, выбранный в images
@@ -113,7 +113,7 @@ func SaveSources(ctx context.Context, project string, input sourceedit.Input, ff
 func removesSelectedImage(document, previous any, input sourceedit.Input) (bool, error) {
 	known := map[string]bool{}
 	if previous != nil {
-		references, err := jscompat.Iterate(jscompat.Get(previous, "references"))
+		references, err := dynvalue.Iterate(dynvalue.Get(previous, "references"))
 		if err != nil {
 			return false, err
 		}
@@ -135,9 +135,9 @@ func removesSelectedImage(document, previous any, input sourceedit.Input) (bool,
 			}
 		}
 	}
-	entities, _ := jscompat.AsArray(jscompat.Get(document, "entities"))
+	entities, _ := dynvalue.AsArray(dynvalue.Get(document, "entities"))
 	for _, entity := range entities {
-		images, _ := jscompat.AsArray(jscompat.Get(entity, "images"))
+		images, _ := dynvalue.AsArray(dynvalue.Get(entity, "images"))
 		for _, image := range images {
 			if path, _ := image.(string); known[path] && !kept[path] {
 				return true, nil
@@ -157,8 +157,8 @@ func removesSelectedImage(document, previous any, input sourceedit.Input) (bool,
 // удалённого невыбранного файла, и по одному пути его не отличить от прежнего. Прежние виды не
 // добавляются: images — сохранённый выбор пользователя, а не список доступных видов. Сущности без
 // референса и референсы без сущности не меняются; сущность из референса создаёт только cast.Init.
-func withNewImages(document, previous any, input sourceedit.Input, manifest *jscompat.Object, moves map[string]string) (any, error) {
-	projected, err := cast.ProjectDescriptions(jscompat.DeepClone(document), manifest)
+func withNewImages(document, previous any, input sourceedit.Input, manifest *dynvalue.Object, moves map[string]string) (any, error) {
+	projected, err := cast.ProjectDescriptions(dynvalue.DeepClone(document), manifest)
 	if err != nil {
 		return nil, err
 	}
@@ -167,11 +167,11 @@ func withNewImages(document, previous any, input sourceedit.Input, manifest *jsc
 	for _, target := range moves {
 		movedTo[target] = true
 	}
-	previousRefs, _ := jscompat.AsArray(jscompat.Get(previous, "references"))
-	manifestRefs, _ := jscompat.AsArray(manifest.Value("references"))
-	entities, _ := jscompat.AsArray(jscompat.Get(projected, "entities"))
+	previousRefs, _ := dynvalue.AsArray(dynvalue.Get(previous, "references"))
+	manifestRefs, _ := dynvalue.AsArray(manifest.Value("references"))
+	entities, _ := dynvalue.AsArray(dynvalue.Get(projected, "entities"))
 	for _, entity := range entities {
-		id := jscompat.Get(entity, "id")
+		id := dynvalue.Get(entity, "id")
 		ref := findByID(manifestRefs, id)
 		if ref == nil {
 			continue
@@ -184,16 +184,16 @@ func withNewImages(document, previous any, input sourceedit.Input, manifest *jsc
 		}
 		var incoming []sourceedit.FileInput
 		for _, item := range input.References {
-			if jscompat.StrictEqual(item.ID, id) {
+			if dynvalue.StrictEqual(item.ID, id) {
 				incoming = item.Files
 				break
 			}
 		}
 		// Сущность — копия из DeepClone/Spread, images — её собственный массив строк (проверен Normalize).
-		images, _ := jscompat.Get(entity, "images").(*jscompat.Array)
-		files, _ := jscompat.AsArray(jscompat.Get(ref, "files"))
+		images, _ := dynvalue.Get(entity, "images").(*dynvalue.Array)
+		files, _ := dynvalue.AsArray(dynvalue.Get(ref, "files"))
 		for index, file := range files {
-			path, _ := jscompat.Get(file, "path").(string)
+			path, _ := dynvalue.Get(file, "path").(string)
 			fresh := index < len(incoming) && incoming[index].SourcePath != nil && *incoming[index].SourcePath != ""
 			if (fresh || !old[path]) && !movedTo[path] && images != nil && !contains(images.Items, path) {
 				images.Items = append(images.Items, path)
@@ -203,10 +203,10 @@ func withNewImages(document, previous any, input sourceedit.Input, manifest *jsc
 	return projected, nil
 }
 
-// findByID — refs.find((ref) => ref.id === id): первый референс с кодом или nil.
+// findByID — первый референс с кодом id или nil.
 func findByID(refs []any, id any) any {
 	for _, ref := range refs {
-		if jscompat.StrictEqual(jscompat.Get(ref, "id"), id) {
+		if dynvalue.StrictEqual(dynvalue.Get(ref, "id"), id) {
 			return ref
 		}
 	}
@@ -214,20 +214,20 @@ func findByID(refs []any, id any) any {
 }
 
 // filePaths — строковые пути ref.files[].path. Не массив files или пустой элемент — TypeError
-// (семантика ref.files.map и file.path в JS). Нестроковые пути пропускаются: их не совпадёт ни
+// dynvalue с текстом, зафиксированным эталоном. Нестроковые пути пропускаются: их не совпадёт ни
 // одно изображение кастинга (это строки).
 func filePaths(ref any) (map[string]bool, error) {
-	files, err := jscompat.Prop(ref, "files")
+	files, err := dynvalue.Prop(ref, "files")
 	if err != nil {
 		return nil, err
 	}
-	list, ok := jscompat.AsArray(files)
+	list, ok := dynvalue.AsArray(files)
 	if !ok {
-		return nil, &jscompat.TypeError{Message: "ref.files.map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "ref.files.map is not a function"}
 	}
 	paths := map[string]bool{}
 	for _, file := range list {
-		path, err := jscompat.Prop(file, "path")
+		path, err := dynvalue.Prop(file, "path")
 		if err != nil {
 			return nil, err
 		}
@@ -238,7 +238,7 @@ func filePaths(ref any) (map[string]bool, error) {
 	return paths, nil
 }
 
-// contains — Array.prototype.includes для строки.
+// contains — есть ли среди элементов строка value.
 func contains(items []any, value string) bool {
 	for _, item := range items {
 		if text, ok := item.(string); ok && text == value {

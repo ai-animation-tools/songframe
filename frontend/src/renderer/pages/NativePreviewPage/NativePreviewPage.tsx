@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Stack, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
-import * as native from '../../../../bindings/songframe-go/internal/app/nativeservice';
-import type { PreviewInput } from '../../../../bindings/songframe-go/internal/app/models';
+import * as native from '../../../../bindings/songframe/internal/app/nativeservice';
+import type { PreviewInput } from '../../../../bindings/songframe/internal/app/models';
 
 /** Служебное второе окно нативной проверки (--native-check): получает медиа из Go по session,
  * сообщает loadedmetadata (preview:ready) и закрывается через Go. Служебное окно не входит

@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"testing"
 
-	"songframe-go/internal/providers/kling/mcp"
+	"songframe/internal/providers/kling/mcp"
 )
 
 // TestFetch — скачивание оригинала по HTTPS на httptest: байты файла (сигнатура PNG) без

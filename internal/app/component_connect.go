@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"songframe-go/internal/components"
-	"songframe-go/internal/wire"
+	"songframe/internal/components"
+	"songframe/internal/wire"
 )
 
 // Connect подключает выбранный файл или устанавливает распознанный архив одним пользовательским действием.

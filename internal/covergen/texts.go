@@ -3,7 +3,7 @@ package covergen
 import (
 	"strings"
 
-	"songframe-go/internal/mediaproviders"
+	"songframe/internal/mediaproviders"
 )
 
 // texts — сообщения генерации по назначению. Обложка берёт sourcesTexts.main, референс —

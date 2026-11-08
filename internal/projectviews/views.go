@@ -5,23 +5,23 @@ import (
 	"sort"
 	"strings"
 
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolrt"
 )
 
-// Prepared — prepared(sources): проверенный реестр, его планы с монтажным временем (Shots) и
+// Prepared — проверенный реестр, его планы с монтажным временем (Shots) и
 // манифесты технических комплектов assets/shots/<план>/manifest.json, которые есть в проекте
 // (код плана → разобранный JSON, в порядке планов). Initial — начальное состояние кастинга, с
-// которым проверялся реестр (initial_states_for проекта).
+// которым проверялся реестр (sceneregistry.InitialStatesFor проекта).
 type Prepared struct {
-	Data     *pycompat.Dict
-	Items    []*pycompat.Dict
-	Packages *pycompat.Dict
-	Initial  *pycompat.Dict
+	Data     *toolrt.Dict
+	Items    []*toolrt.Dict
+	Packages *toolrt.Dict
+	Initial  *toolrt.Dict
 }
 
-// Prepare — prepared(sources). Оригинал вызывает его несколько раз за запуск; результат при
-// неизменных файлах тот же, поэтому вызывающий может вычислить его один раз.
+// Prepare читает и проверяет реестр, его планы и манифесты комплектов. Результат зависит только
+// от файлов, поэтому вызывающий вычисляет его один раз за запуск и передаёт всем представлениям.
 func Prepare(sources *Sources) (*Prepared, error) {
 	raw, err := sources.JSON("plan/scenes.json")
 	if err != nil {
@@ -39,7 +39,7 @@ func Prepare(sources *Sources) (*Prepared, error) {
 	if err != nil {
 		return nil, err
 	}
-	packages := pycompat.NewDict()
+	packages := toolrt.NewDict()
 	for _, scene := range shots {
 		sid := scene.Value("id").(string)
 		path := "assets/shots/" + sid + "/manifest.json"
@@ -54,14 +54,14 @@ func Prepare(sources *Sources) (*Prepared, error) {
 	return &Prepared{Data: data, Items: shots, Packages: packages, Initial: initial}, nil
 }
 
-// ProjectInputs — project_inputs(project, animatic): значимые поля проекта для карточек (name)
-// или сборки аниматика (name и animatic_video). Отсутствующее поле — KeyError.
-func ProjectInputs(project any, animatic bool) (*pycompat.Dict, error) {
+// ProjectInputs — значимые поля проекта для карточек (name) или сборки аниматика (name и
+// animatic_video). Отсутствующее поле — KeyError.
+func ProjectInputs(project any, animatic bool) (*toolrt.Dict, error) {
 	keys := []string{"name"}
 	if animatic {
 		keys = append(keys, "animatic_video")
 	}
-	result := pycompat.NewDict()
+	result := toolrt.NewDict()
 	for _, key := range keys {
 		value, err := get(project, key)
 		if err != nil {
@@ -72,19 +72,19 @@ func ProjectInputs(project any, animatic bool) (*pycompat.Dict, error) {
 	return result, nil
 }
 
-// ProjectInputsMatch — project_inputs_match(record, project, animatic): снимок полей проекта в
-// квитанции совпадает с текущими; отсутствующий или повреждённый снимок требует обновления.
+// ProjectInputsMatch — снимок полей проекта project_inputs в квитанции совпадает с текущими;
+// отсутствующий или повреждённый снимок требует обновления.
 func ProjectInputsMatch(record, project any, animatic bool) (bool, error) {
-	found, err := pycompat.Contains(record, "project_inputs")
+	found, err := toolrt.Contains(record, "project_inputs")
 	if err != nil || !found {
 		return false, err
 	}
-	saved, _ := pycompat.GetItem(record, "project_inputs")
+	saved, _ := toolrt.GetItem(record, "project_inputs")
 	expected, err := ProjectInputs(project, animatic)
 	if err != nil {
 		return false, err
 	}
-	dict, ok := saved.(*pycompat.Dict)
+	dict, ok := saved.(*toolrt.Dict)
 	if !ok || dict.Len() != expected.Len() {
 		return false, nil
 	}
@@ -98,10 +98,10 @@ func ProjectInputsMatch(record, project any, animatic bool) (bool, error) {
 			return false, nil
 		}
 	}
-	return pycompat.Equal(dict, expected), nil
+	return toolrt.Equal(dict, expected), nil
 }
 
-// banner — общая плашка производных документов (format с относительной ссылкой на реестр).
+// banner — общая плашка производных документов с относительной ссылкой registry на реестр.
 func banner(registry string) string {
 	return "> Автоматическое представление [plan/scenes.json](" + registry + "). " +
 		"Изменять только реестр; этот файл не является отдельным " +
@@ -123,7 +123,7 @@ func Documents(sources *Sources, prepared *Prepared) ([]Document, error) {
 	if err != nil {
 		return nil, err
 	}
-	name := pycompat.Str(project.Value("name"))
+	name := toolrt.Str(project.Value("name"))
 	edit, err := editList(prepared, name)
 	if err != nil {
 		return nil, err
@@ -173,9 +173,9 @@ func Documents(sources *Sources, prepared *Prepared) ([]Document, error) {
 	return output, nil
 }
 
-// projectFile — validate_project(sources.json("plan/project.json"), validate_generation=False):
-// представлениям нужны только название и имя аниматика, настройки генерации не проверяются.
-func projectFile(sources *Sources) (*pycompat.Dict, error) {
+// projectFile — plan/project.json, проверенный sceneregistry.ValidateProject без настроек
+// генерации: представлениям нужны только название и имя аниматика.
+func projectFile(sources *Sources) (*toolrt.Dict, error) {
 	raw, err := sources.JSON("plan/project.json")
 	if err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func editList(prepared *Prepared, name string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		list, err := pycompat.Iter(references)
+		list, err := toolrt.Iter(references)
 		if err != nil {
 			return "", err
 		}
@@ -247,7 +247,7 @@ func storyboard(prepared *Prepared, name string) (string, error) {
 			"правила и речевые планы — в [визуальном справочнике](context/characters.md).",
 		"",
 	}
-	sequences, err := pycompat.Iter(prepared.Data.Value("sequences"))
+	sequences, err := toolrt.Iter(prepared.Data.Value("sequences"))
 	if err != nil {
 		return "", err
 	}
@@ -256,9 +256,9 @@ func storyboard(prepared *Prepared, name string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		members := []*pycompat.Dict{}
+		members := []*toolrt.Dict{}
 		for _, scene := range prepared.Items {
-			if pycompat.Equal(scene.Value("sequence"), groupID) {
+			if toolrt.Equal(scene.Value("sequence"), groupID) {
 				members = append(members, scene)
 			}
 		}
@@ -266,8 +266,8 @@ func storyboard(prepared *Prepared, name string) (string, error) {
 			continue
 		}
 		var heading any = "Вступление"
-		if !pycompat.Equal(groupID, "intro") {
-			if heading, err = pycompat.Add("Сцена ", groupID); err != nil {
+		if !toolrt.Equal(groupID, "intro") {
+			if heading, err = toolrt.Add("Сцена ", groupID); err != nil {
 				return "", err
 			}
 		}
@@ -296,7 +296,7 @@ func storyboard(prepared *Prepared, name string) (string, error) {
 }
 
 // storyScene — раздел одного плана раскадровки.
-func storyScene(s *pycompat.Dict) ([]any, error) {
+func storyScene(s *toolrt.Dict) ([]any, error) {
 	sid := s.Value("id").(string)
 	fields := map[string]any{}
 	for _, key := range []string{"title", "interval", "duration"} {
@@ -308,12 +308,12 @@ func storyScene(s *pycompat.Dict) ([]any, error) {
 	}
 	story := []any{
 		`<a id="` + strings.ToLower(sid) + `"></a>`,
-		"### " + sid + ". " + pycompat.Str(fields["title"]),
+		"### " + sid + ". " + toolrt.Str(fields["title"]),
 		"",
-		"**Монтаж:** " + pycompat.Str(fields["interval"]) + " · " + pycompat.Str(fields["duration"]) + " с.",
+		"**Монтаж:** " + toolrt.Str(fields["interval"]) + " · " + toolrt.Str(fields["duration"]) + " с.",
 		"",
 	}
-	if derived := s.Value("derived_from"); pycompat.Truthy(derived) {
+	if derived := s.Value("derived_from"); toolrt.Truthy(derived) {
 		origin, err := get(derived, "shot")
 		if err != nil {
 			return nil, err
@@ -322,13 +322,13 @@ func storyScene(s *pycompat.Dict) ([]any, error) {
 		if err != nil {
 			return nil, err
 		}
-		story = append(story, "**Материал:** из ["+pycompat.Str(origin)+"](#"+lowered+"), без собственной генерации.", "")
+		story = append(story, "**Материал:** из ["+toolrt.Str(origin)+"](#"+lowered+"), без собственной генерации.", "")
 	}
 	camera, err := get(s, "camera")
 	if err != nil {
 		return nil, err
 	}
-	story = append(story, "**Камера:** "+pycompat.Str(camera), "")
+	story = append(story, "**Камера:** "+toolrt.Str(camera), "")
 	action, err := get(s, "action")
 	if err != nil {
 		return nil, err
@@ -338,25 +338,25 @@ func storyScene(s *pycompat.Dict) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	notes, _ := pycompat.DictGet(s, "notes", "")
-	story = append(story, "**Непрерывность:** "+pycompat.Str(continuity), "", notes, "")
+	notes, _ := toolrt.DictGet(s, "notes", "")
+	story = append(story, "**Непрерывность:** "+toolrt.Str(continuity), "", notes, "")
 	// Источник состояния: план (строка) или {scene, phase}; ссылка на сводку, а не её копия.
 	source := s.Value("state_from")
 	origin, phase := source, any("after")
-	if dict, ok := source.(*pycompat.Dict); ok {
+	if dict, ok := source.(*toolrt.Dict); ok {
 		origin = dict.Value("scene")
-		phase, _ = pycompat.DictGet(dict, "phase", "after")
+		phase, _ = toolrt.DictGet(dict, "phase", "after")
 	}
 	link := "начало сюжетной линии"
-	if pycompat.Truthy(origin) {
+	if toolrt.Truthy(origin) {
 		lowered, err := lower(origin)
 		if err != nil {
 			return nil, err
 		}
-		link = "[" + pycompat.Str(origin) + "](#" + lowered + ") (" + pycompat.Str(phase) + ")"
+		link = "[" + toolrt.Str(origin) + "](#" + lowered + ") (" + toolrt.Str(phase) + ")"
 	}
 	story = append(story, "**Состояние:** "+link+"; сводку до/после получить инструментом `scene_registry` комплекса.", "")
-	changesValue, _ := pycompat.DictGet(s, "state_changes", pycompat.NewDict())
+	changesValue, _ := toolrt.DictGet(s, "state_changes", toolrt.NewDict())
 	changes, err := items(changesValue)
 	if err != nil {
 		return nil, err
@@ -376,7 +376,7 @@ func storyScene(s *pycompat.Dict) ([]any, error) {
 				value := attributes.Value(key)
 				text := "не задано"
 				if value != nil {
-					text = pycompat.Str(value)
+					text = toolrt.Str(value)
 				}
 				facts = append(facts, entity+"."+key+": "+text)
 			}
@@ -388,25 +388,25 @@ func storyScene(s *pycompat.Dict) ([]any, error) {
 
 // packagesIndex — assets/shots/manifest.json: индекс комплектов с SHA-256 текста их манифестов.
 func packagesIndex(sources *Sources, prepared *Prepared) (string, error) {
-	shots := pycompat.NewDict()
+	shots := toolrt.NewDict()
 	for _, sid := range prepared.Packages.Keys() {
 		path := "assets/shots/" + sid + "/manifest.json"
 		digest, err := sources.TextSHA(path)
 		if err != nil {
 			return "", err
 		}
-		manifest := pycompat.NewDict()
+		manifest := toolrt.NewDict()
 		manifest.Set("path", path)
 		manifest.Set("sha256", digest)
-		entry := pycompat.NewDict()
+		entry := toolrt.NewDict()
 		entry.Set("asset_manifest", manifest)
 		shots.Set(sid, entry)
 	}
-	index := pycompat.NewDict()
-	index.Set("schema_version", pycompat.NewInt(2))
+	index := toolrt.NewDict()
+	index.Set("schema_version", toolrt.NewInt(2))
 	index.Set("description", "Автоматический индекс локальных технических комплектов; постановка и тайминг принадлежат plan/scenes.json.")
 	index.Set("shots", shots)
-	text, err := pycompat.DumpsJSON(index, pycompat.DumpOptions{Indent: 2, Pretty: true})
+	text, err := toolrt.DumpsJSON(index, toolrt.DumpOptions{Indent: 2, Pretty: true})
 	if err != nil {
 		return "", err
 	}
@@ -418,14 +418,14 @@ func packagesIndex(sources *Sources, prepared *Prepared) (string, error) {
 func charactersView(prepared *Prepared) (string, error) {
 	speech := []string{}
 	for _, scene := range prepared.Items {
-		if pycompat.Truthy(scene.Value("lipsync")) {
+		if toolrt.Truthy(scene.Value("lipsync")) {
 			sid := scene.Value("id").(string)
 			speech = append(speech, "["+sid+"](../storyboard.md#"+strings.ToLower(sid)+")")
 		}
 	}
 	view := "\n\n## Речевые планы\n\nРечевые планы не назначены.\n"
 	if len(speech) > 0 {
-		view = "\n\n## Речевые планы\n\nВсего " + pycompat.NewInt(int64(len(speech))).String() + ". " + strings.Join(speech, ", ") + ".\n"
+		view = "\n\n## Речевые планы\n\nВсего " + toolrt.NewInt(int64(len(speech))).String() + ". " + strings.Join(speech, ", ") + ".\n"
 	}
 	visual, err := get(prepared.Data, "visual_direction")
 	if err != nil {
@@ -433,9 +433,9 @@ func charactersView(prepared *Prepared) (string, error) {
 	}
 	text, ok := visual.(string)
 	if !ok {
-		return "", pycompat.Raise(pycompat.AttributeError, "'%s' object has no attribute 'strip'", pycompat.TypeName(visual))
+		return "", toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'strip'", toolrt.TypeName(visual))
 	}
-	return banner("../scenes.json") + "\n" + pycompat.Strip(text) + view, nil
+	return banner("../scenes.json") + "\n" + toolrt.Strip(text) + view, nil
 }
 
 // packageReadme — assets/shots/<план>/README.md: ссылки на оригинал, принятый монтаж, промпт и
@@ -454,7 +454,7 @@ func packageReadme(sid string, manifest any) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return "[" + title + "](" + pycompat.Str(path) + ")", nil
+		return "[" + title + "](" + toolrt.Str(path) + ")", nil
 	}
 	links := []string{}
 	for _, item := range []struct {
@@ -476,7 +476,7 @@ func packageReadme(sid string, manifest any) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if pycompat.Truthy(audio) {
+	if toolrt.Truthy(audio) {
 		text, err := link("Аудио липсинка", generation, "audio", "path")
 		if err != nil {
 			return "", err
@@ -497,14 +497,15 @@ func packageReadme(sid string, manifest any) (string, error) {
 		"[представлении](../../../plan/storyboard.md#" + strings.ToLower(sid) + ").\n\n" +
 		strings.Join(links, " · ") +
 		"\n\n[manifest.json](manifest.json) хранит файлы, хеши и рецепт " +
-		"обработки генерации. Принятый клип: " + pycompat.Str(frames) + " кадров при " +
-		pycompat.Str(fps) + " кадр/с. Положение на шкале клипа в ассете не " +
+		"обработки генерации. Принятый клип: " + toolrt.Str(frames) + " кадров при " +
+		toolrt.Str(fps) + " кадр/с. Положение на шкале клипа в ассете не " +
 		"дублируется.\n", nil
 }
 
-// clockOf — clock(str(value)): время поля разметки строкой «ММ:СС.d» через Decimal(str()).
+// clockOf — время поля разметки в записи «ММ:СС.d» (sceneregistry.Clock) из строковой записи
+// значения toolrt.Str.
 func clockOf(value any) (string, error) {
-	return sceneregistry.Clock(pycompat.Str(value))
+	return sceneregistry.Clock(toolrt.Str(value))
 }
 
 // timingView — plan/audio/timing.md: структура песни и оценки строк вокала из plan/audio/timing.json.
@@ -576,7 +577,7 @@ func timingView(sources *Sources) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	list, err := pycompat.Iter(sections)
+	list, err := toolrt.Iter(sections)
 	if err != nil {
 		return "", err
 	}
@@ -598,7 +599,7 @@ func timingView(sources *Sources) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if list, err = pycompat.Iter(lines); err != nil {
+	if list, err = toolrt.Iter(lines); err != nil {
 		return "", err
 	}
 	for _, item := range list {
@@ -621,19 +622,19 @@ func timingView(sources *Sources) (string, error) {
 	return join("\n", timing)
 }
 
-// sumFrames — sum(s["frames"] for s in items): кадры планов (целые из Shots).
-func sumFrames(items []*pycompat.Dict, include func(*pycompat.Dict) bool) *big.Int {
+// sumFrames — сумма кадров планов (целые frames из Shots), отобранных include; nil — все планы.
+func sumFrames(items []*toolrt.Dict, include func(*toolrt.Dict) bool) *big.Int {
 	total := new(big.Int)
 	for _, scene := range items {
 		if include == nil || include(scene) {
-			total.Add(total, scene.Value("frames").(pycompat.Int).Big())
+			total.Add(total, scene.Value("frames").(toolrt.Int).Big())
 		}
 	}
 	return total
 }
 
 // sortedKeys — ключи словаря по алфавиту (для детерминированного обхода множеств).
-func sortedKeys(dict *pycompat.Dict) []string {
+func sortedKeys(dict *toolrt.Dict) []string {
 	keys := dict.Keys()
 	sort.Strings(keys)
 	return keys

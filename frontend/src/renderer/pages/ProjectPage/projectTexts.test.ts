@@ -23,7 +23,7 @@ describe('Числа в текстах обзора проекта', () => {
     [21, '21 план'],
     [-2, '-2 плана'],
     [1.5, '1.5 плана']
-  ])('сохраняет фразы и старое согласование для %s', (count, shots) => {
+  ])('сохраняет фразы и согласование числа для %s', (count, shots) => {
     expect(projectTexts.checks.shots(count)).toBe(shots);
     expect(projectTexts.checks.acceptedCount({ done: count, total: 21 })).toBe(`${count} из 21`);
     expect(projectTexts.nextStep.scenes({ done: count, total: 21 })).toBe(`Сцены: ${count} из 21`);
@@ -83,7 +83,7 @@ describe('Параметры целых фраз проекта', () => {
     );
   });
 
-  it('сохраняет прежнее строковое undefined шаблонов', () => {
+  it('подставляет undefined в шаблоны строкой как есть', () => {
     expect(projectTexts.bundle.removeDescription({ folder: undefined })).toBe(
       'Будет удалена папка «undefined» со всем содержимым, включая скопированные медиа. Исходные файлы проекта сохранятся.'
     );

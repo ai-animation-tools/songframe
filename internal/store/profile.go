@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 )
 
-// ProfileName — имя каталога состояния приложения. Оно намеренно отличается от `songframe`,
-// каталога прежних выпусков: их настройки, вход провайдеров и история не читаются и не меняются.
+// ProfileName — имя каталога состояния приложения. Оно намеренно отличается от `songframe`:
+// настройки, вход провайдеров и история в каталоге с таким именем не читаются и не меняются.
 const ProfileName = "songframe-desktop"
 
 // Profile владеет только расположением состояния оболочки. Открытие проекта и настройки
@@ -18,7 +18,7 @@ type Profile struct {
 	override string
 }
 
-// NewProfile получает исключительно SONGFRAME_GO_LOCAL_DIR от точки сборки приложения.
+// NewProfile получает исключительно SONGFRAME_LOCAL_DIR от точки сборки приложения.
 // Отложенная проверка каталога позволяет показать ошибку хранения в интерфейсе через State.
 func NewProfile(override string) *Profile {
 	return &Profile{override: override}

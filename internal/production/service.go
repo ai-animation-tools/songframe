@@ -16,15 +16,15 @@ import (
 	"strings"
 	"sync"
 
-	"songframe-go/internal/builtoutput"
-	"songframe-go/internal/jobs"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/projectfile"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/shotworkflow"
-	"songframe-go/internal/tools"
+	"songframe/internal/builtoutput"
+	"songframe/internal/dynvalue"
+	"songframe/internal/jobs"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/projectfile"
+	"songframe/internal/projectfs"
+	"songframe/internal/providers"
+	"songframe/internal/shotworkflow"
+	"songframe/internal/tools"
 )
 
 // Runner — запуск инструмента комплекса по имени (tools.RunContext): инструменты выполняются в
@@ -44,7 +44,7 @@ type Options struct {
 	// PricingFile — подмена таблицы цен (SONGFRAME_PRICING_FILE) для прогонов без
 	// расхода; "" — таблица адаптера провайдера.
 	PricingFile string
-	// NewToken — одноразовый токен оценки (randomUUID); nil — случайный UUID v4.
+	// NewToken — одноразовый токен оценки; nil — случайный UUID v4 (randomUUID).
 	NewToken func() string
 }
 
@@ -118,7 +118,7 @@ func New(options Options) *Service {
 	}
 }
 
-// randomUUID — crypto.randomUUID: UUID версии 4.
+// randomUUID — случайный UUID версии 4 в каноническом виде с дефисами.
 func randomUUID() string {
 	var data [16]byte
 	_, _ = rand.Read(data[:])
@@ -136,7 +136,7 @@ func (s *Service) pricingArgs() []string {
 	return []string{}
 }
 
-// run — инструмент вне задания; Code nil (остановлен) — как код null процесса.
+// run — инструмент вне задания; Code nil — процесс остановлен, код завершения не получен.
 func (s *Service) run(project, name string, args ...string) (tools.Result, error) {
 	return s.options.Run(context.Background(), project, name, args)
 }
@@ -147,7 +147,7 @@ func failure(result tools.Result, fallback string) error {
 	if text == "" {
 		text = result.Stdout
 	}
-	if text = jscompat.Trim(text); text != "" {
+	if text = dynvalue.Trim(text); text != "" {
 		return errors.New(text)
 	}
 	return errors.New(fallback)
@@ -156,8 +156,8 @@ func failure(result tools.Result, fallback string) error {
 // ok — инструмент завершился с кодом 0.
 func ok(result tools.Result) bool { return result.Code != nil && *result.Code == 0 }
 
-// realpath — канонический путь; текст ошибки в формате Node (jscompat), как ждут эталоны.
-func realpath(path string) (string, error) { return jscompat.Realpath(path) }
+// realpath — канонический путь; текст ошибки в формате dynvalue, как ждут эталоны.
+func realpath(path string) (string, error) { return dynvalue.Realpath(path) }
 
 // packagePattern — допустимое положение пакета внутри проекта.
 var packagePattern = regexp.MustCompile(`^plan/(batches|awaiting)/[^/]+$`)
@@ -165,7 +165,7 @@ var packagePattern = regexp.MustCompile(`^plan/(batches|awaiting)/[^/]+$`)
 // checkedPackage — обычная папка пакета plan/batches/<имя> или plan/awaiting/<имя> выбранного
 // проекта; возвращает её реальный путь.
 func checkedPackage(project, packageDir string) (string, error) {
-	directory := jscompat.Resolve(project, packageDir)
+	directory := dynvalue.Resolve(project, packageDir)
 	root, err := realpath(project)
 	if err != nil {
 		return "", err
@@ -176,9 +176,9 @@ func checkedPackage(project, packageDir string) (string, error) {
 	}
 	info, err := os.Lstat(directory)
 	if err != nil {
-		return "", jscompat.FsError("lstat", directory, err)
+		return "", dynvalue.FsError("lstat", directory, err)
 	}
-	if !packagePattern.MatchString(filepath.ToSlash(jscompat.Relative(root, real))) || info.Mode()&os.ModeSymlink != 0 {
+	if !packagePattern.MatchString(filepath.ToSlash(dynvalue.Relative(root, real))) || info.Mode()&os.ModeSymlink != 0 {
 		return "", errors.New(textPackageFolderRequired)
 	}
 	return real, nil
@@ -202,7 +202,7 @@ func shotKey(project, shot string) string {
 	return root + ":" + shot
 }
 
-// IsBusy — isBusy(project, packageDir): у пакета идёт операция сервиса, его задание или задание
+// IsBusy — у пакета идёт операция сервиса, его задание или задание
 // повтора его плана. Используют проверка видео и проход агента производства.
 func (s *Service) IsBusy(project, packageDir string) bool {
 	s.mu.Lock()
@@ -211,13 +211,13 @@ func (s *Service) IsBusy(project, packageDir string) bool {
 }
 
 func (s *Service) busyLocked(project, packageDir string) bool {
-	directory := jscompat.Resolve(project, packageDir)
-	if jscompat.Exists(directory) {
+	directory := dynvalue.Resolve(project, packageDir)
+	if dynvalue.Exists(directory) {
 		if real, err := realpath(directory); err == nil {
 			directory = real
 		}
 	}
-	shot := jscompat.ToString(jscompat.Get(readJSON(filepath.Join(directory, "workflow.json")), "shot"))
+	shot := dynvalue.ToString(dynvalue.Get(readJSON(filepath.Join(directory, "workflow.json")), "shot"))
 	return s.running(s.shotJobs[shotKey(project, shot)]) || s.operations[directory] || s.running(s.packageJobs[directory])
 }
 
@@ -324,8 +324,8 @@ func (s *Service) price(project, requestDir string) Quote {
 	if err != nil {
 		return unknown
 	}
-	parsed, err := jscompat.Parse([]byte(result.Stdout))
-	value, isObject := jscompat.AsObject(parsed)
+	parsed, err := dynvalue.Parse([]byte(result.Stdout))
+	value, isObject := dynvalue.AsObject(parsed)
 	if err != nil || !isObject {
 		return unknown
 	}
@@ -334,7 +334,7 @@ func (s *Service) price(project, requestDir string) Quote {
 		code = *result.Code
 	}
 	verdict, _ := value.Value("verdict").(string)
-	if (code != 0 && code != 2) || !slices.Contains([]string{VerdictOK, VerdictInsufficientBalance, VerdictUnknown}, jscompat.ToString(value.Value("verdict"))) {
+	if (code != 0 && code != 2) || !slices.Contains([]string{VerdictOK, VerdictInsufficientBalance, VerdictUnknown}, dynvalue.ToString(value.Value("verdict"))) {
 		return unknown
 	}
 	credits, balance := finiteCredits(value.Value("estimate_credits")), finiteCredits(value.Value("balance_credits"))
@@ -345,7 +345,7 @@ func (s *Service) price(project, requestDir string) Quote {
 		checked = VerdictUnknown
 	}
 	reasons := []string{}
-	if list, ok := jscompat.AsArray(value.Value("reasons")); ok {
+	if list, ok := dynvalue.AsArray(value.Value("reasons")); ok {
 		for _, item := range list {
 			if text, ok := item.(string); ok {
 				reasons = append(reasons, text)
@@ -355,7 +355,7 @@ func (s *Service) price(project, requestDir string) Quote {
 	return Quote{Verdict: checked, Credits: credits, Balance: balance, Reasons: reasons}
 }
 
-// Quote — quote(project, packageDir, expectedSha, decisionToken): актуальная стоимость показанного
+// Quote — метод quote контракта window.api: актуальная стоимость показанного
 // запроса и одноразовый token согласия. Для тех же материалов действуют несколько последних
 // оценок (окно может запросить оценку повторно), оценки прежних материалов сгорают. Отправка всё
 // равно заново сверяет цену и остаток.
@@ -512,7 +512,7 @@ func (s *Service) ReopenFrame(project, packageDir, frame, note, noteScope string
 	if !framePattern.MatchString(frame) {
 		return errors.New(textFrameUnknown)
 	}
-	if jscompat.Trim(note) == "" {
+	if dynvalue.Trim(note) == "" {
 		return errors.New(textFrameRevisionRequired)
 	}
 	directory, release, err := s.claim(project, directory)
@@ -520,7 +520,7 @@ func (s *Service) ReopenFrame(project, packageDir, frame, note, noteScope string
 		return err
 	}
 	defer release()
-	result, err := s.run(project, "shot_workflow", "reopen", "--dir", directory, frame, "--note", jscompat.Trim(note), "--note-scope", scope(noteScope))
+	result, err := s.run(project, "shot_workflow", "reopen", "--dir", directory, frame, "--note", dynvalue.Trim(note), "--note-scope", scope(noteScope))
 	if err != nil {
 		return err
 	}
@@ -540,7 +540,7 @@ func (s *Service) AddKeyframeNote(project, packageDir, frame, note, noteScope st
 	if !framePattern.MatchString(frame) {
 		return errors.New(textFrameUnknown)
 	}
-	if jscompat.Trim(note) == "" {
+	if dynvalue.Trim(note) == "" {
 		return errors.New(textFrameInstructionRequired)
 	}
 	directory, release, err := s.claim(project, directory)
@@ -548,7 +548,7 @@ func (s *Service) AddKeyframeNote(project, packageDir, frame, note, noteScope st
 		return err
 	}
 	defer release()
-	return shotworkflow.AddFrameNote(directory, frame, jscompat.Trim(note), scope(noteScope))
+	return shotworkflow.AddFrameNote(directory, frame, dynvalue.Trim(note), scope(noteScope))
 }
 
 // restampPackage — в тексте workflow.json меняется только первое значение
@@ -557,14 +557,14 @@ func restampPackage(directory string, from *string, to string) (bool, error) {
 	path := filepath.Join(directory, "workflow.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return false, jscompat.FsError("open", path, err)
+		return false, dynvalue.FsError("open", path, err)
 	}
-	text := jscompat.DecodeUTF8(data)
+	text := dynvalue.DecodeUTF8(data)
 	value := "null"
 	if from != nil {
 		value = `"` + regexp.QuoteMeta(*from) + `"`
 	}
-	pattern := regexp.MustCompile(`("scene_sha256"` + jsSpace + `*:` + jsSpace + `*)` + value)
+	pattern := regexp.MustCompile(`("scene_sha256"` + wideSpace + `*:` + wideSpace + `*)` + value)
 	match := pattern.FindStringSubmatchIndex(text)
 	if match == nil {
 		return false, nil
@@ -573,8 +573,9 @@ func restampPackage(directory string, from *string, to string) (bool, error) {
 	return true, projectfs.WriteFile(path, []byte(replaced), 0)
 }
 
-// jsSpace — класс \s регулярного выражения JS.
-const jsSpace = `[\t\n\v\f\r \x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\x{feff}]`
+// wideSpace — пробельные символы вокруг «:» поля scene_sha256: все пробелы Unicode, переводы
+// строк, U+2028/U+2029 и BOM (класс \s RE2 в Go покрывает только ASCII).
+const wideSpace = `[\t\n\v\f\r \x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\x{feff}]`
 
 // KeepPackageForScene — пользователь подтверждает, что правка сценария не затрагивает материалы
 // неотправленного пакета: отпечаток постановки в workflow.json заменяется текущим.
@@ -622,7 +623,7 @@ func (s *Service) SetKeyframeNote(project, packageDir string, id float64, active
 	if active {
 		flag = "true"
 	}
-	result, err := s.run(project, "shot_workflow", "set-note", "--dir", directory, "--id", jscompat.NumberToString(id), "--active", flag)
+	result, err := s.run(project, "shot_workflow", "set-note", "--dir", directory, "--id", dynvalue.NumberToString(id), "--active", flag)
 	if err != nil {
 		return err
 	}
@@ -656,11 +657,11 @@ func (s *Service) DiscardAttempt(project, packageDir string) error {
 	if view == nil {
 		// Недописанная папка без workflow.json: удаляется, если в ней нет следов незавершённой
 		// отправки.
-		status := jscompat.Get(readJSON(filepath.Join(directory, "request", "attempt.json")), "status")
-		if jscompat.Truthy(status) && !slices.Contains([]string{"prepared", "downloaded", "failed", "download_failed", "download_partial"}, jscompat.ToString(status)) {
-			return errors.New(textUnfinishedAttemptBlocksRemoval(jscompat.ToString(status)))
+		status := dynvalue.Get(readJSON(filepath.Join(directory, "request", "attempt.json")), "status")
+		if dynvalue.Truthy(status) && !slices.Contains([]string{"prepared", "downloaded", "failed", "download_failed", "download_partial"}, dynvalue.ToString(status)) {
+			return errors.New(textUnfinishedAttemptBlocksRemoval(dynvalue.ToString(status)))
 		}
-		local := strings.ReplaceAll(jscompat.Relative(root, directory), `\`, "/")
+		local := strings.ReplaceAll(dynvalue.Relative(root, directory), `\`, "/")
 		if drafts := montageDraftsUsing(project, local); len(drafts) > 0 {
 			return errors.New(textFolderUsedByMontageDraft(drafts[0]))
 		}
@@ -745,7 +746,8 @@ type Bounds struct {
 // перезаписывает WAV, поэтому прежние speech.wav и audio-recipe.json пакета удаляются перед
 // запуском (и при отказе среза пакет остаётся без него). Пакет занят на время среза: проверка и
 // отметка операции — одна блокировка claim. Границы bounds передаются инструменту строками в
-// записи чисел JS (Number.toString), без них срез предлагает инструмент по разметке.
+// кратчайшей десятичной записи dynvalue.NumberToString, без них срез предлагает инструмент по
+// разметке.
 // Отказ инструмента — его stderr (иначе stdout) или код; результат — свежий PackageView.
 func (s *Service) PrepareSpeech(project, packageDir string, bounds *Bounds) (*PackageView, error) {
 	directory, release, err := s.claim(project, packageDir)
@@ -772,7 +774,7 @@ func (s *Service) PrepareSpeech(project, packageDir string, bounds *Bounds) (*Pa
 	}
 	args := []string{"cut", view.Shot, "--out", audio, "--json"}
 	if bounds != nil {
-		args = append(args, "--start", jscompat.NumberToString(bounds.Start), "--end", jscompat.NumberToString(bounds.End))
+		args = append(args, "--start", dynvalue.NumberToString(bounds.Start), "--end", dynvalue.NumberToString(bounds.End))
 	}
 	result, err := s.run(project, "cut_speech", args...)
 	if err != nil {
@@ -800,7 +802,7 @@ func removeSpeech(project, audio string) error {
 	for _, name := range []string{"speech.wav", "audio-recipe.json"} {
 		path := filepath.Join(audio, name)
 		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return jscompat.FsError("rm", path, err)
+			return dynvalue.FsError("rm", path, err)
 		}
 	}
 	return nil
@@ -825,9 +827,9 @@ func (s *Service) toolStep(project, tool string, args []string, label string, op
 			if *result.Code == 0 {
 				return nil
 			}
-			message := jscompat.Trim(result.Stderr)
+			message := dynvalue.Trim(result.Stderr)
 			if message == "" {
-				message = jscompat.Trim(result.Stdout)
+				message = dynvalue.Trim(result.Stdout)
 			}
 			return &jobs.StepError{Code: *result.Code, Message: message}
 		},
@@ -980,7 +982,7 @@ func (s *Service) Submit(project, packageDir, expectedSha, decisionToken, quoteT
 		if err != nil || finished.Status != jobs.StatusFailed {
 			return
 		}
-		if !jscompat.StrictEqual(jscompat.Get(readJSON(filepath.Join(requestDir, "attempt.json")), "status"), "prepared") {
+		if !dynvalue.StrictEqual(dynvalue.Get(readJSON(filepath.Join(requestDir, "attempt.json")), "status"), "prepared") {
 			return
 		}
 		stage := "request_choice"
@@ -1044,12 +1046,12 @@ func (s *Service) Regenerate(project, shot string) (jobs.Info, error) {
 // сохранённый результат.
 func downloadComplete(requestDir string) error {
 	attempt := readJSON(filepath.Join(requestDir, "attempt.json"))
-	downloads, isList := jscompat.AsArray(jscompat.Get(attempt, "downloads"))
-	if !jscompat.StrictEqual(jscompat.Get(attempt, "status"), "downloaded") || !isList || len(downloads) == 0 {
+	downloads, isList := dynvalue.AsArray(dynvalue.Get(attempt, "downloads"))
+	if !dynvalue.StrictEqual(dynvalue.Get(attempt, "status"), "downloaded") || !isList || len(downloads) == 0 {
 		return errors.New(textResultIncomplete)
 	}
 	for _, item := range downloads {
-		path, isString := jscompat.Get(item, "path").(string)
+		path, isString := dynvalue.Get(item, "path").(string)
 		if !isString || path == "" {
 			return errors.New(textResultIncomplete)
 		}
@@ -1332,7 +1334,7 @@ func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions
 	if view.attemptStatus() != "downloaded" || len(view.Request.Downloads) == 0 {
 		return jobs.Info{}, errors.New(textCompleteResultRequired)
 	}
-	accepted := jscompat.Exists(filepath.Join(project, "assets", "shots", shot, "manifest.json"))
+	accepted := dynvalue.Exists(filepath.Join(project, "assets", "shots", shot, "manifest.json"))
 	if accepted && !options.ReplaceExisting {
 		return jobs.Info{}, errors.New(textReplacementConsentRequired)
 	}
@@ -1356,17 +1358,17 @@ func (s *Service) Accept(project, shot, packageDir string, options AcceptOptions
 		extra = append(extra, "--speed", options.Speed)
 	}
 	if options.HoldFirst != 0 {
-		extra = append(extra, "--hold-first", jscompat.NumberToString(options.HoldFirst))
+		extra = append(extra, "--hold-first", dynvalue.NumberToString(options.HoldFirst))
 	}
 	if options.HoldLast != 0 {
-		extra = append(extra, "--hold-last", jscompat.NumberToString(options.HoldLast))
+		extra = append(extra, "--hold-last", dynvalue.NumberToString(options.HoldLast))
 	}
 	// Речевой план принимается только с точным срезом песни, подготовленным в пакете.
 	lipsync := false
-	if list, ok := jscompat.AsArray(jscompat.Get(readJSON(filepath.Join(project, "plan", "scenes.json")), "scenes")); ok {
+	if list, ok := dynvalue.AsArray(dynvalue.Get(readJSON(filepath.Join(project, "plan", "scenes.json")), "scenes")); ok {
 		for _, scene := range list {
-			if jscompat.StrictEqual(jscompat.Get(scene, "id"), shot) {
-				lipsync = jscompat.Truthy(jscompat.Get(scene, "lipsync"))
+			if dynvalue.StrictEqual(dynvalue.Get(scene, "id"), shot) {
+				lipsync = dynvalue.Truthy(dynvalue.Get(scene, "lipsync"))
 				break
 			}
 		}
@@ -1416,10 +1418,10 @@ func (s *Service) ContactSheet(project, packageDir string) (jobs.Info, error) {
 // montageDraftsUsing — названия сохранённых черновиков монтажа, чьи клипы лежат в папке relative.
 func montageDraftsUsing(project, relative string) []string {
 	folder := filepath.Join(project, "plan", "montage")
-	if !jscompat.Exists(folder) {
+	if !dynvalue.Exists(folder) {
 		return nil
 	}
-	entries, err := jscompat.ReadDir(folder)
+	entries, err := dynvalue.ReadDir(folder)
 	if err != nil {
 		return nil
 	}
@@ -1429,14 +1431,14 @@ func montageDraftsUsing(project, relative string) []string {
 			continue
 		}
 		draft := readJSON(filepath.Join(folder, entry.Name()))
-		clips, _ := jscompat.AsArray(jscompat.Get(draft, "clips"))
+		clips, _ := dynvalue.AsArray(dynvalue.Get(draft, "clips"))
 		for _, clip := range clips {
-			if path, ok := jscompat.Get(clip, "path").(string); ok && strings.HasPrefix(strings.ReplaceAll(path, `\`, "/"), relative+"/") {
-				name := jscompat.Get(draft, "name")
-				if jscompat.IsNullish(name) {
+			if path, ok := dynvalue.Get(clip, "path").(string); ok && strings.HasPrefix(strings.ReplaceAll(path, `\`, "/"), relative+"/") {
+				name := dynvalue.Get(draft, "name")
+				if dynvalue.IsNullish(name) {
 					names = append(names, entry.Name())
 				} else {
-					names = append(names, jscompat.ToString(name))
+					names = append(names, dynvalue.ToString(name))
 				}
 				break
 			}
@@ -1459,10 +1461,10 @@ type Bundle struct {
 func ListBundles(project string) ([]Bundle, error) {
 	folder := filepath.Join(project, "plan", "batches")
 	result := []Bundle{}
-	if !jscompat.Exists(folder) {
+	if !dynvalue.Exists(folder) {
 		return result, nil
 	}
-	entries, err := jscompat.ReadDir(folder)
+	entries, err := dynvalue.ReadDir(folder)
 	if err != nil {
 		return nil, err
 	}
@@ -1472,23 +1474,23 @@ func ListBundles(project string) ([]Bundle, error) {
 		}
 		path := filepath.Join(folder, entry.Name(), "bundle.json")
 		bundle := readJSON(path)
-		shots, isList := jscompat.AsArray(jscompat.Get(bundle, "shots"))
-		if !jscompat.Truthy(bundle) || !isList {
+		shots, isList := dynvalue.AsArray(dynvalue.Get(bundle, "shots"))
+		if !dynvalue.Truthy(bundle) || !isList {
 			continue
 		}
 		info, err := os.Stat(path)
 		if err != nil {
-			return nil, jscompat.FsError("stat", path, err)
+			return nil, dynvalue.FsError("stat", path, err)
 		}
 		created := info.ModTime().UTC().Format("2006-01-02T15:04:05.000Z")
 		videos := 0
 		for _, item := range shots {
-			if jscompat.StrictEqual(jscompat.Get(item, "status"), "video") {
+			if dynvalue.StrictEqual(dynvalue.Get(item, "status"), "video") {
 				videos++
 			}
 		}
 		result = append(result, Bundle{Dir: filepath.Join(folder, entry.Name()), CreatedAt: &created, Shots: len(shots), Videos: videos,
-			Copied: jscompat.Exists(filepath.Join(folder, entry.Name(), "media"))})
+			Copied: dynvalue.Exists(filepath.Join(folder, entry.Name(), "media"))})
 	}
 	slices.SortStableFunc(result, func(a, b Bundle) int {
 		if *a.CreatedAt < *b.CreatedAt {
@@ -1508,18 +1510,18 @@ func ListBundles(project string) ([]Bundle, error) {
 // plan/batches проверяется по границе компонента пути: соседняя папка вроде plan/batches-x
 // отклоняется сразу, без создания папки и запуска инструмента.
 func (s *Service) ExportBundle(project, requested string, copyMedia bool) (jobs.Info, error) {
-	target := jscompat.Resolve(requested)
+	target := dynvalue.Resolve(requested)
 	if !filepath.IsAbs(requested) {
 		return jobs.Info{}, errors.New(textBundleAbsolutePathRequired)
 	}
 	separator := string(filepath.Separator)
-	root := jscompat.Resolve(project)
+	root := dynvalue.Resolve(project)
 	batches := filepath.Join(root, "plan", "batches")
 	if strings.HasPrefix(target, root+separator) && target != batches && !strings.HasPrefix(target, batches+separator) {
 		return jobs.Info{}, errors.New(textBundlePathInvalid)
 	}
-	if jscompat.Exists(target) {
-		entries, err := jscompat.ReadDir(target)
+	if dynvalue.Exists(target) {
+		entries, err := dynvalue.ReadDir(target)
 		if err != nil {
 			return jobs.Info{}, err
 		}
@@ -1528,7 +1530,7 @@ func (s *Service) ExportBundle(project, requested string, copyMedia bool) (jobs.
 		}
 	}
 	if err := os.MkdirAll(target, 0o777); err != nil {
-		return jobs.Info{}, jscompat.FsError("mkdir", target, err)
+		return jobs.Info{}, dynvalue.FsError("mkdir", target, err)
 	}
 	args := []string{"--out", target}
 	steps := []jobs.Step{}
@@ -1567,12 +1569,12 @@ func (s *Service) RemoveBundle(project, path string) error {
 	if err != nil {
 		return err
 	}
-	if !slices.ContainsFunc(bundles, func(bundle Bundle) bool { return jscompat.Resolve(bundle.Dir) == directory }) {
+	if !slices.ContainsFunc(bundles, func(bundle Bundle) bool { return dynvalue.Resolve(bundle.Dir) == directory }) {
 		return errors.New(textBundleMissing)
 	}
 	// Старые рабочие пакеты определяются по запросу, даже если workflow.json ещё не использовался.
 	for _, marker := range []string{"workflow.json", "request.json", filepath.Join("request", "request.json")} {
-		if jscompat.Exists(filepath.Join(directory, marker)) {
+		if dynvalue.Exists(filepath.Join(directory, marker)) {
 			return errors.New(textScenePackageNotBundle)
 		}
 	}
@@ -1595,8 +1597,8 @@ func SpeechLimits(project, packageDir string) (requestSeconds *float64, lipSync 
 	if err != nil {
 		return nil, nil, err
 	}
-	generation, _ := jscompat.Parse(settings.Generation)
-	if id, known := mediaproviders.Normalize(jscompat.GetPath(generation, "video", "provider")); known && mediaproviders.Supports(id, mediaproviders.Video) {
+	generation, _ := dynvalue.Parse(settings.Generation)
+	if id, known := mediaproviders.Normalize(dynvalue.GetPath(generation, "video", "provider")); known && mediaproviders.Supports(id, mediaproviders.Video) {
 		info, _ := mediaproviders.Lookup(id)
 		lipSync = info.LipSync
 	}

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/tools"
+	"songframe/internal/dynvalue"
+	"songframe/internal/tools"
 )
 
 // Тексты каталога.
@@ -38,7 +38,7 @@ var defaultRunner Runner = tools.RunContext
 // в порядке ответа сервиса.
 type CatalogReport struct {
 	Command string
-	Models  *jscompat.Object
+	Models  *dynvalue.Object
 }
 
 // CatalogProblem — отказ одной команды каталога.
@@ -75,7 +75,7 @@ type Catalogs struct {
 // Команды вида медиа знает адаптер провайдера; слой получает объявления и ошибки по командам.
 // Отмена ctx прекращает ожидание этого вызова, но не общий запрос.
 func (c *Catalogs) Read(ctx context.Context, project, provider, kind string) (Catalog, error) {
-	key := jscompat.Stringify(&jscompat.Array{Items: []any{project, provider, kind}})
+	key := dynvalue.Stringify(&dynvalue.Array{Items: []any{project, provider, kind}})
 	c.mu.Lock()
 	if c.pending == nil {
 		c.pending = map[string]*catalogCall{}
@@ -115,12 +115,12 @@ func (c *Catalogs) fetch(project, provider, kind string) (Catalog, error) {
 		return Catalog{}, err
 	}
 	if result.Code == nil || *result.Code != 0 {
-		if message := jscompat.Trim(result.Stderr); message != "" {
+		if message := dynvalue.Trim(result.Stderr); message != "" {
 			return Catalog{}, errors.New(message)
 		}
 		return Catalog{}, errors.New(textCapabilitiesNotConfirmed(title))
 	}
-	value, err := jscompat.Parse([]byte(result.Stdout))
+	value, err := dynvalue.Parse([]byte(result.Stdout))
 	if err != nil {
 		return Catalog{}, err
 	}
@@ -130,9 +130,9 @@ func (c *Catalogs) fetch(project, provider, kind string) (Catalog, error) {
 // parseCatalog проверяет состав ответа: команды непустые и не повторяются ни среди объявлений,
 // ни среди отказов; у объявления — объект models, у отказа — непустое сообщение.
 func parseCatalog(value any, title string) (Catalog, error) {
-	_, ok := value.(*jscompat.Object)
-	reports, reportsOK := jscompat.AsArray(jscompat.Get(value, "reports"))
-	problems, problemsOK := jscompat.AsArray(jscompat.Get(value, "problems"))
+	_, ok := value.(*dynvalue.Object)
+	reports, reportsOK := dynvalue.AsArray(dynvalue.Get(value, "reports"))
+	problems, problemsOK := dynvalue.AsArray(dynvalue.Get(value, "problems"))
 	if !ok || !reportsOK || !problemsOK {
 		return Catalog{}, errors.New(textInvalidCapabilities(title))
 	}
@@ -140,9 +140,9 @@ func parseCatalog(value any, title string) (Catalog, error) {
 	seen := map[string]bool{}
 	invalid := errors.New(textInvalidCapabilityCommands(title))
 	for _, entry := range reports {
-		_, ok := entry.(*jscompat.Object)
-		command, isString := jscompat.Get(entry, "command").(string)
-		models, modelsOK := jscompat.Get(entry, "models").(*jscompat.Object)
+		_, ok := entry.(*dynvalue.Object)
+		command, isString := dynvalue.Get(entry, "command").(string)
+		models, modelsOK := dynvalue.Get(entry, "models").(*dynvalue.Object)
 		if !ok || !isString || command == "" || seen[command] || !modelsOK {
 			return Catalog{}, invalid
 		}
@@ -150,10 +150,10 @@ func parseCatalog(value any, title string) (Catalog, error) {
 		catalog.Reports = append(catalog.Reports, CatalogReport{Command: command, Models: models})
 	}
 	for _, entry := range problems {
-		_, ok := entry.(*jscompat.Object)
-		command, isString := jscompat.Get(entry, "command").(string)
-		message, messageOK := jscompat.Get(entry, "message").(string)
-		if !ok || !isString || command == "" || seen[command] || !messageOK || jscompat.Trim(message) == "" {
+		_, ok := entry.(*dynvalue.Object)
+		command, isString := dynvalue.Get(entry, "command").(string)
+		message, messageOK := dynvalue.Get(entry, "message").(string)
+		if !ok || !isString || command == "" || seen[command] || !messageOK || dynvalue.Trim(message) == "" {
 			return Catalog{}, invalid
 		}
 		seen[command] = true
@@ -173,7 +173,7 @@ func AcceptsAudioInput(reports []CatalogReport) bool {
 			continue
 		}
 		for _, id := range report.Models.Keys() {
-			slots, ok := jscompat.Get(report.Models.Value(id), "slots").(*jscompat.Object)
+			slots, ok := dynvalue.Get(report.Models.Value(id), "slots").(*dynvalue.Object)
 			if !ok {
 				continue
 			}

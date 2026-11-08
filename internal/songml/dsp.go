@@ -32,8 +32,9 @@ const (
 	VocalSampleRate = 44100
 )
 
-// STFT повторяет mdx.stft: reflect-padding, периодический Hann и порядок [канал, real/imag, bin, frame].
-// Умножение на окно выполняется в float32 перед FFT, как у NumPy; сама FFT использует float64.
+// STFT — преобразование в форме входа модели MDX-Net: reflect-padding, периодический Hann и порядок
+// [канал, real/imag, bin, frame]. Умножение на окно выполняется в float32 перед FFT; сама FFT
+// использует float64.
 func STFT(signal [2][]float32, fft, hop int) ([]float32, int, error) {
 	if fft < 2 || fft%2 != 0 || hop < 1 || len(signal[0]) != len(signal[1]) || len(signal[0]) < 2 {
 		return nil, 0, fmt.Errorf("неверный размер STFT")
@@ -48,7 +49,7 @@ func STFT(signal [2][]float32, fft, hop int) ([]float32, int, error) {
 		for t := 0; t < frames; t++ {
 			for j := 0; j < fft; j++ {
 				k := t*hop + j - fft/2
-				// Отражение без повтора крайнего отсчёта (numpy reflect); цикл нужен для очень коротких сигналов.
+				// Отражение без повтора крайнего отсчёта (reflect); цикл нужен для очень коротких сигналов.
 				for k < 0 || k >= n {
 					if k < 0 {
 						k = -k

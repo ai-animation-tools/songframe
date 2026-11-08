@@ -3,72 +3,72 @@ package sceneregistry_test
 import (
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/pycompat"
-	"songframe-go/internal/scenario"
-	"songframe-go/internal/sceneregistry"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/scenario"
+	"songframe/internal/sceneregistry"
+	"songframe/internal/toolrt"
 )
 
-// tsDivergences — случаи cases.json, на которых отпечатки по правилам Python (sceneregistry,
-// инструменты tools.run) и по правилам JS (internal/scenario.SceneFingerprints, страницы
-// приложения) расходятся по природе этих правил.
-var tsDivergences = map[string]string{
-	// Python печатает float как repr (1.0, 1e-07, 1e+16), JS — как Number#toString (1, 1e-7, 10000000000000000).
+// modelDivergences — случаи cases.json, на которых отпечатки в модели toolrt (sceneregistry,
+// инструменты tools.run) и в модели dynvalue (internal/scenario.SceneFingerprints, страницы
+// приложения) расходятся по природе этих моделей.
+var modelDivergences = map[string]string{
+	// toolrt печатает дробное как 1.0, 1e-07, 1e+16, dynvalue — как 1, 1e-7, 10000000000000000.
 	"floats-in-scene": "запись чисел float",
-	// sort_keys Python сортирует по кодовым точкам, сортировка JS — по кодовым единицам UTF-16:
-	// символ вне BMP (суррогатная пара) встаёт перед U+FF01 только в JS.
+	// toolrt сортирует ключи по кодовым точкам, dynvalue — по кодовым единицам UTF-16:
+	// символ вне BMP (суррогатная пара) встаёт перед U+FF01 только в dynvalue.
 	"astral-keys": "порядок ключей вне BMP",
 }
 
-// TestFingerprintsMatchTS доказывает, что отпечатки sceneregistry и internal/scenario совпадают
+// TestFingerprintsMatchScenario доказывает, что отпечатки sceneregistry и internal/scenario совпадают
 // на корректных реестрах эталона: интерфейс и инструменты сверяют принятие по одному SHA.
-func TestFingerprintsMatchTS(t *testing.T) {
-	cases := golden.PyFile(t, "scene-registry", "cases.json").([]any)
+func TestFingerprintsMatchScenario(t *testing.T) {
+	cases := golden.ValueFile(t, "scene-registry", "cases.json").([]any)
 	compared := 0
 	for _, entry := range cases {
-		if golden.PyString(t, entry, "call") != "registry" {
+		if golden.ValueString(t, entry, "call") != "registry" {
 			continue
 		}
-		name := golden.PyString(t, entry, "name")
-		args := item(entry, "args").(*pycompat.Dict)
-		text := golden.PyString(t, args, "data")
-		var pyInitial *pycompat.Dict
-		jsInitial := jscompat.NewObject()
+		name := golden.ValueString(t, entry, "name")
+		args := item(entry, "args").(*toolrt.Dict)
+		text := golden.ValueString(t, args, "data")
+		var toolInitial *toolrt.Dict
+		pageInitial := dynvalue.NewObject()
 		if initial, ok := args.Value("initial").(string); ok {
-			pyInitial = golden.PyDict(t, initial)
-			value, err := jscompat.Parse([]byte(initial))
+			toolInitial = golden.ParseDict(t, initial)
+			value, err := dynvalue.Parse([]byte(initial))
 			if err != nil {
 				t.Fatal(err)
 			}
-			jsInitial = value.(*jscompat.Object)
+			pageInitial = value.(*dynvalue.Object)
 		}
-		python, err := sceneregistry.SceneFingerprints(golden.PyParse(t, text), pyInitial)
+		tools, err := sceneregistry.SceneFingerprints(golden.ParseValue(t, text), toolInitial)
 		if err != nil {
 			continue
 		}
-		data, err := jscompat.Parse([]byte(text))
+		data, err := dynvalue.Parse([]byte(text))
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
-		ts, err := scenario.SceneFingerprints(data, jsInitial)
-		same := err == nil && ts.Len() == python.Len()
+		pages, err := scenario.SceneFingerprints(data, pageInitial)
+		same := err == nil && pages.Len() == tools.Len()
 		if same {
-			for _, sid := range python.Keys() {
-				same = same && ts.Value(sid) == python.Value(sid)
+			for _, sid := range tools.Keys() {
+				same = same && pages.Value(sid) == tools.Value(sid)
 			}
 		}
-		reason, known := tsDivergences[name]
+		reason, known := modelDivergences[name]
 		switch {
 		case same && known:
 			t.Errorf("%s: отпечатки совпали, хотя записано расхождение (%s)", name, reason)
 		case !same && !known:
-			t.Errorf("%s: отпечатки Python и TS расходятся (TS ошибка: %v)", name, err)
+			t.Errorf("%s: отпечатки toolrt и dynvalue расходятся (ошибка scenario: %v)", name, err)
 		}
 		compared++
 	}
 	if compared < 10 {
 		t.Fatalf("сравнено только %d реестров", compared)
 	}
-	t.Logf("сравнено реестров: %d, известных расхождений: %d", compared, len(tsDivergences))
+	t.Logf("сравнено реестров: %d, известных расхождений: %d", compared, len(modelDivergences))
 }

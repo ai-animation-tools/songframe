@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
 )
 
 // Тексты ошибок принятия аниматика.
@@ -33,7 +33,7 @@ type View struct {
 	CardsFresh    bool     `json:"cardsFresh"`
 	Problems      []string `json:"problems"`
 	BlockedReason *string  `json:"blockedReason,omitempty"`
-	// videoSha — manifest.video_sha256 ?? null как есть: SetStatus проверяет его истинность и
+	// videoSha — manifest.video_sha256 как есть (отсутствие — null): SetStatus проверяет его истинность и
 	// записывает без преобразования (в DTO уходит строковый VideoSha256).
 	videoSha any
 }
@@ -45,7 +45,7 @@ type Built struct {
 	VideoSha256  *string `json:"videoSha256"`
 	Duration     float64 `json:"duration"`
 	TotalFrames  float64 `json:"totalFrames"`
-	// BuiltAt — время изменения манифеста, toISOString() (UTC, миллисекунды).
+	// BuiltAt — время изменения манифеста в ISO 8601 (UTC, миллисекунды, суффикс Z).
 	BuiltAt string `json:"builtAt"`
 	// Fresh — сборка сделана по текущему plan/scenes.json и фактическим входам.
 	Fresh  bool   `json:"fresh"`
@@ -85,29 +85,29 @@ type Approval struct {
 	Current        bool    `json:"current"`
 }
 
-// text — строковое поле DTO из значения манифеста. Оригинал передавал значение как есть, и
-// повреждённый манифест мог дать в renderer число или undefined; контракт Go строгий, поэтому
-// nullish даёт «», остальные значения — String(value).
+// text — строковое поле DTO из значения манифеста. Контракт строгий: повреждённый манифест не
+// должен передать в renderer число или отсутствующее значение, поэтому null и отсутствие дают
+// «», остальные значения — их строковый вид dynvalue.ToString.
 func text(value any) string {
-	if jscompat.IsNullish(value) {
+	if dynvalue.IsNullish(value) {
 		return ""
 	}
-	return jscompat.ToString(value)
+	return dynvalue.ToString(value)
 }
 
 // textPointer — строковое поле string | null контракта.
 func textPointer(value any) *string {
-	if jscompat.IsNullish(value) {
+	if dynvalue.IsNullish(value) {
 		return nil
 	}
-	result := jscompat.ToString(value)
+	result := dynvalue.ToString(value)
 	return &result
 }
 
-// number — Number(value ?? 0). JSON Wails не переносит NaN и бесконечности, поэтому для
-// повреждённого значения отдаётся 0.
+// number — числовое значение поля (dynvalue.ToNumber, отсутствие и null — 0). JSON Wails не
+// переносит NaN и бесконечности, поэтому для повреждённого значения отдаётся 0.
 func number(value any) float64 {
-	result := jscompat.ToNumber(jscompat.Coalesce(value, 0.0))
+	result := dynvalue.ToNumber(dynvalue.Coalesce(value, 0.0))
 	if math.IsNaN(result) || math.IsInf(result, 0) {
 		return 0
 	}
@@ -118,7 +118,7 @@ func number(value any) float64 {
 func readStatus(project string) any {
 	status := readJSON(filepath.Join(project, filepath.FromSlash(statusFile)))
 	if status == nil {
-		defaults := jscompat.NewObject()
+		defaults := dynvalue.NewObject()
 		defaults.Set("schema_version", 1.0)
 		defaults.Set("current_animatic", nil)
 		defaults.Set("current_animatic_status", "none")
@@ -144,22 +144,22 @@ func inspect(project string) (View, State, error) {
 	registry, hasRegistry := digestText(filepath.Join(project, "plan", "scenes.json"))
 	status := readStatus(project)
 	cards := readJSON(filepath.Join(project, "plan", "animatic", "cards", "manifest.json"))
-	view.CardsFresh = jscompat.Truthy(cards) && hasRegistry && jscompat.StrictEqual(jscompat.Get(cards, "registry_sha256"), registry)
+	view.CardsFresh = dynvalue.Truthy(cards) && hasRegistry && dynvalue.StrictEqual(dynvalue.Get(cards, "registry_sha256"), registry)
 	if !hasRegistry {
 		view.Problems = append(view.Problems, scenarioRequired)
 	}
 	var videoSha any = nil
 	fresh := false
-	if shots, ok := jscompat.AsArray(jscompat.Get(manifest, "shots")); ok && jscompat.Truthy(manifest) {
-		videoFile := jscompat.Get(manifest, "video_file")
+	if shots, ok := dynvalue.AsArray(dynvalue.Get(manifest, "shots")); ok && dynvalue.Truthy(manifest) {
+		videoFile := dynvalue.Get(manifest, "video_file")
 		var videoPath *string
-		if jscompat.Truthy(videoFile) {
-			name, err := jscompat.PathArg("path", videoFile)
+		if dynvalue.Truthy(videoFile) {
+			name, err := dynvalue.PathArg("path", videoFile)
 			if err != nil {
 				return View{}, State{}, err
 			}
 			path := filepath.Join(project, "plan", "animatic", "latest", name)
-			if jscompat.Exists(path) {
+			if dynvalue.Exists(path) {
 				videoPath = &path
 			}
 		}
@@ -171,21 +171,21 @@ func inspect(project string) (View, State, error) {
 			return View{}, State{}, err
 		}
 		view.Shots = list
-		inputs, err := inputProblems(project, manifest.(*jscompat.Object))
+		inputs, err := inputProblems(project, manifest.(*dynvalue.Object))
 		if err != nil {
 			return View{}, State{}, err
 		}
 		view.Problems = append(view.Problems, inputs...)
 		info, err := os.Stat(manifestPath)
 		if err != nil {
-			return View{}, State{}, jscompat.FsError("stat", manifestPath, err)
+			return View{}, State{}, dynvalue.FsError("stat", manifestPath, err)
 		}
-		sceneRegistry := jscompat.Get(manifest, "scene_registry_sha256")
-		fresh = hasRegistry && jscompat.StrictEqual(sceneRegistry, registry) && videoPath != nil && len(inputs) == 0
-		videoSha = jscompat.Coalesce(jscompat.Get(manifest, "video_sha256"), nil)
+		sceneRegistry := dynvalue.Get(manifest, "scene_registry_sha256")
+		fresh = hasRegistry && dynvalue.StrictEqual(sceneRegistry, registry) && videoPath != nil && len(inputs) == 0
+		videoSha = dynvalue.Coalesce(dynvalue.Get(manifest, "video_sha256"), nil)
 		built := &Built{
 			VideoPath: videoPath, ManifestPath: manifestPath, VideoSha256: textPointer(videoSha),
-			Duration: number(jscompat.Get(manifest, "video_duration")), TotalFrames: number(jscompat.Get(manifest, "total_frames")),
+			Duration: number(dynvalue.Get(manifest, "video_duration")), TotalFrames: number(dynvalue.Get(manifest, "total_frames")),
 			BuiltAt: info.ModTime().UTC().Format("2006-01-02T15:04:05.000Z"), Fresh: fresh,
 		}
 		for _, shot := range list {
@@ -201,25 +201,25 @@ func inspect(project string) (View, State, error) {
 		view.Built = built
 		view.videoSha = videoSha
 		state.Built = true
-		if !hasRegistry || !jscompat.StrictEqual(sceneRegistry, registry) {
+		if !hasRegistry || !dynvalue.StrictEqual(sceneRegistry, registry) {
 			view.Problems = append(view.Problems, registryChanged)
 		}
-	} else if jscompat.Exists(manifestPath) {
+	} else if dynvalue.Exists(manifestPath) {
 		view.Problems = append(view.Problems, manifestCorrupt)
 	}
-	current := jscompat.Get(status, "current_animatic_status")
+	current := dynvalue.Get(status, "current_animatic_status")
 	switch {
-	case jscompat.StrictEqual(current, "approved"):
+	case dynvalue.StrictEqual(current, "approved"):
 		view.Approval.Status = "approved"
-	case jscompat.StrictEqual(current, "review"):
+	case dynvalue.StrictEqual(current, "review"):
 		view.Approval.Status = "review"
 	default:
 		view.Approval.Status = "none"
 	}
-	approvedSha := jscompat.Coalesce(jscompat.GetPath(status, "approved_animatic", "video_sha256"), nil)
+	approvedSha := dynvalue.Coalesce(dynvalue.GetPath(status, "approved_animatic", "video_sha256"), nil)
 	view.Approval.ApprovedSha256 = textPointer(approvedSha)
 	// Принята именно свежая сборка: прежнее согласование остаётся в истории после изменения входов.
-	view.Approval.Current = view.Approval.Status == "approved" && fresh && jscompat.Truthy(videoSha) && jscompat.StrictEqual(approvedSha, videoSha)
+	view.Approval.Current = view.Approval.Status == "approved" && fresh && dynvalue.Truthy(videoSha) && dynvalue.StrictEqual(approvedSha, videoSha)
 	state.Fresh = fresh
 	state.Approved = view.Approval.Current
 	state.ApprovalStatus = view.Approval.Status
@@ -240,30 +240,30 @@ func digestText(path string) (string, bool) {
 func shotList(project string, shots []any) ([]Shot, error) {
 	result := make([]Shot, 0, len(shots))
 	for _, item := range shots {
-		id, err := jscompat.Prop(item, "id")
+		id, err := dynvalue.Prop(item, "id")
 		if err != nil {
 			return nil, err
 		}
-		media := jscompat.Get(item, "media")
+		media := dynvalue.Get(item, "media")
 		shot := Shot{
-			ID: text(id), Title: text(jscompat.Coalesce(jscompat.Get(item, "title"), id)),
-			Original: text(jscompat.Get(item, "original")), Sequence: text(jscompat.Get(item, "sequence")),
-			SequenceTitle: text(jscompat.Get(item, "sequence_title")),
-			Start:         number(jscompat.Get(item, "start")), End: number(jscompat.Get(item, "end")),
-			Frames: number(jscompat.Get(item, "frames")), Action: text(jscompat.Get(item, "action")),
-			Camera: text(jscompat.Get(item, "camera")), Lipsync: jscompat.Truthy(jscompat.Get(item, "lipsync")),
-			Media: text(jscompat.Coalesce(media, "card")),
+			ID: text(id), Title: text(dynvalue.Coalesce(dynvalue.Get(item, "title"), id)),
+			Original: text(dynvalue.Get(item, "original")), Sequence: text(dynvalue.Get(item, "sequence")),
+			SequenceTitle: text(dynvalue.Get(item, "sequence_title")),
+			Start:         number(dynvalue.Get(item, "start")), End: number(dynvalue.Get(item, "end")),
+			Frames: number(dynvalue.Get(item, "frames")), Action: text(dynvalue.Get(item, "action")),
+			Camera: text(dynvalue.Get(item, "camera")), Lipsync: dynvalue.Truthy(dynvalue.Get(item, "lipsync")),
+			Media: text(dynvalue.Coalesce(media, "card")),
 		}
-		if path := jscompat.Get(item, "path"); !jscompat.StrictEqual(media, "video") && jscompat.Truthy(path) {
-			name, err := jscompat.PathArg("path", path)
+		if path := dynvalue.Get(item, "path"); !dynvalue.StrictEqual(media, "video") && dynvalue.Truthy(path) {
+			name, err := dynvalue.PathArg("path", path)
 			if err != nil {
 				return nil, err
 			}
 			card := filepath.Join(project, name)
 			shot.CardPath = &card
 		}
-		if last := jscompat.Get(item, "path_last"); jscompat.StrictEqual(media, "keyframes") && jscompat.Truthy(last) {
-			name, err := jscompat.PathArg("path", last)
+		if last := dynvalue.Get(item, "path_last"); dynvalue.StrictEqual(media, "keyframes") && dynvalue.Truthy(last) {
+			name, err := dynvalue.PathArg("path", last)
 			if err != nil {
 				return nil, err
 			}
@@ -285,7 +285,7 @@ func SetStatus(project, status string) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
-	if view.Built == nil || view.Built.VideoPath == nil || !jscompat.Truthy(view.videoSha) {
+	if view.Built == nil || view.Built.VideoPath == nil || !dynvalue.Truthy(view.videoSha) {
 		return View{}, errors.New(textBuildRequired)
 	}
 	if status == "approved" && !view.Built.Fresh {
@@ -293,13 +293,13 @@ func SetStatus(project, status string) (View, error) {
 	}
 	data := readStatus(project)
 	manifest := readJSON(filepath.Join(project, filepath.FromSlash(manifestFile)))
-	next := jscompat.Spread(data)
+	next := dynvalue.Spread(data)
 	next.Set("current_animatic", manifestFile)
 	next.Set("current_animatic_status", status)
 	if status == "approved" {
-		approved := jscompat.NewObject()
+		approved := dynvalue.NewObject()
 		approved.Set("manifest", manifestFile)
-		approved.Set("video", "plan/animatic/latest/"+jscompat.ToString(jscompat.Coalesce(jscompat.Get(manifest, "video_file"), "")))
+		approved.Set("video", "plan/animatic/latest/"+dynvalue.ToString(dynvalue.Coalesce(dynvalue.Get(manifest, "video_file"), "")))
 		approved.Set("video_sha256", view.videoSha)
 		next.Set("approved_animatic", approved)
 	} else {
@@ -313,7 +313,7 @@ func SetStatus(project, status string) (View, error) {
 	if info, err := os.Stat(path); err == nil {
 		perm = info.Mode().Perm()
 	}
-	if err := projectfs.WriteFile(path, []byte(jscompat.StringifyIndent(next, "  ")+"\n"), perm); err != nil {
+	if err := projectfs.WriteFile(path, []byte(dynvalue.StringifyIndent(next, "  ")+"\n"), perm); err != nil {
 		return View{}, err
 	}
 	return ViewAnimatic(project)

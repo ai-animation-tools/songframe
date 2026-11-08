@@ -9,7 +9,7 @@ import (
 // устаревания и отказы. Сообщения ошибок и подписи — часть контракта полей API и эталонов, поэтому
 // меняются только вместе с ними.
 
-// stageLabels — STAGE_LABELS: подписи этапов workflow.json пакета.
+// stageLabels — подписи этапов (stage) workflow.json пакета для вида производства.
 // textDescriptionAccepted — метка попытки с принятым описанием до первой опоры.
 const textDescriptionAccepted = "описание принято"
 
@@ -29,7 +29,8 @@ var stageLabels = map[string]string{
 	"accepted":             "принята, перенос в assets не завершён",
 }
 
-// attemptLabels — ATTEMPT_LABELS: состояния попытки attempt.json.
+// attemptLabels — подписи состояний попытки attempt.json; те же, что ATTEMPT_LABELS интерфейса
+// (frontend/src/shared/production-labels.ts).
 var attemptLabels = map[string]string{
 	"prepared":               "попытка подготовлена",
 	"submitting":             "отправляется",
@@ -53,7 +54,8 @@ var staleReasons = map[string]string{
 	"derived_link_changed":   "Связь с источником в сценарии изменилась: сохранённый комплект требует нового производства.",
 }
 
-// SceneChanged — SCENE_CHANGED: проблема пакета, подготовленного по прежней постановке плана.
+// SceneChanged — проблема пакета, подготовленного по прежней постановке плана; текст
+// совпадает с SCENE_CHANGED интерфейса (frontend/src/shared/production-labels.ts).
 const SceneChanged = "Постановка или унаследованное состояние плана изменились после подготовки попытки: описание, опоры и промпт могут не соответствовать сценарию."
 
 // TextScenarioRequired — commonTexts.scenario.requiredForWork.
@@ -239,7 +241,8 @@ func textFrameQuestionWriteFailed(frame string) string {
 	return "Кандидат сохранён; не удалось записать вопрос об опоре " + frame + "."
 }
 
-// codeText — `${code}` для кода завершения процесса (null — процесс остановлен сигналом).
+// codeText — код завершения процесса в тексте ошибки: число или «null», если процесс
+// остановлен сигналом.
 func codeText(code *int) string {
 	if code == nil {
 		return "null"
@@ -278,7 +281,7 @@ func textManualResultJob(shot string) string { return "Ручной резуль
 func textAcceptJob(shot string) string       { return "Приёмка " + shot }
 func textContactSheetJob(name string) string { return "Сводка " + name }
 
-// TextSpeechDuration — applicationTexts.speechDuration: длина среза вне lipSync провайдера.
+// TextSpeechDuration — отказ, когда длина среза речи выходит за пределы lipSync провайдера видео.
 func TextSpeechDuration(min, max float64) string {
 	return fmt.Sprintf("Провайдер видео принимает звук длиной от %s до %s с: поправьте границы среза.", number(min), number(max))
 }

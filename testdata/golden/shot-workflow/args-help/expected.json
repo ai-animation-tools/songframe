@@ -1,6 +1,6 @@
 {
   "code": 0,
-  "stdout": "usage: shot_workflow.py [-h]\n                        {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n                        ...\n\nВедение workflow.json рабочего пакета плана: этапы, опоры, промпт, очередь;\n@link README.md\n\npositional arguments:\n  {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n\noptions:\n  -h, --help            show this help message and exit\n",
+  "stdout": "usage: shot_workflow [-h]\n                     {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n                     ...\n\nВедение workflow.json рабочего пакета плана: этапы, опоры, промпт, очередь;\n@link README.md\n\npositional arguments:\n  {init,plan-keyframes,approve,approve-prompt,set-stage,set-image-request,select-image,park,propose,ask,decide,reopen,set-note,show,check}\n\noptions:\n  -h, --help            show this help message and exit\n",
   "stderr": "",
   "traceback": false,
   "files": {},

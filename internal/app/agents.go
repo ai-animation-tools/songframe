@@ -5,8 +5,8 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/wire"
+	"songframe/internal/agents"
+	"songframe/internal/wire"
 )
 
 // AgentEvent — имя события Wails для window.api.agents.onEvent.

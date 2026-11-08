@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"songframe-go/internal/components"
-	"songframe-go/internal/wire"
+	"songframe/internal/components"
+	"songframe/internal/wire"
 )
 
 // componentProbe оставляет единственный синхронный проверяющий механизм в Manager.

@@ -11,7 +11,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
-	"songframe-go/internal/golden"
+	"songframe/internal/golden"
 )
 
 // fakeMontageWindow заменяет окно Wails: записывает доставленные события, хранит хуки и
@@ -363,7 +363,7 @@ func TestUsableMontageBoundsGolden(t *testing.T) {
 			if !ok {
 				return
 			}
-			// Оригинал возвращает сам объект файла с лишними полями; Go берёт только геометрию.
+			// Из файла положения берётся только геометрия; лишние поля в результат не попадают.
 			got := map[string]float64{"x": bounds.X, "y": bounds.Y, "width": bounds.Width, "height": bounds.Height}
 			for key, value := range got {
 				if item.Expected[key] != value {

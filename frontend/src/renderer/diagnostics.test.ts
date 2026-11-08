@@ -5,7 +5,7 @@ import { linkSegments } from './components/linkTargets';
 import { CRASH_NOTICE, installErrorReporting } from './diagnostics';
 
 describe('Перехват ошибок renderer', () => {
-  it('передаёт ошибку и отклонённое обещание в главный процесс', () => {
+  it('передаёт ошибку и отклонённое обещание в журнал сбоев приложения', () => {
     const target = new EventTarget();
     const reportRendererError = vi.fn();
     installErrorReporting(Object.assign(target, { api: { diagnostics: { reportRendererError } } as unknown as Api }));

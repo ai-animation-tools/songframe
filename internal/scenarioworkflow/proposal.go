@@ -7,12 +7,12 @@ import (
 	"slices"
 	"strings"
 
-	"songframe-go/internal/cast"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/scenario"
+	"songframe/internal/cast"
+	"songframe/internal/dynvalue"
+	"songframe/internal/scenario"
 )
 
-// Проверка недоверенного JSON агента: ответ агента разбирается в дерево jscompat и проверяется
+// Проверка недоверенного JSON агента: ответ агента разбирается в дерево dynvalue и проверяется
 // до любых доменных функций, которые ожидают уже типизированный документ. Тексты отказов —
 // scenarioTexts.main (frontend/src/shared/texts/scenario.ts).
 
@@ -25,7 +25,7 @@ var stagingFields = []string{"title", "camera", "action", "continuity", "notes",
 // placeholder — /ЗАПОЛНИТЬ/iu: незаполненное место шаблона в любом регистре.
 var placeholder = regexp.MustCompile(`(?i)ЗАПОЛНИТЬ`)
 
-// Documents — ScenarioDocuments: кастинг, трактовка и реестр как деревья jscompat; nil — null
+// Documents — ScenarioDocuments: кастинг, трактовка и реестр как деревья dynvalue; nil — null
 // (документа нет). Значения после проверок не изменяются: при подстановке строится новый документ.
 type Documents struct {
 	Cast      any
@@ -34,8 +34,8 @@ type Documents struct {
 }
 
 // object — документы как объект { cast, treatment, scenes } для локальной записи и ответа renderer.
-func (d Documents) object() *jscompat.Object {
-	result := jscompat.NewObject()
+func (d Documents) object() *dynvalue.Object {
+	result := dynvalue.NewObject()
 	result.Set("cast", d.Cast)
 	result.Set("treatment", d.Treatment)
 	result.Set("scenes", d.Scenes)
@@ -46,8 +46,8 @@ func (d Documents) object() *jscompat.Object {
 // уже прошёл checkDocuments).
 func documentsFrom(value any) Documents {
 	get := func(key string) any {
-		item := jscompat.Get(value, key)
-		if item == jscompat.Undefined {
+		item := dynvalue.Get(value, key)
+		if item == dynvalue.Undefined {
 			return nil
 		}
 		return item
@@ -55,15 +55,15 @@ func documentsFrom(value any) Documents {
 	return Documents{Cast: get("cast"), Treatment: get("treatment"), Scenes: get("scenes")}
 }
 
-// isString — typeof value === 'string'.
+// isString — значение — строка.
 func isString(value any) bool {
 	_, ok := value.(string)
 	return ok
 }
 
-// stringList — Array.isArray(value) && value.every((item) => typeof item === 'string').
+// stringList — значение — массив, все элементы которого строки.
 func stringList(value any) bool {
-	items, ok := jscompat.AsArray(value)
+	items, ok := dynvalue.AsArray(value)
 	if !ok {
 		return false
 	}
@@ -77,7 +77,7 @@ func stringList(value any) bool {
 
 // texts — строки массива, уже проверенного stringList.
 func texts(value any) []string {
-	items, _ := jscompat.AsArray(value)
+	items, _ := dynvalue.AsArray(value)
 	result := make([]string, 0, len(items))
 	for _, item := range items {
 		result = append(result, item.(string))
@@ -85,7 +85,7 @@ func texts(value any) []string {
 	return result
 }
 
-// sameValue — Object.is для примитивов JSON: NaN равен NaN, +0 и -0 различаются.
+// sameValue — равенство чисел JSON по значению: NaN равен NaN, +0 и -0 различаются.
 func sameValue(left, right float64) bool {
 	if math.IsNaN(left) && math.IsNaN(right) {
 		return true
@@ -96,13 +96,13 @@ func sameValue(left, right float64) bool {
 	return left == right
 }
 
-// deepEqual — util.isDeepStrictEqual для значений JSON: объекты равны при одинаковом наборе
+// deepEqual — глубокое строгое равенство значений JSON: объекты равны при одинаковом наборе
 // собственных ключей (порядок не важен) и равных значениях, массивы — поэлементно, примитивы — по
-// Object.is.
+// sameValue.
 func deepEqual(left, right any) bool {
 	switch a := left.(type) {
-	case *jscompat.Object:
-		b, ok := right.(*jscompat.Object)
+	case *dynvalue.Object:
+		b, ok := right.(*dynvalue.Object)
 		if !ok || a.Len() != b.Len() {
 			return false
 		}
@@ -113,8 +113,8 @@ func deepEqual(left, right any) bool {
 			}
 		}
 		return true
-	case *jscompat.Array:
-		b, ok := right.(*jscompat.Array)
+	case *dynvalue.Array:
+		b, ok := right.(*dynvalue.Array)
 		if !ok || len(a.Items) != len(b.Items) {
 			return false
 		}
@@ -138,30 +138,30 @@ func deepEqual(left, right any) bool {
 // checkScenesShape — полная проверка вложенных полей реестра до scenario.ValidateScenes, который
 // ожидает уже типизированный документ. Первая найденная ошибка — отказ.
 func checkScenesShape(value any) error {
-	document, ok := jscompat.AsObject(value)
-	audio, audioOK := jscompat.AsObject(jscompat.Get(value, "audio"))
-	if !ok || !jscompat.StrictEqual(document.Value("schema_version"), 1.0) || !jscompat.StrictEqual(document.Value("fps"), fps) ||
+	document, ok := dynvalue.AsObject(value)
+	audio, audioOK := dynvalue.AsObject(dynvalue.Get(value, "audio"))
+	if !ok || !dynvalue.StrictEqual(document.Value("schema_version"), 1.0) || !dynvalue.StrictEqual(document.Value("fps"), fps) ||
 		!isString(document.Value("visual_direction")) || !audioOK || !isString(audio.Value("path")) || !isString(audio.Value("end_seconds")) ||
-		!jscompat.IsRecord(document.Value("references")) || !jscompat.IsArray(document.Value("sequences")) || !jscompat.IsArray(document.Value("scenes")) {
+		!dynvalue.IsRecord(document.Value("references")) || !dynvalue.IsArray(document.Value("sequences")) || !dynvalue.IsArray(document.Value("scenes")) {
 		return errors.New(textRegistryInvalidDocument)
 	}
-	references := document.Value("references").(*jscompat.Object)
+	references := document.Value("references").(*dynvalue.Object)
 	for _, key := range references.Keys() {
-		ref, ok := jscompat.AsObject(references.Value(key))
-		if !ok || !isString(ref.Value("name")) || !isString(ref.Value("path")) || (ref.Value("short_name") != jscompat.Undefined && !isString(ref.Value("short_name"))) {
+		ref, ok := dynvalue.AsObject(references.Value(key))
+		if !ok || !isString(ref.Value("name")) || !isString(ref.Value("path")) || (ref.Value("short_name") != dynvalue.Undefined && !isString(ref.Value("short_name"))) {
 			return errors.New(textRegistryInvalidReferences)
 		}
 	}
-	parts, _ := jscompat.AsArray(document.Value("sequences"))
+	parts, _ := dynvalue.AsArray(document.Value("sequences"))
 	for _, item := range parts {
-		part, ok := jscompat.AsObject(item)
+		part, ok := dynvalue.AsObject(item)
 		if !ok || !isString(part.Value("id")) || !isString(part.Value("title")) || !isString(part.Value("direction")) {
 			return errors.New(textRegistryInvalidParts)
 		}
 	}
-	scenes, _ := jscompat.AsArray(document.Value("scenes"))
+	scenes, _ := dynvalue.AsArray(document.Value("scenes"))
 	for _, item := range scenes {
-		scene, ok := jscompat.AsObject(item)
+		scene, ok := dynvalue.AsObject(item)
 		if !ok || !shotShape(scene) {
 			var id *string
 			if ok {
@@ -174,13 +174,13 @@ func checkScenesShape(value any) error {
 		id := scene.Value("id").(string)
 		from := scene.Value("state_from")
 		if from != nil && !isString(from) {
-			record, isRecord := jscompat.AsObject(from)
-			phase, phaseOK := jscompat.Get(from, "phase").(string)
+			record, isRecord := dynvalue.AsObject(from)
+			phase, phaseOK := dynvalue.Get(from, "phase").(string)
 			if !isRecord || !isString(record.Value("scene")) || !phaseOK || !slices.Contains([]string{"before", "after", "same"}, phase) {
 				return errors.New(textRegistryInvalidStateFrom(id))
 			}
 		}
-		changes, changesOK := jscompat.AsObject(scene.Value("state_changes"))
+		changes, changesOK := dynvalue.AsObject(scene.Value("state_changes"))
 		if !changesOK || slices.ContainsFunc(changes.Keys(), func(key string) bool { return key != "before" && key != "after" }) {
 			var phases []string
 			if changesOK {
@@ -189,12 +189,12 @@ func checkScenesShape(value any) error {
 			return errors.New(textRegistryInvalidStatePhases(id, phases))
 		}
 		for _, phase := range changes.Keys() {
-			delta, ok := jscompat.AsObject(changes.Value(phase))
+			delta, ok := dynvalue.AsObject(changes.Value(phase))
 			if !ok {
 				return errors.New(textRegistryInvalidStateChanges(id))
 			}
 			for _, entity := range delta.Keys() {
-				attributes, ok := jscompat.AsObject(delta.Value(entity))
+				attributes, ok := dynvalue.AsObject(delta.Value(entity))
 				if !ok {
 					return errors.New(textRegistryInvalidStateProperties(id))
 				}
@@ -211,25 +211,25 @@ func checkScenesShape(value any) error {
 
 // shotShape — общая форма плана: строки, целые кадры, список референсов, флаг липсинка, карточка
 // и необязательные title, notes и derived_from вида {"shot": "Mxx"}.
-func shotShape(scene *jscompat.Object) bool {
+func shotShape(scene *dynvalue.Object) bool {
 	for _, key := range []string{"id", "original", "sequence", "camera", "action", "continuity"} {
 		if !isString(scene.Value(key)) {
 			return false
 		}
 	}
-	card, cardOK := jscompat.AsObject(scene.Value("card"))
+	card, cardOK := dynvalue.AsObject(scene.Value("card"))
 	_, lipsync := scene.Value("lipsync").(bool)
-	if !jscompat.IsInteger(scene.Value("start_frame")) || !jscompat.IsInteger(scene.Value("end_frame_exclusive")) ||
+	if !dynvalue.IsInteger(scene.Value("start_frame")) || !dynvalue.IsInteger(scene.Value("end_frame_exclusive")) ||
 		!stringList(scene.Value("references")) || !lipsync || !cardOK || !isString(card.Value("primary_reference")) {
 		return false
 	}
 	for _, key := range []string{"title", "notes"} {
-		if value := scene.Value(key); value != jscompat.Undefined && !isString(value) {
+		if value := scene.Value(key); value != dynvalue.Undefined && !isString(value) {
 			return false
 		}
 	}
-	if derived := scene.Value("derived_from"); derived != jscompat.Undefined {
-		record, ok := jscompat.AsObject(derived)
+	if derived := scene.Value("derived_from"); derived != dynvalue.Undefined {
+		record, ok := dynvalue.AsObject(derived)
 		if !ok || strings.Join(record.Keys(), ",") != "shot" || !isString(record.Value("shot")) {
 			return false
 		}
@@ -238,30 +238,30 @@ func shotShape(scene *jscompat.Object) bool {
 }
 
 // filled — непустой после trim текст без «ЗАПОЛНИТЬ».
-func filled(text string) bool { return jscompat.Trim(text) != "" && !placeholder.MatchString(text) }
+func filled(text string) bool { return dynvalue.Trim(text) != "" && !placeholder.MatchString(text) }
 
 // checkTreatmentCast — логлайн и постановка частей заполнены, части
 // ссылаются только на сущности кастинга. Документы уже нормализованы (cast.Normalize, трактовка).
 func checkTreatmentCast(castValue, treatment any) error {
 	entities := map[string]bool{}
-	for _, entity := range arrayItems(jscompat.Get(castValue, "entities")) {
-		if id, ok := jscompat.Get(entity, "id").(string); ok {
+	for _, entity := range arrayItems(dynvalue.Get(castValue, "entities")) {
+		if id, ok := dynvalue.Get(entity, "id").(string); ok {
 			entities[id] = true
 		}
 	}
-	logline, _ := jscompat.Get(treatment, "logline").(string)
+	logline, _ := dynvalue.Get(treatment, "logline").(string)
 	if !filled(logline) {
 		return errors.New(textTreatmentLoglineMissing)
 	}
-	for _, part := range arrayItems(jscompat.Get(treatment, "sequences")) {
-		id, _ := jscompat.Get(part, "id").(string)
-		direction, _ := jscompat.Get(part, "direction").(string)
+	for _, part := range arrayItems(dynvalue.Get(treatment, "sequences")) {
+		id, _ := dynvalue.Get(part, "id").(string)
+		direction, _ := dynvalue.Get(part, "direction").(string)
 		if !filled(direction) {
 			return errors.New(textPartDirectionMissing(id))
 		}
-		for _, entity := range arrayItems(jscompat.Get(part, "entities")) {
+		for _, entity := range arrayItems(dynvalue.Get(part, "entities")) {
 			if name, _ := entity.(string); !entities[name] {
-				return errors.New(textPartUnknownEntity(id, jscompat.ToString(entity)))
+				return errors.New(textPartUnknownEntity(id, dynvalue.ToString(entity)))
 			}
 		}
 	}
@@ -270,7 +270,7 @@ func checkTreatmentCast(castValue, treatment any) error {
 
 // arrayItems — элементы массива или пусто для не-массива.
 func arrayItems(value any) []any {
-	items, _ := jscompat.AsArray(value)
+	items, _ := dynvalue.AsArray(value)
 	return items
 }
 
@@ -282,43 +282,43 @@ func checkReadyScenes(scenes, castValue any, duration float64) error {
 	if err != nil {
 		return err
 	}
-	if math.Abs(jscompat.ToNumber(jscompat.GetPath(scenes, "audio", "end_seconds"))-duration) >= 1/fps {
+	if math.Abs(dynvalue.ToNumber(dynvalue.GetPath(scenes, "audio", "end_seconds"))-duration) >= 1/fps {
 		problems = append(problems, textRegistryDecodedDuration)
 	}
 	references, err := cast.References(castValue)
 	if err != nil {
 		return err
 	}
-	if !deepEqual(jscompat.Get(scenes, "references"), references) {
+	if !deepEqual(dynvalue.Get(scenes, "references"), references) {
 		problems = append(problems, textRegistryReferencesMismatch)
 	}
-	if direction, _ := jscompat.Get(scenes, "visual_direction").(string); !filled(direction) {
+	if direction, _ := dynvalue.Get(scenes, "visual_direction").(string); !filled(direction) {
 		problems = append(problems, textRegistryDirectionMissing)
 	}
-	entities := map[string]*jscompat.Object{}
-	for _, item := range arrayItems(jscompat.Get(castValue, "entities")) {
-		if entity, ok := jscompat.AsObject(item); ok {
+	entities := map[string]*dynvalue.Object{}
+	for _, item := range arrayItems(dynvalue.Get(castValue, "entities")) {
+		if entity, ok := dynvalue.AsObject(item); ok {
 			if id, ok := entity.Value("id").(string); ok {
 				entities[id] = entity
 			}
 		}
 	}
 	unfilled := []string{}
-	for _, item := range arrayItems(jscompat.Get(scenes, "scenes")) {
-		shot := item.(*jscompat.Object)
+	for _, item := range arrayItems(dynvalue.Get(scenes, "scenes")) {
+		shot := item.(*dynvalue.Object)
 		id := shot.Value("id").(string)
 		empty := false
 		for _, key := range []string{"camera", "action", "continuity"} {
-			if jscompat.Trim(jscompat.ToString(shot.Value(key))) == "" {
+			if dynvalue.Trim(dynvalue.ToString(shot.Value(key))) == "" {
 				empty = true
 			}
 		}
-		if empty || placeholder.MatchString(jscompat.Stringify(shot)) {
+		if empty || placeholder.MatchString(dynvalue.Stringify(shot)) {
 			unfilled = append(unfilled, id)
 		}
-		changes := shot.Value("state_changes").(*jscompat.Object)
+		changes := shot.Value("state_changes").(*dynvalue.Object)
 		for _, phase := range changes.Keys() {
-			delta := changes.Value(phase).(*jscompat.Object)
+			delta := changes.Value(phase).(*dynvalue.Object)
 			for _, entityID := range delta.Keys() {
 				entity, known := entities[entityID]
 				if !known {
@@ -326,16 +326,16 @@ func checkReadyScenes(scenes, castValue any, duration float64) error {
 					continue
 				}
 				properties := map[string]bool{}
-				kind := jscompat.ToString(entity.Value("kind"))
-				for _, property := range arrayItems(jscompat.GetPath(castValue, "properties", kind)) {
-					properties[jscompat.ToString(jscompat.Get(property, "key"))] = true
+				kind := dynvalue.ToString(entity.Value("kind"))
+				for _, property := range arrayItems(dynvalue.GetPath(castValue, "properties", kind)) {
+					properties[dynvalue.ToString(dynvalue.Get(property, "key"))] = true
 				}
-				if initial, ok := jscompat.AsObject(entity.Value("initial_state")); ok {
+				if initial, ok := dynvalue.AsObject(entity.Value("initial_state")); ok {
 					for _, key := range initial.Keys() {
 						properties[key] = true
 					}
 				}
-				for _, key := range delta.Value(entityID).(*jscompat.Object).Keys() {
+				for _, key := range delta.Value(entityID).(*dynvalue.Object).Keys() {
 					if !properties[key] {
 						problems = append(problems, textStateUnknownProperty(id, entityID, key))
 					}
@@ -360,12 +360,12 @@ func checkReadyScenes(scenes, castValue any, duration float64) error {
 // Ответ, который не разбирается как JSON, отклоняется понятным пользователю текстом
 // proposalInvalidDocument, а не сообщением разборщика.
 func proposalDocuments(raw, pass string, before Documents, scaffold any, selected []string, duration float64) (Documents, error) {
-	parsed, err := jscompat.Parse([]byte(raw))
+	parsed, err := dynvalue.Parse([]byte(raw))
 	if err != nil {
 		return Documents{}, errors.New(textProposalInvalidDocument)
 	}
-	value, ok := jscompat.AsObject(parsed)
-	if !ok || !jscompat.StrictEqual(value.Value("schemaVersion"), 1.0) || !jscompat.StrictEqual(value.Value("pass"), pass) {
+	value, ok := dynvalue.AsObject(parsed)
+	if !ok || !dynvalue.StrictEqual(value.Value("schemaVersion"), 1.0) || !dynvalue.StrictEqual(value.Value("pass"), pass) {
 		return Documents{}, errors.New(textProposalInvalidDocument)
 	}
 	expected := map[string][]string{"treatment": {"cast", "treatment"}, "scenes": {"scenes"}, "revise": {"patches"}}[pass]
@@ -397,28 +397,28 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 		if err := checkScenesShape(scenes); err != nil {
 			return Documents{}, err
 		}
-		shots := arrayItems(jscompat.Get(scenes, "scenes"))
-		base := arrayItems(jscompat.Get(scaffold, "scenes"))
-		if scaffold == nil || !deepEqual(jscompat.Get(scenes, "audio"), jscompat.Get(scaffold, "audio")) ||
-			!deepEqual(jscompat.Get(scenes, "sequences"), jscompat.Get(scaffold, "sequences")) || len(shots) != len(base) {
+		shots := arrayItems(dynvalue.Get(scenes, "scenes"))
+		base := arrayItems(dynvalue.Get(scaffold, "scenes"))
+		if scaffold == nil || !deepEqual(dynvalue.Get(scenes, "audio"), dynvalue.Get(scaffold, "audio")) ||
+			!deepEqual(dynvalue.Get(scenes, "sequences"), dynvalue.Get(scaffold, "sequences")) || len(shots) != len(base) {
 			return Documents{}, errors.New(textProposalScaffoldChanged)
 		}
 		for index, shot := range shots {
 			for _, key := range []string{"id", "original", "sequence", "start_frame", "end_frame_exclusive"} {
-				if !jscompat.StrictEqual(jscompat.Get(shot, key), jscompat.Get(base[index], key)) {
-					return Documents{}, errors.New(textProposalShotWindowChanged(jscompat.ToString(jscompat.Get(shot, "id"))))
+				if !dynvalue.StrictEqual(dynvalue.Get(shot, key), dynvalue.Get(base[index], key)) {
+					return Documents{}, errors.New(textProposalShotWindowChanged(dynvalue.ToString(dynvalue.Get(shot, "id"))))
 				}
 			}
 		}
 	} else {
-		patchList, isList := jscompat.AsArray(value.Value("patches"))
+		patchList, isList := dynvalue.AsArray(value.Value("patches"))
 		if before.Scenes == nil || !isList || len(patchList) == 0 {
 			return Documents{}, errors.New(textProposalPatchesMissing)
 		}
-		patches := map[string]*jscompat.Object{}
+		patches := map[string]*dynvalue.Object{}
 		for _, item := range patchList {
-			patch, ok := jscompat.AsObject(item)
-			id, idOK := jscompat.Get(item, "id").(string)
+			patch, ok := dynvalue.AsObject(item)
+			id, idOK := dynvalue.Get(item, "id").(string)
 			if !ok || !idOK || !slices.Contains(selected, id) || patches[id] != nil || patch.Len() < 2 ||
 				slices.ContainsFunc(patch.Keys(), func(key string) bool { return key != "id" && !slices.Contains(stagingFields, key) }) {
 				return Documents{}, errors.New(textProposalPatchesInvalid)
@@ -427,9 +427,9 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 		}
 		// derived_from: null в патче снимает признак производного плана; остальные поля заменяются целиком.
 		shots := []any{}
-		for _, item := range arrayItems(jscompat.Get(before.Scenes, "scenes")) {
-			next := jscompat.Spread(item)
-			if patch := patches[jscompat.ToString(jscompat.Get(item, "id"))]; patch != nil {
+		for _, item := range arrayItems(dynvalue.Get(before.Scenes, "scenes")) {
+			next := dynvalue.Spread(item)
+			if patch := patches[dynvalue.ToString(dynvalue.Get(item, "id"))]; patch != nil {
 				for _, key := range patch.Keys() {
 					next.Set(key, patch.Value(key))
 				}
@@ -439,8 +439,8 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 			}
 			shots = append(shots, next)
 		}
-		candidate := jscompat.Spread(before.Scenes)
-		candidate.Set("scenes", &jscompat.Array{Items: shots})
+		candidate := dynvalue.Spread(before.Scenes)
+		candidate.Set("scenes", &dynvalue.Array{Items: shots})
 		if err := checkScenesShape(candidate); err != nil {
 			return Documents{}, err
 		}
@@ -454,10 +454,10 @@ func proposalDocuments(raw, pass string, before Documents, scaffold any, selecte
 
 // initialFrom — объект «id сущности → initial_state» из cast.entities: начальное состояние
 // сущностей для scenario.ResolveStates; без кастинга — пустой объект.
-func initialFrom(castValue any) *jscompat.Object {
-	result := jscompat.NewObject()
-	for _, entity := range arrayItems(jscompat.Get(castValue, "entities")) {
-		result.Set(jscompat.ToString(jscompat.Get(entity, "id")), jscompat.Get(entity, "initial_state"))
+func initialFrom(castValue any) *dynvalue.Object {
+	result := dynvalue.NewObject()
+	for _, entity := range arrayItems(dynvalue.Get(castValue, "entities")) {
+		result.Set(dynvalue.ToString(dynvalue.Get(entity, "id")), dynvalue.Get(entity, "initial_state"))
 	}
 	return result
 }
@@ -470,11 +470,11 @@ func changedSceneIds(before, after Documents) ([]string, error) {
 		return []string{}, nil
 	}
 	previous := map[string]any{}
-	for _, scene := range arrayItems(jscompat.Get(before.Scenes, "scenes")) {
-		// new Map(entries): при повторе кода остаётся последний план.
-		previous[jscompat.ToString(jscompat.Get(scene, "id"))] = scene
+	for _, scene := range arrayItems(dynvalue.Get(before.Scenes, "scenes")) {
+		// При повторе кода остаётся последний план.
+		previous[dynvalue.ToString(dynvalue.Get(scene, "id"))] = scene
 	}
-	var beforeStates any = jscompat.NewObject()
+	var beforeStates any = dynvalue.NewObject()
 	if before.Scenes != nil {
 		if states, err := scenario.ResolveStates(before.Scenes, initialFrom(before.Cast)); err == nil {
 			beforeStates = states
@@ -485,13 +485,13 @@ func changedSceneIds(before, after Documents) ([]string, error) {
 		return nil, err
 	}
 	changed := []string{}
-	for _, scene := range arrayItems(jscompat.Get(after.Scenes, "scenes")) {
-		id := jscompat.ToString(jscompat.Get(scene, "id"))
+	for _, scene := range arrayItems(dynvalue.Get(after.Scenes, "scenes")) {
+		id := dynvalue.ToString(dynvalue.Get(scene, "id"))
 		old, known := previous[id]
 		if !known {
-			old = jscompat.Undefined
+			old = dynvalue.Undefined
 		}
-		if !deepEqual(old, scene) || !deepEqual(jscompat.Get(beforeStates, id), afterStates.Value(id)) {
+		if !deepEqual(old, scene) || !deepEqual(dynvalue.Get(beforeStates, id), afterStates.Value(id)) {
 			changed = append(changed, id)
 		}
 	}

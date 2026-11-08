@@ -2,7 +2,7 @@
 // редактируемая часть настроек — название, имя MP4 аниматика, постоянные инструкции агенту и блок
 // generation. Чтение маркера для статуса остаётся у internal/status.
 //
-// Документ обрабатывается деревом jscompat: неизвестные поля, порядок ключей по правилам JS и
+// Документ обрабатывается деревом dynvalue: неизвестные поля, порядок ключей документа и
 // форма чисел сохраняются байт в байт (эталоны testdata/golden/project-rename и
 // project-settings). Запись атомарна и проходит шлюз записи projectfs: проект с незавершённой
 // многофайловой публикацией не правится.
@@ -18,12 +18,12 @@ import (
 	"slices"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
 )
 
 // Тексты frontend/src/shared/texts (projectsTexts.main, checksTexts,
-// projectTexts.agentInstructions, localFilesTexts).
+// projectTexts.agentInstructions) и ошибок чтения локальных JSON-файлов.
 const (
 	emptyName            = "Название проекта не может быть пустым."
 	invalidNameCharacter = "Название проекта содержит недопустимый символ."
@@ -40,7 +40,7 @@ var relativeFile = filepath.Join("plan", "project.json")
 func File(project string) string { return filepath.Join(project, "plan", "project.json") }
 
 // encode — JSON с отступом в два пробела и переводом строки в конце.
-func encode(value any) []byte { return []byte(jscompat.StringifyIndent(value, "  ") + "\n") }
+func encode(value any) []byte { return []byte(dynvalue.StringifyIndent(value, "  ") + "\n") }
 
 // write атомарно заменяет маркер после проверки шлюза; права существующего файла сохраняются.
 func write(project string, value any) error {
@@ -58,13 +58,13 @@ func readLocal(path string) (any, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, readFailed(path, jscompat.FsError("open", path, err).Error())
+		return nil, readFailed(path, dynvalue.FsError("open", path, err).Error())
 	}
-	value, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(data)))
+	value, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(data)))
 	if err != nil {
 		return nil, readFailed(path, err.Error())
 	}
-	if _, isObject := jscompat.AsObject(value); !isObject && !jscompat.IsArray(value) {
+	if _, isObject := dynvalue.AsObject(value); !isObject && !dynvalue.IsArray(value) {
 		return nil, readFailed(path, objectExpected)
 	}
 	return value, nil
@@ -76,7 +76,7 @@ func readFailed(path, reason string) error {
 
 // hasMarker — readProjectMarker на уже прочитанном документе: непустое строковое name.
 func hasMarker(data any) bool {
-	name, ok := jscompat.Get(data, "name").(string)
+	name, ok := dynvalue.Get(data, "name").(string)
 	return ok && name != ""
 }
 
@@ -87,7 +87,7 @@ var nameCharacters = regexp.MustCompile("[\x00\r\n]")
 // записанное название без пробелов по краям. Историю и статус обновляет вызывающий сервис;
 // beforeWrite (проверка истории) вызывается после проверки названия и маркера, до записи.
 func Rename(project, name string, beforeWrite func() error) (string, error) {
-	if jscompat.Trim(name) == "" {
+	if dynvalue.Trim(name) == "" {
 		return "", errors.New(emptyName)
 	}
 	if nameCharacters.MatchString(name) {
@@ -97,7 +97,7 @@ func Rename(project, name string, beforeWrite func() error) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	object, ok := jscompat.AsObject(data)
+	object, ok := dynvalue.AsObject(data)
 	if !ok || !hasMarker(object) {
 		return "", errors.New(invalidMarker)
 	}
@@ -106,8 +106,8 @@ func Rename(project, name string, beforeWrite func() error) (string, error) {
 			return "", err
 		}
 	}
-	next := jscompat.Trim(name)
-	// { ...data, name }: ключ name остаётся на своей позиции, остальные поля не меняются.
+	next := dynvalue.Trim(name)
+	// Копия документа с новым name: ключ остаётся на своей позиции, остальные поля не меняются.
 	updated := object.Clone()
 	updated.Set("name", next)
 	if err := write(project, updated); err != nil {
@@ -140,17 +140,17 @@ type SettingsInput struct {
 
 // readProjectFile читает маркер для настроек: ошибка чтения или разбора — projectReadFailed
 // с относительным путём, не-объект — projectObjectRequired.
-func readProjectFile(project string) (*jscompat.Object, error) {
+func readProjectFile(project string) (*dynvalue.Object, error) {
 	path := File(project)
 	bytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("Не удалось прочитать %s: %s", relativeFile, jscompat.FsError("open", path, err).Error())
+		return nil, fmt.Errorf("Не удалось прочитать %s: %s", relativeFile, dynvalue.FsError("open", path, err).Error())
 	}
-	data, err := jscompat.Parse([]byte(jscompat.DecodeUTF8(bytes)))
+	data, err := dynvalue.Parse([]byte(dynvalue.DecodeUTF8(bytes)))
 	if err != nil {
 		return nil, fmt.Errorf("Не удалось прочитать %s: %s", relativeFile, err.Error())
 	}
-	object, ok := jscompat.AsObject(data)
+	object, ok := dynvalue.AsObject(data)
 	if !ok {
 		return nil, fmt.Errorf("%s должен быть объектом.", relativeFile)
 	}
@@ -159,9 +159,9 @@ func readProjectFile(project string) (*jscompat.Object, error) {
 
 // instructions — поле agentInstructions: отсутствие поля означает пустые инструкции, другой
 // тип — ошибка.
-func instructions(data *jscompat.Object) (string, error) {
+func instructions(data *dynvalue.Object) (string, error) {
 	value := data.Value("agent_instructions")
-	if value == jscompat.Undefined {
+	if value == dynvalue.Undefined {
 		return "", nil
 	}
 	text, ok := value.(string)
@@ -173,14 +173,14 @@ func instructions(data *jscompat.Object) (string, error) {
 
 // readGeneration — копия блока generation, где video/image не-объекты заменены null: поля другого
 // формата не подтверждают выбор провайдера. nil означает, что блока нет или он не объект.
-func readGeneration(data *jscompat.Object) *jscompat.Object {
-	block, ok := jscompat.AsObject(data.Value("generation"))
+func readGeneration(data *dynvalue.Object) *dynvalue.Object {
+	block, ok := dynvalue.AsObject(data.Value("generation"))
 	if !ok {
 		return nil
 	}
 	result := block.Clone()
 	for _, kind := range []string{"video", "image"} {
-		if inner, ok := jscompat.AsObject(block.Value(kind)); ok {
+		if inner, ok := dynvalue.AsObject(block.Value(kind)); ok {
 			result.Set(kind, inner.Clone())
 		} else {
 			result.Set(kind, nil)
@@ -203,7 +203,7 @@ func ReadSettings(project string) (Settings, error) {
 	settings.Name, _ = data.Value("name").(string)
 	settings.AnimaticVideo, _ = data.Value("animatic_video").(string)
 	if generation := readGeneration(data); generation != nil {
-		settings.Generation = jscompat.Raw(generation)
+		settings.Generation = dynvalue.Raw(generation)
 	}
 	return settings, nil
 }
@@ -211,7 +211,8 @@ func ReadSettings(project string) (Settings, error) {
 // durationRules — DURATION_RULES контракта в порядке сообщения.
 var durationRules = []string{"min_supported_strictly_greater_than_window", "min_supported_not_less_than_window", "exact_window"}
 
-// Шаблоны проверки: \w в JS — [A-Za-z0-9_].
+// Шаблоны проверки: имя MP4 аниматика из ASCII-букв, цифр, «_», «.» и «-» и соотношение сторон
+// «N:M» из ASCII-цифр.
 var (
 	animaticPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+\.mp4$`)
 	aspectPattern   = regexp.MustCompile(`^\d+:\d+$`)
@@ -221,21 +222,21 @@ var (
 // scene_registry; готовность провайдера проверяется отдельно. generation — разобранный ввод формы.
 func Validate(name, animaticVideo string, generation any) []string {
 	problems := []string{}
-	if jscompat.Trim(name) == "" {
+	if dynvalue.Trim(name) == "" {
 		problems = append(problems, emptyName)
 	}
 	if !animaticPattern.MatchString(animaticVideo) || strings.HasPrefix(animaticVideo, ".") {
 		problems = append(problems, animaticInvalid)
 	}
-	if !jscompat.Truthy(generation) {
+	if !dynvalue.Truthy(generation) {
 		return problems
 	}
 	for _, kind := range []string{"video", "image"} {
-		block := jscompat.Get(generation, kind)
-		if jscompat.IsNullish(block) {
+		block := dynvalue.Get(generation, kind)
+		if dynvalue.IsNullish(block) {
 			continue
 		}
-		record, ok := jscompat.AsObject(block)
+		record, ok := dynvalue.AsObject(block)
 		if !ok {
 			problems = append(problems, "generation."+kind+": ожидается объект настроек.")
 			continue
@@ -247,24 +248,24 @@ func Validate(name, animaticVideo string, generation any) []string {
 		isRequired := map[string]bool{}
 		for _, field := range required {
 			isRequired[field] = true
-			if text, ok := record.Value(field).(string); !ok || jscompat.Trim(text) == "" {
+			if text, ok := record.Value(field).(string); !ok || dynvalue.Trim(text) == "" {
 				problems = append(problems, "generation."+kind+": не заполнено поле "+field+".")
 			}
 		}
 		for _, field := range []string{"resolution", "aspect_ratio", "model"} {
 			value := record.Value(field)
 			text, isString := value.(string)
-			if value != jscompat.Undefined && (!isString || jscompat.Trim(text) == "") && !isRequired[field] {
+			if value != dynvalue.Undefined && (!isString || dynvalue.Trim(text) == "") && !isRequired[field] {
 				problems = append(problems, "generation."+kind+": "+field+" должен быть непустой строкой.")
 			}
 		}
-		if aspect := record.Value("aspect_ratio"); aspect != jscompat.Undefined {
+		if aspect := record.Value("aspect_ratio"); aspect != dynvalue.Undefined {
 			text, isString := aspect.(string)
 			if !isString || (!aspectPattern.MatchString(text) && text != "auto") {
 				problems = append(problems, "generation."+kind+": пропорции записываются как 16:9 или auto.")
 			}
 		}
-		if watermark := record.Value("watermark"); kind == "video" || watermark != jscompat.Undefined {
+		if watermark := record.Value("watermark"); kind == "video" || watermark != dynvalue.Undefined {
 			if _, isBool := watermark.(bool); !isBool {
 				problems = append(problems, "generation."+kind+": watermark должен быть логическим значением.")
 			}
@@ -272,15 +273,15 @@ func Validate(name, animaticVideo string, generation any) []string {
 		if rule, isString := record.Value("duration_rule").(string); kind == "video" && !(isString && slices.Contains(durationRules, rule)) {
 			problems = append(problems, "generation."+kind+": правило длительности должно быть одним из: "+strings.Join(durationRules, ", ")+".")
 		}
-		if selected := record.Value("provider_selected"); selected != jscompat.Undefined {
+		if selected := record.Value("provider_selected"); selected != dynvalue.Undefined {
 			if _, isBool := selected.(bool); !isBool {
 				problems = append(problems, "generation."+kind+": provider_selected должен быть логическим значением.")
 			}
 		}
-		if options := record.Value("options"); options != jscompat.Undefined && !jscompat.IsRecord(options) {
+		if options := record.Value("options"); options != dynvalue.Undefined && !dynvalue.IsRecord(options) {
 			problems = append(problems, "generation."+kind+": options должен быть объектом.")
 		}
-		if outputs := record.Value("outputs"); kind == "image" && outputs != jscompat.Undefined && (!jscompat.IsInteger(outputs) || jscompat.ToNumber(outputs) < 1) {
+		if outputs := record.Value("outputs"); kind == "image" && outputs != dynvalue.Undefined && (!dynvalue.IsInteger(outputs) || dynvalue.ToNumber(outputs) < 1) {
 			problems = append(problems, "generation."+kind+": outputs должен быть положительным целым числом.")
 		}
 	}
@@ -289,12 +290,12 @@ func Validate(name, animaticVideo string, generation any) []string {
 
 // merge — известные поля формы поверх сохранённых, вложенные объекты (options,
 // backend провайдера) сливаются рекурсивно, новые ключи встают в конец.
-func merge(previous, current *jscompat.Object) *jscompat.Object {
+func merge(previous, current *dynvalue.Object) *dynvalue.Object {
 	result := previous.Clone()
 	for _, key := range current.Keys() {
 		value := current.Value(key)
-		incoming, incomingRecord := jscompat.AsObject(value)
-		existing, existingRecord := jscompat.AsObject(result.Value(key))
+		incoming, incomingRecord := dynvalue.AsObject(value)
+		existing, existingRecord := dynvalue.AsObject(result.Value(key))
 		if incomingRecord && existingRecord {
 			result.Set(key, merge(existing, incoming))
 		} else {
@@ -312,9 +313,9 @@ func unset(generation any, paths [][]string) {
 		}
 		node := generation
 		for _, key := range path[:len(path)-1] {
-			node = jscompat.Get(node, key)
+			node = dynvalue.Get(node, key)
 		}
-		if object, ok := jscompat.AsObject(node); ok {
+		if object, ok := dynvalue.AsObject(node); ok {
 			object.Delete(path[len(path)-1])
 		}
 	}
@@ -325,7 +326,7 @@ func parseGeneration(raw json.RawMessage) (any, error) {
 	if len(raw) == 0 {
 		return nil, nil
 	}
-	return jscompat.Parse(raw)
+	return dynvalue.Parse(raw)
 }
 
 // WriteSettings — projects.saveSettings: проверка формы, слияние с сохранённым блоком generation
@@ -353,12 +354,12 @@ func WriteSettings(project string, input SettingsInput) (Settings, error) {
 		}
 	}
 	var generation any
-	if jscompat.Truthy(generationInput) {
+	if dynvalue.Truthy(generationInput) {
 		previous := readGeneration(data)
 		if previous == nil {
-			previous = jscompat.NewObject()
+			previous = dynvalue.NewObject()
 		}
-		if incoming, ok := jscompat.AsObject(generationInput); ok {
+		if incoming, ok := dynvalue.AsObject(generationInput); ok {
 			merged := merge(previous, incoming)
 			unset(merged, input.Unset)
 			generation = merged
@@ -368,18 +369,18 @@ func WriteSettings(project string, input SettingsInput) (Settings, error) {
 		}
 	}
 	stored := data.Value("generation")
-	if merged, ok := jscompat.AsObject(generation); ok && jscompat.IsRecord(stored) {
+	if merged, ok := dynvalue.AsObject(generation); ok && dynvalue.IsRecord(stored) {
 		for _, kind := range []string{"video", "image"} {
-			old := jscompat.Get(stored, kind)
-			if jscompat.Get(generationInput, kind) == nil && !jscompat.IsNullish(old) && !jscompat.IsRecord(old) {
+			old := dynvalue.Get(stored, kind)
+			if dynvalue.Get(generationInput, kind) == nil && !dynvalue.IsNullish(old) && !dynvalue.IsRecord(old) {
 				merged.Set(kind, old)
 			}
 		}
-	} else if !jscompat.Truthy(generation) && !jscompat.IsNullish(stored) && !jscompat.IsRecord(stored) {
+	} else if !dynvalue.Truthy(generation) && !dynvalue.IsNullish(stored) && !dynvalue.IsRecord(stored) {
 		generation = stored
 	}
 	next := data.Clone()
-	next.Set("name", jscompat.Trim(input.Name))
+	next.Set("name", dynvalue.Trim(input.Name))
 	next.Set("animatic_video", input.AnimaticVideo)
 	if input.AgentInstructions != nil {
 		// Текст инструкций принадлежит пользователю: пробелы и переносы строк сохраняются дословно.

@@ -4,7 +4,7 @@
 // Пакет не отправляет запросы и не выбирает провайдера: допустимую рабочую папку проверяет
 // вызывающий (internal/mediarequest), ограничения сервиса — его адаптер. Байты request.json и
 // attempt.json, а значит и request_sha256, зафиксированы эталоном request-snapshot: JSON пишется
-// моделью значений pycompat (sort_keys, indent=2, ensure_ascii=False, allow_nan=False) + "\n".
+// моделью значений toolrt (ключи по возрастанию, отступ 2, не-ASCII как есть, без NaN) + "\n".
 package requestsnapshot
 
 import (
@@ -16,8 +16,8 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/pycompat"
+	"songframe/internal/projectfs"
+	"songframe/internal/toolrt"
 )
 
 // Тексты отказов (ValueError): media_request показывает их пользователю как есть.
@@ -56,11 +56,11 @@ var (
 // считается request_sha256, поэтому формат неизменен: ключи по кодовым точкам, отступ 2,
 // не-ASCII как есть, NaN/бесконечность и одиночный суррогат — ValueError/UnicodeEncodeError.
 func Encoded(value any) ([]byte, error) {
-	text, err := pycompat.DumpsJSON(value, pycompat.DumpOptions{Indent: 2, Pretty: true, SortKeys: true, RejectNaN: true})
+	text, err := toolrt.DumpsJSON(value, toolrt.DumpOptions{Indent: 2, Pretty: true, SortKeys: true, RejectNaN: true})
 	if err != nil {
 		return nil, err
 	}
-	return pycompat.EncodeUTF8(text + "\n")
+	return toolrt.EncodeUTF8(text + "\n")
 }
 
 // Digest — SHA-256 байтов Encoded(value) в hex: SHA подготовленного запроса.
@@ -75,7 +75,7 @@ func Digest(value any) (string, error) {
 
 // AtomicJSON заменяет файл через соседний временный файл со сбросом
 // на диск. Состояние отправки должно пережить обрыв до получения ID; подписанные адреса и сырые
-// ответы сервиса сюда не попадают. Права нового файла 0600, как у NamedTemporaryFile Python.
+// ответы сервиса сюда не попадают. Права нового файла 0600 (зафиксированы эталоном).
 // Ошибка записи — OSError (в CLI — общее сообщение без пути).
 func AtomicJSON(path string, value any) error {
 	data, err := Encoded(value)
@@ -83,65 +83,65 @@ func AtomicJSON(path string, value any) error {
 		return err
 	}
 	if err := projectfs.WriteFile(path, data, 0o600); err != nil {
-		return pycompat.OSErrorFrom(err, path)
+		return toolrt.OSErrorFrom(err, path)
 	}
 	return nil
 }
 
-// FileSHA — SHA-256 файла потоком. Ошибка — OSError Python.
+// FileSHA — SHA-256 файла потоком. Ошибка — OSError.
 func FileSHA(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return "", pycompat.OSErrorFrom(err, path)
+		return "", toolrt.OSErrorFrom(err, path)
 	}
 	defer file.Close()
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		return "", pycompat.OSErrorFrom(err, path)
+		return "", toolrt.OSErrorFrom(err, path)
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// nonEmptyString — isinstance(value, str) and value.strip().
+// nonEmptyString — value — строка, непустая после обрезки крайних пробелов.
 func nonEmptyString(value any) bool {
 	text, ok := value.(string)
-	return ok && pycompat.Strip(text) != ""
+	return ok && toolrt.Strip(text) != ""
 }
 
 // ValidateSpec проверяет общую форму спецификации без предположений о командах и слотах
-// провайдера. spec — любое значение json.loads; нарушение — ValueError, сообщение даёт первая
+// провайдера. spec — любое разобранное значение JSON; нарушение — ValueError, сообщение даёт первая
 // нарушенная проверка, поэтому порядок проверок зафиксирован эталоном.
 func ValidateSpec(value any) error {
-	spec, ok := value.(*pycompat.Dict)
-	if !ok || !pycompat.Equal(spec.Value("schema_version"), pycompat.NewInt(1)) {
-		return pycompat.New(pycompat.ValueError, textUnknownSchema)
+	spec, ok := value.(*toolrt.Dict)
+	if !ok || !toolrt.Equal(spec.Value("schema_version"), toolrt.NewInt(1)) {
+		return toolrt.New(toolrt.ValueError, textUnknownSchema)
 	}
 	for _, field := range []string{"provider", "command", "model", "prompt_file"} {
 		if !nonEmptyString(spec.Value(field)) {
-			return pycompat.New(pycompat.ValueError, "Поле "+field+" должно быть непустой строкой.")
+			return toolrt.New(toolrt.ValueError, "Поле "+field+" должно быть непустой строкой.")
 		}
 	}
-	if kind := spec.Value("kind"); !pycompat.Equal(kind, "image") && !pycompat.Equal(kind, "video") {
-		return pycompat.New(pycompat.ValueError, textNoKind)
+	if kind := spec.Value("kind"); !toolrt.Equal(kind, "image") && !toolrt.Equal(kind, "video") {
+		return toolrt.New(toolrt.ValueError, textNoKind)
 	}
 	for _, key := range spec.Keys() {
 		if !specFields[key] {
-			return pycompat.New(pycompat.ValueError, textUnknownFields)
+			return toolrt.New(toolrt.ValueError, textUnknownFields)
 		}
 	}
 	parameters, hasParameters := spec.Get("parameters")
 	if !hasParameters {
-		parameters = pycompat.NewDict()
+		parameters = toolrt.NewDict()
 	}
-	if _, ok := parameters.(*pycompat.Dict); !ok {
-		return pycompat.New(pycompat.ValueError, textParameters)
+	if _, ok := parameters.(*toolrt.Dict); !ok {
+		return toolrt.New(toolrt.ValueError, textParameters)
 	}
 	count, hasCount := spec.Get("outputs")
 	if !hasCount {
-		count = pycompat.NewInt(1)
+		count = toolrt.NewInt(1)
 	}
-	if number, ok := count.(pycompat.Int); !ok || number.Sign() < 1 {
-		return pycompat.New(pycompat.ValueError, textOutputs)
+	if number, ok := count.(toolrt.Int); !ok || number.Sign() < 1 {
+		return toolrt.New(toolrt.ValueError, textOutputs)
 	}
 	inputs, hasInputs := spec.Get("inputs")
 	if !hasInputs {
@@ -149,46 +149,46 @@ func ValidateSpec(value any) error {
 	}
 	list, ok := inputs.([]any)
 	if !ok {
-		return pycompat.New(pycompat.ValueError, textInputsList)
+		return toolrt.New(toolrt.ValueError, textInputsList)
 	}
 	for _, element := range list {
-		item, ok := element.(*pycompat.Dict)
+		item, ok := element.(*toolrt.Dict)
 		if !ok {
-			return pycompat.New(pycompat.ValueError, textInputFields)
+			return toolrt.New(toolrt.ValueError, textInputFields)
 		}
 		for _, key := range item.Keys() {
 			if !inputFields[key] {
-				return pycompat.New(pycompat.ValueError, textInputFields)
+				return toolrt.New(toolrt.ValueError, textInputFields)
 			}
 		}
 		for _, field := range []string{"flag", "path"} {
 			if !nonEmptyString(item.Value(field)) {
-				return pycompat.New(pycompat.ValueError, "У входа нет непустого "+field+".")
+				return toolrt.New(toolrt.ValueError, "У входа нет непустого "+field+".")
 			}
 		}
 		if slot, has := item.Get("slot"); has && !nonEmptyString(slot) {
-			return pycompat.New(pycompat.ValueError, textSlot)
+			return toolrt.New(toolrt.ValueError, textSlot)
 		}
 		if digest, has := item.Get("sha256"); has {
 			text, ok := digest.(string)
 			if !ok || !sha256Pattern.MatchString(text) {
-				return pycompat.New(pycompat.ValueError, textInputSHA)
+				return toolrt.New(toolrt.ValueError, textInputSHA)
 			}
 		}
 	}
 	if value, has := spec.Get("model_selection"); has {
-		selection, ok := value.(*pycompat.Dict)
+		selection, ok := value.(*toolrt.Dict)
 		if !ok || selection.Len() != len(selectionFields) || !hasAll(selection, selectionFields) {
-			return pycompat.New(pycompat.ValueError, textSelectionFields)
+			return toolrt.New(toolrt.ValueError, textSelectionFields)
 		}
 		if preferred := selection.Value("preferredModel"); preferred != nil && !nonEmptyString(preferred) {
-			return pycompat.New(pycompat.ValueError, textPreferredModel)
+			return toolrt.New(toolrt.ValueError, textPreferredModel)
 		}
-		if !pycompat.Equal(selection.Value("selectedModel"), spec.Value("model")) {
-			return pycompat.New(pycompat.ValueError, textSelectedModel)
+		if !toolrt.Equal(selection.Value("selectedModel"), spec.Value("model")) {
+			return toolrt.New(toolrt.ValueError, textSelectedModel)
 		}
 		if !nonEmptyString(selection.Value("reason")) {
-			return pycompat.New(pycompat.ValueError, textSelectionReason)
+			return toolrt.New(toolrt.ValueError, textSelectionReason)
 		}
 	}
 	// Параметры должны кодироваться без NaN и одиночных суррогатов: иначе SHA не посчитать.
@@ -196,8 +196,8 @@ func ValidateSpec(value any) error {
 	return err
 }
 
-// hasAll — все ключи есть в словаре (set(selection) == {...} при равной длине).
-func hasAll(dict *pycompat.Dict, keys []string) bool {
+// hasAll — все ключи есть в словаре (вместе с проверкой длины — ровно этот набор ключей).
+func hasAll(dict *toolrt.Dict, keys []string) bool {
 	for _, key := range keys {
 		if !dict.Has(key) {
 			return false
@@ -216,40 +216,40 @@ func hasAll(dict *pycompat.Dict, keys []string) bool {
 // переименовывается в конце, поэтому недописанный запрос отправить нельзя. Одинаковые байты
 // входов копируются один раз с сохранением всех ролей. extraFields (FrozenFields адаптера)
 // входят в запрос и его SHA. Существующая папка не перезаписывается.
-func Prepare(request, directory string, extraFields *pycompat.Dict) (*pycompat.Dict, error) {
-	request = pycompat.ResolvePath(request)
-	directory = pycompat.ResolvePath(directory)
-	value, err := pycompat.LoadJSONFile(request)
+func Prepare(request, directory string, extraFields *toolrt.Dict) (*toolrt.Dict, error) {
+	request = toolrt.ResolvePath(request)
+	directory = toolrt.ResolvePath(directory)
+	value, err := toolrt.LoadJSONFile(request)
 	if err != nil {
 		return nil, err
 	}
 	if err := ValidateSpec(value); err != nil {
 		return nil, err
 	}
-	spec := value.(*pycompat.Dict)
-	if pycompat.Exists(directory) {
-		return nil, pycompat.New(pycompat.ValueError, textDirectoryExists)
+	spec := value.(*toolrt.Dict)
+	if toolrt.Exists(directory) {
+		return nil, toolrt.New(toolrt.ValueError, textDirectoryExists)
 	}
 	base := filepath.Dir(request)
-	promptSource := pycompat.ResolvePath(pycompat.JoinPath(base, spec.Value("prompt_file").(string)))
+	promptSource := toolrt.ResolvePath(toolrt.JoinPath(base, spec.Value("prompt_file").(string)))
 	promptBytes, err := os.ReadFile(promptSource)
 	if err != nil {
-		return nil, pycompat.OSErrorFrom(err, promptSource)
+		return nil, toolrt.OSErrorFrom(err, promptSource)
 	}
-	prompt, err := pycompat.DecodeUTF8(promptBytes)
+	prompt, err := toolrt.DecodeUTF8(promptBytes)
 	if err != nil {
 		return nil, err
 	}
-	if pycompat.Strip(prompt) == "" {
-		return nil, pycompat.New(pycompat.ValueError, textEmptyPrompt)
+	if toolrt.Strip(prompt) == "" {
+		return nil, toolrt.New(toolrt.ValueError, textEmptyPrompt)
 	}
 	parent := filepath.Dir(directory)
 	if err := os.MkdirAll(parent, 0o777); err != nil {
-		return nil, pycompat.OSErrorFrom(err, parent)
+		return nil, toolrt.OSErrorFrom(err, parent)
 	}
 	staging, err := os.MkdirTemp(parent, ".prepare-")
 	if err != nil {
-		return nil, pycompat.OSErrorFrom(err, parent)
+		return nil, toolrt.OSErrorFrom(err, parent)
 	}
 	// Временная заготовка: после переименования удалять нечего, при отказе удаляется целиком.
 	defer os.RemoveAll(staging)
@@ -258,7 +258,7 @@ func Prepare(request, directory string, extraFields *pycompat.Dict) (*pycompat.D
 		return nil, err
 	}
 	if err := os.Rename(staging, directory); err != nil {
-		return nil, pycompat.OSErrorFrom(err, staging)
+		return nil, toolrt.OSErrorFrom(err, staging)
 	}
 	result := frozen.Clone()
 	result.Set("request_sha256", digest)
@@ -269,30 +269,30 @@ func Prepare(request, directory string, extraFields *pycompat.Dict) (*pycompat.D
 }
 
 // freeze собирает содержимое попытки в staging и возвращает зафиксированный запрос и его SHA.
-func freeze(spec *pycompat.Dict, base, staging string, promptBytes []byte, extraFields *pycompat.Dict) (*pycompat.Dict, string, error) {
+func freeze(spec *toolrt.Dict, base, staging string, promptBytes []byte, extraFields *toolrt.Dict) (*toolrt.Dict, string, error) {
 	if err := os.Mkdir(filepath.Join(staging, "inputs"), 0o777); err != nil {
-		return nil, "", pycompat.OSErrorFrom(err, staging)
+		return nil, "", toolrt.OSErrorFrom(err, staging)
 	}
 	promptPath := filepath.Join(staging, "prompt.txt")
 	if err := os.WriteFile(promptPath, promptBytes, 0o666); err != nil {
-		return nil, "", pycompat.OSErrorFrom(err, promptPath)
+		return nil, "", toolrt.OSErrorFrom(err, promptPath)
 	}
 	inputs := []any{}
 	copies := map[string]string{}
 	specInputs, _ := spec.Value("inputs").([]any)
 	for index, element := range specInputs {
-		item := element.(*pycompat.Dict)
-		source := pycompat.ResolvePath(pycompat.JoinPath(base, item.Value("path").(string)))
+		item := element.(*toolrt.Dict)
+		source := toolrt.ResolvePath(toolrt.JoinPath(base, item.Value("path").(string)))
 		digest, err := FileSHA(source)
 		if err != nil {
 			return nil, "", err
 		}
 		if declared, has := item.Get("sha256"); has && declared != digest {
-			return nil, "", pycompat.New(pycompat.ValueError, textInputHashChanged)
+			return nil, "", toolrt.New(toolrt.ValueError, textInputHashChanged)
 		}
 		name, copied := copies[digest]
 		if !copied {
-			name = "inputs/" + twoDigits(index+1) + strings.ToLower(pycompat.PathSuffix(source))
+			name = "inputs/" + twoDigits(index+1) + strings.ToLower(toolrt.PathSuffix(source))
 			target := filepath.Join(staging, filepath.FromSlash(name))
 			if err := copyFile(source, target); err != nil {
 				return nil, "", err
@@ -300,15 +300,15 @@ func freeze(spec *pycompat.Dict, base, staging string, promptBytes []byte, extra
 			if again, err := FileSHA(target); err != nil {
 				return nil, "", err
 			} else if again != digest {
-				return nil, "", pycompat.New(pycompat.ValueError, textInputChanged)
+				return nil, "", toolrt.New(toolrt.ValueError, textInputChanged)
 			}
 			copies[digest] = name
 		}
 		info, err := os.Stat(source)
 		if err != nil {
-			return nil, "", pycompat.OSErrorFrom(err, source)
+			return nil, "", toolrt.OSErrorFrom(err, source)
 		}
-		entry := pycompat.NewDict()
+		entry := toolrt.NewDict()
 		for _, key := range []string{"flag", "slot", "role"} {
 			if value, has := item.Get(key); has {
 				entry.Set(key, value)
@@ -316,24 +316,24 @@ func freeze(spec *pycompat.Dict, base, staging string, promptBytes []byte, extra
 		}
 		entry.Set("path", name)
 		entry.Set("sha256", digest)
-		entry.Set("bytes", pycompat.NewInt(info.Size()))
+		entry.Set("bytes", toolrt.NewInt(info.Size()))
 		inputs = append(inputs, entry)
 	}
 	promptDigest, err := FileSHA(promptPath)
 	if err != nil {
 		return nil, "", err
 	}
-	frozen := pycompat.NewDict()
-	frozen.Set("schema_version", pycompat.NewInt(1))
+	frozen := toolrt.NewDict()
+	frozen.Set("schema_version", toolrt.NewInt(1))
 	frozen.Set("shot", spec.Value("shot"))
 	frozen.Set("provider", spec.Value("provider"))
 	frozen.Set("kind", spec.Value("kind"))
 	frozen.Set("command", spec.Value("command"))
 	frozen.Set("model", spec.Value("model"))
-	frozen.Set("parameters", valueOr(spec, "parameters", pycompat.NewDict()))
-	frozen.Set("outputs", valueOr(spec, "outputs", pycompat.NewInt(1)))
+	frozen.Set("parameters", valueOr(spec, "parameters", toolrt.NewDict()))
+	frozen.Set("outputs", valueOr(spec, "outputs", toolrt.NewInt(1)))
 	frozen.Set("inputs", inputs)
-	prompt := pycompat.NewDict()
+	prompt := toolrt.NewDict()
 	prompt.Set("path", "prompt.txt")
 	prompt.Set("sha256", promptDigest)
 	frozen.Set("prompt", prompt)
@@ -351,8 +351,8 @@ func freeze(spec *pycompat.Dict, base, staging string, promptBytes []byte, extra
 	if err := AtomicJSON(filepath.Join(staging, "request.json"), frozen); err != nil {
 		return nil, "", err
 	}
-	state := pycompat.NewDict()
-	state.Set("schema_version", pycompat.NewInt(1))
+	state := toolrt.NewDict()
+	state.Set("schema_version", toolrt.NewInt(1))
 	state.Set("request_sha256", digest)
 	state.Set("status", "prepared")
 	state.Set("downloads", []any{})
@@ -362,43 +362,43 @@ func freeze(spec *pycompat.Dict, base, staging string, promptBytes []byte, extra
 	return frozen, digest, nil
 }
 
-// valueOr — spec.get(key, fallback).
-func valueOr(dict *pycompat.Dict, key string, fallback any) any {
+// valueOr — значение ключа или fallback.
+func valueOr(dict *toolrt.Dict, key string, fallback any) any {
 	if value, has := dict.Get(key); has {
 		return value
 	}
 	return fallback
 }
 
-// twoDigits — f"{number:02}".
+// twoDigits — число не короче двух цифр (с ведущим нулём).
 func twoDigits(number int) string {
-	text := pycompat.NewInt(int64(number)).String()
+	text := toolrt.NewInt(int64(number)).String()
 	if len(text) < 2 {
 		return "0" + text
 	}
 	return text
 }
 
-// CopyFile — shutil.copyfile(source, target): байты без метаданных; цель перезаписывается.
-// Ошибка — OSError Python.
+// CopyFile — копирование байтов source в target без метаданных; цель перезаписывается.
+// Ошибка — OSError.
 func CopyFile(source, target string) error { return copyFile(source, target) }
 
 func copyFile(source, target string) error {
 	input, err := os.Open(source)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, source)
+		return toolrt.OSErrorFrom(err, source)
 	}
 	defer input.Close()
 	output, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
-		return pycompat.OSErrorFrom(err, target)
+		return toolrt.OSErrorFrom(err, target)
 	}
 	if _, err := io.Copy(output, input); err != nil {
 		output.Close()
-		return pycompat.OSErrorFrom(err, target)
+		return toolrt.OSErrorFrom(err, target)
 	}
 	if err := output.Close(); err != nil {
-		return pycompat.OSErrorFrom(err, target)
+		return toolrt.OSErrorFrom(err, target)
 	}
 	return nil
 }

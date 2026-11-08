@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/scenario"
+	"songframe/internal/dynvalue"
+	"songframe/internal/golden"
+	"songframe/internal/scenario"
 )
 
 // TestSaveMatchesGolden повторяет вызовы страницы сценария на эталонах scenario-scenes: оценку
@@ -26,15 +26,15 @@ func TestSaveMatchesGolden(t *testing.T) {
 			if err := json.Unmarshal(item.Read(t, "case.json"), &spec); err != nil {
 				t.Fatal(err)
 			}
-			input, err := jscompat.Parse(item.Read(t, "scenes-input.json"))
+			input, err := dynvalue.Parse(item.Read(t, "scenes-input.json"))
 			if err != nil {
 				t.Fatal(err)
 			}
 			before := treeFiles(t, project)
 
-			impact, err := SaveImpact(project, jscompat.DeepClone(input))
+			impact, err := SaveImpact(project, dynvalue.DeepClone(input))
 			assertOutcome(t, "оценка", item.Read(t, "expected-impact.json"), impact, err, project)
-			problems, err := scenario.ValidateProjectScenes(project, jscompat.DeepClone(input))
+			problems, err := scenario.ValidateProjectScenes(project, dynvalue.DeepClone(input))
 			assertOutcome(t, "проверка", item.Read(t, "expected-validate.json"), problems, err, project)
 			if diff := changes(before, treeFiles(t, project)); len(diff) > 0 {
 				t.Fatalf("оценка и проверка изменили файлы: %v", diff)
@@ -53,11 +53,11 @@ func TestSaveMatchesGolden(t *testing.T) {
 			if err := json.Unmarshal(item.Expected(t), &want); err != nil {
 				t.Fatal(err)
 			}
-			saved, err := SaveScenesWithMode(project, jscompat.DeepClone(input), spec.Mode)
+			saved, err := SaveScenesWithMode(project, dynvalue.DeepClone(input), spec.Mode)
 			after := treeFiles(t, project)
 			assertWrite(t, item.Dir, want.Error, want.Result, want.Files, err, saved, before, after)
 			if want.Resave != nil {
-				again, err := SaveScenesWithMode(project, jscompat.DeepClone(saved), spec.Mode)
+				again, err := SaveScenesWithMode(project, dynvalue.DeepClone(saved), spec.Mode)
 				gotError := ""
 				if err != nil {
 					gotError = err.Error()
@@ -69,7 +69,7 @@ func TestSaveMatchesGolden(t *testing.T) {
 				if gotError != wantError {
 					t.Fatalf("повторное сохранение: Go %q, TS %q", gotError, wantError)
 				}
-				if err == nil && (jscompat.Stringify(again) == jscompat.Stringify(saved)) != want.Resave.SameResult {
+				if err == nil && (dynvalue.Stringify(again) == dynvalue.Stringify(saved)) != want.Resave.SameResult {
 					t.Fatal("повторное сохранение вернуло другой реестр")
 				}
 				assertFiles(t, want.Resave.Files, changes(after, treeFiles(t, project)))
@@ -107,7 +107,7 @@ func assertWrite(t *testing.T, dir string, wantError *string, wantResult json.Ra
 		t.Fatalf("ошибка\n  Go:  %s\n  TS:  %s", err, *wantError)
 	}
 	if wantError == nil {
-		golden.AssertJSON(t, wantResult, []byte(jscompat.Stringify(result)))
+		golden.AssertJSON(t, wantResult, []byte(dynvalue.Stringify(result)))
 	}
 	got := changes(before, after)
 	assertFiles(t, wantFiles, got)

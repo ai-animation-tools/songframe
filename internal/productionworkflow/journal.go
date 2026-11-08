@@ -11,8 +11,8 @@ import (
 	"slices"
 	"strings"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/projectfs"
+	"songframe/internal/dynvalue"
+	"songframe/internal/projectfs"
 )
 
 // Узкий журнал замены рабочего пакета. Перед Apply
@@ -41,13 +41,13 @@ var journalName = regexp.MustCompile(`^[a-f0-9]{64}$`)
 // попытки сохраняются). Сравнение с текущим деревом доказывает, что оригиналы не тронуты.
 type protectedImage struct {
 	ImageRoot
-	Files *jscompat.Object
+	Files *dynvalue.Object
 }
 
 // tree — запись защищённой попытки в pending.json в порядке ключей { requestDir, requestSha256,
 // frameId, files }.
-func (p protectedImage) tree() *jscompat.Object {
-	object := jscompat.NewObject()
+func (p protectedImage) tree() *dynvalue.Object {
+	object := dynvalue.NewObject()
 	object.Set("requestDir", p.RequestDir)
 	object.Set("requestSha256", p.RequestSha256)
 	object.Set("frameId", p.FrameID)
@@ -65,17 +65,17 @@ type pending struct {
 }
 
 // tree — pending.json в зафиксированном порядке ключей (байты журнала сверяет эталон).
-func (p pending) tree() *jscompat.Object {
+func (p pending) tree() *dynvalue.Object {
 	images := make([]any, len(p.Protected))
 	for index, image := range p.Protected {
 		images[index] = image.tree()
 	}
-	object := jscompat.NewObject()
+	object := dynvalue.NewObject()
 	object.Set("schemaVersion", float64(pendingSchema))
 	object.Set("project", p.Project)
 	object.Set("packageDir", p.PackageDir)
 	object.Set("existed", p.Existed)
-	object.Set("protectedImages", &jscompat.Array{Items: images})
+	object.Set("protectedImages", &dynvalue.Array{Items: images})
 	return object
 }
 
@@ -84,7 +84,7 @@ func journalDirectory(localDir, project, packageDir string) string {
 	return filepath.Join(localDir, ApplyFolder, digestHex([]byte(project+"\x00"+packageDir)))
 }
 
-// applyPackagePath — packagePath журнала: путь внутри проекта, указывающий ровно на отдельный
+// applyPackagePath — путь пакета для журнала замены: путь внутри проекта, указывающий ровно на отдельный
 // пакет. Текст отказа у журнала свой (productionTexts.main.apply.packageFolderRequired).
 func applyPackagePath(project, path string) (string, error) {
 	full, err := ProductionPath(project, path)
@@ -98,14 +98,14 @@ func applyPackagePath(project, path string) (string, error) {
 }
 
 // videoStage — этап пакета после отправки видео.
-func videoStage(workflow *jscompat.Object) bool {
-	return slices.Contains(videoStages, jscompat.ToString(workflow.Value("stage")))
+func videoStage(workflow *dynvalue.Object) bool {
+	return slices.Contains(videoStages, dynvalue.ToString(workflow.Value("stage")))
 }
 
 // packagePaid сообщает, что пакет есть и уже отправлял видео либо содержит
 // любую оплату, включая проверенные image-попытки. Резерв с такой оплатой не восстанавливается.
 func packagePaid(directory string) (bool, error) {
-	if !jscompat.Exists(directory) {
+	if !dynvalue.Exists(directory) {
 		return false, nil
 	}
 	workflow, err := packageWorkflow(directory)
@@ -120,13 +120,13 @@ func packagePaid(directory string) (bool, error) {
 
 // imageFiles — отпечатки всех файлов и папок image-попытки directory (ключ —
 // путь от неё с разделителем ОС). Ссылка или особый файл — отказ: их байты нельзя доказать.
-// Ключи упорядочены по кодовым единицам UTF-16, а не localeCompare: порядок влияет только на
+// Ключи упорядочены по кодовым единицам UTF-16, без учёта локали: порядок влияет только на
 // байты pending.json, сравнение снимков от порядка не зависит.
-func imageFiles(directory string) (*jscompat.Object, error) {
+func imageFiles(directory string) (*dynvalue.Object, error) {
 	entries := map[string]any{}
 	var visit func(folder string) error
 	visit = func(folder string) error {
-		items, err := jscompat.ReadDir(folder)
+		items, err := dynvalue.ReadDir(folder)
 		if err != nil {
 			return err
 		}
@@ -134,9 +134,9 @@ func imageFiles(directory string) (*jscompat.Object, error) {
 			path := filepath.Join(folder, item.Name())
 			info, err := os.Lstat(path)
 			if err != nil {
-				return jscompat.FsError("lstat", path, err)
+				return dynvalue.FsError("lstat", path, err)
 			}
-			local := jscompat.Relative(directory, path)
+			local := dynvalue.Relative(directory, path)
 			switch {
 			case info.Mode()&os.ModeSymlink != 0:
 				return errors.New(textImageContainsLink)
@@ -148,7 +148,7 @@ func imageFiles(directory string) (*jscompat.Object, error) {
 			case info.Mode().IsRegular():
 				data, err := os.ReadFile(path)
 				if err != nil {
-					return jscompat.FsError("open", path, err)
+					return dynvalue.FsError("open", path, err)
 				}
 				entries[local] = digestHex(data)
 			default:
@@ -165,7 +165,7 @@ func imageFiles(directory string) (*jscompat.Object, error) {
 		keys = append(keys, key)
 	}
 	slices.SortFunc(keys, compareUTF16)
-	result := jscompat.NewObject()
+	result := dynvalue.NewObject()
 	for _, key := range keys {
 		result.Set(key, entries[key])
 	}
@@ -180,7 +180,7 @@ func protectImages(directory string) ([]protectedImage, error) {
 	}
 	images := make([]protectedImage, 0, len(roots))
 	for _, root := range roots {
-		files, err := imageFiles(jscompat.Resolve(directory, root.RequestDir))
+		files, err := imageFiles(dynvalue.Resolve(directory, root.RequestDir))
 		if err != nil {
 			return nil, err
 		}
@@ -193,7 +193,7 @@ func protectImages(directory string) ([]protectedImage, error) {
 func roots(target string, images []protectedImage) []string {
 	result := make([]string, len(images))
 	for index, image := range images {
-		result[index] = jscompat.Resolve(target, image.RequestDir)
+		result[index] = dynvalue.Resolve(target, image.RequestDir)
 	}
 	return result
 }
@@ -201,7 +201,7 @@ func roots(target string, images []protectedImage) []string {
 // verifyImages проверяет, что история image-попыток пакета target (workflow — его
 // workflow.json или доказательство из резерва) совпадает со снимком, файлы попыток не изменились,
 // а нового видео или неизвестной оплаты в пакете нет. Снимки сравниваются как множества путей.
-func verifyImages(target string, images []protectedImage, workflow *jscompat.Object) error {
+func verifyImages(target string, images []protectedImage, workflow *dynvalue.Object) error {
 	if workflow == nil {
 		var err error
 		if workflow, err = packageWorkflow(target); err != nil {
@@ -220,17 +220,17 @@ func verifyImages(target string, images []protectedImage, workflow *jscompat.Obj
 		if index < 0 || current[index].RequestSha256 != image.RequestSha256 || current[index].FrameID != image.FrameID {
 			return errors.New(textProtectedImageChanged)
 		}
-		files, err := imageFiles(jscompat.Resolve(target, image.RequestDir))
+		files, err := imageFiles(dynvalue.Resolve(target, image.RequestDir))
 		if err != nil {
 			return err
 		}
-		if !jscompat.DeepStrictEqual(files, image.Files) {
+		if !dynvalue.DeepStrictEqual(files, image.Files) {
 			return errors.New(textProtectedImageChanged)
 		}
 	}
 	excluded := make([]string, len(current))
 	for index, root := range current {
-		excluded[index] = jscompat.Resolve(target, root.RequestDir)
+		excluded[index] = dynvalue.Resolve(target, root.RequestDir)
 	}
 	paid, err := attemptsPaid(target, excluded)
 	if err != nil {
@@ -254,14 +254,14 @@ func copyMutable(source, target string, images []protectedImage) error {
 		}
 		info, err := os.Lstat(from)
 		if err != nil {
-			return jscompat.FsError("lstat", from, err)
+			return dynvalue.FsError("lstat", from, err)
 		}
 		switch {
 		case info.IsDir():
 			if err := os.MkdirAll(to, info.Mode().Perm()); err != nil {
 				return err
 			}
-			entries, err := jscompat.ReadDir(from)
+			entries, err := dynvalue.ReadDir(from)
 			if err != nil {
 				return err
 			}
@@ -283,12 +283,12 @@ func copyMutable(source, target string, images []protectedImage) error {
 func copyFile(from, to string, perm fs.FileMode) error {
 	source, err := os.Open(from)
 	if err != nil {
-		return jscompat.FsError("open", from, err)
+		return dynvalue.FsError("open", from, err)
 	}
 	defer source.Close()
 	target, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)
 	if err != nil {
-		return jscompat.FsError("open", to, err)
+		return dynvalue.FsError("open", to, err)
 	}
 	if _, err := io.Copy(target, source); err != nil {
 		_ = target.Close()
@@ -303,13 +303,13 @@ func copyFile(from, to string, perm fs.FileMode) error {
 // removeMutable удаляет только изменяемую часть пакета; ни пакет
 // целиком, ни папки защищённых image-попыток не заменяются (папки-предки попыток остаются).
 func removeMutable(target string, images []protectedImage) error {
-	if !jscompat.Exists(target) {
+	if !dynvalue.Exists(target) {
 		return nil
 	}
 	protected := roots(target, images)
 	var visit func(directory string) error
 	visit = func(directory string) error {
-		entries, err := jscompat.ReadDir(directory)
+		entries, err := dynvalue.ReadDir(directory)
 		if err != nil {
 			return err
 		}
@@ -335,7 +335,7 @@ func removeMutable(target string, images []protectedImage) error {
 // журнал, если проект недоступен, резерва нет, защищённые попытки изменились или в пакете
 // (резерве) появилась оплата.
 func restore(directory string, record pending) error {
-	if !jscompat.Exists(filepath.Join(record.Project, "plan", "project.json")) {
+	if !dynvalue.Exists(filepath.Join(record.Project, "plan", "project.json")) {
 		return errors.New(textApplyProjectUnavailable)
 	}
 	target, err := applyPackagePath(record.Project, record.PackageDir)
@@ -343,14 +343,14 @@ func restore(directory string, record pending) error {
 		return err
 	}
 	backup := filepath.Join(directory, "package")
-	if record.Existed && !jscompat.Exists(backup) {
+	if record.Existed && !dynvalue.Exists(backup) {
 		return errors.New(textApplyBackupMissing)
 	}
 	// Обрыв после удаления изменяемых файлов оставляет оригиналы на месте, но временно убирает
 	// workflow.json. Только в этом случае его резерв доказывает прежнюю историю; существующий
 	// чужой workflow.json резервом не подменяется.
 	proofDir := target
-	if record.Existed && !jscompat.Exists(filepath.Join(target, "workflow.json")) {
+	if record.Existed && !dynvalue.Exists(filepath.Join(target, "workflow.json")) {
 		proofDir = backup
 	}
 	proof, err := packageWorkflow(proofDir)
@@ -375,7 +375,7 @@ func restore(directory string, record pending) error {
 	if record.Existed {
 		return copyMutable(backup, target, record.Protected)
 	}
-	if jscompat.Exists(target) {
+	if dynvalue.Exists(target) {
 		return os.Remove(target)
 	}
 	return nil
@@ -403,12 +403,12 @@ func applyPackage(localDir, project, target string, apply func() error) error {
 	if err != nil {
 		return err
 	}
-	if slices.Contains([]string{"image_request_choice", "image_submitted", "image_downloaded"}, jscompat.ToString(workflow.Value("stage"))) {
+	if slices.Contains([]string{"image_request_choice", "image_submitted", "image_downloaded"}, dynvalue.ToString(workflow.Value("stage"))) {
 		return errors.New(textApplyResolveImageAttemptFirst)
 	}
 	directory := journalDirectory(localDir, project, packageDir)
 	pendingPath := filepath.Join(directory, "pending.json")
-	if jscompat.Exists(pendingPath) {
+	if dynvalue.Exists(pendingPath) {
 		return errors.New(textApplyPreviousUnrecovered)
 	}
 	images, err := protectImages(packageDir)
@@ -421,13 +421,13 @@ func applyPackage(localDir, project, target string, apply func() error) error {
 	if err := os.MkdirAll(directory, 0o777); err != nil {
 		return err
 	}
-	record := pending{Project: project, PackageDir: jscompat.Relative(project, packageDir), Existed: jscompat.Exists(packageDir), Protected: images}
+	record := pending{Project: project, PackageDir: dynvalue.Relative(project, packageDir), Existed: dynvalue.Exists(packageDir), Protected: images}
 	if record.Existed {
 		if err := copyMutable(packageDir, filepath.Join(directory, "package"), images); err != nil {
 			return err
 		}
 	}
-	if err := projectfs.WriteFile(pendingPath, []byte(jscompat.Stringify(record.tree())), 0o666); err != nil {
+	if err := projectfs.WriteFile(pendingPath, []byte(dynvalue.Stringify(record.tree())), 0o666); err != nil {
 		return err
 	}
 	if err := apply(); err == nil {
@@ -464,25 +464,25 @@ func readPending(path string) (pending, error) {
 	if err != nil {
 		return pending{}, err
 	}
-	object, ok := value.(*jscompat.Object)
-	project, projectOK := jscompat.Get(value, "project").(string)
-	packageDir, packageOK := jscompat.Get(value, "packageDir").(string)
-	existed, existedOK := jscompat.Get(value, "existed").(bool)
-	if !ok || object.Value("schemaVersion") != float64(pendingSchema) || !projectOK || !jscompat.IsAbs(project) || !packageOK ||
-		jscompat.IsAbs(packageDir) || !existedOK {
+	object, ok := value.(*dynvalue.Object)
+	project, projectOK := dynvalue.Get(value, "project").(string)
+	packageDir, packageOK := dynvalue.Get(value, "packageDir").(string)
+	existed, existedOK := dynvalue.Get(value, "existed").(bool)
+	if !ok || object.Value("schemaVersion") != float64(pendingSchema) || !projectOK || !dynvalue.IsAbs(project) || !packageOK ||
+		dynvalue.IsAbs(packageDir) || !existedOK {
 		return pending{}, errors.New(textRecoveryRecordInvalid)
 	}
-	items, ok := jscompat.AsArray(object.Value("protectedImages"))
+	items, ok := dynvalue.AsArray(object.Value("protectedImages"))
 	if !ok {
 		return pending{}, errors.New(textProtectedImagesSnapshotInvalid)
 	}
 	record := pending{Project: project, PackageDir: packageDir, Existed: existed, Protected: []protectedImage{}}
 	for _, item := range items {
-		requestDir, dirOK := jscompat.Get(item, "requestDir").(string)
-		sha, shaOK := jscompat.Get(item, "requestSha256").(string)
-		frame, frameOK := jscompat.Get(item, "frameId").(string)
-		files, filesOK := jscompat.Get(item, "files").(*jscompat.Object)
-		if !jscompat.IsRecord(item) || !dirOK || requestDir == "" || jscompat.IsAbs(requestDir) ||
+		requestDir, dirOK := dynvalue.Get(item, "requestDir").(string)
+		sha, shaOK := dynvalue.Get(item, "requestSha256").(string)
+		frame, frameOK := dynvalue.Get(item, "frameId").(string)
+		files, filesOK := dynvalue.Get(item, "files").(*dynvalue.Object)
+		if !dynvalue.IsRecord(item) || !dirOK || requestDir == "" || dynvalue.IsAbs(requestDir) ||
 			slices.Contains(strings.Split(filepath.Clean(requestDir), string(os.PathSeparator)), "..") ||
 			!shaOK || !sha256Pattern.MatchString(sha) || !frameOK || !frameIDPattern.MatchString(frame) || !filesOK {
 			return pending{}, errors.New(textProtectedImagesSnapshotInvalid)
@@ -519,7 +519,7 @@ func RecoverInterrupted(localDir string) error {
 		}
 		directory := filepath.Join(base, entry.Name())
 		path := filepath.Join(directory, "pending.json")
-		if !jscompat.Exists(path) {
+		if !dynvalue.Exists(path) {
 			continue
 		}
 		if err := recoverOne(directory, path); err != nil {
@@ -542,7 +542,7 @@ func recoverOne(directory, path string) error {
 	if err != nil {
 		return err
 	}
-	if digestHex([]byte(jscompat.Resolve(record.Project)+"\x00"+target)) != filepath.Base(directory) {
+	if digestHex([]byte(dynvalue.Resolve(record.Project)+"\x00"+target)) != filepath.Base(directory) {
 		return errors.New(textRecoveryPathMismatch)
 	}
 	if err := restore(directory, record); err != nil {

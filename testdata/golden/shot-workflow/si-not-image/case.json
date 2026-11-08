@@ -4,7 +4,7 @@
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "Pillow"
+    "распознавание изображения"
   ],
   "stubbedMedia": [],
   "args": [

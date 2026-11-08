@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/projectfile"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/projectfile"
 )
 
 // Виды действий ИИ (AiActionKind): текстовый этап агента или генерация медиа своего вида.
@@ -74,13 +74,13 @@ func (a *Access) executor(kind string) *ExecutorAccess {
 	return &a.Agent
 }
 
-// generation — блок generation plan/project.json как значение JS (nil — блока нет).
+// generation — блок generation plan/project.json как динамическое значение dynvalue (nil — блока нет).
 func generation(project string) (any, error) {
 	settings, err := projectfile.ReadSettings(project)
 	if err != nil {
 		return nil, err
 	}
-	return jscompat.Parse(settings.Generation)
+	return dynvalue.Parse(settings.Generation)
 }
 
 // selection — явный выбор без диагностики: сохранённый агент и провайдеры медиа с
@@ -107,12 +107,13 @@ func (c *AccessChecker) selection(project *string) (Access, error) {
 		return Access{}, err
 	}
 	for _, kind := range []string{KindImage, KindVideo} {
-		config := jscompat.Get(value, kind)
-		if jscompat.Get(config, "provider_selected") != true {
+		config := dynvalue.Get(value, kind)
+		if dynvalue.Get(config, "provider_selected") != true {
 			continue
 		}
-		// provider — значение JS: не строка даёт «не поддерживается», как isMediaProvider.
-		raw := jscompat.Get(config, "provider")
+		// provider — произвольное значение JSON: не строка даёт «не поддерживается», как isMediaProvider
+		// интерфейса.
+		raw := dynvalue.Get(config, "provider")
 		var provider *string
 		if text, ok := raw.(string); ok {
 			provider = &text

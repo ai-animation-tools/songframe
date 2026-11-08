@@ -14,10 +14,10 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"songframe-go/internal/golden"
-	"songframe-go/internal/newproject"
-	"songframe-go/internal/projectfs"
-	"songframe-go/internal/store"
+	"songframe/internal/golden"
+	"songframe/internal/newproject"
+	"songframe/internal/projectfs"
+	"songframe/internal/store"
 )
 
 // markPaths заменяет корень маркером в JSON-представлении значения (как normalize съёмки).

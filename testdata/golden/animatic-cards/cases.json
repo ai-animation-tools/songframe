@@ -9524,9 +9524,9 @@
  },
  {
   "name": "special-upper",
-  "description": "Название с ß, ﬁ и ё: str.upper() Python.",
+  "description": "Название с ß, ﬁ и ё: верхний регистр по полным правилам Unicode.",
   "covers": [
-   "upper SpecialCasing"
+   "верхний регистр по SpecialCasing"
   ],
   "call": "render_card",
   "shot": {
@@ -9986,7 +9986,7 @@
   "name": "whitespace",
   "description": "Табуляции, переводы строк и неразрывные пробелы разделяют слова.",
   "covers": [
-   "str.split"
+   "разбиение по пробелам"
   ],
   "call": "render_card",
   "shot": {

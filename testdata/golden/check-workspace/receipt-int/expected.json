@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Traceback (most recent call last):\n  File \"<songframe>/tools/check_workspace/check_workspace.py\", line 264, in <module>\n    main()\n  File \"<songframe>/tools/check_workspace/check_workspace.py\", line 241, in main\n    result = collect()\n             ^^^^^^^^^\n  File \"<songframe>/tools/check_workspace/check_workspace.py\", line 175, in collect\n    listed = set(receipt.get(\"cards\", {})) if isinstance(receipt, dict) else set()\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: 'int' object is not iterable\n",
+  "stderr": "Traceback (most recent call last):\nTypeError: 'int' object is not iterable\n",
   "traceback": true
 }

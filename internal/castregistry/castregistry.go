@@ -1,9 +1,9 @@
 // Package castregistry читает кастинг для инструментов tools.run (scene_registry, scene_scaffold,
-// проверки): load_cast, validate_cast, проекция описаний из source/manifest.json, initial_states и
-// references.
+// проверки): загрузка (Load), проверка (Validate), проекция описаний из source/manifest.json,
+// начальные состояния (InitialStates) и карта референсов (References).
 //
-// Кастинг для страниц приложения читает internal/cast. Здесь — семантика Python: значения
-// pycompat, тексты проблем инструмента (они отличаются от текстов страниц) и его исключения на
+// Кастинг для страниц приложения читает internal/cast. Здесь — модель значений инструментов:
+// значения toolrt, тексты проблем инструмента (они отличаются от текстов страниц) и его исключения на
 // данных неожиданной формы; от них зависят байты вывода, проверяемые эталонами. Пакет только
 // читает файлы проекта.
 package castregistry
@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strings"
 
-	"songframe-go/internal/pycompat"
+	"songframe/internal/toolrt"
 )
 
 // Пути внутри проекта.
@@ -25,10 +25,11 @@ const (
 	WorldID = "world"
 )
 
-// kindPattern — KIND_PATTERN.match: `$` Python совпадает и перед последним переводом строки.
+// kindPattern — допустимый тип сущности; один завершающий перевод строки тоже принимается
+// (зафиксировано эталонами инструментов).
 var kindPattern = regexp.MustCompile(`^[a-z][a-z0-9_]*\n?\z`)
 
-// Тексты проблем validate_cast и отказов чтения; зафиксированы эталонами инструментов.
+// Тексты проблем Validate и отказов чтения; зафиксированы эталонами инструментов.
 const (
 	textStructure        = "cast.json: нужны schema_version 1, entities и properties."
 	textEntityNotObject  = "entities: элемент не объект."
@@ -40,21 +41,21 @@ const (
 	textReferenceNoID    = SourceManifest + ": у референса нет строкового id."
 )
 
-// Validate — validate_cast: список проблем структуры кастинга (пустой — кастинг пригоден).
-// Ошибка — исключение Python на данных неожиданной формы (например, images — число).
+// Validate — список проблем структуры кастинга (пустой — кастинг пригоден).
+// Ошибка — исключение toolrt на данных неожиданной формы (например, images — число).
 func Validate(data any) ([]string, error) {
-	document, ok := data.(*pycompat.Dict)
-	if !ok || !pycompat.Equal(document.Value("schema_version"), pycompat.NewInt(1)) {
+	document, ok := data.(*toolrt.Dict)
+	if !ok || !toolrt.Equal(document.Value("schema_version"), toolrt.NewInt(1)) {
 		return []string{textStructure}, nil
 	}
 	entities, entitiesOK := document.Value("entities").([]any)
-	if _, propertiesOK := document.Value("properties").(*pycompat.Dict); !entitiesOK || !propertiesOK {
+	if _, propertiesOK := document.Value("properties").(*toolrt.Dict); !entitiesOK || !propertiesOK {
 		return []string{textStructure}, nil
 	}
 	problems := []string{}
 	seen := map[string]bool{}
 	for _, item := range entities {
-		entity, ok := item.(*pycompat.Dict)
+		entity, ok := item.(*toolrt.Dict)
 		if !ok {
 			problems = append(problems, textEntityNotObject)
 			continue
@@ -71,14 +72,14 @@ func Validate(data any) ([]string, error) {
 		if kind, isString := entity.Value("kind").(string); !isString || !kindPattern.MatchString(kind) {
 			problems = append(problems, id+": тип должен быть кодом из латиницы, цифр и подчёркивания.")
 		}
-		if name, isString := entity.Value("name").(string); !isString || pycompat.Strip(name) == "" {
+		if name, isString := entity.Value("name").(string); !isString || toolrt.Strip(name) == "" {
 			problems = append(problems, id+": нет названия.")
 		}
-		images, _ := pycompat.DictGet(entity, "images", []any{})
-		if !pycompat.Truthy(images) {
+		images, _ := toolrt.DictGet(entity, "images", []any{})
+		if !toolrt.Truthy(images) {
 			images = []any{}
 		}
-		list, err := pycompat.Iter(images)
+		list, err := toolrt.Iter(images)
 		if err != nil {
 			return nil, err
 		}
@@ -87,14 +88,14 @@ func Validate(data any) ([]string, error) {
 				problems = append(problems, id+": путь изображения должен быть вида heroes/<файл>.")
 			}
 		}
-		state, _ := pycompat.DictGet(entity, "initial_state", pycompat.NewDict())
+		state, _ := toolrt.DictGet(entity, "initial_state", toolrt.NewDict())
 		if !validState(state) {
 			problems = append(problems, id+": initial_state должен быть объектом из непустых строк.")
 		}
 	}
 	worlds := 0
 	for _, item := range entities {
-		if entity, ok := item.(*pycompat.Dict); ok && pycompat.Equal(entity.Value("kind"), WorldID) {
+		if entity, ok := item.(*toolrt.Dict); ok && toolrt.Equal(entity.Value("kind"), WorldID) {
 			worlds++
 		}
 	}
@@ -104,61 +105,61 @@ func Validate(data any) ([]string, error) {
 	return problems, nil
 }
 
-// validState — initial_state: словарь непустых (после strip) строк.
+// validState — пригодный initial_state: словарь непустых (без пробелов по краям) строк.
 func validState(value any) bool {
-	state, ok := value.(*pycompat.Dict)
+	state, ok := value.(*toolrt.Dict)
 	if !ok {
 		return false
 	}
 	for _, key := range state.Keys() {
 		text, isString := state.Value(key).(string)
-		if !isString || pycompat.Strip(text) == "" {
+		if !isString || toolrt.Strip(text) == "" {
 			return false
 		}
 	}
 	return true
 }
 
-// SourceDescriptions — source_descriptions: id референса → общее описание из описи исходников,
+// SourceDescriptions — id референса → общее описание из описи исходников,
 // включая явно пустую строку.
-func SourceDescriptions(manifest *pycompat.Dict) (map[string]string, error) {
-	references, _ := pycompat.DictGet(manifest, "references", []any{})
+func SourceDescriptions(manifest *toolrt.Dict) (map[string]string, error) {
+	references, _ := toolrt.DictGet(manifest, "references", []any{})
 	list, ok := references.([]any)
 	if !ok {
-		return nil, pycompat.New(pycompat.ValueError, textReferencesNoList)
+		return nil, toolrt.New(toolrt.ValueError, textReferencesNoList)
 	}
 	descriptions := map[string]string{}
 	for _, item := range list {
-		reference, ok := item.(*pycompat.Dict)
+		reference, ok := item.(*toolrt.Dict)
 		id, isString := reference.Value("id").(string)
 		if !ok || !isString {
-			return nil, pycompat.New(pycompat.ValueError, textReferenceNoID)
+			return nil, toolrt.New(toolrt.ValueError, textReferenceNoID)
 		}
-		description, _ := pycompat.DictGet(reference, "description", "")
+		description, _ := toolrt.DictGet(reference, "description", "")
 		text, isString := description.(string)
 		if !isString {
-			return nil, pycompat.Raise(pycompat.ValueError, "%s: description референса %s должен быть строкой.", SourceManifest, id)
+			return nil, toolrt.Raise(toolrt.ValueError, "%s: description референса %s должен быть строкой.", SourceManifest, id)
 		}
 		descriptions[id] = text
 	}
 	return descriptions, nil
 }
 
-// projectSavedDescriptions — project_saved_descriptions: appearance сущностей заменяется
+// projectSavedDescriptions — appearance сущностей заменяется
 // описаниями из source/manifest.json (проекция в памяти, файлы не меняются). Нет описи — кастинг
 // как есть; повреждённая опись — ValueError.
-func projectSavedDescriptions(root string, cast *pycompat.Dict) (*pycompat.Dict, error) {
+func projectSavedDescriptions(root string, cast *toolrt.Dict) (*toolrt.Dict, error) {
 	path := filepath.Join(root, filepath.FromSlash(SourceManifest))
-	value, damaged := pycompat.ReadJSON(path)
+	value, damaged := toolrt.ReadJSON(path)
 	if value == nil && !damaged {
-		// `manifest is None and not path.exists()`: документ `null` в существующем файле — повреждение.
+		// Опись пропускается, только если файла нет: документ `null` в существующем файле — повреждение.
 		if _, err := os.Stat(path); err != nil {
 			return cast, nil
 		}
 	}
-	manifest, ok := value.(*pycompat.Dict)
-	if !ok || !pycompat.Equal(manifest.Value("schema_version"), pycompat.NewInt(1)) {
-		return nil, pycompat.New(pycompat.ValueError, textManifestDamaged)
+	manifest, ok := value.(*toolrt.Dict)
+	if !ok || !toolrt.Equal(manifest.Value("schema_version"), toolrt.NewInt(1)) {
+		return nil, toolrt.New(toolrt.ValueError, textManifestDamaged)
 	}
 	descriptions, err := SourceDescriptions(manifest)
 	if err != nil {
@@ -166,7 +167,7 @@ func projectSavedDescriptions(root string, cast *pycompat.Dict) (*pycompat.Dict,
 	}
 	entities, _ := cast.Value("entities").([]any)
 	for _, item := range entities {
-		entity := item.(*pycompat.Dict)
+		entity := item.(*toolrt.Dict)
 		if description, ok := descriptions[entity.Value("id").(string)]; ok {
 			entity.Set("appearance", description)
 		}
@@ -174,13 +175,13 @@ func projectSavedDescriptions(root string, cast *pycompat.Dict) (*pycompat.Dict,
 	return cast, nil
 }
 
-// Load — load_cast(root): кастинг проекта с описаниями из описи или nil, если файла нет (или в нём
+// Load — кастинг проекта root с описаниями из описи или nil, если файла нет (или в нём
 // `null`). Повреждённый файл, проблемы Validate и повреждённая опись — ValueError с текстом
 // проблем через пробел.
-func Load(root string) (*pycompat.Dict, error) {
-	value, damaged := pycompat.ReadJSON(filepath.Join(root, filepath.FromSlash(CastPath)))
+func Load(root string) (*toolrt.Dict, error) {
+	value, damaged := toolrt.ReadJSON(filepath.Join(root, filepath.FromSlash(CastPath)))
 	if damaged {
-		return nil, pycompat.New(pycompat.ValueError, textCastDamaged)
+		return nil, toolrt.New(toolrt.ValueError, textCastDamaged)
 	}
 	if value == nil {
 		return nil, nil
@@ -190,54 +191,54 @@ func Load(root string) (*pycompat.Dict, error) {
 		return nil, err
 	}
 	if len(problems) > 0 {
-		return nil, pycompat.New(pycompat.ValueError, strings.Join(problems, " "))
+		return nil, toolrt.New(toolrt.ValueError, strings.Join(problems, " "))
 	}
-	return projectSavedDescriptions(root, value.(*pycompat.Dict))
+	return projectSavedDescriptions(root, value.(*toolrt.Dict))
 }
 
-// InitialStates — initial_states(cast): {сущность: {свойство: значение}} для сущностей с непустым
+// InitialStates — {сущность: {свойство: значение}} для сущностей кастинга с непустым
 // initial_state; nil-кастинг — пустой словарь. Кастинг должен пройти Validate.
-func InitialStates(cast *pycompat.Dict) *pycompat.Dict {
-	result := pycompat.NewDict()
+func InitialStates(cast *toolrt.Dict) *toolrt.Dict {
+	result := toolrt.NewDict()
 	if cast == nil || cast.Len() == 0 {
 		return result
 	}
 	entities, _ := cast.Value("entities").([]any)
 	for _, item := range entities {
-		entity := item.(*pycompat.Dict)
-		if state, ok := entity.Value("initial_state").(*pycompat.Dict); ok && state.Len() > 0 {
+		entity := item.(*toolrt.Dict)
+		if state, ok := entity.Value("initial_state").(*toolrt.Dict); ok && state.Len() > 0 {
 			result.Set(entity.Value("id").(string), state.Clone())
 		}
 	}
 	return result
 }
 
-// References — references(cast): карта references реестра сцен из сущностей с изображением
+// References — карта references реестра сцен из сущностей кастинга с изображением
 // (первый файл — основной, путь от корня проекта). short_name добавляется, если отличается от name.
-func References(cast *pycompat.Dict) (*pycompat.Dict, error) {
-	result := pycompat.NewDict()
+func References(cast *toolrt.Dict) (*toolrt.Dict, error) {
+	result := toolrt.NewDict()
 	entities, _ := cast.Value("entities").([]any)
 	for _, item := range entities {
-		entity := item.(*pycompat.Dict)
-		if !pycompat.Truthy(entity.Value("images")) {
+		entity := item.(*toolrt.Dict)
+		if !toolrt.Truthy(entity.Value("images")) {
 			continue
 		}
-		first, err := pycompat.GetItem(entity.Value("images"), pycompat.NewInt(0))
+		first, err := toolrt.GetItem(entity.Value("images"), toolrt.NewInt(0))
 		if err != nil {
 			return nil, err
 		}
-		path, err := pycompat.Add("source/", first)
+		path, err := toolrt.Add("source/", first)
 		if err != nil {
 			return nil, err
 		}
-		reference := pycompat.NewDict()
-		name, err := pycompat.Item(entity, "name")
+		reference := toolrt.NewDict()
+		name, err := toolrt.Item(entity, "name")
 		if err != nil {
 			return nil, err
 		}
 		reference.Set("name", name)
 		reference.Set("path", path)
-		if short := entity.Value("short_name"); pycompat.Truthy(short) && !pycompat.Equal(short, name) {
+		if short := entity.Value("short_name"); toolrt.Truthy(short) && !toolrt.Equal(short, name) {
 			reference.Set("short_name", short)
 		}
 		result.Set(entity.Value("id").(string), reference)

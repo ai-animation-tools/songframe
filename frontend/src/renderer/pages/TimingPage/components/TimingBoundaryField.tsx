@@ -59,7 +59,7 @@ export function TimingBoundaryField({
         const nextText = event.target.value;
         setText(nextText);
         setError('');
-        // Обычный ввод без ручного черновика остаётся локальным и проверяется прежним commit.
+        // Обычный ввод без ручного черновика остаётся локальным и проверяется при commit.
         if (keepRawDraft) onDraftChange?.(nextText);
         // Полный ручной черновик передаётся через onDraftChange; простой родитель получает числовой снимок.
         if (manualMode && !onDraftChange) onCommit(nextText.trim() ? Number(nextText) : Number.NaN);

@@ -6,13 +6,13 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"songframe-go/internal/agents"
-	"songframe-go/internal/jscompat"
-	"songframe-go/internal/mediaapi"
-	"songframe-go/internal/mediafile"
-	"songframe-go/internal/mediaproviders"
-	"songframe-go/internal/providers"
-	"songframe-go/internal/providers/agentexec"
+	"songframe/internal/agents"
+	"songframe/internal/dynvalue"
+	"songframe/internal/mediaapi"
+	"songframe/internal/mediafile"
+	"songframe/internal/mediaproviders"
+	"songframe/internal/providers"
+	"songframe/internal/providers/agentexec"
 )
 
 // ProjectOptions — зависимости подготовки запроса провайдером изображений проекта.
@@ -55,7 +55,7 @@ func PrepareProject(ctx context.Context, input CandidateInput, options ProjectOp
 	if err != nil {
 		return nil, err
 	}
-	provider, _ := jscompat.Get(settings, "provider").(string)
+	provider, _ := dynvalue.Get(settings, "provider").(string)
 	if !mediaproviders.Supports(provider, mediaproviders.Image) {
 		return nil, errors.New(imageProviderRequired())
 	}
@@ -111,11 +111,12 @@ func PrepareProject(ctx context.Context, input CandidateInput, options ProjectOp
 	}, nil
 }
 
-// agentRequestSha — SHA-256 JSON {prompt, config, workDir, references?} в порядке ключей JS.
+// agentRequestSha — SHA-256 JSON {prompt, config, workDir, references?}: ключи в порядке вставки,
+// references только при наличии; от байтов зависит сохранённый SHA запроса агента.
 func agentRequestSha(prompt string, config agents.Settings, workDir string, references []mediaapi.ReferenceImage) string {
-	value := jscompat.NewObject()
+	value := dynvalue.NewObject()
 	value.Set("prompt", prompt)
-	agent := jscompat.NewObject()
+	agent := dynvalue.NewObject()
 	agent.Set("provider", config.Provider)
 	if config.Model != "" {
 		agent.Set("model", config.Model)
@@ -125,15 +126,15 @@ func agentRequestSha(prompt string, config agents.Settings, workDir string, refe
 	if len(references) > 0 {
 		items := make([]any, len(references))
 		for index, image := range references {
-			item := jscompat.NewObject()
+			item := dynvalue.NewObject()
 			item.Set("path", image.Path)
 			item.Set("label", image.Label)
 			item.Set("sha256", image.SHA256)
 			item.Set("bytes", float64(image.Bytes))
 			items[index] = item
 		}
-		value.Set("references", &jscompat.Array{Items: items})
+		value.Set("references", &dynvalue.Array{Items: items})
 	}
-	sum := sha256.Sum256([]byte(jscompat.Stringify(value)))
+	sum := sha256.Sum256([]byte(dynvalue.Stringify(value)))
 	return hex.EncodeToString(sum[:])
 }

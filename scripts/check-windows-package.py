@@ -51,7 +51,12 @@ with tempfile.TemporaryDirectory(prefix='songframe-nsis-') as directory:
     candidates = list(root.rglob('songframe.exe'))
     assert len(candidates) == 1 and digest(candidates[0]) == digest(binary), 'В NSIS другой exe'
     assert list(root.rglob('MicrosoftEdgeWebview2Setup.exe')), 'Нет WebView2 bootstrapper'
-    assert list(root.rglob('vc_redist.x64.exe')), 'Нет VC++ prerequisite'
+    # ORT импортирует VC++ runtime; DLL лежат рядом с exe, отдельного vc_redist нет.
+    for name in ('msvcp140.dll', 'msvcp140_1.dll', 'vcruntime140.dll', 'vcruntime140_1.dll'):
+        found = list(root.rglob(name))
+        assert len(found) == 1 and found[0].parent == candidates[0].parent, f'{name} не рядом с songframe.exe'
+    assert not list(root.rglob('vc_redist.x64.exe')), 'Лишний vc_redist в пакете'
+    assert list(root.rglob('msvc-runtime/LICENSE')), 'Нет условий распространения VC++ runtime'
     assert list(root.rglob('uninstall.exe')), 'Нет uninstaller'
     assert list(root.rglob('LICENSE')), 'Нет лицензий'
     assert not list(root.rglob('*.onnx')) and not list(root.rglob('onnxruntime.dll')), 'ML попал в базовый пакет'

@@ -44,17 +44,36 @@ docker run --rm --user "$(id -u):$(id -g)" --entrypoint /usr/local/go/bin/go \
   -ldflags "-s -w -H windowsgui -extldflags=-Wl,--subsystem,windows -X songframe-go/internal/appversion.Version=$version" -o /out/songframe.exe .
 wails3 generate webview2bootstrapper -dir "$work/prerequisites"
 printf '%s  %s\n' 7ebc4ce80143ef89cea86a61ea151502868db6caaa678b8b43660a66ace11c3a "$work/prerequisites/MicrosoftEdgeWebview2Setup.exe" | sha256sum --check
-vc="$work/prerequisites/vc_redist.x64.exe"
-if [[ ! -f $vc ]]; then
-  curl --fail --location --retry 2 https://aka.ms/vc14/vc_redist.x64.exe -o "$vc.part"
-  mv -- "$vc.part" "$vc"
+# Visual C++ runtime для ORT кладётся рядом с songframe.exe (app-local, как в Electron-поставке
+# через msvc-runtime): LoadLibrary ищет зависимости onnxruntime.dll в папке программы, поэтому
+# отдельная системная установка vc_redist и права администратора не нужны. Колесо и версия
+# те же, что в Electron runtime-lock; DLL копируются без изменения по REDIST list Microsoft.
+wheel="$work/prerequisites/msvc_runtime-14.51.36231-cp312-cp312-win_amd64.whl"
+if [[ ! -f $wheel ]]; then
+  curl --fail --location --retry 2 https://files.pythonhosted.org/packages/98/33/be9ef68901200813fc174a06758b4ae48ca4eb58fa783280dd879d5fd048/msvc_runtime-14.51.36231-cp312-cp312-win_amd64.whl -o "$wheel.part"
+  mv -- "$wheel.part" "$wheel"
 fi
-# Закреплён файл Microsoft, проверенный для ранней поставки. Изменение permalink требует проверки нового SHA.
-printf '%s  %s\n' 843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c "$vc" | sha256sum --check
+printf '%s  %s\n' 89f70d1a37bb64164cdb09d02dd82d6b1400e1310be2995b4ed5a9f23efe2222 "$wheel" | sha256sum --check
+vcruntime="$work/vcruntime"
+rm -rf -- "$vcruntime"
+mkdir -p "$vcruntime"
+python3 -I - "$wheel" "$vcruntime" <<'PY'
+import pathlib
+import sys
+import zipfile
+# Ровно DLL, которые импортирует onnxruntime.dll из закреплённого архива (manifest.json, abi.dependencies).
+wheel, target = sys.argv[1], pathlib.Path(sys.argv[2])
+with zipfile.ZipFile(wheel) as archive:
+    for name in ('msvcp140.dll', 'msvcp140_1.dll', 'vcruntime140.dll', 'vcruntime140_1.dll'):
+        (target / name).write_bytes(archive.read('msvc_runtime-14.51.36231.data/data/Scripts/' + name))
+    (target / 'LICENSE').write_bytes(archive.read('msvc_runtime-14.51.36231.dist-info/licenses/LICENSE'))
+PY
 python3 scripts/package-notices.py "$work" windows
+mkdir -p "$work/licenses/msvc-runtime"
+mv -- "$vcruntime/LICENSE" "$work/licenses/msvc-runtime/LICENSE"
 installer="$out/songframe-$version-win-x64-setup.exe"
 makensis -WX "-DVERSION=$version" "-DNUMERIC_VERSION=$numeric" "-DBINARY=$root/build/windows/songframe.exe" \
-  "-DWEBVIEW_BOOTSTRAPPER=$work/prerequisites/MicrosoftEdgeWebview2Setup.exe" "-DVC_REDIST=$vc" \
+  "-DWEBVIEW_BOOTSTRAPPER=$work/prerequisites/MicrosoftEdgeWebview2Setup.exe" "-DVCRUNTIME=$vcruntime" \
   "-DOUTPUT=$installer" "-DICON=$root/resources/icon.ico" "-DLICENSES=$work/licenses" packaging/windows/installer.nsi
 python3 scripts/check-windows-package.py "$root/build/windows/songframe.exe" "$installer" "$version" "$image"
 printf 'Готово: %s\n' "$installer"

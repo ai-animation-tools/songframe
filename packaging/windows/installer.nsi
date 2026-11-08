@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Минимальная поставка Go/Wails: только программа, лицензии и отдельный VC++ prerequisite.
+# Минимальная поставка Go/Wails: программа, DLL Visual C++ для ORT рядом с ней и лицензии.
 # Профиль, проекты и компоненты принадлежат пользователю и не удаляются этим установщиком.
 Unicode true
 
@@ -23,8 +23,8 @@ Unicode true
 !ifndef WEBVIEW_BOOTSTRAPPER
   !error "Не передан WEBVIEW_BOOTSTRAPPER"
 !endif
-!ifndef VC_REDIST
-  !error "Не передан VC_REDIST"
+!ifndef VCRUNTIME
+  !error "Не передан VCRUNTIME (папка DLL Visual C++)"
 !endif
 !ifndef OUTPUT
   !error "Не передан OUTPUT"
@@ -72,7 +72,7 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "© 2026 Yarkov Aleksey"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${EXE}"
 !define MUI_FINISHPAGE_RUN_TEXT "Запустить ${PRODUCT}"
 !define MUI_FINISHPAGE_RUN_NOTCHECKED
-!define MUI_FINISHPAGE_TEXT "SongFrame установлен.$\r$\n$\r$\nORT и модели устанавливаются отдельно в разделе «Компоненты». Если для ORT нужен Microsoft Visual C++ 14 Runtime, запустите prerequisites\vc_redist.x64.exe в папке приложения вручную. Это отдельная системная установка, которая может запросить права администратора."
+!define MUI_FINISHPAGE_TEXT "SongFrame установлен.$\r$\n$\r$\nFFmpeg, ONNX Runtime и модели устанавливаются в приложении, в разделе «Компоненты»."
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -197,18 +197,20 @@ Section "SongFrame" InstallApplication
   ${If} ${Errors}
     !insertmacro Fail 74 "Не удалось установить лицензионные материалы. Проверьте свободное место и повторите установку."
   ${EndIf}
-  SetOutPath "$INSTDIR\prerequisites"
+  # DLL Visual C++ нужны отдельно скачиваемому ONNX Runtime: Windows ищет их в папке программы.
+  SetOutPath "$INSTDIR"
   ClearErrors
-  File /oname=vc_redist.x64.exe "${VC_REDIST}"
-  FileOpen $0 "$INSTDIR\prerequisites\README.txt" w
+  File "${VCRUNTIME}\msvcp140.dll"
+  File "${VCRUNTIME}\msvcp140_1.dll"
+  File "${VCRUNTIME}\vcruntime140.dll"
+  File "${VCRUNTIME}\vcruntime140_1.dll"
   ${If} ${Errors}
-    !insertmacro Fail 74 "Не удалось сохранить отдельный установщик Microsoft Visual C++ Runtime. Повторите установку."
+    !insertmacro Fail 74 "Не удалось записать библиотеки Microsoft Visual C++. Закройте приложение, проверьте свободное место и повторите установку."
   ${EndIf}
-  FileWriteUTF16LE /BOM $0 "Microsoft Visual C++ 14 Runtime (x64)$\r$\n$\r$\nНужен для отдельно установленного ONNX Runtime CPU. SongFrame работает без ORT.$\r$\nПри необходимости запустите vc_redist.x64.exe вручную. Он может запросить права администратора.$\r$\nУстановщик SongFrame не запускает его автоматически.$\r$\n"
-  FileClose $0
-  ${If} ${Errors}
-    !insertmacro Fail 74 "Не удалось записать пояснение к Microsoft Visual C++ Runtime. Повторите установку."
-  ${EndIf}
+  # Ранние сборки клали отдельный vc_redist в prerequisites; он больше не нужен.
+  Delete "$INSTDIR\prerequisites\vc_redist.x64.exe"
+  Delete "$INSTDIR\prerequisites\README.txt"
+  RMDir "$INSTDIR\prerequisites"
   SetOutPath "$INSTDIR"
   ClearErrors
   WriteUninstaller "$INSTDIR\uninstall.exe"
@@ -254,9 +256,10 @@ Section "Uninstall"
   ${EndIf}
   Delete "$SMPROGRAMS\${PRODUCT}.lnk"
   Delete "$DESKTOP\${PRODUCT}.lnk"
-  Delete "$INSTDIR\prerequisites\vc_redist.x64.exe"
-  Delete "$INSTDIR\prerequisites\README.txt"
-  RMDir "$INSTDIR\prerequisites"
+  Delete "$INSTDIR\msvcp140.dll"
+  Delete "$INSTDIR\msvcp140_1.dll"
+  Delete "$INSTDIR\vcruntime140.dll"
+  Delete "$INSTDIR\vcruntime140_1.dll"
   RMDir /r "$INSTDIR\licenses"
   Delete "$INSTDIR\uninstall.exe"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"

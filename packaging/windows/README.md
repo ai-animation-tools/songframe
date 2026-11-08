@@ -14,7 +14,7 @@ wails3 task package:windows
 
 Для Zig передаётся `-extldflags=-Wl,--subsystem,windows` вместе с Go `-H windowsgui`. Одного Go-флага в проверенном toolchain оказалось недостаточно: предварительный PE оставался консольным. Проверка заголовка не позволяет такому exe попасть в комплект. Чужая обёртка компилятора не используется.
 
-Результат — `build/release/songframe-<VERSION>-win-x64-setup.exe`, рядом `.sha256` и `.build.json`. [check-windows-package.py](../../scripts/check-windows-package.py) сверяет AMD64/GUI/resources/asInvoker, Go build info CGO/ORT, вшитую версию `packaging/VERSION`, системные PE imports и хеш извлечённого из NSIS app exe; проверяет bootstrapper, VC prerequisite, лицензии, uninstaller и отсутствие встроенных ORT/ONNX. Windows-код не запускается, receipt содержит `nativeWindowsTested: false`.
+Результат — `build/release/songframe-<VERSION>-win-x64-setup.exe`, рядом `.sha256` и `.build.json`. [check-windows-package.py](../../scripts/check-windows-package.py) сверяет AMD64/GUI/resources/asInvoker, Go build info CGO/ORT, вшитую версию `packaging/VERSION`, системные PE imports и хеш извлечённого из NSIS app exe; проверяет bootstrapper, DLL Visual C++ рядом с exe, лицензии, uninstaller и отсутствие встроенных ORT/ONNX. Windows-код не запускается, receipt содержит `nativeWindowsTested: false`.
 
 ## Установка и prerequisites
 
@@ -22,14 +22,14 @@ wails3 task package:windows
 
 Microsoft WebView2 обнаруживается по pv в HKLM/HKCU. Отсутствующий runtime ставится встроенным официальным bootstrapper `/silent /install`; для этого нужен интернет. После установки проверяется действительное наличие runtime, а не только exit code. Источник — [документация Microsoft](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution). Bootstrapper берётся из закреплённого Wails 3.0.0, SHA проверяется.
 
-Оболочка не требует ORT и моделей. Для отдельного Windows ORT нужен Microsoft Visual C++ 14 Runtime x64. Официальный `vc_redist.x64.exe` включён в `prerequisites` рядом с установленным приложением, автоматически не запускается. При его необходимости пользователь запускает его отдельно и подтверждает системные права. [Источник Microsoft](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170); URL и проверенный SHA закреплены в сборочном скрипте. Это не установка Python/Node/Go и не часть собственного runtime приложения.
+Оболочка не требует ORT и моделей. Отдельно скачиваемый Windows ORT импортирует Microsoft Visual C++ 14 Runtime x64 (`msvcp140.dll`, `msvcp140_1.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`). Эти четыре DLL установщик кладёт рядом с `songframe.exe` (app-local): Windows ищет зависимости загружаемой DLL в папке программы, поэтому системная установка `vc_redist` и права администратора не нужны — как в Electron-версии, где те же DLL приходили с Python. Источник — колесо PyPI `msvc-runtime` 14.51.36231 (то же, что в runtime-lock Electron), URL и SHA закреплены в сборочном скрипте; DLL копируются без изменений по [REDIST list Microsoft](https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution#visual-c-runtime-files), условия — `licenses/msvc-runtime/LICENSE`. Ранние сборки 1.0.0-dev.47 вместо этого клали `prerequisites\vc_redist.x64.exe`; установщик удаляет эту папку.
 
 FFmpeg/ffprobe, ORT и модели устанавливаются через экран «Компоненты». Установщик не читает прежний профиль Electron и не переносит клипы.
 
 ## Ручная проверка в VM
 
 1. Запустить setup обычным пользователем. Проверить завершение установки, ярлыки и запуск окна без консоли/UAC приложения; если WebView2 отсутствует, дать bootstrapper завершить загрузку.
-2. Открыть «Компоненты» без установленных ORT/моделей: окно и навигация должны оставаться доступны. При необходимости установить VC prerequisite из папки приложения, затем компоненты. Готовность CTC-модели подтверждается настоящей CPU session/inference встроенной проверкой.
+2. Открыть «Компоненты» без установленных ORT/моделей: окно и навигация должны оставаться доступны. Установить компоненты: ONNX Runtime должен стать «Готов» без отдельной установки Visual C++. Готовность CTC-модели подтверждается настоящей CPU session/inference встроенной проверкой.
 3. Повторно открыть приложение: установленные компоненты должны использоваться без повторного скачивания. Проверить закрытие, повторную установку/удаление и сохранность профиля; полный CTC workflow относится к следующему этапу.
 
 4. Проверить обновление: положить рядом с setup файл `build/release/update-check.cmd` (создаётся вручную по образцу ниже) и запустить его в VM после установки. Установленное приложение получает подставной выпуск 99.0.0 с этим же установщиком, скачивает и сверяет его, запускает установщик и закрывается, как кнопка «Установить и перезапустить». Пройти установщик поверх установленной версии: приложение должно запуститься снова, «Компоненты», настройки и история — остаться. В консоли печатается отчёт `update.json` (`launchedInstaller: true`, `download.status: ready`).

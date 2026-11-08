@@ -27,7 +27,7 @@ interface Props {
 export function VocalPreparation(props: Props): ReactElement {
   const { online } = useApp();
   const preparation = useVocalPreparation(props);
-  const { view, job, error, busy, apiReady } = preparation;
+  const { view, job, error, busy } = preparation;
   const [resultId, setResultId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export function VocalPreparation(props: Props): ReactElement {
   const preview = view?.results.find((item) => item.id === previewId);
   const deletion = view?.results.find((item) => item.id === deleteId);
   const running = job?.status === 'running';
-  const blocked = props.disabled || busy || running || !apiReady;
+  const blocked = props.disabled || busy || running;
   const deleteReason = props.disabled ? texts.vocalInUse : texts.operationPending;
   return (
     <Stack spacing={1.5}>

@@ -12,7 +12,6 @@ import type { KeyframeNoteScope, PackageKeyframe } from '@shared/types';
 import { useApp } from '../../../state';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
-import { useMethodAvailability } from '../../../availability';
 import { KeyframeNoteScopeField } from './KeyframeNoteScopeField';
 import { ProductionFrameGenerationButton } from './ProductionFrameGenerationButton';
 
@@ -36,15 +35,13 @@ export function FrameActions({
   onImport(images: ProductionFrameCandidate[]): Promise<boolean>;
 }): ReactElement | null {
   const { notify, describeError } = useApp();
-  const generation = useMethodAvailability('productionWorkflow.generateFrames');
-  const importing = useMethodAvailability('productionWorkflow.importFrames');
   const [instructionOpen, setInstructionOpen] = useState(false);
   const [note, setNote] = useState('');
   const [scope, setScope] = useState<KeyframeNoteScope>('frame');
   if (frame.approved) return null;
   const replacing = view.replaceFrame === frame.id;
   const available = replacing || view.canGenerateFrames;
-  const reason = busy ? BUSY_REASON : !available ? (view.reasons.frames ?? productionTexts.productionWorkflowPanel.descriptionRequired) : importing.reason;
+  const reason = busy ? BUSY_REASON : !available ? (view.reasons.frames ?? productionTexts.productionWorkflowPanel.descriptionRequired) : null;
   const choose = async (): Promise<void> => {
     try {
       const files = await window.api.dialog.pickFiles({
@@ -79,8 +76,8 @@ export function FrameActions({
       {view.nextFrame === frame.id && !replacing ? (
         <ProductionFrameGenerationButton
           provider={view.imageProvider}
-          disabled={busy || !view.canGenerateFrames || !generation.available}
-          disabledReason={busy ? BUSY_REASON : !view.canGenerateFrames ? view.reasons.frames : generation.reason}
+          disabled={busy || !view.canGenerateFrames}
+          disabledReason={busy ? BUSY_REASON : !view.canGenerateFrames ? view.reasons.frames : null}
           frame={frame.id}
           title={productionTexts.productionWorkflowPanel.frameHint({ nextFrame: frame.id })}
           onGenerate={() => {
@@ -96,13 +93,7 @@ export function FrameActions({
           {productionTexts.frameActions.instructionOpen}
         </Button>
       ) : null}
-      <ActionButton
-        startIcon={<FolderOpenIcon />}
-        size="small"
-        disabled={busy || !available || !importing.available}
-        disabledReason={reason}
-        onClick={() => void choose()}
-      >
+      <ActionButton startIcon={<FolderOpenIcon />} size="small" disabled={busy || !available} disabledReason={reason} onClick={() => void choose()}>
         {frame.imagePath ? productionTexts.frameActions.other : productionTexts.frameActions.own}
       </ActionButton>
     </Stack>

@@ -1,4 +1,5 @@
 /** Сводка использует настоящую классификацию ресурсов, ошибок и необязательных зависимостей. */
+import { providerTexts } from '@shared/texts/providers';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { EnvironmentDiagnostics } from './EnvironmentDiagnostics';
@@ -30,10 +31,10 @@ export const OptionalMissing: Story = {
 };
 export const CoreFailure: Story = {
   name: 'Отсутствует обязательный ресурс',
-  args: { checks: environmentChecks().map((check) => (check.id === 'python' ? { ...check, ok: false, detail: 'Python не найден.' } : check)) },
+  args: { checks: environmentChecks().map((check) => (check.id === 'story-provider-client' ? { ...check, ok: false, detail: 'Клиент не найден.' } : check)) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('alert')).toHaveTextContent('Без этого приложение работает не полностью: Встроенный Python.');
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Без этого приложение работает не полностью: Клиент провайдера изображений.');
     await expect(canvas.queryByText('Ресурсы и библиотеки приложения доступны.')).not.toBeInTheDocument();
   }
 };
@@ -71,7 +72,7 @@ export const RunAndFinish: Story = {
     await expect(canvas.getByText('Проверка среды ещё не выполнена.')).toBeVisible();
     await userEvent.click(canvas.getByRole('button', { name: 'Проверить' }));
     await expect(canvas.getByRole('button', { name: 'Проверка' })).toBeDisabled();
-    await canvas.findByRole('progressbar', { name: 'Встроенный Python: выполняется проверка' });
+    await canvas.findByRole('progressbar', { name: 'Клиент провайдера изображений: выполняется проверка' });
     await canvas.findByText('Ресурсы и библиотеки приложения доступны.');
     await expect(canvas.getByRole('button', { name: 'Проверить' })).toBeEnabled();
     await expect(canvas.queryByRole('progressbar')).not.toBeInTheDocument();
@@ -84,7 +85,7 @@ export const FailureAndRetry: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Проверить' }));
     await canvas.findByText('Не удалось завершить проверку: Демонстрационный worker завершился без ответа. Показаны последние доступные результаты.');
-    await expect(canvas.getByText('Python 3.11.9 · resources/runtime/python')).toBeVisible();
+    await expect(canvas.getByText(providerTexts.bundledClient)).toBeVisible();
     await expect(canvas.queryByRole('progressbar')).not.toBeInTheDocument();
     await userEvent.click(canvas.getByRole('button', { name: 'Проверить' }));
     await canvas.findByText('Ресурсы и библиотеки приложения доступны.');

@@ -2,7 +2,8 @@
  * Единственная реализация window.api (D-027): каждый метод контракта shared/api.ts вызывает
  * сгенерированный binding Wails. Ответы Go не перепроверяются вручную — соответствие типов
  * bindings ↔ shared/types проверяет typecheck, а отсутствие null в коллекциях гарантирует
- * wire.Fill на стороне Go. Методы, ещё не перенесённые в Go, явно отвергаются с кодом UNAVAILABLE.
+ * wire.Fill на стороне Go. Каркас api-skeleton перечисляет все методы контракта, а тест адаптера
+ * проверяет, что каждый из них подключён здесь к binding.
  */
 import type { Api } from '@shared/api';
 import type {
@@ -54,15 +55,15 @@ import type * as mediaapi from '../../bindings/songframe-go/internal/mediaapi/mo
 import type { MediaCapabilities, MediaKind, ProviderAuth } from '@shared/media-providers';
 import { componentTexts } from '@shared/texts/component-manager';
 import { platformTexts } from '@shared/texts/platform';
-import { unavailableApi, type ApiMethod } from './unavailable-api';
+import { apiSkeleton, type ApiMethod } from './api-skeleton';
 import { fileUrl } from './file-url';
 
-export type { ApiMethod } from './unavailable-api';
+export type { ApiMethod } from './api-skeleton';
 
 /** Ошибка сохраняет технический код и метод для диагностики, не превращая отказ в успешную пустую выдачу. */
 export class ApiError extends Error {
   constructor(
-    public readonly code: 'UNAVAILABLE' | 'TIMEOUT' | 'CONNECTION_FAILED' | 'SERVICE_FAILED',
+    public readonly code: 'TIMEOUT' | 'CONNECTION_FAILED' | 'SERVICE_FAILED',
     public readonly method: string,
     message: string,
     options?: ErrorOptions
@@ -194,187 +195,6 @@ export const nativeBindings: Bindings = {
     return { on: Events.On };
   }
 };
-
-/** Методы с реализацией в Go. Всё остальное в контракте — «ещё не перенесено» с понятной причиной. */
-const IMPLEMENTED = new Set<ApiMethod>([
-  'app.state',
-  'dialog.pickFolder',
-  'dialog.pickFiles',
-  'shell.openPath',
-  'shell.readText',
-  'shell.fileUrl',
-  'shell.onFilesDropped',
-  'diagnostics.reportRendererError',
-  'diagnostics.crashNotice',
-  'diagnostics.saveReport',
-  'notifications.onOpen',
-  'projects.open',
-  'projects.create',
-  'projects.validateNew',
-  'projects.status',
-  'projects.rename',
-  'projects.close',
-  'projects.forget',
-  'projects.settings',
-  'projects.saveSettings',
-  'sources.view',
-  'sources.validate',
-  'sources.save',
-  'timing.view',
-  'cast.view',
-  'cast.init',
-  'cast.save',
-  'scenario.status',
-  'scenario.view',
-  'scenario.saveTreatment',
-  'scenario.validateTreatment',
-  'scenario.saveScenes',
-  'scenario.saveImpact',
-  'scenario.validateScenes',
-  'scenario.brief',
-  'tools.run',
-  'checks.list',
-  'checks.run',
-  'checks.runAll',
-  'checks.updateViews',
-  'scenarioWorkflow.view',
-  'scenarioWorkflow.start',
-  'scenarioWorkflow.apply',
-  'scenarioWorkflow.approveCurrent',
-  'scenarioWorkflow.approveScenes',
-  'scenarioWorkflow.discard',
-  'timing.save',
-  'timing.vocalsView',
-  'timing.downloadVocalModel',
-  'timing.separateVocals',
-  'timing.selectVocal',
-  'timing.deleteVocal',
-  'timing.songModelSetup',
-  'timing.downloadSongModels',
-  'timing.start',
-  'timing.cancel',
-  'jobs.list',
-  'jobs.get',
-  'jobs.copyText',
-  'components.state',
-  'components.connect',
-  'components.download',
-  'components.configure',
-  'components.check',
-  'components.cancel',
-  'components.catalog',
-  'components.installation',
-  'components.install',
-  'components.cancelInstall',
-  'components.chooseDirectory',
-  'components.chooseFile',
-  'ai.access',
-  'agents.getSettings',
-  'agents.getProviderSettings',
-  'agents.saveProviderSettings',
-  'agents.saveSettings',
-  'agents.check',
-  'agents.account',
-  'agents.models',
-  'agents.start',
-  'agents.cancel',
-  'agents.get',
-  'agents.list',
-  'agents.onEvent',
-  'environment.check',
-  'environment.loginProvider',
-  'environment.cancelLogin',
-  'environment.onLoginUrl',
-  'environment.providerAuth',
-  'media.capabilities',
-  'videoReview.view',
-  'videoReview.start',
-  'videoReview.cancel',
-  'cover.inspect',
-  'cover.create',
-  'cover.prepare',
-  'cover.generate',
-  'cover.view',
-  'cover.accept',
-  'cover.close',
-  'referenceImages.inspect',
-  'referenceImages.context',
-  'referenceImages.create',
-  'referenceImages.prepare',
-  'referenceImages.generate',
-  'referenceImages.view',
-  'referenceImages.accept',
-  'referenceImages.attach',
-  'referenceImages.close',
-  // Производство.
-  'production.view',
-  'production.decide',
-  'production.reopenFrame',
-  'production.keepPackageForScene',
-  'production.addKeyframeNote',
-  'production.setKeyframeNote',
-  'production.quote',
-  'production.submit',
-  'production.resume',
-  'production.attachResult',
-  'production.markNotCreated',
-  'production.selectImage',
-  'production.regenerate',
-  'production.accept',
-  'production.contactSheet',
-  'production.prepareSpeech',
-  'production.park',
-  'production.speechPlan',
-  'production.reopenQuestion',
-  'production.discardAttempt',
-  'production.exportBundle',
-  'production.listBundles',
-  'production.removeBundle',
-  // Проход агента производства.
-  'productionWorkflow.view',
-  'productionWorkflow.start',
-  'productionWorkflow.apply',
-  'productionWorkflow.discard',
-  'productionWorkflow.generateFrames',
-  'productionWorkflow.importFrames',
-  'dashboard.view',
-  // Аниматик и пробы стыков (FFmpeg-конвейер шага 46a).
-  'animatic.view',
-  'animatic.build',
-  'animatic.setStatus',
-  'checks.buildReview',
-  'checks.listReviews',
-  'checks.removeReview',
-  // Ручной монтаж: черновики, экспорт пробы, применение apply_montage (MontageService).
-  'montage.view',
-  'montage.load',
-  'montage.save',
-  'montage.remove',
-  'montage.export',
-  'montage.apply',
-  'montage.saveVideo',
-  // Производные планы: рецепт, проба и приёмка показанных байтов (DerivedShotService).
-  'derivedShots.view',
-  'derivedShots.save',
-  'derivedShots.build',
-  'derivedShots.accept',
-  // Обновление приложения по кнопке (UpdatesService).
-  'updates.view',
-  'updates.check',
-  'updates.download',
-  'updates.install',
-  // Второе окно плеера монтажа (MontageWindowService).
-  'montageWindow.open',
-  'montageWindow.close',
-  'montageWindow.send',
-  'montageWindow.onMessage',
-  'montageWindow.onClosed'
-]);
-
-/** Доступность принадлежит адаптеру, поэтому UI не повторяет собственный список готовых Go-операций. */
-export function methodAvailability(method: ApiMethod): { available: boolean; reason: string | null } {
-  return IMPLEMENTED.has(method) ? { available: true, reason: null } : { available: false, reason: platformTexts.unavailable };
-}
 
 /**
  * Go-перечисления (jobs.Kind, Status, StepStatus) генерируются как TS enum с теми же строками,
@@ -572,10 +392,7 @@ function componentFolderTitle(component?: string): string {
  * app.state: страницы обращаются к fileUrl только после старта, поэтому он синхронен.
  */
 export function createApi(b: Bindings): Api {
-  const fail = (method: ApiMethod): never => {
-    throw new ApiError('UNAVAILABLE', method, platformTexts.unavailable);
-  };
-  const api = unavailableApi(async (method) => fail(method), fail);
+  const api = apiSkeleton();
   let fileBase: string | null = null;
   let fileBaseLoad: Promise<void> | null = null;
   /**
@@ -611,7 +428,7 @@ export function createApi(b: Bindings): Api {
   api.shell.openPath = (path) => call('shell.openPath', async () => (await b.shell()).OpenPath(path));
   api.shell.readText = (path) => call('shell.readText', async () => (await b.shell()).ReadText(path));
   api.shell.fileUrl = (path) => {
-    if (fileBase === null) throw new ApiError('UNAVAILABLE', 'shell.fileUrl', platformTexts.connectionFailed);
+    if (fileBase === null) throw new ApiError('CONNECTION_FAILED', 'shell.fileUrl', platformTexts.connectionFailed);
     return fileUrl(fileBase, path);
   };
   api.shell.onFilesDropped = (listener) =>
@@ -719,8 +536,8 @@ export function createApi(b: Bindings): Api {
       return { ...brief, phase: brief.phase as BriefResult['phase'] };
     });
 
-  // Перенесённые инструменты Go выполняет в процессе приложения; ToolResult повторяет код, stdout
-  // и stderr процесса Python оригинала. Неперенесённое имя — ошибка Go-сервиса своим текстом.
+  // Инструменты Go выполняет в процессе приложения; ToolResult повторяет код, stdout и stderr
+  // процесса Python оригинала. Неизвестное имя — ошибка Go-сервиса своим текстом.
   api.tools.run = (project, name, args) => call('tools.run', async () => (await b.tools()).Run(project, name, args), false);
 
   // Проверки — задания общего менеджера. CheckId Go генерирует TS enum с теми же строками, поэтому

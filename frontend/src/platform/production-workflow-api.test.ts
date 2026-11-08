@@ -6,7 +6,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { ProductionWorkflowStart } from '@shared/production-workflow';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 function bindings(productionWorkflow: Record<string, unknown>): Bindings {
   const missing = async () => {
@@ -69,18 +69,6 @@ const view = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe('window.api.productionWorkflow', () => {
-  it('перенесены все методы прохода производства', () => {
-    for (const method of [
-      'productionWorkflow.view',
-      'productionWorkflow.start',
-      'productionWorkflow.apply',
-      'productionWorkflow.discard',
-      'productionWorkflow.generateFrames',
-      'productionWorkflow.importFrames'
-    ] as const)
-      expect(methodAvailability(method)).toEqual({ available: true, reason: null });
-  });
-
   it('передаёт документы как есть, а провайдеров — только при наличии', async () => {
     const proposal = { id: 'p', jobId: 'job-1', stage: 'description', status: 'ready', stale: false, before: '', after: { schemaVersion: 1 } };
     const View = vi.fn(async () => view({ proposal, imageProvider: 'test-agent' }));

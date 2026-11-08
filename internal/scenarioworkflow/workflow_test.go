@@ -173,9 +173,6 @@ func TestAgentRefusalStoresNothing(t *testing.T) {
 	if _, err := workflow.Start(StartInput{Project: project, Pass: "treatment"}); !errors.Is(err, access) {
 		t.Fatalf("проверка доступа к агенту: %v", err)
 	}
-	if _, err := (New(Options{LocalDir: localDir})).Start(StartInput{Project: project, Pass: "treatment"}); err == nil || err.Error() != textAgentsUnavailable {
-		t.Fatalf("без менеджера агентов: %v", err)
-	}
 }
 
 // TestApplyFaults — сбой каждой фазы применения оставляет проект прежним, предложение готовым к
@@ -366,7 +363,7 @@ func TestCorruptStateIgnored(t *testing.T) {
 		if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		view, err := New(Options{LocalDir: localDir}).View(project)
+		view, err := New(Options{LocalDir: localDir, Agents: &fakeAgents{}}).View(project)
 		if err != nil || view.TreatmentApproved || view.Proposal != nil || !view.CanApproveCurrent {
 			t.Fatalf("%s: %v %+v", text, err, view)
 		}

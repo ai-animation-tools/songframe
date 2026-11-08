@@ -66,32 +66,6 @@ describe('окружение историй', () => {
     expect(nextClose).toHaveBeenCalledTimes(1);
   });
 
-  it('отсутствующий метод старого preload изолирован своей сессией и не попадает в следующие истории', () => {
-    const normal = createStoryApi();
-    const inspect = normal.api.referenceImages.inspect;
-    const broken = createStoryApi({}, { missingReferenceImageInspection: true });
-    try {
-      // Проверяем настоящее отсутствие после guard-обёрток, не вызывая ненастроенный API.
-      expect(typeof inspect).toBe('function');
-      expect(typeof broken.api.referenceImages.inspect).toBe('undefined');
-      expect(Reflect.has(broken.api.referenceImages, 'inspect')).toBe(false);
-      expect(normal.api.referenceImages.inspect).toBe(inspect);
-      broken.dispose();
-      expect(normal.api.referenceImages.inspect).toBe(inspect);
-      const next = createStoryApi();
-      try {
-        expect(typeof next.api.referenceImages.inspect).toBe('function');
-        expect(Reflect.has(next.api.referenceImages, 'inspect')).toBe(true);
-        expect(next.api.referenceImages.inspect).not.toBe(inspect);
-      } finally {
-        next.dispose();
-      }
-    } finally {
-      broken.dispose();
-      normal.dispose();
-    }
-  });
-
   it('разрешает медиа под подпапкой, Windows-пути, кириллицу и query версии', () => {
     const base = 'https://example.test/каталог/iframe.html?id=история';
     expect(storyFileUrl('C:\\макеты с пробелом\\story-video.mp4?v=7', base)).toBe(
@@ -100,17 +74,4 @@ describe('окружение историй', () => {
     expect(storyFileUrl(STORY_IMAGE_PATH, 'https://example.test/demo/iframe.html')).toBe('https://example.test/demo/media/story-image.png');
     expect(storyFileUrl('/чужой/проект/private.png', base)).toContain('/media/missing-story-file');
   });
-});
-
-it('отсутствующий inspect обложки изолирован и не отключает проверку опор референса', () => {
-  const broken = createStoryApi({}, { missingCoverImageInspection: true });
-  const normal = createStoryApi();
-  try {
-    expect(typeof broken.api.cover.inspect).toBe('undefined');
-    expect(typeof broken.api.referenceImages.inspect).toBe('function');
-    expect(typeof normal.api.cover.inspect).toBe('function');
-  } finally {
-    broken.dispose();
-    normal.dispose();
-  }
 });

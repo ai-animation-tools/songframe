@@ -1,7 +1,6 @@
 /** Типизированное окружение историй: только локальные модели, без Wails, Go-сервисов и рабочего проекта. */
 import type { Api } from '@shared/api';
 import type { AppContextValue } from '../state';
-import type { ApiMethod } from '../availability';
 import { unconfiguredStoryApi } from './storybook-api';
 
 export type ApiOverrides = { [Group in keyof Api]?: Partial<Api[Group]> };
@@ -13,8 +12,6 @@ export interface StoryOptions {
   shell?: 'block' | 'page';
   workspaceWidth?: number;
   createApi?: () => ApiOverrides | StoryApiSession;
-  /** Методы, которые история показывает как ещё не перенесённые в Go (остальные доступны). */
-  unavailable?: readonly ApiMethod[];
 }
 
 export const STORY_VIDEO_PATH = '/mock/story-video.mp4';
@@ -80,10 +77,7 @@ export interface StoryApiSession {
 }
 
 /** Каждый вызов создаёт отдельные методы и подписки; полный Api проверяется компилятором. */
-export function createStoryApi(
-  overrides: ApiOverrides = {},
-  faults: { missingReferenceImageInspection?: boolean; missingCoverImageInspection?: boolean } = {}
-): StoryApiSession {
+export function createStoryApi(overrides: ApiOverrides = {}): StoryApiSession {
   const agent = eventChannel<EventPayload<'agents', 'onEvent'>>();
   const notification = eventChannel<EventPayload<'notifications', 'onOpen'>>();
   const login = eventChannel<EventPayload<'environment', 'onLoginUrl'>>();
@@ -238,8 +232,7 @@ export function createStoryApi(
       onEvent: guardedSync(merged.agents.onEvent)
     },
     app: {
-      state: guardedAsync(merged.app.state),
-      setToolsRoot: guardedAsync(merged.app.setToolsRoot)
+      state: guardedAsync(merged.app.state)
     },
     projects: {
       open: guardedAsync(merged.projects.open),
@@ -372,9 +365,6 @@ export function createStoryApi(
       chooseFile: guardedAsync(merged.components.chooseFile)
     }
   };
-  // Моделируем старый preload после обёрток: отсутствующий метод должен дать undefined, а не отклонённый Promise.
-  if (faults.missingCoverImageInspection) Reflect.deleteProperty(api.cover, 'inspect');
-  if (faults.missingReferenceImageInspection) Reflect.deleteProperty(api.referenceImages, 'inspect');
   return {
     api,
     emit: {

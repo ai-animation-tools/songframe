@@ -6,7 +6,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AgentJob } from '@shared/agents';
 import type { VideoReviewView } from '@shared/video-review';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 function bindings(videoReview: Record<string, unknown>): Bindings {
   const missing = async () => {
@@ -93,11 +93,6 @@ const idle: VideoReviewView = {
 };
 
 describe('window.api.videoReview', () => {
-  it('view, start и cancel перенесены в Go', () => {
-    for (const method of ['videoReview.view', 'videoReview.start', 'videoReview.cancel'] as const)
-      expect(methodAvailability(method), method).toEqual({ available: true, reason: null });
-  });
-
   it('передаёт проект и пакет, возвращает представление Go без изменений', async () => {
     const service = {
       View: vi.fn(async () => completed),

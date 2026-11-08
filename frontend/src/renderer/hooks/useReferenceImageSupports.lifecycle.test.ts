@@ -3,7 +3,6 @@ import type * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GenerationReferenceImage } from '@shared/cover-generation';
 import type { ReferenceImageGenerationInput, ReferenceImageOption } from '@shared/reference-image-generation';
-import { sourcesTexts } from '@shared/texts/sources';
 import { useReferenceImageSupports } from './useReferenceImageSupports';
 
 const fixture = vi.hoisted(() => ({
@@ -48,7 +47,7 @@ const image = (option: ReferenceImageOption, sha256 = 'a'.repeat(64)): Generatio
   bytes: 128
 });
 const inspect = vi.fn<(input: ReferenceImageGenerationInput) => Promise<GenerationReferenceImage[]>>();
-const referenceApi: { inspect?: typeof inspect } = {};
+const referenceApi = { inspect };
 
 function RenderHook(options: ReferenceImageOption[], enabled = true, mode: 'cover' | 'reference' = 'reference') {
   fixture.stateIndex = fixture.effectIndex = 0;
@@ -77,7 +76,6 @@ beforeEach(() => {
   fixture.pending = [];
   inspect.mockReset();
   inspect.mockResolvedValue([image(first)]);
-  referenceApi.inspect = inspect;
   vi.stubGlobal('window', { api: { referenceImages: referenceApi, cover: referenceApi } });
 });
 afterEach(() => {
@@ -86,54 +84,6 @@ afterEach(() => {
 });
 
 describe('жизненный цикл проверки выбранных опор', () => {
-  it('перехватывает отсутствие метода preload и повтор без синхронного падения эффекта', async () => {
-    // Удаляем именно метод переданного preload: подмена отклонённым Promise скрыла бы исходную ошибку.
-    delete referenceApi.inspect;
-    expect(() => RenderHook([first])).not.toThrow();
-    await settle();
-    const failed = RenderHook([first]);
-    expect(failed).toMatchObject({
-      ready: false,
-      loading: false,
-      restartRequired: true,
-      error: sourcesTexts.referenceSupportsRestartRequired,
-      input: { images: [] },
-      notes: ''
-    });
-    failed.retry();
-    expect(() => RenderHook([first])).not.toThrow();
-    await settle();
-    expect(RenderHook([first])).toMatchObject({
-      ready: false,
-      loading: false,
-      restartRequired: true,
-      error: sourcesTexts.referenceSupportsRestartRequired,
-      input: { images: [] }
-    });
-    expect(inspect).not.toHaveBeenCalled();
-  });
-
-  it('после успешной проверки убирает прежний снимок, если метод исчез перед retry', async () => {
-    RenderHook([first]);
-    await settle();
-    const ready = RenderHook([first]);
-    expect(ready.ready).toBe(true);
-    expect(ready.input.images).toHaveLength(1);
-    delete referenceApi.inspect;
-    ready.retry();
-    expect(() => RenderHook([first])).not.toThrow();
-    await settle();
-    expect(RenderHook([first])).toMatchObject({
-      ready: false,
-      loading: false,
-      restartRequired: true,
-      error: sourcesTexts.referenceSupportsRestartRequired,
-      input: { images: [] },
-      notes: ''
-    });
-    expect(inspect).toHaveBeenCalledTimes(1);
-  });
-
   it('перехватывает синхронную ошибку существующего метода как ошибку чтения', async () => {
     inspect.mockImplementationOnce(() => {
       throw new Error('Опора повреждена');
@@ -143,24 +93,9 @@ describe('жизненный цикл проверки выбранных опо
     expect(RenderHook([first])).toMatchObject({
       ready: false,
       loading: false,
-      restartRequired: false,
       error: 'Опора повреждена',
       input: { images: [] }
     });
-  });
-
-  it('снимает ошибку отсутствующего метода при смене выбора и успешно проверяет новые опоры', async () => {
-    delete referenceApi.inspect;
-    expect(() => RenderHook([first])).not.toThrow();
-    await settle();
-    expect(RenderHook([first]).restartRequired).toBe(true);
-    referenceApi.inspect = inspect;
-    const current = deferred();
-    inspect.mockReturnValueOnce(current.promise);
-    expect(RenderHook([second])).toMatchObject({ ready: false, loading: true, error: null, restartRequired: false, input: { images: [] } });
-    current.resolve([image(second, 'b'.repeat(64))]);
-    await settle();
-    expect(RenderHook([second])).toMatchObject({ ready: true, loading: false, error: null, restartRequired: false });
   });
 
   it('поздняя ошибка прежнего выбора не заменяет успешный результат текущего', async () => {
@@ -178,7 +113,6 @@ describe('жизненный цикл проверки выбранных опо
       ready: true,
       loading: false,
       error: null,
-      restartRequired: false,
       input: { images: [{ path: second.path, label: second.label, sha256: 'b'.repeat(64) }] }
     });
   });
@@ -224,7 +158,7 @@ describe('жизненный цикл проверки выбранных опо
     RenderHook([first]);
     await settle();
     const failed = RenderHook([first]);
-    expect(failed).toMatchObject({ ready: false, loading: false, error: 'Опора недоступна', restartRequired: false, input: { images: [] } });
+    expect(failed).toMatchObject({ ready: false, loading: false, error: 'Опора недоступна', input: { images: [] } });
     RenderHook([first]);
     expect(inspect).toHaveBeenCalledTimes(1);
     const retry = deferred();
@@ -271,13 +205,4 @@ describe('жизненный цикл проверки выбранных опо
     expect(after.notes).not.toContain(first.note);
     expect(inspect).toHaveBeenCalledTimes(1);
   });
-});
-
-it('старый preload обложки блокирует выбранные опоры до подготовки, но позволяет убрать выбор', async () => {
-  delete referenceApi.inspect;
-  RenderHook([first], true, 'cover');
-  await settle();
-  expect(RenderHook([first], true, 'cover')).toMatchObject({ ready: false, restartRequired: true, error: sourcesTexts.referenceSupportsRestartRequired });
-  expect(inspect).not.toHaveBeenCalled();
-  expect(RenderHook([], true, 'cover')).toMatchObject({ ready: true, error: null, input: { images: [] } });
 });

@@ -2,7 +2,6 @@ import { checksTexts } from '@shared/texts/checks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CheckId, CheckInfo, JobInfo, ReviewInfo, ShotProduction } from '@shared/types';
 import { useApp } from '../../state';
-import { useMethodAvailability } from '../../availability';
 import type { CheckOutcome } from './types';
 import { selectShot, type ShotSelection } from './shot-selection';
 
@@ -16,9 +15,6 @@ export function useChecksPage() {
   const [jobs, setJobs] = useState<JobInfo[]>([]);
   const [reviews, setReviews] = useState<ReviewInfo[]>([]);
   const [shots, setShots] = useState<ShotProduction[]>([]);
-  // Отличие от 634fd94: проверки Go-версии выполняются в процессе приложения и Python не требуют,
-  // поэтому строка Python страницы «Среда» (её в Go нет) их не блокирует.
-  const pythonAvailable = true;
   const [strict, setStrict] = useState(false);
   const [next, setNext] = useState(false);
   const [planOnly, setPlanOnly] = useState(false);
@@ -30,12 +26,7 @@ export function useChecksPage() {
   const [lastJob, setLastJob] = useState<Record<string, string>>({});
 
   const loadJobs = useCallback(async () => setJobs((await window.api.jobs.list()).filter((j) => JOB_KINDS.has(j.kind))), []);
-  // Отличие от 634fd94 на время миграции: список проб читается, только если адаптер считает метод
-  // доступным; иначе блок пробы показывает причину через RequireMigrated, а проверки работают без него.
-  const reviewsAvailable = useMethodAvailability('checks.listReviews').available;
-  const loadReviews = useCallback(async () => {
-    if (reviewsAvailable) setReviews(await window.api.checks.listReviews(project));
-  }, [project, reviewsAvailable]);
+  const loadReviews = useCallback(async () => setReviews(await window.api.checks.listReviews(project)), [project]);
 
   useEffect(() => {
     window.api.checks
@@ -150,7 +141,6 @@ export function useChecksPage() {
     jobs,
     reviews,
     shots,
-    pythonAvailable,
     strict,
     next,
     planOnly,

@@ -59,7 +59,6 @@ const (
 	textProposedRegistryMissing    = "Нет предложенного реестра сцен."
 	textStaleMaterials             = "Предложение устарело: изменился состав материалов или производных файлов проекта. Подготовьте новое предложение."
 	textRecoveryPending            = "Не завершено восстановление прошлого применения сценария. Перезапустите приложение."
-	textAgentsUnavailable          = "Запуск агента ещё не подключён в Go-версии SongFrame."
 )
 
 func textRegistryInvalidShot(id *string) string {

@@ -17,7 +17,6 @@ export { JobStatus } from './JobStatus';
 export { Layout } from './Layout';
 export { LinkedText } from './LinkedText';
 export { NetworkErrorMessage } from './NetworkErrorMessage';
-export { NotMigratedNotice, RequireMigrated } from './NotMigratedNotice';
 export { RequireProject } from './RequireProject';
 export { RequireScenario } from './RequireScenario';
 export { ScenarioRequired } from './ScenarioRequired';

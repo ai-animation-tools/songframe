@@ -116,7 +116,6 @@ export interface Api {
   };
   app: {
     state(): Promise<AppState>;
-    setToolsRoot(path: string | null): Promise<AppState>;
   };
   projects: {
     open(path: string): Promise<ProjectStatus>;

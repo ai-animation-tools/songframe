@@ -272,7 +272,6 @@ export const productionTexts = {
       descriptionOrFramesReviewRequired: 'На этом этапе требуется согласование описания или опор.',
       stageUnavailable: 'Запрошенный этап ещё не доступен.',
       resolveSceneChangedPackageFirst: ({ reason }: { reason: string }) => `Сначала решите судьбу попытки: ${reason}.`,
-      toolsRootMissing: commonTexts.runtime.rootMissing,
       continuityFailed: 'Не удалось получить врезку непрерывности.',
       providerCapabilitiesMissing: 'Выбранный провайдер видео не объявляет возможности.',
       providerModelsFailed: ({ provider, problem }: { provider: string | undefined; problem: string | null }) =>
@@ -504,7 +503,6 @@ export const productionTexts = {
     attempt: ({ number }: { number: string }) => `Попытка ${number}`
   },
   productionPage: {
-    pythonMissing: `Python не найден: просмотр работает, кнопки решений и отправки недоступны.`,
     paidProviderMissing: `Программа платного провайдера генерации не найдена: отправка и получение результатов недоступны, подготовка и согласования работают.`,
     packageLabel: 'Попытка',
     newPreparation: `Новая попытка`,
@@ -517,9 +515,6 @@ export const productionTexts = {
     chooseShot: `Выберите план.`,
     retryStarted: 'Подготовка повтора запущена',
     acceptanceStarted: 'Приёмка запущена'
-  },
-  constants: {
-    pythonReason: 'Python не найден: проверьте его на странице «Среда».'
   },
   decisions: {
     requestHashMissing: 'У показанного запроса нет SHA256. Обновите попытку перед отправкой.',

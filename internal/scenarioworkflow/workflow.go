@@ -72,7 +72,7 @@ type View struct {
 type Options struct {
 	// LocalDir — каталог состояния приложения (локальные записи и журнал применения).
 	LocalDir string
-	// Agents — менеджер внешних агентов; nil — UnavailableAgents.
+	// Agents — менеджер внешних агентов; обязателен: без него сценарный проход не создаётся.
 	Agents Agents
 	// RequireAgentAccess — ai.requireAccess(project, 'agent') оригинала перед запуском прохода:
 	// сохранённый агент, найденная программа и вход. nil — проверка у менеджера агентов.
@@ -92,10 +92,12 @@ type Workflow struct {
 	preparing map[string]bool
 }
 
-// New создаёт сценарный проход с зависимостями по умолчанию для пустых полей.
+// New создаёт сценарный проход с зависимостями по умолчанию для пустых необязательных полей.
+// Отсутствие Agents — ошибка сборки зависимостей приложения, поэтому New паникует, а не
+// подставляет заглушку.
 func New(options Options) *Workflow {
 	if options.Agents == nil {
-		options.Agents = UnavailableAgents{}
+		panic("scenarioworkflow: менеджер агентов не передан")
 	}
 	if options.Scaffold == nil {
 		options.Scaffold = defaultScaffold

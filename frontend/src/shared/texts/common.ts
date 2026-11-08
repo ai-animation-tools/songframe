@@ -115,8 +115,6 @@ export const commonTexts = {
   },
   runtime: {
     updateViewsStep: 'карточки и представления',
-    rootMissing: 'Корень комплекса не найден.',
-    pythonRequired: 'Нужен Python: проверьте его на странице «Среда».',
     applicationStopping: 'Приложение завершает работу.'
   },
   project: {

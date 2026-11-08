@@ -1,10 +1,7 @@
 /**
  * Состояние приложения в рендерере: комплекс, текущий проект и его статус, уведомления.
  *
- * Отличия от 634fd94 на время миграции на Go (D-028):
- * - ошибки ApiError с кодом UNAVAILABLE показываются общей причиной «ещё не перенесено»;
- * - неперенесённые agents.getSettings/projects.status/ai.access не срывают старт: настройки агента
- *   считаются невыбранными, статус проекта — неизвестным, ИИ-действия блокируются с той же причиной;
+ * Отличия от 634fd94 (D-028):
  * - отказ первого app.state показывает экран ошибки с повтором вместо бесконечной загрузки;
  * - onReady сообщает Go о готовности окна после первого успешного app.state (smoke-проверка).
  */
@@ -12,7 +9,6 @@
 import { type ReactElement, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Alert, AlertTitle, Box, Button, Snackbar } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { platformTexts } from '@shared/texts/platform';
 import { shellTexts } from '@shared/texts/shell';
 import { LinkedText } from './components/LinkedText';
 import { CRASH_NOTICE } from './diagnostics';
@@ -44,7 +40,7 @@ export interface AppContextValue {
   closeProject(): Promise<void>;
   /** persist: сообщение не закрывается само и по клику мимо, только крестиком. */
   notify(message: string, severity?: Severity, options?: { persist?: boolean }): void;
-  /** Текст ошибки вызова для пользователя; недоступный в Go метод даёт общую причину. */
+  /** Текст ошибки вызова для пользователя без технического префикса вызова. */
   describeError(error: unknown): string;
 }
 
@@ -55,29 +51,7 @@ export function AppValueProvider({ value, children }: { value: AppContextValue; 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
-/** ApiError адаптера platform/api распознаётся по форме: renderer не импортирует платформенный модуль. */
-export function isUnavailableError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'ApiError' && (error as { code?: unknown }).code === 'UNAVAILABLE';
-}
-
-/** Пока метод не перенесён, ИИ-действия заблокированы с понятной причиной, как без сети. */
-function unavailableAccess(): AiAccess {
-  const blocked = { provider: null, selected: true, available: false, message: platformTexts.unavailable };
-  return { agent: blocked, image: blocked, video: blocked };
-}
-
-/** Неперенесённая вспомогательная операция заменяется значением «нет данных»; прочие ошибки сохраняются. */
-function unlessUnavailable<T>(operation: () => Promise<T>, fallback: T): Promise<T> {
-  return Promise.resolve()
-    .then(operation)
-    .catch((error: unknown) => {
-      if (isUnavailableError(error)) return fallback;
-      throw error;
-    });
-}
-
 export function describeError(error: unknown): string {
-  if (isUnavailableError(error)) return platformTexts.unavailable;
   const message = error instanceof Error ? error.message : String(error);
   return message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 }
@@ -114,7 +88,7 @@ export function AppProvider({ children, onReady }: { children: ReactNode; onRead
     const path = currentPath.current;
     if (!path) return;
     try {
-      const next = await unlessUnavailable(() => window.api.projects.status(path), null);
+      const next = await window.api.projects.status(path);
       // Ответ по прежнему проекту не подменяет статус после переключения.
       if (currentPath.current === path) setStatus(next);
     } catch {
@@ -173,9 +147,9 @@ export function AppProvider({ children, onReady }: { children: ReactNode; onRead
   const refresh = useCallback(async () => {
     invalidateAiAccess();
     const current = scope.current;
-    const [next, agent] = await Promise.all([window.api.app.state(), unlessUnavailable(() => window.api.agents.getSettings(), null)]);
+    const [next, agent] = await Promise.all([window.api.app.state(), window.api.agents.getSettings()]);
     if (current !== scope.current) return;
-    const nextStatus = next.current ? await unlessUnavailable(() => window.api.projects.status(next.current!), null) : null;
+    const nextStatus = next.current ? await window.api.projects.status(next.current!) : null;
     if (current !== scope.current) return;
     // Локальный просмотр появляется до проверки CLI и входа; AI-действия пока остаются заблокированы.
     currentPath.current = next.current;
@@ -185,7 +159,7 @@ export function AppProvider({ children, onReady }: { children: ReactNode; onRead
     setLoading(false);
     setStartupError(null);
     try {
-      const access = await unlessUnavailable(() => window.api.ai.access(next.current), unavailableAccess());
+      const access = await window.api.ai.access(next.current);
       // Ответ старой проверки не может разрешить ИИ после смены проекта или настроек.
       if (current === scope.current) setAiAccess(access);
     } catch (error) {

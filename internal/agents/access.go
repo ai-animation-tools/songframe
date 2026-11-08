@@ -46,13 +46,10 @@ type AccessChecker struct {
 	Settings *SettingsStore
 	// Check — диагностика программы-агента; nil — Check адаптера с окружением приложения.
 	Check func(ctx context.Context, config Settings) (CheckResult, error)
-	// ProviderAuth — вход в платного провайдера; nil — проверка ещё не перенесена, провайдер
-	// считается недоступным с объяснением.
+	// ProviderAuth — вход в платного провайдера (CheckAuth слоя провайдеров). Обязателен, если
+	// проверяется доступность выбранного платного провайдера медиа.
 	ProviderAuth func(ctx context.Context, provider string) (ProviderAuth, error)
 }
-
-// textProviderAuthUnported — платный провайдер медиа ещё не перенесён в Go-версию.
-const textProviderAuthUnported = "Проверка входа платного провайдера ещё не перенесена в Go-версию."
 
 // mediaSelectionRequired — aiAccessTexts.main.mediaSelectionRequired.
 func mediaSelectionRequired(kind string) string {
@@ -184,9 +181,6 @@ func (c *AccessChecker) GetAccess(ctx context.Context, project *string, required
 				return availability{}, err
 			}
 			return agentAvailability(config)
-		}
-		if c.ProviderAuth == nil {
-			return availability{message: textProviderAuthUnported}, nil
 		}
 		result, ok := auth[provider]
 		if !ok {

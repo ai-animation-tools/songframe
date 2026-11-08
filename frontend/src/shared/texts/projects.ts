@@ -2,39 +2,6 @@ import { commonTexts } from './common';
 
 /** Тексты создания проекта и истории папок; технические значения и проверки остаются у страниц. */
 export const projectsTexts = {
-  // Main возвращает прежние готовые фразы; формат данных проекта и порядок проверок не меняются.
-  main: {
-    nameRequired: 'Укажите название проекта.',
-    pathRequired: 'Укажите полный путь к папке проекта.',
-    absolutePathRequired: 'Путь должен быть абсолютным.',
-    targetExists: 'Папка уже существует: выберите новый путь или откройте её как существующий проект.',
-    parentMissing: ({ path }: { path: string }) => `Родительская папка не существует: ${path}`,
-    invalidAnimaticName: 'Имя MP4: латиница, цифры, точка, дефис, подчёркивание и расширение .mp4.',
-    markerMissingAtPath: ({ path }: { path: string }) => `В папке нет plan/project.json с названием проекта: ${path}`,
-    emptyName: commonTexts.project.nameEmpty,
-    invalidNameCharacter: 'Название проекта содержит недопустимый символ.',
-    invalidMarker: 'В папке нет корректного plan/project.json с названием проекта.',
-    templateUnavailable: 'Корень комплекса не найден: шаблон проекта недоступен. Укажите его на странице «Среда».',
-    templateMissing: ({ path }: { path: string }) => `Шаблон проекта не найден: ${path}`,
-    invalidCurrentFile: ({ path }: { path: string }) => `Неверный формат ${path}. Файл сохранён; выберите резервную копию или исправьте path.`,
-    invalidHistoryFile: ({ path }: { path: string }) => `Неверный формат ${path}. Файл сохранён; исправьте список projects.`,
-    status: {
-      markerMissing: 'Нет plan/project.json с названием проекта.',
-      incompleteSources: 'source/manifest.json есть, но в нём нет трека, текста песни или идеи.',
-      damagedSources: 'source/manifest.json повреждён.',
-      timingLinesMissing: 'plan/audio/timing.json не содержит строк разметки.',
-      damagedCast: commonTexts.project.castDamaged,
-      damagedTreatment: 'plan/treatment.json повреждён или пуст.',
-      damagedScenes: 'plan/scenes.json повреждён или не содержит сцен.',
-      staleShots: ({ ids }: { ids: readonly string[] }) => `Постановка изменена после приёмки: ${ids.join(', ')}. Нужно новое производство этих планов.`,
-      derivedShotsNeedReview: ({ ids }: { ids: readonly string[] }) =>
-        `Не подтверждена актуальность производных планов: ${ids.join(', ')}. Проверьте версию источника и приёмку этих планов.`,
-      orphanKits: ({ ids }: { ids: readonly string[] }) => `Комплекты без сцены в реестре: ${ids.join(', ')}.`,
-      animaticNotBuilt: 'Все сцены приняты, но полный аниматик ещё не собран.',
-      staleAnimatic: 'Аниматик собран по устаревшему реестру или входам: нужна пересборка.',
-      animaticNotApproved: 'Аниматик собран, но не принят в plan/production-status.json.'
-    }
-  },
   created: ({ name }: { name: string }) => `Проект «${name}» создан`,
   creating: 'Дождитесь создания проекта.',
   nameRequired: commonTexts.project.nameRequired,

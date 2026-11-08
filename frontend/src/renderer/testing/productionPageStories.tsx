@@ -34,7 +34,6 @@ const DATE = '2026-10-30T09:00:00.000Z';
 const appState: AppState = {
   packaged: false,
   problems: [],
-  toolsRoot: '/mock/songframe',
   localDir: '/mock/state',
   current: PAGE_PROJECT,
   history: [],
@@ -61,7 +60,8 @@ export interface ProductionPageModelOptions {
   shots: () => ShotProduction[];
   broken?: () => BrokenPackage[];
   problems?: string[];
-  python?: boolean;
+  /** FFmpeg/ffprobe не найдены: проверка видео объясняет причину, просмотр остаётся доступен. */
+  ffmpegMissing?: boolean;
   /** Первое чтение: обычное, отложенное (общий индикатор загрузки) или с ошибкой (повтор — штатным опросом). */
   firstRead?: 'ready' | 'delayed' | 'failed';
   /** Первая запись ответа завершается ошибкой без изменения снимка. */
@@ -122,7 +122,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
           shots: options.shots(),
           broken: options.broken?.() ?? [],
           problems: options.problems ?? [],
-          tools: { python: options.python ?? true, providers: { test: true } }
+          tools: { providers: { test: true } }
         },
         jobs: [],
         reads: 0,
@@ -180,7 +180,7 @@ export function productionPageOptions(options: ProductionPageModelOptions, route
       const reviewRunning = (view: VideoReviewView): boolean => view.status === 'preparing' || view.status === 'running';
       const reviewSnapshot = (pkg: PackageView): VideoReviewView => {
         const entry = reviewEntry(pkg);
-        const reason = !model.view.tools.python
+        const reason = options.ffmpegMissing
           ? videoReviewTexts.main.toolsMissing
           : pkg.request?.kind !== 'video' ||
               !['downloaded', 'edit_review', 'accepted'].includes(pkg.stage) ||

@@ -6,6 +6,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import type { EnvironmentCheck } from '@shared/types';
 import { commonTexts } from '@shared/texts/common';
 import { environmentTexts } from '@shared/texts/environment';
+import { providerTexts } from '@shared/texts/providers';
 import { ActionButton } from '../components/ActionButton';
 import { EnvironmentCheckRow, type ProviderAuthStatus, type ProviderLogin } from '../pages/EnvironmentPage/components/EnvironmentCheckRow';
 import { EnvironmentDiagnostics } from '../pages/EnvironmentPage/components/EnvironmentDiagnostics';
@@ -17,11 +18,11 @@ export const ENVIRONMENT_STORY_LONG_PATH =
 
 export function environmentCheck(overrides: Partial<EnvironmentCheck> = {}): EnvironmentCheck {
   return {
-    id: 'python',
-    label: 'Встроенный Python',
+    id: 'story-provider-client',
+    label: 'Клиент провайдера изображений',
     ok: true,
-    detail: 'Python 3.11.9 · resources/runtime/python',
-    hint: environmentTexts.main.bundledPythonHint,
+    detail: providerTexts.bundledClient,
+    hint: 'Клиент встроен в приложение; если проверка не проходит, переустановите приложение.',
     productionOnly: false,
     bundled: true,
     status: 'done',
@@ -40,7 +41,7 @@ export function environmentChecks(): EnvironmentCheck[] {
       label: 'Git',
       ok: false,
       detail: 'Программа не найдена.',
-      hint: environmentTexts.main.gitHint,
+      hint: environmentTexts.gitHint,
       bundled: false,
       external: true,
       productionOnly: true,

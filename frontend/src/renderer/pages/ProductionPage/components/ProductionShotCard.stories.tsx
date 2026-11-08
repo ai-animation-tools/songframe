@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { ProductionShotStory, productionShot, preparedPackage, queuedPackage, RETRY_ERROR } from '../../../testing/productionQueueStories';
 import { STORY_VIDEO_PATH } from '../../../testing/storybook';
-import { BUSY_REASON, PYTHON_REASON } from '../constants';
+import { BUSY_REASON } from '../constants';
 import { attemptLabel } from '../planPath';
 import { commonTexts } from '@shared/texts/common';
 import { productionTexts } from '@shared/texts/production';
@@ -186,14 +186,6 @@ export const UnknownSubmission: Story = {
     await expect(
       within(canvasElement.ownerDocument.body).queryByRole('menuitem', { name: (name) => name.startsWith(path.deleteAttempt) })
     ).not.toBeInTheDocument();
-  }
-};
-export const NoPython: Story = {
-  name: 'Нет Python · повтор заблокирован, принятый комплект на месте',
-  args: { pythonAvailable: false },
-  play: async ({ canvasElement }) => {
-    await expectRetryBlocked(canvasElement, PYTHON_REASON);
-    await expect(within(canvasElement).getByTestId('shot-model')).toHaveTextContent(KEEPS_ASSET);
   }
 };
 export const Busy: Story = {

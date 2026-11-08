@@ -33,13 +33,12 @@ type ProjectHistoryEntry struct {
 // AppState — совместимый снимок оболочки для window.api.app.state. Nullable-поля
 // явно сериализуются как null, пустые коллекции — как [], а не как null.
 type AppState struct {
-	Packaged  bool                  `json:"packaged"`
-	Problems  []string              `json:"problems"`
-	ToolsRoot *string               `json:"toolsRoot"`
-	LocalDir  string                `json:"localDir"`
-	Current   *string               `json:"current"`
-	History   []ProjectHistoryEntry `json:"history"`
-	Platform  string                `json:"platform"`
+	Packaged bool                  `json:"packaged"`
+	Problems []string              `json:"problems"`
+	LocalDir string                `json:"localDir"`
+	Current  *string               `json:"current"`
+	History  []ProjectHistoryEntry `json:"history"`
+	Platform string                `json:"platform"`
 }
 
 // RootAllower — часть медиасервера, которая разрешает показ файлов каталога по shell.fileUrl.

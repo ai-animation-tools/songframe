@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { environmentTexts } from '@shared/texts/environment';
 import { EnvironmentCheckGroup } from './EnvironmentCheckGroup';
-import { ENVIRONMENT_STORY_LONG_PATH, environmentCheck, environmentChecks } from '../../../testing/environmentStories';
+import { environmentCheck, environmentChecks } from '../../../testing/environmentStories';
 
 const meta: Meta<typeof EnvironmentCheckGroup> = {
   title: 'Среда/Группа проверок',
@@ -39,21 +39,5 @@ export const OptionalPrograms: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Эти программы устанавливаются отдельно по необходимости; без них приложение работает.')).toBeVisible();
     await expect(canvas.getByText('—')).toBeVisible();
-  }
-};
-export const ModelLongPath: Story = {
-  name: 'Установленная модель · длинный путь',
-  args: {
-    title: environmentTexts.modelGroup,
-    category: 'model',
-    items: [
-      environmentCheck({
-        id: 'vocal-model',
-        label: 'Модель выделения вокала',
-        bundled: false,
-        productionOnly: true,
-        detail: ENVIRONMENT_STORY_LONG_PATH
-      })
-    ]
   }
 };

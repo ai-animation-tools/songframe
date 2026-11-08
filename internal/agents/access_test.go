@@ -49,17 +49,18 @@ func TestAccessSelection(t *testing.T) {
 	restore := mediaproviders.Register("test", mediaproviders.Info{Title: "Тест", Kinds: []string{mediaproviders.Video}})
 	defer restore()
 	checker, _, calls = accessFixture(t, &Settings{Provider: Codex, Model: "m"})
+	checker.ProviderAuth = func(context.Context, string) (ProviderAuth, error) { return ProviderAuth{Status: Unauthenticated}, nil }
 	project := testProject(t, `{"generation":{"image":{"provider":"codex","provider_selected":true},"video":{"provider":"test","provider_selected":true}}}`)
 	access, err = checker.GetAccess(t.Context(), &project, "")
 	if err != nil || !access.Agent.Available || access.Agent.Message != "ok m" || !access.Image.Available || access.Image.Message != "ok " ||
-		*access.Video.Provider != "test" || access.Video.Available || access.Video.Message != textProviderAuthUnported {
+		*access.Video.Provider != "test" || access.Video.Available || access.Video.Message != textLoginRequired("Тест") {
 		t.Fatalf("выбор: %+v %v", access, err)
 	}
 	// Одинаковые конфигурации проверяются один раз, разные — отдельно.
 	if *calls != 2 {
 		t.Fatalf("проверок %d", *calls)
 	}
-	if ActionProblem(access, KindAgent) != "" || ActionProblem(access, KindImage) != "" || ActionProblem(access, KindVideo) != textProviderAuthUnported {
+	if ActionProblem(access, KindAgent) != "" || ActionProblem(access, KindImage) != "" || ActionProblem(access, KindVideo) != textLoginRequired("Тест") {
 		t.Fatal("ActionProblem")
 	}
 	checker.ProviderAuth = func(context.Context, string) (ProviderAuth, error) { return ProviderAuth{Status: Authenticated}, nil }

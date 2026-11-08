@@ -7,7 +7,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MontageWindowEvent, MontageWindowMessage } from '@shared/montage-window';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 type Listener = (event: { data: unknown }) => void;
 
@@ -39,9 +39,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 describe('montageWindow поверх MontageWindowService', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('все методы окна перенесены, open/close возвращают ответ Go и его ошибку', async () => {
-    for (const method of ['open', 'close', 'send', 'onMessage', 'onClosed'] as const)
-      expect(methodAvailability(`montageWindow.${method}`)).toEqual({ available: true, reason: null });
+  it('open/close возвращают ответ Go и его ошибку', async () => {
     const Open = vi.fn(async () => undefined);
     const Close = vi.fn(async () => Promise.reject(Object.assign(new Error('Не удалось открыть отдельное окно плеера.'), { name: 'RuntimeError' })));
     const { api } = harness({ Open, Close });

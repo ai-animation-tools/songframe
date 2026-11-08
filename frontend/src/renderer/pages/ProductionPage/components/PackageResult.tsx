@@ -9,7 +9,6 @@ import { ImageGallery } from '../../../components/ImageGallery';
 import { ImageThumbnail } from '../../../components/ImageThumbnail';
 import { ActionButton } from '../../../components/ActionButton';
 import { BUSY_REASON } from '../constants';
-import { useMethodAvailability } from '../../../availability';
 import { VideoPlayer } from './VideoPlayer';
 import { VideoReviewPanel } from './VideoReviewPanel';
 
@@ -22,14 +21,12 @@ export function PackageResult({
 }: {
   pkg: PackageView;
   busy: boolean;
-  /** Почему busy блокирует действия: идёт операция или нет Python. */
+  /** Почему busy блокирует действия: идёт операция. */
   busyReason?: string;
   onContactSheet(): void;
   onSelectImage(index: number): void;
 }): ReactElement {
   const originalVideo = useRef<HTMLVideoElement>(null);
-  // Отличие от 634fd94 на время миграции: если адаптер Go отмечает сводку недоступной, кнопка объясняет причину.
-  const summary = useMethodAvailability('production.contactSheet');
   const pending = pkg.pendingDecision;
   const image = pkg.request?.kind === 'image';
   const canSelectImage = !pending && pkg.stage === 'image_downloaded' && !!pkg.resultToken;
@@ -115,8 +112,8 @@ export function PackageResult({
               size="small"
               sx={{ mt: 1 }}
               onClick={onContactSheet}
-              disabled={busy || !summary.available}
-              disabledReason={busy ? busyReason : summary.reason}
+              disabled={busy}
+              disabledReason={busy ? busyReason : null}
             >
               {productionTexts.packageResult.createSummary}
             </ActionButton>

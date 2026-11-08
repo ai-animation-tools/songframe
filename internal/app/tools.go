@@ -15,7 +15,7 @@ type ToolsService struct{}
 // NewToolsService создаёт сервис инструментов.
 func NewToolsService() *ToolsService { return &ToolsService{} }
 
-// Run — tools.run(project, name, args): ToolResult инструмента. Неверное или ещё не перенесённое
+// Run — tools.run(project, name, args): ToolResult инструмента. Неверное или неизвестное
 // имя — ошибка вызова; отказ самого инструмента — результат с ненулевым кодом.
 func (s *ToolsService) Run(project, name string, args []string) (tools.Result, error) {
 	return wire.Done(tools.Run(project, name, args))

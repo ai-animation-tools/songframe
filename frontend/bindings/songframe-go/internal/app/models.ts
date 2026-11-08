@@ -12,7 +12,6 @@ import * as project$0 from "../project/models.js";
 export interface AppState {
     "packaged": boolean;
     "problems": string[];
-    "toolsRoot": string | null;
     "localDir": string;
     "current": string | null;
     "history": ProjectHistoryEntry[];

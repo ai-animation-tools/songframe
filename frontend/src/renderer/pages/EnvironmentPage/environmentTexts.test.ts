@@ -87,14 +87,11 @@ describe('тексты среды', () => {
   });
 
   it('оставляет отсутствующий локальный путь пустым, а заданный безопасно выводит', () => {
-    const props = { onChooseToolsRoot: vi.fn(), onResetToolsRoot: vi.fn() };
-    const empty = text(renderToStaticMarkup(createElement(ApplicationResources, { ...props, state: null })));
+    const empty = text(renderToStaticMarkup(createElement(ApplicationResources, { state: null })));
     expect(empty).toContain('Определяем ресурсы…Локальное состояние (текущий проект, история): ');
     expect(empty).not.toContain('undefined');
     expect(empty).not.toContain('{path}');
-    const html = renderToStaticMarkup(
-      createElement(ApplicationResources, { ...props, state: { localDir: sample, toolsRoot: sample, packaged: true } as AppState })
-    );
+    const html = renderToStaticMarkup(createElement(ApplicationResources, { state: { localDir: sample, packaged: true } as AppState }));
     expect(text(html)).toContain('Локальное состояние (текущий проект, история): «Тест» &lt;script&gt; &amp; C:\\путь\\модель');
     expect(html).not.toContain('<script>');
   });

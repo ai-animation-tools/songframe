@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { ScenesFile } from '@shared/types';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 function bindings(scenario: Record<string, unknown>, cast: Record<string, unknown> = {}): Bindings {
   const missing = async () => {
@@ -45,23 +45,6 @@ function bindings(scenario: Record<string, unknown>, cast: Record<string, unknow
 }
 
 describe('window.api.cast и window.api.scenario', () => {
-  it('все методы групп перенесены в Go', () => {
-    for (const method of [
-      'cast.view',
-      'cast.init',
-      'cast.save',
-      'scenario.status',
-      'scenario.view',
-      'scenario.saveTreatment',
-      'scenario.validateTreatment',
-      'scenario.saveScenes',
-      'scenario.saveImpact',
-      'scenario.validateScenes',
-      'scenario.brief'
-    ] as const)
-      expect(methodAvailability(method)).toEqual({ available: true, reason: null });
-  });
-
   it('передаёт черновик и режим как есть и возвращает записанный документ Go', async () => {
     const saved = { schema_version: 1, fps: 30, extra: { kept: true }, scenes: [] } as unknown as ScenesFile;
     const SaveScenes = vi.fn(async () => saved);

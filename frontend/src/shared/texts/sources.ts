@@ -108,8 +108,6 @@ export const sourcesTexts = {
   referenceSupportNoteItem: ({ number, label }: { number: number; label: string }) => `Опора ${number} (${label})`,
   referenceSupportsLoading: 'Читаем выбранные опоры и проверяем порядок изображений…',
   referenceSupportsRetry: 'Перечитать опоры',
-  referenceSupportsRestartRequired:
-    'Проверка опор недоступна: приложение запущено до обновления кода. Сначала сохраните или скопируйте несохранённые поля, затем полностью остановите dev-приложение и снова запустите yarn dev.',
   referenceSupportNotesHint: 'Примечания добавляются только в полный промпт. Номера соответствуют отправляемым изображениям; одинаковые картинки объединяются.',
   referenceVisualStyle: 'Общие визуальные правила',
   referenceSelectedSupportCount: ({ selected, total }: { selected: number; total: number }) => `Выбрано: ${selected} из ${total}`,

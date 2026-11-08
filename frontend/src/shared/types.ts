@@ -43,8 +43,6 @@ export interface ProjectHistoryEntry {
 export interface AppState {
   packaged: boolean;
   problems: string[];
-  /** Корень комплекса (где лежат tools и templates) или null, если найти не удалось. */
-  toolsRoot: string | null;
   /** Постоянная папка состояния: изолированный профиль Go либо явно выбранная SONGFRAME_GO_LOCAL_DIR. */
   localDir: string;
   current: string | null;
@@ -578,8 +576,8 @@ export interface ProductionView {
   /** Повреждённые или недописанные папки пакетов; удаляются кнопкой, инструменты их не трогают. */
   broken: BrokenPackage[];
   problems: string[];
-  /** Есть ли Python и программа каждого платного провайдера (по id): без них действия недоступны, просмотр работает. */
-  tools: { python: boolean; providers: Record<string, boolean> };
+  /** Есть ли программа каждого платного провайдера (по id): без неё действия недоступны, просмотр работает. */
+  tools: { providers: Record<string, boolean> };
 }
 
 /** Актуальная стоимость показанного запроса; token одноразовый и не переживает перезапуск. */

@@ -1,15 +1,15 @@
 /**
- * Наблюдаемые гарантии адаптера window.api: настоящие ответы bindings без подмены, явный отказ
- * неперенесённых методов, перевод ошибок Go/транспорта и ограничение ожидания. Bindings Wails
+ * Наблюдаемые гарантии адаптера window.api: настоящие ответы bindings без подмены, подключение
+ * каждого метода контракта, перевод ошибок Go/транспорта и ограничение ожидания. Bindings Wails
  * подменяются целиком: runtime и Go-сервис не запускаются.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppState } from '@shared/types';
 import { platformTexts } from '@shared/texts/platform';
-import { ApiError, createApi, methodAvailability, undefinedPaths, withDeadline, type ApiMethod, type Bindings } from './api';
-import { unavailableApi } from './unavailable-api';
+import { ApiError, createApi, undefinedPaths, withDeadline, type Bindings } from './api';
+import { apiSkeleton, isApiStub } from './api-skeleton';
 
-const state: AppState = { packaged: true, problems: [], toolsRoot: null, localDir: '/isolated/profile', current: null, history: [], platform: 'linux' };
+const state: AppState = { packaged: true, problems: [], localDir: '/isolated/profile', current: null, history: [], platform: 'linux' };
 
 /** Минимальные bindings: каждый тест задаёт только нужные сервисы, остальные при обращении падают. */
 function bindings(
@@ -73,31 +73,22 @@ describe('Граница window.api', () => {
     expect(api.shell.fileUrl('/клип/трек 1.mp3')).toBe('http://127.0.0.1:4100/file/%D0%BA%D0%BB%D0%B8%D0%BF/%D1%82%D1%80%D0%B5%D0%BA%201.mp3');
   });
 
-  it('отвергает неперенесённое действие до обращения к bindings', async () => {
-    const read = vi.fn(async () => state);
-    const api = createApi(bindings({ State: read }));
-    await expect(api.app.setToolsRoot(null)).rejects.toMatchObject({
-      code: 'UNAVAILABLE',
-      method: 'app.setToolsRoot',
-      message: platformTexts.unavailable
-    });
-    expect(read).not.toHaveBeenCalled();
-    expect(methodAvailability('app.setToolsRoot')).toEqual({ available: false, reason: platformTexts.unavailable });
-    expect(methodAvailability('updates.check')).toEqual({ available: true, reason: null });
-    expect(methodAvailability('production.submit')).toEqual({ available: true, reason: null });
-    expect(methodAvailability('app.state')).toEqual({ available: true, reason: null });
-  });
-
-  it('синхронный неперенесённый метод бросает ApiError, подписка неперенесённой области — пустая отписка', () => {
-    // Все синхронные методы и подписки контракта уже перенесены: форму отказа проверяем на самой фабрике.
-    const fail = (method: ApiMethod): never => {
-      throw new ApiError('UNAVAILABLE', method, platformTexts.unavailable);
-    };
-    const api = unavailableApi(async (method) => fail(method), fail);
-    expect(() => api.montageWindow.send({ type: 'ready' })).toThrow(ApiError);
-    const unsubscribe = api.montageWindow.onClosed(() => undefined);
-    expect(typeof unsubscribe).toBe('function');
-    unsubscribe();
+  it('подключает к bindings каждый метод каркаса без обращения к сервисам', () => {
+    const skeleton = apiSkeleton();
+    const api = createApi(bindings());
+    const stubs: string[] = [];
+    let methods = 0;
+    for (const [group, members] of Object.entries(skeleton)) {
+      for (const name of Object.keys(members)) {
+        methods += 1;
+        expect(isApiStub((skeleton as unknown as Record<string, Record<string, unknown>>)[group][name])).toBe(true);
+        if (isApiStub((api as unknown as Record<string, Record<string, unknown>>)[group][name])) stubs.push(`${group}.${name}`);
+      }
+    }
+    expect(methods).toBeGreaterThan(100);
+    expect(stubs).toEqual([]);
+    // Заглушка — ошибка программиста, а не отказ Go-сервиса: её не спутать с ApiError.
+    expect(() => skeleton.app.state()).toThrow(/app\.state не подключён/);
   });
 
   it('сохраняет причину ошибки Go-сервиса и отдельно сообщает о сбое связи', async () => {
@@ -164,10 +155,6 @@ describe('Граница window.api', () => {
     const view = { manifest, lyricsText: '', ideaText: '', coverPath: null, referenceFilePaths: {}, problems: [] };
     const api = createApi(bindings({ sources: { View: async () => view } }));
     await expect(api.sources.view('/клип')).resolves.toStrictEqual(view);
-    expect(methodAvailability('sources.save')).toEqual({ available: true, reason: null });
-    expect(methodAvailability('dashboard.view').available).toBe(true);
-    expect(methodAvailability('production.contactSheet').available).toBe(true);
-    expect(methodAvailability('derivedShots.view').available).toBe(true);
   });
 
   it('передаёт аниматик и пробы стыков в Go без изменения данных', async () => {
@@ -190,8 +177,5 @@ describe('Граница window.api', () => {
       ['status', '/клип', 'approved'],
       ['reviews', '/клип']
     ]);
-    for (const method of ['animatic.build', 'checks.buildReview', 'checks.removeReview', 'production.prepareSpeech'] as const) {
-      expect(methodAvailability(method).available).toBe(true);
-    }
   });
 });

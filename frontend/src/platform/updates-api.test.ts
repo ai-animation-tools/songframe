@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { UpdateView } from '@shared/updates';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 const available: UpdateView = {
   status: 'available',
@@ -22,11 +22,6 @@ function harness(updates: Record<string, unknown>) {
 
 describe('updates поверх UpdatesService', () => {
   afterEach(() => vi.useRealTimers());
-
-  it('все методы перенесены', () => {
-    for (const method of ['view', 'check', 'download', 'install'] as const)
-      expect(methodAvailability(`updates.${method}`)).toEqual({ available: true, reason: null });
-  });
 
   it('возвращает вид Go без изменений', async () => {
     const View = vi.fn(async () => ({ status: 'idle', currentVersion: '1.0.0' }));

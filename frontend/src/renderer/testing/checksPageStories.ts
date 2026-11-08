@@ -83,7 +83,7 @@ export function checksPageOptions({
     shell: 'page',
     route: '/project/checks',
     app: {
-      state: { packaged: false, problems: [], toolsRoot: null, localDir: '/mock/state', current: CHECKS_PAGE_PROJECT, history: [], platform: 'linux' }
+      state: { packaged: false, problems: [], localDir: '/mock/state', current: CHECKS_PAGE_PROJECT, history: [], platform: 'linux' }
     },
     createApi: () => {
       const inspection: ChecksPageInspection = { runs: [], runAll: [], updateViews: 0, reviews: [], removedReviews: [] };
@@ -178,7 +178,7 @@ export function checksPageOptions({
             shots: noShots ? [] : [shot('M01', 0, 4, 'accepted'), shot('M02', 4, 8), shot('M03', 8, 12, 'missing'), shot('M04', 12, 16, 'accepted')],
             broken: [],
             problems: [],
-            tools: { python: true, providers: {} }
+            tools: { providers: {} }
           })
         },
         shell: { openPath: async () => undefined }

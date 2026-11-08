@@ -289,7 +289,6 @@ type ComponentsModel = ReturnType<typeof createComponentsModel>;
 const storyAppState: AppState = {
   packaged: false,
   problems: [],
-  toolsRoot: null,
   localDir: '/test/Профиль приложения',
   current: null,
   history: [],

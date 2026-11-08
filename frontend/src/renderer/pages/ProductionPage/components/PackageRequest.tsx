@@ -22,7 +22,7 @@ export function PackageRequest({
 }: {
   pkg: PackageView;
   busy: boolean;
-  /** Почему busy блокирует действия: идёт операция или нет Python. */
+  /** Почему busy блокирует действия: идёт операция. */
   busyReason?: string;
   providerAvailable: boolean;
   onSubmit(): void;

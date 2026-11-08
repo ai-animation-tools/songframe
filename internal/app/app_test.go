@@ -36,7 +36,7 @@ func TestStateKeepsJSONContract(t *testing.T) {
 	if err := json.Unmarshal(raw, &value); err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]any{"packaged": true, "problems": []any{}, "toolsRoot": nil, "localDir": "profile", "current": nil, "history": []any{}, "platform": service.platform}
+	want := map[string]any{"packaged": true, "problems": []any{}, "localDir": "profile", "current": nil, "history": []any{}, "platform": service.platform}
 	if !reflect.DeepEqual(value, want) {
 		t.Fatalf("JSON-контракт изменился: %s", raw)
 	}

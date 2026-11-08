@@ -1,7 +1,5 @@
 /**
  * Маршруты приложения. Отличия от 634fd94 (D-028):
- * - страница, основной метод чтения которой ещё не перенесён в Go, показывает «Ещё не перенесено в Go»
- *   (RequireMigrated по списку доступности адаптера) вместо загрузки и ошибки;
  * - добавлен маршрут /components (менеджер компонентов этапа 41.3) и служебные /native-check и /preview
  *   (второе окно) для нативной проверки Wails (флаг --native-check);
  * - onReady подтверждает Go готовность окна после первого app.state.
@@ -9,8 +7,7 @@
 import { navigationTexts } from '@shared/texts/navigation';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { HomeRedirect, Layout, RequireMigrated, RequireProject, RequireScenario } from './components';
-import type { ApiMethod } from './availability';
+import { HomeRedirect, Layout, RequireProject, RequireScenario } from './components';
 import { StartupProgress } from './components/StartupProgress';
 import { ComponentsPage } from './pages/ComponentsPage';
 import {
@@ -39,15 +36,6 @@ import { ThemeModeProvider } from './theme';
 const NativeCheckPage = lazy(() => import('./pages/NativeCheckPage').then((module) => ({ default: module.NativeCheckPage })));
 const NativePreviewPage = lazy(() => import('./pages/NativePreviewPage').then((module) => ({ default: module.NativePreviewPage })));
 
-/** Обёртка страницы: заголовок раздела и методы, без которых страница не может прочитать данные. */
-function migrated(title: string, methods: readonly ApiMethod[], page: ReactElement): ReactElement {
-  return (
-    <RequireMigrated title={title} methods={methods}>
-      {page}
-    </RequireMigrated>
-  );
-}
-
 export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElement {
   return (
     <ThemeModeProvider>
@@ -69,7 +57,7 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
               </Suspense>
             }
           />
-          <Route path="montage-player" element={migrated(navigationTexts.pages.montage, ['montageWindow.send'], <MontagePlayerPage />)} />
+          <Route path="montage-player" element={<MontagePlayerPage />} />
           <Route
             element={
               <AppProvider onReady={onReady}>
@@ -79,32 +67,54 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
           >
             <Route index element={<HomeRedirect />} />
             <Route path="projects" element={<ProjectsPage />} />
-            <Route path="projects/new" element={migrated(navigationTexts.pages.newProject, ['projects.create'], <NewProjectPage />)} />
+            <Route path="projects/new" element={<NewProjectPage />} />
             <Route
               path="project"
-              element={<RequireProject>{migrated(navigationTexts.pages.project, ['projects.settings'], <ProjectPage />)}</RequireProject>}
+              element={
+                <RequireProject>
+                  <ProjectPage />
+                </RequireProject>
+              }
             />
             <Route
               path="project/sources"
-              element={<RequireProject>{migrated(navigationTexts.pages.sources, ['sources.view'], <SourcesPage />)}</RequireProject>}
+              element={
+                <RequireProject>
+                  <SourcesPage />
+                </RequireProject>
+              }
             />
-            <Route path="project/timing" element={<RequireProject>{migrated(navigationTexts.pages.timing, ['timing.view'], <TimingPage />)}</RequireProject>} />
-            <Route path="project/cast" element={<RequireProject>{migrated(navigationTexts.pages.cast, ['cast.view'], <CastPage />)}</RequireProject>} />
+            <Route
+              path="project/timing"
+              element={
+                <RequireProject>
+                  <TimingPage />
+                </RequireProject>
+              }
+            />
+            <Route
+              path="project/cast"
+              element={
+                <RequireProject>
+                  <CastPage />
+                </RequireProject>
+              }
+            />
             <Route
               path="project/scenario"
-              element={<RequireProject>{migrated(navigationTexts.pages.scenario, ['scenario.view'], <ScenarioPage />)}</RequireProject>}
+              element={
+                <RequireProject>
+                  <ScenarioPage />
+                </RequireProject>
+              }
             />
             <Route
               path="project/production"
               element={
                 <RequireProject>
-                  {migrated(
-                    navigationTexts.pages.production,
-                    ['scenario.status', 'production.view'],
-                    <RequireScenario title={navigationTexts.pages.production}>
-                      <ProductionPage />
-                    </RequireScenario>
-                  )}
+                  <RequireScenario title={navigationTexts.pages.production}>
+                    <ProductionPage />
+                  </RequireScenario>
                 </RequireProject>
               }
             />
@@ -112,13 +122,9 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
               path="project/scenes"
               element={
                 <RequireProject>
-                  {migrated(
-                    navigationTexts.pages.scenes,
-                    ['scenario.status', 'dashboard.view'],
-                    <RequireScenario title={navigationTexts.pages.scenes}>
-                      <ScenesPage />
-                    </RequireScenario>
-                  )}
+                  <RequireScenario title={navigationTexts.pages.scenes}>
+                    <ScenesPage />
+                  </RequireScenario>
                 </RequireProject>
               }
             />
@@ -126,13 +132,9 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
               path="project/montage"
               element={
                 <RequireProject>
-                  {migrated(
-                    navigationTexts.pages.montage,
-                    ['scenario.status', 'montage.view'],
-                    <RequireScenario title={navigationTexts.pages.montage}>
-                      <MontagePage />
-                    </RequireScenario>
-                  )}
+                  <RequireScenario title={navigationTexts.pages.montage}>
+                    <MontagePage />
+                  </RequireScenario>
                 </RequireProject>
               }
             />
@@ -140,13 +142,9 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
               path="project/checks"
               element={
                 <RequireProject>
-                  {migrated(
-                    navigationTexts.pages.checks,
-                    ['scenario.status', 'checks.list'],
-                    <RequireScenario title={navigationTexts.pages.checks}>
-                      <ChecksPage />
-                    </RequireScenario>
-                  )}
+                  <RequireScenario title={navigationTexts.pages.checks}>
+                    <ChecksPage />
+                  </RequireScenario>
                 </RequireProject>
               }
             />
@@ -154,19 +152,15 @@ export function App({ onReady }: { onReady?: () => Promise<void> }): ReactElemen
               path="project/animatic"
               element={
                 <RequireProject>
-                  {migrated(
-                    navigationTexts.pages.animatic,
-                    ['scenario.status', 'animatic.view'],
-                    <RequireScenario title={navigationTexts.pages.animatic}>
-                      <AnimaticPage />
-                    </RequireScenario>
-                  )}
+                  <RequireScenario title={navigationTexts.pages.animatic}>
+                    <AnimaticPage />
+                  </RequireScenario>
                 </RequireProject>
               }
             />
-            <Route path="environment" element={migrated(navigationTexts.pages.environment, ['environment.check'], <EnvironmentPage />)} />
+            <Route path="environment" element={<EnvironmentPage />} />
             <Route path="components" element={<ComponentsPage />} />
-            <Route path="jobs" element={migrated(navigationTexts.pages.jobs, ['jobs.list'], <JobsPage />)} />
+            <Route path="jobs" element={<JobsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="help" element={<HelpPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

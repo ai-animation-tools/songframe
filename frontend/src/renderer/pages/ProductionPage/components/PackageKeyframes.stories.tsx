@@ -4,7 +4,6 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { KeyframeReviewStory, keyframePackage } from '../../../testing/keyframeStories';
 import { STORY_IMAGE_PATH } from '../../../testing/storybook';
 import { expectImplicitCloseBlocked } from '../../../testing/dialogStories';
-import { PYTHON_REASON } from '../constants';
 import type { PackageView } from '@shared/types';
 
 /** Готовый промпт и запрос видео возможны после утверждения всех запланированных опор. */
@@ -67,7 +66,6 @@ export const LongNotes: Story = {
   }
 };
 export const Busy: Story = { name: 'Операция выполняется · возврат и снятие замечания заблокированы', args: { busy: true } };
-export const RuntimeUnavailable: Story = { name: 'Нет Python · причина недоступности', args: { busy: true, busyReason: PYTHON_REASON } };
 export const PromptApproved: Story = {
   name: 'Видеопромпт утверждён · возврат запрещён',
   args: {

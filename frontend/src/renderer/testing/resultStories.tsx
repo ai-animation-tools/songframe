@@ -316,7 +316,7 @@ function DeliveryStory({ resume, busy = false, providerAvailable = true, showDec
         shots: [productionShot({ id: 'M01' }), productionShot({ packages: [pkg] }), productionShot({ id: 'M03' })],
         broken: [],
         problems: [],
-        tools: { python: true, providers: { test: true } }
+        tools: { providers: { test: true } }
       };
       navigate(reviewMontageRoute(view, pkg, DELIVERY_PROJECT));
       return;

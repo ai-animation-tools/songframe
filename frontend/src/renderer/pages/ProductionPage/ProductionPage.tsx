@@ -23,7 +23,7 @@ import { ProductionQueue } from './components/ProductionQueue';
 import { useStickyTop } from '../../hooks/useStickyTop';
 import { ANCHORS } from '../../components/linkTargets';
 import { LinkedText } from '../../components/LinkedText';
-import { BUSY_REASON, PYTHON_REASON } from './constants';
+import { BUSY_REASON } from './constants';
 
 export function ProductionPage(): ReactElement {
   const [path, setPath] = useState<{ key: string; value: PlanPath } | null>(null);
@@ -90,9 +90,7 @@ export function ProductionPage(): ReactElement {
           <LinkedText text={view.problems.join(' ')} />
         </Alert>
       ) : null}
-      {shot?.derivedFrom ? null : !view.tools.python ? (
-        <Alert severity="info">{productionTexts.productionPage.pythonMissing}</Alert>
-      ) : !Object.values(view.tools.providers).every(Boolean) ? (
+      {shot?.derivedFrom ? null : !Object.values(view.tools.providers).every(Boolean) ? (
         <Alert severity="info">{productionTexts.productionPage.paidProviderMissing}</Alert>
       ) : null}
 
@@ -150,7 +148,6 @@ export function ProductionPage(): ReactElement {
                 shot={shot}
                 busy={busyFor('') || !!shot.packages.find((pkg) => busyFor(pkg.dir) || workflowBusyFor(pkg.dir))}
                 operation={operationFor()}
-                pythonAvailable={view.tools.python}
                 onRegenerate={setConfirmRegenerate}
                 selectedPackage={packageSelection}
                 onOpenPackage={selectPackage}
@@ -174,10 +171,10 @@ export function ProductionPage(): ReactElement {
                     newAttempt={newAttempt}
                     note={selectedPackage ? noteFor(selectedPackage) : ''}
                     setNote={(value) => selectedPackage && setNoteFor(selectedPackage, value)}
-                    busy={selectedPackage ? busyFor(selectedPackage.dir) || !view.tools.python : false}
-                    busyReason={view.tools.python ? BUSY_REASON : PYTHON_REASON}
+                    busy={selectedPackage ? busyFor(selectedPackage.dir) : false}
+                    busyReason={BUSY_REASON}
                     providers={view.tools.providers}
-                    speechBusy={!!selectedPackage && (busyFor(selectedPackage.dir) || workflowBusyFor(selectedPackage.dir) || !view.tools.python)}
+                    speechBusy={!!selectedPackage && (busyFor(selectedPackage.dir) || workflowBusyFor(selectedPackage.dir))}
                     onBusyChange={(value) => reportWorkflowBusy(packageSelection, value)}
                     onApplied={async (dir) => {
                       if (dir) selectPackage(dir);

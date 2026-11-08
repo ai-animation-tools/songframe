@@ -139,11 +139,10 @@ export interface ProductionShotStoryProps {
   initialShot?: ShotProduction;
   initialSelected?: string;
   busy?: boolean;
-  pythonAvailable?: boolean;
   failFirst?: boolean;
 }
 
-export function ProductionShotStory({ initialShot, initialSelected = '', busy = false, pythonAvailable = true, failFirst = false }: ProductionShotStoryProps) {
+export function ProductionShotStory({ initialShot, initialSelected = '', busy = false, failFirst = false }: ProductionShotStoryProps) {
   const [shot, setShot] = useState(() => structuredClone(initialShot ?? productionShot()));
   const [selected, setSelected] = useState(initialSelected);
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -189,7 +188,6 @@ export function ProductionShotStory({ initialShot, initialSelected = '', busy = 
         key={epoch}
         shot={shot}
         busy={locked}
-        pythonAvailable={pythonAvailable}
         selectedPackage={selected}
         onRegenerate={setConfirm}
         onOpenPackage={setSelected}

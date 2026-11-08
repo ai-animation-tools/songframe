@@ -1,11 +1,9 @@
 import { scenarioTexts } from '@shared/texts/scenario';
-import { platformTexts } from '@shared/texts/platform';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { CastProperty, ScenarioSaveImpact, ScenarioView, ScenesFile, ScenesSaveMode, TreatmentFile, TreatmentSequence } from '@shared/types';
 import type { ScenarioPass } from '@shared/scenario-workflow';
 import { useApp } from '../../state';
-import { useMethodAvailability } from '../../availability';
 import { KEEP_NOTHING_REASON, type ScenarioBrief, type ScenarioTab, type ScenesSaveRequest, type ShotReveal, type OpenShotState } from './types';
 import { scenesSavedView, workflowUpdatedView } from './workflowDrafts';
 import { requestedShot } from './shotNavigation';
@@ -15,7 +13,6 @@ import { SHOT_PARAM } from '../../components/shotRoutes';
 /** Загружает сценарий и сохраняет вкладки независимо; проверка следует текущему черновику. */
 export function useScenario() {
   const { state, refresh, notify, describeError } = useApp();
-  const scaffoldAvailability = useMethodAvailability('tools.run');
   const project = state?.current ?? '';
   const activeProject = useRef(project);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -160,26 +157,21 @@ export function useScenario() {
         ? scenarioTexts.prerequisites.reference
         : null;
   // Те же обязательные данные нужны scene_scaffold; объяснение используем и в кнопке, и при запуске.
-  // Отличие от 634fd94: каркас строит инструмент scene_scaffold через tools.run, которого в Go-версии
-  // ещё нет; причина «не перенесено» важнее остальных условий и заменяет просьбу выбрать папку комплекса.
-  // Отличие от 634fd94: каркас строит Go (`tools.run`), корень комплекса (toolsRoot) ему не нужен.
-  const scaffoldProblem = !scaffoldAvailability.available
-    ? (scaffoldAvailability.reason ?? platformTexts.unavailable)
-    : !view?.timing?.lines?.length
-      ? scenarioTexts.prerequisites.timing
-      : !(Number(view.timing.duration_decoded || view.timing.duration_container) > 0)
-        ? scenarioTexts.prerequisites.duration
-        : !cast
-          ? scenarioTexts.prerequisites.cast
-          : !referenceOptions.length
-            ? scenarioTexts.prerequisites.reference
-            : !view.treatment
-              ? scenarioTexts.prerequisites.treatment
-              : treatmentDirty || scenesDirty
-                ? scenarioTexts.prerequisites.savedDrafts
-                : treatmentProblems.length
-                  ? scenarioTexts.prerequisites.treatmentProblems
-                  : null;
+  const scaffoldProblem = !view?.timing?.lines?.length
+    ? scenarioTexts.prerequisites.timing
+    : !(Number(view.timing.duration_decoded || view.timing.duration_container) > 0)
+      ? scenarioTexts.prerequisites.duration
+      : !cast
+        ? scenarioTexts.prerequisites.cast
+        : !referenceOptions.length
+          ? scenarioTexts.prerequisites.reference
+          : !view.treatment
+            ? scenarioTexts.prerequisites.treatment
+            : treatmentDirty || scenesDirty
+              ? scenarioTexts.prerequisites.savedDrafts
+              : treatmentProblems.length
+                ? scenarioTexts.prerequisites.treatmentProblems
+                : null;
 
   // После публикации меняем только принадлежащий проходу черновик: другая вкладка сохраняет свои правки.
   const acceptWorkflowUpdate = async (pass: ScenarioPass): Promise<void> => {

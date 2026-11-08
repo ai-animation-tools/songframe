@@ -45,7 +45,7 @@ export function PackageDecision({
   note: string;
   setNote(value: string): void;
   busy: boolean;
-  /** Почему busy блокирует ответы: идёт операция или нет Python. */
+  /** Почему busy блокирует ответы: идёт операция. */
   busyReason?: string;
   /** Доработка сразу запускает агента: кнопка с полем замечания становится кнопкой агента. */
   revisionByAgent?: boolean;

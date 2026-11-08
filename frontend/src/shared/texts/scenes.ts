@@ -4,29 +4,6 @@ import { countLabel } from '../plural';
 
 /** Тексты обзора сцен и принятого монтажа; дословный перенос описан в @link ../../../docs/ui/texts.md. */
 export const scenesTexts = {
-  // Главный процесс возвращает готовые фразы; данные проекта и формат IPC не меняются.
-  main: {
-    originalMedia: ({
-      width,
-      height,
-      rate,
-      frames,
-      duration
-    }: {
-      width: number | string;
-      height: number | string;
-      rate: string;
-      frames: string;
-      duration: string;
-    }) => `${width}×${height}, ${rate} FPS, кадров: ${frames}, ${duration} с`,
-    stateFailed: ({ shot, reason }: { shot: string; reason: string }) => `${shot}: состояние не вычислено: ${reason}`,
-    requestInput: 'вход запроса',
-    outputAbsolutePathRequired: 'Укажите абсолютный путь собранного результата.',
-    outputOutsideBatches: 'Удалять можно только собранные результаты внутри plan/batches выбранного проекта.',
-    outputMissingOrLink: 'Результат отсутствует или путь содержит символическую ссылку. Обновите список.',
-    outputDirectoryMissing: 'Папка собранного результата отсутствует. Обновите список.',
-    outputFileRequired: 'Собранный результат должен быть обычным файлом.'
-  },
   montageSelected: ({ count }: { count: number }) => `Монтаж выбранных (${count})`,
   selectForMontage: 'Отметьте сцены флажком «В монтажную пробу».',
   noVisibleScenes: 'Нет видимых сцен: измените фильтр или поиск.',

@@ -15,7 +15,6 @@ import type { ProductionWorkflow } from '../useProductionWorkflow';
 import { ProductionProposalDialog } from './ProductionProposalDialog';
 import { LinkedText } from '../../../components/LinkedText';
 import { BUSY_REASON } from '../constants';
-import { useMethodAvailability } from '../../../availability';
 
 /** Подпись следующего прохода агента: кнопка называет шаг, а не «продолжить». */
 const CONTINUE_LABELS: Partial<Record<ProductionPass, string>> = {
@@ -57,7 +56,6 @@ export function ProductionWorkflowPanel({
   const [validation, setValidation] = useState<string | null>(null);
   const view = workflow.view;
   const busy = workflow.busy || packageBusy;
-  const generation = useMethodAvailability('productionWorkflow.generateFrames');
   const framesStage = view?.proposal?.stage === 'frames' || lastAction === 'frames';
   const reviseArea = useRef<HTMLDivElement>(null);
   // Указания перед видеопромптом необязательны и не записываются в попытку: они идут в задание агента.
@@ -111,7 +109,7 @@ export function ProductionWorkflowPanel({
             const action =
               lastAction ?? (view.proposal?.stage === 'frames' ? 'frames' : view.canPrepare ? 'prepare' : view.canContinue ? 'continue' : 'revise');
             if (action === 'frames') {
-              if (!busy && view.canGenerateFrames && generation.available) void workflow.generateFrames();
+              if (!busy && view.canGenerateFrames) void workflow.generateFrames();
             } else void start(action);
           }}
         />

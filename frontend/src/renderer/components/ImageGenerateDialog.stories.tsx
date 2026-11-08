@@ -616,33 +616,6 @@ export const AttachmentRetry: Story = {
   }
 };
 
-export const MissingReferenceImageInspection: Story = {
-  tags: ['ci'],
-  name: 'Прежний API опор — отсутствие метода не скрывает диалог',
-  args: { mode: 'reference' },
-  parameters: { songframe: imageStoryOptions({ missingReferenceImageInspection: true }) },
-  play: async (context) => {
-    const screen = screenOf(context);
-    await expect(typeof window.api.referenceImages.inspect).toBe('undefined');
-    let dialog = await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
-    await expect(await within(dialog).findByText(sourcesTexts.referenceSupportsRestartRequired)).toBeVisible();
-    await expect(within(dialog).getByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).toBeVisible();
-    await expect(within(dialog).getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeDisabled();
-    await expect(within(dialog).queryByRole('button', { name: sourcesTexts.referenceSupportsRetry })).not.toBeInTheDocument();
-    await expandReferenceSection(within(dialog), sourcesTexts.referenceSupports);
-    await expect(within(dialog).getByRole('button', { name: sourcesTexts.referenceSupportsRetry })).toBeDisabled();
-    await expect(imageStoryInspection()).toMatchObject({ creates: [], generations: 0, sessions: [] });
-    await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.cancel }));
-    await expect(screen.queryByRole('dialog', { name: sourcesTexts.createReferenceImage })).not.toBeInTheDocument();
-    await expect(screen.getByRole('img', { name: 'Сохранённое изображение' })).toBeVisible();
-    await userEvent.click(screen.getByRole('button', { name: 'Открыть генерацию' }));
-    dialog = await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
-    await expect(await within(dialog).findByText(sourcesTexts.referenceSupportsRestartRequired)).toBeVisible();
-    await expect(within(dialog).getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeDisabled();
-    await expect(imageStoryInspection()).toMatchObject({ creates: [], generations: 0, sessions: [] });
-  }
-};
-
 /** Проверяем оба способа случайного закрытия отдельно: каждый обязан сохранить текущее состояние окна. */
 async function preserveOnImplicitDismiss(context: PlayContext, verify: () => Promise<void>): Promise<void> {
   const screen = screenOf(context);
@@ -852,23 +825,5 @@ export const OptionalCoverSupports: Story = {
     await waitFor(() => expect(screen.getByRole('button', { name: sourcesTexts.accept })).toBeEnabled());
     await userEvent.click(screen.getByRole('button', { name: sourcesTexts.accept }));
     await expect(await screen.findByText('Выбранная квадратная область принята в локальную форму.')).toBeInTheDocument();
-  }
-};
-
-export const CoverPreloadRestart: Story = {
-  name: 'Обложка — старый preload не отправляет запрос без выбранных опор',
-  tags: ['ci'],
-  parameters: { songframe: imageStoryOptions({ missingCoverImageInspection: true }) },
-  play: async (context) => {
-    const screen = screenOf(context);
-    await expandReferenceSection(screen, sourcesTexts.coverSupports);
-    const checkbox = screen.getByRole('checkbox', { name: sourcesTexts.referenceUseImage({ label: 'Спереди' }) });
-    await userEvent.click(checkbox);
-    await screen.findByText(sourcesTexts.referenceSupportsRestartRequired);
-    await expect(screen.getByRole('button', { name: sourcesTexts.generateCover })).toBeDisabled();
-    await expect(imageStoryInspection().creates).toHaveLength(0);
-    await userEvent.click(checkbox);
-    await waitFor(() => expect(screen.getByRole('button', { name: sourcesTexts.generateCover })).toBeEnabled());
-    await expect(imageStoryInspection().generations).toBe(0);
   }
 };

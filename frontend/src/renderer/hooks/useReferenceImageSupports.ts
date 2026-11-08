@@ -28,7 +28,7 @@ export function useReferenceImageSupports(enabled: boolean, options: ReferenceIm
   // Ключ не включает note: правка примечания не требует повторно читать те же байты.
   const key = JSON.stringify(options.map(({ path, label }) => ({ path, label })));
   const [snapshot, setSnapshot] = useState<{ key: string; images: GenerationReferenceImage[] } | null>(null);
-  const [failure, setFailure] = useState<{ key: string; message: string; restartRequired: boolean } | null>(null);
+  const [failure, setFailure] = useState<{ key: string; message: string } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const requestKey = `${mode}:${key}:${attempt}`;
   useEffect(() => {
@@ -36,18 +36,15 @@ export function useReferenceImageSupports(enabled: boolean, options: ReferenceIm
     let cancelled = false;
     setFailure(null);
     setSnapshot(null);
-    // Старый preload в dev может не иметь нового метода. Вызов входит в try вместе с await:
-    // синхронный отказ и отклонённый Promise оставляют ошибку в диалоге, а не размонтируют страницу.
+    // Вызов входит в try вместе с await: синхронный отказ и отклонённый Promise оставляют ошибку
+    // в диалоге, а не размонтируют страницу.
     void (async () => {
-      let restartRequired = false;
       try {
         const api = mode === 'cover' ? window.api.cover : window.api.referenceImages;
-        restartRequired = typeof api.inspect !== 'function';
-        if (restartRequired) throw new Error(sourcesTexts.referenceSupportsRestartRequired);
         const images = await api.inspect({ images: JSON.parse(key) as { path: string; label: string }[] });
         if (!cancelled) setSnapshot({ key: requestKey, images });
       } catch (error) {
-        if (!cancelled) setFailure({ key: requestKey, message: describeError(error), restartRequired });
+        if (!cancelled) setFailure({ key: requestKey, message: describeError(error) });
       }
     })();
     return () => {
@@ -60,7 +57,6 @@ export function useReferenceImageSupports(enabled: boolean, options: ReferenceIm
     ready: images !== null,
     loading: enabled && images === null && !error,
     error,
-    restartRequired: failure?.key === requestKey && failure.restartRequired,
     notes: images ? referenceSupportNotes(options, images) : '',
     // Примечание никогда не передаётся в label/role; SHA связывает номера в тексте с проверенными байтами.
     input: { images: (images ?? []).map(({ path, label, sha256 }) => ({ path, label, sha256 })) },

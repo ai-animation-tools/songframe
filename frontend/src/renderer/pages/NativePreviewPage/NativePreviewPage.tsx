@@ -5,8 +5,8 @@ import * as native from '../../../../bindings/songframe-go/internal/app/nativese
 import type { PreviewInput } from '../../../../bindings/songframe-go/internal/app/models';
 
 /** Служебное второе окно нативной проверки (--native-check): получает медиа из Go по session,
- * сообщает loadedmetadata (preview:ready) и закрывается через Go. Продуктовое окно монтажа
- * ещё не перенесено, поэтому страница обращается к bindings NativeService напрямую, минуя window.api.
+ * сообщает loadedmetadata (preview:ready) и закрывается через Go. Служебное окно не входит
+ * в контракт window.api, поэтому страница обращается к bindings NativeService напрямую.
  * Видео не приглушается: окно его не воспроизводит, а mute запомнился бы звуковым сервером для роли Movie.
  */
 export function NativePreviewPage() {

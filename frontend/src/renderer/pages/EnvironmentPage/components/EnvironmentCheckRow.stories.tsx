@@ -1,4 +1,5 @@
 /** Строка показывает проверки и управляемый вход без открытия браузера или вызова провайдера. */
+import { providerTexts } from '@shared/texts/providers';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { List } from '@mui/material';
@@ -25,15 +26,15 @@ export const Running: Story = {
   args: { check: environmentCheck({ ok: false, status: 'running' }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('progressbar', { name: 'Встроенный Python: выполняется проверка' })).toBeVisible();
+    await expect(canvas.getByRole('progressbar', { name: 'Клиент провайдера изображений: выполняется проверка' })).toBeVisible();
     await expect(canvas.getByText('Проверка выполняется')).toBeVisible();
-    await expect(canvas.queryByText('Python 3.11.9 · resources/runtime/python')).not.toBeInTheDocument();
+    await expect(canvas.queryByText(providerTexts.bundledClient)).not.toBeInTheDocument();
   }
 };
 export const Success: Story = { name: 'Доступен · время проверки' };
 export const MissingCore: Story = {
   name: 'Не найден обязательный ресурс',
-  args: { check: environmentCheck({ ok: false, detail: 'Встроенный Python недоступен: исполняемый файл отсутствует.' }) }
+  args: { check: environmentCheck({ ok: false, detail: 'Клиент провайдера изображений недоступен: файл клиента отсутствует.' }) }
 };
 export const MissingProduction: Story = {
   name: 'Не найдена зависимость производства',
@@ -64,7 +65,7 @@ export const OptionalNeutral: Story = {
 export const LongPath: Story = {
   name: 'Длинный путь Windows · кириллица и пробелы',
   args: {
-    category: 'model',
+    category: 'core',
     check: environmentCheck({
       id: 'vocal-model',
       label: 'Локальная модель выделения вокала для точной разметки русской песни',

@@ -77,9 +77,8 @@ func VideoReviewBudget(settings *agents.SettingsStore) func() int {
 	}
 }
 
-// ContinuityBrief — continuity_brief <shot> --phase <phase> --json через общий tools.run: Go-версия
-// инструмента подключается регистрацией в internal/tools, без изменения проверки видео. Пока
-// инструмент не перенесён, подготовка завершается его текстом «ещё не перенесён».
+// ContinuityBrief — continuity_brief <shot> --phase <phase> --json через общий tools.run: инструмент
+// зарегистрирован в internal/tools, отказ вызова или ненулевой код завершают подготовку его текстом.
 func ContinuityBrief(_ context.Context, project, shot, phase string) (string, error) {
 	result, err := tools.Run(project, "continuity_brief", []string{shot, "--phase", phase, "--json"})
 	if err != nil {

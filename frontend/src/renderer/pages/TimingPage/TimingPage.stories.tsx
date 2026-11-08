@@ -384,18 +384,6 @@ export const TimingPartialResult: Story = {
     await expect(canvas.getByRole('textbox', { name: 'Конец строки 2' })).toHaveValue('');
   }
 };
-export const TimingOldPreload: Story = {
-  name: 'Локальная разметка · прежний preload · понятная просьба перезапустить',
-  parameters: { songframe: timingPageOptions({ local: 'old-api' }) },
-  play: async ({ canvasElement }) => {
-    const screen = within(canvasElement.ownerDocument.body);
-    await openAutomatic(canvasElement);
-    const modal = within(await screen.findByRole('dialog'));
-    await expect(modal.getByText('В запущенном приложении нет API новой разметки. Сохраните правки и полностью перезапустите приложение.')).toBeVisible();
-    await expect(modal.getByRole('button', { name: commonTexts.run })).toBeDisabled();
-  }
-};
-
 export const TimingResultReadRetry: Story = {
   name: 'Локальная разметка · ошибка чтения результата · повтор без новой обработки',
   tags: ['ci'],

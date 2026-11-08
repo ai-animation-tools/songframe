@@ -251,49 +251,6 @@ export const ReferenceSupportNotes: Story = {
   }
 };
 
-export const MissingReferenceImageInspectionPreservesDrafts: Story = {
-  tags: ['ci'],
-  name: 'Прежний API опор — исходники сохраняют несохранённые поля',
-  parameters: { songframe: referencePageOptions('sources', { missingReferenceImageInspection: true }) },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const screen = within(canvasElement.ownerDocument.body);
-    const idea = await canvas.findByRole('textbox', { name: sourcesTexts.idea });
-    await userEvent.clear(idea);
-    await userEvent.type(idea, REFERENCE_PAGE_DRAFT_IDEA);
-    const lyrics = canvas.getByRole('textbox', { name: sourcesTexts.lyrics });
-    await userEvent.clear(lyrics);
-    await userEvent.type(lyrics, REFERENCE_PAGE_DRAFT_LYRICS.replaceAll('[', '[['));
-    await userEvent.click(canvas.getByRole('button', { name: new RegExp(REFERENCE_PAGE_NAME) }));
-    const description = canvas.getByRole('textbox', { name: sourcesTexts.entityDescription });
-    await userEvent.clear(description);
-    await userEvent.type(description, REFERENCE_PAGE_SHARED_DESCRIPTION);
-    const before = referencePageSnapshot();
-    await expect(typeof window.api.referenceImages.inspect).toBe('undefined');
-    await userEvent.click(canvas.getByRole('button', { name: sourcesTexts.generateReferenceImage }));
-    const dialog = await screen.findByRole('dialog', { name: sourcesTexts.createReferenceImage });
-    await expect(await within(dialog).findByText(sourcesTexts.referenceSupportsRestartRequired)).toBeVisible();
-    await expect(within(dialog).getByRole('textbox', { name: sourcesTexts.referenceImagePrompt })).toBeVisible();
-    await expect(within(dialog).getByRole('button', { name: sourcesTexts.generateReferenceImage })).toBeDisabled();
-    await expect(within(dialog).queryByRole('button', { name: sourcesTexts.referenceSupportsRetry })).not.toBeInTheDocument();
-    const summary = within(dialog).getByRole('button', { name: (name) => name.startsWith(sourcesTexts.referenceSupports) });
-    await userEvent.click(summary);
-    await expect(within(dialog).getByRole('button', { name: sourcesTexts.referenceSupportsRetry })).toBeDisabled();
-    await expect(referencePageInspection()).toMatchObject({ creates: [], generations: 0, sessions: [] });
-    await userEvent.click(within(dialog).getByRole('button', { name: commonTexts.cancel }));
-    await expect(screen.queryByRole('dialog', { name: sourcesTexts.createReferenceImage })).not.toBeInTheDocument();
-    await expect(canvas.getByRole('textbox', { name: sourcesTexts.idea })).toHaveValue(REFERENCE_PAGE_DRAFT_IDEA);
-    await expect(canvas.getByRole('textbox', { name: sourcesTexts.lyrics })).toHaveValue(REFERENCE_PAGE_DRAFT_LYRICS);
-    await expect(canvas.getByRole('textbox', { name: sourcesTexts.entityDescription })).toHaveValue(REFERENCE_PAGE_SHARED_DESCRIPTION);
-    await expect(canvas.getByRole('button', { name: commonTexts.save })).toBeEnabled();
-    await expect(referencePageSnapshot()).toEqual(before);
-    await expect(referencePageInspection()).toMatchObject({ creates: [], generations: 0, sessions: [] });
-    // Возврат оставляет пользователя в доступном поле: черновик можно прочитать и скопировать перед перезапуском.
-    await userEvent.click(canvas.getByRole('textbox', { name: sourcesTexts.entityDescription }));
-    await expect(canvas.getByRole('textbox', { name: sourcesTexts.entityDescription })).toHaveFocus();
-  }
-};
-
 /** Фон проверяется кликом по контейнеру MUI вне Paper: это тот же путь закрытия, что и у настоящего backdrop. */
 async function preserveSourceDialog(dialog: HTMLElement, verify: () => Promise<void>): Promise<void> {
   await expectImplicitCloseBlocked(dialog, verify);

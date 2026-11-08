@@ -34,8 +34,6 @@ export interface ImageModelOptions {
   quote?: 'known' | 'unknown' | 'insufficient';
   failContextOnce?: boolean;
   failInspectOnce?: boolean;
-  missingReferenceImageInspection?: boolean;
-  missingCoverImageInspection?: boolean;
   longContext?: boolean;
   preparePending?: boolean;
   delayCreate?: boolean;
@@ -299,10 +297,7 @@ export function imageStoryOptions(options: ImageModelOptions = {}, selected = tr
       activeInspection = model.inspect;
       activeCreateRelease = model.completeCreate;
       activeAttachmentRelease = model.completeAttachment;
-      const session = createStoryApi(model.api, {
-        missingReferenceImageInspection: options.missingReferenceImageInspection,
-        missingCoverImageInspection: options.missingCoverImageInspection
-      });
+      const session = createStoryApi(model.api);
       session.onCleanup(registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo));
       session.onCleanup(registerMediaProviderForTests(TEST_AGENT_PROVIDER, testAgentProviderInfo));
       session.onCleanup(model.dispose);

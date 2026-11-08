@@ -19,7 +19,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as tools$0 from "../tools/models.js";
 
 /**
- * Run — tools.run(project, name, args): ToolResult инструмента. Неверное или ещё не перенесённое
+ * Run — tools.run(project, name, args): ToolResult инструмента. Неверное или неизвестное
  * имя — ошибка вызова; отказ самого инструмента — результат с ненулевым кодом.
  */
 export function Run(project: string, name: string, args: string[]): $CancellablePromise<tools$0.Result> {

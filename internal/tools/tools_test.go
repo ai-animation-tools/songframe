@@ -8,14 +8,14 @@ import (
 	"songframe-go/internal/tools"
 )
 
-// TestRunRejectsName — неверное и не перенесённое имя отклоняются до запуска, как исключение
+// TestRunRejectsName — неверное и неизвестное имя отклоняются до запуска, как исключение
 // PythonLauncher оригинала (renderer получает отказ вызова, а не ToolResult).
 func TestRunRejectsName(t *testing.T) {
 	for name, want := range map[string]string{
 		"../scene_scaffold": "Недопустимое имя инструмента: ../scene_scaffold",
 		"SceneScaffold":     "Недопустимое имя инструмента: SceneScaffold",
 		"":                  "Недопустимое имя инструмента: ",
-		"current_project":   "Инструмент current_project ещё не перенесён в Go-версию SongFrame.",
+		"current_project":   "Неизвестный инструмент: current_project.",
 	} {
 		if _, err := tools.Run(t.TempDir(), name, nil); err == nil || err.Error() != want {
 			t.Errorf("%q: ожидалось %q, получено %v", name, want, err)
@@ -26,14 +26,13 @@ func TestRunRejectsName(t *testing.T) {
 	}
 }
 
-// TestRunWithoutProject — пустой путь проекта: NO_PROJECT_MESSAGE tools/common.py и код 2.
+// TestRunWithoutProject — пустой путь проекта: подсказка открыть проект в приложении и код 2.
 func TestRunWithoutProject(t *testing.T) {
 	result, err := tools.Run("", "scene_scaffold", []string{"--json"})
 	if err != nil || result.Code == nil || *result.Code != 2 || result.Stdout != "" {
 		t.Fatalf("ожидался код 2 без вывода, получено %+v, %v", result, err)
 	}
-	want := "Проект клипа не выбран. Укажите `--project <папка>`, задайте переменную окружения SONGFRAME_PROJECT " +
-		"или выберите проект: `python3 -B tools/current_project/current_project.py set <папка>`.\n"
+	want := "Проект клипа не выбран. Откройте проект в SongFrame кнопкой «Открыть папку проекта».\n"
 	if result.Stderr != want {
 		t.Fatalf("stderr: %q", result.Stderr)
 	}

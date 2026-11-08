@@ -149,8 +149,6 @@ export const ChangedSource: Story = {
     await expect(timingLocalInspection().starts).toHaveLength(0);
   }
 };
-export const OldPreload: Story = { name: 'Прежний API · понятная ошибка', parameters: { songframe: timingPageOptions({ local: 'vocal-old-api' }) } };
-
 export const RapidComparisonSwitch: Story = {
   name: 'Быстрый A/B до метаданных сохраняет позицию и воспроизведение',
   tags: ['ci'],

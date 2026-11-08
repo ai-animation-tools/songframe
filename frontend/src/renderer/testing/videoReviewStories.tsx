@@ -72,7 +72,7 @@ export function videoReviewStoryOptions(
 ): StoryOptions {
   return {
     app: {
-      state: { packaged: false, problems: [], toolsRoot: '/mock/tools', localDir: '/mock/state', current: project, history: [], platform: 'linux' },
+      state: { packaged: false, problems: [], localDir: '/mock/state', current: project, history: [], platform: 'linux' },
       agentProvider: 'codex',
       aiAccess: storyAccess
     },

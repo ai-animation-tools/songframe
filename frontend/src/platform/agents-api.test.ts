@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { AgentEvent } from '@shared/agents';
-import { createApi, methodAvailability, type Bindings, type EventSource } from './api';
+import { createApi, type Bindings, type EventSource } from './api';
 
 function bindings(services: { agents?: Record<string, unknown>; ai?: Record<string, unknown> }, events?: EventSource): Bindings {
   const missing = async () => {
@@ -62,25 +62,6 @@ const job = {
 };
 
 describe('window.api.agents', () => {
-  it('все методы agents и ai.access перенесены в Go', () => {
-    for (const method of [
-      'ai.access',
-      'agents.getSettings',
-      'agents.getProviderSettings',
-      'agents.saveProviderSettings',
-      'agents.saveSettings',
-      'agents.check',
-      'agents.account',
-      'agents.models',
-      'agents.start',
-      'agents.cancel',
-      'agents.get',
-      'agents.list',
-      'agents.onEvent'
-    ] as const)
-      expect(methodAvailability(method), method).toEqual({ available: true, reason: null });
-  });
-
   it('передаёт настройки и ответы Go без изменений', async () => {
     const settings = { provider: 'claude', model: 'opus' } as const;
     const service = {

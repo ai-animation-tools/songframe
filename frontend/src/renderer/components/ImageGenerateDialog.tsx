@@ -332,16 +332,14 @@ export function ImageGenerateDialog({
               <Alert severity="error">
                 <Stack spacing={1} alignItems="flex-start">
                   <Typography variant="body2">{supports.error}</Typography>
-                  {!supports.restartRequired && (
-                    <ActionButton
-                      startIcon={<RefreshIcon />}
-                      onClick={supports.retry}
-                      disabled={editingBlocked}
-                      disabledReason={sourcesTexts.referenceConstructorBusy}
-                    >
-                      {sourcesTexts.referenceSupportsRetry}
-                    </ActionButton>
-                  )}
+                  <ActionButton
+                    startIcon={<RefreshIcon />}
+                    onClick={supports.retry}
+                    disabled={editingBlocked}
+                    disabledReason={sourcesTexts.referenceConstructorBusy}
+                  >
+                    {sourcesTexts.referenceSupportsRetry}
+                  </ActionButton>
                 </Stack>
               </Alert>
             )}
@@ -391,15 +389,13 @@ export function ImageGenerateDialog({
                         <ActionButton
                           startIcon={<RefreshIcon />}
                           onClick={() => changeReference(supports.retry)}
-                          disabled={editingBlocked || supports.loading || supports.restartRequired || selectedOptions.length === 0}
+                          disabled={editingBlocked || supports.loading || selectedOptions.length === 0}
                           disabledReason={
-                            supports.restartRequired
-                              ? sourcesTexts.referenceSupportsRestartRequired
-                              : editingBlocked
-                                ? sourcesTexts.referenceConstructorBusy
-                                : selectedOptions.length === 0
-                                  ? sourcesTexts.referenceNoSelectedImages
-                                  : sourcesTexts.referenceSupportsLoading
+                            editingBlocked
+                              ? sourcesTexts.referenceConstructorBusy
+                              : selectedOptions.length === 0
+                                ? sourcesTexts.referenceNoSelectedImages
+                                : sourcesTexts.referenceSupportsLoading
                           }
                         >
                           {sourcesTexts.referenceSupportsRetry}

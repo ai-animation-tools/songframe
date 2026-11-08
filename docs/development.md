@@ -69,8 +69,8 @@ dev-skills/             скиллы разработки (в поставку �
 
 Renderer не читает файловую систему и не запускает процессы. Единственный путь к Go — контракт [`frontend/src/shared/api.ts`](../frontend/src/shared/api.ts):
 
-- [`frontend/src/platform/api.ts`](../frontend/src/platform/api.ts) — единственная реализация: каждый метод вызывает сгенерированный binding Wails, а события Wails превращает в подписки. Список `IMPLEMENTED` и функция `methodAvailability` задают доступность методов; UI не ведёт собственный список готовых операций.
-- [`frontend/src/platform/unavailable-api.ts`](../frontend/src/platform/unavailable-api.ts) перечисляет формы всех методов. Метод вне `IMPLEMENTED` отвечает ошибкой `UNAVAILABLE`, а не успешной заглушкой; подписка на событие такой области ничего не делает. Сейчас недоступен только `app.setToolsRoot` (инструменты встроены в приложение).
+- [`frontend/src/platform/api.ts`](../frontend/src/platform/api.ts) — единственная реализация: каждый метод вызывает сгенерированный binding Wails, а события Wails превращает в подписки.
+- [`frontend/src/platform/api-skeleton.ts`](../frontend/src/platform/api-skeleton.ts) задаёт типизированную заготовку всех методов, которую `createApi` заполняет вызовами bindings. Тест адаптера проверяет, что ни один метод не остался заготовкой: новый метод контракта добавляется вместе с Go-реализацией.
 - `frontend/bindings/` создаёт `wails3 task bindings` ([`scripts/bindings.sh`](../scripts/bindings.sh)): `wails3 generate bindings`, затем скрипт убирает хвостовые пробелы и сужает `T[] | null` до `T[]`, что честно благодаря `wire.Fill`. Файлы хранятся в Git и вручную не правятся; после изменения Go-сервиса bindings перегенерируются.
 
 Новая возможность — это метод предметного пакета, метод Wails-сервиса в `internal/app`, перегенерированный binding, метод в `shared/api.ts` и его реализация в `platform/api.ts` с тестом рядом (`frontend/src/platform/*-api.test.ts` подменяют generated-вызовы). Контракты DTO и форматов проекта меняются по [songframe-go-project-contract](../dev-skills/songframe-go-project-contract/SKILL.md).

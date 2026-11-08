@@ -40,7 +40,6 @@ export function timingPageOptions({
       state: {
         packaged: false,
         problems: [],
-        toolsRoot: local ? '/mock/tools' : null,
         localDir: '/mock/state',
         current: TIMING_PAGE_PROJECT,
         history: [],
@@ -132,8 +131,6 @@ export function timingPageOptions({
           }
         }
       });
-      if (local === 'vocal-old-api') Reflect.deleteProperty(session.api.timing, 'vocalsView');
-      if (local === 'old-api') Reflect.deleteProperty(session.api.timing, 'start');
       session.onCleanup(() => {
         localModel?.cleanup();
         if (activeInspection === inspect) activeInspection = null;

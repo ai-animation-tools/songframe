@@ -55,17 +55,19 @@ type Result struct {
 }
 
 // Тексты, которые видит пользователь. toolNameInvalid — environmentTexts.main.toolNameInvalid
-// оригинала; NO_PROJECT_MESSAGE и «Папка проекта не найдена» — tools/common.py.
+// оригинала, «Папка проекта не найдена» — tools/common.py. textNoProject направляет к выбору
+// проекта в приложении: инструменты выполняются только внутри SongFrame, без отдельного CLI.
 const (
-	textNoProject = "Проект клипа не выбран. Укажите `--project <папка>`, задайте переменную окружения " +
-		"SONGFRAME_PROJECT или выберите проект: `python3 -B tools/current_project/current_project.py set <папка>`."
+	textNoProject = "Проект клипа не выбран. Откройте проект в SongFrame кнопкой «Открыть папку проекта»."
 )
 
 func textToolNameInvalid(name string) string {
 	return "Недопустимое имя инструмента: " + name
 }
-func textToolNotMigrated(name string) string {
-	return "Инструмент " + name + " ещё не перенесён в Go-версию SongFrame."
+
+// textToolUnknown — имя допустимо по форме, но такого инструмента в реестре приложения нет.
+func textToolUnknown(name string) string {
+	return "Неизвестный инструмент: " + name + "."
 }
 func textProjectNotFound(root string) string {
 	return "Папка проекта не найдена: " + root + " (источник: argument)."
@@ -77,7 +79,7 @@ var toolName = regexp.MustCompile(`^[a-z_]+$`)
 // tool — перенесённый инструмент: main() на разрешённом корне проекта.
 type tool func(root string, args []string) pytool.Output
 
-// registry — инструменты, перенесённые на Go. Остальные имена оригинала — ошибка «не перенесён».
+// registry — инструменты приложения по имени. Имя вне реестра — ошибка «Неизвестный инструмент».
 var registry = map[string]tool{
 	"scene_scaffold":      scenescaffold.Run,
 	"lint_registry":       lintregistry.Run,
@@ -135,7 +137,7 @@ func withLocalDir(run func(ctx context.Context, root string, args []string, loca
 // провайдеру со страницы «Среда» выполняется без выбранного клипа.
 var projectFree = map[string]map[string]bool{"media_request": mediarequest.ProjectFreeActions}
 
-// Available — перенесён ли инструмент с таким именем.
+// Available — есть ли инструмент с таким именем в реестре приложения.
 func Available(name string) bool {
 	_, ok := registry[name]
 	_, withContext := contextual[name]
@@ -170,8 +172,8 @@ func quote(part string) string {
 	return strings.TrimSuffix(builder.String(), "\n")
 }
 
-// Run — tools.run: проверка имени, выбор проекта и запуск перенесённого инструмента. Ошибка —
-// отказ вызова (неверное или не перенесённое имя), как исключение оригинала до запуска процесса;
+// Run — tools.run: проверка имени, выбор проекта и запуск инструмента из реестра. Ошибка —
+// отказ вызова (неверное или неизвестное имя), как исключение оригинала до запуска процесса;
 // отказ самого инструмента — Result с ненулевым кодом.
 func Run(project, name string, args []string) (Result, error) {
 	return RunContext(context.Background(), project, name, args)
@@ -189,7 +191,7 @@ func RunContext(ctx context.Context, project, name string, args []string) (Resul
 		run = func(root string, args []string) pytool.Output { return withContext(ctx, root, args) }
 	}
 	if !ok {
-		return Result{}, errors.New(textToolNotMigrated(name))
+		return Result{}, errors.New(textToolUnknown(name))
 	}
 	parts := []string{name}
 	finish := func(code int, stdout, stderr string) (Result, error) {

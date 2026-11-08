@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { DerivedShotRecipe } from '@shared/derived-shot';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 const recipe: DerivedShotRecipe = { mode: 'repeat', start_frame: 12, end_frame_exclusive: 72 };
 
@@ -49,11 +49,6 @@ function harness(derivedShots: Record<string, unknown>) {
 }
 
 describe('derivedShots поверх DerivedShotService', () => {
-  it('все методы перенесены', () => {
-    for (const method of ['view', 'save', 'build', 'accept'] as const)
-      expect(methodAvailability(`derivedShots.${method}`)).toEqual({ available: true, reason: null });
-  });
-
   it('передаёт рецепт без изменений и возвращает вид', async () => {
     const View = vi.fn(async () => view);
     const Save = vi.fn(async () => view);

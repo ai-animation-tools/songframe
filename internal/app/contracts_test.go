@@ -59,10 +59,10 @@ func TestContractAppStateMarshal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tools, current := "Комплект теста", "Проекты/Ёж"
+	current := "Проекты/Ёж"
 	states := map[string]AppState{
 		"empty-nullable":    empty,
-		"populated-unicode": {Packaged: true, Problems: []string{"Проверка профиля"}, ToolsRoot: &tools, LocalDir: "Профиль теста 🌿", Current: &current, History: []ProjectHistoryEntry{{Path: current, Name: "Ёж 🌿", LastOpened: "2026-11-03T12:34:56Z", Exists: true}}, Platform: "win32"},
+		"populated-unicode": {Packaged: true, Problems: []string{"Проверка профиля"}, LocalDir: "Профиль теста 🌿", Current: &current, History: []ProjectHistoryEntry{{Path: current, Name: "Ёж 🌿", LastOpened: "2026-11-03T12:34:56Z", Exists: true}}, Platform: "win32"},
 	}
 	fixtures := readAPIContracts(t)
 	if len(states) != len(fixtures.AppStates) {

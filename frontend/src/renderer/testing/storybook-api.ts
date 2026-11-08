@@ -111,8 +111,7 @@ export function unconfiguredStoryApi(): Api {
       onEvent: () => unconfigured('agents.onEvent')
     },
     app: {
-      state: async () => unconfigured('app.state'),
-      setToolsRoot: async () => unconfigured('app.setToolsRoot')
+      state: async () => unconfigured('app.state')
     },
     projects: {
       open: async () => unconfigured('projects.open'),

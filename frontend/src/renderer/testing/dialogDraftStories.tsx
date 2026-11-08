@@ -54,7 +54,7 @@ export function draftDialogOptions(page = false): StoryOptions {
       aiAccess: storyAccess,
       agentProvider: 'codex',
       status: projectStatus,
-      state: { packaged: false, problems: [], toolsRoot: '/mock/songframe', localDir: '/mock/state', current: DRAFT_PROJECT, history: [], platform: 'linux' }
+      state: { packaged: false, problems: [], localDir: '/mock/state', current: DRAFT_PROJECT, history: [], platform: 'linux' }
     },
     createApi: () => ({
       agents: {

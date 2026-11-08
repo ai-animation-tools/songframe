@@ -108,7 +108,6 @@ const renderCard = (overrides: Partial<ComponentProps<typeof ProductionShotCard>
       createElement(ProductionShotCard, {
         shot: fixtureShot(),
         busy: false,
-        pythonAvailable: true,
         onRegenerate: unchanged,
         ...overrides
       })
@@ -162,11 +161,8 @@ describe('Локальная подготовка повтора', () => {
     }
   });
 
-  it.each([
-    { busy: true, pythonAvailable: true },
-    { busy: false, pythonAvailable: false }
-  ])('блокирует подготовку при занятости или недоступном Python: %j', (availability) => {
-    expect(repeatButton(renderCard(availability))).toMatch(/\bdisabled(?:=|\s|>)/);
+  it('блокирует подготовку при занятости', () => {
+    expect(repeatButton(renderCard({ busy: true }))).toMatch(/\bdisabled(?:=|\s|>)/);
   });
 
   it.each(['submitting', 'submission_unknown'])('не позволяет готовить повтор при незавершённой отправке %s', (status) => {

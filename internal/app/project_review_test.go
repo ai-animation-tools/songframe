@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -10,6 +11,19 @@ import (
 	"songframe-go/internal/scenarioworkflow"
 	"songframe-go/internal/status"
 )
+
+// noAgents — менеджер агентов без заданий: проверка свежести сценария агента не запускает.
+type noAgents struct{}
+
+func (noAgents) Start(scenarioworkflow.AgentStartInput) (scenarioworkflow.AgentJob, error) {
+	return scenarioworkflow.AgentJob{}, errors.New("запуск агента в тесте не ожидается")
+}
+
+func (noAgents) Get(string) (scenarioworkflow.AgentJob, bool) {
+	return scenarioworkflow.AgentJob{}, false
+}
+
+func (noAgents) List(string) []scenarioworkflow.AgentJob { return []scenarioworkflow.AgentJob{} }
 
 // TestStatusScenarioReview — projects.status добавляет проблему «проверьте сценарий», когда после
 // утверждения трактовки изменился кастинг (reviewProblem из ipc.ts оригинала), и снимает
@@ -24,7 +38,7 @@ func TestStatusScenarioReview(t *testing.T) {
 		t.Fatal(err)
 	}
 	local := t.TempDir()
-	workflow := scenarioworkflow.New(scenarioworkflow.Options{LocalDir: local})
+	workflow := scenarioworkflow.New(scenarioworkflow.Options{LocalDir: local, Agents: noAgents{}})
 	service := NewProjectService(nil, local)
 	ConnectScenarioReview(service, workflow)
 

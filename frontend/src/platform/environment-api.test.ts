@@ -4,7 +4,7 @@
  * ключами, адрес входа приходит событием environment:loginUrl. Bindings подменяются целиком.
  */
 import { describe, expect, it } from 'vitest';
-import { createApi, methodAvailability, type Bindings, type EventSource } from './api';
+import { createApi, type Bindings, type EventSource } from './api';
 
 type Listener = (event: { data: unknown }) => void;
 
@@ -74,18 +74,6 @@ const row = {
 };
 
 describe('environment', () => {
-  it('методы доступны', () => {
-    for (const method of [
-      'environment.check',
-      'environment.providerAuth',
-      'environment.loginProvider',
-      'environment.cancelLogin',
-      'environment.onLoginUrl',
-      'media.capabilities'
-    ] as const)
-      expect(methodAvailability(method).available).toBe(true);
-  });
-
   it('прогресс относится к своему вызову и подписка снимается после ответа', async () => {
     const hub = eventHub();
     const api = createApi(

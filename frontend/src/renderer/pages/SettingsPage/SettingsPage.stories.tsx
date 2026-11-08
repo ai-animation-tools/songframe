@@ -7,7 +7,6 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { AGENT_PROVIDERS } from '@shared/agent-providers';
 import { commonTexts } from '@shared/texts/common';
 import { componentTexts } from '@shared/texts/component-manager';
-import { migrationTexts } from '@shared/texts/migration';
 import { settingsTexts } from '@shared/texts/settings';
 import { technicalTexts } from '@shared/texts/technical';
 import { updatesTexts } from '@shared/texts/updates';
@@ -64,7 +63,6 @@ export const Configured: Story = {
     await expect(await canvas.findByText(SETTINGS_STORY_EMAIL)).toBeVisible();
     await expect(canvas.getByText(settingsTexts.limitAlmostExhausted(technicalTexts.percent('9')))).toBeVisible();
     // Все блоки страницы перенесены, обновление показывает установленную версию.
-    await expect(canvas.queryByText(migrationTexts.notMigratedTitle)).not.toBeInTheDocument();
     await expect(await canvas.findByText(updatesTexts.currentVersion({ version: '1.0.0' }))).toBeVisible();
 
     await userEvent.click(canvas.getByRole('button', { name: new RegExp(`^${commonTexts.check}$`) }));
@@ -108,16 +106,6 @@ export const WithoutAgent: Story = {
     await userEvent.click(await agentRadio(canvasElement, codex));
     await userEvent.click(canvas.getByRole('button', { name: new RegExp(`^${commonTexts.check}$`) }));
     await expect(await canvas.findByText(settingsTexts.authorization(settingsTexts.unauthenticated))).toBeVisible();
-  }
-};
-
-export const AgentNotMigrated: Story = {
-  name: 'Методы агентов недоступны · блок агента показывает причину',
-  parameters: { songframe: { shell: 'page', route: '/settings', unavailable: ['agents.getSettings'], createApi: () => updatesStoryApi().api } },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText(migrationTexts.agentSection)).toBeVisible();
-    await expect(canvas.getAllByText(migrationTexts.notMigratedTitle)).toHaveLength(1);
   }
 };
 

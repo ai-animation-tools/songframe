@@ -73,7 +73,6 @@ export const PAGE_ALIASES: Readonly<Record<string, string>> = {
 function environmentRows(): Array<{ title: string; id: string }> {
   return [
     ...Object.entries(MEDIA_PROVIDERS).map(([id, info]) => ({ title: info.title, id })),
-    { title: 'Python', id: 'python' },
     { title: 'FFmpeg', id: 'ffmpeg' },
     { title: 'ffprobe', id: 'ffprobe' }
   ];

@@ -1,7 +1,7 @@
 import { environmentTexts } from '@shared/texts/environment';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
-/** Проверка среды: что найдено, чего не хватает и для чего это нужно; восстановление ресурсов разработки. */
+/** Проверка среды: что найдено, чего не хватает и для чего это нужно; встроенные ресурсы приложения. */
 
 import { type ReactElement, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Stack, Typography } from '@mui/material';
@@ -14,7 +14,7 @@ import { PageActionBar } from '../../components/PageActionBar';
 import type { ProviderAuthStatus, ProviderLogin } from './components/EnvironmentCheckRow';
 
 export function EnvironmentPage(): ReactElement {
-  const { state, refresh, refreshAiAccess, notify, describeError, online } = useApp();
+  const { state, refreshAiAccess, notify, describeError, online } = useApp();
   const [checks, setChecks] = useState<EnvironmentCheck[] | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,28 +124,6 @@ export function EnvironmentPage(): ReactElement {
     notify(missing.length ? environmentTexts.checksMissing(missing.join(', ')) : environmentTexts.allAvailable, missing.length ? 'warning' : 'success');
   };
 
-  const chooseToolsRoot = async (): Promise<void> => {
-    const path = await window.api.dialog.pickFolder({ title: environmentTexts.sourceFolderTitle });
-    if (!path) return;
-    try {
-      // Смена ресурсов начинает следующую проверку после завершения запроса к прежней папке.
-      await inFlight.current;
-      await window.api.app.setToolsRoot(path);
-      await refresh();
-      await load();
-      notify(environmentTexts.sourceFolderSaved, 'success');
-    } catch (error) {
-      notify(describeError(error), 'error');
-    }
-  };
-
-  const resetToolsRoot = async (): Promise<void> => {
-    await inFlight.current;
-    await window.api.app.setToolsRoot(null);
-    await refresh();
-    await load();
-  };
-
   // Адрес страницы входа приходит из главного процесса во время ожидания и исчезает с окончанием входа.
   const [authorizeUrls, setAuthorizeUrls] = useState<Record<string, string>>({});
   useEffect(
@@ -219,7 +197,7 @@ export function EnvironmentPage(): ReactElement {
           {problem}
         </Alert>
       ))}
-      <ApplicationResources state={state} onChooseToolsRoot={chooseToolsRoot} onResetToolsRoot={resetToolsRoot} />
+      <ApplicationResources state={state} />
       {elapsedMs !== null && (
         <Typography variant="body2" color="text.secondary">
           {environmentTexts.elapsed((elapsedMs / 1000).toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }))}

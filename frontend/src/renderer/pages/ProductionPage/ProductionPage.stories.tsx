@@ -24,7 +24,6 @@ import {
   productionPageOptions,
   type ProductionPageModelOptions
 } from '../../testing/productionPageStories';
-import { PYTHON_REASON } from './constants';
 import { attemptLabel } from './planPath';
 
 const texts = productionTexts;
@@ -498,10 +497,9 @@ export const GenerationInterrupted: Story = {
   }
 };
 
-const acceptedOptions = (python = true) =>
+const acceptedOptions = () =>
   options(
     {
-      python,
       shots: () => [
         pageShot('M01', {
           title: 'Подъезд к даче',
@@ -533,30 +531,6 @@ export const AcceptedPlan: Story = {
     await expect(screen.queryByText(texts.productionShotCard.accepted)).not.toBeInTheDocument();
   }
 };
-export const AcceptedPlanNoPython: Story = {
-  name: 'Принятый план без Python · видео доступно для просмотра',
-  parameters: { songframe: acceptedOptions(false) },
-  play: async (context) => {
-    await expect(await screenOf(context).findByText(texts.productionPage.pythonMissing, {}, POLL_TIMEOUT)).toBeInTheDocument();
-    await screenOf(context).findByText(texts.productionShotCard.accepted, {}, POLL_TIMEOUT);
-    await expect(planStep(context, 'result').querySelectorAll('video')).toHaveLength(2);
-  }
-};
-
-export const NoPython: Story = {
-  name: 'Без Python · просмотр работает, ответы объясняют причину',
-  parameters: { songframe: options({ python: false }) },
-  play: async (context) => {
-    const screen = screenOf(context);
-    await expect(await screen.findByText(texts.productionPage.pythonMissing, {}, POLL_TIMEOUT)).toBeInTheDocument();
-    const button = await screen.findByRole('button', { name: approve('K02') });
-    await expect(button).toBeDisabled();
-    await userEvent.hover(button.parentElement!);
-    await expect(await screen.findByRole('tooltip')).toHaveTextContent(PYTHON_REASON);
-    await expect(counts(context)).toHaveTextContent('Ответов: 0.');
-  }
-};
-
 export const Empty: Story = {
   name: 'Планов ещё нет · переход к сценарию',
   parameters: { songframe: options({ shots: () => [], problems: ['Планов пока нет: утвердите сценарий на странице «Сценарий».'] }) },
@@ -595,8 +569,8 @@ async function chooseReviewPackage(context: Context, second = false) {
   await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', { name }));
   return reviewPanel(context);
 }
-const reviewOptions = (videoReview: ProductionPageModelOptions['videoReview'] = {}, python = true) =>
-  productionPageOptions({ shots: reviewShots, videoReview, python }, '/project/production?shot=M02');
+const reviewOptions = (videoReview: ProductionPageModelOptions['videoReview'] = {}, ffmpegMissing = false) =>
+  productionPageOptions({ shots: reviewShots, videoReview, ffmpegMissing }, '/project/production?shot=M02');
 
 export const VideoReviewPersists: Story = {
   name: 'Проверка видео · отчёт сохраняется при смене попытки и плана',
@@ -679,10 +653,10 @@ export const VideoReviewFailureAndRetry: Story = {
   }
 };
 
-export const VideoReviewNoPython: Story = {
-  name: 'Проверка видео · без Python просмотр доступен, анализ заблокирован',
+export const VideoReviewNoFFmpeg: Story = {
+  name: 'Проверка видео · без FFmpeg просмотр доступен, анализ заблокирован',
   tags: ['ci'],
-  parameters: { songframe: reviewOptions({}, false) },
+  parameters: { songframe: reviewOptions({}, true) },
   play: async (context) => {
     await shotHeading(context, 'M02');
     const panel = await chooseReviewPackage(context);

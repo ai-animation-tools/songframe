@@ -6,7 +6,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { MontageDraft } from '@shared/montage';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 const draft: MontageDraft = {
   schema_version: 1,
@@ -39,11 +39,6 @@ function harness(montage: Record<string, unknown>) {
 }
 
 describe('montage поверх MontageService', () => {
-  it('все методы монтажа перенесены', () => {
-    for (const method of ['view', 'load', 'save', 'remove', 'export', 'apply', 'saveVideo'] as const)
-      expect(methodAvailability(`montage.${method}`)).toEqual({ available: true, reason: null });
-  });
-
   it('передаёт черновик без изменений, сохраняет новый черновик с id null', async () => {
     const saved = { id: 'id-1', name: draft.name, updatedAt: '2026-11-05T12:00:00.000Z' };
     const Save = vi.fn(async () => saved);

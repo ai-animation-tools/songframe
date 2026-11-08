@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { ScenarioWorkflowStart } from '@shared/scenario-workflow';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 function bindings(scenarioWorkflow: Record<string, unknown>): Bindings {
   const missing = async () => {
@@ -60,18 +60,6 @@ const view = (proposal: unknown = null, job: unknown = null) => ({
 });
 
 describe('window.api.scenarioWorkflow', () => {
-  it('все методы группы перенесены в Go', () => {
-    for (const method of [
-      'scenarioWorkflow.view',
-      'scenarioWorkflow.start',
-      'scenarioWorkflow.apply',
-      'scenarioWorkflow.approveCurrent',
-      'scenarioWorkflow.approveScenes',
-      'scenarioWorkflow.discard'
-    ] as const)
-      expect(methodAvailability(method)).toEqual({ available: true, reason: null });
-  });
-
   it('передаёт документы предложения как есть и копирует message только при наличии', async () => {
     const before = { cast: null, treatment: { schema_version: 1, extra: { kept: true } }, scenes: null };
     const proposal = {

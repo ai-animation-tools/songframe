@@ -3,7 +3,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { productionTexts } from '@shared/texts/production';
 import { KeyframeReviewStory, keyframePackage } from '../../../testing/keyframeStories';
-import { PYTHON_REASON } from '../constants';
 
 const texts = productionTexts.packageDecision;
 const SCOPE = productionTexts.keyframeNoteScopeField.following;
@@ -148,4 +147,3 @@ export const FailureRetry: Story = {
   }
 };
 export const Busy: Story = { name: 'Запись решения · ответы заблокированы', args: { busy: true, initialNote: 'Черновик сохраняется во время операции.' } };
-export const RuntimeUnavailable: Story = { name: 'Нет Python · ответы заблокированы с причиной', args: { busy: true, busyReason: PYTHON_REASON } };

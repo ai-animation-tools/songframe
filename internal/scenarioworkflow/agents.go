@@ -1,10 +1,6 @@
 package scenarioworkflow
 
-import (
-	"errors"
-
-	"songframe-go/internal/agents"
-)
+import "songframe-go/internal/agents"
 
 // AgentStartInput — задание агенту в режиме предложения (StartInput менеджера internal/agents).
 // Сценарный проход заполняет Project (реальный путь проекта), Task («ai-clip-scenario:<pass>»),
@@ -34,18 +30,3 @@ type Agents interface {
 	// List — копии заданий проекта (project — реальный путь, как Project задания).
 	List(project string) []AgentJob
 }
-
-// UnavailableAgents — заглушка до подключения менеджера агентов: заданий нет, запуск отклоняется
-// понятным текстом. Просмотр, утверждение и отклонение сценария работают и без неё.
-type UnavailableAgents struct{}
-
-// Start всегда отклоняет запуск.
-func (UnavailableAgents) Start(AgentStartInput) (AgentJob, error) {
-	return AgentJob{}, errors.New(textAgentsUnavailable)
-}
-
-// Get — заданий нет.
-func (UnavailableAgents) Get(string) (AgentJob, bool) { return AgentJob{}, false }
-
-// List — заданий нет.
-func (UnavailableAgents) List(string) []AgentJob { return []AgentJob{} }

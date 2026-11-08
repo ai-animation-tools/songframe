@@ -2,10 +2,6 @@ import { commonTexts } from './common';
 
 /** Обвязка журнала заданий; журналы программ и содержимое отчётов остаются данными их API. */
 export const jobsTexts = {
-  main: {
-    toolsUnavailable: 'Корень комплекса не найден: инструменты недоступны.',
-    stepFailed: ({ label, code }: { label: string; code: number }) => `Шаг «${label}» завершился с кодом ${code}.`
-  },
   copied: ({ title }: { title: string }) => `Журнал задания «${title}» скопирован`,
   reportSaved: ({ path }: { path: string }) => `Отчёт сохранён: ${path}. Отправьте этот файл разработчику.`,
   currentProject: ({ name }: { name: string }) => `Текущий: ${name}`,

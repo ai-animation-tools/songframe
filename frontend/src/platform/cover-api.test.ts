@@ -4,7 +4,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { CoverGenerationSession } from '@shared/cover-generation';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 function bindings(cover: Record<string, unknown>, referenceImages: Record<string, unknown> = {}): Bindings {
   const missing = async () => {
@@ -59,13 +59,6 @@ const session: CoverGenerationSession = {
 };
 
 describe('window.api.cover и window.api.referenceImages', () => {
-  it('все методы обеих групп перенесены в Go', () => {
-    for (const method of ['inspect', 'create', 'prepare', 'generate', 'view', 'accept', 'close'] as const)
-      expect(methodAvailability(`cover.${method}`), method).toEqual({ available: true, reason: null });
-    for (const method of ['inspect', 'context', 'create', 'prepare', 'generate', 'view', 'accept', 'attach', 'close'] as const)
-      expect(methodAvailability(`referenceImages.${method}`), method).toEqual({ available: true, reason: null });
-  });
-
   it('передаёт сессии, согласие и квадрат обложки как есть', async () => {
     const service = {
       Inspect: vi.fn(async () => session.referenceImages),

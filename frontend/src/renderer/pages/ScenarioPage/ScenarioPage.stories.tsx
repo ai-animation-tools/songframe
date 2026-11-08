@@ -5,8 +5,6 @@ import { componentsTexts } from '@shared/texts/components';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
 import { scenarioTexts } from '@shared/texts/scenario';
-import { migrationTexts } from '@shared/texts/migration';
-import { platformTexts } from '@shared/texts/platform';
 import {
   SCENARIO_PAGE_READ_ERROR,
   ScenarioPageStory,
@@ -227,7 +225,6 @@ export const WorkflowWithManualEditing: Story = {
     // Процесс с агентом перенесён в Go: вместо заметки о переносе страница показывает рабочую панель.
     await expect(screen.getByText(scenarioTexts.workflow.title)).toBeVisible();
     await expect(await screen.findByRole('button', { name: scenarioTexts.workflow.createScenes })).toBeVisible();
-    await expect(screen.queryByText(migrationTexts.notMigratedTitle)).not.toBeInTheDocument();
     await userEvent.type(field(screen, scenarioTexts.fields.action), ' Ручная правка.');
     await userEvent.click(saveButton(screen));
     await waitFor(() => expect(screen.getByTestId('page-model-saves')).toHaveTextContent('Сохранений реестра: 1 (production).'));
@@ -454,18 +451,6 @@ export const LongRegistry: Story = {
     });
     await expect(saveButton(screen)).toBeVisible();
     await expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth);
-  }
-};
-
-export const ScaffoldNotMigrated: Story = {
-  name: 'Каркас недоступен · причина «не перенесено»',
-  tags: CANVAS_ONLY,
-  parameters: { songframe: scenarioPageOptions({ variant: 'noRegistry', unavailable: ['tools.run'] }) },
-  play: async (context) => {
-    const screen = await ready(context);
-    const scaffold = screen.getByRole('button', { name: scenarioTexts.toolbar.buildScaffold });
-    await expect(scaffold).toBeDisabled();
-    await expect(scaffold).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
   }
 };
 

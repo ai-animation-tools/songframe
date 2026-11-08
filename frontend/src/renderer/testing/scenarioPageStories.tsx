@@ -24,7 +24,6 @@ import { ScenarioPage } from '../pages/ScenarioPage/ScenarioPage';
 import { shotPageRoute } from '../components/shotRoutes';
 import { createStoryApi, STORY_IMAGE_PATH, STORY_TRACK_PATH, type StoryOptions } from './storybook';
 import { storyAccess } from './commonStories';
-import type { ApiMethod } from '../availability';
 import { scenarioDocuments, scenarioJob, scenarioProposal, SCENARIO_STORY_PROJECT } from './scenarioWorkflowStories';
 import { productionShot } from './productionQueueStories';
 
@@ -48,8 +47,6 @@ export interface ScenarioPageOptions {
   route?: string;
   /** Планы, для которых под страницей есть демонстрационные ссылки ?shot= (переход на уже открытой странице). */
   links?: string[];
-  /** Методы, которые история показывает как ещё не перенесённые в Go (процесс сценария с агентом). */
-  unavailable?: readonly ApiMethod[];
   /**
    * Музыкальная карта с промежутками и перекрытием секций, как у автоматической разметки; сохранённая трактовка
    * скопировала эти границы как есть и поэтому не стыкуется (проблемы видны сразу после открытия).
@@ -429,15 +426,12 @@ export function scenarioPageOptions({
   route = '/project/scenario',
   links = ['M02', 'M05'],
   failScenesSaveOnce = false,
-  unavailable,
   gappedTiming = false,
   referencesStale = false
 }: ScenarioPageOptions = {}): StoryOptions {
   const state: AppState = {
     packaged: false,
     problems: [],
-    // Как в Go-версии: корня комплекса нет, каркас строит сам Go.
-    toolsRoot: null,
     localDir: '/mock/songframe-state',
     current: SCENARIO_PAGE_PROJECT,
     history: [],
@@ -446,7 +440,6 @@ export function scenarioPageOptions({
   return {
     shell: 'page',
     route,
-    unavailable,
     app: { state, online: true, agentProvider: 'codex', aiAccess: storyAccess },
     createApi: () => {
       const listeners = new Set<() => void>();
@@ -609,7 +602,7 @@ export function scenarioPageOptions({
               ),
               broken: [],
               problems: [],
-              tools: { python: true, providers: {} }
+              tools: { providers: {} }
             };
           }
         },

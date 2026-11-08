@@ -161,7 +161,7 @@ export function animaticPageOptions({
     shell: 'page',
     route: '/project/animatic',
     app: {
-      state: { packaged: false, problems: [], toolsRoot: null, localDir: '/mock/state', current: ANIMATIC_PAGE_PROJECT, history: [], platform: 'linux' }
+      state: { packaged: false, problems: [], localDir: '/mock/state', current: ANIMATIC_PAGE_PROJECT, history: [], platform: 'linux' }
     },
     createApi: () => {
       const inspection: AnimaticPageInspection = { builds: [], statuses: [], openedPaths: [] };

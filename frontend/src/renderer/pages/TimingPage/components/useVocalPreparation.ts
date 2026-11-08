@@ -22,9 +22,6 @@ export function useVocalPreparation({ project, onReady, onJob, onBusy }: Props) 
   const operation = useRef(false);
   const request = useRef(Symbol());
   const readError = useRef(false);
-  const apiReady = ['vocalsView', 'separateVocals', 'downloadVocalModel', 'selectVocal', 'deleteVocal'].every(
-    (method) => typeof Reflect.get(window.api.timing, method) === 'function'
-  );
   const update = useCallback(
     (next: VocalPreparationView) => {
       setView(next);
@@ -33,11 +30,6 @@ export function useVocalPreparation({ project, onReady, onJob, onBusy }: Props) 
     [onReady]
   );
   const read = useCallback(async () => {
-    if (!apiReady) {
-      onReady(false);
-      setError(texts.restart);
-      return;
-    }
     const revision = Symbol();
     request.current = revision;
     try {
@@ -57,7 +49,7 @@ export function useVocalPreparation({ project, onReady, onJob, onBusy }: Props) 
         setError(describeError(reason));
       }
     }
-  }, [apiReady, project, update, onReady, describeError]);
+  }, [project, update, onReady, describeError]);
   useEffect(() => {
     mounted.current = true;
     onReady(false);
@@ -167,7 +159,6 @@ export function useVocalPreparation({ project, onReady, onJob, onBusy }: Props) 
     job,
     error,
     busy,
-    apiReady,
     refresh: () =>
       act(async () => {
         const next = await window.api.timing.vocalsView(project);

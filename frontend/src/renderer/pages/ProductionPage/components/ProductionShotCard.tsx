@@ -12,7 +12,7 @@ import { ConfirmationDialog } from '../../../components/ConfirmationDialog';
 import { DestructiveButton } from '../../../components/DestructiveButton';
 import { formatClock } from '../../../format';
 import { JobStatus } from '../../../components/JobStatus';
-import { BUSY_REASON, PYTHON_REASON } from '../constants';
+import { BUSY_REASON } from '../constants';
 import { isQueuedPackage } from '../decisions';
 import { attemptLabel, REQUEST_IN_FLIGHT, type PlanTone } from '../planPath';
 import { AcceptedAsset } from './AcceptedAsset';
@@ -26,7 +26,6 @@ export function ProductionShotCard({
   shot,
   busy,
   operation,
-  pythonAvailable,
   onRegenerate,
   selectedPackage,
   onOpenPackage,
@@ -39,7 +38,6 @@ export function ProductionShotCard({
   shot: ShotProduction;
   busy: boolean;
   operation?: { job?: JobInfo; error?: string; running?: boolean; label?: string };
-  pythonAvailable: boolean;
   onRegenerate(id: string): void;
   /** Текущий выбор пакета: вопросы уже открытого пакета повторно не предлагаются. */
   selectedPackage?: string;
@@ -63,8 +61,7 @@ export function ProductionShotCard({
   const waiting = (shot.derivedFrom ? [] : shot.packages).filter((pkg) => pkg.pendingDecision && pkg.dir !== selectedPackage);
   const sending = shot.packages.some((pkg) => ['submission_unknown', 'submitting'].includes(pkg.request?.attemptStatus ?? ''));
   // Несовместимость запроса устраняет пользователь, поэтому она важнее временной занятости.
-  const regenerateReason =
-    shot.regenerateProblem ?? (busy ? BUSY_REASON : !pythonAvailable ? PYTHON_REASON : sending ? productionTexts.productionShotCard.submissionUnknown : null);
+  const regenerateReason = shot.regenerateProblem ?? (busy ? BUSY_REASON : sending ? productionTexts.productionShotCard.submissionUnknown : null);
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>

@@ -59,10 +59,9 @@ type Broken struct {
 	Reason   string  `json:"reason"`
 }
 
-// Tools — наличие инструментов приложения: в Go-версии инструменты выполняются в процессе
-// приложения, поэтому python всегда true, а клиенты платных провайдеров встроены.
+// Tools — наличие инструментов приложения: инструменты выполняются в процессе приложения, а
+// клиенты платных провайдеров встроены, поэтому Providers отмечает каждого платного провайдера.
 type Tools struct {
-	Python    bool            `json:"python"`
 	Providers map[string]bool `json:"providers"`
 }
 
@@ -79,7 +78,7 @@ var shotFolder = regexp.MustCompile(`^(M\d{2}(?:\.\d+)?)(?:[-_]|$)`)
 
 // tools — наличие инструментов не зависит от готовности сценария проекта.
 func toolsAvailability() Tools {
-	result := Tools{Python: true, Providers: map[string]bool{}}
+	result := Tools{Providers: map[string]bool{}}
 	for _, paid := range providers.PaidAdapters() {
 		result.Providers[paid.ID] = true
 	}

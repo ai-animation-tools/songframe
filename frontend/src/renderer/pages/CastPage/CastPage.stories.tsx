@@ -5,7 +5,6 @@ import { castTexts } from '@shared/texts/cast';
 import { commonTexts } from '@shared/texts/common';
 import { ReferencePagesJourney } from '../../testing/ReferencePagesJourney';
 import { sourcesTexts } from '@shared/texts/sources';
-import { platformTexts } from '@shared/texts/platform';
 import { IMAGE_STORY_PROJECT, IMAGE_STORY_STYLE } from '../../testing/imageStories';
 import {
   REFERENCE_PAGE_NAME,
@@ -264,17 +263,5 @@ export const ExternalImageSupport: Story = {
     await userEvent.click(local.getByRole('button', { name: commonTexts.cancel }));
     await expect(referencePageSnapshot()).toEqual(before);
     await expect(referencePageInspection().generations).toBe(0);
-  }
-};
-
-export const GenerationNotMigrated: Story = {
-  tags: ['ci'],
-  name: 'Создание изображения не перенесено · кнопка объясняет причину',
-  parameters: { songframe: { ...referencePageOptions('cast'), unavailable: ['referenceImages.create'] } },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const button = await canvas.findByRole('button', { name: sourcesTexts.generateReferenceImage });
-    await expect(button).toBeDisabled();
-    await expect(button).toHaveAttribute('title', expect.stringContaining(platformTexts.unavailable));
   }
 };

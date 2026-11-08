@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { ToolResult } from '@shared/types';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 function bindings(tools: Record<string, unknown>): Bindings {
   const missing = async () => {
@@ -45,10 +45,6 @@ function bindings(tools: Record<string, unknown>): Bindings {
 }
 
 describe('window.api.tools', () => {
-  it('tools.run перенесён в Go', () => {
-    expect(methodAvailability('tools.run')).toEqual({ available: true, reason: null });
-  });
-
   it('передаёт проект, имя и аргументы и возвращает ToolResult Go без изменений', async () => {
     const result: ToolResult = {
       code: 1,
@@ -63,7 +59,7 @@ describe('window.api.tools', () => {
   });
 
   it('показывает отказ Go-сервиса его текстом', async () => {
-    const error = Object.assign(new Error('Инструмент update_scene_views ещё не перенесён в Go-версию SongFrame.'), { name: 'RuntimeError' });
+    const error = Object.assign(new Error('Неизвестный инструмент: update_scene_views.'), { name: 'RuntimeError' });
     const api = createApi(bindings({ Run: async () => Promise.reject(error) }));
     await expect(api.tools.run('/клип', 'update_scene_views', [])).rejects.toMatchObject({ code: 'SERVICE_FAILED', message: error.message });
   });

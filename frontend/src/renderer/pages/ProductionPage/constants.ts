@@ -13,7 +13,6 @@ export const VERDICT_LABELS: Record<string, { label: string; color: 'primary' | 
 };
 export const VERDICT_HINTS: Record<string, string> = productionTexts.verdictHints;
 export const BUSY_REASON = commonTexts.operationPending;
-export const PYTHON_REASON = productionTexts.constants.pythonReason;
 export { SHOT_STATE_LABELS as STATE_LABELS } from '../../components/shotState';
 export type ProductionFilter = 'all' | 'attention' | 'progress' | 'planned' | 'completed' | 'stale' | 'queued';
 export const FILTER_LABELS: Record<ProductionFilter, string> = productionTexts.filterLabels;

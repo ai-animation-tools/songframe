@@ -38,7 +38,7 @@ export function PackageResume({
 }: {
   pkg: PackageView;
   busy: boolean;
-  /** Почему busy блокирует действия: идёт операция или нет Python. */
+  /** Почему busy блокирует действия: идёт операция. */
   busyReason?: string;
   providerAvailable: boolean;
   onResume(): void;

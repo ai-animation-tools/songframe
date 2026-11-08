@@ -238,7 +238,7 @@ export const AcceptFailure: Story = {
 export const Loading: Story = { name: 'Длительная загрузка', parameters: scenario({ initialDelay: 30000 }) };
 export const LoadFailure: Story = { name: 'Ошибка чтения · повтор и восстановление', parameters: scenario({ failLoadOnce: true }) };
 export const NoRuntime: Story = {
-  name: 'Нет Python и FFmpeg · рецепт можно сохранить',
+  name: 'Нет FFmpeg · рецепт можно сохранить',
   parameters: scenario({ view: { recipe: null, toolsProblem: texts.toolsUnavailable } })
 };
 export const MissingSource: Story = {

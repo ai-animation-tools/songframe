@@ -4,20 +4,18 @@ import { checksTexts } from '@shared/texts/checks';
 import { commonTexts } from '@shared/texts/common';
 import { navigationTexts } from '@shared/texts/navigation';
 import type { ReactElement } from 'react';
-import { Alert, Box, Button, Stack, Typography } from '@mui/material';
+import { Box, Button, Stack, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { JobStatus } from '../../components';
 import { ProjectChecksPanel, ReviewPanel } from './components';
 import { useChecksPage } from './useChecksPage';
 import { PageActionBar } from '../../components/PageActionBar';
-import { LinkedText } from '../../components/LinkedText';
-import { RequireMigrated } from '../../components/NotMigratedNotice';
 
 export function ChecksPage(): ReactElement {
   const page = useChecksPage();
   // Причины блокировки общие для проверок и пробы; показываются в подсказках выключенных кнопок.
-  const toolsReason = !page.pythonAvailable ? checksTexts.pythonRequired : page.running ? checksTexts.jobPending : null;
-  // Отличие от 634fd94: перенесённые проверки выполняются в Go и Python не требуют.
+  // Отличие от 634fd94: проверки и проба стыков выполняются в Go и Python не требуют.
+  const reviewReason = page.running ? checksTexts.jobPending : null;
   const checksReason = page.running ? checksTexts.jobPending : !page.scenesReady ? checksTexts.scenesRequired : null;
 
   return (
@@ -31,11 +29,6 @@ export function ChecksPage(): ReactElement {
           {commonTexts.refresh}
         </Button>
       </PageActionBar>
-      {!page.pythonAvailable ? (
-        <Alert severity="warning">
-          <LinkedText text={checksTexts.pythonUnavailable} />
-        </Alert>
-      ) : null}
       {/* Независимые проверки и проба стыков стоят рядом, когда рабочая область достаточно широка. */}
       <Box
         sx={{
@@ -60,25 +53,23 @@ export function ChecksPage(): ReactElement {
           updateViews={page.updateViews}
           runCheck={page.runCheck}
         />
-        <RequireMigrated title={navigationTexts.blocks.checksReview} methods={['checks.buildReview', 'checks.listReviews', 'production.view']} level="section">
-          <ReviewPanel
-            shots={page.shots}
-            selected={page.selected}
-            planOnly={page.planOnly}
-            disabled={!page.pythonAvailable || page.running}
-            disabledReason={toolsReason}
-            reviews={page.reviews}
-            openReview={page.openReview}
-            deletingReview={page.deletingReview}
-            setPlanOnly={page.setPlanOnly}
-            toggleShot={page.toggleShot}
-            clearSelection={page.clearSelection}
-            buildReview={page.buildReview}
-            setOpenReview={page.setOpenReview}
-            openDirectory={page.openDirectory}
-            removeReview={page.removeReview}
-          />
-        </RequireMigrated>
+        <ReviewPanel
+          shots={page.shots}
+          selected={page.selected}
+          planOnly={page.planOnly}
+          disabled={page.running}
+          disabledReason={reviewReason}
+          reviews={page.reviews}
+          openReview={page.openReview}
+          deletingReview={page.deletingReview}
+          setPlanOnly={page.setPlanOnly}
+          toggleShot={page.toggleShot}
+          clearSelection={page.clearSelection}
+          buildReview={page.buildReview}
+          setOpenReview={page.setOpenReview}
+          openDirectory={page.openDirectory}
+          removeReview={page.removeReview}
+        />
       </Box>
     </Stack>
   );

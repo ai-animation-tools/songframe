@@ -13,7 +13,7 @@ import type { EnvironmentCheck } from '@shared/types';
 import { OFFLINE_MESSAGE } from '../../../network';
 import { ActionButton } from '../../../components/ActionButton';
 
-export type EnvironmentCheckCategory = 'core' | 'model' | 'external';
+export type EnvironmentCheckCategory = 'core' | 'external';
 export type ProviderAuthStatus = 'checking' | 'authenticated' | 'unauthenticated' | 'unknown';
 
 /** Вход в платного провайдера из строки его программы. */
@@ -85,15 +85,7 @@ export function EnvironmentCheckRow({ check, category, logins }: EnvironmentChec
               <Chip
                 size="small"
                 variant="outlined"
-                label={
-                  check.bundled
-                    ? environmentTexts.bundled
-                    : category === 'external'
-                      ? environmentTexts.external
-                      : category === 'model'
-                        ? environmentTexts.chosenDuringTiming
-                        : environmentTexts.development
-                }
+                label={check.bundled ? environmentTexts.bundled : category === 'external' ? environmentTexts.external : environmentTexts.development}
               />
             ) : null}
           </Box>

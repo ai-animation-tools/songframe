@@ -28,7 +28,6 @@ function render(current = shot) {
       createElement(ProductionShotCard, {
         shot: current,
         busy: false,
-        pythonAvailable: true,
         onRegenerate: vi.fn()
       })
     )

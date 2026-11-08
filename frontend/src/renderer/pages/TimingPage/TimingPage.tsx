@@ -387,7 +387,6 @@ export function TimingPage(): ReactElement {
     setResultReady(false);
     setGenerationJob(null);
     try {
-      if (typeof window.api.timing.start !== 'function') throw new Error(songTimingTexts.restart);
       // Отличие от 634fd94: модель распознавания и устройство не передаются (D-028), разметка всегда идёт по вокалу.
       const job = await window.api.timing.start(project, { reset: resetAll, vocals: true });
       if (!mounted.current || currentProject.current !== project) return;

@@ -12,7 +12,6 @@ import { LinkedText } from '@renderer/components/LinkedText';
 import { BASE_HEADER_HEIGHT, HeaderHeightContext } from '@renderer/components/headerHeight';
 import { anchorHighlightStyles, useAnchorTarget } from '@renderer/hooks/useAnchorTarget';
 import type { StoryOptions } from '@renderer/testing/storybook';
-import { AvailabilityProvider, type AvailabilityCheck } from '@renderer/availability';
 import { platformTexts } from '@shared/texts/platform';
 
 const styles = createCache({ key: 'css', speedy: true });
@@ -70,11 +69,6 @@ export function StoryEnvironment({ children, options, mode, width }: Props): Rea
     const app = { ...defaultApp, notify, ...options.app };
     return { ...app, aiAccess: app.online ? app.aiAccess : offlineAccess(app.aiAccess) };
   }, [notify, options.app]);
-  // Отличие от 634fd94: доступность методов Go задаётся историей; по умолчанию модель API полная.
-  const availability = useMemo<AvailabilityCheck>(() => {
-    const unavailable = new Set(options.unavailable ?? []);
-    return (method) => (unavailable.has(method) ? { available: false, reason: platformTexts.unavailable } : { available: true, reason: null });
-  }, [options.unavailable]);
   const theme = useMemo(() => createAppTheme(mode), [mode]);
   const themeMode = useMemo(() => ({ mode, resolved: mode, setMode: noAction }), [mode]);
   const workspace = (
@@ -105,41 +99,39 @@ export function StoryEnvironment({ children, options, mode, width }: Props): Rea
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <MemoryRouter initialEntries={[options.route ?? '/']}>
-            <AvailabilityProvider value={availability}>
-              <AppValueProvider value={value}>
-                {options.shell === 'page' ? (
-                  <>
-                    {/* Упрощённая шапка повторяет высоту и закрепление рабочей: под ней встают панели действий страницы. */}
-                    <GlobalStyles styles={anchorHighlightStyles} />
-                    <StoryAnchors />
-                    <AppBar position="fixed" color="default" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                      <Toolbar variant="dense" sx={{ gap: 2 }}>
-                        <Typography variant="subtitle1" fontWeight={700}>
-                          SongFrame · витрина
-                        </Typography>
-                        <StoryRoute />
-                      </Toolbar>
-                    </AppBar>
-                    <Box sx={{ height: BASE_HEADER_HEIGHT - 1 }} />
-                    <HeaderHeightContext.Provider value={BASE_HEADER_HEIGHT}>{workspace}</HeaderHeightContext.Provider>
-                  </>
-                ) : (
-                  workspace
-                )}
-                <Snackbar
-                  open={toast !== null}
-                  autoHideDuration={toast?.persist ? null : 6000}
-                  onClose={(_, reason) => {
-                    if (reason !== 'clickaway') setToast(null);
-                  }}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-                >
-                  <Alert variant="filled" severity={toast?.severity ?? 'info'} onClose={() => setToast(null)}>
-                    <LinkedText text={toast?.message ?? ''} />
-                  </Alert>
-                </Snackbar>
-              </AppValueProvider>
-            </AvailabilityProvider>
+            <AppValueProvider value={value}>
+              {options.shell === 'page' ? (
+                <>
+                  {/* Упрощённая шапка повторяет высоту и закрепление рабочей: под ней встают панели действий страницы. */}
+                  <GlobalStyles styles={anchorHighlightStyles} />
+                  <StoryAnchors />
+                  <AppBar position="fixed" color="default" elevation={0} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <Toolbar variant="dense" sx={{ gap: 2 }}>
+                      <Typography variant="subtitle1" fontWeight={700}>
+                        SongFrame · витрина
+                      </Typography>
+                      <StoryRoute />
+                    </Toolbar>
+                  </AppBar>
+                  <Box sx={{ height: BASE_HEADER_HEIGHT - 1 }} />
+                  <HeaderHeightContext.Provider value={BASE_HEADER_HEIGHT}>{workspace}</HeaderHeightContext.Provider>
+                </>
+              ) : (
+                workspace
+              )}
+              <Snackbar
+                open={toast !== null}
+                autoHideDuration={toast?.persist ? null : 6000}
+                onClose={(_, reason) => {
+                  if (reason !== 'clickaway') setToast(null);
+                }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              >
+                <Alert variant="filled" severity={toast?.severity ?? 'info'} onClose={() => setToast(null)}>
+                  <LinkedText text={toast?.message ?? ''} />
+                </Alert>
+              </Snackbar>
+            </AppValueProvider>
           </MemoryRouter>
         </ThemeProvider>
       </ThemeModeValueProvider>

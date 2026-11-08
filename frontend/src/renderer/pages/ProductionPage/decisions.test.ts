@@ -193,7 +193,7 @@ describe('проба стыков', () => {
       shots: ['M01', 'M02', 'M03', 'M04'].map((id) => ({ id })),
       broken: [],
       problems: [],
-      tools: { python: true, providers: { test: true } }
+      tools: { providers: { test: true } }
     } as unknown as ProductionView;
     expect(reviewShots(view, 'M02')).toEqual(['M01', 'M02', 'M03']);
     expect(reviewShots(view, 'M01')).toEqual(['M01', 'M02']);
@@ -206,7 +206,7 @@ describe('проба стыков', () => {
       shots: ['M44', 'M45', 'M46'].map((id) => ({ id })),
       broken: [],
       problems: [],
-      tools: { python: true, providers: { test: true } }
+      tools: { providers: { test: true } }
     } as unknown as ProductionView;
     const pkg = { shot: 'M45', request: { downloads: ['/p/clip/plan/batches/M45-attempt-01/request/original.mp4'] } } as unknown as PackageView;
     expect(reviewMontageRoute(view, pkg, '/p/clip')).toBe(

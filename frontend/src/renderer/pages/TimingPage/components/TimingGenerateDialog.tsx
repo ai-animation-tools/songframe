@@ -84,7 +84,6 @@ export function TimingGenerateDialog({
   const activeJob = running ? job : [vocalJob, download].find((item) => item?.status === 'running');
   const pending = working || closing || downloadWorking || vocalWorking;
   const processing = !!activeJob || working || closing;
-  const apiReady = typeof window.api.timing.start === 'function';
   const stop = async (closeAfter: boolean): Promise<void> => {
     if (pending) return;
     setCloseError('');
@@ -112,20 +111,13 @@ export function TimingGenerateDialog({
         : activeJob === download
           ? texts.downloadingAlignment
           : texts.download;
-  const generateReason = !apiReady
-    ? texts.restart
-    : pending || activeJob
-      ? texts.operationPending
-      : !songReady || !vocalReady
-        ? texts.missing
-        : generateBlockedReason;
+  const generateReason = pending || activeJob ? texts.operationPending : !songReady || !vocalReady ? texts.missing : generateBlockedReason;
   return (
     <Dialog open={open} disableEscapeKeyDown maxWidth="sm" fullWidth>
       <DialogTitle>{timingTexts.generateTitle}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Alert severity="info">{texts.recognitionNotice}</Alert>
-          {!apiReady && <Alert severity="warning">{texts.restart}</Alert>}
           {activeJob && <TimingJobProgress key={activeJob.id} job={activeJob} label={progressLabel} name={texts.progress} />}
           {working && !activeJob && (
             <Box role="status">

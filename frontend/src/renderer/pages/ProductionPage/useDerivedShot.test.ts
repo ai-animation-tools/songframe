@@ -143,14 +143,14 @@ describe('локальная сборка производного плана', 
     expect(Draw('/projects/other').view).toBeNull();
   });
 
-  it('сохраняет черновик без Python, провайдера и доступного источника', async () => {
+  it('сохраняет черновик без FFmpeg, провайдера и доступного источника', async () => {
     let form = await loaded({
       ...shotView(),
       recipe: null,
       preview: null,
       sourceFrames: 0,
       problem: 'Источник отсутствует.',
-      toolsProblem: 'Python не найден.'
+      toolsProblem: 'FFmpeg не найден.'
     });
     form.change({ mode: 'still', start: '0', end: '', frame: '5' });
     form = Draw();
@@ -178,9 +178,9 @@ describe('локальная сборка производного плана', 
     expect(api.accept).not.toHaveBeenCalled();
   });
 
-  it('при потере Python блокирует приёмку готового кандидата, сохраняя доступ к черновику', async () => {
-    let form = await loaded({ ...shotView(), toolsProblem: 'Python не найден.' });
-    expect(form.reasons?.accept).toBe('Python не найден.');
+  it('при потере FFmpeg блокирует приёмку готового кандидата, сохраняя доступ к черновику', async () => {
+    let form = await loaded({ ...shotView(), toolsProblem: 'FFmpeg не найден.' });
+    expect(form.reasons?.accept).toBe('FFmpeg не найден.');
     form.requestAccept();
     expect(api.accept).not.toHaveBeenCalled();
     form.change({ ...form.draft, start: '20' });

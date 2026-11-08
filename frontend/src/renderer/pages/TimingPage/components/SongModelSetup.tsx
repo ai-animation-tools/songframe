@@ -39,11 +39,6 @@ export function SongModelSetup({ disabled = false, managedProgress = false, onRe
     let active = true;
     setReading(true);
     onReady(false);
-    if (typeof window.api.timing.songModelSetup !== 'function' || typeof window.api.timing.downloadSongModels !== 'function') {
-      setError(texts.restart);
-      setReading(false);
-      return;
-    }
     void Promise.all([window.api.timing.songModelSetup(), window.api.jobs.list()])
       .then(([value, jobs]) => {
         if (!active) return;

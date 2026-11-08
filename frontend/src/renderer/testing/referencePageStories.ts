@@ -86,7 +86,6 @@ export interface ReferencePageModelOptions {
   originalPrompt?: boolean;
   stateFields?: boolean;
   generating?: boolean;
-  missingReferenceImageInspection?: boolean;
   multipleImages?: boolean;
   emptySelection?: boolean;
   failSourceSaveOnce?: boolean;
@@ -113,7 +112,6 @@ export function referencePageOptions(page: 'sources' | 'cast', options: Referenc
   const state: AppState = {
     packaged: false,
     problems: [],
-    toolsRoot: '/mock/songframe',
     localDir: '/mock/state',
     current: IMAGE_STORY_PROJECT,
     history: [],
@@ -171,102 +169,99 @@ export function referencePageOptions(page: 'sources' | 'cast', options: Referenc
           appearance: savedManifest.references.find((ref) => ref.id === entity.id)?.description ?? entity.appearance
         }))
       });
-      const session = createStoryApi(
-        {
-          ...images.api,
-          sources: {
-            view: async (): Promise<SourcesView> => ({
-              manifest: structuredClone(savedManifest),
-              lyricsText,
-              ideaText,
-              coverPath: null,
-              referenceFilePaths: paths(),
-              problems: [],
-              pinnedReferences: options.pinnedReferences ?? {},
-              entityKinds: Object.fromEntries(savedCast.entities.map((entity) => [entity.id, entity.kind]))
-            }),
-            validate: async () => [],
-            save: async (_project, input) => {
-              sourceSaves++;
-              if (options.failSourceSaveOnce && sourceSaves === 1) throw new Error(REFERENCE_PAGE_SAVE_ERROR);
-              const next = structuredClone(savedManifest);
-              next.kinds = input.kinds ?? next.kinds;
-              next.references = input.references.map((ref) => ({
-                id: ref.id,
-                kind: ref.kind,
-                name: ref.name.trim(),
-                short_name: ref.short_name.trim(),
-                description: ref.description.trim(),
-                prompt: null,
-                files: ref.files.map((file, index) => ({
-                  ...FILE,
-                  path: file.existingPath ?? `${ref.id}/upload-${index}/story-image.png`,
-                  view: file.view,
-                  note: file.note,
-                  prompt: null
-                }))
-              }));
-              // Картинки и их порядок остаются выбором кастинга; новое описание обновляет его проекцию.
-              const nextCast = structuredClone(savedCast);
-              for (const entity of nextCast.entities) {
-                const ref = next.references.find((ref) => ref.id === entity.id);
-                if (ref) entity.appearance = ref.description;
-              }
-              savedManifest = next;
-              savedCast = nextCast;
-              if (input.lyrics && 'text' in input.lyrics) lyricsText = input.lyrics.text;
-              if (input.idea && 'text' in input.idea) ideaText = input.idea.text;
-              return structuredClone(savedManifest);
+      const session = createStoryApi({
+        ...images.api,
+        sources: {
+          view: async (): Promise<SourcesView> => ({
+            manifest: structuredClone(savedManifest),
+            lyricsText,
+            ideaText,
+            coverPath: null,
+            referenceFilePaths: paths(),
+            problems: [],
+            pinnedReferences: options.pinnedReferences ?? {},
+            entityKinds: Object.fromEntries(savedCast.entities.map((entity) => [entity.id, entity.kind]))
+          }),
+          validate: async () => [],
+          save: async (_project, input) => {
+            sourceSaves++;
+            if (options.failSourceSaveOnce && sourceSaves === 1) throw new Error(REFERENCE_PAGE_SAVE_ERROR);
+            const next = structuredClone(savedManifest);
+            next.kinds = input.kinds ?? next.kinds;
+            next.references = input.references.map((ref) => ({
+              id: ref.id,
+              kind: ref.kind,
+              name: ref.name.trim(),
+              short_name: ref.short_name.trim(),
+              description: ref.description.trim(),
+              prompt: null,
+              files: ref.files.map((file, index) => ({
+                ...FILE,
+                path: file.existingPath ?? `${ref.id}/upload-${index}/story-image.png`,
+                view: file.view,
+                note: file.note,
+                prompt: null
+              }))
+            }));
+            // Картинки и их порядок остаются выбором кастинга; новое описание обновляет его проекцию.
+            const nextCast = structuredClone(savedCast);
+            for (const entity of nextCast.entities) {
+              const ref = next.references.find((ref) => ref.id === entity.id);
+              if (ref) entity.appearance = ref.description;
             }
-          },
-          cast: {
-            view: async (): Promise<CastView> => {
-              if (options.failCastRead) throw new Error('Не удалось прочитать кастинг для проверки удаления.');
-              return { cast: projectDescriptions(), manifest: structuredClone(savedManifest), imagePaths: paths(), problems: [] };
-            },
-            save: async (_project, input) => {
-              castSaves++;
-              if (options.failCastSaveOnce && castSaves === 1) throw new Error(REFERENCE_PAGE_SAVE_ERROR);
-              const nextCast = structuredClone(input);
-              const nextManifest = structuredClone(savedManifest);
-              for (const entity of nextCast.entities) {
-                entity.appearance = entity.appearance.trim();
-                const ref = nextManifest.references.find((ref) => ref.id === entity.id);
-                if (ref) ref.description = entity.appearance;
-              }
-              savedManifest = nextManifest;
-              savedCast = nextCast;
-              return structuredClone(savedCast);
-            },
-            init: async () => {
-              supplements++;
-              const next = projectDescriptions();
-              for (const ref of savedManifest.references)
-                if (!next.entities.some((entity) => entity.id === ref.id))
-                  next.entities.push({
-                    id: ref.id,
-                    kind: ref.kind,
-                    name: ref.name,
-                    short_name: ref.short_name,
-                    role: '',
-                    appearance: ref.description,
-                    images: ref.files.map((file) => file.path),
-                    initial_state: {}
-                  });
-              savedCast = next;
-              return structuredClone(savedCast);
-            }
-          },
-          shell: {
-            readText: async (path) => {
-              if (options.originalPrompt && path.endsWith(REFERENCE_PAGE_ORIGINAL_PROMPT_PATH)) return REFERENCE_PAGE_ORIGINAL_PROMPT;
-              throw new Error('Текстовый файл не предусмотрен этой историей.');
-            }
-          },
-          dialog: { pickFiles: async () => [REFERENCE_PAGE_UPLOAD] }
+            savedManifest = next;
+            savedCast = nextCast;
+            if (input.lyrics && 'text' in input.lyrics) lyricsText = input.lyrics.text;
+            if (input.idea && 'text' in input.idea) ideaText = input.idea.text;
+            return structuredClone(savedManifest);
+          }
         },
-        { missingReferenceImageInspection: options.missingReferenceImageInspection }
-      );
+        cast: {
+          view: async (): Promise<CastView> => {
+            if (options.failCastRead) throw new Error('Не удалось прочитать кастинг для проверки удаления.');
+            return { cast: projectDescriptions(), manifest: structuredClone(savedManifest), imagePaths: paths(), problems: [] };
+          },
+          save: async (_project, input) => {
+            castSaves++;
+            if (options.failCastSaveOnce && castSaves === 1) throw new Error(REFERENCE_PAGE_SAVE_ERROR);
+            const nextCast = structuredClone(input);
+            const nextManifest = structuredClone(savedManifest);
+            for (const entity of nextCast.entities) {
+              entity.appearance = entity.appearance.trim();
+              const ref = nextManifest.references.find((ref) => ref.id === entity.id);
+              if (ref) ref.description = entity.appearance;
+            }
+            savedManifest = nextManifest;
+            savedCast = nextCast;
+            return structuredClone(savedCast);
+          },
+          init: async () => {
+            supplements++;
+            const next = projectDescriptions();
+            for (const ref of savedManifest.references)
+              if (!next.entities.some((entity) => entity.id === ref.id))
+                next.entities.push({
+                  id: ref.id,
+                  kind: ref.kind,
+                  name: ref.name,
+                  short_name: ref.short_name,
+                  role: '',
+                  appearance: ref.description,
+                  images: ref.files.map((file) => file.path),
+                  initial_state: {}
+                });
+            savedCast = next;
+            return structuredClone(savedCast);
+          }
+        },
+        shell: {
+          readText: async (path) => {
+            if (options.originalPrompt && path.endsWith(REFERENCE_PAGE_ORIGINAL_PROMPT_PATH)) return REFERENCE_PAGE_ORIGINAL_PROMPT;
+            throw new Error('Текстовый файл не предусмотрен этой историей.');
+          }
+        },
+        dialog: { pickFiles: async () => [REFERENCE_PAGE_UPLOAD] }
+      });
       session.onCleanup(registerMediaProviderForTests(TEST_PROVIDER, testProviderInfo));
       session.onCleanup(images.dispose);
       session.onCleanup(() => {

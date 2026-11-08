@@ -1,11 +1,11 @@
 /**
- * Адаптер группы checks: list/run/runAll/updateViews перенесены в Go (задания общего менеджера),
- * пробы стыков недоступны с причиной «не перенесено».
+ * Адаптер группы checks: list/run/runAll/updateViews и пробы стыков выполняются в Go (задания
+ * общего менеджера).
  * Bindings подменяются целиком: Wails runtime и Go не запускаются.
  */
 import { describe, expect, it, vi } from 'vitest';
 import type { CheckInfo } from '@shared/types';
-import { createApi, methodAvailability, type Bindings } from './api';
+import { createApi, type Bindings } from './api';
 
 function bindings(checks: Record<string, unknown>): Bindings {
   const missing = async () => {
@@ -58,21 +58,6 @@ const job = {
 };
 
 describe('window.api.checks', () => {
-  it('все методы проверок и проб стыков перенесены', () => {
-    const methods = [
-      'checks.list',
-      'checks.run',
-      'checks.runAll',
-      'checks.updateViews',
-      'checks.buildReview',
-      'checks.listReviews',
-      'checks.removeReview'
-    ] as const;
-    for (const method of methods) {
-      expect(methodAvailability(method)).toEqual({ available: true, reason: null });
-    }
-  });
-
   it('list возвращает CHECKS Go', async () => {
     const list: CheckInfo[] = [{ id: 'lint', label: 'Данные сцен', description: 'Проверить формат', tool: 'lint_registry', needsScenes: true }];
     const api = createApi(bindings({ List: async () => list }));

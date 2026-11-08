@@ -95,11 +95,10 @@ describe('LinkedText', () => {
     // Провайдер из соседнего предложения не определяет строку.
     expect(links(render('Тестовый сервис доступен. Укажите папку на странице «Среда».'))[0].href).toBe('/environment');
     // Сокращение «См.» не разрывает предложение.
-    expect(links(render('Python не найден: проверки недоступны. См. страницу «Среда».'))[0].href).toBe('/environment?anchor=python');
+    expect(links(render('FFmpeg не найден: проверки недоступны. См. страницу «Среда».'))[0].href).toBe('/environment?anchor=ffmpeg');
   });
 
   it.each([
-    ['Python', '/environment?anchor=python'],
     ['FFmpeg', '/environment?anchor=ffmpeg'],
     ['ffprobe', '/environment?anchor=ffprobe']
   ])('находит строку зависимости %s на странице среды', (title, href) => {
@@ -107,8 +106,8 @@ describe('LinkedText', () => {
   });
 
   it('учитывает порядок упоминаний, отдельные слова и границу строки в ссылке на среду', () => {
-    expect(links(render('Проверьте FFmpeg и Python на странице «Среда».'))[0].href).toBe('/environment?anchor=ffmpeg');
-    expect(links(render('Проверьте Pythonista на странице «Среда».'))[0].href).toBe('/environment');
+    expect(links(render('Проверьте ffprobe и FFmpeg на странице «Среда».'))[0].href).toBe('/environment?anchor=ffprobe');
+    expect(links(render('Проверьте FFmpegX на странице «Среда».'))[0].href).toBe('/environment');
     expect(links(render('Тестовый сервис доступен\nУкажите папку на странице «Среда».'))[0].href).toBe('/environment');
     expect(links(render('Войдите в Тестовый сервис в «Среде».'))).toEqual([{ href: '/environment?anchor=test', text: '«Среде»' }]);
   });

@@ -39,10 +39,10 @@ body:
     attributes:
       label: Версия приложения
       description: >-
-        Укажите версию из имени скачанного файла: songframe-go-ВЕРСИЯ-linux-x86_64.AppImage
-        или songframe-go-ВЕРСИЯ-win-x64-setup.exe. Для сборки из исходников
-        укажите commit или тег.
-      placeholder: 'Например: 1.0.0-dev.47 или commit исходников'
+        Укажите версию из «Настройки» → «Обновления приложения» или из имени скачанного
+        файла: songframe-ВЕРСИЯ-linux-x86_64.AppImage, songframe-ВЕРСИЯ-linux-amd64.deb или
+        songframe-ВЕРСИЯ-win-x64-setup.exe. Для сборки из исходников укажите commit или тег.
+      placeholder: 'Например: 1.0.0 или commit исходников'
     validations:
       required: true
 

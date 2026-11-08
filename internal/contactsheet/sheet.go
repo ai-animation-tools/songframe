@@ -106,7 +106,7 @@ func summarize(ctx context.Context, video, out string, keyframes []keyframe, wit
 	total, ok := info.frames.Int64()
 	if !ok {
 		// Число кадров вне int64 ffprobe не сообщает; такое значение — OverflowError с текстом эталона.
-		return report{}, toolrt.New(toolrt.OverflowError, "Python int too large to convert to C ssize_t")
+		return report{}, toolrt.New(toolrt.OverflowError, "слишком большое число")
 	}
 	last := total - 1
 	indices := []int64{0}

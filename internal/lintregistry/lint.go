@@ -4,7 +4,7 @@
 //
 // Вывод зафиксирован эталоном testdata/golden/lint-registry: строки «ОШИБКА/предупреждение  файл · место: текст»
 // и итог, либо JSON {errors, warnings} с --json; код 1 при ошибках (и предупреждениях с --strict).
-// Данные неожиданной формы дают исключение toolrt (трассировка, код 1), зафиксированное тем же
+// Данные неожиданной формы дают исключение toolrt (необработанная ошибка, код 1), зафиксированное тем же
 // эталоном. Пакет только читает файлы проекта; схемы встроены в бинарник, регулярные выражения —
 // internal/toolregex.
 package lintregistry
@@ -12,7 +12,6 @@ package lintregistry
 import (
 	"embed"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 
@@ -153,7 +152,7 @@ func readJSON(root, name string, r *Report) (any, error) {
 func expectString(value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "expected string or bytes-like object, got '%s'", toolrt.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "ожидается строка, получено: %s", toolrt.TypeName(value))
 	}
 	return text, nil
 }
@@ -481,7 +480,7 @@ func lintDescription(root string, data any, r *Report) error {
 	referencesValue, _ := get(document, "references", toolrt.NewDict())
 	references, ok := referencesValue.(*toolrt.Dict)
 	if !ok {
-		return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(referencesValue))
+		return toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(referencesValue))
 	}
 	for _, key := range references.Keys() {
 		reference := references.Value(key)
@@ -492,18 +491,18 @@ func lintDescription(root string, data any, r *Report) error {
 		pathValue, _ := get(reference, "path", "")
 		location, isString := pathValue.(string)
 		if !isString {
-			return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'startswith'", toolrt.TypeName(pathValue))
+			return toolrt.Raise(toolrt.AttributeError, "ожидается строка, получено: %s", toolrt.TypeName(pathValue))
 		}
 		if !strings.HasPrefix(location, "source/heroes/") || !toolrt.Truthy(name) {
 			continue
 		}
 		title, isString := name.(string)
 		if !isString {
-			return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'split'", toolrt.TypeName(name))
+			return toolrt.Raise(toolrt.AttributeError, "ожидается строка, получено: %s", toolrt.TypeName(name))
 		}
 		words := strings.FieldsFunc(title, toolrt.IsSpace)
 		if len(words) == 0 {
-			return toolrt.Raise(toolrt.IndexError, "list index out of range")
+			return toolrt.Raise(toolrt.IndexError, "индекс за пределами списка")
 		}
 		if !strings.Contains(text, words[0]) {
 			r.warning("source/description.md", key, "персонаж «"+title+"» из реестра не упомянут в сценарии")
@@ -600,14 +599,9 @@ func lintSnapshot(root, name string, r *Report) error {
 	return nil
 }
 
-// pathOperandError — исключение toolrt TypeError соединения пути с нестроковым компонентом; в
-// тексте — имя класса пути ОС.
+// pathOperandError — исключение toolrt TypeError соединения пути с нестроковым компонентом.
 func pathOperandError(value any) error {
-	class := "PosixPath"
-	if runtime.GOOS == "windows" {
-		class = "WindowsPath"
-	}
-	return toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", class, toolrt.TypeName(value))
+	return toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(value))
 }
 
 // lintAssets — манифесты assets/shots/M*/manifest.json и их снимки запроса.
@@ -756,8 +750,8 @@ func lintProductionStatus(root string, data any, r *Report) error {
 	return nil
 }
 
-// Lint — полный отчёт проекта. Ошибка — необработанное исключение toolrt (трассировка и код 1 в
-// выводе инструмента).
+// Lint — полный отчёт проекта. Ошибка — необработанное исключение toolrt (строка «Ошибка: …» и код 1
+// в выводе инструмента).
 func Lint(root string) (*Report, error) {
 	r := &Report{}
 	data, err := lintScenes(root, r)

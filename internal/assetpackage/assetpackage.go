@@ -54,19 +54,11 @@ const (
 // item — значение комплекта по ключу key; отсутствие ключа — исключение toolrt.Item.
 func item(container any, key string) (any, error) { return toolrt.Item(container, key) }
 
-// pathClass — имя типа пути ОС для текста TypeError склейки пути (зафиксировано эталоном).
-func pathClass() string {
-	if os.PathSeparator == '\\' {
-		return "WindowsPath"
-	}
-	return "PosixPath"
-}
-
 // LocalFile — разрешённый абсолютный путь файла name внутри папки комплекта.
 func LocalFile(directory string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(name))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(name))
 	}
 	path := toolrt.ResolvePath(toolrt.JoinPath(directory, text))
 	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(directory)) {
@@ -92,7 +84,7 @@ func descriptorFile(directory string, descriptor *toolrt.Dict, root string) (str
 	base := toolrt.ResolvePath(toolrt.JoinPath(root, "source"))
 	name, ok := path.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "argument should be a str or an os.PathLike object where __fspath__ returns a str, not '%s'", toolrt.TypeName(path))
+		return "", toolrt.Raise(toolrt.TypeError, "путь должен быть строкой, получено: %s", toolrt.TypeName(path))
 	}
 	source := toolrt.ResolvePath(toolrt.JoinPath(base, name))
 	parent := false
@@ -357,7 +349,7 @@ func ValidatePackage(path, shotID, root string) (*toolrt.Dict, error) {
 	addShared := func(value any) error {
 		elements, err := toolrt.Iter(value)
 		if err != nil {
-			return toolrt.Raise(toolrt.TypeError, "Value after * must be an iterable, not %s", toolrt.TypeName(value))
+			return toolrt.Raise(toolrt.TypeError, "нельзя перебрать: %s", toolrt.TypeName(value))
 		}
 		for _, element := range elements {
 			if descriptor, ok := element.(*toolrt.Dict); ok {

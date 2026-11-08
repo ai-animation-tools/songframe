@@ -9,8 +9,8 @@
 // оценивает и не принимает, хеши не считает, assets и реестр не меняет.
 //
 // Эталон testdata/golden/contact-sheet фиксирует аргументы и тексты разбора аргументов, тексты и коды отказов
-// (ValueError печатается, ошибки файлов, ключей и JSON скрываются общей фразой, прочие исключения —
-// трассировка), отчёт и таблицу побайтно, состав и размеры файлов, пиксели кадров (их декодирует
+// (ValueError печатается, ошибки файлов, ключей и JSON скрываются общей фразой, прочие исключения
+// toolrt — необработанная ошибка), отчёт и таблицу побайтно, состав и размеры файлов, пиксели кадров (их декодирует
 // FFmpeg) и фона. Байты PNG, сглаживание букв подписей (растеризатор x/image без хинтинга FreeType,
 // см. animaticcards) и байты превью H.264 эталон не фиксирует: x264 с автоматическим числом потоков
 // недетерминирован между машинами.
@@ -23,7 +23,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"songframe/internal/toolcli"
@@ -45,11 +44,11 @@ const (
 
 // unidentifiedImage — вид исключения нераспознанного изображения опоры (animaticcards). Он относится
 // к ошибкам файлов, но не входит в иерархию OSError toolrt, поэтому run перехватывает его отдельно.
-const unidentifiedImage = "PIL.UnidentifiedImageError"
+const unidentifiedImage = "UnidentifiedImageError"
 
 // parser — аргументы инструмента. Группа источников обязательная (одна из опций должна быть задана), а
 // toolrt.ArgParser знает только необязательную группу: разница (скобки в usage и ошибка
-// «one of the arguments … is required») достраивается в parseArgs.
+// «нужен один из аргументов: …») достраивается в parseArgs.
 var parser = toolrt.ArgParser{
 	Prog:        "contact_sheet",
 	Description: "Техническая сводка полученного видео: параметры, контактный лист, границы, превью; @link README.md",
@@ -79,7 +78,7 @@ func parseArgs(args []string) (toolrt.Args, *toolcli.Output) {
 	parsed, exit := toolcli.Args(parser, args)
 	required := func() *toolcli.Output {
 		usage := strings.Replace(parser.Usage(), optionalGroup, requiredGroup, 1)
-		message := usage + parser.Prog + ": error: one of the arguments " + strings.Join(sources, " ") + " is required\n"
+		message := usage + parser.Prog + ": ошибка: нужен один из аргументов: " + strings.Join(sources, " ") + "\n"
 		return &toolcli.Output{Code: 2, Stderr: toolrt.TextMode(message)}
 	}
 	if exit != nil {
@@ -306,15 +305,11 @@ func underRoot(root, path string) string {
 	return toolrt.JoinPath(root, path)
 }
 
-// joinPath — base/part для значения из JSON: нестроковая часть — TypeError с именем класса пути ОС.
+// joinPath — base/part для значения из JSON: нестроковая часть — TypeError «путь и <вид>».
 func joinPath(base string, part any) (string, error) {
 	text, ok := part.(string)
 	if !ok {
-		name := "PosixPath"
-		if runtime.GOOS == "windows" {
-			name = "WindowsPath"
-		}
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", name, toolrt.TypeName(part))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(part))
 	}
 	return toolrt.JoinPath(base, text), nil
 }

@@ -70,7 +70,7 @@ func ViewProject(project string) (View, error) {
 		if manifest != nil {
 			list, ok := dynvalue.AsArray(dynvalue.Get(manifest, "references"))
 			if !ok {
-				return View{}, &dynvalue.TypeError{Message: "manifest.references.map is not a function"}
+				return View{}, &dynvalue.TypeError{Message: "manifest.references: ожидается список"}
 			}
 			references = list
 		}

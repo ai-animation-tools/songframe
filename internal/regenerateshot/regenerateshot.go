@@ -613,7 +613,7 @@ func Regenerate(ctx context.Context, root, shot string, options Options) (*toolr
 	frozenValue, _ := toolrt.ReadJSON(toolrt.JoinPath(directory, "request", "request.json"))
 	frozen := dict(frozenValue)
 	if frozen == nil {
-		return nil, toolrt.Raise(toolrt.TypeError, "'%s' object is not subscriptable", toolrt.TypeName(frozenValue))
+		return nil, toolrt.Raise(toolrt.TypeError, "нельзя обратиться по индексу или ключу: %s", toolrt.TypeName(frozenValue))
 	}
 	var report *toolrt.Dict
 	if connected {
@@ -669,7 +669,7 @@ func Regenerate(ctx context.Context, root, shot string, options Options) (*toolr
 }
 
 // Run — инструмент regenerate_shot на разрешённом корне проекта: LookupError — код 3, ValueError —
-// код 1 с текстом, прочие исключения — трассировка.
+// код 1 с текстом, прочие исключения — необработанная ошибка (toolrt.Unhandled).
 func Run(ctx context.Context, root string, args []string, localDir string) toolcli.Output {
 	parsed, exit := toolcli.Args(Parser, args)
 	if exit != nil {

@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"syscall"
 
 	"songframe/internal/process"
 	"songframe/internal/toolrt"
@@ -105,10 +106,10 @@ func RunLimits(ctx context.Context, limits Limits, program string, args ...strin
 	return out, err
 }
 
-// NotFound — исключение toolrt FileNotFoundError «[Errno 2] No such file or directory: '<путь>'»
+// NotFound — исключение toolrt FileNotFoundError «нет такого файла или каталога: '<путь>'»
 // для программы, которую не удалось запустить; текст зафиксирован эталонами инструментов.
 func NotFound(program string) error {
-	return toolrt.New(toolrt.FileNotFoundError, "[Errno 2] No such file or directory: "+toolrt.Repr(program))
+	return toolrt.OSErrorFrom(syscall.ENOENT, program)
 }
 
 // Tail — последние limit кодовых точек вывода после декодирования UTF-8 с заменой неверных

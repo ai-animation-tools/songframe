@@ -27,7 +27,7 @@ type URLParts struct {
 // schemeChars — символы, допустимые в схеме адреса (кроме первого, который должен быть буквой).
 const schemeChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-."
 
-// ParseURL — разбор адреса на части. Ошибка — ValueError("Invalid IPv6 URL") при непарной
+// ParseURL — разбор адреса на части. Ошибка — ValueError("неверный адрес IPv6") при непарной
 // квадратной скобке в netloc.
 func ParseURL(raw string) (URLParts, error) {
 	// WHATWG: ведущие управляющие символы и пробел отбрасываются, \t \r \n удаляются везде.
@@ -61,7 +61,7 @@ func ParseURL(raw string) (URLParts, error) {
 		parts.Netloc, raw = raw[2:end], raw[end:]
 		open, closed := strings.Contains(parts.Netloc, "["), strings.Contains(parts.Netloc, "]")
 		if open != closed {
-			return URLParts{}, toolrt.New(toolrt.ValueError, "Invalid IPv6 URL")
+			return URLParts{}, toolrt.New(toolrt.ValueError, "неверный адрес IPv6")
 		}
 	}
 	if index := strings.IndexByte(raw, '#'); index >= 0 {
@@ -153,11 +153,11 @@ func (p URLParts) Port() (int, bool, error) {
 		}
 	}
 	if !valid {
-		return 0, false, toolrt.Raise(toolrt.ValueError, "Port could not be cast to integer value as %s", toolrt.Repr(text))
+		return 0, false, toolrt.Raise(toolrt.ValueError, "порт не число: %s", toolrt.Repr(text))
 	}
 	value, err := strconv.Atoi(text)
 	if err != nil || value > 65535 {
-		return 0, false, toolrt.New(toolrt.ValueError, "Port out of range 0-65535")
+		return 0, false, toolrt.New(toolrt.ValueError, "порт вне диапазона 0–65535")
 	}
 	return value, true, nil
 }

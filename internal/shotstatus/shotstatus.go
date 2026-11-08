@@ -4,7 +4,8 @@
 // партии планов (--independent).
 //
 // Вывод всех веток зафиксирован эталоном testdata/golden/shot-status: ожидаемые отказы
-// (ValueError, OSError, KeyError) — текст в stderr и код 1, прочие исключения — трассировка.
+// (ValueError, OSError, KeyError) — текст в stderr и код 1, прочие исключения — необработанная
+// ошибка (toolrt.Unhandled).
 // Пакет только читает файлы проекта.
 package shotstatus
 
@@ -158,7 +159,7 @@ func shotOf(directory string, documents ...*toolrt.Dict) any {
 func childPath(directory string, value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(value))
 	}
 	return toolrt.JoinPath(directory, text), nil
 }
@@ -369,7 +370,7 @@ func staleStage(reason any, source string) string {
 func get(value any, key string) (any, error) {
 	document, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(value))
 	}
 	return document.Value(key), nil
 }
@@ -580,14 +581,14 @@ func (s *sceneIndex) scene(sid any) (*toolrt.Dict, error) {
 	return scene, nil
 }
 
-// position — order.index(sid).
+// position — номер плана sid в порядке реестра; плана нет в списке — ValueError.
 func (s *sceneIndex) position(sid any) (int, error) {
 	for index, item := range s.order {
 		if toolrt.Equal(item, sid) {
 			return index, nil
 		}
 	}
-	return 0, toolrt.New(toolrt.ValueError, toolrt.Repr(sid)+" is not in list")
+	return 0, toolrt.New(toolrt.ValueError, "нет в списке: "+toolrt.Repr(sid))
 }
 
 // ancestors — все планы, от которых наследуется состояние sid, включая
@@ -722,7 +723,8 @@ func expected(err error) bool {
 	return toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError)
 }
 
-// failure — завершение Run по исключению: ожидаемый отказ — текст и код 1, иначе трассировка.
+// failure — завершение Run по исключению: ожидаемый отказ — текст и код 1, иначе необработанная
+// ошибка.
 func failure(printer *toolcli.Printer, err error) toolcli.Output {
 	if expected(err) {
 		return printer.Fail(err.Error())

@@ -217,7 +217,7 @@ func (s Store) WriteProblems(project string) []string {
 	return nil
 }
 
-// Точки подмены для проверок сбоя (A-11): запись резерва, замена или удаление файла проекта и
+// Точки подмены для проверок сбоя: запись резерва, замена или удаление файла проекта и
 // удаление журнала после публикации.
 var (
 	writeBackup   = func(path string, data []byte) error { return projectfs.WriteFile(path, data, 0o600) }

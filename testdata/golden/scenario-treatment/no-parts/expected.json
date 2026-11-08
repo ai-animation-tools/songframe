@@ -13,5 +13,5 @@
     "sameResult": true,
     "files": {}
   },
-  "originalError": "Трактовка: нужны schema_version 1 и хотя бы одна часть."
+  "strictError": "Трактовка: нужны schema_version 1 и хотя бы одна часть."
 }

@@ -10,17 +10,13 @@
 // Эталон testdata/golden/animatic-cards фиксирует макет 1280×720, цвета, координаты, выбор
 // кегля, переносы, многоточие, размеры и положение вписанных изображений, пиксели фона, полос и
 // вписанных PNG/WebP/GIF (ресэмплинг Lanczos и преобразования libwebp считаются целочисленно), а
-// также тексты исключений для неверных данных (вызывающий инструмент печатает их последней
-// строкой трассировки). Не фиксируются сглаживание глифов (растеризатор x/image без хинтинга),
+// также тексты исключений для неверных данных (вызывающий инструмент печатает их строкой
+// «Ошибка: текст»). Не фиксируются сглаживание глифов (растеризатор x/image без хинтинга),
 // пиксели JPEG (±3 уровня из-за обратного DCT декодера Go) и сжатие PNG, поэтому SHA-256 файла
 // карточки с эталоном не сравнивается.
 package animaticcards
 
-import (
-	"runtime"
-
-	"songframe/internal/toolrt"
-)
+import "songframe/internal/toolrt"
 
 // Макет карточки; значения зафиксированы эталоном.
 const (
@@ -103,20 +99,12 @@ func RenderKeyframeCard(shot, project *toolrt.Dict, keyframes []*toolrt.Dict, ro
 	return card, last, nil
 }
 
-// pathName — имя типа пути ОС в тексте TypeError склейки пути (зафиксировано эталоном).
-func pathName() string {
-	if runtime.GOOS == "windows" {
-		return "WindowsPath"
-	}
-	return "PosixPath"
-}
-
-// joinRoot склеивает root и путь из данных; нестроковый путь — TypeError склейки с именем
-// типа пути ОС.
+// joinRoot склеивает root и путь из данных; нестроковый путь — TypeError «операция «/»
+// неприменима: путь и <вид>».
 func joinRoot(root string, path any) (string, error) {
 	text, ok := path.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathName(), toolrt.TypeName(path))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(path))
 	}
 	return toolrt.JoinPath(root, text), nil
 }
@@ -159,7 +147,7 @@ func upperName(project *toolrt.Dict) (any, error) {
 	}
 	text, ok := name.(string)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'upper'", toolrt.TypeName(name))
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается строка, получено: %s", toolrt.TypeName(name))
 	}
 	return toUpper(text), nil
 }
@@ -367,7 +355,7 @@ func renderCard(shot, project, references *toolrt.Dict, root string, tr *trace) 
 			return fail(err)
 		}
 		if _, ok := reference.(*toolrt.Dict); !ok {
-			return fail(toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(reference)))
+			return fail(toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(reference)))
 		}
 		fallback, err := item(reference, "name")
 		if err != nil {

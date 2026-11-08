@@ -63,7 +63,7 @@ func (m media) dict() *toolrt.Dict {
 // probe — первый видеопоток ffprobe, частота числитель/знаменатель в toolrt.Decimal
 // (28 знаков), длительность потока или формата, число кадров из nb_frames либо округлённое
 // произведение длительности на частоту. Порядок обращений к полям определяет, какое исключение даёт
-// неполный JSON (KeyError — скрытый текст, прочее — трассировка); он зафиксирован эталоном.
+// неполный JSON (KeyError — скрытый текст, прочее — необработанная ошибка); он зафиксирован эталоном.
 func probe(ctx context.Context, path string) (media, error) {
 	output, err := runMedia(ctx, mediacmd.FFprobe(), "-v", "error", "-show_streams", "-show_format", "-of", "json", path)
 	if err != nil {
@@ -186,7 +186,7 @@ func probe(ctx context.Context, path string) (media, error) {
 }
 
 // frameRate — r_frame_rate «числитель/знаменатель» как частное toolrt.Decimal: 0/0 —
-// InvalidOperation, N/0 — DivisionByZero, строка без «/» — IndexError (все — трассировка).
+// InvalidOperation, N/0 — DivisionByZero, строка без «/» — IndexError (все — необработанная ошибка).
 func frameRate(video any) (toolrt.Decimal, error) {
 	raw, err := toolrt.Item(video, "r_frame_rate")
 	if err != nil {
@@ -194,7 +194,7 @@ func frameRate(video any) (toolrt.Decimal, error) {
 	}
 	text, ok := raw.(string)
 	if !ok {
-		return toolrt.Decimal{}, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'split'", toolrt.TypeName(raw))
+		return toolrt.Decimal{}, toolrt.Raise(toolrt.AttributeError, "ожидается строка, получено: %s", toolrt.TypeName(raw))
 	}
 	parts := strings.Split(text, "/")
 	numerator, err := toolrt.NewDecimal(parts[0])
@@ -202,7 +202,7 @@ func frameRate(video any) (toolrt.Decimal, error) {
 		return toolrt.Decimal{}, err
 	}
 	if len(parts) < 2 {
-		return toolrt.Decimal{}, toolrt.New(toolrt.IndexError, "list index out of range")
+		return toolrt.Decimal{}, toolrt.New(toolrt.IndexError, "индекс за пределами списка")
 	}
 	denominator, err := toolrt.NewDecimal(parts[1])
 	if err != nil {
@@ -246,10 +246,9 @@ func toInt(value any) (toolrt.Int, error) {
 		if parsed, ok := parseIntText(item); ok {
 			return parsed, nil
 		}
-		return toolrt.Int{}, toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(item))
+		return toolrt.Int{}, toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(item))
 	}
-	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError,
-		"int() argument must be a string, a bytes-like object or a real number, not '%s'", toolrt.TypeName(value))
+	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "ожидается число или строка, получено: %s", toolrt.TypeName(value))
 }
 
 // parseIntText — целое из строки: пробелы по краям, необязательный знак, десятичные цифры Unicode с
@@ -292,7 +291,7 @@ func decimalFloat(value toolrt.Decimal) (float64, error) {
 		return math.Inf(1), nil
 	}
 	if strings.Contains(text, "sNaN") {
-		return 0, toolrt.New(toolrt.ValueError, "cannot convert signaling NaN to float")
+		return 0, toolrt.New(toolrt.ValueError, "NaN нельзя преобразовать в число")
 	}
 	if strings.Contains(text, "NaN") {
 		return math.NaN(), nil
@@ -337,13 +336,13 @@ func roundedProduct(duration, rate toolrt.Decimal) (toolrt.Int, error) {
 		}
 		return ""
 	}
-	invalid := toolrt.New(toolrt.InvalidOperation, "[<class 'decimal.InvalidOperation'>]")
+	invalid := toolrt.New(toolrt.InvalidOperation, "недопустимая операция с десятичным числом")
 	left, right := special(duration), special(rate)
 	switch {
 	case left == "snan" || right == "snan":
 		return toolrt.Int{}, invalid
 	case left == "nan" || right == "nan":
-		return toolrt.Int{}, toolrt.New(toolrt.ValueError, "cannot convert NaN to integer")
+		return toolrt.Int{}, toolrt.New(toolrt.ValueError, "NaN нельзя преобразовать в целое число")
 	case left == "inf" || right == "inf":
 		other := rate
 		if left != "inf" {
@@ -352,7 +351,7 @@ func roundedProduct(duration, rate toolrt.Decimal) (toolrt.Int, error) {
 		if _, coef, _ := decimalParts(other); special(other) == "" && coef.Sign() == 0 {
 			return toolrt.Int{}, invalid
 		}
-		return toolrt.Int{}, toolrt.New(toolrt.OverflowError, "cannot convert Infinity to integer")
+		return toolrt.Int{}, toolrt.New(toolrt.OverflowError, "бесконечность нельзя преобразовать в целое число")
 	}
 	negativeA, coefA, expA := decimalParts(duration)
 	negativeB, coefB, expB := decimalParts(rate)

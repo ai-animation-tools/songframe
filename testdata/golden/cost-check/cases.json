@@ -2479,7 +2479,7 @@
     ]
   },
   {
-    "name": "argparse",
+    "name": "arguments",
     "description": "Разбор аргументов cost_check: группа, обязательные опции, тип float, справка.",
     "covers": [
       "разбор аргументов"

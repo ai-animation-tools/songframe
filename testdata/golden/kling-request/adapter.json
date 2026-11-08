@@ -81,11 +81,11 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "ответ без generationId"
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
-      "debug": "--- submit <time> ValueError: ответ без generationId\nstatus: 200\nbody: {\"generationId\": \"\"}\n"
+      "debug": "--- submit <time> неверное значение: ответ без generationId\nstatus: 200\nbody: {\"generationId\": \"\"}\n"
     }
   },
   {
@@ -102,11 +102,11 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "ответ без generationId"
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
-      "debug": "--- submit <time> ValueError: ответ без generationId\nstatus: 200\nbody: {\"error\": \"https://secret.test/TOKEN\"}\n"
+      "debug": "--- submit <time> неверное значение: ответ без generationId\nstatus: 200\nbody: {\"error\": \"https://secret.test/TOKEN\"}\n"
     }
   },
   {
@@ -123,11 +123,11 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "ответ без generationId"
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
-      "debug": "--- submit <time> ValueError: ответ без generationId\nstatus: 200\nbody: \"plain\"\n"
+      "debug": "--- submit <time> неверное значение: ответ без generationId\nstatus: 200\nbody: \"plain\"\n"
     }
   },
   {
@@ -144,7 +144,7 @@
     },
     "expected": {
       "error": {
-        "type": "RejectedRequest",
+        "type": "запрос отклонён",
         "message": "Invalid parameters"
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
@@ -164,7 +164,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "Войдите в Kling на странице «Среда». Отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
@@ -178,14 +178,14 @@
       "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
       "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
       "timeout": "60",
-      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"NotSent\", \"message\": \"Нет соединения с Kling: ConnectionRefusedError.\"}}}",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"NotSent\", \"message\": \"Нет соединения с Kling: в соединении отказано.\"}}}",
       "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
       "credentials": true
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
-        "message": "Нет соединения с Kling: ConnectionRefusedError. Отправка не начиналась."
+        "type": "отправка не начиналась",
+        "message": "Нет соединения с Kling: в соединении отказано. Отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]"
     }
@@ -204,11 +204,11 @@
     },
     "expected": {
       "error": {
-        "type": "TransportError",
+        "type": "сбой соединения",
         "message": "HTTP 502: Bad gateway"
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
-      "debug": "--- submit <time> TransportError: HTTP 502: Bad gateway\nstatus: 502\nbody: Bad gateway\n"
+      "debug": "--- submit <time> сбой соединения: HTTP 502: Bad gateway\nstatus: 502\nbody: Bad gateway\n"
     }
   },
   {
@@ -219,17 +219,17 @@
       "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
       "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
       "timeout": "60",
-      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"TransportError\", \"status\": null, \"text\": \"Соединение с Kling прервано после отправки: TimeoutError.\"}}}",
+      "script": "{\"upload\": {\"01.png\": {\"return\": \"https://cdn.test/01.png\"}}, \"call\": {\"image_to_video\": {\"raise\": \"TransportError\", \"status\": null, \"text\": \"Соединение с Kling прервано после отправки: время ожидания истекло.\"}}}",
       "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
       "credentials": true
     },
     "expected": {
       "error": {
-        "type": "TransportError",
-        "message": "Соединение с Kling прервано после отправки: TimeoutError."
+        "type": "сбой соединения",
+        "message": "Соединение с Kling прервано после отправки: время ожидания истекло."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
-      "debug": "--- submit <time> TransportError: Соединение с Kling прервано после отправки: TimeoutError.\nbody: Соединение с Kling прервано после отправки: TimeoutError.\n"
+      "debug": "--- submit <time> сбой соединения: Соединение с Kling прервано после отправки: время ожидания истекло.\nbody: Соединение с Kling прервано после отправки: время ожидания истекло.\n"
     }
   },
   {
@@ -246,11 +246,11 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling: tools/call: bad (1)."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"], [\"call\", \"image_to_video\", {\"model\": \"test-model\", \"arguments\": [{\"name\": \"prompt\", \"value\": \"--model A single take. $(touch X) `cmd`\\r\\nВторая строка.\"}, {\"name\": \"duration\", \"value\": \"6\"}, {\"name\": \"enable_audio\", \"value\": \"false\"}, {\"name\": \"imageCount\", \"value\": \"1\"}, {\"name\": \"resolution\", \"value\": \"1080p\"}], \"rationale\": \"\", \"inputs\": [{\"name\": \"image_1\", \"inputType\": \"URL\", \"url\": \"https://cdn.test/01.png\"}]}, 300]]",
-      "debug": "--- submit <time> ProtocolError: Kling: tools/call: bad (1).\n"
+      "debug": "--- submit <time> ошибка протокола: Kling: tools/call: bad (1).\n"
     }
   },
   {
@@ -267,7 +267,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "Войдите в Kling на странице «Среда». Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"]]"
@@ -281,14 +281,14 @@
       "request": "{\"kind\": \"video\", \"command\": \"image_to_video\", \"model\": \"test-model\", \"outputs\": 1, \"parameters\": {\"duration\": 6, \"resolution\": \"1080p\", \"imageCount\": 1, \"enable_audio\": false}, \"prompt\": {\"path\": \"prompt.txt\", \"sha256\": \"x\"}, \"inputs\": [{\"flag\": \"input\", \"slot\": \"image_1\", \"path\": \"inputs/01.png\", \"role\": \"first\", \"sha256\": \"y\"}]}",
       "state": "{\"status\": \"submitting\", \"task_trace_id\": \"0190-trace\"}",
       "timeout": "60",
-      "script": "{\"initialize\": {\"raise\": \"NotSent\", \"message\": \"Нет соединения с Kling: ConnectionRefusedError.\"}}",
+      "script": "{\"initialize\": {\"raise\": \"NotSent\", \"message\": \"Нет соединения с Kling: в соединении отказано.\"}}",
       "files": "{\"prompt.txt\": \"LS1tb2RlbCBBIHNpbmdsZSB0YWtlLiAkKHRvdWNoIFgpIGBjbWRgDQrQktGC0L7RgNCw0Y8g0YHRgtGA0L7QutCwLg==\", \"inputs/01.png\": \"iVBORyBleGFjdCBpbnB1dCBieXRlcw==\"}",
       "credentials": true
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
-        "message": "Нет соединения с Kling: ConnectionRefusedError. Загрузка не завершена, отправка не начиналась."
+        "type": "отправка не начиналась",
+        "message": "Нет соединения с Kling: в соединении отказано. Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"]]"
     }
@@ -307,7 +307,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "HTTP 500: busy Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"]]"
@@ -327,7 +327,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "Kling MCP is handling too many requests Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"]]"
@@ -347,7 +347,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "HTTP 500: загрузка файла 01.png не принята Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"]]"
@@ -367,7 +367,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: 01.png. Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"]]"
@@ -387,7 +387,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "Входы запроса передаются только именованными слотами; подготовьте новую попытку."
       },
       "log": "[]"
@@ -407,7 +407,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "Входы запроса передаются только именованными слотами; подготовьте новую попытку."
       },
       "log": "[]"
@@ -444,7 +444,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "Нет локального файла подготовленной попытки. Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"]]"
@@ -464,7 +464,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "Нет локального файла подготовленной попытки. Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"]]"
@@ -484,7 +484,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "текст не в UTF-8: байт 0xff в позиции 3, неверный начальный байт Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"]]"
@@ -504,7 +504,7 @@
     },
     "expected": {
       "error": {
-        "type": "NotSubmitted",
+        "type": "отправка не начиналась",
         "message": "Нет локального файла подготовленной попытки. Загрузка не завершена, отправка не начиналась."
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"]]"
@@ -541,11 +541,11 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "в JSON нельзя записать nan"
       },
       "log": "[[\"session\", 60, \"0190-trace\"], [\"initialize\"], [\"upload\", \"01.png\"]]",
-      "debug": "--- submit <time> ValueError: в JSON нельзя записать nan\n"
+      "debug": "--- submit <time> неверное значение: в JSON нельзя записать nan\n"
     }
   },
   {
@@ -800,7 +800,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "query_tasks вернул состояние другого задания."
       },
       "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
@@ -854,7 +854,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "query_tasks вернул неверный ответ."
       },
       "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
@@ -874,7 +874,7 @@
     },
     "expected": {
       "error": {
-        "type": "ToolError",
+        "type": "отказ сервиса",
         "message": "PRIVATE_URL"
       },
       "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
@@ -1081,7 +1081,7 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
+        "type": "неверный вид значения",
         "message": "нельзя перебрать: целое число"
       },
       "log": "[[\"session\", 5, \"tr\"], [\"call\", \"query_tasks\", {\"generationId\": \"job-123\"}, null]]"
@@ -1118,7 +1118,7 @@
     },
     "expected": {
       "error": {
-        "type": "KeyError",
+        "type": "нет ключа",
         "message": "нет ключа 'generation_id'"
       },
       "log": "[[\"session\", 5, \"tr\"]]"
@@ -1378,7 +1378,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "tools/list вернул неверное объявление команд."
       },
       "log": "[[\"session\", 60, null], [\"tools\"]]"
@@ -1413,7 +1413,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверный ответ; сырой ответ скрыт."
       },
       "log": "[[\"session\", 60, null], [\"tools\"], [\"call\", \"who_am_i\", {\"tools\": [\"text_to_video\", \"image_to_video\", \"omni_ref_video\", \"motion_control\"]}, null]]"
@@ -1432,7 +1432,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Discovery Kling недоступен: сервер не ответил или ответил ошибкой."
       },
       "log": "[[\"session\", 60, null], [\"tools\"], [\"call\", \"who_am_i\", {\"tools\": [\"text_to_video\", \"image_to_video\", \"omni_ref_video\", \"motion_control\"]}, null]]"
@@ -1451,7 +1451,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Discovery Kling недоступен: сервер не ответил или ответил ошибкой."
       },
       "log": "[[\"session\", 60, null], [\"tools\"]]"
@@ -1470,7 +1470,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Войдите в Kling на странице «Среда». Объявления моделей недоступны."
       },
       "log": "[[\"session\", 60, null], [\"tools\"]]"
@@ -1489,7 +1489,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Discovery Kling недоступен: сервер не ответил или ответил ошибкой."
       },
       "log": "[[\"session\", 60, null], [\"tools\"]]"

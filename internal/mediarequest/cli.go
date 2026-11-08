@@ -75,7 +75,7 @@ const textHidden = "Ошибка локальных данных или файл
 // Run выполняет media_request на проекте root: разбор аргументов, действие и вывод JSON.
 // Ошибка — код 1 и одна строка в stderr: текст ValueError/NotSubmitted как есть, прочие
 // ожидаемые отказы (KeyError, TypeError, OSError и подклассы ValueError) — общий текст без
-// сырого вывода; неожиданное исключение toolrt — трассировка (toolcli.Printer.Crash). report
+// сырого вывода; неожиданное исключение toolrt — необработанная ошибка (toolcli.Printer.Crash). report
 // получает строки watch по мере смены статусов (nil — только в stdout результата); строки
 // попадают и в stdout.
 func Run(ctx context.Context, root string, args []string, report func(string)) toolcli.Output {
@@ -265,7 +265,7 @@ func printCapabilities(printer *toolcli.Printer, report *toolrt.Dict) (toolcli.O
 		for index, name := range names {
 			text, ok := name.(string)
 			if !ok {
-				return toolcli.Output{}, toolrt.Raise(toolrt.TypeError, "sequence item %d: expected str instance, %s found", index, toolrt.TypeName(name))
+				return toolcli.Output{}, toolrt.Raise(toolrt.TypeError, "элемент %d: ожидается строка, получено: %s", index, toolrt.TypeName(name))
 			}
 			if index > 0 {
 				joined += ", "

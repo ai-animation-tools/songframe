@@ -12,7 +12,7 @@ import (
 // JSONDecodeError), запись JSON в форматах инструментов, repr, строгое декодирование UTF-8 и
 // разбор дробного числа из строки.
 func TestJSONGolden(t *testing.T) {
-	cases, ok := golden.ValueFile(t, "python-json", "cases.json").([]any)
+	cases, ok := golden.ValueFile(t, "tool-json", "cases.json").([]any)
 	if !ok || len(cases) == 0 {
 		t.Fatal("эталон JSON: нет случаев")
 	}

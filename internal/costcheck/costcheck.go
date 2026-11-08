@@ -192,7 +192,7 @@ func loadDict(path string) (*toolrt.Dict, error) {
 	}
 	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(value))
 	}
 	return dict, nil
 }
@@ -212,7 +212,7 @@ func toInt(value any) (int64, error) {
 	case toolrt.Int:
 		result, ok := item.Int64()
 		if !ok {
-			return 0, toolrt.New(toolrt.OverflowError, "int too large")
+			return 0, toolrt.New(toolrt.OverflowError, "слишком большое число")
 		}
 		return result, nil
 	case bool:
@@ -225,11 +225,11 @@ func toInt(value any) (int64, error) {
 	case string:
 		result, err := strconv.ParseInt(toolrt.Strip(item), 10, 64)
 		if err != nil {
-			return 0, toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(item))
+			return 0, toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(item))
 		}
 		return result, nil
 	}
-	return 0, toolrt.Raise(toolrt.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", toolrt.TypeName(value))
+	return 0, toolrt.Raise(toolrt.TypeError, "ожидается число или строка, получено: %s", toolrt.TypeName(value))
 }
 
 // get — поле key словаря запроса или fallback, если поля нет.
@@ -506,14 +506,14 @@ func EstimateCost(pricing, request *toolrt.Dict) (Estimate, error) {
 		outputsItem, _ := field(last, "outputs", toolrt.NewInt(1))
 		lastDuration := number(durationItem)
 		if lastDuration == nil {
-			return Estimate{}, toolrt.New(toolrt.TypeError, "unsupported operand type(s) for /: 'float' and 'NoneType'")
+			return Estimate{}, toolrt.New(toolrt.TypeError, "операция «/» неприменима: дробное число и null")
 		}
 		count, err := toInt(outputsItem)
 		if err != nil {
 			return Estimate{}, err
 		}
 		if *lastDuration == 0 || count == 0 {
-			return Estimate{}, toolrt.New(toolrt.ZeroDivisionError, "float division by zero")
+			return Estimate{}, toolrt.New(toolrt.ZeroDivisionError, "деление на ноль")
 		}
 		perSecond := *number(creditsValue) / *lastDuration / float64(count)
 		credits := perSecond * *duration * float64(outputs)

@@ -624,7 +624,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "stderr": "cannot convert NaN to integer\n"
+          "stderr": "NaN нельзя преобразовать в целое число\n"
         },
         {
           "run": [
@@ -639,7 +639,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: cannot convert Infinity to integer"
+          "unhandled": "Ошибка: бесконечность нельзя преобразовать в целое число"
         },
         {
           "run": [
@@ -998,7 +998,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: '>' not supported between instances of 'строка' and 'дробное число'"
+          "unhandled": "Ошибка: нельзя сравнить «>»: строка и дробное число"
         }
       ],
       "files": {}
@@ -1192,7 +1192,7 @@
           "stderr": ""
         }
       ],
-      "goDiffers": "Начало среза не может быть меньше нуля.",
+      "refusal": "Начало среза не может быть меньше нуля.",
       "files": {
         "plan/batches/M02-attempt-01/audio/audio-recipe.json": {
           "text": "{\n  \"schema_version\": 1,\n  \"source\": {\n    \"path\": \"source/track.flac\",\n    \"sha256\": \"0c337bbdbf0ddfc51c1dd6b0c216c9e64bcf37b54f43e06833164aaf3143102c\",\n    \"bytes\": 34700\n  },\n  \"source_interval_seconds\": [\n    -0.1,\n    0.2\n  ],\n  \"interval_end_exclusive\": true,\n  \"sample_rate\": 44100,\n  \"channels\": 2,\n  \"sample_width_bytes\": 2,\n  \"start_sample\": -4410,\n  \"end_sample_exclusive\": 8820,\n  \"output\": {\n    \"path\": \"speech.wav\",\n    \"sha256\": \"991cd2a53281fab26a26b23f2b3d7a020e277b83978ea36796679e0952ae7575\",\n    \"bytes\": 44\n  },\n  \"processing\": \"Декодирование полного MP3 в PCM s16le, затем срез по номерам сэмплов; без фильтров, нормализации и изменения скорости.\",\n  \"shot\": \"M02\",\n  \"timing_lines\": [\n    {\n      \"id\": 2,\n      \"source_line\": 2,\n      \"text\": \"Вторая строка\",\n      \"start\": 0.35,\n      \"end\": 0.5,\n      \"note\": \"сверка на слух не выполнена\"\n    },\n    {\n      \"id\": 3,\n      \"source_line\": 3,\n      \"text\": \"Третья строка\",\n      \"start\": 0.55,\n      \"end\": 0.75,\n      \"note\": null\n    },\n    {\n      \"id\": 4,\n      \"source_line\": 9,\n      \"text\": null,\n      \"start\": 0.6,\n      \"end\": 0.7,\n      \"note\": null\n    }\n  ]\n}\n"
@@ -1556,7 +1556,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: unsupported operand type(s) for /: 'PosixPath' and 'целое число'"
+          "unhandled": "Ошибка: операция «/» неприменима: путь и целое число"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/r5.json",
@@ -1583,7 +1583,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: unsupported operand type(s) for /: 'PosixPath' and 'целое число'"
+          "unhandled": "Ошибка: операция «/» неприменима: путь и целое число"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/r7.json",
@@ -1648,10 +1648,10 @@
     },
     {
       "name": "verify-recipe-values",
-      "description": "Необычные параметры рецепта: ошибки wave и struct, срезы с отрицательными и огромными индексами, нецелые индексы.",
+      "description": "Необычные параметры рецепта: ошибки параметров и заголовка WAV, срезы с отрицательными и огромными индексами, нецелые индексы.",
       "covers": [
-        "wave.Error",
-        "struct.error",
+        "ошибка параметров WAV",
+        "ошибка поля заголовка WAV",
         "TypeError среза",
         "срез с ограничением индексов",
         "framerate round"
@@ -1685,7 +1685,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: # channels not specified"
+          "unhandled": "Ошибка: не задано число каналов"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w1.json",
@@ -1698,7 +1698,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: sample width not specified"
+          "unhandled": "Ошибка: не задана разрядность"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w2.json",
@@ -1711,7 +1711,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: sampling rate not specified"
+          "unhandled": "Ошибка: не задана частота дискретизации"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w3.json",
@@ -1724,7 +1724,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: sampling rate not specified"
+          "unhandled": "Ошибка: не задана частота дискретизации"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w4.json",
@@ -1737,7 +1737,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: sampling rate not specified"
+          "unhandled": "Ошибка: не задана частота дискретизации"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w5.json",
@@ -1750,7 +1750,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: 'L' format requires 0 <= number <= 4294967295"
+          "unhandled": "Ошибка: поле заголовка WAV вне диапазона 0–4294967295"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w6.json",
@@ -1776,7 +1776,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: sampling rate not specified"
+          "unhandled": "Ошибка: не задана частота дискретизации"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w8.json",
@@ -1789,7 +1789,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: 'H' format requires 0 <= number <= 65535"
+          "unhandled": "Ошибка: поле заголовка WAV вне диапазона 0–65535"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w9.json",
@@ -1828,7 +1828,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: slice indices must be integers or None or have an __index__ method"
+          "unhandled": "Ошибка: границы среза должны быть целыми числами"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w12.json",
@@ -1841,7 +1841,7 @@
           ],
           "code": 1,
           "stdout": "",
-          "unhandled": "Ошибка: unsupported operand type(s) for *: 'null' and 'целое число'"
+          "unhandled": "Ошибка: операция «*» неприменима: null и целое число"
         },
         {
           "write": "plan/batches/M02-attempt-01/audio/w13.json",

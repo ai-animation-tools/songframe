@@ -66,7 +66,7 @@ func (s *Session) headers(token string) []Field {
 func bearer(record *toolrt.Dict) (string, error) {
 	token, ok := record.Value("access_token").(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "can only concatenate str (not \"%s\") to str", toolrt.TypeName(record.Value("access_token")))
+		return "", toolrt.Raise(toolrt.TypeError, "к строке можно прибавить только строку, получено: %s", toolrt.TypeName(record.Value("access_token")))
 	}
 	return token, nil
 }

@@ -109,6 +109,35 @@ func typeOK(value any, expected any) bool {
 	return false
 }
 
+// schemaTypeNames — имена типов JSON Schema в тексте отчёта: те же слова, что виды значений
+// toolrt.TypeName, чтобы ожидаемое и найденное читались одинаково (number — целое или дробное).
+var schemaTypeNames = map[string]string{
+	"object":  "объект",
+	"array":   "список",
+	"string":  "строка",
+	"number":  "число",
+	"integer": "целое число",
+	"boolean": "логическое значение",
+	"null":    "null",
+}
+
+// typeNames — ожидаемый тип схемы словами: одно имя или список имён через «или».
+func typeNames(expected any) string {
+	names := []any{expected}
+	if list, ok := expected.([]any); ok {
+		names = list
+	}
+	words := make([]string, len(names))
+	for index, name := range names {
+		text := toolrt.Str(name)
+		if word, ok := schemaTypeNames[text]; ok {
+			text = word
+		}
+		words[index] = text
+	}
+	return strings.Join(words, " или ")
+}
+
 // validate — рекурсивная проверка значения по схеме; path — JSONPath-подобный путь «$.a[0]».
 func validate(value any, schemaValue *toolrt.Dict, root *toolrt.Dict, path string) []string {
 	schema := resolveRef(schemaValue, root)
@@ -134,7 +163,7 @@ func validate(value any, schemaValue *toolrt.Dict, root *toolrt.Dict, path strin
 		}
 	}
 	if expected, ok := schema.Get("type"); ok && !typeOK(value, expected) {
-		return append(errors, path+": ожидается тип "+toolrt.Str(expected)+", найдено "+toolrt.TypeName(value))
+		return append(errors, path+": ожидается "+typeNames(expected)+", найдено "+toolrt.TypeName(value))
 	}
 	if text, ok := value.(string); ok {
 		if pattern, ok := schema.Value("pattern").(string); ok {

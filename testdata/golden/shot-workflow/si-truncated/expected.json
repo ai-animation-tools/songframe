@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Нужен настоящий PNG, JPEG или WebP; для проверки требуется Pillow.\n",
+  "stderr": "Нужен настоящий PNG, JPEG или WebP.\n",
   "unhandled": false,
   "files": {},
   "dirs": {},

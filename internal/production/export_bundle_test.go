@@ -46,8 +46,10 @@ type bundleStep struct {
 			Required *bool    `json:"required"`
 		} `json:"steps"`
 	} `json:"job"`
-	Exists    map[string]bool `json:"exists"`
-	GoDiffers string          `json:"goDiffers"`
+	Exists map[string]bool `json:"exists"`
+	// RejectedBeforeRun — пояснение шага, который отклоняет проверка цели до запуска: Job шага
+	// не применяется, проверяются текст отказа и то, что папки из Exists не созданы.
+	RejectedBeforeRun string `json:"rejectedBeforeRun"`
 }
 
 // gatedRuns — подмена запуска инструментов: export_edit_bundle ждёт разрешения своей цели (задание
@@ -210,7 +212,7 @@ func TestExportBundleGolden(t *testing.T) {
 		} else {
 			failure = service.RemoveBundle(project, fill(*step.Remove))
 		}
-		if step.GoDiffers != "" {
+		if step.RejectedBeforeRun != "" {
 			want := "Внутри проекта пакет можно собирать только в plan/batches; иначе выберите папку вне проекта."
 			if failure == nil || failure.Error() != want {
 				t.Errorf("%s: %v", step.Label, failure)

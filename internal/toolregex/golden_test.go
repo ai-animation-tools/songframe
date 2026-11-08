@@ -12,7 +12,7 @@ import (
 // проекта: границы совпадений в кодовых точках и значения групп для Search, MatchString, FullMatch
 // и FindAll, с IgnoreCase и без.
 func TestRegexGolden(t *testing.T) {
-	cases := golden.ValueFile(t, "python-re", "cases.json").([]any)
+	cases := golden.ValueFile(t, "tool-regex", "cases.json").([]any)
 	if len(cases) == 0 {
 		t.Fatal("эталон регулярных выражений: нет случаев")
 	}

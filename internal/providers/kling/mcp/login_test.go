@@ -152,7 +152,7 @@ func TestLoginWaitFailures(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	opened := func(string) error { cancel(); return nil }
-	if _, err := client.Login(ctx, LoginOptions{Timeout: 5 * time.Second, OpenBrowser: opened}); !IsCancelled(err) || ErrorTypeName(err) != "CancelledError" {
+	if _, err := client.Login(ctx, LoginOptions{Timeout: 5 * time.Second, OpenBrowser: opened}); !IsCancelled(err) || ErrorTypeName(err) != "отменено" {
 		t.Errorf("отмена входа: %v", err)
 	}
 	if client.ReadCredentials() != nil {

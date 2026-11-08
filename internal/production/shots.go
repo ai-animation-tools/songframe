@@ -71,7 +71,7 @@ func ShotStates(project string) (map[string]ShotState, error) {
 		}
 	}
 	if _, ok := dynvalue.AsArray(dynvalue.Get(scenes, "sequences")); !ok {
-		return nil, &dynvalue.TypeError{Message: "scenes.sequences.map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "scenes.sequences: ожидается список"}
 	}
 	accepted, err := acceptance.Compute(project, scenes)
 	if err != nil {

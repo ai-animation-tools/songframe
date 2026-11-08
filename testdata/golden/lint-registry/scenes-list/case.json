@@ -4,7 +4,7 @@
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "type object",
+    "ожидается объект",
     "not dict"
   ],
   "stubbedMedia": [],

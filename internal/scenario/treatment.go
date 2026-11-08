@@ -88,7 +88,7 @@ func ValidateTreatment(treatment *dynvalue.Object, duration any) ([]string, erro
 	if dynvalue.Truthy(duration) && math.Abs(cursor-dynvalue.ToNumber(duration)) > 0.06 {
 		seconds, isNumber := duration.(float64)
 		if !isNumber {
-			return nil, &dynvalue.TypeError{Message: "duration.toFixed is not a function"}
+			return nil, &dynvalue.TypeError{Message: "duration: ожидается число"}
 		}
 		problems = append(problems, textTreatmentDurationMismatch(dynvalue.ToFixed(cursor, 2), dynvalue.ToFixed(seconds, 2)))
 	}

@@ -1,5 +1,5 @@
 {
-  "description": "M01 без state_from (undefined): состояние то же, но смена направления части verse.",
+  "description": "M01 без state_from: состояние то же, но смена направления части verse.",
   "call": "scenesSaveImpact + validateScenes + saveScenesWithMode",
   "project": "project",
   "mode": "production",

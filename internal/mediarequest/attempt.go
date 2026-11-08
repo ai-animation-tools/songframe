@@ -167,7 +167,7 @@ func WorkPath(root, value string) (string, error) {
 func insideFile(directory string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(name))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(name))
 	}
 	path := toolrt.ResolvePath(toolrt.JoinPath(directory, text))
 	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(directory)) || !toolrt.IsFile(path) {
@@ -606,7 +606,7 @@ func verifySavedImage(directory string, entry *toolrt.Dict) error {
 func verifyDownload(directory string, request *toolrt.Dict, value any) error {
 	entry, ok := value.(*toolrt.Dict)
 	if !ok {
-		return toolrt.Raise(toolrt.TypeError, "'%s' object is not subscriptable", toolrt.TypeName(value))
+		return toolrt.Raise(toolrt.TypeError, "нельзя обратиться по индексу или ключу: %s", toolrt.TypeName(value))
 	}
 	if toolrt.Equal(request.Value("kind"), "image") {
 		return verifySavedImage(directory, entry)
@@ -999,7 +999,7 @@ func resolveUnknown(state *toolrt.Dict, resolution string) error {
 	}
 	list, ok := state.Value("unknown_outcomes").([]any)
 	if !ok {
-		return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'append'", toolrt.TypeName(state.Value("unknown_outcomes")))
+		return toolrt.Raise(toolrt.AttributeError, "ожидается список, получено: %s", toolrt.TypeName(state.Value("unknown_outcomes")))
 	}
 	state.Set("unknown_outcomes", append(list, entry))
 	return nil

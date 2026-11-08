@@ -55,13 +55,15 @@ func (f *goldenFile) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, (*plain)(f))
 }
 
+// goldenCase — случай эталона; Refusal — текст ожидаемого отказа (код 1, без записи файлов),
+// который заменяет исход шагов случая.
 type goldenCase struct {
-	Name      string                     `json:"name"`
-	Overlay   map[string]json.RawMessage `json:"overlay"`
-	Remove    []string                   `json:"remove"`
-	Steps     []goldenStep               `json:"steps"`
-	Files     map[string]goldenFile      `json:"files"`
-	GoDiffers string                     `json:"goDiffers"`
+	Name    string                     `json:"name"`
+	Overlay map[string]json.RawMessage `json:"overlay"`
+	Remove  []string                   `json:"remove"`
+	Steps   []goldenStep               `json:"steps"`
+	Files   map[string]goldenFile      `json:"files"`
+	Refusal string                     `json:"refusal"`
 }
 
 // addresses — адреса структур FFmpeg в stderr, нормализованные в эталоне.
@@ -216,8 +218,8 @@ func TestGolden(t *testing.T) {
 				if step.Unhandled != "" {
 					wantStderr = step.Unhandled + "\n"
 				}
-				if item.GoDiffers != "" {
-					wantCode, wantStdout, wantStderr = 1, "", item.GoDiffers+"\n"
+				if item.Refusal != "" {
+					wantCode, wantStdout, wantStderr = 1, "", item.Refusal+"\n"
 				}
 				gotStdout, gotStderr := normalize(result.Stdout), addresses.ReplaceAllString(normalize(result.Stderr), "0x?")
 				if *result.Code != wantCode {
@@ -241,7 +243,7 @@ func TestGolden(t *testing.T) {
 				return
 			}
 			want := item.Files
-			if item.GoDiffers != "" {
+			if item.Refusal != "" {
 				want = map[string]goldenFile{}
 			}
 			after := snapshot(t, project)

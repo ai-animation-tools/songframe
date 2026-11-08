@@ -31,7 +31,7 @@ var Parser = toolrt.ArgParser{
 
 // failure — исход исключения. Исключения ValueError, OSError и KeyError основной части (caught)
 // инструмент печатает одной строкой с кодом 1; остальные исключения и любые исключения записи и
-// вывода (caught=false) завершают процесс трассировкой с кодом 1.
+// вывода (caught=false) завершают процесс необработанной ошибкой (toolrt.Unhandled) с кодом 1.
 func failure(err error, caught bool) Output {
 	if caught && toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError) {
 		return Output{Code: 1, Stderr: toolrt.TextMode(err.Error() + "\n")}

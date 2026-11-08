@@ -288,12 +288,12 @@ func ViewProduction(project string) (View, error) {
 	view.Broken = broken
 	sequences, ok := dynvalue.AsArray(dynvalue.Get(scenes, "sequences"))
 	if !ok {
-		return View{}, &dynvalue.TypeError{Message: "scenes.sequences.map is not a function"}
+		return View{}, &dynvalue.TypeError{Message: "scenes.sequences: ожидается список"}
 	}
 	titles := map[string]any{}
 	for _, sequence := range sequences {
-		if dynvalue.IsNullish(sequence) {
-			return View{}, &dynvalue.TypeError{Message: "Cannot read properties of " + dynvalue.TypeOf(sequence) + " (reading 'id')"}
+		if _, err := dynvalue.Prop(sequence, "id"); err != nil {
+			return View{}, err
 		}
 		// Повтор ID заменяет прежнее название.
 		titles[dynvalue.ToString(dynvalue.Get(sequence, "id"))] = dynvalue.Get(sequence, "title")
@@ -388,7 +388,7 @@ func shotProduction(project string, scene any, id string, packages []*PackageVie
 	if acceptedState == acceptance.Stale && staleCode != "" {
 		reason, ok := staleReasons[staleCode]
 		if !ok {
-			reason = "undefined"
+			reason = textStaleReasonUnknown
 		}
 		staleReason = &reason
 	}

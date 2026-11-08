@@ -293,7 +293,7 @@ func draftFolders(root, path string, retained map[string]bool) error {
 		}
 		name, ok := location.(string)
 		if !ok {
-			return toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(location))
+			return toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(location))
 		}
 		source := toolrt.ResolvePath(toolrt.JoinPath(root, name))
 		relative, err := toolrt.RelativeTo(source, root)

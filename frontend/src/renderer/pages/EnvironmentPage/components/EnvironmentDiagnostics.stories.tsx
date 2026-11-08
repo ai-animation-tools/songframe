@@ -53,7 +53,7 @@ export const PartialProgress: Story = {
     loading: true,
     checks: [
       environmentCheck(),
-      environmentCheck({ id: 'numpy', label: 'NumPy', ok: false, status: 'running' }),
+      environmentCheck({ id: 'ffmpeg', label: 'FFmpeg', ok: false, status: 'running' }),
       ...environmentChecks()
         .slice(2)
         .map((check) => ({ ...check, status: 'pending' as const }))

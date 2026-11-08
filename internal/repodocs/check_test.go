@@ -76,6 +76,8 @@ func TestCheckFindsDrift(t *testing.T) {
 	write("resources/skills/README.md", "[нет](missing.md)\n")
 	write("README.md", "# R\n\nСтек Electron.\n\n## История\n\nПрежде был Electron.\n")
 	write("internal/x/old.go", "package x\n\n// Как в Electron-версии.\n")
+	write("scripts/tool.py", "print(1)\n")
+	write("testdata/golden/d/expected.json", "{\"stderr\": \"Traceback: x.py\"}\n")
 
 	problems, err := Check(root)
 	if err != nil {
@@ -103,7 +105,11 @@ func TestCheckFindsDrift(t *testing.T) {
 	for _, p := range src {
 		got = append(got, p.String())
 	}
-	want = append(want, "internal/x/old.go:3: упоминание прежней версии: история — только в разделе «История» README")
+	want = append(want,
+		"internal/x/old.go:3: упоминание прежней версии: история — только в разделе «История» README",
+		"scripts/tool.py:0: файл прежних инструментов: сборка и проверки пишутся на Go",
+		"testdata/golden/d/expected.json:1: упоминание прежней версии: история — только в разделе «История» README",
+	)
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("найдено:\n%s\nожидалось:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
 	}

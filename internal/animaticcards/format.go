@@ -27,9 +27,9 @@ func formatG(value any) (string, error) {
 	case float64:
 		number = typed
 	case string:
-		return "", toolrt.New(toolrt.ValueError, "Unknown format code 'g' for object of type 'str'")
+		return "", toolrt.New(toolrt.ValueError, "формат «g» неприменим к строке")
 	default:
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported format string passed to %s.__format__", toolrt.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "формат неприменим к значению: %s", toolrt.TypeName(value))
 	}
 	switch {
 	case math.IsNaN(number):

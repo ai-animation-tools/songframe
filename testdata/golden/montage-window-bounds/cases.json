@@ -1,5 +1,4 @@
 {
-  "source": "src/main/montage-window-bounds.ts 634fd94; чтение файла — registerMontageWindow",
   "written": "{\"x\":100,\"y\":100,\"width\":800,\"height\":500}",
   "cases": [
     {

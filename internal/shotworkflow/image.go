@@ -33,11 +33,11 @@ func is(value any, text string) bool {
 	return ok && s == text
 }
 
-// asDict — значение-словарь; иначе AttributeError с именем вызванного метода (get/update).
-func asDict(value any, method string) (*toolrt.Dict, error) {
+// asDict — значение-словарь; иначе AttributeError «ожидается объект».
+func asDict(value any) (*toolrt.Dict, error) {
 	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute '%s'", toolrt.TypeName(value), method)
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(value))
 	}
 	return dict, nil
 }
@@ -78,7 +78,7 @@ func loadAttempt(directory string) (*toolrt.Dict, *toolrt.Dict, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	request, err := asDict(value, "get")
+	request, err := asDict(value)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -114,7 +114,7 @@ func loadAttempt(directory string) (*toolrt.Dict, *toolrt.Dict, error) {
 	}
 	rest, err := toolrt.Iter(inputs)
 	if err != nil {
-		return nil, nil, toolrt.Raise(toolrt.TypeError, "Value after * must be an iterable, not %s", toolrt.TypeName(inputs))
+		return nil, nil, toolrt.Raise(toolrt.TypeError, "нельзя перебрать: %s", toolrt.TypeName(inputs))
 	}
 	for _, entry := range append([]any{prompt}, rest...) {
 		name, err := item(entry, "path")
@@ -137,7 +137,7 @@ func loadAttempt(directory string) (*toolrt.Dict, *toolrt.Dict, error) {
 			return nil, nil, valueError("Промпт или вход изменён; отправка запрещена.")
 		}
 	}
-	state, err := asDict(stateValue, "get")
+	state, err := asDict(stateValue)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -447,7 +447,7 @@ func (t *workflowTool) selectImage(dirArg, file string) (*toolrt.Dict, error) {
 	}
 	format, err := imageFormat(source)
 	if err != nil {
-		return nil, valueError("Нужен настоящий PNG, JPEG или WebP; для проверки требуется Pillow.")
+		return nil, valueError("Нужен настоящий PNG, JPEG или WebP.")
 	}
 	suffix := strings.ToLower(toolrt.PathSuffix(source))
 	allowed := map[string][]string{"PNG": {".png"}, "JPEG": {".jpg", ".jpeg"}, "WEBP": {".webp"}}

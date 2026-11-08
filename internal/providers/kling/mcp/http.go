@@ -260,8 +260,8 @@ func (c *Client) request(ctx context.Context, method, rawURL string, body []byte
 	// Путь и запрос уходят дословно, без повторного кодирования net/url.
 	request.URL.Opaque = path
 	request.URL.RawQuery = parts.Query
-	// http.client добавлял Accept-Encoding: identity и не посылал User-Agent; имена заголовков
-	// записываются как заданы (mcp-protocol-version — строчными).
+	// Accept-Encoding: identity (тело читается без сжатия) и без User-Agent — как зафиксировано
+	// эталонами запросов; имена заголовков записываются как заданы (mcp-protocol-version — строчными).
 	request.Header = http.Header{"Accept-Encoding": {"identity"}, "User-Agent": {""}}
 	for _, header := range headers {
 		request.Header[header.Name] = []string{header.Value}
@@ -270,21 +270,23 @@ func (c *Client) request(ctx context.Context, method, rawURL string, body []byte
 	if err != nil {
 		var failure *dialFailure
 		if errors.As(err, &failure) {
-			return response{}, &NotSentError{"Нет соединения с " + Title + ": " + socketErrorName(failure.err, false) + "."}
+			return response{}, &NotSentError{"Нет соединения с " + Title + ": " + SocketFailure(failure.err, false) + "."}
 		}
-		return response{}, &TransportError{Text: "Соединение с " + Title + " прервано после отправки: " + socketErrorName(err, false) + "."}
+		return response{}, &TransportError{Text: "Соединение с " + Title + " прервано после отправки: " + SocketFailure(err, false) + "."}
 	}
 	defer answer.Body.Close()
 	data, err := io.ReadAll(answer.Body)
 	if err != nil {
-		return response{}, &TransportError{Text: "Соединение с " + Title + " прервано после отправки: " + socketErrorName(err, true) + "."}
+		return response{}, &TransportError{Text: "Соединение с " + Title + " прервано после отправки: " + SocketFailure(err, true) + "."}
 	}
 	return response{status: answer.StatusCode, contentType: answer.Header.Get("Content-Type"), data: data}, nil
 }
 
-// socketErrorName — имя типа сбоя сокета (TimeoutError, ConnectionRefusedError и т. п.): оно входит в текст ошибок
-// NotSent и TransportError. body — сбой при чтении тела ответа.
-func socketErrorName(err error, body bool) string {
+// SocketFailure — краткое русское описание сбоя соединения («время ожидания истекло», «в соединении
+// отказано» и т. п.): оно входит в текст ошибок NotSent и TransportError и в ошибку скачивания
+// результата. Адрес и прочие подробности ошибки Go в текст не попадают. body — сбой при чтении
+// тела ответа (обрыв до объявленной длины — «ответ оборван»).
+func SocketFailure(err error, body bool) string {
 	var (
 		dns       *net.DNSError
 		authority x509.UnknownAuthorityError
@@ -296,28 +298,28 @@ func socketErrorName(err error, body bool) string {
 	)
 	switch {
 	case errors.Is(err, context.Canceled):
-		return "CancelledError"
+		return "операция отменена"
 	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, os.ErrDeadlineExceeded),
 		errors.As(err, &netError) && netError.Timeout():
-		return "TimeoutError"
+		return "время ожидания истекло"
 	case errors.As(err, &dns):
-		return "gaierror"
+		return "адрес не найден"
 	case errors.As(err, &authority), errors.As(err, &hostname), errors.As(err, &invalid):
-		return "SSLCertVerificationError"
+		return "сертификат не прошёл проверку"
 	case errors.As(err, &record), errors.As(err, &alert):
-		return "SSLError"
+		return "ошибка TLS"
 	case errors.Is(err, syscall.ECONNREFUSED):
-		return "ConnectionRefusedError"
+		return "в соединении отказано"
 	case errors.Is(err, syscall.ECONNRESET):
-		return "ConnectionResetError"
+		return "соединение сброшено"
 	case errors.Is(err, syscall.EPIPE):
-		return "BrokenPipeError"
+		return "соединение разорвано"
 	case errors.Is(err, io.ErrUnexpectedEOF) && body:
-		return "IncompleteRead"
+		return "ответ оборван"
 	case errors.Is(err, io.EOF), errors.Is(err, io.ErrUnexpectedEOF):
-		return "RemoteDisconnected"
+		return "сервер закрыл соединение"
 	}
-	return "OSError"
+	return "ошибка сети"
 }
 
 // jsonBody — JSON из UTF-8 или nil, если байты не разбираются.

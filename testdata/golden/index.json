@@ -1717,7 +1717,7 @@
   {
     "domain": "scenario-scenes",
     "name": "mini-initial-state",
-    "description": "M01 без state_from (undefined): состояние то же, но смена направления части verse.",
+    "description": "M01 без state_from: состояние то же, но смена направления части verse.",
     "covers": [
       "impactGlobalRules для части"
     ]
@@ -1868,7 +1868,7 @@
     ]
   },
   {
-    "domain": "python-json",
+    "domain": "tool-json",
     "name": "cases.json",
     "description": "78 случаев модели значений: строгий разбор и запись JSON, декодирование UTF-8, float, repr.",
     "covers": [
@@ -2524,7 +2524,7 @@
     ]
   },
   {
-    "domain": "python-re",
+    "domain": "tool-regex",
     "name": "cases.json",
     "description": "Шаблоны re инструментов проверок и схем на краевых текстах.",
     "covers": [
@@ -2649,7 +2649,7 @@
     "name": "scenes-list",
     "description": "plan/scenes.json — список.",
     "covers": [
-      "type object",
+      "ожидается объект",
       "not dict"
     ]
   },
@@ -3913,7 +3913,7 @@
       "FileNotFoundError",
       "UnidentifiedImageError",
       "IsADirectoryError",
-      "TypeError Path",
+      "TypeError пути",
       "KeyError",
       "AttributeError",
       "TypeError",
@@ -4127,9 +4127,9 @@
   {
     "domain": "continuity-brief",
     "name": "action-dict",
-    "description": "Действие объектом: KeyError slice — код 1.",
+    "description": "Действие объектом: KeyError среза — код 1.",
     "covers": [
-      "KeyError slice"
+      "KeyError среза"
     ]
   },
   {
@@ -5776,7 +5776,7 @@
   },
   {
     "domain": "media-request",
-    "name": "argparse",
+    "name": "arguments",
     "description": "Ошибки и справка разбора аргументов: подкоманды, обязательные опции, типы, choices, nargs, префиксы, лишние аргументы.",
     "covers": [
       "разбор аргументов"
@@ -5940,7 +5940,7 @@
   },
   {
     "domain": "cost-check",
-    "name": "argparse",
+    "name": "arguments",
     "description": "Разбор аргументов cost_check: группа, обязательные опции, тип float, справка.",
     "covers": [
       "разбор аргументов"
@@ -5949,7 +5949,7 @@
   {
     "domain": "kling-request",
     "name": "cases.json",
-    "description": "225 случаев чистых функций kling_request и kling_mcp.",
+    "description": "225 случаев чистых функций клиента Kling и его MCP-транспорта.",
     "covers": [
       "validate_spec",
       "validate_prompt",
@@ -5967,8 +5967,8 @@
       "token_record",
       "multipart",
       "urlencode",
-      "parse_qs",
-      "urlparse",
+      "query",
+      "url",
       "ответ JSON-RPC"
     ]
   },
@@ -5989,7 +5989,7 @@
   {
     "domain": "kling-request",
     "name": "traces.json",
-    "description": "32 HTTP-трасс клиента kling_mcp на сценарии ответов (без сети).",
+    "description": "32 HTTP-трасс MCP-клиента Kling на сценарии ответов (без сети).",
     "covers": [
       "discover",
       "register",
@@ -9161,10 +9161,10 @@
   {
     "domain": "cut-speech",
     "name": "verify-recipe-values",
-    "description": "Необычные параметры рецепта: ошибки wave и struct, срезы с отрицательными и огромными индексами, нецелые индексы.",
+    "description": "Необычные параметры рецепта: ошибки параметров и заголовка WAV, срезы с отрицательными и огромными индексами, нецелые индексы.",
     "covers": [
-      "wave.Error",
-      "struct.error",
+      "ошибка параметров WAV",
+      "ошибка поля заголовка WAV",
       "TypeError среза",
       "срез с ограничением индексов",
       "framerate round"
@@ -11369,7 +11369,7 @@
       "проверки builtoutput",
       "маркеры рабочего пакета",
       "символическая ссылка",
-      "goDiffers: plan/batches-x"
+      "rejectedBeforeRun: plan/batches-x"
     ]
   },
   {

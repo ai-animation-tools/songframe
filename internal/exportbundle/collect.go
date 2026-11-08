@@ -86,7 +86,7 @@ func unpackPair(value any) (any, any, error) {
 	switch value.(type) {
 	case []any, *toolrt.Dict, string:
 	default:
-		return nil, nil, toolrt.Raise(toolrt.TypeError, "cannot unpack non-iterable %s object", toolrt.TypeName(value))
+		return nil, nil, toolrt.Raise(toolrt.TypeError, "нельзя распаковать: %s", toolrt.TypeName(value))
 	}
 	items, err := toolrt.Iter(value)
 	if err != nil {
@@ -94,9 +94,9 @@ func unpackPair(value any) (any, any, error) {
 	}
 	switch {
 	case len(items) < 2:
-		return nil, nil, toolrt.Raise(toolrt.ValueError, "not enough values to unpack (expected 2, got %d)", len(items))
+		return nil, nil, toolrt.Raise(toolrt.ValueError, "ожидалось 2 значения, получено %d", len(items))
 	case len(items) > 2:
-		return nil, nil, toolrt.New(toolrt.ValueError, "too many values to unpack (expected 2)")
+		return nil, nil, toolrt.New(toolrt.ValueError, "ожидалось 2 значения, получено больше")
 	}
 	return items[0], items[1], nil
 }

@@ -127,8 +127,8 @@ type expectedFile struct {
 // Update — обновляет (check=false) или проверяет производные представления проекта
 // root и возвращает список устаревших в порядке вывода: карточки и их .last.png, лишние PNG
 // папки карточек, документы (projectviews.Documents) и квитанция карточек. Отсутствующий
-// обязательный источник — *MissingInputError; прочие ошибки — исключения toolrt (трассировка
-// у CLI) или отказ шлюза записи. Вызывать можно из другого Go-кода без CLI.
+// обязательный источник — *MissingInputError; прочие ошибки — исключения toolrt (необработанная
+// ошибка у CLI) или отказ шлюза записи. Вызывать можно из другого Go-кода без CLI.
 func Update(root string, check bool) ([]string, error) {
 	sources := projectviews.NewSources(root)
 	if err := requireInputs(sources); err != nil {

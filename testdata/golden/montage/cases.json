@@ -1,5 +1,4 @@
 {
-  "source": "songframe 634fd94 src/main/montage.ts, montage-video.ts, montage-recovery.ts",
   "scenarios": [
     {
       "name": "view-base",

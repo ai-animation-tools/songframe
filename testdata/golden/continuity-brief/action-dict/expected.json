@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "slice(None, 80, None)\n",
+  "stderr": "нельзя взять срез: объект\n",
   "unhandled": false
 }

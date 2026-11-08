@@ -7,8 +7,8 @@
 // промпты опор и видео, поэтому контроль непрерывности не зависит от памяти агента. Вывод CLI
 // (текст, --paragraph, --json), коды завершения и тексты ошибок зафиксированы эталоном
 // testdata/golden/continuity-brief:
-// ожидаемые отказы (ValueError, OSError, KeyError) — текст в stderr и код 1, прочие исключения —
-// трассировка. Пакет только читает файлы проекта.
+// ожидаемые отказы (ValueError, OSError, KeyError) — текст в stderr и код 1, прочие исключения
+// toolrt — необработанная ошибка. Пакет только читает файлы проекта.
 package continuitybrief
 
 import (
@@ -51,7 +51,7 @@ func loadDefaults() (*toolrt.Dict, []any) {
 	parse := func(value any) any {
 		result, err := toolrt.LoadsJSON(dynvalue.Stringify(value))
 		if err != nil {
-			panic("встроенный словарь кастинга не разбирается моделью Python: " + err.Error())
+			panic("встроенный словарь кастинга не читается как JSON: " + err.Error())
 		}
 		return result
 	}
@@ -205,7 +205,7 @@ func describe(castData *toolrt.Dict, state *toolrt.Dict) ([]string, error) {
 			}
 			text, ok := label.(string)
 			if !ok {
-				return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'lower'", toolrt.TypeName(label))
+				return nil, toolrt.Raise(toolrt.AttributeError, "ожидается строка, получено: %s", toolrt.TypeName(label))
 			}
 			parts = append(parts, unicodeLower(text)+": "+toolrt.Str(values.Value(key)))
 		}
@@ -232,7 +232,7 @@ func checklist(castData *toolrt.Dict, state *toolrt.Dict) ([]string, error) {
 			}
 			template, ok := item.Value("checklist").(string)
 			if !ok {
-				return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'format'", toolrt.TypeName(item.Value("checklist")))
+				return nil, toolrt.Raise(toolrt.AttributeError, "ожидается строка, получено: %s", toolrt.TypeName(item.Value("checklist")))
 			}
 			text, err := formatValue(template, values.Value(key))
 			if err != nil {
@@ -245,8 +245,8 @@ func checklist(castData *toolrt.Dict, state *toolrt.Dict) ([]string, error) {
 }
 
 // actionHeading — заголовок по действию сцены: первые 80 кодовых точек и многоточие у длинного.
-// Список режется по элементам и печатается repr-записью; словарь даёт KeyError, прочие типы —
-// TypeError (тексты зафиксированы эталоном).
+// Список режется по элементам и печатается repr-записью; объект даёт KeyError (срез по ключу),
+// прочие виды значений — TypeError (тексты зафиксированы эталоном).
 func actionHeading(scene *toolrt.Dict) (string, error) {
 	action, err := toolrt.GetItem(scene, "action")
 	if err != nil {
@@ -265,9 +265,9 @@ func actionHeading(scene *toolrt.Dict) (string, error) {
 		}
 		return toolrt.Repr(value), nil
 	case *toolrt.Dict:
-		return "", toolrt.New(toolrt.KeyError, "slice(None, 80, None)")
+		return "", toolrt.New(toolrt.KeyError, "нельзя взять срез: объект")
 	}
-	return "", toolrt.Raise(toolrt.TypeError, "'%s' object is not subscriptable", toolrt.TypeName(action))
+	return "", toolrt.Raise(toolrt.TypeError, "нельзя обратиться по индексу или ключу: %s", toolrt.TypeName(action))
 }
 
 // Brief — врезка плана sid реестра data на фазу before/after. castData — кастинг
@@ -330,7 +330,7 @@ func Brief(data *toolrt.Dict, castData *toolrt.Dict, sid, phase string, initial 
 	), nil
 }
 
-// expected — ожидаемые исключения: они печатаются текстом с кодом 1, остальные — трассировкой.
+// expected — ожидаемые исключения: они печатаются текстом с кодом 1, остальные — необработанной ошибкой.
 func expected(err error) bool {
 	return toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError)
 }
@@ -367,7 +367,7 @@ func Run(root string, args []string) toolcli.Output {
 		err = printer.Print(result.Value("text").(string))
 	}
 	if err != nil {
-		// Ошибка печати не входит в ожидаемые: UnicodeEncodeError одиночного суррогата — трассировка.
+		// Ошибка печати не входит в ожидаемые: одиночный суррогат не записывается в UTF-8 — необработанная ошибка.
 		return printer.Crash(err)
 	}
 	return printer.Exit(0)

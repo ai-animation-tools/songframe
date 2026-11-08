@@ -48,7 +48,7 @@ func interruptedScenario(t *testing.T, local, project, old, current string) stri
 	return path
 }
 
-// TestOpenRecoversScenarioPublication — A-11: открытие сначала восстанавливает прерванную
+// TestOpenRecoversScenarioPublication: открытие сначала восстанавливает прерванную
 // публикацию сценария и лишь затем делает проект текущим.
 func TestOpenRecoversScenarioPublication(t *testing.T) {
 	local := t.TempDir()

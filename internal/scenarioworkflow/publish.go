@@ -43,11 +43,11 @@ var copyExtensions = map[string]bool{".json": true, ".md": true, ".txt": true, "
 	".gif": true, ".bmp": true, ".tif": true, ".tiff": true, ".avif": true, ".svg": true}
 
 // skipDirectories — имена, которые staging не копирует.
-var skipDirectories = map[string]bool{".git": true, ".local": true, "__pycache__": true, "node_modules": true, "cache": true}
+var skipDirectories = map[string]bool{".git": true, ".local": true, "node_modules": true, "cache": true}
 
 var kitManifest = regexp.MustCompile(`^assets/shots/M\d{2}(?:\.\d+)?/manifest\.json$`)
 
-// Точки подмены для проверок сбоя (A-11): запуск инструмента в копии и момент перед публикацией.
+// Точки подмены для проверок сбоя: запуск инструмента в копии и момент перед публикацией.
 var (
 	runTool       = tools.Run
 	beforePublish = func(string) error { return nil }

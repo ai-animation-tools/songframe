@@ -21,7 +21,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\n\nПеренос принятой генерации в комплект assets по контракту; @link README.md\n\npositional arguments:\n  shot\n\noptions:\n  -h, --help            show this help message and exit\n  --package PACKAGE     Папка пакета shot_workflow с workflow.json\n  --work-dir WORK_DIR   Папка попытки media_request с request.json и\n                        attempt.json\n  --review REVIEW       JSON рецепта пробы build_review с этим планом\n  --cut НАЧАЛО:КОНЕЦ    Участок оригинала на сетке 30 кадров/с, конец\n                        исключительно\n  --full                Оригинал уже совпадает с окном и FPS: побайтовая копия\n  --speed SPEED\n  --hold-first HOLD_FIRST\n  --hold-last HOLD_LAST\n  --audio AUDIO         speech.wav для речевого плана\n  --audio-recipe AUDIO_RECIPE\n                        audio-recipe.json к WAV\n  --preparation [PREPARATION ...]\n                        Дополнительные файлы подготовки: промпты кадров,\n                        промежуточные изображения\n  --clean               После проверки удалить все пакеты плана в\n                        plan/batches, переданный пакет очереди, пробу и пустые\n                        папки проб\n  --no-views            Не обновлять представления\n  --replace             Заменить уже принятый комплект: прежний переезжает в\n                        assets/replaced/Mxx/<время>\n",
+            "stdout": "использование: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                           (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                           [--speed SPEED] [--hold-first HOLD_FIRST]\n                           [--hold-last HOLD_LAST] [--audio AUDIO]\n                           [--audio-recipe AUDIO_RECIPE]\n                           [--preparation [PREPARATION ...]] [--clean]\n                           [--no-views] [--replace]\n                           shot\n\nПеренос принятой генерации в комплект assets по контракту; @link README.md\n\nаргументы:\n  shot\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --package PACKAGE     Папка пакета shot_workflow с workflow.json\n  --work-dir WORK_DIR   Папка попытки media_request с request.json и\n                        attempt.json\n  --review REVIEW       JSON рецепта пробы build_review с этим планом\n  --cut НАЧАЛО:КОНЕЦ    Участок оригинала на сетке 30 кадров/с, конец\n                        исключительно\n  --full                Оригинал уже совпадает с окном и FPS: побайтовая копия\n  --speed SPEED\n  --hold-first HOLD_FIRST\n  --hold-last HOLD_LAST\n  --audio AUDIO         speech.wav для речевого плана\n  --audio-recipe AUDIO_RECIPE\n                        audio-recipe.json к WAV\n  --preparation [PREPARATION ...]\n                        Дополнительные файлы подготовки: промпты кадров,\n                        промежуточные изображения\n  --clean               После проверки удалить все пакеты плана в\n                        plan/batches, переданный пакет очереди, пробу и пустые\n                        папки проб\n  --no-views            Не обновлять представления\n  --replace             Заменить уже принятый комплект: прежний переезжает в\n                        assets/replaced/Mxx/<время>\n",
             "stderr": ""
           }
         ],
@@ -52,7 +52,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\naccept_shot: error: one of the arguments --package --work-dir is required\n"
+            "stderr": "использование: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                           (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                           [--speed SPEED] [--hold-first HOLD_FIRST]\n                           [--hold-last HOLD_LAST] [--audio AUDIO]\n                           [--audio-recipe AUDIO_RECIPE]\n                           [--preparation [PREPARATION ...]] [--clean]\n                           [--no-views] [--replace]\n                           shot\naccept_shot: ошибка: нужен один из аргументов: --package --work-dir\n"
           }
         ],
         "changed": {},
@@ -82,7 +82,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\naccept_shot: error: one of the arguments --review --cut --full is required\n"
+            "stderr": "использование: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                           (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                           [--speed SPEED] [--hold-first HOLD_FIRST]\n                           [--hold-last HOLD_LAST] [--audio AUDIO]\n                           [--audio-recipe AUDIO_RECIPE]\n                           [--preparation [PREPARATION ...]] [--clean]\n                           [--no-views] [--replace]\n                           shot\naccept_shot: ошибка: нужен один из аргументов: --review --cut --full\n"
           }
         ],
         "changed": {},
@@ -115,7 +115,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\naccept_shot: ошибка: аргумент --full: нельзя вместе с --cut\n"
+            "stderr": "использование: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                           (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                           [--speed SPEED] [--hold-first HOLD_FIRST]\n                           [--hold-last HOLD_LAST] [--audio AUDIO]\n                           [--audio-recipe AUDIO_RECIPE]\n                           [--preparation [PREPARATION ...]] [--clean]\n                           [--no-views] [--replace]\n                           shot\naccept_shot: ошибка: аргумент --full: нельзя вместе с --cut\n"
           }
         ],
         "changed": {},
@@ -150,7 +150,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                   [--speed SPEED] [--hold-first HOLD_FIRST]\n                   [--hold-last HOLD_LAST] [--audio AUDIO]\n                   [--audio-recipe AUDIO_RECIPE]\n                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n                   [--replace]\n                   shot\naccept_shot: error: argument --hold-first: invalid int value: 'x'\n"
+            "stderr": "использование: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n                           (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n                           [--speed SPEED] [--hold-first HOLD_FIRST]\n                           [--hold-last HOLD_LAST] [--audio AUDIO]\n                           [--audio-recipe AUDIO_RECIPE]\n                           [--preparation [PREPARATION ...]] [--clean]\n                           [--no-views] [--replace]\n                           shot\naccept_shot: ошибка: аргумент --hold-first: не целое число: 'x'\n"
           }
         ],
         "changed": {},
@@ -811,7 +811,7 @@
           {
             "code": 1,
             "stdout": "",
-            "stderr": "invalid literal for int() with base 10: 'a'\n"
+            "stderr": "не целое число: 'a'\n"
           }
         ],
         "changed": {},

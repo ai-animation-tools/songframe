@@ -1,5 +1,4 @@
 {
-  "source": "songframe 634fd94 src/main/checks.ts",
   "steps": [
     {
       "op": "list",

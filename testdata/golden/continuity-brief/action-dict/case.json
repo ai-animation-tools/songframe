@@ -1,10 +1,10 @@
 {
-  "description": "Действие объектом: KeyError slice — код 1.",
+  "description": "Действие объектом: KeyError среза — код 1.",
   "call": "continuity_brief",
   "project": "project",
   "base": "checks-base",
   "covers": [
-    "KeyError slice"
+    "KeyError среза"
   ],
   "stubbedMedia": [],
   "args": [

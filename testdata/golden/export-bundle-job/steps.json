@@ -51,7 +51,7 @@
       "exists": {
         "<tmp>/project/plan/batches-x": true
       },
-      "goDiffers": "Проверка префикса без разделителя: папка plan/batches-x не создаётся, отказ даёт проверка цели до запуска."
+      "rejectedBeforeRun": "Проверка префикса без разделителя: папка plan/batches-x не создаётся, отказ даёт проверка цели до запуска."
     },
     {
       "label": "not-empty",

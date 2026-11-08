@@ -23,7 +23,7 @@ func TestTail(t *testing.T) {
 func TestRunMissingProgram(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "ffmpeg")
 	_, err := AnimaticRun(context.Background(), missing, "-version")
-	if !toolrt.Is(err, toolrt.FileNotFoundError) || err.Error() != "[Errno 2] No such file or directory: "+toolrt.Repr(missing) {
+	if !toolrt.Is(err, toolrt.FileNotFoundError) || err.Error() != "нет такого файла или каталога: "+toolrt.Repr(missing) {
 		t.Fatalf("ошибка %v", err)
 	}
 }

@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Ошибка: Replacement index 0 out of range for positional args tuple\n",
+  "stderr": "Ошибка: в шаблоне нет значения для поля 0\n",
   "unhandled": true
 }

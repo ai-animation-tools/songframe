@@ -242,7 +242,7 @@ func TestRestoreFailed(t *testing.T) {
 		t.Fatalf("ошибка %v", err)
 	}
 	backup := strings.TrimPrefix(err.Error(), prefix)
-	backup = backup[:strings.Index(backup, ": Error: ")]
+	backup = backup[:strings.Index(backup, ": ")]
 	t.Cleanup(func() { _ = os.RemoveAll(backup) })
 	if data, _ := os.ReadFile(filepath.Join(backup, "plan", "cast.json")); string(data) != string(castBefore) {
 		t.Fatal("в резерве нет прежнего plan/cast.json")

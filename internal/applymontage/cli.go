@@ -25,14 +25,14 @@ var Parser = toolrt.ArgParser{
 }
 
 // usage — строка использования с обязательной группой в круглых скобках.
-const usage = "usage: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\n"
+const usage = "использование: apply_montage [-h] (--spec SPEC | --recover) [--no-views]\n"
 
 // help — текст справки --help.
 const help = usage + `
 Применяет явный ручной монтаж к принятым сценам; @link README.md.
 
-options:
-  -h, --help   show this help message and exit
+параметры:
+  -h, --help   показать справку и выйти
   --spec SPEC  MontageDraft JSON с относительными путями проекта
   --recover    Только восстановить прерванную публикацию
   --no-views   Не обновлять производные представления
@@ -50,13 +50,13 @@ func isAbsolute(path string) bool { return filepath.IsAbs(path) }
 func asException(err error, target **toolrt.Exception) bool { return errors.As(err, target) }
 
 func argError(message string) toolcli.Output {
-	return toolcli.Output{Code: 2, Stderr: toolrt.TextMode(usage + "apply_montage: error: " + message + "\n")}
+	return toolcli.Output{Code: 2, Stderr: toolrt.TextMode(usage + "apply_montage: ошибка: " + message + "\n")}
 }
 
 // Run — инструмент apply_montage на разрешённом корне проекта: --recover откатывает прерванные
 // публикации и печатает {"status": "recovered"}; --spec читает MontageDraft (относительный путь —
 // от корня проекта) и применяет его. Точный ValueError печатается своим текстом, остальные
-// ожидаемые ошибки — скрытым textHidden, прочие — трассировкой.
+// ожидаемые ошибки — скрытым textHidden, прочие — необработанной ошибкой (toolcli.Printer.Crash).
 func Run(ctx context.Context, root string, args []string) toolcli.Output {
 	parsed, exit := Parser.ParseArgs(args)
 	if exit != nil {
@@ -67,7 +67,7 @@ func Run(ctx context.Context, root string, args []string) toolcli.Output {
 	}
 	spec, hasSpec := parsed.Values["--spec"]
 	if !hasSpec && !parsed.Bools["--recover"] {
-		return argError("one of the arguments --spec --recover is required")
+		return argError("нужен один из аргументов: --spec --recover")
 	}
 	printer := &toolcli.Printer{}
 	result, err := func() (*toolrt.Dict, error) {

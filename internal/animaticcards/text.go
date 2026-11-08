@@ -111,11 +111,11 @@ func layoutTextBox(text string, width, height, size int, isBold bool) (int, []st
 }
 
 // textBox рисует текстовое поле с подбором кегля и возвращает
-// выбранный кегль. Нестроковый текст — AttributeError (текст зафиксирован эталоном).
+// выбранный кегль. Нестроковый текст — AttributeError «ожидается строка» (текст зафиксирован эталоном).
 func (c *card) textBox(value any, x, y, width, height, size int, color string, isBold bool) (int, error) {
 	text, ok := value.(string)
 	if !ok {
-		return 0, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'split'", toolrt.TypeName(value))
+		return 0, toolrt.Raise(toolrt.AttributeError, "ожидается строка, получено: %s", toolrt.TypeName(value))
 	}
 	point, lines, f, err := layoutTextBox(text, width, height, size, isBold)
 	if err != nil {

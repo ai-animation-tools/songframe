@@ -334,12 +334,15 @@ func normalizeFrames(frames any) (any, error) {
 	}
 	items, ok := dynvalue.AsArray(frames)
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "frames?.map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "frames: ожидается список"}
 	}
 	result := &dynvalue.Array{Items: make([]any, len(items))}
 	for index, frame := range items {
 		if dynvalue.IsNullish(frame) {
-			return nil, &dynvalue.TypeError{Message: "Cannot destructure property 'id' of '" + dynvalue.ToString(frame) + "' as it is " + dynvalue.ToString(frame) + "."}
+			if frame == nil {
+				return nil, &dynvalue.TypeError{Message: "нет поля 'id': значение null"}
+			}
+			return nil, &dynvalue.TypeError{Message: "нет поля 'id': значение отсутствует"}
 		}
 		object := dynvalue.NewObject()
 		for _, key := range []string{"id", "role", "time_seconds", "path", "sha256"} {

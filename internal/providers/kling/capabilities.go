@@ -299,7 +299,7 @@ func (a *Adapter) normalizeInputs(spec *toolrt.Dict, load func(command string) (
 	}
 	commandName, ok := command.(string)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.TypeError, "unhashable or non-string command %s", toolrt.Repr(command))
+		return nil, toolrt.Raise(toolrt.TypeError, "команда должна быть строкой: %s", toolrt.Repr(command))
 	}
 	snapshot, err := load(commandName)
 	if err != nil {
@@ -363,7 +363,7 @@ func (a *Adapter) normalizeInputs(spec *toolrt.Dict, load func(command string) (
 func asDict(value any) (*toolrt.Dict, error) {
 	values, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(value))
 	}
 	return values, nil
 }

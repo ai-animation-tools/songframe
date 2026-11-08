@@ -35,7 +35,7 @@ func (r contextReader) Read(buffer []byte) (int, error) {
 }
 
 // copyFile — копия содержимого потоком (ссылка на файл разыменована), права цели — по умолчанию.
-// Копия файла на самого себя — исключение toolrt OSError «are the same file»: иначе открытие цели
+// Копия файла на самого себя — исключение toolrt OSError «это один и тот же файл»: иначе открытие цели
 // обнулило бы исходник.
 func copyFile(ctx context.Context, source, destination string) error {
 	input, err := os.Open(source)
@@ -48,7 +48,7 @@ func copyFile(ctx context.Context, source, destination string) error {
 		return toolrt.OSErrorFrom(err, source)
 	}
 	if to, err := os.Stat(destination); err == nil && os.SameFile(from, to) {
-		return toolrt.New(toolrt.OSError, toolrt.Repr(source)+" and "+toolrt.Repr(destination)+" are the same file")
+		return toolrt.New(toolrt.OSError, "это один и тот же файл: "+toolrt.Repr(source)+" и "+toolrt.Repr(destination))
 	}
 	output, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
@@ -130,7 +130,7 @@ func copyAll(ctx context.Context, bundle *toolrt.Dict, root, target string) (int
 	bundle.Set("song", song)
 	references, ok := bundle.Value("references").(*toolrt.Dict)
 	if !ok {
-		return 0, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(bundle.Value("references")))
+		return 0, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(bundle.Value("references")))
 	}
 	for _, key := range references.Keys() {
 		reference := references.Value(key)

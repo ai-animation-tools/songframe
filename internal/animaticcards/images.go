@@ -43,11 +43,11 @@ func (m rgbImage) digest() string {
 	return hex.EncodeToString(sum[:])
 }
 
-// unidentifiedImage — ошибка нераспознанного формата изображения. Тип записан полным именем с
-// пакетом: так его печатает последняя строка трассировки инструмента (тип не встроенный); имя и
-// текст зафиксированы эталоном.
+// unidentifiedImage — ошибка нераспознанного формата изображения. Внутренний вид исключения
+// отличает её от OSError повреждённого файла и в вывод не попадает; текст с путём зафиксирован
+// эталоном.
 func unidentifiedImage(filename string) error {
-	return toolrt.New("PIL.UnidentifiedImageError", "cannot identify image file "+toolrt.Repr(filename))
+	return toolrt.New("UnidentifiedImageError", "не удалось распознать изображение: "+toolrt.Repr(filename))
 }
 
 // openRGB открывает изображение и приводит его к RGB (toRGB). Файл открывается по разрешённому
@@ -68,9 +68,10 @@ func openRGB(path string) (rgbImage, error) {
 	decoded, format, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
-			return rgbImage{}, toolrt.New(toolrt.OSError, "image file is truncated")
+			return rgbImage{}, toolrt.New(toolrt.OSError, "файл изображения обрезан")
 		}
-		return rgbImage{}, toolrt.New(toolrt.OSError, err.Error())
+		// Текст декодера Go не показывается: пользователю достаточно признака повреждения.
+		return rgbImage{}, toolrt.New(toolrt.OSError, "файл изображения повреждён")
 	}
 	switch typed := decoded.(type) {
 	case *image.YCbCr:
@@ -358,7 +359,7 @@ func resizeLanczos(source rgbImage, width, height int) (rgbImage, error) {
 // предварительного уменьшения); тот же размер — копия.
 func resize(source rgbImage, width, height int, filter resampleFilter) (rgbImage, error) {
 	if width < 1 || height < 1 {
-		return rgbImage{}, toolrt.New(toolrt.ValueError, "height and width must be > 0")
+		return rgbImage{}, toolrt.New(toolrt.ValueError, "размеры изображения должны быть больше нуля")
 	}
 	if width == source.width && height == source.height {
 		return rgbImage{width: width, height: height, pix: append([]byte(nil), source.pix...)}, nil

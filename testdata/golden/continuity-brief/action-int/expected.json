@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Ошибка: 'целое число' object is not subscriptable\n",
+  "stderr": "Ошибка: нельзя обратиться по индексу или ключу: целое число\n",
   "unhandled": true
 }

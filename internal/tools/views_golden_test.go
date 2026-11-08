@@ -16,7 +16,7 @@ import (
 )
 
 // checkStreams — сверка кода завершения и потоков результата tools.Run с эталоном
-// (`<project>` вместо пути копии; у трассировки — заголовок и последняя строка). compare
+// (`<project>` вместо пути копии; необработанная ошибка сверяется целиком). compare
 // подменяет сравнение stdout/stderr, если оно не побайтное (список карточек scene-views).
 func checkStreams(t *testing.T, expected *toolrt.Dict, result tools.Result, root string, compare func(want, got string) bool) {
 	t.Helper()

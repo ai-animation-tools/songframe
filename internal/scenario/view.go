@@ -141,7 +141,7 @@ func ValidateScenes(data, castValue any) ([]string, error) {
 	}
 	sequences, ok := dynvalue.AsArray(dynvalue.Get(data, "sequences"))
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "data.sequences.map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "data.sequences: ожидается список"}
 	}
 	groups := &valueSet{}
 	for _, sequence := range sequences {
@@ -258,7 +258,7 @@ func referenceKnown(references, key any) (bool, error) {
 func trimmedText(value any, name string) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", &dynvalue.TypeError{Message: name + ".trim is not a function"}
+		return "", &dynvalue.TypeError{Message: name + ": ожидается строка"}
 	}
 	return dynvalue.Trim(text), nil
 }

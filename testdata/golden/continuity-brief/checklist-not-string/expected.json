@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Ошибка: 'целое число' object has no attribute 'format'\n",
+  "stderr": "Ошибка: ожидается строка, получено: целое число\n",
   "unhandled": true
 }

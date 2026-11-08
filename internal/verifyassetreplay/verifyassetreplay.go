@@ -8,7 +8,7 @@
 // пишется вне папки проекта. Проект инструмент не меняет: копии и пересборки лежат во временной
 // папке «accepted-replay-*», удаляемой по завершении.
 //
-// Коды выхода, stdout и последняя строка трассировки зафиксированы эталоном
+// Коды выхода, stdout и строка необработанной ошибки в stderr зафиксированы эталоном
 // testdata/golden/verify-asset-replay. Планы проверяются двумя параллельными работниками, но
 // строки о них печатаются в порядке индекса, чтобы вывод был детерминированным.
 package verifyassetreplay
@@ -43,7 +43,8 @@ const (
 	textDone         = "Проверка всех принятых комплектов завершена."
 	textNote         = "Проверены все хеши, точное копирование, повтор фильтров, размер и длина; " +
 		"визуальное сравнение ограничено тремя кадрами каждого плана."
-	// assertionError — тип исключения отказа сверки; исключение без текста печатается пустой строкой.
+	// assertionError — тип исключения отказа сверки; без текста оно печатается как «Ошибка: внутренняя
+	// проверка не прошла» (toolrt.Unhandled).
 	assertionError = "AssertionError"
 	// rmsLimit — допустимая разница повторного H.264: проверяются кадровые границы и
 	// преобразования, а не новая художественная приёмка.
@@ -89,7 +90,7 @@ func Run(root string, argv []string) toolcli.Output {
 	return out.Exit(0)
 }
 
-// run — работа Run: любая возвращённая ошибка — необработанное исключение (трассировка, код 1).
+// run — работа Run: любая возвращённая ошибка — необработанная ошибка (toolrt.Unhandled, код 1).
 func run(ctx context.Context, root string, args toolrt.Namespace, out *toolcli.Printer) error {
 	report := toolrt.ResolvePath(args["report"].(string))
 	if toolrt.IsRelativeTo(report, root) {
@@ -211,7 +212,7 @@ func verifyAll(ctx context.Context, root string, shots []any, temporary string) 
 func verify(ctx context.Context, root string, shot any, temporary string) (*toolrt.Dict, error) {
 	sid, ok := shot.(string)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(shot))
+		return nil, toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(shot))
 	}
 	path := filepath.Join(root, "assets/shots", sid, "manifest.json")
 	pack, err := assetpackage.ValidatePackage(path, sid, root)
@@ -258,11 +259,11 @@ func verify(ctx context.Context, root string, shot any, temporary string) (*tool
 	}
 	count, ok := frames.(toolrt.Int)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for //: '%s' and 'int'", toolrt.TypeName(frames))
+		return nil, toolrt.Raise(toolrt.TypeError, "операция «//» неприменима: %s и целое число", toolrt.TypeName(frames))
 	}
 	total, ok := count.Int64()
 	if !ok {
-		return nil, toolrt.New(toolrt.OverflowError, "Python int too large to convert to C long")
+		return nil, toolrt.New(toolrt.OverflowError, "слишком большое число")
 	}
 	indices := sampleIndices(total)
 	name, err := toolrt.Item(video, "path")
@@ -315,12 +316,12 @@ func checkMeta(sid string, meta, frames any) error {
 	case string:
 		parsed, ok := toolrt.ParseIntText(number)
 		if !ok {
-			return toolrt.New(toolrt.ValueError, "invalid literal for int() with base 10: "+toolrt.Repr(number))
+			return toolrt.New(toolrt.ValueError, "не целое число: "+toolrt.Repr(number))
 		}
 		values[0] = parsed
 	case toolrt.Int:
 	default:
-		return toolrt.Raise(toolrt.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", toolrt.TypeName(number))
+		return toolrt.Raise(toolrt.TypeError, "ожидается число или строка, получено: %s", toolrt.TypeName(number))
 	}
 	expected := []any{frames, "30/1", toolrt.NewInt(1920), toolrt.NewInt(1080)}
 	for index := range values {
@@ -417,7 +418,7 @@ func checkPreserved(root, path string) (int, error) {
 	}
 	dict, ok := media.(*toolrt.Dict)
 	if !ok {
-		return 0, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(media))
+		return 0, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(media))
 	}
 	for _, name := range dict.Keys() {
 		digest, err := assetpackage.FileSHA256(filepath.Join(root, name))

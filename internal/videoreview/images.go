@@ -171,12 +171,12 @@ func (r *mediaRunner) imageSize(path string) (int, int, error) {
 		Streams []map[string]any `json:"streams"`
 	}
 	if err := decodeJSON(output, &info); err != nil || len(info.Streams) == 0 {
-		return 0, 0, fail("cannot identify image file " + toolrt.Repr(path))
+		return 0, 0, fail("не удалось распознать изображение: " + toolrt.Repr(path))
 	}
 	width, okWidth := intOf(info.Streams[0]["width"])
 	height, okHeight := intOf(info.Streams[0]["height"])
 	if !okWidth || !okHeight || width <= 0 || height <= 0 {
-		return 0, 0, fail("cannot identify image file " + toolrt.Repr(path))
+		return 0, 0, fail("не удалось распознать изображение: " + toolrt.Repr(path))
 	}
 	return width, height, nil
 }
@@ -193,7 +193,7 @@ func (r *mediaRunner) reference(source, target string) error {
 		if r.ctx.Err() != nil {
 			return err
 		}
-		return fail("cannot identify image file " + toolrt.Repr(source))
+		return fail("не удалось распознать изображение: " + toolrt.Repr(source))
 	}
 	filters := []string{"format=rgb24"}
 	if filter, swap := orientationFilter(exifOrientation(data)); filter != "" {
@@ -256,7 +256,7 @@ func (r *mediaRunner) budgetImages(paths []string, total, perFile int) ([]string
 		current, _, err := image.Decode(file)
 		file.Close()
 		if err != nil {
-			return nil, fail("cannot identify image file " + toolrt.Repr(path))
+			return nil, fail("не удалось распознать изображение: " + toolrt.Repr(path))
 		}
 		for {
 			var payload []byte

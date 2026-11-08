@@ -381,9 +381,6 @@ func restore(directory string, record pending) error {
 	return nil
 }
 
-// errorString — вид ошибки в текстах журнала: «Error: сообщение» (формат зафиксирован эталоном).
-func errorString(err error) string { return "Error: " + err.Error() }
-
 // applyPackage выполняет apply над пакетом target проекта
 // project (реальный путь) под журналом замены. Пакет с отправленным видео или неизвестной
 // оплатой и пакет, ждущий решения по image-попытке, не меняются. Ошибка apply или проверки
@@ -449,10 +446,10 @@ func applyPackage(localDir, project, target string, apply func() error) error {
 // с обоими текстами, если откат не удался (журнал тогда остаётся).
 func rollback(directory string, record pending, cause error) error {
 	if err := restore(directory, record); err != nil {
-		return errors.New(textApplyRecoveryFailed(errorString(cause), errorString(err)))
+		return errors.New(textApplyRecoveryFailed(cause.Error(), err.Error()))
 	}
 	if err := os.RemoveAll(directory); err != nil {
-		return errors.New(textApplyRecoveryFailed(errorString(cause), errorString(err)))
+		return errors.New(textApplyRecoveryFailed(cause.Error(), err.Error()))
 	}
 	return cause
 }
@@ -523,7 +520,7 @@ func RecoverInterrupted(localDir string) error {
 			continue
 		}
 		if err := recoverOne(directory, path); err != nil {
-			failures = append(failures, errorString(err))
+			failures = append(failures, err.Error())
 		}
 	}
 	if len(failures) > 0 {

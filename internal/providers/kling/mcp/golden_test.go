@@ -148,9 +148,9 @@ func TestPureGolden(t *testing.T) {
 			got = result
 		case "urlencode":
 			got = URLEncode(fields(arg(t, entry, "fields")))
-		case "parse_qs":
+		case "query":
 			got = ParseQueryFirst(arg(t, entry, "query").(string))
-		case "urlparse":
+		case "url":
 			var parts URLParts
 			parts, err = ParseURL(arg(t, entry, "url").(string))
 			got = urlPartsDict(parts)
@@ -228,8 +228,9 @@ func replacer(from, to string) *strings.Replacer {
 	return strings.NewReplacer(from, to, url.QueryEscape(from), url.QueryEscape(to))
 }
 
-// socketName — имя класса сбоя сокета в тексте ошибки транспорта: обрыв сценария даёт другой тип.
-var socketName = regexp.MustCompile(`(прервано после отправки|Нет соединения с Kling): [A-Za-z]+\.`)
+// socketName — описание сбоя соединения в тексте ошибки транспорта (SocketFailure): обрыв
+// сценария даёт другой сбой, чем записан в эталоне.
+var socketName = regexp.MustCompile(`(прервано после отправки|Нет соединения с Kling): [^.:]+\.`)
 
 // TestTracesGolden — точные запросы клиента (метод, адрес, явные заголовки, тело), результаты и
 // байты записи входа на сценариях traces.json.
@@ -290,7 +291,7 @@ func TestTracesGolden(t *testing.T) {
 	}
 }
 
-// implicitHeaders — заголовки, которые добавлял http.client или добавляет net/http сам.
+// implicitHeaders — заголовки, которые клиент задаёт для каждого запроса или добавляет net/http сам.
 var implicitHeaders = map[string]bool{"Host": true, "Accept-Encoding": true, "Content-Length": true, "Connection": true}
 
 // compareRequest сверяет запрос сценария с эталоном: метод, адрес, набор явных заголовков и тело.

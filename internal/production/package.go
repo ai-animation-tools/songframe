@@ -279,12 +279,12 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 	problems := []string{}
 	list, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(parsed, "keyframes"), &dynvalue.Array{}))
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "(workflow.keyframes ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "workflow.keyframes: ожидается список"}
 	}
 	keyframes := make([]Keyframe, 0, len(list))
 	for _, frame := range list {
-		if dynvalue.IsNullish(frame) {
-			return nil, &dynvalue.TypeError{Message: "Cannot read properties of " + dynvalue.TypeOf(frame) + " (reading 'id')"}
+		if _, err := dynvalue.Prop(frame, "id"); err != nil {
+			return nil, err
 		}
 		item := Keyframe{Note: rawOptional(dynvalue.Get(frame, "note")), Approved: dynvalue.Truthy(dynvalue.Get(frame, "approved"))}
 		item.ID = dynvalue.ToString(dynvalue.Coalesce(dynvalue.Get(frame, "id"), ""))
@@ -315,7 +315,7 @@ func readPackage(project, dir string, fingerprint fingerprintFunc) (*PackageView
 	}
 	stage, ok := dynvalue.Get(parsed, "stage").(string)
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "workflow.stage.startsWith is not a function"}
+		return nil, &dynvalue.TypeError{Message: "workflow.stage: ожидается строка"}
 	}
 	imageRequest := strings.HasPrefix(stage, "image_")
 	active := dynvalue.Get(parsed, "request_dir")
@@ -430,12 +430,12 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 	if imageRequest {
 		entries, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(workflow, "image_requests"), &dynvalue.Array{}))
 		if !ok {
-			return nil, &dynvalue.TypeError{Message: "(workflow.image_requests ?? []).some is not a function"}
+			return nil, &dynvalue.TypeError{Message: "workflow.image_requests: ожидается список"}
 		}
 		matched := false
 		for _, entry := range entries {
-			if dynvalue.IsNullish(entry) {
-				return nil, &dynvalue.TypeError{Message: "Cannot read properties of " + dynvalue.TypeOf(entry) + " (reading 'request_dir')"}
+			if _, err := dynvalue.Prop(entry, "request_dir"); err != nil {
+				return nil, err
 			}
 			if dynvalue.StrictEqual(dynvalue.Get(entry, "request_dir"), active) &&
 				dynvalue.StrictEqual(dynvalue.Get(entry, "frame_id"), dynvalue.Get(workflow, "image_frame_id")) &&
@@ -459,7 +459,7 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 	downloads := []string{}
 	list, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(attempt, "downloads"), &dynvalue.Array{}))
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "(attempt?.downloads ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "attempt.downloads: ожидается список"}
 	}
 	for _, item := range list {
 		path, err := dynvalue.Prop(item, "path")
@@ -522,7 +522,7 @@ func readRequest(dir string, workflow, active any, imageRequest bool, problems *
 	}
 	inputs, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(frozen, "inputs"), &dynvalue.Array{}))
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "(frozen.inputs ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "frozen.inputs: ожидается список"}
 	}
 	for _, input := range inputs {
 		value, err := dynvalue.Prop(input, "path")
@@ -599,7 +599,7 @@ func packageToken(project, directory string, workflow any, stage, resultToken st
 	requests := []any{dynvalue.Get(workflow, "request_dir"), dynvalue.Get(workflow, "image_request_dir")}
 	entries, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(workflow, "image_requests"), &dynvalue.Array{}))
 	if !ok {
-		return "", &dynvalue.TypeError{Message: "(workflow.image_requests ?? []).map is not a function"}
+		return "", &dynvalue.TypeError{Message: "workflow.image_requests: ожидается список"}
 	}
 	for _, entry := range entries {
 		value, err := dynvalue.Prop(entry, "request_dir")

@@ -19,7 +19,7 @@
         "steps": [
           {
             "code": 0,
-            "stdout": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\n\nСборка временной пробы по параметрам; @link README.md\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --shots SHOTS [SHOTS ...]\n  --spec SPEC\n  --output OUTPUT\n  --plan-only\n",
+            "stdout": "использование: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC)\n                            --output OUTPUT [--plan-only]\n\nСборка временной пробы по параметрам; @link README.md\n\nпараметры:\n  -h, --help            показать справку и выйти\n  --shots SHOTS [SHOTS ...]\n  --spec SPEC\n  --output OUTPUT\n  --plan-only\n",
             "stderr": ""
           }
         ],
@@ -45,7 +45,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\nbuild_review: error: the following arguments are required: --output\n"
+            "stderr": "использование: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC)\n                            --output OUTPUT [--plan-only]\nbuild_review: ошибка: обязательные аргументы: --output\n"
           }
         ],
         "changed": {},
@@ -73,7 +73,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\nbuild_review: error: one of the arguments --shots --spec is required\n"
+            "stderr": "использование: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC)\n                            --output OUTPUT [--plan-only]\nbuild_review: ошибка: нужен один из аргументов: --shots --spec\n"
           }
         ],
         "changed": {},
@@ -105,7 +105,7 @@
           {
             "code": 2,
             "stdout": "",
-            "stderr": "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n                    OUTPUT [--plan-only]\nbuild_review: ошибка: аргумент --spec: нельзя вместе с --shots\n"
+            "stderr": "использование: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC)\n                            --output OUTPUT [--plan-only]\nbuild_review: ошибка: аргумент --spec: нельзя вместе с --shots\n"
           }
         ],
         "changed": {},

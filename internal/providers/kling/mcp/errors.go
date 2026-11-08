@@ -97,30 +97,53 @@ func IsToolError(err error) bool {
 	return errors.As(err, &target)
 }
 
-// ErrorTypeName — имя типа ошибки для отладочной записи и эталонов: имена
-// классов клиента, тип исключения toolrt или «Exception» для прочих ошибок Go.
+// exceptionKinds — названия видов исключений toolrt в ErrorTypeName. Подтипы OSError без своей
+// строки получают общее «ошибка ввода-вывода».
+var exceptionKinds = map[string]string{
+	toolrt.ValueError:         "неверное значение",
+	toolrt.TypeError:          "неверный вид значения",
+	toolrt.KeyError:           "нет ключа",
+	toolrt.IndexError:         "нет элемента",
+	toolrt.AttributeError:     "нет операции",
+	toolrt.OverflowError:      "слишком большое число",
+	toolrt.ZeroDivisionError:  "деление на ноль",
+	toolrt.JSONDecodeError:    "неверный JSON",
+	toolrt.UnicodeDecodeError: "текст не в UTF-8",
+	toolrt.UnicodeEncodeError: "текст нельзя записать в UTF-8",
+}
+
+// ErrorTypeName — русское название вида ошибки для отладочной записи (Debug) и эталонов: вид
+// ошибки клиента, адаптера (ExceptionType) или исключения toolrt; прочие ошибки Go — «ошибка».
+// Названия различаются для всех видов, поэтому эталон по ним отличает, например, неотправленный
+// запрос от сбоя после отправки.
 func ErrorTypeName(err error) string {
 	switch err.(type) {
 	case *AuthRequiredError:
-		return "AuthRequired"
+		return "нужен вход"
 	case *NotSentError:
-		return "NotSent"
+		return "запрос не отправлен"
 	case *TransportError:
-		return "TransportError"
+		return "сбой соединения"
 	case *ProtocolError:
-		return "ProtocolError"
+		return "ошибка протокола"
 	case *ToolError:
-		return "ToolError"
+		return "отказ сервиса"
 	case *cancelledError:
-		return "CancelledError"
+		return "отменено"
 	}
 	var exception *toolrt.Exception
 	if errors.As(err, &exception) {
-		return exception.Type
+		if kind, ok := exceptionKinds[exception.Type]; ok {
+			return kind
+		}
+		if toolrt.Is(err, toolrt.OSError) {
+			return "ошибка ввода-вывода"
+		}
+		return "ошибка"
 	}
 	var named interface{ ExceptionType() string }
 	if errors.As(err, &named) {
 		return named.ExceptionType()
 	}
-	return "Exception"
+	return "ошибка"
 }

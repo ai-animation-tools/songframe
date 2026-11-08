@@ -75,7 +75,7 @@ func Parser() *toolrt.Command {
 
 // Run — инструмент cut_speech на корне проекта root (уже выбранном tools.Run). Ошибки ValueError
 // (кроме JSONDecodeError) печатаются своим текстом, OSError, KeyError и битый JSON — общим
-// текстом без сырого вывода, прочие исключения — трассировкой; везде код 1. verify без
+// текстом без сырого вывода, прочие исключения toolrt — необработанной ошибкой; везде код 1. verify без
 // совпадения SHA и PCM завершается кодом 1 после печати отчёта. Отмена context останавливает
 // FFmpeg; тогда результат — код 1 с текстом отмены (tools.RunContext заменит код на null).
 func Run(ctx context.Context, root string, argv []string) toolcli.Output {

@@ -338,9 +338,9 @@ func formatG(value any) (string, error) {
 		}
 		number = converted
 	case string:
-		return "", valueError("Unknown format code 'g' for object of type 'str'")
+		return "", valueError("формат «g» неприменим к строке")
 	default:
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported format string passed to %s.__format__", toolrt.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "формат неприменим к значению: %s", toolrt.TypeName(value))
 	}
 	switch {
 	case math.IsNaN(number):
@@ -392,7 +392,7 @@ func table(info reportInfo) (string, error) {
 	if len(items) > 0 {
 		lines = append(lines, "", "| Опора | Роль | Время, с | Принята | Файл |", "| --- | --- | --- | --- | --- |")
 		for _, entry := range items {
-			keyframe, err := asDict(entry, "get")
+			keyframe, err := asDict(entry)
 			if err != nil {
 				return "", err
 			}

@@ -89,7 +89,7 @@ func readPackage(dir string) (*packageView, error) {
 	view := &packageView{shot: shot, timing: dynvalue.Coalesce(dynvalue.Get(workflow, "timing"), nil), description: nil, promptText: dynvalue.Undefined}
 	frames, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(workflow, "keyframes"), &dynvalue.Array{}))
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "(workflow.keyframes ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "workflow.keyframes: ожидается список"}
 	}
 	for _, raw := range frames {
 		id, err := dynvalue.Prop(raw, "id")
@@ -121,7 +121,7 @@ func readPackage(dir string) (*packageView, error) {
 	}
 	stage, ok := dynvalue.Get(workflow, "stage").(string)
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "workflow.stage.startsWith is not a function"}
+		return nil, &dynvalue.TypeError{Message: "workflow.stage: ожидается строка"}
 	}
 	view.stage = stage
 	active := dynvalue.Get(workflow, "request_dir")
@@ -170,7 +170,7 @@ func readRequest(dir string, active any) (*packageRequest, error) {
 	var downloads []string
 	list, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(attempt, "downloads"), &dynvalue.Array{}))
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "(attempt?.downloads ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "attempt.downloads: ожидается список"}
 	}
 	for _, item := range list {
 		path, err := dynvalue.Prop(item, "path")
@@ -199,7 +199,7 @@ func readRequest(dir string, active any) (*packageRequest, error) {
 	// Нестроковый путь во входах запроса — TypeError, как и при чтении пакета производства.
 	inputs, ok := dynvalue.AsArray(dynvalue.Coalesce(dynvalue.Get(frozen, "inputs"), &dynvalue.Array{}))
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "(frozen.inputs ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "frozen.inputs: ожидается список"}
 	}
 	for _, input := range inputs {
 		path, err := dynvalue.Prop(input, "path")

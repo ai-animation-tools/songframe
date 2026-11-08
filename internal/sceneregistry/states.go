@@ -81,7 +81,7 @@ func (r *resolver) visit(sid any) (*toolrt.Dict, error) {
 	r.visiting = append(r.visiting, sid)
 	scene, isDict := found.(*toolrt.Dict)
 	if !isDict {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'keys'", toolrt.TypeName(found))
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(found))
 	}
 	if !scene.Has("state_from") || !scene.Has("state_changes") {
 		return nil, valueError("%s: нужны state_from и state_changes.", toolrt.Str(sid))

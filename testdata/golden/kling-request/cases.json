@@ -19,7 +19,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Недопустимый параметр команды; файлы передаются через inputs."
       }
     }
@@ -33,7 +33,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Недопустимый параметр команды; файлы передаются через inputs."
       }
     }
@@ -47,7 +47,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Недопустимый параметр команды; файлы передаются через inputs."
       }
     }
@@ -61,7 +61,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Недопустимый параметр команды; файлы передаются через inputs."
       }
     }
@@ -75,7 +75,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Недопустимый параметр команды; файлы передаются через inputs."
       }
     }
@@ -89,7 +89,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Недопустимый параметр команды; файлы передаются через inputs."
       }
     }
@@ -103,7 +103,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Неизвестная команда генерации."
       }
     }
@@ -117,7 +117,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Неизвестная команда генерации."
       }
     }
@@ -131,7 +131,7 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
+        "type": "неверный вид значения",
         "message": "нельзя использовать как ключ: список"
       }
     }
@@ -145,7 +145,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Неизвестная команда генерации."
       }
     }
@@ -159,7 +159,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Вид результата не соответствует команде."
       }
     }
@@ -173,7 +173,7 @@
     },
     "expected": {
       "error": {
-        "type": "KeyError",
+        "type": "нет ключа",
         "message": "нет ключа 'kind'"
       }
     }
@@ -187,7 +187,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Не указан точный идентификатор модели."
       }
     }
@@ -201,8 +201,8 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'целое число'"
+        "type": "неверный вид значения",
+        "message": "ожидается строка, получено: целое число"
       }
     }
   },
@@ -215,8 +215,8 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'null'"
+        "type": "неверный вид значения",
+        "message": "ожидается строка, получено: null"
       }
     }
   },
@@ -229,7 +229,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Не указан точный идентификатор модели."
       }
     }
@@ -243,7 +243,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Не указан точный идентификатор модели."
       }
     }
@@ -257,7 +257,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Неверное число результатов."
       }
     }
@@ -271,7 +271,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Неверное число результатов."
       }
     }
@@ -285,7 +285,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "outputs и imageCount должны совпадать."
       }
     }
@@ -299,7 +299,7 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
+        "type": "неверный вид значения",
         "message": "нельзя сравнить «<=»: целое число и строка"
       }
     }
@@ -324,7 +324,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "outputs и imageCount должны совпадать."
       }
     }
@@ -349,7 +349,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "outputs и imageCount должны совпадать."
       }
     }
@@ -363,7 +363,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Для этой команды нет входов."
       }
     }
@@ -399,7 +399,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Вход должен быть именованным слотом: flag=input и slot из объявления модели."
       }
     }
@@ -413,7 +413,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Вход должен быть именованным слотом: flag=input и slot из объявления модели."
       }
     }
@@ -427,8 +427,8 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'целое число'"
+        "type": "неверный вид значения",
+        "message": "ожидается строка, получено: целое число"
       }
     }
   },
@@ -441,7 +441,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Вход должен быть именованным слотом: flag=input и slot из объявления модели."
       }
     }
@@ -455,7 +455,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Вход должен быть именованным слотом: flag=input и slot из объявления модели."
       }
     }
@@ -469,7 +469,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Один входной слот указан дважды."
       }
     }
@@ -483,7 +483,7 @@
     },
     "expected": {
       "error": {
-        "type": "AttributeError",
+        "type": "нет операции",
         "message": "ожидается объект, получено: строка"
       }
     }
@@ -497,7 +497,7 @@
     },
     "expected": {
       "error": {
-        "type": "AttributeError",
+        "type": "нет операции",
         "message": "ожидается объект, получено: строка"
       }
     }
@@ -511,7 +511,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "preferredModel должен быть точным идентификатором модели или null."
       }
     }
@@ -547,7 +547,7 @@
     },
     "expected": {
       "error": {
-        "type": "KeyError",
+        "type": "нет ключа",
         "message": "нет ключа 'preferredModel'"
       }
     }
@@ -561,8 +561,8 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'целое число'"
+        "type": "неверный вид значения",
+        "message": "ожидается строка, получено: целое число"
       }
     }
   },
@@ -575,7 +575,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Для этой модели укажите prefer_multi_shots явно: для единого плана — false."
       }
     }
@@ -589,7 +589,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Для этой модели укажите prefer_multi_shots явно: для единого плана — false."
       }
     }
@@ -625,7 +625,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Для этой модели укажите resolution явно: по умолчанию сервис даёт 720p."
       }
     }
@@ -672,8 +672,8 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
-        "message": "expected string or bytes-like object, got 'целое число'"
+        "type": "неверный вид значения",
+        "message": "ожидается строка, получено: целое число"
       }
     }
   },
@@ -697,7 +697,7 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
+        "type": "неверный вид значения",
         "message": "нельзя перебрать: целое число"
       }
     }
@@ -788,7 +788,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление параметров или слотов."
       }
     }
@@ -846,7 +846,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверные допустимые значения параметра."
       }
     }
@@ -860,7 +860,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверные допустимые значения параметра."
       }
     }
@@ -874,7 +874,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление параметров или слотов."
       }
     }
@@ -888,7 +888,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление параметров или слотов."
       }
     }
@@ -902,7 +902,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление параметров или слотов."
       }
     }
@@ -916,7 +916,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление параметров или слотов."
       }
     }
@@ -930,7 +930,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление параметров или слотов."
       }
     }
@@ -944,7 +944,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверный лимит параметра или слота."
       }
     }
@@ -958,7 +958,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверный лимит параметра или слота."
       }
     }
@@ -972,7 +972,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверный лимит параметра или слота."
       }
     }
@@ -1028,7 +1028,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Модель не объявлена для этой команды: kling-video-v3_0, kling-video-v4_0"
       }
     }
@@ -1045,7 +1045,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Модель не объявлена для этой команды: kling-video-v3_0, kling-video-v4_0"
       }
     }
@@ -1062,7 +1062,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Команда не объявлена в tool_list текущего аккаунта."
       }
     }
@@ -1079,7 +1079,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды."
       }
     }
@@ -1096,7 +1096,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i не вернул объявления моделей."
       }
     }
@@ -1113,7 +1113,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i не вернул объявления моделей."
       }
     }
@@ -1144,7 +1144,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i не вернул объявления моделей."
       }
     }
@@ -1161,7 +1161,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление моделей команды."
       }
     }
@@ -1178,7 +1178,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i не объявил модели для этой команды; обновите возможности и проверьте доступность команды."
       }
     }
@@ -1195,7 +1195,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление модели."
       }
     }
@@ -1212,7 +1212,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление модели."
       }
     }
@@ -1229,7 +1229,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверное объявление параметров или слотов."
       }
     }
@@ -1246,7 +1246,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "who_am_i вернул неверные допустимые значения параметра."
       }
     }
@@ -1263,7 +1263,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Модель не объявлена для этой команды: B, a, Я, б"
       }
     }
@@ -1368,7 +1368,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Для входа video модель kling-video-v3_0 не объявляет подходящего слота; повторите запрос вручную в новой подготовке."
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"video\", \"path\": \"c\"}]}",
@@ -1384,7 +1384,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Для входа mask модель kling-video-v3_0 не объявляет подходящего слота; повторите запрос вручную в новой подготовке."
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"mask\", \"path\": \"c\"}]}",
@@ -1400,7 +1400,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Для входа None модель kling-video-v3_0 не объявляет подходящего слота; повторите запрос вручную в новой подготовке."
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"path\": \"c\"}]}",
@@ -1416,7 +1416,7 @@
     },
     "expected": {
       "error": {
-        "type": "TypeError",
+        "type": "неверный вид значения",
         "message": "нельзя использовать как ключ: список"
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": [\"image\"], \"path\": \"c\"}]}",
@@ -1445,7 +1445,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Для входа image модель kling-video-v4_0 не объявляет подходящего слота; повторите запрос вручную в новой подготовке."
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v4_0\", \"inputs\": [{\"flag\": \"input\", \"path\": \"a\", \"slot\": \"first_image\"}, {\"flag\": \"input\", \"path\": \"b\", \"slot\": \"keyframe_1\"}, {\"flag\": \"image\", \"path\": \"c\"}]}",
@@ -1461,7 +1461,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Модель не объявлена для этой команды: kling-video-v3_0, kling-video-v4_0"
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v9\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}]}",
@@ -1477,7 +1477,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Команда не объявлена в tool_list текущего аккаунта."
       },
       "spec": "{\"command\": \"omni_ref_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}]}",
@@ -1493,8 +1493,8 @@
     },
     "expected": {
       "error": {
-        "type": "AttributeError",
-        "message": "'целое число' object has no attribute 'get'"
+        "type": "нет операции",
+        "message": "ожидается объект, получено: целое число"
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\", \"inputs\": [{\"flag\": \"image\", \"path\": \"a\"}, 5]}",
       "catalog": "[[\"image_to_video\"]]"
@@ -1509,7 +1509,7 @@
     },
     "expected": {
       "error": {
-        "type": "KeyError",
+        "type": "нет ключа",
         "message": "нет ключа 'inputs'"
       },
       "spec": "{\"command\": \"image_to_video\", \"model\": \"kling-video-v3_0\"}",
@@ -1602,7 +1602,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "в JSON нельзя записать nan"
       }
     }
@@ -1616,7 +1616,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "в JSON нельзя записать inf"
       }
     }
@@ -1680,7 +1680,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "в JSON нельзя записать nan"
       }
     }
@@ -1771,7 +1771,7 @@
     },
     "expected": {
       "error": {
-        "type": "OverflowError",
+        "type": "слишком большое число",
         "message": "слишком большое число"
       }
     }
@@ -1840,7 +1840,7 @@
     },
     "expected": {
       "error": {
-        "type": "ToolError",
+        "type": "отказ сервиса",
         "message": "Invalid parameters"
       }
     }
@@ -1854,7 +1854,7 @@
     },
     "expected": {
       "error": {
-        "type": "ToolError",
+        "type": "отказ сервиса",
         "message": "яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя"
       }
     }
@@ -1868,7 +1868,7 @@
     },
     "expected": {
       "error": {
-        "type": "ToolError",
+        "type": "отказ сервиса",
         "message": "отказ без пояснения"
       }
     }
@@ -1882,7 +1882,7 @@
     },
     "expected": {
       "error": {
-        "type": "ToolError",
+        "type": "отказ сервиса",
         "message": "42"
       }
     }
@@ -1907,7 +1907,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling вернул результат инструмента без текста."
       }
     }
@@ -1921,7 +1921,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling вернул результат инструмента без текста."
       }
     }
@@ -1935,7 +1935,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling вернул результат инструмента без текста."
       }
     }
@@ -1949,7 +1949,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling вернул неверный результат инструмента."
       }
     }
@@ -2117,8 +2117,8 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
-        "message": "Invalid IPv6 URL"
+        "type": "неверное значение",
+        "message": "неверный адрес IPv6"
       }
     }
   },
@@ -2197,7 +2197,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: g.mov."
       }
     }
@@ -2211,7 +2211,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: noext."
       }
     }
@@ -2225,7 +2225,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: .png."
       }
     }
@@ -2250,7 +2250,7 @@
     },
     "expected": {
       "error": {
-        "type": "ValueError",
+        "type": "неверное значение",
         "message": "Kling принимает загрузку только PNG, JPEG, MP4, WAV и MP3: x.png.txt."
       }
     }
@@ -2370,7 +2370,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling не выдал токен доступа."
       }
     }
@@ -2386,7 +2386,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling не выдал токен доступа."
       }
     }
@@ -2466,8 +2466,8 @@
     }
   },
   {
-    "name": "parse_qs code=x&state=s",
-    "call": "parse_qs",
+    "name": "query code=x&state=s",
+    "call": "query",
     "description": "",
     "args": {
       "query": "\"code=x&state=s\""
@@ -2477,8 +2477,8 @@
     }
   },
   {
-    "name": "parse_qs code=&state=s",
-    "call": "parse_qs",
+    "name": "query code=&state=s",
+    "call": "query",
     "description": "",
     "args": {
       "query": "\"code=&state=s\""
@@ -2488,8 +2488,8 @@
     }
   },
   {
-    "name": "parse_qs state=a&state=b",
-    "call": "parse_qs",
+    "name": "query state=a&state=b",
+    "call": "query",
     "description": "",
     "args": {
       "query": "\"state=a&state=b\""
@@ -2499,8 +2499,8 @@
     }
   },
   {
-    "name": "parse_qs a+b=c%20d&e",
-    "call": "parse_qs",
+    "name": "query a+b=c%20d&e",
+    "call": "query",
     "description": "",
     "args": {
       "query": "\"a+b=c%20d&e\""
@@ -2510,8 +2510,8 @@
     }
   },
   {
-    "name": "parse_qs x=%zz&y=%E2%82",
-    "call": "parse_qs",
+    "name": "query x=%zz&y=%E2%82",
+    "call": "query",
     "description": "",
     "args": {
       "query": "\"x=%zz&y=%E2%82\""
@@ -2521,8 +2521,8 @@
     }
   },
   {
-    "name": "parse_qs error=access_denied&error_description=No+way&state=s",
-    "call": "parse_qs",
+    "name": "query error=access_denied&error_description=No+way&state=s",
+    "call": "query",
     "description": "",
     "args": {
       "query": "\"error=access_denied&error_description=No+way&state=s\""
@@ -2532,8 +2532,8 @@
     }
   },
   {
-    "name": "parse_qs ",
-    "call": "parse_qs",
+    "name": "query ",
+    "call": "query",
     "description": "",
     "args": {
       "query": "\"\""
@@ -2543,8 +2543,8 @@
     }
   },
   {
-    "name": "parse_qs code=1;state=2",
-    "call": "parse_qs",
+    "name": "query code=1;state=2",
+    "call": "query",
     "description": "",
     "args": {
       "query": "\"code=1;state=2\""
@@ -2554,8 +2554,8 @@
     }
   },
   {
-    "name": "parse_qs =v&k=",
-    "call": "parse_qs",
+    "name": "query =v&k=",
+    "call": "query",
     "description": "",
     "args": {
       "query": "\"=v&k=\""
@@ -2565,8 +2565,8 @@
     }
   },
   {
-    "name": "urlparse 'https://kling.ai/auth'",
-    "call": "urlparse",
+    "name": "url 'https://kling.ai/auth'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"https://kling.ai/auth\""
@@ -2576,8 +2576,8 @@
     }
   },
   {
-    "name": "urlparse 'HTTPS://Example.TEST:8443/p;x?q=1#f'",
-    "call": "urlparse",
+    "name": "url 'HTTPS://Example.TEST:8443/p;x?q=1#f'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"HTTPS://Example.TEST:8443/p;x?q=1#f\""
@@ -2587,8 +2587,8 @@
     }
   },
   {
-    "name": "urlparse 'http://user:pw@[::1]:80/a'",
-    "call": "urlparse",
+    "name": "url 'http://user:pw@[::1]:80/a'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"http://user:pw@[::1]:80/a\""
@@ -2598,8 +2598,8 @@
     }
   },
   {
-    "name": "urlparse '  https://x/y'",
-    "call": "urlparse",
+    "name": "url '  https://x/y'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"  https://x/y\""
@@ -2609,8 +2609,8 @@
     }
   },
   {
-    "name": "urlparse 'ht\\ttps://x/\\ny'",
-    "call": "urlparse",
+    "name": "url 'ht\\ttps://x/\\ny'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"ht\\ttps://x/\\ny\""
@@ -2620,8 +2620,8 @@
     }
   },
   {
-    "name": "urlparse '1http://x'",
-    "call": "urlparse",
+    "name": "url '1http://x'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"1http://x\""
@@ -2631,8 +2631,8 @@
     }
   },
   {
-    "name": "urlparse 'cdn.test/a.png'",
-    "call": "urlparse",
+    "name": "url 'cdn.test/a.png'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"cdn.test/a.png\""
@@ -2642,8 +2642,8 @@
     }
   },
   {
-    "name": "urlparse 'mailto:a@b'",
-    "call": "urlparse",
+    "name": "url 'mailto:a@b'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"mailto:a@b\""
@@ -2653,44 +2653,44 @@
     }
   },
   {
-    "name": "urlparse 'http://[::1/a'",
-    "call": "urlparse",
+    "name": "url 'http://[::1/a'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"http://[::1/a\""
     },
     "expected": {
       "error": {
-        "type": "ValueError",
-        "message": "Invalid IPv6 URL"
+        "type": "неверное значение",
+        "message": "неверный адрес IPv6"
       }
     }
   },
   {
-    "name": "urlparse 'http://h:abc/'",
-    "call": "urlparse",
+    "name": "url 'http://h:abc/'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"http://h:abc/\""
     },
     "expected": {
-      "result": "{\"scheme\": \"http\", \"netloc\": \"h:abc\", \"path\": \"/\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"h\", \"port\": null, \"port_error\": {\"type\": \"ValueError\", \"message\": \"Port could not be cast to integer value as 'abc'\"}}"
+      "result": "{\"scheme\": \"http\", \"netloc\": \"h:abc\", \"path\": \"/\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"h\", \"port\": null, \"port_error\": {\"type\": \"неверное значение\", \"message\": \"порт не число: 'abc'\"}}"
     }
   },
   {
-    "name": "urlparse 'http://h:70000/'",
-    "call": "urlparse",
+    "name": "url 'http://h:70000/'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"http://h:70000/\""
     },
     "expected": {
-      "result": "{\"scheme\": \"http\", \"netloc\": \"h:70000\", \"path\": \"/\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"h\", \"port\": null, \"port_error\": {\"type\": \"ValueError\", \"message\": \"Port out of range 0-65535\"}}"
+      "result": "{\"scheme\": \"http\", \"netloc\": \"h:70000\", \"path\": \"/\", \"query\": \"\", \"fragment\": \"\", \"hostname\": \"h\", \"port\": null, \"port_error\": {\"type\": \"неверное значение\", \"message\": \"порт вне диапазона 0–65535\"}}"
     }
   },
   {
-    "name": "urlparse 'https://x/a;b/c;d'",
-    "call": "urlparse",
+    "name": "url 'https://x/a;b/c;d'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"https://x/a;b/c;d\""
@@ -2700,8 +2700,8 @@
     }
   },
   {
-    "name": "urlparse ''",
-    "call": "urlparse",
+    "name": "url ''",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"\""
@@ -2711,8 +2711,8 @@
     }
   },
   {
-    "name": "urlparse 'https:'",
-    "call": "urlparse",
+    "name": "url 'https:'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"https:\""
@@ -2722,8 +2722,8 @@
     }
   },
   {
-    "name": "urlparse '//host/p'",
-    "call": "urlparse",
+    "name": "url '//host/p'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"//host/p\""
@@ -2733,8 +2733,8 @@
     }
   },
   {
-    "name": "urlparse 'file:///tmp/x'",
-    "call": "urlparse",
+    "name": "url 'file:///tmp/x'",
+    "call": "url",
     "description": "",
     "args": {
       "url": "\"file:///tmp/x\""
@@ -2819,7 +2819,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling не вернул ответ JSON-RPC на запрос tools/call."
       }
     }
@@ -2835,7 +2835,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling: tools/call: bad params (-32602)."
       }
     }
@@ -2851,7 +2851,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling: tools/call: ошибка JSON-RPC (None)."
       }
     }
@@ -2867,7 +2867,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling: tools/call: ошибка JSON-RPC (None)."
       }
     }
@@ -2896,7 +2896,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling не вернул ответ JSON-RPC на запрос tools/call."
       }
     }
@@ -2912,7 +2912,7 @@
     },
     "expected": {
       "error": {
-        "type": "ProtocolError",
+        "type": "ошибка протокола",
         "message": "Kling не вернул ответ JSON-RPC на запрос tools/call."
       }
     }

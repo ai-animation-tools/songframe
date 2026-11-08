@@ -24,7 +24,7 @@ func SceneFingerprints(data any, initial *dynvalue.Object) (*dynvalue.Object, er
 	sequenceList := dynvalue.Coalesce(dynvalue.Get(data, "sequences"), &dynvalue.Array{})
 	sequences, ok := dynvalue.AsArray(sequenceList)
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "(data.sequences ?? []).map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "data.sequences: ожидается список"}
 	}
 	directions := newOrderedMap[any]()
 	for _, sequence := range sequences {

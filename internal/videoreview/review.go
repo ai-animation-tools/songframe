@@ -286,7 +286,7 @@ func (s *Service) source(project, directory string) (*reviewContext, error) {
 	}
 	sequences, ok := dynvalue.AsArray(dynvalue.Get(registry, "sequences"))
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "registry.sequences.find is not a function"}
+		return nil, &dynvalue.TypeError{Message: "registry.sequences: ожидается список"}
 	}
 	var sequence any = dynvalue.Undefined
 	for _, item := range sequences {

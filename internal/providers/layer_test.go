@@ -196,7 +196,7 @@ func TestCheckEnvironmentRowsAndGit(t *testing.T) {
 	}
 	layer = NewLayer(Options{Git: failing})
 	checks, _ = layer.CheckEnvironment(context.Background(), nil)
-	if checks[2].Detail != "Command failed: "+failing+" --version\n" {
+	if checks[2].Detail != "Команда завершилась с ошибкой: "+failing+" --version" {
 		t.Fatalf("сбой git: %q", checks[2].Detail)
 	}
 }

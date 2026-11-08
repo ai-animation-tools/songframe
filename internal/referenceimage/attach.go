@@ -98,7 +98,7 @@ func Attach(project, entityID string, result Result) error {
 	manifest.Set("kinds", kinds)
 	references, ok := manifest.Value("references").(*dynvalue.Array)
 	if !ok {
-		return &dynvalue.TypeError{Message: "manifest.references.find is not a function"}
+		return &dynvalue.TypeError{Message: "manifest.references: ожидается список"}
 	}
 	var ref *dynvalue.Object
 	for _, item := range references.Items {
@@ -139,7 +139,7 @@ func Attach(project, entityID string, result Result) error {
 	}
 	files, ok := ref.Value("files").(*dynvalue.Array)
 	if !ok {
-		return &dynvalue.TypeError{Message: "ref.files.some is not a function"}
+		return &dynvalue.TypeError{Message: "ref.files: ожидается список"}
 	}
 	images, _ := entity.Value("images").(*dynvalue.Array)
 	relative := dir + "/" + dynvalue.ToString(entity.Value("id")) + "-generated-" + result.ID + strings.ToLower(filepath.Ext(result.Path))
@@ -293,7 +293,7 @@ func typedKinds(kinds *dynvalue.Array) ([]sourceedit.Kind, error) {
 	for _, item := range kinds.Items {
 		label, ok := dynvalue.Get(item, "label").(string)
 		if !ok {
-			return nil, &dynvalue.TypeError{Message: "kind.label.trim is not a function"}
+			return nil, &dynvalue.TypeError{Message: "kind.label: ожидается строка"}
 		}
 		result = append(result, sourceedit.Kind{ID: dynvalue.ToString(dynvalue.Get(item, "id")), Label: label, Dir: dynvalue.ToString(dynvalue.Get(item, "dir"))})
 	}

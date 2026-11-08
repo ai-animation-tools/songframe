@@ -92,16 +92,16 @@ type writeExpectation struct {
 	} `json:"resave"`
 }
 
-// treatmentExpectation — expected.json scenario-treatment: общий формат записи и originalError —
+// treatmentExpectation — expected.json scenario-treatment: общий формат записи и strictError —
 // текст отказа строгой проверки для случаев, которые сохраняются черновиком (см. README эталонов).
 type treatmentExpectation struct {
 	writeExpectation
-	OriginalError *string `json:"originalError"`
+	StrictError *string `json:"strictError"`
 }
 
 // TestSaveTreatmentMatchesGolden сверяет saveTreatment: ошибка, результат, байты файла и повтор,
 // а также проблемы ValidateProjectTreatment того же входа. Содержательные проблемы не отклоняют
-// сохранение; у таких случаев проблемы через пробел равны тексту строгого отказа (originalError),
+// сохранение; у таких случаев проблемы через пробел равны тексту строгого отказа (strictError),
 // у корректных трактовок — пусты, у неверной структуры — один текст отказа.
 func TestSaveTreatmentMatchesGolden(t *testing.T) {
 	for _, item := range golden.Load(t, "scenario-treatment") {
@@ -125,9 +125,9 @@ func TestSaveTreatmentMatchesGolden(t *testing.T) {
 				if len(problems) != 1 || problems[0] != *want.Error {
 					t.Fatalf("проблемы неверной структуры: %q", problems)
 				}
-			case want.OriginalError != nil:
-				if got := strings.Join(problems, " "); got != *want.OriginalError {
-					t.Fatalf("проблемы черновика\n  Go: %s\n  TS: %s", got, *want.OriginalError)
+			case want.StrictError != nil:
+				if got := strings.Join(problems, " "); got != *want.StrictError {
+					t.Fatalf("проблемы черновика\n  получено: %s\n  эталон:   %s", got, *want.StrictError)
 				}
 			case len(problems) != 0:
 				t.Fatalf("эталон принял трактовку, Go нашёл проблемы: %q", problems)
@@ -150,7 +150,7 @@ func TestSaveTreatmentMatchesGolden(t *testing.T) {
 }
 
 // TestNormalizeTreatmentRejectsProblems — строгая нормализация (ответ агента) отклоняет
-// трактовку с содержательными проблемами текстом originalError эталона.
+// трактовку с содержательными проблемами текстом strictError эталона.
 func TestNormalizeTreatmentRejectsProblems(t *testing.T) {
 	for _, item := range golden.Load(t, "scenario-treatment") {
 		t.Run(item.Name, func(t *testing.T) {
@@ -169,13 +169,13 @@ func TestNormalizeTreatmentRejectsProblems(t *testing.T) {
 			_, err = NormalizeTreatment(input, duration)
 			expected := want.Error
 			if expected == nil {
-				expected = want.OriginalError
+				expected = want.StrictError
 			}
 			switch {
 			case expected == nil && err != nil:
 				t.Fatalf("эталон принял, Go: %v", err)
 			case expected != nil && (err == nil || err.Error() != *expected):
-				t.Fatalf("ошибка\n  Go: %v\n  TS: %s", err, *expected)
+				t.Fatalf("ошибка\n  получено: %v\n  эталон:   %s", err, *expected)
 			}
 		})
 	}
@@ -191,7 +191,7 @@ func AssertWrite(t *testing.T, dir string, wantError *string, wantResult json.Ra
 	case wantError == nil && err != nil:
 		t.Fatalf("эталон сохранил, Go: %v", err)
 	case wantError != nil && err.Error() != *wantError:
-		t.Fatalf("ошибка\n  Go:  %s\n  TS:  %s", err, *wantError)
+		t.Fatalf("ошибка\n  получено: %s\n  эталон:   %s", err, *wantError)
 	}
 	if wantError == nil {
 		golden.AssertJSON(t, wantResult, []byte(dynvalue.Stringify(result)))
@@ -207,7 +207,7 @@ func AssertWrite(t *testing.T, dir string, wantError *string, wantResult json.Ra
 			t.Fatal(readErr)
 		}
 		if !bytes.Equal(expected, after[path]) {
-			t.Fatalf("%s: байты отличаются\n  Go: %q\n  TS: %q", path, after[path], expected)
+			t.Fatalf("%s: байты отличаются\n  получено: %q\n  эталон:   %q", path, after[path], expected)
 		}
 	}
 }
@@ -220,7 +220,7 @@ func assertFiles(t *testing.T, want, got map[string]string) {
 	wantJSON, _ := json.Marshal(want)
 	gotJSON, _ := json.Marshal(got)
 	if !bytes.Equal(wantJSON, gotJSON) {
-		t.Fatalf("изменённые файлы\n  Go: %s\n  TS: %s", gotJSON, wantJSON)
+		t.Fatalf("изменённые файлы\n  получено: %s\n  эталон:   %s", gotJSON, wantJSON)
 	}
 }
 

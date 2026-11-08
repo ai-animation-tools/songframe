@@ -916,7 +916,7 @@
       "PCM16 stereo44100",
       "PCM16 mono16000",
       "float32 mono16000",
-      "Go CTC global margin adaptive",
+      "CTC global margin adaptive",
       "manual_listening_review"
     ],
     "binding": {

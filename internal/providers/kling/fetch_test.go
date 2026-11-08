@@ -47,7 +47,7 @@ func TestFetch(t *testing.T) {
 	if err := adapter.Fetch(ctx, server.URL+"/short.png", destination); err == nil || err.Error() != "Загрузка не завершена." {
 		t.Errorf("обрыв тела: %v", err)
 	}
-	if err := adapter.Fetch(ctx, server.URL+"/missing.png", destination); err == nil || err.Error() != "HTTP Error 404: Not Found" || mcp.ErrorTypeName(err) != "OSError" {
+	if err := adapter.Fetch(ctx, server.URL+"/missing.png", destination); err == nil || err.Error() != "ошибка HTTP 404: Not Found" || mcp.ErrorTypeName(err) != "ошибка ввода-вывода" {
 		t.Errorf("HTTP-ошибка: %v", err)
 	}
 	if err := adapter.Fetch(ctx, "http://example.test/ok.png", destination); err == nil || err.Error() != "Сервис вернул недопустимый адрес результата." {

@@ -173,7 +173,7 @@ func prepareCase(t *testing.T, c golden.Case) toolCase {
 	return run
 }
 
-// checkStreams сверяет код, stdout и stderr; у трассировки — заголовок и последнюю строку.
+// checkStreams сверяет код, stdout и stderr; необработанная ошибка сверяется целиком.
 func (run toolCase) checkStreams(t *testing.T, result tools.Result, sortedStdout bool) {
 	t.Helper()
 	if want := run.expected.Value("code").(toolrt.Int).String(); result.Code == nil || want != toolrt.NewInt(int64(*result.Code)).String() {

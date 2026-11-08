@@ -586,13 +586,13 @@
       "validate": {
         "error": {
           "type": "TypeError",
-          "message": "expected string or bytes-like object, got 'целое число'"
+          "message": "ожидается строка, получено: целое число"
         }
       },
       "fingerprints": {
         "error": {
           "type": "TypeError",
-          "message": "expected string or bytes-like object, got 'целое число'"
+          "message": "ожидается строка, получено: целое число"
         }
       },
       "states": {
@@ -605,13 +605,13 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "expected string or bytes-like object, got 'целое число'"
+            "message": "ожидается строка, получено: целое число"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "expected string or bytes-like object, got 'целое число'"
+            "message": "ожидается строка, получено: целое число"
           }
         }
       },
@@ -619,13 +619,13 @@
         "M01": {
           "error": {
             "type": "TypeError",
-            "message": "expected string or bytes-like object, got 'целое число'"
+            "message": "ожидается строка, получено: целое число"
           }
         },
         "M03": {
           "error": {
             "type": "TypeError",
-            "message": "expected string or bytes-like object, got 'целое число'"
+            "message": "ожидается строка, получено: целое число"
           }
         }
       }

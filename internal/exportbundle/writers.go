@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -51,7 +50,7 @@ func csvCell(value any) (any, error) {
 		for index, part := range item {
 			text, ok := part.(string)
 			if !ok {
-				return nil, toolrt.Raise(toolrt.TypeError, "sequence item %d: expected str instance, %s found", index, toolrt.TypeName(part))
+				return nil, toolrt.Raise(toolrt.TypeError, "элемент %d: ожидается строка, получено: %s", index, toolrt.TypeName(part))
 			}
 			parts[index] = text
 		}
@@ -142,7 +141,7 @@ func eventLine(number int, shot string, stamps ...string) string {
 // или bool, иначе TypeError.
 func repeatList(cycle, count any) ([]any, error) {
 	if !toolrt.IsInt(count) {
-		return nil, toolrt.Raise(toolrt.TypeError, "can't multiply sequence by non-int of type '%s'", toolrt.TypeName(count))
+		return nil, toolrt.Raise(toolrt.TypeError, "последовательность можно умножить только на целое число, получено: %s", toolrt.TypeName(count))
 	}
 	value, err := toolrt.Sub(count, toolrt.NewInt(0))
 	if err != nil {
@@ -150,7 +149,7 @@ func repeatList(cycle, count any) ([]any, error) {
 	}
 	total, ok := value.(toolrt.Int).Int64()
 	if !ok {
-		return nil, toolrt.New(toolrt.OverflowError, "cannot fit 'int' into an index-sized integer")
+		return nil, toolrt.New(toolrt.OverflowError, "слишком большое число")
 	}
 	lengths := []any{}
 	for index := int64(0); index < total; index++ {
@@ -313,16 +312,11 @@ func fileURI(slashed, volume string) string {
 	return "file://" + quoteURI(slashed)
 }
 
-// pathJoin — путь base с компонентом part из JSON: нестроковая часть — TypeError оператора
-// деления пути с именем класса пути ОС.
+// pathJoin — путь base с компонентом part из JSON: нестроковая часть — TypeError соединения пути.
 func pathJoin(base string, part any) (string, error) {
 	text, ok := part.(string)
 	if !ok {
-		name := "PosixPath"
-		if runtime.GOOS == "windows" {
-			name = "WindowsPath"
-		}
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", name, toolrt.TypeName(part))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(part))
 	}
 	return toolrt.JoinPath(base, text), nil
 }

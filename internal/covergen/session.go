@@ -244,7 +244,7 @@ func trimmedModel(settings any) (string, error) {
 	}
 	text, ok := value.(string)
 	if !ok {
-		return "", &dynvalue.TypeError{Message: "imageSettings.model?.trim is not a function"}
+		return "", &dynvalue.TypeError{Message: "imageSettings.model: ожидается строка"}
 	}
 	return dynvalue.Trim(text), nil
 }

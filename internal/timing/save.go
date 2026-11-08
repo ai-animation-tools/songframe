@@ -63,7 +63,7 @@ func Prepare(project string, input any) (*dynvalue.Object, error) {
 		line.Set("end", round(dynvalue.Get(raw, "end").(float64)))
 		note, ok := dynvalue.Coalesce(dynvalue.Get(raw, "note"), "").(string)
 		if !ok {
-			return nil, &dynvalue.TypeError{Message: "(line.note ?? \"\").trim is not a function"}
+			return nil, &dynvalue.TypeError{Message: "line.note: ожидается строка"}
 		}
 		line.Set("note", dynvalue.Trim(note))
 		lines[index] = withTimingVerification(line)
@@ -106,7 +106,7 @@ func Prepare(project string, input any) (*dynvalue.Object, error) {
 	}
 	previous, ok := dynvalue.Get(input, "status").(string)
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "previous.replace is not a function"}
+		return nil, &dynvalue.TypeError{Message: "previous: ожидается строка"}
 	}
 	sections, err := resolveSections(dynvalue.Get(input, "sections"), view.Lyrics, lines, duration, candidates)
 	if err != nil {
@@ -274,14 +274,14 @@ func isAutoSection(section any, partNames map[string]bool) (bool, error) {
 	if nameIsString && partNames[nameText] {
 		noteText, ok := note.(string)
 		if !ok {
-			return false, &dynvalue.TypeError{Message: "note.match is not a function"}
+			return false, &dynvalue.TypeError{Message: "note: ожидается строка"}
 		}
 		if autoNote.MatchString(noteText) {
 			return true, nil
 		}
 	}
 	if !nameIsString {
-		return false, &dynvalue.TypeError{Message: "name.match is not a function"}
+		return false, &dynvalue.TypeError{Message: "name: ожидается строка"}
 	}
 	if (nameText == "Вступление" || interludeName.MatchString(nameText)) && dynvalue.StrictEqual(note, "без вокала") {
 		return true, nil
@@ -334,7 +334,7 @@ func groupParts(lyrics []LyricsLine, byNumber map[float64]any) []sectionPart {
 func resolveSections(sections any, lyrics []LyricsLine, lines []any, duration any, candidates []any) ([]any, error) {
 	saved, ok := dynvalue.AsArray(dynvalue.Coalesce(sections, &dynvalue.Array{}))
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "saved.filter is not a function"}
+		return nil, &dynvalue.TypeError{Message: "saved: ожидается список"}
 	}
 	partNames := map[string]bool{}
 	for _, part := range groupParts(lyrics, map[float64]any{}) {

@@ -45,7 +45,7 @@ func envelope(request *toolrt.Dict, prompt string, inputs []slotURL) (*toolrt.Di
 	}
 	values, ok := parameters.(*toolrt.Dict)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(parameters))
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(parameters))
 	}
 	first := toolrt.NewDict()
 	first.Set("name", "prompt")
@@ -90,7 +90,7 @@ func envelope(request *toolrt.Dict, prompt string, inputs []slotURL) (*toolrt.Di
 func inside(directory string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(name))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(name))
 	}
 	path := toolrt.ResolvePath(toolrt.JoinPath(directory, text))
 	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(directory)) || !toolrt.IsFile(path) {
@@ -404,14 +404,14 @@ func (a *Adapter) Fetch(ctx context.Context, url, destination string) error {
 	}
 	// Без сжатия (Accept-Encoding: identity): сжатие сломало бы сверку с Content-Length.
 	request.Header.Set("Accept-Encoding", "identity")
-	request.Header.Set("User-Agent", "Python-urllib/3.12")
+	request.Header.Set("User-Agent", "SongFrame")
 	response, err := a.fetcher().Do(request)
 	if err != nil {
-		return toolrt.Raise(toolrt.OSError, "<urlopen error %s>", err.Error())
+		return toolrt.Raise(toolrt.OSError, "ошибка соединения: %s", mcp.SocketFailure(err, false))
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return toolrt.Raise(toolrt.OSError, "HTTP Error %d: %s", response.StatusCode, http.StatusText(response.StatusCode))
+		return toolrt.Raise(toolrt.OSError, "ошибка HTTP %d: %s", response.StatusCode, http.StatusText(response.StatusCode))
 	}
 	target, err := os.Create(destination)
 	if err != nil {

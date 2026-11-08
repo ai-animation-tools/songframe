@@ -762,10 +762,10 @@ func prepareStage(result *checkedResult, status *toolrt.Dict, journal *toolrt.Di
 	if _, err := assetpackage.ValidatePackage(filepath.Join(stagedKit, "manifest.json"), shot, stage); err != nil {
 		return nil, err
 	}
-	// Ненулевой код update_scene_views — исключение CalledProcessError: CLI показывает его скрытым
-	// общим текстом.
+	// Ненулевой код update_scene_views — ожидаемый отказ вида CalledProcessError: CLI показывает его
+	// скрытым общим текстом.
 	if output := sceneviews.Run(stage, []string{}); output.Code != 0 {
-		return nil, toolrt.New("CalledProcessError", "update_scene_views returned non-zero exit status")
+		return nil, toolrt.New("CalledProcessError", "обновление представлений завершилось с ошибкой")
 	}
 	names := map[string]bool{sceneregistry.ProductionStatus: true}
 	applymontage.ViewPaths(stage, root, names)

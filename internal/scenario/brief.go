@@ -156,7 +156,7 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 	for _, entry := range propertiesEntries {
 		items, ok := dynvalue.AsArray(entry.Value)
 		if !ok {
-			return Brief{}, &dynvalue.TypeError{Message: "items.map is not a function"}
+			return Brief{}, &dynvalue.TypeError{Message: "items: ожидается список"}
 		}
 		if vocab[entry.Key], err = newVocabulary(items); err != nil {
 			return Brief{}, err
@@ -255,7 +255,7 @@ func BuildBrief(data, castValue any, sid, phase string) (Brief, error) {
 	}
 	actionText, ok := action.(string)
 	if !ok {
-		return Brief{}, &dynvalue.TypeError{Message: "scene.action.slice is not a function"}
+		return Brief{}, &dynvalue.TypeError{Message: "scene.action: ожидается строка"}
 	}
 	short, cut := sliceUTF16(actionText, 80)
 	if cut {

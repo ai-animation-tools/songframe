@@ -223,7 +223,7 @@ func filePaths(ref any) (map[string]bool, error) {
 	}
 	list, ok := dynvalue.AsArray(files)
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "ref.files.map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "ref.files: ожидается список"}
 	}
 	paths := map[string]bool{}
 	for _, file := range list {

@@ -12,7 +12,7 @@
 // окончаниями \r\n и кавычками только по необходимости, кавычки атрибутов XML, URI файлов,
 // порядок ключей bundle.json, порядок записи файлов (отказ на середине оставляет уже
 // записанное), тексты разбора аргументов и отказов: ValueError печатается, OSError, KeyError и
-// JSONDecodeError скрываются общей фразой, прочие исключения — трассировка.
+// JSONDecodeError скрываются общей фразой, прочие исключения — необработанная ошибка (toolrt.Unhandled).
 // Пути копий в bundle.json и CSV пишутся через «/» на любой ОС, чтобы пакет переносился между
 // Linux и Windows.
 //
@@ -59,7 +59,7 @@ func parseArgs(args []string) (toolrt.Args, *toolcli.Output) {
 	parsed, exit := toolcli.Args(parser, args)
 	required := func() *toolcli.Output {
 		usage := strings.Replace(parser.Usage(), optionalOut, requiredOut, 1)
-		message := usage + parser.Prog + ": error: the following arguments are required: --out\n"
+		message := usage + parser.Prog + ": ошибка: обязательные аргументы: --out\n"
 		return &toolcli.Output{Code: 2, Stderr: toolrt.TextMode(message)}
 	}
 	if exit != nil {

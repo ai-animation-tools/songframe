@@ -213,12 +213,12 @@ func extreme(lines []*toolrt.Dict, key string, maximum bool) (any, error) {
 	return current, nil
 }
 
-// greater — left > right через toolrt.Less; несравнимые типы дают TypeError с оператором «>»
-// и типами в исходном порядке.
+// greater — left > right через toolrt.Less; несравнимые значения дают TypeError с оператором «>»
+// и видами значений в исходном порядке.
 func greater(left, right any) (bool, error) {
 	result, err := toolrt.Less(right, left)
 	if err != nil {
-		return false, toolrt.Raise(toolrt.TypeError, "'>' not supported between instances of '%s' and '%s'", toolrt.TypeName(left), toolrt.TypeName(right))
+		return false, toolrt.Raise(toolrt.TypeError, "нельзя сравнить «>»: %s и %s", toolrt.TypeName(left), toolrt.TypeName(right))
 	}
 	return result, nil
 }
@@ -256,13 +256,13 @@ func sampleIndex(seconds any) (*big.Int, error) {
 	text := toolrt.Str(seconds)
 	switch text {
 	case "nan", "-nan":
-		return nil, toolrt.New(toolrt.ValueError, "cannot convert NaN to integer")
+		return nil, toolrt.New(toolrt.ValueError, "NaN нельзя преобразовать в целое число")
 	case "inf", "-inf":
-		return nil, toolrt.New(toolrt.OverflowError, "cannot convert Infinity to integer")
+		return nil, toolrt.New(toolrt.OverflowError, "бесконечность нельзя преобразовать в целое число")
 	}
 	value, ok := new(big.Rat).SetString(text)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.TypeError, "conversion from %s to Decimal is not supported", toolrt.TypeName(seconds))
+		return nil, toolrt.Raise(toolrt.TypeError, "нельзя преобразовать в десятичное число: %s", toolrt.TypeName(seconds))
 	}
 	value.Mul(value, new(big.Rat).SetInt64(sampleRate))
 	negative := value.Sign() < 0
@@ -291,11 +291,11 @@ func decode(ctx context.Context, source string) ([]byte, error) {
 	return result.Stdout, nil
 }
 
-// pathDiv — base/part: нестроковая часть — TypeError с именем класса пути ОС (pathType).
+// pathDiv — base/part: нестроковая часть — TypeError «операция «/» неприменима: путь и <вид>».
 func pathDiv(base string, part any) (string, error) {
 	text, ok := part.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathType, toolrt.TypeName(part))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(part))
 	}
 	return toolrt.JoinPath(base, text), nil
 }

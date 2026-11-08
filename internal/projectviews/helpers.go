@@ -45,18 +45,18 @@ func join(separator string, items []any) (string, error) {
 	for index, item := range items {
 		text, ok := item.(string)
 		if !ok {
-			return "", toolrt.Raise(toolrt.TypeError, "sequence item %d: expected str instance, %s found", index, toolrt.TypeName(item))
+			return "", toolrt.Raise(toolrt.TypeError, "элемент %d: ожидается строка, получено: %s", index, toolrt.TypeName(item))
 		}
 		parts[index] = text
 	}
 	return strings.Join(parts, separator), nil
 }
 
-// lower — строка в нижнем регистре; не-строка — AttributeError «нет атрибута lower».
+// lower — строка в нижнем регистре; не-строка — AttributeError «ожидается строка».
 func lower(value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'lower'", toolrt.TypeName(value))
+		return "", toolrt.Raise(toolrt.AttributeError, "ожидается строка, получено: %s", toolrt.TypeName(value))
 	}
 	return strings.ToLower(text), nil
 }
@@ -103,11 +103,11 @@ func dictGet(value any, key string, fallback any) (any, error) {
 	return toolrt.DictGet(value, key, fallback)
 }
 
-// items — значение как словарь для обхода пар; не-словарь — AttributeError «нет атрибута items».
+// items — значение как словарь для обхода пар; не-словарь — AttributeError «ожидается объект».
 func items(value any) (*toolrt.Dict, error) {
 	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(value))
 	}
 	return dict, nil
 }

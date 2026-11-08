@@ -2,7 +2,6 @@ package sceneviews
 
 import (
 	"path/filepath"
-	"runtime"
 
 	"songframe/internal/animaticcards"
 	"songframe/internal/projectviews"
@@ -66,7 +65,7 @@ func approvedKeyframes(root, sid string) ([]*toolrt.Dict, error) {
 			}
 			name, ok := value.(string)
 			if !ok {
-				return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(value))
+				return nil, toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(value))
 			}
 			files[index] = toolrt.JoinPath(parent, name)
 		}
@@ -286,7 +285,7 @@ func expectedCards(sources *projectviews.Sources, prepared *projectviews.Prepare
 		}
 		references, ok := prepared.Data.Value("references").(*toolrt.Dict)
 		if !ok {
-			return nil, nil, toolrt.Raise(toolrt.TypeError, "%s indices must be integers or slices, not str", toolrt.TypeName(prepared.Data.Value("references")))
+			return nil, nil, toolrt.New(toolrt.TypeError, "индекс должен быть целым числом, получено: строка")
 		}
 		card, err := animaticcards.RenderCard(scene, project, references, root)
 		if err != nil {
@@ -304,7 +303,7 @@ func referenceHashes(sources *projectviews.Sources, prepared *projectviews.Prepa
 	value := prepared.Data.Value("references")
 	references, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'values'", toolrt.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(value))
 	}
 	result := toolrt.NewDict()
 	for _, key := range references.Keys() {
@@ -317,7 +316,7 @@ func referenceHashes(sources *projectviews.Sources, prepared *projectviews.Prepa
 			if _, err := toolrt.HashKey(pathValue); err != nil {
 				return nil, err
 			}
-			return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(pathValue))
+			return nil, toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(pathValue))
 		}
 		digest, err := sources.Digest(path)
 		if err != nil {
@@ -365,11 +364,3 @@ func cardsReceipt(sources *projectviews.Sources, prepared *projectviews.Prepared
 
 // orderedRecord — упорядоченный словарь из пар ключ-значение.
 func orderedRecord(pairs ...any) *toolrt.Dict { return toolcli.Record(pairs...) }
-
-// pathClass — имя класса пути в тексте TypeError соединения пути с не-строкой (зависит от ОС).
-func pathClass() string {
-	if runtime.GOOS == "windows" {
-		return "WindowsPath"
-	}
-	return "PosixPath"
-}

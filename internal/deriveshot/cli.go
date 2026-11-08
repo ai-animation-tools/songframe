@@ -37,7 +37,7 @@ func Parser() *toolrt.Command {
 }
 
 // Run — инструмент derive_shot на корне проекта. ValueError печатается своим текстом, остальные
-// ожидаемые ошибки — скрытым textHidden, прочие — трассировкой; --json превращает отказ в
+// ожидаемые ошибки — скрытым textHidden, прочие — необработанной ошибкой; --json превращает отказ в
 // {"status": "error", "message": …} на stdout.
 func Run(ctx context.Context, root string, argv []string) toolcli.Output {
 	args, exit := Parser().ParseArgs(argv)

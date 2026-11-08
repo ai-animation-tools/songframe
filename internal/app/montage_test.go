@@ -47,7 +47,7 @@ func interruptedMontage(t *testing.T, project, current string) string {
 	return filepath.Join(project, filepath.FromSlash(history), "journal.json")
 }
 
-// TestOpenRecoversMontagePublication — A-11: открытие откатывает прерванную публикацию монтажа
+// TestOpenRecoversMontagePublication: открытие откатывает прерванную публикацию монтажа
 // до того, как проект станет текущим; конфликт с ручной правкой не открывает проект.
 func TestOpenRecoversMontagePublication(t *testing.T) {
 	local := t.TempDir()

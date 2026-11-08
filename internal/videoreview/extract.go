@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 	"unicode/utf8"
 
@@ -258,15 +259,16 @@ func manifestJSON(manifest Manifest) ([]byte, error) {
 	return toolrt.EncodeIndented(report)
 }
 
-// osError — OSError с системным текстом и repr-записью пути, без обёртки ошибки Go.
+// osError — файловая ошибка с русским описанием по errno (toolrt.OSErrorFrom) и repr-записью
+// пути, без обёртки ошибки Go.
 func osError(err error) error {
 	var pathErr *os.PathError
 	if errors.As(err, &pathErr) {
-		return fail(pathErr.Err.Error() + ": " + toolrt.Repr(pathErr.Path))
+		return fail(toolrt.OSErrorFrom(pathErr.Err, pathErr.Path).Message)
 	}
 	var linkErr *os.LinkError
 	if errors.As(err, &linkErr) {
-		return fail(linkErr.Err.Error() + ": " + toolrt.Repr(linkErr.Old) + " -> " + toolrt.Repr(linkErr.New))
+		return fail(toolrt.OSErrorFrom(linkErr.Err, linkErr.Old).Message + " -> " + toolrt.Repr(linkErr.New))
 	}
 	return fail(err.Error())
 }
@@ -299,11 +301,11 @@ func (r *mediaRunner) run(path, name string, args ...string) ([]byte, error) {
 		for _, part := range append([]string{name}, args...) {
 			quoted = append(quoted, toolrt.Repr(part))
 		}
-		return nil, fail(fmt.Sprintf("Command '[%s]' timed out after 120 seconds", strings.Join(quoted, ", ")))
+		return nil, fail(fmt.Sprintf("команда не завершилась за 120 секунд: [%s]", strings.Join(quoted, ", ")))
 	}
 	var start *process.StartError
 	if errors.As(err, &start) {
-		return nil, fail("[Errno 2] No such file or directory: " + toolrt.Repr(name))
+		return nil, fail(toolrt.OSErrorFrom(syscall.ENOENT, name).Message)
 	}
 	return nil, fail(err.Error())
 }

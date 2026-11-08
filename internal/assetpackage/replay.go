@@ -120,7 +120,7 @@ func Replay(ctx context.Context, path, destination string, fromOriginal bool, ro
 		previous = target
 	}
 	if previous == "" {
-		return toolrt.Raise(toolrt.AttributeError, "'NoneType' object has no attribute 'open'")
+		return toolrt.Raise(toolrt.AttributeError, "файл не открыт")
 	}
 	return copyNew(previous, destination)
 }
@@ -149,5 +149,5 @@ func copyNew(source, destination string) error {
 // NotFound — FileNotFoundError для программы, которую не удалось запустить (текст
 // зафиксирован эталоном).
 func NotFound(program string) error {
-	return toolrt.New(toolrt.FileNotFoundError, "[Errno 2] No such file or directory: "+toolrt.Repr(program))
+	return toolrt.New(toolrt.FileNotFoundError, "нет такого файла или каталога: "+toolrt.Repr(program))
 }

@@ -11,8 +11,8 @@ import (
 // errUnsupportedFormat — конструкция шаблона, которую formatValue не поддерживает (доступ к
 // атрибутам и индексам поля, вложенные поля в спецификации, числовые спецификации). В словарях
 // свойств SongFrame шаблоны чек-листа используют только «{value}»; такая ошибка не относится к
-// исключениям toolrt и печатается трассировкой с этим текстом.
-var errUnsupportedFormat = errors.New("шаблон чек-листа использует возможность str.format, не перенесённую в Go-версию")
+// исключениям toolrt и печатается необработанной ошибкой с этим текстом.
+var errUnsupportedFormat = errors.New("шаблон чек-листа использует неподдерживаемую возможность форматирования")
 
 // formatValue подставляет value в шаблон чек-листа: «{{»/«}}» — литеральные скобки,
 // поле value с преобразованием !s/!r/!a и строковой спецификацией [[fill]align][0][width][.precision][s].
@@ -29,7 +29,7 @@ func formatValue(template string, value any) (string, error) {
 				index++
 				continue
 			}
-			return "", toolrt.New(toolrt.ValueError, "Single '}' encountered in format string")
+			return "", toolrt.New(toolrt.ValueError, "в шаблоне одиночная «}»")
 		}
 		if r != '{' {
 			builder.WriteString(toolrt.FromRunes([]rune{r}))
@@ -41,7 +41,7 @@ func formatValue(template string, value any) (string, error) {
 			continue
 		}
 		if index+1 >= len(runes) {
-			return "", toolrt.New(toolrt.ValueError, "Single '{' encountered in format string")
+			return "", toolrt.New(toolrt.ValueError, "в шаблоне одиночная «{»")
 		}
 		// Поле до парной «}» с учётом вложенных скобок спецификации.
 		depth, end := 1, index+1
@@ -56,7 +56,7 @@ func formatValue(template string, value any) (string, error) {
 			}
 		}
 		if end >= len(runes) {
-			return "", toolrt.New(toolrt.ValueError, "expected '}' before end of string")
+			return "", toolrt.New(toolrt.ValueError, "в шаблоне нет закрывающей «}»")
 		}
 		text, err := replaceField(runes[index+1:end], value)
 		if err != nil {
@@ -77,7 +77,7 @@ func replaceField(field []rune, value any) (string, error) {
 			break
 		}
 		if r == '{' {
-			return "", toolrt.New(toolrt.ValueError, "unexpected '{' in field name")
+			return "", toolrt.New(toolrt.ValueError, "в имени поля шаблона лишняя «{»")
 		}
 	}
 	name := toolrt.FromRunes(field[:nameEnd])
@@ -85,15 +85,15 @@ func replaceField(field []rune, value any) (string, error) {
 	conversion := rune(0)
 	if len(rest) > 0 && rest[0] == '!' {
 		if len(rest) < 2 {
-			return "", toolrt.New(toolrt.ValueError, "end of string while looking for conversion specifier")
+			return "", toolrt.New(toolrt.ValueError, "в шаблоне оборвано преобразование")
 		}
 		conversion = rest[1]
 		rest = rest[2:]
 		if len(rest) > 0 && rest[0] != ':' {
-			return "", toolrt.New(toolrt.ValueError, "expected ':' after conversion specifier")
+			return "", toolrt.New(toolrt.ValueError, "после преобразования в шаблоне нужно «:»")
 		}
 		if conversion == '}' || conversion == ':' {
-			return "", toolrt.New(toolrt.ValueError, "unmatched '{' in format spec")
+			return "", toolrt.New(toolrt.ValueError, "в шаблоне незакрытая «{»")
 		}
 	}
 	spec := ""
@@ -113,7 +113,7 @@ func replaceField(field []rune, value any) (string, error) {
 				number = "0"
 			}
 		}
-		return "", toolrt.Raise(toolrt.IndexError, "Replacement index %s out of range for positional args tuple", number)
+		return "", toolrt.Raise(toolrt.IndexError, "в шаблоне нет значения для поля %s", number)
 	}
 	if first != "value" {
 		return "", toolrt.NewKeyError(first)
@@ -130,7 +130,7 @@ func replaceField(field []rune, value any) (string, error) {
 	case 'a':
 		value = asciiRepr(toolrt.Repr(value))
 	default:
-		return "", toolrt.Raise(toolrt.ValueError, "Unknown conversion specifier %s", string(conversion))
+		return "", toolrt.Raise(toolrt.ValueError, "неизвестное преобразование %s", string(conversion))
 	}
 	if spec == "" {
 		return toolrt.Str(value), nil
@@ -140,7 +140,7 @@ func replaceField(field []rune, value any) (string, error) {
 		switch value.(type) {
 		case nil, []any, *toolrt.Dict:
 			typeName := toolrt.TypeName(value)
-			return "", toolrt.Raise(toolrt.TypeError, "unsupported format string passed to %s.__format__", typeName)
+			return "", toolrt.Raise(toolrt.TypeError, "формат неприменим к значению: %s", typeName)
 		}
 		return "", errUnsupportedFormat
 	}
@@ -200,7 +200,7 @@ func formatString(text, spec string) (string, error) {
 		align, position = runes[0], 1
 	}
 	if position < len(runes) && (runes[position] == '+' || runes[position] == '-' || runes[position] == ' ') {
-		return "", toolrt.New(toolrt.ValueError, "Sign not allowed in string format specifier")
+		return "", toolrt.New(toolrt.ValueError, "знак в формате строки недопустим")
 	}
 	if position < len(runes) && runes[position] == '0' {
 		if align == 0 {
@@ -223,20 +223,20 @@ func formatString(text, spec string) (string, error) {
 			position++
 		}
 		if position == start {
-			return "", toolrt.New(toolrt.ValueError, "Format specifier missing precision")
+			return "", toolrt.New(toolrt.ValueError, "в формате не указана точность")
 		}
 	}
 	if position < len(runes) {
 		if runes[position] == 's' && position == len(runes)-1 {
 			position++
 		} else if position == len(runes)-1 {
-			return "", toolrt.Raise(toolrt.ValueError, "Unknown format code '%s' for object of type 'str'", string(runes[position]))
+			return "", toolrt.Raise(toolrt.ValueError, "формат «%s» неприменим к строке", string(runes[position]))
 		} else {
-			return "", toolrt.New(toolrt.ValueError, "Invalid format specifier")
+			return "", toolrt.New(toolrt.ValueError, "неверный формат")
 		}
 	}
 	if align == '=' {
-		return "", toolrt.New(toolrt.ValueError, "'=' alignment not allowed in string format specifier")
+		return "", toolrt.New(toolrt.ValueError, "выравнивание «=» в формате строки недопустимо")
 	}
 	body := toolrt.Runes(text)
 	if precision >= 0 && precision < len(body) {

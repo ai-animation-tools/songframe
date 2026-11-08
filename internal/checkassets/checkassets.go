@@ -2,7 +2,7 @@
 // (validate_package, internal/assetpackage) и печатает сводку по их числу.
 //
 // Инструмент check_assets не разбирает аргументы: всё после --project игнорируется, любой отказ (нет
-// реестра, комплект вне реестра, изменённый файл) — необработанное исключение с трассировкой и
+// реестра, комплект вне реестра, изменённый файл) — необработанная ошибка «Ошибка: <текст>» с
 // кодом 1. Пакет только читает файлы проекта.
 package checkassets
 
@@ -55,7 +55,7 @@ func LoadMotion(root string) (map[string]Motion, error) {
 		}
 		name, isString := location.(string)
 		if !isString {
-			return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(location))
+			return nil, toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(location))
 		}
 		relative, err := toolrt.RelativeTo(toolrt.JoinPath(filepath.Dir(path), name), root)
 		if err != nil {

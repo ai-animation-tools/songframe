@@ -8,10 +8,11 @@
 // testdata/golden/shot-workflow. Ожидаемые отказы (ValueError, OSError, KeyError, TypeError)
 // печатаются в stderr с кодом 1 — текст ValueError как есть, прочие «Ошибка файлов пакета; сырой
 // вывод скрыт.»; остальные исключения toolrt (AttributeError на данных неожиданной формы) дают
-// трассировку. Пакет не обращается к сервисам генерации и не меняет attempt.json и оригиналы.
+// необработанную ошибку (toolrt.Unhandled). Пакет не обращается к сервисам генерации и не меняет attempt.json и оригиналы.
 package shotworkflow
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -303,10 +304,11 @@ func Run(root string, argv []string) toolcli.Output {
 	return finish(out, err)
 }
 
-// exitCode — завершение инструмента с кодом code после вывода (текст ошибки — «SystemExit»).
+// exitCode — завершение инструмента с кодом code после вывода. Это не ошибка данных: finish
+// возвращает код без текста, Error нужен только для интерфейса error.
 type exitCode int
 
-func (e exitCode) Error() string { return "SystemExit" }
+func (e exitCode) Error() string { return fmt.Sprintf("завершение с кодом %d", int(e)) }
 
 // finish — обработка исключений Run: ожидаемые типы — текст в stderr и код 1.
 func finish(out *toolcli.Printer, err error) toolcli.Output {

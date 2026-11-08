@@ -2087,7 +2087,7 @@
       "expected": {
         "code": 1,
         "stdout": "",
-        "stderr": "Ошибка: unsupported operand type(s) for /: 'PosixPath' and 'целое число'\n",
+        "stderr": "Ошибка: операция «/» неприменима: путь и целое число\n",
         "files": [
           "plan/batches/M02-attempt-01/workflow.json"
         ],
@@ -2883,7 +2883,7 @@
       "expected": {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\ncontact_sheet: error: one of the arguments --package --work-dir --video is required\n",
+        "stderr": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\ncontact_sheet: ошибка: нужен один из аргументов: --package --work-dir --video\n",
         "files": [],
         "produced": {},
         "inputsUnchanged": true,
@@ -2905,7 +2905,7 @@
       "expected": {
         "code": 2,
         "stdout": "",
-        "stderr": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\ncontact_sheet: error: one of the arguments --package --work-dir --video is required\n",
+        "stderr": "использование: contact_sheet [-h]\n                             (--package PACKAGE | --work-dir WORK_DIR | --video VIDEO)\n                             [--out OUT] [--no-preview] [--json]\ncontact_sheet: ошибка: нужен один из аргументов: --package --work-dir --video\n",
         "files": [],
         "produced": {},
         "inputsUnchanged": true,

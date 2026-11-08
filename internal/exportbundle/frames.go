@@ -47,7 +47,7 @@ func power10(n int64) *big.Int {
 func parseFraction(text string) (*big.Rat, error) {
 	match, ok := rationalFormat.MatchString(text)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.ValueError, "Invalid literal for Fraction: %s", toolrt.Repr(text))
+		return nil, toolrt.Raise(toolrt.ValueError, "неверная запись дроби: %s", toolrt.Repr(text))
 	}
 	whole, _ := match.Group(2)
 	numerator := parseInteger(whole)
@@ -75,7 +75,7 @@ func parseFraction(text string) (*big.Rat, error) {
 		numerator.Neg(numerator)
 	}
 	if denominator.Sign() == 0 {
-		return nil, toolrt.Raise(toolrt.ZeroDivisionError, "Fraction(%s, 0)", numerator.String())
+		return nil, toolrt.Raise(toolrt.ZeroDivisionError, "дробь с нулевым знаменателем: %s/0", numerator.String())
 	}
 	return new(big.Rat).SetFrac(numerator, denominator), nil
 }
@@ -94,16 +94,16 @@ func fractionOf(value any) (*big.Rat, error) {
 		return new(big.Rat).SetInt(item.Big()), nil
 	case float64:
 		if math.IsNaN(item) {
-			return nil, toolrt.New(toolrt.ValueError, "cannot convert NaN to integer ratio")
+			return nil, toolrt.New(toolrt.ValueError, "NaN нельзя представить дробью")
 		}
 		if math.IsInf(item, 0) {
-			return nil, toolrt.New(toolrt.OverflowError, "cannot convert Infinity to integer ratio")
+			return nil, toolrt.New(toolrt.OverflowError, "бесконечность нельзя представить дробью")
 		}
 		return new(big.Rat).SetFloat64(item), nil
 	case string:
 		return parseFraction(item)
 	}
-	return nil, toolrt.New(toolrt.TypeError, "argument should be a string or a Rational instance")
+	return nil, toolrt.New(toolrt.TypeError, "ожидается строка или дробь")
 }
 
 // decimalPrecision — число значащих цифр десятичного деления.
@@ -208,7 +208,7 @@ func rational(seconds any) (string, error) {
 func ratFloat(value *big.Rat) (float64, error) {
 	result, _ := value.Float64()
 	if math.IsInf(result, 0) {
-		return 0, toolrt.New(toolrt.OverflowError, "integer division result too large for a float")
+		return 0, toolrt.New(toolrt.OverflowError, "слишком большое число")
 	}
 	return result, nil
 }

@@ -62,8 +62,10 @@ type NotSubmittedError struct{ Message string }
 
 func (e *NotSubmittedError) Error() string { return e.Message }
 
-// ExceptionType — имя класса для эталонов и отладочной записи.
-func (e *NotSubmittedError) ExceptionType() string { return "NotSubmitted" }
+// ExceptionType — название вида ошибки для эталонов и отладочной записи (mcp.ErrorTypeName).
+func (e *NotSubmittedError) ExceptionType() string {
+	return "отправка не начиналась"
+}
 
 // RejectedRequestError — RejectedRequest (подкласс NotSubmitted): сервис явно отклонил запрос
 // (isError), задание не создано; текст — краткая причина без секретов для last_rejection.
@@ -71,8 +73,8 @@ type RejectedRequestError struct{ Message string }
 
 func (e *RejectedRequestError) Error() string { return e.Message }
 
-// ExceptionType — имя класса для эталонов и отладочной записи.
-func (e *RejectedRequestError) ExceptionType() string { return "RejectedRequest" }
+// ExceptionType — название вида ошибки для эталонов и отладочной записи (mcp.ErrorTypeName).
+func (e *RejectedRequestError) ExceptionType() string { return "запрос отклонён" }
 
 //go:embed pricing.json
 var pricing []byte

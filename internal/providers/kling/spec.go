@@ -53,7 +53,7 @@ var (
 func fullMatch(pattern *toolregex.Regexp, value any) (bool, error) {
 	text, ok := value.(string)
 	if !ok {
-		return false, toolrt.Raise(toolrt.TypeError, "expected string or bytes-like object, got '%s'", toolrt.TypeName(value))
+		return false, toolrt.Raise(toolrt.TypeError, "ожидается строка, получено: %s", toolrt.TypeName(value))
 	}
 	_, matched := pattern.FullMatch(text)
 	return matched, nil

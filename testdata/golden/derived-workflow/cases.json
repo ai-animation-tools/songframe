@@ -1,5 +1,4 @@
 {
-  "source": "634fd94",
   "scenarios": [
     {
       "name": "view-context",
@@ -203,7 +202,7 @@
             "preview": null,
             "job": null,
             "problem": null,
-            "toolsProblem": "Для сборки нужны доступные Python и FFmpeg. Проверьте страницу «Среда».",
+            "toolsProblem": "Для сборки нужен доступный FFmpeg. Проверьте страницу «Среда».",
             "hasAsset": true
           },
           "changed": {},
@@ -235,7 +234,7 @@
             "preview": null,
             "job": null,
             "problem": null,
-            "toolsProblem": "Для сборки нужны доступные Python и FFmpeg. Проверьте страницу «Среда».",
+            "toolsProblem": "Для сборки нужен доступный FFmpeg. Проверьте страницу «Среда».",
             "hasAsset": true
           },
           "changed": {
@@ -251,7 +250,7 @@
             "start_frame": 0,
             "end_frame_exclusive": 60
           },
-          "error": "Для сборки нужны доступные Python и FFmpeg. Проверьте страницу «Среда».",
+          "error": "Для сборки нужен доступный FFmpeg. Проверьте страницу «Среда».",
           "changed": {},
           "removed": []
         }

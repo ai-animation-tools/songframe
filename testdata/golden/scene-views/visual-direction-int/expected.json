@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Ошибка: 'целое число' object has no attribute 'strip'\n",
+  "stderr": "Ошибка: ожидается строка, получено: целое число\n",
   "unhandled": true,
   "cards": null
 }

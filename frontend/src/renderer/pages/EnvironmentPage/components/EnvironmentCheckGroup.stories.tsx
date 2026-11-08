@@ -19,15 +19,15 @@ export const Mixed: Story = {
   args: {
     items: [
       environmentCheck(),
-      environmentCheck({ id: 'numpy', label: 'NumPy', status: 'running', ok: false }),
-      environmentCheck({ id: 'pillow', label: 'Pillow', status: 'pending', ok: false }),
+      environmentCheck({ id: 'ffmpeg', label: 'FFmpeg', status: 'running', ok: false }),
+      environmentCheck({ id: 'onnxruntime', label: 'ONNX Runtime', status: 'pending', ok: false }),
       environmentCheck({ id: 'tools', label: 'Комплекс SongFrame', ok: false, detail: 'Ресурсы не найдены.' })
     ]
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getAllByRole('listitem')).toHaveLength(4);
-    await expect(canvas.getByRole('progressbar', { name: 'NumPy: выполняется проверка' })).toBeVisible();
+    await expect(canvas.getByRole('progressbar', { name: 'FFmpeg: выполняется проверка' })).toBeVisible();
     await expect(canvas.getByText('Ожидает проверки')).toBeVisible();
     await expect(canvas.getByText('Ресурсы не найдены.')).toBeVisible();
   }

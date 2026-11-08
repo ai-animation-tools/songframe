@@ -1,7 +1,7 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Ошибка: float division by zero\n",
+  "stderr": "Ошибка: деление на ноль\n",
   "unhandled": true,
   "files": {
     "plan/scenes.json": "unchanged"

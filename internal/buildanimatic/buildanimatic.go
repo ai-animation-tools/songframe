@@ -14,7 +14,7 @@
 // отменой через context); параметры кодирования Encode и тексты отказов run/probe общие с
 // accept_shot. Ошибки — исключения toolrt с типом и текстом, зафиксированными эталоном:
 // ожидаемые Run печатает текстом с кодом 1, а не перехваченные (TypeError, AttributeError,
-// StopIteration) — трассировкой.
+// StopIteration) — необработанной ошибкой «Ошибка: текст».
 //
 // Пути входов в манифесте (shots[].path, path_last) всегда записываются через «/»: проверка
 // свежести приложения сравнивает их с путём через «/», и разделитель ОС в Windows навсегда
@@ -30,7 +30,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -99,7 +98,7 @@ func probe(ctx context.Context, path string) (*toolrt.Dict, error) {
 		return nil, err
 	}
 	if info == nil {
-		return nil, toolrt.Raise(toolrt.TypeError, "list indices must be integers or slices, not str")
+		return nil, toolrt.Raise(toolrt.TypeError, "индекс списка должен быть целым числом, получено: строка")
 	}
 	return info, nil
 }
@@ -119,21 +118,12 @@ func writeText(path, text string) error {
 	return nil
 }
 
-// pathClass — имя типа пути ОС в тексте TypeError склейки пути с не-строкой (зафиксировано
-// эталоном).
-func pathClass() string {
-	if runtime.GOOS == "windows" {
-		return "WindowsPath"
-	}
-	return "PosixPath"
-}
-
 // local — допустимый входной файл name внутри root (после разрешения ссылок); иначе
 // ValueError «Нет допустимого входного файла: <name>». Не-строка — TypeError склейки пути.
 func local(root string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(name))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(name))
 	}
 	path := toolrt.ResolvePath(toolrt.JoinPath(root, text))
 	if !toolrt.IsRelativeTo(path, toolrt.ResolvePath(root)) || !toolrt.IsFile(path) {
@@ -191,11 +181,11 @@ func toInt(value any) (toolrt.Int, error) {
 	case string:
 		parsed, ok := toolrt.ParseIntText(number)
 		if !ok {
-			return toolrt.Int{}, toolrt.New(toolrt.ValueError, "invalid literal for int() with base 10: "+toolrt.Repr(number))
+			return toolrt.Int{}, toolrt.New(toolrt.ValueError, "не целое число: "+toolrt.Repr(number))
 		}
 		return parsed, nil
 	}
-	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", toolrt.TypeName(value))
+	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "ожидается число или строка, получено: %s", toolrt.TypeName(value))
 }
 
 // frame — секунды как точное десятичное число, умноженные на 30, с округлением половины от нуля
@@ -208,9 +198,9 @@ func frame(seconds any) (toolrt.Int, error) {
 	text := value.FormatF()
 	switch {
 	case strings.Contains(text, "NaN"):
-		return toolrt.Int{}, toolrt.New(toolrt.ValueError, "cannot convert NaN to integer")
+		return toolrt.Int{}, toolrt.New(toolrt.ValueError, "NaN нельзя преобразовать в целое число")
 	case strings.Contains(text, "Infinity"):
-		return toolrt.Int{}, toolrt.New(toolrt.OverflowError, "cannot convert Infinity to integer")
+		return toolrt.Int{}, toolrt.New(toolrt.OverflowError, "бесконечность нельзя преобразовать в целое число")
 	}
 	rational, _ := new(big.Rat).SetString(text)
 	rational.Mul(rational, big.NewRat(fps, 1))
@@ -225,7 +215,7 @@ func frame(seconds any) (toolrt.Int, error) {
 }
 
 // streamOf — первый поток сводки info с codec_type, равным kind; без такого потока —
-// StopIteration (не перехватывается Run и печатается трассировкой).
+// StopIteration (не перехватывается Run и печатается необработанной ошибкой).
 func streamOf(info any, kind string) (any, error) {
 	streams, err := item(info, "streams")
 	if err != nil {
@@ -472,7 +462,7 @@ func checkReceipt(root string, receipt any, project *toolrt.Dict) error {
 		}
 		dict, ok := hashes.(*toolrt.Dict)
 		if !ok {
-			return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(hashes))
+			return toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(hashes))
 		}
 		for _, name := range dict.Keys() {
 			path, err := local(root, name)
@@ -620,7 +610,7 @@ func setKey(dict *toolrt.Dict, key, value any) error {
 	}
 	text, ok := key.(string)
 	if !ok {
-		return toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(key))
+		return toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(key))
 	}
 	dict.Set(text, value)
 	return nil
@@ -1191,7 +1181,7 @@ func publish(base, work, videoName string) error {
 	if toolrt.Truthy(previous) && !toolrt.Equal(previous, videoName) {
 		name, ok := previous.(string)
 		if !ok {
-			return toolrt.Raise(toolrt.TypeError, "expected str, bytes or os.PathLike object, not %s", toolrt.TypeName(previous))
+			return toolrt.Raise(toolrt.TypeError, "путь должен быть строкой, получено: %s", toolrt.TypeName(previous))
 		}
 		if toolrt.PathName(name) == name && strings.HasSuffix(name, ".mp4") {
 			if err := unlinkMissingOK(toolrt.JoinPath(latest, name)); err != nil {
@@ -1223,7 +1213,7 @@ var Parser = toolrt.ArgParser{
 // Run — инструмент build_animatic на разрешённом корне проекта: сборка (или --plan-only),
 // обновление текстовых представлений после сборки и отчёт JSON. ValueError, KeyError и OSError —
 // текст в stderr с кодом 1 (строки готовности фрагментов остаются в stdout); прочие исключения —
-// трассировка.
+// необработанная ошибка «Ошибка: текст».
 func Run(ctx context.Context, root string, args []string) toolcli.Output {
 	parsed, exit := toolcli.Args(Parser, args)
 	if exit != nil {

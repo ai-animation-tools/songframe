@@ -14,7 +14,6 @@ package acceptshot
 
 import (
 	"context"
-	"errors"
 	"math"
 	"math/big"
 	"os"
@@ -86,23 +85,23 @@ var Parser = toolrt.ArgParser{
 // usage и help — готовые тексты строки использования и справки (обязательные группы в круглых
 // скобках и --preparation), зафиксированные эталоном testdata/golden/production-tools: общий
 // ArgParser такие группы не печатает.
-const usage = "usage: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n" +
-	"                   (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n" +
-	"                   [--speed SPEED] [--hold-first HOLD_FIRST]\n" +
-	"                   [--hold-last HOLD_LAST] [--audio AUDIO]\n" +
-	"                   [--audio-recipe AUDIO_RECIPE]\n" +
-	"                   [--preparation [PREPARATION ...]] [--clean] [--no-views]\n" +
-	"                   [--replace]\n" +
-	"                   shot\n"
+const usage = "использование: accept_shot [-h] (--package PACKAGE | --work-dir WORK_DIR)\n" +
+	"                           (--review REVIEW | --cut НАЧАЛО:КОНЕЦ | --full)\n" +
+	"                           [--speed SPEED] [--hold-first HOLD_FIRST]\n" +
+	"                           [--hold-last HOLD_LAST] [--audio AUDIO]\n" +
+	"                           [--audio-recipe AUDIO_RECIPE]\n" +
+	"                           [--preparation [PREPARATION ...]] [--clean]\n" +
+	"                           [--no-views] [--replace]\n" +
+	"                           shot\n"
 
 const help = usage + `
 Перенос принятой генерации в комплект assets по контракту; @link README.md
 
-positional arguments:
+аргументы:
   shot
 
-options:
-  -h, --help            show this help message and exit
+параметры:
+  -h, --help            показать справку и выйти
   --package PACKAGE     Папка пакета shot_workflow с workflow.json
   --work-dir WORK_DIR   Папка попытки media_request с request.json и
                         attempt.json
@@ -127,9 +126,9 @@ options:
                         assets/replaced/Mxx/<время>
 `
 
-// argError — отказ разбора аргументов: строка использования, «accept_shot: error: …» и код 2.
+// argError — отказ разбора аргументов: строка использования, «accept_shot: ошибка: …» и код 2.
 func argError(message string) toolcli.Output {
-	return toolcli.Output{Code: 2, Stderr: toolrt.TextMode(usage + "accept_shot: error: " + message + "\n")}
+	return toolcli.Output{Code: 2, Stderr: toolrt.TextMode(usage + "accept_shot: ошибка: " + message + "\n")}
 }
 
 func valueError(message string) error { return toolrt.New(toolrt.ValueError, message) }
@@ -221,12 +220,12 @@ func resolvePackage(packageDir, workDir, root string) (attemptData, error) {
 		}
 		result.workflow = dict(value)
 		if result.workflow == nil {
-			return result, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(value))
+			return result, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(value))
 		}
 		directory, _ := toolrt.DictGet(result.workflow, "request_dir", "request")
 		name, ok := directory.(string)
 		if !ok {
-			return result, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(directory))
+			return result, toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(directory))
 		}
 		workDir = toolrt.JoinPath(result.packageDir, name)
 	}
@@ -244,7 +243,7 @@ func resolvePackage(packageDir, workDir, root string) (attemptData, error) {
 	}
 	result.attempt = dict(attempt)
 	if result.attempt == nil {
-		return result, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(attempt))
+		return result, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(attempt))
 	}
 	if !toolrt.Equal(result.attempt.Value("status"), "downloaded") || !toolrt.Truthy(result.attempt.Value("downloads")) {
 		return result, valueError("Попытка не в состоянии downloaded: принимать нечего.")
@@ -363,7 +362,7 @@ func intFloat(value *big.Int) float64 {
 
 // toInt — целое из значения JSON рецепта или аргумента: целое и bool как есть, float с
 // отбрасыванием дробной части (NaN — ValueError, бесконечность — OverflowError), строка — по
-// синтаксису десятичного целого toolrt.ParseIntText (иначе ValueError «invalid literal…»),
+// синтаксису десятичного целого toolrt.ParseIntText (иначе ValueError «не целое число: …»),
 // прочее — TypeError. Тексты отказов зафиксированы эталоном.
 func toInt(value any) (*big.Int, error) {
 	switch item := value.(type) {
@@ -376,21 +375,21 @@ func toInt(value any) (*big.Int, error) {
 		return big.NewInt(0), nil
 	case float64:
 		if math.IsNaN(item) {
-			return nil, toolrt.Raise(toolrt.ValueError, "cannot convert float NaN to integer")
+			return nil, toolrt.Raise(toolrt.ValueError, "NaN нельзя преобразовать в целое число")
 		}
 		if math.IsInf(item, 0) {
-			return nil, toolrt.Raise(toolrt.OverflowError, "cannot convert float infinity to integer")
+			return nil, toolrt.Raise(toolrt.OverflowError, "бесконечность нельзя преобразовать в целое число")
 		}
 		result, _ := new(big.Float).SetFloat64(math.Trunc(item)).Int(nil)
 		return result, nil
 	case string:
 		parsed, ok := toolrt.ParseIntText(item)
 		if !ok {
-			return nil, toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(item))
+			return nil, toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(item))
 		}
 		return parsed.Big(), nil
 	}
-	return nil, toolrt.Raise(toolrt.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", toolrt.TypeName(value))
+	return nil, toolrt.Raise(toolrt.TypeError, "ожидается число или строка, получено: %s", toolrt.TypeName(value))
 }
 
 // planEdit — параметры обрезки из рецепта пробы (того же оригинала) или аргументов; фильтр и длительности
@@ -440,7 +439,7 @@ func planEdit(ctx context.Context, shot, original string, frames toolrt.Int, roo
 		}
 		path, ok := pathValue.(string)
 		if !ok {
-			return editPlan{}, toolrt.Raise(toolrt.TypeError, "expected str, bytes or os.PathLike object, not %s", toolrt.TypeName(pathValue))
+			return editPlan{}, toolrt.Raise(toolrt.TypeError, "путь должен быть строкой, получено: %s", toolrt.TypeName(pathValue))
 		}
 		recipeDigest, err := assetpackage.FileSHA256(path)
 		if err != nil {
@@ -714,7 +713,7 @@ func Accept(ctx context.Context, root, shot string, options Options) (*toolrt.Di
 	}
 	frames64, err := strconv.ParseInt(toolrt.Str(difference), 10, 64)
 	if err != nil {
-		return nil, toolrt.Raise(toolrt.TypeError, "frames must be an integer")
+		return nil, toolrt.Raise(toolrt.TypeError, "число кадров плана должно быть целым")
 	}
 	frames := toolrt.NewInt(frames64)
 	data, err := resolvePackage(options.Package, options.WorkDir, root)
@@ -804,12 +803,9 @@ func Accept(ctx context.Context, root, shot string, options Options) (*toolrt.Di
 		switch {
 		case err == nil:
 			result.Set("observed_credits", credits)
-		case toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError):
+		case toolrt.IsAny(err, toolrt.ValueError, toolrt.OSError, toolrt.KeyError, toolrt.TypeError):
+			// Предупреждение несёт текст ошибки, а не внутренний вид исключения.
 			warnings = append(warnings, "Наблюдение расхода не записано: "+err.Error())
-		case toolrt.IsAny(err, toolrt.KeyError, toolrt.TypeError):
-			var exception *toolrt.Exception
-			errors.As(err, &exception)
-			warnings = append(warnings, "Наблюдение расхода не записано: "+exception.Type)
 		default:
 			return nil, err
 		}
@@ -818,7 +814,7 @@ func Accept(ctx context.Context, root, shot string, options Options) (*toolrt.Di
 	if options.UpdateViews {
 		views := sceneviews.Run(root, []string{})
 		if views.Code != 0 {
-			return nil, toolrt.New("CalledProcessError", "Command 'update_scene_views' returned non-zero exit status "+strconv.Itoa(views.Code)+".")
+			return nil, toolrt.New("CalledProcessError", "команда завершилась с кодом "+strconv.Itoa(views.Code)+": update_scene_views")
 		}
 	}
 	if options.Clean {
@@ -1044,7 +1040,7 @@ func buildKit(ctx context.Context, root, shot string, frames toolrt.Int, staging
 	}
 	lines := toolrt.SplitLines(versionText)
 	if len(lines) == 0 {
-		return nil, "", toolrt.New(toolrt.IndexError, "list index out of range")
+		return nil, "", toolrt.New(toolrt.IndexError, "индекс за пределами списка")
 	}
 	sourceFPS := originalMedia.Value("r_frame_rate")
 	conversion := "Исходная частота кадров совпадает со шкалой."
@@ -1159,7 +1155,7 @@ func Run(ctx context.Context, root string, args []string, localDir string) toolc
 		}
 		number, ok := toolrt.ParseIntText(value(name))
 		if !ok {
-			return argError("argument " + name + ": invalid int value: " + toolrt.Repr(value(name)))
+			return argError("аргумент " + name + ": не целое число: " + toolrt.Repr(value(name)))
 		}
 		holds[name] = number
 	}
@@ -1169,13 +1165,13 @@ func Run(ctx context.Context, root string, args []string, localDir string) toolc
 		if second == "--package" {
 			first = "--work-dir"
 		}
-		return argError("argument " + second + ": not allowed with argument " + first)
+		return argError("аргумент " + second + ": нельзя вместе с " + first)
 	}
 	if !present("--package") && !present("--work-dir") {
-		return argError("one of the arguments --package --work-dir is required")
+		return argError("нужен один из аргументов: --package --work-dir")
 	}
 	if !present("--review") && !present("--cut") && !parsed.Bools["--full"] {
-		return argError("one of the arguments --review --cut --full is required")
+		return argError("нужен один из аргументов: --review --cut --full")
 	}
 	printer := &toolcli.Printer{}
 	options := Options{
@@ -1199,7 +1195,7 @@ func Run(ctx context.Context, root string, args []string, localDir string) toolc
 			for _, part := range parts {
 				number, ok := toolrt.ParseIntText(part)
 				if !ok {
-					return nil, toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(part))
+					return nil, toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(part))
 				}
 				numbers = append(numbers, number)
 			}

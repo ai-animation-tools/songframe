@@ -90,7 +90,7 @@ func (s *valueSet) add(value any) {
 func trimmed(value any, name string) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", &dynvalue.TypeError{Message: name + ".trim is not a function"}
+		return "", &dynvalue.TypeError{Message: name + ": ожидается строка"}
 	}
 	return dynvalue.Trim(text), nil
 }

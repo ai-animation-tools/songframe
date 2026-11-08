@@ -9,9 +9,8 @@
 // accept_shot (internal/acceptshot): рецепт одного плана даёт ей фильтр рендера.
 //
 // Ошибки — исключения toolrt, тексты зафиксированы эталоном build-review: Run печатает текст
-// ValueError, остальные
-// ожидаемые ошибки (KeyError, TypeError, OSError, InvalidOperation…) — общим текстом без сырого
-// вывода, прочее — трассировкой. FFmpeg и ffprobe запускаются через internal/mediacmd.
+// ValueError, остальные ожидаемые ошибки (KeyError, TypeError, OSError, InvalidOperation…) —
+// общим текстом без сырого вывода, прочее — необработанной ошибкой «Ошибка: текст». FFmpeg и ffprobe запускаются через internal/mediacmd.
 package buildreview
 
 import (
@@ -78,19 +77,11 @@ func valueError(message string) error { return toolrt.New(toolrt.ValueError, mes
 // TempDir — временная папка ОС, куда тоже разрешено сохранять пробу (подменяется в тестах).
 var TempDir = os.TempDir
 
-// pathClass — имя типа пути ОС для текста TypeError склейки пути (зафиксировано эталоном).
-func pathClass() string {
-	if os.PathSeparator == '\\' {
-		return "WindowsPath"
-	}
-	return "PosixPath"
-}
-
 // joinTyped склеивает root и name; не строка — TypeError склейки пути.
 func joinTyped(root string, name any) (string, error) {
 	text, ok := name.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: '%s' and '%s'", pathClass(), toolrt.TypeName(name))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(name))
 	}
 	return toolrt.JoinPath(root, text), nil
 }
@@ -734,7 +725,7 @@ func checkCard(root, sid, path string, receipt *any, scenesPath string) error {
 			}
 			table, ok := hashes.(*toolrt.Dict)
 			if !ok {
-				return toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'items'", toolrt.TypeName(hashes))
+				return toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(hashes))
 			}
 			for _, key := range table.Keys() {
 				reference, err := source(root, key)
@@ -805,7 +796,7 @@ func availableFrames(ctx context.Context, path string) (*big.Int, error) {
 	if toolrt.Equal(rate, "30/1") && digits {
 		value, ok := toolrt.ParseIntText(text)
 		if !ok {
-			return nil, toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(text))
+			return nil, toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(text))
 		}
 		return bigInt(value), nil
 	}
@@ -937,7 +928,7 @@ func Build(ctx context.Context, spec any, output, root string, planOnly bool) (*
 	}
 	lines := toolrt.SplitLines(versionText)
 	if len(lines) == 0 {
-		return nil, toolrt.New(toolrt.IndexError, "list index out of range")
+		return nil, toolrt.New(toolrt.IndexError, "индекс за пределами списка")
 	}
 	plan.Set("ffmpeg_version", lines[0])
 	plan.Set("encoding", encoding())
@@ -1095,7 +1086,7 @@ func checkResult(ctx context.Context, target string, total *big.Int) error {
 	}
 	count, ok := toolrt.ParseIntText(toolrt.Str(values[0]))
 	if !ok {
-		return toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(values[0]))
+		return toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(values[0]))
 	}
 	if bigInt(count).Cmp(total) != 0 || !toolrt.Equal(values[1], "30/1") || !toolrt.Equal(values[2], toolrt.NewInt(1920)) || !toolrt.Equal(values[3], toolrt.NewInt(1080)) {
 		return valueError(textBadFormat)
@@ -1141,8 +1132,8 @@ var Parser = toolrt.ArgParser{
 }
 
 // usage — строка использования: обязательная группа в круглых скобках, --output без скобок.
-const usage = "usage: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC) --output\n" +
-	"                    OUTPUT [--plan-only]\n"
+const usage = "использование: build_review [-h] (--shots SHOTS [SHOTS ...] | --spec SPEC)\n" +
+	"                            --output OUTPUT [--plan-only]\n"
 
 // fixUsage заменяет usage общего парсера на usage в справке и ошибках разбора.
 func fixUsage(text string) string {
@@ -1151,7 +1142,7 @@ func fixUsage(text string) string {
 
 // argError — ошибка разбора аргументов (код 2) с usage.
 func argError(message string) toolcli.Output {
-	return toolcli.Output{Code: 2, Stderr: toolrt.TextMode(usage + "build_review: error: " + message + "\n")}
+	return toolcli.Output{Code: 2, Stderr: toolrt.TextMode(usage + "build_review: ошибка: " + message + "\n")}
 }
 
 // Run — инструмент build_review на разрешённом корне проекта: спецификация из --spec или
@@ -1163,12 +1154,12 @@ func Run(ctx context.Context, root string, args []string) toolcli.Output {
 	}
 	outputs, hasOutput := parsed.Values["--output"]
 	if !hasOutput {
-		return argError("the following arguments are required: --output")
+		return argError("обязательные аргументы: --output")
 	}
 	shots, hasShots := parsed.Values["--shots"]
 	specs, hasSpec := parsed.Values["--spec"]
 	if !hasShots && !hasSpec {
-		return argError("one of the arguments --shots --spec is required")
+		return argError("нужен один из аргументов: --shots --spec")
 	}
 	printer := &toolcli.Printer{}
 	result, err := func() (*toolrt.Dict, error) {

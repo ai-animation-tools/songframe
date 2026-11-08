@@ -138,7 +138,7 @@ func item(container any, key string) (any, error) { return toolrt.Item(container
 func text(value any) (string, error) {
 	result, ok := value.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, `can only concatenate str (not "%s") to str`, toolrt.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "к строке можно прибавить только строку, получено: %s", toolrt.TypeName(value))
 	}
 	return result, nil
 }
@@ -252,7 +252,7 @@ func recoverJournals(root string) error {
 		if toolrt.Equal(state, "publishing") {
 			journal, ok := value.(*toolrt.Dict)
 			if !ok {
-				return toolrt.Raise(toolrt.TypeError, "'%s' object does not support item assignment", toolrt.TypeName(value))
+				return toolrt.Raise(toolrt.TypeError, "нельзя изменить элемент: %s", toolrt.TypeName(value))
 			}
 			if err := restoreHook(filepath.Dir(path), journal, root); err != nil {
 				return err
@@ -654,9 +654,9 @@ func toInt(value any) (toolrt.Int, error) {
 		if parsed, ok := toolrt.ParseIntText(number); ok {
 			return parsed, nil
 		}
-		return toolrt.Int{}, toolrt.Raise(toolrt.ValueError, "invalid literal for int() with base 10: %s", toolrt.Repr(number))
+		return toolrt.Int{}, toolrt.Raise(toolrt.ValueError, "не целое число: %s", toolrt.Repr(number))
 	}
-	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "int() argument must be a string, a bytes-like object or a real number, not '%s'", toolrt.TypeName(value))
+	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "ожидается число или строка, получено: %s", toolrt.TypeName(value))
 }
 
 // editManifest — копия принятого комплекта с новым accepted_edit по участку item
@@ -923,7 +923,7 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 		if lines := toolrt.SplitLines(version); len(lines) > 0 {
 			version = lines[0]
 		} else {
-			return toolrt.New(toolrt.IndexError, "list index out of range")
+			return toolrt.New(toolrt.IndexError, "индекс за пределами списка")
 		}
 		clips := draft.Value("clips").([]any)
 		planShots := prepared.plan.Value("shots").([]any)
@@ -1008,7 +1008,7 @@ func Apply(ctx context.Context, draftValue any, rootPath string, updateViews boo
 			// Ненулевой код update_scene_views — CalledProcessError: CLI показывает его скрытым
 			// общим текстом.
 			if output := sceneviews.Run(stage, []string{}); output.Code != 0 {
-				return toolrt.New("CalledProcessError", "update_scene_views returned non-zero exit status")
+				return toolrt.New("CalledProcessError", "обновление представлений завершилось с ошибкой")
 			}
 		}
 		names := map[string]bool{sceneregistry.ScenesPath: true, sceneregistry.ProductionStatus: true}

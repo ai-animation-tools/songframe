@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Single '}' encountered in format string\n",
+  "stderr": "в шаблоне одиночная «}»\n",
   "unhandled": false
 }

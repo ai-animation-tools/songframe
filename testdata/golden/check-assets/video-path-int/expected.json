@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Ошибка: unsupported operand type(s) for /: 'PosixPath' and 'целое число'\n",
+  "stderr": "Ошибка: операция «/» неприменима: путь и целое число\n",
   "unhandled": true
 }

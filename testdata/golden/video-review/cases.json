@@ -4580,7 +4580,7 @@
             "frames": [],
             "stale": false,
             "canStart": false,
-            "reason": "workflow.stage.startsWith is not a function",
+            "reason": "workflow.stage: ожидается строка",
             "error": null,
             "durationSeconds": null
           }

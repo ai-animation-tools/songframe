@@ -123,7 +123,7 @@ func enter(root string) func() {
 func pathText(value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "expected str, bytes or os.PathLike object, not %s", toolrt.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "путь должен быть строкой, получено: %s", toolrt.TypeName(value))
 	}
 	return text, nil
 }
@@ -167,10 +167,14 @@ func relative(path, root string) (string, error) {
 	return filepath.ToSlash(name), nil
 }
 
-// attributeError — AttributeError вызова метода словаря у значения другого типа: необработанное
-// исключение (трассировка, код 1).
+// attributeError — AttributeError вызова метода у значения другого вида: необработанная ошибка
+// (код 1). Метод списка extend ожидает список, остальные методы (get, update, setdefault) — объект.
 func attributeError(value any, method string) error {
-	return toolrt.New("AttributeError", "'"+toolrt.TypeName(value)+"' object has no attribute '"+method+"'")
+	expected := "объект"
+	if method == "extend" {
+		expected = "список"
+	}
+	return toolrt.New(toolrt.AttributeError, "ожидается "+expected+", получено: "+toolrt.TypeName(value))
 }
 
 // dictOf — значение как словарь для вызова метода method.
@@ -187,7 +191,7 @@ func wholeNumber(value any) (toolrt.Int, error) {
 	if number, ok := value.(toolrt.Int); ok {
 		return number, nil
 	}
-	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "expected int, not %s", toolrt.TypeName(value))
+	return toolrt.Int{}, toolrt.Raise(toolrt.TypeError, "ожидается целое число, получено: %s", toolrt.TypeName(value))
 }
 
 // recipeFields — обязательный набор полей каждого режима рецепта.
@@ -459,7 +463,7 @@ func ffmpegVersion(ctx context.Context) (string, error) {
 	}
 	lines := toolrt.SplitLines(text)
 	if len(lines) == 0 {
-		return "", toolrt.New("IndexError", "list index out of range")
+		return "", toolrt.New(toolrt.IndexError, "индекс за пределами списка")
 	}
 	return lines[0], nil
 }

@@ -57,15 +57,6 @@ type bundleCase struct {
 	} `json:"expected"`
 }
 
-// fixedReadme приводит README пакета из эталона к текущему тексту: файлы лежат в папке проекта,
-// а не в репозитории, примера из чужого клипа нет, есть пояснение о переносимости
-// timeline.fcpxml.
-func fixedReadme(text string) string {
-	text = strings.ReplaceAll(text, "- `media/` — копии исходников, если пакет собран с `--copy`.", "- `media/` — копии исходников, если пакет собран с `--copy`; `timeline.fcpxml` ссылается на них относительными путями, поэтому папку пакета можно передавать целиком.")
-	text = strings.ReplaceAll(text, "относительны к корню репозитория;", "относительны к корню папки проекта;")
-	return strings.ReplaceAll(text, "генерации (например, вступление из M13);", "генерации;")
-}
-
 var relativeSource = regexp.MustCompile(`src="([^"]*)"`)
 
 // absoluteSources возвращает относительные src переносимого FCPXML к абсолютному URI файла:
@@ -298,7 +289,7 @@ func TestExportGolden(t *testing.T) {
 						t.Errorf("%s: ожидалась папка", path)
 					}
 				case want.Text != nil:
-					expected := fixedReadme(*want.Text)
+					expected := *want.Text
 					if strings.HasSuffix(path, ".fcpxml") {
 						content = absoluteSources(content, filepath.Dir(filepath.Join(tmp, filepath.FromSlash(path))))
 					}

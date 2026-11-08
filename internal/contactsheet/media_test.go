@@ -39,7 +39,7 @@ func TestRoundedProduct(t *testing.T) {
 			t.Errorf("%s × %s: %v %v, ожидалось %s", item.duration, item.rate, got, err, item.want)
 		}
 	}
-	if _, err := roundedProduct(decimal("NaN"), decimal("1")); err == nil || err.Error() != "cannot convert NaN to integer" {
+	if _, err := roundedProduct(decimal("NaN"), decimal("1")); err == nil || err.Error() != "NaN нельзя преобразовать в целое число" {
 		t.Errorf("NaN: %v", err)
 	}
 	if _, err := roundedProduct(decimal("Infinity"), decimal("0")); !toolrt.Is(err, toolrt.InvalidOperation) {

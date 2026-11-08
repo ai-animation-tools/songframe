@@ -1,6 +1,6 @@
 {
   "code": 1,
   "stdout": "",
-  "stderr": "Ошибка: expected string or bytes-like object, got 'целое число'\n",
+  "stderr": "Ошибка: ожидается строка, получено: целое число\n",
   "unhandled": true
 }

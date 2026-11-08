@@ -35,7 +35,7 @@ func FromSources(manifest, existing any, defaults Defaults) (*dynvalue.Object, e
 	if cast == nil {
 		if dynvalue.Truthy(existing) {
 			// Истинное значение не-объект (строка, число) — TypeError: у него нет списка entities.
-			return nil, &dynvalue.TypeError{Message: "cast.entities.map is not a function"}
+			return nil, &dynvalue.TypeError{Message: "cast.entities: ожидается список"}
 		}
 		cast = dynvalue.NewObject()
 		cast.Set("schema_version", 1.0)
@@ -44,7 +44,7 @@ func FromSources(manifest, existing any, defaults Defaults) (*dynvalue.Object, e
 	}
 	entities, ok := cast.Value("entities").(*dynvalue.Array)
 	if !ok {
-		return nil, &dynvalue.TypeError{Message: "cast.entities.map is not a function"}
+		return nil, &dynvalue.TypeError{Message: "cast.entities: ожидается список"}
 	}
 	// byId — сущности по коду: при повторе кода побеждает последняя сущность.
 	type pair struct {
@@ -74,7 +74,7 @@ func FromSources(manifest, existing any, defaults Defaults) (*dynvalue.Object, e
 	for _, ref := range references {
 		files, ok := dynvalue.AsArray(dynvalue.Get(ref, "files"))
 		if !ok {
-			return nil, &dynvalue.TypeError{Message: "ref.files.map is not a function"}
+			return nil, &dynvalue.TypeError{Message: "ref.files: ожидается список"}
 		}
 		images := make([]any, len(files))
 		for index, file := range files {
@@ -89,7 +89,7 @@ func FromSources(manifest, existing any, defaults Defaults) (*dynvalue.Object, e
 			// Список source — доступные виды, а images — сохранённый выбор; порядок и пустой выбор не сбрасываем.
 			object, ok := dynvalue.AsObject(entity)
 			if !ok {
-				return nil, &dynvalue.TypeError{Message: "Cannot set properties of non-object entity (setting 'appearance')"}
+				return nil, &dynvalue.TypeError{Message: "нельзя задать поле 'appearance': значение не объект"}
 			}
 			object.Set("appearance", dynvalue.Coalesce(dynvalue.Get(ref, "description"), ""))
 			continue
@@ -328,8 +328,8 @@ func restore(project string, changes []fileChange) error {
 }
 
 // RestoreFailed — referenceImageTexts.restoreFailed: откат после ошибки не удался, прежние данные
-// оставлены в резерве backup. reason выводится с префиксом «Error: ». Текст общий
+// оставлены в резерве backup, после двоеточия — причина reason. Текст общий
 // для публикации описаний и сохранения исходников с кастингом (internal/referenceimage).
 func RestoreFailed(backup string, reason error) error {
-	return fmt.Errorf("%s%s: Error: %v", textRestoreFailedPrefix, backup, reason)
+	return fmt.Errorf("%s%s: %v", textRestoreFailedPrefix, backup, reason)
 }

@@ -11421,7 +11421,7 @@
  },
  {
   "name": "broken-image",
-  "description": "Не изображение: PIL.UnidentifiedImageError.",
+  "description": "Не изображение: не удалось распознать изображение.",
   "covers": [
    "UnidentifiedImageError"
   ],
@@ -11569,8 +11569,8 @@
   },
   "expected": {
    "error": {
-    "type": "PIL.UnidentifiedImageError",
-    "message": "cannot identify image file '<project>/source/broken.png'"
+    "type": "UnidentifiedImageError",
+    "message": "не удалось распознать изображение: '<project>/source/broken.png'"
    },
    "result": null,
    "texts": [
@@ -11943,7 +11943,7 @@
   "name": "number-path",
   "description": "Путь референса не строка: TypeError деления пути.",
   "covers": [
-   "TypeError Path"
+   "TypeError пути"
   ],
   "call": "render_card",
   "shot": {
@@ -12090,7 +12090,7 @@
   "expected": {
    "error": {
     "type": "TypeError",
-    "message": "unsupported operand type(s) for /: 'PosixPath' and 'целое число'"
+    "message": "операция «/» неприменима: путь и целое число"
    },
    "result": null,
    "texts": [
@@ -12777,7 +12777,7 @@
  },
  {
   "name": "number-action",
-  "description": "Действие числом: AttributeError split.",
+  "description": "Действие числом: AttributeError «ожидается строка».",
   "covers": [
    "AttributeError"
   ],
@@ -12928,7 +12928,7 @@
   "expected": {
    "error": {
     "type": "AttributeError",
-    "message": "'целое число' object has no attribute 'split'"
+    "message": "ожидается строка, получено: целое число"
    },
    "result": null,
    "texts": [
@@ -14962,7 +14962,7 @@
   "expected": {
    "error": {
     "type": "TypeError",
-    "message": "unsupported format string passed to null.__format__"
+    "message": "формат неприменим к значению: null"
    },
    "result": null,
    "texts": [
@@ -15087,7 +15087,7 @@
   "expected": {
    "error": {
     "type": "ValueError",
-    "message": "Unknown format code 'g' for object of type 'str'"
+    "message": "формат «g» неприменим к строке"
    },
    "result": null,
    "texts": [

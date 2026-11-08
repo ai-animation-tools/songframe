@@ -100,7 +100,7 @@ func copyLevels(state *dynvalue.Object) *dynvalue.Object {
 // зафиксированным эталонами.
 func cloneState(state tracked, ok bool) (tracked, error) {
 	if !ok {
-		return tracked{}, &dynvalue.TypeError{Message: "Cannot convert undefined or null to object"}
+		return tracked{}, &dynvalue.TypeError{Message: "ожидается объект, получено: null"}
 	}
 	return tracked{values: copyLevels(state.values), sources: copyLevels(state.sources)}, nil
 }

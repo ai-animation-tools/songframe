@@ -164,10 +164,11 @@ var yarnBuiltins = map[string]bool{
 	"npm": true, "cache": true, "dedupe": true, "node": true, "version": true, "init": true,
 }
 
-// historyMarker находит упоминания прежней версии приложения. История проекта живёт только в
-// разделе «История» корневого README (правило AGENTS.md «Документация и код»): в остальных
-// документах, коде и комментариях текст описывает то, что есть сейчас.
-var historyMarker = regexp.MustCompile(`Electron|634fd94`)
+// historyMarker находит следы прежней версии приложения: её стек и инструменты, прежние имена
+// модуля и переменных. История проекта живёт только в разделе «История» корневого README
+// (правило AGENTS.md «Документация и код»): в остальных документах, коде, комментариях и
+// эталонах текст описывает то, что есть сейчас.
+var historyMarker = regexp.MustCompile(`Electron|634fd94|Python|python3|\.py\b|__pycache__|songframe-go|SONGFRAME_GO_|Go-верси|src/main/`)
 
 // historySection — заголовок раздела README, где история разрешена.
 const historySection = "## История"
@@ -248,7 +249,7 @@ func sourceIndex(root string) (map[string]bool, error) {
 	vars := map[string]bool{}
 	exts := map[string]bool{
 		".go": true, ".ts": true, ".tsx": true, ".js": true, ".mjs": true, ".sh": true,
-		".py": true, ".yml": true, ".yaml": true, ".json": true, ".nsi": true, ".nsh": true,
+		".yml": true, ".yaml": true, ".json": true, ".nsi": true, ".nsh": true,
 		".cmd": true, ".ps1": true, "": true,
 	}
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
@@ -461,15 +462,17 @@ func checkLink(root, rel, dir, target string, idx anchorIndex, add func(string, 
 	}
 }
 
-// sourceExts — расширения исходников, комментарии и тексты которых проверяет CheckSources.
+// sourceExts — расширения текстовых файлов, которые проверяет CheckSources: исходники, рецепты
+// и данные эталонов.
 var sourceExts = map[string]bool{
-	".go": true, ".ts": true, ".tsx": true, ".js": true, ".mjs": true, ".sh": true, ".py": true,
+	".go": true, ".ts": true, ".tsx": true, ".js": true, ".mjs": true, ".sh": true,
 	".yml": true, ".yaml": true, ".nsi": true, ".nsh": true, ".css": true, ".html": true,
+	".json": true, ".txt": true,
 }
 
-// CheckSources находит упоминания прежней версии в исходниках репозитория. Эталоны и fixtures
-// (каталоги testdata), сгенерированные bindings и сам пакет repodocs, где задано правило, не
-// проверяются.
+// CheckSources находит следы прежней версии в исходниках, рецептах и эталонах репозитория, а
+// также файлы на языке прежних инструментов (*.py). Сгенерированные bindings и сам пакет
+// repodocs, где задано правило, не проверяются.
 func CheckSources(root string) ([]Problem, error) {
 	var problems []Problem
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
@@ -482,9 +485,13 @@ func CheckSources(root string) ([]Problem, error) {
 		}
 		rel = filepath.ToSlash(rel)
 		if d.IsDir() {
-			if p != root && (skippedDirs[d.Name()] || d.Name() == "testdata" || rel == "internal/repodocs") {
+			if p != root && (skippedDirs[d.Name()] || rel == "internal/repodocs") {
 				return filepath.SkipDir
 			}
+			return nil
+		}
+		if filepath.Ext(d.Name()) == ".py" {
+			problems = append(problems, Problem{rel, 0, "файл прежних инструментов: сборка и проверки пишутся на Go"})
 			return nil
 		}
 		if d.Type()&fs.ModeSymlink != 0 || !sourceExts[filepath.Ext(d.Name())] && d.Name() != "Taskfile.yml" {

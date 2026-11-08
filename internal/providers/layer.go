@@ -536,7 +536,6 @@ func (l *Layer) versionProbe() (bool, string, int) {
 	if message := dynvalue.Trim(stderr); message != "" {
 		return false, message, elapsed
 	}
-	// Текст ошибки без stderr: «Command failed: <команда>» и пустой stderr с новой строки
-	// (формат зафиксирован эталоном «Среды»).
-	return false, "Command failed: " + command + " --version\n", elapsed
+	// Команда завершилась с ошибкой и ничего не написала в stderr: деталь называет саму команду.
+	return false, "Команда завершилась с ошибкой: " + command + " --version", elapsed
 }

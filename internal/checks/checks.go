@@ -92,8 +92,9 @@ func step(project string, info Info, options Options, continueOnFailure bool) jo
 			if err != nil {
 				return err
 			}
-			// Инструменты печатают stdout до stderr (отказы parser.exit и трассировка — в конце),
-			// поэтому последовательная запись даёт тот же порядок, что вывод процесса без буфера.
+			// Инструменты печатают stdout до stderr (отказы разбора аргументов и необработанные
+			// ошибки — в конце), поэтому последовательная запись даёт тот же порядок, что вывод
+			// процесса без буфера.
 			journal.Log(result.Stdout)
 			journal.Log(result.Stderr)
 			if result.Code == nil || *result.Code == 0 {

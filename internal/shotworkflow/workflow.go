@@ -42,9 +42,9 @@ func setItem(value any, key string, new any) error {
 	dict, ok := value.(*toolrt.Dict)
 	if !ok {
 		if _, isList := value.([]any); isList {
-			return toolrt.Raise(toolrt.TypeError, "list indices must be integers or slices, not str")
+			return toolrt.Raise(toolrt.TypeError, "индекс списка должен быть целым числом, получено: строка")
 		}
-		return toolrt.Raise(toolrt.TypeError, "'%s' object does not support item assignment", toolrt.TypeName(value))
+		return toolrt.Raise(toolrt.TypeError, "нельзя изменить элемент: %s", toolrt.TypeName(value))
 	}
 	dict.Set(key, new)
 	return nil
@@ -54,7 +54,7 @@ func setItem(value any, key string, new any) error {
 func pathPart(directory string, value any) (string, error) {
 	text, ok := value.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(value))
+		return "", toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(value))
 	}
 	return toolrt.JoinPath(directory, text), nil
 }
@@ -512,7 +512,7 @@ func findKeyframe(data *toolrt.Dict, id any) (*toolrt.Dict, error) {
 		if toolrt.Equal(value, id) {
 			dict, ok := keyframe.(*toolrt.Dict)
 			if !ok {
-				return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'update'", toolrt.TypeName(keyframe))
+				return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(keyframe))
 			}
 			return dict, nil
 		}
@@ -528,7 +528,7 @@ func approvedFrames(data *toolrt.Dict) (*toolrt.Dict, error) {
 	}
 	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.TypeError, "'%s' object does not support item assignment", toolrt.TypeName(value))
+		return nil, toolrt.Raise(toolrt.TypeError, "нельзя изменить элемент: %s", toolrt.TypeName(value))
 	}
 	return dict, nil
 }
@@ -637,7 +637,7 @@ func (t *workflowTool) approvePromptData(directory string, data *toolrt.Dict, fi
 		for index, id := range pending {
 			text, ok := id.(string)
 			if !ok {
-				return nil, nil, toolrt.Raise(toolrt.TypeError, "sequence item %d: expected str instance, %s found", index, toolrt.TypeName(id))
+				return nil, nil, toolrt.Raise(toolrt.TypeError, "элемент %d: ожидается строка, получено: %s", index, toolrt.TypeName(id))
 			}
 			names[index] = text
 		}
@@ -866,7 +866,7 @@ func (t *workflowTool) decide(dirArg, verdict, note, scope string) (*toolrt.Dict
 			for index, option := range list {
 				text, ok := option.(string)
 				if !ok {
-					return nil, toolrt.Raise(toolrt.TypeError, "sequence item %d: expected str instance, %s found", index, toolrt.TypeName(option))
+					return nil, toolrt.Raise(toolrt.TypeError, "элемент %d: ожидается строка, получено: %s", index, toolrt.TypeName(option))
 				}
 				names[index] = text
 			}

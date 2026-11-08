@@ -433,7 +433,7 @@ func charactersView(prepared *Prepared) (string, error) {
 	}
 	text, ok := visual.(string)
 	if !ok {
-		return "", toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'strip'", toolrt.TypeName(visual))
+		return "", toolrt.Raise(toolrt.AttributeError, "ожидается строка, получено: %s", toolrt.TypeName(visual))
 	}
 	return banner("../scenes.json") + "\n" + toolrt.Strip(text) + view, nil
 }

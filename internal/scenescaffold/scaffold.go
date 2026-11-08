@@ -37,7 +37,7 @@ const (
 
 // maxPieces — предел числа равных кусков одного участка: такой список строился бы минутами и
 // исчерпал бы память (шаг в доли кадра на длинном треке), поэтому инструмент сразу отказывает
-// MemoryError.
+// необработанной ошибкой «нехватка памяти».
 const maxPieces = 100_000_000
 
 // frame — номер кадра: seconds как дробное × 30, округлённое до целого с половиной к чётному.
@@ -52,7 +52,7 @@ func frame(seconds any) (int64, error) {
 // trueDiv — частное a / b целых как корректно округлённое float64; деление на ноль — ZeroDivisionError.
 func trueDiv(a, b int64) (float64, error) {
 	if b == 0 {
-		return 0, toolrt.Raise(toolrt.ZeroDivisionError, "division by zero")
+		return 0, toolrt.Raise(toolrt.ZeroDivisionError, "деление на ноль")
 	}
 	value, _ := new(big.Rat).SetFrac(big.NewInt(a), big.NewInt(b)).Float64()
 	return value, nil
@@ -131,7 +131,7 @@ func abs(value float64) float64 {
 func asDict(value any) (*toolrt.Dict, error) {
 	dict, ok := value.(*toolrt.Dict)
 	if !ok {
-		return nil, toolrt.Raise(toolrt.AttributeError, "'%s' object has no attribute 'get'", toolrt.TypeName(value))
+		return nil, toolrt.Raise(toolrt.AttributeError, "ожидается объект, получено: %s", toolrt.TypeName(value))
 	}
 	return dict, nil
 }
@@ -175,7 +175,7 @@ func maxShotSeconds(part *toolrt.Dict) (float64, error) {
 // pieces — start + round(length * index / count) для index от 1 до count-1.
 func pieces(start, length, count int64) ([]int64, error) {
 	if count > maxPieces {
-		return nil, toolrt.New("MemoryError", "")
+		return nil, toolrt.New("MemoryError", "нехватка памяти: участок делится на слишком много частей")
 	}
 	result := []int64{}
 	for index := int64(1); index < count; index++ {
@@ -246,7 +246,7 @@ func ShotBoundaries(part *toolrt.Dict, lines []any, endFrame int64) ([]int64, []
 			return nil, nil, err
 		}
 		if step == 0 {
-			return nil, nil, toolrt.Raise(toolrt.ZeroDivisionError, "float division by zero")
+			return nil, nil, toolrt.Raise(toolrt.ZeroDivisionError, "деление на ноль")
 		}
 		rounded, err := toolrt.FloatToInt(seconds/step, true)
 		if err != nil {

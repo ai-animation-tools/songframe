@@ -390,7 +390,7 @@ func ProjectShotAcceptance(root string, data *toolrt.Dict) (Acceptance, error) {
 		}
 		id, ok := idValue.(string)
 		if !ok {
-			return Acceptance{}, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for /: 'PosixPath' and '%s'", toolrt.TypeName(idValue))
+			return Acceptance{}, toolrt.Raise(toolrt.TypeError, "операция «/» неприменима: путь и %s", toolrt.TypeName(idValue))
 		}
 		path := filepath.Join(root, "assets", "shots", id, "manifest.json")
 		if toolrt.IsFile(path) {

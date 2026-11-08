@@ -9,25 +9,17 @@ import (
 	"math"
 	"math/big"
 	"path/filepath"
-	"runtime"
 
 	"songframe/internal/mediacmd"
 	"songframe/internal/toolcli"
 	"songframe/internal/toolrt"
 )
 
-// pathType — имя класса пути ОС в текстах TypeError соединения путей.
-var pathType = func() string {
-	if runtime.GOOS == "windows" {
-		return "WindowsPath"
-	}
-	return "PosixPath"
-}()
-
-// Виды исключений записи WAV и упаковки заголовка: необработанные, печатаются трассировкой.
+// Виды исключений toolrt для параметров WAV и полей заголовка: они не входят в ожидаемые отказы
+// и печатаются необработанной ошибкой.
 const (
-	waveError   = "wave.Error"
-	structError = "struct.error"
+	waveError   = "WaveParameterError"
+	structError = "WaveHeaderError"
 )
 
 // verify — повтор среза по рецепту в памяти и сверка SHA-256 с записанным; рядом сохранённый WAV
@@ -129,11 +121,11 @@ func verify(ctx context.Context, root, recipePath string) (*toolrt.Dict, error) 
 	), nil
 }
 
-// repeated — результат повторения последовательности (str или list на целое): содержимое для
-// дальнейшего хода не нужно, важен только тип в текстах следующих TypeError.
+// repeated — результат повторения последовательности (строка или список на целое): содержимое для
+// дальнейшего хода не нужно, важен только вид значения в текстах следующих TypeError.
 type repeated struct{ kind string }
 
-// typeName — имя типа значения в текстах исключений (toolrt.TypeName) с учётом repeated.
+// typeName — вид значения в текстах исключений (toolrt.TypeName) с учётом repeated.
 func typeName(value any) string {
 	if item, ok := value.(repeated); ok {
 		return item.kind
@@ -141,13 +133,12 @@ func typeName(value any) string {
 	return toolrt.TypeName(value)
 }
 
-// sequenceKind — имя типа последовательности (str или list), если value — строка, список или повтор.
+// sequenceKind — вид последовательности (toolrt.TypeName строки или списка), если value — строка,
+// список или повтор.
 func sequenceKind(value any) (string, bool) {
 	switch item := value.(type) {
-	case string:
-		return "str", true
-	case []any:
-		return "list", true
+	case string, []any:
+		return toolrt.TypeName(item), true
 	case repeated:
 		return item.kind, true
 	}
@@ -155,9 +146,9 @@ func sequenceKind(value any) (string, bool) {
 }
 
 // multiply — произведение значений рецепта: целые точно (bool — 0/1), с float —
-// числом float; последовательность на целое — повтор, на нецелое — «can't multiply sequence»;
-// прочее — «unsupported operand type(s) for *». Содержимое повтора не строится: далее оно
-// годится только для TypeError среза.
+// числом float; последовательность на целое — повтор, на нецелое — TypeError «последовательность
+// можно умножить только на целое число»; прочее — «операция «*» неприменима». Содержимое повтора
+// не строится: далее оно годится только для TypeError среза.
 func multiply(left, right any) (any, error) {
 	a, leftInt := index(left)
 	b, rightInt := index(right)
@@ -181,15 +172,15 @@ func multiply(left, right any) (any, error) {
 		if rightInt {
 			return repeated{kind}, nil
 		}
-		return nil, toolrt.Raise(toolrt.TypeError, "can't multiply sequence by non-int of type '%s'", typeName(right))
+		return nil, toolrt.Raise(toolrt.TypeError, "последовательность можно умножить только на целое число, получено: %s", typeName(right))
 	}
 	if kind, ok := sequenceKind(right); ok {
 		if leftInt {
 			return repeated{kind}, nil
 		}
-		return nil, toolrt.Raise(toolrt.TypeError, "can't multiply sequence by non-int of type '%s'", typeName(left))
+		return nil, toolrt.Raise(toolrt.TypeError, "последовательность можно умножить только на целое число, получено: %s", typeName(left))
 	}
-	return nil, toolrt.Raise(toolrt.TypeError, "unsupported operand type(s) for *: '%s' and '%s'", typeName(left), typeName(right))
+	return nil, toolrt.Raise(toolrt.TypeError, "операция «*» неприменима: %s и %s", typeName(left), typeName(right))
 }
 
 // floatOperand — число для арифметики с float: целое переводится в float (OverflowError для
@@ -210,7 +201,7 @@ func slice(data []byte, start, stop any) ([]byte, error) {
 	a, okA := index(start)
 	b, okB := index(stop)
 	if !okA || !okB {
-		return nil, toolrt.New(toolrt.TypeError, "slice indices must be integers or None or have an __index__ method")
+		return nil, toolrt.New(toolrt.TypeError, "границы среза должны быть целыми числами")
 	}
 	length := big.NewInt(int64(len(data)))
 	clamp := func(value *big.Int) int {
@@ -236,19 +227,19 @@ func slice(data []byte, start, stop any) ([]byte, error) {
 // waveBytes — файл WAV: 44-байтный заголовок PCM (каналы, ширина сэмпла, частота) и данные;
 // байты зафиксированы эталоном testdata/golden/cut-speech. Каналы и ширина здесь уже целые
 // (иначе раньше упал бы срез). Неверный параметр сообщается при завершении записи: у первого
-// незаданного параметра — «… not specified» (waveError); поле заголовка вне диапазона 16 или 32
+// незаданного параметра — «не задано …» (waveError); поле заголовка вне диапазона 16 или 32
 // бит — structError. rateErr — ошибка чтения sample_rate: она тоже заменяется отказом
-// «sampling rate not specified».
+// «не задана частота дискретизации».
 func waveBytes(channelsValue, widthValue, rate any, rateErr error, data []byte) ([]byte, error) {
 	count, _ := index(channelsValue)
 	width, _ := index(widthValue)
 	if count.Sign() < 1 {
-		return nil, toolrt.New(waveError, "# channels not specified")
+		return nil, toolrt.New(waveError, "не задано число каналов")
 	}
 	if width.Sign() < 1 || width.Cmp(big.NewInt(4)) > 0 {
-		return nil, toolrt.New(waveError, "sample width not specified")
+		return nil, toolrt.New(waveError, "не задана разрядность")
 	}
-	unspecifiedRate := toolrt.New(waveError, "sampling rate not specified")
+	unspecifiedRate := toolrt.New(waveError, "не задана частота дискретизации")
 	if rateErr != nil {
 		return nil, unspecifiedRate
 	}
@@ -273,9 +264,9 @@ func waveBytes(channelsValue, widthValue, rate any, rateErr error, data []byte) 
 		{new(big.Int).Add(initial, big.NewInt(36)), true}, {count, false}, {framerate, true}, {byteRate, true}, {frameSize, false}, {bits, false},
 	}
 	for _, field := range fields {
-		limit, format := big.NewInt(math.MaxUint16), "'H' format requires 0 <= number <= 65535"
+		limit, format := big.NewInt(math.MaxUint16), "поле заголовка WAV вне диапазона 0–65535"
 		if field.wide {
-			limit, format = big.NewInt(math.MaxUint32), "'L' format requires 0 <= number <= 4294967295"
+			limit, format = big.NewInt(math.MaxUint32), "поле заголовка WAV вне диапазона 0–4294967295"
 		}
 		if field.value.Cmp(limit) > 0 {
 			return nil, toolrt.New(structError, format)

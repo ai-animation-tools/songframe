@@ -60,8 +60,8 @@ func reply(writer http.ResponseWriter, status int, text string) {
 // ServeHTTP принимает GET колбэка входа и отвечает страницей reply.
 func (s *CallbackServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodGet {
-		// BaseHTTPRequestHandler без do_<метод> отвечал 501.
-		reply(writer, http.StatusNotImplemented, "Unsupported method ("+toolrt.Repr(request.Method)+")")
+		// Колбэк входа принимает только GET; прочие методы — 501 с названием метода.
+		reply(writer, http.StatusNotImplemented, "Метод не поддерживается: "+toolrt.Repr(request.Method))
 		return
 	}
 	parts, _ := ParseURL(request.RequestURI)

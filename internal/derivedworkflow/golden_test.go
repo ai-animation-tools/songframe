@@ -246,8 +246,7 @@ func diffTrees(before, after map[string]string) (map[string]string, []string) {
 
 // TestDerivedWorkflowGolden проходит все сценарии эталона на копии образца с подставным
 // менеджером заданий: результат или текст ошибки, изменённые файлы побайтно, запущенные задания и
-// дерево после восстановления. Текст отказа о недоступных инструментах, записанный в эталоне
-// (goldenToolsUnavailable), тест заменяет текстом приложения textToolsUnavailable.
+// дерево после восстановления.
 func TestDerivedWorkflowGolden(t *testing.T) {
 	var file goldenFile
 	if err := json.Unmarshal(golden.ReadFile(t, "derived-workflow", "cases.json"), &file); err != nil {
@@ -257,7 +256,6 @@ func TestDerivedWorkflowGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	const goldenToolsUnavailable = "Для сборки нужны доступные Python и FFmpeg. Проверьте страницу «Среда»."
 	for _, item := range file.Scenarios {
 		t.Run(item.Name, func(t *testing.T) {
 			parent, err := filepath.EvalSymlinks(t.TempDir())
@@ -329,10 +327,10 @@ func TestDerivedWorkflowGolden(t *testing.T) {
 				}
 				label := fmt.Sprintf("шаг %d %s", index, step.Op)
 				if failure != nil {
-					want := goldenToolsUnavailable
-					if step.Error != nil {
-						want = strings.ReplaceAll(*step.Error, goldenToolsUnavailable, textToolsUnavailable)
+					if step.Error == nil {
+						t.Fatalf("%s: ошибка %q, ожидался результат", label, names.text(failure.Error()))
 					}
+					want := *step.Error
 					if got := sameParse(names.text(failure.Error())); got != sameParse(want) {
 						t.Fatalf("%s: ошибка %q, ожидалась %q", label, got, want)
 					}
@@ -343,7 +341,7 @@ func TestDerivedWorkflowGolden(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					sameJSON(t, label, []byte(strings.ReplaceAll(string(step.Result), goldenToolsUnavailable, textToolsUnavailable)), []byte(names.text(string(data))))
+					sameJSON(t, label, step.Result, []byte(names.text(string(data))))
 				}
 				after := tree(t, project)
 				changed, removed := diffTrees(before, after)

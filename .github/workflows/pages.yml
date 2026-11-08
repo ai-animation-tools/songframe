@@ -1,6 +1,6 @@
 # Лэндинг из www публикуется на GitHub Pages как есть, без сборки.
-# Сайт принадлежит публичному ai-animation-tools/songframe: после переноса истории туда workflow
-# начинает публиковать, а в приватном songframe-go, где Pages не включены, job пропускается.
+# Сайт принадлежит публичному ai-animation-tools/songframe; в форках, где Pages не включены,
+# job пропускается.
 name: Pages
 
 on:

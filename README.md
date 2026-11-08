@@ -52,6 +52,7 @@ nice -n 19 ionice -c3 wails3 task check:all
 
 | Документ | О чём |
 | --- | --- |
+| [docs/code-map.md](docs/code-map.md) | Карта кода: области, их пакеты и страницы, документы-владельцы (генерируется) |
 | [docs/development.md](docs/development.md) | Устройство, контракт `window.api`, процессы и задания, провайдеры, тесты и эталоны, команды |
 | [docs/production-workflow.md](docs/production-workflow.md) | Производство плана: попытки, опоры, запрос, платная отправка, приёмка |
 | [docs/scenario-workflow.md](docs/scenario-workflow.md) | Сценарный проход и применение предложений |

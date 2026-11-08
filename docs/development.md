@@ -49,19 +49,7 @@ dev-skills/             скиллы разработки (в поставку �
 
 ### Предметные пакеты
 
-Сгруппированы по областям; назначение каждого пакета описано комментарием `// Package …` в его исходниках. Многие пакеты — переносы отдельных инструментов или модулей оригинала: комментарий называет исходный файл.
-
-| Область | Пакеты |
-| --- | --- |
-| Инфраструктура приложения | `store` (каталог состояния, текущий проект и история), `diagnostics` (журнал и признак штатного завершения), `process` (запуск внешних программ), `jobs` (менеджер заданий), `projectfs` (атомарная запись и шлюз записи), `filedigest` (SHA-256 с кэшем), `media` (loopback HTTP для WebView), `desktop` (открытие файлов системой), `trash` (корзина ОС), `wire` (подготовка ответов к контракту), `components` (FFmpeg, ONNX Runtime и модели) |
-| Проект и исходники | `project` (общие сведения о папке проекта и журналах), `projectfile` (маркер `plan/project.json`), `newproject` (создание из шаблона), `status` (состояние проекта), `sources`, `sourceedit`, `sourceinputs` (опись `source/manifest.json` и форма «Исходники»), `referenceimage`, `cast`, `castregistry` (кастинг), `covergen` (обложка и изображения референсов), `projectviews` |
-| Разметка песни | `timing` (`plan/audio/timing.json`), `songtiming` (автоматическая разметка), `songml` (выделение вокала и выравнивание CTC), `speech` (речевые планы), `cutspeech` (WAV липсинка) |
-| Сценарий | `scenario`, `sceneregistry`, `scenesave`, `scenescaffold`, `sceneviews` (реестр планов `plan/scenes.json` и его представления), `scenarioworkflow` (сценарный проход агента), `scenarioapply` (многофайловая публикация), `continuitybrief`, `lintregistry` |
-| Производство и приёмка | `production`, `productionworkflow` (рабочие пакеты и проход агента), `shotworkflow`, `shotstatus`, `regenerateshot`, `requestsnapshot`, `costcheck`, `acceptance`, `acceptshot`, `assetpackage`, `verifyassetreplay`, `videoreview` (проверка видео агентом), `contactsheet`, `dashboard`, `checks`, `checkassets`, `checkworkspace`, `tools` (метод `tools.run`) |
-| Аниматик и монтаж | `animatic`, `animaticcards`, `buildanimatic`, `buildreview` (пробы стыков), `montage`, `applymontage`, `derivedshot`, `derivedworkflow`, `deriveshot` (производные планы), `exportbundle` (экспорт для монтажёра), `builtoutput` |
-| Агенты и провайдеры медиа | `agents` (внешние текстовые агенты), `providers` (слой провайдеров) и папки адаптеров `providers/<id>/`, `mediaproviders` (Go-часть реестра), `mediaadapters` (таблица платных адаптеров), `mediaapi` (контракт адаптера), `mediarequest` (жизненный цикл платной попытки), `mediatest` (тестовый провайдер `test`), `mediafile`, `mediacmd` (общий запуск FFmpeg/ffprobe) |
-| Семантика оригинала | `pycompat`, `pyre`, `pyargparse`, `pytool` (значения, JSON-вывод, регулярные выражения, argparse и вывод CLI в семантике Python 3.12), `jscompat` (семантика JavaScript/Node.js, от которой зависит результат) |
-| Тесты | `golden` (чтение и сравнение эталонов) |
+Логика областей — в пакетах `internal/<область>` без зависимости от Wails. Какие пакеты и страницы входят в каждую область и какие документы ей принадлежат, показывает генерируемая [карта кода](code-map.md); назначение пакета — комментарий `// Package …` в его исходниках. Многие пакеты — переносы отдельных инструментов или модулей оригинала: комментарий называет исходный файл.
 
 Подробные процессы описаны отдельно: [производство](production-workflow.md), [сценарный проход](scenario-workflow.md), [монтаж и производные планы](montage.md), [агенты](agents.md) и [ограничения изображений агента](agent-image-limits.md).
 
@@ -192,6 +180,8 @@ Python 3 нужен только сборщику поставок и отдел
 | `wails3 task storybook` | Собрать статическую витрину `frontend/storybook-static` |
 | `wails3 task check:storybook` | Браузерные сценарии витрины |
 | `wails3 task check:ui` | `storybook`, затем `check:storybook` |
+| `wails3 task check:docs` | Ссылки, пути, переменные и задачи документации, актуальность карты кода (`internal/repodocs`) |
+| `wails3 task docs:map` | Перегенерировать [карту кода](code-map.md) из `internal/repodocs/areas.go` и комментариев пакетов |
 | `wails3 task check:all` | Последовательно `check`, `check:race`, `check:format`, `check:ui` |
 
 Из `frontend/` (`frontend/package.json`): `yarn typecheck`, `yarn test [файл]`, `yarn build-storybook`, `yarn test:storybook [--grep группа]`, `yarn storybook` (dev-сервер на порту 6106, в приёмку не входит), `yarn format` (переформатирование — только отдельным поручением).
@@ -199,6 +189,7 @@ Python 3 нужен только сборщику поставок и отдел
 ### Как проверять
 
 - Во время работы гонять тесты изменённой области: `go test ./internal/<пакет> -run Имя`, `yarn test src/platform/<файл>.test.ts`, `yarn test:storybook --grep "<группа>"` после `yarn build-storybook`. После сбоя исправить и перезапустить только упавшее.
+- После правки только документации достаточно `wails3 task check:docs`; новый пакет или страница требуют строки в `internal/repodocs/areas.go` и `wails3 task docs:map`.
 - Перед коммитом — один полный `wails3 task check:all`. Чтобы не мешать остальной работе машины, запускать его с пониженным приоритетом:
 
   ```sh

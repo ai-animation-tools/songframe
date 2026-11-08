@@ -72,6 +72,14 @@ tasks:
       - task: bindings
       - go test ./...
       - go vet ./...
+  check:docs:
+    desc: Сверить ссылки, пути, переменные и задачи документации с репозиторием и карту кода
+    cmds:
+      - go test ./internal/repodocs -count=1
+  docs:map:
+    desc: Перегенерировать docs/code-map.md из internal/repodocs/areas.go и комментариев пакетов
+    cmds:
+      - go test ./internal/repodocs -run TestCodeMap -count=1 -update
   check:components:
     desc: Проверить закреплённый manifest компонентов без загрузки и ML
     cmds:

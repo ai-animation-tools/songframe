@@ -3,7 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../../state';
 import { MontageWorkspace } from './MontageWorkspace';
 
-/** Выбранные на странице сцен планы передаются в начальную пробу, проект задаёт границу состояния. */
+/** Монтаж: ручная проба из принятых планов, её черновики, экспорт и применение к сценам.
+ *
+ * Выбранные на странице сцен планы передаются в начальную пробу, проект задаёт границу состояния. */
 export function MontagePage(): ReactElement {
   const { state } = useApp();
   const [params] = useSearchParams();

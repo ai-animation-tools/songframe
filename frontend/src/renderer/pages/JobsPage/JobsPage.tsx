@@ -16,6 +16,7 @@ import { useApp } from '../../state';
 import { ToolJobEntry } from './components';
 import { useJobsJournal } from './useJobsJournal';
 
+/** Задания: общая хронология заданий агентов и инструментов с состоянием, журналом и отменой. */
 export function JobsPage(): ReactElement {
   const { state, notify, describeError } = useApp();
   const journal = useJobsJournal();
